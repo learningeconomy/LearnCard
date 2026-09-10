@@ -122,3 +122,17 @@ describe('project context', () => {
         expect(() => resolveServices({}, 'file:///tmp/network', {})).toThrow('HTTP');
     });
 });
+
+describe('upsertEnv value quoting', () => {
+    it('writes percent-encoded network URIs bare so shell scripts can read them', () => {
+        expect(upsertEnv('', { TEMPLATE_URI: 'lc:network:localhost%3A4000/trpc:boost:abc' })).toBe(
+            'TEMPLATE_URI=lc:network:localhost%3A4000/trpc:boost:abc\n'
+        );
+    });
+
+    it('quotes values with spaces or shell-significant characters', () => {
+        expect(upsertEnv('', { API_TOKEN_SCOPE: 'boosts:write inbox:read' })).toBe(
+            'API_TOKEN_SCOPE="boosts:write inbox:read"\n'
+        );
+    });
+});

@@ -7,6 +7,12 @@ const snippets = {
     SEND_MJS: 'quickstart/send.mjs',
     SEND_SH: 'quickstart/send.sh',
     SEND_FROM_TEMPLATE_MJS: 'quickstart/send-from-template.mjs',
+    WEBHOOK_MJS: 'cli/webhook.mjs',
+    CLAIM_BUTTON_HTML: 'cli/claim-button.html',
+    CREATE_CONTRACT_MJS: 'consentflow/create-contract.mjs',
+    CONSENT_CALLBACK_MJS: 'consentflow/consent-callback.mjs',
+    READ_USER_DATA_MJS: 'consentflow/read-user-data.mjs',
+    ISSUE_THROUGH_CONTRACT_MJS: 'consentflow/issue-through-contract.mjs',
 };
 const lines = await Promise.all(
     Object.entries(snippets).map(

@@ -395,6 +395,35 @@ const runCommand = async (action: (didkit: Promise<Buffer>) => Promise<void>) =>
 };
 
 commandOptions(
+    program.command('consent-contract').description("Connect a user's LearnCard to your platform.")
+)
+    .option('--name <name>', 'contract name (default: issuer display name)')
+    .option(
+        '--redirect-url <url>',
+        'callback URL (default: http://localhost:3000/consent-callback)'
+    )
+    .action(options =>
+        runCommand(async didkit => {
+            const { runConsentContract } = await import('./consent-contract');
+            await runConsentContract({ ...options, didkit });
+        })
+    );
+
+commandOptions(program.command('embed').description('Put a Claim button on your site.'))
+    .option('--name <name>', 'integration name (default: issuer display name)')
+    .option(
+        '--domains <origins>',
+        'comma-separated origins (default: http://localhost:3000,http://localhost:5173)'
+    )
+    .option('--rotate-key', 'rotate the integration publishable key')
+    .action(options =>
+        runCommand(async didkit => {
+            const { runEmbed } = await import('./embed');
+            await runEmbed({ ...options, didkit });
+        })
+    );
+
+commandOptions(
     program
         .command('setup-signing')
         .description('Set up LearnCard to sign credentials for your project.')
@@ -446,6 +475,20 @@ commandOptions(
         runCommand(async didkit => {
             const { runRevoke } = await import('./revoke');
             await runRevoke(uri, { ...options, didkit });
+        })
+    );
+
+commandOptions(
+    program.command('webhook [email]').description('Know when your credential was claimed.')
+)
+    .option('--to <email>', 'recipient email')
+    .option('--url <publicUrl>', 'public HTTPS webhook URL')
+    .option('--port <n>', 'receiver port (default: 8787)')
+    .option('--name <name>', 'display name for your issuer profile')
+    .action((email, options) =>
+        runCommand(async didkit => {
+            const { runWebhook } = await import('./webhook');
+            await runWebhook(email, { ...options, didkit });
         })
     );
 

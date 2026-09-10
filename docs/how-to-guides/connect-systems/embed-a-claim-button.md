@@ -12,6 +12,58 @@ Add a "Claim Credential" button to any webpage. When a user clicks it, a modal w
 This is for **external websites** that want to award credentials to visitors. If you're building an app that runs _inside_ the LearnCard App Store, see [Build an App Inside LearnCard](../publish-your-app.md) instead.
 {% endhint %}
 
+## Or let the CLI do it
+
+Run `npx @learncard/cli embed -y` to configure a primary signing authority and an integration, then serve the generated `claim-button.html` from `http://localhost:3000`, not `file://`. The CLI replaces the publishable-key placeholder and selects your network's API URL. This example uses a full unsigned badge, so no named template is needed. The current SDK's `LearnCard.init()` renders the button; it does not expose `LearnCard.claim()`.
+
+<!-- snippet: cli/claim-button.html -->
+
+```html
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Claim your badge</title>
+    </head>
+    <body>
+        <h1>Claim your badge</h1>
+        <div id="claim-button"></div>
+        <script src="https://cdn.jsdelivr.net/npm/@learncard/embed-sdk@latest/dist/learncard.js"></script>
+        <script>
+            // init renders the Claim button. The current SDK does not export claim().
+            LearnCard.init({
+                target: '#claim-button',
+                publishableKey: 'PUBLISHABLE_KEY_PLACEHOLDER',
+                apiBaseUrl: 'https://network.learncard.com/api',
+                // A full unsigned badge works without a named integration template.
+                credential: {
+                    '@context': [
+                        'https://www.w3.org/ns/credentials/v2',
+                        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+                        'https://ctx.learncard.com/boosts/1.0.3.json',
+                    ],
+                    type: ['VerifiableCredential', 'OpenBadgeCredential', 'BoostCredential'],
+                    name: 'Badge Name',
+                    credentialSubject: {
+                        type: ['AchievementSubject'],
+                        achievement: {
+                            id: 'urn:uuid:552bf83b-7700-4c3a-b1ce-2d8f8ee68811',
+                            type: ['Achievement'],
+                            name: 'Badge Name',
+                            description: 'Claimed a badge with LearnCard.',
+                            criteria: { narrative: 'Clicked the Claim button.' },
+                        },
+                    },
+                },
+            });
+        </script>
+    </body>
+</html>
+```
+
+<!-- /snippet -->
+
 ## Prerequisites
 
 - A LearnCard developer account with an **Embed** integration created in the [Developer Portal](https://learncard.app/app-store/developer)

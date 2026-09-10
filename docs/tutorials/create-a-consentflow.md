@@ -6,6 +6,10 @@ description: Link a learner's LearnCard once, then read their data and issue to 
 
 A learner links their LearnCard to your platform once and chooses what you may read and write. LearnCard calls this a [ConsentFlow](../core-concepts/consent-and-permissions/consentflow-overview.md). This tutorial asks for an optional name and permission to send achievements.
 
+## Or let the CLI do it
+
+Run `npx @learncard/cli consent-contract -y` to create or reuse `CONTRACT_URI`, save `RETURN_TO`, and write the four canonical scripts embedded below: `create-contract.mjs`, `consent-callback.mjs`, `read-user-data.mjs`, and `issue-through-contract.mjs`. Start with `node --env-file=.env consent-callback.mjs`. The CLI defaults to a local HTTP callback and optional achievement permissions; the standalone setup script below intentionally requires HTTPS and required write permission. Reuse the CLI's saved contract instead of running that setup script again. Read and issue scripts still require a signed `CONSENT_VP`, not a bare DID.
+
 ## Do you need this, or just send()?
 
 - **Just awarding a badge?** If you know the user's email, use [`send()`](../how-to-guides/send-credentials.md) — it's simpler and requires no setup for the user.

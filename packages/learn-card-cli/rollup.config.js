@@ -16,6 +16,19 @@ export default [
                 inlineDynamicImports: true,
             },
         ],
-        plugins: [json(), esbuild()],
+        plugins: [
+            json(),
+            esbuild(),
+            {
+                name: 'native-webhook-import',
+                renderDynamicImport({ moduleId }) {
+                    // Rollup 2 otherwise emits require(data:...), which Node cannot load.
+                    if (moduleId.endsWith('/src/webhook.ts')) {
+                        return { left: 'import(', right: ')' };
+                    }
+                    return null;
+                },
+            },
+        ],
     },
 ];

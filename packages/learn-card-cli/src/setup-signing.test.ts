@@ -51,6 +51,9 @@ describe('signing authority setup', () => {
             expect(log).toHaveBeenCalledWith(
                 'Signing authority "default-issuer" is already your primary.'
             );
+            const demoProject = { env: {}, existing: '', envPath: '/unused/.env' };
+            await setupSigning(demoProject, { invoke }, undefined, { persist: false });
+            expect(demoProject.env).toEqual({});
         } finally {
             log.mockRestore();
             await fs.rm(cwd, { recursive: true, force: true });

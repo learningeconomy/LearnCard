@@ -27,7 +27,8 @@ type SigningCard = {
 export const setupSigning = async (
     project: Project,
     learnCard: SigningCard,
-    requestedName?: string
+    requestedName?: string,
+    options: { persist?: boolean } = {}
 ): Promise<void> => {
     const name = authorityName(project, requestedName);
     const registered = (await learnCard.invoke.getRegisteredSigningAuthorities()).find(
@@ -46,10 +47,12 @@ export const setupSigning = async (
                 );
             }
         }
-        await saveProject(project, {
-            SIGNING_AUTHORITY_NAME: name,
-            SIGNING_AUTHORITY_ENDPOINT: endpoint,
-        });
+        if (options.persist !== false) {
+            await saveProject(project, {
+                SIGNING_AUTHORITY_NAME: name,
+                SIGNING_AUTHORITY_ENDPOINT: endpoint,
+            });
+        }
         console.log(`Signing authority "${name}" is already your primary.`);
         return;
     }
@@ -74,10 +77,12 @@ export const setupSigning = async (
     ) {
         throw new Error('Could not select the primary signing authority. Please try again.');
     }
-    await saveProject(project, {
-        SIGNING_AUTHORITY_NAME: authority.name,
-        SIGNING_AUTHORITY_ENDPOINT: authority.endpoint,
-    });
+    if (options.persist !== false) {
+        await saveProject(project, {
+            SIGNING_AUTHORITY_NAME: authority.name,
+            SIGNING_AUTHORITY_ENDPOINT: authority.endpoint,
+        });
+    }
     console.log(`LearnCard will now sign credentials for ${project.env.PROFILE_ID}.`);
     console.log('What this did:');
     console.log(

@@ -71,7 +71,7 @@ export const upsertEnv = (text: string, values: Record<string, string>): string 
             // Quotes make multi-scope values safe in both dotenv and shell scripts.
             const value = values[key]!;
             if (/[\r\n]/.test(value)) throw new Error(`Invalid multiline value for ${key}`);
-            return `${key}=${/^[a-zA-Z0-9_./:@*=-]*$/.test(value) ? value : JSON.stringify(value)}`;
+            return `${key}=${/^[a-zA-Z0-9_./:@*=%+-]*$/.test(value) ? value : JSON.stringify(value)}`;
         }
         return line;
     });
