@@ -38,6 +38,7 @@ export const EscrowRecoveryPanel = ({
     const [loadAttempt, setLoadAttempt] = useState(0);
     const [saved, setSaved] = useState(true);
     const [loading, setLoading] = useState(false);
+    const [finishing, setFinishing] = useState(false);
     const [error, setError] = useState('');
     const [notice, setNotice] = useState('');
     const [now, setNow] = useState(Date.now());
@@ -181,13 +182,18 @@ export const EscrowRecoveryPanel = ({
                             onClick={() =>
                                 void run(async () => {
                                     if (!(await checkStatus())) return;
-                                    await onRecover({
-                                        method: 'escrow',
-                                        holdId: pending.holdId,
-                                        resumeToken: pending.resumeToken,
-                                        clientEphemeralPrivateKey:
-                                            pending.clientEphemeralPrivateKey,
-                                    });
+                                    setFinishing(true);
+                                    try {
+                                        await onRecover({
+                                            method: 'escrow',
+                                            holdId: pending.holdId,
+                                            resumeToken: pending.resumeToken,
+                                            clientEphemeralPrivateKey:
+                                                pending.clientEphemeralPrivateKey,
+                                        });
+                                    } finally {
+                                        setFinishing(false);
+                                    }
                                     await clearPendingEscrowRecovery(pending.holdId, scope);
                                     setPending(undefined);
                                 })
@@ -195,6 +201,11 @@ export const EscrowRecoveryPanel = ({
                         >
                             {loading ? spinner('Recovering...') : 'Finish recovery'}
                         </button>
+                    )}
+                    {finishing && (
+                        <p role="status" className="text-xs text-grayscale-500 leading-relaxed">
+                            Keep this page open until your account is restored.
+                        </p>
                     )}
                     <p className="text-xs text-grayscale-600 leading-relaxed">
                         To cancel this request, use a device where you are already signed in.
