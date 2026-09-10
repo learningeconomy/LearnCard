@@ -1,0 +1,83 @@
+name: CodeQL full comparison
+on:
+    push:
+        branches: ['codex/pr1549-codeql-audit']
+    workflow_dispatch:
+        inputs:
+            target_ref:
+                description: 'Target branch, commit SHA, or refs/pull/NUMBER/head'
+                required: true
+                type: string
+            baseline_ref:
+                description: 'Baseline branch or commit SHA'
+                default: main
+                required: true
+                type: string
+permissions:
+    contents: read
+    actions: read
+jobs:
+    scan:
+        name: Full scan (${{ matrix.side }})
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                side: [baseline, target]
+        env:
+            CODEQL_ACTION_DIFF_INFORMED_QUERIES: 'false'
+        steps:
+            - uses: actions/checkout@v7
+              with:
+                  ref: ${{ matrix.side == 'baseline' && (inputs.baseline_ref || '50f8d26c271d1a16240c5024402d0ea75c475a3d') || inputs.target_ref || '4513902a2' }}
+                  persist-credentials: false
+            - name: Record commit and prepare scan configuration
+              shell: bash
+              run: |
+                  mkdir -p "$RUNNER_TEMP/full-codeql-results"
+                  git rev-parse HEAD > "$RUNNER_TEMP/full-codeql-results/commit.txt"
+                  if [[ -f .github/codeql-config.yml ]]; then
+                      cp .github/codeql-config.yml "$RUNNER_TEMP/full-codeql-config.yml"
+                  else
+                      printf 'name: Full CodeQL scan\n' > "$RUNNER_TEMP/full-codeql-config.yml"
+                  fi
+                  cp "$RUNNER_TEMP/full-codeql-config.yml" "$RUNNER_TEMP/full-codeql-results/config.yml"
+            - uses: github/codeql-action/init@v2
+              with:
+                  # Pin both sides to one query bundle for a meaningful comparison.
+                  tools: https://github.com/github/codeql-action/releases/download/codeql-bundle-v2.27.0/codeql-bundle-linux64.tar.zst
+                  languages: javascript
+                  config-file: ${{ runner.temp }}/full-codeql-config.yml
+            - uses: github/codeql-action/autobuild@v2
+            - uses: github/codeql-action/analyze@v2
+              with:
+                  output: ${{ runner.temp }}/full-codeql-results
+                  upload: never
+                  upload-database: false
+            - uses: actions/upload-artifact@v4
+              with:
+                  name: codeql-full-${{ matrix.side }}
+                  path: ${{ runner.temp }}/full-codeql-results
+                  retention-days: 14
+    compare:
+        needs: scan
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v7
+              with:
+                  # Use the workflow revision's comparison script, not target code.
+                  ref: ${{ github.workflow_sha }}
+                  persist-credentials: false
+            - uses: actions/download-artifact@v4
+              with:
+                  pattern: codeql-full-*
+                  path: results
+            - name: Compare findings
+              run: |
+                  python3 scripts/codeql/compare.py results/codeql-full-baseline results/codeql-full-target > comparison.md
+                  cat comparison.md >> "$GITHUB_STEP_SUMMARY"
+            - uses: actions/upload-artifact@v4
+              with:
+                  name: codeql-full-comparison
+                  path: comparison.md
+                  retention-days: 14

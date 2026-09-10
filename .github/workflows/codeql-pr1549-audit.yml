@@ -1,7 +1,7 @@
 name: CodeQL PR 1549 full audit
 on:
     push:
-        branches: ['codex/pr1549-codeql-audit']
+        branches: ['codex/pr1549-codeql-audit-single']
 permissions:
     contents: read
     actions: read
