@@ -1,4 +1,4 @@
-name: Hosted E2E Shadow
+name: E2E
 
 on:
     pull_request:
@@ -23,7 +23,7 @@ concurrency:
 
 jobs:
     eligibility:
-        name: Determine hosted E2E eligibility
+        name: Determine E2E eligibility
         runs-on: ubuntu-latest
         outputs:
             run_e2e: ${{ steps.policy.outputs.run_e2e }}
@@ -46,8 +46,8 @@ jobs:
                     echo 'reason=draft-pr' >> "$GITHUB_OUTPUT"
                   fi
 
-    browser_e2e:
-        name: Hosted browser E2E and accessibility
+    playwright_e2e:
+        name: Playwright E2E
         needs: eligibility
         if: ${{ needs.eligibility.outputs.run_e2e == 'true' }}
         runs-on: ${{ vars.E2E_HOSTED_RUNNER || 'ubuntu-latest' }}
@@ -119,7 +119,7 @@ jobs:
             - name: Setup Bun and dependencies
               uses: ./.github/actions/setup
 
-            - name: Run hosted browser suites
+            - name: Run Playwright and accessibility suites
               run: bash scripts/e2e-hosted/run-browser.sh
 
             - name: Publish browser diagnostic summary
@@ -128,20 +128,20 @@ jobs:
                   if [[ -f "$E2E_ARTIFACT_DIR/summary.md" ]]; then
                     cat "$E2E_ARTIFACT_DIR/summary.md" >> "$GITHUB_STEP_SUMMARY"
                   else
-                    echo 'Hosted browser diagnostics were not created.' >> "$GITHUB_STEP_SUMMARY"
+                    echo 'Playwright E2E diagnostics were not created.' >> "$GITHUB_STEP_SUMMARY"
                   fi
 
             - name: Upload browser E2E artifacts
               if: always()
               uses: actions/upload-artifact@v4
               with:
-                  name: hosted-browser-e2e-${{ github.run_id }}
+                  name: playwright-e2e-${{ github.run_id }}
                   path: ${{ env.E2E_ARTIFACT_DIR }}
                   if-no-files-found: error
                   retention-days: 30
 
-    service_e2e:
-        name: Hosted service E2E
+    tests_e2e:
+        name: tests/e2e
         needs: eligibility
         if: ${{ needs.eligibility.outputs.run_e2e == 'true' }}
         runs-on: ${{ vars.E2E_HOSTED_RUNNER || 'ubuntu-latest' }}
@@ -212,7 +212,7 @@ jobs:
             - name: Setup Bun and dependencies
               uses: ./.github/actions/setup
 
-            - name: Run hosted service suite
+            - name: Run tests/e2e
               run: bash scripts/e2e-hosted/run-service.sh
 
             - name: Publish service diagnostic summary
@@ -221,40 +221,40 @@ jobs:
                   if [[ -f "$E2E_ARTIFACT_DIR/summary.md" ]]; then
                     cat "$E2E_ARTIFACT_DIR/summary.md" >> "$GITHUB_STEP_SUMMARY"
                   else
-                    echo 'Hosted service diagnostics were not created.' >> "$GITHUB_STEP_SUMMARY"
+                    echo 'tests/e2e diagnostics were not created.' >> "$GITHUB_STEP_SUMMARY"
                   fi
 
             - name: Upload service E2E artifacts
               if: always()
               uses: actions/upload-artifact@v4
               with:
-                  name: hosted-service-e2e-${{ github.run_id }}
+                  name: tests-e2e-${{ github.run_id }}
                   path: ${{ env.E2E_ARTIFACT_DIR }}
                   if-no-files-found: error
                   retention-days: 30
 
-    hosted_e2e_shadow:
-        name: Hosted E2E shadow
-        needs: [eligibility, browser_e2e, service_e2e]
+    e2e:
+        name: E2E
+        needs: [eligibility, playwright_e2e, tests_e2e]
         if: ${{ always() }}
         runs-on: ubuntu-latest
         timeout-minutes: 5
         steps:
-            - name: Evaluate hosted E2E result
+            - name: Evaluate E2E result
               env:
                   ELIGIBILITY_RESULT: ${{ needs.eligibility.result }}
                   ELIGIBLE: ${{ needs.eligibility.outputs.run_e2e }}
                   ELIGIBILITY_REASON: ${{ needs.eligibility.outputs.reason }}
-                  BROWSER_RESULT: ${{ needs.browser_e2e.result }}
-                  SERVICE_RESULT: ${{ needs.service_e2e.result }}
+                  BROWSER_RESULT: ${{ needs.playwright_e2e.result }}
+                  SERVICE_RESULT: ${{ needs.tests_e2e.result }}
               run: |
                   if [[ "$ELIGIBILITY_RESULT" != "success" ]]; then
-                    echo "Hosted E2E eligibility did not succeed: $ELIGIBILITY_RESULT" >&2
+                    echo "E2E eligibility did not succeed: $ELIGIBILITY_RESULT" >&2
                     exit 1
                   fi
 
                   if [[ "$ELIGIBLE" == "false" && "$ELIGIBILITY_REASON" == "draft-pr" ]]; then
-                    echo 'Hosted E2E skipped: draft pull request.'
+                    echo 'E2E skipped: draft pull request.'
                     exit 0
                   fi
 
@@ -263,5 +263,5 @@ jobs:
                     exit 0
                   fi
 
-                  echo "Hosted E2E failed: eligibility=$ELIGIBLE reason=$ELIGIBILITY_REASON browser=$BROWSER_RESULT service=$SERVICE_RESULT" >&2
+                  echo "E2E failed: eligibility=$ELIGIBLE reason=$ELIGIBILITY_REASON playwright=$BROWSER_RESULT tests_e2e=$SERVICE_RESULT" >&2
                   exit 1

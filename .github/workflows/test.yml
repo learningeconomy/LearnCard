@@ -38,10 +38,11 @@ jobs:
                   SEED: ${{ secrets.SEED || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
                   LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
 
-    # Run the real-backend E2E and Axe suites on every PR or manual trigger.
-    # SSHs into EC2 to run Playwright tests against the branch
+    # Temporary manual fallback during the hosted-runner cutover.
+    # Remove after one sprint of stable GitHub-hosted E2E operation.
     e2e-tests:
-        if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+        name: EC2 E2E fallback (manual)
+        if: github.event_name == 'workflow_dispatch'
         concurrency:
             group: learncard-e2e-ec2
             cancel-in-progress: false

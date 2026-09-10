@@ -3,19 +3,21 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
-ruby - "$REPO_ROOT/.github/workflows/e2e-hosted-shadow.yml" "$REPO_ROOT/.github/workflows/test.yml" <<'RUBY'
+ruby - "$REPO_ROOT/.github/workflows/e2e.yml" "$REPO_ROOT/.github/workflows/test.yml" <<'RUBY'
 require 'yaml'
 require 'tempfile'
 require 'tmpdir'
 require 'open3'
 
-hosted_path, legacy_path = ARGV
-abort 'hosted E2E workflow missing' unless File.file?(hosted_path)
+e2e_path, legacy_path = ARGV
+abort 'E2E workflow missing' unless File.file?(e2e_path)
 
-source = File.read(hosted_path)
+source = File.read(e2e_path)
 abort 'pull_request_target must not execute PR code' if source.include?('pull_request_target')
+abort 'cutover workflow must not retain shadow naming' if source.downcase.include?('shadow')
 
-workflow = YAML.load_file(hosted_path, aliases: true)
+workflow = YAML.load_file(e2e_path, aliases: true)
+abort 'workflow name must be E2E' unless workflow.fetch('name') == 'E2E'
 triggers = workflow['on'] || workflow[true]
 pull_request = triggers.fetch('pull_request')
 expected_types = %w[opened synchronize reopened ready_for_review converted_to_draft]
@@ -33,17 +35,21 @@ permissions = workflow.fetch('permissions')
 abort 'workflow must use read-only contents permission' unless permissions == { 'contents' => 'read' }
 
 jobs = workflow.fetch('jobs')
-expected_jobs = %w[eligibility browser_e2e service_e2e hosted_e2e_shadow]
-abort 'hosted shadow workflow job set changed' unless jobs.keys.sort == expected_jobs.sort
+expected_jobs = %w[eligibility playwright_e2e tests_e2e e2e]
+abort 'E2E workflow job set changed' unless jobs.keys.sort == expected_jobs.sort
 
 eligibility = jobs.fetch('eligibility')
+abort 'eligibility name must not retain hosted shadow terminology' unless eligibility.fetch('name') == 'Determine E2E eligibility'
 outputs = eligibility.fetch('outputs')
 abort 'run_e2e output missing' unless outputs.key?('run_e2e')
 abort 'eligibility reason output missing' unless outputs.key?('reason')
 
-browser = jobs.fetch('browser_e2e')
-service = jobs.fetch('service_e2e')
-aggregate = jobs.fetch('hosted_e2e_shadow')
+browser = jobs.fetch('playwright_e2e')
+service = jobs.fetch('tests_e2e')
+aggregate = jobs.fetch('e2e')
+abort 'browser check name must be stable' unless browser.fetch('name') == 'Playwright E2E'
+abort 'service check name must match its suite' unless service.fetch('name') == 'tests/e2e'
+abort 'aggregate required-gate name must be stable' unless aggregate.fetch('name') == 'E2E'
 
 expected_browser_specs = 'consent-flow-race.spec.ts app-store.spec.ts wallet-credentials.spec.ts'
 dispatch_default = triggers.fetch('workflow_dispatch').fetch('inputs').fetch('test_files').fetch('default')
@@ -62,7 +68,7 @@ abort 'runner label must remain configurable' unless browser.fetch('runs-on').in
 )
 
 abort 'aggregate must inspect all job results' unless aggregate.fetch('needs') == [
-  'eligibility', 'browser_e2e', 'service_e2e'
+  'eligibility', 'playwright_e2e', 'tests_e2e'
 ]
 abort 'aggregate must run after failures/skips' unless aggregate.fetch('if').include?('always()')
 abort 'aggregate must have a bounded timeout' unless aggregate.fetch('timeout-minutes') == 5
@@ -150,16 +156,16 @@ abort 'explicit draft skip must succeed' unless aggregate_succeeds?(aggregate_ru
   'ELIGIBILITY_REASON' => 'draft-pr',
   'BROWSER_RESULT' => 'skipped'
 ))
-abort 'absent eligibility output must fail shadow result' if aggregate_succeeds?(aggregate_run, aggregate_defaults.merge(
+abort 'absent eligibility output must fail aggregate result' if aggregate_succeeds?(aggregate_run, aggregate_defaults.merge(
   'ELIGIBLE' => '',
   'ELIGIBILITY_REASON' => ''
 ))
-abort 'malformed ineligible output must fail shadow result' if aggregate_succeeds?(aggregate_run, aggregate_defaults.merge(
+abort 'malformed ineligible output must fail aggregate result' if aggregate_succeeds?(aggregate_run, aggregate_defaults.merge(
   'ELIGIBLE' => 'false',
   'ELIGIBILITY_REASON' => 'manual-dispatch'
 ))
 %w[failure cancelled].each do |result|
-  abort "#{result} eligibility must fail shadow result" if aggregate_succeeds?(aggregate_run, aggregate_defaults.merge(
+  abort "#{result} eligibility must fail aggregate result" if aggregate_succeeds?(aggregate_run, aggregate_defaults.merge(
     'ELIGIBILITY_RESULT' => result,
     'ELIGIBLE' => '',
     'ELIGIBILITY_REASON' => ''
@@ -168,7 +174,9 @@ end
 
 legacy = YAML.load_file(legacy_path, aliases: true)
 legacy_jobs = legacy.fetch('jobs')
-abort 'legacy EC2 gate must remain during shadow phase' unless legacy_jobs.key?('e2e-tests')
+legacy_e2e = legacy_jobs.fetch('e2e-tests')
+abort 'legacy EC2 job must be labeled manual fallback' unless legacy_e2e.fetch('name') == 'EC2 E2E fallback (manual)'
+abort 'legacy EC2 job must not run for PR events' unless legacy_e2e.fetch('if') == "github.event_name == 'workflow_dispatch'"
 
 [browser_steps, service.fetch('steps')].each do |steps|
   preflight = steps.find { |step| step['name'] == 'Capture runner preflight' }
@@ -183,14 +191,14 @@ abort 'legacy EC2 gate must remain during shadow phase' unless legacy_jobs.key?(
       File.write(File.join(dir, 'head'), "#!/bin/sh\nif [ \"$2\" = /proc/meminfo ]; then echo 'MemTotal: fixture'; else exec /usr/bin/head \"$@\"; fi\n")
       File.chmod(0755, File.join(dir, 'head'))
       artifacts = File.join(dir, 'artifacts')
-      workspace = checkout_outcome == 'success' ? File.expand_path('../..', File.dirname(hosted_path)) : File.join(dir, 'missing-checkout')
+      workspace = checkout_outcome == 'success' ? File.expand_path('../..', File.dirname(e2e_path)) : File.join(dir, 'missing-checkout')
       env = {
         'PATH' => "#{dir}:#{ENV.fetch('PATH')}", 'E2E_ARTIFACT_DIR' => artifacts,
         'GITHUB_WORKSPACE' => workspace, 'CHECKOUT_OUTCOME' => checkout_outcome,
         'CHECKOUT_CONCLUSION' => checkout_outcome, 'GITHUB_EVENT_NAME' => 'workflow_dispatch',
         'GITHUB_SHA' => 'event-sha-fixture', 'GITHUB_REF' => 'refs/heads/main',
         'GITHUB_RUN_ID' => '12345', 'GITHUB_RUN_ATTEMPT' => '2',
-        'GITHUB_REPOSITORY' => 'example/LearnCard', 'GITHUB_WORKFLOW' => 'Hosted E2E Shadow',
+        'GITHUB_REPOSITORY' => 'example/LearnCard', 'GITHUB_WORKFLOW' => 'E2E',
         'TESTED_REF' => 'selected-manual-ref'
       }
       stdout, status = Open3.capture2e(env, 'bash', '-euo', 'pipefail', '-c', preflight.fetch('run'), chdir: dir)
@@ -212,9 +220,9 @@ end
 puts 'Browser job preserves event/run provenance with and without checkout'
 RUBY
 
-grep -Fq 'E2E_ARTIFACT_DIR: /tmp/learncard-e2e-artifacts/browser' "$REPO_ROOT/.github/workflows/e2e-hosted-shadow.yml" \
+grep -Fq 'E2E_ARTIFACT_DIR: /tmp/learncard-e2e-artifacts/browser' "$REPO_ROOT/.github/workflows/e2e.yml" \
     || { echo 'browser artifacts must live outside the Docker context' >&2; exit 1; }
-grep -Fq 'E2E_ARTIFACT_DIR: /tmp/learncard-e2e-artifacts/service' "$REPO_ROOT/.github/workflows/e2e-hosted-shadow.yml" \
+grep -Fq 'E2E_ARTIFACT_DIR: /tmp/learncard-e2e-artifacts/service' "$REPO_ROOT/.github/workflows/e2e.yml" \
     || { echo 'service artifacts must live outside the Docker context' >&2; exit 1; }
 grep -Fxq 'e2e-artifacts/' "$REPO_ROOT/.dockerignore" \
     || { echo 'Docker context must exclude local E2E artifacts' >&2; exit 1; }
