@@ -132,6 +132,9 @@ export interface AuthCoordinatorProviderProps {
     /** Called after the coordinator finishes its own logout cleanup. Use for app-specific store/DB clearing. */
     onLogout?: () => Promise<void>;
 
+    /** Wipes pending escrow recovery requests on `forgetDevice()`; defaults to the web storage copy. */
+    clearPendingEscrowRecovery?: () => Promise<void>;
+
     /** Debug event callback for logging/debugging */
     onDebugEvent?: (
         type: string,
@@ -184,6 +187,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
     signDidAuthVp,
     getCachedPrivateKey,
     onLogout,
+    clearPendingEscrowRecovery,
     onDebugEvent,
     enabled = true,
     legacyAccountThresholdMs,
@@ -282,6 +286,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             signDidAuthVp,
             getCachedPrivateKey,
             onLogout,
+            clearPendingEscrowRecovery,
             legacyAccountThresholdMs,
         });
 
@@ -317,6 +322,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
         signDidAuthVp,
         getCachedPrivateKey,
         onLogout,
+        clearPendingEscrowRecovery,
         onDebugEvent,
         getStateEventLevel,
         extractStateDetails,
