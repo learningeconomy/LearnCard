@@ -149,6 +149,18 @@ import ReAuthOverlay from '../components/auth/ReAuthOverlay';
 
 const log = getLogger('auth-coordinator');
 
+/**
+ * Records whether the user has set or explicitly skipped a recovery PIN for a
+ * given DID. Read by the post-setup "set a PIN" overlay (skip once, don't
+ * re-nag) and by the "your PIN was reset" banner after a forced rotation.
+ * Must be called from every code path that sets/clears/skips the PIN so the
+ * flag stays in sync regardless of whether the change came from the
+ * post-setup overlay or the recovery settings row.
+ */
+const writeRecoveryPinPromptFlag = (did: string, value: 'set' | 'skipped'): void => {
+    localStorage.setItem(`lc:recovery-pin-prompt:${did}`, value);
+};
+
 export interface RecoverySetupOptions {
     initialMethod?: RecoverySetupType;
     onCompleted?: (method: RecoverySetupType) => void;
@@ -1337,6 +1349,26 @@ const AuthSessionManager: React.FC<{
         setDeviceLinkVisible(true);
     }, []);
 
+    // Record the prompt flag when a PIN is set/removed from recovery settings
+    // (MyLearnCardModal -> AutomaticRecoveryCard), mirroring what the
+    // post-setup RecoveryPinSetupOverlay already does on its own callbacks.
+    const setEscrowPin = useCallback<AppAuthContextValue['setEscrowPin']>(
+        async pin => {
+            await coordinator.setEscrowPin(pin);
+            if (coordinator.state.status === 'ready') {
+                writeRecoveryPinPromptFlag(coordinator.state.did, 'set');
+            }
+        },
+        [coordinator]
+    );
+
+    const clearEscrowPin = useCallback<AppAuthContextValue['clearEscrowPin']>(async () => {
+        await coordinator.clearEscrowPin();
+        if (coordinator.state.status === 'ready') {
+            writeRecoveryPinPromptFlag(coordinator.state.did, 'skipped');
+        }
+    }, [coordinator]);
+
     const enrichedValue: AppAuthContextValue = useMemo(
         () => ({
             // Spread all base coordinator fields
@@ -1361,6 +1393,8 @@ const AuthSessionManager: React.FC<{
             recoveryMethodCount,
             recoveryActivationPending: coordinator.needsActivation,
             openRecoverySetup,
+            setEscrowPin,
+            clearEscrowPin,
 
             // Provider-agnostic auth provider (consumers should use this
             // instead of importing Firebase directly)
@@ -1379,6 +1413,8 @@ const AuthSessionManager: React.FC<{
             deviceLinkVisible,
             recoveryMethodCount,
             openRecoverySetup,
+            setEscrowPin,
+            clearEscrowPin,
             authProvider,
         ]
     );
@@ -1398,10 +1434,7 @@ const AuthSessionManager: React.FC<{
                     {showRecoveryPinReset && (
                         <RecoveryPinResetBanner
                             onDismiss={() => {
-                                localStorage.setItem(
-                                    `lc:recovery-pin-prompt:${coordinator.state.did}`,
-                                    'skipped'
-                                );
+                                writeRecoveryPinPromptFlag(coordinator.state.did, 'skipped');
                                 setShowRecoveryPinReset(false);
                             }}
                         />
@@ -1699,17 +1732,11 @@ const AuthSessionManager: React.FC<{
             {showRecoveryPinSetup && coordinator.state.status === 'ready' && (
                 <RecoveryPinSetupOverlay
                     onComplete={() => {
-                        localStorage.setItem(
-                            `lc:recovery-pin-prompt:${coordinator.state.did}`,
-                            'set'
-                        );
+                        writeRecoveryPinPromptFlag(coordinator.state.did, 'set');
                         setShowRecoveryPinSetup(false);
                     }}
                     onSkip={() => {
-                        localStorage.setItem(
-                            `lc:recovery-pin-prompt:${coordinator.state.did}`,
-                            'skipped'
-                        );
+                        writeRecoveryPinPromptFlag(coordinator.state.did, 'skipped');
                         setShowRecoveryPinSetup(false);
                     }}
                 />
