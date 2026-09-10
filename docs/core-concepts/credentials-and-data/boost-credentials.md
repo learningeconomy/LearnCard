@@ -1,7 +1,7 @@
 ---
 description: >-
-  Boosts are a core concept in the LearnCard Network that represent templates
-  for credentials, achievements, or badge
+    Boosts are a core concept in the LearnCard Network that represent templates
+    for credentials, achievements, or badge
 ---
 
 # Boost Credentials
@@ -59,8 +59,6 @@ graph TD
     admin -.-> parent
 ```
 
-
-
 ## Boost Hierarchies & Relationships
 
 Boosts can have various relationships with other entities in the system:
@@ -87,18 +85,18 @@ These relationships allow for organizing credentials into families or pathways.
 
 Our system uses a clear parent-child relationship between badges:
 
-* **Martial Arts** is the top-level parent badge
-  * **Black Belt** is a child of Martial Arts
-    * **Brown Belt** is a child of Black Belt
-      * Additional belts follow in sequence (indicated as "n + 1")
-  * **Self-Defense Expert** is another child of Martial Arts (sibling to Black Belt)
+- **Martial Arts** is the top-level parent badge
+    - **Black Belt** is a child of Martial Arts
+        - **Brown Belt** is a child of Black Belt
+            - Additional belts follow in sequence (indicated as "n + 1")
+    - **Self-Defense Expert** is another child of Martial Arts (sibling to Black Belt)
 
 #### Role-Based Permissions
 
 Two key roles exist in the system:
 
-* **Admin**: Has top-level permissions to manage the entire badge system
-* **Coach**: Has permissions to issue specific badges to students
+- **Admin**: Has top-level permissions to manage the entire badge system
+- **Coach**: Has permissions to issue specific badges to students
 
 #### Credential Issuance Process
 
@@ -110,10 +108,10 @@ Two key roles exist in the system:
 
 #### Key Relationships
 
-* **PARENT\_OF**: Establishes the badge hierarchy
-* **HAS\_PERMISSIONS**: Links roles to users
-* **INSTANCE\_OF**: Connects a specific credential to its badge type
-* **ISSUED\_TO**: Associates a credential with a student profile
+- **PARENT\_OF**: Establishes the badge hierarchy
+- **HAS\_PERMISSIONS**: Links roles to users
+- **INSTANCE\_OF**: Connects a specific credential to its badge type
+- **ISSUED\_TO**: Associates a credential with a student profile
 
 This hierarchical structure ensures proper badge progression while maintaining clear permissions for who can issue credentials.
 
@@ -128,11 +126,9 @@ Boosts can be created in two ways:
 
 When creating a Boost, you can specify:
 
-* The credential template
-* Metadata such as name, category, and type
-* Default claim permissions
-
-
+- The credential template
+- Metadata such as name, category, and type
+- Default claim permissions
 
 ```mermaid
 sequenceDiagram
@@ -160,15 +156,16 @@ sequenceDiagram
 
 Boosts have three status states that control what actions can be performed:
 
-| Status | Can Edit All Fields | Can Send/Issue | Use Case |
-| ------ | ------------------- | -------------- | -------- |
-| **DRAFT** | ✅ Yes | ❌ No | Work in progress, not ready for issuance |
-| **PROVISIONAL** | ✅ Yes | ✅ Yes | Active but iterating—test and refine while issuing |
-| **LIVE** | ❌ Only meta | ✅ Yes | Official/finalized—locked for consistency |
+| Status          | Can Edit All Fields | Can Send/Issue | Use Case                                           |
+| --------------- | ------------------- | -------------- | -------------------------------------------------- |
+| **DRAFT**       | ✅ Yes              | ❌ No          | Work in progress, not ready for issuance           |
+| **PROVISIONAL** | ✅ Yes              | ✅ Yes         | Active but iterating—test and refine while issuing |
+| **LIVE**        | ❌ Only meta        | ✅ Yes         | Official/finalized—locked for consistency          |
 
 #### DRAFT Status
 
 A Boost in `DRAFT` status is a work in progress. All properties can be freely edited, including:
+
 - Name, category, and type
 - Credential template
 - Permissions and metadata
@@ -187,31 +184,32 @@ However, DRAFT Boosts **cannot be sent to recipients** or have claim links gener
 ```typescript
 // Create a provisional boost for testing
 const boostUri = await learnCard.invoke.createBoost(credential, {
-  name: 'Course Certificate',
-  status: 'PROVISIONAL',  // Can edit AND send
+    name: 'Course Certificate',
+    status: 'PROVISIONAL', // Can edit AND send
 });
 
 // Send to test recipients while still iterating
 await learnCard.invoke.send({
-  type: 'boost',
-  recipient: 'qa-tester@example.com',
-  templateUri: boostUri,
+    type: 'boost',
+    recipient: 'qa-tester@example.com',
+    templateUri: boostUri,
 });
 
 // Later, update the template based on feedback
 await learnCard.invoke.updateBoost(boostUri, {
-  credential: updatedCredential,  // Still allowed!
+    credential: updatedCredential, // Still allowed!
 });
 
 // When finalized, promote to LIVE
 await learnCard.invoke.updateBoost(boostUri, {
-  status: 'LIVE',
+    status: 'LIVE',
 });
 ```
 
 #### LIVE Status
 
 When a Boost is set to `LIVE` status, its core properties are **finalized and locked**. Only the following can be updated:
+
 - `meta` (arbitrary metadata)
 - `defaultPermissions`
 
@@ -219,10 +217,11 @@ This ensures that all credentials issued from a LIVE Boost maintain consistency 
 
 {% hint style="info" %}
 **Choosing the Right Status**:
+
 - Use `DRAFT` while building and testing locally
 - Use `PROVISIONAL` when you need to issue real credentials but may still iterate
 - Use `LIVE` when the credential template is finalized and should never change
-{% endhint %}
+  {% endhint %}
 
 ### Sending to Recipients <a href="#sending-to-recipients" id="sending-to-recipients"></a>
 
@@ -265,10 +264,10 @@ Recipients have the option to accept/claim Boosts that have been sent to them. W
 
 The Boost permission system is comprehensive, allowing fine-grained control over who can perform different actions on Boosts. Permissions can be:
 
-* Directly assigned to profiles
-* Inherited through the Boost hierarchy
-* Granted when claiming a Boost
-* Applied by default to all authenticated users via `defaultPermissions`
+- Directly assigned to profiles
+- Inherited through the Boost hierarchy
+- Granted when claiming a Boost
+- Applied by default to all authenticated users via `defaultPermissions`
 
 ### Permission Properties <a href="#permission-properties" id="permission-properties"></a>
 
@@ -327,8 +326,6 @@ graph TD
     parent -->|"influences via canIssueChildren"| child
 ```
 
-
-
 ### Permission Administration <a href="#permission-administration" id="permission-administration"></a>
 
 The system provides several endpoints for managing permissions:
@@ -345,9 +342,9 @@ The system provides several endpoints for managing permissions:
 
 #### Use Cases
 
-* **Open Issuance**: Allow anyone to issue credentials from a Boost (e.g., community badges)
-* **Collaborative Editing**: Enable any authenticated user to edit the Boost
-* **Transparent Analytics**: Grant everyone access to view analytics
+- **Open Issuance**: Allow anyone to issue credentials from a Boost (e.g., community badges)
+- **Collaborative Editing**: Enable any authenticated user to edit the Boost
+- **Transparent Analytics**: Grant everyone access to view analytics
 
 #### Setting Default Permissions
 
@@ -356,11 +353,11 @@ When creating or updating a Boost, you can specify `defaultPermissions`:
 ```typescript
 // Create a Boost that anyone can issue
 const boostUri = await learnCard.invoke.createBoost(credential, {
-  name: 'Community Badge',
-  defaultPermissions: {
-    canIssue: true,           // Anyone can issue this Boost
-    canViewAnalytics: true,   // Anyone can view analytics
-  },
+    name: 'Community Badge',
+    defaultPermissions: {
+        canIssue: true, // Anyone can issue this Boost
+        canViewAnalytics: true, // Anyone can view analytics
+    },
 });
 ```
 
@@ -371,10 +368,10 @@ Default permissions can be updated on published Boosts:
 ```typescript
 // Add canEdit permission to existing Boost
 await learnCard.invoke.updateBoost(boostUri, {
-  defaultPermissions: {
-    canIssue: true,
-    canEdit: true,
-  },
+    defaultPermissions: {
+        canIssue: true,
+        canEdit: true,
+    },
 });
 ```
 
@@ -399,32 +396,32 @@ The following permissions can be set via `defaultPermissions`:
 ```typescript
 // Create a Boost that anyone in the community can issue
 const communityBadgeUri = await learnCard.invoke.createBoost(
-  {
-    '@context': [
-      'https://www.w3.org/2018/credentials/v1',
-      'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.1.json',
-      'https://ctx.learncard.com/boosts/1.0.3.json',
-    ],
-    type: ['VerifiableCredential', 'OpenBadgeCredential', 'BoostCredential'],
-    name: 'Community Helper Badge',
-    issuer: 'did:web:community.example.com',
-    credentialSubject: {
-      type: ['AchievementSubject'],
-      achievement: {
-        type: ['Achievement'],
-        name: 'Community Helper',
-        description: 'Recognized for helping others in the community',
-        criteria: { narrative: 'Awarded by any community member' },
-      },
+    {
+        '@context': [
+            'https://www.w3.org/2018/credentials/v1',
+            'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.1.json',
+            'https://ctx.learncard.com/boosts/1.0.3.json',
+        ],
+        type: ['VerifiableCredential', 'OpenBadgeCredential', 'BoostCredential'],
+        name: 'Community Helper Badge',
+        issuer: 'did:web:community.example.com',
+        credentialSubject: {
+            type: ['AchievementSubject'],
+            achievement: {
+                type: ['Achievement'],
+                name: 'Community Helper',
+                description: 'Recognized for helping others in the community',
+                criteria: { narrative: 'Awarded by any community member' },
+            },
+        },
     },
-  },
-  {
-    name: 'Community Helper Badge',
-    category: 'Social Badge',
-    defaultPermissions: {
-      canIssue: true,  // Any authenticated user can issue this badge
-    },
-  }
+    {
+        name: 'Community Helper Badge',
+        category: 'Social Badge',
+        defaultPermissions: {
+            canIssue: true, // Any authenticated user can issue this badge
+        },
+    }
 );
 
 // Now any authenticated user can issue this badge to others
@@ -435,16 +432,16 @@ await anyUser.invoke.sendBoost('recipient-profile-id', communityBadgeUri, signed
 
 The system supports complex querying of Boosts with a flexible query language, allowing filtering by:
 
-* String properties (exact match)
-* Array inclusion (`$in` operator)
-* Regular expression patterns (`$regex` operator)
+- String properties (exact match)
+- Array inclusion (`$in` operator)
+- Regular expression patterns (`$regex` operator)
 
 ```typescript
 // Example query structure
 const query = {
-  category: "Education",              // Exact match
-  type: { $in: ["Badge", "Certificate"] },  // Array inclusion
-  name: { $regex: /introduction/i }   // Regex pattern
+    category: 'Education', // Exact match
+    type: { $in: ['Badge', 'Certificate'] }, // Array inclusion
+    name: { $regex: /introduction/i }, // Regex pattern
 };
 ```
 
@@ -459,6 +456,7 @@ Boosts support **dynamic templating** using Mustache-style variables (`{{variabl
 Dynamic templates solve a common challenge: you want to issue credentials that share the same structure but contain personalized data for each recipient. Instead of creating a new Boost for each variation, you create one template and provide the unique data when sending.
 
 **Use cases include:**
+
 - **Personalized certificates**: Include the recipient's name, completion date, or score
 - **Course completions**: Dynamic course name, grade, or instructor
 - **Event attendance**: Event date, location, or session details
@@ -470,34 +468,34 @@ Define your Boost credential with Mustache variables where you want dynamic valu
 
 ```typescript
 const templatedCredential = {
-  '@context': [
-    'https://www.w3.org/2018/credentials/v1',
-    'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.1.json',
-    'https://ctx.learncard.com/boosts/1.0.3.json',
-  ],
-  type: ['VerifiableCredential', 'OpenBadgeCredential', 'BoostCredential'],
-  issuer: 'did:web:example.com',
-  name: 'Certificate for {{courseName}}',
-  credentialSubject: {
-    id: 'did:example:recipient',
-    type: ['AchievementSubject'],
-    achievement: {
-      id: 'urn:uuid:123',
-      type: ['Achievement'],
-      achievementType: 'Course',
-      name: '{{courseName}} - {{level}}',
-      description: 'Awarded to {{studentName}} for completing {{courseName}}',
-      criteria: {
-        narrative: 'Complete the {{courseName}} course with grade {{grade}}.',
-      },
+    '@context': [
+        'https://www.w3.org/2018/credentials/v1',
+        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.1.json',
+        'https://ctx.learncard.com/boosts/1.0.3.json',
+    ],
+    type: ['VerifiableCredential', 'OpenBadgeCredential', 'BoostCredential'],
+    issuer: 'did:web:example.com',
+    name: 'Certificate for {{courseName}}',
+    credentialSubject: {
+        id: 'did:example:recipient',
+        type: ['AchievementSubject'],
+        achievement: {
+            id: 'urn:uuid:123',
+            type: ['Achievement'],
+            achievementType: 'Course',
+            name: '{{courseName}} - {{level}}',
+            description: 'Awarded to {{studentName}} for completing {{courseName}}',
+            criteria: {
+                narrative: 'Complete the {{courseName}} course with grade {{grade}}.',
+            },
+        },
     },
-  },
 };
 
 // Create the boost template
 const boostUri = await learnCard.invoke.createBoost(templatedCredential, {
-  name: 'Course Completion Certificate',
-  category: 'Education',
+    name: 'Course Completion Certificate',
+    category: 'Education',
 });
 ```
 
@@ -508,15 +506,15 @@ When sending the Boost, provide the `templateData` object to fill in the variabl
 ```typescript
 // Send the boost with personalized data
 const result = await learnCard.invoke.send({
-  type: 'boost',
-  recipient: 'recipient-profile-id',
-  templateUri: boostUri,
-  templateData: {
-    courseName: 'Web Development 101',
-    level: 'Beginner',
-    studentName: 'Alice Smith',
-    grade: 'A',
-  },
+    type: 'boost',
+    recipient: 'recipient-profile-id',
+    templateUri: boostUri,
+    templateData: {
+        courseName: 'Web Development 101',
+        level: 'Beginner',
+        studentName: 'Alice Smith',
+        grade: 'A',
+    },
 });
 ```
 
@@ -527,29 +525,25 @@ The resulting credential will have all `{{variableName}}` placeholders replaced 
 You can also use the `sendBoost` method directly:
 
 ```typescript
-const credentialUri = await learnCard.invoke.sendBoost(
-  'recipient-profile-id',
-  boostUri,
-  {
+const credentialUri = await learnCard.invoke.sendBoost('recipient-profile-id', boostUri, {
     encrypt: true,
     templateData: {
-      courseName: 'Advanced TypeScript',
-      level: 'Advanced',
-      studentName: 'Bob Johnson',
-      grade: 'A+',
+        courseName: 'Advanced TypeScript',
+        level: 'Advanced',
+        studentName: 'Bob Johnson',
+        grade: 'A+',
     },
-  }
-);
+});
 ```
 
 ### Template Behavior
 
-| Scenario | Behavior |
-| -------- | -------- |
-| Variable in template, value provided | Variable is replaced with the value |
-| Variable in template, value missing | Variable is replaced with empty string |
-| No variables in template | Template is used as-is (backwards compatible) |
-| `templateData` provided, no variables | Data is ignored, template used as-is |
+| Scenario                              | Behavior                                      |
+| ------------------------------------- | --------------------------------------------- |
+| Variable in template, value provided  | Variable is replaced with the value           |
+| Variable in template, value missing   | Variable is replaced with empty string        |
+| No variables in template              | Template is used as-is (backwards compatible) |
+| `templateData` provided, no variables | Data is ignored, template used as-is          |
 
 {% hint style="info" %}
 **Missing Variables**: If a variable in the template is not provided in `templateData`, Mustache renders it as an empty string. This is the expected default behavior and allows for optional fields.
@@ -559,39 +553,42 @@ const credentialUri = await learnCard.invoke.sendBoost(
 
 ```typescript
 // Create a templated event attendance boost
-const eventBoostUri = await learnCard.invoke.createBoost({
-  '@context': [
-    'https://www.w3.org/2018/credentials/v1',
-    'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.1.json',
-  ],
-  type: ['VerifiableCredential', 'OpenBadgeCredential', 'BoostCredential'],
-  issuer: 'did:web:events.example.com',
-  name: '{{eventName}} Attendance',
-  credentialSubject: {
-    id: 'did:example:recipient',
-    type: ['AchievementSubject'],
-    achievement: {
-      type: ['Achievement'],
-      name: '{{eventName}} - {{eventDate}}',
-      description: 'Attended {{eventName}} on {{eventDate}} at {{location}}',
-      criteria: { narrative: 'Present at the event venue' },
+const eventBoostUri = await learnCard.invoke.createBoost(
+    {
+        '@context': [
+            'https://www.w3.org/2018/credentials/v1',
+            'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.1.json',
+        ],
+        type: ['VerifiableCredential', 'OpenBadgeCredential', 'BoostCredential'],
+        issuer: 'did:web:events.example.com',
+        name: '{{eventName}} Attendance',
+        credentialSubject: {
+            id: 'did:example:recipient',
+            type: ['AchievementSubject'],
+            achievement: {
+                type: ['Achievement'],
+                name: '{{eventName}} - {{eventDate}}',
+                description: 'Attended {{eventName}} on {{eventDate}} at {{location}}',
+                criteria: { narrative: 'Present at the event venue' },
+            },
+        },
     },
-  },
-}, { name: 'Event Attendance Template' });
+    { name: 'Event Attendance Template' }
+);
 
 // Issue to multiple attendees with the same event data
 const attendees = ['alice', 'bob', 'charlie'];
 for (const profileId of attendees) {
-  await learnCard.invoke.send({
-    type: 'boost',
-    recipient: profileId,
-    templateUri: eventBoostUri,
-    templateData: {
-      eventName: 'Tech Conference 2025',
-      eventDate: 'January 15, 2025',
-      location: 'San Francisco, CA',
-    },
-  });
+    await learnCard.invoke.send({
+        type: 'boost',
+        recipient: profileId,
+        templateUri: eventBoostUri,
+        templateData: {
+            eventName: 'Tech Conference 2025',
+            eventDate: 'January 15, 2025',
+            location: 'San Francisco, CA',
+        },
+    });
 }
 ```
 
@@ -620,9 +617,9 @@ The simplest form of a boost adds display options to a standard credential:
 {% hint style="info" %}
 **Use Display Types**:
 
-* `badge` for compact achievements
-* `certificate` for formal credentials
-{% endhint %}
+- `badge` for compact achievements
+- `certificate` for formal credentials
+  {% endhint %}
 
 ### ID Boost
 
@@ -644,9 +641,9 @@ Special type for creating digital IDs with custom styling:
 }
 ```
 
-### Network Certification
+### Legacy Network Certification
 
-When a Boost is issued through the LearnCard Network, it gets wrapped in a CertifiedBoostCredential:
+Previously issued Boosts may be wrapped in a CertifiedBoostCredential:
 
 ```javascript
 {
@@ -659,15 +656,29 @@ When a Boost is issued through the LearnCard Network, it gets wrapped in a Certi
 }
 ```
 
-This wrapper:
+Legacy wrappers added a network signature around the original credential:
 
-* Validates the issuer's authority to send the boost
-* Provides a unique network identifier
-* Adds a network-level signature
-* Maintains the original peer-to-peer signatures
+- Validated the issuer's authority to send the boost
+- Provided a unique network identifier
+- Added a network-level signature
+- Maintained the original peer-to-peer signatures
+
+New Boosts are stored as the issuer-signed credential itself, without a network wrapper.
+The `boostId` claim and the network `INSTANCE_OF` relationship provide Boost association.
+Wallets continue to unwrap legacy wrappers when present.
+
+There is no new network counter-signature or server-side template-derivation check. Trust
+rests on the issuer's signature and the signed `boostId` claim. Signing-authority responses
+are encrypted for the subject and issuing owner (the trusted signing authority also has
+access); the brain service cannot decrypt these responses. Only public status-list
+coordinates are retained separately so encrypted credentials can still be revoked or
+suspended.
+
+This is the only issuance path; no environment flag is required. Previously stored
+wrapped credentials remain supported by verification and display.
 
 ### Further Resources
 
-* [W3C Verifiable Credentials Standard](https://www.w3.org/TR/vc-data-model/)
-* [Open Badges v3 Specification](https://www.imsglobal.org/spec/ob/v3p0/)
-* [JSON-LD Playground](https://json-ld.org/playground/)
+- [W3C Verifiable Credentials Standard](https://www.w3.org/TR/vc-data-model/)
+- [Open Badges v3 Specification](https://www.imsglobal.org/spec/ob/v3p0/)
+- [JSON-LD Playground](https://json-ld.org/playground/)
