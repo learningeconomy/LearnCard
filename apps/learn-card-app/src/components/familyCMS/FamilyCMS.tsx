@@ -62,10 +62,11 @@ import { VC } from '@learncard/types';
 import { LearnCardRolesEnum } from '../onboarding/onboarding.helpers';
 import * as m from '../../paraglide/messages.js';
 
-const StateValidator = z.object({
-    name: z.string().min(1, 'Name is required!'),
-    description: z.string().min(1, 'Description is required!'),
-});
+const getStateValidator = () =>
+    z.object({
+        name: z.string().min(1, m['arabicFixes.nameRequired']()),
+        description: z.string().min(1, 'Description is required!'),
+    });
 
 type FamilyCMSProps = {
     credential?: VC;
@@ -182,7 +183,7 @@ export const FamilyCMS: React.FC<FamilyCMSProps> = ({
     }, [hasRecoveredState, recoveredState, clearRecoveredState, newModal, closeModal]);
 
     const validate = () => {
-        const parsedData = StateValidator.safeParse({
+        const parsedData = getStateValidator().safeParse({
             name: state?.basicInfo.name,
             description: state?.basicInfo?.description,
         });
@@ -224,9 +225,8 @@ export const FamilyCMS: React.FC<FamilyCMSProps> = ({
                             boostUri
                         );
 
-                        const issuedVcUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(
-                            sentBoost
-                        );
+                        const issuedVcUri =
+                            await wallet?.store?.LearnCloud?.uploadEncrypted?.(sentBoost);
 
                         setIssuedVCUri(issuedVCUri);
 

@@ -13,6 +13,7 @@ import FamilyBoostMembersList from '../FamilyBoostPreview/FamilyBoostMembersList
 import FamilyBoostInviteModalOptions from '../FamilyBoostPreview/FamilyBoostInviteModal/FamilyBoostInviteModalOptions';
 import ShareBoostLink from '../../boost/boost-options-menu/ShareBoostLink';
 import FamilyActionMenu from '../FamilyActionMenu/FamilyActionMenu';
+import * as m from '../../../paraglide/messages.js';
 
 import {
     BoostCategoryOptionsEnum,
@@ -174,7 +175,7 @@ export const FamilyCard: React.FC<FamilyCardProps> = ({ showSkeleton, credential
                         <p className="w-full line-clamp-1">{familyName}</p>
                     </div>
                     <p className="font-poppins text-xs font-semibold mt-2 pl-3">
-                        {totalMembersCount} Members
+                        {m['arabicFixes.membersCount']({ count: totalMembersCount })}
                     </p>
 
                     <div className="pl-3">
@@ -189,7 +190,7 @@ export const FamilyCard: React.FC<FamilyCardProps> = ({ showSkeleton, credential
                             }}
                             className="bg-amber-400 text-sm xs:text-xs font-poppins font-semibold rounded-full w-[90%] flex items-center justify-center mt-2 px-2 py-2 text-white ml-1"
                         >
-                            New Member{' '}
+                            {m['arabicFixes.newMember']()}{' '}
                             <AddUser
                                 className="text-white ml-2 xs:h-auto xs:w-[20px]"
                                 fill="white"

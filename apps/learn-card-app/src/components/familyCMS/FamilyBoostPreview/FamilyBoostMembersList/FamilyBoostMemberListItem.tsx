@@ -12,6 +12,7 @@ import FamilyMemberActionMenu from './FamilyMemberActionMenu';
 
 import { FamilyMember } from '../../familyCMSState';
 import { VC } from '@learncard/types';
+import * as m from '../../../../paraglide/messages.js';
 
 export const FamilyBoostMembersListItem: React.FC<{
     credential: VC;
@@ -55,7 +56,7 @@ export const FamilyBoostMembersListItem: React.FC<{
             <div className="flex items-center justify-start w-full">
                 <div className="flex items-center justify-start">
                     <UserProfilePicture
-                        customContainerClass={`flex justify-center items-center w-[40px] h-[40px] rounded-full overflow-hidden text-white font-medium text-4xl mr-3 ${
+                        customContainerClass={`flex justify-center items-center w-[40px] h-[40px] rounded-full overflow-hidden text-white font-medium text-4xl me-3 ${
                             currentUserIsActiveUser
                                 ? 'border-emerald-700 border-solid border-2'
                                 : ''
@@ -67,7 +68,9 @@ export const FamilyBoostMembersListItem: React.FC<{
                 </div>
                 <div className="flex flex-col items-start justify-center pt-1 pr-1 pb-1">
                     {currentUserIsActiveUser && (
-                        <p className="text-emerald-700 text-xs font-semibold">Active User</p>
+                        <p className="text-emerald-700 text-xs font-semibold">
+                            {m['arabicFixes.activeUser']()}
+                        </p>
                     )}
                     <p className="text-grayscale-900 font-normal font-poppins">{displayName}</p>
                 </div>

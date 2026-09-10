@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import moment from 'moment';
 import { ErrorBoundary } from 'react-error-boundary';
+import { getLocale } from '../../../paraglide/runtime.js';
 import { VC } from '@learncard/types';
 
 import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore';
@@ -272,7 +273,11 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
     const { createdAt } = getInfoFromCredential(cred, 'MMMM DD, YYYY', {
         uppercaseDate: false,
     });
-    const issueDate = moment(createdAt).format('MMMM DD YYYY');
+    const issueDate = new Intl.DateTimeFormat(getLocale(), {
+        month: 'long',
+        day: '2-digit',
+        year: 'numeric',
+    }).format(new Date(createdAt));
 
     const handlePresentOptionsModal = async () => {
         handlePresentBoostMenuModal();

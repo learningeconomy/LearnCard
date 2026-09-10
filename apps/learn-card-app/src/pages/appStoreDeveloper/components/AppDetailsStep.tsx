@@ -68,7 +68,10 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
             {/* Icon Upload */}
             <div className="flex flex-col items-center gap-3">
                 <label className="text-sm font-medium text-gray-600">
-                    {m['developerPortal.components.appDetailsStep.appIcon']()}
+                    {m['developerPortal.components.appDetailsStep.appIcon']()}{' '}
+                    <span className="text-red-500" aria-hidden="true">
+                        *
+                    </span>
                 </label>
 
                 <ImageUpload
@@ -89,7 +92,10 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
             {/* Display Name */}
             <div>
                 <label className="block text-sm font-medium text-gray-600 mb-1">
-                    {m['developerPortal.components.appDetailsStep.displayName']()}
+                    {m['developerPortal.components.appDetailsStep.displayName']()}{' '}
+                    <span className="text-red-500" aria-hidden="true">
+                        *
+                    </span>
                 </label>
 
                 <input
@@ -153,7 +159,10 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
             {/* Tagline */}
             <div>
                 <label className="block text-sm font-medium text-gray-600 mb-1">
-                    {m['developerPortal.components.appDetailsStep.tagline']()}
+                    {m['developerPortal.components.appDetailsStep.tagline']()}{' '}
+                    <span className="text-red-500" aria-hidden="true">
+                        *
+                    </span>
                 </label>
 
                 <input
@@ -183,7 +192,10 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
             {/* Full Description */}
             <div>
                 <label className="block text-sm font-medium text-gray-600 mb-1">
-                    {m['developerPortal.components.appDetailsStep.fullDescription']()}
+                    {m['developerPortal.components.appDetailsStep.fullDescription']()}{' '}
+                    <span className="text-red-500" aria-hidden="true">
+                        *
+                    </span>
                 </label>
 
                 <textarea

@@ -25,6 +25,7 @@ import {
 import { useUploadFile } from '../../../../hooks/useUploadFile';
 import { useUploadVcFromText } from '../../../../hooks/useUploadVcFromText';
 import useTheme from '../../../../theme/hooks/useTheme';
+import * as m from '../../../../paraglide/messages.js';
 
 export type RawVCFileType = {
     id: string;
@@ -223,7 +224,7 @@ export const CheckListUploadRawVC: React.FC = () => {
                         <div className="flex items-center gap-[10px]">
                             <BulkImportWithPlusIcon className="w-[65px] h-[65px]" />
                             <h5 className="text-[22px] font-semibold text-grayscale-900 font-poppins leading-[24px]">
-                                Add Credentials
+                                {m['arabicFixes.addCredentials']()}
                             </h5>
                         </div>
                     </div>
@@ -236,10 +237,10 @@ export const CheckListUploadRawVC: React.FC = () => {
                 <div className="w-full bg-white flex flex-col gap-[20px] items-center justify-center shadow-bottom-2-4 p-[15px] mt-4 rounded-[15px]">
                     <div className="flex flex-col items-start justify-center gap-[5px]">
                         <h4 className="text-[20px] text-grayscale-900 font-notoSans text-left">
-                            Verifiable Credentials
+                            {m['arabicFixes.verifiableCredentials']()}
                         </h4>
                         <p className="text-[14px] text-grayscale-600 font-notoSans text-left">
-                            Upload or paste raw JSON credentials to add them to your wallet.
+                            {m['arabicFixes.uploadCredentialsHelp']()}
                         </p>
                     </div>
 
@@ -370,7 +371,7 @@ export const CheckListUploadRawVC: React.FC = () => {
                 {rawVCs?.length !== 0 && (
                     <div className="w-full bg-white flex flex-col gap-[20px] justify-center shadow-bottom-2-4 p-[15px] mt-4 mb-12 rounded-[15px]">
                         <h4 className="text-[20px] text-grayscale-900 font-notoSans text-left">
-                            {isLoading ? '...' : rawVCs?.length ?? 0} Verifiable Credential
+                            {isLoading ? '...' : (rawVCs?.length ?? 0)} Verifiable Credential
                             {rawVCs?.length === 1 ? '' : 's'}
                         </h4>
 

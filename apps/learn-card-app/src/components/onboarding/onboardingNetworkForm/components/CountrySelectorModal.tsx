@@ -3,10 +3,9 @@ import * as m from '../../../../paraglide/messages.js';
 import { Checkmark } from '@learncard/react';
 
 import countries from '../../../../constants/countries.json';
+import { useLocale } from '../../../../i18n';
 
 const COUNTRIES: Record<string, string> = countries as Record<string, string>;
-const COUNTRY_ENTRIES = Object.entries(COUNTRIES).sort((a, b) => a[1].localeCompare(b[1]));
-
 export type CountrySelectorModalProps = {
     selected?: string;
     onSelect: (code: string) => void;
@@ -14,8 +13,13 @@ export type CountrySelectorModalProps = {
 
 const CountrySelectorModal: React.FC<CountrySelectorModalProps> = ({ selected, onSelect }) => {
     const [query, setQuery] = useState<string>('');
+    const locale = useLocale();
+    const countryNames = new Intl.DisplayNames([locale], { type: 'region' });
+    const countryEntries = Object.entries(COUNTRIES)
+        .map(([code, fallback]) => [code, countryNames.of(code) ?? fallback] as const)
+        .sort((a, b) => a[1].localeCompare(b[1], locale));
 
-    const filtered = COUNTRY_ENTRIES.filter(([_, label]) =>
+    const filtered = countryEntries.filter(([_, label]) =>
         label.toLowerCase().includes((query ?? '').toLowerCase())
     );
 
