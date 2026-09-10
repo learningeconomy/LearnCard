@@ -35,19 +35,19 @@ jobs:
                   mkdir -p "$RUNNER_TEMP/full-codeql-results"
                   git rev-parse HEAD > "$RUNNER_TEMP/full-codeql-results/commit.txt"
                   if [[ -f .github/codeql-config.yml ]]; then
-                      cp .github/codeql-config.yml "$RUNNER_TEMP/full-codeql-config.yml"
+                      cp .github/codeql-config.yml "$GITHUB_WORKSPACE/.codeql-full-config.yml"
                   else
-                      printf 'name: Full CodeQL scan\n' > "$RUNNER_TEMP/full-codeql-config.yml"
+                      printf 'name: Full CodeQL scan\n' > "$GITHUB_WORKSPACE/.codeql-full-config.yml"
                   fi
-                  cp "$RUNNER_TEMP/full-codeql-config.yml" "$RUNNER_TEMP/full-codeql-results/config.yml"
-            - uses: github/codeql-action/init@v2
+                  cp "$GITHUB_WORKSPACE/.codeql-full-config.yml" "$RUNNER_TEMP/full-codeql-results/config.yml"
+            - uses: github/codeql-action/init@v4
               with:
                   # Pin both sides to one query bundle for a meaningful comparison.
                   tools: https://github.com/github/codeql-action/releases/download/codeql-bundle-v2.27.0/codeql-bundle-linux64.tar.zst
                   languages: javascript
-                  config-file: ${{ runner.temp }}/full-codeql-config.yml
-            - uses: github/codeql-action/autobuild@v2
-            - uses: github/codeql-action/analyze@v2
+                  config-file: ./.codeql-full-config.yml
+            - uses: github/codeql-action/autobuild@v4
+            - uses: github/codeql-action/analyze@v4
               with:
                   output: ${{ runner.temp }}/full-codeql-results
                   upload: never
