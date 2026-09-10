@@ -23,3 +23,10 @@ class ComparisonTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+class WorkflowMetadataTests(unittest.TestCase):
+    def test_metadata_is_written_after_analysis_and_before_upload(self):
+        from pathlib import Path
+        workflow = (Path(__file__).resolve().parents[2] / '.github/workflows/codeql-full.yml').read_text()
+        self.assertLess(workflow.index('uses: github/codeql-action/analyze@v4'), workflow.index('commit.txt'))
+        self.assertLess(workflow.index('commit.txt'), workflow.index('uses: actions/upload-artifact@v4'))
