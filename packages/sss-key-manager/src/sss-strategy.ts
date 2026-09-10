@@ -1446,6 +1446,10 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
 
             // Step 1: Decrypt the recovery share based on method
             switch (input.method) {
+                case 'escrow-pin':
+                    // Phase 3 replaces this guard with the PIN release flow.
+                    throw new Error('PIN recovery is not available yet');
+
                 case 'passkey': {
                     const result = await fetchRecoveryShare(
                         serverUrl,
