@@ -368,7 +368,7 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                                             {m['arabicFixes.sharingCount']({
                                                 selected: term.shareAll
                                                     ? totalCount
-                                                    : term.shared?.length ?? 0,
+                                                    : (term.shared?.length ?? 0),
                                                 total: totalCount,
                                             })}
                                         </output>

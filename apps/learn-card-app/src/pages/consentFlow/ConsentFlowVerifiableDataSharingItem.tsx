@@ -52,8 +52,8 @@ const ConsentFlowVerifiableDataSharingItem: React.FC<ConsentFlowVerifiableDataSh
     const currentLabel = isLiveSync
         ? m['consentFlow.sync.liveSyncing']()
         : isShareOnce
-        ? m['arabicFixes.shareOnce']()
-        : m['consentFlow.deny']();
+          ? m['arabicFixes.shareOnce']()
+          : m['consentFlow.deny']();
 
     const handleRowClick = () => {
         onModeChange(nextMode);
@@ -113,8 +113,8 @@ const ConsentFlowVerifiableDataSharingItem: React.FC<ConsentFlowVerifiableDataSh
                                 isLiveSync
                                     ? 'text-emerald-700'
                                     : isShareOnce
-                                    ? 'text-grayscale-600'
-                                    : 'text-grayscale-500'
+                                      ? 'text-grayscale-600'
+                                      : 'text-grayscale-500'
                             }`}
                         >
                             {currentLabel}

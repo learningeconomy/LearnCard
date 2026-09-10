@@ -371,7 +371,7 @@ export const CheckListUploadRawVC: React.FC = () => {
                 {rawVCs?.length !== 0 && (
                     <div className="w-full bg-white flex flex-col gap-[20px] justify-center shadow-bottom-2-4 p-[15px] mt-4 mb-12 rounded-[15px]">
                         <h4 className="text-[20px] text-grayscale-900 font-notoSans text-left">
-                            {isLoading ? '...' : rawVCs?.length ?? 0} Verifiable Credential
+                            {isLoading ? '...' : (rawVCs?.length ?? 0)} Verifiable Credential
                             {rawVCs?.length === 1 ? '' : 's'}
                         </h4>
 

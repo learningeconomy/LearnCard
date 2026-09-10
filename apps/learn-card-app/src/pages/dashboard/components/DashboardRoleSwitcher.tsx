@@ -61,7 +61,7 @@ const DashboardRoleSwitcher: React.FC = () => {
     }, [lcNetworkProfile?.role, optimisticRole]);
 
     const activeRole = (
-        isChildProfile ? LearnCardRolesEnum.learner : role ?? LearnCardRolesEnum.learner
+        isChildProfile ? LearnCardRolesEnum.learner : (role ?? LearnCardRolesEnum.learner)
     ) as LearnCardRolesEnum;
 
     const roleLabel = getRoleTitle(activeRole);

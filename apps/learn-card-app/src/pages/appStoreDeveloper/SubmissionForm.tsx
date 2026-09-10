@@ -293,7 +293,7 @@ const SubmissionForm: React.FC = () => {
             highlights: formData.highlights,
             screenshots: formData.screenshots,
             hero_background_color: formData.hero_background_color,
-        } as ExtendedAppStoreListing);
+        }) as ExtendedAppStoreListing;
 
     const openPreviewModal = () => {
         const mockListing = createMockListingForPreview();
@@ -477,8 +477,8 @@ const SubmissionForm: React.FC = () => {
                             {isPendingReview
                                 ? m['developerPortal.submissionForm.changesSaved']()
                                 : isEditMode
-                                ? m['developerPortal.submissionForm.draftUpdated']()
-                                : m['developerPortal.submissionForm.draftSaved']()}
+                                  ? m['developerPortal.submissionForm.draftUpdated']()
+                                  : m['developerPortal.submissionForm.draftSaved']()}
                         </h2>
                         <p className="text-gray-500 text-sm mb-6">
                             {isEditMode
@@ -622,8 +622,10 @@ const SubmissionForm: React.FC = () => {
                                             {isPendingReview
                                                 ? m['developerPortal.submissionForm.saveChanges']()
                                                 : isEditMode
-                                                ? m['developerPortal.submissionForm.updateDraft']()
-                                                : m['developerPortal.submissionForm.saveDraft']()}
+                                                  ? m[
+                                                        'developerPortal.submissionForm.updateDraft'
+                                                    ]()
+                                                  : m['developerPortal.submissionForm.saveDraft']()}
                                         </>
                                     )}
                                 </button>

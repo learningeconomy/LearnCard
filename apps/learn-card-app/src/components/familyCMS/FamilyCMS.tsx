@@ -225,9 +225,8 @@ export const FamilyCMS: React.FC<FamilyCMSProps> = ({
                             boostUri
                         );
 
-                        const issuedVcUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(
-                            sentBoost
-                        );
+                        const issuedVcUri =
+                            await wallet?.store?.LearnCloud?.uploadEncrypted?.(sentBoost);
 
                         setIssuedVCUri(issuedVCUri);
 
