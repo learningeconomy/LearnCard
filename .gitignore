@@ -65,3 +65,4 @@ services/learn-card-network/lca-api/.env.scouts
 
 # Sisyphus agent working directory (local only)
 .sisyphus/
+e2e-artifacts/
