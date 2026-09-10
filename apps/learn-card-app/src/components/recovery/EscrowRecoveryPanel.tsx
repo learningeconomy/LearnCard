@@ -10,6 +10,7 @@ import {
 } from './escrowRecoveryStorage';
 import type { PendingEscrowRecovery } from './escrowRecoveryStorage';
 import { RecoveryPinInput } from './RecoveryPinInput';
+import * as m from '../../paraglide/messages.js';
 
 export interface EscrowRecoveryPanelProps {
     scope?: string;
@@ -107,6 +108,9 @@ export const EscrowRecoveryPanel = ({
             if (err.name === 'EscrowPinMismatchError') {
                 const attempts = 'attemptsRemaining' in err ? Number(err.attemptsRemaining) : 0;
                 setPinError(`Incorrect PIN. ${attempts} attempts left.`);
+                setPinInput('');
+            } else if (err.name === 'EscrowPinThrottledError') {
+                setPinError(m['recovery.pin.throttled']());
                 setPinInput('');
             } else if (err.name === 'EscrowPinLockedError') {
                 setPinError('Too many attempts. You can still recover by waiting 7 days.');
