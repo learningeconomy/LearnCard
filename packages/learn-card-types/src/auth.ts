@@ -237,6 +237,7 @@ export interface ServerKeyStatus {
     authShare: string | null;
     shareVersion: number | null;
     maskedRecoveryEmail?: string | null;
+    escrowOptedOut?: boolean;
     sssActivationState?: SssActivationState | null;
 }
 
@@ -408,6 +409,32 @@ export interface KeyDerivationStrategy<
 
     // --- Recovery ---
 
+    /** Read the current automatic recovery enrollment status. */
+    getEscrowEnrollmentState?(params: {
+        token: string;
+        providerType: AuthProviderType;
+    }): Promise<'enrolled' | 'not-enrolled' | 'opted-out' | 'disabled'>;
+
+    /** Opt out with an owner proof; requires another confirmed recovery method. */
+    disableEscrowRecovery?(params: {
+        token: string;
+        providerType: AuthProviderType;
+        privateKey: string;
+        signDidAuthVp: DidAuthVpSigner;
+    }): Promise<void>;
+
+    /** Opt back in and enroll automatic recovery material. */
+    enableEscrowRecovery?(params: {
+        token: string;
+        providerType: AuthProviderType;
+        privateKey: string;
+        signDidAuthVp: DidAuthVpSigner;
+    }): Promise<
+        | { enrolled: false; reason: 'disabled' | 'opted-out' }
+        | { enrolled: true; changed: false }
+        | { enrolled: true; changed: true; shareVersion: number }
+    >;
+
     /** Repair escrow enrollment, rotating shares only when no current confirmed enrollment exists. */
     ensureEscrowEnrollment?(params: {
         token: string;
@@ -415,7 +442,7 @@ export interface KeyDerivationStrategy<
         privateKey: string;
         signDidAuthVp: DidAuthVpSigner;
     }): Promise<
-        | { enrolled: false; reason: 'disabled' }
+        | { enrolled: false; reason: 'disabled' | 'opted-out' }
         | { enrolled: true; changed: false }
         | { enrolled: true; changed: true; shareVersion: number }
     >;

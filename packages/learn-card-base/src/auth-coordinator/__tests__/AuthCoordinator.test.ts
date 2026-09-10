@@ -310,6 +310,82 @@ describe('AuthCoordinator', () => {
             );
             expect(coordinator.getState().status).toBe('ready');
         });
+        it('requires ready state and forwards automatic recovery controls with owner credentials', async () => {
+            const disableEscrowRecovery = vi.fn().mockResolvedValue(undefined);
+            const enableEscrowRecovery = vi
+                .fn()
+                .mockResolvedValue({ enrolled: true, changed: false });
+            const getEscrowEnrollmentState = vi.fn().mockResolvedValue('opted-out');
+            const signDidAuthVp = vi.fn();
+            const { coordinator } = setup({
+                keyDerivation: {
+                    disableEscrowRecovery,
+                    enableEscrowRecovery,
+                    getEscrowEnrollmentState,
+                },
+                config: { signDidAuthVp },
+            });
+            await expect(coordinator.disableEscrowRecovery()).rejects.toThrow();
+            await expect(coordinator.enableEscrowRecovery()).rejects.toThrow();
+            await expect(coordinator.getEscrowEnrollmentState()).rejects.toThrow();
+            expect(disableEscrowRecovery).not.toHaveBeenCalled();
+            await coordinator.initialize();
+            await coordinator.disableEscrowRecovery();
+            await expect(coordinator.enableEscrowRecovery()).resolves.toEqual({
+                enrolled: true,
+                changed: false,
+            });
+            await expect(coordinator.getEscrowEnrollmentState()).resolves.toBe('opted-out');
+            const credentials = { token: 'mock-token', providerType: 'firebase' };
+            expect(disableEscrowRecovery).toHaveBeenCalledWith({
+                ...credentials,
+                privateKey: 'reconstructed-private-key',
+                signDidAuthVp,
+            });
+            expect(enableEscrowRecovery).toHaveBeenCalledWith({
+                ...credentials,
+                privateKey: 'reconstructed-private-key',
+                signDidAuthVp,
+            });
+            expect(getEscrowEnrollmentState).toHaveBeenCalledWith(credentials);
+            disableEscrowRecovery.mockRejectedValueOnce(
+                Object.assign(new Error('Escrow request failed'), { status: 412 })
+            );
+            await expect(coordinator.disableEscrowRecovery()).rejects.toMatchObject({
+                status: 412,
+            });
+            expect(coordinator.getState().status).toBe('ready');
+        });
+        it('drains explicit enrollment before forgetting device secrets', async () => {
+            let finishEnrollment: (() => void) | undefined;
+            const pending = new Promise<void>(resolve => {
+                finishEnrollment = resolve;
+            });
+            let hasDeviceSecrets = false;
+            const enableEscrowRecovery = vi.fn(async () => {
+                await pending;
+                hasDeviceSecrets = true;
+                return { enrolled: true as const, changed: false as const };
+            });
+            const clearLocalKeys = vi.fn(async () => {
+                hasDeviceSecrets = false;
+            });
+            const { coordinator } = setup({
+                keyDerivation: { enableEscrowRecovery, clearLocalKeys },
+                config: { signDidAuthVp: vi.fn() },
+            });
+            await coordinator.initialize();
+            const enabling = coordinator.enableEscrowRecovery();
+            await vi.waitFor(() => expect(enableEscrowRecovery).toHaveBeenCalledOnce());
+            const forgetting = coordinator.forgetDevice();
+            expect(clearLocalKeys).not.toHaveBeenCalled();
+            await expect(coordinator.enableEscrowRecovery()).rejects.toThrow();
+            finishEnrollment?.();
+            await enabling;
+            await forgetting;
+            expect(clearLocalKeys).toHaveBeenCalledOnce();
+            expect(hasDeviceSecrets).toBe(false);
+        });
         it('discovers a pending hold and clears it after cancellation', async () => {
             const hold = {
                 holdId: 'hold',
