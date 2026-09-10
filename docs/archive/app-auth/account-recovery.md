@@ -4,7 +4,7 @@ description: How users recover access to their keys when they lose a device
 
 {% hint style="info" %}
 Archived — describes the LearnCard app's internal sign-in implementation.
-For the library, see [SSS Key Manager](../../sdks/sss-key-manager.md).
+For the library, see [`@learncard/sss-key-manager`](https://github.com/learningeconomy/LearnCard/tree/main/packages/sss-key-manager).
 {% endhint %}
 
 # Account Recovery

@@ -4,7 +4,7 @@ description: How users securely transfer key access to a new device via QR code
 
 {% hint style="info" %}
 Archived — describes the LearnCard app's internal sign-in implementation.
-For the library, see [SSS Key Manager](../../sdks/sss-key-manager.md).
+For the library, see [`@learncard/sss-key-manager`](https://github.com/learningeconomy/LearnCard/tree/main/packages/sss-key-manager).
 {% endhint %}
 
 # Cross-Device Login (QR)
