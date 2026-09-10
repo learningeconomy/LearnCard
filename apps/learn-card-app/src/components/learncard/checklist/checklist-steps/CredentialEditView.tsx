@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { getField, setField } from './credentialEditFields';
 import { ModalTypes, useModal, useDeviceTypeByWidth } from 'learn-card-base';
 import { useTheme } from '../../../../theme/hooks/useTheme';
 import DatePickerInput from '../../../date-picker/DatePickerInput';
@@ -13,67 +14,6 @@ type Props = {
     credential: ParsedCredential;
     onSave: (editedVc: Record<string, unknown>) => void;
     onBack: () => void;
-};
-
-/** Read a nested VC path, returning '' for missing values. Handles array values (e.g. achievementType: ["Certificate"]) */
-const getField = (vc: Record<string, unknown>, path: string): string => {
-    const value = path.split('.').reduce<unknown>((obj, key) => {
-        if (obj && typeof obj === 'object' && key in obj) {
-            return (obj as Record<string, unknown>)[key];
-        }
-        return undefined;
-    }, vc);
-    if (typeof value === 'string') return value;
-    if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'string') return value[0];
-    return '';
-};
-
-/** Set a nested path on a deep-cloned VC. Empty string removes the key. */
-const setField = (
-    vc: Record<string, unknown>,
-    path: string,
-    value: string
-): Record<string, unknown> => {
-    const clone = JSON.parse(JSON.stringify(vc));
-    const keys = path.split('.');
-    let obj = clone;
-    for (let i = 0; i < keys.length - 1; i++) {
-        const key = keys[i];
-        // Guard against prototype pollution - inline check for CodeQL recognition
-        if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
-            return clone;
-        }
-        const existing = obj[key];
-        if (Array.isArray(existing)) {
-            // VC 1.1 permits credentialSubject as an array - traverse into first element
-            if (existing.length === 0) {
-                existing.push({});
-            }
-            const firstElement = existing[0];
-            // If first element is a primitive (e.g., ["did:example:123"]), replace with object
-            if (typeof firstElement !== 'object' || firstElement === null) {
-                existing[0] = {};
-            }
-            obj = existing[0];
-        } else if (typeof existing !== 'object' || existing === null) {
-            // Replace null/primitive with object to allow deeper property assignment
-            obj[key] = {};
-            obj = obj[key];
-        } else {
-            obj = existing;
-        }
-    }
-    const lastKey = keys[keys.length - 1];
-    // Guard against prototype pollution - inline check for CodeQL recognition
-    if (lastKey === '__proto__' || lastKey === 'constructor' || lastKey === 'prototype') {
-        return clone;
-    }
-    if (value === '') {
-        delete obj[lastKey];
-    } else {
-        obj[lastKey] = value;
-    }
-    return clone;
 };
 
 export const CredentialEditView: React.FC<Props> = ({ credential, onSave, onBack }) => {

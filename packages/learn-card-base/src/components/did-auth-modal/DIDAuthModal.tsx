@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useHistory, useParams, useLocation } from 'react-router-dom';
 import queryString from 'query-string';
+import { useDIDAuthPresentation } from './useDIDAuthPresentation';
 import {
     IonPage,
     IonHeader,
@@ -27,12 +28,12 @@ import { useIsLoggedIn } from 'learn-card-base/stores/currentUserStore';
 export const DIDAuthModal = () => {
     const { challenge } = useParams<{ challenge: string }>();
     const { search } = useLocation();
-    const { domain } = queryString.parse(search);
+    const parsedDomain = queryString.parse(search).domain;
+    const domain = typeof parsedDomain === 'string' ? parsedDomain : undefined;
 
     const history = useHistory();
     const [authInitiated, setAuthInitiated] = useState(false);
 
-    const [vp, setVP] = useState<any>();
     const [verificationCode, setVerificationCode] = useState<string>();
     const [authVPLoading, setAuthVPLoading] = useState(false);
 
@@ -40,6 +41,7 @@ export const DIDAuthModal = () => {
 
     const { issueDIDAuthPresentation, publishContentToCeramic } = useWallet();
     const isLoggedIn = useIsLoggedIn();
+    const vp = useDIDAuthPresentation(challenge, domain, issueDIDAuthPresentation);
 
     const handleInititateAuth = async () => {
         setAuthVPLoading(true);
@@ -50,19 +52,6 @@ export const DIDAuthModal = () => {
         setAuthInitiated(true);
         setVerificationCode(streamId);
     };
-
-    useEffect(() => {
-        if (challenge && !vp) {
-            let cancelled = false;
-            (async () => {
-                const newVp = await issueDIDAuthPresentation(challenge, domain);
-                if (!cancelled) setVP(newVp);
-            })();
-            return () => {
-                cancelled = true;
-            };
-        }
-    }, [challenge, vp, issueDIDAuthPresentation, domain]);
 
     const dismiss = async ({ historyPush }) => {
         history.push(historyPush ?? '/wallet');
