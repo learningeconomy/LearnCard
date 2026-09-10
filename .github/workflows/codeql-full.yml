@@ -1,7 +1,7 @@
 name: CodeQL full comparison
 on:
     push:
-        branches: ['codex/pr1549-codeql-audit']
+        branches: ['codex/pr1549-codeql-audit-full']
     workflow_dispatch:
         inputs:
             target_ref:

@@ -1,0 +1,35 @@
+name: CodeQL comparison report recovery
+on:
+    push:
+        branches: ['codex/pr1549-codeql-audit']
+permissions:
+    contents: read
+    actions: read
+jobs:
+    report:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v7
+              with:
+                  ref: 306afd0e39b57bc389ce6a4396b221379eb1c3fd
+                  persist-credentials: false
+            - uses: actions/download-artifact@v4
+              with:
+                  github-token: ${{ github.token }}
+                  run-id: 34518760035
+                  pattern: codeql-full-*
+                  path: results
+            - name: Restore metadata from the verified scan inputs
+              run: |
+                  printf '%s\n' '50f8d26c271d1a16240c5024402d0ea75c475a3d' > results/codeql-full-baseline/commit.txt
+                  printf '%s\n' '4468f0c5bf51133b80e6c342ed203511199e778c' > results/codeql-full-target/commit.txt
+                  printf 'name: Full CodeQL scan\n' > results/codeql-full-baseline/config.yml
+                  cp .github/codeql-config.yml results/codeql-full-target/config.yml
+            - name: Compare completed scans
+              run: |
+                  python3 scripts/codeql/compare.py results/codeql-full-baseline results/codeql-full-target > comparison.md
+                  cat comparison.md >> "$GITHUB_STEP_SUMMARY"
+            - uses: actions/upload-artifact@v4
+              with:
+                  name: codeql-full-comparison
+                  path: comparison.md
