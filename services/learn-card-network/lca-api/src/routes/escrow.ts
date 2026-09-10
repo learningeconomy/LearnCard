@@ -1,6 +1,8 @@
 import { timingSafeEqual } from 'crypto';
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
+import { ESCROW_PIN_MAX_ATTEMPTS } from '@learncard/sss-key-manager';
+import cache from '@cache';
 import { environment } from '@environment';
 import { t, openRoute, didAndChallengeRoute } from '@routes';
 import { createRecoverySession } from '@cache/recoverySessions';
@@ -8,6 +10,11 @@ import { decryptAuthShare } from '@helpers/shareEncryption.helpers';
 import {
     EscrowEnvelopeValidator,
     EscrowBlobValidator,
+    EscrowPinSaltValidator,
+    reserveEscrowPinAttempt,
+    resetEscrowPinAttempts,
+    disableEscrowPin,
+    markClaimedEscrowHoldFailed,
     ServerEncryptedShareValidator,
     findUserKeyByAuthProvider,
     findAuthShareByVersion,
@@ -44,10 +51,45 @@ import {
     EscrowPolicyError,
     EscrowBlobError,
     EscrowUnavailableError,
+    EscrowPinMismatchError,
 } from '../services/escrow-enclave';
 
 const unavailableMessage = 'Automatic recovery is not available for this account.';
 const invalidMessage = 'This recovery request is no longer valid.';
+const pinLockedMessage = 'Too many incorrect PIN attempts. You can still recover by waiting.';
+
+// Follow qr-login's Redis INCR/EXPIRE per-IP limiter. keys.ts has only OTP-specific limits.
+const limitPinCompletion = async (clientIp: string | undefined): Promise<void> => {
+    const redis = cache.redis ?? cache.node;
+    const key = `escrow:pin-complete:${clientIp ?? 'unknown'}`;
+    const count = await redis.incr(key);
+    if (count === 1) await redis.expire(key, 60);
+    if (count > 20)
+        throw new TRPCError({
+            code: 'TOO_MANY_REQUESTS',
+            message: 'Please wait before trying again.',
+        });
+};
+
+const lockPin = async (hold: EscrowHold, userKey: MongoUserKeyType): Promise<void> => {
+    const disabled = await disableEscrowPin(
+        hold.authProvider,
+        hold.shareVersion,
+        userKey.escrowBlob?.envelope.ciphertext
+    );
+    // Always burn this request, but never disable/cancel a replacement enrollment.
+    const cancelled = await cancelEscrowHold(hold._id, 'system', 'pin-locked');
+    if (cancelled) void notifyEscrowHoldEvent({ kind: 'cancelled', hold: cancelled, userKey });
+    if (!disabled) return;
+    for (const provider of userKey.authProviders) {
+        const pending = await findPendingEscrowHoldByAuthProvider(provider);
+        if (pending?.releasePolicy === 'pin' && pending.shareVersion === hold.shareVersion) {
+            const cancelled = await cancelEscrowHold(pending._id, 'system', 'pin-locked');
+            if (cancelled)
+                void notifyEscrowHoldEvent({ kind: 'cancelled', hold: cancelled, userKey });
+        }
+    }
+};
 let holdIndexes: Promise<void> | undefined;
 
 // Lambda and in-process callers do not run docker-entry's index initialization.
@@ -73,6 +115,7 @@ const holdStatusValidator = z.object({
     status: z.enum(['pending', 'cancelled', 'completed', 'expired']),
     requestedAt: z.string(),
     releaseAfter: z.string(),
+    releasePolicy: z.enum(['hold', 'pin']),
     cancelledAt: z.string().optional(),
     completedAt: z.string().optional(),
 });
@@ -82,6 +125,7 @@ const serializeHold = (hold: EscrowHold): z.infer<typeof holdStatusValidator> =>
     status: hold.status,
     requestedAt: hold.requestedAt.toISOString(),
     releaseAfter: hold.releaseAfter.toISOString(),
+    releasePolicy: hold.releasePolicy ?? 'hold',
     ...(hold.cancelledAt ? { cancelledAt: hold.cancelledAt.toISOString() } : {}),
     ...(hold.completedAt ? { completedAt: hold.completedAt.toISOString() } : {}),
 });
@@ -132,6 +176,7 @@ const enclaveOperation = async <T>(operation: () => Promise<T>, enrolling = fals
 const startInput = z
     .object({
         clientEphemeralPublicKey: z.string().min(1).max(512),
+        releasePolicy: z.enum(['hold', 'pin']).default('hold'),
         authToken: z.string().optional(),
         providerType: AuthProviderTypeValidator.optional(),
         recoverySessionToken: RecoverySessionTokenValidator.optional(),
@@ -195,6 +240,7 @@ export const escrowRouter = t.router({
                 envelope: EscrowEnvelopeValidator,
                 shareVersion: z.number().int().positive(),
                 enclaveKeyId: EscrowBlobValidator.shape.enclaveKeyId,
+                pinSalt: EscrowPinSaltValidator.optional(),
             }).strict()
         )
         .output(successValidator.extend({ shareVersion: z.number() }))
@@ -233,7 +279,7 @@ export const escrowRouter = t.router({
                     }),
                 true
             );
-            if (!verification.ok) {
+            if (!verification.ok || verification.hasPin !== !!input.pinSalt) {
                 throw new TRPCError({
                     code: 'BAD_REQUEST',
                     message: 'Invalid automatic recovery material.',
@@ -249,7 +295,8 @@ export const escrowRouter = t.router({
                     shareVersion: input.shareVersion,
                     createdAt: new Date(),
                 },
-                input.shareVersion
+                input.shareVersion,
+                input.pinSalt ? { salt: input.pinSalt } : undefined
             );
             if (!stored)
                 throw new TRPCError({
@@ -307,8 +354,12 @@ export const escrowRouter = t.router({
         .input(startInput)
         .output(
             holdStatusValidator
-                .pick({ holdId: true, requestedAt: true, releaseAfter: true })
-                .extend({ status: z.literal('pending'), resumeToken: z.string().nullable() })
+                .pick({ holdId: true, requestedAt: true, releaseAfter: true, releasePolicy: true })
+                .extend({
+                    status: z.literal('pending'),
+                    resumeToken: z.string().nullable(),
+                    pinSalt: EscrowPinSaltValidator.optional(),
+                })
         )
         .mutation(async ({ input, ctx }) => {
             let authProvider: AuthProviderMapping;
@@ -337,11 +388,32 @@ export const escrowRouter = t.router({
                 throw new TRPCError({ code: 'NOT_FOUND', message: unavailableMessage });
             }
             const now = new Date();
+            if (
+                input.releasePolicy === 'pin' &&
+                (!userKey.escrowPin ||
+                    userKey.escrowPin.disabledAt ||
+                    userKey.escrowPin.failedAttempts >= ESCROW_PIN_MAX_ATTEMPTS ||
+                    userKey.escrowPin.shareVersion !== userKey.shareVersion)
+            ) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'PIN recovery is not available for this account.',
+                });
+            }
             await expireStaleEscrowHolds(now);
             await ensureHoldIndexes();
             const pending = await findPendingEscrowHoldByAuthProvider(authProvider);
-            if (pending)
+            if (
+                pending &&
+                input.releasePolicy === 'hold' &&
+                (pending.releasePolicy ?? 'hold') === 'hold'
+            )
                 return { ...serializeHold(pending), status: 'pending' as const, resumeToken: null };
+            if (pending) {
+                const cancelled = await cancelEscrowHold(pending._id, 'system', 'superseded');
+                if (cancelled)
+                    void notifyEscrowHoldEvent({ kind: 'cancelled', hold: cancelled, userKey });
+            }
             const resumeToken = generateEscrowResumeToken();
             let hold: EscrowHold;
             try {
@@ -354,7 +426,11 @@ export const escrowRouter = t.router({
                             ? 'recovery-session'
                             : 'auth-token',
                     requestedAt: now,
-                    releaseAfter: new Date(now.getTime() + getEscrowHoldDurationMs()),
+                    releaseAfter:
+                        input.releasePolicy === 'pin'
+                            ? now
+                            : new Date(now.getTime() + getEscrowHoldDurationMs()),
+                    releasePolicy: input.releasePolicy,
                     clientEphemeralPublicKey: input.clientEphemeralPublicKey,
                     resumeTokenHash: hashEscrowResumeToken(resumeToken),
                     requestIp: ctx.clientIp,
@@ -367,7 +443,11 @@ export const escrowRouter = t.router({
                     error.code === 11000
                 ) {
                     const raced = await findPendingEscrowHoldByAuthProvider(authProvider);
-                    if (raced)
+                    if (
+                        raced &&
+                        input.releasePolicy === 'hold' &&
+                        (raced.releasePolicy ?? 'hold') === 'hold'
+                    )
                         return {
                             ...serializeHold(raced),
                             status: 'pending' as const,
@@ -384,7 +464,12 @@ export const escrowRouter = t.router({
                 });
             }
             void notifyEscrowHoldEvent({ kind: 'started', hold, userKey });
-            return { ...serializeHold(hold), status: 'pending' as const, resumeToken };
+            return {
+                ...serializeHold(hold),
+                status: 'pending' as const,
+                resumeToken,
+                ...(input.releasePolicy === 'pin' ? { pinSalt: userKey.escrowPin!.salt } : {}),
+            };
         }),
 
     getStatus: openRoute
@@ -424,7 +509,14 @@ export const escrowRouter = t.router({
 
     completeRecovery: openRoute
         .meta({ openapi: { method: 'POST', path: '/keys/escrow/complete', tags: ['Keys'] } })
-        .input(resumeInput)
+        .input(
+            resumeInput.extend({
+                pinProof: z
+                    .string()
+                    .regex(/^[0-9a-f]{64}$/i)
+                    .optional(),
+            })
+        )
         .output(
             z.object({
                 sealedShare: EscrowEnvelopeValidator,
@@ -434,7 +526,8 @@ export const escrowRouter = t.router({
                 rebindSessionToken: RecoverySessionTokenValidator,
             })
         )
-        .mutation(async ({ input }) => {
+        .mutation(async ({ input, ctx }) => {
+            if (input.pinProof !== undefined) await limitPinCompletion(ctx.clientIp);
             const hold = await findEscrowHoldById(input.holdId);
             if (!hold || !resumeTokenMatches(hold, input.resumeToken)) {
                 throw new TRPCError({
@@ -473,23 +566,83 @@ export const escrowRouter = t.router({
             if (!encryptedAuthShare || !environment.SEED) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: invalidMessage });
             }
+            const reserved =
+                hold.releasePolicy === 'pin'
+                    ? await reserveEscrowPinAttempt(
+                          hold.authProvider,
+                          hold.shareVersion,
+                          userKey.escrowBlob.envelope.ciphertext
+                      )
+                    : undefined;
+            if (reserved === null) {
+                await lockPin(hold, userKey);
+                throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: pinLockedMessage });
+            }
             // Claim the pending hold BEFORE releasing secrets. The enclave receives the
             // pending snapshot whose CAS we won; release failures burn the hold (fail-closed).
             const completed = await completeEscrowHold(hold._id);
-            if (!completed)
+            if (!completed) {
+                if (reserved?.escrowPin?.failedAttempts === ESCROW_PIN_MAX_ATTEMPTS)
+                    await lockPin(hold, userKey);
                 throw new TRPCError({
                     code: 'CONFLICT',
                     message: 'Recovery state changed; please retry.',
                 });
-            const { sealed } = await enclaveOperation(() =>
-                getEscrowEnclave().releaseEscrow({
-                    envelope: userKey.escrowBlob!.envelope,
-                    hold,
-                    clientEphemeralPublicKey: hold.clientEphemeralPublicKey,
-                    expectedDid: userKey.primaryDid,
-                    now,
-                })
-            );
+            }
+            const release = await enclaveOperation(async () => {
+                try {
+                    return {
+                        result: await getEscrowEnclave().releaseEscrow({
+                            envelope: (reserved ?? userKey).escrowBlob!.envelope,
+                            hold,
+                            clientEphemeralPublicKey: hold.clientEphemeralPublicKey,
+                            expectedDid: userKey.primaryDid,
+                            now,
+                            pinProof: input.pinProof,
+                        }),
+                        mismatch: false as const,
+                    };
+                } catch (error) {
+                    // Keep the typed mismatch inside the wrapper; never expose enclave internals.
+                    if (hold.releasePolicy === 'pin' && error instanceof EscrowPinMismatchError)
+                        return { mismatch: true as const };
+                    if (reserved?.escrowPin?.failedAttempts === ESCROW_PIN_MAX_ATTEMPTS)
+                        await lockPin(hold, userKey);
+                    throw error;
+                }
+            });
+            if (release.mismatch) {
+                await markClaimedEscrowHoldFailed(hold._id, 'pin-mismatch', completed.completedAt!);
+                void notifyEscrowHoldEvent({
+                    kind: 'cancelled',
+                    hold: {
+                        ...completed,
+                        status: 'cancelled',
+                        cancelledBy: 'system',
+                        cancelReason: 'pin-mismatch',
+                        cancelledAt: new Date(),
+                    },
+                    userKey,
+                });
+                const attemptsRemaining =
+                    ESCROW_PIN_MAX_ATTEMPTS - reserved!.escrowPin!.failedAttempts;
+                if (attemptsRemaining <= 0) {
+                    await lockPin(hold, userKey);
+                    throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: pinLockedMessage });
+                }
+                // No structured error-data convention exists: the client parses this exact text.
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: `Incorrect PIN. ${attemptsRemaining} attempts left.`,
+                });
+            }
+            const { sealed } = release.result;
+            if (hold.releasePolicy === 'pin')
+                await resetEscrowPinAttempts(
+                    hold.authProvider,
+                    hold.shareVersion,
+                    userKey.escrowBlob.envelope.ciphertext
+                );
             const authShare = await enclaveOperation(async () =>
                 decryptAuthShare(encryptedAuthShare, environment.SEED)
             );
