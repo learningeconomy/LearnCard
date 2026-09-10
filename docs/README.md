@@ -50,5 +50,6 @@ LearnCard is open source and maintained by [**Learning Economy Foundation**](htt
 ### Get Help
 
 - **Bugs and technical questions:** [Open an issue](https://github.com/learningeconomy/LearnCard/issues/new/choose).
+- **Want to contribute?** See [CONTRIBUTING.md](https://github.com/learningeconomy/LearnCard/blob/main/CONTRIBUTING.md) in the repo.
 - **Feature requests and releases:** [Request and vote on the roadmap](https://roadmap.learncard.com) and follow the [changelog](https://roadmap.learncard.com/changelog).
 - **Private or commercial questions:** Email [sdk@learningeconomy.io](mailto:sdk@learningeconomy.io) or [contact Learning Economy](https://www.learningeconomy.io/contact).

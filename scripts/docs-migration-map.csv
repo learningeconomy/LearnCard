@@ -1,6 +1,6 @@
 old_url,new_url,action,status
 .,.,keep,unchanged
-apps/apps,products/apps,moved,redirected
+apps/apps,products/learn-card-app,merge,redirected
 apps/learn-card-app,products/learn-card-app,moved,redirected
 apps/learn-card-app/analytics,products/learn-card-app,internal,redirected
 apps/learn-card-app/resume-builder-ler-rs-mapping,products/learn-card-app,internal,redirected
@@ -50,8 +50,8 @@ core-concepts/network-and-interactions/credential-activity,understand/ecosystem-
 core-concepts/network-and-interactions/key-network-procedures,understand/ecosystem-architecture,merge,redirected
 core-concepts/network-and-interactions/network-vision-and-principles,understand/ecosystem-architecture,merge,redirected
 core-concepts/network-and-interactions/universal-inbox,understand/ecosystem-architecture/universal-inbox,moved,redirected
-core-concepts/tenant-branded-emails,products/apps,internal,redirected
-development/contributing,products/contributing,moved,redirected
+core-concepts/tenant-branded-emails,products/learn-card-app,internal,redirected
+development/contributing,,moved,redirected
 how-to-guides/connect-systems,start-here/what-do-you-want-to-build,merge,redirected
 how-to-guides/connect-systems/connect-a-game,build/create-a-consentflow,merge,redirected
 how-to-guides/connect-systems/connect-a-website,build/create-a-consentflow,merge,redirected

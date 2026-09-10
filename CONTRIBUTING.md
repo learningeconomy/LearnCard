@@ -58,6 +58,74 @@ As a rule of thumb, changes are obvious fixes if they do not introduce any new f
 - Changes to ‘metadata’ files like .gitignore, build scripts, etc.
 - Moving source files from one directory or package to another
 
+# Repository Structure
+
+The LearnCard repository is organized as a monorepo managed with NX. This structure allows for efficient management of multiple packages and services while sharing dependencies and build configurations.
+
+```mermaid
+flowchart TD
+    subgraph "LearnCard Monorepo"
+        packages["packages/<br/>(Core Libraries)"]
+        services["services/<br/>(Backend Services)"]
+        apps["apps/<br/>(Frontend Applications)"]
+        examples["examples/<br/>(Example Projects)"]
+    end
+
+    subgraph "Key Packages"
+        core["@learncard/core"]
+        types["@learncard/types"]
+        init["@learncard/init"]
+        react["@learncard/react"]
+        plugins["Various Plugins"]
+    end
+
+    subgraph "Services"
+        brain["Brain Service<br/>(LearnCloud Network API)"]
+        learncloud["Learn Cloud Service<br/>(LearnCloud Storage API)"]
+    end
+
+    packages --> core
+    packages --> types
+    packages --> init
+    packages --> react
+    packages --> plugins
+
+    services --> brain
+    services --> learncloud
+```
+
+# Local Development Workflow
+
+1.  **Clone the repository**:
+
+    ```bash
+    git clone https://github.com/learningeconomy/LearnCard.gitcd LearnCard
+    ```
+
+2.  **Set up Node.js version**:
+
+    ```bash
+    nvm use # Uses the version specified in .nvmrc
+    ```
+
+3.  **Install dependencies**:
+
+    ```bash
+    bun install
+    ```
+
+4.  **Run tests for affected packages**:
+
+    ```bash
+    bunx nx affected --target=test --base=HEAD~1 --head=HEAD
+    ```
+
+5.  **Build packages**:
+
+    ```bash
+    bunx nx run-many --target=build --exclude docs
+    ```
+
 # How to report a bug
 
 ### Security Vulnerabilities

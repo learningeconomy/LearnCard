@@ -4,7 +4,7 @@ description: 'How-To Guide: Export, restore, and import all of your LearnCard da
 
 # Export & Import Your Data
 
-This guide is a step-by-step recipe for taking **all of your LearnCard data** with you: your keys, credentials, presentations, consent records, and more. You can save it as a single encrypted file, restore your original account from it, or copy its contents into a brand-new account.
+This is the command-line recipe for taking **all of a LearnCard account's data** somewhere else — for developers, power users, and anyone auditing the [holder-continuity guarantee](../core-concepts/architecture-and-principles/holder-continuity.md). It covers your keys, credentials, presentations, consent records, and more. You can save it as a single encrypted file, restore your original account from it, or copy its contents into a brand-new account.
 
 {% hint style="success" %}
 **Our commitment to holder continuity**

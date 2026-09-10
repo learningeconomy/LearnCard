@@ -1,14 +1,12 @@
 ---
-description: How to connect your AI client to LearnCard's MCP server
+description: Let Claude or ChatGPT read your LearnCard so it can tailor help to what you've actually learned.
 ---
 
-# Connect AI Agent
-
-**Purpose**
+# Use LearnCard with Claude or ChatGPT
 
 Connect your AI assistant (e.g. Claude or ChatGPT) to LearnCard to enable personalized learning experiences. Your AI will be able to access your learning context, ask questions about your background, and save learning session summaries as verifiable credentials.
 
-**LearnCard MCP Server URL (for reference):**
+You'll paste this address into your assistant's settings:
 
 ```
 https://mcp.learncard.ai/
@@ -24,7 +22,7 @@ Below are instructions for connecting the LearnCard MCP server with Claude or Ch
 
 ## Claude
 
-#### Claude **Pro or higher required**.
+Requires Claude **Pro** or higher.
 
 {% embed url="https://www.loom.com/share/a18c5bc1bd8349c5a80d898ecd149eb9" %}
 
@@ -98,7 +96,7 @@ Below are instructions for connecting the LearnCard MCP server with Claude or Ch
 
 ## ChatGPT
 
-#### ChatGPT Plus **or higher required**.
+Requires ChatGPT **Plus** or higher.
 
 {% embed url="https://www.loom.com/share/d90d6fbb70c54514a0704f73735818cc" %}
 

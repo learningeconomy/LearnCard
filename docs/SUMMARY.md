@@ -63,6 +63,7 @@
     - [Achievement Types & Categories](core-concepts/credentials-and-data/achievement-types-and-categories.md)
     - [Changelog](sdks/learncard-core/migration-guide.md)
 - [Network API](sdks/learncard-network/README.md)
+    - [OpenAPI](https://network.learncard.com/docs#/)
     - [Authentication](sdks/learncard-network/authentication.md)
     - [Usage Examples](sdks/learncard-network/usage-examples.md)
     - [Universal Inbox API](sdks/learncard-network/universal-inbox-api.md)
@@ -71,7 +72,6 @@
     - [Skill Frameworks & OpenSALT](sdks/learncard-network/skills-and-opensalt.md)
     - [Key Management & QR Login API](sdks/learncard-network/lca-api-key-management.md)
     - [Errors & Limits](sdks/learncard-network/errors-and-limits.md)
-    - [OpenAPI (interactive)](https://network.learncard.com/docs#/)
     - ```yaml
       props:
           models: true
@@ -114,11 +114,9 @@
 
 ## 📱 Products
 
-- [LearnCard Apps](apps/README.md)
 - [LearnCard App](apps/learn-card-app/README.md)
+    - [Use LearnCard with Claude or ChatGPT](how-to-guides/connect-systems/connect-ai-agent.md)
     - [Export & Import Your Data](how-to-guides/export-and-import-your-data.md)
-    - [Connect an AI Assistant](how-to-guides/connect-systems/connect-ai-agent.md)
 - [ScoutPass](apps/scouts/README.md)
-- [Contributing](development/contributing.md)
 - [Roadmap](https://roadmap.learncard.com/)
 - [Changelog](https://roadmap.learncard.com/changelog)

@@ -35,7 +35,7 @@ redirects:
     core-concepts/network-and-interactions/credential-activity: core-concepts/network-and-interactions/universal-inbox.md
     core-concepts/network-and-interactions/key-network-procedures: introduction/ecosystem-architecture.md
     core-concepts/network-and-interactions/network-vision-and-principles: introduction/ecosystem-architecture.md
-    core-concepts/tenant-branded-emails: apps/README.md
+    core-concepts/tenant-branded-emails: apps/learn-card-app/README.md
     how-to-guides/implement-flows: tutorials/create-a-consentflow.md
     how-to-guides/implement-flows/chapi: introduction/interoperability.md
     how-to-guides/implement-flows/chapi/chapi-wallet-setup-guide: introduction/interoperability.md
@@ -47,7 +47,7 @@ redirects:
     how-to-guides/implement-flows/chapi/using-learncard-to-interact-with-a-chapi-wallet: introduction/interoperability.md
 
     # --- Pages that still exist but whose URL changed in the nav restructure ---
-    apps/apps: apps/README.md
+    apps/apps: apps/learn-card-app/README.md
     apps/learn-card-app: apps/learn-card-app/README.md
     apps/learn-card-app/analytics: apps/learn-card-app/README.md
     apps/scouts: apps/scouts/README.md
@@ -90,7 +90,7 @@ redirects:
     core-concepts/identities-and-keys/trust-registries: core-concepts/identities-and-keys/trust-registries.md
     core-concepts/network-and-interactions: core-concepts/network-and-interactions/universal-inbox.md
     core-concepts/network-and-interactions/universal-inbox: core-concepts/network-and-interactions/universal-inbox.md
-    development/contributing: development/contributing.md
+    development/contributing: README.md
     how-to-guides/connect-systems: introduction/what-do-you-want-to-build.md
     how-to-guides/connect-systems/connect-a-game: tutorials/create-a-consentflow.md
     how-to-guides/connect-systems/connect-a-website: tutorials/create-a-consentflow.md
