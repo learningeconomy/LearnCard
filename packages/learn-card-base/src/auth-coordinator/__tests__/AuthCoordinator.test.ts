@@ -441,6 +441,64 @@ describe('AuthCoordinator', () => {
             expect(setEscrowPin).not.toHaveBeenCalled();
             expect(clearEscrowPin).not.toHaveBeenCalled();
         });
+        it.each([
+            ['set', true, true],
+            ['clear', true, true],
+            ['set', false, true],
+            ['clear', false, true],
+            ['set', false, false],
+            ['clear', false, false],
+            ['set', true, false],
+            ['clear', true, false],
+        ])(
+            'reconciles %s PIN (mutation fails: %s, refresh fails: %s)',
+            async (method, mutationFails, refreshFails) => {
+                const oldPin = { enabled: true, attemptsRemaining: 7 };
+                const freshPin = { enabled: method === 'set', attemptsRemaining: 10 };
+                const getEscrowEnrollmentState = vi
+                    .fn()
+                    .mockResolvedValue({ state: 'enrolled', escrowPin: oldPin });
+                const mutationError = new Error('mutation failed');
+                const mutation = vi.fn().mockImplementation(async () => {
+                    expect(coordinator.getState()).toMatchObject({
+                        status: 'ready',
+                        escrowPin: undefined,
+                    });
+                    if (mutationFails) throw mutationError;
+                });
+                const { coordinator } = setup({
+                    keyDerivation: {
+                        getEscrowEnrollmentState,
+                        setEscrowPin: mutation,
+                        clearEscrowPin: mutation,
+                    },
+                    config: { signDidAuthVp: vi.fn() },
+                });
+                await coordinator.initialize();
+                await vi.waitFor(() =>
+                    expect(coordinator.getState()).toMatchObject({ escrowPin: oldPin })
+                );
+                getEscrowEnrollmentState.mockClear();
+                if (refreshFails) getEscrowEnrollmentState.mockRejectedValue(new Error('offline'));
+                else
+                    getEscrowEnrollmentState.mockResolvedValue({
+                        state: 'enrolled',
+                        escrowPin: freshPin,
+                    });
+                const operation =
+                    method === 'set'
+                        ? coordinator.setEscrowPin('135790')
+                        : coordinator.clearEscrowPin();
+                expect(coordinator.getState()).toMatchObject({ escrowPin: undefined });
+                if (mutationFails) await expect(operation).rejects.toBe(mutationError);
+                else await operation;
+                expect(getEscrowEnrollmentState).toHaveBeenCalledTimes(1);
+                expect(coordinator.getState()).toMatchObject({
+                    escrowPin: refreshFails ? undefined : freshPin,
+                });
+            }
+        );
+
         it('delegates setEscrowPin to the strategy and drains it before logout proceeds', async () => {
             let finishSetPin!: () => void;
             const setEscrowPin = vi.fn().mockImplementation(
