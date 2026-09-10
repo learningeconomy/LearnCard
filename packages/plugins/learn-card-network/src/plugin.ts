@@ -759,7 +759,11 @@ export async function getLearnCardNetworkPlugin(
                 return client.profileManager.updateProfileManager.mutate(manager);
             },
             deleteProfile: async () => {
-                if (!userData) throw new Error('Account does not exist!');
+                // Settle initialization before deletion so it cannot repopulate userData later.
+                await initialQuery;
+                // API tokens may grant profiles:delete without profiles:read. The server
+                // validates the profile and scope; a local read must not gate deletion.
+                if (!apiToken) await ensureUser();
 
                 const result = await client.profile.deleteProfile.mutate();
 

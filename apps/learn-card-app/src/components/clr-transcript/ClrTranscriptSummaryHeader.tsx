@@ -36,6 +36,12 @@ const ClrTranscriptSummaryHeader: React.FC<{
             block: 'start',
         });
     };
+    const scrollToAssessments = () => {
+        document.getElementById('assessments')?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+        });
+    };
     const openEvidenceModal = () => {
         newModal(
             <ClrEvidenceDetailPanel
@@ -124,6 +130,13 @@ const ClrTranscriptSummaryHeader: React.FC<{
                         type="courses"
                         value={model.summary.courseCount}
                         onClick={scrollToCourseHistory}
+                    />
+                )}
+                {model.summary.assessmentCount > 0 && (
+                    <StatCard
+                        type="assessments"
+                        value={model.summary.assessmentCount}
+                        onClick={scrollToAssessments}
                     />
                 )}
                 {model.summary.explicitCompetencyCount > 0 && (

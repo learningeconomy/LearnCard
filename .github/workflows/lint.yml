@@ -78,6 +78,9 @@ jobs:
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
 
+            - name: Test lint project discovery
+              run: node --test scripts/lint-workspace.test.mjs
+
             - name: Run workspace lint
               run: bun run lint:workspace
 
@@ -103,6 +106,10 @@ jobs:
                   for contract in .github/tests/*.test.sh; do
                     echo "Running $contract"
                     bash "$contract"
+                  done
+                  for contract in .github/tests/*.test.cjs; do
+                    echo "Running $contract"
+                    node "$contract"
                   done
 
     NoJest:

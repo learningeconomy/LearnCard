@@ -1,6 +1,6 @@
 {
     "name": "@learncard/network-brain-service",
-    "version": "3.16.15",
+    "version": "3.16.16",
     "description": "",
     "engines": {
         "node": ">=24.12 <25"

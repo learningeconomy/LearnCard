@@ -61,6 +61,7 @@ import {
     buildFinalTranscriptVariant,
     REFRESH_SERVICE_INLINE_CONTEXT,
 } from './clr/provisional-transcript';
+import { clrDemoIsdDiplomaAssessments } from './clr/demo-isd-diploma-assessments';
 
 // SD-JWT VC
 import { sdJwtVcCourseCompletion } from './sd-jwt-vc/course-completion';
@@ -125,6 +126,7 @@ export const ALL_FIXTURES: LibraryFixture[] = [
     clrWestbridgeFull,
     clrCompetencyAligned,
     clrProvisionalTranscript,
+    clrDemoIsdDiplomaAssessments,
 
     // SD-JWT VC
     sdJwtVcCourseCompletion,
@@ -174,5 +176,6 @@ export {
     clrProvisionalTranscript,
     buildFinalTranscriptVariant,
     REFRESH_SERVICE_INLINE_CONTEXT,
+    clrDemoIsdDiplomaAssessments,
     sdJwtVcCourseCompletion,
 };

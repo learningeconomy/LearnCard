@@ -1,6 +1,6 @@
 {
     "name": "@learncard/vc-plugin",
-    "version": "1.5.11",
+    "version": "1.5.12",
     "description": "",
     "type": "module",
     "main": "./dist/index.cjs",

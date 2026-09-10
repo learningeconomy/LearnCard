@@ -12,6 +12,7 @@
         "claimedType": "Credencial reclamada"
     },
     "common": {
+        "tryAgain": "Reintentar",
         "share": "Compartir",
         "open": "Abrir",
         "accept": "Aceptar",
@@ -2819,6 +2820,7 @@
             "deleteCredentialError": "Error al eliminar credencial: no se pudo ubicar el ID del registro.",
             "shareLinkCopied": "Enlace para compartir copiado al portapapeles",
             "shareLinkCopyFailed": "No se pudo copiar el enlace para compartir",
+            "shareLinkGenerationFailed": "No pudimos crear un enlace para compartir. Inténtalo de nuevo.",
             "templateIdCopied": "ID de plantilla copiado al portapapeles",
             "templateIdCopyFailed": "No se pudo copiar el ID de plantilla",
             "boostLinkCopied": "Enlace del boost copiado al portapapeles",

@@ -10,8 +10,6 @@ export enum AdminToolOptionsEnum {
     CONSENT_FLOW = 'Consent Flow',
     SYNC_ALL_CREDENTIALS = 'Sync All Credentials',
     CLI = 'CLI',
-    GUARDIAN_CREDENTIAL_TEST = 'Guardian Credential Test',
-    APPEVENT_PERF_BENCH = 'AppEvent Perf Bench',
 }
 
 export type AdminToolOption = {
@@ -41,23 +39,6 @@ export const adminToolOptions: AdminToolOption[] = [
         description: 'Create and share consent contracts.',
         actionLabel: 'Create Contract',
         type: AdminToolOptionsEnum.CONSENT_FLOW,
-    },
-    {
-        id: 3,
-        label: 'Guardian Credential Test',
-        title: 'Guardian Credential Test',
-        description: 'Send a guardian-gated test credential to test the guardian credential flow.',
-        actionLabel: 'Open Test UI',
-        type: AdminToolOptionsEnum.GUARDIAN_CREDENTIAL_TEST,
-    },
-    {
-        id: 4,
-        label: 'AppEvent Perf Bench',
-        title: 'AppEvent Perf Bench',
-        description:
-            'Run the sendCredential APP_EVENT flow N times against staging and capture per-phase timings in PostHog.',
-        actionLabel: 'Open Perf Bench',
-        type: AdminToolOptionsEnum.APPEVENT_PERF_BENCH,
     },
 ];
 
@@ -127,8 +108,6 @@ export const developerToolOptions: AdminToolOption[] = [
  * (not invocations) so the locale resolves when `getAdminToolLabel`/
  * `getAdminToolDescription` CALL them at render — no module-load freeze.
  *
- * Guardian Credential Test and AppEvent Perf Bench are intentionally omitted:
- * they're internal dev tools and fall back to their static English copy.
  */
 const ADMIN_TOOL_COPY: Partial<
     Record<

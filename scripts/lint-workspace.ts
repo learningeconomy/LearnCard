@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -9,20 +9,22 @@ const REPOSITORY_PATH_PLACEHOLDER = '<repository>';
 const concurrency = 2;
 
 const walkProjectConfigs = (root: string): string[] => {
-    if (!existsSync(root)) return [];
+    const entries = readdirSync(root, { withFileTypes: true });
+
+    // Nested Git repositories (including submodules) own their project metadata.
+    if (root !== '.' && entries.some(entry => entry.name === '.git')) return [];
 
     const configs: string[] = [];
 
-    for (const entry of readdirSync(root)) {
-        const path = join(root, entry);
-        const stats = statSync(path);
+    for (const entry of entries) {
+        const path = join(root, entry.name);
 
-        if (stats.isDirectory()) {
-            if (['node_modules', 'dist', 'build', '.git', '.nx', 'coverage'].includes(entry)) {
+        if (entry.isDirectory()) {
+            if (['node_modules', 'dist', 'build', '.git', '.nx', 'coverage'].includes(entry.name)) {
                 continue;
             }
             configs.push(...walkProjectConfigs(path));
-        } else if (entry === 'project.json') {
+        } else if (entry.isFile() && entry.name === 'project.json') {
             configs.push(path);
         }
     }
@@ -30,7 +32,6 @@ const walkProjectConfigs = (root: string): string[] => {
     return configs;
 };
 
-const projectSourceRoots: string[] = [];
 const LEGACY_LINT_EXCEPTIONS: Record<string, string> = {
     'apps/learn-card-app/src':
         'Legacy UI source remains enforced by lint-staged while React Compiler and Prettier debt is paid down.',
@@ -38,46 +39,50 @@ const LEGACY_LINT_EXCEPTIONS: Record<string, string> = {
         'Legacy UI source remains enforced by lint-staged while React Compiler and Prettier debt is paid down.',
 };
 
-for (const path of walkProjectConfigs('.')) {
-    const parsed: unknown = JSON.parse(readFileSync(path, 'utf8'));
+const getFullWorkspaceCohorts = (): readonly (readonly string[])[] => {
+    const projectSourceRoots: string[] = [];
 
-    if (
-        typeof parsed !== 'object' ||
-        parsed === null ||
-        !('sourceRoot' in parsed) ||
-        typeof parsed.sourceRoot !== 'string'
-    ) {
-        throw new Error(`${path} must declare sourceRoot`);
+    for (const path of walkProjectConfigs('.')) {
+        const parsed: unknown = JSON.parse(readFileSync(path, 'utf8'));
+
+        if (
+            typeof parsed !== 'object' ||
+            parsed === null ||
+            !('sourceRoot' in parsed) ||
+            typeof parsed.sourceRoot !== 'string'
+        ) {
+            throw new Error(`${path} must declare sourceRoot`);
+        }
+
+        if (LEGACY_LINT_EXCEPTIONS[parsed.sourceRoot]) continue;
+
+        if (!projectSourceRoots.includes(parsed.sourceRoot)) {
+            projectSourceRoots.push(parsed.sourceRoot);
+        }
     }
 
-    if (LEGACY_LINT_EXCEPTIONS[parsed.sourceRoot]) continue;
-
-    if (!projectSourceRoots.includes(parsed.sourceRoot)) {
-        projectSourceRoots.push(parsed.sourceRoot);
-    }
-}
-
-projectSourceRoots.sort();
-const fullWorkspaceCohorts: readonly (readonly string[])[] = [
-    [
-        'eslint.config.mjs',
-        'scripts/env-contracts.ts',
-        'scripts/verify-lc-1984.ts',
-        'scripts/lint-workspace.ts',
-        'apps/learn-card-app/vite.config.mts',
-        'apps/scouts/vite.config.ts',
-        'apps/learn-card-app/src/config',
-        'apps/scouts/src/config',
-        'services/learn-card-network/brain-service/lambda.ts',
-        'services/learn-card-network/brain-service/didWebLambda.ts',
-        'services/learn-card-network/lca-api/lambda.ts',
-        'services/learn-card-network/learn-cloud-service/lambda.ts',
-        'services/learn-card-network/learn-cloud-service/didWebLambda.ts',
-        'services/learn-card-network/learn-cloud-service/oidcLambda.ts',
-        'services/learn-card-network/learn-cloud-service/xApiLambda.ts',
-    ],
-    ...projectSourceRoots.map(root => [root] as const),
-];
+    projectSourceRoots.sort();
+    return [
+        [
+            'eslint.config.mjs',
+            'scripts/env-contracts.ts',
+            'scripts/verify-lc-1984.ts',
+            'scripts/lint-workspace.ts',
+            'apps/learn-card-app/vite.config.mts',
+            'apps/scouts/vite.config.ts',
+            'apps/learn-card-app/src/config',
+            'apps/scouts/src/config',
+            'services/learn-card-network/brain-service/lambda.ts',
+            'services/learn-card-network/brain-service/didWebLambda.ts',
+            'services/learn-card-network/lca-api/lambda.ts',
+            'services/learn-card-network/learn-cloud-service/lambda.ts',
+            'services/learn-card-network/learn-cloud-service/didWebLambda.ts',
+            'services/learn-card-network/learn-cloud-service/oidcLambda.ts',
+            'services/learn-card-network/learn-cloud-service/xApiLambda.ts',
+        ],
+        ...projectSourceRoots.map(root => [root] as const),
+    ];
+};
 
 const filesArgumentIndex = process.argv.indexOf('--files');
 const filesMode = filesArgumentIndex !== -1;
@@ -86,7 +91,9 @@ const requestedFiles = filesMode
           .slice(filesArgumentIndex + 1)
           .filter(path => /\.(?:js|jsx|mjs|mts|ts|tsx)$/.test(path))
     : [];
-const cohorts: readonly (readonly string[])[] = filesMode ? [requestedFiles] : fullWorkspaceCohorts;
+const cohorts: readonly (readonly string[])[] = filesMode
+    ? [requestedFiles]
+    : getFullWorkspaceCohorts();
 
 const lintMessageSchema = z.object({
     ruleId: z.string().nullable(),
