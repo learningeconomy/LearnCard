@@ -78,6 +78,18 @@ export {
 export type { EscrowEnvelope, EscrowBlobPlaintext, EscrowReleasePlaintext } from './escrow-crypto';
 export { verifyEnclaveAttestation } from './escrow-attestation';
 export type { EscrowAttestationPolicy, EscrowHoldStatus, EscrowRecoveryStart } from './types';
+export type { EscrowEnrollmentOptions, EscrowEnrollmentState, EscrowPinStatus } from './types';
+export { EscrowPinMismatchError, EscrowPinLockedError } from './types';
+export {
+    PIN_MIN_LENGTH,
+    PIN_MAX_LENGTH,
+    ESCROW_PIN_MAX_ATTEMPTS,
+    normalizePin,
+    validatePin,
+    generatePinSalt,
+    derivePinProof,
+    constantTimeEqualHex,
+} from './escrow-pin';
 
 export {
     createPasskeyCredential,

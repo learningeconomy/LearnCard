@@ -21,6 +21,9 @@ export {
     type SssActivationState,
     type KeyDerivationStrategy,
     type DidAuthVpSigner,
+    type EscrowEnrollmentOptions,
+    type EscrowEnrollmentState,
+    type EscrowPinStatus,
 } from '@learncard/types';
 
 import type {
@@ -73,6 +76,7 @@ export type EscrowAttestationPolicy =
 /** Public status of an escrow recovery waiting period. */
 export interface EscrowHoldStatus {
     holdId: string;
+    releasePolicy: 'hold' | 'pin';
     status: 'pending' | 'cancelled' | 'completed' | 'expired';
     requestedAt: string;
     releaseAfter: string;
@@ -84,7 +88,24 @@ export interface EscrowHoldStatus {
 export type EscrowRecoveryStart = EscrowHoldStatus & {
     resumeToken: string | null;
     clientEphemeralPrivateKey: string;
+    pinSalt?: string;
 };
+
+/** A failed PIN attempt consumes its hold; another attempt must start a fresh hold. */
+export class EscrowPinMismatchError extends Error {
+    constructor(public readonly attemptsRemaining: number) {
+        super('Incorrect PIN.');
+        this.name = 'EscrowPinMismatchError';
+    }
+}
+
+/** PIN recovery is exhausted; delayed escrow recovery remains available. */
+export class EscrowPinLockedError extends Error {
+    constructor() {
+        super('Too many incorrect PIN attempts. You can still recover by waiting.');
+        this.name = 'EscrowPinLockedError';
+    }
+}
 
 export interface PasskeyRecoveryMethod {
     type: 'passkey';
@@ -110,6 +131,7 @@ export type RecoveryMethod =
  * SSS-specific recovery input — what the user provides to recover their key.
  */
 export type RecoveryInput =
+    | { method: 'escrow-pin'; pin: string }
     | { method: 'escrow'; holdId: string; resumeToken: string; clientEphemeralPrivateKey: string }
     | { method: 'passkey'; credentialId: string }
     | { method: 'phrase'; phrase: string }
@@ -120,7 +142,7 @@ export type RecoveryInput =
  * SSS-specific recovery setup input — what the user provides to set up a method.
  */
 export type RecoverySetupInput =
-    | { method: 'escrow' }
+    | { method: 'escrow'; pin?: string }
     | { method: 'passkey' }
     | { method: 'phrase' }
     | { method: 'backup'; password: string; did: string }
