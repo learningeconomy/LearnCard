@@ -11,54 +11,36 @@ import AdminToolsSigningAuthorityOption from '../signingAuthority/AdminToolsSign
 import AdminToolsSyncAllCredentialsOption from '../AdminToolsSyncAllCredentials/AdminToolsSyncAllCredentialsOption';
 import AdminToolsCLIOption from '../AdminToolsCLI/AdminToolsCLIOption';
 import AdminToolsLearnerContextTestOption from '../learner-context-test/AdminToolsLearnerContextTestOption';
-import AdminToolsGuardianCredentialTestOption from '../guardian-credential-test/AdminToolsGuardianCredentialTestOption';
-import AdminToolsAppEventPerfBenchOption from '../appevent-perf-bench/AdminToolsAppEventPerfBenchOption';
 
 import { AdminToolOption, AdminToolOptionsEnum } from './admin-tools.helpers';
 
 export const AdminToolsOptionsContainer: React.FC<{ option: AdminToolOption }> = ({ option }) => {
-    let activeAdminToolOption: AdminToolOptionsEnum = option.type;
+    const activeAdminToolOption: AdminToolOptionsEnum = option.type;
 
-    let adminToolContent: React.ReactNode = null;
-
-    switch (activeAdminToolOption) {
-        case AdminToolOptionsEnum.API_TOKENS:
-            adminToolContent = <AdminToolsApiTokensOption option={option} />;
-            break;
-        case AdminToolOptionsEnum.LEARNER_CONTEXT_TEST:
-            adminToolContent = <AdminToolsLearnerContextTestOption option={option} />;
-            break;
-        case AdminToolOptionsEnum.SIGNING_AUTHORITY:
-            adminToolContent = <AdminToolsSigningAuthorityOption option={option} />;
-            break;
-        case AdminToolOptionsEnum.NETWORKS:
-            adminToolContent = <AdminToolsNetworkOption option={option} showFooter />;
-            break;
-        case AdminToolOptionsEnum.STORAGE:
-            adminToolContent = <AdminToolsStorageOption option={option} showFooter />;
-            break;
-        case AdminToolOptionsEnum.BULK_UPLOAD:
-            adminToolContent = <AdminToolsBulkBoostImportOption option={option} />;
-            break;
-        case AdminToolOptionsEnum.CONSENT_FLOW:
-            adminToolContent = <AdminToolsConsentFlowOption option={option} />;
-            break;
-        case AdminToolOptionsEnum.SYNC_ALL_CREDENTIALS:
-            adminToolContent = <AdminToolsSyncAllCredentialsOption option={option} />;
-            break;
-        case AdminToolOptionsEnum.CLI:
-            adminToolContent = <AdminToolsCLIOption option={option} />;
-            break;
-        case AdminToolOptionsEnum.GUARDIAN_CREDENTIAL_TEST:
-            adminToolContent = <AdminToolsGuardianCredentialTestOption option={option} />;
-            break;
-        case AdminToolOptionsEnum.APPEVENT_PERF_BENCH:
-            adminToolContent = <AdminToolsAppEventPerfBenchOption option={option} />;
-            break;
-        default:
-            adminToolContent = null;
-            break;
-    }
+    const adminToolContent: React.ReactNode = (() => {
+        switch (activeAdminToolOption) {
+            case AdminToolOptionsEnum.API_TOKENS:
+                return <AdminToolsApiTokensOption option={option} />;
+            case AdminToolOptionsEnum.LEARNER_CONTEXT_TEST:
+                return <AdminToolsLearnerContextTestOption option={option} />;
+            case AdminToolOptionsEnum.SIGNING_AUTHORITY:
+                return <AdminToolsSigningAuthorityOption option={option} />;
+            case AdminToolOptionsEnum.NETWORKS:
+                return <AdminToolsNetworkOption option={option} showFooter />;
+            case AdminToolOptionsEnum.STORAGE:
+                return <AdminToolsStorageOption option={option} showFooter />;
+            case AdminToolOptionsEnum.BULK_UPLOAD:
+                return <AdminToolsBulkBoostImportOption option={option} />;
+            case AdminToolOptionsEnum.CONSENT_FLOW:
+                return <AdminToolsConsentFlowOption option={option} />;
+            case AdminToolOptionsEnum.SYNC_ALL_CREDENTIALS:
+                return <AdminToolsSyncAllCredentialsOption option={option} />;
+            case AdminToolOptionsEnum.CLI:
+                return <AdminToolsCLIOption option={option} />;
+            default:
+                return null;
+        }
+    })();
 
     return (
         <div className="h-full relative bg-grayscale-100">
