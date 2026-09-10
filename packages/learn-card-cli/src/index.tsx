@@ -341,6 +341,7 @@ program
         'public handle for your profile (default: derived from the display name)'
     )
     .option('--network <url>', 'network tRPC URL (default: production)')
+    .option('--template', 'send using a reusable template and hosted signing authority')
     .action(
         async (
             email: string,
@@ -351,6 +352,7 @@ program
                 description?: string;
                 profileId?: string;
                 network?: string;
+                template?: boolean;
             }
         ) => {
             const didkit = fs.readFile(
@@ -368,6 +370,83 @@ program
                 process.exit(1);
             }
         }
+    );
+
+const commandOptions = (command: ReturnType<typeof program.command>) =>
+    command
+        .option('-y, --yes', 'accept defaults without prompting')
+        .option('--profile-id <id>', 'public handle for your issuer profile')
+        .option('--network <url>', 'network tRPC URL or staging (default: production)');
+
+const runCommand = async (action: (didkit: Promise<Buffer>) => Promise<void>) => {
+    try {
+        await action(
+            fs.readFile(require.resolve('@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm'))
+        );
+        process.exit(process.exitCode || 0);
+    } catch (error) {
+        console.error(
+            error instanceof Error
+                ? error.message.split('\n')[0]
+                : 'Command failed. Please try again.'
+        );
+        process.exit(1);
+    }
+};
+
+commandOptions(
+    program
+        .command('setup-signing')
+        .description('Set up LearnCard to sign credentials for your project.')
+)
+    .option('--name <name>', 'signing authority name (default: default-issuer)')
+    .action(options =>
+        runCommand(async didkit => {
+            const { runSetupSigning } = await import('./setup-signing');
+            await runSetupSigning({ ...options, didkit });
+        })
+    );
+
+commandOptions(
+    program.command('token').description('Create a scoped API token and reusable send.sh.')
+)
+    .option('--name <name>', 'auth grant name (default: cli-<date>)')
+    .option('--scope <scope>', 'space-separated permissions (default: boosts:write)')
+    .option('--revoke <grantId>', 'revoke an existing auth grant')
+    .action(options =>
+        runCommand(async didkit => {
+            const { runToken } = await import('./token');
+            await runToken({ ...options, didkit });
+        })
+    );
+
+program
+    .command('verify <file>')
+    .description('Verify a credential or presentation JSON file; use - for stdin.')
+    .option('--json', 'print the raw verification result')
+    .action((file, options) =>
+        runCommand(async didkit => {
+            const { runVerify } = await import('./verify');
+            await runVerify(file, { ...options, didkit });
+        })
+    );
+
+commandOptions(
+    program
+        .command('revoke <credentialUri>')
+        .description('Revoke or suspend an issued credential on the network.')
+)
+    .option('--suspend', 'suspend instead of permanently revoking')
+    .option('--template-uri <uri>', 'template URI if it cannot be read from the credential')
+    .option(
+        '--recipient <profileId>',
+        'recipient profile ID if it cannot be read from the credential'
+    )
+    .action((uri, options) =>
+        runCommand(async didkit => {
+            const { runRevoke } = await import('./revoke');
+            await runRevoke(uri, { ...options, didkit });
+        })
     );
 
 program

@@ -118,6 +118,36 @@ In the Developer Portal, **Signing Authority** shows the authority name with a *
 
 ## Next steps
 
+The CLI's `send --template` saves the reusable script below after setting up your signer and template:
+
+<!-- snippet: quickstart/send-from-template.mjs -->
+
+```javascript
+import { initLearnCard } from '@learncard/init';
+
+const recipient = process.argv[2];
+if (!recipient)
+    throw new Error('Usage: node --env-file=.env send-from-template.mjs you@example.com');
+if (!process.env.TEMPLATE_URI)
+    throw new Error('Run npx @learncard/cli send you@example.com --template first.');
+
+// The CLI saved a template and registered your primary signing authority once.
+const learnCard = await initLearnCard({ seed: process.env.SECURE_SEED, network: true });
+const result = await learnCard.invoke.send({
+    type: 'boost',
+    recipient,
+    templateUri: process.env.TEMPLATE_URI,
+});
+console.log(
+    result.inbox?.status === 'PENDING'
+        ? `Sent. ${recipient} will get a claim email. You can also share this link directly:\n${result.inbox.claimUrl}`
+        : `Delivered. ${recipient} already uses LearnCard — the credential is in their wallet.`
+);
+console.log(`Reusable template for this badge: ${result.uri}`);
+```
+
+<!-- /snippet -->
+
 - Send from a template → [Issue at scale with templates](send-credentials.md#issue-at-scale-with-templates)
 - Know when it's claimed → [Know When a Credential Is Claimed](../tutorials/listen-to-webhooks.md)
 - Understand what a signing authority is under the hood → [Signing Authorities](../core-concepts/identities-and-keys/signing-authorities.md)

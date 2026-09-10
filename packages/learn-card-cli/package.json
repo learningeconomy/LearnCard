@@ -5,13 +5,13 @@
     "main": "dist/index.js",
     "bin": "dist/index.js",
     "scripts": {
-        "start": "bun --conditions=development src/index.tsx",
-        "start:built": "rollup -c && node --enable-source-maps dist/index.js",
-        "dev": "bun --conditions=development src/index.tsx",
-        "build": "rollup -c",
-        "test": "vitest run",
-        "test:watch": "vitest",
-        "test:coverage": "vitest run --coverage"
+        "start": "bun scripts/embed-snippets.ts && bun --conditions=development src/index.tsx",
+        "start:built": "bun run build && node --enable-source-maps dist/index.js",
+        "dev": "bun run start",
+        "build": "bun scripts/embed-snippets.ts && rollup -c",
+        "test": "bun scripts/embed-snippets.ts && vitest run",
+        "test:watch": "bun scripts/embed-snippets.ts && vitest",
+        "test:coverage": "bun scripts/embed-snippets.ts && vitest run --coverage"
     },
     "author": "Learning Economy Foundation (www.learningeconomy.io)",
     "license": "MIT",
