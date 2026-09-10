@@ -1976,7 +1976,8 @@
             "enterForInstant": "Enter your 6-digit PIN for instant recovery.",
             "dontHave": "I don't have a PIN",
             "incorrect": "Incorrect PIN. {{attempts}} attempts left.",
-            "locked": "Too many attempts. You can still recover by waiting 7 days."
+            "locked": "Too many attempts. You can still recover by waiting 7 days.",
+            "throttled": "Too many tries right now. Wait a minute and try again."
         }
     },
     "alerts": {

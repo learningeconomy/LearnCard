@@ -99,6 +99,14 @@ export class EscrowPinMismatchError extends Error {
     }
 }
 
+/** Temporary throttle: retry after cooldown with a fresh hold, never retry /complete. */
+export class EscrowPinThrottledError extends Error {
+    constructor() {
+        super('Too many tries right now. Wait a minute and try again.');
+        this.name = 'EscrowPinThrottledError';
+    }
+}
+
 /** PIN recovery is exhausted; delayed escrow recovery remains available. */
 export class EscrowPinLockedError extends Error {
     constructor() {

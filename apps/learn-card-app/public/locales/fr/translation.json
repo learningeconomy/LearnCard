@@ -1713,6 +1713,9 @@
         }
     },
     "recovery": {
+        "pin": {
+            "throttled": "Trop de tentatives pour le moment. Attendez une minute et réessayez."
+        },
         "error.invalidPhrase": "Ces mots ne correspondent pas à votre phrase de récupération. Vérifiez-les et réessayez.",
         "error.invalidPassword": "Mot de passe incorrect ou le fichier n'a pas pu être lu. Veuillez réessayer.",
         "error.invalidCode": "Ce code est incorrect ou a expiré. Demandez-en un nouveau et réessayez.",

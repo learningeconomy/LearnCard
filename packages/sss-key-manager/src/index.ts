@@ -79,7 +79,7 @@ export type { EscrowEnvelope, EscrowBlobPlaintext, EscrowReleasePlaintext } from
 export { verifyEnclaveAttestation } from './escrow-attestation';
 export type { EscrowAttestationPolicy, EscrowHoldStatus, EscrowRecoveryStart } from './types';
 export type { EscrowEnrollmentOptions, EscrowEnrollmentState, EscrowPinStatus } from './types';
-export { EscrowPinMismatchError, EscrowPinLockedError } from './types';
+export { EscrowPinMismatchError, EscrowPinLockedError, EscrowPinThrottledError } from './types';
 export {
     PIN_MIN_LENGTH,
     PIN_MAX_LENGTH,

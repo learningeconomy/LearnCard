@@ -32,8 +32,13 @@ import type {
     EscrowRecoveryStart,
     EscrowEnrollmentState,
 } from './types';
-import { EscrowPinLockedError, EscrowPinMismatchError } from './types';
-import { validatePin, generatePinSalt, derivePinProof } from './escrow-pin';
+import { EscrowPinLockedError, EscrowPinMismatchError, EscrowPinThrottledError } from './types';
+import {
+    validatePin,
+    generatePinSalt,
+    derivePinProof,
+    ESCROW_PIN_MAX_ATTEMPTS,
+} from './escrow-pin';
 import { encryptEscrowBlob, generateEscrowKeyPair, openEscrowRelease } from './escrow-crypto';
 import { verifyEnclaveAttestation } from './escrow-attestation';
 import type { EmailRelayBranding } from './email-relay-crypto';
@@ -731,7 +736,19 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         });
         // Never propagate response bodies or status text that could contain secrets.
         if (!response.ok) {
-            if (pinAttempt && response.status === 429) throw new EscrowPinLockedError();
+            if (pinAttempt && response.status === 429) {
+                const body: unknown = await response.json().catch(() => undefined);
+                if (
+                    body &&
+                    typeof body === 'object' &&
+                    'message' in body &&
+                    body.message ===
+                        'Too many incorrect PIN attempts. You can still recover by waiting.'
+                ) {
+                    throw new EscrowPinLockedError();
+                }
+                throw new EscrowPinThrottledError();
+            }
             if (pinAttempt && response.status === 403) {
                 const body: unknown = await response.json().catch(() => undefined);
                 if (
@@ -745,7 +762,11 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     const remaining = match ? Number(match[1]) : 0;
                     // Older/malformed responses must not invent remaining guesses; use 0.
                     throw new EscrowPinMismatchError(
-                        Number.isSafeInteger(remaining) ? remaining : 0
+                        Number.isSafeInteger(remaining) &&
+                            remaining >= 0 &&
+                            remaining < ESCROW_PIN_MAX_ATTEMPTS
+                            ? remaining
+                            : 0
                     );
                 }
             }
