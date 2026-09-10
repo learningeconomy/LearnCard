@@ -308,7 +308,10 @@ describe('escrow strategy', () => {
                     cancelled = true;
                     return new Response(
                         JSON.stringify({
-                            message: `Incorrect PIN. ${attemptsRemaining} attempts left.`,
+                            message:
+                                attemptsRemaining <= 0
+                                    ? 'Too many incorrect PIN attempts. You can still recover by waiting.'
+                                    : `Incorrect PIN. ${attemptsRemaining} attempts left.`,
                         }),
                         { status: attemptsRemaining <= 0 ? 429 : 403 }
                     );
@@ -647,19 +650,50 @@ describe('escrow strategy', () => {
         expect(calls.filter(call => call.path === '/keys/escrow/complete')).toHaveLength(1);
     });
 
-    it('uses zero remaining attempts for an unparseable mismatch response', async () => {
+    it('maps IP throttling to a retryable error and uses a fresh hold on the next call', async () => {
+        await strategy.setEscrowPin!({ ...params, pin: '135790' });
+        const original = vi.mocked(fetch).getMockImplementation()!;
+        const completeIds: string[] = [];
+        vi.mocked(fetch).mockImplementation((url, init) => {
+            if (String(url).endsWith('/complete')) {
+                completeIds.push(JSON.parse(String(init?.body)).holdId);
+                return Promise.resolve(
+                    new Response(
+                        JSON.stringify({
+                            message: 'Please wait before trying again.',
+                        }),
+                        { status: 429 }
+                    )
+                );
+            }
+            return original(url, init);
+        });
+        await expect(recoverPin()).rejects.toMatchObject({ name: 'EscrowPinThrottledError' });
+        expect(completeIds).toHaveLength(1);
+        await expect(recoverPin()).rejects.toMatchObject({ name: 'EscrowPinThrottledError' });
+        expect(completeIds).toEqual(['escrow-hold', 'escrow-hold-2']);
+    });
+
+    it.each([
+        ['Incorrect PIN.', 0],
+        ['Incorrect PIN. nope attempts left.', 0],
+        ['Incorrect PIN. 9007199254740992 attempts left.', 0],
+        ['Incorrect PIN. 10 attempts left.', 0],
+        ['Incorrect PIN. -1 attempts left.', 0],
+        ['Incorrect PIN. 1.5 attempts left.', 0],
+        ['Incorrect PIN. 9 attempts left.', 9],
+        ['Incorrect PIN. 0 attempts left.', 0],
+    ])('bounds remaining attempts in %s', async (message, expected) => {
         await strategy.setEscrowPin!({ ...params, pin: '135790' });
         const original = vi.mocked(fetch).getMockImplementation()!;
         vi.mocked(fetch).mockImplementation((url, init) =>
             String(url).endsWith('/complete')
-                ? Promise.resolve(
-                      new Response(JSON.stringify({ message: 'Incorrect PIN.' }), { status: 403 })
-                  )
+                ? Promise.resolve(new Response(JSON.stringify({ message }), { status: 403 }))
                 : original(url, init)
         );
         await expect(recoverPin()).rejects.toMatchObject({
             name: 'EscrowPinMismatchError',
-            attemptsRemaining: 0,
+            attemptsRemaining: expected,
         });
     });
 
