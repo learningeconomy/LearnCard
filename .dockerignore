@@ -92,6 +92,7 @@ examples
 **/__tests__
 **/playwright-report
 **/test-results
+e2e-artifacts/
 
 # Native build artifacts
 **/*.node
