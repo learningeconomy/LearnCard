@@ -1729,6 +1729,10 @@
                 "title": "This session ends when you close the tab",
                 "body": "Set up a way to sign back in, or you'll lose access to your account."
             },
+            "activation": {
+                "title": "Finish securing your account",
+                "body": "Your account upgrade isn't complete until you add a way to sign back in."
+            },
             "success": {
                 "title": "You're covered",
                 "body": "You can sign back in from any device."

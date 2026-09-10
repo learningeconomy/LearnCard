@@ -1729,6 +1729,10 @@
                 "title": "Cette session se termine lorsque vous fermez l’onglet",
                 "body": "Configurez un moyen de vous reconnecter, sinon vous perdrez l’accès à votre compte."
             },
+            "activation": {
+                "title": "Terminez la sécurisation de votre compte",
+                "body": "La mise à niveau de votre compte ne sera terminée que lorsque vous aurez ajouté un moyen de vous reconnecter."
+            },
             "success": {
                 "title": "Votre compte est protégé",
                 "body": "Vous pouvez vous reconnecter depuis n’importe quel appareil."

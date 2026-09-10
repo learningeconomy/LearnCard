@@ -132,6 +132,7 @@ export type DashboardHeroSlot = 'getStarted' | 'goal';
 export type DashboardRecoveryPromptViewModel = {
     recoverySupported: boolean;
     recoveryMethodCount: number | null;
+    activationPending: boolean;
     totalCredentialCount: number;
     onSetup: (options: {
         initialMethod: RecoverySetupType;

@@ -67,8 +67,6 @@ const mockRelayAcceptance = () =>
 beforeAll(async () => {
     process.env.IS_E2E_TEST = 'true';
     process.env.SEED ||= 'a'.repeat(64);
-    process.env.ESCROW_RELAY_URL = 'https://escrow-relay.example';
-    process.env.ESCROW_RELAY_AUTH_TOKEN = 'relay-auth-token';
     await client.connect();
     await createUserKeysIndexes();
 });
@@ -283,7 +281,7 @@ describe('P0-2 two-phase recovery enrollment', () => {
                 email: recoveryEmail,
             });
             const relayCall = relaySpy.mock.calls.find(
-                ([input]) => input === `${process.env.ESCROW_RELAY_URL}/email-backup`
+                ([input]) => input === 'https://escrow-relay.example/email-backup'
             );
             const relayRequest = relayCall?.[1];
 

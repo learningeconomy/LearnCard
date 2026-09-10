@@ -35,9 +35,9 @@ interface RecoverySetupModalProps {
     onConfirmEmailRecovery: (code: string) => Promise<void>;
     existingMethods: { type: string; createdAt: string }[];
     maskedRecoveryEmail?: string | null;
+    isActivationPending?: boolean;
     initialMethod?: RecoverySetupType;
     onCompleted?: (method: RecoverySetupType) => void;
-    isActivationPending?: boolean;
     onClose: () => void;
 }
 
@@ -53,9 +53,9 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     onConfirmEmailRecovery,
     existingMethods,
     maskedRecoveryEmail,
+    isActivationPending = false,
     initialMethod,
     onCompleted,
-    isActivationPending = false,
     onClose,
 }) => {
     const webAuthnSupported = isWebAuthnSupported();
@@ -176,7 +176,6 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
 
         try {
             await onConfirmPhrase(phraseChallengeWords);
-            setPhraseConfirmed(true);
             markConfigured('phrase');
             setRecoveryPhrase(null);
             setPhraseChallengeStarted(false);
@@ -271,8 +270,6 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             markConfigured('backup');
             setSuccess(m['recovery.success.backupSaved']());
             setBackupVerificationPassword('');
-            setBackupPassword('');
-            setConfirmBackupPassword('');
             setShowUpdateForm(false);
             onCompleted?.('backup');
         } catch (e) {

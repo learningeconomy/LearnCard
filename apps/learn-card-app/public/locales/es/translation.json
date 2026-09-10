@@ -1729,6 +1729,10 @@
                 "title": "Esta sesión termina cuando cierres la pestaña",
                 "body": "Configura una forma de volver a iniciar sesión o perderás el acceso a tu cuenta."
             },
+            "activation": {
+                "title": "Termina de proteger tu cuenta",
+                "body": "La actualización de tu cuenta no estará completa hasta que agregues una forma de volver a iniciar sesión."
+            },
             "success": {
                 "title": "Tu cuenta está protegida",
                 "body": "Puedes volver a iniciar sesión desde cualquier dispositivo."
