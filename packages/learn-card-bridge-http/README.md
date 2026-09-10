@@ -15,10 +15,10 @@ https://docs.learncard.com
 
 ## Install
 
--   Clone this repo
--   Set up AWS CLI
--   Add a .env file exporting a wallet seed (e.g. `WALLET_SEED=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`)
--   Run `bun run serverless-deploy`
+- Clone this repo
+- Set up AWS CLI
+- Add a .env file exporting a wallet seed (e.g. `WALLET_SEED=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`)
+- Run `bun run serverless-deploy`
 
 ## Local VC-API conformance testing
 
@@ -34,8 +34,12 @@ bun --cwd ../../../../packages/plugins/didkit run build
 
 Stop and restart any running bridge after rebuilding; it loads the DIDKit WASM during
 initialization.
-When intentionally rebuilding DIDKit, review the new binary and update
-`EXPECTED_DIDKIT_SHA256` in `scripts/sync-didkit.ts`. To test an unreviewed local artifact
+When intentionally rebuilding DIDKit, review the new binary and run
+`bun scripts/sync-didkit.ts --update-integrity` from this package. Commit the updated
+`EXPECTED_DIDKIT_SHA256` guard together with the plugin artifact. The repository's
+`build-wasm-from-submodules.sh` helper does this explicitly after generation, and the
+WASM update automation includes the guard and artifacts in its PR. Ordinary builds only verify
+the pin; they never update it. To test an unreviewed local artifact
 without changing that pin, set `LOCAL_DIDKIT_PATH` as described below.
 
 Start the LearnCard HTTP bridge in the first terminal:

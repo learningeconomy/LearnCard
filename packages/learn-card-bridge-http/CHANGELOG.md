@@ -1,5 +1,11 @@
 # @learncard/create-http-bridge
 
+## 1.1.253
+
+### Patch Changes
+
+- [#1560](https://github.com/learningeconomy/LearnCard/pull/1560) [`ee6a8ec1693fbfc08818f6d71456734318aaafcc`](https://github.com/learningeconomy/LearnCard/commit/ee6a8ec1693fbfc08818f6d71456734318aaafcc) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Synchronize the bundled DIDKit WASM with the current plugin artifact and restore checksum-verified bridge builds. Intentional WASM updates now refresh the integrity pin and bridge copy together; ordinary builds continue to reject unexpected artifact changes.
+
 ## 1.1.252
 
 ### Patch Changes
