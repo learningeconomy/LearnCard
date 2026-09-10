@@ -1,4 +1,5 @@
-import { createAdaptiveStorage, isPublicComputerMode } from '@learncard/sss-key-manager';
+import { isPublicComputerMode } from '@learncard/sss-key-manager';
+import { createDeviceShareStorage } from 'learn-card-base/security/deviceShareStorage';
 import { z } from 'zod';
 
 export interface PendingEscrowRecovery {
@@ -9,7 +10,7 @@ export interface PendingEscrowRecovery {
 }
 
 const KEY = 'escrow-recovery-pending';
-const storage = createAdaptiveStorage();
+const storage = createDeviceShareStorage();
 
 /** A week-long request requires durable storage and cross-tab write coordination. */
 export const isEscrowRecoveryStorageAvailable = (): boolean =>
@@ -35,7 +36,7 @@ const loadRequests = async () => {
     return z.array(storedRequestSchema).parse(Array.isArray(value) ? value : [value]);
 };
 
-/** Uses SSS encrypted IndexedDB storage; new requests are disabled on public computers. */
+/** Uses the SSS device-share storage (encrypted SQLite on native, encrypted IndexedDB on web); new requests are disabled on public computers. */
 export const loadPendingEscrowRecovery = async (
     scope = 'default'
 ): Promise<PendingEscrowRecovery | undefined> => {
@@ -76,4 +77,14 @@ export const clearPendingEscrowRecovery = async (
         if (remaining.length) await storage.storeDeviceShare(JSON.stringify(remaining), KEY);
         else await storage.clearAllShares(KEY);
     });
+};
+
+/** Forget-device path: best-effort wipe of every pending request on this device. */
+export const clearAllPendingEscrowRecovery = async (): Promise<void> => {
+    const wipe = () => storage.clearAllShares(KEY);
+    if (typeof navigator !== 'undefined' && navigator.locks) {
+        await navigator.locks.request(KEY, wipe);
+    } else {
+        await wipe();
+    }
 };
