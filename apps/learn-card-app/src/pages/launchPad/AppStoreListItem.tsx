@@ -7,6 +7,7 @@ import { ThreeDotVertical } from '@learncard/react';
 import useTheme from '../../theme/hooks/useTheme';
 import { ColorSetEnum } from '../../theme/colors';
 import useAppLaunch from './useAppLaunch';
+import * as m from '../../paraglide/messages.js';
 
 type AppStoreListItemProps = {
     listing: AppStoreListing | InstalledApp;
@@ -85,7 +86,7 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
                         ) : isInstalled || installedAt || launchConfig.skipInstallation ? (
                             <>
                                 <button onClick={handleLaunch} className={connectedButtonClass}>
-                                    Open
+                                    {m['common.open']()}
                                 </button>
 
                                 <button
@@ -108,7 +109,7 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
                                 }}
                                 className={buttonClass}
                             >
-                                Get
+                                {m['launchpad.appCard.get']()}
                             </button>
                         )}
                     </div>

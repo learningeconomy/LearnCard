@@ -56,7 +56,7 @@ type ChildInviteModalProps = {
 const COUNTRIES: Record<string, string> = countries as Record<string, string>;
 
 const StateValidator = z.object({
-    name: z.string().min(1, 'Name is required!'),
+    name: z.string().min(1, m['arabicFixes.nameRequired']()),
     dob: z
         .string()
         .min(1, 'Date of birth is required!')

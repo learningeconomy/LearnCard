@@ -24,6 +24,7 @@ import {
     LearnCardRoles,
 } from '../../../components/onboarding/onboarding.helpers';
 import LaunchPadRoleSelector from '../../launchPad/LaunchPadHeader/LaunchPadRoleSelector';
+import { getRoleTitle } from '../../../components/onboarding/onboardingRoles/onboardingRolesI18n';
 
 import * as m from '../../../paraglide/messages.js';
 
@@ -63,9 +64,7 @@ const DashboardRoleSwitcher: React.FC = () => {
         isChildProfile ? LearnCardRolesEnum.learner : role ?? LearnCardRolesEnum.learner
     ) as LearnCardRolesEnum;
 
-    const roleLabel =
-        LearnCardRoles.find(r => r.type === activeRole)?.title ??
-        m['onboarding.role.learner.title']();
+    const roleLabel = getRoleTitle(activeRole);
 
     const handleRoleChange = async (newRole: LearnCardRolesEnum) => {
         if (newRole === activeRole) return;
@@ -99,9 +98,7 @@ const DashboardRoleSwitcher: React.FC = () => {
             log.error('Failed to refresh profile cache after role change', e);
         }
 
-        const newRoleTitle =
-            LearnCardRoles.find(r => r.type === newRole)?.title ??
-            m['onboarding.role.learner.title']();
+        const newRoleTitle = getRoleTitle(newRole);
         presentToast(m['toasts.launchpad.nowRole']({ role: newRoleTitle }), {
             title: m['launchpad.modal.roleUpdated'](),
             type: ToastTypeEnum.Success,
@@ -172,12 +169,14 @@ const DashboardRoleSwitcher: React.FC = () => {
                                             <img
                                                 src={roleIcons[roleItem.type]}
                                                 alt={m['dashboard.roleSwitcher.iconAlt']({
-                                                    role: roleItem.title,
+                                                    role: getRoleTitle(roleItem.type),
                                                 })}
                                                 className="h-[20px] w-[20px] object-contain"
                                             />
                                         </span>
-                                        <span className="flex-1 text-left">{roleItem.title}</span>
+                                        <span className="flex-1 text-left">
+                                            {getRoleTitle(roleItem.type)}
+                                        </span>
                                         {isSelected && (
                                             <Checkmark className="w-[15px] h-[15px] text-[#2A2F55]" />
                                         )}

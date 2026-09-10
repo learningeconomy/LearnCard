@@ -1,6 +1,7 @@
 import React from 'react';
 import { ConsentFlowTerm } from '@learncard/types';
 import { IonRippleEffect } from '@ionic/react';
+import * as m from '../../paraglide/messages.js';
 
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
 
@@ -48,7 +49,11 @@ const ConsentFlowVerifiableDataSharingItem: React.FC<ConsentFlowVerifiableDataSh
         return 'liveSync' as const;
     })();
 
-    const currentLabel = isLiveSync ? 'Live Sync' : isShareOnce ? 'Share Once' : 'Deny';
+    const currentLabel = isLiveSync
+        ? m['consentFlow.sync.liveSyncing']()
+        : isShareOnce
+        ? m['arabicFixes.shareOnce']()
+        : m['consentFlow.deny']();
 
     const handleRowClick = () => {
         onModeChange(nextMode);
@@ -90,7 +95,7 @@ const ConsentFlowVerifiableDataSharingItem: React.FC<ConsentFlowVerifiableDataSh
 
                             {required && (
                                 <span className="text-[14px] text-grayscale-600 text-left self-start">
-                                    Required
+                                    {m['arabicFixes.required']()}
                                 </span>
                             )}
 

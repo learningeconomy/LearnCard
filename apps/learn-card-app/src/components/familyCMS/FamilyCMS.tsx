@@ -63,7 +63,7 @@ import { LearnCardRolesEnum } from '../onboarding/onboarding.helpers';
 import * as m from '../../paraglide/messages.js';
 
 const StateValidator = z.object({
-    name: z.string().min(1, 'Name is required!'),
+    name: z.string().min(1, m['arabicFixes.nameRequired']()),
     description: z.string().min(1, 'Description is required!'),
 });
 

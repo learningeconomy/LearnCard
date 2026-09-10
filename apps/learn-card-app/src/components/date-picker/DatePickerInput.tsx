@@ -162,7 +162,7 @@ const DatePickerInput: React.FC<DatePickerInputProps> = ({
             />
             <Calendar
                 aria-hidden="true"
-                className={`pointer-events-none absolute right-[16px] top-[50%] -translate-y-1/2 text-grayscale-700 w-[24px] ${
+                className={`pointer-events-none absolute end-[16px] top-[50%] -translate-y-1/2 text-grayscale-700 w-[24px] ${
                     disabled ? 'opacity-50' : ''
                 }`}
             />

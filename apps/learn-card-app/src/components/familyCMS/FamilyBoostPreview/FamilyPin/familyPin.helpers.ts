@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import * as m from '../../../../paraglide/messages.js';
 
 export const pinValidator = z.object({
     pin: z.array(z.string()).length(5, 'Pin requires 5 digits'),
@@ -10,7 +11,7 @@ export const confirmPinValidator = z
         confirmPin: z.array(z.string()).length(5, ' '),
     })
     .refine(data => data.pin.join('') === data.confirmPin.join(''), {
-        message: 'Pin must match',
+        message: m['arabicFixes.pinMustMatch'](),
         path: ['confirmPin'],
     });
 

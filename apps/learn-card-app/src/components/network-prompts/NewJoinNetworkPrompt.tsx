@@ -40,7 +40,7 @@ import useTheme from '../../theme/hooks/useTheme';
 const StateValidator = z.object({
     name: z
         .string()
-        .nonempty(' Name is required.')
+        .nonempty(m['arabicFixes.nameRequired']())
         .min(3, ' Must contain at least 3 character(s).')
         .max(30, ' Must contain at most 30 character(s).')
         .regex(/^[A-Za-z0-9 ]+$/, ' Alpha numeric characters(s) only'),

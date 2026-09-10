@@ -45,7 +45,7 @@ import { LCNProfile } from '@learncard/types';
 const NameValidator = z.object({
     name: z
         .string()
-        .nonempty('Name is required.')
+        .nonempty(m['arabicFixes.nameRequired']())
         .min(3, 'Must contain at least 3 characters.')
         .max(30, 'Must contain at most 30 characters.')
         .regex(/^[A-Za-z0-9 ]+$/, 'Alpha numeric characters only'),

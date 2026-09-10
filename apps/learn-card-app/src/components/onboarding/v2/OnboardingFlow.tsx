@@ -38,6 +38,7 @@ import { generateEd25519PrivateKey } from '@learncard/sss-key-manager';
 import { getSigningLearnCard } from 'learn-card-base/helpers/walletHelpers';
 
 import { LearnCardRolesEnum, LearnCardRoles } from '../onboarding.helpers';
+import { getRoleTitle } from '../onboardingRoles/onboardingRolesI18n';
 import { isEUCountry, requiresEUParentalConsent } from '../onboardingNetworkForm/helpers/gdpr';
 import { getDefaultPrivacyPreferences, OnboardingPrivacyPreferences } from '../privacyPreferences';
 import { ProfileIDStateValidator } from '../onboardingNetworkForm/helpers/validators';
@@ -1336,7 +1337,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                             : 'bg-grayscale-100 border border-grayscale-200 text-grayscale-700 hover:bg-grayscale-200'
                                     }`}
                                 >
-                                    {r.title}
+                                    {getRoleTitle(r.type)}
                                 </button>
                             ))}
                         </div>
