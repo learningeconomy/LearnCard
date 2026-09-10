@@ -14,23 +14,42 @@ bun add @learncard/sss-key-manager
 
 ## Overview
 
-This package provides the `KeyDerivationStrategy` implementation used by the [AuthCoordinator](../core-concepts/architecture-and-principles/auth-coordinator.md). It handles:
+This package provides the `KeyDerivationStrategy` implementation used by the `AuthCoordinator` in `packages/learn-card-base`. It handles:
 
--   **Key splitting and reconstruction** using a 2-of-3 Shamir threshold scheme
--   **Local device share storage** in IndexedDB with versioning
--   **Server communication** for storing and retrieving auth shares
--   **Recovery methods** — passkey (WebAuthn PRF), recovery phrase, backup file, email backup
--   **Cross-device login** via QR code with ephemeral ECDH encryption
--   **Migration** from Web3Auth to SSS
+- **Key splitting and reconstruction** using a 2-of-4 Shamir threshold scheme
+- **Local device share storage** in IndexedDB with versioning
+- **Server communication** for storing and retrieving auth shares
+- **Recovery methods** — passkey (WebAuthn PRF), recovery phrase, backup file, email backup
+- **Cross-device login** via QR code with ephemeral ECDH encryption
+- **Migration** from Web3Auth to SSS
+
+## Four shares
+
+`SSS_TOTAL_SHARES = 4` and `SSS_THRESHOLD = 2`: any two shares reconstruct the private key, while one share alone reveals nothing about it.
+
+| Share          | Where it lives                                                                     | Purpose                            |
+| -------------- | ---------------------------------------------------------------------------------- | ---------------------------------- |
+| Device share   | Local IndexedDB                                                                    | Same-device sign-in                |
+| Auth share     | LearnCard API server, encrypted at rest                                            | Authenticated sign-in and recovery |
+| Recovery share | Passkey-protected server record, offline phrase, or password-encrypted backup file | User-controlled recovery           |
+| Email share    | Recovery email backup, encrypted before delivery                                   | Optional additional recovery path  |
+
+Passkeys protect the recovery share using a key derived from WebAuthn PRF output. A recovery phrase encodes the share as a mnemonic; a backup file encrypts it using Argon2id password derivation and AES-GCM, with its salt and KDF parameters stored in the file.
+
+### Server-side encryption
+
+The `lca-api` service derives an AES-256-GCM key from its server `SEED` using HKDF-SHA256, with salt `lca-auth-share-encryption` and info `v1`. Each auth-share encryption uses a fresh 12-byte IV; the stored ciphertext includes the 16-byte authentication tag.
+
+This implementation encrypts the share directly with the derived key. It does **not** generate a per-share Data Encryption Key (DEK) wrapped by a separate Key Encryption Key (KEK): the `encryptedDek` field holds the format marker `server-v1`, not a wrapped DEK. Password backup encryption and server auth-share encryption are separate mechanisms.
 
 ## Architecture
 
 ```
 sss-key-manager/
-├── sss.ts                  # Shamir split (2-of-3) and reconstruct primitives
+├── sss.ts                  # Shamir split (2-of-4) and reconstruct primitives
 ├── sss-strategy.ts         # KeyDerivationStrategy implementation
 ├── storage.ts              # IndexedDB device share persistence
-├── crypto.ts               # AES-GCM encryption, PBKDF2 key derivation
+├── crypto.ts               # AES-GCM encryption, Argon2id key derivation
 ├── passkey.ts              # WebAuthn PRF-based share encryption
 ├── recovery-phrase.ts      # BIP39-style mnemonic ↔ share encoding
 ├── qr-crypto.ts            # ECDH ephemeral key exchange
@@ -63,9 +82,9 @@ Describes how well-protected a user's key is:
 type SecurityLevel = 'basic' | 'enhanced' | 'advanced';
 ```
 
--   **basic** — device + server share only (no recovery method)
--   **enhanced** — at least one recovery method configured
--   **advanced** — multiple recovery methods configured
+- **basic** — device + server share only (no recovery method)
+- **enhanced** — at least one recovery method configured
+- **advanced** — multiple recovery methods configured
 
 ### RecoveryInput
 

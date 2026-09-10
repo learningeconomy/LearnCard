@@ -1,104 +1,87 @@
-# Writing Consented Data
+# Reading & Writing Consented Data
 
-Understand how, after consent is given, new credentials or data can be provided to a user or recorded about them by authorized parties (like contract owners or automated systems). This covers the rules and methods for data delivery based on established consent.
+A [contract](consentflow-overview.md#contracts) defines requested access; a user's [terms](consentflow-overview.md#terms-what-the-user-actually-agreed-to) define what they granted. Reading shares existing data with a contract owner. Writing delivers a credential to a consenting user. Neither grants unrestricted access to the user's account.
 
-## The `send` Method with Contract Integration (Recommended)
+All methods below are called through `learnCard.invoke`. For a runnable implementation, including verified identity from the consent redirect, follow [Build a ConsentFlow](../../tutorials/create-a-consentflow.md).
 
-The simplest way to write credentials while respecting consent flows is using the `send` method with a `contractUri`. This method automatically routes through consent terms when the recipient has consented.
+## Reading
 
-```typescript
-const result = await learnCard.invoke.send({
-    type: 'boost',
-    recipient: 'recipient-profile-id',
-    templateUri: 'urn:lc:boost:abc123',
-    contractUri: 'urn:lc:contract:xyz789', // Optional: routes via consent if applicable
-});
-```
+### One user: the safe default
 
-When you provide a `contractUri`:
+For user-facing features, use `getConsentFlowDataForDid(did, options?)` rather than searching an aggregate result for a person.
 
-1. **Automatic routing**: If the recipient has consented to the contract, the credential routes through the consent flow
-2. **Boost-contract relationship**: When creating a new boost on-the-fly, a `RELATED_TO` relationship is established between the boost and the contract
-3. **Permission verification**: The system verifies you have permission to write in the credential's category
+1. Establish the user's identity from a verified source, not an untrusted redirect parameter.
+2. Resolve their network profile and call `verifyConsent(contractUri, profileId)` before reading or using cached data. If it returns false or the check fails, deny access.
+3. Fetch that user's data and retain only records whose `contractUri` equals the intended contract URI.
+4. Repeat the filter for every page. Do not mix records from other contracts into the current app session.
 
-{% hint style="success" %}
-**Fallback behavior**: If the recipient hasn't consented to the contract, the credential is still sent normally—the contract integration is additive, not blocking.
+Each record contains:
+
+| Field         | Meaning                                    |
+| ------------- | ------------------------------------------ |
+| `contractUri` | Contract under which the data was shared   |
+| `personal`    | Map of shared field names to string values |
+| `credentials` | Array of `{ category, uri }` entries       |
+| `date`        | Record date                                |
+
+The optional `query` filters credential categories, personal fields, or contract `id`. The response's `contractUri` is still the explicit boundary to check. Credential URIs are references, not full credential payloads; retrieve authorized content with `learnCard.read.get(uri)`.
+
+{% hint style="warning" %}
+Record presence is not proof of active consent. The current per-user query can return withdrawn terms. Always gate access with `verifyConsent`, including before reusing cached results.
 {% endhint %}
 
-For more details on the `send` method, see the [Send Credentials How-To Guide](../../how-to-guides/send-credentials.md).
+### Aggregate data
 
----
+`getConsentFlowData(contractUri, options?)` reads data across all consenters to a contract the caller owns. Its records contain `personal`, `credentials.categories` (category-to-URI-array map), and `date`—**no identity field**. Do not use record order or personal fields to infer which record belongs to a signed-in user.
 
-## Writing Credentials to Contracts (Direct) <a href="#writing-credentials-to-contracts" id="writing-credentials-to-contracts"></a>
+`getAllConsentFlowData(query?, options?)` reads across the caller's contracts and returns the same aggregate record shape. Unlike the other read methods, its query is the **first argument**, separate from pagination options.
 
-For more granular control, contract owners can write credentials directly to profiles that have consented using:
+These methods support credential-category and personal-field filters; aggregate queries also support `anonymize`. They are not substitutes for a per-user consent check. For any operation tied to a person, use the guarded per-user path above; an aggregate row cannot supply the `profileId` needed by `verifyConsent`.
 
--   `writeCredentialToContract`: Direct credential writing
--   `writeCredentialToContractViaSigningAuthority`: Using a signing authority
+### Pagination
 
-```mermaid
-sequenceDiagram
-    participant Owner as Contract Owner
-    participant API as LearnCloud Network API
-    participant Consenter as Contract Consenter
+Read methods return `{ records, hasMore, cursor }`:
 
-    alt Direct credential writing
-        Owner->>API: writeCredentialToContract
-        Note right of Owner: Includes did, contractUri, boostUri, credential
-    else Via signing authority
-        Owner->>API: writeCredentialToContractViaSigningAuthority
-        Note right of Owner: Includes did, contractUri, boostUri, signingAuthority
-    end
+- Set `limit` in the options to bound each request.
+- When `hasMore` is true, pass the returned `cursor` in the next request's options.
+- Preserve the same query and contract filter across pages.
+- Stop when `hasMore` is false. Treat the cursor as a continuation token, not a date-range filter.
 
-    API->>API: Verify consent
-    API->>API: Verify boost permissions
-    API->>API: Verify category permissions
+## Writing
 
-    opt Via signing authority
-        API->>API: Issue credential using signing authority
-    end
+### Delivering a credential
 
-    API->>API: Send boost with credential
-    API->>API: Record write transaction
-    API-->>Owner: Return credential URI
-```
+`writeCredentialToContract(did, contractUri, credential, boostUri)` returns a credential URI. The credential must be a signed Verifiable Credential or an encrypted JWE, and `boostUri` must identify a real, published boost.
 
-The system verifies:
+Writing requires:
 
-1. The recipient has consented to the contract
-2. The contract owner has permission to issue the boost
-3. The contract terms allow writing in the boost's category
+- Active consent for the recipient and contract; check `verifyConsent` before starting.
+- Permission for the sender to issue the boost.
+- An approved contract writer who is not denied by the user's terms.
+- Write permission in the terms for the boost's category, such as `write.credentials.categories.Achievement: true`.
 
-## Credential Syncing <a href="#credential-syncing" id="credential-syncing"></a>
+The network checks permissions during the write and records a `write` transaction. A prior successful check does not guarantee a later write will succeed: terms can change between requests. Handle rejection without falling back to a delivery path that bypasses consent.
 
-Consented users can sync their existing credentials to a contract using `syncCredentialsToContract`.
+### Sharing existing credentials
 
-```mermaid
-sequenceDiagram
-    participant Consenter as Contract Consenter
-    participant API as LearnCloud Network API
-    participant Owner as Contract Owner
+The consenting user calls `syncCredentialsToContract(termsUri, categories)`, where `categories` is a `Record<string, string[]>` mapping contract read-category names to credential URIs. This shares existing credentials; it does not issue new ones.
 
-    Consenter->>API: syncCredentialsToContract
-    Note right of Consenter: Includes termsUri and credentials by category
+The terms must belong to the caller, remain live, and not be expired. Categories must exist in the contract's read definition. Sync adds and deduplicates URIs in the shared arrays, records a `sync` transaction, and returns a boolean.
 
-    API->>API: Verify terms ownership
-    API->>API: Update terms with synced credentials
-    API->>API: Create sync transaction
-    API->>Owner: Notify of synced credentials
-    API-->>Consenter: Return success
-```
+### The send convenience method
 
-Credential syncing allows:
+`send()` supports a **top-level** `contractUri` alongside `type: 'boost'`, `recipient`, and the template or signed credential. `SendOptionsValidator` has **no** `contractUri` field: do not put it inside `options`.
 
-1. Sharing existing credentials with contract owners
-2. Organizing credentials by categories defined in the contract
-3. Controlling exactly which credentials are shared
+Contract integration routes a consenting recipient through the contract, but `send()` can fall back to normal delivery when consent is absent. It is therefore not a consent gate. For workflows that must stop without consent, use the guarded direct write rather than relying on `send()` alone. See [Send Credentials](../../how-to-guides/send-credentials.md).
 
-The sync process:
+## Withdrawal
 
-1. Verify the terms exist and belong to the requesting user
-2. Ensure terms are still live (not withdrawn or expired)
-3. Update the terms by adding the synced credentials to the shared arrays
-4. Create a 'sync' transaction with the categorized credentials
-5. Notify the contract owner
+The user calls `withdrawConsent(termsUri)`, not `withdrawConsent(contractUri)`. Withdrawal is recorded in the [transaction history](consentflow-overview.md#transactions-the-audit-trail).
+
+- `verifyConsent(contractUri, profileId)` returns false after withdrawal.
+- Guarded reads must stop, even if an underlying query still returns a stored record.
+- Contract writes and credential syncing are no longer authorized by those terms.
+- Stop queued issuance and invalidate cached data before reuse. Delete retained copies according to your data-retention obligations; withdrawal cannot erase copies already exported to your system.
+- Previously issued credentials are not automatically revoked by withdrawing consent. Normal delivery outside this contract is separate, which is why the `send()` fallback must not be used to bypass a failed consent check.
+
+The [Build tutorial's withdrawal step](../../tutorials/create-a-consentflow.md#6-handle-withdrawal) demonstrates a cache that fails closed when active consent cannot be confirmed.

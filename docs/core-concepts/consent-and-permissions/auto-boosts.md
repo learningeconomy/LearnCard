@@ -12,7 +12,7 @@ sequenceDiagram
     participant API as LearnCloud Network API
     participant Consenter as Contract Consenter
 
-    Creator->>API: createConsentFlowContract with autoboosts
+    Creator->>API: createContract with autoboosts
     Note right of Creator: Includes boostUri and signingAuthority
 
     Consenter->>API: consentToContract
@@ -32,16 +32,16 @@ Auto-boosts are configured when creating a contract:
 
 ```typescript
 {
-  // other contract fields
-  autoboosts: [
-    {
-      boostUri: 'boost:123',
-      signingAuthority: {
-        endpoint: 'https://signing-authority.example.com',
-        name: 'my-authority'
-      }
-    }
-  ]
+    // other contract fields
+    autoboosts: [
+        {
+            boostUri: 'boost:123',
+            signingAuthority: {
+                endpoint: 'https://signing-authority.example.com',
+                name: 'my-authority',
+            },
+        },
+    ];
 }
 ```
 

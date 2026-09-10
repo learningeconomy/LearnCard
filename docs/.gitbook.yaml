@@ -30,11 +30,11 @@ redirects:
     # --- Pages removed or merged (content retired; nearest replacement) ---
     apps/learn-card-app/resume-builder-ler-rs-mapping: apps/learn-card-app/README.md
     core-concepts/architecture-and-principles/u.s.-state-api: sdks/learncard-network/README.md
-    core-concepts/credentials-and-data/general-best-practices-and-troubleshooting: core-concepts/credentials-and-data/README.md
-    core-concepts/network-and-interactions/core-interaction-workflows: core-concepts/network-and-interactions/network-architecture.md
-    core-concepts/network-and-interactions/credential-activity: core-concepts/network-and-interactions/README.md
-    core-concepts/network-and-interactions/key-network-procedures: core-concepts/network-and-interactions/network-architecture.md
-    core-concepts/network-and-interactions/network-vision-and-principles: core-concepts/network-and-interactions/network-architecture.md
+    core-concepts/credentials-and-data/general-best-practices-and-troubleshooting: core-concepts/credentials-and-data/building-verifiable-credentials.md
+    core-concepts/network-and-interactions/core-interaction-workflows: introduction/ecosystem-architecture.md
+    core-concepts/network-and-interactions/credential-activity: core-concepts/network-and-interactions/universal-inbox.md
+    core-concepts/network-and-interactions/key-network-procedures: introduction/ecosystem-architecture.md
+    core-concepts/network-and-interactions/network-vision-and-principles: introduction/ecosystem-architecture.md
     core-concepts/tenant-branded-emails: apps/README.md
     how-to-guides/implement-flows: tutorials/create-a-consentflow.md
     how-to-guides/implement-flows/chapi: introduction/interoperability.md
@@ -52,43 +52,43 @@ redirects:
     apps/learn-card-app/analytics: apps/learn-card-app/README.md
     apps/scouts: apps/scouts/README.md
     apps/scouts/credential-revocation: core-concepts/credentials-and-data/credential-status-and-bitstring-status-lists.md
-    core-concepts/architecture-and-principles: core-concepts/architecture-and-principles/README.md
-    core-concepts/architecture-and-principles/auth-coordinator: core-concepts/architecture-and-principles/auth-coordinator.md
+    core-concepts/architecture-and-principles: introduction/ecosystem-architecture.md
+    core-concepts/architecture-and-principles/auth-coordinator: sdks/sss-key-manager.md
     core-concepts/architecture-and-principles/auth-grants-and-api-tokens: core-concepts/architecture-and-principles/auth-grants-and-api-tokens.md
     core-concepts/architecture-and-principles/control-planes: core-concepts/architecture-and-principles/control-planes.md
     core-concepts/architecture-and-principles/plugins: core-concepts/architecture-and-principles/plugins.md
-    core-concepts/consent-and-permissions: core-concepts/consent-and-permissions/README.md
-    core-concepts/consent-and-permissions/accessing-consented-data: core-concepts/consent-and-permissions/accessing-consented-data.md
+    core-concepts/consent-and-permissions: core-concepts/consent-and-permissions/consentflow-overview.md
+    core-concepts/consent-and-permissions/accessing-consented-data: core-concepts/consent-and-permissions/writing-consented-data.md
     core-concepts/consent-and-permissions/auto-boosts: core-concepts/consent-and-permissions/auto-boosts.md
-    core-concepts/consent-and-permissions/consent-contracts: core-concepts/consent-and-permissions/consent-contracts.md
-    core-concepts/consent-and-permissions/consent-transactions: core-concepts/consent-and-permissions/consent-transactions.md
+    core-concepts/consent-and-permissions/consent-contracts: core-concepts/consent-and-permissions/consentflow-overview.md
+    core-concepts/consent-and-permissions/consent-transactions: core-concepts/consent-and-permissions/consentflow-overview.md
     core-concepts/consent-and-permissions/consentflow-overview: core-concepts/consent-and-permissions/consentflow-overview.md
     core-concepts/consent-and-permissions/gameflow-overview: core-concepts/consent-and-permissions/gameflow-overview.md
-    core-concepts/consent-and-permissions/user-consent-and-terms: core-concepts/consent-and-permissions/user-consent-and-terms.md
+    core-concepts/consent-and-permissions/user-consent-and-terms: core-concepts/consent-and-permissions/consentflow-overview.md
     core-concepts/consent-and-permissions/verifiable-data-in-consentflow: core-concepts/consent-and-permissions/verifiable-data-in-consentflow.md
     core-concepts/consent-and-permissions/writing-consented-data: core-concepts/consent-and-permissions/writing-consented-data.md
-    core-concepts/credentials-and-data: core-concepts/credentials-and-data/README.md
+    core-concepts/credentials-and-data: core-concepts/credentials-and-data/verifiable-credentials-vcs.md
     core-concepts/credentials-and-data/achievement-types-and-categories: core-concepts/credentials-and-data/achievement-types-and-categories.md
     core-concepts/credentials-and-data/boost-credentials: core-concepts/credentials-and-data/boost-credentials.md
     core-concepts/credentials-and-data/building-verifiable-credentials: core-concepts/credentials-and-data/building-verifiable-credentials.md
-    core-concepts/credentials-and-data/credential-lifecycle: core-concepts/credentials-and-data/credential-lifecycle.md
+    core-concepts/credentials-and-data/credential-lifecycle: core-concepts/credentials-and-data/verifiable-credentials-vcs.md
     core-concepts/credentials-and-data/credential-status-and-bitstring-status-lists: core-concepts/credentials-and-data/credential-status-and-bitstring-status-lists.md
     core-concepts/credentials-and-data/display-hint-tags: core-concepts/credentials-and-data/display-hint-tags.md
-    core-concepts/credentials-and-data/getting-started-with-boosts: core-concepts/credentials-and-data/getting-started-with-boosts.md
+    core-concepts/credentials-and-data/getting-started-with-boosts: core-concepts/credentials-and-data/boost-credentials.md
     core-concepts/credentials-and-data/uris: core-concepts/credentials-and-data/uris.md
     core-concepts/credentials-and-data/verifiable-credentials-vcs: core-concepts/credentials-and-data/verifiable-credentials-vcs.md
     core-concepts/credentials-and-data/xapi-data: core-concepts/credentials-and-data/xapi-data.md
-    core-concepts/holder-continuity: core-concepts/holder-continuity.md
-    core-concepts/identities-and-keys: core-concepts/identities-and-keys/README.md
-    core-concepts/identities-and-keys/account-recovery: core-concepts/identities-and-keys/account-recovery.md
-    core-concepts/identities-and-keys/cross-device-login: core-concepts/identities-and-keys/cross-device-login.md
+    core-concepts/holder-continuity: core-concepts/architecture-and-principles/holder-continuity.md
+    core-concepts/identities-and-keys: core-concepts/identities-and-keys/decentralized-identifiers-dids.md
+    core-concepts/identities-and-keys/account-recovery: sdks/sss-key-manager.md
+    core-concepts/identities-and-keys/cross-device-login: sdks/sss-key-manager.md
     core-concepts/identities-and-keys/decentralized-identifiers-dids: core-concepts/identities-and-keys/decentralized-identifiers-dids.md
     core-concepts/identities-and-keys/key-management-sss: core-concepts/identities-and-keys/key-management-sss.md
     core-concepts/identities-and-keys/network-profiles: core-concepts/identities-and-keys/network-profiles.md
     core-concepts/identities-and-keys/seed-phrases: core-concepts/identities-and-keys/seed-phrases.md
     core-concepts/identities-and-keys/signing-authorities: core-concepts/identities-and-keys/signing-authorities.md
     core-concepts/identities-and-keys/trust-registries: core-concepts/identities-and-keys/trust-registries.md
-    core-concepts/network-and-interactions: core-concepts/network-and-interactions/README.md
+    core-concepts/network-and-interactions: core-concepts/network-and-interactions/universal-inbox.md
     core-concepts/network-and-interactions/universal-inbox: core-concepts/network-and-interactions/universal-inbox.md
     development/contributing: development/contributing.md
     how-to-guides/connect-systems: introduction/what-do-you-want-to-build.md

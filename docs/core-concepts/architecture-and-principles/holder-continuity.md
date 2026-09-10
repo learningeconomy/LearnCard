@@ -23,13 +23,13 @@ Any two shares can reconstruct the key. One share alone is not useful.
 
 The holder continuity export includes:
 
--   DID key material as encrypted JWKs and the private key seed.
--   A recovery phrase derived from the current SSS recovery share.
--   The primary DID document and locally derivable DID variants.
--   W3C Verifiable Credential and Verifiable Presentation payloads exactly as resolved from the holder's wallet index.
--   Encrypted LearnCloud index metadata, including URI, record ID, category, and title where available.
--   ConsentFlow contracts, terms, statuses, and transaction history returned by the authenticated holder export metadata route.
--   Status-list credential snapshots when the status URL is publicly fetchable during export.
+- DID key material as encrypted JWKs and the private key seed.
+- A recovery phrase derived from the current SSS recovery share.
+- The primary DID document and locally derivable DID variants.
+- W3C Verifiable Credential and Verifiable Presentation payloads exactly as resolved from the holder's wallet index.
+- Encrypted LearnCloud index metadata, including URI, record ID, category, and title where available.
+- ConsentFlow contracts, terms, statuses, and transaction history returned by the authenticated holder export metadata route.
+- Status-list credential snapshots when the status URL is publicly fetchable during export.
 
 The export preserves issuer-signed JSON. It does not normalize proofs or rewrite credential contents.
 
@@ -90,11 +90,11 @@ Restore passes the exported `key-private-seed` to `initLearnCard(...)`. It recre
 
 The exported artifacts are based on public standards and readable formats:
 
--   DIDs and DID Documents are JSON.
--   Verifiable Credentials and Verifiable Presentations are W3C VC/VP JSON payloads.
--   JSON-LD proofs, JWT VCs, and BitstringStatusList or StatusList2021 credentials can be verified by non-LearnCard libraries that support those suites and contexts.
--   Consent records are JSON snapshots with contract terms and transaction history.
--   The outer container is a normal ZIP file; encryption is per-payload JSON, not proprietary ZIP encryption.
+- DIDs and DID Documents are JSON.
+- Verifiable Credentials and Verifiable Presentations are W3C VC/VP JSON payloads.
+- JSON-LD proofs, JWT VCs, and BitstringStatusList or StatusList2021 credentials can be verified by non-LearnCard libraries that support those suites and contexts.
+- Consent records are JSON snapshots with contract terms and transaction history.
+- The outer container is a normal ZIP file; encryption is per-payload JSON, not proprietary ZIP encryption.
 
 If LearnCard services are unavailable, the bundle remains useful for independent verification, audit, and migration work.
 
@@ -102,10 +102,10 @@ If LearnCard services are unavailable, the bundle remains useful for independent
 
 Some LearnCard network behavior is service-specific and cannot be fully reconstructed from holder artifacts alone:
 
--   Boost authoring semantics and issuer-side template management.
--   Claim hooks, notification queues, inbox delivery state, and server-only activity feeds.
--   Network graph edges that are not represented in a credential, consent record, or transaction.
--   LearnCard convenience relationships such as profile recommendations or app-specific UI grouping.
+- Boost authoring semantics and issuer-side template management.
+- Claim hooks, notification queues, inbox delivery state, and server-only activity feeds.
+- Network graph edges that are not represented in a credential, consent record, or transaction.
+- LearnCard convenience relationships such as profile recommendations or app-specific UI grouping.
 
 Some of this can be recreated from credentials and consent records. For example, a credential's issuer, subject, proof, and status fields remain available. Server-only state that was never written into a holder-controlled artifact is not portable.
 
@@ -132,5 +132,5 @@ The table below reflects what each vendor's public docs describe at the time of 
 
 ## Related pages
 
--   [LearnCard CLI](../sdks/learncard-cli.md)
--   [Key Management (SSS)](identities-and-keys/key-management-sss.md)
+- [LearnCard CLI](../../sdks/learncard-cli.md)
+- [Key Management (SSS)](../identities-and-keys/key-management-sss.md)

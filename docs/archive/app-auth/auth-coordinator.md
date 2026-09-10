@@ -2,6 +2,11 @@
 description: The unified state machine for authentication and key derivation
 ---
 
+{% hint style="info" %}
+Archived — describes the LearnCard app's internal sign-in implementation.
+For the library, see [SSS Key Manager](../../sdks/sss-key-manager.md).
+{% endhint %}
+
 # Auth Coordinator
 
 ## What is this section about?
@@ -42,17 +47,17 @@ stateDiagram-v2
 
 ### State Descriptions
 
-| State | Meaning |
-|---|---|
-| `idle` | No user is authenticated. Waiting for sign-in. |
-| `authenticating` | The auth provider has detected a sign-in attempt. Obtaining the auth token. |
-| `authenticated` | Auth token obtained. About to check key status on the server. |
-| `checking_key_status` | Querying the server for the user's key record (via `KeyDerivationStrategy.fetchServerKeyStatus`). |
-| `needs_setup` | No key record exists. The user is new and needs a key generated. |
-| `needs_migration` | A legacy Web3Auth account was detected (account exists but no SSS record). Migration is required. |
-| `needs_recovery` | A key record exists on the server, but no device share is available locally. The user must recover. |
-| `deriving_key` | The key is being reconstructed or generated. Shares are being stored. |
-| `ready` | The private key is available. The app can proceed normally. |
+| State                 | Meaning                                                                                             |
+| --------------------- | --------------------------------------------------------------------------------------------------- |
+| `idle`                | No user is authenticated. Waiting for sign-in.                                                      |
+| `authenticating`      | The auth provider has detected a sign-in attempt. Obtaining the auth token.                         |
+| `authenticated`       | Auth token obtained. About to check key status on the server.                                       |
+| `checking_key_status` | Querying the server for the user's key record (via `KeyDerivationStrategy.fetchServerKeyStatus`).   |
+| `needs_setup`         | No key record exists. The user is new and needs a key generated.                                    |
+| `needs_migration`     | A legacy Web3Auth account was detected (account exists but no SSS record). Migration is required.   |
+| `needs_recovery`      | A key record exists on the server, but no device share is available locally. The user must recover. |
+| `deriving_key`        | The key is being reconstructed or generated. Shares are being stored.                               |
+| `ready`               | The private key is available. The app can proceed normally.                                         |
 
 ---
 
@@ -102,12 +107,12 @@ The default implementation is the **SSS strategy** from `@learncard/sss-key-mana
 
 The AuthCoordinator is configured via environment variables, read by `authConfig.ts` in `learn-card-base`:
 
-| Variable | Default | Purpose |
-|---|---|---|
-| `VITE_AUTH_PROVIDER` | `'firebase'` | Which auth provider to use |
-| `VITE_KEY_DERIVATION` | `'sss'` | Which key derivation strategy to use |
-| `VITE_SSS_SERVER_URL` | `'http://localhost:5100/api'` | Server URL for SSS key operations |
-Environment variables use a dual-prefix fallback: `VITE_*` first, then `REACT_APP_*`.
+| Variable                                                                              | Default                       | Purpose                              |
+| ------------------------------------------------------------------------------------- | ----------------------------- | ------------------------------------ |
+| `VITE_AUTH_PROVIDER`                                                                  | `'firebase'`                  | Which auth provider to use           |
+| `VITE_KEY_DERIVATION`                                                                 | `'sss'`                       | Which key derivation strategy to use |
+| `VITE_SSS_SERVER_URL`                                                                 | `'http://localhost:5100/api'` | Server URL for SSS key operations    |
+| Environment variables use a dual-prefix fallback: `VITE_*` first, then `REACT_APP_*`. |
 
 ---
 
@@ -146,11 +151,11 @@ const MyComponent = () => {
 
 The coordinator exposes a `capabilities` object that the UI can use to conditionally render features:
 
-| Capability | Meaning |
-|---|---|
-| `recovery` | The current key derivation strategy supports recovery method management |
-| `deviceLinking` | The current strategy supports QR-based cross-device login |
-| `migration` | The current strategy supports migrating from a legacy key provider |
+| Capability      | Meaning                                                                 |
+| --------------- | ----------------------------------------------------------------------- |
+| `recovery`      | The current key derivation strategy supports recovery method management |
+| `deviceLinking` | The current strategy supports QR-based cross-device login               |
+| `migration`     | The current strategy supports migrating from a legacy key provider      |
 
 ---
 

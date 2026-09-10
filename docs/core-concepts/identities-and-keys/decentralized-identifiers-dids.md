@@ -4,9 +4,9 @@ A DID is a username that no company owns. It's a globally unique identifier (lik
 
 Formally, Decentralized Identifiers (DIDs) are a type of globally unique identifier that enables verifiable, decentralized digital identity. Unlike traditional identifiers, DIDs are:
 
--   **Self-sovereign**: Controlled by the identity owner, not a central authority
--   **Persistent**: Do not require the continued operation of an underlying organization
--   **Cryptographically verifiable**: Allow the controller to prove control without requiring permission
+- **Self-sovereign**: Controlled by the identity owner, not a central authority
+- **Persistent**: Do not require the continued operation of an underlying organization
+- **Cryptographically verifiable**: Allow the controller to prove control without requiring permission
 
 A DID looks like this: `did:method:specific-idstring`, where the method specifies how the DID operates.
 
@@ -22,6 +22,10 @@ graph TD
         Document --> Services["Service Endpoints"]
     end
 ```
+
+## DID Authentication
+
+DID Authentication (DID-Auth) proves control of a DID by signing a challenge with its private key, rather than presenting a password or email address. LearnCard uses this proof to authorize access to services; see [SDK Authentication](../../sdks/learncard-core/authentication.md).
 
 ## DID Methods
 

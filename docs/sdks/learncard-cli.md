@@ -54,7 +54,7 @@ await createLearnCardBundle(learnCard, { password });
 await readLearnCardBundle('./learncard-export.zip', { password });
 ```
 
-For the data model and portability caveats, see [Holder Continuity](../core-concepts/holder-continuity.md) and the `@learncard/holder-continuity` package `BUNDLE_SPEC.md`.
+For the data model and portability caveats, see [Holder Continuity](../core-concepts/architecture-and-principles/holder-continuity.md) and the `@learncard/holder-continuity` package `BUNDLE_SPEC.md`.
 
 ### Getting Started
 

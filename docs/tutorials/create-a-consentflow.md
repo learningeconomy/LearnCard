@@ -332,5 +332,5 @@ The shared read function uses `getProfile(userDid)` to resolve the identifier to
 
 - See a runnable game example: [Gashapon Game Corner](https://github.com/learningeconomy/LearnCard/tree/main/examples/app-store-apps/4-gashapon-game-corner)
 - [Auto-issuance](../core-concepts/consent-and-permissions/auto-boosts.md) sends credentials when consent is accepted, using a registered signing authority.
-- [User consent and terms](../core-concepts/consent-and-permissions/user-consent-and-terms.md) covers permission updates and withdrawal.
-- [Accessing consented data](../core-concepts/consent-and-permissions/accessing-consented-data.md) explains data access beyond this example.
+- [User consent and terms](../core-concepts/consent-and-permissions/consentflow-overview.md#terms-what-the-user-actually-agreed-to) covers permission updates and withdrawal.
+- [Reading & Writing Consented Data](../core-concepts/consent-and-permissions/writing-consented-data.md#reading) explains data access beyond this example.

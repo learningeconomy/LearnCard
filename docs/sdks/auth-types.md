@@ -4,7 +4,7 @@ description: Provider-agnostic interfaces for authentication and key derivation
 
 # Auth Types
 
-The auth types are defined in `@learncard/types` (in `src/auth.ts`) and provide the abstract interfaces used by the [AuthCoordinator](../core-concepts/architecture-and-principles/auth-coordinator.md), auth providers, and key derivation strategies.
+The auth types are defined in `@learncard/types` (in `src/auth.ts`) and provide the abstract interfaces used by the `AuthCoordinator`, auth providers, and key derivation strategies.
 
 ## Installation
 
@@ -63,7 +63,7 @@ The interface that key derivation strategies must implement. Handles key generat
 interface KeyDerivationStrategy<
     TRecoveryInput = unknown,
     TSetupInput = unknown,
-    TSetupResult = unknown
+    TSetupResult = unknown,
 > {
     /** Check the server for an existing key record */
     fetchServerKeyStatus(token: string, providerType: string): Promise<ServerKeyStatus>;

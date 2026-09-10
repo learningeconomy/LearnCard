@@ -29,10 +29,10 @@ Routes marked **open** require an auth token in the body but no DID-Auth header.
 
 Retrieve the encrypted auth share for the authenticated user.
 
-| | |
-|---|---|
+|              |                         |
+| ------------ | ----------------------- |
 | **Endpoint** | `POST /keys/auth-share` |
-| **Auth** | Auth Token (body) |
+| **Auth**     | Auth Token (body)       |
 
 **Request Body:**
 
@@ -71,10 +71,10 @@ Retrieve the encrypted auth share for the authenticated user.
 
 Store or rotate the encrypted auth share. Requires DID-Auth.
 
-| | |
-|---|---|
+|              |                        |
+| ------------ | ---------------------- |
 | **Endpoint** | `PUT /keys/auth-share` |
-| **Auth** | DID Auth (header) |
+| **Auth**     | DID Auth (header)      |
 
 **Request Body:**
 
@@ -105,10 +105,10 @@ Store or rotate the encrypted auth share. Requires DID-Auth.
 
 Add a recovery method (passkey, backup, phrase, or email). Requires DID-Auth.
 
-| | |
-|---|---|
+|              |                       |
+| ------------ | --------------------- |
 | **Endpoint** | `POST /keys/recovery` |
-| **Auth** | DID Auth (header) |
+| **Auth**     | DID Auth (header)     |
 
 **Request Body:**
 
@@ -135,10 +135,10 @@ Add a recovery method (passkey, backup, phrase, or email). Requires DID-Auth.
 
 Retrieve an encrypted recovery share by type and credential ID.
 
-| | |
-|---|---|
+|              |                      |
+| ------------ | -------------------- |
 | **Endpoint** | `GET /keys/recovery` |
-| **Auth** | Query parameters |
+| **Auth**     | Query parameters     |
 
 **Query Parameters:**
 
@@ -162,10 +162,10 @@ Retrieve an encrypted recovery share by type and credential ID.
 
 Send a 6-digit verification code to the specified email address.
 
-| | |
-|---|---|
+|              |                                 |
+| ------------ | ------------------------------- |
 | **Endpoint** | `POST /keys/recovery-email/add` |
-| **Auth** | DID Auth (header) |
+| **Auth**     | DID Auth (header)               |
 
 **Request Body:**
 
@@ -189,10 +189,10 @@ Send a 6-digit verification code to the specified email address.
 
 Verify the 6-digit code and persist the recovery email.
 
-| | |
-|---|---|
+|              |                                    |
+| ------------ | ---------------------------------- |
 | **Endpoint** | `POST /keys/recovery-email/verify` |
-| **Auth** | DID Auth (header) |
+| **Auth**     | DID Auth (header)                  |
 
 **Request Body:**
 
@@ -219,10 +219,10 @@ Verify the 6-digit code and persist the recovery email.
 
 Retrieve the masked recovery email for a user.
 
-| | |
-|---|---|
+|              |                            |
+| ------------ | -------------------------- |
 | **Endpoint** | `GET /keys/recovery-email` |
-| **Auth** | Query parameters |
+| **Auth**     | Query parameters           |
 
 **Query Parameters:**
 
@@ -243,10 +243,10 @@ Retrieve the masked recovery email for a user.
 
 Send the encrypted backup share to the user's recovery email (or a specified email).
 
-| | |
-|---|---|
+|              |                           |
+| ------------ | ------------------------- |
 | **Endpoint** | `POST /keys/email-backup` |
-| **Auth** | Auth Token (body) |
+| **Auth**     | Auth Token (body)         |
 
 **Request Body:**
 
@@ -274,10 +274,10 @@ Either `email` or `useRecoveryEmail: true` must be provided (not both).
 
 Upgrade a user's primary contact method (e.g., phone → email). Verifies an OTP code, links the email to the Firebase account, and updates the server record.
 
-| | |
-|---|---|
+|              |                                     |
+| ------------ | ----------------------------------- |
 | **Endpoint** | `POST /keys/upgrade-contact-method` |
-| **Auth** | Auth Token (body) |
+| **Auth**     | Auth Token (body)                   |
 
 **Request Body:**
 
@@ -308,10 +308,10 @@ The client should re-authenticate with the returned custom token.
 
 Mark a user as migrated from Web3Auth to SSS.
 
-| | |
-|---|---|
+|              |                      |
+| ------------ | -------------------- |
 | **Endpoint** | `POST /keys/migrate` |
-| **Auth** | Auth Token (body) |
+| **Auth**     | Auth Token (body)    |
 
 **Request Body:**
 
@@ -334,10 +334,10 @@ Mark a user as migrated from Web3Auth to SSS.
 
 Delete all key data for a user. Requires DID-Auth.
 
-| | |
-|---|---|
+|              |                     |
+| ------------ | ------------------- |
 | **Endpoint** | `POST /keys/delete` |
-| **Auth** | DID Auth (header) |
+| **Auth**     | DID Auth (header)   |
 
 **Request Body:**
 
@@ -358,16 +358,16 @@ Delete all key data for a user. Requires DID-Auth.
 
 ## QR Login Routes (`/qr-login/*`)
 
-These routes implement the ephemeral relay for [cross-device login](../../core-concepts/identities-and-keys/cross-device-login.md). All session data lives in Redis with short TTLs.
+These routes implement the ephemeral relay for cross-device login (QR sign-in between a signed-in device and a new one). All session data lives in Redis with short TTLs.
 
 ### Create Session
 
 Create a new QR login session with the new device's ephemeral public key.
 
-| | |
-|---|---|
+|              |                          |
+| ------------ | ------------------------ |
 | **Endpoint** | `POST /qr-login/session` |
-| **Auth** | None |
+| **Auth**     | None                     |
 
 **Request Body:**
 
@@ -392,10 +392,10 @@ Create a new QR login session with the new device's ephemeral public key.
 
 Look up a session by its ID or short code.
 
-| | |
-|---|---|
+|              |                                  |
+| ------------ | -------------------------------- |
 | **Endpoint** | `GET /qr-login/session/{lookup}` |
-| **Auth** | None |
+| **Auth**     | None                             |
 
 **Response (200):**
 
@@ -413,10 +413,10 @@ Look up a session by its ID or short code.
 
 Post the encrypted device share payload from the logged-in device.
 
-| | |
-|---|---|
+|              |                                              |
+| ------------ | -------------------------------------------- |
 | **Endpoint** | `POST /qr-login/session/{sessionId}/approve` |
-| **Auth** | Auth Token (body) |
+| **Auth**     | Auth Token (body)                            |
 
 **Request Body:**
 
@@ -440,10 +440,10 @@ Post the encrypted device share payload from the logged-in device.
 
 Send a push notification to the user's other devices to prompt approval.
 
-| | |
-|---|---|
+|              |                         |
+| ------------ | ----------------------- |
 | **Endpoint** | `POST /qr-login/notify` |
-| **Auth** | Auth Token (body) |
+| **Auth**     | Auth Token (body)       |
 
 **Request Body:**
 

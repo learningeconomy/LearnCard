@@ -2,6 +2,11 @@
 description: How users securely transfer key access to a new device via QR code
 ---
 
+{% hint style="info" %}
+Archived — describes the LearnCard app's internal sign-in implementation.
+For the library, see [SSS Key Manager](../../sdks/sss-key-manager.md).
+{% endhint %}
+
 # Cross-Device Login (QR)
 
 ## What is this section about?
@@ -60,13 +65,13 @@ Device B (new)                  Server (Redis)               Device A (logged in
 
 ## Security Properties
 
-| Property | Guarantee |
-|---|---|
-| **End-to-end encryption** | The device share is encrypted with a shared secret derived via ECDH. The server only relays opaque bytes. |
-| **Ephemeral keys** | A new key pair is generated for each session. No long-lived key material is exchanged. |
-| **Short-lived sessions** | Sessions are stored in Redis with a short TTL and are automatically evicted. |
-| **No plaintext on server** | The server never has access to the ECDH private key and cannot decrypt the payload. |
-| **One-time use** | Once a session is approved, it cannot be reused. |
+| Property                   | Guarantee                                                                                                 |
+| -------------------------- | --------------------------------------------------------------------------------------------------------- |
+| **End-to-end encryption**  | The device share is encrypted with a shared secret derived via ECDH. The server only relays opaque bytes. |
+| **Ephemeral keys**         | A new key pair is generated for each session. No long-lived key material is exchanged.                    |
+| **Short-lived sessions**   | Sessions are stored in Redis with a short TTL and are automatically evicted.                              |
+| **No plaintext on server** | The server never has access to the ECDH private key and cannot decrypt the payload.                       |
+| **One-time use**           | Once a session is approved, it cannot be reused.                                                          |
 
 ---
 
@@ -80,12 +85,12 @@ To improve the user experience, Device B can optionally send a **push notificati
 
 The QR login relay is implemented as a set of routes on the `lca-api` server:
 
-| Route | Method | Purpose |
-|---|---|---|
-| `/qr-login/session` | POST | Create a session with Device B's ephemeral public key |
-| `/qr-login/session/{lookup}` | GET | Look up a session by ID or short code |
-| `/qr-login/session/{sessionId}/approve` | POST | Post the encrypted share payload (Device A) |
-| `/qr-login/notify` | POST | Send a push notification to the user's other devices |
+| Route                                   | Method | Purpose                                               |
+| --------------------------------------- | ------ | ----------------------------------------------------- |
+| `/qr-login/session`                     | POST   | Create a session with Device B's ephemeral public key |
+| `/qr-login/session/{lookup}`            | GET    | Look up a session by ID or short code                 |
+| `/qr-login/session/{sessionId}/approve` | POST   | Post the encrypted share payload (Device A)           |
+| `/qr-login/notify`                      | POST   | Send a push notification to the user's other devices  |
 
 All session data lives in **Redis** with short TTLs. No session data is persisted to a database.
 
@@ -93,11 +98,11 @@ All session data lives in **Redis** with short TTLs. No session data is persiste
 
 ## When to Use QR Login vs. Recovery
 
-| Scenario | Recommended approach |
-|---|---|
-| User has another device nearby and logged in | **QR Login** — fastest path, no recovery method needed |
-| User lost their only device | **Recovery** — use passkey, phrase, backup file, or email backup |
-| User is setting up for the first time | Neither — the key is generated fresh |
+| Scenario                                     | Recommended approach                                             |
+| -------------------------------------------- | ---------------------------------------------------------------- |
+| User has another device nearby and logged in | **QR Login** — fastest path, no recovery method needed           |
+| User lost their only device                  | **Recovery** — use passkey, phrase, backup file, or email backup |
+| User is setting up for the first time        | Neither — the key is generated fresh                             |
 
 ---
 

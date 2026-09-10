@@ -224,7 +224,35 @@ Authentication shows up in two places, deliberately decoupled:
 
 **Guardian gating** is supported via approval tokens and a `guardianStatus` field on inbox credentials, used when the holder is a minor or when the issuer requires guardian co-signature before a credential can be claimed.
 
-→ Deep dives: [Auth Coordinator](../core-concepts/architecture-and-principles/auth-coordinator.md) · [Signing Authorities](../core-concepts/identities-and-keys/signing-authorities.md) · [Trust Registries](../core-concepts/identities-and-keys/trust-registries.md) · [Universal Inbox](../core-concepts/network-and-interactions/universal-inbox.md) · [Guardian-Gated Credentials](../how-to-guides/send-credentials.md#guardian-gated-credentials) · [ConsentFlow Overview](../core-concepts/consent-and-permissions/consentflow-overview.md)
+→ Deep dives: [SSS Key Manager](../sdks/sss-key-manager.md) · [Signing Authorities](../core-concepts/identities-and-keys/signing-authorities.md) · [Trust Registries](../core-concepts/identities-and-keys/trust-registries.md) · [Universal Inbox](../core-concepts/network-and-interactions/universal-inbox.md) · [Guardian-Gated Credentials](../how-to-guides/send-credentials.md#guardian-gated-credentials) · [ConsentFlow Overview](../core-concepts/consent-and-permissions/consentflow-overview.md)
+
+## How the network handles a credential
+
+The SDK and network divide the credential lifecycle into these core procedures:
+
+- **Construct** — assemble an unsigned credential from a template and subject data.
+- **Issue** — apply the issuer's signature to make the credential tamper-evident.
+- **Exchange** — transmit a credential or presentation between participants.
+- **Verify** — check signatures and validate content against expected rules or schemas.
+- **Store** — retain a credential in the holder's chosen repository.
+- **Present** — select credentials and construct a presentation for a verifier.
+- **Prove** — sign the presentation with the holder's key to prove control of their DID.
+
+Profile connections have a separate request/accept lifecycle:
+
+```mermaid
+stateDiagram-v2
+    NOT_CONNECTED --> PENDING_REQUEST_SENT: Send request
+    NOT_CONNECTED --> PENDING_REQUEST_RECEIVED: Receive request
+    PENDING_REQUEST_SENT --> CONNECTED: Other profile accepts
+    PENDING_REQUEST_RECEIVED --> CONNECTED: Accept request
+    PENDING_REQUEST_SENT --> NOT_CONNECTED: Cancel request
+    PENDING_REQUEST_RECEIVED --> NOT_CONNECTED: Reject request
+    CONNECTED --> NOT_CONNECTED: Disconnect
+    CONNECTED --> BLOCKED: Block profile
+```
+
+`LCNProfileConnectionStatusEnum` contains `NOT_CONNECTED`, `PENDING_REQUEST_SENT`, `PENDING_REQUEST_RECEIVED`, and `CONNECTED`. `BLOCKED` above represents a separate blocking relationship, not an enum value; blocking can also occur without a connection or while a request is pending.
 
 ---
 
@@ -251,7 +279,7 @@ If you're...
 
 - **Building an app** → start with the [Wallet SDK](../sdks/learncard-core/README.md)
 - **Working cloud-side** → start with the [Network API](../sdks/learncard-network/README.md) or [Storage API](../sdks/learncloud-storage-api/README.md)
-- **Issuing credentials** → start with [Boost Credentials](../core-concepts/credentials-and-data/boost-credentials.md)
+- **Issuing credentials** → start with [Credential Templates (Boosts)](../core-concepts/credentials-and-data/boost-credentials.md)
 - **Building consent flows** → start with [ConsentFlow Overview](../core-concepts/consent-and-permissions/consentflow-overview.md)
 - **Connecting an AI agent** → start with [Connect AI Agent](../how-to-guides/connect-systems/connect-ai-agent.md)
 - **Integrating into a school or state** → start with [What Do You Want to Build?](what-do-you-want-to-build.md)

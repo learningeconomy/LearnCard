@@ -14,10 +14,10 @@ A **Signing Authority** is a separate service with its own unique identity and k
 
 **Benefits:**
 
-* **Enhanced Security:** The Owner's primary keys are not shared with the services performing routine issuance.
-* **Delegation:** Safely delegate issuance capabilities to other applications or services.
-* **Cloud Scalability & Reliability:** Leverage AWS infrastructure for your signing operations.
-* **Scoped Permissions:** (Future capability) Potentially limit what types of credentials a specific authority can issue.&#x20;
+- **Enhanced Security:** The Owner's primary keys are not shared with the services performing routine issuance.
+- **Delegation:** Safely delegate issuance capabilities to other applications or services.
+- **Cloud Scalability & Reliability:** Leverage AWS infrastructure for your signing operations.
+- **Scoped Permissions:** (Future capability) Potentially limit what types of credentials a specific authority can issue.&#x20;
 
 Signing Authorities allow third-party services to issue credentials on behalf of profiles. This enables credential issuance without requiring direct access to private keys.
 
@@ -30,7 +30,7 @@ graph TD
             register["registerSigningAuthority()"]
             issue["issueCredentialWithSigningAuthority()"]
             send["sendBoostViaSigningAuthority()"]
-            write["writeToContractViaSigningAuthority()"]
+            write["writeCredentialToContractViaSigningAuthority()"]
         end
     end
 
@@ -46,4 +46,3 @@ graph TD
 
     endpoint -->|"signs with"| keys
 ```
-

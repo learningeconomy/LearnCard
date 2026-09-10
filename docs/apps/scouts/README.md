@@ -122,6 +122,5 @@ sequenceDiagram
 ## Related Documentation
 
 - [Credential Status & Bitstring Status Lists](../../core-concepts/credentials-and-data/credential-status-and-bitstring-status-lists.md) — How revocation works
-- [Boost Credentials](../../core-concepts/credentials-and-data/boost-credentials.md) — Understanding hierarchies and permissions
-- [Getting Started with Boosts](../../core-concepts/credentials-and-data/getting-started-with-boosts.md) — Creating and issuing boosts
+- [Credential Templates (Boosts)](../../core-concepts/credentials-and-data/boost-credentials.md) — Reusable templates, hierarchies, and permissions
 - [Network Profiles](../../core-concepts/identities-and-keys/network-profiles.md) — Managing organizational profiles

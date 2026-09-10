@@ -10,10 +10,10 @@ description: Understanding Seed Phrases (for Account & Key Recovery)
 
 **What you'll learn:**
 
--   What a LearnCard "seed" specifically refers to (a hexadecimal string).
--   How these seeds are used to generate keys.
--   Best practices for generating and securely managing these seeds.
--   The distinction between this type of seed and mnemonic "seed phrases."
+- What a LearnCard "seed" specifically refers to (a hexadecimal string).
+- How these seeds are used to generate keys.
+- Best practices for generating and securely managing these seeds.
+- The distinction between this type of seed and mnemonic "seed phrases."
 
 ---
 
@@ -43,7 +43,7 @@ Key input should be a hexadecimal string. If you pass a string that is not valid
 
 Here are examples of how to generate a cryptographically secure 32-byte random value and convert it to the required 64-character hexadecimal string:
 
--   **In a Browser Environment:**
+- **In a Browser Environment:**
 
     ```typescript
     const randomKeyHex = Array.from(crypto.getRandomValues(new Uint8Array(32)), dec =>
@@ -52,7 +52,7 @@ Here are examples of how to generate a cryptographically secure 32-byte random v
     // randomKeyHex will be a 64-character hexadecimal string
     ```
 
--   **In a Node.js Environment:**
+- **In a Node.js Environment:**
 
     ```typescript
     import crypto from 'node:crypto';
@@ -65,13 +65,13 @@ Here are examples of how to generate a cryptographically secure 32-byte random v
 
 Because this hexadecimal seed is the master secret for an identity's keys within LearnCard:
 
--   **It IS the Master Key:** If someone gains access to this 64-character hex string, they can regenerate all associated private keys and take full control of the identity and any credentials or assets it controls.
--   **Loss Means Irreversibility:** If you (or your user) lose this seed and there are no other backups of the private keys themselves, access to the identity and its capabilities may be permanently lost.
--   **Security Practices (similar to mnemonic seed phrases, but for a hex string):**
-    -   **Store Securely:** This hex string must be stored with extreme care. For end-users managing their own seeds, this often means writing it down accurately and storing it offline in multiple secure locations (e.g., a safe). For backend systems managing seeds, this involves robust secret management solutions (e.g., Hardware Security Modules (HSMs), managed KMS services).
-    -   **Accuracy is Crucial:** Unlike mnemonic phrases designed for easier human transcription, a 64-character hex string is prone to transcription errors if handled manually.
-    -   **Never Transmit Insecurely:** Avoid sending it over unencrypted channels or storing it in easily accessible digital locations.
-    -   **Do Not Hardcode (in client-side code):** For applications where users control their identities, the seed should be managed by the user or a secure wallet mechanism, not hardcoded into the application.
+- **It IS the Master Key:** If someone gains access to this 64-character hex string, they can regenerate all associated private keys and take full control of the identity and any credentials or assets it controls.
+- **Loss Means Irreversibility:** If you (or your user) lose this seed and there are no other backups of the private keys themselves, access to the identity and its capabilities may be permanently lost.
+- **Security Practices (similar to mnemonic seed phrases, but for a hex string):**
+    - **Store Securely:** This hex string must be stored with extreme care. For end-users managing their own seeds, this often means writing it down accurately and storing it offline in multiple secure locations (e.g., a safe). For backend systems managing seeds, this involves robust secret management solutions (e.g., Hardware Security Modules (HSMs), managed KMS services).
+    - **Accuracy is Crucial:** Unlike mnemonic phrases designed for easier human transcription, a 64-character hex string is prone to transcription errors if handled manually.
+    - **Never Transmit Insecurely:** Avoid sending it over unencrypted channels or storing it in easily accessible digital locations.
+    - **Do Not Hardcode (in client-side code):** For applications where users control their identities, the seed should be managed by the user or a secure wallet mechanism, not hardcoded into the application.
 
 #### Seeds in LearnCard Initialization
 
@@ -94,8 +94,8 @@ The LearnCard SDK uses this hexadecimal seed to deterministically generate the c
 
 It's important to distinguish LearnCard's direct use of a hexadecimal seed string from **mnemonic seed phrases** (e.g., the 12-24 words used by many cryptocurrency wallets, often following the BIP-39 standard).
 
--   **Mnemonic Seed Phrases:** These are designed to be a more human-readable and writable way to back up the entropy (randomness) needed to generate keys. The words themselves are converted into the actual binary seed/entropy.
--   **LearnCard's `seed` parameter:** Expects the direct hexadecimal representation of the 32-byte entropy.
+- **Mnemonic Seed Phrases:** These are designed to be a more human-readable and writable way to back up the entropy (randomness) needed to generate keys. The words themselves are converted into the actual binary seed/entropy.
+- **LearnCard's `seed` parameter:** Expects the direct hexadecimal representation of the 32-byte entropy.
 
 While you _could_ technically generate a 32-byte entropy, convert it to a BIP-39 mnemonic phrase for user backup, and then convert that mnemonic _back_ to its 32-byte hex representation to pass to `initLearnCard`, LearnCard's `seed` parameter itself does not directly consume the list of words. It consumes the resulting hex string.
 
@@ -105,16 +105,16 @@ In the LearnCard App and other end-user applications, private keys are no longer
 
 The seed-based initialization described on this page is primarily relevant for:
 
--   **Backend services** and **bots** that manage their own identity programmatically.
--   **Self-hosted deployments** where you control the key material directly.
--   **Plugin development** and **testing** scenarios.
+- **Backend services** and **bots** that manage their own identity programmatically.
+- **Self-hosted deployments** where you control the key material directly.
+- **Plugin development** and **testing** scenarios.
 
-For end-user applications, see [Key Management (SSS)](key-management-sss.md) and [Account Recovery](account-recovery.md) for how keys are protected and recovered.
+For end-user applications, see [Key Management (SSS)](key-management-sss.md) for how keys are protected and recovered.
 
 #### Key Takeaways
 
--   A LearnCard Key Generation Seed is a **64-character hexadecimal string** representing 32 bytes of randomness.
--   It is the **foundational secret** used to deterministically derive all cryptographic keys for a LearnCard identity.
--   **Secure generation and extremely careful storage** of this seed are critical for maintaining control and enabling recovery of an identity.
--   This direct hexadecimal seed is distinct from, though related to the concept of, mnemonic seed phrases commonly used for wallet backups.
--   For end-user applications, **SSS key management** handles key protection automatically — users do not need to manage raw seeds.
+- A LearnCard Key Generation Seed is a **64-character hexadecimal string** representing 32 bytes of randomness.
+- It is the **foundational secret** used to deterministically derive all cryptographic keys for a LearnCard identity.
+- **Secure generation and extremely careful storage** of this seed are critical for maintaining control and enabling recovery of an identity.
+- This direct hexadecimal seed is distinct from, though related to the concept of, mnemonic seed phrases commonly used for wallet backups.
+- For end-user applications, **SSS key management** handles key protection automatically — users do not need to manage raw seeds.
