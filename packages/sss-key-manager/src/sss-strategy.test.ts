@@ -112,6 +112,8 @@ const createMemoryStorage = (): SSSStorageFunctions & {
 // ---------------------------------------------------------------------------
 
 describe('escrow strategy', () => {
+    let optedOut: boolean;
+    let optOutStatus: number;
     const privateKey = 'a'.repeat(64);
     const did = 'did:key:escrow-test';
     const token = 'provider-secret';
@@ -147,6 +149,8 @@ describe('escrow strategy', () => {
     const json = (value: unknown): Response => new Response(JSON.stringify(value), { status: 200 });
 
     beforeEach(async () => {
+        optedOut = false;
+        optOutStatus = 200;
         storage = createMemoryStorage();
         enclaveKeys = await generateEscrowKeyPair();
         version = 1;
@@ -187,6 +191,7 @@ describe('escrow strategy', () => {
                     authShare: { encryptedData: authShare, encryptedDek: '', iv: '' },
                     shareVersion: version,
                     recoveryMethods: methods,
+                    escrowOptedOut: optedOut,
                 });
             }
             if (path === '/keys/recovery' || path === '/keys/recovery/confirm')
@@ -204,6 +209,24 @@ describe('escrow strategy', () => {
                     },
                     holdDurationMs: 604800000,
                 });
+            }
+            if (
+                path === '/keys/escrow/opt-in' ||
+                (path === '/keys/escrow' && init?.method === 'DELETE')
+            ) {
+                expect(new Headers(init?.headers).get('Authorization')).toMatch(/^Bearer vp-/);
+                expect(new Headers(init?.headers).get('X-Tenant-Id')).toBe('test-tenant');
+                if (init?.method === 'DELETE') {
+                    expect(body).toEqual({ authToken: token, providerType, optOut: true });
+                    if (optOutStatus !== 200)
+                        return new Response('sensitive server response', { status: optOutStatus });
+                    optedOut = true;
+                    methods = [];
+                } else {
+                    expect(body).toEqual({ authToken: token, providerType });
+                    optedOut = false;
+                }
+                return json({ success: true });
             }
             if (path === '/keys/escrow') {
                 expect(new Headers(init?.headers).get('Authorization')).toMatch(/^Bearer vp-/);
@@ -266,6 +289,79 @@ describe('escrow strategy', () => {
         });
     });
     afterEach(() => vi.restoreAllMocks());
+
+    it('opts out with a fresh owner proof', async () => {
+        await strategy.disableEscrowRecovery!(params);
+        expect(optedOut).toBe(true);
+        expect(await strategy.getEscrowEnrollmentState!(params)).toBe('opted-out');
+    });
+
+    it('does not rotate or enroll during repeated repairs after opt-out', async () => {
+        await strategy.disableEscrowRecovery!(params);
+        calls = [];
+        for (let attempt = 0; attempt < 7; attempt++) {
+            await expect(strategy.ensureEscrowEnrollment!(params)).resolves.toEqual({
+                enrolled: false,
+                reason: 'opted-out',
+            });
+        }
+        expect(version).toBe(1);
+        expect(
+            calls.every(call => call.path === '/keys/auth-share' && call.init?.method === 'POST')
+        ).toBe(true);
+        expect(blob).toBeUndefined();
+    });
+
+    it('sanitizes malformed successful responses', async () => {
+        const originalFetch = vi.mocked(globalThis.fetch).getMockImplementation()!;
+        vi.spyOn(globalThis, 'fetch').mockImplementation((url, init) =>
+            init?.method === 'DELETE'
+                ? Promise.resolve(new Response('sensitive response', { status: 200 }))
+                : originalFetch(url, init)
+        );
+        await expect(strategy.disableEscrowRecovery!(params)).rejects.toMatchObject({
+            name: 'EscrowRequestError',
+            status: 200,
+            message: 'Escrow request failed',
+        });
+    });
+
+    it('exposes the precondition status without exposing the response body', async () => {
+        optOutStatus = 412;
+        await expect(strategy.disableEscrowRecovery!(params)).rejects.toMatchObject({
+            name: 'EscrowRequestError',
+            status: 412,
+            message: 'Escrow request failed',
+        });
+        expect(optedOut).toBe(false);
+    });
+
+    it('opts in then enrolls and reports the current enrollment state', async () => {
+        optedOut = true;
+        await expect(strategy.enableEscrowRecovery!(params)).resolves.toEqual({
+            enrolled: true,
+            changed: true,
+            shareVersion: 2,
+        });
+        expect(blob).toBeDefined();
+        expect(calls.findIndex(call => call.path === '/keys/escrow/opt-in')).toBeLessThan(
+            calls.findIndex(call => call.path === '/keys/escrow')
+        );
+        expect(await strategy.getEscrowEnrollmentState!(params)).toBe('enrolled');
+        methods[0].shareVersion = 1;
+        expect(await strategy.getEscrowEnrollmentState!(params)).toBe('not-enrolled');
+        methods[0].shareVersion = version;
+        methods[0].confirmedAt = undefined;
+        expect(await strategy.getEscrowEnrollmentState!(params)).toBe('not-enrolled');
+    });
+
+    it('reports missing and disabled enrollment without unnecessary requests', async () => {
+        expect(await strategy.getEscrowEnrollmentState!(params)).toBe('not-enrolled');
+        const disabled = createSSSStrategy({ ...config, escrow: undefined });
+        calls = [];
+        expect(await disabled.getEscrowEnrollmentState!(params)).toBe('disabled');
+        expect(calls).toHaveLength(0);
+    });
 
     it.each(['phrase', 'passkey'] as const)(
         'enrolls after %s setup only when enabled',

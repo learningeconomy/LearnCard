@@ -139,6 +139,14 @@ const buildHeaders = (
     ...(tenantId ? { 'X-Tenant-Id': tenantId } : {}),
 });
 
+/** HTTP failure metadata without potentially sensitive server response text. */
+export class EscrowRequestError extends Error {
+    constructor(public readonly status: number) {
+        super('Escrow request failed');
+        this.name = 'EscrowRequestError';
+    }
+}
+
 const fetchAuthShareRaw = async (
     serverUrl: string,
     token: string,
@@ -648,8 +656,12 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
     const escrowRequest = async <T>(path: string, init: RequestInit): Promise<T> => {
         const response = await fetch(`${serverUrl}/keys/escrow${path}`, init);
         // Never propagate response bodies or status text that could contain secrets.
-        if (!response.ok) throw new Error('Escrow request failed');
-        return response.json();
+        if (!response.ok) throw new EscrowRequestError(response.status);
+        try {
+            return await response.json();
+        } catch {
+            throw new EscrowRequestError(response.status);
+        }
     };
 
     const fetchVerifiedEnclaveKey = async (): Promise<{ publicKey: string; keyId: string }> => {
@@ -1020,6 +1032,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 authShare: authShareString,
                 shareVersion: serverVersion,
                 maskedRecoveryEmail: data.maskedRecoveryEmail ?? null,
+                escrowOptedOut: data.escrowOptedOut === true,
                 sssActivationState: data.sssActivationState ?? 'active',
             };
         },
@@ -1083,16 +1096,78 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
 
         // --- Recovery execution ---
 
+        async getEscrowEnrollmentState(params) {
+            if (!config.escrow?.enabled) return 'disabled';
+            const status = await this.fetchServerKeyStatus(params.token, params.providerType);
+            if (status.escrowOptedOut) return 'opted-out';
+            return status.shareVersion !== null &&
+                status.recoveryMethods.some(
+                    method =>
+                        method.type === 'escrow' &&
+                        method.shareVersion === status.shareVersion &&
+                        (Boolean(method.confirmedAt) ||
+                            ('confirmationStatus' in method &&
+                                method.confirmationStatus === 'confirmed'))
+                )
+                ? 'enrolled'
+                : 'not-enrolled';
+        },
+
+        async disableEscrowRecovery(params): Promise<void> {
+            const status = await this.fetchServerKeyStatus(params.token, params.providerType);
+            if (!status.primaryDid) throw new Error('Cannot disable escrow without a primary DID');
+            const vp = await requestFreshDidAuthVp(
+                serverUrl,
+                params.privateKey,
+                status.primaryDid,
+                params.signDidAuthVp,
+                tenantId
+            );
+            await escrowRequest('', {
+                method: 'DELETE',
+                headers: buildHeaders(params.token, vp, tenantId),
+                body: JSON.stringify({
+                    authToken: params.token,
+                    providerType: params.providerType,
+                    optOut: true,
+                }),
+            });
+        },
+
+        async enableEscrowRecovery(params) {
+            if (!config.escrow?.enabled)
+                return { enrolled: false as const, reason: 'disabled' as const };
+            const status = await this.fetchServerKeyStatus(params.token, params.providerType);
+            if (!status.primaryDid) throw new Error('Cannot enable escrow without a primary DID');
+            const vp = await requestFreshDidAuthVp(
+                serverUrl,
+                params.privateKey,
+                status.primaryDid,
+                params.signDidAuthVp,
+                tenantId
+            );
+            await escrowRequest('/opt-in', {
+                method: 'POST',
+                headers: buildHeaders(params.token, vp, tenantId),
+                body: JSON.stringify({
+                    authToken: params.token,
+                    providerType: params.providerType,
+                }),
+            });
+            return this.ensureEscrowEnrollment!(params);
+        },
+
         /** Enroll missing/stale escrow material using the standard atomic rotation. */
         async ensureEscrowEnrollment(
             params
         ): Promise<
-            | { enrolled: false; reason: 'disabled' }
+            | { enrolled: false; reason: 'disabled' | 'opted-out' }
             | { enrolled: true; changed: false }
             | { enrolled: true; changed: true; shareVersion: number }
         > {
             if (!config.escrow?.enabled) return { enrolled: false, reason: 'disabled' };
             const status = await this.fetchServerKeyStatus(params.token, params.providerType);
+            if (status.escrowOptedOut) return { enrolled: false, reason: 'opted-out' };
             if (
                 status.shareVersion !== null &&
                 status.recoveryMethods.some(
