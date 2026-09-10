@@ -323,15 +323,19 @@ export class AuthCoordinator {
             throw new Error('Sign in on a trusted device to manage recovery');
         }
         const generation = ++this.escrowStatusGeneration;
-        await this.runEscrowOperation(async () =>
-            this.keyDerivation.setEscrowPin!({
-                ...(await this.getAuthCredentials()),
-                privateKey: ready.privateKey,
-                signDidAuthVp: this.config.signDidAuthVp!,
-                pin,
-            })
-        );
-        await this.refreshEscrowPinStatus(ready, generation);
+        this.setState({ ...ready, escrowPin: undefined });
+        try {
+            await this.runEscrowOperation(async () =>
+                this.keyDerivation.setEscrowPin!({
+                    ...(await this.getAuthCredentials()),
+                    privateKey: ready.privateKey,
+                    signDidAuthVp: this.config.signDidAuthVp!,
+                    pin,
+                })
+            );
+        } finally {
+            await this.refreshEscrowPinStatus(ready, generation);
+        }
     }
 
     /** Remove a PIN by rotating escrow material with an owner proof. */
@@ -345,14 +349,18 @@ export class AuthCoordinator {
             throw new Error('Sign in on a trusted device to manage recovery');
         }
         const generation = ++this.escrowStatusGeneration;
-        await this.runEscrowOperation(async () =>
-            this.keyDerivation.clearEscrowPin!({
-                ...(await this.getAuthCredentials()),
-                privateKey: ready.privateKey,
-                signDidAuthVp: this.config.signDidAuthVp!,
-            })
-        );
-        await this.refreshEscrowPinStatus(ready, generation);
+        this.setState({ ...ready, escrowPin: undefined });
+        try {
+            await this.runEscrowOperation(async () =>
+                this.keyDerivation.clearEscrowPin!({
+                    ...(await this.getAuthCredentials()),
+                    privateKey: ready.privateKey,
+                    signDidAuthVp: this.config.signDidAuthVp!,
+                })
+            );
+        } finally {
+            await this.refreshEscrowPinStatus(ready, generation);
+        }
     }
 
     /** Re-fetch enrollment after a PIN change so `ready.escrowPin` reflects the new status. */
