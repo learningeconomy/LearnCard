@@ -15,7 +15,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { AuthCoordinator, createAuthCoordinator } from '../AuthCoordinator';
-import { IdentityRecoverySessionConsumedError } from '@learncard/sss-key-manager';
+import {
+    EscrowPinMismatchError,
+    IdentityRecoverySessionConsumedError,
+} from '@learncard/sss-key-manager';
 import { AuthSessionError } from '../types';
 
 import type {
@@ -373,7 +376,9 @@ describe('AuthCoordinator', () => {
                 enrolled: true,
                 changed: false,
             });
-            await expect(coordinator.getEscrowEnrollmentState()).resolves.toBe('opted-out');
+            await expect(coordinator.getEscrowEnrollmentState()).resolves.toEqual({
+                state: 'opted-out',
+            });
             const credentials = { token: 'mock-token', providerType: 'firebase' };
             expect(disableEscrowRecovery).toHaveBeenCalledWith({
                 ...credentials,
@@ -423,6 +428,117 @@ describe('AuthCoordinator', () => {
             await forgetting;
             expect(clearLocalKeys).toHaveBeenCalledOnce();
             expect(hasDeviceSecrets).toBe(false);
+        });
+        it('rejects setEscrowPin and clearEscrowPin outside the ready state', async () => {
+            const setEscrowPin = vi.fn().mockResolvedValue(undefined);
+            const clearEscrowPin = vi.fn().mockResolvedValue(undefined);
+            const { coordinator } = setup({
+                keyDerivation: { setEscrowPin, clearEscrowPin },
+                config: { signDidAuthVp: vi.fn() },
+            });
+            await expect(coordinator.setEscrowPin('135790')).rejects.toThrow();
+            await expect(coordinator.clearEscrowPin()).rejects.toThrow();
+            expect(setEscrowPin).not.toHaveBeenCalled();
+            expect(clearEscrowPin).not.toHaveBeenCalled();
+        });
+        it('delegates setEscrowPin to the strategy and drains it before logout proceeds', async () => {
+            let finishSetPin!: () => void;
+            const setEscrowPin = vi.fn().mockImplementation(
+                () =>
+                    new Promise<void>(resolve => {
+                        finishSetPin = resolve;
+                    })
+            );
+            const signDidAuthVp = vi.fn();
+            const { coordinator, authProvider } = setup({
+                keyDerivation: { setEscrowPin },
+                config: { signDidAuthVp },
+            });
+            await coordinator.initialize();
+            expect(coordinator.getState().status).toBe('ready');
+
+            const setting = coordinator.setEscrowPin('135790');
+            await vi.waitFor(() => expect(setEscrowPin).toHaveBeenCalledTimes(1));
+            expect(setEscrowPin).toHaveBeenCalledWith({
+                token: 'mock-token',
+                providerType: 'firebase',
+                privateKey: 'reconstructed-private-key',
+                signDidAuthVp,
+                pin: '135790',
+            });
+
+            const loggingOut = coordinator.logout();
+            expect(authProvider.signOut).not.toHaveBeenCalled();
+
+            finishSetPin();
+            await setting;
+            await loggingOut;
+
+            expect(authProvider.signOut).toHaveBeenCalledTimes(1);
+            expect(coordinator.getState()).toEqual({ status: 'idle' });
+        });
+        it('delegates recover({ method: "escrow-pin" }) and rethrows EscrowPinMismatchError intact', async () => {
+            const mismatchError = new EscrowPinMismatchError(4);
+            const executeRecovery = vi.fn().mockRejectedValue(mismatchError);
+            const { coordinator } = setup({
+                keyDerivation: {
+                    hasLocalKey: vi.fn().mockResolvedValue(false),
+                    executeRecovery,
+                },
+            });
+            await coordinator.initialize();
+            expect(coordinator.getState().status).toBe('needs_recovery');
+
+            const input = { method: 'escrow-pin' as const, pin: '135790' };
+            let thrown: unknown;
+
+            try {
+                await coordinator.recover(input);
+            } catch (e) {
+                thrown = e;
+            }
+
+            expect(thrown).toBe(mismatchError);
+            expect(thrown).toBeInstanceOf(EscrowPinMismatchError);
+            expect((thrown as EscrowPinMismatchError).attemptsRemaining).toBe(4);
+            expect(coordinator.getState().status).toBe('needs_recovery');
+            expect(executeRecovery).toHaveBeenCalledWith({
+                token: 'mock-token',
+                providerType: 'firebase',
+                input,
+                didFromPrivateKey: expect.any(Function),
+            });
+        });
+        it('exposes escrowPin on the ready state via refreshEscrow', async () => {
+            const escrowPinStatus = { enabled: true, attemptsRemaining: 7, salt: 'c2FsdA==' };
+            const getEscrowEnrollmentState = vi
+                .fn()
+                .mockResolvedValue({ state: 'enrolled', escrowPin: escrowPinStatus });
+            const { coordinator } = setup({
+                keyDerivation: { getEscrowEnrollmentState },
+            });
+            await coordinator.initialize();
+            expect(coordinator.getState().status).toBe('ready');
+
+            await vi.waitFor(() =>
+                expect(coordinator.getState()).toMatchObject({ escrowPin: escrowPinStatus })
+            );
+            expect(getEscrowEnrollmentState).toHaveBeenCalledWith({
+                token: 'mock-token',
+                providerType: 'firebase',
+            });
+        });
+        it('normalizes a legacy string enrollment state into an EscrowEnrollmentState object', async () => {
+            const getEscrowEnrollmentState = vi.fn().mockResolvedValue('enrolled');
+            const { coordinator } = setup({
+                keyDerivation: { getEscrowEnrollmentState },
+            });
+            await coordinator.initialize();
+            expect(coordinator.getState().status).toBe('ready');
+
+            await expect(coordinator.getEscrowEnrollmentState()).resolves.toEqual({
+                state: 'enrolled',
+            });
         });
         it('discovers a pending hold and clears it after cancellation', async () => {
             const hold = {
