@@ -345,5 +345,3 @@ Adding the CTID as an alignment tells verifiers which registered definition each
 3. Prefer `alignment` over inventing a `skills` array; prefer `result` over inventing a `score` field. Other wallets will understand the first and ignore the second.
 4. Include only what the credential needs. Smaller credentials are easier to display and verify.
 5. `issueCredential()` fills in `issuer` and the issuance date if you leave them out.
-
-Every example on this page is issued in CI (`packages/credential-library/src/__tests__/docs-json.test.ts`), so it is safe to copy.
