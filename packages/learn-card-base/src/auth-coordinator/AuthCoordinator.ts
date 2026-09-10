@@ -62,11 +62,28 @@ import type {
     AuthProvider,
     AuthUser,
     AuthCoordinatorConfig,
+    EscrowEnrollmentState,
     KeyDerivationStrategy,
     RecoveryMethodInfo,
     RecoveryReason,
     UnifiedAuthState,
 } from './types';
+
+/** True for recovery inputs that consume a single-use escrow hold (delay or PIN release). */
+const isEscrowRecoveryMethod = (input: unknown): boolean =>
+    typeof input === 'object' &&
+    input !== null &&
+    'method' in input &&
+    (input.method === 'escrow' || input.method === 'escrow-pin');
+
+/** Legacy strategies resolve a bare state string; PIN-aware strategies resolve the full object. */
+const normalizeEscrowEnrollmentState = (
+    result: EscrowEnrollmentState['state'] | EscrowEnrollmentState | undefined
+): EscrowEnrollmentState => {
+    if (result === undefined) return { state: 'disabled' };
+    if (typeof result === 'string') return { state: result };
+    return result;
+};
 
 export class AuthCoordinator {
     private state: UnifiedAuthState = { status: 'idle' };
@@ -134,7 +151,8 @@ export class AuthCoordinator {
     ): Promise<void> {
         if (
             !this.keyDerivation.ensureEscrowEnrollment &&
-            !this.keyDerivation.getEscrowRecoveryStatus
+            !this.keyDerivation.getEscrowRecoveryStatus &&
+            !this.keyDerivation.getEscrowEnrollmentState
         )
             return;
         const generation = ++this.escrowStatusGeneration;
@@ -158,6 +176,18 @@ export class AuthCoordinator {
                           })
                         : undefined
                 ).catch(err => log.warn('escrow.enrollment.failed', err));
+            }
+            if (this.keyDerivation.getEscrowEnrollmentState) {
+                try {
+                    const enrollment = normalizeEscrowEnrollmentState(
+                        await this.keyDerivation.getEscrowEnrollmentState(credentials)
+                    );
+                    if (isCurrentAccount() && this.state.status === 'ready') {
+                        this.setState({ ...this.state, escrowPin: enrollment.escrowPin });
+                    }
+                } catch (err) {
+                    log.warn('escrow.pin.status.failed', err);
+                }
             }
             const hold = await this.keyDerivation.getEscrowRecoveryStatus?.(credentials);
             if (isCurrentAccount() && this.state.status === 'ready' && hold?.status === 'pending') {
@@ -227,12 +257,11 @@ export class AuthCoordinator {
         return this.state;
     }
 
-    /** Read automatic recovery status from a signed-in device. */
-    async getEscrowEnrollmentState() {
+    /** Read automatic recovery status (and PIN status) from a signed-in device. */
+    async getEscrowEnrollmentState(): Promise<EscrowEnrollmentState> {
         if (this.state.status !== 'ready') throw new Error('Sign in to manage recovery');
-        return (
-            this.keyDerivation.getEscrowEnrollmentState?.(await this.getAuthCredentials()) ??
-            ('disabled' as const)
+        return normalizeEscrowEnrollmentState(
+            await this.keyDerivation.getEscrowEnrollmentState?.(await this.getAuthCredentials())
         );
     }
 
@@ -281,6 +310,72 @@ export class AuthCoordinator {
                 signDidAuthVp: this.config.signDidAuthVp!,
             })
         );
+    }
+
+    /** Set or change a PIN by rotating escrow material with an owner proof. */
+    async setEscrowPin(pin: string): Promise<void> {
+        const ready = this.state;
+        if (
+            ready.status !== 'ready' ||
+            !this.keyDerivation.setEscrowPin ||
+            !this.config.signDidAuthVp
+        ) {
+            throw new Error('Sign in on a trusted device to manage recovery');
+        }
+        const generation = ++this.escrowStatusGeneration;
+        await this.runEscrowOperation(async () =>
+            this.keyDerivation.setEscrowPin!({
+                ...(await this.getAuthCredentials()),
+                privateKey: ready.privateKey,
+                signDidAuthVp: this.config.signDidAuthVp!,
+                pin,
+            })
+        );
+        await this.refreshEscrowPinStatus(ready, generation);
+    }
+
+    /** Remove a PIN by rotating escrow material with an owner proof. */
+    async clearEscrowPin(): Promise<void> {
+        const ready = this.state;
+        if (
+            ready.status !== 'ready' ||
+            !this.keyDerivation.clearEscrowPin ||
+            !this.config.signDidAuthVp
+        ) {
+            throw new Error('Sign in on a trusted device to manage recovery');
+        }
+        const generation = ++this.escrowStatusGeneration;
+        await this.runEscrowOperation(async () =>
+            this.keyDerivation.clearEscrowPin!({
+                ...(await this.getAuthCredentials()),
+                privateKey: ready.privateKey,
+                signDidAuthVp: this.config.signDidAuthVp!,
+            })
+        );
+        await this.refreshEscrowPinStatus(ready, generation);
+    }
+
+    /** Re-fetch enrollment after a PIN change so `ready.escrowPin` reflects the new status. */
+    private async refreshEscrowPinStatus(
+        ready: Extract<UnifiedAuthState, { status: 'ready' }>,
+        generation: number
+    ): Promise<void> {
+        if (!this.keyDerivation.getEscrowEnrollmentState) return;
+        try {
+            const enrollment = normalizeEscrowEnrollmentState(
+                await this.keyDerivation.getEscrowEnrollmentState(await this.getAuthCredentials())
+            );
+            if (
+                generation === this.escrowStatusGeneration &&
+                this.state.status === 'ready' &&
+                this.state.privateKey === ready.privateKey &&
+                this.state.authUser?.id === ready.authUser?.id
+            ) {
+                this.setState({ ...this.state, escrowPin: enrollment.escrowPin });
+            }
+        } catch (err) {
+            log.warn('escrow.pin.refresh.failed', err);
+        }
     }
 
     /** Helper: get token + providerType from the auth provider.
@@ -820,23 +915,14 @@ export class AuthCoordinator {
      * Delegates the actual recovery logic to the strategy's executeRecovery().
      */
     async recover(input: unknown): Promise<UnifiedAuthState> {
-        if (
-            typeof input === 'object' &&
-            input !== null &&
-            'method' in input &&
-            input.method === 'escrow'
-        ) {
+        if (isEscrowRecoveryMethod(input)) {
             return this.runEscrowOperation(() => this.executeRecovery(input));
         }
         return this.executeRecovery(input);
     }
 
     private async executeRecovery(input: unknown): Promise<UnifiedAuthState> {
-        const isEscrow =
-            typeof input === 'object' &&
-            input !== null &&
-            'method' in input &&
-            input.method === 'escrow';
+        const isEscrow = isEscrowRecoveryMethod(input);
         if (isEscrow && this.escrowRecoveryInFlight) throw new Error('Recovery is already running');
         if (
             this.state.status === 'identity_recovery' &&

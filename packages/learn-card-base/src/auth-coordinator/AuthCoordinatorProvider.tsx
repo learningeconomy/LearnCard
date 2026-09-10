@@ -64,6 +64,8 @@ export interface AuthCoordinatorContextValue {
     cancelEscrowRecovery: AuthCoordinator['cancelEscrowRecovery'];
     disableEscrowRecovery: AuthCoordinator['disableEscrowRecovery'];
     enableEscrowRecovery: AuthCoordinator['enableEscrowRecovery'];
+    setEscrowPin: AuthCoordinator['setEscrowPin'];
+    clearEscrowPin: AuthCoordinator['clearEscrowPin'];
     getEscrowEnrollmentState: AuthCoordinator['getEscrowEnrollmentState'];
     beginIdentityRecovery: () => void;
     sendIdentityRecoveryCode: (email: string) => Promise<void>;
@@ -399,6 +401,14 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
         if (!coordinatorRef.current) throw new Error('Auth coordinator is not initialized');
         return coordinatorRef.current.enableEscrowRecovery();
     }, []);
+    const setEscrowPin = useCallback(async (pin: string) => {
+        if (!coordinatorRef.current) throw new Error('Auth coordinator is not initialized');
+        return coordinatorRef.current.setEscrowPin(pin);
+    }, []);
+    const clearEscrowPin = useCallback(async () => {
+        if (!coordinatorRef.current) throw new Error('Auth coordinator is not initialized');
+        return coordinatorRef.current.clearEscrowPin();
+    }, []);
     const getEscrowEnrollmentState = useCallback(async () => {
         if (!coordinatorRef.current) throw new Error('Auth coordinator is not initialized');
         return coordinatorRef.current.getEscrowEnrollmentState();
@@ -515,6 +525,8 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             cancelEscrowRecovery,
             disableEscrowRecovery,
             enableEscrowRecovery,
+            setEscrowPin,
+            clearEscrowPin,
             getEscrowEnrollmentState,
             beginIdentityRecovery,
             sendIdentityRecoveryCode,
@@ -554,6 +566,8 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             cancelEscrowRecovery,
             disableEscrowRecovery,
             enableEscrowRecovery,
+            setEscrowPin,
+            clearEscrowPin,
             getEscrowEnrollmentState,
             beginIdentityRecovery,
             sendIdentityRecoveryCode,
