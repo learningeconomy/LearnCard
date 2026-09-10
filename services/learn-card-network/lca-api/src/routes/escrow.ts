@@ -57,6 +57,8 @@ import {
 const unavailableMessage = 'Automatic recovery is not available for this account.';
 const invalidMessage = 'This recovery request is no longer valid.';
 const pinLockedMessage = 'Too many incorrect PIN attempts. You can still recover by waiting.';
+// Keep throttling distinct: clients reserve the locked message for lifetime PIN exhaustion.
+const pinThrottledMessage = 'Please wait before trying again.';
 
 // Follow qr-login's Redis INCR/EXPIRE per-IP limiter. keys.ts has only OTP-specific limits.
 const limitPinCompletion = async (clientIp: string | undefined): Promise<void> => {
@@ -67,7 +69,7 @@ const limitPinCompletion = async (clientIp: string | undefined): Promise<void> =
     if (count > 20)
         throw new TRPCError({
             code: 'TOO_MANY_REQUESTS',
-            message: 'Please wait before trying again.',
+            message: pinThrottledMessage,
         });
 };
 
@@ -606,26 +608,33 @@ export const escrowRouter = t.router({
                     // Keep the typed mismatch inside the wrapper; never expose enclave internals.
                     if (hold.releasePolicy === 'pin' && error instanceof EscrowPinMismatchError)
                         return { mismatch: true as const };
-                    if (reserved?.escrowPin?.failedAttempts === ESCROW_PIN_MAX_ATTEMPTS)
+                    if (reserved?.escrowPin?.failedAttempts === ESCROW_PIN_MAX_ATTEMPTS) {
+                        await markClaimedEscrowHoldFailed(
+                            hold._id,
+                            'pin-locked',
+                            completed.completedAt!
+                        );
                         await lockPin(hold, userKey);
+                    }
                     throw error;
                 }
             });
             if (release.mismatch) {
-                await markClaimedEscrowHoldFailed(hold._id, 'pin-mismatch', completed.completedAt!);
+                const attemptsRemaining =
+                    ESCROW_PIN_MAX_ATTEMPTS - reserved!.escrowPin!.failedAttempts;
+                const cancelReason = attemptsRemaining <= 0 ? 'pin-locked' : 'pin-mismatch';
+                await markClaimedEscrowHoldFailed(hold._id, cancelReason, completed.completedAt!);
                 void notifyEscrowHoldEvent({
                     kind: 'cancelled',
                     hold: {
                         ...completed,
                         status: 'cancelled',
                         cancelledBy: 'system',
-                        cancelReason: 'pin-mismatch',
+                        cancelReason,
                         cancelledAt: new Date(),
                     },
                     userKey,
                 });
-                const attemptsRemaining =
-                    ESCROW_PIN_MAX_ATTEMPTS - reserved!.escrowPin!.failedAttempts;
                 if (attemptsRemaining <= 0) {
                     await lockPin(hold, userKey);
                     throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: pinLockedMessage });

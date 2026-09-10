@@ -102,7 +102,11 @@ export const getEscrowPinStatus = (
     userKey: MongoUserKeyType
 ): z.infer<typeof EscrowPinStatusValidator> => {
     const pin = userKey.escrowPin;
-    const enabled = !!pin && !pin.disabledAt && pin.shareVersion === userKey.shareVersion;
+    const enabled =
+        !!pin &&
+        !pin.disabledAt &&
+        pin.shareVersion === userKey.shareVersion &&
+        pin.failedAttempts < ESCROW_PIN_MAX_ATTEMPTS;
     return {
         enabled,
         attemptsRemaining: pin ? Math.max(0, ESCROW_PIN_MAX_ATTEMPTS - pin.failedAttempts) : 0,
