@@ -95,17 +95,36 @@ Add the categories you want to share under `read.credentials.categories`. The ca
 
 ## Reading it from your platform
 
-Once a user has consented, the fields appear in their consented data like any other category. Each record's `credentials` array holds `{ category, uri }` pairs; resolve the URI to get the credential, and the structured data is in `credentialSubject.dataPayload`:
+Once a user has consented, their shared fields show up in their consented data like any other category: each record's `credentials` array holds `{ category, uri }` pairs. Resolve the URI and the structured data is in `credentialSubject.dataPayload`. Two things to remember: the learner chooses which credential URIs to share under each category, and if the credential was stored encrypted, your platform's DID must be one of its encryption recipients — consent to a category does not by itself grant decryption.
 
-```typescript
-const { records } = await learnCard.invoke.getConsentFlowDataForDid(userDid);
-const mine = records.filter(r => r.contractUri === contractUri);
+<!-- snippet: understand/read-verifiable-data.mjs -->
 
-for (const { category, uri } of mine.flatMap(r => r.credentials)) {
+```javascript
+import { initLearnCard } from '@learncard/init';
+
+const { SECURE_SEED, USER_DID, CONTRACT_URI } = process.env;
+
+const learnCard = await initLearnCard({ seed: SECURE_SEED, network: true });
+
+// 1. Is this user's consent still live? Never read without checking.
+const profile = await learnCard.invoke.getProfile(USER_DID);
+const consented =
+    profile && (await learnCard.invoke.verifyConsent(CONTRACT_URI, profile.profileId));
+if (!consented) throw new Error('No active consent');
+
+// 2. Fetch what they shared, keeping only records for this contract.
+const { records } = await learnCard.invoke.getConsentFlowDataForDid(USER_DID, { limit: 100 });
+const mine = records.filter(record => record.contractUri === CONTRACT_URI);
+
+// 3. Resolve the Pay Rate credential(s) and read the structured payload.
+for (const { category, uri } of mine.flatMap(record => record.credentials)) {
     if (category !== 'Pay Rate') continue;
+
     const vc = await learnCard.read.get(uri);
-    console.log(vc.credentialSubject.dataPayload); // { salary: '85000', salaryType: 'per_year' }
+    console.log(JSON.stringify(vc.credentialSubject.dataPayload));
 }
 ```
+
+<!-- /snippet -->
 
 Gate every read on `verifyConsent(contractUri, profileId)` first — see [Reading & Writing Consented Data](writing-consented-data.md).

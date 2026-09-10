@@ -31,13 +31,28 @@ DID-Auth proves you control a DID by signing a challenge with its private key �
 
 ## In the SDK
 
-```typescript
-const learnCard = await initLearnCard({ seed: process.env.SECURE_SEED, network: true });
+Set `SECURE_SEED` to your 64-hex seed and `PROFILE_ID` to a unique profile ID. This creates a profile if needed and prints only the key type and curve, not private key material.
 
-learnCard.id.did('key'); // 'did:key:z6Mk…' — derived from your seed
-learnCard.id.did(); // your did:web once you have a network profile; did:key before that
-learnCard.id.keypair(); // the underlying Ed25519 key as a JWK
+<!-- snippet: understand/dids.mjs -->
+
+```javascript
+import { initLearnCard } from '@learncard/init';
+
+const { SECURE_SEED, PROFILE_ID } = process.env;
+if (!SECURE_SEED || !PROFILE_ID) throw new Error('Set SECURE_SEED and PROFILE_ID');
+const learnCard = await initLearnCard({ seed: SECURE_SEED, network: true });
+if (!(await learnCard.invoke.getProfile())) {
+    await learnCard.invoke.createProfile({ profileId: PROFILE_ID, displayName: 'Understand DIDs' });
+}
+console.log('profile:', learnCard.id.did());
+console.log('key:', learnCard.id.did('key'));
+const { kty, crv } = learnCard.id.keypair();
+console.log('keypair:', kty, crv); // Never print the private JWK fields.
 ```
+
+<!-- /snippet -->
+
+With seed-based network initialization, `id.did()` starts as `did:key` and switches to the profile's `did:web` when the profile is loaded or created. `id.did('key')` always derives the key DID from your seed.
 
 Without `network: true`, `id.did()` returns the `did:key`. The `id` [control plane](../architecture-and-principles/control-planes.md) is the same regardless of which plugin provides the keys.
 

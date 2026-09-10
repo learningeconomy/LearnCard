@@ -8,7 +8,8 @@ A Verifiable Credential (VC) in LearnCard is a JSON document that follows the W3
 {
     "@context": [
         "https://www.w3.org/2018/credentials/v1",
-        "https://w3id.org/vc/status-list/2021/v1"
+        "https://w3id.org/vc/status-list/2021/v1",
+        "https://schema.org/"
     ],
     "type": ["VerifiableCredential"],
     "credentialSubject": {
@@ -68,11 +69,11 @@ A Verifiable Credential (VC) in LearnCard is a JSON document that follows the W3
             "description": "Professional certification in web development",
             "criteria": {
                 "narrative": "Demonstrated proficiency in HTML, CSS, JavaScript, and modern frameworks"
-            },
-            "validFrom": "2023-01-01T00:00:00Z",
-            "validUntil": "2026-01-01T00:00:00Z"
+            }
         }
-    }
+    },
+    "issuanceDate": "2023-01-01T00:00:00Z",
+    "expirationDate": "2026-01-01T00:00:00Z"
 }
 ```
 
@@ -122,7 +123,9 @@ A Verifiable Credential (VC) in LearnCard is a JSON document that follows the W3
     "@context": [
         "https://www.w3.org/2018/credentials/v1",
         "https://w3id.org/vc/status-list/2021/v1",
-        "https://w3id.org/security/suites/ed25519-2020/v1"
+        "https://w3id.org/security/suites/ed25519-2020/v1",
+        "https://schema.org/",
+        "https://www.w3.org/2018/credentials/examples/v1"
     ],
     "type": ["VerifiableCredential", "EmploymentCredential"],
     "credentialSubject": {
@@ -147,8 +150,7 @@ A Verifiable Credential (VC) in LearnCard is a JSON document that follows the W3
     "@context": [
         "https://www.w3.org/2018/credentials/v1",
         "https://w3id.org/vc/status-list/2021/v1",
-        "https://purl.imsglobal.org/spec/ob/v3p0/context.json",
-        "https://example.org/contexts/skills.json"
+        "https://purl.imsglobal.org/spec/ob/v3p0/context.json"
     ],
     "type": ["VerifiableCredential", "OpenBadgeCredential"],
     "credentialSubject": {
@@ -157,24 +159,29 @@ A Verifiable Credential (VC) in LearnCard is a JSON document that follows the W3
         "achievement": {
             "id": "https://example.org/skills/001",
             "type": ["Achievement"],
+            "achievementType": "Competency",
             "name": "Advanced JavaScript Programming",
             "description": "Demonstrated advanced JavaScript programming skills",
             "criteria": {
                 "narrative": "Successfully completed advanced programming assessments"
-            }
-        },
-        "skills": [
-            {
-                "id": "https://example.org/skills/js-async",
-                "name": "Asynchronous JavaScript",
-                "proficiencyLevel": "Advanced"
             },
-            {
-                "id": "https://example.org/skills/js-frameworks",
-                "name": "JavaScript Frameworks",
-                "proficiencyLevel": "Intermediate"
-            }
-        ]
+            "alignment": [
+                {
+                    "type": ["Alignment"],
+                    "targetName": "Asynchronous JavaScript",
+                    "targetUrl": "https://example.org/skills/js-async",
+                    "targetType": "Competency",
+                    "targetFramework": "Example Skills Framework"
+                },
+                {
+                    "type": ["Alignment"],
+                    "targetName": "JavaScript Frameworks",
+                    "targetUrl": "https://example.org/skills/js-frameworks",
+                    "targetType": "Competency",
+                    "targetFramework": "Example Skills Framework"
+                }
+            ]
+        }
     }
 }
 ```
@@ -186,8 +193,7 @@ A Verifiable Credential (VC) in LearnCard is a JSON document that follows the W3
     "@context": [
         "https://www.w3.org/2018/credentials/v1",
         "https://w3id.org/vc/status-list/2021/v1",
-        "https://purl.imsglobal.org/spec/ob/v3p0/context.json",
-        "https://example.org/contexts/pathways.json"
+        "https://purl.imsglobal.org/spec/ob/v3p0/context.json"
     ],
     "type": ["VerifiableCredential", "OpenBadgeCredential"],
     "credentialSubject": {
@@ -196,16 +202,26 @@ A Verifiable Credential (VC) in LearnCard is a JSON document that follows the W3
         "achievement": {
             "id": "https://example.org/pathways/fullstack",
             "type": ["Achievement"],
+            "achievementType": "LearningProgram",
             "name": "Full Stack Developer Pathway",
-            "description": "Completed the full stack developer learning pathway"
+            "description": "Completed the full stack developer learning pathway",
+            "criteria": { "narrative": "Complete all six modules." },
+            "resultDescription": [
+                {
+                    "id": "https://example.org/pathways/fullstack/results/modules",
+                    "type": ["ResultDescription"],
+                    "name": "Modules completed",
+                    "resultType": "Result"
+                }
+            ]
         },
-        "pathway": {
-            "id": "https://example.org/pathways/fullstack",
-            "name": "Full Stack Developer",
-            "totalModules": 6,
-            "completedModules": 6,
-            "completionDate": "2023-06-15"
-        }
+        "result": [
+            {
+                "type": ["Result"],
+                "resultDescription": "https://example.org/pathways/fullstack/results/modules",
+                "value": "6 of 6"
+            }
+        ]
     }
 }
 ```
@@ -216,7 +232,9 @@ A Verifiable Credential (VC) in LearnCard is a JSON document that follows the W3
 {
     "@context": [
         "https://www.w3.org/2018/credentials/v1",
-        "https://w3id.org/vc/status-list/2021/v1"
+        "https://w3id.org/vc/status-list/2021/v1",
+        "https://schema.org/",
+        "https://www.w3.org/2018/credentials/examples/v1"
     ],
     "type": ["VerifiableCredential", "AttendanceCredential"],
     "credentialSubject": {
@@ -246,7 +264,9 @@ A Verifiable Credential (VC) in LearnCard is a JSON document that follows the W3
 {
     "@context": [
         "https://www.w3.org/2018/credentials/v1",
-        "https://w3id.org/vc/status-list/2021/v1"
+        "https://w3id.org/vc/status-list/2021/v1",
+        "https://schema.org/",
+        "https://www.w3.org/2018/credentials/examples/v1"
     ],
     "type": ["VerifiableCredential", "MembershipCredential"],
     "credentialSubject": {
@@ -259,10 +279,10 @@ A Verifiable Credential (VC) in LearnCard is a JSON document that follows the W3
             "url": "https://example.org/pda"
         },
         "membershipId": "PDA-98765",
-        "membershipLevel": "Professional",
-        "validFrom": "2023-01-01T00:00:00Z",
-        "validUntil": "2023-12-31T23:59:59Z"
-    }
+        "membershipLevel": "Professional"
+    },
+    "issuanceDate": "2023-01-01T00:00:00Z",
+    "expirationDate": "2023-12-31T23:59:59Z"
 }
 ```
 
@@ -320,10 +340,10 @@ Adding the CTID as an alignment tells verifiers which registered definition each
 
 ### Best Practices
 
-1. Always include the core W3C VC context
-2. Use specific types that match your credential purpose
-3. Include only necessary fields to keep credentials compact
-4. Ensure all custom fields are properly defined in contexts
-5. Remember that LearnCard will add issuance date and issuer DID automatically
+1. Start from Open Badges 3.0 (`OpenBadgeCredential` + `AchievementSubject`) unless you have a reason not to. Its vocabulary already covers skills (`alignment`), scores and progress (`result`), evidence, and validity.
+2. **Every field must be defined by a context you list.** Signing fails with `undefined JSON-LD term` otherwise. If you need a field OBv3 doesn't have, add `https://schema.org/` (for `name`, `description`, `startDate`…) or `https://www.w3.org/2018/credentials/examples/v1` (for VC 1.0 example terms) — or publish your own context and list it.
+3. Prefer `alignment` over inventing a `skills` array; prefer `result` over inventing a `score` field. Other wallets will understand the first and ignore the second.
+4. Include only what the credential needs. Smaller credentials are easier to display and verify.
+5. `issueCredential()` fills in `issuer` and the issuance date if you leave them out.
 
-For detailed examples of different credential types, see the examples section above.
+Every example on this page is issued in CI (`packages/credential-library/src/__tests__/docs-json.test.ts`), so it is safe to copy.

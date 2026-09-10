@@ -1761,6 +1761,7 @@
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/credential-library": "workspace:*",
+        "@learncard/didkey-plugin": "workspace:*",
         "@learncard/didkit-plugin": "workspace:*",
         "@learncard/helpers": "workspace:*",
         "@learncard/holder-continuity": "workspace:*",

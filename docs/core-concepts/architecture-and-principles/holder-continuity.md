@@ -35,50 +35,58 @@ The export preserves issuer-signed JSON. It does not normalize proofs or rewrite
 
 ## Zero-cooperation exit path
 
-A holder who can still access their wallet can export a bundle with the LearnCard CLI:
+A holder who can still access their wallet can export a bundle using `exportLearnCardBundle`, copy credentials into another wallet with `importLearnCardBundle`, and restore the original identity with `restoreLearnCardFromBundle`. These helpers are exported by `@learncard/holder-continuity`.
 
-```js
-const password = await getLearnCardBundlePassword();
+Install `@learncard/init` and `@learncard/holder-continuity`, and set `SECURE_SEED` to your 64-hex seed. This Node.js example exports to a temporary directory, imports into a fresh wallet, restores the original identity, and removes the temporary bundle. For a real backup, keep the ZIP in a secure location and choose your own strong password.
 
-await exportLearnCardBundle(learnCard, {
-    out: './learncard-export.zip',
-    password,
-});
-```
+<!-- snippet: understand/export-import-bundle.mjs -->
 
-The CLI also supports `await exportLearnCardBundle({ ...options })`, which exports the default `learnCard` wallet created at startup.
-
-The underlying bundle helpers live in `@learncard/holder-continuity`:
-
-```ts
+```javascript
+import { randomBytes } from 'node:crypto';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { initLearnCard } from '@learncard/init';
 import {
     exportLearnCardBundle,
     importLearnCardBundle,
     restoreLearnCardFromBundle,
 } from '@learncard/holder-continuity';
+
+if (!process.env.SECURE_SEED) throw new Error('Set SECURE_SEED');
+const learnCard = await initLearnCard({ seed: process.env.SECURE_SEED, network: true });
+await learnCard.invoke.getProfile(); // Load the network identity before comparing DIDs.
+const original = learnCard.id.did();
+// Example only: choose a unique, strong password for a real export.
+const password = 'correct horse battery staple';
+const directory = await mkdtemp(join(tmpdir(), 'learncard-bundle-'));
+try {
+    const path = join(directory, 'learncard-export.zip');
+    await exportLearnCardBundle(learnCard, { out: path, password });
+    const freshWallet = await initLearnCard({
+        seed: randomBytes(32).toString('hex'),
+        network: true,
+    });
+    const report = await importLearnCardBundle(path, {
+        password,
+        wallet: freshWallet,
+        verifyBeforeImport: true,
+    });
+    if (report.errors.length) throw new Error('Some bundle entries could not be imported');
+    console.log('imported:', report.importedCredentials);
+    const restored = await restoreLearnCardFromBundle(path, { password, init: { network: true } });
+    await restored.invoke.getProfile();
+    console.log('restored:', restored.id.did() === original);
+} finally {
+    await rm(directory, { recursive: true, force: true });
+}
 ```
+
+<!-- /snippet -->
+
+The LearnCard CLI also supports `await exportLearnCardBundle({ ...options })`, which exports its default `learnCard` wallet. `getLearnCardBundlePassword()` is a CLI REPL helper, not an export of the bundle package.
 
 After the ZIP is created, the holder can decrypt and inspect it with only the bundle password and public tooling. The readable `manifest.json` lists every payload and SHA-256 hash, while sensitive payloads and LearnCloud index records remain encrypted. Encrypted files use Argon2id and AES-GCM through the same `@learncard/sss-key-manager` password envelope used for account backup files.
-
-A fresh LearnCard wallet can import the bundle without help from the original LearnCard account:
-
-```js
-const freshWallet = await initLearnCard({ seed: '0'.repeat(64) });
-await importLearnCardBundle('./learncard-export.zip', {
-    password,
-    wallet: freshWallet,
-    verifyBeforeImport: true,
-});
-```
-
-The original wallet identity can also be reconstructed directly from the exported seed:
-
-```js
-const restoredWallet = await restoreLearnCardFromBundle('./learncard-export.zip', {
-    password,
-    init: { network: true, didkit: 'node' },
-});
-```
 
 Import writes to the target wallet. Use `verifyBeforeImport: true` when the target wallet can verify VCs/VPs before upload; otherwise, only import bundles from sources you trust.
 

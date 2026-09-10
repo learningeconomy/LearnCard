@@ -54,21 +54,52 @@ To learn more about [Control Planes](control-planes.md), as well as find recomme
 
 In code, constructing a LearnCard completely from scratch looks like this:
 
-```typescript
-const baseLearnCard = await initLearnCard({ custom: true });
-const didkitLearnCard = await baseLearnCard.addPlugin(await getDidKitPlugin());
-const didkeyLearnCard = await didkitLearnCard.addPlugin(
-    await getDidKeyPlugin(didkitLearnCard, 'a', 'key')
+Install `@learncard/init`, `@learncard/didkit-plugin`, and `@learncard/didkey-plugin`. Use a 32-byte (64-hex) seed; this example generates one if `SECURE_SEED` is unset.
+
+<!-- snippet: understand/compose-plugins.mjs -->
+
+```javascript
+import { randomBytes } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
+import { initLearnCard } from '@learncard/init';
+import { getDidKitPlugin } from '@learncard/didkit-plugin';
+import { getDidKeyPlugin } from '@learncard/didkey-plugin';
+
+const seed = process.env.SECURE_SEED ?? randomBytes(32).toString('hex');
+const require = createRequire(import.meta.url);
+const didkit = readFile(
+    require.resolve('@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm')
 );
-// repeat for any more plugins you'd like to add
+const baseLearnCard = await initLearnCard({ custom: true });
+const didkitLearnCard = await baseLearnCard.addPlugin(await getDidKitPlugin(didkit));
+const learnCard = await didkitLearnCard.addPlugin(
+    await getDidKeyPlugin(didkitLearnCard, seed, 'key')
+);
+console.log(learnCard.id.did());
 ```
+
+<!-- /snippet -->
 
 However, you don't have to start from scratch! Each instantiation function is completely able to add bespoke plugins to it:
 
-```typescript
-const emptyLearnCard = await initLearnCard();
-const customLearnCard = await emptyLearnCard.addPlugin(CustomPlugin);
+<!-- snippet: understand/add-plugin.mjs -->
+
+```javascript
+import { initLearnCard } from '@learncard/init';
+
+const HelloPlugin = {
+    name: 'Hello',
+    methods: {
+        hello: () => 'world',
+    },
+};
+const baseLearnCard = await initLearnCard({ custom: true });
+const learnCard = await baseLearnCard.addPlugin(HelloPlugin);
+console.log(learnCard.invoke.hello());
 ```
+
+<!-- /snippet -->
 
 ```mermaid
 sequenceDiagram
