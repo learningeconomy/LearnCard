@@ -12,6 +12,7 @@
         "claimedType": "Justificatif réclamé"
     },
     "common": {
+        "tryAgain": "Réessayer",
         "share": "Partager",
         "open": "Ouvrir",
         "accept": "Accepter",
@@ -2803,6 +2804,7 @@
             "deleteCredentialError": "Erreur lors de la suppression de l'accréditation : impossible de localiser l'ID d'enregistrement.",
             "shareLinkCopied": "Lien de partage copié dans le presse-papiers",
             "shareLinkCopyFailed": "Impossible de copier le lien de partage",
+            "shareLinkGenerationFailed": "Nous n’avons pas pu créer de lien de partage. Réessayez.",
             "templateIdCopied": "ID de modèle copié dans le presse-papiers",
             "templateIdCopyFailed": "Impossible de copier l'ID de modèle",
             "boostLinkCopied": "Lien du boost copié dans le presse-papiers",

@@ -12,6 +12,7 @@
         "claimedType": "تم استلام الاعتماد"
     },
     "common": {
+        "tryAgain": "حاول مجددًا",
         "share": "مشاركة",
         "open": "فتح",
         "accept": "قبول",
@@ -2803,6 +2804,7 @@
             "deleteCredentialError": "خطأ في حذف بيانات الاعتماد: تعذر تحديد موقع معرف السجل.",
             "shareLinkCopied": "تم نسخ رابط المشاركة إلى الحافظة",
             "shareLinkCopyFailed": "تعذر نسخ رابط المشاركة",
+            "shareLinkGenerationFailed": "تعذر إنشاء رابط للمشاركة. حاول مجددًا.",
             "templateIdCopied": "تم نسخ معرف القالب إلى الحافظة",
             "templateIdCopyFailed": "تعذر نسخ معرف القالب",
             "boostLinkCopied": "تم نسخ رابط Boost إلى الحافظة",

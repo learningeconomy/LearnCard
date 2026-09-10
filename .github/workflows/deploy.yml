@@ -886,21 +886,23 @@ jobs:
             # Deploy OTA update to CapGo
             - name: Upload to CapGo
               if: matrix.capgo
+              working-directory: apps/${{ steps.vars.outputs.project_name }}
               run: |
-                  bunx @capgo/cli@latest bundle upload \
+                  bunx --package @capgo/cli@8.50.3 capgo bundle upload \
                     ${{ steps.vars.outputs.capgo_id }} \
                     --delta \
                     --apikey ${{ secrets.CAPGO_TOKEN }} \
-                    --path ${{ steps.vars.outputs.build_path }} \
+                    --path "${{ github.workspace }}/${{ steps.vars.outputs.build_path }}" \
                     --channel ${{ steps.capgo-channel.outputs.channel }} \
                     --bundle ${{ steps.app-version.outputs.version }} \
-                    --package-json apps/${{ steps.vars.outputs.project_name }}/package.json \
-                    --node-modules node_modules
+                    --package-json package.json \
+                    --node-modules "${{ github.workspace }}/node_modules"
 
             - name: Set CapGo Channel
               if: matrix.capgo
+              working-directory: apps/${{ steps.vars.outputs.project_name }}
               run: |
-                  bunx @capgo/cli@latest channel set ${{ steps.capgo-channel.outputs.channel }} \
+                  bunx --package @capgo/cli@8.50.3 capgo channel set ${{ steps.capgo-channel.outputs.channel }} \
                     -s default \
                     -a ${{ secrets.CAPGO_TOKEN }} \
                     -b ${{ steps.app-version.outputs.version }} \
@@ -1274,7 +1276,9 @@ jobs:
                   package-manager-cache: false
 
             - name: Build packages
-              run: bunx nx run-many --target=build --exclude docs --exclude didkit-plugin-node
+              run: |
+                  PROJECTS=$(node scripts/select-registry-build-projects.mjs)
+                  bunx nx run-many --target=build --projects="$PROJECTS"
 
             # The native DIDKit package is published by didkit-plugin-node-prebuilds.yml
             # with platform artifacts. Keep it out of the generic changeset publish pass.
