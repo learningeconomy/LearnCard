@@ -642,9 +642,16 @@ describe('escrow PIN release', () => {
             const hold = await startPin();
             await expect(completePin(hold, wrongProof)).rejects.toMatchObject({
                 code: attempt === 10 ? 'TOO_MANY_REQUESTS' : 'FORBIDDEN',
+                message:
+                    attempt === 10
+                        ? 'Too many incorrect PIN attempts. You can still recover by waiting.'
+                        : `Incorrect PIN. ${10 - attempt} attempts left.`,
             });
-            // §0.9: the claimed mismatch stays pin-mismatch, including the last reservation.
-            expect((await findEscrowHoldById(hold.holdId))?.cancelReason).toBe('pin-mismatch');
+            expect(await findEscrowHoldById(hold.holdId)).toMatchObject({
+                status: 'cancelled',
+                cancelledBy: 'system',
+                cancelReason: attempt === 10 ? 'pin-locked' : 'pin-mismatch',
+            });
         }
         expect((await record())?.escrowPin).toMatchObject({
             failedAttempts: 10,
@@ -654,6 +661,37 @@ describe('escrow PIN release', () => {
         const fallback = await start();
         expect(fallback.releasePolicy).toBe('hold');
         expect(fallback).not.toHaveProperty('pinSalt');
+    });
+
+    it('uses a distinct IP throttle message without consuming a PIN attempt', async () => {
+        await enrollPin();
+        const hold = await startPin();
+        const redis = cache.redis ?? cache.node;
+        await redis.set('escrow:pin-complete:unknown', '20');
+        await expect(completePin(hold)).rejects.toMatchObject({
+            code: 'TOO_MANY_REQUESTS',
+            message: 'Please wait before trying again.',
+        });
+        expect((await record())?.escrowPin?.failedAttempts).toBe(0);
+        expect((await findEscrowHoldById(hold.holdId))?.status).toBe('pending');
+    });
+
+    it('marks the tenth claimed hold pin-locked when proof is missing', async () => {
+        await enrollPin();
+        await getUserKeysCollection().updateOne(
+            { 'authProviders.id': authProvider.id },
+            { $set: { 'escrowPin.failedAttempts': 9 } }
+        );
+        const hold = await startPin();
+        await expect(getClient().escrow.completeRecovery(resume(hold))).rejects.toMatchObject({
+            code: 'FORBIDDEN',
+        });
+        expect(await findEscrowHoldById(hold.holdId)).toMatchObject({
+            status: 'cancelled',
+            cancelledBy: 'system',
+            cancelReason: 'pin-locked',
+        });
+        expect((await record())?.escrowPin?.disabledAt).toBeInstanceOf(Date);
     });
 
     it('cancels a pending PIN hold as pin-locked when no reservation remains', async () => {
