@@ -52,9 +52,10 @@ type ChildInviteModalSimpleProps = {
     >;
 };
 
-const StateValidator = z.object({
-    name: z.string().min(1, m['arabicFixes.nameRequired']()),
-});
+const getStateValidator = () =>
+    z.object({
+        name: z.string().min(1, m['arabicFixes.nameRequired']()),
+    });
 
 export const ChildInviteModalSimple: React.FC<ChildInviteModalSimpleProps> = ({
     selectedFamily,
@@ -91,7 +92,7 @@ export const ChildInviteModalSimple: React.FC<ChildInviteModalSimpleProps> = ({
     });
 
     const validate = () => {
-        const parsedData = StateValidator.safeParse({
+        const parsedData = getStateValidator().safeParse({
             name: name,
         });
 

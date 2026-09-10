@@ -62,14 +62,15 @@ interface OrganizationSetupStepProps {
     onComplete: (organization: OrganizationProfile) => void;
 }
 
-const NameValidator = z.object({
-    name: z
-        .string()
-        .nonempty(m['arabicFixes.nameRequired']())
-        .min(3, 'Must contain at least 3 characters.')
-        .max(30, 'Must contain at most 30 characters.')
-        .regex(/^[A-Za-z0-9 ]+$/, 'Alpha numeric characters only'),
-});
+const getNameValidator = () =>
+    z.object({
+        name: z
+            .string()
+            .nonempty(m['arabicFixes.nameRequired']())
+            .min(3, 'Must contain at least 3 characters.')
+            .max(30, 'Must contain at most 30 characters.')
+            .regex(/^[A-Za-z0-9 ]+$/, 'Alpha numeric characters only'),
+    });
 
 const ProfileIDValidator = z.object({
     profileId: z
@@ -171,7 +172,7 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
     };
 
     const validateName = () => {
-        const result = NameValidator.safeParse({ name: orgName });
+        const result = getNameValidator().safeParse({ name: orgName });
         if (!result.success) {
             setNameError(result.error.issues[0]?.message || 'Invalid name');
             return false;
@@ -370,8 +371,9 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
                 );
 
                 if (sentBoost) {
-                    const issuedVcUri =
-                        await wallet?.store?.LearnCloud?.uploadEncrypted?.(sentBoost);
+                    const issuedVcUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(
+                        sentBoost
+                    );
                     if (issuedVcUri) {
                         await addCredentialToWallet({ uri: issuedVcUri });
                     }
@@ -755,15 +757,15 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
                                         isUniqueValid
                                             ? 'bg-emerald-100 text-emerald-700'
                                             : uniqueProfileFetching
-                                              ? 'bg-amber-100 text-amber-700'
-                                              : 'bg-gray-100 text-gray-500'
+                                            ? 'bg-amber-100 text-amber-700'
+                                            : 'bg-gray-100 text-gray-500'
                                     }`}
                                 >
                                     {uniqueProfileFetching
                                         ? 'Checking...'
                                         : isUniqueValid
-                                          ? 'Available'
-                                          : 'Must be unique'}
+                                        ? 'Available'
+                                        : 'Must be unique'}
                                 </span>
                             </div>
 

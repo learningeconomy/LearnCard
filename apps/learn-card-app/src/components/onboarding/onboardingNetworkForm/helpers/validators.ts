@@ -2,21 +2,22 @@ import { z } from 'zod';
 import { calculateAge } from 'learn-card-base/helpers/dateHelpers';
 import * as m from '../../../../paraglide/messages.js';
 
-export const StateValidator = z.object({
-    name: z
-        .string()
-        .nonempty(m['arabicFixes.nameRequired']())
-        .min(3, ' Must contain at least 3 character(s).')
-        .max(30, ' Must contain at most 30 character(s).')
-        .regex(/^[A-Za-z0-9 ]+$/, ' Alpha numeric characters(s) only'),
-    dob: z
-        .string()
-        .nonempty(' Date of birth is required.')
-        .refine(dob => !Number.isNaN(calculateAge(dob)), {
-            message: ' Invalid date of birth.',
-        }),
-    country: z.string().nonempty(' Country is required.'),
-});
+export const getStateValidator = () =>
+    z.object({
+        name: z
+            .string()
+            .nonempty(m['arabicFixes.nameRequired']())
+            .min(3, ' Must contain at least 3 character(s).')
+            .max(30, ' Must contain at most 30 character(s).')
+            .regex(/^[A-Za-z0-9 ]+$/, ' Alpha numeric characters(s) only'),
+        dob: z
+            .string()
+            .nonempty(' Date of birth is required.')
+            .refine(dob => !Number.isNaN(calculateAge(dob)), {
+                message: ' Invalid date of birth.',
+            }),
+        country: z.string().nonempty(' Country is required.'),
+    });
 
 export const ProfileIDStateValidator = z.object({
     profileId: z
@@ -30,4 +31,4 @@ export const ProfileIDStateValidator = z.object({
         ),
 });
 
-export const DobValidator = StateValidator.pick({ dob: true });
+export const getDobValidator = () => getStateValidator().pick({ dob: true });

@@ -55,15 +55,16 @@ type ChildInviteModalProps = {
 
 const COUNTRIES: Record<string, string> = countries as Record<string, string>;
 
-const StateValidator = z.object({
-    name: z.string().min(1, m['arabicFixes.nameRequired']()),
-    dob: z
-        .string()
-        .min(1, 'Date of birth is required!')
-        .refine(dob => !Number.isNaN(calculateAge(dob)), {
-            message: 'Invalid date of birth.',
-        }),
-});
+const getStateValidator = () =>
+    z.object({
+        name: z.string().min(1, m['arabicFixes.nameRequired']()),
+        dob: z
+            .string()
+            .min(1, 'Date of birth is required!')
+            .refine(dob => !Number.isNaN(calculateAge(dob)), {
+                message: 'Invalid date of birth.',
+            }),
+    });
 
 export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
     viewMode = ChildInviteModalViewModeEnum.create,
@@ -94,7 +95,7 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
             ? existingChild?.learnCardID
             : getLearnCardIDStyleDefaults(LearnCardIDCMSTabsEnum.dark)
     );
-    const [dob, setDob] = useState<string>(isInEditMode ? (existingChild?.dob ?? '') : '');
+    const [dob, setDob] = useState<string>(isInEditMode ? existingChild?.dob ?? '' : '');
     const [country, setCountry] = useState<string | undefined>(
         isInEditMode ? existingChild?.country : undefined
     );
@@ -114,7 +115,7 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
     });
 
     const validate = () => {
-        const parsedData = StateValidator.safeParse({
+        const parsedData = getStateValidator().safeParse({
             name: name,
             dob: dob,
         });

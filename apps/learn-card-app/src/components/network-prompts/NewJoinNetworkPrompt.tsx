@@ -37,14 +37,15 @@ import { m } from '../../paraglide/messages.js';
 
 import useTheme from '../../theme/hooks/useTheme';
 
-const StateValidator = z.object({
-    name: z
-        .string()
-        .nonempty(m['arabicFixes.nameRequired']())
-        .min(3, ' Must contain at least 3 character(s).')
-        .max(30, ' Must contain at most 30 character(s).')
-        .regex(/^[A-Za-z0-9 ]+$/, ' Alpha numeric characters(s) only'),
-});
+const getStateValidator = () =>
+    z.object({
+        name: z
+            .string()
+            .nonempty(m['arabicFixes.nameRequired']())
+            .min(3, ' Must contain at least 3 character(s).')
+            .max(30, ' Must contain at most 30 character(s).')
+            .regex(/^[A-Za-z0-9 ]+$/, ' Alpha numeric characters(s) only'),
+    });
 
 const ProfileIDStateValidator = z.object({
     profileId: z
@@ -122,7 +123,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
     });
 
     const validate = () => {
-        const parsedData = StateValidator.safeParse({
+        const parsedData = getStateValidator().safeParse({
             name: name,
         });
 

@@ -4,7 +4,7 @@ import { getLogger } from 'learn-card-base';
 const log = getLogger('family-pin-wrapper');
 
 import FamilyPinModal from './FamilyPinModal';
-import { confirmPinValidator, existingPinValidator, pinValidator } from './familyPin.helpers';
+import { getConfirmPinValidator, existingPinValidator, pinValidator } from './familyPin.helpers';
 import { currentUserStore, switchedProfileStore, useModal, useVerifyPin } from 'learn-card-base';
 
 export enum FamilyPinViewModeEnum {
@@ -55,7 +55,7 @@ export const FamilyPinWrapper: React.FC<FamilyPinWrapperProps> = ({
                 validator = pinValidator;
                 break;
             case 'confirmPin':
-                validator = confirmPinValidator;
+                validator = getConfirmPinValidator();
                 break;
             case 'existingPin':
                 validator = existingPinValidator;
