@@ -20,6 +20,7 @@ describe('token scopes', () => {
     it('writes send.sh that reads API_TOKEN from .env without executing it', () => {
         const written = withEnvTokenLoader(SEND_SH);
         expect(written).toContain("sed -n 's/^API_TOKEN=//p' .env");
+        expect(written).not.toMatch(/tr -d/);
         expect(written).toContain('Bearer $TOKEN');
         expect(written).not.toContain('. .env');
         expect(written).not.toContain('source .env');

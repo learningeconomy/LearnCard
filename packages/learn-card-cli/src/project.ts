@@ -271,9 +271,9 @@ export const localizeSnippet = (
  */
 export const ENV_TOKEN_LOADER = `#!/bin/sh
 set -eu
-# Read API_TOKEN from .env without executing it.
+# Read API_TOKEN from .env without executing it (strips optional quotes).
 if [ -f .env ]; then
-  API_TOKEN=$(sed -n 's/^API_TOKEN=//p' .env | tr -d '"'"'"'"'")
+  API_TOKEN=$(sed -n 's/^API_TOKEN=//p' .env | sed 's/^["'"'"']//; s/["'"'"']$//')
 fi
 TOKEN=\${TOKEN:-\${API_TOKEN:-}}
 : "\${TOKEN:?Run npx @learncard/cli token first}"

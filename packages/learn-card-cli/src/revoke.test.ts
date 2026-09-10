@@ -1,25 +1,29 @@
 import { describe, expect, it } from 'vitest';
-import { revocationTarget } from './revoke';
+import { recipientOf, templateUriOf } from './revoke';
 
-describe('revocation target', () => {
-    it('resolves an issued Boost to the exact recipient and template', () => {
-        expect(
-            revocationTarget(
-                {
-                    boostId: 'lc:boost',
-                    credentialSubject: { id: 'did:web:network.learncard.com:users:alice' },
-                },
-                {}
-            )
-        ).toEqual({ templateUri: 'lc:boost', profileId: 'alice' });
+describe('revoke targeting', () => {
+    it('reads the template URI from the credential boostId', () => {
+        expect(templateUriOf({ boostId: 'lc:network:x/trpc:boost:1' }, {})).toBe(
+            'lc:network:x/trpc:boost:1'
+        );
     });
-    it('supports explicit details and rejects ambiguous subjects', () => {
-        expect(revocationTarget(null, { templateUri: 'lc:boost', recipient: 'alice' })).toEqual({
-            templateUri: 'lc:boost',
-            profileId: 'alice',
-        });
-        expect(() =>
-            revocationTarget({ credentialSubject: [{ id: 'one' }, { id: 'two' }] }, {})
-        ).toThrow('--template-uri');
+
+    it('prefers an explicit --template-uri', () => {
+        expect(templateUriOf({ boostId: 'lc:boost:a' }, { templateUri: 'lc:boost:b' })).toBe(
+            'lc:boost:b'
+        );
+    });
+
+    it('explains when a credential did not come from a template', () => {
+        expect(() => templateUriOf({ id: 'urn:uuid:1' }, {})).toThrow(/not issued from a template/);
+    });
+
+    it('finds the recipient holding the exact credential URI', () => {
+        const records = [
+            { to: { profileId: 'alice' }, uri: 'lc:network:x/trpc:credential:1' },
+            { to: { profileId: 'bob' }, uri: 'lc:network:x/trpc:credential:2' },
+        ];
+        expect(recipientOf(records, 'lc:network:x/trpc:credential:2')).toBe('bob');
+        expect(recipientOf(records, 'lc:network:x/trpc:credential:9')).toBeUndefined();
     });
 });

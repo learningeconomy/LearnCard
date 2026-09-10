@@ -6,27 +6,24 @@ export interface RevokeOptions extends ProjectOptions {
     recipient?: string;
 }
 
-/** Boosts contain their template URI and a single recipient's network DID. */
-export const revocationTarget = (credential: unknown, options: RevokeOptions) => {
+/** Template URI comes from the credential's `boostId`; the recipient from the network's recipient list. */
+export const templateUriOf = (credential: unknown, options: RevokeOptions): string => {
     const value =
         credential && typeof credential === 'object' ? (credential as Record<string, unknown>) : {};
     const templateUri =
         options.templateUri || (typeof value.boostId === 'string' ? value.boostId : undefined);
-    const subjects = Array.isArray(value.credentialSubject)
-        ? value.credentialSubject
-        : [value.credentialSubject];
-    const subject =
-        subjects.length === 1 ? (subjects[0] as { id?: unknown } | undefined) : undefined;
-    const did = typeof subject?.id === 'string' ? subject.id : '';
-    const profileId =
-        options.recipient ||
-        (did.startsWith('did:web:') ? did.match(/:users:([^:]+)$/)?.[1] : undefined);
-    if (!templateUri || !profileId)
+    if (!templateUri)
         throw new Error(
-            'Cannot resolve the template and recipient. Pass --template-uri <uri> and --recipient <profileId> (not an email).'
+            'This credential was not issued from a template. Pass --template-uri <uri> and --recipient <profileId>.'
         );
-    return { templateUri, profileId };
+    return templateUri;
 };
+
+type Recipient = { to: { profileId: string }; uri?: string };
+
+/** Find which recipient of a template holds this exact credential URI. */
+export const recipientOf = (records: Recipient[], credentialUri: string): string | undefined =>
+    records.find(record => record.uri === credentialUri)?.to.profileId;
 
 export const runRevoke = async (uri: string, options: RevokeOptions): Promise<void> => {
     const project = await loadProject(process.cwd());
@@ -34,7 +31,25 @@ export const runRevoke = async (uri: string, options: RevokeOptions): Promise<vo
     const learnCard = await connect(project, options);
     const credential =
         options.templateUri && options.recipient ? undefined : await learnCard.read.get(uri);
-    const target = revocationTarget(credential, options);
+    const templateUri = templateUriOf(credential, options);
+    let profileId = options.recipient;
+    let cursor: string | undefined;
+    while (!profileId) {
+        const page = await learnCard.invoke.getPaginatedBoostRecipients(
+            templateUri,
+            100,
+            cursor,
+            true
+        );
+        profileId = recipientOf(page.records, uri);
+        if (profileId || !page.hasMore) break;
+        cursor = page.cursor ?? undefined;
+    }
+    if (!profileId)
+        throw new Error(
+            `No recipient of ${templateUri} holds ${uri}. If it was sent to an email and not yet claimed, there is nothing to revoke; otherwise pass --recipient <profileId>.`
+        );
+    const target = { templateUri, profileId };
     const result = options.suspend
         ? await learnCard.invoke.suspendBoostRecipient(target.templateUri, target.profileId, uri)
         : await learnCard.invoke.revokeBoostRecipient(target.templateUri, target.profileId, uri);
