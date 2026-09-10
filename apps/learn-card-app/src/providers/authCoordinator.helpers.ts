@@ -35,7 +35,9 @@ export const countUserConfiguredRecoveryMethods = (
     methods: Array<{ type: string; confirmedAt?: Date | string }>,
     maskedRecoveryEmail?: string | null
 ): number => {
-    const nonEmailMethods = methods.filter(method => method.type !== 'email').length;
+    const nonEmailMethods = methods.filter(
+        method => method.type !== 'email' && method.type !== 'escrow'
+    ).length;
     const emailMethods = methods.filter(method => method.type === 'email');
     const hasConfirmedRecoveryEmail = emailMethods.some(method => !!method.confirmedAt);
     const hasExplicitRecoveryEmail =
