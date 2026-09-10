@@ -78,6 +78,9 @@ export class AuthCoordinator {
     private escrowOperations = new Set<Promise<unknown>>();
     private endingSession = false;
 
+    /** Upper bound on waiting for in-flight escrow writes before logout / forget-device proceeds. */
+    static readonly ESCROW_DRAIN_TIMEOUT_MS = 10_000;
+
     /** Drain escrow writes before clearing a device or changing its signed-in identity. */
     private async runEscrowOperation<T>(operation: () => Promise<T>): Promise<T> {
         if (this.endingSession) throw new Error('This recovery request was cancelled.');
@@ -88,6 +91,19 @@ export class AuthCoordinator {
         } finally {
             this.escrowOperations.delete(pending);
         }
+    }
+
+    /**
+     * Wait for outstanding escrow writes, but never indefinitely: a stalled
+     * network request must not block the user from logging out.
+     */
+    private async drainEscrowOperations(): Promise<void> {
+        if (this.escrowOperations.size === 0) return;
+        await withDeadlineOr(Promise.allSettled(this.escrowOperations), undefined, {
+            ms: AuthCoordinator.ESCROW_DRAIN_TIMEOUT_MS,
+            label: 'escrow drain',
+            onTimeout: () => log.warn('Escrow operations did not settle before session end'),
+        });
     }
 
     constructor(config: AuthCoordinatorConfig) {
@@ -1203,7 +1219,7 @@ export class AuthCoordinator {
         this.recoveryGeneration++;
         this.escrowStatusGeneration++;
         try {
-            await Promise.allSettled(this.escrowOperations);
+            await this.drainEscrowOperations();
             this.keyDerivation.cancelIdentityRecovery?.();
             await this.config.authProvider.signOut();
 
@@ -1234,9 +1250,13 @@ export class AuthCoordinator {
         this.recoveryGeneration++;
         this.escrowStatusGeneration++;
         try {
-            await Promise.allSettled(this.escrowOperations);
+            await this.drainEscrowOperations();
             this.keyDerivation.cancelIdentityRecovery?.();
             await this.keyDerivation.clearLocalKeys();
+            if (this.config.clearPendingEscrowRecovery) {
+                await this.config.clearPendingEscrowRecovery();
+                return;
+            }
             const clearPendingRecovery = async () => {
                 if (typeof indexedDB !== 'undefined')
                     await deleteDeviceShare('escrow-recovery-pending');
