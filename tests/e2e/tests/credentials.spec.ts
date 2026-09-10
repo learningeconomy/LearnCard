@@ -88,7 +88,7 @@ describe('Credentials', () => {
         expect(await b.read.get(uri)).toBeUndefined();
     });
 
-    test('Users cannot accept the same credential twice', async () => {
+    test('Repeated acceptance is idempotent and does not duplicate credentials', async () => {
         const unsignedVc = a.invoke.getTestVc(b.id.did());
         const vc = await a.invoke.issueCredential(unsignedVc);
 
@@ -101,8 +101,8 @@ describe('Credentials', () => {
         const receivedCreds = await b.invoke.getReceivedCredentials();
         expect(receivedCreds).toHaveLength(1);
 
-        // Second acceptance should fail
-        await expect(b.invoke.acceptCredential(uri)).rejects.toThrow(/already been received/);
+        // Clients can safely retry after a completed acceptance.
+        await expect(b.invoke.acceptCredential(uri)).resolves.toBe(true);
 
         // Verify that received credentials count hasn't changed
         const receivedCredsAfter = await b.invoke.getReceivedCredentials();
