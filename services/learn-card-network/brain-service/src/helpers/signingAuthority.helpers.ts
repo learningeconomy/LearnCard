@@ -11,6 +11,7 @@ import { trace, traceCrypto, traceHttp } from '@tracing';
 import { PerfTracker } from '@helpers/perf';
 import { benchContextStorage } from '@helpers/bench-context.helpers';
 import { appendBitstringStatusListEntries } from './status-list.helpers';
+import { rememberIssuedCredentialStatus } from './issuedCredentialStatus.helpers';
 
 const IS_TEST_ENVIRONMENT = environment.NODE_ENV === 'test';
 
@@ -130,6 +131,17 @@ export async function issueCredentialWithSigningAuthority(
     const ownerProfile = getIssuerOwnerProfile(issuer);
     const ownerDid =
         ownerDidOverride ?? getDidWeb(domain ?? 'network.learncard.com', ownerProfile.profileId);
+    const subjectId = Array.isArray(credential.credentialSubject)
+        ? credential.credentialSubject[0]?.id
+        : credential.credentialSubject?.id;
+    if (encrypt && !subjectId) {
+        throw new SaIssueError({
+            message: 'Encrypted credential issuance requires a subject DID',
+            status: 400,
+            kind: 'validation_error',
+            retryable: false,
+        });
+    }
     const credentialToIssue = await appendBitstringStatusListEntries(
         credential,
         ownerProfile.profileId,
@@ -163,8 +175,12 @@ export async function issueCredentialWithSigningAuthority(
                 );
                 perf.mark('initDid');
 
-                const brainDid = learnCard.id.did();
-                console.log('[SA Helper] Brain DID resolved:', brainDid);
+                // Brain authenticates the request but must not be able to decrypt the response.
+                const encryption = encrypt
+                    ? {
+                          recipients: [subjectId!, ownerDid],
+                      }
+                    : undefined;
 
                 const didJwt = await traceCrypto('getDidAuthVp', () =>
                     learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt' })
@@ -174,16 +190,6 @@ export async function issueCredentialWithSigningAuthority(
                 if (!didJwt) {
                     console.error('[SA Helper] Failed to generate DID Auth VP - got falsy value');
                 }
-
-                const subjectId = Array.isArray(credentialToIssue?.credentialSubject)
-                    ? credentialToIssue?.credentialSubject[0]?.id
-                    : credentialToIssue?.credentialSubject?.id;
-
-                const encryption = encrypt
-                    ? {
-                          recipients: [brainDid, ...(subjectId ? [subjectId] : [])],
-                      }
-                    : undefined;
 
                 console.log('[SA Helper] Request details:', {
                     subjectId,
@@ -314,6 +320,7 @@ export async function issueCredentialWithSigningAuthority(
                                 retryable: false,
                             });
                         }
+                        rememberIssuedCredentialStatus(validationResult.data, credentialToIssue);
                         return validationResult.data;
                     }
                     const validationResult = await VCValidator.spa(res);

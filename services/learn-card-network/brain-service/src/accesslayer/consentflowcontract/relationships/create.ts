@@ -259,7 +259,7 @@ export const consentToContract = async (
                         boostCredential,
                         contractOwnerSigningAuthority,
                         domain,
-                        false
+                        true
                     );
 
                     const boostTransaction = {

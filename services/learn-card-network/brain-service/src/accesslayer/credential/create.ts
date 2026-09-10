@@ -1,5 +1,7 @@
 import { UnsignedVC, VC, JWE } from '@learncard/types';
 import { v4 as uuid } from 'uuid';
+import { isEncrypted } from '@learncard/helpers';
+import { getIssuedCredentialStatus } from '@helpers/issuedCredentialStatus.helpers';
 
 import { Credential, CredentialInstance } from '@models';
 
@@ -8,5 +10,12 @@ export const storeCredential = async (
 ): Promise<CredentialInstance> => {
     const id = uuid();
 
-    return Credential.createOne({ id, credential: JSON.stringify(credential) });
+    const statusEntries = isEncrypted(credential)
+        ? getIssuedCredentialStatus(credential as JWE)
+        : undefined;
+    return Credential.createOne({
+        id,
+        credential: JSON.stringify(credential),
+        ...(statusEntries?.length ? { statusEntries: JSON.stringify(statusEntries) } : {}),
+    });
 };

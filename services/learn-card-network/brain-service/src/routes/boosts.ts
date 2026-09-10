@@ -793,7 +793,6 @@ export const boostsRouter = t.router({
                     let boost = null as BoostInstance | null;
                     let boostUri = '';
                     let boostCreated = false;
-                    let boostCreatedFromSignedCredential = false;
 
                     if (input.templateUri) {
                         const resolved = await traceDb('getBoostByUri', () =>
@@ -849,7 +848,6 @@ export const boostsRouter = t.router({
 
                         boostUri = getBoostUri(boost.id, domain);
                         boostCreated = true;
-                        boostCreatedFromSignedCredential = true;
                     }
 
                     if (!boost) {
@@ -1306,7 +1304,6 @@ export const boostsRouter = t.router({
                             credential: signedVc,
                             domain,
                             skipNotification,
-                            skipCertification: boostCreatedFromSignedCredential,
                             contractTerms: contractTerms ?? undefined,
                             activityId,
                             integrationId: input.integrationId,
@@ -1504,8 +1501,7 @@ export const boostsRouter = t.router({
 
             const decodedUri = decodeURIComponent(uri);
             const { domain: uriDomain } = getUriParts(decodedUri, true);
-            // Match the bare domain verifyCredentialIsDerivedFromBoost uses, so
-            // injected alignment targetUrls equal the verifier's re-computed ones.
+            // Use the bare domain so alignment targetUrls match issuance-time injection.
             const alignmentsDomain = getDomainFromUri(decodedUri);
             const [boost, boostInstance] = await Promise.all([
                 getBoostByUriWithDefaultClaimPermissions(decodedUri),
@@ -1979,9 +1975,8 @@ export const boostsRouter = t.router({
             }
 
             // Revoke the credential
-            const { revokeCredentialReceived } = await import(
-                '@accesslayer/credential/relationships/update'
-            );
+            const { revokeCredentialReceived } =
+                await import('@accesslayer/credential/relationships/update');
             const revoked = await revokeCredentialReceived(
                 credential.id,
                 resolvedRecipientProfileId
@@ -2100,9 +2095,8 @@ export const boostsRouter = t.router({
                 });
             }
 
-            const { suspendCredentialReceived } = await import(
-                '@accesslayer/credential/relationships/update'
-            );
+            const { suspendCredentialReceived } =
+                await import('@accesslayer/credential/relationships/update');
             const suspended = await suspendCredentialReceived(
                 credential.id,
                 resolvedRecipientProfileId
@@ -2208,9 +2202,8 @@ export const boostsRouter = t.router({
                 });
             }
 
-            const { unsuspendCredentialReceived } = await import(
-                '@accesslayer/credential/relationships/update'
-            );
+            const { unsuspendCredentialReceived } =
+                await import('@accesslayer/credential/relationships/update');
             const unsuspended = await unsuspendCredentialReceived(
                 credential.id,
                 resolvedRecipientProfileId
@@ -3477,7 +3470,7 @@ export const boostsRouter = t.router({
 
             // Use the generator's profile for SA lookup if available, fall back to boost owner
             const saOwner = generatorProfileId
-                ? (await getProfileByProfileId(generatorProfileId)) ?? boostOwner
+                ? ((await getProfileByProfileId(generatorProfileId)) ?? boostOwner)
                 : boostOwner;
 
             const saOwnerProfile: ProfileType =
@@ -3486,12 +3479,12 @@ export const boostsRouter = t.router({
                 'profileId' in saOwner
                     ? { type: 'profile' as const, profile: saOwner }
                     : saOwner.type === 'profile'
-                    ? { type: 'profile' as const, profile: saOwner.profile }
-                    : {
-                          type: 'appStoreListing' as const,
-                          listing: saOwner.listing,
-                          ownerProfile: saOwner.ownerProfile,
-                      };
+                      ? { type: 'profile' as const, profile: saOwner.profile }
+                      : {
+                            type: 'appStoreListing' as const,
+                            listing: saOwner.listing,
+                            ownerProfile: saOwner.ownerProfile,
+                        };
 
             const signingAuthority = await getSigningAuthorityForUserByName(
                 saOwnerProfile,
