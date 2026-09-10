@@ -241,7 +241,9 @@ describe('App Store Credential Issuance E2E Tests', () => {
 
             // Resolve the credential to inspect it
             const resolved = await appUser.invoke.resolveFromLCN(result.credentialUri as string);
-            const credential = unwrapBoostCredential(resolved) as VC;
+            const credential = unwrapBoostCredential(
+                await appUser.invoke.decryptDagJwe(resolved)
+            ) as VC;
             expect(credential).toBeDefined();
 
             // Verify the issuer is the app DID (not the profile DID)
@@ -282,7 +284,9 @@ describe('App Store Credential Issuance E2E Tests', () => {
 
             // Resolve the credential
             const resolved = await appUser.invoke.resolveFromLCN(result.credentialUri as string);
-            const credential = unwrapBoostCredential(resolved) as VC;
+            const credential = unwrapBoostCredential(
+                await appUser.invoke.decryptDagJwe(resolved)
+            ) as VC;
 
             // A third party (user c) should be able to verify the credential
             const verifier = await getLearnCardForUser('c');
