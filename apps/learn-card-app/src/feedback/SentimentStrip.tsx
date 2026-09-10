@@ -142,12 +142,12 @@ export const SentimentStrip: React.FC<SentimentStripProps> = ({
             data-testid="sentiment-strip"
         >
             {answered ? (
-                <p className="text-sm text-grayscale-600 animate-fade-in-up">
+                <p className="text-sm text-grayscale-700 animate-fade-in-up">
                     {m['feedback.thanks']()}
                 </p>
             ) : (
                 <>
-                    <span className="text-sm text-grayscale-500">{m['feedback.howWasThat']()}</span>
+                    <span className="text-sm text-grayscale-700">{m['feedback.howWasThat']()}</span>
 
                     <div className="flex items-center gap-1">
                         {SENTIMENT_OPTIONS.map(({ sentiment, Icon, labelKey, hoverClass }) => (

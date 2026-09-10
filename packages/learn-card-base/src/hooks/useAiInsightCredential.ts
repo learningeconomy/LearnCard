@@ -11,6 +11,7 @@ import {
 
 import { CredentialCategoryEnum, categoryMetadata } from 'learn-card-base';
 import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
+import { addActiveLocaleToUrl } from '../i18n';
 
 import { LCR } from 'learn-card-base/types/credential-records';
 import { VCValidator, VC } from '@learncard/types';
@@ -21,6 +22,7 @@ import { useConsentedContracts } from './useConsentedContracts';
 import { useGetCredentialsForSkills } from '../react-query/queries/vcQueries';
 import { LEARNCARD_AI_PASSPORT_CONTRACT_URI } from '../constants/aiPassport';
 import { AiServiceError, getAiServiceError } from '../helpers/aiErrors';
+import { aiPassportFetch, ensureAiPassportSession } from '../helpers/aiPassportAuth';
 const log = getLogger('use-ai-insight-credential');
 
 // Types for pathway data
@@ -142,13 +144,15 @@ const createAiInsightCredentialInternal = async (
         did,
         aiServiceUrl: networkStore.get.aiServiceUrl(),
     });
+    await ensureAiPassportSession(wallet);
 
-    const response = await fetch(
-        `${networkStore.get.aiServiceUrl()}/credentials/ai-insight?did=${did}`,
+    const response = await aiPassportFetch(
+        addActiveLocaleToUrl(`${networkStore.get.aiServiceUrl()}/credentials/ai-insight`),
         {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-        }
+        },
+        did
     );
 
     if (response.status === 204) {

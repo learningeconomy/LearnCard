@@ -4,6 +4,7 @@ import { useHistory } from 'react-router-dom';
 import type { AppStoreListing, InstalledApp } from '@learncard/types';
 
 import * as m from '../../../paraglide/messages.js';
+import { ChevronRight } from 'lucide-react';
 
 import AppTile from './AppTile';
 import FeaturedAppTile from './FeaturedAppTile';
@@ -72,7 +73,7 @@ const AppsCard: React.FC<AppsCardProps> = ({
             <section className="bg-white rounded-[20px] p-5 desktop:p-6 shadow-soft-bottom border border-grayscale-200 animate-fade-in-up">
                 <div className="flex items-center justify-between mb-4">
                     <div>
-                        <h2 className="text-[11px] font-medium tracking-[0.14em] text-grayscale-500 uppercase">
+                        <h2 className="text-xs font-medium tracking-[0.14em] text-grayscale-500 uppercase">
                             {headerLabel}
                         </h2>
                         <p className="mt-0.5 text-base desktop:text-lg font-semibold text-grayscale-900 leading-tight">
@@ -84,9 +85,10 @@ const AppsCard: React.FC<AppsCardProps> = ({
                     <button
                         type="button"
                         onClick={() => history.push('/launchpad')}
-                        className="text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors"
+                        className="flex items-center gap-1 text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                     >
                         {m['dashboard.apps.browseAll']()}
+                        <ChevronRight className="w-5 h-5 text-grayscale-400 rtl:rotate-180" />
                     </button>
                 </div>
 
@@ -110,15 +112,16 @@ const AppsCard: React.FC<AppsCardProps> = ({
     return (
         <section className="bg-white rounded-[20px] p-4 shadow-soft-bottom border border-grayscale-200 animate-fade-in-up">
             <div className="flex items-center justify-between mb-3">
-                <h2 className="text-xs font-medium tracking-wider text-grayscale-500 uppercase">
+                <h2 className="text-xs font-medium tracking-wider text-grayscale-600 uppercase">
                     {headerLabel}
                 </h2>
                 <button
                     type="button"
                     onClick={() => history.push('/launchpad')}
-                    className="text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors"
+                    className="flex items-center gap-1 text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                 >
                     {m['dashboard.apps.viewAll']()}
+                    <ChevronRight className="w-5 h-5 text-grayscale-400 rtl:rotate-180" />
                 </button>
             </div>
 

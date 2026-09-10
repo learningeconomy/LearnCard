@@ -467,29 +467,29 @@ const APISetupStep: React.FC<{
                     apiToken
                         ? 'ready'
                         : loadingGrants
-                        ? 'loading'
-                        : fetchError
-                        ? 'warning'
-                        : hasActiveToken
-                        ? 'incomplete'
-                        : 'warning'
+                          ? 'loading'
+                          : fetchError
+                            ? 'warning'
+                            : hasActiveToken
+                              ? 'incomplete'
+                              : 'warning'
                 }
                 label={
                     apiToken
                         ? `Token: ${displayTokenName}`
                         : loadingGrants
-                        ? 'Checking...'
-                        : hasActiveToken
-                        ? `${authGrants.length} token${authGrants.length > 1 ? 's' : ''} ready`
-                        : 'No API tokens found'
+                          ? 'Checking...'
+                          : hasActiveToken
+                            ? `${authGrants.length} token${authGrants.length > 1 ? 's' : ''} ready`
+                            : 'No API tokens found'
                 }
                 description={
                     fetchError ||
                     (apiToken
                         ? 'Ready to use'
                         : hasActiveToken
-                        ? 'Select a token to use in your code'
-                        : 'Create one to continue')
+                          ? 'Select a token to use in your code'
+                          : 'Create one to continue')
                 }
             />
 
@@ -1034,7 +1034,7 @@ const TestStep: React.FC<{
                         snippets={{
                             curl: `GET ${
                                 redirectUrl || 'https://your-app.com/api/learncard/callback'
-                            }?did=did:web:...&vp=eyJhbGciOiJFZDI1NTE5...`,
+                            }?challenge=...&vp=eyJhbGciOiJFZDI1NTE5...`,
                         }}
                     />
                 </div>

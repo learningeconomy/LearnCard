@@ -25,6 +25,8 @@ import {
 } from 'learn-card-base';
 import { generatePK } from '../../../helpers/privateKeyHelpers';
 import * as m from '../../../paraglide/messages.js';
+import { useLocale } from '../../../i18n';
+import { createPreAuthEmailPayload } from '../../../i18n/preAuthEmail';
 import { TransP } from '../../../i18n/TransP';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('email-form');
@@ -44,6 +46,7 @@ const EmailForm: React.FC = () => {
     const { initWallet } = useWallet();
     const { setCurrentUser, getCurrentUser } = useSQLiteStorage();
     const { sendSignInLink, signInWithCustomFirebaseToken } = useFirebase();
+    const locale = useLocale();
 
     const enableMagicLinkLogin = flags?.enableMagicLinkLogin ?? false;
 
@@ -209,7 +212,9 @@ const EmailForm: React.FC = () => {
                     } else {
                         try {
                             setIsLoading(true);
-                            await sendLoginVerificationCode({ email: email as string });
+                            await sendLoginVerificationCode(
+                                createPreAuthEmailPayload(email as string, locale)
+                            );
                             redirectStore.set.email(email as string);
                             setCurrentStep(EmailFormStepsEnum.verification);
                             setIsLoading(false);
@@ -234,7 +239,9 @@ const EmailForm: React.FC = () => {
     const handleResendCode = async () => {
         setIsResendCodeLoading(true);
         try {
-            await sendLoginVerificationCode({ email: verificationEmail as string });
+            await sendLoginVerificationCode(
+                createPreAuthEmailPayload(verificationEmail as string, locale)
+            );
             setIsResendCodeLoading(false);
         } catch (e) {
             setIsResendCodeLoading(false);

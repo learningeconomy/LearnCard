@@ -295,13 +295,7 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
         step === 'preview' ? resetToList : step === 'recipient' ? () => setStep('preview') : null;
 
     return (
-        <div
-            className="font-poppins w-full max-w-[560px] mx-auto bg-white rounded-[20px] flex flex-col max-h-[85vh] overflow-hidden animate-fade-in-up"
-            style={{
-                paddingTop: 'env(safe-area-inset-top)',
-                paddingBottom: 'env(safe-area-inset-bottom)',
-            }}
-        >
+        <div className="font-poppins w-full max-w-[560px] mx-auto bg-white rounded-[20px] flex flex-col max-h-[85vh] overflow-hidden animate-fade-in-up">
             <div className="shrink-0 px-6 pt-6 pb-4 border-b border-grayscale-100">
                 <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2 min-w-0">

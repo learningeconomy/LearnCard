@@ -16,7 +16,7 @@ type DashboardHeaderCardProps = {
     onAvatarClick?: () => void;
     onNotificationsClick?: () => void;
     unreadCount?: number;
-    topRightAction?: React.ReactNode;
+    qrCodeAction?: React.ReactNode;
     roleSwitcher?: React.ReactNode;
 };
 
@@ -55,7 +55,7 @@ const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
     onAvatarClick,
     onNotificationsClick,
     unreadCount = 0,
-    topRightAction,
+    qrCodeAction,
     roleSwitcher,
 }) => {
     const initials = getInitials(displayName);
@@ -79,7 +79,7 @@ const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
     const hasName = displayName.trim().length > 0;
 
     const initialsAvatar = (
-        <div className="w-16 h-16 rounded-full bg-grayscale-100 border-2 border-white shadow-soft-bottom flex items-center justify-center text-grayscale-700 font-semibold text-lg">
+        <div className="w-[60px] h-[60px] rounded-full bg-grayscale-100 border-2 border-white shadow-soft-bottom flex items-center justify-center text-grayscale-700 font-semibold text-lg">
             {hasName ? (
                 initials
             ) : (
@@ -94,11 +94,38 @@ const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
                 src={profileImage}
                 alt={displayName || m['dashboard.header.profileAlt']()}
                 onError={() => setImageFailed(true)}
-                className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-soft-bottom bg-grayscale-100"
+                className="w-[60px] h-[60px] rounded-full object-cover border-2 border-white shadow-soft-bottom bg-grayscale-100"
             />
         ) : (
             initialsAvatar
         );
+
+    const descriptorRoleContent =
+        descriptor || roleSwitcher || roleFallback ? (
+            <div className="flex items-center gap-2 min-w-0 pe-12 desktop:pe-0 desktop:ms-[76px]">
+                {descriptor && (
+                    <p
+                        className={`min-w-0 truncate text-sm leading-snug ${
+                            descriptor.emphasis
+                                ? 'font-medium text-grayscale-700'
+                                : 'text-grayscale-600'
+                        }`}
+                    >
+                        {descriptor.text}
+                    </p>
+                )}
+                {(roleSwitcher || roleFallback) && (
+                    <div className="shrink-0 mt-2">
+                        {roleSwitcher ??
+                            (roleFallback && (
+                                <span className="inline-flex px-2 py-0.5 rounded-full bg-grayscale-100 text-grayscale-700 text-xs font-medium">
+                                    {roleFallback}
+                                </span>
+                            ))}
+                    </div>
+                )}
+            </div>
+        ) : null;
 
     return (
         <section className="relative bg-white rounded-[20px] shadow-soft-bottom border border-grayscale-200 animate-fade-in-up overflow-hidden">
@@ -115,7 +142,7 @@ const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
                 </div>
             )}
 
-            <div className="relative p-5">
+            <div className="relative p-2.5">
                 <div className="flex items-center gap-4">
                     <div className="shrink-0 relative">
                         {onAvatarClick ? (
@@ -123,7 +150,7 @@ const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
                                 type="button"
                                 onClick={onAvatarClick}
                                 aria-label={m['dashboard.header.avatarAria']({ brand: brandName })}
-                                className="rounded-full active:scale-[0.97] transition-transform"
+                                className="rounded-full active:scale-[0.97] transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                             >
                                 {avatar}
                             </button>
@@ -142,7 +169,7 @@ const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
                                               count: unreadCount > 99 ? '99+' : unreadCount,
                                           })
                                 }
-                                className="absolute top-0 right-0 flex items-center justify-center active:scale-90 transition-transform"
+                                className="absolute top-0 right-0 flex items-center justify-center rounded-full active:scale-90 transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                             >
                                 <span className="absolute inline-flex h-3.5 w-3.5 rounded-full bg-red-500 opacity-60 animate-ping" />
                                 <span className="relative inline-flex h-3.5 w-3.5 rounded-full bg-red-500 border-2 border-white shadow-soft-bottom" />
@@ -150,40 +177,19 @@ const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
                         )}
                     </div>
 
-                    <div className="flex-1 min-w-0">
-                        <p className="text-sm text-grayscale-500 leading-tight">{greeting}</p>
+                    <div className="flex-1 min-w-0 desktop:pe-12">
+                        <p className="text-sm text-grayscale-600 leading-tight">{greeting}</p>
                         <h1 className="text-xl font-semibold text-grayscale-900 leading-tight truncate">
                             {displayName || m['dashboard.header.welcome']()}
                         </h1>
-                        {(descriptor || roleSwitcher || roleFallback) && (
-                            <div className="mt-1 flex items-center gap-2 min-w-0">
-                                {descriptor && (
-                                    <p
-                                        className={`min-w-0 truncate text-sm leading-snug ${
-                                            descriptor.emphasis
-                                                ? 'font-medium text-grayscale-700'
-                                                : 'text-grayscale-600'
-                                        }`}
-                                    >
-                                        {descriptor.text}
-                                    </p>
-                                )}
-                                {(roleSwitcher || roleFallback) && (
-                                    <div className="shrink-0">
-                                        {roleSwitcher ??
-                                            (roleFallback && (
-                                                <span className="inline-flex px-2 py-0.5 rounded-full bg-grayscale-100 text-grayscale-700 text-xs font-medium">
-                                                    {roleFallback}
-                                                </span>
-                                            ))}
-                                    </div>
-                                )}
-                            </div>
-                        )}
                     </div>
-
-                    {topRightAction && <div className="shrink-0 self-start">{topRightAction}</div>}
                 </div>
+                {descriptorRoleContent}
+                {qrCodeAction && (
+                    <div className="absolute bottom-3 end-3 desktop:bottom-auto desktop:top-3">
+                        {qrCodeAction}
+                    </div>
+                )}
             </div>
         </section>
     );

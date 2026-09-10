@@ -32,11 +32,10 @@
             }
         },
         "start": {
-            "executor": "nx:run-commands",
+            "executor": "nx:run-script",
             "dependsOn": ["^build"],
             "options": {
-                "command": "bun run start --",
-                "cwd": "{projectRoot}"
+                "script": "start"
             }
         }
     }

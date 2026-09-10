@@ -70,12 +70,14 @@ export const SomeoneSentYouACredentialRequest: React.FC<{
                 <p className="text-white/85 text-[17px] font-medium leading-relaxed max-w-[380px]">
                     Sign into {brandingConfig?.name} to view and claim,
                     <br />
-                    <span onClick={handleInteractionModal}>
-                        or{' '}
-                        <span className="underline cursor-pointer text-white hover:text-white/90">
-                            claim with another wallet.
-                        </span>
-                    </span>
+                    or{' '}
+                    <button
+                        type="button"
+                        onClick={handleInteractionModal}
+                        className="p-0 border-0 bg-transparent underline cursor-pointer text-white hover:text-white/90"
+                    >
+                        claim with another wallet.
+                    </button>
                 </p>
             </div>
         </div>
@@ -125,10 +127,15 @@ export const SomeoneSentYouACredentialRequestMobile: React.FC<{
                     Someone sent you a credential
                 </h1>
                 <button
+                    type="button"
                     className="bg-white text-grayscale-800 font-semibold flex items-center justify-center p-4 py-2 rounded-[15px] h-[54px] text-[17px] shadow-soft-bottom"
                     onClick={onClick}
                 >
-                    <img src={brandMark} alt="Brand mark" className="rounded-full h-[40px] w-[40px] mr-[10px]" />
+                    <img
+                        src={brandMark}
+                        alt="Brand mark"
+                        className="rounded-full h-[40px] w-[40px] mr-[10px]"
+                    />
                     Sign In to View and Claim
                 </button>
                 <div className="flex w-full items-center justify-center text-white/90 font-semibold text-[14px] mt-[40px]">
@@ -136,12 +143,13 @@ export const SomeoneSentYouACredentialRequestMobile: React.FC<{
                     OR
                     <hr className="w-[25%] ml-[20px] border-white/30" />
                 </div>
-                <span
+                <button
+                    type="button"
                     className="mt-[25px] text-white underline cursor-pointer font-semibold flex items-center justify-center p-4 py-2 h-[54px] text-[17px]"
                     onClick={handleInteractionModal}
                 >
                     Claim with Other Wallet
-                </span>
+                </button>
             </div>
 
             <GenericErrorBoundary hideGoHome>

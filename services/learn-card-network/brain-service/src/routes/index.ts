@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import http from 'node:http';
 
 import { initTRPC, TRPCError } from '@trpc/server';
@@ -94,11 +95,11 @@ export const createContext = async (
     const domainName = 'requestContext' in event ? event.requestContext.domainName : '';
 
     const _domain =
-        !domainName || process.env.IS_OFFLINE
-            ? `localhost%3A${process.env.PORT || 3000}`
+        !domainName || environment.IS_OFFLINE
+            ? `localhost%3A${environment.PORT || 3000}`
             : domainName.replace(/:/g, '%3A');
 
-    const domain = process.env.DOMAIN_NAME || _domain;
+    const domain = environment.DOMAIN_NAME || _domain;
 
     // API Gateway v2 puts the caller IP on requestContext.http.sourceIp. Other
     // transports (Fastify/NodeHTTP/in-process) may not carry one at all.
@@ -112,8 +113,8 @@ export const createContext = async (
         'event' in options
             ? (options.event.headers as Record<string, string | undefined>)
             : 'get' in event.headers
-            ? Object.fromEntries(event.headers as Map<string, string>)
-            : (event.headers as Record<string, string | string[] | undefined>);
+              ? Object.fromEntries(event.headers as Map<string, string>)
+              : (event.headers as Record<string, string | string[] | undefined>);
 
     const tenant = resolveTenantFromRequest(
         rawHeaders as Record<string, string | string[] | undefined>
@@ -227,7 +228,7 @@ export const resolveProfileFromContextDid = async (
         const learnCard = await getEmptyLearnCard();
         const didDoc = await learnCard.invoke.resolveDid(
             did,
-            process.env.IS_OFFLINE ? { noCache: true } : undefined
+            environment.IS_OFFLINE ? { noCache: true } : undefined
         );
 
         if (!didDoc.controller) return null;

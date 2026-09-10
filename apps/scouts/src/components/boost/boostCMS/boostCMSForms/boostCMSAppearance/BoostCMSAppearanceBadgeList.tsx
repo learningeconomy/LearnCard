@@ -77,8 +77,6 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
     const { newModal } = useModal();
     const flags = useFlags();
     const { credentials } = useHighlightedCredentials();
-
-    // Check if user is Global Admin or National Admin
     const isAdmin = credentials.some(cred => {
         const subject = cred?.credentialSubject;
         if (!subject || Array.isArray(subject)) return false;
@@ -199,7 +197,6 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
                             </p>
                             {categoryButton}
                         </div>
-                        {/* Allow admins to upload custom images even when CMS customization is disabled */}
                         {(!flags?.disableCmsCustomization || isAdmin) && (
                             <button onClick={handleImageSelect} className="boost-cms-badge">
                                 <Camera className="boost-cms-camera-icon text-white" />

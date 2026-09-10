@@ -78,11 +78,15 @@ export const getLearnCloudPlugin = async (
 
     let dids: string[] = [learnCard.id.did()];
 
-    client.user.getDids.query().then(result => (dids = result));
+    void client.user.getDids
+        .query()
+        .then(result => (dids = result))
+        .catch(error => learnCard.debug?.('Unable to preload LearnCloud DIDs', error));
 
     let otherClients: Record<string, LearnCloudClient> = {};
 
-    const learnCloudDid = client.utilities.getDid.query();
+    let learnCloudDid: ReturnType<typeof client.utilities.getDid.query> | undefined;
+    const getLearnCloudDid = () => (learnCloudDid ??= client.utilities.getDid.query());
 
     const getOtherClient = async (url: string) => {
         if (!otherClients[url]) otherClients[url] = await getLearnCloudClient(url, learnCard);
@@ -110,6 +114,7 @@ export const getLearnCloudPlugin = async (
             }
 
             client = await getLearnCloudClient(url, _learnCard);
+            learnCloudDid = undefined;
         }
 
         learnCard = _learnCard;
@@ -130,7 +135,7 @@ export const getLearnCloudPlugin = async (
                 );
 
                 return client.customStorage.create.mutate({
-                    item: await generateJWE(_learnCard, await learnCloudDid, item),
+                    item: await generateJWE(_learnCard, await getLearnCloudDid(), item),
                 });
             },
             learnCloudCreateMany: async (_learnCard, documents) => {
@@ -143,7 +148,7 @@ export const getLearnCloudPlugin = async (
                 );
 
                 return client.customStorage.createMany.mutate({
-                    items: await generateJWE(_learnCard, await learnCloudDid, items),
+                    items: await generateJWE(_learnCard, await getLearnCloudDid(), items),
                 });
             },
             learnCloudRead: async (_learnCard, query, includeAssociatedDids) => {
@@ -215,7 +220,7 @@ export const getLearnCloudPlugin = async (
                 );
 
                 const jwe: JWE = (await client.customStorage.read.query({
-                    query: await generateJWE(_learnCard, await learnCloudDid, {
+                    query: await generateJWE(_learnCard, await getLearnCloudDid(), {
                         ...unencryptedEntries,
                         ...(fields.length > 0 ? { fields: { $in: fields } } : {}),
                     }),
@@ -257,7 +262,7 @@ export const getLearnCloudPlugin = async (
                 );
 
                 return client.customStorage.count.query({
-                    query: await generateJWE(_learnCard, await learnCloudDid, {
+                    query: await generateJWE(_learnCard, await getLearnCloudDid(), {
                         ...unencryptedEntries,
                         ...(fields.length > 0 ? { fields: { $in: fields } } : {}),
                     }),
@@ -272,12 +277,12 @@ export const getLearnCloudPlugin = async (
                 const updates = await Promise.all(
                     documents.map(async document =>
                         client.customStorage.update.mutate({
-                            query: await generateJWE(_learnCard, await learnCloudDid, {
+                            query: await generateJWE(_learnCard, await getLearnCloudDid(), {
                                 _id: document._id,
                             }),
                             update: await generateJWE(
                                 _learnCard,
-                                await learnCloudDid,
+                                await getLearnCloudDid(),
                                 await generateEncryptedRecord(
                                     _learnCard,
                                     { ...document, ...update },
@@ -307,7 +312,7 @@ export const getLearnCloudPlugin = async (
                 );
 
                 return client.customStorage.delete.mutate({
-                    query: await generateJWE(_learnCard, await learnCloudDid, {
+                    query: await generateJWE(_learnCard, await getLearnCloudDid(), {
                         ...unencryptedEntries,
                         ...(fields.length > 0 ? { fields: { $in: fields } } : {}),
                     }),
@@ -551,7 +556,7 @@ export const getLearnCloudPlugin = async (
                 );
 
                 const jwe: JWE = (await client.index.get.query({
-                    query: await generateJWE(_learnCard, await learnCloudDid, {
+                    query: await generateJWE(_learnCard, await getLearnCloudDid(), {
                         ...unencryptedEntries,
                         ...(fields.length > 0 ? { fields: { $in: fields } } : {}),
                     }),
@@ -616,7 +621,7 @@ export const getLearnCloudPlugin = async (
                 );
 
                 const jwe = await client.index.count.query({
-                    query: await generateJWE(_learnCard, await learnCloudDid, {
+                    query: await generateJWE(_learnCard, await getLearnCloudDid(), {
                         ...unencryptedEntries,
                         ...(fields.length > 0 ? { fields: { $in: fields } } : {}),
                     }),
@@ -638,7 +643,7 @@ export const getLearnCloudPlugin = async (
                 const id = record.id || _learnCard.invoke.crypto().randomUUID();
 
                 return client.index.add.mutate({
-                    record: await generateJWE(_learnCard, await learnCloudDid, {
+                    record: await generateJWE(_learnCard, await getLearnCloudDid(), {
                         ...(await generateEncryptedRecord(
                             _learnCard,
                             { ...record, id },
@@ -669,7 +674,11 @@ export const getLearnCloudPlugin = async (
                         );
 
                         return client.index.addMany.mutate({
-                            records: await generateJWE(_learnCard, await learnCloudDid, records),
+                            records: await generateJWE(
+                                _learnCard,
+                                await getLearnCloudDid(),
+                                records
+                            ),
                         });
                     })
                 );
@@ -691,7 +700,7 @@ export const getLearnCloudPlugin = async (
                     id: await hash(_learnCard, id),
                     updates: await generateJWE(
                         _learnCard,
-                        await learnCloudDid,
+                        await getLearnCloudDid(),
                         await generateEncryptedRecord(_learnCard, newRecord, unencryptedFields)
                     ),
                 });

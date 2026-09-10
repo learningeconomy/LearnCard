@@ -9,7 +9,7 @@ import type { DataTransformer } from '@trpc/server';
 export const isHex = (str: string) => /^[0-9a-f]+$/i.test(str);
 
 /** Determines whether or not an object is an encrypted JWE */
-export const isEncrypted = (item: Record<string, any>): item is JWE => {
+export const isEncrypted = (item: unknown): item is JWE => {
     return JWEValidator.safeParse(item).success;
 };
 
@@ -17,7 +17,7 @@ export const isEncrypted = (item: Record<string, any>): item is JWE => {
  * tRPC data transformer that handles RegExp serialization/deserialization
  */
 export const RegExpTransformer: DataTransformer = {
-    serialize(object: any): any {
+    serialize(object) {
         return JSON.stringify(object, (_key, value) => {
             if (value instanceof RegExp) return value.toString(); // Converts to format /pattern/flags
 
@@ -25,7 +25,7 @@ export const RegExpTransformer: DataTransformer = {
         });
     },
 
-    deserialize(object: any): any {
+    deserialize(object) {
         // Old clients will for some reason already be deserialized, so this checks for that to retain
         // backwards compat
         if (typeof object !== 'string') return object;
@@ -51,14 +51,14 @@ export const RegExpTransformer: DataTransformer = {
 /**
  * Determines if a credential uses VC 2.0 format by checking the context array
  */
-export const isVC2Format = (credential: UnsignedVC | VC): boolean => {
-    if (!credential['@context'] || !Array.isArray(credential['@context'])) {
-        return false;
-    }
+export const isVC2Format = (credential: unknown): boolean => {
+    if (!credential || typeof credential !== 'object' || !('@context' in credential)) return false;
 
-    return credential['@context'].some(
-        context => context === 'https://www.w3.org/ns/credentials/v2'
-    );
+    const context = credential['@context'];
+
+    return Array.isArray(context)
+        ? context.some(value => value === 'https://www.w3.org/ns/credentials/v2')
+        : context === 'https://www.w3.org/ns/credentials/v2';
 };
 
 /** Unwraps a boost credential from a CertifiedBoostCredential, if it is one */
@@ -86,6 +86,7 @@ export * from './Utilities';
 export * from './app-install';
 export * from './credential-format';
 export * from './did';
+export * from './environment';
 
 // ADR-0001 Phase 1: format-tagged credential storage projector
 export * from './credential-format';

@@ -85,7 +85,10 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
     const queryClient = useQueryClient();
     const history = useHistory();
     const { gate } = useLCNGatedAction();
-    const { newModal } = useModal({ desktop: ModalTypes.Cancel });
+    const { newModal } = useModal({
+        desktop: ModalTypes.Center,
+        mobile: ModalTypes.FullScreen,
+    });
 
     const { presentToast } = useToast();
     const [presentAlert, dismissAlert] = useIonAlert();
@@ -615,8 +618,15 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
         </>
     );
 
-    const shouldHideButton = !showDeleteButton && showBlockButton && !showRequestButton;
-    const shouldUsePortal = !showDeleteButton && showBlockButton;
+    const contactModalOptions = {
+        addShadow: true,
+        customCloseButton: true,
+        customCloseButtonClass: 'absolute right-4 top-4 z-10 hidden md:flex',
+        sectionClassName: isMobile =>
+            `${
+                !isMobile ? '!relative !flex !h-full' : ''
+            } !max-w-[480px] !flex-col !overflow-hidden ${!isMobile ? '!h-[750px]' : '!h-full'}`,
+    };
 
     const contactItemDetails = (
         <>
@@ -643,12 +653,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                             handleUnblockUser={handleUnblockUser}
                             history={history}
                         />,
-                        {
-                            sectionClassName: '!max-w-[400px]',
-                            hideButton: shouldHideButton,
-                            usePortal: shouldUsePortal,
-                            portalClassName: '!max-w-[400px]',
-                        }
+                        contactModalOptions
                     );
                 }}
             >
@@ -715,7 +720,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                                     handleUnblockUser={handleUnblockUser}
                                     history={history}
                                 />,
-                                { sectionClassName: '!max-w-[400px]' }
+                                contactModalOptions
                             );
                         }}
                     >

@@ -138,6 +138,10 @@
     },
     "scanner": {
         "title": "Escanear código QR",
+        "description": "Apunta la cámara a un código QR",
+        "frameLabel": "Coloca el QR dentro del marco",
+        "lookingForQr": "Buscando código QR…",
+        "closeAria": "Cerrar escáner",
         "scanning": "Escaneando...",
         "noCamera": "Cámara no disponible",
         "cameraPermission": "Se requiere permiso de cámara",

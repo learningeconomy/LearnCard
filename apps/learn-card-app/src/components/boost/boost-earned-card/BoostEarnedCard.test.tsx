@@ -19,6 +19,7 @@ const mocks = vi.hoisted(() => ({
     isBoostCredential: vi.fn(),
     boostPreview: vi.fn(() => null),
     nonBoostPreview: vi.fn(() => null),
+    resetIonicModalBackground: vi.fn(),
 }));
 
 vi.mock('learn-card-base', () => ({
@@ -68,7 +69,7 @@ vi.mock('learn-card-base', () => ({
             )}
         </div>
     ),
-    resetIonicModalBackground: vi.fn(),
+    resetIonicModalBackground: mocks.resetIonicModalBackground,
     BoostCategoryOptionsEnum: { family: 'Family' },
     newCredsStore: {
         use: { newCreds: () => ({}) },
@@ -142,6 +143,7 @@ describe('BoostEarnedCard', () => {
         mocks.isBoostCredential.mockReturnValue(true);
         mocks.boostPreview.mockClear();
         mocks.nonBoostPreview.mockClear();
+        mocks.resetIonicModalBackground.mockClear();
     });
 
     it('does not expose card options while the credential is loading', () => {
@@ -214,5 +216,27 @@ describe('BoostEarnedCard', () => {
         expect(preview).toBeDefined();
         expect(preview!.props.onDotsClick).toBeUndefined();
         expect(mocks.presentOptions).not.toHaveBeenCalled();
+    });
+
+    it('uses the earned preview flow from a custom trigger', () => {
+        render(
+            <BoostEarnedCard
+                credential={credential}
+                record={{ uri: 'urn:credential:achievement' }}
+                categoryType="Achievement"
+                renderPreviewTrigger={openPreview => (
+                    <button type="button" onClick={openPreview}>
+                        Open contact credential
+                    </button>
+                )}
+            />
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Open contact credential' }));
+
+        expect(mocks.resetIonicModalBackground).toHaveBeenCalledOnce();
+        expect(mocks.newModal).toHaveBeenCalledOnce();
+        const preview = mocks.newModal.mock.calls[0]?.[0] as React.ReactElement | undefined;
+        expect(preview?.type).toBe(mocks.boostPreview);
     });
 });

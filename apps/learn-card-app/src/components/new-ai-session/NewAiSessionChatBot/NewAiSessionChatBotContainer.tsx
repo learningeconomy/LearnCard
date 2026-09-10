@@ -20,6 +20,7 @@ import {
 
 import {
     getLogger,
+    getAiPassportLaunchUrl,
     useGetCurrentLCNUser,
     useModal,
     useDeviceTypeByWidth,
@@ -35,7 +36,7 @@ import {
     aiPassportApps,
     AiPassportAppsEnum,
 } from '../../ai-passport-apps/aiPassport-apps.helpers';
-import { AiSessionMode, sessionLoadingText } from '../newAiSession.helpers';
+import { AiSessionMode, getSessionLoadingText } from '../newAiSession.helpers';
 import { usePathQuery } from 'learn-card-base';
 
 import { chatBotStore, useChatBotQA } from '../../../stores/chatBotStore';
@@ -265,9 +266,10 @@ export const NewAiSessionChatBotContainer: React.FC<{
             closeAllModals();
             const url = aiPassportApps.find(app => app.id === appAnswer)?.url;
 
-            window.location.href = `${url}/chats?topic=${encodeURIComponent(
-                topicAnswer || ''
-            )}&did=${currentLCNUser?.did}`;
+            window.location.href = getAiPassportLaunchUrl(
+                `${url}/chats?topic=${encodeURIComponent(topicAnswer || '')}`,
+                currentLCNUser?.did
+            );
         }, 3000);
     };
 
@@ -339,14 +341,14 @@ export const NewAiSessionChatBotContainer: React.FC<{
             className={`relative w-full flex flex-col pt-[80px] ${
                 isDesktop ? 'max-w-[800px]' : ''
             }`}
-            style={{ paddingTop: 'calc(80px + env(safe-area-inset-top))' }}
+            style={{ paddingTop: 'calc(80px + var(--ion-safe-area-top, 0px))' }}
         >
             <OnboardingHeader
                 title={m['aiSession.newTopic']()}
                 onClose={isDesktop ? handleStartOver : undefined}
             />
             {showLoader && (
-                <AiSessionLoader chatBotQA={chatBotQA} overrideText={sessionLoadingText} />
+                <AiSessionLoader chatBotQA={chatBotQA} overrideText={getSessionLoadingText()} />
             )}
             {chatBotQA.map((qa, index) => {
                 if (qa.hidden) return null;

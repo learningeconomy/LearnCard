@@ -1,5 +1,6 @@
-jest.mock('multiformats/bases/base58', () => ({ base58btc: {} }), { virtual: true });
-jest.mock('multiformats/bases/base64', () => ({ base64url: {} }), { virtual: true });
+import { vi } from 'vitest';
+vi.mock('multiformats/bases/base58', () => ({ base58btc: {} }));
+vi.mock('multiformats/bases/base64', () => ({ base64url: {} }));
 
 import { issueCredential } from './issueCredential';
 
@@ -42,7 +43,7 @@ const credential: Credential = {
 };
 
 const getLearnCard = () => {
-    const issueCredentialMock = jest.fn(
+    const issueCredentialMock = vi.fn(
         async (
             unsignedCredential: Credential,
             _options: ProofOptionsForTest,
@@ -69,8 +70,8 @@ const getLearnCard = () => {
             keypair: () => keypair,
         },
         invoke: {
-            didToVerificationMethod: jest.fn(async () => 'did:example:issuer#key-1'),
-            resolveDid: jest.fn(async () => ({ verificationMethod: [] })),
+            didToVerificationMethod: vi.fn(async () => 'did:example:issuer#key-1'),
+            resolveDid: vi.fn(async () => ({ verificationMethod: [] })),
         },
     };
 

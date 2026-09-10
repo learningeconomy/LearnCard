@@ -7,7 +7,11 @@
         "lcaApi": "http://localhost:5100/trpc",
         "xapi": "http://localhost:4100/xapi"
     },
+    "features": {
+        "analytics": false
+    },
     "observability": {
-        "sentryEnv": "scouts-development"
+        "sentryEnv": "scouts-development",
+        "launchDarklyClientId": "64b5aeeb41628613abcf2af0"
     }
 }

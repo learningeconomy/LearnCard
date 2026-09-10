@@ -349,9 +349,7 @@ const LearnerContextPromptTestPage: FC = () => {
             setFormatterTimingMs(performance.now() - formatterStartedAt);
 
             const data = (await result.json().catch(() => null)) as
-                | LearnerContextResponse
-                | { error?: string }
-                | null;
+                LearnerContextResponse | { error?: string } | null;
 
             if (!result.ok) {
                 const errorMessage =

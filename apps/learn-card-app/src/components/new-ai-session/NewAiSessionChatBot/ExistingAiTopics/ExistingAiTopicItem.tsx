@@ -9,7 +9,7 @@ import { ChatBotQuestionsEnum } from '../newAiSessionChatbot.helpers';
 import { Boost, VC } from '@learncard/types';
 import { getAiTopicTitle } from '../../newAiSession.helpers';
 import { useHistory } from 'react-router-dom';
-import { useGetCurrentLCNUser, useModal } from 'learn-card-base';
+import { getAiPassportLaunchUrl, useGetCurrentLCNUser, useModal } from 'learn-card-base';
 
 export const ExistingAiTopicItem: React.FC<{
     topicVc?: VC;
@@ -50,9 +50,10 @@ export const ExistingAiTopicItem: React.FC<{
                             history.push(`/chats?topicUri=${encodeURIComponent(topicBoost.uri)}`);
                             closeAllModals();
                         } else if (app?.url) {
-                            window.location.href = `${app.url}/chats?topicUri=${encodeURIComponent(
-                                topicBoost.uri
-                            )}&did=${encodeURIComponent(currentLCNUser?.did ?? '')}`;
+                            window.location.href = getAiPassportLaunchUrl(
+                                `${app.url}/chats?topicUri=${encodeURIComponent(topicBoost.uri)}`,
+                                currentLCNUser?.did
+                            );
                         } else {
                             history.push(`/chats?topicUri=${encodeURIComponent(topicBoost.uri)}`);
                             closeAllModals();

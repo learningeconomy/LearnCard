@@ -4,7 +4,7 @@ import { useLocation, useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 import { getVCDisplayCardVariant } from '@learncard/react';
-import BoostFooterLayout from 'learn-card-base/components/boost/boostFooter/BoostFooterLayout';
+import BoostFooterLayout from '../accessibility/AccessibleBoostFooterLayout';
 import { IonContent, IonPage, useIonAlert, IonHeader, IonToolbar, useIonModal } from '@ionic/react';
 import SharedBoostVerificationBlock, {
     SharedBoostVerificationBlockViewMode,
@@ -257,12 +257,17 @@ const ViewSharedBoost: React.FC<{
                 <IonHeader color="light">
                     <IonToolbar className="flex">
                         <div className="flex justify-between items-center pl-[10px] pr-[10px] py-3 w-full relative">
-                            <div className="cursor-pointer" onClick={redirectHome}>
+                            <button
+                                type="button"
+                                aria-label="Go to LearnCard home"
+                                className="cursor-pointer border-0 bg-transparent p-0"
+                                onClick={redirectHome}
+                            >
                                 <HeaderBranding
                                     branding={BrandingEnum.learncard}
                                     className="main-header-branding-public-route"
                                 />
-                            </div>
+                            </button>
 
                             <div className="flex items-center">
                                 <button

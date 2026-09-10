@@ -240,10 +240,10 @@ const UrlCheckResults: React.FC<{ results: UrlCheckResult[]; isChecking: boolean
                 isChecking
                     ? 'bg-gray-50 border-gray-200'
                     : allPassed
-                    ? 'bg-emerald-50 border-emerald-200'
-                    : hasFailed
-                    ? 'bg-red-50 border-red-200'
-                    : 'bg-gray-50 border-gray-200'
+                      ? 'bg-emerald-50 border-emerald-200'
+                      : hasFailed
+                        ? 'bg-red-50 border-red-200'
+                        : 'bg-gray-50 border-gray-200'
             }`}
         >
             <div className="flex items-center gap-2 mb-3">
@@ -262,19 +262,19 @@ const UrlCheckResults: React.FC<{ results: UrlCheckResult[]; isChecking: boolean
                         isChecking
                             ? 'text-gray-700'
                             : allPassed
-                            ? 'text-emerald-800'
-                            : hasFailed
-                            ? 'text-red-800'
-                            : 'text-gray-700'
+                              ? 'text-emerald-800'
+                              : hasFailed
+                                ? 'text-red-800'
+                                : 'text-gray-700'
                     }`}
                 >
                     {isChecking
                         ? m['developerPortal.guides.embedApp.urlCheck.checking']()
                         : allPassed
-                        ? m['developerPortal.guides.embedApp.urlCheck.lookingGood']()
-                        : hasFailed
-                        ? m['developerPortal.guides.embedApp.urlCheck.someIssues']()
-                        : m['developerPortal.guides.embedApp.urlCheck.urlCheckResults']()}
+                          ? m['developerPortal.guides.embedApp.urlCheck.lookingGood']()
+                          : hasFailed
+                            ? m['developerPortal.guides.embedApp.urlCheck.someIssues']()
+                            : m['developerPortal.guides.embedApp.urlCheck.urlCheckResults']()}
                 </h4>
             </div>
 
@@ -296,10 +296,10 @@ const UrlCheckResults: React.FC<{ results: UrlCheckResult[]; isChecking: boolean
                                         result.status === 'pass'
                                             ? 'text-emerald-600'
                                             : result.status === 'fail'
-                                            ? 'text-red-600'
-                                            : result.status === 'warn'
-                                            ? 'text-amber-600'
-                                            : 'text-gray-500'
+                                              ? 'text-red-600'
+                                              : result.status === 'warn'
+                                                ? 'text-amber-600'
+                                                : 'text-gray-500'
                                     }`}
                                 >
                                     {result.message}
@@ -606,9 +606,9 @@ log.info('User:', identity.profile.displayName);`;
                                                                 'LISTED'
                                                                     ? 'bg-emerald-100 text-emerald-700'
                                                                     : listing.app_listing_status ===
-                                                                      'PENDING_REVIEW'
-                                                                    ? 'bg-amber-100 text-amber-700'
-                                                                    : 'bg-gray-100 text-gray-600'
+                                                                        'PENDING_REVIEW'
+                                                                      ? 'bg-amber-100 text-amber-700'
+                                                                      : 'bg-gray-100 text-gray-600'
                                                             }`}
                                                         >
                                                             {listing.app_listing_status === 'LISTED'
@@ -616,13 +616,13 @@ log.info('User:', identity.profile.displayName);`;
                                                                       'developerPortal.guides.embedApp.gettingStarted.live'
                                                                   ]()
                                                                 : listing.app_listing_status ===
-                                                                  'PENDING_REVIEW'
-                                                                ? m[
-                                                                      'developerPortal.guides.embedApp.gettingStarted.inReview'
-                                                                  ]()
-                                                                : m[
-                                                                      'developerPortal.guides.embedApp.gettingStarted.draft'
-                                                                  ]()}
+                                                                    'PENDING_REVIEW'
+                                                                  ? m[
+                                                                        'developerPortal.guides.embedApp.gettingStarted.inReview'
+                                                                    ]()
+                                                                  : m[
+                                                                        'developerPortal.guides.embedApp.gettingStarted.draft'
+                                                                    ]()}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -915,8 +915,8 @@ const SigningAuthorityStep: React.FC<{
                     loading
                         ? m['developerPortal.guides.embedApp.signingAuthority.checking']()
                         : hasSigningAuthority
-                        ? m['developerPortal.guides.embedApp.signingAuthority.configured']()
-                        : m['developerPortal.guides.embedApp.signingAuthority.notFound']()
+                          ? m['developerPortal.guides.embedApp.signingAuthority.configured']()
+                          : m['developerPortal.guides.embedApp.signingAuthority.notFound']()
                 }
                 description={
                     hasSigningAuthority
@@ -3639,8 +3639,8 @@ const FeatureSetupStep: React.FC<{
                                     index === currentFeatureIndex
                                         ? 'bg-cyan-100 text-cyan-700'
                                         : index < currentFeatureIndex
-                                        ? 'bg-emerald-100 text-emerald-700'
-                                        : 'text-gray-400'
+                                          ? 'bg-emerald-100 text-emerald-700'
+                                          : 'text-gray-400'
                                 }`}
                             >
                                 {index < currentFeatureIndex ? (

@@ -23,11 +23,6 @@ services:
             - path: ./.env
               required: false
         environment:
-            LCN_URL: http://localhost:4000/trpc
-            LCN_API_URL: http://localhost:4000/api
-            CLOUD_URL: http://localhost:4100/trpc
-            LEARN_CLOUD_XAPI_URL: http://localhost:4100/xapi
-            API_URL: http://localhost:5100/trpc
             TENANT: ${TENANT:-learncard}
             STAGE: ${STAGE:-local}
             LOCAL_AIP: ${LOCAL_AIP:-}
@@ -46,7 +41,6 @@ services:
             - ./capacitor.config.ts:/app/apps/learn-card-app/capacitor.config.ts
             - ./vite.config.mts:/app/apps/learn-card-app/vite.config.mts
             - ./postcss.config.js:/app/apps/learn-card-app/postcss.config.js
-            - ./tailwind.config.js:/app/apps/learn-card-app/tailwind.config.js
             - ./tsconfig.json:/app/apps/learn-card-app/tsconfig.json
             - ../../packages:/app/packages
             - ../../services/learn-card-network:/app/services/learn-card-network

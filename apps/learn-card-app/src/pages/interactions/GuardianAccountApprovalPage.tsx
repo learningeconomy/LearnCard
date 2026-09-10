@@ -43,7 +43,7 @@ const GuardianAccountApprovalPage: React.FC = () => {
     const { brandName } = useBrandingConfig();
     const { theme } = useTheme();
     const bgColor =
-        theme.colors.defaults.loginBgColor ?? theme.colors.defaults.loaders?.[0] ?? '#059669';
+        theme.colors.defaults.loginBgColor ?? theme.colors.defaults.loaders?.[0] ?? '#047857';
 
     const [state, setState] = useState<PageState>('loading');
     const [error, setError] = useState<string>('');

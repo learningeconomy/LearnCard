@@ -4,7 +4,8 @@ import { QRCodeSVG } from 'qrcode.react';
 import moment from 'moment';
 
 import X from 'learn-card-base/svgs/X';
-import { IonGrid, IonSpinner } from '@ionic/react';
+import { IonGrid, IonIcon, IonSpinner } from '@ionic/react';
+import { alertCircleOutline } from 'ionicons/icons';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 import IDSleeve from '../../../assets/images/id-sleeve.png';
 import FamilyCrest from '../../familyCMS/FamilyCrest/FamilyCrest';
@@ -67,7 +68,11 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
     const { track } = useAnalytics();
     const qrTrackedRef = React.useRef(false);
 
-    const { mutate: shareEarnedBoost, isPending: isLinkLoading } = useShareBoostMutation();
+    const {
+        mutate: shareEarnedBoost,
+        isPending: isLinkLoading,
+        isError: isShareError,
+    } = useShareBoostMutation();
 
     const boostMetadata = getBoostMetadata(categoryType);
     const { IconComponent, CategoryImage, title: categoryTitle } = boostMetadata ?? {};
@@ -118,8 +123,8 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
         issuerName = profile
             ? profile?.displayName
             : isLoading
-            ? m['common.loading']()
-            : m['common.unknown']();
+              ? m['common.loading']()
+              : m['common.unknown']();
     } else {
         issuerName = getIssuerNameNonBoost(cred);
     }
@@ -128,8 +133,8 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
         issueeName = myProfile
             ? myProfile?.displayName
             : myProfileLoading
-            ? m['common.loading']()
-            : m['common.unknown']();
+              ? m['common.loading']()
+              : m['common.unknown']();
     } else {
         issueeName = cred?.credentialSubject?.id;
     }
@@ -145,7 +150,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
         </div>
     );
 
-    const generateShareLink = async () => {
+    const generateShareLink = () => {
         shareEarnedBoost(
             { credential: boost, credentialUri: boostUri as string },
             {
@@ -245,12 +250,39 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
 
     if (compact) {
         return (
-            <div className="relative shrink-0 rounded-[16px] border border-grayscale-200 bg-white p-3 pb-8">
+            <div className="relative shrink-0 rounded-[16px] border border-grayscale-200 bg-white p-3 pb-8 font-poppins">
                 <div className="flex h-[50px] w-[50px] items-center justify-center">
-                    {isLinkLoading || !shareLink ? (
-                        <IonSpinner name="crescent" className="h-5 w-5 text-grayscale-600" />
+                    {isShareError ? (
+                        <div role="alert">
+                            <span className="sr-only">
+                                {m['toasts.boost.shareLinkGenerationFailed']()}
+                            </span>
+                            <button
+                                type="button"
+                                onClick={generateShareLink}
+                                title={m['toasts.boost.shareLinkGenerationFailed']()}
+                                className="flex h-[50px] w-[50px] flex-col items-center justify-center rounded-[20px] text-red-700 hover:bg-red-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                            >
+                                <IonIcon icon={alertCircleOutline} aria-hidden="true" />
+                                <span className="text-[10px] font-medium leading-tight text-center">
+                                    {m['common.tryAgain']()}
+                                </span>
+                            </button>
+                        </div>
+                    ) : isLinkLoading || !shareLink ? (
+                        <IonSpinner
+                            role="status"
+                            aria-label={m['passport.resumeBuilder.shareLink.generatingLink']()}
+                            name="crescent"
+                            className="h-5 w-5 text-grayscale-600"
+                        />
                     ) : (
-                        <QRCodeSVG value={shareLink} size={50} />
+                        <QRCodeSVG
+                            role="img"
+                            aria-label={`${m['common.share']()} QR code`}
+                            value={shareLink}
+                            size={50}
+                        />
                     )}
                 </div>
                 <div className="absolute bottom-[5px] left-1/2 -translate-x-1/2">
@@ -281,24 +313,62 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                                 )}
                                 {onBackButtonClick && (
                                     <button
+                                        type="button"
+                                        aria-label={m['common.back']()}
                                         className="text-grayscale-50 p-0"
                                         onClick={onBackButtonClick}
                                     >
-                                        <LeftArrow className="h-[30px]" opacity="1" />
+                                        <span aria-hidden="true">
+                                            <LeftArrow className="h-[30px]" opacity="1" />
+                                        </span>
                                     </button>
                                 )}
                             </div>
-                            <p className="font-poppins text-xl text-white">{m['common.share']()}</p>
-                            <button onClick={handleClose}>
-                                <X className="text-white h-8 w-8" />
+                            <h1 className="font-poppins text-xl text-white">
+                                {m['common.share']()}
+                            </h1>
+                            <button
+                                type="button"
+                                aria-label={m['common.close']()}
+                                onClick={handleClose}
+                            >
+                                <span aria-hidden="true">
+                                    <X className="text-white h-8 w-8" />
+                                </span>
                             </button>
                         </div>
                     </div>
                     <div className="w-[85%] flex flex-col justify-center items-center relative mb-5 mt-5 bg-white rounded-[15px] py-4 px-2">
                         <div className="flex flex-col justify-center items-center w-full relative">
+                            {isShareError && (
+                                <div className="w-full p-4 font-poppins">
+                                    <div
+                                        role="alert"
+                                        className="mb-5 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5"
+                                    >
+                                        <IonIcon
+                                            icon={alertCircleOutline}
+                                            aria-hidden="true"
+                                            className="text-red-400 text-lg mt-0.5 shrink-0"
+                                        />
+                                        <span className="text-sm text-red-700 leading-relaxed">
+                                            {m['toasts.boost.shareLinkGenerationFailed']()}
+                                        </span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={generateShareLink}
+                                        className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                    >
+                                        {m['common.tryAgain']()}
+                                    </button>
+                                </div>
+                            )}
                             {!isLinkLoading && shareLink && shareLink?.length > 0 && (
                                 <div className="w-full h-full relative py-4 px-4">
                                     <QRCodeSVG
+                                        role="img"
+                                        aria-label={`${m['common.share']()} QR code`}
                                         className="h-full w-full"
                                         value={shareLink}
                                         bgColor="transparent"
@@ -306,26 +376,34 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                                 </div>
                             )}
 
-                            {(isLinkLoading || shareLink?.length === 0) && (
-                                <div className="min-w-[300px] min-h-[300px] h-full w-full relative flex items-center justify-center">
+                            {!isShareError && (isLinkLoading || !shareLink) && (
+                                <div className="min-h-[300px] h-full w-full relative flex flex-col gap-3 items-center justify-center">
                                     <IonSpinner
+                                        role="status"
+                                        aria-label={m[
+                                            'passport.resumeBuilder.shareLink.generatingLink'
+                                        ]()}
                                         name="crescent"
                                         color="dark"
                                         className="scale-[1]"
                                     />
+                                    <span className="font-poppins text-sm text-grayscale-600">
+                                        {m['passport.resumeBuilder.shareLink.generatingLink']()}
+                                    </span>
                                 </div>
                             )}
                         </div>
 
                         {!isLinkLoading && shareLink && shareLink?.length > 0 && (
                             <div className="w-full flex items-center justify-between px-4 py-3 rounded-2xl bg-grayscale-100">
-                                <p className="w-full text-left text-grayscale-500 font-medium text-sm line-clamp-1 overflow-ellipsis">
+                                <p className="w-full text-left text-grayscale-700 font-medium text-sm line-clamp-1 overflow-ellipsis">
                                     {shareLink}
                                 </p>
 
                                 <button
+                                    type="button"
                                     onClick={() => copyBoostLinkToClipBoard()}
-                                    className="min-w-[108px] flex items-center justify-end text-[#2F99F0]"
+                                    className="min-w-[108px] flex items-center justify-end text-grayscale-700"
                                 >
                                     Copy Link
                                 </button>
@@ -349,6 +427,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                                     className="group flex items-center justify-center w-full bg-white text-grayscale-600 font-semibold py-2 px-4 rounded-full border-2 border-grayscale-20 hover:border-[#0A66C2] hover:bg-[#0A66C2] hover:text-white transition-colors duration-300"
                                 >
                                     <svg
+                                        aria-hidden="true"
                                         className="w-5 h-5 mr-2 fill-[#0A66C2] group-hover:fill-white transition-colors duration-300"
                                         viewBox="0 0 24 24"
                                         xmlns="http://www.w3.org/2000/svg"
@@ -361,10 +440,12 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                         ) : (
                             <div className={hideLinkedIn ? 'hidden' : 'w-full bg-white px-4 py-3'}>
                                 <button
+                                    type="button"
                                     disabled
                                     className="flex items-center justify-center w-full bg-grayscale-100 text-grayscale-400 font-semibold py-2 px-4 rounded-full border-2 border-grayscale-200 cursor-not-allowed"
                                 >
                                     <svg
+                                        aria-hidden="true"
                                         className="w-5 h-5 mr-2 fill-grayscale-400"
                                         viewBox="0 0 24 24"
                                         xmlns="http://www.w3.org/2000/svg"
@@ -379,19 +460,21 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
 
                     <div className="w-full flex items-center justify-center">
                         <p className="text-white font-medium text-lg mb-4 flex items-center justify-center w-full">
-                            <IconComponent className="mr-1 h-[24px] w-[25px]" /> Verified{' '}
-                            {categoryTitle ?? 'Achievement'}
+                            <span aria-hidden="true">
+                                <IconComponent className="mr-1 h-[24px] w-[25px]" />
+                            </span>{' '}
+                            Verified {categoryTitle ?? 'Achievement'}
                         </p>
                     </div>
 
                     <div className="w-full relative mb-[-20px]">
                         <img
                             src={IDSleeve}
-                            alt="id-sleeve"
+                            alt=""
                             className="w-full object-cover absolute top-0 left-0 blur-[1px]"
                         />
 
-                        <img src={IDSleeve} alt="id-sleeve" className="w-full object-cover" />
+                        <img src={IDSleeve} alt="" className="w-full object-cover" />
 
                         <div className="absolute top-0 left-[50%] translate-x-[-50%]">
                             {isID && subjectProfileImageElement}

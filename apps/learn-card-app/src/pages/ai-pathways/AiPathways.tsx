@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { IonContent, IonPage } from '@ionic/react';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -21,9 +21,17 @@ import AiPathwayCareers from './ai-pathway-careers/AiPathwayCareers';
 
 const AiPathways: React.FC = () => {
     const { getThemedCategoryColors } = useTheme();
-    const { percentage } = useSkillProfileCompletion();
+    const { percentage, isFetched } = useSkillProfileCompletion();
     const { careerKeywords, occupations, isLoading } = useGrowSkillsContent();
-    const [isInitialPercentageAboveZero] = useState(() => percentage > 0);
+    const [isInitialPercentageAboveZero, setIsInitialPercentageAboveZero] = useState<
+        boolean | null
+    >(null);
+
+    useEffect(() => {
+        if (isFetched) {
+            setIsInitialPercentageAboveZero(current => current ?? percentage > 0);
+        }
+    }, [isFetched, percentage]);
 
     const colors = getThemedCategoryColors(CredentialCategoryEnum.aiPathway);
     const { backgroundSecondaryColor } = colors;
@@ -48,7 +56,7 @@ const AiPathways: React.FC = () => {
 
                                     <MySkillProfile className="w-full" />
 
-                                    {!isInitialPercentageAboveZero && (
+                                    {isInitialPercentageAboveZero === false && (
                                         <AiPathwaysWhatWouldYouLikeToDoCard />
                                     )}
 

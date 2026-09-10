@@ -28,13 +28,13 @@ const SettingRow: React.FC<SettingRowProps> = ({
             <div className="flex-1 min-w-0">
                 <p className="text-[15px] font-medium text-grayscale-900">{title}</p>
                 {description && (
-                    <p className="text-sm text-grayscale-500 mt-0.5 leading-relaxed">
+                    <p className="text-sm text-grayscale-600 mt-0.5 leading-relaxed">
                         {description}
                     </p>
                 )}
                 {lockedNote && (
                     <p className="flex items-center gap-1.5 text-xs text-sky-700 mt-2 leading-relaxed">
-                        <Lock className="w-3.5 h-3.5 shrink-0" />
+                        <Lock aria-hidden="true" className="w-3.5 h-3.5 shrink-0" />
                         {lockedNote}
                     </p>
                 )}

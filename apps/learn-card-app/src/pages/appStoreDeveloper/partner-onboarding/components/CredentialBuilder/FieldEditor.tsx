@@ -111,8 +111,8 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
             showError
                 ? 'border-red-300 bg-red-50 focus:ring-2 focus:ring-red-500 focus:border-red-500'
                 : field.isDynamic
-                ? 'border-violet-300 bg-violet-50 focus:ring-2 focus:ring-violet-500 focus:border-violet-500'
-                : 'border-gray-200 bg-white focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500'
+                  ? 'border-violet-300 bg-violet-50 focus:ring-2 focus:ring-violet-500 focus:border-violet-500'
+                  : 'border-gray-200 bg-white focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500'
         } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`;
 
         if (type === 'select' && options) {

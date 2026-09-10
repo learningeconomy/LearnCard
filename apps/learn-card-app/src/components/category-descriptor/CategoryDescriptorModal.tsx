@@ -40,6 +40,7 @@ const CategoryDescriptorModal: React.FC<{
                 break;
 
             case 'Skills Hub':
+            case 'Skills':
                 imgSrc = walletSubtypeToDefaultImageSrc(WalletCategoryTypes.skills);
                 category = BoostCategoryOptionsEnum.skill;
                 break;
@@ -76,7 +77,13 @@ const CategoryDescriptorModal: React.FC<{
                 break;
 
             default:
-                throw new Error('Invalid title provided');
+                // Unknown titles must not crash the app: this modal is hosted by
+                // useIonModal (no error boundary), so a throw here unmounts the
+                // whole React root (white screen). Fall back to the skills visuals.
+                console.error(`CategoryDescriptorModal: unknown title "${title}"`);
+                imgSrc = walletSubtypeToDefaultImageSrc(WalletCategoryTypes.skills);
+                category = BoostCategoryOptionsEnum.skill;
+                break;
         }
 
         return { imgSrc, category };

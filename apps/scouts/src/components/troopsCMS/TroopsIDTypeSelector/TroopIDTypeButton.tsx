@@ -44,7 +44,9 @@ export const TroopIDTypeButton: React.FC<TroopIDTypeButtonProps> = ({
     viewModeSubtype,
 }) => {
     const [search, setSearch] = useState<string>('');
-    const { data: searchResults, isLoading: loading } = useGetSearchProfiles(search ?? '');
+    const { data: searchResults, isLoading: loading } = useGetSearchProfiles(search ?? '', {
+        enabled: false,
+    });
 
     const scoutsList = members ?? [];
     const leadersList = admins ?? [];

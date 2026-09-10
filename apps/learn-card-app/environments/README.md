@@ -68,8 +68,8 @@ a custom theme — all with sensible defaults.
     // environments/tenant-registry.json
     {
         "hostnames": {
-            "mytenant.app": { "tenantId": "mytenant", "domain": "mytenant.app" }
-        }
+            "mytenant.app": { "tenantId": "mytenant", "domain": "mytenant.app" },
+        },
     }
     ```
 
@@ -217,38 +217,36 @@ To brand emails for a new tenant today, add an entry to
 tenants override branding without a package change.
 {% endhint %}
 
-## Config precedence
+## Config ownership and failure policy
 
-The app has two config input paths. **Tenant config JSON is canonical.**
+`TenantConfig` is the only runtime configuration source for browser applications.
+API endpoints, auth selection and provider settings, branding, observability,
+Google Maps, analytics, and CORS proxy settings belong in `config.json` plus its
+selected stage overlay.
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  Highest priority                                               │
-│                                                                 │
-│  1. TenantConfig (config.json + stage overlay)                  │
-│     → setAuthConfigFromTenant() bridges into authConfig          │
-│     → initNetworkStoreFromTenant() sets API endpoints            │
-│     → initSentryFromTenant() reads observability config          │
-│                                                                 │
-│  2. .env vars (VITE_* / REACT_APP_*)                            │
-│     → Legacy fallback for auth config (getAuthConfig())          │
-│     → Per-developer overrides (e.g. personal Google Maps key)    │
-│                                                                 │
-│  3. vite.config.ts `define` globals                             │
-│     → DEPRECATED for values now in TenantConfig                  │
-│     → Still used: __PACKAGE_VERSION__, IS_PRODUCTION             │
-│                                                                 │
-│  4. Hardcoded defaults (tenantDefaults.ts, authConfig.ts)       │
-│                                                                 │
-│  Lowest priority                                                │
-└─────────────────────────────────────────────────────────────────┘
-```
+Vite environment variables are limited to build controls such as source mode,
+file watching, bundle analysis, and the debug panel. ScoutPass additionally
+accepts its public Web3Auth client ID and Google Maps key at build time; the
+validated build contract merges those values into the single resolved
+`TenantConfig` before application startup.
 
-**Rule of thumb:**
+Resolution behavior is intentionally strict:
 
--   Tenant-specific values → `config.json`
--   Personal developer keys → `.env` (gitignored)
--   Everything else uses defaults
+1. Explicit static, baked, fetched, and cached values are validated before use.
+2. Invalid JSON or an invalid explicit config stops startup with an actionable
+   configuration error.
+3. A transiently unavailable remote endpoint may fall back to a previously
+   validated baked or cached config.
+4. The built-in LearnCard default is used only when a caller explicitly opts
+   into it, primarily in isolated tests.
+5. No application subsystem reads `process.env`, `import.meta.env`, legacy Vite
+   globals, or `window.__ENV__` directly.
+
+Service deployments follow the same rule: each service parses its environment
+once in `src/config/environment.ts`, then consumers import the typed
+`environment` object. Unsupported booleans, malformed URLs, missing required
+keys, and invalid conditional combinations fail before database or client
+initialization.
 
 ## Quick start
 

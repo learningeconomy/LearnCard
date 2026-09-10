@@ -43,6 +43,7 @@ export const BoostSideMenuMediaDetails: React.FC<{ credential: VC }> = ({ creden
                         {imageAttachments.map((img, idx) => (
                             <button
                                 key={idx}
+                                type="button"
                                 onClick={() => handleClick(img?.url, img?.fileName || img?.title)}
                                 className="hover:underline focus:outline-none text-left break-words"
                             >
@@ -69,7 +70,8 @@ export const BoostSideMenuMediaDetails: React.FC<{ credential: VC }> = ({ creden
         if (type === BoostMediaOptionsEnum.document) subLabel = fileName;
 
         return (
-            <div
+            <button
+                type="button"
                 className="w-full flex items-center justify-start cursor-pointer"
                 onClick={() => handleClick(url, fileName || title)}
             >
@@ -86,7 +88,7 @@ export const BoostSideMenuMediaDetails: React.FC<{ credential: VC }> = ({ creden
                         {subLabel}
                     </p>
                 </div>
-            </div>
+            </button>
         );
     }
     return null;

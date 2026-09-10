@@ -58,7 +58,7 @@ export const useEnforceVisibleLocale = (): void => {
         if (visibleLanguages.includes(locale)) return;
 
         const fallback = visibleLanguages.includes('en') ? 'en' : visibleLanguages[0];
-        changeLocale(fallback);
+        changeLocale(fallback, { manual: false });
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [visibleKey, locale, changeLocale]);
 };

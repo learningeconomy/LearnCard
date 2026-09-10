@@ -13,6 +13,10 @@ export type ClrTranscriptIssuerInfo = {
     logoSrc?: string;
 };
 
+/** Returns the issuer-provided mark first, with the credential image as a fallback. */
+export const getClrIssuerLogo = (model: ClrTranscriptDisplayModel): string | undefined =>
+    model.header.issuerImage?.value ?? model.header.image?.value;
+
 /** Lightweight title patterns used only when structured CLR signals are inconclusive. */
 const TITLE_HEURISTICS: Array<[InferredClrKind, RegExp[]]> = [
     [
@@ -113,7 +117,7 @@ export const getClrTranscriptIssuerInfo = (credential: VC): ClrTranscriptIssuerI
 
         return {
             issuerName: model.header.issuerName?.value,
-            logoSrc: model.header.image?.value,
+            logoSrc: getClrIssuerLogo(model),
         };
     } catch {
         return {};

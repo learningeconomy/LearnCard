@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 
 import TotalSkillsCount from './TotalSkillsCount';
 import { IonContent, IonPage } from '@ionic/react';
-import SkillsInsightCard from './SkillsInsightCard';
 import SkillsCategoryList from './SkillsCategoryList';
 import MainHeader from '../../components/main-header/MainHeader';
 import SkillsPageEmptyPlaceholder from './SkillsEmptyPlaceholder';
@@ -39,9 +38,6 @@ const SkillsPage: React.FC = () => {
 
     const [selectedTab, setSelectedTab] = useState<SkillsTab>(SkillsTab.MyHub);
     const [frameworkToBrowse, setFrameworkToBrowse] = useState<ApiFrameworkInfo | null>(null);
-
-    // const flags = useFlags();
-    // const showAiInsights = flags?.showAiInsights;
 
     const credentialsBackgroundFetching = credentialsFetching && !allResolvedBoostsLoading;
 
@@ -107,7 +103,6 @@ const SkillsPage: React.FC = () => {
                 <IonContent fullscreen className="skills-page" color="violet-200">
                     <div className="flex relative justify-center items-center w-full pb-[30px]">
                         <div className="w-full max-w-[600px] flex items-center justify-center flex-wrap text-center ion-padding mt-[30px] px-[20px]">
-                            {/* {showAiInsights && <SkillsInsightCard />} */}
                             {/* <TotalSkillsCount total={total} /> */}
 
                             <SkillsTabs

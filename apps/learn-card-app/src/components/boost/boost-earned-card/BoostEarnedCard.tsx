@@ -82,6 +82,8 @@ type BoostEarnedCardProps = {
     isPreview?: boolean;
     relativeDate?: boolean;
     compact?: boolean;
+    /** Renders a custom card surface while retaining this component's credential preview flow. */
+    renderPreviewTrigger?: (openPreview: () => void) => React.ReactNode;
 };
 
 export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
@@ -110,6 +112,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     isPreview = false,
     relativeDate = false,
     compact = false,
+    renderPreviewTrigger,
 }) => {
     const { newModal, closeModal, closeAllModals } = useModal({
         mobile: ModalTypes.FullScreen,
@@ -381,6 +384,17 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             });
         }
     };
+
+    if (renderPreviewTrigger) {
+        const openPreview = (): void => {
+            if (showSkeleton || !cred) return;
+
+            resetIonicModalBackground();
+            presentModal();
+        };
+
+        return <>{renderPreviewTrigger(openPreview)}</>;
+    }
 
     const { createdAt } = getInfoFromCredential(cred, 'MMMM DD, YYYY', {
         uppercaseDate: false,

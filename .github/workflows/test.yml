@@ -38,10 +38,10 @@ jobs:
                   SEED: ${{ secrets.SEED || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
                   LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
 
-    # Run E2E tests on changeset release PRs or manual trigger
+    # Run the real-backend E2E and Axe suites on every PR or manual trigger.
     # SSHs into EC2 to run Playwright tests against the branch
     e2e-tests:
-        if: github.head_ref == 'changeset-release/main' || github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
         concurrency:
             group: learncard-e2e-ec2
             cancel-in-progress: false
@@ -105,6 +105,57 @@ jobs:
                       echo "Runner repository resolved to: $(git rev-parse HEAD)"
                       ./scripts/sync-repo.sh ${{ github.head_ref || github.event.inputs.branch }}
                       ./scripts/run-tests.sh
+
+                      # The runner script owns the existing Playwright suite. Run the
+                      # Axe-backed core-flow checks explicitly so accessibility remains
+                      # part of the same real-backend E2E gate.
+                      #
+                      # ssh-action opens a non-interactive shell that never sources the
+                      # login profile, so the toolchain run-tests.sh resolves for itself
+                      # is not on PATH here — without this, `bun` exits 127 and fails the
+                      # step even when every Playwright suite has passed.
+                      export PATH="$HOME/.bun/bin:$HOME/.node/bin:$PATH"
+                      command -v bun >/dev/null || { echo "bun not found on the runner"; exit 1; }
+
+                      cd workspace/LearnCard/apps/learn-card-app
+                      bun run test:a11y
+
+            - name: Download Playwright report from EC2
+              if: always()
+              continue-on-error: true
+              run: |
+                  mkdir -p playwright-report test-results playwright-report-a11y test-results-a11y
+                  echo "${{ secrets.E2E_EC2_SSH_KEY }}" > /tmp/ec2_key
+                  chmod 600 /tmp/ec2_key
+                  # Download HTML report
+                  scp -o StrictHostKeyChecking=no -i /tmp/ec2_key -r \
+                    ${{ secrets.E2E_EC2_USERNAME }}@${{ env.E2E_EC2_IP }}:~/learncard-e2e-runner/workspace/LearnCard/apps/learn-card-app/playwright-report/* \
+                    playwright-report/ || echo "Failed to download HTML report"
+                  # Download JSON results (for job summary parsing)
+                  scp -o StrictHostKeyChecking=no -i /tmp/ec2_key -r \
+                    ${{ secrets.E2E_EC2_USERNAME }}@${{ env.E2E_EC2_IP }}:~/learncard-e2e-runner/workspace/LearnCard/apps/learn-card-app/test-results/* \
+                    test-results/ || echo "Failed to download test results"
+                  # Download the Axe suite's report, which writes to its own paths so
+                  # it does not overwrite the main Playwright suite's artifacts
+                  scp -o StrictHostKeyChecking=no -i /tmp/ec2_key -r \
+                    ${{ secrets.E2E_EC2_USERNAME }}@${{ env.E2E_EC2_IP }}:~/learncard-e2e-runner/workspace/LearnCard/apps/learn-card-app/playwright-report-a11y/* \
+                    playwright-report-a11y/ || echo "Failed to download a11y HTML report"
+                  scp -o StrictHostKeyChecking=no -i /tmp/ec2_key -r \
+                    ${{ secrets.E2E_EC2_USERNAME }}@${{ env.E2E_EC2_IP }}:~/learncard-e2e-runner/workspace/LearnCard/apps/learn-card-app/test-results-a11y/* \
+                    test-results-a11y/ || echo "Failed to download a11y test results"
+                  rm /tmp/ec2_key
+
+            - name: Upload Playwright report
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: playwright-report
+                  path: |
+                      playwright-report/
+                      test-results/
+                      playwright-report-a11y/
+                      test-results-a11y/
+                  retention-days: 30
 
             - name: Cleanup EC2 (docker down, prune)
               if: ${{ always() && env.E2E_EC2_IP != '' }}

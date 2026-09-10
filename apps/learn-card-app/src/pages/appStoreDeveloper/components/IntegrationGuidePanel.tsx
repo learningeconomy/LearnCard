@@ -1456,17 +1456,11 @@ const DirectLinkGuide: React.FC<{ url?: string }> = ({ url }) => {
                 </p>
 
                 <CodeBlock
-                    code={`// Your app receives:
-${url || 'https://yourapp.com'}?did=did:web:user.learncard.com
+                    code={`// Your backend callback receives a challenge-bound DID Auth VP:
+${url || 'https://yourapp.com'}?challenge=...&vp=eyJhbGciOiJFZDI1NTE5...
 
-// Extract the DID in your app
-const urlParams = new URLSearchParams(window.location.search);
-const userDid = urlParams.get('did');
-
-if (userDid) {
-    // User is authenticated via LearnCard
-    log.info('User DID:', userDid);
-}`}
+// Verify the VP signature, challenge, domain/audience, expiry, and replay status.
+// Derive the authenticated DID from the verified presentation holder.`}
                 />
             </StepCard>
 
@@ -1540,7 +1534,7 @@ const AITutorGuide: React.FC<{ aiTutorUrl?: string }> = ({ aiTutorUrl }) => {
                 <p className="text-xs text-gray-500 mt-3">
                     {m['developerPortal.integrationGuide.aiTutor.step1Redirect']()}{' '}
                     <code className="bg-gray-100 px-1 rounded">
-                        {aiTutorUrl || 'https://yourtutor.com'}/chats?did=...&topic=...
+                        {aiTutorUrl || 'https://yourtutor.com'}/chats?topic=...
                     </code>
                 </p>
             </StepCard>

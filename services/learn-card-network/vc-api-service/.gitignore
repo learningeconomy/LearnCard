@@ -1,0 +1,8 @@
+.env
+.env.*
+!.env.example
+dist/
+.serverless/
+.esbuild/
+node_modules/
+src/didkit_wasm_bg.wasm

@@ -22,7 +22,7 @@ const INDEX_PATH = path.join(FIXTURES_ROOT, 'index.ts');
 function listFolders(): string[] {
     return fs
         .readdirSync(FIXTURES_ROOT, { withFileTypes: true })
-        .filter(d => d.isDirectory())
+        .filter(d => d.isDirectory() && d.name !== 'sd-jwt-vc')
         .map(d => d.name)
         .sort();
 }
@@ -165,6 +165,20 @@ export default function fixtureWriterPlugin(): Plugin {
                         if (!folder || !metadata?.id) {
                             res.statusCode = 400;
                             res.end(JSON.stringify({ error: 'Missing folder or metadata.id' }));
+
+                            return;
+                        }
+
+                        if (
+                            metadata.spec === 'sd-jwt-vc' ||
+                            (metadata.id as string).startsWith('sd-jwt-vc/')
+                        ) {
+                            res.statusCode = 400;
+                            res.end(
+                                JSON.stringify({
+                                    error: 'The New Fixture endpoint only creates W3C VC fixtures.',
+                                })
+                            );
 
                             return;
                         }

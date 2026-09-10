@@ -51,7 +51,7 @@ export const LaunchTypeStep: React.FC<LaunchTypeStepProps> = ({ data, onChange }
                 {(
                     Object.entries(LAUNCH_TYPE_INFO) as [
                         LaunchType,
-                        (typeof LAUNCH_TYPE_INFO)[LaunchType]
+                        (typeof LAUNCH_TYPE_INFO)[LaunchType],
                     ][]
                 ).map(([type, info]) => {
                     const isSelected = data.launch_type === type;
@@ -68,8 +68,8 @@ export const LaunchTypeStep: React.FC<LaunchTypeStepProps> = ({ data, onChange }
                                 isComingSoon
                                     ? 'border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed'
                                     : isSelected
-                                    ? 'border-cyan-500 bg-cyan-50'
-                                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                                      ? 'border-cyan-500 bg-cyan-50'
+                                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                             }`}
                         >
                             <div className="flex items-start gap-4">
@@ -78,8 +78,8 @@ export const LaunchTypeStep: React.FC<LaunchTypeStepProps> = ({ data, onChange }
                                         isComingSoon
                                             ? 'bg-gray-200 text-gray-400'
                                             : isSelected
-                                            ? 'bg-cyan-500 text-white'
-                                            : 'bg-gray-100 text-gray-500 group-hover:bg-gray-200'
+                                              ? 'bg-cyan-500 text-white'
+                                              : 'bg-gray-100 text-gray-500 group-hover:bg-gray-200'
                                     }`}
                                 >
                                     {IconComponent && <IconComponent className="w-5 h-5" />}
@@ -92,8 +92,8 @@ export const LaunchTypeStep: React.FC<LaunchTypeStepProps> = ({ data, onChange }
                                                 isComingSoon
                                                     ? 'text-gray-500'
                                                     : isSelected
-                                                    ? 'text-cyan-700'
-                                                    : 'text-gray-700'
+                                                      ? 'text-cyan-700'
+                                                      : 'text-gray-700'
                                             }`}
                                         >
                                             {mDynamic(info.labelKey)}

@@ -66,6 +66,8 @@ jobs:
 
             - name: Setup Bun
               uses: oven-sh/setup-bun@v2
+              with:
+                  bun-version: 1.3.14
 
             - name: Setup Bun cache
               uses: actions/cache@v6
@@ -188,11 +190,13 @@ jobs:
 
             - name: Setup Bun
               uses: oven-sh/setup-bun@v2
+              with:
+                  bun-version: 1.3.14
 
-            - name: Use Node.js 24 for npm trusted publishing
+            - name: Use Node.js 24.12.0 for npm trusted publishing
               uses: actions/setup-node@v6
               with:
-                  node-version: 24
+                  node-version: 24.12.0
                   package-manager-cache: false
 
             - name: Setup Bun cache

@@ -24,6 +24,7 @@ import { neogma } from '@instance';
 import { getIdFromUri } from '@helpers/uri.helpers';
 import { sendSpy, addNotificationToQueueSpy } from './helpers/spies';
 import * as notifications from '@helpers/notifications.helpers';
+import { areProfilesConnected } from '@helpers/connection.helpers';
 
 // Mock delivery service for inbox routing tests
 const deliverySendSpy = vi.fn().mockResolvedValue(undefined);
@@ -2931,6 +2932,49 @@ describe('Boosts', () => {
             } else {
                 expect(sa).toBeDefined();
             }
+        });
+
+        it('creates both prompt directions for a claim-link acceptance using the credential trigger', async () => {
+            const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
+            const boostUri = boosts.records[0]!.uri;
+            const sa = await userA.clients.fullAuth.profile.signingAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'mysa',
+            });
+            expect(sa).toBeDefined();
+
+            const challenge = 'connection-prompt-claim';
+            await userA.clients.fullAuth.boost.generateClaimLink({
+                boostUri,
+                challenge,
+                claimLinkSA: {
+                    endpoint: sa!.signingAuthority.endpoint,
+                    name: sa!.relationship.name,
+                },
+            });
+
+            const credentialUri = await userB.clients.fullAuth.boost.claimBoostWithLink({
+                boostUri,
+                challenge,
+            });
+            const [claimerPrompts, senderPrompts, claimer, sender] = await Promise.all([
+                userB.clients.fullAuth.profile.pendingConnectionPrompts(),
+                userA.clients.fullAuth.profile.pendingConnectionPrompts(),
+                userB.clients.fullAuth.profile.getProfile(),
+                userA.clients.fullAuth.profile.getProfile(),
+            ]);
+
+            expect(claimerPrompts).toHaveLength(1);
+            expect(claimerPrompts[0]).toMatchObject({
+                surface: 'POST_CLAIM',
+                triggerId: `credential:${getIdFromUri(credentialUri)}`,
+            });
+            expect(senderPrompts).toHaveLength(1);
+            expect(senderPrompts[0]).toMatchObject({
+                surface: 'NOTIFICATION',
+                triggerId: `credential:${getIdFromUri(credentialUri)}`,
+            });
+            expect(await areProfilesConnected(claimer!, sender!)).toBe(false);
         });
 
         it("should auto-accept a boost you've claimed", async () => {

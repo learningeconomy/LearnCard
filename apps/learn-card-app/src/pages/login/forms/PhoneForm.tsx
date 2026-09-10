@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import * as m from '../../../paraglide/messages.js';
 import { TransP } from '../../../i18n/TransP';
 import Countdown from 'react-countdown';
-import ReactCodeInput from 'react-code-input';
 import PhoneInput from 'react-phone-number-input';
 import { Capacitor } from '@capacitor/core';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
@@ -22,6 +21,7 @@ import { useTheme } from '../../../theme/hooks/useTheme';
 
 import { IonCol } from '@ionic/react';
 import AppStoreDownloadButtons from '../appStoreButtons/AppStoreDownloadButtons';
+import AccessibleCodeInput from './AccessibleCodeInput';
 
 import { PhoneFormStepsEnum } from 'learn-card-base';
 
@@ -272,7 +272,19 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
 
         activeStep = (
             <IonCol size="12" className="ion-no-padding">
+                <label htmlFor="login-phone" className="sr-only">
+                    {m['login.phone.placeholder']()}
+                </label>
                 <PhoneInput
+                    id="login-phone"
+                    aria-invalid={Boolean(errors?.phone || error)}
+                    aria-describedby={
+                        errors?.phone?.[0]
+                            ? 'login-phone-error'
+                            : error
+                            ? 'login-phone-service-error'
+                            : undefined
+                    }
                     placeholder={m['login.phone.placeholder']()}
                     countryOptionsOrder={['US', 'CA', 'AU', '|', '...']}
                     defaultCountry="US"
@@ -283,24 +295,37 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                     }`}
                 />
                 {errors?.phone?.[0] && (
-                    <p className="w-full text-center mt-2 text-red-500 font-medium">
+                    <p
+                        id="login-phone-error"
+                        role="alert"
+                        className="w-full text-center mt-2 text-red-500 font-medium"
+                    >
                         {errors?.phone?.[0]}
                     </p>
                 )}
                 {error && (
-                    <p className="w-full text-center mt-2 text-red-500 font-medium">{error}</p>
+                    <p
+                        id="login-phone-service-error"
+                        role="alert"
+                        className="w-full text-center mt-2 text-red-500 font-medium"
+                    >
+                        {error}
+                    </p>
                 )}
             </IonCol>
         );
         buttonTitle = isLoading ? m['common.loading']() : m['login.phone.button']();
         disabled = !phone || isLoading;
     } else if (currentStep === PhoneFormStepsEnum.verification) {
+        const verificationError = errors?.code?.[0] ?? codeError;
         formTitle = (
             <TransP
                 m={m['common.enterVerificationCode']}
                 components={[
-                    <span
+                    <button
                         key="0"
+                        type="button"
+                        aria-label="Start over"
                         className={startOverClassNameOverride ?? 'text-white underline font-bold'}
                         onClick={resetForm}
                     />,
@@ -312,8 +337,11 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                 size="12"
                 className="w-full flex flex-col items-center justify-center ion-no-padding ion-no-margin mb-[20px]"
             >
-                <ReactCodeInput
+                <AccessibleCodeInput
                     name="phoneVerification"
+                    label={m['common.enterVerificationCode']()}
+                    errorId={verificationError ? 'login-phone-code-error' : undefined}
+                    isValid={!verificationError}
                     inputMode="numeric"
                     fields={6}
                     type="text"
@@ -322,13 +350,14 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                         verificationCodeInputClassName ?? ''
                     } ${errors.code || codeError ? 'react-code-input-error' : ''}`}
                 />
-                {errors?.code?.[0] && (
-                    <p className="w-full text-center mt-2 text-red-500 font-medium">
-                        {errors?.code?.[0]}
+                {verificationError && (
+                    <p
+                        id="login-phone-code-error"
+                        role="alert"
+                        className="w-full text-center mt-2 text-red-500 font-medium"
+                    >
+                        {verificationError}
                     </p>
-                )}
-                {codeError && (
-                    <p className="w-full text-center mt-2 text-red-500 font-medium">{codeError}</p>
                 )}
             </IonCol>
         );
@@ -345,6 +374,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
             {activeStep}
             <div className="flex items-center justify-center mt-[20px] pb-[20px]">
                 <button
+                    type="submit"
                     onClick={handleOnClick}
                     className={`ion-padding w-full font-bold rounded-[15px] disabled:opacity-50 ${
                         !loginButtonBgColor ? 'bg-grayscale-900' : ''
@@ -366,6 +396,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                         renderer={({ seconds, completed }) =>
                             completed ? (
                                 <button
+                                    type="button"
                                     onClick={e => {
                                         e.preventDefault();
                                         e.stopPropagation();
@@ -380,6 +411,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                                 </button>
                             ) : (
                                 <button
+                                    type="button"
                                     disabled
                                     className={
                                         resendCodeButtonClassNameOverride ??

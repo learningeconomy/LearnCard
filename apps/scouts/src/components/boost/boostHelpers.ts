@@ -4,20 +4,20 @@ import type { SupportedLanguage } from '../../i18n';
 import { LCNBoostStatusEnum, VC, VerificationItem } from '@learncard/types';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { RouteComponentProps } from 'react-router-dom';
+import type { BoostCMSState } from 'learn-card-base/components/boost/boost';
+import { defaultCategoryThumbImages } from 'learn-card-base/components/boost/boostOptions/boostOptions';
 import {
-    BoostCategoryOptionsEnum,
-    LCAStylesPackRegistryEntry,
-    defaultCategoryThumbImages,
     getAchievementTypeFromCustomType,
     isCustomBoostType,
     replaceUnderscoresWithWhiteSpace,
-    BoostCMSState,
-} from 'learn-card-base';
+} from 'learn-card-base/helpers/boostCustomTypeHelpers';
+import { getLogger } from 'learn-card-base/logging/logger';
+import { BoostCategoryOptionsEnum } from 'learn-card-base/types/boostAndCredentialMetadata';
+import type { LCAStylesPackRegistryEntry } from 'learn-card-base/types/sync-my-school';
 import { defaultIDCardImage, defaultIssuerThumbnail } from './boost-options/boostOptions';
 import { alignmentsFromSkills, extractSkillIdsFromAlignments } from './alignmentHelpers';
 import { BoostCMSAlignment } from './boost';
 import { CATEGORY_TO_SUBCATEGORY_LIST, boostCategoryOptions } from './boost-options/boostOptions';
-import { getLogger } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
 const log = getLogger('boost-helpers');
 

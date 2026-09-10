@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import { RegistryClient } from '@digitalcredentials/issuer-registry-client';
 import { RegistryService, IssuerLookupResult } from '../registry.service';
 
@@ -12,7 +13,9 @@ export class DccIssuerRegistryAdapter implements RegistryService {
     private async initialize() {
         if (this.isInitialized) return;
 
-        const knownRegistriesUrl = process.env.DCC_KNOWN_REGISTRIES_URL || 'https://registries.learncard.com/known-did-registries.json';
+        const knownRegistriesUrl =
+            environment.DCC_KNOWN_REGISTRIES_URL ||
+            'https://registries.learncard.com/known-did-registries.json';
 
         try {
             const response = await fetch(knownRegistriesUrl);

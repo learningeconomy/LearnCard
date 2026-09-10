@@ -21,8 +21,10 @@ export const LearnCardIDCMSFooter: React.FC<{
     return (
         <IonFooter
             mode="ios"
-            className="w-full flex justify-center items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] absolute bottom-0 bg-white max-h-[100px]"
-            style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+            className="lc-content-owns-bottom w-full flex justify-center items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] absolute bottom-0 bg-white max-h-[100px]"
+            style={{
+                paddingBottom: 'var(--lc-overlay-inset-bottom, var(--ion-safe-area-bottom, 0px))',
+            }}
         >
             <IonToolbar color="transparent" mode="ios">
                 <div className="w-full flex items-center justify-center">

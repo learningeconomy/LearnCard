@@ -1,6 +1,8 @@
 import React from 'react';
 
 import ClrCourseSection from '../ClrCourseSection';
+import ClrAssessmentSection from '../ClrAssessmentSection';
+import ClrAssessmentDetailPanel from '../ClrAssessmentDetailPanel';
 import ClrProgramsSection from '../ClrProgramsSection';
 import ClrCourseDetailPanel from '../ClrCourseDetailPanel';
 import ClrProgramDetailPanel from '../ClrProgramDetailPanel';
@@ -14,6 +16,7 @@ import { ModalTypes, useModal } from 'learn-card-base';
 
 import type {
     ViewOptions,
+    AssessmentDisplayModel,
     CourseDisplayModel,
     ProgramDisplayModel,
     ClrTranscriptDisplayModel,
@@ -21,6 +24,7 @@ import type {
 import { selectClrTranscriptView } from '../../../helpers/clrRenderer.helpers';
 
 import type { VC } from '@learncard/types';
+import { getClrIssuerLogo } from '../clrKind.helpers';
 
 const ClrTranscriptFullPage: React.FC<{
     model: ClrTranscriptDisplayModel;
@@ -32,7 +36,7 @@ const ClrTranscriptFullPage: React.FC<{
     const { newModal } = useModal({ desktop: ModalTypes.Right, mobile: ModalTypes.Right });
 
     const selectedView = selectClrTranscriptView(model, options);
-    const issuerLogo = model.header.image?.value;
+    const issuerLogo = getClrIssuerLogo(model);
 
     const handleSelectProgram = (program: ProgramDisplayModel) => {
         newModal(
@@ -42,6 +46,18 @@ const ClrTranscriptFullPage: React.FC<{
                 adminMode={adminMode}
                 associations={model.associations}
                 competencies={model.competencies}
+                issuerName={model.header.issuerName?.value}
+                issuerLogo={issuerLogo}
+            />
+        );
+    };
+
+    const handleSelectAssessment = (assessment: AssessmentDisplayModel) => {
+        newModal(
+            <ClrAssessmentDetailPanel
+                assessment={assessment}
+                boost={boost}
+                adminMode={adminMode}
                 issuerName={model.header.issuerName?.value}
                 issuerLogo={issuerLogo}
             />
@@ -63,7 +79,7 @@ const ClrTranscriptFullPage: React.FC<{
     };
 
     return (
-        <div className="flex flex-col w-full min-h-full">
+        <div className="flex flex-col w-full min-h-full pt-[var(--ion-safe-area-top,0px)]">
             <div className="py-0 sm:pb-10 px-0 sm:px-4 flex justify-center sm:rounded-xl">
                 <div className="max-w-[800px] w-full bg-white shadow-[0_4px_24px_rgba(0,0,0,0.10)] rounded-xl sm:rounded-xl p-2 sm:p-10 space-y-4">
                     {/* Warnings — admin only */}
@@ -94,6 +110,17 @@ const ClrTranscriptFullPage: React.FC<{
                             <ClrCourseSection
                                 model={model}
                                 onSelectCourse={handleSelectCourse}
+                                adminMode={adminMode}
+                            />
+                        )}
+
+                    {/* Assessments (ACT, rubric-based skills assessments, ...) */}
+                    {(selectedView === 'StructuredTranscriptView' ||
+                        selectedView === 'VerifierInspectionView') &&
+                        model.assessments.length > 0 && (
+                            <ClrAssessmentSection
+                                assessments={model.assessments}
+                                onSelectAssessment={handleSelectAssessment}
                                 adminMode={adminMode}
                             />
                         )}

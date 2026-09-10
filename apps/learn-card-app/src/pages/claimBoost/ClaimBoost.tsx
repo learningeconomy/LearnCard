@@ -2,14 +2,16 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { getVCDisplayCardVariant } from '@learncard/react';
+import { useQueryClient } from '@tanstack/react-query';
 import moment from 'moment';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('claim-boost');
 
 import { IonPage, IonSpinner, useIonModal, useIonAlert, IonRow } from '@ionic/react';
-import { useRenderMethodEnabled } from '../../hooks/useRenderMethodEnabled';
+
 // import MainHeader from '../../components/main-header/MainHeader';
-import BoostFooterLayout from 'learn-card-base/components/boost/boostFooter/BoostFooterLayout';
+import BoostFooterLayout from '../../components/accessibility/AccessibleBoostFooterLayout';
+import AccessibleCredentialCard from '../../components/accessibility/AccessibleCredentialCard';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 import RenderMethodDisplay from '../../components/render-method/RenderMethodDisplay';
 import ClaimBoostLoggedOutPrompt from 'learn-card-base/components/boost/claimBoostLoggedOutPrompt/ClaimBoostLoggedOutPrompt';
@@ -35,6 +37,7 @@ import {
     useToast,
     ToastTypeEnum,
     boostPreviewStore,
+    connectionPromptKeys,
 } from 'learn-card-base';
 
 import {
@@ -60,6 +63,7 @@ import { networkStore } from 'learn-card-base/stores/NetworkStore';
 
 import {
     getAchievementType,
+    getCredentialName,
     getDefaultCategoryForCredential,
     unwrapBoostCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
@@ -99,7 +103,7 @@ const ClaimBoostBodyPreviewOverride: React.FC<{
                         {issuerProfileImageElement ? (
                             issuerProfileImageElement
                         ) : (
-                            <div className="flex flex-row items-center justify-center h-full w-full overflow-hidden bg-gray-50 text-emerald-700 font-semibold text-xl">
+                            <div className="flex flex-row items-center justify-center h-full w-full overflow-hidden bg-grayscale-100 text-emerald-700 font-semibold text-xl">
                                 {getEmojiFromDidString(issuerName)}
                             </div>
                         )}
@@ -113,7 +117,11 @@ const ClaimBoostBodyPreviewOverride: React.FC<{
                             <strong className="font-[700] capitalize">{issuerName}</strong>
                         </span>
                     </div>
-                    <CredentialVerificationDisplay credential={boostVC} showText />
+                    <CredentialVerificationDisplay
+                        credential={boostVC}
+                        showText
+                        className="claim-boost-verification-status"
+                    />
                 </div>
             </>
         );
@@ -144,6 +152,7 @@ const ClaimBoost: React.FC<{
     vc?: VC | null;
 }> = ({ uri, claimChallenge, dismissClaimModal = () => {}, vc }) => {
     const history = useHistory();
+    const queryClient = useQueryClient();
     const query = usePathQuery();
     const isLoggedIn = useIsLoggedIn();
     const { initWallet, addVCtoWallet } = useWallet();
@@ -158,7 +167,6 @@ const ClaimBoost: React.FC<{
 
     const { uploadVcFromTextAndAddToWallet } = useUploadVcFromText();
     const { gate } = useLCNGatedAction();
-    const enableRenderMethod = useRenderMethodEnabled();
 
     const resolvePartnerId = (issuerId?: string) => {
         const profileId = getUserHandleFromDid(issuerId ?? '');
@@ -388,6 +396,8 @@ const ClaimBoost: React.FC<{
             });
             if (!addedToWallet) throw new Error('Credential was not added to LearnCard');
 
+            await queryClient.invalidateQueries({ queryKey: connectionPromptKeys.all });
+
             const category = getDefaultCategoryForCredential(boost);
             const achievementType = getAchievementType(boost);
 
@@ -529,10 +539,7 @@ const ClaimBoost: React.FC<{
 
     const isFamily = category === CredentialCategoryEnum.family;
     const renderMethodSource = (_boost ?? boost ?? vc) as VC | undefined;
-    const renderMethod =
-        enableRenderMethod && renderMethodSource
-            ? getSvgMustacheRenderMethod(renderMethodSource)
-            : null;
+    const renderMethod = renderMethodSource ? getSvgMustacheRenderMethod(renderMethodSource) : null;
     const selectedDisplayView = boostPreviewStore.useTracked.selectedDisplayView();
     const displayCredential = unwrapBoostCredential(renderMethodSource as VC) as VC;
 
@@ -551,11 +558,9 @@ const ClaimBoost: React.FC<{
 
     useEffect(() => {
         boostPreviewStore.set.updateSelectedDisplayView(
-            enableRenderMethod && renderMethod
-                ? BoostPreviewDisplayViewEnum.Issuer
-                : BoostPreviewDisplayViewEnum.Default
+            renderMethod ? BoostPreviewDisplayViewEnum.Issuer : BoostPreviewDisplayViewEnum.Default
         );
-    }, [renderMethod?.template, renderMethodSource?.id, enableRenderMethod]);
+    }, [renderMethod?.template, renderMethodSource?.id]);
 
     const appearance = boost?.display;
     const wallpaperImage = appearance?.backgroundImage;
@@ -598,28 +603,30 @@ const ClaimBoost: React.FC<{
     }
 
     const isIssuerViewSelected =
-        enableRenderMethod &&
-        Boolean(renderMethod) &&
-        selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
+        Boolean(renderMethod) && selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
     const shouldUseHostCardPadding =
         !renderMethodSource ||
         isIssuerViewSelected ||
         getVCDisplayCardVariant(displayCredential, category ?? undefined) !== 'ribbon';
 
     const renderClaimCredentialDisplay = (credentialToDisplay: VC) => (
-        <VCDisplayCardWrapper2
-            useCurrentUserName
-            credential={credentialToDisplay}
-            customBodyCardComponent={credentialBodyOverride}
-            customFooterComponent={<div />}
-            checkProof={false}
-            // isFrontOverride={isFront}
-            setIsFrontOverride={setIsFront}
-            hideNavButtons
-            hideFrontFaceDetails={false}
-            claimStatusText={actionButtonText}
-            handleClaim={handleClaimBoost}
-        />
+        <AccessibleCredentialCard
+            label={getCredentialName(credentialToDisplay) || m['claim.modal.credentialFallback']()}
+        >
+            <VCDisplayCardWrapper2
+                useCurrentUserName
+                credential={credentialToDisplay}
+                customBodyCardComponent={credentialBodyOverride}
+                customFooterComponent={<div />}
+                checkProof={false}
+                // isFrontOverride={isFront}
+                setIsFrontOverride={setIsFront}
+                hideNavButtons
+                hideFrontFaceDetails={false}
+                claimStatusText={actionButtonText}
+                handleClaim={handleClaimBoost}
+            />
+        </AccessibleCredentialCard>
     );
     const boostCredentialWithId = boost
         ? ({ ...((_boost ?? boost) as VC), boostId: boostUri } as VC)
@@ -642,7 +649,11 @@ const ClaimBoost: React.FC<{
     };
 
     return (
-        <IonPage>
+        <IonPage className="claim-boost-a11y-surface">
+            <h1 className="sr-only">
+                {getCredentialName((renderMethodSource ?? {}) as VC) ||
+                    m['claim.modal.credentialFallback']()}
+            </h1>
             {duplicateCredentialPrompt}
             {/* <MainHeader
                 showBackButton={false}
@@ -656,7 +667,8 @@ const ClaimBoost: React.FC<{
                     handleDetails: isMobile ? () => openDetailsSideModal() : undefined,
                     handleClaim: vc ? handleClaimRawCredential : handleClaimBoostAction,
                     claimBtnText: actionButtonText,
-                    disableClaimButton: isClaimLoading || isCheckingDuplicate || isClaimed,
+                    disableClaimButton:
+                        loading || isClaimLoading || isCheckingDuplicate || isClaimed,
                     useFullCloseButton: !isMobile,
                 }}
             >
@@ -674,14 +686,18 @@ const ClaimBoost: React.FC<{
                         className="flex flex-col items-center justify-center px-2 overflow-x-auto h-full pt-[30px]"
                     > */}
                         <section
-                            className={`w-full safe-area-top-margin overflow-y-auto max-h-full disable-scrollbars ${
+                            className={`w-full mt-[var(--ion-safe-area-top,0px)] overflow-y-auto max-h-full disable-scrollbars ${
                                 shouldUseHostCardPadding ? 'px-6' : ''
                             } ${Capacitor.isNativePlatform() ? 'pt-0' : 'pt-[30px]'}`}
                         >
                             <div className="pb-4 vc-preview-modal-safe-area h-full w-full">
                                 {loading && (
-                                    <section className="relative loading-spinner-container flex flex-col items-center justify-center h-full w-full">
-                                        <IonSpinner color="black" />
+                                    <section
+                                        role="status"
+                                        aria-live="polite"
+                                        className="relative loading-spinner-container flex flex-col items-center justify-center h-full w-full"
+                                    >
+                                        <IonSpinner aria-hidden="true" color="black" />
                                         <p className="mt-2 font-bold text-lg">
                                             {m['common.loading']()}
                                         </p>

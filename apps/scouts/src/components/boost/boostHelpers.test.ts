@@ -1,9 +1,15 @@
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
 import { BoostCategoryOptionsEnum } from 'learn-card-base/types/boostAndCredentialMetadata';
 
 import { setLocale } from '../../paraglide/runtime.js';
+import { CATEGORY_TO_SUBCATEGORY_LIST } from './boost-options/boostOptions';
+import {
+    getDefaultBoostCriteria,
+    getDefaultBoostDescription,
+    getDefaultBoostTitle,
+} from './boostHelpers';
 import { getBoostPresetLocalization, refreshLocalizedPresetFields } from './localizedPresetFields';
 
 vi.mock('../../paraglide/messages.js', async importOriginal => {
@@ -15,11 +21,6 @@ vi.mock('../../paraglide/messages.js', async importOriginal => {
             'Unregistered preset copy',
     };
 });
-
-let getDefaultBoostCriteria: typeof import('./boostHelpers').getDefaultBoostCriteria;
-let getDefaultBoostDescription: typeof import('./boostHelpers').getDefaultBoostDescription;
-let getDefaultBoostTitle: typeof import('./boostHelpers').getDefaultBoostTitle;
-let categoryToSubcategoryList: typeof import('./boost-options/boostOptions').CATEGORY_TO_SUBCATEGORY_LIST;
 
 const englishDefaults = {
     name: 'Archery',
@@ -33,43 +34,15 @@ const spanishDefaults = {
     narrative: 'Completa los requisitos de tiro con arco.',
 };
 
-beforeAll(async () => {
-    const storage = {
-        clear: vi.fn(),
-        getItem: vi.fn(() => null),
-        key: vi.fn(() => null),
-        length: 0,
-        removeItem: vi.fn(),
-        setItem: vi.fn(),
-    };
-
-    vi.stubGlobal('localStorage', storage);
-    vi.stubGlobal('sessionStorage', storage);
-    vi.stubGlobal('window', {
-        localStorage: storage,
-        sessionStorage: storage,
-        location: { hostname: 'localhost' },
-    });
-
-    ({ getDefaultBoostCriteria, getDefaultBoostDescription, getDefaultBoostTitle } = await import(
-        './boostHelpers'
-    ));
-    ({ CATEGORY_TO_SUBCATEGORY_LIST: categoryToSubcategoryList } = await import(
-        './boost-options/boostOptions'
-    ));
-});
-
 afterEach(() => {
     setLocale('en', { reload: false });
 });
 
-afterAll(() => {
-    vi.unstubAllGlobals();
-});
-
 describe('localized Boost preset defaults', () => {
     it('uses bundled images for every Merit Badge preset', () => {
-        const externalImagePresets = categoryToSubcategoryList[BoostCategoryOptionsEnum.meritBadge]
+        const externalImagePresets = CATEGORY_TO_SUBCATEGORY_LIST[
+            BoostCategoryOptionsEnum.meritBadge
+        ]
             .filter(preset => /^https?:\/\//.test(preset.image ?? ''))
             .map(preset => preset.type);
 
@@ -121,7 +94,7 @@ describe('localized Boost preset defaults', () => {
             BoostCategoryOptionsEnum.socialBadge,
             BoostCategoryOptionsEnum.meritBadge,
         ].flatMap(category =>
-            categoryToSubcategoryList[category].map(preset => ({
+            CATEGORY_TO_SUBCATEGORY_LIST[category].map(preset => ({
                 category,
                 type: preset.type,
                 title: preset.presetTitle,

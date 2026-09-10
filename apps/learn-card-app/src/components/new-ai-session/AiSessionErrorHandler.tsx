@@ -39,7 +39,7 @@ export const AiSessionErrorHandler: React.FC = () => {
     const { title, body } = getAiErrorCopy(visibleError.code);
 
     return (
-        <div className="absolute inset-x-4 top-[calc(80px+env(safe-area-inset-top))] z-[100]">
+        <div className="absolute inset-x-4 top-[calc(80px+var(--lc-overlay-inset-top,var(--ion-safe-area-top,0px)))] z-[100]">
             <div
                 role="alert"
                 className="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5 shadow-soft-bottom"

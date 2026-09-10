@@ -21,6 +21,7 @@ const config: PlaywrightTestConfig = {
     retries: 0,
     use: {
         ...base.use,
+        baseURL: 'http://localhost:3010',
         // Start unauthenticated — mocked tests drive auth through the seed flow
         // against stubbed endpoints, not a saved real session.
         storageState: undefined,
@@ -32,8 +33,8 @@ const config: PlaywrightTestConfig = {
         // Use bun (the repo's declared packageManager); a `pnpm` here is rejected by
         // corepack against the bun packageManager spec.
         command:
-            'bun scripts/prepare-native-config.ts learncard --stage local && bunx vite --host --port 3000',
-        url: 'http://localhost:3000',
+            'bun scripts/prepare-native-config.ts learncard --stage local && bunx vite --host --port 3010 --strictPort',
+        url: 'http://localhost:3010',
         timeout: 5 * 60 * 1000,
         reuseExistingServer: !process.env.CI,
         ignoreHTTPSErrors: true,

@@ -1,18 +1,24 @@
-const mockGetClient = jest.fn();
+import { vi } from 'vitest';
+const mockGetClient = vi.fn();
 
-const mockClient = {
+const makeMockClient = (learnCloudDid = 'did:key:z6MkLearnCloud') => ({
     user: {
-        getDids: { query: jest.fn().mockResolvedValue([]) },
+        getDids: { query: vi.fn().mockResolvedValue([]) },
     },
     utilities: {
-        getDid: { query: jest.fn().mockResolvedValue('did:key:z6MkLearnCloud') },
+        getDid: { query: vi.fn().mockResolvedValue(learnCloudDid) },
+    },
+    customStorage: {
+        create: { mutate: vi.fn().mockResolvedValue('lc:cloud:credential') },
     },
     storage: {
-        batchResolve: { query: jest.fn() },
+        batchResolve: { query: vi.fn() },
     },
-};
+});
 
-jest.mock('@learncard/learn-cloud-client', () => ({
+const mockClient = makeMockClient();
+
+vi.mock('@learncard/learn-cloud-client', () => ({
     getClient: (...args: unknown[]) => mockGetClient(...args),
 }));
 
@@ -32,25 +38,55 @@ const makeW3cVc = () => ({
     },
 });
 
-const makeLearnCard = () => ({
+const makeLearnCard = (did = 'did:key:z6MkHolder') => ({
     id: {
-        did: () => 'did:key:z6MkHolder',
+        did: () => did,
     },
     invoke: {
-        getDidAuthVp: jest.fn().mockResolvedValue('did-auth-jwt'),
-        decryptDagJwe: jest.fn(async value => value),
+        getDidAuthVp: vi.fn().mockResolvedValue('did-auth-jwt'),
+        decryptDagJwe: vi.fn(async value => value),
+        createDagJwe: vi.fn(async (value, recipients) => ({ value, recipients })),
+        hash: vi.fn().mockResolvedValue('hashed-field'),
     },
-    debug: jest.fn(),
+    debug: vi.fn(),
 });
 
 describe('LearnCloud Plugin', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         mockGetClient.mockResolvedValue(mockClient);
     });
 
     it('exposes a function', () => {
         expect(getLearnCloudPlugin).toBeDefined();
+    });
+
+    it('refreshes the LearnCloud DID after switching authenticated clients', async () => {
+        const initialClient = makeMockClient('did:web:cloud-one.example');
+        const switchedClient = makeMockClient('did:web:cloud-two.example');
+        mockGetClient.mockResolvedValueOnce(initialClient).mockResolvedValueOnce(switchedClient);
+
+        const initialLearnCard = makeLearnCard('did:key:holder-one');
+        const switchedLearnCard = makeLearnCard('did:key:holder-two');
+        const plugin = await getLearnCloudPlugin(
+            initialLearnCard as never,
+            'https://cloud.example',
+            [],
+            [],
+            false
+        );
+
+        await plugin.methods.learnCloudCreate(initialLearnCard as never, { id: 'first' });
+        await plugin.methods.learnCloudCreate(switchedLearnCard as never, { id: 'second' });
+
+        expect(initialClient.utilities.getDid.query).toHaveBeenCalledTimes(1);
+        expect(switchedClient.utilities.getDid.query).toHaveBeenCalledTimes(1);
+        expect(initialLearnCard.invoke.createDagJwe).toHaveBeenLastCalledWith(expect.any(Object), [
+            'did:web:cloud-one.example',
+        ]);
+        expect(switchedLearnCard.invoke.createDagJwe).toHaveBeenLastCalledWith(expect.any(Object), [
+            'did:web:cloud-two.example',
+        ]);
     });
 
     it('projects envelope-backed credentials in learnCloudBatchResolve', async () => {

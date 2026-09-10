@@ -57,9 +57,11 @@ const ProofAvatar: React.FC<{ name: string; image?: string }> = ({ name, image }
     ) : (
         <span
             title={name}
+            role="img"
+            aria-label={name}
             className="w-9 h-9 rounded-full ring-2 ring-white bg-grayscale-100 flex items-center justify-center text-grayscale-400"
         >
-            <Shield className="w-4 h-4" />
+            <Shield aria-hidden="true" className="w-4 h-4" />
         </span>
     );
 };
@@ -99,7 +101,7 @@ const TrustSummaryCard: React.FC<TrustSummaryCardProps> = ({ contracts, delay = 
                     </span>
 
                     <div className="min-w-0">
-                        <p className="text-xs font-medium tracking-wider text-grayscale-500 uppercase">
+                        <p className="text-xs font-medium tracking-wider text-grayscale-600 uppercase">
                             {m['dataShareCenter.trust.eyebrow']()}
                         </p>
                         <h2 className="mt-0.5 text-[22px] desktop:text-[26px] font-semibold text-grayscale-900 leading-tight">

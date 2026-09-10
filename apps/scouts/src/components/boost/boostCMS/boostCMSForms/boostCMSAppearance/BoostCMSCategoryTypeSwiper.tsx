@@ -26,9 +26,9 @@ const BoostVCTypeSwiper: React.FC<{
     const width = useScreenWidth(true);
     const swiperRef = useRef();
 
-    let _boostVCTypeOptions = boostVCTypeOptions?.[boostUserType];
+    let _boostVCTypeOptions = boostVCTypeOptions?.[boostUserType] ?? [];
     if (flags?.disableCmsCustomization) {
-        _boostVCTypeOptions = boostVCTypeOptions?.[boostUserType]?.slice(0, 1);
+        _boostVCTypeOptions = _boostVCTypeOptions.slice(0, 1);
     }
     if (!flags?.createMeritBadges) {
         _boostVCTypeOptions = _boostVCTypeOptions.filter(

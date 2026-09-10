@@ -1,0 +1,65 @@
+{
+    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+    "name": "vc-api-service",
+    "sourceRoot": "services/learn-card-network/vc-api-service/src",
+    "projectType": "application",
+    "root": "services/learn-card-network/vc-api-service",
+    "tags": [],
+    "implicitDependencies": [
+        "core",
+        "crypto-plugin",
+        "didkey-plugin",
+        "didkit-plugin",
+        "dynamic-loader-plugin",
+        "encryption-plugin",
+        "expiration-plugin",
+        "learn-card-plugin",
+        "vc-plugin",
+        "vc-templates-plugin",
+        "types"
+    ],
+    "namedInputs": {
+        "source": ["{projectRoot}/src/**/*"],
+        "dist": ["{projectRoot}/dist/**/*"]
+    },
+    "targets": {
+        "serverless-deploy": {
+            "executor": "nx:run-script",
+            "inputs": ["source"],
+            "dependsOn": ["^build"],
+            "options": {
+                "script": "serverless-deploy"
+            }
+        },
+        "build": {
+            "executor": "nx:run-script",
+            "inputs": ["source"],
+            "options": {
+                "script": "build"
+            }
+        },
+        "build:docker": {
+            "executor": "nx:run-script",
+            "inputs": ["source"],
+            "dependsOn": ["^build"],
+            "options": {
+                "script": "build:docker"
+            }
+        },
+        "typecheck": {
+            "executor": "nx:run-script",
+            "inputs": ["source"],
+            "options": {
+                "script": "typecheck"
+            }
+        },
+        "start": {
+            "executor": "nx:run-script",
+            "inputs": ["source"],
+            "dependsOn": ["^build"],
+            "options": {
+                "script": "start"
+            }
+        }
+    }
+}

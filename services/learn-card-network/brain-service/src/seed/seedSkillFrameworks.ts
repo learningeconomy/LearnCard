@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
 
@@ -114,7 +115,7 @@ const loadStagingNeo4jEnv = (): Record<string, string> => {
     for (const filePath of STAGING_NEO4J_ENV_PATHS) {
         const values = loadEnvFile(filePath);
 
-        if (toBoolean(process.env.SKILL_FRAMEWORKS_DEBUG)) {
+        if (environment.SKILL_FRAMEWORKS_DEBUG) {
             const loadedKeys = ['NEO4J_URI', 'NEO4J_USERNAME', 'NEO4J_PASSWORD'].filter(
                 key => values[key] !== undefined
             );
@@ -136,19 +137,13 @@ const readNeo4jEnvValue = (
     key: 'NEO4J_URI' | 'NEO4J_USERNAME' | 'NEO4J_PASSWORD'
 ): string | undefined => {
     const stagingValue = stagingEnv[key]?.trim();
-    const processValue = process.env[key]?.trim();
+    const processValue = environment[key].trim();
 
     if (stage === 'staging') {
         return stagingValue ?? processValue;
     }
 
     return processValue ?? stagingValue;
-};
-
-const toBoolean = (value: string | undefined): boolean => {
-    if (!value) return false;
-
-    return ['1', 'true', 'yes', 'on'].includes(value.trim().toLowerCase());
 };
 
 const unique = (values: string[]): string[] =>
@@ -192,7 +187,7 @@ const buildNeo4jConnectionCandidates = (
     const envUsername = readNeo4jEnvValue(stage, stagingEnv, 'NEO4J_USERNAME');
     const envPassword = readNeo4jEnvValue(stage, stagingEnv, 'NEO4J_PASSWORD');
 
-    if (stage === 'staging' && toBoolean(process.env.SKILL_FRAMEWORKS_DEBUG)) {
+    if (stage === 'staging' && environment.SKILL_FRAMEWORKS_DEBUG) {
         console.log(
             `[skill-frameworks] staging Neo4j values are sourced from ${getStagingNeo4jSourceDescription()}`
         );
@@ -642,11 +637,11 @@ export const maybeAutoSeedSkillFrameworks = async (
     run: QueryRunnerLike['run'],
     options: SeedSkillFrameworksOptions = {}
 ): Promise<{ seeded: boolean; seededFrameworkIds: string[] }> => {
-    if (process.env.NODE_ENV === 'production') {
+    if (environment.NODE_ENV === 'production') {
         return { seeded: false, seededFrameworkIds: [] };
     }
 
-    if (toBoolean(process.env.SKIP_SKILL_FRAMEWORK_SEED)) {
+    if (environment.SKIP_SKILL_FRAMEWORK_SEED) {
         options.log?.log(
             'Skipping skill-framework auto-seed because SKIP_SKILL_FRAMEWORK_SEED is set'
         );
@@ -662,11 +657,11 @@ export const maybeAutoSeedSkillFrameworks = async (
     const seeded = await seedSkillFrameworkFixtures(run, {
         ownerProfileId:
             options.ownerProfileId ??
-            process.env.SKILL_FRAMEWORK_SEED_OWNER_PROFILE_ID ??
+            environment.SKILL_FRAMEWORK_SEED_OWNER_PROFILE_ID ??
             undefined,
         adminProfileIds: unique([
             ...(options.adminProfileIds ?? []),
-            ...(process.env.SKILL_FRAMEWORK_ADMIN_PROFILE_IDS ?? '')
+            ...(environment.SKILL_FRAMEWORK_ADMIN_PROFILE_IDS ?? '')
                 .split(',')
                 .map(value => value.trim())
                 .filter(Boolean),

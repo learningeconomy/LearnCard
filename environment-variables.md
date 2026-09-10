@@ -105,6 +105,23 @@ Each target pulls secrets from its specific Infisical folder path. To enable roo
 
 Generated `.env` files are gitignored and should **never** be committed.
 
+### Validation and access
+
+Each deployable owns a Zod contract in its config directory. Services validate
+`process.env` once before initializing databases or clients and expose a typed
+`environment` object. Browser applications validate Vite build inputs in
+`vite.config` and resolve all runtime behavior through `TenantConfig`.
+
+Direct `process.env` and `import.meta.env` reads outside those config modules are
+rejected by ESLint. `bun run verify:lc-1984` also requires every schema key to be
+documented in the matching `.env.example`, rejects unknown example keys, and
+checks actual source access. Validation errors name the project, source, invalid
+key, and example file without printing secret values.
+
+Booleans accept only `true`, `false`, `1`, or `0`. Invalid explicit config stops
+startup; unavailable remote tenant config may use only a previously validated
+baked or cached value.
+
 ## Adding a New Service
 
 Edit `scripts/pull-env.sh` and add entries to the three parallel arrays:
@@ -141,15 +158,15 @@ The "LearnCard" Infisical project has this folder layout:
 │   ├── brain-service/      ← SEED, SKILL_EMBEDDING_*, SMART_RESUME_*
 │   ├── cloud-service/      ← JWT_SIGNING_KEY, LEARN_CLOUD_*, RSA_PRIVATE_KEY, XAPI_*
 │   ├── lca-api/            ← GOOGLE_APPLICATION_CREDENTIAL, OPENAI_API_KEY, SEED
-├── learn-card-app/         ← VITE_*, CORS_PROXY_API_KEY, WEB3AUTH_*
-│   └── fastlane/           ← (CI/CD keys, not pulled by default)
+├── learn-card-app/         ← build controls only; runtime values live in TenantConfig
+│   └── fastlane/           ← CI/CD keys, not pulled by default
 ```
 
 ### Known Gaps
 
--   **ScoutPass app** (`apps/scouts/`) uses a separate Infisical project ("ScoutPass") — not yet wired into this script.
--   **Example apps** (`examples/app-store-apps/`) are developer-specific and not pulled from Infisical.
--   Some vars in `.env.example` files may not yet exist in Infisical. Compare your generated `.env` against the `.env.example` and add any missing vars to Infisical or fill them in manually.
+- **ScoutPass app** (`apps/scouts/`) uses a separate Infisical project ("ScoutPass") — not yet wired into this script.
+- **Example apps** (`examples/app-store-apps/`) are developer-specific and not pulled from Infisical.
+- `.env.example` files are contract-checked; update the schema and example together.
 
 ## Troubleshooting
 

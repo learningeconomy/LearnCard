@@ -30,7 +30,7 @@ export const AdminToolsOptionsContainerHeader: React.FC<{ option: AdminToolOptio
     }
 
     return (
-        <div className="ion-padding bg-white safe-area-top-margin rounded-b-[30px] overflow-hidden shadow-md">
+        <div className="ion-padding bg-white rounded-b-[30px] overflow-hidden shadow-md">
             <div className="flex items-center justify-normal p-2">
                 <div className="flex items-center">
                     {iconComponent}

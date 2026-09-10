@@ -121,7 +121,7 @@ export const OnboardingFooter: React.FC<{
 
                         {showSkipButton && (
                             <button
-                                className="text-grayscale-500 my-4 font-poppins text-base"
+                                className="text-grayscale-600 my-4 font-poppins text-base"
                                 onClick={overrideSkip ? overrideSkip : closeModal}
                             >
                                 {m['onboarding.skipForNow']()}

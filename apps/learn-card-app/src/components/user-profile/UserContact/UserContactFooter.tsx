@@ -17,13 +17,17 @@ const UserContactFooter: React.FC = () => {
             <div className="w-full flex items-center justify-center">
                 <div className="w-full flex items-center justify-between max-w-[600px] ion-padding">
                     <button
+                        type="button"
                         onClick={closeModal}
                         className=" py-[9px] pl-[20px] pr-[15px] bg-white rounded-[30px] font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] text-grayscale-900 w-full shadow-button-bottom flex gap-[5px] justify-center mr-2"
                     >
                         {m['profile.back']()}
                     </button>
 
-                    <button className="bg-grayscale-800 py-[9px] pl-[20px] pr-[15px] rounded-[30px] font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] text-white w-full shadow-button-bottom flex gap-[5px] items-center justify-center">
+                    <button
+                        type="button"
+                        className="bg-grayscale-800 py-[9px] pl-[20px] pr-[15px] rounded-[30px] font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] text-white w-full shadow-button-bottom flex gap-[5px] items-center justify-center"
+                    >
                         {m['profile.save']()}
                     </button>
                 </div>

@@ -2,6 +2,7 @@ import React from 'react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { VC, VP } from '@learncard/types';
+import { createDeferred } from 'learn-card-base/helpers/deferred';
 
 import ExchangeAcceptCredentials from './ExchangeAcceptCredentials';
 
@@ -67,6 +68,7 @@ vi.mock('@analytics', () => ({
 }));
 vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
     getAchievementType: () => 'Achievement',
+    getCredentialName: (value: VC) => value.name,
     getDefaultCategoryForCredential: () => 'Achievement',
 }));
 vi.mock('learn-card-base/helpers/verificationPrettifier', () => ({
@@ -90,7 +92,7 @@ vi.mock('uuid', () => ({ v4: () => 'event-id' }));
 vi.mock('learn-card-base/components/vcmodal/VCDisplayCardWrapper2', () => ({
     default: () => <div>Credential card</div>,
 }));
-vi.mock('learn-card-base/components/boost/boostFooter/BoostFooterLayout', () => ({
+vi.mock('../../components/accessibility/AccessibleBoostFooterLayout', () => ({
     default: ({
         children,
         footerProps,
@@ -222,7 +224,7 @@ describe('ExchangeAcceptCredentials duplicate handling', () => {
     });
 
     it('removes the inline claim overlay when exchange completion unmounts the claim screen', async () => {
-        const { promise: storeResult, resolve: resolveStore } = Promise.withResolvers<{
+        const { promise: storeResult, resolve: resolveStore } = createDeferred<{
             result: boolean;
             credentialUri: string;
         }>();

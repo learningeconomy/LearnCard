@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { IonCol, IonContent, IonGrid, IonPage, IonRow } from '@ionic/react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import {
-    SCOUTPASS_NETWORK_API_URL,
+    networkStore,
     useDeviceTypeByWidth,
     usePathQuery,
     BoostCategoryOptionsEnum,
@@ -29,12 +29,36 @@ import * as m from '../../../paraglide/messages.js';
 
 const log = getLogger('claim-boost-logged-out-prompt');
 
+const getBoostName = (boost: VC | undefined, fallback: string): string => {
+    if (!boost) return fallback;
+    if ('name' in boost && typeof boost.name === 'string') return boost.name;
+
+    const subject = boost.credentialSubject;
+    if (
+        !subject ||
+        Array.isArray(subject) ||
+        typeof subject !== 'object' ||
+        !('achievement' in subject)
+    ) {
+        return fallback;
+    }
+
+    const achievement = subject.achievement;
+    if (
+        !achievement ||
+        Array.isArray(achievement) ||
+        typeof achievement !== 'object' ||
+        !('name' in achievement)
+    ) {
+        return fallback;
+    }
+
+    return typeof achievement.name === 'string' ? achievement.name : fallback;
+};
+
 const getBoostHeadline = (boost?: VC): string => {
-    const boostCategory = getDefaultCategoryForCredential(boost as any);
-    const boostName =
-        (boost as any)?.name ??
-        (boost as any)?.credentialSubject?.achievement?.name ??
-        m['claimBoost.thisBoost']();
+    const boostCategory = boost ? getDefaultCategoryForCredential(boost) : undefined;
+    const boostName = getBoostName(boost, m['claimBoost.thisBoost']());
 
     switch (boostCategory) {
         case BoostCategoryOptionsEnum.globalAdminId:
@@ -54,7 +78,7 @@ const getBoostHeadline = (boost?: VC): string => {
 };
 
 const getBoostActionLabel = (boost?: VC): string => {
-    const boostCategory = getDefaultCategoryForCredential(boost as any);
+    const boostCategory = boost ? getDefaultCategoryForCredential(boost) : undefined;
 
     switch (boostCategory) {
         case BoostCategoryOptionsEnum.globalAdminId:
@@ -93,7 +117,7 @@ export const ClaimBoostLoggedOutPrompt: React.FC<{
             setIsLoading(true);
 
             const result = await fetch(
-                `${SCOUTPASS_NETWORK_API_URL}/storage/resolve?uri=${encodeURIComponent(boostUri)}${
+                `${networkStore.get.networkApiUrl()}/storage/resolve?uri=${encodeURIComponent(boostUri)}${
                     challenge ? `&challenge=${encodeURIComponent(challenge)}` : ''
                 }`
             );
@@ -103,7 +127,7 @@ export const ClaimBoostLoggedOutPrompt: React.FC<{
             const boostVC: VC = await result.json();
 
             setBoost(boostVC);
-        } catch (error: any) {
+        } catch (error) {
             log.error('Failed to resolve boost:', error);
         } finally {
             setIsLoading(false);

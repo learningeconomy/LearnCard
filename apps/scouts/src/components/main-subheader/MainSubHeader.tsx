@@ -1,24 +1,18 @@
-import React, { useState, useRef } from 'react';
+import React from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import * as m from '../../paraglide/messages.js';
 
 import useBoostModal from '../boost/hooks/useBoostModal';
-import modalStateStore from 'learn-card-base/stores/modalStateStore';
 
-import { IonRow, IonCol, IonModal, IonSpinner } from '@ionic/react';
+import { IonRow, IonCol, IonSpinner } from '@ionic/react';
 import Plus from 'learn-card-base/svgs/Plus';
 import { BlueBoostOutline2 } from 'learn-card-base/svgs/BoostOutline2';
 import { GreenScoutsPledge2 } from 'learn-card-base/svgs/ScoutsPledge2';
 import { PurpleMeritBadgesIcon } from 'learn-card-base/svgs/MeritBadgesIcon';
 
-import IssueVCModal from '../../../../../packages/learn-card-base/src/components/IssueVC/IssueVCModal';
-import ShareCredentialsModal from '../../../../../packages/learn-card-base/src/components/sharecreds/ShareCredentialsModal';
-import PlusButtonModalContent from '../../../../../packages/learn-card-base/src/components/plusButton/PlusButtonModalContent';
-import SubheaderPlusActionButton from './SubheaderPlusActionButton';
 import CategoryDescriptorModal from '../category-descriptor/CategoryDescriptorModal';
 
-import { ACHIEVEMENT_CATEGORIES } from '../../../../../packages/learn-card-base/src/components/IssueVC/constants';
 import { SubheaderTypeEnum, SubheaderContentType, getSubheaderCopy } from './MainSubHeader.types';
 import { BoostCategoryOptionsEnum, useModal, ModalTypes } from 'learn-card-base';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
@@ -55,8 +49,6 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
     const flags = useFlags();
     const history = useHistory();
     const location = useLocation();
-    const [isOpen, setIsOpen] = useState(false);
-    const [shareCredsIsOpen, setShareCredsIsOpen] = useState(false);
 
     let category = BoostCategoryOptionsEnum.socialBadge;
     switch (subheaderType) {
@@ -76,48 +68,10 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
 
     const { handlePresentBoostModal } = useBoostModal(history, category);
 
-    const sheetModal = useRef<HTMLIonModalElement>(null);
-    const centerModal = useRef<HTMLIonModalElement>(null);
-
     const { IconComponent, iconColor, textColor } = SubheaderContentType[subheaderType];
-
-    const hideSelfIssueBtn = true;
 
     const _hidePlusBtn =
         hidePlusBtn || (location.pathname === '/troops' && flags.disableTroopCreation);
-
-    const pathName = location?.pathname?.replace('/', '');
-    const PATH_TO_CATEGORY: Record<string, any> = {
-        learninghistory: ACHIEVEMENT_CATEGORIES.LearningHistory,
-        workhistory: ACHIEVEMENT_CATEGORIES.WorkHistory,
-        ids: ACHIEVEMENT_CATEGORIES.ID,
-        skills: ACHIEVEMENT_CATEGORIES.Skill,
-        achievements: ACHIEVEMENT_CATEGORIES.Achievement,
-        memberships: ACHIEVEMENT_CATEGORIES.Membership,
-    };
-
-    const achievementCategory = PATH_TO_CATEGORY[pathName];
-
-    const handleClickModal = () => {
-        modalStateStore.set.issueVcModal({ open: true, name: pathName });
-        setIsOpen(true);
-    };
-
-    const handleCloseModal = () => {
-        modalStateStore.set.issueVcModal({
-            open: false,
-            name: null,
-        });
-        setIsOpen(false);
-    };
-
-    const handleShareModal = () => {
-        setShareCredsIsOpen(true);
-    };
-
-    const handleCloseShareModal = () => {
-        setShareCredsIsOpen(false);
-    };
 
     const categoryCopy = isScoutPassCategorySubheader(subheaderType)
         ? getScoutPassCategoryCopy(m, category)
@@ -199,16 +153,6 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
                 size={plusButtonOverride ? '3' : '2'}
                 className="flex items-center justify-end p-0 ml-auto"
             >
-                {!hideSelfIssueBtn && (
-                    <SubheaderPlusActionButton
-                        iconColor={iconColor}
-                        location={location as any}
-                        handleSelfIssue={handleClickModal}
-                        handleShareCreds={handleShareModal}
-                        subheaderType={subheaderType}
-                    />
-                )}
-
                 {plusButtonOverride}
                 {!_hidePlusBtn && !plusButtonOverride && (
                     <button
@@ -220,37 +164,6 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
                         <Plus className={`h-[20px] w-[20px] ${iconColor}`} />
                     </button>
                 )}
-
-                <IonModal className="main-header-modal" isOpen={shareCredsIsOpen}>
-                    <ShareCredentialsModal onDismiss={handleCloseShareModal} />
-                </IonModal>
-
-                <IonModal className="main-header-modal" isOpen={isOpen}>
-                    <IssueVCModal
-                        achievementCategory={achievementCategory}
-                        onDismiss={handleCloseModal}
-                    />
-                </IonModal>
-                <IonModal ref={centerModal} className="center-modal">
-                    <PlusButtonModalContent
-                        handleCloseModal={() => centerModal.current?.dismiss()}
-                        showFixedFooter={false}
-                        showCloseButton={false}
-                    />
-                </IonModal>
-                <IonModal
-                    ref={sheetModal}
-                    initialBreakpoint={0.25}
-                    breakpoints={[0, 0.25, 0.5, 0.75]}
-                    handleBehavior="cycle"
-                    className="mobile-modal"
-                >
-                    <PlusButtonModalContent
-                        handleCloseModal={() => sheetModal.current?.dismiss()}
-                        showFixedFooter={false}
-                        showCloseButton={false}
-                    />
-                </IonModal>
             </IonCol>
         </IonRow>
     );

@@ -20,17 +20,21 @@ const IssuerStatusCard: React.FC<IssuerStatusCardProps> = ({ walletDid }) => {
     return (
         <div className="bg-white rounded-[20px] shadow-lg border border-grayscale-100 px-5 py-4 flex flex-col gap-3">
             <div className="flex items-center justify-between">
-                <span className="font-poppins font-semibold text-grayscale-800 text-base">
+                <h4 className="font-poppins font-semibold text-grayscale-800 text-base">
                     Issuer Status
-                </span>
+                </h4>
                 {isTrustedIssuer ? (
                     <div className="flex items-center gap-1.5 text-green-600 font-poppins font-medium text-xs uppercase tracking-wide">
-                        <TrustedCertIcon className="w-[22px] h-[22px]" />
+                        <span aria-hidden="true">
+                            <TrustedCertIcon className="w-[22px] h-[22px]" />
+                        </span>
                         Trusted Issuer
                     </div>
                 ) : (
                     <div className="flex items-center gap-1.5 text-orange-500 font-poppins font-medium text-xs uppercase tracking-wide">
-                        <UnknownCertIcon className="w-[22px] h-[22px]" />
+                        <span aria-hidden="true">
+                            <UnknownCertIcon className="w-[22px] h-[22px]" />
+                        </span>
                         Unknown Issuer
                     </div>
                 )}

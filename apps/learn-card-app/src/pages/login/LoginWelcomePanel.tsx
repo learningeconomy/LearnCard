@@ -22,7 +22,7 @@ const LoginWelcomePanel: React.FC = () => {
     const { theme } = useTheme();
 
     const loaderColors = theme.colors.defaults.loaders ?? [];
-    const baseColor = theme.colors.defaults.loginBgColor ?? loaderColors[0] ?? '#059669';
+    const baseColor = theme.colors.defaults.loginBgColor ?? loaderColors[0] ?? '#058760';
     const accentColor = loaderColors[1] ?? loaderColors[0] ?? '#06B6D4';
 
     return (
@@ -66,7 +66,7 @@ const LoginWelcomePanel: React.FC = () => {
                     {m['login.welcome.heading']({ brand: brandingConfig.name })}
                 </h2>
 
-                <p className="text-white/70 text-base leading-relaxed max-w-[340px]">
+                <p className="text-white text-base leading-relaxed max-w-[340px]">
                     {m['login.welcome.subtitle']()}
                 </p>
 
@@ -75,7 +75,7 @@ const LoginWelcomePanel: React.FC = () => {
                     {['Credentials', 'Achievements', 'Skills'].map(label => (
                         <span
                             key={label}
-                            className="px-4 py-2 rounded-full text-sm font-medium text-white/90 bg-white/10 backdrop-blur-sm"
+                            className="px-4 py-2 rounded-full text-sm font-medium text-white bg-black/10 backdrop-blur-sm"
                         >
                             {mDynamic(pillKeyMap[label] ?? label)}
                         </span>

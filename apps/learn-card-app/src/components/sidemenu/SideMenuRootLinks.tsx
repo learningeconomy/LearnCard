@@ -235,18 +235,22 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
             linkPath === '/notifications' ? undefined : () => setActiveTab(linkPath);
 
         return (
-            <IonMenuToggle key={link.id} autoHide={false} className="w-full">
-                <div
-                    onClick={handleTabClick}
-                    className="flex items-center justify-center px-0 py-[3px]"
-                >
-                    {linkEl}
-                </div>
+            <IonMenuToggle
+                key={link.id}
+                autoHide={false}
+                onClick={handleTabClick}
+                className="w-full flex items-center justify-center px-0 py-[3px]"
+            >
+                {linkEl}
             </IonMenuToggle>
         );
     });
 
-    return <IonList className="m-4 rounded-2xl py-3">{rootLinks}</IonList>;
+    return (
+        <IonList role="navigation" aria-label="Primary navigation" className="m-4 rounded-2xl py-3">
+            {rootLinks}
+        </IonList>
+    );
 };
 
 export default SideMenuRootLinks;

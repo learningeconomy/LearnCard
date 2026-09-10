@@ -16,6 +16,7 @@ import type { VC } from '@learncard/types';
 import { formatClrDate } from '../../helpers/clrRenderer.helpers';
 import type { ClrTranscriptDisplayModel } from '../../helpers/clrRenderer.helpers';
 import { formatClrGpa } from './clr.helpers';
+import { getClrIssuerLogo } from './clrKind.helpers';
 
 const ClrTranscriptSummaryHeader: React.FC<{
     model: ClrTranscriptDisplayModel;
@@ -24,10 +25,16 @@ const ClrTranscriptSummaryHeader: React.FC<{
     adminMode?: boolean;
 }> = ({ model, boost, boostUri, adminMode = false }) => {
     const { newModal } = useModal({ desktop: ModalTypes.Right, mobile: ModalTypes.Right });
-    const issuerLogo = model.header.image?.value;
+    const issuerLogo = getClrIssuerLogo(model);
     const transcriptTitle = model.header.title?.value || 'Official Academic Transcript';
     const scrollToCourseHistory = () => {
         document.getElementById('course-history')?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+        });
+    };
+    const scrollToAssessments = () => {
+        document.getElementById('assessments')?.scrollIntoView({
             behavior: 'smooth',
             block: 'start',
         });
@@ -120,6 +127,13 @@ const ClrTranscriptSummaryHeader: React.FC<{
                         type="courses"
                         value={model.summary.courseCount}
                         onClick={scrollToCourseHistory}
+                    />
+                )}
+                {model.summary.assessmentCount > 0 && (
+                    <StatCard
+                        type="assessments"
+                        value={model.summary.assessmentCount}
+                        onClick={scrollToAssessments}
                     />
                 )}
                 {model.summary.explicitCompetencyCount > 0 && (

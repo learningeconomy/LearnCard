@@ -30,7 +30,7 @@ packages/plugins/learn-cloud/**
 !packages/plugins/learn-cloud/
 !packages/plugins/learn-cloud/package.json
 !packages/plugins/learn-cloud/project.json
-!packages/plugins/learn-cloud/jest.config.cjs
+!packages/plugins/learn-cloud/vitest.config.ts
 !packages/plugins/learn-cloud/tsconfig.json
 !packages/plugins/learn-cloud/scripts/
 !packages/plugins/learn-cloud/scripts/**
@@ -40,7 +40,7 @@ packages/plugins/linked-claims/**
 !packages/plugins/linked-claims/
 !packages/plugins/linked-claims/package.json
 !packages/plugins/linked-claims/project.json
-!packages/plugins/linked-claims/jest.config.cjs
+!packages/plugins/linked-claims/vitest.config.ts
 !packages/plugins/linked-claims/tsconfig.json
 !packages/plugins/linked-claims/scripts/
 !packages/plugins/linked-claims/scripts/**

@@ -3,7 +3,13 @@ const log = getLogger('mutations');
 /*mutations related to boosts */
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { v4 as uuidv4 } from 'uuid';
-import { useWallet, insertItem, switchedProfileStore, CredentialCategory } from 'learn-card-base';
+import {
+    useWallet,
+    insertItem,
+    switchedProfileStore,
+    CredentialCategory,
+    connectionPromptKeys,
+} from 'learn-card-base';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { VC, Boost, CredentialRecord, VCValidator } from '@learncard/types';
 
@@ -102,6 +108,8 @@ export const useAddCredentialToWallet = () => {
         },
         onSuccess: async data => {
             const { category, vc, uri, id, didOverride, eventSource, eventBoostUri } = data;
+
+            await queryClient.invalidateQueries({ queryKey: connectionPromptKeys.all });
 
             // Publish a `CredentialIngested` event to the pathway
             // event bus so the progress reactor can match this VC

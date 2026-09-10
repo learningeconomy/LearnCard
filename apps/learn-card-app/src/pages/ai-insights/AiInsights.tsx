@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 import { ErrorBoundary } from 'react-error-boundary';
 
 import { IonContent, IonPage } from '@ionic/react';
@@ -48,11 +47,6 @@ import AiInsightsWidgets from './AiInsightsWidgets';
 import { useGlobalSkillFrameworks } from '../../helpers/globalSkillFrameworks.helpers';
 import { getAiErrorCopy } from '../../helpers/aiError.helpers';
 
-type Flags = {
-    hideAiPathways?: boolean;
-    showGenerateAiInsightsButton?: boolean;
-};
-
 type ContractRequestRecord = {
     contract?: { uri?: string };
     status?: string | null;
@@ -88,7 +82,6 @@ const AiInsights: React.FC = () => {
 
     const colors = getThemedCategoryColors(CredentialCategoryEnum.aiInsight);
     const { backgroundSecondaryColor } = colors;
-    const flags = useFlags<Flags>();
 
     const {
         data: allResolvedCreds,
@@ -258,21 +251,6 @@ const AiInsights: React.FC = () => {
 
     const myInsights = (
         <>
-            <div className="flex items-center justify-center w-full">
-                {flags?.showGenerateAiInsightsButton && (
-                    <button
-                        className="bg-indigo-600 text-white rounded-[16px] w-full py-2 shadow-button-bottom font-semibold"
-                        type="button"
-                        disabled={createAiInsightCredentialLoading || !canGenerateAiInsights}
-                        onClick={generateAiInsights}
-                    >
-                        {createAiInsightCredentialLoading
-                            ? m['aiInsights.generating']()
-                            : m['aiInsights.generateAiInsights']()}
-                    </button>
-                )}
-            </div>
-
             {contractRequest}
             <ShareInsightsCard />
 
@@ -306,9 +284,7 @@ const AiInsights: React.FC = () => {
             <AiInsightsWidgets />
 
             <AiInsightsPromptBoxContainer />
-            {!flags?.hideAiPathways && (
-                <AiFeatureLinks features={['ai-sessions', 'skills-hub', 'pathways']} />
-            )}
+            <AiFeatureLinks features={['ai-sessions', 'skills-hub', 'pathways']} />
         </>
     );
 

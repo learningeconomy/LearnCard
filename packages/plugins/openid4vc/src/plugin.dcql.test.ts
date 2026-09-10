@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 /**
  * Plugin-level e2e tests for the **DCQL routing path**.
  *
@@ -133,7 +134,7 @@ const buildFakeDcqlVerifier = (
     const authRequestUri = `openid4vp://authorize?${params.toString()}`;
     const submissions: DcqlVerifierRecord[] = [];
 
-    const fetchImpl = jest.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = String(input);
         if (url !== responseUri) {
             throw new Error(`FakeDcqlVerifier: unexpected fetch ${url}`);

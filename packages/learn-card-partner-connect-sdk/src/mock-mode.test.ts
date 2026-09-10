@@ -1,18 +1,23 @@
+// @vitest-environment jsdom
+import { vi } from 'vitest';
+
 /**
  * Tests for standalone mock mode and embed detection in
  * @learncard/partner-connect. These run in jsdom, where `window.self` equals
  * `window.top` (i.e. not embedded), so 'auto' mock mode is active by default.
  */
 
+import type { MockInstance } from 'vitest';
+
 import { PartnerConnect, createPartnerConnect, isEmbedded } from './index';
 
 const flush = (): Promise<void> => new Promise(resolve => setTimeout(resolve, 0));
 
-let errorSpy: jest.SpyInstance;
+let errorSpy: MockInstance;
 
 beforeEach(() => {
-    jest.spyOn(console, 'log').mockImplementation(() => undefined);
-    errorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     try {
         localStorage.clear();
     } catch {
@@ -21,7 +26,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
     document.querySelectorAll('.lc-mock-toast, .lc-mock-stack').forEach(node => node.remove());
 });
 

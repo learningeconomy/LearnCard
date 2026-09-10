@@ -16,7 +16,7 @@ const getNewClient = async (
 ) => {
     return getClient(
         url,
-        async challenge => {
+        async (challenge?: string) => {
             const jwt = await learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt', challenge });
 
             if (typeof jwt !== 'string') throw new Error('Error getting DID-Auth-JWT!');
@@ -200,11 +200,14 @@ export const getLCAPlugin = async (
                     client = await getNewClient(url, _learnCard);
                     learnCard = _learnCard;
                 },
-                generateBoostInfo: async (_learnCard, description) => {
+                generateBoostInfo: async (_learnCard, description, locale) => {
                     await initialized;
                     await updateLearnCard(_learnCard);
 
-                    const result = await client.ai.generateBoostInfo.query({ description });
+                    const result = await client.ai.generateBoostInfo.query({
+                        description,
+                        locale,
+                    });
 
                     return {
                         title: result.title,
@@ -304,9 +307,8 @@ export const getLCAPlugin = async (
                     await initialized;
                     await updateLearnCard(_learnCard);
 
-                    const result = await client.analytics.generateAnalyticsAccessToken.mutate(
-                        payload
-                    );
+                    const result =
+                        await client.analytics.generateAnalyticsAccessToken.mutate(payload);
 
                     return result;
                 },

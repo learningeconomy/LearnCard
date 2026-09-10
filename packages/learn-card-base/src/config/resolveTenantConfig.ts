@@ -17,6 +17,7 @@ import type { TenantConfig } from './tenantConfig';
 import {
     parseTenantConfig,
     parsePartialTenantConfig,
+    TenantConfigValidationError,
     TENANT_CONFIG_SCHEMA_VERSION,
 } from './tenantConfigSchema';
 import { DEFAULT_LEARNCARD_TENANT_CONFIG } from './tenantDefaults';
@@ -24,6 +25,18 @@ import { deepMerge } from './deepMerge';
 
 const CACHE_KEY_PREFIX = 'tenant-config-cache';
 const CACHE_TTL_MS = 1000 * 60 * 60; // 1 hour
+
+export class TenantConfigResolutionError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = 'TenantConfigResolutionError';
+    }
+}
+
+const VALIDATED_DEFAULT_TENANT_CONFIG = parseTenantConfig(
+    DEFAULT_LEARNCARD_TENANT_CONFIG,
+    'built-in LearnCard default'
+);
 
 // ---------------------------------------------------------------------------
 // Optional fetch-failure callback (for Sentry breadcrumbs, telemetry, etc.)
@@ -180,17 +193,20 @@ const loadBakedConfig = async (onEvent?: OnConfigEvent): Promise<TenantConfig | 
         const raw: unknown = await response.json();
         const config = parseTenantConfig(raw, 'baked tenant-config.json');
 
-        if (config) {
-            onEvent?.('config:baked_loaded', `Baked config loaded: ${config.tenantId}`, {
-                tenantId: config.tenantId,
-                domain: config.domain,
-            });
-        } else {
-            onEvent?.('config:baked_missing', 'Baked config found but failed schema validation');
-        }
+        onEvent?.('config:baked_loaded', `Baked config loaded: ${config.tenantId}`, {
+            tenantId: config.tenantId,
+            domain: config.domain,
+        });
 
         return config;
-    } catch {
+    } catch (error) {
+        if (
+            error instanceof TenantConfigValidationError ||
+            error instanceof TenantConfigResolutionError
+        ) {
+            throw error;
+        }
+
         onEvent?.('config:baked_missing', 'Baked config fetch threw an error');
 
         return null;
@@ -209,19 +225,17 @@ const fetchFreshConfig = async (
     onEvent?: OnConfigEvent,
     mergeBase?: TenantConfig
 ): Promise<TenantConfig | null> => {
-    try {
-        const url = endpoint ?? '/__tenant-config';
+    const url = endpoint ?? '/__tenant-config';
 
+    try {
         onEvent?.('config:fetch_start', `Fetching config from ${url}`, { url, timeout: 5000 });
 
-        const t0 = Date.now();
-
+        const startedAt = Date.now();
         const response = await fetch(url, {
             headers: { Accept: 'application/json' },
             signal: AbortSignal.timeout(5000),
         });
-
-        const durationMs = Date.now() - t0;
+        const durationMs = Date.now() - startedAt;
 
         if (!response.ok) {
             onEvent?.('config:fetch_error', `Fetch returned HTTP ${response.status}`, {
@@ -233,121 +247,65 @@ const fetchFreshConfig = async (
             return null;
         }
 
-        const raw: unknown = await response.json();
+        let raw: unknown;
 
-        // When a mergeBase exists (baked config from native builds or CI),
-        // always treat the fetch response as an overlay — deep-merge it onto
-        // the baked config rather than replacing it. Edge functions and config
-        // services return tenant-specific overrides, not complete configs.
-        // Without this, Zod schema defaults fill in missing fields, making the
-        // response look "full" and causing the baked config to be discarded.
-        if (mergeBase) {
-            const partial = parsePartialTenantConfig(raw, `fetch ${url} (overlay)`);
+        try {
+            raw = await response.json();
+        } catch {
+            throw new TenantConfigResolutionError(
+                `TenantConfig endpoint ${url} returned invalid JSON`
+            );
+        }
 
-            if (partial && typeof partial === 'object') {
-                onEvent?.(
-                    'config:fetch_partial_merge',
-                    `Fetched config overlay, merging onto baked config (${mergeBase.tenantId}) (${durationMs}ms)`,
-                    {
-                        url,
-                        durationMs,
-                        overrideKeys: Object.keys(partial as Record<string, unknown>),
-                        mergeBase: `baked (${mergeBase.tenantId})`,
-                    }
-                );
+        const partial = parsePartialTenantConfig(raw, `fetch ${url} (overlay)`);
+        const overlay: Record<string, unknown> = { ...partial };
 
-                const merged = deepMerge(
-                    mergeBase as unknown as Record<string, unknown>,
-                    partial as Record<string, unknown>
-                );
+        if (!mergeBase && (!partial.tenantId || !partial.domain)) {
+            throw new TenantConfigResolutionError(
+                `TenantConfig endpoint ${url} must provide tenantId and domain when no baked config exists`
+            );
+        }
+        const base: Record<string, unknown> = {
+            ...(mergeBase ?? VALIDATED_DEFAULT_TENANT_CONFIG),
+        };
+        const merged = deepMerge(base, overlay);
+        const result = parseTenantConfig(merged, `fetch ${url} (merged overlay)`);
 
-                const result = parseTenantConfig(merged, `fetch ${url} (merged onto baked)`);
-
-                if (result) {
-                    onEvent?.(
-                        'config:fetch_success',
-                        `Merged config resolved: ${result.tenantId} (${durationMs}ms)`,
-                        {
-                            url,
-                            tenantId: result.tenantId,
-                            durationMs,
-                            parseMode: 'overlay_on_baked',
-                        }
-                    );
-                }
-
-                return result;
+        onEvent?.(
+            'config:fetch_partial_merge',
+            `Fetched config overlay, merging onto ${
+                mergeBase ? `baked config (${mergeBase.tenantId})` : 'validated defaults'
+            } (${durationMs}ms)`,
+            {
+                url,
+                durationMs,
+                overrideKeys: Object.keys(overlay),
+                mergeBase: mergeBase ? `baked (${mergeBase.tenantId})` : 'defaults',
             }
-
-            onEvent?.(
-                'config:fetch_error',
-                `Fetch succeeded but partial parse failed — using baked config as-is`,
-                { url, durationMs }
-            );
-
-            return null;
-        }
-
-        // No baked config — try full config parse (e.g. a config service returning complete configs)
-        const full = parseTenantConfig(raw, `fetch ${url}`);
-
-        if (full) {
-            onEvent?.(
-                'config:fetch_success',
-                `Full config fetched: ${full.tenantId} (${durationMs}ms)`,
-                { url, tenantId: full.tenantId, durationMs, parseMode: 'full' }
-            );
-
-            return full;
-        }
-
-        // Fall back to partial parse — deep-merge onto DEFAULT_LEARNCARD_TENANT_CONFIG.
-        const partial = parsePartialTenantConfig(raw, `fetch ${url} (partial)`);
-
-        if (partial && typeof partial === 'object') {
-            onEvent?.(
-                'config:fetch_partial_merge',
-                `Partial config fetched, merging onto defaults (${durationMs}ms)`,
-                {
-                    url,
-                    durationMs,
-                    overrideKeys: Object.keys(partial as Record<string, unknown>),
-                    mergeBase: 'defaults',
-                }
-            );
-
-            const merged = deepMerge(
-                DEFAULT_LEARNCARD_TENANT_CONFIG as unknown as Record<string, unknown>,
-                partial as Record<string, unknown>
-            );
-
-            const result = parseTenantConfig(merged, `fetch ${url} (merged)`);
-
-            if (result) {
-                onEvent?.(
-                    'config:fetch_success',
-                    `Merged config resolved: ${result.tenantId} (${durationMs}ms)`,
-                    { url, tenantId: result.tenantId, durationMs, parseMode: 'partial_merge' }
-                );
-            }
-
-            return result;
-        }
-
-        onEvent?.('config:fetch_error', `Fetch succeeded but config parsing failed`, {
+        );
+        onEvent?.('config:fetch_success', `Merged config resolved: ${result.tenantId}`, {
             url,
+            tenantId: result.tenantId,
             durationMs,
+            parseMode: mergeBase ? 'overlay_on_baked' : 'overlay_on_default',
         });
 
-        return null;
-    } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        const url = endpoint ?? '/__tenant-config';
+        return result;
+    } catch (error) {
+        if (
+            error instanceof TenantConfigValidationError ||
+            error instanceof TenantConfigResolutionError
+        ) {
+            throw error;
+        }
 
-        log.warn(`[TenantConfig] fetchFreshConfig failed (${url}): ${message}`);
+        const message = error instanceof Error ? error.message : String(error);
 
-        onEvent?.('config:fetch_error', `Fetch error: ${message}`, { url, error: message });
-
+        log.warn(`[TenantConfig] fetchFreshConfig unavailable (${url}): ${message}`);
+        onEvent?.('config:fetch_error', `Fetch unavailable: ${message}`, {
+            url,
+            error: message,
+        });
         _onFetchFailure?.({ endpoint: url, error: message });
 
         return null;
@@ -377,16 +335,16 @@ export interface ResolveTenantConfigOptions {
     configEndpoint?: string;
 
     /**
-     * Skip the network fetch and only use baked/cached/default config.
+     * Skip the network fetch and only use validated baked/cached config.
      * Useful for tests or offline-first boot.
      */
     offlineOnly?: boolean;
 
-    /**
-     * Provide a static config directly — bypasses all resolution.
-     * Useful for tests or local dev with a known config.
-     */
-    staticConfig?: TenantConfig;
+    /** Provide an explicit config. It is validated before use. */
+    staticConfig?: unknown;
+
+    /** Explicitly permit the validated LearnCard default, primarily for isolated tests. */
+    allowDefault?: boolean;
 
     /**
      * Optional callback invoked at each resolution step.
@@ -411,20 +369,19 @@ export const resolveTenantConfig = async (
         hasEndpoint: !!options.configEndpoint,
     });
 
-    // Static override — for tests or explicit config injection
+    // Static override — validate before any subsystem observes it.
     if (options.staticConfig) {
-        onEvent?.(
-            'config:static_override',
-            `Using static config: ${options.staticConfig.tenantId}`,
-            { tenantId: options.staticConfig.tenantId }
-        );
-        onEvent?.(
-            'config:resolved',
-            `Resolved via static override: ${options.staticConfig.tenantId}`,
-            { source: 'static', tenantId: options.staticConfig.tenantId }
-        );
+        const staticConfig = parseTenantConfig(options.staticConfig, 'static override');
 
-        return options.staticConfig;
+        onEvent?.('config:static_override', `Using static config: ${staticConfig.tenantId}`, {
+            tenantId: staticConfig.tenantId,
+        });
+        onEvent?.('config:resolved', `Resolved via static override: ${staticConfig.tenantId}`, {
+            source: 'static',
+            tenantId: staticConfig.tenantId,
+        });
+
+        return staticConfig;
     }
 
     // 1. Try baked config (native builds)
@@ -476,19 +433,19 @@ export const resolveTenantConfig = async (
         return cached;
     }
 
-    // 6. Final fallback — default LearnCard config
-    onEvent?.(
-        'config:fallback_default',
-        'All sources failed — using DEFAULT_LEARNCARD_TENANT_CONFIG',
-        { tenantId: DEFAULT_LEARNCARD_TENANT_CONFIG.tenantId }
-    );
-    onEvent?.(
-        'config:resolved',
-        `Resolved via default fallback: ${DEFAULT_LEARNCARD_TENANT_CONFIG.tenantId}`,
-        { source: 'default', tenantId: DEFAULT_LEARNCARD_TENANT_CONFIG.tenantId }
-    );
+    if (options.allowDefault) {
+        onEvent?.(
+            'config:fallback_default',
+            'No external source resolved — using explicitly allowed validated default',
+            { tenantId: VALIDATED_DEFAULT_TENANT_CONFIG.tenantId }
+        );
 
-    return DEFAULT_LEARNCARD_TENANT_CONFIG;
+        return VALIDATED_DEFAULT_TENANT_CONFIG;
+    }
+
+    throw new TenantConfigResolutionError(
+        'No valid TenantConfig source resolved. Provide a baked config, a valid config endpoint, or a validated static config.'
+    );
 };
 
 /**

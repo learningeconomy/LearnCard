@@ -24,10 +24,10 @@ export const SignCredentialModal: React.FC<SignCredentialModalProps> = ({
     return (
         <div className="flex flex-col h-full w-full bg-grayscale-100">
             {/* Header */}
-            <div 
+            <div
                 className="bg-white border-b border-grayscale-200 p-6"
                 style={{
-                    paddingTop: 'max(1.5rem, env(safe-area-inset-top))',
+                    paddingTop: '1.5rem',
                 }}
             >
                 <h2 className="text-2xl font-bold text-grayscale-900 text-center">
@@ -51,12 +51,12 @@ export const SignCredentialModal: React.FC<SignCredentialModalProps> = ({
             </div>
 
             {/* Action Buttons */}
-            <div 
+            <div
                 className="flex items-center justify-center gap-4 p-6 border-t border-grayscale-200 bg-white"
                 style={{
-                    paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))',
-                    paddingLeft: 'max(1.5rem, env(safe-area-inset-left))',
-                    paddingRight: 'max(1.5rem, env(safe-area-inset-right))',
+                    paddingBottom: '1.5rem',
+                    paddingLeft: '1.5rem',
+                    paddingRight: '1.5rem',
                 }}
             >
                 <button

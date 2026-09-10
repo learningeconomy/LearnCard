@@ -21,6 +21,7 @@ import {
     getEffectiveSupportedLanguages,
 } from './detectLocale';
 import { applyLocaleChange } from './localeChange';
+import type { LocaleChangeOptions } from './localeChange';
 import { getLocaleStorage, readPersistedLocale } from './localeStorage';
 
 // Mirror of Paraglide's runtime `MessagePart` (a JSDoc typedef in
@@ -55,7 +56,7 @@ export const RTL_LANGUAGES = new Set<SupportedLanguage>(['ar']);
 
 type LocaleContextValue = {
     locale: SupportedLanguage;
-    changeLocale: (lang: SupportedLanguage) => void;
+    changeLocale: (lang: SupportedLanguage, options?: LocaleChangeOptions) => void;
 };
 
 const LocaleContext = createContext<LocaleContextValue | null>(null);
@@ -98,13 +99,14 @@ export const LocaleProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         paraglideSetLocale(initial, { reload: false });
         return initial;
     });
-    const changeLocale = useCallback((lang: SupportedLanguage) => {
+    const changeLocale = useCallback((lang: SupportedLanguage, options?: LocaleChangeOptions) => {
         manualChangeVersion.current += 1;
         applyLocaleChange(
             lang,
             nextLocale => paraglideSetLocale(nextLocale, { reload: false }),
             setLocaleState,
-            getLocaleStorage()
+            getLocaleStorage(),
+            options
         );
     }, []);
 
@@ -158,7 +160,10 @@ export function useLocale(): SupportedLanguage {
 /**
  * Hook to change the current locale. Returns a stable setter function.
  */
-export function useChangeLocale(): (lang: SupportedLanguage) => void {
+export function useChangeLocale(): (
+    lang: SupportedLanguage,
+    options?: LocaleChangeOptions
+) => void {
     const ctx = useContext(LocaleContext);
     if (!ctx) throw new Error('useChangeLocale() must be used inside <LocaleProvider>');
     return ctx.changeLocale;

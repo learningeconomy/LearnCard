@@ -3,7 +3,6 @@ import moment from 'moment';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import { ModalTypes, useModal, QRCodeScannerStore, useAiFeatureGate } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
@@ -61,7 +60,6 @@ import {
     developerToolOptions,
 } from '../../adminToolsPage/AdminToolsModal/admin-tools.helpers';
 import AdminToolsCreateProfileSimple from '../../adminToolsPage/AdminToolsAccountSwitcher/AdminToolsCreateProfileSimple';
-import useBoostModal from '../../../components/boost/hooks/useBoostModal';
 import useBoostRecoveryCheck from '../../../hooks/useBoostRecoveryCheck';
 import { openDeveloperDocs } from '../../../helpers/externalLinkHelpers';
 import {
@@ -218,9 +216,7 @@ const ActionButton: React.FC<{
     role?: string;
 }> = ({ label, bg, bgHex, textColor, borderColor, to, onClick, role }) => {
     const history = useHistory();
-    const flags = useFlags();
     const { newModal, closeModal, closeAllModals } = useModal();
-    const { handlePresentBoostModal } = useBoostModal(undefined, undefined, true, true);
     const { checkAndPromptRecovery } = useBoostRecoveryCheck();
     const { theme, getIconSet } = useTheme();
     const brandingConfig = useBrandingConfig();
@@ -341,15 +337,10 @@ const ActionButton: React.FC<{
                 );
                 return;
             case 'Create Credential':
-                if (flags?.enableSimpleSend) {
-                    checkAndPromptRecovery(() => {
-                        closeAllModals();
-                        history.push('/issue');
-                    });
-                    return;
-                }
-                closeModal();
-                handlePresentBoostModal();
+                checkAndPromptRecovery(() => {
+                    closeAllModals();
+                    history.push('/issue');
+                });
                 return;
             case 'Create API Token':
                 closeModal();

@@ -8,6 +8,8 @@ import { showToast } from './toastStore';
 import { showErrorModal } from './ErrorModalStore';
 
 import { networkStore } from '../NetworkStore';
+import { walletStore } from '../walletStore';
+import { addActiveLocaleToPayload, addActiveLocaleToUrl } from '../../i18n';
 import type {
     ChatMessage,
     Thread,
@@ -16,6 +18,15 @@ import type {
     ActiveSessionStatus,
 } from '../../types/ai-chat';
 import { parseAiErrorPayload, type AiClientError } from '../../helpers/aiErrors';
+import {
+    aiPassportFetch,
+    ensureAiPassportSession,
+    getAiPassportAuthMode,
+    getAiPassportWebSocketProtocols,
+    getAiPassportUrl,
+    waitForAiPassportAuthMode,
+} from '../../helpers/aiPassportAuth';
+import { createDeferred } from '../../helpers/deferred';
 
 export const messages = atom<ChatMessage[]>([]);
 export const streamingMessage = atom<ChatMessage | null>(null);
@@ -105,6 +116,22 @@ export const planSections = atom({
 });
 
 export const getBackendUrl = (): string => networkStore.get.aiServiceUrl();
+
+const ensureChatAiPassportAuth = async (did: string, refreshLegacy = false) => {
+    const mode = getAiPassportAuthMode(did);
+
+    if (mode && (!refreshLegacy || mode === 'session')) return mode;
+
+    const wallet = walletStore.get.wallet();
+
+    if (wallet) return ensureAiPassportSession(wallet);
+
+    const pendingMode = await waitForAiPassportAuthMode(did);
+
+    if (pendingMode) return pendingMode;
+
+    throw new Error('AI Passport authentication requires an initialized wallet');
+};
 
 /** @deprecated Use getBackendUrl() for dynamic tenant-aware URL */
 export const BACKEND_URL = 'https://api.learncloud.ai';
@@ -202,6 +229,35 @@ const MAX_RECONNECT_ATTEMPTS = 5;
 let messageListeners: ((message: any) => void)[] = [];
 let readyListeners: (() => void)[] = [];
 let shouldReconnect = true;
+let reconnectTimer: number | undefined;
+let socketConnection: Promise<WebSocket | null> | null = null;
+let connectionGeneration = 0;
+
+const clearReconnectTimer = () => {
+    if (reconnectTimer === undefined) return;
+
+    clearTimeout(reconnectTimer);
+    reconnectTimer = undefined;
+};
+
+const clearTerminalConnectionState = () => {
+    isTyping.set(false);
+    isLoading.set(false);
+};
+
+const scheduleReconnect = () => {
+    if (!shouldReconnect || reconnectTimer !== undefined || socketConnection) return;
+
+    if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+        clearTerminalConnectionState();
+        return;
+    }
+
+    reconnectTimer = window.setTimeout(() => {
+        reconnectTimer = undefined;
+        void reconnectWebSocket();
+    }, 1000);
+};
 
 const SESSION_START_WATCHDOG_MS = 32_000;
 let startupWatchdog: number | undefined;
@@ -302,9 +358,10 @@ const stopPendingAiResponse = () => {
 export async function loadThreads() {
     const { did } = auth.get();
     if (!did) return;
+    await ensureChatAiPassportAuth(did);
 
     try {
-        const response = await fetch(`${getBackendUrl()}/threads?did=${did}`);
+        const response = await aiPassportFetch('/threads', {}, did);
         if (!response.ok) throw new Error('Failed to load threads');
 
         const threadList = await response.json();
@@ -319,10 +376,9 @@ export async function getActiveSessionStatus(): Promise<ActiveSessionStatus> {
     const { did } = auth.get();
 
     if (!did) return { isActive: false, activeThreadId: null };
+    await ensureChatAiPassportAuth(did);
 
-    const response = await fetch(
-        `${getBackendUrl()}/api/chat/active-session-status?did=${encodeURIComponent(did)}`
-    );
+    const response = await aiPassportFetch('/api/chat/active-session-status', {}, did);
 
     if (!response.ok) throw new Error('Failed to check active AI session');
 
@@ -333,9 +389,14 @@ export async function getActiveSessionStatus(): Promise<ActiveSessionStatus> {
 export async function loadThread(threadId: string) {
     const { did } = auth.get();
     if (!did) return;
+    await ensureChatAiPassportAuth(did);
 
     try {
-        const response = await fetch(`${getBackendUrl()}/messages?did=${did}&threadId=${threadId}`);
+        const response = await aiPassportFetch(
+            `/messages?threadId=${encodeURIComponent(threadId)}`,
+            {},
+            did
+        );
         if (!response.ok) throw new Error('Failed to load messages');
 
         const threadMessages: ChatMessage[] = await response.json();
@@ -363,11 +424,11 @@ export async function loadThread(threadId: string) {
         planReady.set(hasPendingPlan);
         planReadyThread.set(hasPendingPlan ? threadId : null);
 
-        log.debug(`Thread ${threadId} session ended: ${hasSessionEnded}`);
-
         // Load thread credentials
-        const credsResponse = await fetch(
-            `${getBackendUrl()}/thread_credentials?did=${did}&threadId=${threadId}`
+        const credsResponse = await aiPassportFetch(
+            `/thread_credentials?threadId=${encodeURIComponent(threadId)}`,
+            {},
+            did
         );
         if (!credsResponse.ok) {
             log.error('Failed to load thread credentials');
@@ -390,7 +451,7 @@ export async function resumeThread(threadId: string): Promise<boolean> {
 
     if (currentThreadId.get() !== threadId) return false;
 
-    connectWebSocket();
+    await connectWebSocket();
 
     return true;
 }
@@ -399,11 +460,16 @@ export async function resumeThread(threadId: string): Promise<boolean> {
 export async function createThread() {
     const { did } = auth.get();
     if (!did) return;
+    await ensureChatAiPassportAuth(did);
 
     try {
-        const response = await fetch(`${getBackendUrl()}/threads?did=${did}`, {
-            method: 'POST',
-        });
+        const response = await aiPassportFetch(
+            '/threads',
+            {
+                method: 'POST',
+            },
+            did
+        );
 
         if (!response.ok) throw new Error('Failed to create thread');
 
@@ -424,11 +490,14 @@ export async function createThread() {
 export async function deleteThread(threadId: string) {
     const { did } = auth.get();
     if (!did) return;
+    await ensureChatAiPassportAuth(did);
 
     try {
-        const response = await fetch(`${getBackendUrl()}/threads?did=${did}&threadId=${threadId}`, {
-            method: 'DELETE',
-        });
+        const response = await aiPassportFetch(
+            `/threads?threadId=${encodeURIComponent(threadId)}`,
+            { method: 'DELETE' },
+            did
+        );
 
         if (!response.ok) throw new Error('Failed to delete thread');
 
@@ -451,12 +520,13 @@ export async function fetchLearningPathways(threadId: string): Promise<LearningP
         log.error('Authentication required to fetch learning pathways');
         return [];
     }
+    await ensureChatAiPassportAuth(did);
 
     try {
-        const response = await fetch(
-            `${getBackendUrl()}/learning-pathways?did=${encodeURIComponent(
-                did
-            )}&threadId=${encodeURIComponent(threadId)}`
+        const response = await aiPassportFetch(
+            `/learning-pathways?threadId=${encodeURIComponent(threadId)}`,
+            {},
+            did
         );
 
         if (response.ok) {
@@ -472,19 +542,73 @@ export async function fetchLearningPathways(threadId: string): Promise<LearningP
     }
 }
 
-export function connectWebSocket() {
-    if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING))
-        return ws;
+const reconnectWebSocket = async (): Promise<void> => {
+    const { did } = auth.get();
 
+    if (!did || !shouldReconnect) {
+        clearTerminalConnectionState();
+        return;
+    }
+
+    if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+        clearTerminalConnectionState();
+        return;
+    }
+
+    reconnectAttempts += 1;
+
+    try {
+        await ensureChatAiPassportAuth(did, true);
+
+        if (!shouldReconnect) return;
+
+        await connectWebSocket();
+    } catch (error) {
+        log.error('WebSocket reconnect failed:', error);
+        scheduleReconnect();
+    }
+};
+
+export function connectWebSocket(): Promise<WebSocket | null> {
+    if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+        return Promise.resolve(ws);
+    }
+
+    if (socketConnection) return socketConnection;
+
+    shouldReconnect = true;
+    const generation = connectionGeneration;
+    const request = createWebSocket(generation);
+
+    socketConnection = request;
+    void request.then(
+        () => {
+            if (socketConnection === request) socketConnection = null;
+        },
+        () => {
+            if (socketConnection === request) socketConnection = null;
+        }
+    );
+
+    return request;
+}
+
+const createWebSocket = async (generation: number): Promise<WebSocket | null> => {
     const { did } = auth.get();
     if (!did) throw new Error('Authentication required');
 
-    shouldReconnect = true;
+    const wsUrl = getAiPassportUrl('/', did);
 
-    const wsUrl = getBackendUrl().replace(/^http/, 'ws');
-    const threadIdQuery = currentThreadId.get() ? `&threadId=${currentThreadId.get()}` : '';
+    wsUrl.protocol = wsUrl.protocol === 'https:' ? 'wss:' : 'ws:';
+    if (currentThreadId.get()) wsUrl.searchParams.set('threadId', currentThreadId.get() ?? '');
 
-    ws = new WebSocket(`${wsUrl}?did=${did}${threadIdQuery}`);
+    const protocols = await getAiPassportWebSocketProtocols(did);
+
+    if (!shouldReconnect || generation !== connectionGeneration) return null;
+
+    ws = protocols
+        ? new WebSocket(addActiveLocaleToUrl(wsUrl.toString()), protocols)
+        : new WebSocket(addActiveLocaleToUrl(wsUrl.toString()));
     const socket = ws;
 
     ws.onmessage = event => {
@@ -980,6 +1104,7 @@ export function connectWebSocket() {
     ws.onopen = () => {
         if (ws !== socket) return;
         reconnectAttempts = 0;
+        clearReconnectTimer();
         readyListeners.forEach(fn => fn());
         readyListeners = [];
     };
@@ -990,17 +1115,10 @@ export function connectWebSocket() {
         preservePartialStreamingMessage();
 
         ws = null;
+        scheduleReconnect();
 
-        const shouldTryReconnect = shouldReconnect && reconnectAttempts < MAX_RECONNECT_ATTEMPTS;
-
-        if (!shouldTryReconnect) {
-            isTyping.set(false);
-            isLoading.set(false);
-        }
-
-        if (shouldTryReconnect) {
-            reconnectAttempts++;
-            setTimeout(connectWebSocket, 1000);
+        if (!shouldReconnect || reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+            clearTerminalConnectionState();
         }
     };
 
@@ -1015,7 +1133,7 @@ export function connectWebSocket() {
     };
 
     return ws;
-}
+};
 
 // Function to update artifact claimed status by artifact ID
 export function updateArtifactClaimedStatus(artifactId: string, claimed: boolean) {
@@ -1047,8 +1165,13 @@ export function sendMessageWithQuestion(content: string, selectedQuestion?: stri
         return;
     }
 
-    const socket = connectWebSocket();
+    const socket = ws;
+
     if (!socket || socket.readyState !== WebSocket.OPEN) {
+        void connectWebSocket().catch(error => {
+            log.error('WebSocket connection failed while sending a message:', error);
+            clearTerminalConnectionState();
+        });
         onReady(() => sendMessageWithQuestion(content, selectedQuestion));
         return;
     }
@@ -1126,17 +1249,19 @@ export function sendMessageWithQuestion(content: string, selectedQuestion?: stri
     }
 
     socket.send(
-        JSON.stringify({
-            message: newMessage,
-            threadId,
-            selectedQuestion,
-        })
+        JSON.stringify(
+            addActiveLocaleToPayload({
+                message: newMessage,
+                threadId,
+                selectedQuestion,
+            })
+        )
     );
 }
 
 // Maintain backward compatibility
 export function sendMessage(content: string) {
-    sendMessageWithQuestion(content);
+    void sendMessageWithQuestion(content);
 }
 
 // Function to start a new topic using a topic URI
@@ -1160,15 +1285,16 @@ export async function startTopicWithUri(topicUri: string) {
         showErrorModal('Authentication Required', 'Please sign in to start a topic with a URI.');
         return;
     }
-
-    // Reset WebSocket and clear current thread to avoid restoring old session
+    // Cancel the previous socket before auth so it cannot invalidate a newer
+    // in-flight connection generation when negotiation completes.
     disconnectWebSocket();
     currentThreadId.set(null);
+    await ensureChatAiPassportAuth(did, true);
 
     // Ensure WebSocket connection is established
     if (!ws || ws.readyState !== WebSocket.OPEN) {
         try {
-            connectWebSocket();
+            await connectWebSocket();
             await waitForSocketConnection();
         } catch (error) {
             log.error('WebSocket connection failed, cannot start topic with URI:', error);
@@ -1187,7 +1313,6 @@ export async function startTopicWithUri(topicUri: string) {
         action: 'start_topic_uri',
         topicUri,
         introStreamMode: 'structured',
-        did,
     };
 
     beginSessionStartWatchdog();
@@ -1195,7 +1320,17 @@ export async function startTopicWithUri(topicUri: string) {
 }
 
 const waitForSocketConnection = (): Promise<void> => {
-    const { promise, resolve, reject } = Promise.withResolvers<void>();
+    if (ws?.readyState === WebSocket.OPEN) return Promise.resolve();
+
+    // A deliberate disconnect can cancel an in-flight connect (createWebSocket
+    // returns null on generation mismatch). With no socket, no pending connect,
+    // and no scheduled reconnect, nothing will ever fire onReady — fail fast
+    // instead of stalling for the full timeout.
+    if (!ws && !socketConnection && reconnectTimer === undefined) {
+        return Promise.reject(new Error('WebSocket connection cancelled'));
+    }
+
+    const { promise, reject, resolve } = createDeferred<void>();
     let unsubscribe = () => {};
     const timeout = window.setTimeout(() => {
         unsubscribe();
@@ -1232,16 +1367,15 @@ export async function startLearningPathway(topicUri: string, pathwayUri: string)
         showErrorModal('Authentication Required', 'Please sign in to start a learning pathway.');
         return;
     }
-
-    // Reset WebSocket and clear current thread to avoid restoring old session
-
+    // Cancel the previous socket before auth negotiation begins.
     disconnectWebSocket();
     currentThreadId.set(null);
+    await ensureChatAiPassportAuth(did, true);
 
     // Ensure WebSocket connection is established
     if (!ws || ws.readyState !== WebSocket.OPEN) {
         try {
-            connectWebSocket();
+            await connectWebSocket();
             await waitForSocketConnection();
         } catch (error) {
             log.error('WebSocket connection failed, cannot start learning pathway:', error);
@@ -1261,7 +1395,6 @@ export async function startLearningPathway(topicUri: string, pathwayUri: string)
         topicUri,
         pathwayUri,
         introStreamMode: 'structured',
-        did,
     };
 
     beginSessionStartWatchdog();
@@ -1283,13 +1416,12 @@ export async function startTopic(topic: string, mode: AiSessionMode = AiSessionM
         return;
     }
 
-    // Reset WebSocket to avoid overlapping streams when starting a new topic
     disconnectWebSocket();
+    await ensureChatAiPassportAuth(did, true);
 
-    // Ensure WebSocket is connected before sending message
     if (!ws || ws.readyState !== WebSocket.OPEN) {
         try {
-            connectWebSocket();
+            await connectWebSocket();
             await waitForSocketConnection();
         } catch (error) {
             log.error('WebSocket connection failed, cannot start topic:', error);
@@ -1303,17 +1435,10 @@ export async function startTopic(topic: string, mode: AiSessionMode = AiSessionM
         }
     }
 
-    // Clear current thread ID before starting a new topic, backend will assign a new one.
-    // However, the backend handles creating/assigning threadId upon 'start_topic' or first message.
-    // Let's ensure frontend state reflects expectation of a new session, if not already handled.
-    // currentThreadId.set(null); // This might be too aggressive if backend reuses thread for a new plan on same ID.
-    // The backend should handle thread finalization if a new 'start_topic' arrives for a DID with an existing active thread.
-
     const messageToSend = {
         action: 'start_topic',
         topic,
         introStreamMode: 'structured',
-        did, // Include DID for backend processing
         mode,
     };
 
@@ -1329,11 +1454,12 @@ export async function startInsightsSession(topic: string, initialText?: string) 
     messages.set([
         {
             role: 'assistant',
-            content: '', // placeholder for streaming
+            content: '',
         },
     ]);
 
     const { did } = auth.get();
+
     if (!did) {
         isTyping.set(false);
         isLoading.set(false);
@@ -1344,18 +1470,16 @@ export async function startInsightsSession(topic: string, initialText?: string) 
     disconnectWebSocket();
     currentThreadId.set(null);
 
-    // Ensure WS connected
-    if (!ws || ws.readyState !== WebSocket.OPEN) {
-        try {
-            connectWebSocket();
-            await waitForSocketConnection();
-        } catch (err) {
-            log.error('WS connect failed:', err);
-            isTyping.set(false);
-            isLoading.set(false);
-            showErrorModal('Connection Error', 'Could not connect to chat service.');
-            return;
-        }
+    try {
+        await ensureChatAiPassportAuth(did, true);
+        await connectWebSocket();
+        await waitForSocketConnection();
+    } catch (error) {
+        log.error('WS connect failed:', error);
+        isTyping.set(false);
+        isLoading.set(false);
+        showErrorModal('Connection Error', 'Could not connect to chat service.');
+        return;
     }
 
     const firstMessage = (initialText?.trim() || `Let's do insights on: ${topic}`).trim();
@@ -1375,9 +1499,15 @@ export async function startInsightsSession(topic: string, initialText?: string) 
 export function continuePlan() {
     const threadId = planReadyThread.get();
     if (!threadId) return;
-    const socket = connectWebSocket();
+
+    const socket = ws;
+
     if (!socket || socket.readyState !== WebSocket.OPEN) {
-        onReady(() => continuePlan());
+        void connectWebSocket().catch(error => {
+            log.error('WebSocket connection failed while continuing a plan:', error);
+            clearTerminalConnectionState();
+        });
+        onReady(continuePlan);
         return;
     }
 
@@ -1387,7 +1517,7 @@ export function continuePlan() {
     lastAiError.set(null);
     isTyping.set(true);
     beginSessionStartWatchdog('continuation');
-    socket.send(JSON.stringify({ action: 'continue_plan', threadId }));
+    socket.send(JSON.stringify(addActiveLocaleToPayload({ action: 'continue_plan', threadId })));
     planReady.set(false);
     planReadyThread.set(null);
 }
@@ -1397,6 +1527,7 @@ export async function finishSession(onSuccess?: () => void) {
     const { did } = auth.get();
     const threadId = currentThreadId.get();
     if (!did || !threadId) return;
+    await ensureChatAiPassportAuth(did);
 
     try {
         isEndingSession.set(true);
@@ -1408,10 +1539,15 @@ export async function finishSession(onSuccess?: () => void) {
         ]);
         sessionEnded.set(true);
 
-        const res = await fetch(`${getBackendUrl()}/threads/finish?did=${did}`, {
-            method: 'POST',
-            body: JSON.stringify({ threadId, did }),
-        });
+        const res = await aiPassportFetch(
+            addActiveLocaleToUrl(`${getBackendUrl()}/threads/finish`),
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ threadId }),
+            },
+            did
+        );
 
         // In most cases the summary will come through the existing WebSocket
         // listener as a `conversation_summary` event. However, if the WS is not
@@ -1473,12 +1609,18 @@ export function getWebSocket() {
 export function disconnectWebSocket() {
     clearSessionStartWatchdog();
     shouldReconnect = false;
+    connectionGeneration += 1;
+    clearReconnectTimer();
+    socketConnection = null;
+    readyListeners = [];
+
     if (ws) {
         try {
             ws.close();
         } catch (e) {
             log.error('WebSocket close error:', e);
         }
+
         ws = null;
     }
 }
@@ -1486,8 +1628,12 @@ export function disconnectWebSocket() {
 // Send a payload as soon as the socket is open. Avoids polling setTimeout loops
 // for the "send right after connect" race that can otherwise add up to 100ms of
 // idle wait per first message.
-function sendWhenReady(payload: unknown) {
-    const json = JSON.stringify(payload);
+// `Record<string, unknown>` rather than `unknown`: the old runtime `typeof
+// payload === 'object'` guard also accepted arrays, which would have spread into
+// `{0: …, 1: …}`. Every caller passes an object literal, so the type makes that
+// structurally impossible instead of relying on the check.
+function sendWhenReady(payload: Record<string, unknown>) {
+    const json = JSON.stringify(addActiveLocaleToPayload(payload));
     if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(json);
         return;
@@ -1524,17 +1670,17 @@ export async function closeInsightsSession(threadId?: string) {
 
     if (!activeThreadId) return;
 
-    const socket = connectWebSocket();
-    if (!socket || socket.readyState !== WebSocket.OPEN) {
-        onReady(() => closeInsightsSession(activeThreadId));
-        return;
-    }
+    const socket = ws;
+
+    if (!socket || socket.readyState !== WebSocket.OPEN) return;
 
     socket.send(
-        JSON.stringify({
-            action: 'close_insights_session',
-            threadId: activeThreadId,
-        })
+        JSON.stringify(
+            addActiveLocaleToPayload({
+                action: 'close_insights_session',
+                threadId: activeThreadId,
+            })
+        )
     );
 
     // Optimistically reset state

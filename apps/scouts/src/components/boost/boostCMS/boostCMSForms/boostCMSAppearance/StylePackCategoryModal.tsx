@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { IonCol, IonRow } from '@ionic/react';
 import * as m from '../../../../../paraglide/messages.js';
 import { useModal } from 'learn-card-base';
@@ -27,8 +27,6 @@ export const StylePackCategoryModal: React.FC<StylePackCategoryModalProps> = ({
     const { closeModal } = useModal();
     const flags = useFlags();
     const { credentials } = useHighlightedCredentials();
-
-    // Check if user is Global Admin or National Admin
     const isAdmin = credentials.some(cred => {
         const subject = cred?.credentialSubject;
         if (!subject || Array.isArray(subject)) return false;
@@ -40,8 +38,7 @@ export const StylePackCategoryModal: React.FC<StylePackCategoryModalProps> = ({
         closeModal();
     };
 
-    let boostOptions = boostVCTypeOptions[boostUserType];
-    // Allow admins to bypass CMS customization restrictions
+    let boostOptions = boostVCTypeOptions[boostUserType] ?? [];
     if (flags?.disableCmsCustomization && !isAdmin) {
         boostOptions = boostVCTypeOptions?.[boostUserType].filter(item => item.type === targetType);
     }
