@@ -219,7 +219,7 @@ const emptyLC = await initLearnCard();
 const seededLC = await initLearnCard({ seed: 'abc123' });
 ```
 
-Check out the docs on [initializing LearnCards](learncard-core/construction.md#the-initlearncard-function) for more ways to create a LearnCard.
+Check out the docs on [initializing LearnCards](learncard-core/construction.md#initialize) for more ways to create a LearnCard.
 
 #### And beyond!&#x20;
 
