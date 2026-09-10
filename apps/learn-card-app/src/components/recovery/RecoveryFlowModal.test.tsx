@@ -70,6 +70,7 @@ describe('RecoveryFlowModal', () => {
                 escrowRecovery={escrowRecovery}
             />
         );
+        fireEvent.click(await screen.findByRole('button', { name: "I don't have a PIN" }));
         expect(
             await screen.findByRole('button', { name: 'Start a 7-day recovery' })
         ).toBeDisabled();
@@ -92,6 +93,7 @@ describe('RecoveryFlowModal', () => {
         );
         fireEvent.click(await screen.findByRole('button', { name: 'Check request status' }));
         expect(await screen.findByText('This recovery request was cancelled.')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: "I don't have a PIN" }));
         expect(screen.getByRole('button', { name: 'Start a 7-day recovery' })).toBeEnabled();
     });
 
@@ -143,6 +145,7 @@ describe('RecoveryFlowModal', () => {
         expect(
             await screen.findByText('Recovery details could not be loaded. Please try again.')
         ).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: "I don't have a PIN" }));
         expect(screen.getByRole('button', { name: 'Start a 7-day recovery' })).toBeDisabled();
         fireEvent.click(screen.getByRole('button', { name: 'Try Again' }));
         await waitFor(() =>
@@ -181,6 +184,7 @@ describe('RecoveryFlowModal', () => {
                 escrowRecovery={escrowRecovery}
             />
         );
+        fireEvent.click(screen.getByRole('button', { name: "I don't have a PIN" }));
         const button = screen.getByRole('button', { name: 'Start a 7-day recovery' });
         await waitFor(() => expect(button).toBeEnabled());
         fireEvent.click(button);
@@ -253,6 +257,7 @@ describe('RecoveryFlowModal', () => {
                 escrowRecovery={escrowRecovery}
             />
         );
+        fireEvent.click(screen.getByRole('button', { name: "I don't have a PIN" }));
         const start = screen.getByRole('button', { name: 'Start a 7-day recovery' });
         await waitFor(() => expect(start).toBeEnabled());
         fireEvent.click(start);
