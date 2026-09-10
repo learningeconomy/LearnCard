@@ -17,15 +17,11 @@ import { FamilyPinWrapper } from '../components/familyCMS/FamilyBoostPreview/Fam
 
 const DEFAULT_VERIFICATION_TTL = 5 * 60 * 1000; // 5 minutes in ms
 
-// Module-level storage for verification timestamps (not persisted)
-const verificationTimestamps = new Map<string, number>();
-
 /**
  * Standalone function to clear guardian verification cache.
  * Call this when switching from child profile back to parent.
  */
 export const clearGuardianVerification = (): void => {
-    verificationTimestamps.clear();
     guardianApprovalStore.set.clearAllApprovals();
 };
 
@@ -88,67 +84,48 @@ export const useGuardianGate = (options: UseGuardianGateOptions = {}): GuardianG
         return Number.isNaN(age) ? null : age;
     }, [currentLCNUser?.dob]);
 
-    // Check if verification is still valid within TTL
     const isGuardianVerified = useCallback((): boolean => {
-        if (!parentDid) return false;
-
-        const lastVerification = verificationTimestamps.get(parentDid);
-        if (!lastVerification) return false;
-
-        const elapsed = Date.now() - lastVerification;
-        return elapsed < verificationTTL;
-    }, [parentDid, verificationTTL]);
+        const childDid = switchedProfileStore.get.switchedDid();
+        return Boolean(
+            parentDid && childDid && guardianApprovalStore.get.getApproval(parentDid, childDid)
+        );
+    }, [parentDid]);
 
     const setVerified = useCallback(async () => {
-        if (parentDid) {
-            verificationTimestamps.set(parentDid, Date.now());
-
-            // Create guardian approval VP and store it
-            try {
-                const childDid = switchedProfileStore.get.switchedDid();
-                if (!childDid) return;
-
-                // Get the parent's private key to create their wallet
-                const parentUser = currentUserStore.get.parentUser();
-                const parentPrivateKey = parentUser?.privateKey;
-                if (!parentPrivateKey) {
-                    log.error('Failed to get parent private key for guardian approval');
-                    return;
-                }
-
-                // Create parent's wallet to sign the VP (using parent's DID)
-                const parentWallet = await initWallet(parentPrivateKey, parentDid);
-
-                const expiresAt = Date.now() + verificationTTL;
-                const expInSeconds = Math.floor(expiresAt / 1000);
-
-                // Create guardian approval claims as challenge string
-                // iss = parent (guardian) DID, sub = child DID
-                const guardianClaims = JSON.stringify({
-                    iss: parentDid,
-                    sub: childDid,
-                    exp: expInSeconds,
-                    scope: 'guardian-approval',
-                });
-
-                // Create a VP with the guardian claims as the challenge, signed by parent
-                const vp = await parentWallet.invoke.getDidAuthVp({
-                    proofFormat: 'jwt',
-                    challenge: guardianClaims,
-                });
-
-                if (typeof vp === 'string') {
-                    guardianApprovalStore.set.setApproval(parentDid, vp, expiresAt);
-                }
-            } catch (error) {
-                log.error('Failed to create guardian approval VP:', error);
+        try {
+            const childDid = switchedProfileStore.get.switchedDid();
+            const parentPrivateKey = currentUserStore.get.parentUser()?.privateKey;
+            if (!parentDid || !childDid || !parentPrivateKey) {
+                throw new Error('Guardian signing identity is unavailable');
             }
+
+            const parentWallet = await initWallet(parentPrivateKey, parentDid);
+            const expiresAt = Date.now() + Math.min(verificationTTL, DEFAULT_VERIFICATION_TTL);
+            const guardianClaims = JSON.stringify({
+                iss: parentDid,
+                sub: childDid,
+                exp: Math.floor(expiresAt / 1000),
+                scope: 'guardian-approval',
+            });
+            const vp = await parentWallet.invoke.getDidAuthVp({
+                proofFormat: 'jwt',
+                challenge: guardianClaims,
+            });
+            if (typeof vp !== 'string' || !vp) {
+                throw new Error('Guardian signing did not return an approval');
+            }
+            if (switchedProfileStore.get.switchedDid() !== childDid) {
+                throw new Error('Child profile changed during guardian approval');
+            }
+            guardianApprovalStore.set.setApproval(parentDid, childDid, vp, expiresAt);
+        } catch {
+            onCancel?.();
+            throw new Error('Could not create guardian approval. Please try again.');
         }
-    }, [parentDid, initWallet, verificationTTL]);
+    }, [parentDid, initWallet, verificationTTL, onCancel]);
 
     const clearVerification = useCallback(() => {
         if (parentDid) {
-            verificationTimestamps.delete(parentDid);
             guardianApprovalStore.set.clearApproval(parentDid);
         }
     }, [parentDid]);
@@ -198,17 +175,17 @@ export const useGuardianGate = (options: UseGuardianGateOptions = {}): GuardianG
             }
 
             // Show verification modal using FamilyPinWrapper
-            return new Promise<void>(resolve => {
+            return new Promise<void>((resolve, reject) => {
                 const handleSuccess = async () => {
-                    // Close modal FIRST, before running action
                     closeModal();
-                    // Small delay to ensure modal animation completes
-                    await new Promise(r => setTimeout(r, 50));
-
-                    await setVerified();
-                    onVerified?.();
-                    await action();
-                    resolve();
+                    try {
+                        await setVerified();
+                        onVerified?.();
+                        await action();
+                        resolve();
+                    } catch (error) {
+                        reject(error);
+                    }
                 };
 
                 newModal(

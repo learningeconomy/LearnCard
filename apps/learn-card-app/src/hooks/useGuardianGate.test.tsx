@@ -1,333 +1,156 @@
 import React from 'react';
-import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-
+import {
+    guardianApprovalStore,
+    getGuardianApprovalVP,
+} from 'learn-card-base/stores/guardianApprovalStore';
 import { useGuardianGate, clearGuardianVerification } from './useGuardianGate';
 
-// Mock the dependencies
-const mockNewModal = vi.fn();
-const mockCloseModal = vi.fn();
-const mockInitWallet = vi.fn();
+const state = vi.hoisted(() => ({
+    child: true,
+    childDid: 'did:example:child-a',
+    parentDid: 'did:example:parent',
+    privateKey: 'local-test-key',
+    newModal: vi.fn(),
+    closeModal: vi.fn(),
+    initWallet: vi.fn(),
+    hasPin: vi.fn(),
+    sign: vi.fn(),
+}));
 
 vi.mock('learn-card-base', () => ({
-    getLogger: () => ({
-        debug: vi.fn(),
-        error: vi.fn(),
-        info: vi.fn(),
-        warn: vi.fn(),
-    }),
+    getLogger: () => ({ warn: vi.fn() }),
     switchedProfileStore: {
         use: {
-            isSwitchedProfile: vi.fn(() => false),
-            profileType: vi.fn(() => null),
+            isSwitchedProfile: () => state.child,
+            profileType: () => (state.child ? 'child' : 'parent'),
         },
-        get: {
-            switchedDid: vi.fn(() => undefined),
-        },
+        get: { switchedDid: () => state.childDid },
     },
     currentUserStore: {
-        use: {
-            parentUserDid: vi.fn(() => null),
-        },
-        get: {
-            parentUser: vi.fn(() => null),
-        },
+        use: { parentUserDid: () => state.parentDid },
+        get: { parentUser: () => ({ privateKey: state.privateKey }) },
     },
-    useModal: () => ({
-        newModal: mockNewModal,
-        closeModal: mockCloseModal,
-    }),
-    useWallet: () => ({
-        initWallet: mockInitWallet,
-    }),
-    useGetCurrentLCNUser: () => ({
-        currentLCNUser: null,
-    }),
-    calculateAge: vi.fn(() => NaN),
-    ModalTypes: {
-        Center: 'Center',
-        Cancel: 'Cancel',
-        FullScreen: 'FullScreen',
-    },
+    useModal: () => ({ newModal: state.newModal, closeModal: state.closeModal }),
+    useWallet: () => ({ initWallet: state.initWallet }),
+    useGetCurrentLCNUser: () => ({ currentLCNUser: null }),
+    calculateAge: () => NaN,
+    ModalTypes: { FullScreen: 'FullScreen', Cancel: 'Cancel' },
 }));
-
-vi.mock('learn-card-base/stores/guardianApprovalStore', () => ({
-    guardianApprovalStore: {
-        set: {
-            clearAllApprovals: vi.fn(),
-            setApproval: vi.fn(),
-            clearApproval: vi.fn(),
-        },
-    },
-}));
-
 vi.mock('../components/familyCMS/FamilyBoostPreview/FamilyPin/FamilyPinWrapper', () => ({
-    FamilyPinWrapper: ({ handleOnSubmit }: { handleOnSubmit: () => void }) => (
-        <div data-testid="family-pin-wrapper">
-            <button onClick={handleOnSubmit}>Verify</button>
-        </div>
-    ),
+    FamilyPinWrapper: () => <div />,
 }));
 
-// Import mocked modules to manipulate them
-import { switchedProfileStore, currentUserStore } from 'learn-card-base';
-
-const queryClient = new QueryClient({
-    defaultOptions: {
-        queries: { retry: false },
-        mutations: { retry: false },
-    },
-});
-
-const wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-);
-
-describe('useGuardianGate', () => {
+describe('guardian-approved actions', () => {
     beforeEach(() => {
-        vi.clearAllMocks();
-        // Clear module-level verification cache so tests don't leak TTL state
+        vi.resetAllMocks();
         clearGuardianVerification();
-        // Reset to default non-child profile state
-        (switchedProfileStore.use.isSwitchedProfile as Mock).mockReturnValue(false);
-        (switchedProfileStore.use.profileType as Mock).mockReturnValue(null);
-        (currentUserStore.use.parentUserDid as Mock).mockReturnValue(null);
-    });
-
-    describe('isChildProfile detection', () => {
-        it('should return isChildProfile=false when not switched', () => {
-            (switchedProfileStore.use.isSwitchedProfile as Mock).mockReturnValue(false);
-            (switchedProfileStore.use.profileType as Mock).mockReturnValue(null);
-
-            const { result } = renderHook(() => useGuardianGate(), { wrapper });
-
-            expect(result.current.isChildProfile).toBe(false);
-        });
-
-        it('should return isChildProfile=false when switched to service profile', () => {
-            (switchedProfileStore.use.isSwitchedProfile as Mock).mockReturnValue(true);
-            (switchedProfileStore.use.profileType as Mock).mockReturnValue('service');
-
-            const { result } = renderHook(() => useGuardianGate(), { wrapper });
-
-            expect(result.current.isChildProfile).toBe(false);
-        });
-
-        it('should return isChildProfile=false when switched to parent profile', () => {
-            (switchedProfileStore.use.isSwitchedProfile as Mock).mockReturnValue(true);
-            (switchedProfileStore.use.profileType as Mock).mockReturnValue('parent');
-
-            const { result } = renderHook(() => useGuardianGate(), { wrapper });
-
-            expect(result.current.isChildProfile).toBe(false);
-        });
-
-        it('should return isChildProfile=true when switched to child profile', () => {
-            (switchedProfileStore.use.isSwitchedProfile as Mock).mockReturnValue(true);
-            (switchedProfileStore.use.profileType as Mock).mockReturnValue('child');
-
-            const { result } = renderHook(() => useGuardianGate(), { wrapper });
-
-            expect(result.current.isChildProfile).toBe(true);
+        state.child = true;
+        state.childDid = 'did:example:child-a';
+        state.parentDid = 'did:example:parent';
+        state.privateKey = 'local-test-key';
+        state.hasPin.mockResolvedValue(false);
+        state.sign.mockImplementation(async ({ challenge }) => `signed:${challenge}`);
+        state.initWallet.mockResolvedValue({
+            invoke: { hasPin: state.hasPin, getDidAuthVp: state.sign },
         });
     });
+    afterEach(() => vi.useRealTimers());
 
-    describe('guardedAction - non-child profile passthrough', () => {
-        it('should execute action immediately for non-child profiles', async () => {
-            (switchedProfileStore.use.isSwitchedProfile as Mock).mockReturnValue(false);
-            (switchedProfileStore.use.profileType as Mock).mockReturnValue(null);
-
-            const action = vi.fn().mockResolvedValue(undefined);
-
-            const { result } = renderHook(() => useGuardianGate(), { wrapper });
-
-            await act(async () => {
-                await result.current.guardedAction(action);
-            });
-
-            expect(action).toHaveBeenCalledTimes(1);
-            expect(mockNewModal).not.toHaveBeenCalled();
-        });
-
-        it('should execute action immediately for parent profiles', async () => {
-            (switchedProfileStore.use.isSwitchedProfile as Mock).mockReturnValue(true);
-            (switchedProfileStore.use.profileType as Mock).mockReturnValue('parent');
-
-            const action = vi.fn().mockResolvedValue(undefined);
-
-            const { result } = renderHook(() => useGuardianGate(), { wrapper });
-
-            await act(async () => {
-                await result.current.guardedAction(action);
-            });
-
-            expect(action).toHaveBeenCalledTimes(1);
-            expect(mockNewModal).not.toHaveBeenCalled();
-        });
-
-        it('should execute action immediately for service profiles', async () => {
-            (switchedProfileStore.use.isSwitchedProfile as Mock).mockReturnValue(true);
-            (switchedProfileStore.use.profileType as Mock).mockReturnValue('service');
-
-            const action = vi.fn().mockResolvedValue(undefined);
-
-            const { result } = renderHook(() => useGuardianGate(), { wrapper });
-
-            await act(async () => {
-                await result.current.guardedAction(action);
-            });
-
-            expect(action).toHaveBeenCalledTimes(1);
-            expect(mockNewModal).not.toHaveBeenCalled();
-        });
+    it('does not gate adult actions', async () => {
+        state.child = false;
+        const action = vi.fn();
+        const { result } = renderHook(() => useGuardianGate());
+        await act(() => result.current.guardedAction(action));
+        expect(action).toHaveBeenCalledOnce();
+        expect(state.sign).not.toHaveBeenCalled();
     });
 
-    describe('guardedAction - skip option', () => {
-        it('should execute action immediately when skip=true regardless of profile type', async () => {
-            (switchedProfileStore.use.isSwitchedProfile as Mock).mockReturnValue(true);
-            (switchedProfileStore.use.profileType as Mock).mockReturnValue('child');
-            (currentUserStore.use.parentUserDid as Mock).mockReturnValue('did:example:parent');
-
-            const action = vi.fn().mockResolvedValue(undefined);
-
-            const { result } = renderHook(() => useGuardianGate({ skip: true }), { wrapper });
-
-            await act(async () => {
-                await result.current.guardedAction(action);
-            });
-
-            expect(action).toHaveBeenCalledTimes(1);
-            expect(mockNewModal).not.toHaveBeenCalled();
-        });
+    it('requires a signed approval even under the existing no-PIN policy', async () => {
+        const action = vi.fn();
+        const { result } = renderHook(() => useGuardianGate());
+        await act(() => result.current.guardedAction(action));
+        expect(action).toHaveBeenCalledOnce();
+        expect(getGuardianApprovalVP(state.childDid)).toContain(state.childDid);
+        expect(getGuardianApprovalVP('did:example:other-child')).toBeUndefined();
+        expect(getGuardianApprovalVP(undefined)).toBeUndefined();
+        await act(() => result.current.guardedAction(action));
+        expect(action).toHaveBeenCalledTimes(2);
+        expect(state.sign).toHaveBeenCalledOnce();
     });
 
-    describe('guardedAction - child profile gating', () => {
-        beforeEach(() => {
-            (switchedProfileStore.use.isSwitchedProfile as Mock).mockReturnValue(true);
-            (switchedProfileStore.use.profileType as Mock).mockReturnValue('child');
-            (currentUserStore.use.parentUserDid as Mock).mockReturnValue('did:example:parent');
-            mockInitWallet.mockResolvedValue({
-                invoke: {
-                    hasPin: vi.fn().mockResolvedValue(true),
-                },
-            });
-        });
-
-        it('should show PIN modal for child profile when action is triggered', async () => {
-            const action = vi.fn();
-
-            const { result } = renderHook(() => useGuardianGate(), { wrapper });
-
-            // Start the guarded action but don't await (modal will be shown)
-            act(() => {
-                result.current.guardedAction(action);
-            });
-
-            await waitFor(() => {
-                expect(mockNewModal).toHaveBeenCalledTimes(1);
-            });
-
-            // Action should not be called yet (waiting for PIN)
-            expect(action).not.toHaveBeenCalled();
-        });
-
-        it('should skip verification and execute action when no PIN is set', async () => {
-            mockInitWallet.mockResolvedValue({
-                invoke: {
-                    hasPin: vi.fn().mockResolvedValue(false),
-                },
-            });
-
-            const action = vi.fn();
-            const onVerified = vi.fn();
-
-            const { result } = renderHook(() => useGuardianGate({ onVerified }), { wrapper });
-
-            await act(async () => {
-                await result.current.guardedAction(action);
-            });
-
-            expect(action).toHaveBeenCalledTimes(1);
-            expect(onVerified).toHaveBeenCalled();
-            expect(mockNewModal).not.toHaveBeenCalled();
-        });
-
-        it('should call onCancel when parentDid is missing', async () => {
-            (currentUserStore.use.parentUserDid as Mock).mockReturnValue(null);
-            const onCancel = vi.fn();
-            const action = vi.fn();
-
-            const { result } = renderHook(() => useGuardianGate({ onCancel }), { wrapper });
-
-            await act(async () => {
-                await result.current.guardedAction(action);
-            });
-
-            expect(onCancel).toHaveBeenCalled();
-            expect(action).not.toHaveBeenCalled();
-        });
+    it('does not execute or cache approval when signing fails, and can retry', async () => {
+        state.sign.mockRejectedValueOnce(new Error('Signing unavailable'));
+        const action = vi.fn();
+        const verified = vi.fn();
+        const { result } = renderHook(() => useGuardianGate({ onVerified: verified }));
+        await expect(result.current.guardedAction(action)).rejects.toThrow(
+            'Could not create guardian approval'
+        );
+        expect(action).not.toHaveBeenCalled();
+        expect(verified).not.toHaveBeenCalled();
+        expect(getGuardianApprovalVP(state.childDid)).toBeUndefined();
+        await act(() => result.current.guardedAction(action));
+        expect(action).toHaveBeenCalledOnce();
+        expect(verified).toHaveBeenCalledOnce();
     });
 
-    describe('TTL verification caching', () => {
-        it('should return isGuardianVerified=false initially', () => {
-            (switchedProfileStore.use.isSwitchedProfile as Mock).mockReturnValue(true);
-            (switchedProfileStore.use.profileType as Mock).mockReturnValue('child');
-            (currentUserStore.use.parentUserDid as Mock).mockReturnValue('did:example:parent');
-
-            const { result } = renderHook(() => useGuardianGate(), { wrapper });
-
-            expect(result.current.isGuardianVerified).toBe(false);
-        });
-
-        it('should clear verification when clearVerification is called', () => {
-            (switchedProfileStore.use.isSwitchedProfile as Mock).mockReturnValue(true);
-            (switchedProfileStore.use.profileType as Mock).mockReturnValue('child');
-            (currentUserStore.use.parentUserDid as Mock).mockReturnValue('did:example:parent');
-
-            const { result } = renderHook(() => useGuardianGate(), { wrapper });
-
-            act(() => {
-                result.current.clearVerification();
-            });
-
-            expect(result.current.isGuardianVerified).toBe(false);
-        });
+    it('does not reuse another child’s verification when switching within one family', async () => {
+        const action = vi.fn();
+        const { result } = renderHook(() => useGuardianGate());
+        await act(() => result.current.guardedAction(action));
+        state.childDid = 'did:example:child-b';
+        await act(() => result.current.guardedAction(action));
+        expect(getGuardianApprovalVP('did:example:child-a')).toBeUndefined();
+        state.childDid = 'did:example:child-a';
+        await act(() => result.current.guardedAction(action));
+        expect(state.sign).toHaveBeenCalledTimes(3);
+        expect(action).toHaveBeenCalledTimes(3);
     });
 
-    describe('options callbacks', () => {
-        it('should accept onVerified callback', () => {
-            const onVerified = vi.fn();
-
-            const { result } = renderHook(() => useGuardianGate({ onVerified }), { wrapper });
-
-            expect(result.current.guardedAction).toBeDefined();
-        });
-
-        it('should accept custom verificationTTL', () => {
-            const customTTL = 10 * 60 * 1000; // 10 minutes
-
-            const { result } = renderHook(() => useGuardianGate({ verificationTTL: customTTL }), {
-                wrapper,
-            });
-
-            expect(result.current.guardedAction).toBeDefined();
-        });
+    it('requires signing again at expiry and after explicit clearing', async () => {
+        vi.useFakeTimers();
+        const action = vi.fn();
+        const { result } = renderHook(() => useGuardianGate({ verificationTTL: 1000 }));
+        await act(() => result.current.guardedAction(action));
+        vi.advanceTimersByTime(1000);
+        expect(getGuardianApprovalVP(state.childDid)).toBeUndefined();
+        await act(() => result.current.guardedAction(action));
+        act(() => result.current.clearVerification());
+        await act(() => result.current.guardedAction(action));
+        expect(state.sign).toHaveBeenCalledTimes(3);
     });
 
-    describe('hook return values', () => {
-        it('should return all expected properties', () => {
-            const { result } = renderHook(() => useGuardianGate(), { wrapper });
-
-            expect(result.current).toHaveProperty('guardedAction');
-            expect(result.current).toHaveProperty('isChildProfile');
-            expect(result.current).toHaveProperty('isGuardianVerified');
-            expect(result.current).toHaveProperty('clearVerification');
-
-            expect(typeof result.current.guardedAction).toBe('function');
-            expect(typeof result.current.isChildProfile).toBe('boolean');
-            expect(typeof result.current.isGuardianVerified).toBe('boolean');
-            expect(typeof result.current.clearVerification).toBe('function');
+    it('rejects a profile switch during signing without running the stale action', async () => {
+        state.sign.mockImplementationOnce(async () => {
+            state.childDid = 'did:example:child-b';
+            return 'signed-for-child-a';
         });
+        const action = vi.fn();
+        const { result } = renderHook(() => useGuardianGate());
+        await expect(result.current.guardedAction(action)).rejects.toThrow(
+            'Could not create guardian approval'
+        );
+        expect(action).not.toHaveBeenCalled();
+        expect(getGuardianApprovalVP('did:example:child-a')).toBeUndefined();
+        expect(getGuardianApprovalVP(state.childDid)).toBeUndefined();
+    });
+
+    it('settles the PIN-gated action with rejection when signing fails after verification', async () => {
+        state.hasPin.mockResolvedValue(true);
+        state.sign.mockRejectedValue(new Error('Signing unavailable'));
+        const action = vi.fn();
+        const { result } = renderHook(() => useGuardianGate());
+        const pending = result.current.guardedAction(action);
+        const rejection = expect(pending).rejects.toThrow('Could not create guardian approval');
+        await waitFor(() => expect(state.newModal).toHaveBeenCalledOnce());
+        expect(action).not.toHaveBeenCalled();
+        await act(() => state.newModal.mock.calls[0][0].props.handleOnSubmit());
+        await rejection;
+        expect(action).not.toHaveBeenCalled();
+        expect(
+            guardianApprovalStore.get.getApproval(state.parentDid, state.childDid)
+        ).toBeUndefined();
     });
 });

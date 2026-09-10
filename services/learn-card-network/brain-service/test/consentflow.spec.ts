@@ -22,6 +22,14 @@ import {
     SigningAuthority,
 } from '@models';
 import { testUnsignedBoost } from './helpers/send';
+import { BindParam, QueryBuilder } from 'neogma';
+import {
+    getContractTermsByUri,
+    getTransactionsForTerms,
+    hasGuardianApprovalHistory,
+} from '@accesslayer/consentflowcontract/relationships/read';
+import { consentToContract } from '@accesslayer/consentflowcontract/relationships/create';
+import { updateTerms } from '@accesslayer/consentflowcontract/relationships/update';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
@@ -204,9 +212,8 @@ describe('Consent Flow Contracts', () => {
             };
 
             // Simulating contract creation
-            const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract(
-                contractData
-            );
+            const contractUri =
+                await userA.clients.fullAuth.contracts.createConsentFlowContract(contractData);
 
             // Fetching the created contract
             const contract = await userA.clients.fullAuth.contracts.getConsentFlowContract({
@@ -225,9 +232,8 @@ describe('Consent Flow Contracts', () => {
                 contract: minimalContract,
             };
 
-            const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract(
-                contractData
-            );
+            const contractUri =
+                await userA.clients.fullAuth.contracts.createConsentFlowContract(contractData);
 
             const contract = await userA.clients.fullAuth.contracts.getConsentFlowContract({
                 uri: contractUri,
@@ -244,9 +250,8 @@ describe('Consent Flow Contracts', () => {
                 contract: minimalContract,
             };
 
-            const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract(
-                contractData
-            );
+            const contractUri =
+                await userA.clients.fullAuth.contracts.createConsentFlowContract(contractData);
 
             const contract = await userA.clients.fullAuth.contracts.getConsentFlowContract({
                 uri: contractUri,
@@ -263,9 +268,8 @@ describe('Consent Flow Contracts', () => {
                 contract: minimalContract,
             };
 
-            const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract(
-                contractData
-            );
+            const contractUri =
+                await userA.clients.fullAuth.contracts.createConsentFlowContract(contractData);
 
             const contract = await userA.clients.fullAuth.contracts.getConsentFlowContract({
                 uri: contractUri,
@@ -282,9 +286,8 @@ describe('Consent Flow Contracts', () => {
                 contract: minimalContract,
             };
 
-            const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract(
-                contractData
-            );
+            const contractUri =
+                await userA.clients.fullAuth.contracts.createConsentFlowContract(contractData);
 
             const contract = await userA.clients.fullAuth.contracts.getConsentFlowContract({
                 uri: contractUri,
@@ -300,9 +303,8 @@ describe('Consent Flow Contracts', () => {
                 contract: minimalContract,
             };
 
-            const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract(
-                contractData
-            );
+            const contractUri =
+                await userA.clients.fullAuth.contracts.createConsentFlowContract(contractData);
 
             const contract = await userA.clients.fullAuth.contracts.getConsentFlowContract({
                 uri: contractUri,
@@ -319,9 +321,8 @@ describe('Consent Flow Contracts', () => {
             };
 
             // Simulating contract creation
-            const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract(
-                contractData
-            );
+            const contractUri =
+                await userA.clients.fullAuth.contracts.createConsentFlowContract(contractData);
 
             // Fetching the created contract
             const contract = await userA.clients.fullAuth.contracts.getConsentFlowContract({
@@ -974,6 +975,278 @@ describe('Consent Flow Contracts', () => {
             });
 
             expect(withdrawnData.records).toEqual([]);
+        });
+
+        it('honors category grants without a root sharing flag and rejects malformed category expiry', async () => {
+            const initial = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                did: userBDid,
+            });
+            const terms = structuredClone(normalFullTerms);
+            delete terms.read.credentials.sharing;
+            terms.read.credentials.categories.Achievement!.shareUntil = '';
+            terms.read.credentials.categories.ID!.shareUntil = 'not-a-date';
+            await userB.clients.fullAuth.contracts.updateConsentedContractTerms({
+                uri: initial.records[0]!.termsUri,
+                terms,
+            });
+            const data = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                did: userBDid,
+            });
+            expect(data.records[0]?.credentials).toEqual([
+                { category: 'Achievement', uri: 'achievement1' },
+                { category: 'Achievement', uri: 'achievement2' },
+            ]);
+        });
+
+        it('stores initial guardian approval with its consent snapshot and clears it on unapproved reconsent', async () => {
+            const initial = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                did: userBDid,
+            });
+            const relationship = (await getContractTermsByUri(initial.records[0]!.termsUri))!;
+            await ConsentFlowTerms.delete({ detach: true, where: { id: relationship.terms.id } });
+            await Profile.relateTo({
+                alias: 'managedBy',
+                where: { source: { profileId: 'userb' }, target: { profileId: 'userc' } },
+            });
+            const approval = {
+                guardianProfileId: 'userc',
+                guardianDid: userC.learnCard.id.did(),
+                approvedAt: new Date().toISOString(),
+                contractUpdatedAt: relationship.contract.updatedAt,
+            };
+            await consentToContract(
+                relationship.consenter,
+                relationship,
+                { terms: normalFullTerms, guardianApproval: approval },
+                'localhost%3A3000'
+            );
+            const approved = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                did: userBDid,
+            });
+            expect(approved.records[0]?.guardian).toEqual({
+                required: true,
+                approved: true,
+                approval,
+            });
+            const current = (await getContractTermsByUri(approved.records[0]!.termsUri))!;
+            expect(current.terms.guardianApproval).toEqual(approval);
+            const transactions = await getTransactionsForTerms(current.terms.id, { limit: 10 });
+            expect(transactions[0]).toMatchObject({
+                action: 'consent',
+                guardianApproval: approval,
+                terms: normalFullTerms,
+            });
+
+            await consentToContract(
+                current.consenter,
+                current,
+                { terms: normalAchievementOnlyTerms },
+                'localhost%3A3000'
+            );
+            const reconsented = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                did: userBDid,
+            });
+            expect(reconsented.records[0]?.guardian).toEqual({ required: true, approved: false });
+            expect(reconsented.records[0]?.terms).toEqual(normalAchievementOnlyTerms);
+            expect(reconsented.records[0]?.createdAt).toBe(approved.records[0]?.createdAt);
+        });
+
+        it.each(['terms', 'contract'] as const)(
+            'filters %s expiry without treating empty expiry as an expired grant',
+            async target => {
+                const initial = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                    did: userBDid,
+                });
+                const relationship = (await getContractTermsByUri(initial.records[0]!.termsUri))!;
+                const model = target === 'terms' ? ConsentFlowTerms : ConsentFlowContract;
+                const id = relationship[target].id;
+
+                for (const [expiresAt, active] of [
+                    [null, true],
+                    ['', true],
+                    ['   ', true],
+                    ['2999-01-01T00:00:00.000Z', true],
+                    ['2000-01-01T00:00:00.000Z', false],
+                    ['not-a-date', false],
+                ] as const) {
+                    await new QueryBuilder(new BindParam({ expiresAt }))
+                        .match({ model, identifier: 'record', where: { id } })
+                        .set('record.expiresAt = $expiresAt')
+                        .run();
+                    const data = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                        did: userBDid,
+                    });
+                    expect(data.records).toHaveLength(active ? 1 : 0);
+                    if (active && !expiresAt?.trim()) {
+                        expect(data.records[0]?.expiresAt).toBeUndefined();
+                        expect(data.records[0]?.contractExpiresAt).toBeUndefined();
+                    }
+                }
+            }
+        );
+
+        it('preserves original adult grant metadata through permission updates and legacy timestamps', async () => {
+            const initial = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                did: userBDid,
+            });
+            const original = initial.records[0]!;
+            const relationship = (await getContractTermsByUri(original.termsUri))!;
+            await ConsentFlowContract.update(
+                {
+                    reasonForAccessing: 'Personalized learning',
+                    expiresAt: '2999-01-01T00:00:00.000Z',
+                },
+                { where: { id: relationship.contract.id } }
+            );
+            await userB.clients.fullAuth.contracts.updateConsentedContractTerms({
+                uri: original.termsUri,
+                terms: normalAchievementOnlyTerms,
+            });
+            const updated = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                did: userBDid,
+            });
+            expect(updated.records[0]).toMatchObject({
+                createdAt: original.createdAt,
+                contractUpdatedAt: relationship.contract.updatedAt,
+                contractExpiresAt: '2999-01-01T00:00:00.000Z',
+                reasonForAccessing: 'Personalized learning',
+                guardian: { required: false, approved: false },
+                terms: normalAchievementOnlyTerms,
+            });
+            expect(Date.parse(updated.records[0]!.date)).toBeGreaterThanOrEqual(
+                Date.parse(original.date)
+            );
+
+            await new QueryBuilder()
+                .match({
+                    model: ConsentFlowTerms,
+                    identifier: 'terms',
+                    where: { id: relationship.terms.id },
+                })
+                .set('terms.createdAt = null')
+                .run();
+            const legacy = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                did: userBDid,
+            });
+            expect(legacy.records[0]?.createdAt).toBe(original.createdAt);
+            expect(legacy.records[0]?.guardian).toEqual({ required: false, approved: false });
+        });
+
+        it('does not invent guardian approval for legacy managed grants or accept it in client terms', async () => {
+            const initial = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                did: userBDid,
+            });
+            const original = initial.records[0]!;
+            const termsWithClientMetadata = {
+                ...normalFullTerms,
+                guardianApproval: {
+                    guardianProfileId: 'userc',
+                    guardianDid: userC.learnCard.id.did(),
+                    approvedAt: new Date().toISOString(),
+                    contractUpdatedAt: original.contractUpdatedAt,
+                },
+            };
+            await userB.clients.fullAuth.contracts.updateConsentedContractTerms({
+                uri: original.termsUri,
+                terms: termsWithClientMetadata,
+            });
+            await Profile.relateTo({
+                alias: 'managedBy',
+                where: { source: { profileId: 'userb' }, target: { profileId: 'userc' } },
+            });
+            const managed = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                did: userBDid,
+            });
+            expect(managed.records[0]?.guardian).toEqual({ required: true, approved: false });
+            expect(
+                (await getContractTermsByUri(original.termsUri))?.terms.guardianApproval
+            ).toBeUndefined();
+
+            const adult = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                did: (await userC.clients.fullAuth.profile.getProfile())!.did,
+            });
+            expect(adult.records[0]?.guardian).toEqual({ required: false, approved: false });
+        });
+
+        it('snapshots guardian consent, invalidates changed contracts and removed managers, and retains child history when cleared', async () => {
+            const initial = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                did: userBDid,
+            });
+            const relationship = (await getContractTermsByUri(initial.records[0]!.termsUri))!;
+            await Profile.relateTo({
+                alias: 'managedBy',
+                where: { source: { profileId: 'userb' }, target: { profileId: 'userc' } },
+            });
+            const approval = {
+                guardianProfileId: 'userc',
+                guardianDid: userC.learnCard.id.did(),
+                approvedAt: new Date().toISOString(),
+                contractUpdatedAt: relationship.contract.updatedAt,
+            };
+            await consentToContract(
+                relationship.consenter,
+                relationship,
+                { terms: normalFullTerms, guardianApproval: approval },
+                'localhost%3A3000'
+            );
+            const approved = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                did: userBDid,
+            });
+            expect(approved.records[0]?.guardian).toEqual({
+                required: true,
+                approved: true,
+                approval,
+            });
+            const transactions = await getTransactionsForTerms(relationship.terms.id, {
+                limit: 10,
+            });
+            expect(
+                transactions.find(transaction => transaction.guardianApproval)?.guardianApproval
+            ).toEqual(approval);
+
+            await ConsentFlowContract.update(
+                { updatedAt: '2999-01-01T00:00:00.000Z' },
+                { where: { id: relationship.contract.id } }
+            );
+            const revised = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                did: userBDid,
+            });
+            expect(revised.records[0]?.guardian).toEqual({
+                required: true,
+                approved: false,
+                approval,
+            });
+
+            await ConsentFlowContract.update(
+                { updatedAt: relationship.contract.updatedAt },
+                { where: { id: relationship.contract.id } }
+            );
+            await Profile.delete({ detach: true, where: { profileId: 'userc' } });
+            const unmanaged = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                did: userBDid,
+            });
+            expect(unmanaged.records[0]?.guardian).toEqual({
+                required: true,
+                approved: false,
+                approval,
+            });
+
+            const current = (await getContractTermsByUri(initial.records[0]!.termsUri))!;
+            await updateTerms(current, { terms: normalAchievementOnlyTerms }, 'localhost%3A3000');
+            const cleared = (await getContractTermsByUri(initial.records[0]!.termsUri))!;
+            expect(cleared.terms.guardianApproval).toBeUndefined();
+            expect(await hasGuardianApprovalHistory(cleared.terms)).toBe(true);
+            const historical = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                did: userBDid,
+            });
+            expect(historical.records[0]?.guardian).toEqual({ required: true, approved: false });
+            const history = await getTransactionsForTerms(relationship.terms.id, { limit: 10 });
+            expect(
+                history.find(transaction => transaction.action === 'update')?.guardianApproval
+            ).toBeUndefined();
+            expect(
+                history.find(transaction => transaction.guardianApproval)?.guardianApproval
+            ).toEqual(approval);
         });
 
         it('should error for non-existent did', async () => {
@@ -1991,7 +2264,7 @@ describe('Consent Flow Contracts', () => {
                     contractUri,
                     terms: normalFullTerms, // No deniedWriters
                 });
-            let credentialsAfterInitialConsent =
+            const credentialsAfterInitialConsent =
                 await userB.clients.fullAuth.contracts.getCredentialsForContract({
                     termsUri: initialTermsUri,
                 });
@@ -2106,7 +2379,7 @@ describe('Consent Flow Contracts', () => {
                 contractUri,
                 terms: normalFullTerms, // No deniedWriters
             });
-            let credentialsAfterInitialConsent =
+            const credentialsAfterInitialConsent =
                 await userB.clients.fullAuth.contracts.getCredentialsForContract({ termsUri });
             // Should have boosts from both A and C
             expect(credentialsAfterInitialConsent.records).toHaveLength(2);
@@ -2251,7 +2524,7 @@ describe('Consent Flow Contracts', () => {
                     )
             );
 
-            for (let contractUri of uris) {
+            for (const contractUri of uris) {
                 await userB.clients.fullAuth.contracts.consentToContract({
                     contractUri,
                     terms: minimalTerms,
@@ -2518,8 +2791,8 @@ describe('Consent Flow Contracts', () => {
                             Achievement: {
                                 ...normalFullTerms.read.credentials.categories.Achievement,
                                 shared: [
-                                    ...normalFullTerms.read.credentials.categories.Achievement
-                                        ?.shared!,
+                                    ...(normalFullTerms.read.credentials.categories.Achievement
+                                        ?.shared ?? []),
                                     'another!',
                                 ],
                             },
