@@ -40,11 +40,17 @@ const renderModal = (
         existingMethods: [],
         maskedRecoveryEmail: null,
         onSetupPasskey: vi.fn().mockResolvedValue('credential-id'),
-        onGeneratePhrase: vi.fn().mockResolvedValue('one two three'),
+        onGeneratePhrase: vi.fn().mockResolvedValue({
+            phrase: 'one two three',
+            challengeWordIndices: [0, 2],
+        }),
+        onConfirmPhrase: vi.fn().mockResolvedValue(undefined),
         onSetupBackup: vi.fn().mockResolvedValue('{}'),
+        onConfirmBackup: vi.fn().mockResolvedValue(undefined),
         onAddRecoveryEmail: vi.fn().mockResolvedValue(undefined),
         onVerifyRecoveryEmail: vi.fn().mockResolvedValue({ maskedEmail: 'r***@example.com' }),
         onSetupEmailRecovery: vi.fn().mockResolvedValue(undefined),
+        onConfirmEmailRecovery: vi.fn().mockResolvedValue(undefined),
         onClose: vi.fn(),
     };
 
@@ -90,8 +96,9 @@ describe('RecoverySetupModal prompt integration', () => {
     });
 
     it('waits for backup download confirmation before reporting completion', async () => {
-        const createObjectURL = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:backup');
-        const revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+        const createObjectURL = vi.fn().mockReturnValue('blob:backup');
+        const revokeObjectURL = vi.fn();
+        vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
         const anchorClick = vi
             .spyOn(HTMLAnchorElement.prototype, 'click')
             .mockImplementation(() => {});
@@ -109,11 +116,17 @@ describe('RecoverySetupModal prompt integration', () => {
         expect(onCompleted).not.toHaveBeenCalled();
 
         fireEvent.click(screen.getByRole('button', { name: 'Download Backup File' }));
-        fireEvent.click(screen.getByRole('button', { name: "I've Saved It Somewhere Safe" }));
+        fireEvent.change(screen.getByPlaceholderText('Type it again'), {
+            target: { value: 'secure-password' },
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'Verify Backup File' }));
 
+        expect(onCompleted).not.toHaveBeenCalled();
+        await waitFor(() =>
+            expect(props.onConfirmBackup).toHaveBeenCalledWith('{}', 'secure-password')
+        );
         expect(onCompleted).toHaveBeenCalledWith('backup');
-        createObjectURL.mockRestore();
-        revokeObjectURL.mockRestore();
+        vi.unstubAllGlobals();
         anchorClick.mockRestore();
     });
 
@@ -138,6 +151,14 @@ describe('RecoverySetupModal prompt integration', () => {
 
         fireEvent.click(screen.getByRole('button', { name: 'Send Recovery Key' }));
         await waitFor(() => expect(props.onSetupEmailRecovery).toHaveBeenCalledOnce());
+        expect(onCompleted).not.toHaveBeenCalled();
+
+        fireEvent.change(screen.getByPlaceholderText('123456'), {
+            target: { value: '654321' },
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'Confirm Recovery Key' }));
+
+        await waitFor(() => expect(props.onConfirmEmailRecovery).toHaveBeenCalledWith('654321'));
         expect(onCompleted).toHaveBeenCalledWith('email');
     });
 });

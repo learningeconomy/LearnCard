@@ -89,7 +89,8 @@ import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
 const DashboardPage: React.FC = () => {
     const history = useHistory();
     const { track } = useAnalytics();
-    const { capabilities, recoveryMethodCount, openRecoverySetup } = useAppAuth();
+    const { capabilities, recoveryMethodCount, recoveryActivationPending, openRecoverySetup } =
+        useAppAuth();
     const { getIconSet, getColorSet } = useTheme();
     const brandingConfig = useBrandingConfig();
     const sideMenuIcons = getIconSet(IconSetEnum.sideMenu);
@@ -206,7 +207,7 @@ const DashboardPage: React.FC = () => {
         const skillsMap = mapBoostsToSkills(skillsCredentials, globalSkillFrameworkIds);
         const categorizedSkills = Object.entries(skillsMap) as [
             string,
-            RawCategorizedEntry[] & { totalSkills: number; totalSubskills: number }
+            RawCategorizedEntry[] & { totalSkills: number; totalSubskills: number },
         ][];
         const aggregatedSkills = aggregateCategorizedEntries(categorizedSkills);
 
@@ -537,6 +538,7 @@ const DashboardPage: React.FC = () => {
         recoveryPrompt: {
             recoverySupported: capabilities.recovery,
             recoveryMethodCount,
+            activationPending: recoveryActivationPending,
             totalCredentialCount,
             onSetup: openRecoverySetup,
         },

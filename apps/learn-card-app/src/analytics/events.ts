@@ -663,10 +663,7 @@ export interface AnalyticsEventPayloads {
         agent: string;
         tier: 'low' | 'medium' | 'high';
         cappedAt:
-            | 'per-invocation'
-            | 'per-learner-daily'
-            | 'per-learner-monthly'
-            | 'per-tenant-monthly';
+            'per-invocation' | 'per-learner-daily' | 'per-learner-monthly' | 'per-tenant-monthly';
     };
 
     [AnalyticsEvents.PATHWAYS_LEARNER_COST_SNAPSHOT]: {
@@ -837,12 +834,7 @@ export interface AnalyticsEventPayloads {
         outcome: 'succeeded' | 'failed';
         duration_ms: number;
         error_kind?:
-            | 'format_gap'
-            | 'trust_gap'
-            | 'transport'
-            | 'request_invalid'
-            | 'wallet'
-            | 'unknown';
+            'format_gap' | 'trust_gap' | 'transport' | 'request_invalid' | 'wallet' | 'unknown';
         counterparty?: string;
     };
 
@@ -870,12 +862,7 @@ export interface AnalyticsEventPayloads {
         transport_retries: number;
         trust_gaps_accepted: number;
         final_error_kind?:
-            | 'format_gap'
-            | 'trust_gap'
-            | 'transport'
-            | 'request_invalid'
-            | 'wallet'
-            | 'unknown';
+            'format_gap' | 'trust_gap' | 'transport' | 'request_invalid' | 'wallet' | 'unknown';
         counterparty?: string;
         total_duration_ms: number;
     };
@@ -1137,12 +1124,7 @@ export interface AnalyticsEventPayloads {
         counterparty?: string;
         error_code?: string;
         error_kind?:
-            | 'format_gap'
-            | 'trust_gap'
-            | 'transport'
-            | 'request_invalid'
-            | 'wallet'
-            | 'unknown';
+            'format_gap' | 'trust_gap' | 'transport' | 'request_invalid' | 'wallet' | 'unknown';
         total_attempts?: number;
         duration_ms?: number;
     };
