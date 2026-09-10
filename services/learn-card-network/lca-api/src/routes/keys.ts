@@ -623,6 +623,7 @@ export const keysRouter = t.router({
                     keyProvider: z.enum(['web3auth', 'sss']),
                     shareVersion: z.number(),
                     maskedRecoveryEmail: z.string().nullable(),
+                    escrowOptedOut: z.boolean(),
                     sssActivationState: z.enum(['provisional', 'active']),
                 })
                 .nullable()
@@ -694,6 +695,7 @@ export const keysRouter = t.router({
                     ? maskEmail(userKey.recoveryEmail)
                     : null,
                 sssActivationState: getSssActivationState(userKey),
+                escrowOptedOut: Boolean(userKey.escrowOptedOutAt),
             };
         }),
 
