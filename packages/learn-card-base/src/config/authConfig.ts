@@ -32,6 +32,8 @@ export interface AuthConfig {
  */
 export interface SSSConfig {
     serverUrl: string;
+    escrowRelayPublicKey: string;
+    escrowRelayKeyId: string;
     enableEmailBackupShare: boolean;
     requireEmailForPhoneUsers: boolean;
 }
@@ -113,6 +115,8 @@ export const getAuthConfig = (): AuthConfig => {
     providerConfig.sss = {
         ...sss,
         serverUrl: (sss.serverUrl as string | undefined) ?? 'http://localhost:5100/api',
+        escrowRelayPublicKey: (sss.escrowRelayPublicKey as string | undefined) ?? '',
+        escrowRelayKeyId: (sss.escrowRelayKeyId as string | undefined) ?? '',
         enableEmailBackupShare: (sss.enableEmailBackupShare as boolean | undefined) ?? true,
         requireEmailForPhoneUsers: (sss.requireEmailForPhoneUsers as boolean | undefined) ?? true,
     };
@@ -136,6 +140,8 @@ export const getSSSConfig = (): SSSConfig => {
 
     return {
         serverUrl: (sss.serverUrl as string) ?? 'http://localhost:5100/api',
+        escrowRelayPublicKey: (sss.escrowRelayPublicKey as string) ?? '',
+        escrowRelayKeyId: (sss.escrowRelayKeyId as string) ?? '',
         enableEmailBackupShare: (sss.enableEmailBackupShare as boolean) ?? true,
         requireEmailForPhoneUsers: (sss.requireEmailForPhoneUsers as boolean) ?? true,
     };

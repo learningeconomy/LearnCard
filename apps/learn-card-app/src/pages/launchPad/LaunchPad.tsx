@@ -406,7 +406,10 @@ const LaunchPad: React.FC = () => {
                                                             }
                                                             values={{ query: searchInput }}
                                                             components={[
-                                                                <span className="text-black italic" />,
+                                                                <span
+                                                                    key="query"
+                                                                    className="text-black italic"
+                                                                />,
                                                             ]}
                                                         />
                                                     </p>

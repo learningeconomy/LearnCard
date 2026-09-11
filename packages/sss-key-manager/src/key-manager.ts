@@ -21,11 +21,7 @@ import {
     deleteDeviceShare,
     clearAllShares,
 } from './storage';
-import {
-    encryptWithPassword,
-    decryptWithPassword,
-    generateEd25519PrivateKey,
-} from './crypto';
+import { encryptWithPassword, decryptWithPassword, generateEd25519PrivateKey } from './crypto';
 
 import {
     createPasskeyCredential,
@@ -33,11 +29,9 @@ import {
     decryptShareWithPasskey,
 } from './passkey';
 
-import {
-    shareToRecoveryPhrase,
-    recoveryPhraseToShare,
-} from './recovery-phrase';
+import { shareToRecoveryPhrase, recoveryPhraseToShare } from './recovery-phrase';
 
+/** @deprecated Use `createSSSStrategy` with AuthCoordinator. */
 export class SSSKeyManager implements SSSKeyDerivationProvider {
     readonly name = 'sss';
 
@@ -318,6 +312,7 @@ export class SSSKeyManager implements SSSKeyDerivationProvider {
     }
 }
 
+/** @deprecated Use `createSSSStrategy` with AuthCoordinator. */
 export function createSSSKeyManager(config: SSSKeyManagerConfig): SSSKeyManager {
     return new SSSKeyManager(config);
 }

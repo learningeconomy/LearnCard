@@ -39,6 +39,8 @@ import {
     getGuardianRejectedCredentialSubject,
     EmailVerification,
     getEmailVerificationSubject,
+    AccountSignInChanged,
+    getAccountSignInChangedSubject,
 } from './templates';
 
 import type {
@@ -53,6 +55,7 @@ import type {
     GuardianEmailOtpProps,
     GuardianRejectedCredentialProps,
     EmailVerificationProps,
+    AccountSignInChangedProps,
 } from './templates';
 
 // ---------------------------------------------------------------------------
@@ -146,6 +149,9 @@ export interface TemplateDataMap {
 
     /** Sent to student: guardian rejected credential */
     'guardian-rejected-credential': GuardianRejectedCredentialData;
+
+    /** lca-api: lost-login identity rebind security notification */
+    'account-sign-in-changed': AccountSignInChangedData;
 }
 
 export type TemplateId = keyof TemplateDataMap;
@@ -184,6 +190,7 @@ export interface AccountApprovedData {
 
 export interface RecoveryKeyData {
     recoveryKey: string;
+    confirmationCode: string;
 }
 
 export interface EndorsementRequestData {
@@ -222,6 +229,8 @@ export interface GuardianRejectedCredentialData {
     credential?: { name?: string };
     recipient?: { email?: string };
 }
+
+export type AccountSignInChangedData = Record<string, never>;
 
 // ---------------------------------------------------------------------------
 // renderEmail()
@@ -417,6 +426,15 @@ function buildElement(
             return {
                 element: React.createElement(GuardianRejectedCredential, props),
                 subject: getGuardianRejectedCredentialSubject(branding, locale),
+            };
+        }
+
+        case 'account-sign-in-changed': {
+            const props: AccountSignInChangedProps = { branding, locale };
+
+            return {
+                element: React.createElement(AccountSignInChanged, props),
+                subject: getAccountSignInChangedSubject(branding, locale),
             };
         }
 

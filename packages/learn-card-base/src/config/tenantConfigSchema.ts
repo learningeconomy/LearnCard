@@ -57,6 +57,8 @@ export const tenantFirebaseConfigSchema = z
 export const tenantSSSConfigSchema = z
     .object({
         serverUrl: urlOrPlaceholder().default('https://api.learncard.app/trpc'),
+        escrowRelayPublicKey: z.string().default(''),
+        escrowRelayKeyId: z.string().default(''),
         enableEmailBackupShare: z.boolean().default(true),
         requireEmailForPhoneUsers: z.boolean().default(true),
     })

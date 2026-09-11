@@ -20,8 +20,8 @@ import crypto from 'crypto';
 
 import { t, openRoute } from '@routes';
 import cache from '@cache';
-import { verifyAuthToken, getContactMethodFromUser, AuthProviderType } from '@helpers/auth.helpers';
-import { findUserKeyByContactMethod } from '@models';
+import { verifyAuthToken, AuthProviderType } from '@helpers/auth.helpers';
+import { findUserKeyByAuthProvider } from '@models';
 import { sendPushNotification } from '@helpers/pushNotifications.helpers';
 
 // ---------------------------------------------------------------------------
@@ -40,13 +40,13 @@ const CODE_PREFIX = 'qr-login:code:';
 const RATE_PREFIX = 'qr-login:rate:';
 
 /** Rate limiting */
-const CREATE_RATE_LIMIT = 10;       // max session creations per window
-const CREATE_RATE_WINDOW = 600;     // 10-minute window (seconds)
-const LOOKUP_RATE_LIMIT = 20;       // max lookups per window
-const LOOKUP_RATE_WINDOW = 60;      // 1-minute window (seconds)
-const APPROVE_RATE_LIMIT = 5;       // max approve attempts per session
-const NOTIFY_RATE_LIMIT = 3;        // max notify calls per window
-const NOTIFY_RATE_WINDOW = 300;     // 5-minute window (seconds)
+const CREATE_RATE_LIMIT = 10; // max session creations per window
+const CREATE_RATE_WINDOW = 600; // 10-minute window (seconds)
+const LOOKUP_RATE_LIMIT = 20; // max lookups per window
+const LOOKUP_RATE_WINDOW = 60; // 1-minute window (seconds)
+const APPROVE_RATE_LIMIT = 5; // max approve attempts per session
+const NOTIFY_RATE_LIMIT = 3; // max notify calls per window
+const NOTIFY_RATE_WINDOW = 300; // 5-minute window (seconds)
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -149,7 +149,9 @@ export const qrLoginRouter = t.router({
             // Rate limit by IP — max 10 sessions per 10 minutes
             const clientIp = ctx.clientIp ?? 'unknown';
 
-            if (!(await checkRateLimit(`create:${clientIp}`, CREATE_RATE_LIMIT, CREATE_RATE_WINDOW))) {
+            if (
+                !(await checkRateLimit(`create:${clientIp}`, CREATE_RATE_LIMIT, CREATE_RATE_WINDOW))
+            ) {
                 throw new Error('Too many session requests. Please try again later.');
             }
 
@@ -215,7 +217,13 @@ export const qrLoginRouter = t.router({
             if (/^\d{8}$/.test(input.lookup)) {
                 const clientIp = ctx.clientIp ?? 'unknown';
 
-                if (!(await checkRateLimit(`lookup:${clientIp}`, LOOKUP_RATE_LIMIT, LOOKUP_RATE_WINDOW))) {
+                if (
+                    !(await checkRateLimit(
+                        `lookup:${clientIp}`,
+                        LOOKUP_RATE_LIMIT,
+                        LOOKUP_RATE_WINDOW
+                    ))
+                ) {
                     throw new Error('Too many lookup attempts. Please try again later.');
                 }
             }
@@ -281,7 +289,13 @@ export const qrLoginRouter = t.router({
         .output(z.object({ success: z.boolean() }))
         .mutation(async ({ input, ctx: _ctx }) => {
             // Rate limit approve attempts per session to prevent brute-force
-            if (!(await checkRateLimit(`approve:${input.sessionId}`, APPROVE_RATE_LIMIT, SESSION_TTL_SECONDS))) {
+            if (
+                !(await checkRateLimit(
+                    `approve:${input.sessionId}`,
+                    APPROVE_RATE_LIMIT,
+                    SESSION_TTL_SECONDS
+                ))
+            ) {
                 throw new Error('Too many approve attempts for this session.');
             }
 
@@ -326,7 +340,7 @@ export const qrLoginRouter = t.router({
                 method: 'POST',
                 path: '/qr-login/notify',
                 tags: ['QR Login'],
-                summary: 'Send a device link push notification to the user\'s other devices',
+                summary: "Send a device link push notification to the user's other devices",
             },
         })
         .input(
@@ -347,21 +361,25 @@ export const qrLoginRouter = t.router({
         .output(z.object({ sent: z.boolean(), deviceCount: z.number() }))
         .mutation(async ({ input, ctx: _ctx }) => {
             // Rate limit notify calls per session
-            if (!(await checkRateLimit(`notify:${input.sessionId}`, NOTIFY_RATE_LIMIT, NOTIFY_RATE_WINDOW))) {
+            if (
+                !(await checkRateLimit(
+                    `notify:${input.sessionId}`,
+                    NOTIFY_RATE_LIMIT,
+                    NOTIFY_RATE_WINDOW
+                ))
+            ) {
                 return { sent: false, deviceCount: 0 };
             }
 
             // Verify the auth token and get the user
-            const user = await verifyAuthToken(input.authToken, input.providerType as AuthProviderType);
+            const user = await verifyAuthToken(
+                input.authToken,
+                input.providerType as AuthProviderType
+            );
 
-            const contactMethod = getContactMethodFromUser(user);
-
-            if (!contactMethod) {
-                throw new Error('User must have an email or phone number');
-            }
-
-            // Look up the user's DID from their key record
-            const userKey = await findUserKeyByContactMethod(contactMethod);
+            // Provider identity is immutable; a recycled contact method must
+            // never receive notifications for a previous owner's DID.
+            const userKey = await findUserKeyByAuthProvider(input.providerType, user.id);
 
             if (!userKey?.primaryDid) {
                 return { sent: false, deviceCount: 0 };

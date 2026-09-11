@@ -43,18 +43,33 @@ When the device share is lost (new device, cleared storage), the private key is 
 
 Three methods are supported. Each encrypts the **recovery share** differently.
 
-| Method | Storage | User Input | Encryption |
-|---|---|---|---|
-| **Passkey** | Server (encrypted recovery share) | Biometric/FIDO2 auth | WebAuthn PRF → AES-GCM |
-| **Phrase** | User writes down 25 words | 25-word mnemonic | Direct encoding (`shareToRecoveryPhrase`) |
-| **Backup File** | User downloads `.json` file | File + password | `encryptWithPassword` (Argon2id KDF → AES-GCM) |
+| Method          | Storage                           | User Input           | Encryption                                     |
+| --------------- | --------------------------------- | -------------------- | ---------------------------------------------- |
+| **Passkey**     | Server (encrypted recovery share) | Biometric/FIDO2 auth | WebAuthn PRF → AES-GCM                         |
+| **Phrase**      | User writes down 25 words         | 25-word mnemonic     | Direct encoding (`shareToRecoveryPhrase`)      |
+| **Backup File** | User downloads `.json` file       | File + password      | `encryptWithPassword` (Argon2id KDF → AES-GCM) |
+
+### Email recovery relay and residual risk
+
+For email recovery, the client encrypts the versioned recovery share, target email, tenant
+branding, and a client-generated confirmation code to a pinned relay public key using ephemeral
+P-256 ECDH, HKDF-SHA-256, and AES-256-GCM. `lca-api` proxies only the authenticated ciphertext
+and records the pending method after the isolated relay reports synchronous Postmark acceptance;
+it never receives the share. The confirmation code is also sent separately to `lca-api` so the
+existing HMAC hash, expiry, and attempt-limit checks remain authoritative. This means a compromised
+`lca-api` can interfere with enrollment metadata or the code lifecycle, but cannot decrypt or
+redirect the recovery share because the recipient is authenticated inside the ciphertext.
+
+The relay is still a **transient share holder while decrypting**, and Postmark plus the recipient's
+mailbox retain the plaintext email. Email recovery is therefore a bridge, not enclave-grade escrow;
+it should be retired when enclave-backed recovery is available.
 
 ### Server endpoints for recovery
 
-| Endpoint | Method | Description |
-|---|---|---|
-| `GET /keys/recovery?type=<type>&providerType=<p>&authToken=<t>` | GET | Fetch encrypted recovery share |
-| `POST /keys/recovery` | POST | Store new encrypted recovery share |
+| Endpoint                                                                                 | Method | Description                        |
+| ---------------------------------------------------------------------------------------- | ------ | ---------------------------------- |
+| `GET /keys/recovery?type=<type>&providerType=<p>` (auth token via `X-Auth-Token` header) | GET    | Fetch encrypted recovery share     |
+| `POST /keys/recovery`                                                                    | POST   | Store new encrypted recovery share |
 
 ---
 
@@ -66,8 +81,8 @@ After a new user completes first-time setup (`needs_setup` → `ready`), the LCA
 
 1. A `sawNeedsSetupRef` tracks whether the coordinator passed through `needs_setup`
 2. Once the wallet initializes (`ready` + wallet created), check:
-   - Did the coordinator pass through `needs_setup`?
-   - Does the user have 0 recovery methods?
+    - Did the coordinator pass through `needs_setup`?
+    - Does the user have 0 recovery methods?
 3. If both true → show `RecoverySetupModal`
 
 ### `useRecoverySetup` hook
@@ -109,10 +124,10 @@ sequenceDiagram
 
 ```ts
 const {
-    getRecoveryMethods,      // (authProvider) => Promise<RecoveryMethodInfo[]>
-    addPasskeyRecovery,      // (authProvider, privateKey) => Promise<string> (credentialId)
-    generateRecoveryPhrase,  // (privateKey, authProvider?) => Promise<string> (25 words)
-    exportBackup,            // (privateKey, password, did) => Promise<BackupFile>
+    getRecoveryMethods, // (authProvider) => Promise<RecoveryMethodInfo[]>
+    addPasskeyRecovery, // (authProvider, privateKey) => Promise<string> (credentialId)
+    generateRecoveryPhrase, // (privateKey, authProvider?) => Promise<string> (25 words)
+    exportBackup, // (privateKey, password, did) => Promise<BackupFile>
 } = useRecoverySetup({ serverUrl });
 ```
 
@@ -179,11 +194,11 @@ sequenceDiagram
 
 ```ts
 const {
-    recoverWithPasskey,   // (authProvider, credentialId) => Promise<string>
-    recoverWithPhrase,    // (authProvider, phrase) => Promise<string>
-    recoverWithBackup,    // (authProvider, fileContents, password) => Promise<string>
-    connecting,           // boolean — loading state
-    error,                // string | null — last error
+    recoverWithPasskey, // (authProvider, credentialId) => Promise<string>
+    recoverWithPhrase, // (authProvider, phrase) => Promise<string>
+    recoverWithBackup, // (authProvider, fileContents, password) => Promise<string>
+    connecting, // boolean — loading state
+    error, // string | null — last error
 } = useRecoveryMethods({ serverUrl });
 ```
 
@@ -244,6 +259,7 @@ graph TD
 ### Key invariant
 
 After **every** recovery, the shares are **re-split** and **re-stored**. This means:
+
 - The device share on the new device is fresh (not the old one)
 - The auth share on the server is fresh
 - Old shares are effectively invalidated
@@ -287,6 +303,7 @@ const methods = [
 ### When shown
 
 Shown as a **dismissible prompt** for first-time users who:
+
 1. Went through `needs_setup` → `ready` (tracked via `sawNeedsSetupRef`)
 2. Have **zero** configured recovery methods
 
@@ -302,19 +319,19 @@ Shown as a **dismissible prompt** for first-time users who:
 
 All cryptographic operations come from `@learncard/sss-key-manager`:
 
-| Function | Package Path | Description |
-|---|---|---|
-| `splitAndVerify` | `atomic-operations.ts` | Split private key into 3 shares with verification |
-| `reconstructFromShares` | `sss.ts` | Reconstruct from any 2 shares |
-| `encryptWithPassword` | `crypto.ts` | Argon2id KDF → AES-GCM encryption |
-| `decryptWithPassword` | `crypto.ts` | Reverse of above |
-| `createPasskeyCredential` | `passkey.ts` | WebAuthn credential creation |
-| `encryptShareWithPasskey` | `passkey.ts` | PRF-derived key → AES-GCM |
-| `decryptShareWithPasskey` | `passkey.ts` | Reverse of above |
-| `shareToRecoveryPhrase` | `recovery-phrase.ts` | Encode share as 25-word mnemonic |
-| `recoveryPhraseToShare` | `recovery-phrase.ts` | Decode mnemonic back to share |
-| `storeDeviceShare` | `storage.ts` | Persist to IndexedDB (`lcb-sss-keys`) |
-| `getDeviceShare` | `storage.ts` | Retrieve from IndexedDB |
+| Function                  | Package Path           | Description                                       |
+| ------------------------- | ---------------------- | ------------------------------------------------- |
+| `splitAndVerify`          | `atomic-operations.ts` | Split private key into 3 shares with verification |
+| `reconstructFromShares`   | `sss.ts`               | Reconstruct from any 2 shares                     |
+| `encryptWithPassword`     | `crypto.ts`            | Argon2id KDF → AES-GCM encryption                 |
+| `decryptWithPassword`     | `crypto.ts`            | Reverse of above                                  |
+| `createPasskeyCredential` | `passkey.ts`           | WebAuthn credential creation                      |
+| `encryptShareWithPasskey` | `passkey.ts`           | PRF-derived key → AES-GCM                         |
+| `decryptShareWithPasskey` | `passkey.ts`           | Reverse of above                                  |
+| `shareToRecoveryPhrase`   | `recovery-phrase.ts`   | Encode share as 25-word mnemonic                  |
+| `recoveryPhraseToShare`   | `recovery-phrase.ts`   | Decode mnemonic back to share                     |
+| `storeDeviceShare`        | `storage.ts`           | Persist to IndexedDB (`lcb-sss-keys`)             |
+| `getDeviceShare`          | `storage.ts`           | Retrieve from IndexedDB                           |
 
 ---
 

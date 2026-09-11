@@ -1,6 +1,6 @@
 /**
  * Auth Coordinator Module
- * 
+ *
  * Exports the unified auth + key derivation orchestration layer.
  */
 
@@ -15,6 +15,7 @@ export { createWeb3AuthStrategy } from '../key-derivation';
 export type { Web3AuthStrategyConfig } from '../key-derivation';
 
 export { AuthSessionError } from './types';
+export { IdentityRecoverySessionConsumedError } from '@learncard/sss-key-manager';
 
 export {
     AuthCoordinatorProvider,
@@ -51,6 +52,7 @@ export type {
     RecoveryReason,
     RecoverySetupInput,
     RecoverySetupResult,
+    RecoveryConfirmationInput,
     SSSKeyDerivationStrategy,
     UnifiedAuthState,
 } from './types';

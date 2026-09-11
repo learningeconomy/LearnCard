@@ -22,8 +22,23 @@ describe('authConfig', () => {
         });
         expect(getSSSConfig()).toEqual({
             serverUrl: 'http://localhost:5100/api',
+            escrowRelayPublicKey: '',
+            escrowRelayKeyId: '',
             enableEmailBackupShare: true,
             requireEmailForPhoneUsers: true,
+        });
+    });
+
+    it('reads the pinned escrow relay key from tenant SSS config', () => {
+        setAuthConfigOverrides({
+            providerConfig: {
+                sss: { escrowRelayPublicKey: 'relay-public-key', escrowRelayKeyId: '2026-09' },
+            },
+        });
+
+        expect(getSSSConfig()).toMatchObject({
+            escrowRelayPublicKey: 'relay-public-key',
+            escrowRelayKeyId: '2026-09',
         });
     });
 

@@ -524,7 +524,10 @@
                 "yourPhrase": "Votre phrase de récupération",
                 "copied": "Copié !",
                 "copyBtn": "Copier dans le presse-papiers",
-                "confirmBtn": "Je l'ai sauvegardée dans un endroit sûr"
+                "confirmBtn": "Je l'ai sauvegardée dans un endroit sûr",
+                "verifyDesc": "Entrez les mots demandés pour confirmer que vous avez enregistré votre phrase.",
+                "verifyTitle": "Confirmez votre phrase de récupération",
+                "wordNumber": "Mot {{number}}"
             },
             "backup": {
                 "createdRow": "Fichier de sauvegarde créé",
@@ -542,7 +545,9 @@
                 "downloadAgain": "Télécharger à nouveau",
                 "downloadBtn": "Télécharger le fichier de sauvegarde",
                 "confirmBtn": "Je l'ai sauvegardé dans un endroit sûr",
-                "shareTitle": "Sauvegarde ScoutPass"
+                "shareTitle": "Sauvegarde ScoutPass",
+                "reenterPassword": "Entrez à nouveau le mot de passe de sauvegarde",
+                "verifyDesc": "Nous vérifierons le fichier téléchargé avant de confirmer cette méthode de récupération."
             },
             "email": {
                 "recoveryRow": "E-mail de récupération : {{email}}",
@@ -563,7 +568,9 @@
                 "sendKeyDesc": "Nous enverrons une clé de récupération à cet e-mail. Si vous perdez l'accès, vérifiez votre boîte de réception et collez la clé pour récupérer.",
                 "sendKeyBtn": "Envoyer la clé de récupération",
                 "keySentTitle": "Clé de récupération envoyée",
-                "keySentDesc": "Vérifiez votre boîte de réception à {{email}}. Conservez cet e-mail — vous aurez besoin de la clé de récupération si vous perdez l'accès."
+                "keySentDesc": "Vérifiez votre boîte de réception à {{email}}. Conservez cet e-mail — vous aurez besoin de la clé de récupération si vous perdez l'accès.",
+                "confirmKeyBtn": "Confirmer la clé de récupération",
+                "confirmationCodeSent": "Entrez le code de confirmation envoyé avec votre clé de récupération à {{email}}."
             },
             "errors": {
                 "passLength": "Le mot de passe doit comporter au moins 8 caractères.",
