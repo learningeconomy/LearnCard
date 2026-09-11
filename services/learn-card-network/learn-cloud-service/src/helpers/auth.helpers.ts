@@ -1,4 +1,5 @@
 // crypto.helpers.ts
+import { environment } from '@environment';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import { XAPI_ENDPOINT } from '../constants/xapi';
@@ -22,8 +23,8 @@ export function getKeyPair(): KeyPair {
     }
 
     // Try to get keys from environment
-    const privateKey = process.env.RSA_PRIVATE_KEY?.replace(/\\n/g, '\n');
-    const publicKey = process.env.RSA_PUBLIC_KEY?.replace(/\\n/g, '\n');
+    const privateKey = environment.RSA_PRIVATE_KEY?.replace(/\\n/g, '\n');
+    const publicKey = environment.RSA_PUBLIC_KEY?.replace(/\\n/g, '\n');
 
     // If we have valid keys in env, use them
     if (privateKey && publicKey) {
@@ -75,7 +76,7 @@ export function getKeyPair(): KeyPair {
     return cachedKeyPair;
 }
 
-const ISSUER = process.env.SERVER_URL || 'http://localhost:4100';
+const ISSUER = environment.SERVER_URL || 'http://localhost:4100';
 
 export const generateToken = (did: string, scope = 'lrs:all'): string => {
     const { privateKey, keyId } = getKeyPair();

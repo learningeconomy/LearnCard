@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 
 import {
@@ -53,6 +54,21 @@ const MobileNavBar: React.FC = () => {
     const location = useLocation();
     const isLoggedIn = useIsLoggedIn();
     const isWalletSyncing = walletStore.useTracked.syncState();
+    const [prefersReducedMotion, setPrefersReducedMotion] = useState(
+        () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
+    );
+
+    useEffect(() => {
+        const mediaQuery = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+        if (!mediaQuery) return undefined;
+
+        const handleChange = (event: MediaQueryListEvent): void => {
+            setPrefersReducedMotion(event.matches);
+        };
+
+        mediaQuery.addEventListener('change', handleChange);
+        return () => mediaQuery.removeEventListener('change', handleChange);
+    }, []);
 
     const navlinks = theme?.navbar ?? [];
 
@@ -87,7 +103,7 @@ const MobileNavBar: React.FC = () => {
     return (
         <GenericErrorBoundary>
             <IonTabs className={`${getNavBarColor(activePathname)}`}>
-                <IonRouterOutlet animated={true}>
+                <IonRouterOutlet animated={!prefersReducedMotion}>
                     <Routes />
                 </IonRouterOutlet>
                 {isLoggedIn && showNavBar(activePathname) ? (

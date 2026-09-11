@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { IonLabel, IonRow, IonSegment, IonSegmentButton } from '@ionic/react';
+import * as m from '../../../paraglide/messages.js';
 
 export enum TroopsAppearanceTabs {
     dark = 'dark',
@@ -31,7 +32,7 @@ const TroopsCMSAppearanceTabs: React.FC<{
                     }}
                 >
                     <IonLabel className="font-normal text-[17px] text-grayscale-800 font-notoSans">
-                        Dark
+                        {m['scoutsId.dark']()}
                     </IonLabel>
                 </IonSegmentButton>
                 <IonSegmentButton
@@ -43,7 +44,7 @@ const TroopsCMSAppearanceTabs: React.FC<{
                     }}
                 >
                     <IonLabel className="font-normal text-[17px] text-grayscale-800 font-notoSans">
-                        Light
+                        {m['scoutsId.light']()}
                     </IonLabel>
                 </IonSegmentButton>
                 <IonSegmentButton
@@ -55,7 +56,7 @@ const TroopsCMSAppearanceTabs: React.FC<{
                     }}
                 >
                     <IonLabel className="font-normal text-[17px] text-grayscale-800 font-notoSans">
-                        Custom
+                        {m['scoutsId.custom']()}
                     </IonLabel>
                 </IonSegmentButton>
             </IonSegment>

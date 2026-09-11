@@ -145,7 +145,7 @@ const BoostEarnedIDList: React.FC<BoostEarnedIDListProps> = ({
                 credentials &&
                 credentials?.length === 0 && (
                     <section className="relative flex flex-col pt-[10px] px-[20px] text-center justify-center mt-[20px]">
-                        <img src={defaultImg} alt="ids" className="w-[200px] h-[200px] m-auto" />
+                        <img src={defaultImg} alt="" className="w-[200px] h-[200px] m-auto" />
                         <p
                             className={`absolute inset-0 flex items-center justify-center font-bold text-center w-[133px] m-auto text-[16px] ${emptyMessageStyle}`}
                         >

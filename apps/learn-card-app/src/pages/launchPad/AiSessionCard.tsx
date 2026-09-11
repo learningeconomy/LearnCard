@@ -28,7 +28,7 @@ const AiSessionPreviewWithClose: React.FC<{ summaryUri: string }> = ({ summaryUr
                            flex items-center justify-center text-grayscale-800
                            hover:bg-grayscale-10 transition-colors
                            focus:outline-none focus:ring-2 focus:ring-indigo-400
-                           safe-area-top-margin"
+                           mt-[var(--lc-overlay-inset-top,var(--ion-safe-area-top,0px))]"
             >
                 <X className="w-5 h-5" aria-hidden="true" />
             </button>

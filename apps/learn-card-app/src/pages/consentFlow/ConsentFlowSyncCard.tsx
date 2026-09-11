@@ -17,12 +17,18 @@ import {
     useCurrentUser,
     useModal,
     ModalTypes,
+    ToastTypeEnum,
+    useToast,
     useWallet,
     useSyncConsentFlow,
 } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import NewMyData from '../../components/new-my-data/NewMyData';
 import ConsentFlowEditAccess from '../launchPad/ConsentFlowEditAccess';
+import {
+    getConsentFlowContractRedirect,
+    getConsentFlowDidAuthRedirect,
+} from './issueConsentFlowDidAuth';
 
 import useTheme from '../../theme/hooks/useTheme';
 import * as m from '../../paraglide/messages.js';
@@ -67,6 +73,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
     const { newModal, closeModal, closeAllModals } = useModal();
 
     const { initWallet } = useWallet();
+    const { presentToast } = useToast();
 
     const [loading, setLoading] = useState(false);
 
@@ -97,7 +104,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
     const location = useLocation();
     const brandingConfig = useBrandingConfig();
 
-    const { returnTo } = queryString.parse(location.search);
+    const { challenge, domain, returnTo } = queryString.parse(location.search);
 
     // state for handling - data share duration
     const [shareDuration, setShareDuration] = useState<{
@@ -208,9 +215,14 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                                 //   this displays a toast that says "Successfully synced X credentials" when done
                                 fetchNewContractCredentials();
 
-                                if (contractRedirectUrl) {
-                                    // If the consentToContract call returned a specific redirect url, use it over everything else
-                                    window.location.href = contractRedirectUrl;
+                                const allowedContractRedirectUrl = getConsentFlowContractRedirect({
+                                    challenge,
+                                    contractRedirectUrl,
+                                    domain,
+                                });
+
+                                if (allowedContractRedirectUrl) {
+                                    window.location.href = allowedContractRedirectUrl;
                                     return;
                                 }
 
@@ -220,41 +232,24 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                                         returnTo.startsWith('https://')
                                     ) {
                                         const wallet = await initWallet();
+                                        const ownerDid = contractDetails.owner.did;
 
-                                        // add user's did to returnTo url
-                                        const urlObj = new URL(returnTo);
-                                        urlObj.searchParams.set('did', wallet.id.did());
-                                        if (contractDetails.owner.did) {
-                                            const unsignedDelegateCredential =
-                                                wallet.invoke.newCredential({
-                                                    type: 'delegate',
-                                                    subject: contractDetails.owner.did,
-                                                    access: ['read', 'write'],
-                                                });
+                                        if (!ownerDid) throw new Error('Invalid consent request');
 
-                                            const delegateCredential =
-                                                await wallet.invoke.issueCredential(
-                                                    unsignedDelegateCredential
-                                                );
-
-                                            const unsignedDidAuthVp =
-                                                await wallet.invoke.newPresentation(
-                                                    delegateCredential
-                                                );
-                                            const vp = (await wallet.invoke.issuePresentation(
-                                                unsignedDidAuthVp,
-                                                {
-                                                    proofPurpose: 'authentication',
-                                                    proofFormat: 'jwt',
-                                                }
-                                            )) as any as string;
-
-                                            urlObj.searchParams.set('vp', vp);
-                                        }
-
-                                        window.location.href = urlObj.toString();
+                                        window.location.href = await getConsentFlowDidAuthRedirect({
+                                            challenge,
+                                            contractUri: contractDetails.uri,
+                                            domain,
+                                            ownerDid,
+                                            returnTo,
+                                            wallet,
+                                        });
                                     } else history.push(returnTo);
                                 } else history.push(`/launchpad?uri=${contractDetails.uri}`);
+                            } catch {
+                                presentToast('Unable to complete sign in. Please try again.', {
+                                    type: ToastTypeEnum.Error,
+                                });
                             } finally {
                                 setLoading(false);
                             }

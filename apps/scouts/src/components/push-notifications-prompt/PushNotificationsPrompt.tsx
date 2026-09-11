@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 
 import { Capacitor } from '@capacitor/core';
+import * as m from '../../paraglide/messages.js';
 import { NativeSettings, IOSSettings, AndroidSettings } from 'capacitor-native-settings';
 
 import { IonRow, IonCol } from '@ionic/react';
@@ -62,7 +63,7 @@ export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }>
                 </IonCol>
                 <IonCol className="w-full flex items-center justify-center mt-8">
                     <h6 className="text-center text-black text-2xl text-medium">
-                        Stay in the Loop?
+                        {m['notifications.stayInTheLoop']()}
                     </h6>
                 </IonCol>
             </IonRow>
@@ -71,7 +72,11 @@ export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }>
                 <IonCol className="flex items-center justify-around w-full max-w-[600px]">
                     <div className="relative flex flex-col items-center justify-center p-4 rounded-3xl flex-1">
                         <div className="absolute top-0 left-[%50] w-[70px] h-[70px] bg-rose-100 rounded-full" />
-                        <img src={NotificationImage} alt="notification icon" className="z-50" />
+                        <img
+                            src={NotificationImage}
+                            alt={m['notifications.notificationIcon']()}
+                            className="z-50"
+                        />
                     </div>
                 </IonCol>
             </IonRow>
@@ -79,11 +84,10 @@ export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }>
                 <IonCol className="text-center">
                     <p className="text-center text-sm font-semibold px-[16px] text-grayscale-600">
                         <span className="font-bold text-grayscale-800">
-                            Receive push notifications for:
+                            {m['notifications.receivePushFor']()}
                         </span>
                         <br />
-                        New connection requests, New boosts (like achievements, credentials, and
-                        badges).
+                        {m['notifications.pushDescription']()}
                     </p>
                     <br />
                     {/* <button
@@ -141,7 +145,7 @@ export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }>
                         type="button"
                         className="flex items-center justify-center text-white rounded-full px-[18px] py-[12px] bg-sp-purple-base text-2xl w-full shadow-lg font-medium max-w-[320px]"
                     >
-                        Continue
+                        {m['common.continue']()}
                     </button>
 
                     <div className="w-full flex items-center justify-center m-4">
@@ -151,7 +155,7 @@ export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }>
                             }}
                             className="text-grayscale-900 text-center text-base w-full font-medium"
                         >
-                            Not Yet
+                            {m['notifications.notYet']()}
                         </button>
                     </div>
                 </IonCol>
@@ -159,11 +163,11 @@ export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }>
             <IonRow className="flex items-center justify-center mt-4 w-full">
                 <IonCol className="flex items-center justify-center">
                     <button onClick={openPP} className="text-indigo-500 font-bold text-sm">
-                        Privacy Policy
+                        {m['login.privacyPolicy']()}
                     </button>
                     <span className="text-indigo-500 font-bold text-sm">&nbsp;•&nbsp;</span>
                     <button onClick={openToS} className="text-indigo-500 font-bold text-sm">
-                        Terms of Service
+                        {m['login.termsOfService']()}
                     </button>
                 </IonCol>
             </IonRow>

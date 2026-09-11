@@ -102,6 +102,47 @@ export const LCNPublicProfileValidator = LCNProfileValidator.pick({
 });
 export type LCNPublicProfile = z.infer<typeof LCNPublicProfileValidator>;
 
+export const LCNConnectionPromptStatusValidator = z.enum(['PENDING', 'SKIPPED', 'CONNECTED']);
+export type LCNConnectionPromptStatus = z.infer<typeof LCNConnectionPromptStatusValidator>;
+
+export const LCNConnectionPromptSurfaceValidator = z.enum(['POST_CLAIM', 'NOTIFICATION']);
+export type LCNConnectionPromptSurface = z.infer<typeof LCNConnectionPromptSurfaceValidator>;
+
+export const LCNConnectionPromptActionStatusValidator = z.enum([
+    'PENDING',
+    'SKIPPED',
+    'CONNECTED',
+    'STALE',
+]);
+export type LCNConnectionPromptActionStatus = z.infer<
+    typeof LCNConnectionPromptActionStatusValidator
+>;
+
+export const LCNConnectionPromptValidator = z.object({
+    promptId: z.string().uuid(),
+    status: LCNConnectionPromptStatusValidator,
+    surface: LCNConnectionPromptSurfaceValidator,
+    triggerId: z.string(),
+    triggeredAt: z.iso.datetime(),
+    updatedAt: z.iso.datetime(),
+    counterpart: LCNPublicProfileValidator,
+});
+export type LCNConnectionPrompt = z.infer<typeof LCNConnectionPromptValidator>;
+
+export const LCNConnectionPromptActionResultValidator = z.object({
+    promptId: z.string().uuid(),
+    status: LCNConnectionPromptActionStatusValidator,
+});
+export type LCNConnectionPromptActionResult = z.infer<
+    typeof LCNConnectionPromptActionResultValidator
+>;
+
+export const LCNConnectionPromptMetadataValidator = z.object({
+    promptId: z.string().uuid(),
+    counterpartProfileId: z.string(),
+});
+export type LCNConnectionPromptMetadata = z.infer<typeof LCNConnectionPromptMetadataValidator>;
+
 export const LCNAuthedProfileValidator = LCNPublicProfileValidator.extend({
     bio: LCNProfileValidator.shape.bio,
     websiteLink: LCNProfileValidator.shape.websiteLink,
@@ -113,6 +154,10 @@ export type LCNAuthedProfile = z.infer<typeof LCNAuthedProfileValidator>;
 
 export const LCNConnectionProfileValidator = LCNAuthedProfileValidator.extend({
     email: LCNProfileValidator.shape.email,
+    connectedAt: z.iso
+        .datetime()
+        .optional()
+        .describe('When the viewer and this profile became connected.'),
 });
 export type LCNConnectionProfile = z.infer<typeof LCNConnectionProfileValidator>;
 
@@ -966,13 +1011,20 @@ export const LCNNotificationInboxValidator = z.object({
 
 export type LCNNotificationInbox = z.infer<typeof LCNNotificationInboxValidator>;
 
+export const LCNNotificationMetadataValidator = z
+    .object({
+        connectionPrompt: LCNConnectionPromptMetadataValidator.optional(),
+    })
+    .catchall(z.unknown());
+export type LCNNotificationMetadata = z.infer<typeof LCNNotificationMetadataValidator>;
+
 export const LCNNotificationDataValidator = z
     .object({
         vcUris: z.array(z.string()).optional(),
         vpUris: z.array(z.string()).optional(),
         transaction: ConsentFlowTransactionValidator.optional(),
         inbox: LCNNotificationInboxValidator.optional(),
-        metadata: z.record(z.string(), z.unknown()).optional(),
+        metadata: LCNNotificationMetadataValidator.optional(),
     })
     .loose();
 export type LCNNotificationData = z.infer<typeof LCNNotificationDataValidator>;

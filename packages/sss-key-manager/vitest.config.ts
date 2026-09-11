@@ -1,9 +1,7 @@
-import { defineConfig } from 'vitest/config';
+import { createVitestConfig, happyDomPreset } from '../../vitest.shared';
 
-export default defineConfig({
+export default createVitestConfig(happyDomPreset, {
     test: {
-        environment: 'jsdom',
-        globals: true,
         include: ['src/**/*.test.ts'],
     },
 });

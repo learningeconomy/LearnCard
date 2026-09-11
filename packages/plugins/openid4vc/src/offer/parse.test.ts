@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { parseCredentialOfferUri, resolveCredentialOfferByReference } from './parse';
 import { CredentialOfferParseError, PRE_AUTHORIZED_CODE_GRANT } from './types';
 
@@ -144,7 +145,8 @@ describe('parseCredentialOfferUri', () => {
         });
 
         it('throws on invalid JSON in credential_offer', () => {
-            const uri = 'openid-credential-offer://?credential_offer=' + encodeURIComponent('{not json');
+            const uri =
+                'openid-credential-offer://?credential_offer=' + encodeURIComponent('{not json');
 
             try {
                 parseCredentialOfferUri(uri);
@@ -191,7 +193,7 @@ describe('parseCredentialOfferUri', () => {
 
 describe('resolveCredentialOfferByReference', () => {
     it('fetches and normalizes a by-reference offer', async () => {
-        const fetchMock = jest.fn().mockResolvedValue({
+        const fetchMock = vi.fn().mockResolvedValue({
             ok: true,
             status: 200,
             statusText: 'OK',
@@ -216,7 +218,7 @@ describe('resolveCredentialOfferByReference', () => {
     });
 
     it('surfaces HTTP errors as CredentialOfferParseError', async () => {
-        const fetchMock = jest.fn().mockResolvedValue({
+        const fetchMock = vi.fn().mockResolvedValue({
             ok: false,
             status: 404,
             statusText: 'Not Found',
@@ -231,7 +233,7 @@ describe('resolveCredentialOfferByReference', () => {
     });
 
     it('surfaces JSON parse errors', async () => {
-        const fetchMock = jest.fn().mockResolvedValue({
+        const fetchMock = vi.fn().mockResolvedValue({
             ok: true,
             status: 200,
             json: async () => {
@@ -248,7 +250,7 @@ describe('resolveCredentialOfferByReference', () => {
     });
 
     it('surfaces network errors', async () => {
-        const fetchMock = jest.fn().mockRejectedValue(new Error('network down'));
+        const fetchMock = vi.fn().mockRejectedValue(new Error('network down'));
 
         await expect(
             resolveCredentialOfferByReference(

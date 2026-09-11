@@ -46,15 +46,15 @@ export const RecentlyAdded: React.FC = () => {
     if (items.length === 0) return null;
 
     return (
-        <div className="mb-[24px]">
+        <section className="mb-[24px]">
             <div className="flex items-center justify-between mb-[10px]">
-                <h3 className="font-poppins text-[13px] tracking-[1px] text-grayscale-500">
+                <h2 className="font-poppins text-[13px] tracking-[1px] text-grayscale-800">
                     {m['passport.activity.recent']()}
-                </h3>
+                </h2>
                 <button
                     type="button"
                     onClick={openSeeAll}
-                    className="font-poppins text-[13px] font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors"
+                    className="font-poppins text-[13px] font-medium text-grayscale-800 hover:text-grayscale-900 transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                 >
                     {m['passport.activity.seeAll']()}
                 </button>
@@ -78,7 +78,7 @@ export const RecentlyAdded: React.FC = () => {
                     );
                 })}
             </div>
-        </div>
+        </section>
     );
 };
 

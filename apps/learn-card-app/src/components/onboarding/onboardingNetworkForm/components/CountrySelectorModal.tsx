@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import * as m from '../../../../paraglide/messages.js';
-import { IonInput } from '@ionic/react';
 import { Checkmark } from '@learncard/react';
 
 import countries from '../../../../constants/countries.json';
@@ -29,31 +28,38 @@ const CountrySelectorModal: React.FC<CountrySelectorModalProps> = ({ selected, o
                     </h2>
                 </div>
                 <div className="p-4">
-                    <IonInput
+                    <label htmlFor="onboarding-country-search" className="sr-only">
+                        {m['onboarding.country.search']()}
+                    </label>
+                    <input
+                        id="onboarding-country-search"
                         type="text"
                         value={query}
                         placeholder={m['onboarding.country.search']()}
-                        onIonInput={e => setQuery(e.detail.value ?? '')}
-                        className="bg-grayscale-100 text-grayscale-800 rounded-[12px] !py-[5px] font-normal text-base !pl-[15px]"
+                        onChange={event => setQuery(event.target.value)}
+                        className="w-full bg-grayscale-100 text-grayscale-800 placeholder:text-grayscale-400 rounded-[12px] py-[5px] px-[15px] font-normal text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                     />
                 </div>
                 <div className="px-2 pb-4 overflow-y-auto flex-1">
                     {filtered.map(([code, label]) => (
                         <button
                             key={code}
+                            type="button"
                             onClick={() => onSelect(code)}
                             className="w-full text-left px-3 py-2 rounded-[12px] hover:bg-grayscale-100 flex items-center justify-between"
                         >
                             <span className="text-grayscale-800 text-[16px] flex gap-[10px] items-center">
                                 <img
                                     src={`https://flagcdn.com/36x27/${code.toLowerCase()}.png`}
-                                    alt={`${label} flag`}
+                                    alt=""
                                     className="w-[36px] h-[27px] object-cover"
                                 />
                                 {label}
                             </span>
                             {selected === code && (
-                                <Checkmark className="w-[20px] h-[20px] text-emerald-600" />
+                                <span aria-hidden="true">
+                                    <Checkmark className="w-[20px] h-[20px] text-emerald-600" />
+                                </span>
                             )}
                         </button>
                     ))}

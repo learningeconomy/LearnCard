@@ -17,6 +17,7 @@ import ModalLayout from 'apps/learn-card-app/src/layout/ModalLayout';
 import { QRCodeScannerStore } from 'learn-card-base';
 
 import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
+import { useInviteAction } from '../addressBookInvite/useInviteAction';
 import * as m from '../../../paraglide/messages.js';
 
 const AddressBookContactOptions: React.FC<{
@@ -26,6 +27,12 @@ const AddressBookContactOptions: React.FC<{
 }> = ({ handleCloseModal, showSearch = true, handleShowSearch }) => {
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
+
+    // LC-2089: the ticket asks for an invite entry point that survives past the
+    // zero-contact empty state. It lives here rather than as a header pill —
+    // the header is spoken for by the Figma, and two pills crowd the title at
+    // phone widths.
+    const { share: shareInvite } = useInviteAction({ surface: 'menu' });
 
     const [walletDid, setWalletDid] = useState<string>('');
 
@@ -126,6 +133,15 @@ const AddressBookContactOptions: React.FC<{
         icon?: React.ReactNode;
         onClick?: () => void;
     }[] = [
+        {
+            id: 0,
+            title: m['contacts.invite.cta'](),
+            icon: <LinkChain className="ml-[5px] h-[30px] w-[30px] mr-2" version="thin" />,
+            onClick: () => {
+                handleCloseModal();
+                shareInvite();
+            },
+        },
         {
             id: 1,
             title: m['contacts.showCode'](),

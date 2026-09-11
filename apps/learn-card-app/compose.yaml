@@ -1,5 +1,6 @@
 services:
     app:
+        image: learn-card-e2e-app
         build:
             context: ../../
             dockerfile: apps/learn-card-app/Dockerfile
@@ -17,15 +18,9 @@ services:
             - learn-card
         extra_hosts:
             - 'localhost:host-gateway'
-        environment:
-            LCN_URL: http://localhost:4000/trpc
-            LCN_API_URL: http://localhost:4000/api
-            CLOUD_URL: http://localhost:4100/trpc
-            API_URL: http://localhost:5100/trpc
-            REACT_APP_KEY_DERIVATION_PROVIDER: sss
-            REACT_APP_SSS_SERVER_URL: http://localhost:5100
 
     delete-service:
+        image: learn-card-e2e-delete-service
         build: ../../services/playwright-delete-service
         ports:
             - '3100:3100'

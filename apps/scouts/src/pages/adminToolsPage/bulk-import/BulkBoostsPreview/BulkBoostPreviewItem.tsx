@@ -1,5 +1,4 @@
 import React from 'react';
-import moment from 'moment';
 
 import X from 'learn-card-base/svgs/X';
 import TrashBin from 'learn-card-base/svgs/TrashBin';
@@ -15,6 +14,7 @@ import {
     ImageTrackingInfo,
 } from '../AdminToolsBulkBoostImportOption';
 import BlueCheckMark from '../../../../components/svgs/BlueCheckMark';
+import { formatLocaleDate } from '../../../../i18n/formatters';
 
 const BulkBoostPreviewItem: React.FC<{
     index: number;
@@ -116,7 +116,8 @@ const BulkBoostPreviewItem: React.FC<{
                     {title}
                 </h3>
                 <p className="text-sm text-grayscale-700 line-clamp-1 flex items-center gap-[5px]">
-                    <BlueCheckMark /> {currentLCNUser?.displayName} • {moment().format('MM/DD/YY')}
+                    <BlueCheckMark /> {currentLCNUser?.displayName} •{' '}
+                    {formatLocaleDate(new Date(), { dateStyle: 'short' })}
                 </p>
                 {mainImageInfo.status === ImageStatus.missing ||
                     (mainImageInfo.status === ImageStatus.needsUpload && (

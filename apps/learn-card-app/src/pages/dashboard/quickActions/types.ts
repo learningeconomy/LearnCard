@@ -14,7 +14,7 @@ export type DashboardState = {
     hasSkillProfile: boolean;
     nextNodeTitle?: string;
     pathwaysEnabled: boolean;
-    showAiInsights: boolean;
+    aiInsightsEnabled: boolean;
 };
 
 export type ActionHandlers = {

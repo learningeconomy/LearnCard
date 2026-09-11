@@ -14,6 +14,8 @@ import currentUserStore, { useIsLoggedIn } from 'learn-card-base/stores/currentU
 import { useGetUnreadUserNotifications } from 'learn-card-base';
 
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
+import * as m from '../../paraglide/messages.js';
+import { getScoutPassSideMenuLinkLabel } from './scoutPassSideMenuLabels';
 
 type SideMenuRootLinksProps = {
     activeTab: string;
@@ -53,7 +55,7 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({
 
     if (Array.isArray(walletLink)) {
         rootLinks = walletLink?.map(link => {
-            if (link.name === 'Admin Tools' && !hasAdminAccess) {
+            if (link.path === '/admin-tools' && !hasAdminAccess) {
                 return undefined;
             }
 
@@ -66,7 +68,7 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({
                         link.path
                     )}`}
                 >
-                    <IconComponent /> {link.name}
+                    <IconComponent /> {getScoutPassSideMenuLinkLabel(m, link)}
                 </Link>
             );
 
@@ -91,7 +93,7 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({
                             )}
                         </div>
 
-                        {link.name}
+                        {getScoutPassSideMenuLinkLabel(m, link)}
                     </Link>
                 );
             }
@@ -118,8 +120,9 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({
                 >
                     <Link
                         to={walletLink?.path}
-                        className={`w-full ${sideMenuBrandingStyles?.defaultLinkStyles
-                            } ${isPathActive(walletLink?.path)} `}
+                        className={`w-full ${
+                            sideMenuBrandingStyles?.defaultLinkStyles
+                        } ${isPathActive(walletLink?.path)} `}
                     >
                         <LearnCardIcon /> {walletLink?.name}
                     </Link>

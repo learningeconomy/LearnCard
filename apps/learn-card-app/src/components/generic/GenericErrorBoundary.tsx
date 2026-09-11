@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useRef } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import {
     CredentialCategoryEnum,
@@ -8,6 +8,7 @@ import {
 } from 'learn-card-base';
 import { getLogger } from 'learn-card-base';
 import { m } from '../../paraglide/messages.js';
+import { environment } from '../../config/environment';
 const log = getLogger('generic-error-boundary');
 
 import SpilledCup from 'learn-card-base/svgs/SpilledCup';
@@ -15,6 +16,7 @@ import SpilledCup from 'learn-card-base/svgs/SpilledCup';
 import useTheme from '../../theme/hooks/useTheme';
 import { ColorSetEnum } from '../../theme/colors/index';
 import ArrowCircle from 'learn-card-base/svgs/ArrowCircle';
+import { useFeedbackOptional } from '../../feedback/reporting/FeedbackContext';
 
 type ErrorFallbackProps = {
     error: Error;
@@ -22,6 +24,8 @@ type ErrorFallbackProps = {
     hideGoHome?: boolean;
     extraButtons?: { label: string; onClick: () => void }[];
     category?: CredentialCategoryEnum;
+    /** Opens the feedback composer for this error; absent when ineligible. */
+    onReportProblem?: () => void;
 };
 
 const ErrorFallback: React.FC<ErrorFallbackProps> = ({
@@ -30,6 +34,7 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({
     hideGoHome = false,
     extraButtons,
     category,
+    onReportProblem,
 }) => {
     const { getColorSet, colors } = useTheme();
 
@@ -42,7 +47,7 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({
 
     const primaryColor = colors?.defaults?.primaryColor;
 
-    const showError = process.env.NODE_ENV === 'development' || isLocalhost;
+    const showError = environment.DEV || isLocalhost;
 
     const isChunkError = isStaleChunkError(error);
 
@@ -127,6 +132,14 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({
                         >
                             {m['error.retry']()}
                         </button>
+                        {onReportProblem && (
+                            <button
+                                className="bg-white py-[7px] px-[15px] rounded-[30px] text-grayscale-700 text-[14px] shadow-button-bottom font-poppins border-[1px] border-grayscale-300 border-solid"
+                                onClick={onReportProblem}
+                            >
+                                {m['feedback.reporting.sendReport']()}
+                            </button>
+                        )}
                         {extraButtons?.map(button => (
                             <button
                                 key={button.label}
@@ -166,6 +179,23 @@ const GenericErrorBoundary: React.FC<GenericErrorBoundaryProps> = ({
     extraButtons,
     category,
 }) => {
+    const feedback = useFeedbackOptional();
+    const reportProblem = feedback?.reportProblem;
+
+    /** Sentry event id returned by the logger when this boundary caught. */
+    const associatedEventIdRef = useRef<string | undefined>(undefined);
+
+    const handleReportProblem = useCallback(() => {
+        if (!reportProblem) return;
+
+        void reportProblem({
+            source: 'error-boundary',
+            ...(associatedEventIdRef.current
+                ? { associatedEventId: associatedEventIdRef.current }
+                : {}),
+        });
+    }, [reportProblem]);
+
     return (
         <ErrorBoundary
             FallbackComponent={({ error, resetErrorBoundary }) => (
@@ -175,11 +205,16 @@ const GenericErrorBoundary: React.FC<GenericErrorBoundaryProps> = ({
                     hideGoHome={hideGoHome}
                     extraButtons={extraButtons}
                     category={category}
+                    onReportProblem={feedback?.bugEligible ? handleReportProblem : undefined}
                 />
             )}
             onReset={onReset}
             onError={(error: Error, info) => {
-                log.error('ErrorBoundary caught an error:', error, info);
+                associatedEventIdRef.current = log.error(
+                    'ErrorBoundary caught an error:',
+                    error,
+                    info
+                );
 
                 // If this is a stale-chunk error that got past ChunkBoundary,
                 // try a guarded reload (respects the shared reload budget).

@@ -6,6 +6,7 @@ import { useFlags } from 'launchdarkly-react-client-sdk';
 import { ErrorBoundary } from 'react-error-boundary';
 import { CredentialCategoryEnum, useGetCurrentLCNUser, useWallet } from 'learn-card-base';
 
+import { environment } from '../../config/environment';
 import { AiFeatureGate } from '../../components/ai-feature-gate/AiFeatureGate';
 import ErrorBoundaryFallback from '../../components/boost/boostErrors/BoostErrorsDisplay';
 import MainHeader from '../../components/main-header/MainHeader';
@@ -141,7 +142,7 @@ const MyAssistantPageContent: React.FC = () => {
     const [selectedCard, setSelectedCard] = useState<LearnCardAssistantCard | undefined>();
     const [chatOpen, setChatOpen] = useState(false);
     const [chatInitialPrompt, setChatInitialPrompt] = useState<string | undefined>();
-    const showDebugSeedButton = import.meta.env.DEV || Boolean(flags.enableLearnCardAssistantDebug);
+    const showDebugSeedButton = environment.DEV || Boolean(flags.enableLearnCardAssistantDebug);
     const [avatarConfig, setAvatarConfig] = useState<AssistantAvatarConfig>(() =>
         loadAssistantAvatarConfig(currentDid)
     );
@@ -453,8 +454,7 @@ const MyAssistantPageContent: React.FC = () => {
                                             onChange={event =>
                                                 setTypeFilter(
                                                     event.target.value as
-                                                        | 'all'
-                                                        | LearnCardAssistantCardType
+                                                        'all' | LearnCardAssistantCardType
                                                 )
                                             }
                                             className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"

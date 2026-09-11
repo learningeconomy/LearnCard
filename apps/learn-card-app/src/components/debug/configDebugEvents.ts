@@ -1,4 +1,5 @@
 import { getLogger } from 'learn-card-base';
+import { isDebugEnvironmentEnabled } from '../../config/environment';
 const log = getLogger('config-debug-events');
 /**
  * Config & Theme Debug Event Logger
@@ -72,18 +73,10 @@ type EventListener = (event: ConfigDebugEvent) => void;
 const MAX_EVENTS = 200;
 
 let events: ConfigDebugEvent[] = [];
-let listeners: Set<EventListener> = new Set();
+const listeners: Set<EventListener> = new Set();
 let eventIdCounter = 0;
 
-const isDebugEnabled = (): boolean => {
-    if (typeof window === 'undefined') return false;
-
-    try {
-        return import.meta.env.VITE_ENABLE_AUTH_DEBUG_WIDGET === 'true' || import.meta.env.DEV;
-    } catch {
-        return false;
-    }
-};
+const isDebugEnabled = isDebugEnvironmentEnabled;
 
 // ---------------------------------------------------------------------------
 // Public API

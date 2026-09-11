@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, RouteComponentProps } from 'react-router-dom';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 import Lottie from 'react-lottie-player';
 
 import {
@@ -38,6 +37,7 @@ import {
 import { UnsignedVC, VC } from '@learncard/types';
 
 import PurpGhost from '../../../assets/lotties/purpghost.json';
+import * as m from '../../../paraglide/messages.js';
 import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
 
 const PATH_TO_CATEGORY = {
@@ -74,7 +74,6 @@ const BoostSelectMenu: React.FC<BoostSelectMenuProps> = ({
     otherUserProfileId,
 }) => {
     const width = useScreenWidth(true);
-    const flags = useFlags();
     const location = useLocation();
     const { handlePresentBoostModal } = useBoostModal(history);
 
@@ -91,7 +90,6 @@ const BoostSelectMenu: React.FC<BoostSelectMenuProps> = ({
     const onCategoryRoute = pathName ? PATH_TO_CATEGORY[pathName] : null;
 
     useEffect(() => {
-        //Change default selectedVCType if on category route
         if (onCategoryRoute) {
             setSelectedVCType(onCategoryRoute);
         } else {
@@ -100,7 +98,6 @@ const BoostSelectMenu: React.FC<BoostSelectMenuProps> = ({
     }, [onCategoryRoute]);
 
     const boostUserType = BoostUserTypeEnum.someone;
-
     const boostDropdownCategoryOptions = boostVCTypeOptions[boostUserType];
 
     const { color, IconComponent, title } = boostCategoryOptions[selectedVCType];
@@ -188,8 +185,8 @@ const BoostSelectMenu: React.FC<BoostSelectMenuProps> = ({
                             onClick={handleNewBoostModal}
                             className="mx-[20px] flex items-center justify-center bg-indigo-500 rounded-full px-[18px] py-[12px] font-medium text-white text-2xl w-full shadow-lg"
                         >
-                            <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" /> New
-                            Boost
+                            <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
+                            {m['boost.newBoost']()}
                         </button>
                     </IonCol>
                 </IonRow>
@@ -198,7 +195,7 @@ const BoostSelectMenu: React.FC<BoostSelectMenuProps> = ({
             <IonContent>
                 <IonGrid className="ion-padding">
                     <div className="flex w-full items-center justify-between px-4">
-                        <p className="font-bold">Existing boosts</p>
+                        <p className="font-bold">{m['boost.existingBoosts']()}</p>
                         <IonList className="rounded-full ion-no-padding p-0 shadow-3xl">
                             <IonItem lines="none">
                                 <IconComponent
@@ -235,7 +232,7 @@ const BoostSelectMenu: React.FC<BoostSelectMenuProps> = ({
                                             style={{ width: '100%', height: '100%' }}
                                         />
                                     </div>
-                                    <p className="mt-2 text-2xl">No Boosts yet!</p>
+                                    <p className="mt-2 text-2xl">{m['boost.noBoostsYet']()}</p>
                                 </div>
                             )}
                             {!boostsLoading && boosts && boosts?.length > 0 && (
@@ -256,7 +253,7 @@ const BoostSelectMenu: React.FC<BoostSelectMenuProps> = ({
                             onClick={() => handleCloseModal()}
                             className="text-grayscale-900 text-center text-sm"
                         >
-                            Cancel
+                            {m['common.cancel']()}
                         </button>
                     </div>
                 </IonGrid>

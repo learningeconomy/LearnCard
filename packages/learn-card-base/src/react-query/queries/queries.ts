@@ -742,12 +742,15 @@ export const useGenerateInvite = () => {
 
 /**
  * Query: Search profiles by profileId.
+ *
+ * @param options.enabled Whether the profile search query should run.
  */
-export const useGetSearchProfiles = (profileId: string) => {
+export const useGetSearchProfiles = (profileId: string, options: { enabled?: boolean } = {}) => {
     const { initWallet } = useWallet();
     const switchedDid = switchedProfileStore.use.switchedDid();
     return useQuery<(LCNVisibleProfile & { connectionStatus?: LCNProfileConnectionStatusEnum })[]>({
         queryKey: ['getSearchProfiles', switchedDid ?? '', profileId],
+        enabled: options.enabled ?? true,
         queryFn: async () => {
             const wallet = await initWallet();
             const data = await wallet.invoke.searchProfiles(profileId, {

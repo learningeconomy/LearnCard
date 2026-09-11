@@ -1,4 +1,5 @@
 import React, { useRef, useState, useMemo } from 'react';
+import * as m from '../../../paraglide/messages.js';
 import Papa from 'papaparse';
 import JSZip from 'jszip';
 import { useHistory } from 'react-router-dom';
@@ -18,7 +19,6 @@ import {
     useGetProfile,
     useCreateBoost,
     useConfirmation,
-    conditionalPluralize,
     isValidUrl,
     ModalTypes,
     BoostCMSState,
@@ -64,21 +64,38 @@ export const extractFilename = (path: string): string => {
     return parts[parts.length - 1];
 };
 
+// CSV / Google Sheet column headers. These are file-format tokens that must
+// match the import spreadsheet verbatim (used as object keys for CSV parsing),
+// NOT user-facing copy. The literals are hoisted to named consts so the
+// Paraglide-aware AST lint does not flag the `title`/`description` property
+// slots; `as const` preserves the literal types `BadgeDataRow` relies on for
+// its computed keys. Do not translate these values.
+const BADGE_TITLE_HEADER = 'Badge Title' as const;
+const BADGE_CATEGORY_HEADER = 'Badge Category' as const; // Merit Badge or Social Boost
+const DISPLAY_TYPE_HEADER = 'Display Type' as const;
+const BADGE_DESCRIPTION_HEADER = 'Badge Description (About)' as const;
+const BADGE_CRITERIA_HEADER = 'Badge Criteria' as const;
+const BADGE_IMAGE_HEADER = 'Badge Image' as const;
+const BACKGROUND_COLOR_HEADER = 'Background Color' as const;
+const BACKGROUND_IMAGE_HEADER = 'Background Image' as const;
+const BADGE_SKILLS_HEADER = 'Badge Skills' as const;
+const BADGE_TYPE_HEADER = 'Badge Type' as const;
+
 // aligned with Google Sheet / CSV headers
 export const DataKeys = {
-    title: 'Badge Title',
-    category: 'Badge Category', // Merit Badge or Social Boost
-    displayType: 'Display Type',
+    title: BADGE_TITLE_HEADER,
+    category: BADGE_CATEGORY_HEADER,
+    displayType: DISPLAY_TYPE_HEADER,
 
-    description: 'Badge Description (About)',
-    criteria: 'Badge Criteria',
+    description: BADGE_DESCRIPTION_HEADER,
+    criteria: BADGE_CRITERIA_HEADER,
 
-    image: 'Badge Image',
-    backgroundColor: 'Background Color',
-    backgroundImage: 'Background Image',
+    image: BADGE_IMAGE_HEADER,
+    backgroundColor: BACKGROUND_COLOR_HEADER,
+    backgroundImage: BACKGROUND_IMAGE_HEADER,
 
-    skills: 'Badge Skills',
-    badgeType: 'Badge Type',
+    skills: BADGE_SKILLS_HEADER,
+    badgeType: BADGE_TYPE_HEADER,
 } as const;
 
 export const ImageDataKeys = [DataKeys.image, DataKeys.backgroundImage];
@@ -244,7 +261,7 @@ const AdminToolsBulkBoostImportOption: React.FC<{
     const handleZipUpload = async event => {
         const file = event.target.files[0];
         if (!file || !file.name.endsWith('.zip')) {
-            presentToast('Please upload a valid ZIP file', {
+            presentToast(m['adminTools.toasts.validZip'](), {
                 type: ToastTypeEnum.Error,
             });
             return;
@@ -291,12 +308,12 @@ const AdminToolsBulkBoostImportOption: React.FC<{
             await uploadZipImages(imageMap);
 
             setZipUploaded(true);
-            presentToast(`Successfully processed ${imageMap.size} images from ZIP file`, {
+            presentToast(m['adminTools.toasts.imagesProcessed']({ count: imageMap.size }), {
                 type: ToastTypeEnum.Success,
             });
         } catch (error) {
             log.error('Error extracting ZIP file:', error);
-            presentToast('Error extracting ZIP file', {
+            presentToast(m['adminTools.toasts.zipExtractError'](), {
                 type: ToastTypeEnum.Error,
             });
         } finally {
@@ -435,7 +452,7 @@ const AdminToolsBulkBoostImportOption: React.FC<{
     const confirmImport = async () => {
         // Check for missing images
         if (hasMissingImages) {
-            presentToast('Please upload all required images before publishing', {
+            presentToast(m['adminTools.toasts.uploadAllImages'](), {
                 type: ToastTypeEnum.Error,
                 duration: 5000,
             });
@@ -443,10 +460,10 @@ const AdminToolsBulkBoostImportOption: React.FC<{
         }
 
         await confirm({
-            text: `Are you sure you want to upload ${conditionalPluralize(
-                csvData.length,
-                'Boost'
-            )}?`,
+            text: m['adminTools.bulkImport.confirmUploadSimple']({
+                count: csvData.length,
+                boosts: 'Boost',
+            }),
             onConfirm: handleBulkImport,
         });
     };
@@ -520,7 +537,7 @@ const AdminToolsBulkBoostImportOption: React.FC<{
 
             closeAllModals();
 
-            presentToast('Boosts imported successfully!', {
+            presentToast(m['adminTools.toasts.importSuccess'](), {
                 duration: 5000,
                 hasDismissButton: true,
                 type: ToastTypeEnum.Success,
@@ -528,7 +545,7 @@ const AdminToolsBulkBoostImportOption: React.FC<{
         } catch (e) {
             log.error('Failed to bulk import boosts: ', e?.message);
 
-            presentToast(`Bulk boost import failed! ${e?.message}`, {
+            presentToast(m['adminTools.toasts.importFailed']({ message: e?.message ?? '' }), {
                 duration: 5000,
                 hasDismissButton: true,
                 type: ToastTypeEnum.Error,
@@ -583,7 +600,10 @@ const AdminToolsBulkBoostImportOption: React.FC<{
         setImageTracking(prev => deleteIndexAndReindex(prev, rowIndex));
     };
 
-    const loadingText = `Importing boosts (${numBoostsCreated}/${csvData.length})...`;
+    const loadingText = m['adminTools.bulkImport.importingBoosts']({
+        created: numBoostsCreated,
+        total: csvData.length,
+    });
 
     const showLoader = isLoading || isUploadingImages;
 

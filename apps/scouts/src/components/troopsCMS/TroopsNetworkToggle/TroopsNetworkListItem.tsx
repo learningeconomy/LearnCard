@@ -44,11 +44,7 @@ const TroopsNetworkListItem: React.FC<TroopsNetworkListItemProps> = ({
         >
             <div className="flex items-center justify-center">
                 <div className="w-[40px] h-[40px] rounded-full bg-white mr-2 overflow-hidden">
-                    <img
-                        src={thumbnail}
-                        alt="network thumb"
-                        className="w-full h-full object-cover"
-                    />
+                    <img src={thumbnail} alt="" className="w-full h-full object-cover" />
                 </div>
                 <div className="flex flex-col items-cennter justify-center">
                     <p className="m-0 p-0 text-lg text-left font-notoSans text-grayscale-900">

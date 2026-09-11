@@ -1,15 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import * as m from '../../../paraglide/messages.js';
 
-import LaunchPadAiSessionComingSoon from './LaunchPadAiSessionsComingSoon';
-
 import {
-    ModalTypes,
     useGetUnreadUserNotifications,
-    useModal,
     useAiFeatureGate,
     useToast,
     ToastTypeEnum,
@@ -32,16 +27,12 @@ const LaunchPadHeaderLinks: React.FC = () => {
     const { contacts, aiSessions, alerts } = getColorSet(ColorSetEnum.launchPad);
     const styles = getStyleSet(StyleSetEnum.launchPad);
 
-    const { newModal } = useModal({ desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel });
-    const flags = useFlags();
     const { isAiEnabled, reason } = useAiFeatureGate();
     const { presentToast } = useToast();
 
     const { data: unreadNotifications } = useGetUnreadUserNotifications();
 
     const unreadCount = unreadNotifications?.notifications?.length;
-
-    const enableLaunchPadUpdates = flags?.enableLaunchPadUpdates;
 
     if (!launchPadQuickActions) return null;
 
@@ -60,7 +51,7 @@ const LaunchPadHeaderLinks: React.FC = () => {
                     </p>
                 </Link>
 
-                {enableLaunchPadUpdates && isAiEnabled ? (
+                {isAiEnabled ? (
                     <Link
                         to="/ai/topics"
                         className="relative flex flex-col items-center justify-center p-4 rounded-3xl flex-1 xxs:p-1 max-h-[133px] min-h-[133px]"
@@ -72,7 +63,7 @@ const LaunchPadHeaderLinks: React.FC = () => {
                             {m['launchpad.header.aiSessions']()}
                         </p>
                     </Link>
-                ) : enableLaunchPadUpdates && !isAiEnabled ? (
+                ) : (
                     <button
                         onClick={() => {
                             const msg =
@@ -82,22 +73,6 @@ const LaunchPadHeaderLinks: React.FC = () => {
                             presentToast(msg, { type: ToastTypeEnum.Error });
                         }}
                         className="relative flex flex-col items-center justify-center p-4 rounded-3xl flex-1 xxs:p-1 max-h-[133px] min-h-[133px] opacity-50"
-                    >
-                        <AiSessionsIcon className={styles?.iconStyles} />
-                        <p
-                            className={`text-${aiSessions.color} ${styles?.textStyles} font-poppins font-semibold phone:text-[14px] text-center`}
-                        >
-                            {m['launchpad.header.aiSessions']()}
-                        </p>
-                    </button>
-                ) : (
-                    <button
-                        onClick={() => {
-                            newModal(<LaunchPadAiSessionComingSoon />, {
-                                sectionClassName: '!max-w-[370px]',
-                            });
-                        }}
-                        className="relative flex flex-col items-center justify-center p-4 rounded-3xl flex-1 xxs:p-1 max-h-[133px] min-h-[133px]"
                     >
                         <AiSessionsIcon className={styles?.iconStyles} />
                         <p

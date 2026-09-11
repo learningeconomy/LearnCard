@@ -20,8 +20,9 @@ import BoostRecipients from 'learn-card-base/components/boost/BoostRecipients';
 import ScoutConnectModal from './ScoutConnectModal';
 import InviteSelectionModal from './InviteSelectionModal';
 
+import * as m from '../../paraglide/messages.js';
 import { Boost, VC } from '@learncard/types';
-import { pluralize } from 'learn-card-base';
+import { selectLocalePlural } from '../../i18n/formatters';
 import { useCanInviteTroop } from './useCanInviteTroop';
 import {
     getDefaultBadgeThumbForCredential,
@@ -192,7 +193,9 @@ const TroopListItemCardItem: React.FC<TroopListItemCardItemProps> = ({
         handleSelectInviteModal();
     };
 
-    const memberName = customMemberName ? customMemberName : 'Leader';
+    const memberForms = customMemberName
+        ? { one: customMemberName, other: customMemberName }
+        : { one: m['troops.leaderOne'](), other: m['troops.leaderOther']() };
 
     return (
         <div className="cursor-pointer relative rounded-[20px] shadow-bottom-1-4  flex min-h-[130px] items-center h-full bg-white mt-[20px] w-full px-[20px] py-[10px]">
@@ -226,7 +229,7 @@ const TroopListItemCardItem: React.FC<TroopListItemCardItemProps> = ({
                     {_resolvedBoost?.name}
                     <div className="absolute right-[0px] top-[0px] cursor-pointer">
                         <SlimCaretRight
-                            className="text-grayscale-400 h-[20px] w-[20px]"
+                            className="rtl-mirror text-grayscale-400 h-[20px] w-[20px]"
                             color="currentColor"
                         />
                     </div>
@@ -238,11 +241,13 @@ const TroopListItemCardItem: React.FC<TroopListItemCardItemProps> = ({
                 )}
                 {recipients && recipients?.length > 0 && (
                     <span className="font-medium text-grayscale-700">
-                        {recipients?.length} {pluralize(memberName, recipients?.length)}
+                        {recipients?.length} {selectLocalePlural(recipients.length, memberForms)}
                     </span>
                 )}
                 {recipients?.length === 0 && (
-                    <span className="font-medium text-grayscale-700">0 People</span>
+                    <span className="font-medium text-grayscale-700">
+                        {m['troops.list.zeroPeople']()}
+                    </span>
                 )}
                 <span className="h-[30px]">
                     <BoostRecipients
@@ -254,7 +259,7 @@ const TroopListItemCardItem: React.FC<TroopListItemCardItemProps> = ({
 
             {/* <div className="absolute right-[20px] top-[20px] cursor-pointer">
                 <SlimCaretRight
-                    className="text-grayscale-400 h-[20px] w-[20px]"
+                    className="rtl-mirror text-grayscale-400 h-[20px] w-[20px]"
                     color="currentColor"
                 />
             </div> */}

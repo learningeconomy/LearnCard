@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 /**
  * Plugin-level integration tests for the OpenID4VC holder.
  *
@@ -241,7 +242,7 @@ const buildFakeVerifier = (
         responder = next;
     };
 
-    const fetchImpl = jest.fn(
+    const fetchImpl = vi.fn(
         async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
             const url = String(input);
 
@@ -717,8 +718,8 @@ describe('OpenID4VC plugin — SD-JWT-VC matcher wiring', () => {
         ],
     });
 
-    const attachParser = (mock: MockLearnCardHandle): jest.Mock => {
-        const parseSdJwtVc = jest.fn(async (compact: string) => {
+    const attachParser = (mock: MockLearnCardHandle): Mock => {
+        const parseSdJwtVc = vi.fn(async (compact: string) => {
             expect(compact).toBe(SD_JWT_COMPACT);
             return {
                 vct: SD_JWT_VCT,

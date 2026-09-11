@@ -78,6 +78,11 @@ interface IssueSuccessSnapshot {
 
 const SUCCESS_SNAPSHOT_KEY = 'issue-success-snapshot';
 
+type IssueCredentialLocationState = {
+    entryPoint?: string;
+    recipient?: Extract<Recipient, { kind: 'profile' }>;
+};
+
 const readSuccessSnapshot = (): IssueSuccessSnapshot | null => {
     try {
         const raw = sessionStorage.getItem(SUCCESS_SNAPSHOT_KEY);
@@ -136,10 +141,14 @@ const IssueCredentialPage: React.FC = () => {
     const { track } = useAnalytics();
     const { capture: captureProfileSnapshot, snapshotRef: profileSnapshotRef } =
         useProfileSnapshotCapture();
-    const location = useLocation<{ entryPoint?: string } | undefined>();
+    const location = useLocation<IssueCredentialLocationState | undefined>();
     const issueEntryPoint = location.state?.entryPoint;
+    const initialRecipient = location.state?.recipient;
 
-    const initialSnapshot = useMemo(() => readSuccessSnapshot(), []);
+    const initialSnapshot = useMemo(
+        () => (initialRecipient ? null : readSuccessSnapshot()),
+        [initialRecipient]
+    );
 
     const [selectedType, setSelectedType] = useState<CredentialTypeEntry | null>(
         initialSnapshot?.selectedType ?? null
@@ -164,9 +173,11 @@ const IssueCredentialPage: React.FC = () => {
     >(initialSnapshot?.recipientEvidence ?? {});
 
     const [recipientMode, setRecipientMode] = useState<RecipientMode>(
-        initialSnapshot?.recipientMode ?? 'self'
+        initialSnapshot?.recipientMode ?? (initialRecipient ? 'people' : 'self')
     );
-    const [recipients, setRecipients] = useState<Recipient[]>(initialSnapshot?.recipients ?? []);
+    const [recipients, setRecipients] = useState<Recipient[]>(
+        initialSnapshot?.recipients ?? (initialRecipient ? [initialRecipient] : [])
+    );
     const [linkOptions, setLinkOptions] = useState<LinkOptions>(initialSnapshot?.linkOptions ?? {});
 
     const [selectedSkills, setSelectedSkills] = useState<SelectedSkill[]>([]);

@@ -1,5 +1,7 @@
 import React from 'react';
 
+import * as m from '../../paraglide/messages.js';
+
 import { IonFooter, IonPage, IonToolbar } from '@ionic/react';
 import ScoutPassIDCMSLayout from './ScoutPassIDCMSLayout';
 import IDSleeve from 'learn-card-base/svgs/IDSleeve';
@@ -47,7 +49,7 @@ export const ScoutPassIDPreview: React.FC<{
                                 onClick={handleCloseModal}
                                 className={`text-grayscale-900 bg-grayscale-100 text-lg font-bold rounded-full py-[12px] w-full`}
                             >
-                                Cancel
+                                {m['common.cancel']()}
                             </button>
                         </div>
                     </div>

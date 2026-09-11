@@ -102,7 +102,7 @@ export const getLearnCloudPlugin = async (
 
     const getOtherClient = async (
         otherUrl: string,
-        _learnCard: LearnCard<any, 'id', LearnCloudPluginDependentMethods>
+        _learnCard: typeof initialLearnCard
     ): Promise<LearnCloudClient> => {
         const key = `${_learnCard.id.did()}\0${otherUrl}`;
         let otherClient = otherClients.get(key);
@@ -575,7 +575,7 @@ export const getLearnCloudPlugin = async (
 
                 if (!query) {
                     _learnCard.debug?.('LearnCloud index.get (no query)');
-                    const jwe: JWE = (await currentClient.index.get.query(options)) as any;
+                    const jwe = await currentClient.index.get.query(options);
 
                     _learnCard.debug?.('LearnCloud index.get (no query response)', jwe);
 

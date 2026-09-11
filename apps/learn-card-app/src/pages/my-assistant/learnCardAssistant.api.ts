@@ -1,4 +1,5 @@
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
+import { environment } from '../../config/environment';
 
 export const AGENT_URL_STORAGE_KEY = 'learnCardAiAgentDebugUrl';
 export const DEFAULT_AGENT_URL = 'http://localhost:4300';
@@ -14,13 +15,7 @@ export const getInitialAgentUrl = (): string => {
         const debugOverride = localStorage.getItem(AGENT_URL_STORAGE_KEY);
         if (debugOverride) return normalizeAgentUrl(debugOverride);
 
-        const envAgentUrl = import.meta.env.VITE_AI_AGENT_URL;
-        const configuredAgentUrl =
-            typeof envAgentUrl === 'string' &&
-            envAgentUrl.trim() &&
-            envAgentUrl.trim().toLowerCase() !== 'undefined'
-                ? envAgentUrl
-                : networkStore.get.aiAgentUrl();
+        const configuredAgentUrl = environment.VITE_AI_AGENT_URL || networkStore.get.aiAgentUrl();
 
         return normalizeAgentUrl(configuredAgentUrl || DEFAULT_AGENT_URL);
     } catch {
@@ -29,10 +24,7 @@ export const getInitialAgentUrl = (): string => {
 };
 
 export type LearnCardAssistantCardType =
-    | 'message'
-    | 'job-suggestion'
-    | 'pathway-update'
-    | 'action-item';
+    'message' | 'job-suggestion' | 'pathway-update' | 'action-item';
 export type LearnCardAssistantCardPriority = 'normal' | 'high';
 
 export interface LearnCardAssistantCardCta {

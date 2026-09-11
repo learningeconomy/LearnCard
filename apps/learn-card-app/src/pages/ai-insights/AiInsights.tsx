@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 import { ErrorBoundary } from 'react-error-boundary';
+import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import { IonContent, IonPage } from '@ionic/react';
 import { useLocation } from 'react-router-dom';
@@ -50,8 +50,6 @@ import { useGlobalSkillFrameworks } from '../../helpers/globalSkillFrameworks.he
 import { getAiErrorCopy } from '../../helpers/aiError.helpers';
 
 type Flags = {
-    hideAiPathways?: boolean;
-    showGenerateAiInsightsButton?: boolean;
     enableAiAgentDebugTab?: boolean;
 };
 
@@ -228,7 +226,7 @@ const AiInsights: React.FC = () => {
         () =>
             Object.entries(skillsMap) as [
                 string,
-                RawCategorizedEntry[] & { totalSkills: number; totalSubskills: number }
+                RawCategorizedEntry[] & { totalSkills: number; totalSubskills: number },
             ][],
         [skillsMap]
     );
@@ -268,21 +266,6 @@ const AiInsights: React.FC = () => {
 
     const myInsights = (
         <>
-            <div className="flex items-center justify-center w-full">
-                {flags?.showGenerateAiInsightsButton && (
-                    <button
-                        className="bg-indigo-600 text-white rounded-[16px] w-full py-2 shadow-button-bottom font-semibold"
-                        type="button"
-                        disabled={createAiInsightCredentialLoading || !canGenerateAiInsights}
-                        onClick={generateAiInsights}
-                    >
-                        {createAiInsightCredentialLoading
-                            ? m['aiInsights.generating']()
-                            : m['aiInsights.generateAiInsights']()}
-                    </button>
-                )}
-            </div>
-
             {contractRequest}
             <ShareInsightsCard />
 
@@ -316,9 +299,7 @@ const AiInsights: React.FC = () => {
             <AiInsightsWidgets />
 
             <AiInsightsPromptBoxContainer />
-            {!flags?.hideAiPathways && (
-                <AiFeatureLinks features={['ai-sessions', 'skills-hub', 'pathways']} />
-            )}
+            <AiFeatureLinks features={['ai-sessions', 'skills-hub', 'pathways']} />
         </>
     );
 

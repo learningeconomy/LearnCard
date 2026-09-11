@@ -63,7 +63,7 @@ export const notificationCardStyles = {
     /** Meta row (type label); pair with a per-type accent color class */
     meta: 'font-bold p-0 leading-none tracking-wide line-clamp-1 text-[12px] notification-card-type-text',
     /** Timestamp inside the meta row */
-    date: 'text-grayscale-500 normal-case font-normal text-[12px] notification-card-type-issue-date',
+    date: 'text-grayscale-600 normal-case font-normal text-[12px] notification-card-type-issue-date',
     /** Primary pill action button; pair with per-type color classes */
     primaryButton:
         'notification-claim-btn flex items-center justify-center flex-1 rounded-full border-2 border-solid font-semibold font-poppins text-[14px] py-2 px-3 tracking-wide transition duration-150 active:scale-[0.98]',
@@ -189,7 +189,7 @@ export const NotificationTypeStyles: {
         viewButtonStyles: 'border-white-50 text-white-50',
         unclaimedButtonStyles: 'text-white bg-grayscale-100 border-grayscale-100 ',
         claimedButtonStyles: 'text-white bg-white-50 border-white-50 cursor-default',
-        textStyles: 'text-grayscale-500 capitalize',
+        textStyles: 'text-grayscale-600 capitalize',
         iconCircleStyles: 'bg-grayscale-100',
         typeText: 'Loading...',
     },
@@ -197,7 +197,7 @@ export const NotificationTypeStyles: {
         viewButtonStyles: 'border-white-50 text-white-50',
         unclaimedButtonStyles: 'text-white bg-grayscale-100 border-grayscale-100 ',
         claimedButtonStyles: 'text-white bg-white-50 border-white-50 cursor-default',
-        textStyles: 'text-grayscale-500 capitalize',
+        textStyles: 'text-grayscale-600 capitalize',
         iconCircleStyles: 'bg-grayscale-100',
         typeText: 'Consent Flow Transaction',
     },

@@ -2,8 +2,12 @@ import React from 'react';
 
 import type { IconPalette } from '../types';
 
-export const BoostsIconFormal: React.FC<{ className?: string; palette?: Partial<IconPalette> }> = ({ className = '', palette }) => {
+export const BoostsIconFormal: React.FC<{ className?: string; palette?: Partial<IconPalette> }> = ({
+    className = '',
+    palette,
+}) => {
     const fillColor = palette?.primary ?? '#3B82F6';
+    const secondaryColor = palette?.secondary ?? 'white';
     return (
         <svg
             width="51"
@@ -19,7 +23,7 @@ export const BoostsIconFormal: React.FC<{ className?: string; palette?: Partial<
             />
             <path
                 d="M27.3912 30.4063C26.4191 31.3805 24.9135 31.3805 23.9415 30.4063L18.1438 24.5952C14.2653 20.6714 19.3299 12.0023 25.6663 18.4126C31.9916 12.0135 37.0563 20.6828 33.1889 24.5952L27.3912 30.4063Z"
-                fill="white"
+                fill={secondaryColor}
             />
         </svg>
     );

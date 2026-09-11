@@ -171,7 +171,7 @@
             "linkInactiveColor": "text-grayscale-700",
             "linkActiveBackgroundColor": "bg-grayscale-100",
             "linkInactiveBackgroundColor": "bg-white",
-            "primaryButtonColor": "bg-indigo-500 text-white",
+            "primaryButtonColor": "bg-indigo-600 text-white",
             "secondaryButtonColor": "bg-gradient-rainbow text-white border-white",
             "indicatorColor": "text-rose-500",
             "syncingColor": "!text-indigo-500",
@@ -273,7 +273,7 @@
             "primaryColor": "indigo-500",
             "primaryColorShade": "indigo-200",
             "loaders": ["#8B5CF6", "#06B6D4", "#059669", "#3B82F6"],
-            "loginBgColor": "#00ba88",
+            "loginBgColor": "#058760",
             "loginButtonBgColor": "#047857",
             "loginButtonTextColor": "#FFFFFF",
             "featuredCardBgColor": "bg-slate-100"

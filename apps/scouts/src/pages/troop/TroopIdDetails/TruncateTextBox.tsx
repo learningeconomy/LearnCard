@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import * as m from '../../../paraglide/messages.js';
 
 type TruncateTextBoxProps = {
     headerText?: string;
@@ -65,7 +66,7 @@ const TruncateTextBox: React.FC<TruncateTextBoxProps> = ({
                                 setShowFullText(true);
                             }}
                         >
-                            Show more
+                            {m['troops.showMore']()}
                         </button>
                     </>
                 )}
@@ -79,7 +80,7 @@ const TruncateTextBox: React.FC<TruncateTextBoxProps> = ({
                                 setShowFullText(false);
                             }}
                         >
-                            Show less
+                            {m['troops.showLess']()}
                         </button>
                     </>
                 )}

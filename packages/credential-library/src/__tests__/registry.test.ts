@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, expectTypeOf, beforeAll } from 'vitest';
 import { UnsignedVCValidator } from '@learncard/types';
 
 import {
@@ -10,7 +10,10 @@ import {
     getValidFixtures,
     getInvalidFixtures,
     getStats,
+    isCredentialFixture,
+    isSdJwtVcFixture,
     resetRegistry,
+    registerFixture,
     registerFixtures,
     prepareFixture,
     prepareFixtureById,
@@ -18,13 +21,32 @@ import {
 
 import { ALL_FIXTURES } from '../fixtures';
 
-import type { CredentialFixture } from '../types';
+import type { CredentialFixture, LibraryFixture, SdJwtVcFixture } from '../types';
+
+const sdJwtFixture: SdJwtVcFixture = {
+    kind: 'sd-jwt-vc',
+    id: 'sd-jwt-vc/test-course',
+    name: 'Test Course',
+    description: 'Registry-only SD-JWT VC fixture',
+    spec: 'sd-jwt-vc',
+    profile: 'course',
+    features: ['selective-disclosure', 'holder-binding'],
+    source: 'synthetic',
+    signed: false,
+    validity: 'valid',
+    template: {
+        format: 'dc+sd-jwt',
+        vct: 'https://example.com/vct/test-course',
+        claims: { course_name: 'Test Course' },
+        selectivelyDisclosable: ['course_name'],
+    },
+};
 
 // ---------------------------------------------------------------------------
 // Ensure fixtures are loaded
 // ---------------------------------------------------------------------------
 
-let fixtures: readonly CredentialFixture[];
+let fixtures: readonly LibraryFixture[];
 
 beforeAll(() => {
     fixtures = getAllFixtures();
@@ -56,7 +78,11 @@ describe('Registry integrity', () => {
             expect(f.source).toBeTruthy();
             expect(typeof f.signed).toBe('boolean');
             expect(f.validity).toBeTruthy();
-            expect(f.credential).toBeTruthy();
+            if (isCredentialFixture(f)) {
+                expect(f.credential).toBeTruthy();
+            } else {
+                expect(f.template).toBeTruthy();
+            }
         }
     });
 });
@@ -67,7 +93,11 @@ describe('Registry integrity', () => {
 
 describe('Fixture validation', () => {
     describe('Valid fixtures pass their declared validator', () => {
-        const validFixtures = () => getAllFixtures().filter(f => f.validity === 'valid');
+        const validFixtures = () =>
+            getAllFixtures().filter(
+                (fixture): fixture is CredentialFixture =>
+                    fixture.validity === 'valid' && isCredentialFixture(fixture)
+            );
 
         it.each(validFixtures().map(f => [f.id, f] as const))('%s', (_id, fixture) => {
             if (!fixture.validator) return;
@@ -79,7 +109,11 @@ describe('Fixture validation', () => {
     });
 
     describe('Valid fixtures also pass base UnsignedVC validator', () => {
-        const validFixtures = () => getAllFixtures().filter(f => f.validity === 'valid');
+        const validFixtures = () =>
+            getAllFixtures().filter(
+                (fixture): fixture is CredentialFixture =>
+                    fixture.validity === 'valid' && isCredentialFixture(fixture)
+            );
 
         it.each(validFixtures().map(f => [f.id, f] as const))('%s', (_id, fixture) => {
             const result = UnsignedVCValidator.safeParse(fixture.credential);
@@ -90,7 +124,11 @@ describe('Fixture validation', () => {
 
     describe('Invalid fixtures fail their declared validator', () => {
         const invalidFixtures = () =>
-            getAllFixtures().filter(f => f.validity === 'invalid' || f.validity === 'tampered');
+            getAllFixtures().filter(
+                (fixture): fixture is CredentialFixture =>
+                    (fixture.validity === 'invalid' || fixture.validity === 'tampered') &&
+                    isCredentialFixture(fixture)
+            );
 
         it.each(invalidFixtures().map(f => [f.id, f] as const))('%s', (_id, fixture) => {
             if (!fixture.validator) return;
@@ -114,12 +152,34 @@ describe('Query API', () => {
         expect(fixture.spec).toBe('vc-v2');
     });
 
+    it('registers the production Course Completion SD-JWT VC fixture', () => {
+        const fixture = getFixture('sd-jwt-vc/course-completion');
+
+        expect(isSdJwtVcFixture(fixture)).toBe(true);
+        if (!isSdJwtVcFixture(fixture)) throw new Error('Expected SD-JWT VC fixture');
+
+        expect(fixture.template.format).toBe('dc+sd-jwt');
+        expect(fixture.template.vct).toBe(
+            'https://credentials.learncard.com/vct/course-completion'
+        );
+        expect(getFixtures({ spec: 'sd-jwt-vc' }).map(item => item.id)).toContain(fixture.id);
+        expect(getFixtures({ kind: 'sd-jwt-vc' }).map(item => item.id)).toContain(fixture.id);
+        expect(getUnsignedFixtures().map(item => item.id)).not.toContain(fixture.id);
+    });
+
     it('getFixture throws for unknown ID', () => {
         expect(() => getFixture('nonexistent/fixture')).toThrow('not found');
     });
 
     it('findFixture returns undefined for unknown ID', () => {
         expect(findFixture('nonexistent/fixture')).toBeUndefined();
+    });
+
+    it('types runtime string fixture lookups as the heterogeneous library union', () => {
+        const runtimeId: string = 'sd-jwt-vc/course-completion';
+
+        expectTypeOf(getFixture(runtimeId)).toEqualTypeOf<LibraryFixture>();
+        expectTypeOf(findFixture(runtimeId)).toEqualTypeOf<LibraryFixture | undefined>();
     });
 
     it('filters by spec', () => {
@@ -194,6 +254,134 @@ describe('Query API', () => {
         expect(unsigned.length).toBeGreaterThan(0);
         expect(unsigned.every(f => f.signed === false)).toBe(true);
     });
+
+    it('narrows SD-JWT fixtures and keeps W3C helpers narrow', () => {
+        expect(isSdJwtVcFixture(sdJwtFixture)).toBe(true);
+        expect(isCredentialFixture(getFixture('vc-v2/basic'))).toBe(true);
+        expect(getUnsignedFixtures().every(isCredentialFixture)).toBe(true);
+        expect(() =>
+            prepareFixture(sdJwtFixture, { issuerDid: 'did:key:z6MkTestIssuer123' })
+        ).toThrow('materializeSdJwtVcFixture');
+    });
+
+    it('stores SD-JWT fixtures separately from W3C fixtures', () => {
+        resetRegistry();
+
+        try {
+            registerFixtures([...ALL_FIXTURES, sdJwtFixture]);
+
+            const sdJwtFixtures = getFixtures({ kind: 'sd-jwt-vc' });
+            expect(sdJwtFixtures).toContainEqual(sdJwtFixture);
+            expect(sdJwtFixtures.map(fixture => fixture.id)).toContain(
+                'sd-jwt-vc/course-completion'
+            );
+            const w3cFixtures = getFixtures({ kind: 'w3c-vc' });
+            expect(w3cFixtures).toHaveLength(ALL_FIXTURES.filter(isCredentialFixture).length);
+            expect(w3cFixtures.every(isCredentialFixture)).toBe(true);
+            expect(getFixture('sd-jwt-vc/test-course').template).toEqual(sdJwtFixture.template);
+            expect(getUnsignedFixtures().every(isCredentialFixture)).toBe(true);
+            expect(getUnsignedFixtures().some(fixture => fixture.id === sdJwtFixture.id)).toBe(
+                false
+            );
+        } finally {
+            resetRegistry();
+            getAllFixtures();
+        }
+    });
+
+    it('rejects SD-JWT fixtures outside the required ID prefix', () => {
+        resetRegistry();
+
+        try {
+            expect(() =>
+                registerFixture({
+                    ...sdJwtFixture,
+                    id: 'custom/course',
+                } as unknown as LibraryFixture)
+            ).toThrow('must start with "sd-jwt-vc/"');
+        } finally {
+            resetRegistry();
+            getAllFixtures();
+        }
+    });
+
+    it('rejects W3C fixtures inside the reserved SD-JWT ID prefix', () => {
+        const w3cFixture = ALL_FIXTURES.find(isCredentialFixture);
+        if (!w3cFixture) throw new Error('Expected at least one W3C fixture');
+
+        resetRegistry();
+
+        try {
+            expect(() =>
+                registerFixture({
+                    ...w3cFixture,
+                    id: 'sd-jwt-vc/not-an-sd-jwt-template',
+                } as LibraryFixture)
+            ).toThrow('reserved for SD-JWT VC fixtures');
+        } finally {
+            resetRegistry();
+            getAllFixtures();
+        }
+    });
+
+    it('rejects SD-JWT fixtures whose kind and spec disagree', () => {
+        resetRegistry();
+
+        try {
+            expect(() =>
+                registerFixture({
+                    ...sdJwtFixture,
+                    spec: 'vc-v2',
+                } as unknown as LibraryFixture)
+            ).toThrow('must use spec "sd-jwt-vc"');
+        } finally {
+            resetRegistry();
+            getAllFixtures();
+        }
+    });
+
+    it('rejects unrecognized fixture kinds at registration', () => {
+        const w3cFixture = ALL_FIXTURES.find(isCredentialFixture);
+        if (!w3cFixture) throw new Error('Expected at least one W3C fixture');
+
+        resetRegistry();
+
+        try {
+            expect(() =>
+                registerFixture({
+                    ...w3cFixture,
+                    kind: 'unknown-fixture-kind',
+                } as unknown as LibraryFixture)
+            ).toThrow('Unsupported fixture kind "unknown-fixture-kind"');
+        } finally {
+            resetRegistry();
+            getAllFixtures();
+        }
+    });
+
+    it.each([undefined, 'w3c-vc'] as const)(
+        'rejects W3C fixtures with kind %s and the SD-JWT spec',
+        kind => {
+            const w3cFixture = ALL_FIXTURES.find(isCredentialFixture);
+            if (!w3cFixture) throw new Error('Expected at least one W3C fixture');
+
+            resetRegistry();
+
+            try {
+                expect(() =>
+                    registerFixture({
+                        ...w3cFixture,
+                        kind,
+                        id: 'custom/not-an-sd-jwt-template',
+                        spec: 'sd-jwt-vc',
+                    } as unknown as LibraryFixture)
+                ).toThrow('W3C VC fixtures cannot use spec "sd-jwt-vc"');
+            } finally {
+                resetRegistry();
+                getAllFixtures();
+            }
+        }
+    );
 
     it('combined filters work together', () => {
         const results = getFixtures({

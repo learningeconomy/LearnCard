@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { renderHook } from '@testing-library/react';
 
 let installed: any[] = [];

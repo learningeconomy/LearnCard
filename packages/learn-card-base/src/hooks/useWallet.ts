@@ -379,19 +379,24 @@ export const useWallet = () => {
 
     const storeAndAddVCToWallet = async (
         vc: VC,
-        metadata: Partial<{ title: string; imgUrl: string }> = {},
+        metadata: Partial<{
+            title: string;
+            imgUrl: string;
+            allowDuplicate: boolean;
+            boostUri: string;
+        }> = {},
         location: 'SQLite' | 'LearnCloud' = 'LearnCloud',
         skipLCNUser?: boolean // skip steps requiring a LCN account eg didweb
     ): Promise<{ result: boolean; credentialUri: string; category: string }> => {
-        const { title, imgUrl } = metadata;
-        const _id = vc.id || uuidv4();
+        const { title, imgUrl, allowDuplicate, boostUri: sourceBoostUri } = metadata;
+        const _id = allowDuplicate ? uuidv4() : vc.id || uuidv4();
         let returnUri: string | undefined;
 
         try {
             const wallet = await getWallet();
 
             const category = await getCategoryForCredential(vc, wallet);
-            const boostUri = vc.boostId ?? unwrapBoostCredential(vc)?.boostId;
+            const boostUri = sourceBoostUri ?? vc.boostId ?? unwrapBoostCredential(vc)?.boostId;
             let result: boolean | undefined;
 
             if (skipLCNUser) {
@@ -503,7 +508,7 @@ export const useWallet = () => {
         input: AddVCInput & { skipSync?: boolean },
         location: 'SQLite' | 'LearnCloud' = 'LearnCloud'
     ) => {
-        const { uri, id, title, imgUrl, contractUri, skipSync } = input;
+        const { uri, id, title, imgUrl, contractUri, boostUri: sourceBoostUri, skipSync } = input;
         let _id = id;
         if (!uri) throw new Error('No uri was provided, uri required');
 
@@ -517,7 +522,8 @@ export const useWallet = () => {
             if (!vc) throw new Error('No credential was found at the provided URI');
 
             const category = await getCategoryForCredential(vc as VC, wallet);
-            const boostUri = vc?.boostId ?? unwrapBoostCredential(vc as VC)?.boostId;
+            const boostUri =
+                sourceBoostUri ?? vc?.boostId ?? unwrapBoostCredential(vc as VC)?.boostId;
 
             logWalletSync('Adding credential to wallet', {
                 uri,

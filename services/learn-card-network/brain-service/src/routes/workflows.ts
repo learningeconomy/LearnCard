@@ -48,6 +48,7 @@ import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { getNotificationMessage } from '@helpers/notificationMessages';
 import { resolveRecipientLocale } from '@helpers/getRecipientLocale.helpers';
 import { logCredentialClaimed, logCredentialFailed } from '@helpers/activity.helpers';
+import { handleConnectionPromptsForCredentialClaim } from '@helpers/connectionPrompt.helpers';
 import {
     EXHAUSTED,
     exhaustExchangeChallengeForToken,
@@ -707,6 +708,18 @@ async function handleInboxClaimPresentation(
             const integrationId = inboxCredential.integrationId;
             const issuerProfileForActivity = await getProfileByDid(inboxCredential.issuerDid);
             if (issuerProfileForActivity) {
+                if (
+                    holderProfile &&
+                    !(inboxCredential.signingAuthority as { listingSlug?: string } | undefined)
+                        ?.listingSlug
+                ) {
+                    await handleConnectionPromptsForCredentialClaim({
+                        claimer: holderProfile,
+                        sender: issuerProfileForActivity,
+                        triggerId: `inbox:${inboxCredential.id}`,
+                    });
+                }
+
                 await logCredentialClaimed({
                     activityId,
                     actorProfileId: issuerProfileForActivity.profileId,

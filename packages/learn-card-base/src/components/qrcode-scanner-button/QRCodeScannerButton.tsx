@@ -1,25 +1,25 @@
-import React, { useRef } from 'react';
-
-import { IonModal } from '@ionic/react';
+import React from 'react';
 
 import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
 import QrCodeUserCardModal from 'learn-card-base/components/qrcode-user-card/QRCodeUserCard';
 import ProfilePicture from 'learn-card-base/components/profilePicture/ProfilePicture';
 
+import useModal from '../modals/useModal';
+import { ModalTypes } from '../modals/types/Modals';
 import { BrandingEnum } from '../headerBranding/headerBrandingHelpers';
 
 export const QRCodeScannerButton: React.FC<{ branding: BrandingEnum }> = ({ branding }) => {
-    const isOpen = useRef(false);
-    const modal = useRef(null);
+    const { newModal, closeModal } = useModal();
 
+    // Same presentation as LCA's MyLearnCardModal QR-card flow: FullScreen on
+    // both platforms; the AppModal surface owns safe-area insets (the legacy
+    // `safe--area` iPad env() patch is no longer needed).
     const handleQRCodeCardModal = () => {
-        if (isOpen.current) {
-            isOpen.current = false;
-            modal.current.dismiss();
-        } else {
-            isOpen.current = true;
-            modal.current.present();
-        }
+        newModal(
+            <QrCodeUserCardModal handleQRCodeCardModal={() => closeModal()} branding={branding} />,
+            { className: 'qr-code-card-modal' },
+            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+        );
     };
 
     return (
@@ -37,12 +37,6 @@ export const QRCodeScannerButton: React.FC<{ branding: BrandingEnum }> = ({ bran
             <section className="flex justify-center items-center h-9 w-9 ml-3 rounded-full bg-white text-black">
                 <QRCodeScanner className="h-[70%]" />
             </section>
-            <IonModal ref={modal} isOpen={isOpen} className="qr-code-card-modal safe--area">
-                <QrCodeUserCardModal
-                    handleQRCodeCardModal={handleQRCodeCardModal}
-                    branding={branding}
-                />
-            </IonModal>
         </button>
     );
 };

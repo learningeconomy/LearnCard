@@ -262,7 +262,7 @@ export const brandNewUser: DashboardViewModel = {
     reviewsDueToday: 0,
     onContinueGoal: baseHandlers.onContinueGoal,
     onReviewGoal: baseHandlers.onReviewGoal,
-    primaryButtonClass: 'bg-indigo-500 text-white',
+    primaryButtonClass: 'bg-indigo-600 text-white',
     slots: {
         collect: makeAction(
             'collect',
@@ -333,7 +333,7 @@ export const activeLearner: DashboardViewModel = {
     reviewsDueToday: 3,
     onContinueGoal: baseHandlers.onContinueGoal,
     onReviewGoal: baseHandlers.onReviewGoal,
-    primaryButtonClass: 'bg-indigo-500 text-white',
+    primaryButtonClass: 'bg-indigo-600 text-white',
     slots: {
         collect: makeAction('collect', 'connect-active', 'See Passport', '12 credentials'),
         understand: makeAction(

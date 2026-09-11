@@ -26,8 +26,9 @@ export const callbackLink = (callback: () => Promise<void>): TRPCLink<AppRouter>
                                 () => {
                                     if (!isDone) attempt();
                                 },
-                                callbackError => {
-                                    if (!isDone) observer.error(callbackError);
+                                () => {
+                                    // Forward the original request error if refreshing auth fails.
+                                    if (!isDone) observer.error(error);
                                 }
                             );
                         },

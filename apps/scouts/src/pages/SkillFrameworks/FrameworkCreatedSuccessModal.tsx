@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { ModalTypes, useModal } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
 
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
 import ManageSkills from './ManageSkills';
@@ -32,7 +33,7 @@ const FrameworkCreatedSuccessModal: React.FC<FrameworkCreatedSuccessModalProps> 
                     {isUpdate ? (
                         <>
                             <span className="font-poppins text-[22px] text-grayscale-900">
-                                Framework has been successfully updated.
+                                {m['skillFrameworks.fwUpdatedMsg']()}
                             </span>
                         </>
                     ) : (
@@ -41,7 +42,7 @@ const FrameworkCreatedSuccessModal: React.FC<FrameworkCreatedSuccessModalProps> 
                                 {framework.name}
                             </span>{' '}
                             <span className="font-poppins text-[22px] text-grayscale-900">
-                                has been successfully created.
+                                {m['skillFrameworks.fwCreatedMsg']()}
                             </span>
                         </>
                     )}
@@ -49,7 +50,7 @@ const FrameworkCreatedSuccessModal: React.FC<FrameworkCreatedSuccessModalProps> 
 
                 {!isUpdate && (
                     <p className="text-grayscale-900 text-center font-poppins text-[22px]">
-                        Would you like to add competencies now?
+                        {m['skillFrameworks.addCompsQ']()}
                     </p>
                 )}
             </div>
@@ -68,14 +69,14 @@ const FrameworkCreatedSuccessModal: React.FC<FrameworkCreatedSuccessModalProps> 
                     className="bg-indigo-500 text-white py-[10px] px-[20px] rounded-[30px] flex gap-[10px] items-center justify-center font-[600] text-[17px] font-notoSans leading-[24px] tracking-[0.25px]"
                 >
                     <PuzzlePiece version="with-plus" className="w-[25px] h-[25px]" />
-                    Add Competencies
+                    {m['skillFrameworks.addComps']()}
                 </button>
             )}
             <button
                 onClick={isUpdate ? closeAllModals : closeModal}
                 className="bg-white text-grayscale-900 py-[10px] px-[20px] rounded-[30px] flex gap-[10px] items-center justify-center text-[17px] font-poppins leading-[24px] tracking-[-0.25px]"
             >
-                {isUpdate ? 'Close' : 'Later'}
+                {isUpdate ? m['common.close']() : m['skillFrameworks.later']()}
             </button>
         </div>
     );

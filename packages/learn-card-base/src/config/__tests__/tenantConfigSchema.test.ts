@@ -10,6 +10,22 @@ describe('tenantConfigSchema', () => {
         expect(result.success).toBe(true);
     });
 
+    it('requires strategy-specific auth configuration', () => {
+        const result = tenantConfigSchema.safeParse({
+            ...DEFAULT_LEARNCARD_TENANT_CONFIG,
+            auth: {
+                ...DEFAULT_LEARNCARD_TENANT_CONFIG.auth,
+                keyDerivation: 'web3auth',
+                web3Auth: undefined,
+            },
+        });
+
+        expect(result.success).toBe(false);
+        expect(result.error?.issues.some(issue => issue.path.join('.') === 'auth.web3Auth')).toBe(
+            true
+        );
+    });
+
     it('returns the full config shape from defaults', () => {
         const result = tenantConfigSchema.parse(DEFAULT_LEARNCARD_TENANT_CONFIG);
 
@@ -187,9 +203,9 @@ describe('parseTenantConfig', () => {
         expect(config.tenantId).toBe('learncard');
     });
 
-    it('returns null for invalid input', () => {
-        const result = parseTenantConfig({ tenantId: 'bad' } as unknown, 'test');
-
-        expect(result).toBeNull();
+    it('throws actionable errors for invalid input', () => {
+        expect(() => parseTenantConfig({ tenantId: 'bad' }, 'test fixture')).toThrow(
+            /Invalid TenantConfig from test fixture/
+        );
     });
 });

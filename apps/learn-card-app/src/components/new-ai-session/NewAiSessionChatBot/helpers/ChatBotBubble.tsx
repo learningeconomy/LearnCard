@@ -12,6 +12,8 @@ import {
     ChatBotQuestionsEnum,
     existingSessionQAInitState,
     newSessionQAInitState,
+    resolveChatBotEmphasis,
+    resolveChatBotQuestion,
 } from '../newAiSessionChatbot.helpers';
 import {
     aiPassportApps,
@@ -148,8 +150,8 @@ export const ChatBotBubbleQuestion: React.FC<{ qa: ChatBotQA; index: number }> =
                 <div className="bg-grayscale-100 rounded-[20px] px-[15px] py-[10px] flex items-center">
                     <p className="text-grayscale-800 text-[17px]">
                         <FormatQuestionTitle
-                            title={qa?.question as string}
-                            phraseToEmphasize={qa?.phraseToEmphasize as string}
+                            title={resolveChatBotQuestion(qa)}
+                            phraseToEmphasize={resolveChatBotEmphasis(qa)}
                         />
                     </p>
                 </div>

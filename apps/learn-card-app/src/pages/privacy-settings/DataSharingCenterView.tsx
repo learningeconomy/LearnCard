@@ -21,6 +21,7 @@ const DataSharingCenterView: React.FC<DataSharingCenterViewProps> = ({ vm }) => 
 
     return (
         <div className="ds-content-bg relative min-h-full w-full">
+            <h1 className="sr-only">{m['settings.privacyTitle']()}</h1>
             <div aria-hidden className="ds-aurora">
                 <span className="ds-aurora__blob ds-aurora__blob--emerald" />
                 <span className="ds-aurora__blob ds-aurora__blob--sky" />
@@ -28,8 +29,12 @@ const DataSharingCenterView: React.FC<DataSharingCenterViewProps> = ({ vm }) => 
             </div>
 
             {isLoading ? (
-                <div className="relative z-10 flex flex-col items-center justify-center min-h-[60vh] gap-3">
-                    <IonSpinner name="crescent" className="w-8 h-8" />
+                <div
+                    role="status"
+                    aria-live="polite"
+                    className="relative z-10 flex flex-col items-center justify-center min-h-[60vh] gap-3"
+                >
+                    <IonSpinner aria-hidden="true" name="crescent" className="w-8 h-8" />
                     <p className="text-grayscale-600 text-sm">{m['dataSharing.loadingCenter']()}</p>
                 </div>
             ) : (
@@ -55,7 +60,7 @@ const DataSharingCenterView: React.FC<DataSharingCenterViewProps> = ({ vm }) => 
 
                         <AppDiagnosticsCard {...diagnostics} delay={240} />
 
-                        <p className="text-xs text-grayscale-500 text-center px-6 mt-1">
+                        <p className="text-xs text-grayscale-600 text-center px-6 mt-1">
                             {m['dataSharing.centerFooter']()}
                         </p>
                     </div>

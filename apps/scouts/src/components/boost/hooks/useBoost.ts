@@ -15,6 +15,7 @@ import {
 import { useAddCredentialToWallet } from '../mutations';
 import { LCNBoostStatusEnum } from '../boost';
 import { getLogger } from 'learn-card-base';
+import * as m from '../../../paraglide/messages.js';
 const log = getLogger('use-boost');
 
 // oxlint-disable-next-line no-unused-vars
@@ -41,7 +42,7 @@ const useBoost = (history: RouteComponentProps['history']) => {
                     })
                 ).then(() => {
                     setIsLoading(false);
-                    presentToast(`Boost issued successfully`, {
+                    presentToast(m['boostCMS.issuedOk'](), {
                         type: ToastTypeEnum.Success,
                         hasDismissButton: true,
                     });
@@ -50,7 +51,7 @@ const useBoost = (history: RouteComponentProps['history']) => {
         } catch (e) {
             log.debug('error', e);
             setIsLoading(false);
-            presentToast(`Error issuing boost`, {
+            presentToast(m['boostCMS.issueErr'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -82,7 +83,7 @@ const useBoost = (history: RouteComponentProps['history']) => {
         } catch (e) {
             log.debug('error', e);
             setIsLoading(false);
-            presentToast(`Error issuing boost`, {
+            presentToast(m['boostCMS.issueErr'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -96,14 +97,14 @@ const useBoost = (history: RouteComponentProps['history']) => {
             const vcUri = await sendAndSaveBoostCredentialSelf(wallet, profileId, boostUri);
             await addCredentialToWallet({ uri: vcUri });
             setIsLoading(false);
-            presentToast(`Boost issued successfully`, {
+            presentToast(m['boostCMS.issuedOk'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
         } catch (e) {
             log.debug('error', e);
             setIsLoading(false);
-            presentToast(`Error issuing boost`, {
+            presentToast(m['boostCMS.issueErr'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -134,7 +135,7 @@ const useBoost = (history: RouteComponentProps['history']) => {
         } catch (e) {
             log.debug('error', e);
             setIsLoading(false);
-            presentToast(`Error issuing boost`, {
+            presentToast(m['boostCMS.issueErr'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });

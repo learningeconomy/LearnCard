@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 
 import { IonItem, IonList } from '@ionic/react';
+import * as m from '../../../paraglide/messages.js';
 
 import { Notification, NotificationProps } from '@learncard/react';
 import { VCClaim } from 'learn-card-base/components/vcmodal/VCModal';
@@ -52,7 +53,7 @@ export const NotificationItem: React.FC<{
                 {
                     async onSuccess() {
                         await addCredentialToWallet({ uri: notification?.uri });
-                        presentToast(`Successfully claimed Credential!`, {
+                        presentToast(m['notifications.toasts.successfullyClaimed'](), {
                             type: ToastTypeEnum.Success,
                             hasDismissButton: true,
                         });

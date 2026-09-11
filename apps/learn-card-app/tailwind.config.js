@@ -7,6 +7,10 @@ module.exports = {
         '../../packages/learn-card-base/src/**/*.{js,jsx,ts,tsx}',
     ],
     safelist: [
+        // @learncard/react is not in `content`, but this stylesheet overrides its
+        // bundled palette. Keep the accessible verifier-badge orange generated
+        // here so the app does not fall back to an unstyled badge.
+        'text-orange-800',
         'text-[var(--sdm-c,inherit)]',
         'dark:text-[var(--shiki-dark,var(--sdm-c,inherit))]',
         'bg-[var(--sdm-tbg)]',
@@ -20,6 +24,10 @@ module.exports = {
         'bg-sand-50',
         'bg-vp-red-50',
         'bg-baltic-blue-500',
+        // `defaults.primaryButtonColor` comes from theme JSON; the 600 steps are
+        // the AA-passing white-on-button values (the 500s fall below 4.5:1).
+        'bg-baltic-blue-600',
+        'bg-indigo-600',
         // LC-1921 side-menu Build-My-LearnCard card + theme toggle: tints built
         // via `bg-${family}-{50,200,500}` from the active theme primary color.
         'bg-indigo-50',

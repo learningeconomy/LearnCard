@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { initLearnCard } from '@learncard/init';
 
 import { useWallet, useCurrentUser, chapiStore, redirectStore } from 'learn-card-base';
+import * as m from '../../../paraglide/messages.js';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('vpr-query-by-example');
 
@@ -146,14 +147,16 @@ const VprQueryByExample: React.FC = ({ event, currentUser }) => {
                                             className="bg-emerald-700 rounded-full text-white font-bold border px-4 py-2 mr-2 w-full max-w-[200px]"
                                             onClick={accept}
                                         >
-                                            {isLoading ? 'Sharing...' : 'Share'}
+                                            {isLoading
+                                                ? m['credentialStorage.sharing']()
+                                                : m['credentialStorage.share']()}
                                         </button>
                                         <button
                                             type="button"
                                             className="bg-rose-600 rounded-full text-white font-bold border px-4 py-2 w-full max-w-[200px]"
                                             onClick={reject}
                                         >
-                                            Reject
+                                            {m['credentialStorage.reject']()}
                                         </button>
                                     </div>
                                 </IonCol>
@@ -166,13 +169,13 @@ const VprQueryByExample: React.FC = ({ event, currentUser }) => {
                         )}
                         {!isLoadingCredentials && vcs.length === 0 && (
                             <section className="flex relative flex-col achievements-list-container pt-[10px] px-[20px] text-center justify-center">
-                                <strong>No credentials to share.</strong>
+                                <strong>{m['credentialStorage.noCredsToShare']()}</strong>
                                 <button
                                     type="button"
                                     className="bg-rose-600 rounded-full text-white font-bold border px-4 py-2 w-full max-w-[200px]"
                                     onClick={reject}
                                 >
-                                    Cancel
+                                    {m['credentialStorage.cancel']()}
                                 </button>
                             </section>
                         )}

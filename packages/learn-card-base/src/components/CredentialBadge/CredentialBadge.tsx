@@ -204,7 +204,7 @@ export const CredentialBadge: React.FC<CredentialBadgeProps> = ({
                         </div>
                         {isCertDisplayType && (
                             <CertRibbon
-                                className={`absolute z-[9999] w-[100px] h-[100px] text-${_colorOverride} ${certRibbonCustomClass}`}
+                                className={`absolute z-10 w-[100px] h-[100px] text-${_colorOverride} ${certRibbonCustomClass}`}
                             />
                         )}
                         {/* isCertDisplayType && credential && (

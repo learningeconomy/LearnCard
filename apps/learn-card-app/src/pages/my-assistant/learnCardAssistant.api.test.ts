@@ -1,6 +1,12 @@
-import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
+
+const mockBuildEnvironment = vi.hoisted(() => ({
+    VITE_AI_AGENT_URL: undefined as string | undefined,
+}));
+
+vi.mock('../../config/environment', () => ({ environment: mockBuildEnvironment }));
 
 import {
     AGENT_URL_STORAGE_KEY,
@@ -328,12 +334,7 @@ describe('getInitialAgentUrl', () => {
     beforeEach(() => {
         localStorage.clear();
         networkStore.set.aiAgentUrl('');
-        vi.unstubAllEnvs();
-        vi.stubEnv('VITE_AI_AGENT_URL', '');
-    });
-
-    afterEach(() => {
-        vi.unstubAllEnvs();
+        mockBuildEnvironment.VITE_AI_AGENT_URL = undefined;
     });
 
     it('prefers the debug localStorage override', () => {
@@ -343,7 +344,7 @@ describe('getInitialAgentUrl', () => {
     });
 
     it('uses VITE_AI_AGENT_URL when set', () => {
-        vi.stubEnv('VITE_AI_AGENT_URL', 'https://env-agent.example.com');
+        mockBuildEnvironment.VITE_AI_AGENT_URL = 'https://env-agent.example.com';
 
         expect(getInitialAgentUrl()).toBe('https://env-agent.example.com');
     });

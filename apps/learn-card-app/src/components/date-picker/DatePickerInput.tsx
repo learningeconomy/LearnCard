@@ -7,9 +7,12 @@ import { IonDatetime } from '@ionic/react';
 import { useModal, ModalTypes } from 'learn-card-base';
 
 interface DatePickerInputProps {
+    id?: string;
     value: string;
     onChange: (date: string) => void;
     error?: string;
+    ariaDescribedBy?: string;
+    ariaInvalid?: boolean;
     isMobile: boolean;
     label?: string;
     minDate?: string;
@@ -18,9 +21,12 @@ interface DatePickerInputProps {
 }
 
 const DatePickerInput: React.FC<DatePickerInputProps> = ({
+    id,
     value,
     onChange,
     error,
+    ariaDescribedBy,
+    ariaInvalid = false,
     isMobile,
     label = 'Date of Birth',
     minDate = new Date('1900-01-01T00:00:00'),
@@ -70,9 +76,13 @@ const DatePickerInput: React.FC<DatePickerInputProps> = ({
         return (
             <>
                 <button
+                    id={id}
                     type="button"
                     disabled={disabled}
-                    className={`w-full flex items-center justify-between bg-grayscale-100 text-grayscale-500 rounded-[15px] font-poppins font-normal px-[16px] py-[16px] tracking-wider text-base ${
+                    aria-label={label}
+                    aria-describedby={ariaDescribedBy}
+                    aria-haspopup="dialog"
+                    className={`w-full flex items-center justify-between bg-grayscale-100 text-grayscale-600 rounded-[15px] font-poppins font-normal px-[16px] py-[16px] tracking-wider text-base ${
                         error ? 'login-input-email-error' : ''
                     } ${disabled ? '!opacity-70 cursor-not-allowed' : ''}`}
                     onClick={e => {
@@ -81,9 +91,12 @@ const DatePickerInput: React.FC<DatePickerInputProps> = ({
                         newModal(
                             <div className="w-full h-full transparent flex items-center justify-center">
                                 <IonDatetime
-                                    onIonChange={e => {
-                                        if (e.detail.value) {
-                                            onChange(moment(e.detail.value).format('YYYY-MM-DD'));
+                                    aria-label={label}
+                                    onIonChange={event => {
+                                        if (event.detail.value) {
+                                            onChange(
+                                                moment(event.detail.value).format('YYYY-MM-DD')
+                                            );
                                             closeModal();
                                         }
                                     }}
@@ -92,13 +105,16 @@ const DatePickerInput: React.FC<DatePickerInputProps> = ({
                                     className="bg-white text-black rounded-[20px] w-full shadow-3xl z-50 font-notoSans"
                                     showDefaultButtons
                                     color="indigo-500"
-                                    max={maxDate || moment().format('YYYY-MM-DD')}
-                                    min={minDate}
+                                    max={
+                                        maxDate
+                                            ? moment(maxDate).format('YYYY-MM-DD')
+                                            : moment().format('YYYY-MM-DD')
+                                    }
+                                    min={moment(minDate).format('YYYY-MM-DD')}
                                     onIonCancel={closeModal}
                                 />
                             </div>,
                             {
-                                disableCloseHandlers: true,
                                 sectionClassName:
                                     '!bg-transparent !border-none !shadow-none !rounded-none',
                             },
@@ -111,6 +127,7 @@ const DatePickerInput: React.FC<DatePickerInputProps> = ({
                 >
                     {value ? moment(value).format('MMMM D, YYYY') : label}
                     <Calendar
+                        aria-hidden="true"
                         className={`pointer-events-none text-grayscale-700 w-[24px] ${
                             disabled ? 'opacity-50' : ''
                         }`}
@@ -123,6 +140,7 @@ const DatePickerInput: React.FC<DatePickerInputProps> = ({
     return (
         <div className="relative w-full z-10">
             <DatePicker
+                id={id}
                 selected={value ? moment(value, 'YYYY-MM-DD').toDate() : null}
                 onChange={handleDateChange}
                 onBlur={handleBlur}
@@ -135,12 +153,15 @@ const DatePickerInput: React.FC<DatePickerInputProps> = ({
                 wrapperClassName="w-full"
                 popperClassName="z-[9999]"
                 dateFormat="MMMM d, yyyy"
-                className={`w-full flex items-center justify-between bg-grayscale-100 text-grayscale-500 rounded-[15px] font-poppins font-normal px-[16px] py-[16px] tracking-wider text-base ${
+                ariaDescribedBy={ariaDescribedBy}
+                ariaInvalid={ariaInvalid ? 'true' : undefined}
+                className={`w-full flex items-center justify-between bg-grayscale-100 text-grayscale-900 placeholder:text-grayscale-400 rounded-[15px] font-poppins font-normal px-[16px] py-[16px] tracking-wider text-base ${
                     error ? 'login-input-email-error' : ''
                 } ${disabled ? '!opacity-70 cursor-not-allowed' : ''}`}
                 disabled={disabled}
             />
             <Calendar
+                aria-hidden="true"
                 className={`pointer-events-none absolute right-[16px] top-[50%] -translate-y-1/2 text-grayscale-700 w-[24px] ${
                     disabled ? 'opacity-50' : ''
                 }`}

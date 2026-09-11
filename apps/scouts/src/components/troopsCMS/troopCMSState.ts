@@ -8,6 +8,7 @@ import ScoutsLogo from '../svgs/ScoutsLogo';
 import { BoostCMSAppearanceDisplayTypeEnum } from 'learn-card-base';
 import { VC } from '@learncard/types';
 import { TroopsAppearanceTabs } from './TroopsCMSAppearanceForm/TroopsCMSAppearanceTabs';
+import * as m from '../../paraglide/messages.js';
 
 // different editor modes the CMS can be opended in
 export enum TroopsCMSEditorModeEnum {
@@ -26,7 +27,7 @@ export enum TroopsCMSViewModeEnum {
 
 export const troopsCMSViewModeDefaults: {
     [key in TroopsCMSViewModeEnum]?: {
-        title: string;
+        titleKey: string;
         altTitle?: string;
         Icon: React.FC<{ className?: string }>;
         image: string;
@@ -36,7 +37,7 @@ export const troopsCMSViewModeDefaults: {
     };
 } = {
     [TroopsCMSViewModeEnum.global]: {
-        title: 'Global Network',
+        titleKey: 'troops.globalNetworkLabel',
         altTitle: 'Global Network',
         Icon: ScoutsLogo,
         image: 'https://cdn.filestackcontent.com/0RZLXJurQmOOlSvdkENj',
@@ -45,7 +46,7 @@ export const troopsCMSViewModeDefaults: {
         type: TroopsCMSViewModeEnum.global,
     },
     [TroopsCMSViewModeEnum.network]: {
-        title: 'National Network',
+        titleKey: 'troops.nationalNetworkLabel',
         altTitle: 'Network',
         Icon: ScoutsNetworkTent,
         image: 'https://cdn.filestackcontent.com/yapZ1xFqTSmaDz5H5dVL',
@@ -54,7 +55,7 @@ export const troopsCMSViewModeDefaults: {
         type: TroopsCMSViewModeEnum.network,
     },
     [TroopsCMSViewModeEnum.troop]: {
-        title: 'Troop',
+        titleKey: 'troops.troop',
         altTitle: 'Troop',
         Icon: GreenScoutsPledge2,
         image: 'https://cdn.filestackcontent.com/yapZ1xFqTSmaDz5H5dVL',
@@ -63,7 +64,7 @@ export const troopsCMSViewModeDefaults: {
         type: TroopsCMSViewModeEnum.troop,
     },
     [TroopsCMSViewModeEnum.leader]: {
-        title: 'Leader',
+        titleKey: 'troops.leaderOne',
         Icon: ScoutsNetworkTent,
         image: 'https://cdn.filestackcontent.com/yapZ1xFqTSmaDz5H5dVL',
         backgroundImage: 'https://cdn.filestackcontent.com/H815W3JUSbW9De76oZ0c',
@@ -71,7 +72,7 @@ export const troopsCMSViewModeDefaults: {
         type: TroopsCMSViewModeEnum.leader,
     },
     [TroopsCMSViewModeEnum.member]: {
-        title: 'Member',
+        titleKey: 'troops.memberOne',
         Icon: GreenScoutsPledge2,
         image: 'https://cdn.filestackcontent.com/yapZ1xFqTSmaDz5H5dVL',
         backgroundImage: 'https://cdn.filestackcontent.com/NR4YvCLERFemM7tBaFLZ',
@@ -150,7 +151,7 @@ export const getTroopsCMSViewModeDefaults = (viewMode: TroopsCMSViewModeEnum) =>
     }
 
     return {
-        title: '',
+        titleKey: '',
         Icon: () => null, // default to an empty component
         image: '',
         color: '',
@@ -309,48 +310,182 @@ export const defaultTroopState: TroopCMSFields = {
 };
 
 export const scoutPermissions: {
-    [key in TroopsCMSViewModeEnum]?: { id: number; title: string; roles: string[] }[];
+    [key in TroopsCMSViewModeEnum]?: { id: number; titleKey: string; roleKeys: string[] }[];
 } = {
     // global admin
     [TroopsCMSViewModeEnum.global]: [
-        { id: 1, title: 'General', roles: ['View Analytics'] },
-        { id: 2, title: 'Social Boosts', roles: ['Issue', 'Create'] },
-        { id: 3, title: 'Merit Badges', roles: ['Issue', 'Create', 'Revoke'] },
-        { id: 4, title: 'Troops', roles: ['Create', 'Edit', 'Revoke'] },
-        { id: 5, title: 'Troop Leader IDs', roles: ['Issue', 'Edit', 'Revoke'] },
-        { id: 6, title: 'National Networks', roles: ['Create', 'Edit', 'Revoke'] },
-        { id: 7, title: 'National Admin IDs', roles: ['Issue', 'Edit', 'Revoke'] },
-        { id: 8, title: 'Global Admin IDs', roles: ['Issue', 'Edit', 'Revoke'] },
+        { id: 1, titleKey: 'troops.perms.general', roleKeys: ['troops.perms.viewAnalytics'] },
+        {
+            id: 2,
+            titleKey: 'troops.childMenu.socialBoosts',
+            roleKeys: ['troops.perms.issue', 'troops.perms.create'],
+        },
+        {
+            id: 3,
+            titleKey: 'troops.childMenu.meritBadges',
+            roleKeys: ['troops.perms.issue', 'troops.perms.create', 'troops.perms.revoke'],
+        },
+        {
+            id: 4,
+            titleKey: 'troops.childMenu.troops',
+            roleKeys: ['troops.perms.create', 'common.edit', 'troops.perms.revoke'],
+        },
+        {
+            id: 5,
+            titleKey: 'troops.perms.troopLeaderIds',
+            roleKeys: ['troops.perms.issue', 'common.edit', 'troops.perms.revoke'],
+        },
+        {
+            id: 6,
+            titleKey: 'troops.childMenu.nationalNetworks',
+            roleKeys: ['troops.perms.create', 'common.edit', 'troops.perms.revoke'],
+        },
+        {
+            id: 7,
+            titleKey: 'troops.perms.nationalAdminIds',
+            roleKeys: ['troops.perms.issue', 'common.edit', 'troops.perms.revoke'],
+        },
+        {
+            id: 8,
+            titleKey: 'troops.perms.globalAdminIds',
+            roleKeys: ['troops.perms.issue', 'common.edit', 'troops.perms.revoke'],
+        },
     ],
     // network admins
     [TroopsCMSViewModeEnum.network]: [
-        { id: 1, title: 'General', roles: ['View Analytics'] },
-        { id: 2, title: 'Social Boosts', roles: ['Create'] },
-        { id: 3, title: 'Merit Badges', roles: ['Create'] },
-        { id: 4, title: 'Troops', roles: ['Create', 'Edit', 'Revoke'] },
-        { id: 5, title: 'Troop Leader IDs', roles: ['Issue', 'Edit', 'Revoke'] },
-        { id: 6, title: 'National Admin IDs', roles: ['Issue', 'Edit', 'Revoke'] },
+        { id: 1, titleKey: 'troops.perms.general', roleKeys: ['troops.perms.viewAnalytics'] },
+        { id: 2, titleKey: 'troops.childMenu.socialBoosts', roleKeys: ['troops.perms.create'] },
+        { id: 3, titleKey: 'troops.childMenu.meritBadges', roleKeys: ['troops.perms.create'] },
+        {
+            id: 4,
+            titleKey: 'troops.childMenu.troops',
+            roleKeys: ['troops.perms.create', 'common.edit', 'troops.perms.revoke'],
+        },
+        {
+            id: 5,
+            titleKey: 'troops.perms.troopLeaderIds',
+            roleKeys: ['troops.perms.issue', 'common.edit', 'troops.perms.revoke'],
+        },
+        {
+            id: 6,
+            titleKey: 'troops.perms.nationalAdminIds',
+            roleKeys: ['troops.perms.issue', 'common.edit', 'troops.perms.revoke'],
+        },
     ],
     // troop leaders
     [TroopsCMSViewModeEnum.leader]: [
-        { id: 1, title: 'General', roles: ['View Analytics'] },
-        { id: 2, title: 'Social Boosts', roles: ['Issue', 'Create', 'Revoke'] },
-        { id: 3, title: 'Merit Badges', roles: ['Issue', 'Create', 'Revoke'] },
-        { id: 4, title: 'Scout IDs', roles: ['Issue', 'Edit', 'Revoke'] },
-        { id: 5, title: 'Troop Leader Permissions', roles: ['Issue', 'Edit', 'Revoke'] },
+        { id: 1, titleKey: 'troops.perms.general', roleKeys: ['troops.perms.viewAnalytics'] },
+        {
+            id: 2,
+            titleKey: 'troops.childMenu.socialBoosts',
+            roleKeys: ['troops.perms.issue', 'troops.perms.create', 'troops.perms.revoke'],
+        },
+        {
+            id: 3,
+            titleKey: 'troops.childMenu.meritBadges',
+            roleKeys: ['troops.perms.issue', 'troops.perms.create', 'troops.perms.revoke'],
+        },
+        {
+            id: 4,
+            titleKey: 'troops.perms.scoutIds',
+            roleKeys: ['troops.perms.issue', 'common.edit', 'troops.perms.revoke'],
+        },
+        {
+            id: 5,
+            titleKey: 'troops.perms.troopLeaderPermissions',
+            roleKeys: ['troops.perms.issue', 'common.edit', 'troops.perms.revoke'],
+        },
     ],
     // scouts
     [TroopsCMSViewModeEnum.member]: [
-        { id: 1, title: 'General', roles: ['View Analytics'] },
-        { id: 2, title: 'Social Boosts', roles: ['Issue', 'Create'] },
-        { id: 3, title: 'Merit Badges', roles: ['Issue', 'Create', 'Revoke'] },
-        { id: 4, title: 'Troops', roles: ['Create', 'Edit', 'Revoke'] },
-        { id: 5, title: 'Troop Leader IDs', roles: ['Issue', 'Edit', 'Revoke'] },
-        { id: 6, title: 'National Networks', roles: ['Create', 'Edit', 'Revoke'] },
-        { id: 7, title: 'National Admin IDs', roles: ['Issue', 'Edit', 'Revoke'] },
-        { id: 8, title: 'Global Admin IDs', roles: ['Issue', 'Edit', 'Revoke'] },
+        { id: 1, titleKey: 'troops.perms.general', roleKeys: ['troops.perms.viewAnalytics'] },
+        {
+            id: 2,
+            titleKey: 'troops.childMenu.socialBoosts',
+            roleKeys: ['troops.perms.issue', 'troops.perms.create'],
+        },
+        {
+            id: 3,
+            titleKey: 'troops.childMenu.meritBadges',
+            roleKeys: ['troops.perms.issue', 'troops.perms.create', 'troops.perms.revoke'],
+        },
+        {
+            id: 4,
+            titleKey: 'troops.childMenu.troops',
+            roleKeys: ['troops.perms.create', 'common.edit', 'troops.perms.revoke'],
+        },
+        {
+            id: 5,
+            titleKey: 'troops.perms.troopLeaderIds',
+            roleKeys: ['troops.perms.issue', 'common.edit', 'troops.perms.revoke'],
+        },
+        {
+            id: 6,
+            titleKey: 'troops.childMenu.nationalNetworks',
+            roleKeys: ['troops.perms.create', 'common.edit', 'troops.perms.revoke'],
+        },
+        {
+            id: 7,
+            titleKey: 'troops.perms.nationalAdminIds',
+            roleKeys: ['troops.perms.issue', 'common.edit', 'troops.perms.revoke'],
+        },
+        {
+            id: 8,
+            titleKey: 'troops.perms.globalAdminIds',
+            roleKeys: ['troops.perms.issue', 'common.edit', 'troops.perms.revoke'],
+        },
     ],
 };
+
+/**
+ * Resolve a `scoutPermissions` `titleKey`/`roleKey` to its localized label.
+ *
+ * The config stores stable Paraglide message keys (not translated text); these
+ * helpers perform the catalog lookup at invocation time so the labels follow the
+ * active locale. The maps hold thunks so `m[...]()` only runs when a label is
+ * needed (never at module scope).
+ */
+const PERMISSION_TITLE_LABELS: Record<string, () => string> = {
+    'troops.perms.general': () => m['troops.perms.general'](),
+    'troops.perms.troopLeaderIds': () => m['troops.perms.troopLeaderIds'](),
+    'troops.perms.nationalAdminIds': () => m['troops.perms.nationalAdminIds'](),
+    'troops.perms.globalAdminIds': () => m['troops.perms.globalAdminIds'](),
+    'troops.perms.scoutIds': () => m['troops.perms.scoutIds'](),
+    'troops.perms.troopLeaderPermissions': () => m['troops.perms.troopLeaderPermissions'](),
+    'troops.childMenu.socialBoosts': () => m['troops.childMenu.socialBoosts'](),
+    'troops.childMenu.meritBadges': () => m['troops.childMenu.meritBadges'](),
+    'troops.childMenu.troops': () => m['troops.childMenu.troops'](),
+    'troops.childMenu.nationalNetworks': () => m['troops.childMenu.nationalNetworks'](),
+};
+
+const PERMISSION_ROLE_LABELS: Record<string, () => string> = {
+    'troops.perms.viewAnalytics': () => m['troops.perms.viewAnalytics'](),
+    'troops.perms.issue': () => m['troops.perms.issue'](),
+    'troops.perms.create': () => m['troops.perms.create'](),
+    'troops.perms.revoke': () => m['troops.perms.revoke'](),
+    'common.edit': () => m['common.edit'](),
+};
+
+export const permissionTitle = (titleKey: string | undefined): string =>
+    (titleKey && PERMISSION_TITLE_LABELS[titleKey]?.()) || '';
+
+export const permissionRole = (roleKey: string | undefined): string =>
+    (roleKey && PERMISSION_ROLE_LABELS[roleKey]?.()) || '';
+
+/**
+ * Resolve a `troopsCMSViewModeDefaults` `titleKey` to its localized label.
+ * `VIEW_MODE_TITLE_LABELS` holds thunks so `m[...]()` only runs at invocation.
+ */
+const VIEW_MODE_TITLE_LABELS: Record<string, () => string> = {
+    'troops.globalNetworkLabel': () => m['troops.globalNetworkLabel'](),
+    'troops.nationalNetworkLabel': () => m['troops.nationalNetworkLabel'](),
+    'troops.troop': () => m['troops.troop'](),
+    'troops.leaderOne': () => m['troops.leaderOne'](),
+    'troops.memberOne': () => m['troops.memberOne'](),
+};
+
+export const viewModeTitle = (titleKey: string | undefined): string =>
+    (titleKey && VIEW_MODE_TITLE_LABELS[titleKey]?.()) || '';
 
 export type TroopsCMSState = TroopCMSFields & {
     memberID?: TroopCMSFields;
@@ -377,7 +512,7 @@ export const initializeTroopState = (viewMode: TroopsCMSViewModeEnum): TroopsCMS
             basicInfo: {
                 ...defaultTroopState.basicInfo,
                 name: 'World Scouting',
-                description: `Scouting's mission is to contribute to the education of young people through a value system based on the Scout Promise and Law. Through Scouting, we are building a better world where people are self-fulfilled as individuals and play a constructive role in society. To be the world’s most inspiring and inclusive youth movement, creating transformative learning experiences for every young person, everywhere.`,
+                description: m['troops.worldScoutingMission'](),
                 type: categoryType,
                 achievementType: achievementType,
             },

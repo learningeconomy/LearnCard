@@ -46,6 +46,8 @@ type BoostManagedCardProps = {
     boostPageViewMode?: BoostPageViewModeType;
     userToBoostProfileId?: string;
     loading?: boolean;
+    /** Renders a custom card surface while retaining the managed credential preview flow. */
+    renderPreviewTrigger?: (openPreview: () => void) => React.ReactNode;
 };
 
 export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
@@ -59,6 +61,7 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
     boostPageViewMode = BoostPageViewMode.Card,
     userToBoostProfileId,
     loading,
+    renderPreviewTrigger,
 }) => {
     const history = useHistory();
     const { newModal, closeAllModals } = useModal({
@@ -121,6 +124,8 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
         resetIonicModalBackground();
         presentManagedBoostModal();
     };
+
+    if (renderPreviewTrigger) return <>{renderPreviewTrigger(innerOnClick)}</>;
 
     const cardTitle = boost?.name || boostVC?.credentialSubject?.achievement?.name;
 

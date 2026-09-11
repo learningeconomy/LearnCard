@@ -1,6 +1,14 @@
+import { isProductionEnvironment } from '../config/isProduction';
+
 // ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
+
+import {
+    clearDiagnosticLogs,
+    recordDiagnosticLog,
+    setDiagnosticLogCollectionEnabled,
+} from './diagnosticLogBuffer';
 
 interface Parsed {
     message: string;
@@ -36,6 +44,18 @@ const breadcrumbData = (p: Parsed): Record<string, unknown> => {
     const data = sentryExtra(p);
     if (p.err) data.error = String(p.err);
     return data;
+};
+
+// Diagnostic buffer payload: the scrubbed meta bag, leftover values, and the
+// parsed error. Mirrors sentryExtra so feedback reports carry the same context
+// the Sentry event does; recordDiagnosticLog then applies its forced
+// sanitizer (scrubbing again is idempotent, and allowPii input stays scrubbed).
+const diagnosticData = (p: Parsed): Record<string, unknown> | undefined => {
+    const out: Record<string, unknown> = { ...p.extra };
+    if (p.values.length === 1) out.value = p.values[0];
+    else if (p.values.length > 1) out.values = p.values;
+    if (p.err) out.error = p.err;
+    return Object.keys(out).length > 0 ? out : undefined;
 };
 
 // Console output: prefix, then message, error, leftover values, and the meta
@@ -178,7 +198,7 @@ export interface SentryTransport {
         err: unknown,
         tags?: Record<string, string>,
         extra?: Record<string, unknown>
-    ): void;
+    ): string | undefined;
     captureMessage(
         msg: string,
         level: 'warning' | 'error',
@@ -204,8 +224,12 @@ export interface SentryTransport {
 // ---------------------------------------------------------------------------
 
 let _transport: SentryTransport | null = null; // null = dev mode, no Sentry forwarding
-let _bugReportsEnabled = true; // mirrors user's bugReportsEnabled preference; default true so existing users without stored prefs are unaffected
+// Preserve the pre-LC-2086 crash-reporting default for signed-out, onboarding,
+// and preferences-loading surfaces. Feedback diagnostics have a separate,
+// fail-closed gate below.
+let _bugReportsEnabled = true;
 let _tenantId: string | undefined; // included as a Sentry tag on every captured event
+let _diagnosticIdentity: string | null | undefined;
 
 /** Call after Sentry.init() so the logger can forward events. */
 export const configureSentryTransport = (t: SentryTransport | null): void => {
@@ -215,9 +239,23 @@ export const configureSentryTransport = (t: SentryTransport | null): void => {
 /** Called by useSentryIdentify whenever preferences / tenantId change. Pass null to clear tenantId (e.g. on logout). */
 export const configureLoggerContext = (opts: {
     bugReportsEnabled?: boolean;
+    diagnosticLogCollectionEnabled?: boolean;
     tenantId?: string | null;
+    /** Opaque owner key for the process-global diagnostic buffer. */
+    diagnosticIdentity?: string | null;
 }): void => {
-    if (opts.bugReportsEnabled !== undefined) _bugReportsEnabled = opts.bugReportsEnabled;
+    if (opts.diagnosticIdentity !== undefined) {
+        if (_diagnosticIdentity !== undefined && _diagnosticIdentity !== opts.diagnosticIdentity) {
+            clearDiagnosticLogs();
+        }
+        _diagnosticIdentity = opts.diagnosticIdentity;
+    }
+    if (opts.bugReportsEnabled !== undefined) {
+        _bugReportsEnabled = opts.bugReportsEnabled;
+    }
+    if (opts.diagnosticLogCollectionEnabled !== undefined) {
+        setDiagnosticLogCollectionEnabled(opts.diagnosticLogCollectionEnabled);
+    }
     if (opts.tenantId !== undefined) _tenantId = opts.tenantId ?? undefined;
 };
 
@@ -229,7 +267,8 @@ export interface Logger {
     debug(...args: unknown[]): void;
     info(...args: unknown[]): void;
     warn(...args: unknown[]): void;
-    error(...args: unknown[]): void;
+    /** Returns the Sentry event id when an exception was captured, otherwise undefined. */
+    error(...args: unknown[]): string | undefined;
     breadcrumb(opts: {
         category: string;
         message: string;
@@ -251,13 +290,25 @@ const createLogger = (scope?: string): Logger => {
     return {
         debug(...args) {
             // Dropped in production (transport active + non-dev environment) to avoid noise.
-            if (sentryActive() && process.env.NODE_ENV === 'production') return;
+            if (sentryActive() && isProductionEnvironment()) return;
             const p = parseArgs(args);
+            recordDiagnosticLog({
+                level: 'info',
+                scope,
+                message: p.message,
+                data: diagnosticData(p),
+            });
             console.debug(...renderConsole(prefix, p));
         },
 
         info(...args) {
             const p = parseArgs(args);
+            recordDiagnosticLog({
+                level: 'info',
+                scope,
+                message: p.message,
+                data: diagnosticData(p),
+            });
             if (sentryActive()) {
                 _transport!.addBreadcrumb({
                     category: scope,
@@ -272,6 +323,12 @@ const createLogger = (scope?: string): Logger => {
 
         warn(...args) {
             const p = parseArgs(args);
+            recordDiagnosticLog({
+                level: 'warning',
+                scope,
+                message: p.message,
+                data: diagnosticData(p),
+            });
             // Always log to console so devs see warnings in both envs
             console.warn(...renderConsole(prefix, p));
             if (sentryActive()) {
@@ -285,17 +342,19 @@ const createLogger = (scope?: string): Logger => {
 
         error(...args) {
             const p = parseArgs(args);
+            recordDiagnosticLog({
+                level: 'error',
+                scope,
+                message: p.message,
+                data: diagnosticData(p),
+            });
             console.error(...renderConsole(prefix, p));
             if (sentryActive()) {
-                if (p.err) _transport!.captureException(p.err, tags(), sentryExtra(p));
-                else
-                    _transport!.captureMessage(
-                        p.message || 'error',
-                        'error',
-                        tags(),
-                        sentryExtra(p)
-                    );
+                if (p.err) return _transport!.captureException(p.err, tags(), sentryExtra(p));
+                _transport!.captureMessage(p.message || 'error', 'error', tags(), sentryExtra(p));
+                return undefined;
             }
+            return undefined;
         },
 
         breadcrumb(opts) {

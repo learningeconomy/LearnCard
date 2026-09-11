@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useHistory, useParams, useLocation } from 'react-router-dom';
 import queryString from 'query-string';
+import { useDIDAuthPresentation } from './useDIDAuthPresentation';
 import {
     IonPage,
     IonHeader,
@@ -16,6 +17,7 @@ import {
 } from '@ionic/react';
 
 import { CopyToClipboard } from 'react-copy-to-clipboard';
+import { sanitizeImageUrl } from '@learncard/helpers';
 import VCDisplayCardWrapper from '../vcmodal/VCDisplayCardWrapper';
 
 import useWallet from 'learn-card-base/hooks/useWallet';
@@ -26,12 +28,12 @@ import { useIsLoggedIn } from 'learn-card-base/stores/currentUserStore';
 export const DIDAuthModal = () => {
     const { challenge } = useParams<{ challenge: string }>();
     const { search } = useLocation();
-    const { domain } = queryString.parse(search);
+    const parsedDomain = queryString.parse(search).domain;
+    const domain = typeof parsedDomain === 'string' ? parsedDomain : undefined;
 
     const history = useHistory();
     const [authInitiated, setAuthInitiated] = useState(false);
 
-    const [vp, setVP] = useState<any>();
     const [verificationCode, setVerificationCode] = useState<string>();
     const [authVPLoading, setAuthVPLoading] = useState(false);
 
@@ -39,6 +41,7 @@ export const DIDAuthModal = () => {
 
     const { issueDIDAuthPresentation, publishContentToCeramic } = useWallet();
     const isLoggedIn = useIsLoggedIn();
+    const vp = useDIDAuthPresentation(challenge, domain, issueDIDAuthPresentation);
 
     const handleInititateAuth = async () => {
         setAuthVPLoading(true);
@@ -49,17 +52,6 @@ export const DIDAuthModal = () => {
         setAuthInitiated(true);
         setVerificationCode(streamId);
     };
-
-    const handleCreateVP = async () => {
-        const vp = await issueDIDAuthPresentation(challenge, domain);
-        setVP(vp);
-    };
-
-    useEffect(() => {
-        if (challenge && !vp) {
-            handleCreateVP();
-        }
-    }, [challenge, vp]);
 
     const dismiss = async ({ historyPush }) => {
         history.push(historyPush ?? '/wallet');
@@ -208,9 +200,10 @@ export const DIDAuthModal = () => {
 };
 
 export const DIDAuthMessage = ({ title, subtitle, text, color, image }) => {
+    const safeImageUrl = sanitizeImageUrl(image);
     return (
         <IonCard color={color} style={{ maxWidth: '600px ' }}>
-            {image && <img alt="Success" src={image} />}
+            {safeImageUrl && <img alt="Success" src={safeImageUrl} />}
             <IonCardHeader>
                 <IonCardTitle>{title}</IonCardTitle>
                 <IonCardSubtitle>{subtitle}</IonCardSubtitle>

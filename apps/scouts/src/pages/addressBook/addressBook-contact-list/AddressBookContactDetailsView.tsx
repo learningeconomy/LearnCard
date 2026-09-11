@@ -25,6 +25,7 @@ import { LCNProfileConnectionStatusEnum, LCNProfile } from '@learncard/types';
 import { useIsCurrentUserLCNUser } from 'learn-card-base';
 import { useCheckIfUserInNetwork } from 'apps/scouts/src/components/network-prompts/hooks/useCheckIfUserInNetwork';
 import useBoostModal from '../../../components/boost/hooks/useBoostModal';
+import * as m from '../../../paraglide/messages.js';
 
 type AddressBookContactDetailsViewProps = {
     contact: LCNProfile | null;
@@ -70,17 +71,17 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
     showCloseButton,
     showBoostButton,
     showRequestButton,
-    handleConnectionRequest = () => { },
+    handleConnectionRequest = () => {},
     showDeleteButton,
-    handleRemoveConnection = () => { },
+    handleRemoveConnection = () => {},
     showAcceptButton,
-    handleAcceptConnectionRequest = () => { },
+    handleAcceptConnectionRequest = () => {},
     showCancelButton,
-    handleCancelConnectionRequest = () => { },
+    handleCancelConnectionRequest = () => {},
     showBlockButton,
-    handleBlockUser = () => { },
+    handleBlockUser = () => {},
     showUnblockButton,
-    handleUnblockUser = () => { },
+    handleUnblockUser = () => {},
     history,
 }) => {
     const { presentToast } = useToast();
@@ -101,11 +102,11 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
             header,
             buttons: [
                 {
-                    text: 'Confirm',
+                    text: m['addressBook.confirm'](),
                     role: 'confirm',
                     handler: () => handler(new Event('custom'), contact?.profileId),
                 },
-                { text: 'Cancel', role: 'cancel', handler: () => dismissAlert() },
+                { text: m['common.cancel'](), role: 'cancel', handler: () => dismissAlert() },
             ],
         });
     };
@@ -123,12 +124,12 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
             await Clipboard.write({
                 string: privateKey,
             });
-            presentToast('DID copied to clipboard', {
+            presentToast(m['addressBook.toasts.didCopied'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
         } catch (err) {
-            presentToast('Unable to copy DID to clipboard', {
+            presentToast(m['addressBook.toasts.unableToCopyDid'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -142,7 +143,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
             actionButton = (
                 <button className="w-full flex items-center justify-center bg-white rounded-full px-[18px] py-[12px] text-grayscale-900 text-2xl shadow-lg mb-4">
                     <Checkmark className="ml-[5px] h-[30px] w-[30px] mr-2" />
-                    Connected
+                    {m['addressBook.connected']()}
                 </button>
             );
         } else if (
@@ -153,16 +154,13 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                     className="text-[17px] font-poppins w-full flex items-center justify-between py-3 px-2 border-b-grayscale-100 border-solid border-b-[2px] last:border-b-0"
                     onClick={e => {
                         e.stopPropagation();
-                        showConfirmationAlert(
-                            'Are you sure you want to send a connection request?',
-                            async () => {
-                                handleConnectionRequest?.(e, contact?.profileId);
-                                handleCloseModal();
-                            }
-                        );
+                        showConfirmationAlert(m['addressBook.confirmConnection'](), async () => {
+                            handleConnectionRequest?.(e, contact?.profileId);
+                            handleCloseModal();
+                        });
                     }}
                 >
-                    <p className="text-grayscale-900">Request Connection</p>
+                    <p className="text-grayscale-900">{m['addressBook.requestConnection']()}</p>
                     <Plus className="h-[30px] w-[30px] text-grayscale-900" />
                 </button>
             );
@@ -175,7 +173,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                     onClick={e => {
                         e.stopPropagation();
                         showConfirmationAlert(
-                            'Are you sure you want to cancel your connection request?',
+                            m['addressBook.confirmCancelConnection'](),
                             async () => {
                                 handleCancelConnectionRequest?.(e, contact?.profileId);
                                 handleCloseModal();
@@ -184,7 +182,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                     }}
                 >
                     <X className="ml-[5px] h-[30px] w-[30px] mr-2" />
-                    Cancel Request
+                    {m['addressBook.cancelRequest']()}
                 </button>
             );
         } else if (
@@ -197,7 +195,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                     onClick={e => {
                         e.stopPropagation();
                         showConfirmationAlert(
-                            'Are you sure you want to accept the connection request?',
+                            m['addressBook.confirmAcceptConnection'](),
                             async () => {
                                 handleAcceptConnectionRequest?.(e, contact?.profileId);
                                 handleCloseModal();
@@ -206,7 +204,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                     }}
                 >
                     <Checkmark className="ml-[5px] h-[30px] w-[30px] mr-2" />
-                    Accept Request
+                    {m['addressBook.acceptRequest']()}
                 </button>
             );
         }
@@ -245,7 +243,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                             }}
                             className="text-[17px] font-poppins w-full flex items-center justify-between py-3 px-2 border-b-grayscale-100 border-solid border-b-[2px] last:border-b-0"
                         >
-                            <p className="text-grayscale-900">Boost</p>
+                            <p className="text-grayscale-900">{m['addressBook.boostLabel']()}</p>
                             <div className="h-[30px] w-[30px] max-h-[30px] max-w-[30px]">
                                 <RibbonAwardIcon className="h-[30px] w-[30px] text-grayscale-900" />
                             </div>
@@ -257,7 +255,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                                 e.stopPropagation();
                                 closeModal();
                                 showConfirmationAlert(
-                                    'Are you sure you want to remove this connection?',
+                                    m['addressBook.confirmRemoveConnection'](),
                                     async () => {
                                         handleRemoveConnection(e, contact?.profileId);
                                     }
@@ -265,7 +263,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                             }}
                             className="text-[17px] font-poppins w-full flex items-center justify-between py-3 px-2 border-b-grayscale-100 border-solid border-b-[2px] last:border-b-0"
                         >
-                            <p className="text-grayscale-900">Remove Contact</p>
+                            <p className="text-grayscale-900">{m['addressBook.removeContact']()}</p>
                             <TrashBin className="h-[30px] w-[30px]" />
                         </button>
                     )}
@@ -277,14 +275,14 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                                 e.stopPropagation();
                                 closeModal();
                                 showConfirmationAlert(
-                                    'Are you sure you want to cancel your connection request?',
+                                    m['addressBook.confirmCancelConnection'](),
                                     async () => {
                                         handleCancelConnectionRequest?.(e, contact?.profileId);
                                     }
                                 );
                             }}
                         >
-                            <p className="text-grayscale-900">Cancel Request</p>
+                            <p className="text-grayscale-900">{m['addressBook.cancelRequest']()}</p>
                             <X className="h-[30px] w-[30px] text-grayscale-700" />
                         </button>
                     )}
@@ -296,14 +294,14 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                                 closeModal();
                                 if (!checkIfUserInNetwork()) return;
                                 showConfirmationAlert(
-                                    'Are you sure you want to block this user?',
+                                    m['addressBook.confirmBlockUser'](),
                                     async () => {
                                         handleBlockUser(e, contact?.profileId);
                                     }
                                 );
                             }}
                         >
-                            <p className="text-grayscale-900"> Block Contact</p>
+                            <p className="text-grayscale-900">{m['addressBook.blockContact']()}</p>
                             <Block className="h-[30px] w-[30px] text-grayscale-700" />
                         </button>
                     )}
@@ -314,14 +312,16 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                                 e.stopPropagation();
                                 closeModal();
                                 showConfirmationAlert(
-                                    'Are you sure you want to unblock this user?',
+                                    m['addressBook.confirmUnblockUser'](),
                                     async () => {
                                         handleUnblockUser(e, contact?.profileId);
                                     }
                                 );
                             }}
                         >
-                            <p className="text-grayscale-900">Unblock Contact</p>
+                            <p className="text-grayscale-900">
+                                {m['addressBook.unblockContact']()}
+                            </p>
                             <Block className="ml-[5px] h-[30px] w-[30px] text-grayscale-700" />
                         </button>
                     )}
@@ -331,7 +331,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                 <IonCol className="w-full bg-grayscale-100 flex items-center justify-between px-4 rounded-2xl">
                     <div className="w-[80%] flex flex-col justify-center items-start text-left">
                         <p className="text-grayscale-500 font-medium text-sm">
-                            ScoutPass Number (DID)
+                            {m['addressBook.scoutpassNumber']()}
                         </p>
                         <p className="w-full text-grayscale-900 line-clamp-1">{contact?.did}</p>
                     </div>
@@ -352,7 +352,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                                 e.stopPropagation();
                                 closeModal();
                                 showConfirmationAlert(
-                                    'Are you sure you want to accept the connection request?',
+                                    m['addressBook.confirmAcceptConnection'](),
                                     async () => {
                                         handleAcceptConnectionRequest?.(e, contact?.profileId);
                                     }
@@ -360,13 +360,13 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                             }}
                             className="bg-indigo-500 text-white text-lg font-notoSans py-2 rounded-[20px] font-semibold w-full max-w-[400px] h-full"
                         >
-                            Accept Request
+                            {m['addressBook.acceptRequest']()}
                         </button>
                         <button
                             onClick={closeModal}
                             className="bg-white text-grayscale-900 text-lg font-notoSans py-2 rounded-[20px] w-full h-full shadow-bottom mt-[10px]"
                         >
-                            Close
+                            {m['common.close']()}
                         </button>
                     </div>,
                     sectionPortal

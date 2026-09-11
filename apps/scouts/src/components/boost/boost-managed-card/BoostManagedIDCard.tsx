@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import moment from 'moment';
-
 import { useHistory } from 'react-router-dom';
 import { ErrorBoundary } from 'react-error-boundary';
+import * as m from '../../../paraglide/messages.js';
+import { formatLocaleDate, formatLocaleTime } from '../../../i18n/formatters';
 
 import { VC, Boost } from '@learncard/types';
 
@@ -300,9 +300,16 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
                                                     recipient?.to?.profileId}
                                             </p>
                                             <p className="text-grayscale-600 font-normal text-sm">
-                                                {moment(recipient?.received).format('DD MMMM YYYY')}{' '}
+                                                {formatLocaleDate(recipient?.received, {
+                                                    day: '2-digit',
+                                                    month: 'long',
+                                                    year: 'numeric',
+                                                })}{' '}
                                                 &bull;{' '}
-                                                {moment(recipient?.received).format('h:mm A')}
+                                                {formatLocaleTime(recipient?.received, {
+                                                    hour: 'numeric',
+                                                    minute: '2-digit',
+                                                })}
                                             </p>
                                         </div>
                                     </div>
@@ -328,7 +335,7 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
             customBody = (
                 <div className="w-full text-center">
                     <p className="text-grayscale-600 font-semibold text-center text-[14px] leading-none">
-                        No Boosts Yet
+                        {m['boost.noBoostsYet']()}
                     </p>
                     <button
                         className="text-indigo-600 font-semibold text-base leading-snug"
@@ -337,7 +344,7 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
                             handleEditOnClick();
                         }}
                     >
-                        Edit
+                        {m['common.edit']()}
                     </button>
                 </div>
             );
@@ -372,7 +379,7 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
     const handleOptionsMenu = async () => handlePresentBoostMenuModal();
 
     return (
-        <ErrorBoundary fallback={<div>Something went wrong</div>}>
+        <ErrorBoundary fallback={<div>{m['boost.somethingWentWrong']()}</div>}>
             <IdDisplayContainer
                 achievementType={boostVC?.credentialSubject?.achievement?.achievementType}
                 title={cardTitle}

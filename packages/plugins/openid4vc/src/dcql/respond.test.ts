@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 /**
  * Sign + assemble unit tests for the DCQL response pipeline.
  *
@@ -30,7 +31,7 @@ const makeJwtSigner = (
             header: Record<string, unknown>;
             payload: Record<string, unknown>;
         }>,
-        sign: jest.fn(
+        sign: vi.fn(
             async (
                 header: Record<string, unknown>,
                 payload: Record<string, unknown>
@@ -203,7 +204,7 @@ describe('signDcqlPresentations — SD-JWT-VC passthrough', () => {
             holder: HOLDER,
         });
 
-        const presenter = jest.fn(async (_c: string, _o) => ({ compact: presentedCompact }));
+        const presenter = vi.fn(async (_c: string, _o) => ({ compact: presentedCompact }));
         const jwtSigner = makeJwtSigner();
 
         const result = await signDcqlPresentations(
@@ -264,7 +265,7 @@ describe('signDcqlPresentations — SD-JWT-VC passthrough', () => {
             holder: HOLDER,
         });
 
-        const presenter = jest.fn(async () => {
+        const presenter = vi.fn(async () => {
             throw new Error('verifier rejected nonce');
         });
 
@@ -303,7 +304,7 @@ describe('signDcqlPresentations — SD-JWT-VC passthrough', () => {
             holder: HOLDER,
         });
 
-        const presenter = jest.fn(async () => ({ compact: presentedCompact }));
+        const presenter = vi.fn(async () => ({ compact: presentedCompact }));
         const jwtSigner = makeJwtSigner();
 
         const response = await buildDcqlResponse(

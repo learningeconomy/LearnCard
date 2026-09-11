@@ -1,5 +1,5 @@
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
-import { SCOUTPASS_NETWORK_URL } from './Networks';
+import { isProductionEnvironment } from '../config/isProduction';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
 
 export const LOGIN_REDIRECTS: {
@@ -42,13 +42,7 @@ export const SCOUTPASS_BASE_URL = 'pass.scout.org';
 export const LEARNCARD_BASE_URL = 'learncard.app';
 
 export const getBaseUrl = (): string => {
-    if (process.env.NODE_ENV === 'production') {
-        const network = networkStore?.get?.networkUrl();
-        if (!network)
-            return LEARNCARD_BASE_URL; // default network to learncard.app if no network is set
-        else if (network && network === SCOUTPASS_NETWORK_URL) return SCOUTPASS_BASE_URL;
-        else return LEARNCARD_BASE_URL;
-    }
+    if (!isProductionEnvironment()) return 'localhost:3000';
 
-    return 'localhost:3000';
+    return networkStore.get.tenantId() === 'scoutpass' ? SCOUTPASS_BASE_URL : LEARNCARD_BASE_URL;
 };

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import * as m from '../../paraglide/messages.js';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { QRCodeSVG } from 'qrcode.react';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
@@ -87,7 +88,7 @@ const QrCodeUserCard: React.FC<{
     const presentEditAccountModal = () => {
         newEditModal(
             <UserProfileSetup
-                title="My Account"
+                title={m['scanner.myAccount']()}
                 handleCloseModal={() => closeEditModal()}
                 showCancelButton={true}
                 handleLogout={() => handleLogout()}
@@ -172,7 +173,7 @@ const QrCodeUserCard: React.FC<{
         }
     };
 
-    const connectionsTitle = 'Contacts';
+    const connectionsTitle = m['scanner.contacts']();
 
     return (
         <section className="pt-9 pb-4">
@@ -197,7 +198,7 @@ const QrCodeUserCard: React.FC<{
                             onClick={() => presentEditAccountModal()}
                             className="mr-1 text-indigo-500 font-semibold text-lg text-center"
                         >
-                            Edit Info <span className="text-indigo-500">•</span>
+                            {m['scanner.editInfo']()} <span className="text-indigo-500">•</span>
                         </button>
 
                         <button
@@ -217,7 +218,7 @@ const QrCodeUserCard: React.FC<{
                             onClick={handleLogout}
                             className="text-center font-semibold text-indigo-500 text-lg"
                         >
-                            Logout
+                            {m['scanner.logout']()}
                         </button>
                     </div>
                 )}
@@ -232,7 +233,9 @@ const QrCodeUserCard: React.FC<{
                         bgColor="transparent"
                     />
                 </div>
-                <p className="font-rubik text-lg text-gray-800 mt-4">Scan to connect</p>
+                <p className="font-rubik text-lg text-gray-800 mt-4">
+                    {m['scanner.scanConnect']()}
+                </p>
             </div>
 
             <div className="w-full flex items-center justify-center">
@@ -242,7 +245,7 @@ const QrCodeUserCard: React.FC<{
                             onClick={handleScan}
                             className="flex flex-1 items-center justify-center bg-grayscale-900 text-white py-2 mr-3 text-2xl font-medium tracking-wider rounded-[40px] shadow-2xl"
                         >
-                            <Camera className="h-[25px] mr-2" /> Scan
+                            <Camera className="h-[25px] mr-2" /> {m['scanner.scanLabel']()}
                         </button>
                     )}
 
@@ -258,7 +261,7 @@ const QrCodeUserCard: React.FC<{
                         }}
                         className="flex flex-1 items-center justify-center bg-grayscale-900 text-white py-2 text-2xl rounded-[40px] font-medium"
                     >
-                        <LinkChain className="h-[25px] mr-2" /> Share
+                        <LinkChain className="h-[25px] mr-2" /> {m['common.share']()}
                     </button>
                 </div>
             </div>

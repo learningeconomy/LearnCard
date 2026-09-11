@@ -2,6 +2,7 @@ import React from 'react';
 import * as m from '../../paraglide/messages.js';
 import { getLocale } from '../../paraglide/runtime.js';
 import { TransP } from '../../i18n/TransP';
+import { Check } from 'lucide-react';
 
 type LinkedChild = {
     childProfileId: string;
@@ -33,7 +34,7 @@ const GuardianLinkedModal: React.FC<Props> = ({ children, onDismiss }) => {
     return (
         <div className="flex flex-col items-center text-center px-4 py-6 max-w-[360px]">
             <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center mb-4">
-                <span className="text-emerald-700 text-xl">✓</span>
+                <Check aria-hidden="true" className="h-6 w-6 text-emerald-700" />
             </div>
             <h2 className="text-[18px] font-[700] font-notoSans text-grayscale-900 mb-3">
                 {m['onboarding.guardianLinked.heading']()}
@@ -46,6 +47,7 @@ const GuardianLinkedModal: React.FC<Props> = ({ children, onDismiss }) => {
                 />
             </p>
             <button
+                type="button"
                 onClick={onDismiss}
                 className="w-full rounded-full bg-emerald-700 text-white py-[12px] text-[15px] font-[600] font-notoSans"
             >

@@ -1,15 +1,18 @@
 import React, { useState, useCallback } from 'react';
 
-import type { CredentialFixture } from '@learncard/credential-library';
-import { prepareFixture } from '@learncard/credential-library';
+import {
+    isSdJwtVcFixture,
+    prepareFixture,
+    type LibraryFixture,
+} from '@learncard/credential-library';
 
 import { Badge } from './Badge';
 import { SPEC_LABELS, SPEC_COLORS, CATEGORY_COLORS, DEFAULT_CATEGORY_COLOR } from '../lib/colors';
 import { useWallet } from '../context/WalletContext';
-import { getCategoryForCredential, ALL_CATEGORIES, type CredentialCategory } from '../lib/category';
+import { getCategoryForFixture, ALL_CATEGORIES, type CredentialCategory } from '../lib/category';
 
 interface IssuePanelProps {
-    fixtures: CredentialFixture[];
+    fixtures: LibraryFixture[];
     onClose: () => void;
 }
 
@@ -23,10 +26,15 @@ interface IssueResult {
 }
 
 export const IssuePanel: React.FC<IssuePanelProps> = ({ fixtures, onClose }) => {
-    const { did, issueAndStore } = useWallet();
+    const { did, issueAndStore, materializeAndStoreSdJwt } = useWallet();
 
     const [step, setStep] = useState<IssueStep>('confirm');
-    const [result, setResult] = useState<IssueResult>({ succeeded: 0, failed: 0, uris: [], errors: [] });
+    const [result, setResult] = useState<IssueResult>({
+        succeeded: 0,
+        failed: 0,
+        uris: [],
+        errors: [],
+    });
     const [progress, setProgress] = useState(0);
 
     // Per-fixture category overrides: empty string = use auto-detected
@@ -53,16 +61,25 @@ export const IssuePanel: React.FC<IssuePanelProps> = ({ fixtures, onClose }) => 
             const fixture = fixtures[i];
 
             try {
-                const unsigned = prepareFixture(fixture, {
-                    issuerDid: did,
-                    subjectDid: did,
-                });
-
                 const override = categoryOverrides[fixture.id] || undefined;
 
-                const { uri } = await issueAndStore(unsigned as Record<string, unknown>, override);
+                if (isSdJwtVcFixture(fixture)) {
+                    const { uri } = await materializeAndStoreSdJwt(fixture, override);
 
-                uris.push(uri);
+                    uris.push(uri);
+                } else {
+                    const unsigned = prepareFixture(fixture, {
+                        issuerDid: did,
+                        subjectDid: did,
+                    });
+
+                    const { uri } = await issueAndStore(
+                        unsigned as Record<string, unknown>,
+                        override
+                    );
+
+                    uris.push(uri);
+                }
                 succeeded++;
             } catch (err) {
                 const msg = err instanceof Error ? err.message : String(err);
@@ -76,7 +93,7 @@ export const IssuePanel: React.FC<IssuePanelProps> = ({ fixtures, onClose }) => 
 
         setResult({ succeeded, failed, uris, errors });
         setStep(failed > 0 && succeeded === 0 ? 'error' : 'success');
-    }, [did, fixtures, issueAndStore, categoryOverrides]);
+    }, [did, fixtures, issueAndStore, materializeAndStoreSdJwt, categoryOverrides]);
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -85,14 +102,25 @@ export const IssuePanel: React.FC<IssuePanelProps> = ({ fixtures, onClose }) => 
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
                     <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-blue-500 flex items-center justify-center">
-                            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                            <svg
+                                className="w-4 h-4 text-white"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                strokeWidth={2}
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                                />
                             </svg>
                         </div>
 
                         <div>
                             <h3 className="text-sm font-bold text-white">
-                                Issue {isBulk ? `${fixtures.length} Credentials` : 'Credential'} to Self
+                                Issue {isBulk ? `${fixtures.length} Credentials` : 'Credential'} to
+                                Self
                             </h3>
 
                             <p className="text-xs text-gray-400">
@@ -105,8 +133,18 @@ export const IssuePanel: React.FC<IssuePanelProps> = ({ fixtures, onClose }) => 
                         onClick={onClose}
                         className="p-1.5 rounded-md text-gray-400 hover:text-white hover:bg-gray-800 transition-colors cursor-pointer"
                     >
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={2}
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M6 18L18 6M6 6l12 12"
+                            />
                         </svg>
                     </button>
                 </div>
@@ -127,7 +165,9 @@ export const IssuePanel: React.FC<IssuePanelProps> = ({ fixtures, onClose }) => 
                                     if (val) {
                                         const overrides: Record<string, string> = {};
 
-                                        fixtures.forEach(f => { overrides[f.id] = val; });
+                                        fixtures.forEach(f => {
+                                            overrides[f.id] = val;
+                                        });
 
                                         setCategoryOverrides(overrides);
                                     } else {
@@ -139,7 +179,9 @@ export const IssuePanel: React.FC<IssuePanelProps> = ({ fixtures, onClose }) => 
                                 <option value="">Auto-detect</option>
 
                                 {ALL_CATEGORIES.map(cat => (
-                                    <option key={cat} value={cat}>{cat}</option>
+                                    <option key={cat} value={cat}>
+                                        {cat}
+                                    </option>
                                 ))}
                             </select>
                         </div>
@@ -148,14 +190,20 @@ export const IssuePanel: React.FC<IssuePanelProps> = ({ fixtures, onClose }) => 
                     <div className="space-y-1.5">
                         {fixtures.map(f => {
                             const specColor = SPEC_COLORS[f.spec];
-                            const detectedCategory = getCategoryForCredential(f.credential as Record<string, unknown>);
-                            const effectiveCategory = (categoryOverrides[f.id] || detectedCategory) as CredentialCategory;
-                            const catColor = CATEGORY_COLORS[effectiveCategory] ?? DEFAULT_CATEGORY_COLOR;
+                            const detectedCategory = getCategoryForFixture(f);
+                            const effectiveCategory = (categoryOverrides[f.id] ||
+                                detectedCategory) as CredentialCategory;
+                            const catColor =
+                                CATEGORY_COLORS[effectiveCategory] ?? DEFAULT_CATEGORY_COLOR;
                             const isOverridden = Boolean(categoryOverrides[f.id]);
 
                             return (
                                 <div key={f.id} className="flex items-center gap-1.5">
-                                    <Badge bg={specColor.bg} text={specColor.text} border={specColor.border}>
+                                    <Badge
+                                        bg={specColor.bg}
+                                        text={specColor.text}
+                                        border={specColor.border}
+                                    >
                                         {f.name}
                                     </Badge>
 
@@ -187,9 +235,13 @@ export const IssuePanel: React.FC<IssuePanelProps> = ({ fixtures, onClose }) => 
                                         >
                                             <option value="">{detectedCategory} (auto)</option>
 
-                                            {ALL_CATEGORIES.filter(c => c !== detectedCategory).map(cat => (
-                                                <option key={cat} value={cat}>{cat}</option>
-                                            ))}
+                                            {ALL_CATEGORIES.filter(c => c !== detectedCategory).map(
+                                                cat => (
+                                                    <option key={cat} value={cat}>
+                                                        {cat}
+                                                    </option>
+                                                )
+                                            )}
                                         </select>
                                     ) : (
                                         <Badge bg={catColor.bg} text={catColor.text}>
@@ -209,7 +261,10 @@ export const IssuePanel: React.FC<IssuePanelProps> = ({ fixtures, onClose }) => 
                             <div className="p-3 bg-gray-800/50 rounded-lg space-y-2">
                                 <div className="flex items-center justify-between text-xs">
                                     <span className="text-gray-500">Issuer / Recipient</span>
-                                    <span className="text-gray-300 font-mono text-[11px] max-w-[280px] truncate" title={did ?? ''}>
+                                    <span
+                                        className="text-gray-300 font-mono text-[11px] max-w-[280px] truncate"
+                                        title={did ?? ''}
+                                    >
                                         {did}
                                     </span>
                                 </div>
@@ -221,7 +276,9 @@ export const IssuePanel: React.FC<IssuePanelProps> = ({ fixtures, onClose }) => 
 
                                 <div className="flex items-center justify-between text-xs">
                                     <span className="text-gray-500">Action</span>
-                                    <span className="text-gray-300">Sign → Upload Encrypted → Index</span>
+                                    <span className="text-gray-300">
+                                        Generate → Upload Encrypted → Index
+                                    </span>
                                 </div>
                             </div>
 
@@ -233,18 +290,31 @@ export const IssuePanel: React.FC<IssuePanelProps> = ({ fixtures, onClose }) => 
                             </button>
 
                             <p className="text-[11px] text-gray-600 leading-relaxed">
-                                Each fixture will be prepared with your DID, signed via{' '}
-                                <code className="text-gray-500">issueCredential()</code>, uploaded encrypted to
-                                LearnCloud, and added to your LearnCloud index.
+                                Generate, upload encrypted, and index each selected credential.
                             </p>
                         </div>
                     )}
 
                     {step === 'issuing' && (
                         <div className="flex flex-col items-center py-8 text-gray-400">
-                            <svg className="w-8 h-8 animate-spin mb-3" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                            <svg
+                                className="w-8 h-8 animate-spin mb-3"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                            >
+                                <circle
+                                    className="opacity-25"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    strokeWidth="4"
+                                />
+                                <path
+                                    className="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                                />
                             </svg>
 
                             <p className="text-sm">
@@ -265,8 +335,18 @@ export const IssuePanel: React.FC<IssuePanelProps> = ({ fixtures, onClose }) => 
                     {step === 'success' && (
                         <div className="space-y-4">
                             <div className="flex items-center gap-2 text-green-400">
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                <svg
+                                    className="w-5 h-5"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth={2}
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                    />
                                 </svg>
 
                                 <span className="text-sm font-medium">
@@ -281,7 +361,9 @@ export const IssuePanel: React.FC<IssuePanelProps> = ({ fixtures, onClose }) => 
 
                                     <div className="mt-1 p-3 bg-gray-800 border border-gray-700 rounded-lg text-xs font-mono text-gray-300 overflow-auto max-h-32 space-y-1">
                                         {result.uris.map((uri, i) => (
-                                            <div key={i} className="break-all">{uri}</div>
+                                            <div key={i} className="break-all">
+                                                {uri}
+                                            </div>
                                         ))}
                                     </div>
                                 </div>
@@ -305,8 +387,18 @@ export const IssuePanel: React.FC<IssuePanelProps> = ({ fixtures, onClose }) => 
                     {step === 'error' && (
                         <div className="space-y-4">
                             <div className="flex items-center gap-2 text-red-400">
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                <svg
+                                    className="w-5 h-5"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth={2}
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                    />
                                 </svg>
 
                                 <span className="text-sm font-medium">All issuances failed</span>
@@ -317,7 +409,10 @@ export const IssuePanel: React.FC<IssuePanelProps> = ({ fixtures, onClose }) => 
                             </pre>
 
                             <button
-                                onClick={() => { setStep('confirm'); setResult({ succeeded: 0, failed: 0, uris: [], errors: [] }); }}
+                                onClick={() => {
+                                    setStep('confirm');
+                                    setResult({ succeeded: 0, failed: 0, uris: [], errors: [] });
+                                }}
                                 className="w-full py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg text-sm transition-colors cursor-pointer"
                             >
                                 Try Again

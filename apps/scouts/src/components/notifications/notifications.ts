@@ -1,5 +1,5 @@
-import moment from 'moment';
 import { VC } from '@learncard/types';
+import { formatLocaleDate } from '../../i18n/formatters';
 import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
 import {
     AchievementCategoryTypes,
@@ -38,7 +38,11 @@ export const getNotificationFromVC = (vc: VC, uri: string, from: string) => {
         notificationType:
             getNotificationType(_vc?.credentialSubject?.achievement?.achievementType) ||
             NotificationTypeEnum.Achievement,
-        issueDate: moment(_vc?.issuanceDate).format('MMM DD YYYY'),
+        issueDate: formatLocaleDate(_vc?.issuanceDate, {
+            month: 'short',
+            day: '2-digit',
+            year: 'numeric',
+        }),
         uri,
         from,
     };

@@ -17,6 +17,7 @@ import {
 
 import { IonCol, IonRow, IonGrid } from '@ionic/react';
 import { UserProfilePicture, useCurrentUser } from 'learn-card-base';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { AddressBookContact } from '../addressBookHelpers';
 import ArrowRight from 'learn-card-base/svgs/ArrowRight';
 import ExpiredInviteLink from './ExpiredInviteLink';
@@ -71,6 +72,7 @@ export const AddContactView: React.FC<{
     const { initWallet } = useWallet();
     const isLoggedIn = useIsLoggedIn();
     const currentUser = useCurrentUser();
+    const brandingConfig = useBrandingConfig();
     const { presentToast } = useToast();
     const { newModal } = useModal();
 
@@ -393,6 +395,15 @@ export const AddContactView: React.FC<{
             <p className="text-grayscale-600 text-lg font-semibold text-center">
                 {user?.displayName || `@${user?.profileId}`} has requested
                 <br /> to connect with you?
+            </p>
+        );
+    } else if (mode === AddContactViewMode?.acceptInvite) {
+        promptText = (
+            <p className="text-grayscale-600 text-lg font-semibold text-center">
+                {m['contacts.invite.invitedYou']({
+                    name: user?.displayName || `@${user?.profileId}`,
+                    brand: brandingConfig?.name ?? 'LearnCard',
+                })}
             </p>
         );
     } else {

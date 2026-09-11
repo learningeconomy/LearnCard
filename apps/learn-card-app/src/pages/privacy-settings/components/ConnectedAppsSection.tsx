@@ -98,11 +98,11 @@ const ConnectedAppsSection: React.FC<ConnectedAppsSectionProps> = ({
             <GlassCard className="overflow-hidden">
                 {isEmpty ? (
                     <div className="flex flex-col items-center justify-center px-6 py-10 text-center">
-                        <Shield className="w-11 h-11 text-grayscale-300 mb-3" />
+                        <Shield aria-hidden="true" className="w-11 h-11 text-grayscale-300 mb-3" />
                         <p className="text-grayscale-700 font-medium">
                             {m['dataShareCenter.connectedApps.emptyTitle']()}
                         </p>
-                        <p className="text-sm text-grayscale-500 mt-1">
+                        <p className="text-sm text-grayscale-600 mt-1">
                             {m['dataShareCenter.connectedApps.emptySubtitle']()}
                         </p>
                     </div>
@@ -111,7 +111,7 @@ const ConnectedAppsSection: React.FC<ConnectedAppsSectionProps> = ({
                         <p className="text-grayscale-600 font-medium">
                             {m['dataShareCenter.connectedApps.noMatches']()}
                         </p>
-                        <p className="text-sm text-grayscale-500 mt-1">
+                        <p className="text-sm text-grayscale-600 mt-1">
                             {m['dataShareCenter.connectedApps.noMatchesFor']({ query })}
                         </p>
                     </div>
@@ -122,7 +122,7 @@ const ConnectedAppsSection: React.FC<ConnectedAppsSectionProps> = ({
                                 key={group.key}
                                 className="border-b border-grayscale-100 last:border-b-0"
                             >
-                                <p className="px-5 pt-4 pb-1 text-xs font-semibold tracking-wider text-grayscale-500 uppercase">
+                                <p className="px-5 pt-4 pb-1 text-xs font-semibold tracking-wider text-grayscale-600 uppercase">
                                     {groupLabel(group.key)}
                                 </p>
                                 <div className="flex flex-col gap-1 p-2 pt-1">

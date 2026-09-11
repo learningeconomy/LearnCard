@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { useGetCurrentLCNUser } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
 
 const UserProfileSetupHeader: React.FC<{
     showNetworkSettings?: boolean;
@@ -21,7 +22,7 @@ const UserProfileSetupHeader: React.FC<{
                         onClick={() => handleNotificationsPrompt?.()}
                         className="mr-1 text-indigo-500 font-semibold text-lg text-center"
                     >
-                        Notifications
+                        {m['userProfile.notifications']()}
                     </button>
                     {/* {!currentLCNUser && (
                         <button

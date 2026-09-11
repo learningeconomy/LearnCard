@@ -30,6 +30,8 @@ import { TroopParentLevel } from './troopConstants';
 import { getScoutsRole } from '../../helpers/troop.helpers';
 import { ScoutsRoleEnum } from '../../stores/troopPageStore';
 import { DASHBOARD_TYPE } from 'packages/plugins/lca-api-plugin/src/types';
+import { useLocale } from '../../i18n';
+import * as m from '../../paraglide/messages.js';
 
 import type { VC } from '@learncard/types';
 
@@ -108,6 +110,7 @@ const TroopChildrenBox: React.FC<Props> = ({ networkName, boostUri, credential, 
     const role = userRole ?? credentialRole;
     const flags = useFlags();
     const showAnalyticsOption = flags.enableViewScoutAnalytics;
+    const locale = useLocale();
 
     const isNetworkAdmin = role === ScoutsRoleEnum.national;
 
@@ -186,20 +189,20 @@ const TroopChildrenBox: React.FC<Props> = ({ networkName, boostUri, credential, 
                 return [
                     {
                         Icon: OrangeScoutsNetworkTent,
-                        mainText: 'National Networks',
+                        mainText: m['troops.childMenu.nationalNetworks'](),
                         caretText: fmt(counts.globalNetworks),
                         onClick: openNetworkList,
                     },
                     {
                         Icon: GreenScoutsPledge2,
-                        mainText: 'Troops',
+                        mainText: m['troops.childMenu.troops'](),
                         caretText: fmt(counts.globalTroops),
                         onClick: () => openTroopsModal(TroopParentLevel.global),
                     },
                     showAnalyticsOption
                         ? {
                               Icon: AnalyticsIcon,
-                              mainText: 'Analytics',
+                              mainText: m['troops.childMenu.analytics'](),
                               caretText: '',
                               onClick: () => openAnalytics(DASHBOARD_TYPE.GLOBAL),
                           }
@@ -210,26 +213,26 @@ const TroopChildrenBox: React.FC<Props> = ({ networkName, boostUri, credential, 
                 return [
                     {
                         Icon: GreenScoutsPledge2,
-                        mainText: 'Troops',
+                        mainText: m['troops.childMenu.troops'](),
                         caretText: fmt(counts.nationalTroops),
                         onClick: () => openTroopsModal(TroopParentLevel.national),
                     },
                     {
                         Icon: PurpleMeritBadgesIcon,
-                        mainText: 'Merit Badges',
+                        mainText: m['troops.childMenu.meritBadges'](),
                         caretText: fmt(counts.nationalBadges),
                         onClick: () => openCredentialModal(CredentialCategoryEnum.meritBadge),
                     },
                     {
                         Icon: BlueBoostOutline2,
-                        mainText: 'Social Boosts',
+                        mainText: m['troops.childMenu.socialBoosts'](),
                         caretText: fmt(counts.nationalBoosts),
                         onClick: () => openCredentialModal(CredentialCategoryEnum.socialBadge),
                     },
                     showAnalyticsOption
                         ? {
                               Icon: AnalyticsIcon,
-                              mainText: 'Analytics',
+                              mainText: m['troops.childMenu.analytics'](),
                               caretText: '',
                               onClick: () => openAnalytics(DASHBOARD_TYPE.NSO),
                           }
@@ -240,13 +243,13 @@ const TroopChildrenBox: React.FC<Props> = ({ networkName, boostUri, credential, 
                 return [
                     {
                         Icon: PurpleMeritBadgesIcon,
-                        mainText: 'Merit Badges',
+                        mainText: m['troops.childMenu.meritBadges'](),
                         caretText: fmt(counts.scoutBadges),
                         onClick: () => openCredentialModal(CredentialCategoryEnum.meritBadge),
                     },
                     {
                         Icon: BlueBoostOutline2,
-                        mainText: 'Social Boosts',
+                        mainText: m['troops.childMenu.socialBoosts'](),
                         caretText: fmt(counts.scoutBoosts),
                         onClick: () => openCredentialModal(CredentialCategoryEnum.socialBadge),
                     },
@@ -256,20 +259,20 @@ const TroopChildrenBox: React.FC<Props> = ({ networkName, boostUri, credential, 
                 return [
                     {
                         Icon: PurpleMeritBadgesIcon,
-                        mainText: 'Merit Badges',
+                        mainText: m['troops.childMenu.meritBadges'](),
                         caretText: fmt(counts.troopBadges),
                         onClick: () => openCredentialModal(CredentialCategoryEnum.meritBadge),
                     },
                     {
                         Icon: BlueBoostOutline2,
-                        mainText: 'Social Boosts',
+                        mainText: m['troops.childMenu.socialBoosts'](),
                         caretText: fmt(counts.troopBoosts),
                         onClick: () => openCredentialModal(CredentialCategoryEnum.socialBadge),
                     },
                     showAnalyticsOption
                         ? {
                               Icon: AnalyticsIcon,
-                              mainText: 'Analytics',
+                              mainText: m['troops.childMenu.analytics'](),
                               caretText: '',
                               onClick: () => openAnalytics(DASHBOARD_TYPE.TROOP),
                           }
@@ -279,7 +282,16 @@ const TroopChildrenBox: React.FC<Props> = ({ networkName, boostUri, credential, 
             default:
                 return [];
         }
-    }, [role, counts, openNetworkList, openTroopsModal, openCredentialModal, openAnalytics]);
+    }, [
+        role,
+        counts,
+        openNetworkList,
+        openTroopsModal,
+        openCredentialModal,
+        openAnalytics,
+        showAnalyticsOption,
+        locale,
+    ]);
 
     /* ------------------------------------------------------------------------ */
 

@@ -55,6 +55,37 @@ Locale switching: `useLocale()` / `useChangeLocale()` from `../i18n`.
    plugin's duplicate-import guard and fails the build. Prefer `import * as m`.
 7. **`vite build` does NOT typecheck** (esbuild strips types). Undefined-identifier
    and type bugs surface only at runtime — run `tsc` separately.
+8. **Never put translated prose in a _persisted_ store — store the key.** A
+   persisted zustood store (`persist: { enabled: true }`) writes its state to
+   localStorage, so a translated string put there is frozen into whichever
+   language was active when it was written and _survives a language switch_ —
+   worse than the module-scope freeze, because clearing it needs a migration.
+   Store a stable message KEY (plus the English source as a fallback) and
+   resolve at render with `mDynamic`. See `ChatBotQA.questionKey` /
+   `resolveChatBotQuestion` in `newAiSessionChatbot.helpers.ts`, seeded into the
+   persisted `chatBotStore`. Same rule, same reason as the
+   `personalizedQuestions` VC round-trip: what gets stored must be
+   locale-independent.
+9. **Translate the emphasis phrase alongside its sentence.**
+   `FormatQuestionTitle` bolds by `title.includes(phraseToEmphasize)`, so a
+   translated question paired with an English phrase silently renders
+   _unbolded_ rather than erroring — easy to miss in review. Every
+   question/emphasis pair must satisfy "emphasis is a substring of question" in
+   **all four** locales, including interpolated `{{var}}` variants where the
+   param must be injected into both halves.
+
+## Locale-frozen data: the three shapes
+
+The `no-module-scope-i18n` rule catches the first shape; the other two are on you.
+
+| Shape                                          | Symptom                                                    | Fix                                                                                     |
+| ---------------------------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Module-scope `const` (array/object of strings) | Frozen at import, before the locale resolves               | Turn it into a getter function — `getSessionLoadingText()` in `newAiSession.helpers.ts` |
+| `useMemo` missing a locale dep                 | Frozen at mount; ignores switches                          | Add the locale to the dep array (see `no-frozen-i18n-memo`)                             |
+| **Persisted** store state                      | Frozen _and_ written to localStorage; outlives the session | Store the key, resolve at render (gotcha 8)                                             |
+
+Rule of thumb: if a string is going to outlive the current render, store what it
+_means_ (a key), not what it _says_.
 
 ## Shared packages (`learn-card-base`, `@learncard/react`)
 
@@ -83,7 +114,33 @@ serve `[]`.
 
 -   **App Store admin + developer guides** (`src/pages/appStoreDeveloper/`,
     ~127 files / ~56k LOC) — effectively a standalone app; tracked separately.
+-   **AI assessment flow** (`src/components/ai-assessment/`, ~38 literals, LC-1901
+    follow-up) — `Final Assessment`, `Let's Go`, `Skills Earned`,
+    `Session Reflection`, `Next Steps`, `Assessment Question {n}`, and
+    `Skills You Can Earn` duplicated across three preview components. Surfaces
+    once a user _finishes_ a session, so it isn't hit by the chat-flow QA.
+-   **`ChatBotQA.answer` strings** — `'New Topic'`, `'Revisit Topic'`,
+    `` `New Session for ${title}` `` (`useNewSessionForTopic.tsx`,
+    `AiInsightsPromptBox.tsx`). Hidden in the tutor flow but rendered in the
+    insights one. They live in the same **persisted** `chatBotStore` as the
+    questions, so localizing them needs an `answerKey` — gotcha 8 — not
+    `m[...]()`.
 -   Keep this list current as surfaces are swept.
+
+To enumerate what's left on any surface, point the existing AST config at it
+rather than grepping:
+
+```bash
+cd apps/learn-card-app
+npx eslint --no-eslintrc -c .eslintrc-i18n.cjs --resolve-plugins-relative-to ../.. \
+  --ext .tsx,.ts src/components/<area> --format unix
+```
+
+Two caveats: it is `mode: 'jsx-text-only'`, so it does **not** flag literals in
+`.ts` helpers (both LC-1901 QA bugs were exactly that), and app-wide it reports
+~2,892 warnings — which is why `i18n:check-ast` is still scoped to
+`appStoreDeveloper` + `appStoreAdmin`. Widening it wants a committed baseline
+that fails only on _new_ violations.
 
 ### Swept
 
@@ -117,6 +174,30 @@ serve `[]`.
         the "N read, M write" row summary (`dataSharing.readCount`/`writeCount`/
         `noPermissions`) — fine because it only runs inside the row render.
     -   Cancel / Back reuse `common.cancel` / `common.back`.
+
+-   **AI session chat + plan** (`src/components/new-ai-session/`,
+    `src/components/ai-sessions/`, LC-1901) — localized under `aiSession.chat.*`,
+    `aiSession.plan.*` and `aiSession.loading.*`. Notes for future edits there:
+
+    -   The chat Q&A entries live in the **persisted** `chatBotStore`, so they carry
+        `questionKey`/`emphasisKey`/`questionParams` and resolve at render via
+        `resolveChatBotQuestion` / `resolveChatBotEmphasis`. Never put a translated
+        string on `ChatBotQA.question` — see gotchas 8 and 9.
+    -   The three loader arrays are getter functions
+        (`getSessionLoadingText` / `getAiThinkingText` / `getSessionWrapUpText`),
+        called at each render site. Adding a line means adding a key to all four
+        catalogs, not pushing onto an array.
+    -   **AI-generated** content (tutor replies, plan body, summaries) is translated
+        server-side, not here — the client sends the locale and the AI answers in it.
+        See `getActiveLocale` / `addActiveLocaleToUrl` / `addActiveLocaleToPayload`
+        in `learn-card-base/src/i18n`. The headings around that content are ours;
+        the content is not.
+    -   Bulk translation went through the deepseek dispatch flow
+        (`~/.claude/dispatch/gen_lc1901_flavor_translate.py`), whose worklist is
+        `check-i18n-untranslated --json`. Seed es/fr/ar with the English source and
+        the guard picks the keys up automatically. **Do not list `AI` as a
+        never-translate brand token** in those prompts — unlike LearnCard/Boost/DID
+        it localizes (`IA` in es and fr).
 
 ## Adding a new language
 

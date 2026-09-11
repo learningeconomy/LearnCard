@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { IonTextarea, IonRow, IonCol } from '@ionic/react';
+import { IonRow, IonCol } from '@ionic/react';
 import KeyIcon from 'learn-card-base/svgs/KeyIcon';
 import { useModal, useCurrentUser } from 'learn-card-base';
 import CopyStack from '../svgs/CopyStack';
@@ -18,35 +18,10 @@ const SeedPhraseModal: React.FC<{}> = () => {
     const currentUser = useCurrentUser();
     const { presentToast } = useToast();
 
-    const handleCopySeedPhrase = () => {
-        newModal(
-            <div className="p-[20px]">
-                <p className="text-[16px] font-poppins font-medium mb-[10px] text-grayscale-900">
-                    {m['profile.seed.copyConfirm']()}
-                </p>
-                <div className="flex justify-end items-end">
-                    <button
-                        className="text-[#0054E9] font-medium font-poppins leading-[150%] mr-[10px]"
-                        onClick={copySeedPhrase}
-                    >
-                        {m['profile.export.confirm']()}
-                    </button>
-                    <button
-                        className="text-[#0054E9] font-medium font-poppins leading-[150%] mr-[10px]"
-                        onClick={closeModal}
-                    >
-                        {m['profile.export.cancel']()}
-                    </button>
-                </div>
-            </div>,
-            { sectionClassName: '!max-w-[450px]', hideButton: true }
-        );
-    };
-
     const copySeedPhrase = async () => {
         closeModal();
         try {
-            await Clipboard.write({ string: currentUser?.privateKey });
+            await Clipboard.write({ string: currentUser?.privateKey ?? '' });
             presentToast(m['profile.seed.copiedToast'](), {
                 hasDismissButton: true,
             });
@@ -58,32 +33,63 @@ const SeedPhraseModal: React.FC<{}> = () => {
         }
     };
 
+    const handleCopySeedPhrase = () => {
+        newModal(
+            <div className="p-[20px]">
+                <h2 className="text-[16px] font-poppins font-medium mb-[10px] text-grayscale-900">
+                    {m['profile.seed.copyConfirm']()}
+                </h2>
+                <div className="flex justify-end items-end">
+                    <button
+                        type="button"
+                        className="text-[#0054E9] font-medium font-poppins leading-[150%] mr-[10px]"
+                        onClick={copySeedPhrase}
+                    >
+                        {m['profile.export.confirm']()}
+                    </button>
+                    <button
+                        type="button"
+                        className="text-[#0054E9] font-medium font-poppins leading-[150%] mr-[10px]"
+                        onClick={closeModal}
+                    >
+                        {m['profile.export.cancel']()}
+                    </button>
+                </div>
+            </div>,
+            { sectionClassName: '!max-w-[450px]', hideButton: true }
+        );
+    };
+
     return (
         <section className="h-full pb-[100px]">
             <div className="flex flex-col p-6 w-full bg-white rounded-[30px]">
-                <h2 className="flex text-[16px] font-semibold">
+                <h1 id="seed-phrase-label" className="flex text-[16px] font-semibold">
                     {m['profile.seed.yourSeedPhrase']()}
-                </h2>
+                </h1>
                 <IonRow className="flex items-center justify-center w-full bg-grayscale-100 mt-4 mb-4 rounded-[15px]">
                     <IonCol className="w-full flex items-center justify-between px-4 py-3 rounded-2xl">
                         <div className="w-[90%] flex justify-start items-center text-left">
-                            <IonTextarea
-                                className="flex items-center w-full bg-grayscale-100 rounded-[10px] px-[10px] text-[15px] text-grayscale-900"
+                            <textarea
+                                className="flex items-center w-full resize-none bg-grayscale-100 rounded-[10px] px-[10px] text-[15px] text-grayscale-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                                 value={
                                     revealed
-                                        ? currentUser?.privateKey
+                                        ? currentUser?.privateKey ?? ''
                                         : '•'.repeat(currentUser?.privateKey?.length || 0)
                                 }
-                                readonly
-                                disabled
+                                readOnly
+                                aria-labelledby="seed-phrase-label"
                             />
                         </div>
-                        <div
-                            onClick={() => handleCopySeedPhrase()}
+                        <button
+                            type="button"
+                            onClick={handleCopySeedPhrase}
+                            aria-label={m['recovery.copyToClipboard']()}
                             className="w-[10%] flex items-center justify-end"
                         >
-                            <CopyStack className="w-[32px] h-[32px] text-grayscale-900" />
-                        </div>
+                            <span aria-hidden="true">
+                                <CopyStack className="w-[32px] h-[32px] text-grayscale-900" />
+                            </span>
+                        </button>
                     </IonCol>
                 </IonRow>
                 <a
@@ -98,13 +104,17 @@ const SeedPhraseModal: React.FC<{}> = () => {
 
             <div className="flex flex-col justify-center items-center mt-[10px]">
                 <button
+                    type="button"
                     onClick={() => setRevealed(prev => !prev)}
                     className="flex items-center justify-center bg-indigo-500 text-white text-lg font-notoSans py-2 rounded-[20px] font-semibold w-full h-full disabled:opacity-50"
                 >
-                    <KeyIcon className="w-[20px] mr-[5px]" />
+                    <span aria-hidden="true">
+                        <KeyIcon className="w-[20px] mr-[5px]" />
+                    </span>
                     {revealed ? m['profile.seed.hide']() : m['profile.seed.reveal']()}
                 </button>
                 <button
+                    type="button"
                     onClick={closeModal}
                     className="bg-white text-grayscale-900 text-lg font-notoSans py-2 rounded-[20px] w-full h-full shadow-bottom mt-[10px]"
                 >

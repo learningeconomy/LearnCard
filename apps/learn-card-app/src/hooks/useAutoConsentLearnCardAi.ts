@@ -8,6 +8,7 @@ import {
 const log = getLogger('use-auto-consent-learn-card-ai');
 
 import { CurrentUser, useWallet, useCurrentUser, useWithdrawConsent } from 'learn-card-base';
+import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { getOrFetchConsentedContracts } from 'learn-card-base';
 import { getTermsWithSharedUrisForWallet } from 'learn-card-base';
 import { isProductionNetwork } from 'learn-card-base';
@@ -23,8 +24,11 @@ import {
 
 let autoConsentInFlight: Promise<boolean> | null = null;
 let withdrawConsentInFlight: Promise<boolean> | null = null;
-const triggerCredentialIngestion = (did: string, source: CredentialIngestionSource): void => {
-    void ensureCredentialIngestion(did, source).catch(error => {
+const triggerCredentialIngestion = (
+    wallet: BespokeLearnCard,
+    source: CredentialIngestionSource
+): void => {
+    void ensureCredentialIngestion(wallet, source).catch(error => {
         log.warn('Failed to start credential indexing', error);
     });
 };
@@ -77,7 +81,7 @@ export const useAutoConsentLearnCardAi = () => {
                     );
 
                     if (alreadyConsented) {
-                        triggerCredentialIngestion(consentWallet.id.did(), 'app_open');
+                        triggerCredentialIngestion(consentWallet, 'app_open');
                         return true;
                     }
 
@@ -140,7 +144,7 @@ export const useAutoConsentLearnCardAi = () => {
                     });
 
                     await queryClient.invalidateQueries({ queryKey: ['useConsentedContracts'] });
-                    triggerCredentialIngestion(consentWallet.id.did(), 'consent');
+                    triggerCredentialIngestion(consentWallet, 'consent');
 
                     return true;
                 } catch (error) {
@@ -163,7 +167,7 @@ export const useAutoConsentLearnCardAi = () => {
                         );
 
                         if (recoveredConsent) {
-                            triggerCredentialIngestion(recoveryWallet.id.did(), 'app_open');
+                            triggerCredentialIngestion(recoveryWallet, 'app_open');
                             return true;
                         }
                     } catch {

@@ -106,7 +106,7 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
                                         history.goBack();
                                     }}
                                 >
-                                    <LeftArrow className="w-7 h-auto text-white" />
+                                    <LeftArrow className="rtl-mirror w-7 h-auto text-white" />
                                 </button>
                             )}
 

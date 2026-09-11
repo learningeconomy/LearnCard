@@ -13,13 +13,18 @@ import {
     InboxCredential,
     ContactMethod,
 } from '@models';
-import { getClaimLinkOptionsInfoForBoost, getClaimLinkGeneratorProfileId, getTTLForClaimLink } from '@cache/claim-links';
+import {
+    getClaimLinkOptionsInfoForBoost,
+    getClaimLinkGeneratorProfileId,
+    getTTLForClaimLink,
+} from '@cache/claim-links';
 import { BoostStatus } from 'types/boost';
 import { adminRole, creatorRole, emptyRole } from './helpers/permissions';
 import { neogma } from '@instance';
 import { getIdFromUri } from '@helpers/uri.helpers';
 import { sendSpy, addNotificationToQueueSpy } from './helpers/spies';
 import * as notifications from '@helpers/notifications.helpers';
+import { areProfilesConnected } from '@helpers/connection.helpers';
 
 // Mock delivery service for inbox routing tests
 const deliverySendSpy = vi.fn().mockResolvedValue(undefined);
@@ -743,6 +748,46 @@ describe('Boosts', () => {
                 credential,
             });
             expect(credentialUri).toBeDefined();
+        });
+
+        it('includes the source Boost URI in received-notification metadata', async () => {
+            const notificationSpy = vi
+                .spyOn(notifications, 'addNotificationToQueue')
+                .mockImplementation(addNotificationToQueueSpy);
+            addNotificationToQueueSpy.mockClear();
+
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+            const userBProfile = (await userB.clients.fullAuth.profile.getProfile())!;
+            const credential = await userA.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userA.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userB.learnCard.id.did(),
+                },
+                boostId: uri,
+            });
+
+            const credentialUri = await userA.clients.fullAuth.boost.sendBoost({
+                profileId: userBProfile.profileId,
+                uri,
+                credential,
+            });
+
+            await vi.waitFor(() => {
+                expect(addNotificationToQueueSpy).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        data: {
+                            vcUris: [credentialUri],
+                            metadata: { boostUri: uri },
+                        },
+                    })
+                );
+            });
+
+            notificationSpy.mockRestore();
         });
 
         it('should allow sending a boost to did:web', async () => {
@@ -2887,6 +2932,49 @@ describe('Boosts', () => {
             } else {
                 expect(sa).toBeDefined();
             }
+        });
+
+        it('creates both prompt directions for a claim-link acceptance using the credential trigger', async () => {
+            const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
+            const boostUri = boosts.records[0]!.uri;
+            const sa = await userA.clients.fullAuth.profile.signingAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'mysa',
+            });
+            expect(sa).toBeDefined();
+
+            const challenge = 'connection-prompt-claim';
+            await userA.clients.fullAuth.boost.generateClaimLink({
+                boostUri,
+                challenge,
+                claimLinkSA: {
+                    endpoint: sa!.signingAuthority.endpoint,
+                    name: sa!.relationship.name,
+                },
+            });
+
+            const credentialUri = await userB.clients.fullAuth.boost.claimBoostWithLink({
+                boostUri,
+                challenge,
+            });
+            const [claimerPrompts, senderPrompts, claimer, sender] = await Promise.all([
+                userB.clients.fullAuth.profile.pendingConnectionPrompts(),
+                userA.clients.fullAuth.profile.pendingConnectionPrompts(),
+                userB.clients.fullAuth.profile.getProfile(),
+                userA.clients.fullAuth.profile.getProfile(),
+            ]);
+
+            expect(claimerPrompts).toHaveLength(1);
+            expect(claimerPrompts[0]).toMatchObject({
+                surface: 'POST_CLAIM',
+                triggerId: `credential:${getIdFromUri(credentialUri)}`,
+            });
+            expect(senderPrompts).toHaveLength(1);
+            expect(senderPrompts[0]).toMatchObject({
+                surface: 'NOTIFICATION',
+                triggerId: `credential:${getIdFromUri(credentialUri)}`,
+            });
+            expect(await areProfilesConnected(claimer!, sender!)).toBe(false);
         });
 
         it("should auto-accept a boost you've claimed", async () => {

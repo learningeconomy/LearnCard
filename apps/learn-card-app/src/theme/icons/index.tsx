@@ -15,6 +15,10 @@ export type CategoryIcons = {
      * already the solid glyph. `ActivityCredentialIcon` falls back to `Icon`.
      */
     IconSolid?: React.FC<{ className?: string }>;
+    /** Dark variant (grayscale-700) for inactive filter states. */
+    IconDark?: React.FC<{ className?: string }>;
+    /** White variant for active/selected filter states on dark backgrounds. */
+    IconWhite?: React.FC<{ className?: string }>;
 };
 
 export type LaunchPadIcons = {

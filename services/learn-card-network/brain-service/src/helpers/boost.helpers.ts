@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import isEqual from 'lodash/isEqual';
 import cloneDeep from 'lodash/cloneDeep';
 import { v4 as uuidv4 } from 'uuid';
@@ -313,7 +314,7 @@ export const issueCertifiedBoost = async (
                 lcnDID = learnCard.id.did();
             }
         } catch (error) {
-            if (process.env.NODE_ENV !== 'test') {
+            if (environment.NODE_ENV !== 'test') {
                 console.warn(
                     'LCN DID Document is unable to resolve while issuing Certified Boost. Reverting to did:key. Is this a test environment?',
                     lcnDID,
@@ -415,6 +416,7 @@ export const sendBoost = async ({
         async () => {
             const decryptedCredential = await decryptCredential(credential);
             let boostUri: string | undefined;
+            const sourceBoostUri = getBoostUri(boost.dataValues.id, domain);
             const fromProfile = getIssuerOwnerProfile(from);
 
             // Skip certification if requested or if credential can't be decrypted or if it's not a boost credential
@@ -484,7 +486,7 @@ export const sendBoost = async ({
 
                     boostUri = getCredentialUri(credentialInstance.id, domain);
 
-                    if (process.env.NODE_ENV !== 'test') {
+                    if (environment.NODE_ENV !== 'test') {
                         console.log('🚀 sendBoost:boost certified', boostUri);
                     }
                 } else {
@@ -562,6 +564,10 @@ export const sendBoost = async ({
                             ),
                             data: {
                                 vcUris: [boostUri!],
+                                metadata: {
+                                    ...(metadata ?? {}),
+                                    boostUri: sourceBoostUri,
+                                },
                             },
                         })
                     ).catch((err: unknown) => {

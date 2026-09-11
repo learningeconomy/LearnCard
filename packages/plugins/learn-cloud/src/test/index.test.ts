@@ -1,22 +1,25 @@
-const mockGetClient = jest.fn();
+import { vi } from 'vitest';
+const mockGetClient = vi.fn();
 
-const mockClient = {
+const makeMockClient = (learnCloudDid = 'did:key:z6MkLearnCloud') => ({
     user: {
-        getDids: { query: jest.fn().mockResolvedValue([]) },
+        getDids: { query: vi.fn().mockResolvedValue([]) },
     },
     utilities: {
-        getDid: { query: jest.fn().mockResolvedValue('did:key:z6MkLearnCloud') },
-    },
-    storage: {
-        batchResolve: { query: jest.fn() },
+        getDid: { query: vi.fn().mockResolvedValue(learnCloudDid) },
     },
     customStorage: {
-        count: { query: jest.fn().mockResolvedValue(0) },
-        create: { mutate: jest.fn() },
+        count: { query: vi.fn().mockResolvedValue(0) },
+        create: { mutate: vi.fn().mockResolvedValue('lc:cloud:credential') },
     },
-};
+    storage: {
+        batchResolve: { query: vi.fn() },
+    },
+});
 
-jest.mock('@learncard/learn-cloud-client', () => ({
+const mockClient = makeMockClient();
+
+vi.mock('@learncard/learn-cloud-client', () => ({
     getClient: (...args: unknown[]) => mockGetClient(...args),
 }));
 
@@ -41,22 +44,18 @@ const makeLearnCard = (did = 'did:key:z6MkHolder') => ({
         did: () => did,
     },
     invoke: {
-        getDidAuthVp: jest.fn().mockResolvedValue('did-auth-jwt'),
-        decryptDagJwe: jest.fn(async value => value),
-        createDagJwe: jest.fn(async () => ({ ciphertext: 'encrypted' })),
-        hash: jest.fn(async value => `hash:${value}`),
+        getDidAuthVp: vi.fn().mockResolvedValue('did-auth-jwt'),
+        decryptDagJwe: vi.fn(async value => value),
+        createDagJwe: vi.fn(async () => ({ ciphertext: 'encrypted' })),
+        hash: vi.fn(async value => `hash:${value}`),
     },
-    debug: jest.fn(),
+    debug: vi.fn(),
 });
 
 describe('LearnCloud Plugin', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         mockGetClient.mockResolvedValue(mockClient);
-    });
-
-    it('exposes a function', () => {
-        expect(getLearnCloudPlugin).toBeDefined();
     });
 
     it('defers remote identity requests until a method needs them', async () => {
@@ -92,21 +91,21 @@ describe('LearnCloud Plugin', () => {
         const firstClient = {
             ...mockClient,
             utilities: {
-                getDid: { query: jest.fn().mockResolvedValue('did:key:z6MkFirstLearnCloud') },
+                getDid: { query: vi.fn().mockResolvedValue('did:key:z6MkFirstLearnCloud') },
             },
             customStorage: {
                 ...mockClient.customStorage,
-                create: { mutate: jest.fn().mockResolvedValue('first-record') },
+                create: { mutate: vi.fn().mockResolvedValue('first-record') },
             },
         };
         const secondClient = {
             ...mockClient,
             utilities: {
-                getDid: { query: jest.fn().mockResolvedValue('did:key:z6MkSecondLearnCloud') },
+                getDid: { query: vi.fn().mockResolvedValue('did:key:z6MkSecondLearnCloud') },
             },
             customStorage: {
                 ...mockClient.customStorage,
-                create: { mutate: jest.fn().mockResolvedValue('second-record') },
+                create: { mutate: vi.fn().mockResolvedValue('second-record') },
             },
         };
         mockGetClient.mockResolvedValueOnce(firstClient).mockResolvedValueOnce(secondClient);
@@ -138,21 +137,21 @@ describe('LearnCloud Plugin', () => {
         const firstClient = {
             ...mockClient,
             utilities: {
-                getDid: { query: jest.fn().mockResolvedValue('did:key:z6MkFirstLearnCloud') },
+                getDid: { query: vi.fn().mockResolvedValue('did:key:z6MkFirstLearnCloud') },
             },
             customStorage: {
                 ...mockClient.customStorage,
-                create: { mutate: jest.fn().mockResolvedValue('first-record') },
+                create: { mutate: vi.fn().mockResolvedValue('first-record') },
             },
         };
         const secondClient = {
             ...mockClient,
             utilities: {
-                getDid: { query: jest.fn().mockResolvedValue('did:key:z6MkSecondLearnCloud') },
+                getDid: { query: vi.fn().mockResolvedValue('did:key:z6MkSecondLearnCloud') },
             },
             customStorage: {
                 ...mockClient.customStorage,
-                create: { mutate: jest.fn().mockResolvedValue('second-record') },
+                create: { mutate: vi.fn().mockResolvedValue('second-record') },
             },
         };
         mockGetClient.mockResolvedValueOnce(firstClient).mockResolvedValueOnce(secondClient);
@@ -213,7 +212,7 @@ describe('LearnCloud Plugin', () => {
             ...mockClient,
             storage: {
                 ...mockClient.storage,
-                resolve: { query: jest.fn().mockResolvedValue(makeW3cVc()) },
+                resolve: { query: vi.fn().mockResolvedValue(makeW3cVc()) },
             },
         };
 

@@ -3,6 +3,8 @@ import { z } from 'zod';
 
 import { IonCol, IonInput, IonInputPasswordToggle } from '@ionic/react';
 
+import * as m from '../../../paraglide/messages.js';
+import { TransP } from '../../../i18n/TransP';
 import { useScoutsSSOLogin } from './useScoutsSSOLogin';
 import useFirebase from '../../../hooks/useFirebase';
 
@@ -68,8 +70,10 @@ export const ScoutsSSOLogin: React.FC = () => {
         <form onSubmit={handleLogin} className="w-full">
             <IonCol size="12">
                 <p className="font-medium text-sm text-grayscale-600 uppercase">
-                    Login with your{' '}
-                    <span className="text-sp-purple-light">World Scouts Account</span>
+                    <TransP
+                        m={m['login.worldScoutsAccount']}
+                        components={[<span className="text-sp-purple-light" key="brand" />]}
+                    />
                 </p>
             </IonCol>
             {loginError && (
@@ -83,7 +87,7 @@ export const ScoutsSSOLogin: React.FC = () => {
                     className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] !px-4 !py-2 font-medium font-notoSans tracking-wide text-base ${
                         errors.username ? 'login-input-email-error' : ''
                     }`}
-                    placeholder="Username"
+                    placeholder={m['login.usernamePlaceholder']()}
                     onIonInput={e => setUsername(e.detail.value)}
                     value={username}
                     type="text"
@@ -96,7 +100,7 @@ export const ScoutsSSOLogin: React.FC = () => {
                     className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] !px-4 !py-2 font-medium font-notoSans tracking-wide text-base ${
                         errors.password ? 'login-input-email-error' : ''
                     }`}
-                    placeholder="Password"
+                    placeholder={m['common.password']()}
                     onIonInput={e => setPassword(e.detail.value)}
                     value={password}
                     type="password"
@@ -115,7 +119,7 @@ export const ScoutsSSOLogin: React.FC = () => {
                     type="submit"
                     className="bg-sp-purple-base text-white ion-padding w-full font-bold rounded-[30px]"
                 >
-                    {loading ? 'Loading...' : 'Login'}
+                    {loading ? m['common.loading']() : m['common.login']()}
                 </button>
             </IonCol>
         </form>

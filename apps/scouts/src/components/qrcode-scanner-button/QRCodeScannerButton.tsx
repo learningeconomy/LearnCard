@@ -10,6 +10,7 @@ import {
     useGetConnections,
 } from 'learn-card-base';
 import MyScoutsModal from '../scouts/MyScoutsModal';
+import * as m from '../../paraglide/messages.js';
 import QrCodeUserCardModal from '../qrcode-user-card/QRCodeUserCard';
 
 export const QRCodeScannerButton: React.FC<{ branding: BrandingEnum }> = ({ branding }) => {
@@ -48,7 +49,7 @@ export const QRCodeScannerButton: React.FC<{ branding: BrandingEnum }> = ({ bran
         <div className="flex justify-between items-center bg-grayscale-200 rounded-[40px] p-0 m-0 pr-[10px] pb-[3px] pt-[3px] object-fill">
             <button
                 type="button"
-                aria-label="qr-code-scanner-button"
+                aria-label={m['scanner.scanQR']()}
                 onClick={() => {
                     newModal(<MyScoutsModal branding={branding} />);
                 }}
@@ -63,7 +64,7 @@ export const QRCodeScannerButton: React.FC<{ branding: BrandingEnum }> = ({ bran
             </button>
             <button
                 onClick={handleQrCodeClick}
-                aria-label="qr-code-scanner-button"
+                aria-label={m['scanner.scanQR']()}
                 className="flex justify-center items-center h-9 w-9 ml-3 rounded-full bg-white text-black"
             >
                 <QRCodeScanner className="h-[70%]" />

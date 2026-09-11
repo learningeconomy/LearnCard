@@ -4,7 +4,7 @@ import { useHistory, useLocation, Link, useParams } from 'react-router-dom';
 import { BrandingEnum, ModalTypes, useModal, BoostCategoryOptionsEnum } from 'learn-card-base';
 import { IonContent, IonPage } from '@ionic/react';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
-import { useFlags } from 'launchdarkly-react-client-sdk';
+import * as m from '../../paraglide/messages.js';
 
 import MainHeader from '../../components/main-header/MainHeader';
 import CapGoUpdateModal from '../../components/capGoUpdateModal/CapGoUpdateModal';
@@ -12,11 +12,9 @@ import { RecoveryBanner } from '../../components/recovery/RecoveryBanner';
 import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
 import NewBoostSelectMenu from '../../components/boost/boost-select-menu/NewBoostSelectMenu';
 import { ScoutsNewsList } from '../../components/scout-news/ScoutNews';
-import { MV_TYPEFORM, openExternalLink } from '../../helpers/externalLinkHelpers';
 import useAppConnectModal from '../../hooks/useConnectAppModal';
-import { useIsCurrentUserLCNUser, useGetUnreadUserNotifications } from 'learn-card-base';
+import { useGetUnreadUserNotifications } from 'learn-card-base';
 
-import MiniPack from '../../assets/images/mini-pack.png';
 import BoostOutline2 from 'learn-card-base/svgs/BoostOutline2';
 import ContactsIcon from '../../assets/icons/ContactsIcon';
 import TroopsIcon from '../../assets/icons/TroopsIcon';
@@ -34,7 +32,6 @@ type CapacitorBundle = {
 const LaunchPad: React.FC = () => {
     const history = useHistory();
     const { search } = useLocation();
-    const flags = useFlags();
     const { connectTo, challenge } = queryString.parse(search);
     const { frameworkId, skillId } = useParams<{ frameworkId?: string; skillId?: string }>();
 
@@ -83,7 +80,7 @@ const LaunchPad: React.FC = () => {
                     />,
                     {
                         sectionClassName: '!max-w-[400px]',
-                        cancelButtonTextOverride: 'Maybe Later',
+                        cancelButtonTextOverride: m['launchPad.maybeLater'](),
                         topSectionClassName: '!py-[20px]',
                         androidClassName: isAndroid ? '!mb-[40px]' : '',
                     },
@@ -132,12 +129,22 @@ const LaunchPad: React.FC = () => {
     );
 
     const navButtons = [
-        { to: '/contacts', icon: <ContactsIcon />, text: 'Contacts', color: 'text-[#622599]' },
-        { to: '/troops', icon: <TroopsIcon />, text: 'Troops', color: 'text-[#248737]' },
+        {
+            to: '/contacts',
+            icon: <ContactsIcon />,
+            text: m['launchPad.contacts'](),
+            color: 'text-[#622599]',
+        },
+        {
+            to: '/troops',
+            icon: <TroopsIcon />,
+            text: m['launchPad.troops'](),
+            color: 'text-[#248737]',
+        },
         {
             to: '/notifications',
             icon: <AlertsIcon unreadCount={unreadCount} />,
-            text: 'Alerts',
+            text: m['launchPad.alerts'](),
             color: 'text-[#FF5655]',
             className: 'mt-1',
         },
@@ -177,20 +184,6 @@ const LaunchPad: React.FC = () => {
                                 </p>
                             </Link>
                         ))}
-
-                        {!flags?.hideSchoolsButton && (
-                            <button
-                                onClick={() => openExternalLink(MV_TYPEFORM)}
-                                className="relative flex flex-col items-center justify-center p-4 rounded-3xl flex-1 mr-3"
-                                aria-label="Manage schools"
-                            >
-                                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-16 bg-emerald-50 rounded-full" />
-                                <img src={MiniPack} alt="Schools icon" className="z-50 h-15" />
-                                <p className="text-medium font-medium text-grayscale-900">
-                                    Schools
-                                </p>
-                            </button>
-                        )}
                     </div>
                 </section>
 
@@ -199,9 +192,9 @@ const LaunchPad: React.FC = () => {
                         <button
                             onClick={handleBoostClick}
                             className="flex items-center justify-center w-[95%] py-2.5 rounded-full bg-sp-blue-ocean text-white font-notoSans text-[25px] leading-[130%] tracking-[-0.25px] mb-6 shadow-button"
-                            aria-label="Open boost menu"
+                            aria-label={m['launchPad.openBoostMenu']()}
                         >
-                            <span className="mr-2">Boost</span>
+                            <span className="mr-2">{m['launchPad.boost']()}</span>
                             <BoostOutline2
                                 outsideStar="#FFFFFF"
                                 insideStar="#03748D"
@@ -219,7 +212,7 @@ const LaunchPad: React.FC = () => {
 
                 <section className="mt-[-50px] relative">
                     <h2 className="w-full max-w-[600px] px-4 mx-auto font-rubik text-grayscale-900 font-medium text-2xl tracking-0.01">
-                        Latest News
+                        {m['launchPad.latestNews']()}
                     </h2>
                     <div className="bg-gray-100 px-4">
                         <ScoutsNewsList />

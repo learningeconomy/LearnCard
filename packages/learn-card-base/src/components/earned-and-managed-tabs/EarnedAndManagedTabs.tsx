@@ -20,7 +20,7 @@ export const BoostPageViewMode = {
 } as const;
 export type BoostPageViewModeType = (typeof BoostPageViewMode)[keyof typeof BoostPageViewMode];
 
-type EarnedAndManagedTabsProps = {
+export type EarnedAndManagedTabsProps = {
     activeTab: CredentialListTabEnum | string;
     handleActiveTab: (selectedTab: any) => void;
     handlePlusClick?: () => void;
@@ -43,6 +43,8 @@ type EarnedAndManagedTabsProps = {
     hideSearch?: boolean;
     lightSearchInput?: boolean;
     showEarnedAndManaged?: boolean;
+    earnedLabel?: React.ReactNode;
+    managedLabel?: React.ReactNode;
 };
 
 export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
@@ -65,6 +67,8 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
     hideSearch = false,
     lightSearchInput = false,
     showEarnedAndManaged,
+    earnedLabel = 'Earned',
+    managedLabel = 'Managed',
 }) => {
     const location = useLocation();
     const history = useHistory();
@@ -175,7 +179,7 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
                                         : inactiveLabelClassName
                                 }`}
                             >
-                                Earned
+                                {earnedLabel}
                             </IonLabel>
                         </IonSegmentButton>
                         {showManaged && (
@@ -191,7 +195,7 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
                                             : inactiveLabelClassName
                                     }`}
                                 >
-                                    Managed
+                                    {managedLabel}
                                 </IonLabel>
                             </IonSegmentButton>
                         )}

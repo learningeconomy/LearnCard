@@ -31,12 +31,12 @@ This shape reuses the account's fixed-cost ALB, NAT, DNS, and cluster infrastruc
 
 The deployed process enforces these invariants at startup:
 
--   `NODE_ENV=production`.
--   MongoDB, wallet encryption seed, OpenAI provider, DID Auth domain, LearnCard endpoints, and ConsentFlow contract are explicit.
--   Model input/output prices are explicit so estimated cost is not silently guessed.
--   Debug routes are disabled. Production refuses to start when `AI_AGENT_DEBUG_ENABLED=true`.
--   Local autonomy is disabled. Trigger.dev requires matching deployment environment labels, its runtime secret, and the environment's LaunchDarkly server SDK key.
--   Every run is bounded by tool rounds, wall-clock time, output tokens, measured total tokens, and estimated model cost.
+- `NODE_ENV=production`.
+- MongoDB, wallet encryption seed, OpenAI provider, DID Auth domain, LearnCard endpoints, and ConsentFlow contract are explicit.
+- Model input/output prices are explicit so estimated cost is not silently guessed.
+- Debug routes are disabled. Production refuses to start when `AI_AGENT_DEBUG_ENABLED=true`.
+- Local autonomy is disabled. Trigger.dev requires matching deployment environment labels, its runtime secret, and the environment's LaunchDarkly server SDK key.
+- Every run is bounded by tool rounds, wall-clock time, output tokens, measured total tokens, and estimated model cost.
 
 The load balancer calls `/api/health/ready`; a missing provider or unavailable MongoDB keeps a new task out of service. The ECS deployment circuit breaker rolls back a failed replacement while `MinimumHealthyPercent=100` preserves the working task.
 
@@ -48,13 +48,13 @@ Create separate CloudFormation stacks for `staging` and `production`. The templa
 
 Create one AWS Secrets Manager secret for each environment variable below. Store the raw value as the secret value, not a JSON object.
 
--   `OPENAI_API_KEY`
--   `BRAVE_SEARCH_API_KEY` when `WebSearchProvider=brave`
--   `AI_AGENT_WALLET_SEED`
--   `AI_AGENT_MONGO_URI`
--   `SENTRY_DSN`
--   the matching LaunchDarkly environment server-side SDK key used as `LAUNCHDARKLY_SDK_KEY`
--   the dedicated Trigger.dev project's **PROD** secret used as `TRIGGER_SECRET_KEY`
+- `OPENAI_API_KEY`
+- `BRAVE_SEARCH_API_KEY` when `WebSearchProvider=brave`
+- `AI_AGENT_WALLET_SEED`
+- `AI_AGENT_MONGO_URI`
+- `SENTRY_DSN`
+- the matching LaunchDarkly environment server-side SDK key used as `LAUNCHDARKLY_SDK_KEY`
+- the dedicated Trigger.dev project's **PROD** secret used as `TRIGGER_SECRET_KEY`
 
 Do not put secret values in parameter files, CloudFormation, shell history, GitHub variables, or logs. CloudFormation receives only secret ARNs.
 
@@ -77,15 +77,15 @@ If a secret uses a customer-managed KMS key, grant the generated task execution 
 
 Fill these parameters from existing resources in one VPC:
 
--   `ClusterName`
--   `VpcId`
--   `PrivateSubnetIds`, with NAT egress to OpenAI, Brave, Sentry, and public LearnCard APIs
--   `LoadBalancerSecurityGroupId`
--   `HttpsListenerArn`
--   `LoadBalancerFullName`
--   `LoadBalancerDnsName`
--   `LoadBalancerCanonicalHostedZoneId`
--   `HostedZoneId`
+- `ClusterName`
+- `VpcId`
+- `PrivateSubnetIds`, with NAT egress to OpenAI, Brave, Sentry, and public LearnCard APIs
+- `LoadBalancerSecurityGroupId`
+- `HttpsListenerArn`
+- `LoadBalancerFullName`
+- `LoadBalancerDnsName`
+- `LoadBalancerCanonicalHostedZoneId`
+- `HostedZoneId`
 
 The stack references those resources but never owns them. Deleting the AI Agent stack cannot delete the shared cluster, VPC, subnets, NAT gateway, ALB, HTTPS listener, listener security group, or hosted zone.
 
@@ -218,13 +218,13 @@ aws cloudformation wait stack-update-complete \
 
 The stack creates:
 
--   retained ECR repository;
--   ARM64 ECS/Fargate task definition and service on the imported cluster;
--   task security group, target group, host-header rule, dedicated ACM certificate, listener certificate attachment, and Route 53 alias;
--   request-count target-tracking autoscaling;
--   30-day CloudWatch log group;
--   custom CloudWatch dashboard and alarms;
--   SNS operations topic and optional email subscription.
+- retained ECR repository;
+- ARM64 ECS/Fargate task definition and service on the imported cluster;
+- task security group, target group, host-header rule, dedicated ACM certificate, listener certificate attachment, and Route 53 alias;
+- request-count target-tracking autoscaling;
+- 30-day CloudWatch log group;
+- custom CloudWatch dashboard and alarms;
+- SNS operations topic and optional email subscription.
 
 Confirm the email subscription AWS sends to `AlertEmail`.
 
@@ -245,20 +245,20 @@ Create `learn-card-ai-agent-staging` and `learn-card-ai-agent-production` GitHub
 
 Environment variables:
 
--   `AWS_REGION`
--   `AI_AGENT_AWS_ROLE_ARN`, an AWS role trusted only by the two AI Agent GitHub environments
--   `AI_AGENT_ECR_REPOSITORY_URL` from the stack's `EcrRepositoryUrl` output
--   `AI_AGENT_CLOUDFORMATION_STACK`
--   `AI_AGENT_BASE_URL`, the final public HTTPS origin
--   `AI_AGENT_TRIGGER_PROJECT_REF`, the environment's dedicated Trigger.dev project ref
--   `AI_AGENT_TRIGGER_SECRET_KEY_SECRET_ARN`, the ARN of the AWS secret containing that project's PROD secret
--   `AI_AGENT_LAUNCHDARKLY_SDK_KEY_SECRET_ARN`, the ARN of the AWS secret containing the matching LaunchDarkly environment's server-side SDK key
+- `AWS_REGION`
+- `AI_AGENT_AWS_ROLE_ARN`, an AWS role trusted only by the two AI Agent GitHub environments
+- `AI_AGENT_ECR_REPOSITORY_URL` from the stack's `EcrRepositoryUrl` output
+- `AI_AGENT_CLOUDFORMATION_STACK`
+- `AI_AGENT_BASE_URL`, the final public HTTPS origin
+- `AI_AGENT_TRIGGER_PROJECT_REF`, the environment's dedicated Trigger.dev project ref
+- `AI_AGENT_TRIGGER_SECRET_KEY_SECRET_ARN`, the ARN of the AWS secret containing that project's PROD secret
+- `AI_AGENT_LAUNCHDARKLY_SDK_KEY_SECRET_ARN`, the ARN of the AWS secret containing the matching LaunchDarkly environment's server-side SDK key
 
 Environment secrets:
 
--   `AI_AGENT_SMOKE_SEED` for staging only
--   `TRIGGER_ACCESS_TOKEN` in both environments, containing a Trigger.dev personal access token
-    beginning with `tr_pat_`; this deploys task code and is not the runtime project secret
+- `AI_AGENT_SMOKE_SEED` for staging only
+- `TRIGGER_ACCESS_TOKEN` in both environments, containing a Trigger.dev personal access token
+  beginning with `tr_pat_`; this deploys task code and is not the runtime project secret
 
 Grant the workflow `id-token: write` and use GitHub OIDC; do not create long-lived AWS access keys. Scope the role trust policy to `repo:learningeconomy/LearnCard:environment:learn-card-ai-agent-staging` and `repo:learningeconomy/LearnCard:environment:learn-card-ai-agent-production`. Restrict its policy to the two AI Agent ECR repositories, CloudFormation stacks, and resource types the template manages. The service stack attaches only `logs:FilterLogEvents` for its own application log group so deployment can verify readable logs. Set `DeploymentRoleName` if the existing role is not named `learncard-ai-agent-github-deploy`. Require a non-self production approval and protected-branch deployment.
 
@@ -278,17 +278,17 @@ project as the local-development default.
 
 Configure each project's **Prod** environment with the same runtime values used by its ECS task:
 
--   `NODE_ENV=production`, `SENTRY_ENV` and `AI_AGENT_TRIGGER_ENVIRONMENT` from the table,
-    `AI_AGENT_TRIGGER_ENABLED=true`, `AI_AGENT_AUTONOMY_DEV_ENABLED=false`,
-    `AI_AGENT_DEBUG_ENABLED=false`, and `AI_AGENT_SELF_IMPROVEMENT_ENABLED=true`
--   `LAUNCHDARKLY_SDK_KEY` from the matching LearnCard LaunchDarkly environment
--   `OPENAI_API_KEY`, `AI_AGENT_WALLET_SEED`, `AI_AGENT_MONGO_URI`, `SENTRY_DSN`, and
-    `BRAVE_SEARCH_API_KEY` when Brave is enabled
--   `AI_AGENT_WALLET_DID_WEB` when ECS uses a service profile, with the same value as ECS
--   `AI_AGENT_AUTH_DOMAIN`, `AI_AGENT_CLOUD_URL`, `AI_AGENT_NETWORK_URL`,
-    `AI_AGENT_CONSENT_FLOW_CONTRACT_URI`, and `AI_AGENT_CONSENT_FLOW_APP_URL`
--   `AI_AGENT_MONGO_DB_NAME`, `AI_AGENT_ENCRYPTION_KEY_ID`, and the same
-    run/budget/web-search settings as ECS
+- `NODE_ENV=production`, `SENTRY_ENV` and `AI_AGENT_TRIGGER_ENVIRONMENT` from the table,
+  `AI_AGENT_TRIGGER_ENABLED=true`, `AI_AGENT_AUTONOMY_DEV_ENABLED=false`,
+  `AI_AGENT_DEBUG_ENABLED=false`, and `AI_AGENT_SELF_IMPROVEMENT_ENABLED=true`
+- `LAUNCHDARKLY_SDK_KEY` from the matching LearnCard LaunchDarkly environment
+- `OPENAI_API_KEY`, `AI_AGENT_WALLET_SEED`, `AI_AGENT_MONGO_URI`, `SENTRY_DSN`, and
+  `BRAVE_SEARCH_API_KEY` when Brave is enabled
+- `AI_AGENT_WALLET_DID_WEB` when ECS uses a service profile, with the same value as ECS
+- `AI_AGENT_AUTH_DOMAIN`, `AI_AGENT_CLOUD_URL`, `AI_AGENT_NETWORK_URL`,
+  `AI_AGENT_CONSENT_FLOW_CONTRACT_URI`, and `AI_AGENT_CONSENT_FLOW_APP_URL`
+- `AI_AGENT_MONGO_DB_NAME`, `AI_AGENT_ENCRYPTION_KEY_ID`, and the same
+  run/budget/web-search settings as ECS
 
 `trigger.config.ts` synchronizes GPT-5.6 Luna with its configured token prices, the trace
 sample rate (`1` for staging, `0.1` for production), and the Git commit release. The workflow
@@ -337,11 +337,19 @@ perform irreversible effects.
 
 ## Deploy
 
--   Every merge to `main` that changes the AI Agent, shared packages, lockfile, or container base
-    deploys Trigger.dev staging tasks and ECS staging through
-    `.github/workflows/deploy-ai-agent.yml`.
--   Before that workflow exists on the default branch, dispatch the already-registered
-    `.github/workflows/deploy.yml` from the feature ref:
+- Pull requests affecting the AI Agent or its shared dependencies run the **AI Agent CI**
+  job: service tests, the Bun service build, and CloudFormation lint. This job has read-only
+  repository permissions, no deployment environment or secrets, and never deploys.
+  The repository also runs its required **Test** and **E2E** checks. Adding this workflow
+  does not automatically make its new check required in branch protection.
+- Pushes and manual deployments rerun **AI Agent CI** before the deployment job can start.
+  Trigger.dev packaging, AWS validation, image scanning, and live smoke checks remain
+  deployment-time gates, not PR checks.
+- Every merge to `main` that changes the AI Agent, shared packages, lockfile, or container base
+  deploys Trigger.dev staging tasks and ECS staging through
+  `.github/workflows/deploy-ai-agent.yml`.
+- Before that workflow exists on the default branch, dispatch the already-registered
+  `.github/workflows/deploy.yml` from the feature ref:
 
     ```bash
     gh workflow run deploy.yml \
@@ -350,11 +358,11 @@ perform irreversible effects.
       -f deploy-ai-agent=true
     ```
 
--   Production is a manual workflow dispatch targeting `production`, deploys its separate Trigger
-    project and enables schedule synchronization, and should require GitHub environment approval.
-    Keep the production LaunchDarkly flag off throughout the initial deployment.
--   Images receive an immutable `sha-<git-sha>` tag. Workflow retries reuse the existing image rather than overwriting it.
--   The workflow rejects ARM64 images with critical or high ECR findings, updates the CloudFormation image tag and deployment ID, waits for the ECS rolling deployment with circuit-breaker rollback, checks readiness, and runs the authenticated smoke test in staging.
+- Production is a manual workflow dispatch targeting `production`, deploys its separate Trigger
+  project and enables schedule synchronization, and should require GitHub environment approval.
+  Keep the production LaunchDarkly flag off throughout the initial deployment.
+- Images receive an immutable `sha-<git-sha>` tag. Workflow retries reuse the existing image rather than overwriting it.
+- The workflow rejects ARM64 images with critical or high ECR findings, updates the CloudFormation image tag and deployment ID, waits for the ECS rolling deployment with circuit-breaker rollback, checks readiness, and runs the authenticated smoke test in staging.
 
 Before production dispatch:
 
@@ -434,12 +442,12 @@ Staging samples all traces; production defaults to `0.1`.
 
 ## Secret and key rotation
 
--   **OpenAI, Brave, or Sentry:** create a new provider credential, update the existing Secrets Manager value, run the deployment workflow to force a new ECS revision, verify, then revoke the old credential.
--   **LaunchDarkly:** rotate the matching environment's server SDK key in both AWS Secrets Manager
-    and its dedicated Trigger.dev project, deploy and verify, then revoke the old key.
--   **MongoDB:** create a second database user, update `AI_AGENT_MONGO_URI`, deploy and verify, then remove the old user.
--   **AI Agent wallet seed:** do not rotate in place. It is required to decrypt existing DAG-JWE records. Build and verify an explicit decrypt/re-encrypt migration with both identities before changing the secret.
--   **`AI_AGENT_ENCRYPTION_KEY_ID`:** do not change it casually; it is part of the persisted encryption envelope/AAD contract. Treat a change as a data migration.
+- **OpenAI, Brave, or Sentry:** create a new provider credential, update the existing Secrets Manager value, run the deployment workflow to force a new ECS revision, verify, then revoke the old credential.
+- **LaunchDarkly:** rotate the matching environment's server SDK key in both AWS Secrets Manager
+  and its dedicated Trigger.dev project, deploy and verify, then revoke the old key.
+- **MongoDB:** create a second database user, update `AI_AGENT_MONGO_URI`, deploy and verify, then remove the old user.
+- **AI Agent wallet seed:** do not rotate in place. It is required to decrypt existing DAG-JWE records. Build and verify an explicit decrypt/re-encrypt migration with both identities before changing the secret.
+- **`AI_AGENT_ENCRYPTION_KEY_ID`:** do not change it casually; it is part of the persisted encryption envelope/AAD contract. Treat a change as a data migration.
 
 The workflow changes `DeploymentId` on every run so ECS replaces tasks and resolves current secret values even when the image SHA is unchanged.
 

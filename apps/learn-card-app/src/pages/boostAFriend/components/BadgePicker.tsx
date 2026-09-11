@@ -13,6 +13,15 @@ import * as m from '../../../paraglide/messages.js';
 import { useLocale } from '../../../i18n';
 import { tBadgeCategoryLabel, tBadgeCategoryDesc } from '../badgePackI18n';
 
+// Hoisted to module scope to avoid re-creating on every render.
+// Uses crypto for CodeQL compliance, even though this is cosmetic badge selection.
+// Note: array[0] % length has minor modulo bias but acceptable for non-security use.
+const getSecureRandomIndex = (length: number): number => {
+    const array = new Uint32Array(1);
+    crypto.getRandomValues(array);
+    return array[0]! % length;
+};
+
 interface BadgePickerProps {
     onSelect: (badge: BadgePreset, vibeColor: string) => void;
     onBack: () => void;
@@ -61,14 +70,14 @@ export const BadgePicker: React.FC<BadgePickerProps> = ({
     };
 
     const handleSurpriseMe = () => {
-        const randomPreset = presets[Math.floor(Math.random() * presets.length)];
-        const randomColor = VIBE_COLORS[Math.floor(Math.random() * VIBE_COLORS.length)];
+        const randomPreset = presets[getSecureRandomIndex(presets.length)];
+        const randomColor = VIBE_COLORS[getSecureRandomIndex(VIBE_COLORS.length)];
         handleSelect(randomPreset, randomColor);
     };
 
     const handleCustom = () => {
         const trimmedSearch = search.trim();
-        const randomColor = VIBE_COLORS[Math.floor(Math.random() * VIBE_COLORS.length)];
+        const randomColor = VIBE_COLORS[getSecureRandomIndex(VIBE_COLORS.length)];
         handleSelect(
             { title: trimmedSearch, type: 'ext:Custom', category: 'Social Badge' },
             randomColor

@@ -62,9 +62,9 @@ export type ModalOptions = {
      * Callback function that is called when closing the modal by "natively"
      *
      * In other words, this function is called when the user clicks the X button, or clicks on
-     * the dimmer to close the modal
+     * the dimmer to close the modal. Centered modals remain open when this returns false.
      */
-    onClose?: () => void;
+    onClose?: () => boolean | void | Promise<boolean | void>;
 
     /**
      * Confirmation prompt to display before closing modal natively"
@@ -133,12 +133,18 @@ export type ModalOptions = {
 
 export type ModalComponent = ReactNode;
 
+export type ModalInstanceToken = Readonly<{
+    id: number;
+    generation: number;
+}>;
+
 export type Modal = {
     component: ModalComponent;
     type: ModalType;
     options?: ModalOptions;
     open: boolean;
     id: number;
+    generation: number;
 };
 
 export type ModalProps = {

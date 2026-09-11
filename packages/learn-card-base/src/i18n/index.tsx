@@ -44,6 +44,71 @@ export const EN_DEFAULTS: Record<string, string> = {
     'boostFooter.accept': 'Accept',
 };
 
+/**
+ * The user's active language as a plain BCP-47 string, read from the same
+ * localStorage key the app's i18n writes (`i18n.language`). For non-React call
+ * sites (network mutations, WebSocket setup) that need to tell the backend
+ * which language to generate AI content in (LC-1901). Falls back to `'en'`.
+ */
+export const getActiveLocale = (): string => {
+    try {
+        if (typeof localStorage !== 'undefined') {
+            const raw = localStorage.getItem('i18n.language');
+            if (raw) {
+                // Strip anything that isn't a valid BCP-47 character (alphanumeric +
+                // hyphen) before this value is sent to the backend. A crafted
+                // localStorage entry — e.g. via XSS — must not be able to alter
+                // request parameters. An all-invalid value collapses to 'en'.
+                return raw.replace(/[^a-zA-Z0-9-]/g, '') || 'en';
+            }
+        }
+    } catch {
+        // localStorage may be unavailable or no manual choice may exist.
+    }
+
+    try {
+        const liveLocale =
+            typeof document !== 'undefined' ? document.documentElement?.lang : undefined;
+        if (liveLocale) return liveLocale.replace(/[^a-zA-Z0-9-]/g, '') || 'en';
+    } catch {
+        // document may be unavailable (native/SSR) — default to English.
+    }
+    return 'en';
+};
+// NOTE: the `document.documentElement.lang` step above is not a vestigial
+// fallback — it is what covers every case where the user never *chose* a
+// language (browser autodetect, tenant default, profile restore), since those
+// don't write `i18n.language`. It stays correct only because `LocaleProvider`
+// syncs `<html lang>` on each locale change (apps/learn-card-app/src/i18n/
+// index.tsx). Drop that effect and AI responses silently revert to English for
+// autodetected users, with no test failing.
+
+/**
+ * Add the active UI locale to an AI service URL without unsafe string interpolation.
+ *
+ * Returns the URL untouched if it can't be parsed. `new URL()` throws a
+ * `TypeError` on a relative or empty base, and `aiServiceUrl` is tenant-supplied
+ * (`apis.aiService`) and read at call time, so it isn't guaranteed absolute. Some
+ * call sites sit inside handlers where a throw does collateral damage — the
+ * `visibilitychange` beacon in `LearnCardAiChatBot` would lose its hidden-timer
+ * bookkeeping, not just one request. Locale enrichment is an enhancement; it must
+ * never be the reason a request fails to go out.
+ */
+export const addActiveLocaleToUrl = (url: string): string => {
+    try {
+        const parsedUrl = new URL(url);
+        parsedUrl.searchParams.set('locale', getActiveLocale());
+        return parsedUrl.toString();
+    } catch {
+        return url;
+    }
+};
+
+/** Add the active UI locale to a WebSocket payload without mutating the input. */
+export const addActiveLocaleToPayload = <Payload extends object>(
+    payload: Payload
+): Payload & { locale: string } => ({ ...payload, locale: getActiveLocale() });
+
 /** Minimal `{var}` interpolation — no dependency. */
 const interpolate = (str: string, params?: Record<string, unknown>): string =>
     params

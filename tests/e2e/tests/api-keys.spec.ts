@@ -1,4 +1,5 @@
 import { describe, test, expect } from 'vitest';
+import crypto from 'crypto';
 
 import {
     getLearnCardForUser,
@@ -1141,8 +1142,8 @@ describe('API Key LearnCard Method Permissions', () => {
     });
     test('deleteProfile requires profiles:delete', async () => {
         // Create a temporary user and API token
-        const randomSeed = `${Date.now()}${Math.random()}`.replace(/\./g, '');
-        const tmp = await getLearnCard(randomSeed.padEnd(64, 'a').slice(0, 64));
+        const randomSeed = crypto.randomBytes(32).toString('hex');
+        const tmp = await getLearnCard(randomSeed);
         await tmp.invoke.createProfile({
             profileId: `tmp-${Date.now()}`,
             displayName: 'Tmp',
@@ -1157,7 +1158,9 @@ describe('API Key LearnCard Method Permissions', () => {
         const grantId2 = await tmp.invoke.addAuthGrant({ name: 'tmp2', scope: 'profiles:read' });
         const token2 = await tmp.invoke.getAPITokenForAuthGrant(grantId2);
         const apiLcDenied = await initApiKeyLearnCard(token2);
-        await expect(apiLcDenied.invoke.deleteProfile()).rejects.toThrow();
+        await expect(apiLcDenied.invoke.deleteProfile()).rejects.toThrow(
+            'This operation requires profiles:delete scope'
+        );
 
         // With delete -> allowed
         const ok = await apiLc.invoke.deleteProfile();

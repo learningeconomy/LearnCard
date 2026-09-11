@@ -9,6 +9,7 @@ import CaretLeft from '../../../svgs/CaretLeft';
 
 import { boostVCTypeOptions, BoostUserTypeEnum } from '../boostOptions';
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
+import * as m from '../../../../paraglide/messages.js';
 
 type BoostVCTypeOptionsProps = {
     boostUserType: BoostUserTypeEnum;
@@ -35,13 +36,16 @@ export const BoostVCTypeOptions: React.FC<BoostVCTypeOptionsProps> = ({
         BoostCategoryOptionsEnum | string | null
     >(boostCategoryType ?? null);
 
-    const title = boostUserType === BoostUserTypeEnum.self ? 'Yourself!' : 'Someone!';
+    const title =
+        boostUserType === BoostUserTypeEnum.self
+            ? m['boost.yourselfExclamation']()
+            : m['boost.someoneExclamation']();
     const boostOptions = boostVCTypeOptions[boostUserType];
 
     const subtext =
         boostUserType === BoostUserTypeEnum.self
-            ? 'You can issue yourself credentials to tell your story. Your skills are currencies for your future.'
-            : ' Issue credentials to people you know, teach and admire. Every boost of encouragement counts.';
+            ? m['boost.selfSubtext']()
+            : m['boost.someoneSubtext']();
 
     const boostOptionsItemList = boostOptions.map(
         ({ id, IconComponent, iconCircleClass, iconClassName, title, type }) => {
@@ -90,7 +94,7 @@ export const BoostVCTypeOptions: React.FC<BoostVCTypeOptionsProps> = ({
                                                 className="text-grayscale-50 p-0 mr-[10px]"
                                                 onClick={() => handleCloseModal()}
                                             >
-                                                <CaretLeft className="h-auto w-3 text-white" />
+                                                <CaretLeft className="rtl-mirror h-auto w-3 text-white" />
                                             </button>
                                             {title}
                                         </h6>
@@ -109,7 +113,7 @@ export const BoostVCTypeOptions: React.FC<BoostVCTypeOptionsProps> = ({
                                             <div className="absolute top-0 left-[%50] w-[170px] h-[170px] bg-indigo-800 rounded-full" />
                                             <img
                                                 src={MiniGhost}
-                                                alt="ghost"
+                                                alt=""
                                                 className="z-50 w-[240px] h-[214px] mt-[-35px]"
                                             />
                                         </div>
@@ -127,7 +131,7 @@ export const BoostVCTypeOptions: React.FC<BoostVCTypeOptionsProps> = ({
                                         onClick={() => handleCloseModal()}
                                         className="text-white text-center text-sm"
                                     >
-                                        Cancel
+                                        {m['common.cancel']()}
                                     </button>
                                 </div>
                             </IonRow>

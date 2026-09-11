@@ -239,3 +239,80 @@ export const insertParamsToFilestackUrl = (filestackUrl: string | undefined, ins
         `https://cdn.filestackcontent.com/${insertion}`
     );
 };
+
+/** Whether a URL is served by the Filestack CDN. */
+export const isFilestackUrl = (url: string | undefined): url is string =>
+    Boolean(url?.startsWith('https://cdn.filestackcontent.com/'));
+
+/**
+ * Whether a URL can actually carry transformation tasks: it must be a Filestack
+ * CDN URL *and* end in a file handle for those tasks to apply to.
+ *
+ * The handle check matters because the CDN root on its own
+ * (`https://cdn.filestackcontent.com/`) passes `isFilestackUrl` but has nothing
+ * to transform — tasks spliced onto it produce a task-only URL that 404s.
+ */
+export const isOptimizableFilestackUrl = (url: string | undefined): url is string => {
+    if (!isFilestackUrl(url)) return false;
+
+    const urlParams = getUrlParams(url);
+
+    return Boolean(urlParams[urlParams.length - 1]);
+};
+
+/**
+ * Resizes a Filestack image and converts it to a modern format at an explicit
+ * quality, replacing any resize/quality/output tasks already on the URL.
+ *
+ * Prefer this over `resizeAndChangeQuality` when the source is a PNG. The
+ * standalone `quality=value:N` task only applies to JPEG output — Filestack
+ * silently ignores it for PNG and WebP, so `resize=width:1600/quality=value:75`
+ * on a PNG still returns a full-weight PNG. Quality for a converted image has to
+ * ride on the `output` task itself (`output=format:webp,quality:75`).
+ *
+ * URLs that cannot carry transformation tasks are returned untouched.
+ *
+ * @param url Filestack URL
+ * @param width Target output width
+ * @param quality Quality value (1-100)
+ * @param format Output format
+ *
+ * @return Filestack URL
+ */
+export const optimizeUrl = (
+    url: string,
+    { width, quality = 75, format = 'webp' }: { width: number; quality?: number; format?: string }
+): string => {
+    if (!isOptimizableFilestackUrl(url)) return url;
+
+    const urlParams = getUrlParams(url).filter(param => !param.match(/^(resize|quality|output)=/));
+
+    // Tasks go before the trailing handle, and after any leading task (a
+    // security policy, say) that we are not replacing.
+    urlParams.splice(-1, 0, `resize=width:${width}`, `output=format:${format},quality:${quality}`);
+
+    return getUrlFromUrlParams(urlParams);
+};
+
+/**
+ * Generates a responsive srcset string of optimized Filestack renditions.
+ *
+ * Returns an empty string when the URL cannot be optimized. Mapping every width
+ * onto the one untransformable URL would advertise renditions that do not
+ * exist, so the honest answer is to offer no candidates and let the caller's
+ * `src` stand on its own.
+ *
+ * @param url Filestack URL
+ * @param widths list of widths
+ *
+ * @return srcset string, or '' if the URL cannot be optimized
+ */
+export const generateOptimizedSrcSet = (
+    url: string,
+    widths: number[],
+    options: { quality?: number; format?: string } = {}
+): string => {
+    if (!isOptimizableFilestackUrl(url)) return '';
+
+    return widths.map(width => `${optimizeUrl(url, { ...options, width })} ${width}w`).join(', ');
+};

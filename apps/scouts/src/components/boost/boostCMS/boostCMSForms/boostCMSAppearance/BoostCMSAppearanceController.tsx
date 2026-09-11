@@ -49,12 +49,14 @@ const BoostCMSAppearanceController: React.FC<BoostCMSActiveAppearanceControllerP
     showEditButton = true,
     customHeaderClass = '',
 }) => {
-    const categoryType = state?.basicInfo?.type
-        || CATEGORY_MAP[state?.basicInfo?.achievementType as keyof typeof CATEGORY_MAP] as BoostCategoryOptionsEnum | undefined
-        || BoostCategoryOptionsEnum.achievement;
+    const categoryType =
+        state?.basicInfo?.type ||
+        (CATEGORY_MAP[state?.basicInfo?.achievementType as keyof typeof CATEGORY_MAP] as
+            | BoostCategoryOptionsEnum
+            | undefined) ||
+        BoostCategoryOptionsEnum.achievement;
 
-    const { color, subColor, IconComponent } =
-        boostCategoryOptions[categoryType] || {};
+    const { color, subColor, IconComponent } = boostCategoryOptions[categoryType] || {};
     let badgeCircleText = '';
 
     if (isCustomBoostType(state?.basicInfo?.achievementType)) {
@@ -128,11 +130,13 @@ const BoostCMSAppearanceController: React.FC<BoostCMSActiveAppearanceControllerP
                         <div
                             className={`relative flex items-center justify-center w-[60%] h-[60%] rounded-full border-white border-solid border-4 bg-${subColor} overflow-hidden object-contain bg-${subColor}`}
                         >
-                            <img src={state?.appearance?.badgeThumbnail} alt="badge thumbnail" />
+                            <img src={state?.appearance?.badgeThumbnail} alt="" />
                         </div>
                         <div className="absolute flex items-center justify-center left-[37%] bottom-[-12%]">
                             <Ribbon />
-                            {IconComponent && <IconComponent className={`absolute text-${color} h-[30px] mb-3`} />}
+                            {IconComponent && (
+                                <IconComponent className={`absolute text-${color} h-[30px] mb-3`} />
+                            )}
                         </div>
                     </div>
                 )}

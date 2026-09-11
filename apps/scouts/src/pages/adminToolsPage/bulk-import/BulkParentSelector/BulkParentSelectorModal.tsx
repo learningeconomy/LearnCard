@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
+import * as m from '../../../../paraglide/messages.js';
 
 import { IonInput } from '@ionic/react';
 import Search from 'learn-card-base/svgs/Search';
@@ -34,16 +35,10 @@ const BulkParentSelectorModal: React.FC<ViewAllManagedBoostsProps> = ({
     const [activeCategory, setActiveCategory] = useState<BoostCategoryOptionsEnum>(
         BoostCategoryOptionsEnum.all
     );
-    const [categoryTitle, setCategoryTitle] = useState<string>('All');
-
-    useEffect(() => {
-        if (activeCategory === BoostCategoryOptionsEnum.all) {
-            setCategoryTitle('All');
-            return;
-        } else if (boostCategoryOptions[activeCategory]) {
-            setCategoryTitle(boostCategoryOptions[activeCategory].title);
-        }
-    }, [activeCategory]);
+    const categoryTitle =
+        activeCategory === BoostCategoryOptionsEnum.all
+            ? m['boostCMS.all']()
+            : boostCategoryOptions[activeCategory]?.title;
 
     const handleCategoryFilter = () => {
         newModal(
@@ -102,7 +97,7 @@ const BulkParentSelectorModal: React.FC<ViewAllManagedBoostsProps> = ({
                     <IonInput
                         type="text"
                         value={searchInput}
-                        placeholder="Browse Credentials"
+                        placeholder={m['adminTools.bulkImport.browseCredentials']()}
                         onIonInput={e => setSearchInput(e.detail.value)}
                         className="bg-white text-grayscale-800 rounded-[15px] !py-[4px] font-normal !font-notoSans text-[17px] !pl-[48px]"
                     />
@@ -123,7 +118,7 @@ const BulkParentSelectorModal: React.FC<ViewAllManagedBoostsProps> = ({
                         onClick={closeModal}
                         className="bg-white flex-1 p-[7px] text-grayscale-900 font-poppins text-[17px] rounded-[30px] border-[1px] border-solid border-grayscale-200 shadow-button-bottom h-[44px]"
                     >
-                        Close
+                        {m['common.close']()}
                     </button>
                 </div>
             </footer>

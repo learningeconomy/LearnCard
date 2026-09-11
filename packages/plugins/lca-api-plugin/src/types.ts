@@ -293,7 +293,10 @@ export type LCAPluginMethods = {
         authorization: SigningAuthorityAuthorization
     ) => Promise<boolean>;
     resetLCAClient: () => Promise<void>;
-    generateBoostInfo: (description: string) => Promise<{
+    generateBoostInfo: (
+        description: string,
+        locale?: string
+    ) => Promise<{
         title: string;
         description: string;
         category: string;

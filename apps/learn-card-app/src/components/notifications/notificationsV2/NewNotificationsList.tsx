@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 
 import { useLoadingLine } from 'apps/learn-card-app/src/stores/loadingStore';
 import { useGetUserNotifications } from 'learn-card-base';
+import { deduplicateConnectionPromptNotifications } from 'learn-card-base/components/connection-prompts/deduplicateConnectionPromptNotifications';
 
 import { IonSpinner } from '@ionic/react';
 import ArrowCircle from 'learn-card-base/svgs/ArrowCircle';
@@ -51,10 +52,11 @@ const NewNotificationsList: React.FC<NewNotificationsListProps> = ({
 
     useLoadingLine(isLoading || isFetching);
 
-    const flatNotifications: NotificationType[] =
-        data?.pages?.flatMap(group => group?.notifications ?? []) ?? [];
+    const flatNotifications = (data?.pages?.flatMap(group => group?.notifications ?? []) ??
+        []) as NotificationType[];
+    const visibleNotifications = deduplicateConnectionPromptNotifications(flatNotifications);
 
-    const listItems = buildNotificationListItems(flatNotifications);
+    const listItems = buildNotificationListItems(visibleNotifications);
 
     const renderNotifications = listItems.map(item => {
         if (item.kind === 'consentGroup') {

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 
 import {
     useIsLoggedIn,
@@ -6,7 +7,8 @@ import {
     getCategoryForCredential,
     walletStore,
     WalletSyncState,
-    useIsCurrentUserLCNUser
+    useIsCurrentUserLCNUser,
+    connectionPromptKeys,
 } from 'learn-card-base';
 import type { VC, LCNProfile } from '@learncard/types';
 import { useVerifySuccessTick } from '../stores/autoVerifyStore';
@@ -46,12 +48,14 @@ export const clearFinalizeCache = (): void => {
     finalizedProfileCache.clear();
 };
 
-const hasProfileId = (p: LCNProfile | undefined): boolean => !!p && typeof p.profileId === 'string' && p.profileId.length > 0;
+const hasProfileId = (p: LCNProfile | undefined): boolean =>
+    !!p && typeof p.profileId === 'string' && p.profileId.length > 0;
 
 export const useFinalizeInboxCredentials = () => {
     const { data: isLCNUser } = useIsCurrentUserLCNUser();
     const isLoggedIn = useIsLoggedIn();
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
     const verifySuccessTick = useVerifySuccessTick();
 
     const inFlightRef = useRef(false);
@@ -75,7 +79,7 @@ export const useFinalizeInboxCredentials = () => {
                 const wallet = await initWallet();
                 if (!wallet) return;
 
-                const profile = await wallet?.invoke?.getProfile() as LCNProfile | undefined;
+                const profile = (await wallet?.invoke?.getProfile()) as LCNProfile | undefined;
                 if (!profile) return;
                 const profileId = hasProfileId(profile) ? profile.profileId : undefined;
                 if (!profileId) return;
@@ -84,6 +88,8 @@ export const useFinalizeInboxCredentials = () => {
                 if (!needsFinalize(profileId)) return;
 
                 const result = await wallet.invoke?.finalizeInboxCredentials();
+
+                await queryClient.invalidateQueries({ queryKey: connectionPromptKeys.all });
 
                 const vcs: VC[] = result?.verifiableCredentials || [];
 
@@ -110,10 +116,15 @@ export const useFinalizeInboxCredentials = () => {
 
                         if (!uri) continue;
 
-                        const id = vc?.id ||
+                        const id =
+                            vc?.id ||
                             (typeof crypto !== 'undefined' && crypto.randomUUID
                                 ? crypto.randomUUID()
-                                : `${Date.now()}-${Math.random().toString(36).slice(2, 18)}-${Math.random().toString(36).slice(2, 18)}-${performance.now()}`);
+                                : `${Date.now()}-${Math.random()
+                                      .toString(36)
+                                      .slice(2, 18)}-${Math.random()
+                                      .toString(36)
+                                      .slice(2, 18)}-${performance.now()}`);
 
                         await wallet.index.LearnCloud.add({
                             id,
@@ -126,8 +137,12 @@ export const useFinalizeInboxCredentials = () => {
                         // LC-1853: fire profile_item_added for each auto-accepted credential
                         try {
                             const now = Date.now();
-                            const sessionStart = Number(localStorage.getItem(SESSION_START_KEY) ?? now);
-                            const accountCreatedAt = Number(localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now);
+                            const sessionStart = Number(
+                                localStorage.getItem(SESSION_START_KEY) ?? now
+                            );
+                            const accountCreatedAt = Number(
+                                localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now
+                            );
                             track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
                                 method: ProfileBuildMethod.ReceivedBoost,
                                 itemType: 'credential',

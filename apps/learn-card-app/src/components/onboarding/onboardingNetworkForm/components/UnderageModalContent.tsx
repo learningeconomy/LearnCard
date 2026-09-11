@@ -1,6 +1,6 @@
 import React from 'react';
 import * as m from '../../../../paraglide/messages.js';
-import { IonInput, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 import { ToastTypeEnum, useToast } from 'learn-card-base';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import X from 'learn-card-base/svgs/X';
@@ -103,7 +103,7 @@ const UnderageModalContent: React.FC<UnderageModalContentProps> = ({
                 {!isSchoolView ? (
                     schoolCodes.length > 0 && (
                         <div className="mt-6 pt-6 border-t border-grayscale-100 w-full flex flex-col items-center gap-3">
-                            <p className="text-grayscale-400 text-xs font-semibold uppercase tracking-widest">
+                            <p className="text-grayscale-600 text-xs font-semibold uppercase tracking-widest">
                                 {m['onboarding.consent.underage.or']()}
                             </p>
                             <button
@@ -119,26 +119,52 @@ const UnderageModalContent: React.FC<UnderageModalContentProps> = ({
                 ) : (
                     <div className="flex flex-col gap-3 mt-6">
                         <div className="relative w-full">
-                            <IonInput
+                            <label htmlFor="underage-school-code" className="sr-only">
+                                {m['onboarding.consent.underage.schoolCode.placeholder']()}
+                            </label>
+                            <input
+                                id="underage-school-code"
+                                type="text"
                                 value={code}
-                                onIonInput={e => {
-                                    setCode(e.detail.value ?? '');
+                                onChange={event => {
+                                    setCode(event.target.value);
                                     setError('');
+                                }}
+                                onKeyDown={event => {
+                                    if (event.key === 'Enter' && code && !isValidating) {
+                                        event.preventDefault();
+                                        handleVerifyCode();
+                                    }
                                 }}
                                 placeholder={m[
                                     'onboarding.consent.underage.schoolCode.placeholder'
                                 ]()}
-                                className={`bg-grayscale-100 rounded-[12px] px-4 py-2 text-grayscale-900 font-medium tracking-widest text-center ${
+                                autoComplete="off"
+                                spellCheck={false}
+                                aria-invalid={Boolean(error)}
+                                aria-describedby={error ? 'underage-school-code-error' : undefined}
+                                className={`w-full bg-grayscale-100 rounded-[12px] px-4 py-2 text-grayscale-900 placeholder:text-grayscale-400 font-medium tracking-widest text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:border-transparent ${
                                     error ? 'border-red-500 border' : ''
                                 }`}
                             />
                             {code && !isValidating && error && (
-                                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                <div
+                                    className="absolute right-3 top-1/2 -translate-y-1/2"
+                                    aria-hidden="true"
+                                >
                                     <X className="w-5 h-5 text-red-500" />
                                 </div>
                             )}
                         </div>
-                        {error && <p className="text-red-600 text-[13px] mt-1">{error}</p>}
+                        {error && (
+                            <p
+                                id="underage-school-code-error"
+                                role="alert"
+                                className="text-red-700 text-[13px] mt-1"
+                            >
+                                {error}
+                            </p>
+                        )}
                     </div>
                 )}
             </div>
@@ -156,11 +182,16 @@ const UnderageModalContent: React.FC<UnderageModalContentProps> = ({
                         type="button"
                         onClick={isSchoolView ? handleVerifyCode : onAdult}
                         disabled={isSchoolView && (!code || isValidating)}
+                        aria-busy={isSchoolView && isValidating}
                         className=" shadow-button-bottom font-semibold flex-1 py-[10px] text-[17px] bg-emerald-700 rounded-[40px] text-white shadow-box-bottom flex items-center justify-center min-h-[46px]"
                     >
                         {isSchoolView ? (
                             isValidating ? (
-                                <IonSpinner name="crescent" className="h-5 w-5" />
+                                <IonSpinner
+                                    name="crescent"
+                                    className="h-5 w-5"
+                                    aria-hidden="true"
+                                />
                             ) : (
                                 m['common.verify']()
                             )

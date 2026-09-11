@@ -6,6 +6,8 @@ import {
     LCNVisibleProfileValidator,
     LCNProfileValidator,
     LCNProfileConnectionStatusEnum,
+    LCNConnectionPromptActionResultValidator,
+    LCNConnectionPromptValidator,
     ProfileVisibilityEnum,
     PaginatedLCNProfilesValidator,
     PaginatedVisibleLCNProfilesValidator,
@@ -30,6 +32,12 @@ import {
     getBlockedAndBlockedByIds,
     isRelationshipBlocked,
 } from '@helpers/connection.helpers';
+import {
+    connectWithConnectionPrompt,
+    getConnectionPromptStatus,
+    getPendingConnectionPrompts,
+    skipConnectionPrompt,
+} from '@helpers/connectionPrompt.helpers';
 import {
     getDidWeb,
     getManagedDidWeb,
@@ -923,6 +931,32 @@ export const profilesRouter = t.router({
 
             return success;
         }),
+
+    pendingConnectionPrompts: profileRoute
+        .meta({ requiredScope: 'connections:read' })
+        .input(z.void())
+        .output(LCNConnectionPromptValidator.array())
+        .query(({ ctx }) => getPendingConnectionPrompts(ctx.user.profile)),
+
+    connectionPromptStatus: profileRoute
+        .meta({ requiredScope: 'connections:read' })
+        .input(z.object({ promptId: z.string().uuid() }))
+        .output(LCNConnectionPromptActionResultValidator)
+        .query(({ ctx, input }) => getConnectionPromptStatus(ctx.user.profile, input.promptId)),
+
+    skipConnectionPrompt: profileRoute
+        .meta({ requiredScope: 'connections:write' })
+        .input(z.object({ promptId: z.string().uuid() }))
+        .output(LCNConnectionPromptActionResultValidator)
+        .mutation(({ ctx, input }) => skipConnectionPrompt(ctx.user.profile, input.promptId)),
+
+    connectWithConnectionPrompt: profileRoute
+        .meta({ requiredScope: 'connections:write' })
+        .input(z.object({ promptId: z.string().uuid() }))
+        .output(LCNConnectionPromptActionResultValidator)
+        .mutation(({ ctx, input }) =>
+            connectWithConnectionPrompt(ctx.user.profile, input.promptId)
+        ),
 
     connections: profileRoute
         .meta({

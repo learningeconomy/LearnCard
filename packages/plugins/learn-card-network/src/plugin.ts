@@ -34,6 +34,135 @@ import {
     TrustedBoostRegistryEntry,
 } from './types';
 
+/**
+ * Trusted LearnCard domain suffixes for federation.
+ * Only dotted suffixes - the isLearnCardDomain check handles apex domains via
+ * `host === suffix.replace(/^\./, '')`. Bare entries would allow bypass
+ * (e.g., 'evillearncard.com'.endsWith('learncard.com') === true).
+ */
+const LEARNCARD_DOMAIN_SUFFIXES = ['.learncard.com', '.learncard.app', '.learncard.ai'];
+
+/**
+ * Configuration for federation URL validation.
+ */
+export interface FederationConfig {
+    /**
+     * Explicit list of trusted hosts. If not provided, federation is open (any HTTPS host allowed).
+     * This is safe for client-side code where SSRF doesn't apply.
+     * Server-side code should provide an explicit allowlist.
+     */
+    trustedFederationHosts?: string[];
+    /**
+     * Allow localhost/127.0.0.1 for development.
+     * Auto-detected: defaults to true when serviceUrl is localhost, false otherwise.
+     */
+    allowLocalhostFederation?: boolean;
+    /**
+     * The origin of this plugin's service URL. When set, endpoints matching this origin
+     * skip validation (they're self-generated, not from external DID documents).
+     */
+    serviceOrigin?: string;
+}
+
+/**
+ * Checks if a hostname matches any LearnCard domain suffix.
+ */
+const isLearnCardDomain = (host: string): boolean => {
+    return LEARNCARD_DOMAIN_SUFFIXES.some(
+        suffix => host === suffix.replace(/^\./, '') || host.endsWith(suffix)
+    );
+};
+
+/**
+ * Checks if a hostname is localhost or loopback.
+ */
+const isLocalhostHost = (host: string): boolean => {
+    const lower = host.toLowerCase();
+    return lower === 'localhost' || lower === '127.0.0.1';
+};
+
+/**
+ * Validates and normalizes a federation URL.
+ *
+ * This runs in the CLIENT plugin where SSRF risk is lower (the browser's same-origin
+ * policy provides protection). By default, federation is open to any HTTPS host.
+ * Server-side code should provide an explicit trustedFederationHosts list.
+ *
+ * Note: For local-service recipients, getInboxEndpointForDid returns a fixed
+ * `/api/inbox/receive` path. Only external DID doc serviceEndpoints preserve
+ * their original path.
+ *
+ * @param userProvidedUrl - The inbox endpoint URL (from DID doc or local service)
+ * @param config - Federation configuration with trusted hosts
+ * @returns The validated URL
+ * @throws Error if the URL is invalid or host is not trusted
+ */
+const validateFederationUrl = (userProvidedUrl: string, config: FederationConfig): string => {
+    let parsed: URL;
+    try {
+        parsed = new URL(userProvidedUrl);
+    } catch {
+        throw new Error(`Invalid federation endpoint URL: ${userProvidedUrl}`);
+    }
+
+    // If this endpoint matches our own service origin, skip validation entirely.
+    // These URLs are self-generated (e.g., from getInboxEndpointForDid when the recipient
+    // resolves to our local service), not from external DID documents.
+    if (config.serviceOrigin) {
+        const endpointOrigin = parsed.origin;
+        if (endpointOrigin === config.serviceOrigin) {
+            // Self-referential URL - return parsed.href so CodeQL sees URL sanitization
+            return parsed.href;
+        }
+    }
+
+    const host = parsed.hostname.toLowerCase();
+    const isLocalhost = isLocalhostHost(host);
+
+    // Handle localhost: check allowLocalhostFederation and convert https->http
+    if (isLocalhost) {
+        if (!config.allowLocalhostFederation) {
+            throw new Error(
+                `Localhost federation is disabled. Set allowLocalhostFederation: true for development.`
+            );
+        }
+        // Local dev typically doesn't have TLS - convert https to http
+        if (parsed.protocol === 'https:') {
+            parsed.protocol = 'http:';
+        }
+        // Return the validated/normalized URL
+        return parsed.href;
+    }
+
+    // Validate protocol - require HTTPS for non-localhost
+    if (parsed.protocol !== 'https:') {
+        throw new Error(`Federation requires HTTPS for non-localhost hosts: ${userProvidedUrl}`);
+    }
+
+    // If trustedFederationHosts is provided, use explicit allowlist mode
+    if (config.trustedFederationHosts !== undefined) {
+        const trustedHosts = new Set(config.trustedFederationHosts);
+        const allowAnyHost = trustedHosts.has('*');
+
+        // Check explicit list, LearnCard domains, or wildcard.
+        // Note: LearnCard domains are always trusted even with an explicit allowlist -
+        // this is intentional to ensure core federation always works.
+        if (!allowAnyHost && !isLearnCardDomain(host) && !trustedHosts.has(host)) {
+            throw new Error(
+                `Federation host '${host}' is not trusted. ` +
+                    `Add it to trustedFederationHosts or use '*' to allow any host.`
+            );
+        }
+    }
+    // If trustedFederationHosts is not provided, allow any HTTPS host (client-side default)
+    // This enables third-party did:web federation without requiring explicit opt-in
+
+    // Return the validated URL - CodeQL: at this point the URL has been validated
+    // as either matching our service origin, being localhost with permission, or
+    // being HTTPS with a trusted/allowed host
+    return parsed.href;
+};
+
 const uint8ArrayToBase64Url = (bytes: Uint8Array): string => {
     let binary = '';
     for (let i = 0; i < bytes.length; i += 1) binary += String.fromCharCode(bytes[i]!);
@@ -319,46 +448,52 @@ export type GuardianApprovalGetter = () => string | undefined | Promise<string |
 /**
  * @group Plugins
  */
+/** Options for the LearnCard Network Plugin */
+export interface LearnCardNetworkPluginOptions extends FederationConfig {
+    guardianApprovalGetter?: GuardianApprovalGetter;
+    extraHeaders?: Record<string, string>;
+}
+
 export async function getLearnCardNetworkPlugin(
     learnCard: LearnCard<any, 'id', LearnCardNetworkPluginDependentMethods>,
     url: string,
-    apiTokenOrOptions?: {
-        guardianApprovalGetter?: GuardianApprovalGetter;
-        extraHeaders?: Record<string, string>;
-    }
+    apiTokenOrOptions?: LearnCardNetworkPluginOptions
 ): Promise<LearnCardNetworkPlugin>;
 export async function getLearnCardNetworkPlugin(
     learnCard: LearnCard<any, any, LearnCardNetworkPluginDependentMethods>,
     url: string,
     apiToken: string,
-    options?: {
-        guardianApprovalGetter?: GuardianApprovalGetter;
-        extraHeaders?: Record<string, string>;
-    }
+    options?: LearnCardNetworkPluginOptions
 ): Promise<LearnCardNetworkPlugin>;
 export async function getLearnCardNetworkPlugin(
     learnCard: LearnCard<any, any, LearnCardNetworkPluginDependentMethods>,
     url: string,
-    apiTokenOrOptions?:
-        | string
-        | {
-              guardianApprovalGetter?: GuardianApprovalGetter;
-              extraHeaders?: Record<string, string>;
-          },
-    options?: {
-        guardianApprovalGetter?: GuardianApprovalGetter;
-        extraHeaders?: Record<string, string>;
-    }
+    apiTokenOrOptions?: string | LearnCardNetworkPluginOptions,
+    options?: LearnCardNetworkPluginOptions
 ): Promise<LearnCardNetworkPlugin> {
     const apiToken = typeof apiTokenOrOptions === 'string' ? apiTokenOrOptions : undefined;
-    const guardianApprovalGetter =
-        (typeof apiTokenOrOptions === 'object'
-            ? apiTokenOrOptions?.guardianApprovalGetter
-            : undefined) ?? options?.guardianApprovalGetter;
+    const resolvedOptions: LearnCardNetworkPluginOptions =
+        (typeof apiTokenOrOptions === 'object' ? apiTokenOrOptions : options) ?? {};
 
-    const extraHeaders =
-        (typeof apiTokenOrOptions === 'object' ? apiTokenOrOptions?.extraHeaders : undefined) ??
-        options?.extraHeaders;
+    const {
+        guardianApprovalGetter,
+        extraHeaders,
+        trustedFederationHosts,
+        allowLocalhostFederation,
+    } = resolvedOptions;
+
+    // Parse service URL to determine origin and auto-detect localhost
+    const serviceUrl = new URL(url);
+    const serviceIsLocalhost = isLocalhostHost(serviceUrl.hostname);
+
+    // Federation config for URL validation
+    // - serviceOrigin: skip validation for self-referential URLs
+    // - allowLocalhostFederation: auto-detect from service URL if not explicitly set
+    const federationConfig: FederationConfig = {
+        trustedFederationHosts,
+        allowLocalhostFederation: allowLocalhostFederation ?? serviceIsLocalhost,
+        serviceOrigin: serviceUrl.origin,
+    };
     // Initialize DID safely: in API-key mode there may be no local ID plane provider
     let did = '';
     try {
@@ -713,7 +848,11 @@ export async function getLearnCardNetworkPlugin(
                 return client.profileManager.updateProfileManager.mutate(manager);
             },
             deleteProfile: async () => {
-                if (!userData) throw new Error('Account does not exist!');
+                // Settle initialization before deletion so it cannot repopulate userData later.
+                await initialQuery;
+                // API tokens may grant profiles:delete without profiles:read. The server
+                // validates the profile and scope; a local read must not gate deletion.
+                if (!apiToken) await ensureUser();
 
                 const result = await client.profile.deleteProfile.mutate();
 
@@ -787,6 +926,26 @@ export async function getLearnCardNetworkPlugin(
                 await ensureUser();
 
                 return client.profile.acceptConnectionRequest.mutate({ profileId });
+            },
+            getPendingConnectionPrompts: async _learnCard => {
+                await ensureUser();
+
+                return client.profile.pendingConnectionPrompts.query();
+            },
+            getConnectionPromptStatus: async (_learnCard, promptId) => {
+                await ensureUser();
+
+                return client.profile.connectionPromptStatus.query({ promptId });
+            },
+            skipConnectionPrompt: async (_learnCard, promptId) => {
+                await ensureUser();
+
+                return client.profile.skipConnectionPrompt.mutate({ promptId });
+            },
+            connectWithConnectionPrompt: async (_learnCard, promptId) => {
+                await ensureUser();
+
+                return client.profile.connectWithConnectionPrompt.mutate({ promptId });
             },
             getConnections: async _learnCard => {
                 console.warn(
@@ -890,13 +1049,14 @@ export async function getLearnCardNetworkPlugin(
                         challenge: `inbox-federation-${crypto.randomUUID()}`,
                     });
 
-                    let receiveUrl = inboxEndpoint;
-
-                    if (receiveUrl.includes('localhost')) {
-                        receiveUrl = receiveUrl.replace('https://', 'http://');
-                    }
+                    // Validate the federation URL. For external DIDs, inboxEndpoint comes
+                    // from the DID doc's serviceEndpoint; for local-service DIDs, it's
+                    // a fixed /api/inbox/receive path from getInboxEndpointForDid.
+                    const receiveUrl = validateFederationUrl(inboxEndpoint, federationConfig);
 
                     const response = await fetch(receiveUrl, {
+                        // A redirect must not bypass endpoint validation or forward credentials.
+                        redirect: 'error',
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -2625,7 +2785,9 @@ export async function getLearnCardNetworkPlugin(
 
             isServiceTrusted: async (_learnCard, serviceDid) => {
                 const trustedServices = await client.federation.getTrustedServices.query({});
-                return trustedServices.some(s => s.did === serviceDid);
+                return trustedServices.some(
+                    (service: { did: string }) => service.did === serviceDid
+                );
             },
 
             getTrustedServices: async () => {
@@ -2693,9 +2855,8 @@ export const getVerifyBoostPlugin = async (
                 const boostCredential = credential?.boostCredential;
                 try {
                     if (boostCredential) {
-                        const verifyBoostCredential = await learnCard.invoke.verifyCredential(
-                            boostCredential
-                        );
+                        const verifyBoostCredential =
+                            await learnCard.invoke.verifyCredential(boostCredential);
                         const boostCredentialErrors = verifyBoostCredential.errors ?? [];
                         if (verifyBoostCredential.status?.length) {
                             verificationCheck.status = [

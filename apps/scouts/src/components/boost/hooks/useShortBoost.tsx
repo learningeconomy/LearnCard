@@ -1,4 +1,5 @@
 import React from 'react';
+import * as m from '../../../paraglide/messages.js';
 
 import ShortBoostUserOptions from '../boost-options/boostUserOptions/ShortBoostUserOptions';
 
@@ -29,7 +30,7 @@ const useShortBoost = (
                 profileId={profileId}
                 title={
                     <p className="flex items-center justify-center text-2xl w-full h-full text-grayscale-900">
-                        Who do you want to send to?
+                        {m['boost.whoToSend']()}
                     </p>
                 }
                 history={history}

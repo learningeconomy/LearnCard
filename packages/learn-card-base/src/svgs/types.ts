@@ -16,6 +16,9 @@ export type IconPalette = {
     /** Secondary decorative fill color */
     accent?: string;
 
+    /** Inner detail fill color (defaults to white in formal icons) */
+    secondary?: string;
+
     /** Outline / stroke color */
     stroke?: string;
 };

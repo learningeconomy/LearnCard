@@ -28,7 +28,7 @@ const BoostGroupedBySkillsModalHeader: React.FC<BoostGroupedBySkillsModalProps> 
                         <div className="absolute top-[25px] w-[70px] h-[70px] rounded-full overflow-hidden">
                             <img
                                 src={IconComponent}
-                                alt="category icon"
+                                alt=""
                                 className="w-full h-full object-contain"
                             />
                         </div>

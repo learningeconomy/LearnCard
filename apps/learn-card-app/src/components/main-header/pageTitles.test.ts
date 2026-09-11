@@ -4,7 +4,7 @@ import { getPageTitle } from './pageTitles';
 describe('getPageTitle (LC-1921 scroll title)', () => {
     it('maps known routes to their page titles', () => {
         expect(getPageTitle('/passport')).toBe('My Passport');
-        expect(getPageTitle('/dashboard')).toBe('Dashboard');
+        expect(getPageTitle('/dashboard')).toBe('My Dashboard');
         expect(getPageTitle('/launchpad')).toBe('My Apps');
         expect(getPageTitle('/contacts')).toBe('My Contacts');
         expect(getPageTitle('/notifications')).toBe('My Alerts');

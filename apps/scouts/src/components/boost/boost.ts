@@ -3,8 +3,9 @@ import LinkChain from 'learn-card-base/svgs/LinkChain';
 import Video from 'learn-card-base/svgs/Video';
 import Document from 'learn-card-base/svgs/Document';
 
-import { BoostCategoryOptionsEnum } from 'learn-card-base';
+import { BoostCategoryOptionsEnum } from 'learn-card-base/types/boostAndCredentialMetadata';
 import { AddressSpec } from '../locationSearch/location.helpers';
+import * as m from '../../paraglide/messages.js';
 
 /**
  * Status states for Boosts that control what actions can be performed.
@@ -45,32 +46,50 @@ export const boostMediaOptions = [
     {
         id: 1,
         type: BoostMediaOptionsEnum.photo,
-        title: 'Photo',
+        titleKey: 'boostCMS.mediaType.photo',
         color: 'cyan-700',
         Icon: Camera,
     },
     {
         id: 2,
         type: BoostMediaOptionsEnum.document,
-        title: 'Document',
+        titleKey: 'boostCMS.mediaType.document',
         color: 'emerald-700',
         Icon: Document,
     },
     {
         id: 3,
         type: BoostMediaOptionsEnum.video,
-        title: 'Video',
+        titleKey: 'boostCMS.mediaType.video',
         color: 'rose-600',
         Icon: Video,
     },
     {
         id: 4,
         type: BoostMediaOptionsEnum.link,
-        title: 'Link',
+        titleKey: 'boostCMS.mediaType.link',
         color: 'indigo-600',
         Icon: LinkChain,
     },
 ];
+
+/**
+ * Resolve a `boostMediaOptions` `titleKey` to its localized label.
+ *
+ * The config stores a stable Paraglide message key (not translated text); this
+ * helper performs the catalog lookup at invocation time so the label follows the
+ * active locale. `MEDIA_TYPE_LABELS` holds thunks so `m[...]()` only runs when
+ * the helper is called (never at module scope).
+ */
+const MEDIA_TYPE_LABELS: Record<string, () => string> = {
+    'boostCMS.mediaType.photo': () => m['boostCMS.mediaType.photo'](),
+    'boostCMS.mediaType.document': () => m['boostCMS.mediaType.document'](),
+    'boostCMS.mediaType.video': () => m['boostCMS.mediaType.video'](),
+    'boostCMS.mediaType.link': () => m['boostCMS.mediaType.link'](),
+};
+
+export const mediaTypeTitle = (titleKey: string | undefined): string =>
+    (titleKey && MEDIA_TYPE_LABELS[titleKey]?.()) || '';
 
 export enum BoostCMSSkillsEnum {
     Creative = 'Creative',

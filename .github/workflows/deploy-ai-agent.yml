@@ -1,13 +1,25 @@
 name: Deploy AI Agent
 
 on:
+    pull_request:
+        types: [opened, synchronize, reopened, ready_for_review]
+        paths:
+            - 'services/learn-card-network/ai-agent/**'
+            - 'packages/**'
+            - 'package.json'
+            - 'bun.lock'
+            - '.dockerignore'
+            - '.github/actions/setup/**'
+            - '.github/workflows/deploy-ai-agent.yml'
     push:
         branches: [main]
         paths:
             - 'services/learn-card-network/ai-agent/**'
             - 'packages/**'
+            - 'package.json'
             - 'bun.lock'
             - '.dockerignore'
+            - '.github/actions/setup/**'
             - '.github/workflows/deploy-ai-agent.yml'
     workflow_dispatch:
         inputs:
@@ -27,22 +39,19 @@ on:
                 type: string
 
 concurrency:
-    group: deploy-ai-agent-${{ inputs.target-environment || 'staging' }}
+    group: deploy-ai-agent-${{ github.event.pull_request.number || inputs.target-environment || 'staging' }}
     cancel-in-progress: false
 
 permissions:
     contents: read
-    id-token: write
 
 jobs:
-    deploy:
-        name: Deploy AI Agent
+    validate:
+        name: AI Agent CI
         runs-on: ubuntu-latest
-        environment: learn-card-ai-agent-${{ inputs.target-environment || 'staging' }}
+        timeout-minutes: 20
         env:
             CI: true
-            TARGET_ENVIRONMENT: ${{ inputs.target-environment || 'staging' }}
-            AWS_DEFAULT_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
         steps:
             - name: Checkout repository
               uses: actions/checkout@v7
@@ -55,8 +64,29 @@ jobs:
 
             - name: Build AI Agent
               run: bun run --cwd services/learn-card-network/ai-agent build
+
             - name: Lint CloudFormation template
               run: pipx run cfn-lint services/learn-card-network/ai-agent/infra/aws/template.yml
+
+    deploy:
+        name: Deploy AI Agent
+        if: github.event_name != 'pull_request'
+        needs: validate
+        permissions:
+            contents: read
+            id-token: write
+        runs-on: ubuntu-latest
+        environment: learn-card-ai-agent-${{ inputs.target-environment || 'staging' }}
+        env:
+            CI: true
+            TARGET_ENVIRONMENT: ${{ inputs.target-environment || 'staging' }}
+            AWS_DEFAULT_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v7
+
+            - name: Use composite setup action
+              uses: ./.github/actions/setup
 
             - name: Validate deployment configuration
               env:

@@ -262,6 +262,31 @@ describe('sendAiSessionCredential (App Event)', () => {
         expect(listingEdges.records[0]?.get('count').toNumber()).toBe(1);
     });
 
+    it('accepts an application-issued credential without prompting the listing owner to connect', async () => {
+        const { listing } = await seedListingWithSigningAuthority('usera');
+        await installAppForProfile('userb', listing.listing_id);
+
+        const result = await userB.clients.fullAuth.appStore.appEvent({
+            listingId: listing.listing_id,
+            event: {
+                type: 'send-ai-session-credential',
+                sessionTitle: 'Application-issued session',
+                summaryData: sampleSummaryData('Application-issued session'),
+            },
+        });
+        expect(result).toMatchObject({ sessionCredentialUri: expect.any(String) });
+
+        expect(
+            (await userB.clients.fullAuth.credential.receivedCredentials()).map(({ uri }) => uri)
+        ).toContain(result.sessionCredentialUri);
+        await expect(
+            userA.clients.fullAuth.profile.pendingConnectionPrompts()
+        ).resolves.toHaveLength(0);
+        await expect(
+            userB.clients.fullAuth.profile.pendingConnectionPrompts()
+        ).resolves.toHaveLength(0);
+    });
+
     it('rejects missing sessionTitle', async () => {
         const { listing } = await seedListingWithSigningAuthority('usera');
         await installAppForProfile('userb', listing.listing_id);

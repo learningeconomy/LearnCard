@@ -91,6 +91,45 @@ const signed = await wallet.invoke.issueCredential(unsigned);
 -   **Fresh UUIDs** — regenerates all `urn:uuid:` ids (disable with `freshIds: false`)
 -   **Timestamps** — sets `validFrom`/`issuanceDate` to now (or a custom value)
 
+### Materializing an SD-JWT VC Fixture
+
+SD-JWT VC fixtures are synthetic templates. Query and narrow them through the
+same registry API, then materialize one with signing capability supplied by the
+caller:
+
+```typescript
+import {
+    getFixtures,
+    getFixture,
+    isSdJwtVcFixture,
+    materializeSdJwtVcFixture,
+} from '@learncard/credential-library';
+
+const sdJwtCourses = getFixtures({
+    kind: 'sd-jwt-vc',
+    profile: 'course',
+    features: ['selective-disclosure'],
+});
+const fixture = getFixture('sd-jwt-vc/course-completion');
+if (!isSdJwtVcFixture(fixture)) throw new Error('Expected SD-JWT VC fixture');
+
+const result = await materializeSdJwtVcFixture(fixture, {
+    issuerDid,
+    issuerKid,
+    issuerSigner,
+    holderPublicJwk,
+});
+
+await wallet.store.LearnCloud.uploadEncrypted(result.envelope);
+```
+
+The fixture contains no issuer private key and does not sign itself. Callers
+must provide the issuer DID, key ID, signing function, and an Ed25519 public
+holder key. The returned envelope is canonical `{ format: 'dc+sd-jwt', data:
+compact }`; `result.compact` contains the issuer-signed SD-JWT VC only and never
+stores a KB-JWT. A KB-JWT is created later, when a holder presents the
+credential to a verifier with an audience and nonce.
+
 ## Query API Reference
 
 | Function                           | Description                                                                   |
@@ -101,8 +140,8 @@ const signed = await wallet.invoke.issueCredential(unsigned);
 | `getFixtures(filter)`              | Returns fixtures matching the filter                                          |
 | `getValidFixtures(filter?)`        | Shorthand for `getFixtures({ ...filter, validity: 'valid' })`                 |
 | `getInvalidFixtures(filter?)`      | Shorthand for `getFixtures({ ...filter, validity: ['invalid', 'tampered'] })` |
-| `getUnsignedFixtures(filter?)`     | Returns only unsigned fixtures                                                |
-| `getSignedFixtures(filter?)`       | Returns only signed fixtures                                                  |
+| `getUnsignedFixtures(filter?)`     | Returns only unsigned W3C VC fixtures                                         |
+| `getSignedFixtures(filter?)`       | Returns only signed W3C VC fixtures                                           |
 | `getStats()`                       | Returns counts grouped by spec, profile, validity, and signed status          |
 | `prepareFixture(fixture, options)` | Clones a fixture and patches DIDs, UUIDs, and timestamps                      |
 | `prepareFixtureById(id, options)`  | Combines `getFixture` + `prepareFixture`                                      |
@@ -113,6 +152,7 @@ All filter fields are optional. Array fields accept a single value or an array.
 
 | Field         | Type                                       | Behavior                            |
 | ------------- | ------------------------------------------ | ----------------------------------- |
+| `kind`        | `FixtureKind \| FixtureKind[]`             | Match `w3c-vc` or `sd-jwt-vc`       |
 | `spec`        | `CredentialSpec \| CredentialSpec[]`       | Match any of the given specs        |
 | `profile`     | `CredentialProfile \| CredentialProfile[]` | Match any of the given profiles     |
 | `features`    | `CredentialFeature[]`                      | Must have **all** of these features |
@@ -164,16 +204,26 @@ The `examples/credential-viewer` app has a **New Fixture** button that provides 
 -   Test Issue button (requires wallet connection)
 -   Saves the `.ts` file and updates the index automatically
 
+The form creates W3C VC fixtures only. Add SD-JWT VC template fixtures manually so
+their `kind`, reserved ID/spec pairing, and materialization template remain explicit.
+
 See the [Credential Viewer README](../../examples/credential-viewer/README.md) for details.
 
 ## Fixture Metadata
 
+`kind` identifies the fixture's runtime shape: W3C VC fixtures use
+`kind: 'w3c-vc'` (or omit it for backwards compatibility) and contain a
+`credential` object, while `kind: 'sd-jwt-vc'` fixtures contain a materializable
+`template`. SD-JWT VC templates also use `spec: 'sd-jwt-vc'` and reserve the
+`sd-jwt-vc/` ID prefix.
+
 | Field         | Type                  | Description                                                                                                                                                                                  |
 | ------------- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `id`          | `string`              | Unique identifier, e.g. `obv3/minimal-badge`                                                                                                                                                 |
+| `kind`        | `FixtureKind?`        | Runtime shape: `w3c-vc` (default when omitted) or `sd-jwt-vc`                                                                                                                                |
 | `name`        | `string`              | Human-readable name                                                                                                                                                                          |
 | `description` | `string`              | What this fixture tests/demonstrates                                                                                                                                                         |
-| `spec`        | `CredentialSpec`      | `vc-v1`, `vc-v2`, `obv3`, `clr-v2`, `europass`, `custom`                                                                                                                                     |
+| `spec`        | `CredentialSpec`      | `vc-v1`, `vc-v2`, `obv3`, `clr-v2`, `europass`, `sd-jwt-vc`, `custom`                                                                                                                        |
 | `profile`     | `CredentialProfile`   | `badge`, `diploma`, `certificate`, `id`, `membership`, `license`, `micro-credential`, `course`, `degree`, `boost`, `boost-id`, `delegate`, `endorsement`, `learner-record`, `generic`        |
 | `features`    | `CredentialFeature[]` | Features exercised: `evidence`, `alignment`, `endorsement`, `expiration`, `status`, `multiple-subjects`, `image`, `results`, `skills`, `display`, `associations`, `nested-credentials`, etc. |
 | `source`      | `FixtureSource`       | `spec-example`, `plugfest`, `real-world`, `synthetic`                                                                                                                                        |
@@ -229,6 +279,11 @@ See the [Credential Viewer README](../../examples/credential-viewer/README.md) f
 -   `boost/with-skills` — Boost with skills, evidence, and alignment
 -   `boost/community-award` — Community leadership award boost
 -   `boost/delegate` — Organization delegate credential
+
+### SD-JWT VCs (1)
+
+-   `sd-jwt-vc/course-completion` — Synthetic, holder-bound course completion
+    credential with selective disclosure and Digital Credentials API metadata
 
 ### Invalid / Negative Tests (3)
 
