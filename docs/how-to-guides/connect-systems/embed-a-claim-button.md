@@ -24,17 +24,14 @@ The rest of this page is the same setup by hand.
 This is for **external websites** that want to award credentials to visitors. If you're building an app that runs _inside_ the LearnCard App Store, see [Build an App Inside LearnCard](../publish-your-app.md) instead.
 {% endhint %}
 
-## Prerequisites
+## Step 1: Get a publishable key
 
-- A LearnCard developer account with an **Embed** integration created in the [Developer Portal](https://learncard.app/app-store/developer)
-- At least one **credential template** attached to that integration
-- Your integration's **publishable key** (`pk_...`)
+The button is keyed to an **integration** — a record that holds your allowed origins and a publishable key (`pk_…`). Either:
 
-## Step 1: Create Your Integration & Template
+- run `npx @learncard/cli embed --domains https://yoursite.com` (creates it and saves `PUBLISHABLE_KEY` to `.env`), or
+- in the [Developer Portal](https://learncard.app/app-store/developer) open **Guides → Embed Claim Button**, follow the setup, and copy the key from the **Embed Code** tab.
 
-1. Go to the Developer Portal → **Guides** → **Embed Claim Button**
-2. Follow the setup guide: set your partner name, create a credential template
-3. Copy your **publishable key** from the **Embed Code** tab
+Credentials claimed through the button are signed by your primary [signing authority](../create-signing-authority.md); the CLI sets one up if you don't have one.
 
 ## Step 2: Add the SDK
 

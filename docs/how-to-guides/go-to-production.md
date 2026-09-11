@@ -36,9 +36,9 @@ Staging and production are separate networks — nothing carries over automatica
 
 A network error or timeout from `send()` doesn't tell you whether the credential was actually issued before the connection dropped. Before retrying:
 
-1. **Check the response first.** If you got a response back with `inbox.issuanceId` (or a `credentialUri` for a direct send), it succeeded — don't retry.
+1. **Check the response first.** If you got a response back with `activityId`, it succeeded — don't retry. `learncard status <activityId>` (or [`getActivityChain`](../sdks/learncard-network/credential-activity.md)) shows where it got to.
 2. **If the call threw or timed out, look for an existing issuance before retrying:**
-    - Profile/DID recipients — [`getPaginatedBoostRecipients(templateUri)`](send-credentials.md#tracking-credential-template-recipients) and check whether your recipient is already in the list.
+    - Profile/DID recipients — [`getPaginatedBoostRecipients(templateUri)`](send-credentials.md#who-has-a-template) and check whether your recipient is already in the list.
     - Email/phone recipients — `learnCard.invoke.getMySentInboxCredentials({ query: { boostUri: templateUri, currentStatus: 'PENDING' } })` and check whether an issuance already addresses that contact method.
 3. **Only retry if neither check finds an existing record.**
 
@@ -57,7 +57,7 @@ Store `inbox.issuanceId` (and `activityId`) keyed by your own record ID at send 
 ## Reliability
 
 - [ ] **Full flow run on staging** with your own email as recipient — [Test Safely](deploy-infrastructure/test-safely.md)
-- [ ] **`PENDING` vs `ISSUED` handled**, and a webhook records claims — [Know When a Credential Is Claimed](../tutorials/listen-to-webhooks.md)
+- [ ] **You know how you'll learn a credential was claimed** — polling `status`, or a webhook — [Know When a Credential Is Claimed](../tutorials/listen-to-webhooks.md)
 - [ ] **You know how to undo a mistake** — [Revoke or Update a Credential](revoke-or-update-a-credential.md)
 - [ ] **Retries on `TOO_MANY_REQUESTS` are safe; ambiguous failures are handled deliberately** — [Errors & Limits](../sdks/learncard-network/errors-and-limits.md) · [When a Send Fails Ambiguously](#when-a-send-fails-ambiguously)
 

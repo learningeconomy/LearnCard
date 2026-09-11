@@ -29,12 +29,10 @@ The rest of this page is the same flow in your own code.
 
 ## Prerequisites
 
-- Node.js 20.6 or newer and a separate LearnCard account to test consent.
-- A server-only project with `@learncard/init` installed: `npm install @learncard/init`.
-- An HTTPS endpoint you control that forwards `/consent-callback` to this example's local port 3000.
-- Save all five `.mjs` files below in the same folder.
-
-Set `SECURE_SEED`, `PROFILE_ID`, and `RETURN_TO` in a private `.env` file. Generate a 32-byte hex seed with `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"`. Choose a unique service profile handle for `PROFILE_ID`. Set `RETURN_TO` to your real HTTPS callback URL, ending in `/consent-callback`.
+- The `.env` from the [Quickstart](../quick-start/your-first-integration.md) (`SECURE_SEED`, `PROFILE_ID`) — or run `npx @learncard/cli init`.
+- `RETURN_TO` in that `.env`: the public HTTPS URL that reaches this example's `/consent-callback` on port 3000 (a tunnel like ngrok is fine for development). `consent-contract` writes it for you.
+- A second LearnCard account (a phone, or a different browser profile) to play the user who consents.
+- `npm install @learncard/init`, and the five `.mjs` files below in one folder — `consent-contract` writes all of them.
 
 Never commit `.env` or put the seed in browser code. Disable callback query-string logging in your proxy, analytics, and application: the presentation in the URL is sensitive.
 

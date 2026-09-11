@@ -84,6 +84,12 @@ console.log('Primary signing authority:', authority.name);
 
 If you run a [VC-API](https://w3c-ccg.github.io/vc-api/) compliant issuer and it must be the signer, register it instead of a hosted authority. It needs a public HTTPS `/issue` endpoint and a DID.
 
+```bash
+npx @learncard/cli setup-signing --endpoint https://issuer.my-org.com/issue --did did:web:issuer.my-org.com
+```
+
+Or in code:
+
 ```javascript
 import { initLearnCard } from '@learncard/init';
 

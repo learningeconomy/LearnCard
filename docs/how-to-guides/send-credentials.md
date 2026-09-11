@@ -1,10 +1,8 @@
 ---
-description: 'How-To Guide: Sending and issuing credentials with LearnCard'
+description: 'One call sends a credential to an email, phone, or LearnCard profile. Sign it yourself or let LearnCard sign from a template.'
 ---
 
 # Send & Issue Credentials
-
----
 
 {% hint style="info" %}
 **~10 min** · After the [Quickstart](../quick-start/your-first-integration.md).
@@ -19,267 +17,210 @@ npx @learncard/cli send you@example.com --template # LearnCard signs from a reus
 
 Both reuse the `.env` the Quickstart created. Everything below is what those scripts do, and the options `send()` takes beyond them.
 
-## Quick Start: The `send` Method (Recommended)
+## `send()` in one picture
 
-The `send` method handles credential issuance, signing, and delivery in a single call.
+```typescript
+const result = await learnCard.invoke.send({
+    type: 'boost',
+    recipient: 'jane@example.com', // email, phone, profile ID, or DID — detected automatically
+    signedCredential, //             ← you signed it       (or)
+    templateUri, //                  ← LearnCard signs from a template you created
+});
+```
 
-The `send` method detects your recipient type:
+You choose **who the recipient is** and **who signs**. Everything else — delivery, the claim email, auto-delivery to existing accounts — is the same call.
 
-- **Profile ID** → Direct delivery to their LearnCard
-- **DID** → Direct delivery via DID resolution
-- **Email** → Routes through Universal Inbox (sends claim email)
-- **Phone** → Routes through Universal Inbox (sends claim SMS)
+| Recipient looks like          | What happens                                                                                                                                                                                                   |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `jane@example.com`            | Goes to the [Universal Inbox](../core-concepts/network-and-interactions/universal-inbox.md); Jane gets a claim email. If that email is already verified on a LearnCard account, it's delivered straight there. |
+| `+15551234567`                | Same, by SMS. Phone delivery is limited to issuers on the [trusted registry](verify-my-issuer.md).                                                                                                             |
+| `jane-doe` (profile ID)       | Delivered directly to that account.                                                                                                                                                                            |
+| `did:key:z6Mk…` / `did:web:…` | Delivered directly to that DID.                                                                                                                                                                                |
 
-### Prerequisites
+| You pass                                   | Who signs                                                                                               | Set up                                                     |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| `signedCredential`                         | You did, with `issueCredential()` and your seed                                                         | Nothing                                                    |
+| `templateUri`                              | LearnCard, with your [signing authority](create-signing-authority.md), from a template you created once | `setup-signing`, then `createBoost` (or `send --template`) |
+| `template: { credential, name, category }` | Same, creating the template in this call                                                                | `setup-signing`                                            |
 
-- LearnCard SDK initialized with `network: true`
-- A decision on [who signs](create-signing-authority.md): you (a seed, pass `signedCredential`) **or** LearnCard (a hosted signing authority, pass `templateUri`/`template`)
+Template URIs look like `lc:network:<host>/trpc:boost:<id>`. Always use the value returned by `createBoost` or `send` (`result.uri`) — never build one.
 
-{% hint style="info" %}
-**Issuer Profiles**: Before sending, you need a profile on the network. Use `createProfile` for a person, or `createServiceProfile` for an organization, app, or bot issuer. See [Network Profiles](../core-concepts/identities-and-keys/network-profiles.md).
-{% endhint %}
+You need a network profile before you send — `createServiceProfile` for an organization or bot, `createProfile` for a person. The Quickstart and `learncard init` do this for you. [Network Profiles](../core-concepts/identities-and-keys/network-profiles.md).
 
-### Basic Usage
-
-{% hint style="info" %}
-Template URIs look like `lc:network:<host>/trpc:boost:<id>`. Always use the value returned by `createBoost` or `send` (`result.uri`) — don't construct them.
-{% endhint %}
+## Examples
 
 {% tabs %}
-{% tab title="Send to Profile ID or DID" %}
+{% tab title="You sign" %}
 
 ```typescript
-// Send to an existing LearnCard user
-const result = await learnCard.invoke.send({
-    type: 'boost',
-    recipient: 'recipient-profile-id', // or 'did:key:z6Mk...'
-    templateUri: 'lc:network:network.learncard.com/trpc:boost:abc123',
-});
-
-console.log(result.credentialUri); // URI of the sent credential
-console.log(result.uri); // URI of the credential template used
-```
-
-{% endtab %}
-
-{% tab title="Send to Email" %}
-
-```typescript
-// Send to someone via email (they'll get a claim link)
-const result = await learnCard.invoke.send({
-    type: 'boost',
-    recipient: 'student@example.com', // Auto-detected as email
-    templateUri: 'lc:network:network.learncard.com/trpc:boost:abc123',
-    options: {
-        branding: {
-            issuerName: 'My Organization',
-            issuerLogoUrl: 'https://example.com/logo.png',
-            recipientName: 'John Doe',
-        },
-        webhookUrl: 'https://api.example.com/webhooks/claimed',
-    },
-});
-
-console.log(result.inbox?.claimUrl); // Present when inbox.status is 'PENDING' (new recipient)
-console.log(result.inbox?.issuanceId); // Issuance tracking ID
-```
-
-{% endtab %}
-
-{% tab title="Send to Phone" %}
-
-```typescript
-// Send to someone via SMS
-const result = await learnCard.invoke.send({
-    type: 'boost',
-    recipient: '+15551234567', // Auto-detected as phone
-    templateUri: 'lc:network:network.learncard.com/trpc:boost:abc123',
-    options: {
-        suppressDelivery: true, // Skip the SMS — inbox.claimUrl is still returned; deliver it yourself
-    },
-});
-
-// Use result.inbox.claimUrl in your own notification
-```
-
-{% endtab %}
-
-{% tab title="Creating a New Credential Template On-the-Fly" %}
-
-```typescript
-// Send by creating a new credential template from an unsigned credential
-const result = await learnCard.invoke.send({
-    type: 'boost',
-    recipient: 'recipient-profile-id',
-    template: {
-        credential: {
-            '@context': [
-                'https://www.w3.org/2018/credentials/v1',
-                'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
-            ],
-            'type': ['VerifiableCredential', 'OpenBadgeCredential'],
-            'issuer': 'did:web:example.com',
-            'name': 'Course Completion',
-            'credentialSubject': {
-                'type': ['AchievementSubject'],
-                'achievement': {
-                    'type': ['Achievement'],
-                    'name': 'Web Development 101',
-                    'description': 'Completed the Web Development fundamentals course.',
-                    'criteria': {
-                        'narrative':
-                            'Successfully completed all modules and passed the final assessment.',
-                    },
-                },
-            },
-        },
-        name: 'Web Development 101 Certificate',
-        category: 'Achievement',
-    },
-});
-```
-
-{% endtab %}
-
-{% tab title="Send a Pre-Signed Credential" %}
-
-```typescript
-// Sign a credential yourself, then send it — no template needed
 const signedCredential = await learnCard.invoke.issueCredential({
     '@context': [
         'https://www.w3.org/ns/credentials/v2',
         'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
     ],
-    'type': ['VerifiableCredential', 'OpenBadgeCredential'],
-    'issuer': learnCard.id.did(),
-    'credentialSubject': {
-        'type': ['AchievementSubject'],
-        'achievement': {
-            'type': ['Achievement'],
-            'name': 'Teamwork Badge',
-            'description': 'Recognized for outstanding collaboration.',
-            'criteria': { 'narrative': 'Nominated by peers.' },
+    type: ['VerifiableCredential', 'OpenBadgeCredential'],
+    issuer: learnCard.id.did(),
+    credentialSubject: {
+        type: ['AchievementSubject'],
+        achievement: {
+            type: ['Achievement'],
+            name: 'Teamwork Badge',
+            description: 'Recognized for outstanding collaboration.',
+            criteria: { narrative: 'Nominated by peers.' },
         },
     },
 });
 
 const result = await learnCard.invoke.send({
     type: 'boost',
-    recipient: 'recipient@example.com', // or profile ID, DID
+    recipient: 'jane@example.com',
     signedCredential,
 });
 ```
 
-{% endtab %}
+Your proof is kept as-is all the way to the recipient. `send()` also saves the credential as a template (`result.uri`) so you can send the same badge again with `templateUri`.
 
-{% tab title="With ConsentFlow Contract" %}
+{% endtab %}
+{% tab title="LearnCard signs (template)" %}
 
 ```typescript
-// Send through a consent flow contract
-// Automatically routes via consent terms if the recipient has consented
 const result = await learnCard.invoke.send({
     type: 'boost',
-    recipient: 'recipient-profile-id',
-    templateUri: 'lc:network:network.learncard.com/trpc:boost:abc123',
-    contractUri: 'lc:network:network.learncard.com/trpc:contract:abc123', // Optional: link to consent contract
+    recipient: 'jane-doe', // or an email, phone, or DID
+    templateUri, // from createBoost() or an earlier send()'s result.uri
 });
 ```
 
-{% endtab %}
-{% endtabs %}
-
-### REST API (`POST /api/send`)
-
-The `send` method is available as a REST endpoint. Authenticate with `Authorization: Bearer <API token>`, using a token from an auth grant with `boosts:write` scope (create one in the Developer Portal, or via `addAuthGrant` + `getAPITokenForAuthGrant`).
-
-{% tabs %}
-{% tab title="cURL: Send with Template" %}
-
-```bash
-curl -X POST https://network.learncard.com/api/send \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "type": "boost",
-    "recipient": "student@example.com",
-    "templateUri": "lc:network:network.learncard.com/trpc:boost:abc123"
-  }'
-```
+Needs a [signing authority](create-signing-authority.md) — one command: `npx @learncard/cli setup-signing`. Templates can carry `{{variables}}` filled per send; see [Issue at scale](#issue-at-scale-with-templates).
 
 {% endtab %}
+{% tab title="Create the template in the same call" %}
 
-{% tab title="cURL: Send Pre-Signed Credential" %}
-
-```bash
-curl -X POST https://network.learncard.com/api/send \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "type": "boost",
-    "recipient": "student@example.com",
-    "signedCredential": {
-      "@context": [
-        "https://www.w3.org/ns/credentials/v2",
-        "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json",
-        "https://w3id.org/security/suites/ed25519-2020/v1"
-      ],
-      "type": ["VerifiableCredential", "OpenBadgeCredential"],
-      "issuer": { "id": "did:web:example.com" },
-      "validFrom": "2025-01-01T00:00:00Z",
-      "name": "Teamwork Badge",
-      "credentialSubject": {
-        "type": ["AchievementSubject"],
-        "achievement": {
-          "type": ["Achievement"],
-          "name": "Teamwork",
-          "description": "Recognized for outstanding collaboration.",
-          "criteria": { "narrative": "Nominated by peers." }
-        }
-      },
-      "proof": {
-        "type": "Ed25519Signature2020",
-        "proofPurpose": "assertionMethod",
-        "proofValue": "z...",
-        "verificationMethod": "did:web:example.com#owner",
-        "created": "2025-01-01T00:00:00Z"
-      }
-    }
-  }'
-```
-
-{% endtab %}
-
-{% tab title="JavaScript (fetch)" %}
-
-```javascript
-const response = await fetch('https://network.learncard.com/api/send', {
-    method: 'POST',
-    headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
+```typescript
+const result = await learnCard.invoke.send({
+    type: 'boost',
+    recipient: 'jane-doe',
+    template: {
+        credential: {
+            '@context': [
+                'https://www.w3.org/ns/credentials/v2',
+                'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+                'https://ctx.learncard.com/boosts/1.0.1.json',
+            ],
+            type: ['VerifiableCredential', 'OpenBadgeCredential', 'BoostCredential'],
+            name: 'Web Development 101',
+            credentialSubject: {
+                type: ['AchievementSubject'],
+                achievement: {
+                    type: ['Achievement'],
+                    name: 'Web Development 101',
+                    description: 'Completed the Web Development fundamentals course.',
+                    criteria: { narrative: 'Passed all modules and the final assessment.' },
+                },
+            },
+        },
+        name: 'Web Development 101',
+        category: 'Achievement',
     },
-    body: JSON.stringify({
-        type: 'boost',
-        recipient: 'student@example.com',
-        signedCredential: mySignedVC, // A previously signed VC object
-    }),
 });
 
-const result = await response.json();
-console.log(result);
-// { type: 'boost', uri: 'lc:network:network.learncard.com/trpc:boost:...', inbox: { issuanceId: '...', status: 'PENDING' } }
+console.log(result.uri); // the new template — reuse it next time
 ```
+
+Include the LearnCard Boost context and `BoostCredential` type on templates the network signs; it stamps `boostId` on each issued credential. [Why](../core-concepts/credentials-and-data/boost-credentials.md#anatomy).
+
+{% endtab %}
+{% tab title="Through a consent contract" %}
+
+```typescript
+const result = await learnCard.invoke.send({
+    type: 'boost',
+    recipient: 'jane-doe',
+    templateUri,
+    contractUri, // the contract Jane consented to
+});
+```
+
+If Jane has consented to `contractUri` with write permission for this template's category, the credential is written under that consent and appears in her consent history. See [Connect a User's LearnCard](../tutorials/create-a-consentflow.md).
 
 {% endtab %}
 {% endtabs %}
 
-{% hint style="info" %}
-**All SDK parameters work in the REST API too** — `templateUri`, `template`, `signedCredential`, `templateData`, `options`, and `contractUri` are all supported in the JSON body.
-{% endhint %}
+## Options for email and phone recipients
+
+```typescript
+options: {
+    webhookUrl?: string;        // POSTed ISSUANCE_DELIVERED, then ISSUANCE_CLAIMED — see Know When a Credential Is Claimed
+    suppressDelivery?: boolean; // Don't send the email/SMS. inbox.claimUrl is still returned; deliver it your way.
+    guardianEmail?: string;     // A parent must approve before the recipient can claim. Must differ from recipient.
+    branding?: {
+        issuerName?: string;
+        issuerLogoUrl?: string;
+        credentialName?: string; // display name in the claim email
+        recipientName?: string;  // "Hi Jane,"
+    };
+}
+```
+
+### Guardian approval
+
+```typescript
+const result = await learnCard.invoke.send({
+    type: 'boost',
+    recipient: 'student@school.edu',
+    templateUri,
+    options: { guardianEmail: 'parent@example.com' },
+});
+console.log(result.inbox?.guardianStatus); // 'AWAITING_GUARDIAN'
+```
+
+The guardian gets an approval email with a 6-digit code; the learner sees a pending notice, then a normal claim button once approved. `guardianStatus` moves to `GUARDIAN_APPROVED` or `GUARDIAN_REJECTED`. If the guardian goes on to create a LearnCard account, they become the learner's manager and **every future credential to that learner is gated automatically** — no `guardianEmail` needed, approval in-app without a code.
+
+| If…                                                                    | Then                                                                                                      |
+| :--------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------- |
+| `guardianEmail must differ from recipient (self-approval not allowed)` | Use a different address for the guardian.                                                                 |
+| Stuck at `AWAITING_GUARDIAN`                                           | The guardian hasn't acted. They can reopen the link from their email; the learner can't claim until then. |
+| Learner can't claim after approval                                     | Check `guardianStatus` — `GUARDIAN_REJECTED` means not claimable. Send again if it was a mistake.         |
+
+## What comes back
+
+```typescript
+{
+    type: 'boost',
+    uri: string,            // the template used or created — reuse it
+    activityId: string,     // key for status tracking (below)
+    credentialUri?: string, // the issued credential — set for profile/DID sends; for email/phone, once claimed
+
+    inbox?: {               // only for email/phone recipients
+        issuanceId: string,
+        status: 'PENDING' | 'ISSUED',
+        claimUrl?: string,  // present when PENDING
+        guardianStatus?: 'AWAITING_GUARDIAN' | 'GUARDIAN_APPROVED' | 'GUARDIAN_REJECTED',
+    },
+}
+```
+
+| `inbox.status` | Means                                                                                               | `claimUrl` |
+| :------------- | :-------------------------------------------------------------------------------------------------- | :--------- |
+| `PENDING`      | New recipient. A claim email/SMS went out (unless `suppressDelivery`); they claim at `claimUrl`.    | yes        |
+| `ISSUED`       | That email/phone is already verified on a LearnCard account — delivered directly. Nothing to claim. | no         |
+
+Once someone claims by email, that address is verified on their account, so your next send to it comes back `ISSUED`.
+
+## Over HTTP
+
+`send()` is also `POST https://network.learncard.com/api/send` with the same JSON body. Authenticate with `Authorization: Bearer <API token>` from an auth grant with `boosts:write` scope — `npx @learncard/cli token`, or [Generate API Tokens](deploy-infrastructure/generate-api-tokens.md).
+
+```bash
+curl -X POST https://network.learncard.com/api/send \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "type": "boost", "recipient": "jane@example.com", "templateUri": "lc:network:network.learncard.com/trpc:boost:…" }'
+```
 
 ### Sign locally, send over HTTP
 
-If you sign credentials yourself but want to deliver them from any language, create an API token and POST the signed credential to `/api/send`. This script creates the token (scope `boosts:write`) and writes the request body to `request.json`:
+If you sign credentials yourself but want to deliver them from any language, create a token and POST the signed credential. This script creates the token and writes the request body to `request.json`:
 
 <!-- snippet: quickstart/api-token.mjs -->
 
@@ -365,129 +306,6 @@ The response is JSON:
 `inbox.status` is `PENDING` for a new recipient (`inbox.claimUrl` is where they claim it) or `ISSUED` if they already use LearnCard (auto-delivered, no `claimUrl`).
 
 The token has one permission (`boosts:write`). Store it like a password. [Revoke it](../core-concepts/architecture-and-principles/auth-grants-and-api-tokens.md) any time.
-
-### How It Works
-
-1. **Detects recipient type**: email, phone, DID, or profile ID.
-2. **Routes**: direct send for profiles/DIDs, Universal Inbox for email/phone.
-3. **Prepares the credential**: uses your template, creates a new template, or uses your pre-signed credential.
-4. **Signs the credential**: skips signing if you provided a `signedCredential`; otherwise uses client-side signing or your registered signing authority.
-5. **Delivers the credential**: direct delivery or sends claim email/SMS.
-6. **Auto-delivery**: if the email/phone is verified and linked to a LearnCard profile, the credential is delivered directly to their wallet.
-
-{% hint style="info" %}
-**Pre-Signed Credentials**: When you provide only `signedCredential` (without `templateUri` or `template`), the system creates a template from your credential. Your original proof is preserved through the entire flow, including email inbox claims.
-{% endhint %}
-
-### Guardian-Gated Credentials
-
-To require guardian (parent) approval before a minor can claim a credential, add `guardianEmail` to `options` (must not equal the recipient email):
-
-```typescript
-const result = await learnCard.invoke.send({
-    type: 'boost',
-    recipient: 'student@school.edu',
-    templateUri: 'lc:network:network.learncard.com/trpc:boost:abc123',
-    options: {
-        guardianEmail: 'parent@example.com',
-    },
-});
-
-console.log(result.inbox?.guardianStatus); // 'AWAITING_GUARDIAN'
-```
-
-**What each person sees:**
-
-- **Guardian:** Receives an approval email with a 6-digit code.
-- **Learner:** Sees a pending notice in their wallet, then a normal claim button once approved.
-- **You:** `guardianStatus` moves from `AWAITING_GUARDIAN` to `GUARDIAN_APPROVED` or `GUARDIAN_REJECTED`.
-
-**After approval / rejection:**
-
-- **Approved:** The credential becomes claimable. If the guardian then creates a LearnCard account, a MANAGES relationship is created. **All future inbox credentials to that learner are guardian-gated automatically** (no `guardianEmail` needed), and the guardian approves in-app without a code.
-- **Rejected:** The learner is notified and cannot claim the credential.
-
-#### Troubleshooting
-
-| If…                                                                    | Then                                                                                                                             |
-| :--------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------- |
-| `guardianEmail must differ from recipient (self-approval not allowed)` | Use a different address for the guardian.                                                                                        |
-| Stuck at `AWAITING_GUARDIAN`                                           | The guardian hasn't acted. They can reopen the approval link from their email; the learner can't claim until then.               |
-| Learner can't claim after approval                                     | Check `guardianStatus` — if it's `GUARDIAN_REJECTED`, the credential is not claimable. Send again if the decision was a mistake. |
-
-### Response
-
-```typescript
-interface SendResponse {
-    type: 'boost';
-    credentialUri: string; // URI of the issued credential
-    uri: string; // URI of the credential template
-    activityId: string; // Links to the activity lifecycle for this issuance
-
-    // Only present when sent to email/phone recipients
-    inbox?: {
-        issuanceId: string; // Tracking ID for this issuance
-        status:
-            | 'PENDING' // Waiting to be claimed
-            | 'ISSUED' // Auto-delivered to verified user
-            | 'EXPIRED' // Claim link expired
-            | 'DELIVERED' // Delivered to inbox
-            | 'CLAIMED'; // Claimed via claim link
-        claimUrl?: string; // Present when status is 'PENDING'; not tied to suppressDelivery
-        guardianStatus?:
-            // Present when guardianEmail was specified
-            | 'AWAITING_GUARDIAN' // Waiting for guardian approval
-            | 'GUARDIAN_APPROVED' // Guardian approved
-            | 'GUARDIAN_REJECTED'; // Guardian rejected
-    };
-}
-```
-
-{% hint style="success" %}
-**Auto-Delivery**: When `status` is `ISSUED`, the credential was automatically delivered to the recipient's wallet because their email/phone was already verified. No claim link was needed!
-{% endhint %}
-
-**Response conditions**
-
-| `inbox.status` | `claimUrl` present? | What was delivered                                                                                                                        |
-| :------------- | :------------------ | :---------------------------------------------------------------------------------------------------------------------------------------- |
-| `PENDING`      | Yes                 | New recipient — a claim email/SMS was sent, unless `options.suppressDelivery: true` (then nothing was sent; deliver `claimUrl` yourself). |
-| `ISSUED`       | No                  | Recipient already had a verified email/phone linked to a LearnCard profile — the credential was auto-delivered directly to their wallet.  |
-
-### Options (for Email/Phone Recipients)
-
-When sending to email or phone recipients, you can provide additional options:
-
-```typescript
-options: {
-    webhookUrl?: string;       // Receives ISSUANCE_DELIVERED and ISSUANCE_CLAIMED events — see Listen to Webhooks
-    suppressDelivery?: boolean; // Skips the email/SMS only — the inbox record and claimUrl are created either way
-    branding?: {
-        issuerName?: string;    // Your organization name
-        issuerLogoUrl?: string; // Your logo URL
-        credentialName?: string; // Display name for the credential
-        recipientName?: string;  // Recipient's name for personalization
-    };
-}
-```
-
-{% hint style="info" %}
-**Contract Integration**: When you provide a `contractUri`, the method automatically:
-
-- Checks if the recipient has consented to the contract
-- Routes the credential through the consent flow if terms exist
-- Creates a `RELATED_TO` relationship between new credential templates and the contract
-
-{% endhint %}
-
-{% hint style="info" %}
-**Email Verification**: When a recipient claims a credential via an email claim link, their email address becomes a **verified contact method** linked to their LearnCard profile. This means:
-
-- Future credentials sent to that email will be **auto-delivered** directly to their wallet
-- No claim link is needed for subsequent issuances
-- The issuer receives `status: 'ISSUED'` instead of `status: 'PENDING'`
-
-{% endhint %}
 
 ---
 
@@ -604,15 +422,9 @@ Note that re-running `send` for the same recipient and template will re-send the
 
 ---
 
-## Need more control?
-
-For lower-level control over the inbox issuance process (custom delivery suppression, custom branding per issuance, or webhook-driven status tracking), see the [Universal Inbox API](../sdks/learncard-network/universal-inbox-api.md).
-
----
-
 ## Next steps
 
-- Design a custom credential → [Building Verifiable Credentials](../core-concepts/credentials-and-data/building-verifiable-credentials.md)
-- Issue at scale with credential templates → [Issue at scale with templates](#issue-at-scale-with-templates)
-- Know when it's claimed → [Know When a Credential Is Claimed](../tutorials/listen-to-webhooks.md)
-- Verify credentials → [Verify Credentials](../tutorials/verify-credentials.md)
+- Know whether it was claimed → [Know When a Credential Is Claimed](../tutorials/listen-to-webhooks.md)
+- Take one back → [Revoke or Update a Credential](revoke-or-update-a-credential.md)
+- Design your own credential → [Building Verifiable Credentials](../core-concepts/credentials-and-data/building-verifiable-credentials.md)
+- Lower-level inbox control (per-issuance signer, custom claim flows) → [Universal Inbox API](../sdks/learncard-network/universal-inbox-api.md)

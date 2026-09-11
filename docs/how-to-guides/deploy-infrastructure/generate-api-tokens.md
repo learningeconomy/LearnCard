@@ -14,7 +14,7 @@ description: Create a scoped token so your server can call the LearnCard API wit
 npx @learncard/cli token --scope boosts:write
 ```
 
-Creates the auth grant, shows the token once, saves it to `.env` (`chmod 600`), and writes `send.sh` — a ready-to-run `curl` that reads the token from `.env`. `--revoke <grantId>` revokes.
+Creates the auth grant, shows the token once, saves it to `.env` (`chmod 600`), and writes `send.sh` — a ready-to-run `curl` that reads the token from `.env`. Add `--expires 30` for a 30-day token. `--list` shows your grants; `--revoke <grantId>` revokes one.
 
 An API token is a bearer credential tied to an **auth grant** (a named set of scopes on your profile). Use it for `POST /api/send` and other REST calls from any language; the SDK with a seed doesn't need one. See [Auth Grants and API Tokens](../../core-concepts/architecture-and-principles/auth-grants-and-api-tokens.md).
 
@@ -66,7 +66,13 @@ Scopes define the permissions granted to a client via an API token. Each scope f
 
 ## What you should see
 
-When you successfully generate an API token, you receive a JWT string that you can use in the `Authorization` header of your HTTP requests.
+A JWT — three base64 segments separated by dots. Put it in `Authorization: Bearer <token>`. Test it in one line:
+
+```bash
+curl -s https://network.learncard.com/api/profile -H "Authorization: Bearer $TOKEN"
+```
+
+Your profile comes back as JSON; a `401` means the token is wrong or expired.
 
 ## Troubleshooting
 
