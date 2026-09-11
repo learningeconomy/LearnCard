@@ -7,6 +7,10 @@
         "d87c23528432e4c9f2b918e8eaf29370d786bd1de735d2e2c2bb4c483674ba32": 2,
         "ee50d406de047071d2a4c887b27c70752e55518ccb077c41782ea3c9c697e328": 2
     },
+    "apps/learn-card-app/src/pages/appStoreDeveloper/guides/IntegrationHub.tsx": {
+        "3d7ad9dd7629fb895a48a10937045e251c007b6de1d83dbfd077f66677ef1343": 1,
+        "d15cd80ba3506adc848b9b7d8a9a647a1812421f5d75835c4879def04a2ed3f8": 1
+    },
     "examples/app-store-apps/1-basic-launchpad-app/src/actions/index.ts": {
         "12a8b9f28db47def1977cec5f7c1bc2ee591a6148184c3c3347b73bf5e871df3": 1,
         "1fb0f868be6ad228cffe80586b25e2e2bd892200883c8e93456d78a9fba556c7": 1,
