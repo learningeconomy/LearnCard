@@ -91,6 +91,14 @@ export type EscrowRecoveryStart = EscrowHoldStatus & {
     pinSalt?: string;
 };
 
+/** The account has no available PIN release policy. */
+export class EscrowPinUnavailableError extends Error {
+    constructor() {
+        super('PIN recovery is not available for this account.');
+        this.name = 'EscrowPinUnavailableError';
+    }
+}
+
 /** A failed PIN attempt consumes its hold; another attempt must start a fresh hold. */
 export class EscrowPinMismatchError extends Error {
     constructor(public readonly attemptsRemaining: number) {
