@@ -1,16 +1,53 @@
 ---
-description: 'Get a webhook the moment a credential you sent is delivered, and again when it is claimed.'
+description: 'Check whether a credential you sent was claimed — by asking, or by being told the moment it happens.'
 ---
 
 # Know When a Credential Is Claimed
 
-Sending a credential doesn't tell you what happened to it. Pass a webhook URL with the send and LearnCard `POST`s to your server the moment it's delivered, and again the moment it's claimed — no polling.
+Sending a credential doesn't tell you what happened to it. There are two ways to find out. **Ask** — every send has an `activityId`, and you can look up its history any time. Or **be told** — give the send a webhook URL and LearnCard `POST`s to your server the moment it's delivered and again when it's claimed.
+
+Start with asking. It needs nothing but the SDK. Move to webhooks when you're sending at volume or need to react within seconds.
 
 {% hint style="info" %}
-**~15 min** · After the [Quickstart](../quick-start/your-first-integration.md) · ngrok or another tunnel.
+**~5 min to check · ~15 min for webhooks** · After the [Quickstart](../quick-start/your-first-integration.md).
 {% endhint %}
 
-## The one-line version
+## Ask: check a credential's status
+
+```bash
+npx @learncard/cli status
+```
+
+lists your recent sends with their current state. `npx @learncard/cli status <activityId>` shows one credential's full history. In code:
+
+<!-- snippet: cli/status.mjs -->
+
+```javascript
+import { initLearnCard } from '@learncard/init';
+
+const activityId = process.argv[2];
+if (!activityId) throw new Error('Usage: node --env-file=.env status.mjs <activityId>');
+
+const learnCard = await initLearnCard({ seed: process.env.SECURE_SEED, network: true });
+
+const chain = await learnCard.invoke.getActivityChain({ activityId });
+const latest = chain.at(-1);
+
+for (const event of chain) console.log(`${event.timestamp}  ${event.eventType}`);
+console.log(latest?.eventType === 'CLAIMED' ? 'Claimed.' : 'Not claimed yet.');
+```
+
+<!-- /snippet -->
+
+`send()` returns the `activityId`; store it next to your own record of the send. The events are `CREATED` → `DELIVERED` → `CLAIMED`, or `EXPIRED` / `FAILED`. For lists, filters, and claim-rate stats, see the [Credential Activity](../sdks/learncard-network/credential-activity.md) reference.
+
+Polling this every minute from a cron job is a perfectly good integration. The rest of this page is for when it isn't enough.
+
+---
+
+## Be told: webhooks
+
+### The one-line version
 
 ```bash
 npx @learncard/cli webhook you@example.com --url https://<your-tunnel>
@@ -18,20 +55,16 @@ npx @learncard/cli webhook you@example.com --url https://<your-tunnel>
 
 Starts a receiver on port 8787, sends a demo credential with `webhookUrl` set, and prints each event as it arrives. Expose the port first (`ngrok http 8787`) and pass the tunnel URL. It writes the receiver as `webhook.mjs` — the same code Step 1 below walks through.
 
-The rest of this page is the same flow in your own code.
-
-## Prerequisites
+### Prerequisites
 
 - The [Quickstart](../quick-start/your-first-integration.md), **"Own your keys"** path — this tutorial extends `send.mjs` and reuses its `.env` (`SECURE_SEED`, `PROFILE_ID`)
 - [ngrok](https://ngrok.com/download) (or another tunnel) to expose your local server
 
----
-
-## Send with a webhook URL
+### Send with a webhook URL
 
 Pass `options.webhookUrl` when you send a credential to an email or phone number. LearnCard `POST`s a notification to that URL twice: once when the credential is delivered (`ISSUANCE_DELIVERED`), and again when the recipient claims it (`ISSUANCE_CLAIMED`).
 
-### Step 1: Start a receiver
+#### Step 1: Start a receiver
 
 Save this next to `send.mjs` as `webhook.mjs`. It verifies that each request really came from the LearnCard Network (a DID-signed bearer token), acknowledges fast, logs the fields you care about, and de-duplicates by `${type}:${issuanceId}` — LearnCard retries on failure, so you will occasionally see the same event twice.
 
@@ -132,7 +165,7 @@ node webhook.mjs
 
 It listens on port 8787 (set `PORT` to change).
 
-### Step 2: Expose it with ngrok
+#### Step 2: Expose it with ngrok
 
 ```bash
 ngrok http 8787
@@ -140,7 +173,7 @@ ngrok http 8787
 
 Copy the `https://` forwarding URL ngrok prints. That's your `webhookUrl` for the next step.
 
-### Step 3: Send with a webhook URL
+#### Step 3: Send with a webhook URL
 
 Save this next to `send.mjs` as `send-with-webhook.mjs`. It's the quickstart's script with one addition: `options.webhookUrl`.
 
@@ -208,11 +241,11 @@ Run it with a real email you can open and the ngrok URL from Step 2:
 node --env-file=.env send-with-webhook.mjs you@example.com https://xxxx.ngrok-free.app
 ```
 
-### Step 4: Watch it arrive
+#### Step 4: Watch it arrive
 
 Your listener logs `ISSUANCE_DELIVERED` immediately. `status: 'PENDING'` means a claim email is on its way; `status: 'ISSUED'` means the recipient already had a LearnCard account and the credential was delivered straight to their wallet (in which case there's nothing left to claim — skip to [Troubleshooting](#troubleshooting)).
 
-### Step 5: Claim it
+#### Step 5: Claim it
 
 Open the claim email, tap **Claim**, and sign in or create an account — same as in the quickstart. Your listener logs `ISSUANCE_CLAIMED`, with `claimedBy` set to the DID of the account that just claimed it.
 

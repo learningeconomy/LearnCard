@@ -16,8 +16,8 @@ When the user accepted your contract, the `vp` in the redirect wasn't only proof
 
 So: store the `vp` per user, server-side, encrypted. It is a bearer credential — never log it or expose it to the browser.
 
-{% hint style="warning" %}
-The xAPI endpoint checks the delegate credential, not the live contract. If a user withdraws consent, the `vp` still works until you stop using it. Call `verifyConsent` before each write and delete the stored `vp` on withdrawal.
+{% hint style="info" %}
+**Treat the `vp` like any bearer credential you hold on a user's behalf.** Check `verifyConsent` before each write and delete the stored `vp` when a user withdraws — the pattern below does both. Today the xAPI endpoint validates the `vp` itself rather than re-checking live consent, so this check is yours to make.
 {% endhint %}
 
 Save the blocks below together as `record-activity.mjs` next to the two helper files:

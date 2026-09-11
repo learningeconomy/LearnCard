@@ -181,6 +181,7 @@ export const runSend = async (recipientEmail: string, options: SendOptions): Pro
             `\nThe code that just ran is in ./${filename} — run it yourself:\n  npm install @learncard/init\n  node --env-file=.env ${filename} ${recipientEmail}`
         );
     }
+    out.log(`Check whether it was claimed: npx @learncard/cli status ${result.activityId}`);
     out.log(`See it in the app: npx @learncard/cli open${options.template ? ' template' : ''}`);
     out.set({
         profileId: identity.profileId,
@@ -189,6 +190,7 @@ export const runSend = async (recipientEmail: string, options: SendOptions): Pro
         status: result.inbox?.status === 'PENDING' ? 'PENDING' : 'ISSUED',
         ...(result.inbox?.claimUrl && { claimUrl: result.inbox.claimUrl }),
         templateUri: result.uri,
+        activityId: result.activityId,
         ...(result.credentialUri && { credentialUri: result.credentialUri }),
         ...(result.inbox?.issuanceId && { issuanceId: result.inbox.issuanceId }),
         files: wroteSendFile ? [`./${filename}`] : [],

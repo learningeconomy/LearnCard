@@ -18,7 +18,7 @@ import { getLearnCardForUser } from './helpers/learncard.helpers';
 const CLI = resolve(__dirname, '../../../packages/learn-card-cli/dist/index.js');
 const NETWORK = 'http://localhost:4000/trpc';
 const REST = 'http://localhost:4000';
-const LCA_API_URL = 'http://localhost:5200/api';
+const LCA_API_URL = process.env.LCA_API_URL ?? 'http://localhost:5200/api';
 const WEBHOOK_PORT = 8791;
 /** The brain container reaches the host through this name in Docker Desktop. */
 const WEBHOOK_URL = `http://host.docker.internal:${WEBHOOK_PORT}`;
@@ -174,6 +174,22 @@ describe('CLI: one folder, every command', () => {
             expect(json.did).toMatch(/^did:/);
             expect(json.issuanceId).toMatch(/^[0-9a-f-]{36}$/);
             expect(json.claimUrl).toContain('/interactions/inbox-claim/');
+        }
+
+        // status lists sends and shows one chain, from the activityId send returned
+        {
+            const sent = JSON.parse(
+                cli('send', `cli-status-${randomBytes(3).toString('hex')}@test.com`, '--json')
+            );
+            expect(sent.activityId).toMatch(/^[0-9a-f-]{36}$/);
+            const list = JSON.parse(cli('status', '--json'));
+            expect(list.activities.map((a: { activityId: string }) => a.activityId)).toContain(
+                sent.activityId
+            );
+            const one = JSON.parse(cli('status', sent.activityId, '--json'));
+            expect(one.state).toBe('CREATED');
+            expect(one.recipient).toBe(sent.recipient);
+            expect(cli('status', sent.activityId)).toContain('Not claimed yet');
         }
 
         // token writes API_TOKEN + send.sh, and send.sh sends over HTTP

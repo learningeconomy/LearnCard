@@ -537,6 +537,23 @@ commandOptions(
         })
     );
 
+commandOptions(
+    program
+        .command('status [activityId]')
+        .description('What happened to a credential you sent: created, delivered, claimed.')
+)
+    .option('--limit <n>', 'how many recent sends to list (default: 20)')
+    .option(
+        '--event <type>',
+        'only list sends whose latest event is this: created|delivered|claimed|expired|failed'
+    )
+    .action((activityId, options) =>
+        runCommand('status', options, async didkit => {
+            const { runStatus } = await import('./status');
+            await runStatus(activityId, { ...options, didkit });
+        })
+    );
+
 program
     .command('open [target]')
     .description(

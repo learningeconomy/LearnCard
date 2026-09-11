@@ -46,7 +46,7 @@ core-concepts/identities-and-keys/signing-authorities,understand/decentralized-i
 core-concepts/identities-and-keys/trust-registries,understand/decentralized-identifiers-dids/trust-registries,moved,redirected
 core-concepts/network-and-interactions,understand/ecosystem-architecture/universal-inbox,merge,redirected
 core-concepts/network-and-interactions/core-interaction-workflows,understand/ecosystem-architecture,merge,redirected
-core-concepts/network-and-interactions/credential-activity,understand/ecosystem-architecture/universal-inbox,internal,redirected
+core-concepts/network-and-interactions/credential-activity,reference/learncard-network/credential-activity,moved,redirected
 core-concepts/network-and-interactions/key-network-procedures,understand/ecosystem-architecture,merge,redirected
 core-concepts/network-and-interactions/network-vision-and-principles,understand/ecosystem-architecture,merge,redirected
 core-concepts/network-and-interactions/universal-inbox,understand/ecosystem-architecture/universal-inbox,moved,redirected

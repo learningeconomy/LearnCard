@@ -32,7 +32,7 @@ redirects:
     core-concepts/architecture-and-principles/u.s.-state-api: sdks/learncard-network/README.md
     core-concepts/credentials-and-data/general-best-practices-and-troubleshooting: core-concepts/credentials-and-data/building-verifiable-credentials.md
     core-concepts/network-and-interactions/core-interaction-workflows: introduction/ecosystem-architecture.md
-    core-concepts/network-and-interactions/credential-activity: core-concepts/network-and-interactions/universal-inbox.md
+    core-concepts/network-and-interactions/credential-activity: sdks/learncard-network/credential-activity.md
     core-concepts/network-and-interactions/key-network-procedures: introduction/ecosystem-architecture.md
     core-concepts/network-and-interactions/network-vision-and-principles: introduction/ecosystem-architecture.md
     core-concepts/tenant-branded-emails: apps/learn-card-app/README.md

@@ -491,22 +491,28 @@ options: {
 
 ---
 
-## Tracking Credential Template Recipients
+## Track what happened to a credential
 
-Track which users have received credentials from a specific credential template using `getPaginatedBoostRecipients`:
+Every `send()` returns an `activityId`. The network logs each step against it — `CREATED` when you sent, `DELIVERED` when it reached an existing account or the claim email went out, `CLAIMED` when the recipient accepted, and `EXPIRED` or `FAILED` if it didn't get there.
 
 ```typescript
-// Get all recipients of a credential template
-const { records } = await learnCard.invoke.getPaginatedBoostRecipients(boostUri);
-
-console.log(records);
-// [
-//   { to: { profileId: 'alice-123', did: 'did:key:z6Mk...' }, received: '2025-01-09T...' },
-//   { to: { profileId: 'bob-456', did: 'did:key:z6Mk...' }, received: '2025-01-08T...' },
-// ]
+const chain = await learnCard.invoke.getActivityChain({ activityId: result.activityId });
+console.log(chain.map(e => `${e.eventType} ${e.timestamp}`));
+// ['CREATED 2026-09-11T18:12:27Z', 'DELIVERED 2026-09-11T18:12:28Z', 'CLAIMED 2026-09-11T18:20:04Z']
 ```
 
-Use this for auditing, preventing duplicates, and tracking issuance metrics.
+Or from the terminal: `npx @learncard/cli status <activityId>`. No server needed — poll this when you want to know if a credential was claimed. Details, filters, and stats: [Credential Activity](../sdks/learncard-network/credential-activity.md). To be told instead of asking, see [Know When a Credential Is Claimed](../tutorials/listen-to-webhooks.md).
+
+### Who has a template
+
+For a per-template view — everyone who holds a credential issued from it, and whether each one is `active`, `revoked`, or `suspended`:
+
+```typescript
+const { records } = await learnCard.invoke.getPaginatedBoostRecipients(templateUri);
+// [{ to: { profileId: 'alice-123' }, received: '2026-01-09T…', uri: 'lc:network:…:credential:…', status: 'active' }, …]
+```
+
+This is also how you find the `credentialUri` to [revoke](revoke-or-update-a-credential.md).
 
 ---
 
