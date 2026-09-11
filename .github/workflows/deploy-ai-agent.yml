@@ -3,34 +3,6 @@ name: Deploy AI Agent
 on:
     pull_request:
         types: [opened, synchronize, reopened, ready_for_review]
-        paths:
-            - 'services/learn-card-network/ai-agent/**'
-            - 'packages/**'
-            - 'package.json'
-            - 'bun.lock'
-            - '.dockerignore'
-            - '.github/actions/setup/**'
-            - '.github/workflows/deploy-ai-agent.yml'
-    push:
-        branches: [main]
-        paths:
-            - 'services/learn-card-network/ai-agent/**'
-            - 'packages/**'
-            - 'package.json'
-            - 'bun.lock'
-            - '.dockerignore'
-            - '.github/actions/setup/**'
-            - '.github/workflows/deploy-ai-agent.yml'
-    workflow_dispatch:
-        inputs:
-            target-environment:
-                description: Target environment
-                required: true
-                default: staging
-                type: choice
-                options:
-                    - staging
-                    - production
     workflow_call:
         inputs:
             target-environment:
@@ -39,7 +11,7 @@ on:
                 type: string
 
 concurrency:
-    group: deploy-ai-agent-${{ github.event.pull_request.number || inputs.target-environment || 'staging' }}
+    group: deploy-ai-agent-${{ github.event.pull_request.number || inputs.target-environment }}
     cancel-in-progress: false
 
 permissions:
@@ -76,10 +48,10 @@ jobs:
             contents: read
             id-token: write
         runs-on: ubuntu-latest
-        environment: learn-card-ai-agent-${{ inputs.target-environment || 'staging' }}
+        environment: learn-card-ai-agent-${{ inputs.target-environment }}
         env:
             CI: true
-            TARGET_ENVIRONMENT: ${{ inputs.target-environment || 'staging' }}
+            TARGET_ENVIRONMENT: ${{ inputs.target-environment }}
             AWS_DEFAULT_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
         steps:
             - name: Checkout repository

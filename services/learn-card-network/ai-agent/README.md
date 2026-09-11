@@ -222,9 +222,11 @@ execution recheck access, so revoking a target also blocks queued work at its ne
 Missing SDK keys, initialization failures, and evaluation errors fail closed. Turning the flag off
 does not cancel an already-running agent or undo its effects.
 
-The workflow validates the environment/project pairing before deploying tasks and enables ECS
-schedule synchronization in both environments. Production remains manually deployed and approved.
-See [RUNBOOK.md](./RUNBOOK.md) for environment setup and controlled rollout.
+The main **Deploy** workflow sends affected `main` commits to staging and Changesets releases
+that update the AI Agent package to production. It reuses `deploy-ai-agent.yml`, which validates
+the environment/project pairing and enables ECS schedule synchronization in both environments.
+Production retains its environment approval; no separate action dispatch is required.
+See [RUNBOOK.md](./RUNBOOK.md) for CI, release metadata, environment setup, and controlled rollout.
 
 The Trigger task runtime is Node even though repository commands use Bun. A live Bun task run
 failed in `@learncard/init` while loading DidKit, so the native

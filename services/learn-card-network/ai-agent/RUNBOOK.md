@@ -337,49 +337,55 @@ perform irreversible effects.
 
 ## Deploy
 
-- Pull requests affecting the AI Agent or its shared dependencies run the **AI Agent CI**
-  job: service tests, the Bun service build, and CloudFormation lint. This job has read-only
-  repository permissions, no deployment environment or secrets, and never deploys.
-  The repository also runs its required **Test** and **E2E** checks. Adding this workflow
-  does not automatically make its new check required in branch protection.
-- Pushes and manual deployments rerun **AI Agent CI** before the deployment job can start.
-  Trigger.dev packaging, AWS validation, image scanning, and live smoke checks remain
+- Every pull request runs the **AI Agent CI** job: service tests, the Bun service build,
+  and CloudFormation lint. This job has read-only repository permissions, no deployment
+  environment or secrets, and never deploys. It also reports on unrelated PRs so making
+  it a required check will not leave those PRs waiting for a path-filtered workflow.
+  The repository also runs its required **Test** and **E2E** checks; branch protection
+  must be configured separately to require **AI Agent CI**.
+- The main **Deploy** workflow (`.github/workflows/deploy.yml`) owns deployment selection,
+  just like the other services:
+    - Ordinary `main` pushes deploy **staging** when Nx reports `ai-agent-service` affected
+      and **Test Affected Projects** succeeds.
+    - Changesets release pushes (`chore(release):`) deploy **production** when the AI Agent
+      package manifest changes in the release commit. Releases without an AI Agent package
+      change skip its production deployment.
+    - Manual component overrides remain available in **Deploy** for operational reruns,
+      but are not part of the normal release flow. ScoutPass selections do not deploy AI Agent.
+- Include a changeset for `@learncard/ai-agent-service` with deployable changes. The package
+  is private and is not published to npm, but Changesets still versions it and includes
+  its bump in the usual release PR.
+- `deploy-ai-agent.yml` is the reusable deployment implementation and PR validation entry.
+  It has no independent `push` or manual-dispatch trigger, so a `main` push cannot start
+  a second AI Agent rollout. Selected deployments rerun **AI Agent CI** before the
+  environment-protected deployment job starts.
+- Production begins automatically from the Changesets release; existing GitHub environment
+  approval still applies. No separate action needs to be dispatched. Keep the production
+  LaunchDarkly flag off throughout the initial deployment; workflows never open targeting.
+- Trigger.dev packaging, AWS validation, image scanning, and live smoke checks remain
   deployment-time gates, not PR checks.
-- Every merge to `main` that changes the AI Agent, shared packages, lockfile, or container base
-  deploys Trigger.dev staging tasks and ECS staging through
-  `.github/workflows/deploy-ai-agent.yml`.
-- Before that workflow exists on the default branch, dispatch the already-registered
-  `.github/workflows/deploy.yml` from the feature ref:
-
-    ```bash
-    gh workflow run deploy.yml \
-      --ref ai-agent-foundation \
-      -f target-environment=staging \
-      -f deploy-ai-agent=true
-    ```
-
-- Production is a manual workflow dispatch targeting `production`, deploys its separate Trigger
-  project and enables schedule synchronization, and should require GitHub environment approval.
-  Keep the production LaunchDarkly flag off throughout the initial deployment.
 - Images receive an immutable `sha-<git-sha>` tag. Workflow retries reuse the existing image rather than overwriting it.
 - The workflow rejects ARM64 images with critical or high ECR findings, updates the CloudFormation image tag and deployment ID, waits for the ECS rolling deployment with circuit-breaker rollback, checks readiness, and runs the authenticated smoke test in staging.
 
-Before production dispatch:
+Before merging the release PR and approving production:
 
-1. Confirm the staging smoke test passed on the exact commit.
+1. Confirm the code being released passed staging smoke and the release PR passed CI.
+   The Changesets version commit has a new SHA; the normal release flow does not deploy
+   that version-only commit to staging before production.
 2. Inspect the CloudWatch dashboard and Sentry for staging errors.
 3. Confirm current model prices and budget thresholds.
-4. Confirm the ECR scan completed with no critical or high findings.
+4. Confirm the staging ECR scan completed with no critical or high findings.
 5. Record the current production `ImageTag` parameter for rollback.
 
-After production dispatch, use the dedicated synthetic production test account for one read-only authenticated run. Do not use a real learner account for deployment verification.
+After production deployment, use the dedicated synthetic production test account for one read-only authenticated run. Do not use a real learner account for deployment verification.
 
 ### Controlled production schedule rollout
 
 1. Keep production `ai-agent-autonomy-enabled` targeting **Off**, its off variation `false`,
    and its default rule `false`. Make the flag available to client-side SDKs as well.
-2. Deploy the approved staging-tested commit. The production workflow intentionally skips the
-   staging scheduled smoke: it must not open targeting or create a production schedule.
+2. Approve the Changesets-triggered deployment after staging and release CI pass. The production
+   workflow intentionally skips the staging scheduled smoke: it must not open targeting or
+   create a production schedule.
 3. Using a dedicated synthetic production account, verify schedule API access is denied while
    the flag is off. The frontend alone is not an access-control boundary.
 4. When ready for an internal trial, target only the synthetic account's production `did:web`

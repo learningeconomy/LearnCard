@@ -80,6 +80,7 @@ jobs:
             brain_service_changed: ${{ steps.check_versions.outputs.brain_service_changed }}
             learn_cloud_changed: ${{ steps.check_versions.outputs.learn_cloud_changed }}
             lca_api_changed: ${{ steps.check_versions.outputs.lca_api_changed }}
+            ai_agent_changed: ${{ steps.check_versions.outputs.ai_agent_changed }}
             lca_app_changed: ${{ steps.check_versions.outputs.lca_app_changed }}
             native_plugin_changed: ${{ steps.check_versions.outputs.native_plugin_changed }}
             # Dynamic environment names
@@ -164,6 +165,13 @@ jobs:
                     echo "LCA API version changed"
                   else
                     echo "lca_api_changed=false" >> $GITHUB_OUTPUT
+                  fi
+
+                  if echo "$CHANGED_FILES" | grep -q "services/learn-card-network/ai-agent/package.json"; then
+                    echo "ai_agent_changed=true" >> $GITHUB_OUTPUT
+                    echo "AI Agent service version changed"
+                  else
+                    echo "ai_agent_changed=false" >> $GITHUB_OUTPUT
                   fi
 
                   if echo "$CHANGED_FILES" | grep -q "apps/learn-card-app/package.json"; then
@@ -1462,14 +1470,20 @@ jobs:
 
     deploy-ai-agent:
         name: Deploy AI Agent
-        if: >-
-            github.event_name == 'workflow_dispatch' &&
-            inputs.deploy-ai-agent &&
-            (inputs.target-environment == 'staging' || inputs.target-environment == 'production')
+        needs: [determine-affected, test-affected]
+        if: |
+            always() &&
+            !cancelled() &&
+            needs.determine-affected.result == 'success' &&
+            (
+              (needs.determine-affected.outputs.is_manual == 'true' && inputs.deploy-ai-agent && (inputs.target-environment == 'staging' || inputs.target-environment == 'production')) ||
+              (needs.determine-affected.outputs.is_release == 'true' && needs.determine-affected.outputs.ai_agent_changed == 'true') ||
+              (needs.determine-affected.outputs.is_manual != 'true' && needs.determine-affected.outputs.is_release != 'true' && needs.test-affected.result == 'success' && contains(needs.determine-affected.outputs.affected, 'ai-agent-service'))
+            )
         permissions:
             contents: read
             id-token: write
         uses: ./.github/workflows/deploy-ai-agent.yml
         with:
-            target-environment: ${{ inputs.target-environment }}
+            target-environment: ${{ needs.determine-affected.outputs.is_manual == 'true' && inputs.target-environment || (needs.determine-affected.outputs.is_release == 'true' && 'production' || 'staging') }}
         secrets: inherit
