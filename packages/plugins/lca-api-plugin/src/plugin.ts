@@ -536,11 +536,11 @@ export const getLCAPlugin = async (
                     return client.keys.markMigrated.mutate({ authToken, providerType });
                 },
 
-                deleteUserKey: async (_learnCard, authToken, providerType) => {
+                deleteUserKey: async (_learnCard, authToken, providerType, challenge) => {
                     await initialized;
                     await updateLearnCard(_learnCard);
 
-                    return client.keys.deleteUserKey.mutate({ authToken, providerType });
+                    return client.keys.deleteUserKey.mutate({ authToken, providerType, challenge });
                 },
             },
         };

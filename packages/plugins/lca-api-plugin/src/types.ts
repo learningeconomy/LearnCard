@@ -389,7 +389,8 @@ export type LCAPluginMethods = {
 
     deleteUserKey: (
         authToken: string,
-        providerType: AuthProviderType
+        providerType: AuthProviderType,
+        challenge: string
     ) => Promise<{ success: boolean }>;
 };
 
