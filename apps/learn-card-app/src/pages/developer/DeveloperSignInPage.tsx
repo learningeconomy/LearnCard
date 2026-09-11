@@ -7,12 +7,21 @@ import {
     eyeOutline,
     eyeOffOutline,
     alertCircleOutline,
+    personCircleOutline,
 } from 'ionicons/icons';
-import { useIsLoggedIn } from 'learn-card-base';
+import { useIsLoggedIn, useCurrentUser, useGetCurrentLCNUser } from 'learn-card-base';
 import useTheme from '../../theme/hooks/useTheme';
+import useLogout from '../../hooks/useLogout';
 import { useSeedLogin } from '../login/useSeedLogin';
 import { sanitizeNextPath } from './sanitizeNextPath';
 import * as m from '../../paraglide/messages.js';
+
+const SEED_HASH_PREFIX = '#seed=';
+
+const readSeedFromHash = (): string | null => {
+    const { hash } = window.location;
+    return hash.startsWith(SEED_HASH_PREFIX) ? hash.slice(SEED_HASH_PREFIX.length) : null;
+};
 
 const DeveloperSignInPage: React.FC = () => {
     const { colors } = useTheme();
@@ -22,40 +31,53 @@ const DeveloperSignInPage: React.FC = () => {
     const history = useHistory();
     const location = useLocation();
     const isLoggedIn = useIsLoggedIn();
+    const currentUser = useCurrentUser();
+    const { currentLCNUser } = useGetCurrentLCNUser();
     const { signInWithSeed, validate } = useSeedLogin();
+    const { handleLogout, isLoggingOut } = useLogout();
 
     const [seed, setSeed] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isSigningIn, setIsSigningIn] = useState(false);
     const [hint, setHint] = useState<string | null>(null);
+    const [hashSeed] = useState<string | null>(readSeedFromHash);
+    const [hasPendingSwitch, setHasPendingSwitch] = useState(false);
 
     const inputRef = useRef<HTMLInputElement>(null);
 
     const nextPath = sanitizeNextPath(new URLSearchParams(location.search).get('next'));
+    const isBusy = isSigningIn || isLoggingOut;
+
+    const currentAccountName =
+        currentLCNUser?.displayName?.trim() ||
+        currentUser?.name?.trim() ||
+        currentUser?.email?.trim() ||
+        null;
 
     useEffect(() => {
-        if (isLoggedIn) {
+        if (hashSeed === null) return;
+
+        window.history.replaceState(null, '', location.pathname + location.search);
+        setSeed(hashSeed);
+
+        const validationError = validate(hashSeed);
+        if (validationError) {
+            setError(validationError);
+            return;
+        }
+
+        if (!isLoggedIn) {
+            handleSignIn(hashSeed);
+            return;
+        }
+
+        if (currentUser?.privateKey === hashSeed) {
             history.replace(nextPath);
+            return;
         }
-    }, [isLoggedIn, history, nextPath]);
 
-    useEffect(() => {
-        const hash = location.hash;
-        if (hash.startsWith('#seed=')) {
-            const hashSeed = hash.replace('#seed=', '');
-
-            window.history.replaceState(null, '', location.pathname + location.search);
-
-            const validationError = validate(hashSeed);
-            if (!validationError) {
-                setSeed(hashSeed);
-                handleSignIn(hashSeed);
-            } else {
-                setSeed(hashSeed);
-                setError(validationError);
-            }
-        }
+        setHasPendingSwitch(true);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -79,25 +101,66 @@ const DeveloperSignInPage: React.FC = () => {
         }
     };
 
+    const handleSwitchAccount = async (seedToUse: string) => {
+        const validationError = validate(seedToUse);
+        if (validationError) {
+            setError(validationError);
+            return;
+        }
+
+        if (currentUser?.privateKey === seedToUse) {
+            history.replace(nextPath);
+            return;
+        }
+
+        setError(null);
+        setHint(null);
+
+        const returnUrl = `${window.location.origin}${location.pathname}${location.search}${SEED_HASH_PREFIX}${seedToUse}`;
+        await handleLogout({ overrideRedirectUrl: returnUrl });
+    };
+
+    const handleSubmit = (seedToUse: string) => {
+        if (isLoggedIn) {
+            handleSwitchAccount(seedToUse);
+        } else {
+            handleSignIn(seedToUse);
+        }
+    };
+
     const handlePaste = async () => {
         try {
             const text = await navigator.clipboard.readText();
             const trimmed = text.trim();
+            setSeed(trimmed);
 
             const validationError = validate(trimmed);
-            if (!validationError) {
-                setSeed(trimmed);
-                handleSignIn(trimmed);
-            } else {
-                setSeed(trimmed);
+            if (validationError) {
                 setError(validationError);
                 setHint(null);
+                return;
             }
+
+            if (isLoggedIn) {
+                setError(null);
+                setHint(null);
+                return;
+            }
+
+            handleSignIn(trimmed);
         } catch (err) {
             setHint(m['login.developerSignIn.pasteHint']());
             inputRef.current?.focus();
         }
     };
+
+    const submitLabel = isLoggedIn
+        ? m['login.developerSignIn.signOutAndSwitch']()
+        : m['login.developerSignIn.signInAction']();
+
+    const busyLabel = isLoggingOut
+        ? m['login.developerSignIn.switching']()
+        : m['login.developerSignIn.signingIn']();
 
     return (
         <div
@@ -117,9 +180,64 @@ const DeveloperSignInPage: React.FC = () => {
                     </p>
                 </div>
 
+                {isLoggedIn && (
+                    <div className="mb-6 p-4 bg-amber-50 border border-amber-100 rounded-2xl">
+                        <div className="flex items-start gap-2.5">
+                            <IonIcon
+                                icon={personCircleOutline}
+                                className="text-amber-500 text-lg mt-0.5 shrink-0"
+                            />
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-amber-900 truncate">
+                                    {currentAccountName
+                                        ? m['login.developerSignIn.alreadySignedInAs']({
+                                              name: currentAccountName,
+                                          })
+                                        : m['login.developerSignIn.alreadySignedIn']()}
+                                </p>
+                                <p className="text-sm text-amber-700 leading-relaxed mt-1">
+                                    {hasPendingSwitch
+                                        ? m['login.developerSignIn.linkSwitchBody']()
+                                        : m['login.developerSignIn.alreadySignedInBody']()}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col gap-2 mt-4">
+                            {hasPendingSwitch && (
+                                <button
+                                    onClick={() => handleSwitchAccount(seed)}
+                                    disabled={isBusy}
+                                    className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                >
+                                    {isLoggingOut ? (
+                                        <>
+                                            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                            {m['login.developerSignIn.switching']()}
+                                        </>
+                                    ) : (
+                                        m['login.developerSignIn.switchAction']()
+                                    )}
+                                </button>
+                            )}
+                            <button
+                                onClick={() => history.replace(nextPath)}
+                                disabled={isBusy}
+                                className="w-full py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                                {currentAccountName
+                                    ? m['login.developerSignIn.continueAs']({
+                                          name: currentAccountName,
+                                      })
+                                    : m['login.developerSignIn.stayAction']()}
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 <button
                     onClick={handlePaste}
-                    disabled={isSigningIn}
+                    disabled={isBusy}
                     className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 mb-6"
                 >
                     {isSigningIn ? (
@@ -191,17 +309,17 @@ const DeveloperSignInPage: React.FC = () => {
                 )}
 
                 <button
-                    onClick={() => handleSignIn(seed)}
-                    disabled={isSigningIn || !!validate(seed)}
+                    onClick={() => handleSubmit(seed)}
+                    disabled={isBusy || !!validate(seed)}
                     className="w-full py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent mb-6 flex items-center justify-center gap-2"
                 >
-                    {isSigningIn ? (
+                    {isBusy ? (
                         <>
                             <span className="w-4 h-4 border-2 border-grayscale-300 border-t-grayscale-700 rounded-full animate-spin" />
-                            {m['login.developerSignIn.signingIn']()}
+                            {busyLabel}
                         </>
                     ) : (
-                        m['login.developerSignIn.signInAction']()
+                        submitLabel
                     )}
                 </button>
 

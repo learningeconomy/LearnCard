@@ -993,22 +993,31 @@
             "import": "استيراد جواز السفر",
             "error": {
                 "invalidChars": "يجب أن تحتوي العبارة فقط على أرقام وحروف (a–f).",
-                "tooShort": "يجب أن تتكون عبارة الاسترداد من 64 حرفاً.",
+                "wrongLength": "يجب أن تتكون البذرة من 64 حرفًا بالضبط.",
                 "generic": "حدث خطأ ما. يرجى المحاولة مرة أخرى."
             }
         },
         "developerSignIn": {
-            "title": "Sign in with your developer seed",
-            "description": "This is the SECURE_SEED in your project's .env. It stays on this device — we never send it anywhere.",
-            "pasteAction": "Paste from clipboard",
-            "signingIn": "Signing in...",
-            "or": "or",
-            "seedLabel": "Seed",
-            "signInAction": "Sign in",
-            "notDeveloper": "Not a developer? ",
-            "signInNormally": "Sign in normally",
-            "securityWarning": "Keep your seed private. Anyone with it controls this account.",
-            "pasteHint": "Paste it into the field below."
+            "title": "سجّل الدخول باستخدام بذرة المطوّر",
+            "description": "هذه هي قيمة SECURE_SEED في ملف .env الخاص بمشروعك. تبقى على هذا الجهاز ولا نرسلها إلى أي مكان.",
+            "pasteAction": "لصق من الحافظة",
+            "signingIn": "جارٍ تسجيل الدخول...",
+            "switching": "جارٍ تبديل الحساب...",
+            "or": "أو",
+            "seedLabel": "البذرة",
+            "signInAction": "تسجيل الدخول",
+            "signOutAndSwitch": "تسجيل الخروج والتبديل",
+            "alreadySignedIn": "أنت مسجّل الدخول بالفعل",
+            "alreadySignedInAs": "أنت مسجّل الدخول باسم {{name}}",
+            "alreadySignedInBody": "تسجيل الدخول ببذرة يؤدي أولًا إلى تسجيل خروجك من حسابك الحالي.",
+            "linkSwitchBody": "يتضمن هذا الرابط بذرة لحساب آخر. التبديل سيؤدي إلى تسجيل خروجك من حسابك الحالي.",
+            "switchAction": "تبديل الحساب",
+            "stayAction": "البقاء مسجّل الدخول",
+            "continueAs": "المتابعة باسم {{name}}",
+            "notDeveloper": "لست مطوّرًا؟ ",
+            "signInNormally": "تسجيل الدخول بالطريقة العادية",
+            "securityWarning": "احتفظ ببذرتك سرّية. أي شخص يمتلكها يتحكم في هذا الحساب.",
+            "pasteHint": "الصقها في الحقل أدناه."
         },
         "loader": {
             "messages": {
@@ -4342,35 +4351,6 @@
                 "admin": "مدير",
                 "selectProject": "اختيار مشروع"
             },
-            "betaGate": {
-                "betaAccessRequired": "مطلوب وصول تجريبي",
-                "betaAccessDesc": "هذه الميزة حالياً في مرحلة تجريبية. أدخل رمز الوصول للمتابعة.",
-                "accessCode": "رمز الوصول",
-                "accessCodePlaceholder": "أدخل رمز الوصول التجريبي",
-                "continue": "متابعة",
-                "noAccessCode": "ليس لديك رمز وصول؟",
-                "contactUs": "اتصل بنا",
-                "backToDeveloperPortal": "← العودة إلى بوابة المطورين",
-                "invalidAccessCode": "رمز وصول غير صالح. تحقق وحاول مرة أخرى.",
-                "welcomeToBeta": "مرحباً بك في النسخة التجريبية!",
-                "welcomeDesc": "أنت تتصفح أدوات مطور جديدة قبل أن تصبح متاحة للجمهور.",
-                "betaPreviewNotice": "إشعار المعاينة التجريبية",
-                "betaPreviewDesc": "هذه وظيفة ما قبل الإصدار. قد تتغير الميزات وقد تواجه أخطاء. ملاحظاتك قيمة!",
-                "yourAccessIncludes": "وصولك يشمل:",
-                "integrationDashboard": "لوحة تحكم التكامل",
-                "apiTokenManagement": "إدارة رموز API",
-                "allIntegrationGuides": "جميع أدلة التكامل",
-                "otherGuidesLocked": "أدلة أخرى (مقفلة)",
-                "letsGo": "هيا بنا!",
-                "feedbackContact": "support@learncard.com",
-                "questionsFeedback": "أسئلة أو ملاحظات؟",
-                "guideLockedTitle": "{{name}}",
-                "guideLockedDesc": "هذا الدليل مقفل. أكمل الخطوات السابقة أولاً.",
-                "requestAccess": "طلب وصول",
-                "locked": "مقفل",
-                "guideNotAvailable": "هذا الدليل غير متاح مع وصولك التجريبي الحالي.",
-                "guideLabel": "دليل"
-            },
             "codeBlock": {
                 "copyCode": "نسخ الكود",
                 "copied": "تم النسخ!"
@@ -6661,8 +6641,6 @@
             },
             "hub": {
                 "comingSoon": "قريباً",
-                "locked": "مقفل",
-                "requestAccess": "طلب الوصول",
                 "inProgress": "قيد التنفيذ",
                 "getStarted": "ابدأ",
                 "createProject": {
