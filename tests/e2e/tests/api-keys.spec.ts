@@ -1,4 +1,5 @@
 import { describe, test, expect } from 'vitest';
+import crypto from 'crypto';
 
 import {
     getLearnCardForUser,
@@ -1141,8 +1142,8 @@ describe('API Key LearnCard Method Permissions', () => {
     });
     test('deleteProfile requires profiles:delete', async () => {
         // Create a temporary user and API token
-        const randomSeed = `${Date.now()}${Math.random()}`.replace(/\./g, '');
-        const tmp = await getLearnCard(randomSeed.padEnd(64, 'a').slice(0, 64));
+        const randomSeed = crypto.randomBytes(32).toString('hex');
+        const tmp = await getLearnCard(randomSeed);
         await tmp.invoke.createProfile({
             profileId: `tmp-${Date.now()}`,
             displayName: 'Tmp',
