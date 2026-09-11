@@ -643,7 +643,7 @@ const runRepl = async (_seed: string = generateRandomSeed()) => {
     const seed = seedInput.padStart(64, '0');
 
     console.log(
-        gradient(['cyan', 'green'])(figlet.textSync('Learn Card', 'Big Money-ne' as figlet.Fonts))
+        gradient(['cyan', 'green'])(figlet.textSync('Learn Card', { font: 'Big Money-ne' }))
     );
     console.log('Welcome to the Learn Card CLI!\n');
 
