@@ -34,8 +34,8 @@ const createConfiguredWebSearchTool = ({
         webSearchProvider === 'brave' && braveSearchApiKey
             ? createBraveWebSearchProvider({ apiKey: braveSearchApiKey })
             : webSearchProvider === 'mock'
-            ? createMockWebSearchProvider()
-            : undefined;
+              ? createMockWebSearchProvider()
+              : undefined;
 
     if (!provider) return undefined;
 

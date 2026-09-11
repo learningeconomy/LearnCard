@@ -27,8 +27,10 @@ export interface UpdateLearnCardAssistantProfileInput {
     personality?: string;
 }
 
-export interface LearnCardAssistantProfileResponse
-    extends Omit<LearnCardAssistantProfile, '_id' | 'createdAt' | 'updatedAt'> {
+export interface LearnCardAssistantProfileResponse extends Omit<
+    LearnCardAssistantProfile,
+    '_id' | 'createdAt' | 'updatedAt'
+> {
     createdAt: string;
     updatedAt: string;
 }

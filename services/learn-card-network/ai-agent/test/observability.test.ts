@@ -220,8 +220,7 @@ describe('AI Agent observability', () => {
 
     it('reports the Sentry transport response for a deployment check event', async () => {
         let afterSend:
-            | ((event: { event_id?: string }, result?: { statusCode?: number }) => void)
-            | undefined;
+            ((event: { event_id?: string }, result?: { statusCode?: number }) => void) | undefined;
         const client = {
             on: vi.fn(
                 (

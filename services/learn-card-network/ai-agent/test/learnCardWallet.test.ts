@@ -14,7 +14,7 @@ describe('createLearnCardWalletTool', () => {
                     invoke: {
                         getProfile: async () => ({ profileId: 'agent' }),
                     },
-                } as any),
+                }) as unknown as AgentNetworkWallet,
         });
 
         await expect(
@@ -45,7 +45,7 @@ describe('createLearnCardWalletTool', () => {
                         getProfile: async (profileId?: string) => ({ profileId }),
                         searchProfiles: async (query: string) => [{ profileId: query }],
                     },
-                } as any),
+                }) as unknown as AgentNetworkWallet,
         });
 
         await expect(
@@ -106,7 +106,7 @@ describe('createLearnCardWalletTool', () => {
                     invoke: {
                         sendBoost,
                     },
-                } as any),
+                }) as unknown as AgentNetworkWallet,
         });
 
         await expect(
@@ -161,7 +161,7 @@ describe('createLearnCardWalletTool', () => {
                     invoke: {
                         sendBoost,
                     },
-                } as any),
+                }) as unknown as AgentNetworkWallet,
         });
 
         await expect(
@@ -241,7 +241,7 @@ describe('createLearnCardWalletTool', () => {
                             return { profileId };
                         },
                     },
-                } as any),
+                }) as unknown as AgentNetworkWallet,
         });
 
         await expect(
@@ -269,7 +269,7 @@ describe('createLearnCardWalletTool', () => {
                     invoke: {
                         getProfile: async () => undefined,
                     },
-                } as any),
+                }) as unknown as AgentNetworkWallet,
         });
 
         await expect(
@@ -319,7 +319,7 @@ describe('createLearnCardWalletTool', () => {
 
     it('rejects unsafe wallet paths', async () => {
         const tool = createLearnCardWalletTool({
-            getWallet: async () => ({ invoke: {} } as any),
+            getWallet: async () => ({ invoke: {} }) as unknown as AgentNetworkWallet,
         });
 
         await expect(

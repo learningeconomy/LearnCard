@@ -66,11 +66,10 @@ export interface RecordLearnCardAssistantCardInput {
     sourceRunId?: string;
 }
 
-export interface LearnCardAssistantCardResponse
-    extends Omit<
-        LearnCardAssistantCard,
-        '_id' | 'createdAt' | 'updatedAt' | 'readAt' | 'feedback'
-    > {
+export interface LearnCardAssistantCardResponse extends Omit<
+    LearnCardAssistantCard,
+    '_id' | 'createdAt' | 'updatedAt' | 'readAt' | 'feedback'
+> {
     readAt?: string;
     feedback?: {
         type: 'thumbs-down';

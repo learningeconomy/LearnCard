@@ -14,19 +14,19 @@ Use this skill when you need a capability on the configured LearnCard wallet and
 
 Use `learnCardWallet` with one of two operations:
 
--   `inspect`: list functions, objects, and scalar values available at a wallet path.
--   `call`: invoke a wallet method by dot-separated path with positional `args`.
+- `inspect`: list functions, objects, and scalar values available at a wallet path.
+- `call`: invoke a wallet method by dot-separated path with positional `args`.
 
 The `path` starts at the wallet root. Pass `args` as an array, even when there is only one argument.
 
 Inspect results can include:
 
--   parsed JavaScript parameters when available,
--   TypeScript-derived metadata for common LearnCard Network methods,
--   argument details,
--   examples,
--   preconditions,
--   method notes.
+- parsed JavaScript parameters when available,
+- TypeScript-derived metadata for common LearnCard Network methods,
+- argument details,
+- examples,
+- preconditions,
+- method notes.
 
 Bound SDK methods may still appear as native functions in JavaScript. When inspection returns `argumentDetails`, `examples`, or `metadataSource`, treat those as more reliable than `arg1`/`arg2`.
 
@@ -144,10 +144,10 @@ Send a Boost to a profile:
 
 Important `sendBoost` details:
 
--   Argument order is `profileId`, then `boostUri`, then optional `options`.
--   Use profile IDs such as `"taylor"`, not DIDs, for direct profile sends.
--   `connectWith(profileId)` may create a pending connection. Check `getConnections()` and `getPendingConnections()` before assuming the recipient can receive direct sends.
--   If direct send is blocked by a pending connection, ask the user to accept the connection or use an email/phone inbox flow if appropriate.
+- Argument order is `profileId`, then `boostUri`, then optional `options`.
+- Use profile IDs such as `"taylor"`, not DIDs, for direct profile sends.
+- `connectWith(profileId)` may create a pending connection. Check `getConnections()` and `getPendingConnections()` before assuming the recipient can receive direct sends.
+- If direct send is blocked by a pending connection, ask the user to accept the connection or use an email/phone inbox flow if appropriate.
 
 For email or phone recipients, use the unified `invoke.send` route when you have a Boost URI, or `sendCredentialViaInbox` for lower-level inbox issuance.
 
@@ -326,13 +326,13 @@ Do not keep retrying the same write call when `argsSummary` and `knownUsage` sho
 
 ## Common Planes
 
--   `id`: identity helpers such as `did`.
--   `read`: retrieve credential or document content by URI.
--   `store`: persist credential or document content.
--   `index`: query or update indexes.
--   `cache`: temporary key/value storage.
--   `context`: resolve JSON-LD contexts.
--   `invoke`: LearnCard and LearnCard Network plugin methods.
+- `id`: identity helpers such as `did`.
+- `read`: retrieve credential or document content by URI.
+- `store`: persist credential or document content.
+- `index`: query or update indexes.
+- `cache`: temporary key/value storage.
+- `context`: resolve JSON-LD contexts.
+- `invoke`: LearnCard and LearnCard Network plugin methods.
 
 ## Safety
 

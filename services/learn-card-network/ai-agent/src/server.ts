@@ -83,8 +83,8 @@ const getLimitedQueryValue = (value: unknown, defaultLimit: number, maxLimit: nu
         typeof value === 'string'
             ? Number.parseInt(value, 10)
             : typeof value === 'number'
-            ? value
-            : defaultLimit;
+              ? value
+              : defaultLimit;
 
     if (!Number.isFinite(parsed)) return defaultLimit;
 
@@ -1302,27 +1302,27 @@ export const createServer = ({
                               requiresApproval: parsed.data.requiresApproval,
                           })
                         : action === 'update'
-                        ? await selfImprovement.updateDebugDoc({
-                              ownerDid,
-                              name: parsed.data.name,
-                              kind: parsed.data.kind,
-                              description: parsed.data.description,
-                              content: parsed.data.content,
-                              status: parsed.data.status,
-                              sourceType: parsed.data.sourceType,
-                              confidence: parsed.data.confidence,
-                              sensitivity: parsed.data.sensitivity,
-                              expiresAt: parsed.data.expiresAt,
-                              requiresApproval: parsed.data.requiresApproval,
-                          })
-                        : action === 'approve'
-                        ? await selfImprovement.approveDebugDoc(ownerDid, parsed.data.name)
-                        : await selfImprovement.archiveDebugDoc({
-                              ownerDid,
-                              name: parsed.data.name,
-                              reason: parsed.data.reason,
-                              provenance: { reason: parsed.data.reason },
-                          });
+                          ? await selfImprovement.updateDebugDoc({
+                                ownerDid,
+                                name: parsed.data.name,
+                                kind: parsed.data.kind,
+                                description: parsed.data.description,
+                                content: parsed.data.content,
+                                status: parsed.data.status,
+                                sourceType: parsed.data.sourceType,
+                                confidence: parsed.data.confidence,
+                                sensitivity: parsed.data.sensitivity,
+                                expiresAt: parsed.data.expiresAt,
+                                requiresApproval: parsed.data.requiresApproval,
+                            })
+                          : action === 'approve'
+                            ? await selfImprovement.approveDebugDoc(ownerDid, parsed.data.name)
+                            : await selfImprovement.archiveDebugDoc({
+                                  ownerDid,
+                                  name: parsed.data.name,
+                                  reason: parsed.data.reason,
+                                  provenance: { reason: parsed.data.reason },
+                              });
 
                 res.json({
                     ok: true,

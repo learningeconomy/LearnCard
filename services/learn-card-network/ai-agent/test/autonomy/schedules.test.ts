@@ -384,7 +384,7 @@ describe('agent autonomy schedules', () => {
                     const ownerMatches =
                         typeof ownerFilter === 'string'
                             ? document.ownerDid === ownerFilter
-                            : ownerFilter?.$in.includes(String(document.ownerDid)) ?? true;
+                            : (ownerFilter?.$in.includes(String(document.ownerDid)) ?? true);
                     const enabledMatches =
                         filter.enabled === undefined || document.enabled === filter.enabled;
                     const nextRunFilter = filter.nextRunAt as { $lte?: Date } | undefined;

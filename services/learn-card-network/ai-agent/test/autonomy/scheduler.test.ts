@@ -533,7 +533,9 @@ describe('autonomous scheduler', () => {
                 if (!signal) throw new Error('Expected scheduler abort signal.');
 
                 await new Promise<void>((_resolve, reject) => {
-                    signal.addEventListener('abort', () => reject(signal.reason), { once: true });
+                    signal.addEventListener('abort', () => reject(new Error('Agent aborted.')), {
+                        once: true,
+                    });
                 });
 
                 throw new Error('Unreachable scheduled result.');

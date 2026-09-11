@@ -15,12 +15,7 @@ export type AssistantAvatarAccessory =
     | 'bandana';
 
 export type AssistantAvatarMouth =
-    | 'smile'
-    | 'mustache'
-    | 'vampire'
-    | 'whiskers'
-    | 'short-snout'
-    | 'long-snout';
+    'smile' | 'mustache' | 'vampire' | 'whiskers' | 'short-snout' | 'long-snout';
 
 export interface AssistantAvatarConfig {
     accessory: AssistantAvatarAccessory;

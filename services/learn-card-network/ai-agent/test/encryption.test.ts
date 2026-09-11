@@ -29,7 +29,7 @@ const createWallet = (decrypted = { aad, value: { text: 'secret' } }): AgentNetw
             createDagJwe: vi.fn().mockResolvedValue(jwe),
             decryptDagJwe: vi.fn().mockResolvedValue(decrypted),
         },
-    } as unknown as AgentNetworkWallet);
+    }) as unknown as AgentNetworkWallet;
 
 describe('AI Agent DAG-JWE encryption service', () => {
     it('wraps JSON with LearnCard DAG-JWE metadata', async () => {

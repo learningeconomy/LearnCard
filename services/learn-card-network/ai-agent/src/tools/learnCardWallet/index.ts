@@ -281,7 +281,7 @@ const getFunctionInspection = (
     const parameters = useMetadata && metadata ? metadata.parameters : sourceParameters;
     const name =
         useMetadata && metadata
-            ? parseWalletPath(walletPath).at(-1) ?? fallbackName
+            ? (parseWalletPath(walletPath).at(-1) ?? fallbackName)
             : value.name || fallbackName || '(anonymous)';
     const asyncFunction = source.trim().startsWith('async ');
 
@@ -654,7 +654,9 @@ export const createLearnCardWalletTool = (
             context.signal?.throwIfAborted();
         } catch (error) {
             context.signal?.throwIfAborted();
-            throw new Error(createWalletCallFailureMessage(walletPath, callArgs, error));
+            throw new Error(createWalletCallFailureMessage(walletPath, callArgs, error), {
+                cause: error,
+            });
         }
 
         return {

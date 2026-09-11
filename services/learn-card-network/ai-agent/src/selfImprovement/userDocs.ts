@@ -888,7 +888,7 @@ export const createUserDocService = (repository: UserDocRepository): UserDocServ
             requiresApproval:
                 nextStatus === 'proposed' || nextSourceType === 'agent-inferred'
                     ? true
-                    : normalized.requiresApproval ?? existing.requiresApproval,
+                    : (normalized.requiresApproval ?? existing.requiresApproval),
             ...(nextStatus === 'proposed' && existing.status !== 'proposed'
                 ? { proposedAt: now }
                 : {}),

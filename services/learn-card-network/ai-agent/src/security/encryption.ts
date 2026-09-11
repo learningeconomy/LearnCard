@@ -25,20 +25,20 @@ export type EncryptionService = {
 export const isEncryptedEnvelope = (value: unknown): value is EncryptedJsonEnvelopeV1 =>
     Boolean(
         value &&
-            typeof value === 'object' &&
-            '__learnCardAiAgentEncrypted' in value &&
-            value.__learnCardAiAgentEncrypted === true &&
-            'version' in value &&
-            value.version === 1 &&
-            'format' in value &&
-            value.format === 'dag-jwe' &&
-            'kid' in value &&
-            typeof value.kid === 'string' &&
-            'recipientDid' in value &&
-            typeof value.recipientDid === 'string' &&
-            'jwe' in value &&
-            value.jwe &&
-            typeof value.jwe === 'object'
+        typeof value === 'object' &&
+        '__learnCardAiAgentEncrypted' in value &&
+        value.__learnCardAiAgentEncrypted === true &&
+        'version' in value &&
+        value.version === 1 &&
+        'format' in value &&
+        value.format === 'dag-jwe' &&
+        'kid' in value &&
+        typeof value.kid === 'string' &&
+        'recipientDid' in value &&
+        typeof value.recipientDid === 'string' &&
+        'jwe' in value &&
+        value.jwe &&
+        typeof value.jwe === 'object'
     );
 
 export const createFieldAad = ({

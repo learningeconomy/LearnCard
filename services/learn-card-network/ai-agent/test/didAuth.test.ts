@@ -37,7 +37,7 @@ const createJwt = (nonce: string, holder = 'did:key:user'): string => {
 const createRequest = (token: string): Request =>
     ({
         get: (header: string) => (header === 'authorization' ? `Bearer ${token}` : undefined),
-    } as Request);
+    }) as Request;
 
 describe('DID Auth security', () => {
     it('verifies JWT VP challenge metadata and consumes the challenge', async () => {

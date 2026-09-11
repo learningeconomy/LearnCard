@@ -58,10 +58,10 @@ export const runScheduledAgentRequest = async ({
     const wroteAssistantCard = result.payload.toolRuns.some(toolRun =>
         Boolean(
             toolRun &&
-                typeof toolRun === 'object' &&
-                'name' in toolRun &&
-                toolRun.name === 'recordLearnCardAssistantCard' &&
-                !('error' in toolRun && toolRun.error)
+            typeof toolRun === 'object' &&
+            'name' in toolRun &&
+            toolRun.name === 'recordLearnCardAssistantCard' &&
+            !('error' in toolRun && toolRun.error)
         )
     );
     signal?.throwIfAborted();

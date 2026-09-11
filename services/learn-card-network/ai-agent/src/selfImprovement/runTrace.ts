@@ -230,8 +230,8 @@ export const extractSkillUsage = (toolRuns: AgentToolRun[]): SkillUsage => {
         if (toolRun.name === 'listSkills' || toolRun.name === 'searchSkills') {
             const skills =
                 toolRun.result && typeof toolRun.result === 'object'
-                    ? (toolRun.result as { skills?: Array<{ name?: unknown }> }).skills ??
-                      (toolRun.result as { matches?: Array<{ name?: unknown }> }).matches
+                    ? ((toolRun.result as { skills?: Array<{ name?: unknown }> }).skills ??
+                      (toolRun.result as { matches?: Array<{ name?: unknown }> }).matches)
                     : undefined;
 
             for (const skill of skills ?? []) {

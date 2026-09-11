@@ -106,8 +106,8 @@ const AssistantSchedulesCard: React.FC<AssistantSchedulesCardProps> = ({
         (queryError instanceof Error
             ? queryError.message
             : queryError
-            ? 'Could not load schedules.'
-            : '');
+              ? 'Could not load schedules.'
+              : '');
     const startAdding = (): void => {
         setEditingId(undefined);
         setDeleteConfirmationId(undefined);

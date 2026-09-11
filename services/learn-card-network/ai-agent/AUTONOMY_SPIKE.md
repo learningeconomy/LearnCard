@@ -15,14 +15,14 @@ The spike also confirmed the boundary that prevents this implementation from goi
 
 ## Capability policy
 
--   Schedules are absent by default and created by the user.
--   Every schedule has its own name, task prompt, enabled state, minute-precision local time, selected weekdays, and IANA timezone.
--   A user can create up to 10 schedules. Raw cron, seconds, monthly rules, intervals, and one-off jobs are intentionally not user-facing.
--   The global spike worker is separately disabled by default, development-only, and restricted to the exact DIDs in `AI_AGENT_AUTONOMY_DEV_DIDS`.
--   Once an allowed schedule is due, it invokes the full agent. There is no reduced autonomous tool set. The run can use every configured base tool, per-user memory tool and skill, ConsentFlow-approved data, Assistant feed tool, web search provider, and LearnCard wallet method. It can update memory and perform wallet or outbound effects when the model chooses those tools.
--   The post-response retrospective is awaited. A run is not successful until the full response path, card delivery or fallback, trace persistence, and retro pass complete.
--   Delivery in this spike is limited to an in-app Assistant card. It does not send push, email, or SMS notifications and does not implement quiet hours.
--   A due occurrence is advanced before execution and is never retried automatically after `failed` or `abandoned`. This avoids blind replay of possibly irreversible effects, but it does not solve effect-level idempotency.
+- Schedules are absent by default and created by the user.
+- Every schedule has its own name, task prompt, enabled state, minute-precision local time, selected weekdays, and IANA timezone.
+- A user can create up to 10 schedules. Raw cron, seconds, monthly rules, intervals, and one-off jobs are intentionally not user-facing.
+- The global spike worker is separately disabled by default, development-only, and restricted to the exact DIDs in `AI_AGENT_AUTONOMY_DEV_DIDS`.
+- Once an allowed schedule is due, it invokes the full agent. There is no reduced autonomous tool set. The run can use every configured base tool, per-user memory tool and skill, ConsentFlow-approved data, Assistant feed tool, web search provider, and LearnCard wallet method. It can update memory and perform wallet or outbound effects when the model chooses those tools.
+- The post-response retrospective is awaited. A run is not successful until the full response path, card delivery or fallback, trace persistence, and retro pass complete.
+- Delivery in this spike is limited to an in-app Assistant card. It does not send push, email, or SMS notifications and does not implement quiet hours.
+- A due occurrence is advanced before execution and is never retried automatically after `failed` or `abandoned`. This avoids blind replay of possibly irreversible effects, but it does not solve effect-level idempotency.
 
 ## Implementation exercised
 
@@ -30,18 +30,18 @@ The spike also confirmed the boundary that prevents this implementation from goi
 
 The app manages schedules through DID-authenticated, matching-owner routes:
 
--   `GET /api/users/:did/assistant-schedules`
--   `POST /api/users/:did/assistant-schedules`
--   `PATCH /api/users/:did/assistant-schedules/:id`
--   `DELETE /api/users/:did/assistant-schedules/:id`
+- `GET /api/users/:did/assistant-schedules`
+- `POST /api/users/:did/assistant-schedules`
+- `PATCH /api/users/:did/assistant-schedules/:id`
+- `DELETE /api/users/:did/assistant-schedules/:id`
 
 Croner calculates the next occurrence from the restricted weekday/time/timezone contract. The user does not author cron. `advanceNextRun` conditionally matches the exact prior `nextRunAt`, so one occurrence is claimed once and missed intervals collapse to one catch-up occurrence.
 
 Mongo collections:
 
--   `agentAutonomySchedules`: queryable owner, schedule, enabled, cron, timezone, and next-run metadata; DAG-JWE-encrypted `name` and `prompt`.
--   `agentAutonomousRuns`: unique owner/schedule/scheduled-for occurrence, lease metadata, status, encrypted success summary, and encrypted sanitized failure text.
--   `agentAutonomousLeases`: one active owner lease across processes. Active runs renew both owner and run leases; terminal writes are fenced by lease ID and unexpired lease time.
+- `agentAutonomySchedules`: queryable owner, schedule, enabled, cron, timezone, and next-run metadata; DAG-JWE-encrypted `name` and `prompt`.
+- `agentAutonomousRuns`: unique owner/schedule/scheduled-for occurrence, lease metadata, status, encrypted success summary, and encrypted sanitized failure text.
+- `agentAutonomousLeases`: one active owner lease across processes. Active runs renew both owner and run leases; terminal writes are fenced by lease ID and unexpired lease time.
 
 ### Full-agent execution
 
@@ -140,8 +140,8 @@ Two `autonomy:once` processes were started concurrently against one due owner/sc
 
 One manual cycle selected due schedules for two explicitly configured fixture DIDs. It reported `dueCount: 2`, one successful result per owner:
 
--   owner one run `315c9f97-07f6-4faa-8990-fb6c0d68b199`, card `Owner One Isolation Confirmed`;
--   owner two run `f6d6340a-fd50-43e1-9a75-c2758cc0959c`, card `Owner two isolation confirmed`.
+- owner one run `315c9f97-07f6-4faa-8990-fb6c0d68b199`, card `Owner One Isolation Confirmed`;
+- owner two run `f6d6340a-fd50-43e1-9a75-c2758cc0959c`, card `Owner two isolation confirmed`.
 
 Each card, trace, retro, schedule, and run record remained under its own owner DID.
 
@@ -155,11 +155,11 @@ A scripted running record had its owner and run leases moved into the past. The 
 
 Lease-renewal and terminal-fencing tests additionally prove:
 
--   only the current lease holder can renew;
--   run and owner leases must both renew before expiry;
--   loss of either renewal aborts the full agent and fails the occurrence;
--   a late success/failure write after lease expiry is rejected;
--   active leases are removed after terminal completion.
+- only the current lease holder can renew;
+- run and owner leases must both renew before expiry;
+- loss of either renewal aborts the full agent and fails the occurrence;
+- a late success/failure write after lease expiry is rejected;
+- active leases are removed after terminal completion.
 
 ## Assistant schedule UI
 
@@ -171,20 +171,20 @@ The full local app build passed. A real signed-in route was not used for the UI 
 
 Observed commands and results:
 
--   `bun vitest run` in `services/learn-card-network/ai-agent`: 19 files, 113 tests passed.
--   Focused cancellation/fencing suite: 6 files, 37 tests passed.
--   Final expiry-fencing subset: 2 files, 12 tests passed.
--   `bun run build` in `services/learn-card-network/ai-agent`: passed.
--   LearnCard Assistant API/helper unit suite: 2 files, 16 tests passed. The existing unrelated missing `@tsconfig/svelte/tsconfig.json` warning remained.
--   `bun run build` in `apps/learn-card-app`: passed; existing large-chunk warnings remained.
--   Live Mongo/OpenAI/Brave smoke: scheduled run, autonomous card, trace, retro, encryption, duplicate suppression, two-owner isolation, signal drain, and abandonment observed as described above.
--   Trigger.dev follow-up on 2026-07-17: `bun vitest run` passed 20 files/122 tests,
-    `bunx tsc --noEmit -p tsconfig.build.json` passed, and `bun run build` passed.
--   Live Trigger.dev DEV schedule CRUD and execution passed: create/update synchronized one imperative
-    schedule, the final Node `medium-1x` occurrence completed in 9.2 seconds, the encrypted Mongo run
-    reached `succeeded` with `trigger` provenance, one autonomous Assistant card was linked to the
-    agent run, trace plus one `noop` retro result persisted, and `nextRunAt` advanced one day.
-    Schedule/provider and Mongo smoke artifacts were deleted afterward.
+- `bun vitest run` in `services/learn-card-network/ai-agent`: 19 files, 113 tests passed.
+- Focused cancellation/fencing suite: 6 files, 37 tests passed.
+- Final expiry-fencing subset: 2 files, 12 tests passed.
+- `bun run build` in `services/learn-card-network/ai-agent`: passed.
+- LearnCard Assistant API/helper unit suite: 2 files, 16 tests passed. The existing unrelated missing `@tsconfig/svelte/tsconfig.json` warning remained.
+- `bun run build` in `apps/learn-card-app`: passed; existing large-chunk warnings remained.
+- Live Mongo/OpenAI/Brave smoke: scheduled run, autonomous card, trace, retro, encryption, duplicate suppression, two-owner isolation, signal drain, and abandonment observed as described above.
+- Trigger.dev follow-up on 2026-07-17: `bun vitest run` passed 20 files/122 tests,
+  `bunx tsc --noEmit -p tsconfig.build.json` passed, and `bun run build` passed.
+- Live Trigger.dev DEV schedule CRUD and execution passed: create/update synchronized one imperative
+  schedule, the final Node `medium-1x` occurrence completed in 9.2 seconds, the encrypted Mongo run
+  reached `succeeded` with `trigger` provenance, one autonomous Assistant card was linked to the
+  agent run, trace plus one `noop` retro result persisted, and `nextRunAt` advanced one day.
+  Schedule/provider and Mongo smoke artifacts were deleted afterward.
 
 ## Trigger.dev development integration, staging test path, and production evaluation
 
@@ -206,30 +206,30 @@ so Trigger's terminal status matches the encrypted Mongo audit record.
 
 Official documentation confirms:
 
--   one scheduled task can have many imperative schedules, each with IANA timezone/DST handling, enable/disable/edit/delete operations, an optional `externalId`, and a project-scoped `deduplicationKey`;
--   dynamic per-user schedules can share `externalId: ownerDid`;
--   a `concurrencyKey` creates a per-key queue, and `concurrencyLimit: 1` serializes actively executing runs for that owner;
--   task idempotency keys return the existing run for duplicates, default to a 30-day TTL, and are scoped to task and environment; v4.3.1 raw strings default to run scope inside tasks, so production code should create explicit global keys where needed;
--   deployed tasks can execute on Bun 1.3.3, but the Trigger.dev CLI still requires Node and some OpenTelemetry instrumentation does not work under Bun;
--   self-hosting requires ownership of the webapp, Redis, Postgres, workers, updates, security, scaling, uptime, and data integrity. It lacks Cloud warm starts, autoscaling, checkpoints, and dedicated support.
+- one scheduled task can have many imperative schedules, each with IANA timezone/DST handling, enable/disable/edit/delete operations, an optional `externalId`, and a project-scoped `deduplicationKey`;
+- dynamic per-user schedules can share `externalId: ownerDid`;
+- a `concurrencyKey` creates a per-key queue, and `concurrencyLimit: 1` serializes actively executing runs for that owner;
+- task idempotency keys return the existing run for duplicates, default to a 30-day TTL, and are scoped to task and environment; v4.3.1 raw strings default to run scope inside tasks, so production code should create explicit global keys where needed;
+- deployed tasks can execute on Bun 1.3.3, but the Trigger.dev CLI still requires Node and some OpenTelemetry instrumentation does not work under Bun;
+- self-hosting requires ownership of the webapp, Redis, Postgres, workers, updates, security, scaling, uptime, and data integrity. It lacks Cloud warm starts, autoscaling, checkpoints, and dedicated support.
 
 Remaining production proof:
 
--   one Trigger scheduled task with many imperative schedules;
--   `externalId: ownerDid`;
--   immutable schedule deduplication key `${environment}:${ownerDid}:${scheduleId}` because schedule dedupe keys are project-scoped rather than environment-scoped;
--   `concurrencyKey: ownerDid` and `concurrencyLimit: 1`;
--   an explicit occurrence idempotency key derived from environment, owner DID, schedule ID, and scheduled timestamp, plus the existing Mongo unique occurrence record as a second fence;
--   explicit retry/dead-letter/manual-replay policy only after tool-level effect idempotency exists;
--   a Cloud versus self-hosted/platform-owned decision covering credentials, deployment lifecycle, data residency, worker scaling, Redis/Postgres ownership, Bun/Node operational split, retention, and incident response.
+- one Trigger scheduled task with many imperative schedules;
+- `externalId: ownerDid`;
+- immutable schedule deduplication key `${environment}:${ownerDid}:${scheduleId}` because schedule dedupe keys are project-scoped rather than environment-scoped;
+- `concurrencyKey: ownerDid` and `concurrencyLimit: 1`;
+- an explicit occurrence idempotency key derived from environment, owner DID, schedule ID, and scheduled timestamp, plus the existing Mongo unique occurrence record as a second fence;
+- explicit retry/dead-letter/manual-replay policy only after tool-level effect idempotency exists;
+- a Cloud versus self-hosted/platform-owned decision covering credentials, deployment lifecycle, data residency, worker scaling, Redis/Postgres ownership, Bun/Node operational split, retention, and incident response.
 
 Primary sources:
 
--   [Trigger.dev scheduled tasks](https://trigger.dev/docs/tasks/scheduled)
--   [Trigger.dev queues and concurrency](https://trigger.dev/docs/queue-concurrency)
--   [Trigger.dev idempotency](https://trigger.dev/docs/idempotency)
--   [Trigger.dev Bun support](https://trigger.dev/docs/guides/frameworks/bun)
--   [Trigger.dev self-hosting overview](https://trigger.dev/docs/self-hosting/overview)
+- [Trigger.dev scheduled tasks](https://trigger.dev/docs/tasks/scheduled)
+- [Trigger.dev queues and concurrency](https://trigger.dev/docs/queue-concurrency)
+- [Trigger.dev idempotency](https://trigger.dev/docs/idempotency)
+- [Trigger.dev Bun support](https://trigger.dev/docs/guides/frameworks/bun)
+- [Trigger.dev self-hosting overview](https://trigger.dev/docs/self-hosting/overview)
 
 ## Production follow-up ticket drafts
 
@@ -243,12 +243,12 @@ The dev-only Mongo polling worker has no production deployment owner, durable or
 
 **Acceptance criteria**
 
--   Record an architecture decision comparing Trigger.dev Cloud, self-hosted Trigger.dev, and the platform scheduler across credentials, data residency, cost, uptime, deployment lifecycle, Redis/Postgres ownership, worker scaling, and incident response.
--   Prove dynamic per-user schedule create/update/disable/delete and reconciliation using immutable `${environment}:${ownerDid}:${scheduleId}` deduplication keys.
--   Preserve IANA timezone and daylight-saving behavior, missed-run policy, pause/resume, max backlog, and one occurrence per owner/schedule/timestamp.
--   Prove `externalId: ownerDid`, owner concurrency limit 1, and explicit occurrence idempotency against duplicate delivery.
--   Define migration and rollback for `agentAutonomySchedules` and `agentAutonomousRuns` spike records.
--   Assign service, deployment, on-call, and data-retention ownership.
+- Record an architecture decision comparing Trigger.dev Cloud, self-hosted Trigger.dev, and the platform scheduler across credentials, data residency, cost, uptime, deployment lifecycle, Redis/Postgres ownership, worker scaling, and incident response.
+- Prove dynamic per-user schedule create/update/disable/delete and reconciliation using immutable `${environment}:${ownerDid}:${scheduleId}` deduplication keys.
+- Preserve IANA timezone and daylight-saving behavior, missed-run policy, pause/resume, max backlog, and one occurrence per owner/schedule/timestamp.
+- Prove `externalId: ownerDid`, owner concurrency limit 1, and explicit occurrence idempotency against duplicate delivery.
+- Define migration and rollback for `agentAutonomySchedules` and `agentAutonomousRuns` spike records.
+- Assign service, deployment, on-call, and data-retention ownership.
 
 **Dependencies**
 
@@ -262,12 +262,12 @@ A full agent may complete a wallet or outbound effect before its process fails. 
 
 **Acceptance criteria**
 
--   Inventory autonomous tools and classify read-only, reversible, approval-required, and irreversible effects.
--   Add per-tool capability and consent policy with explicit user UX for autonomous wallet/outbound actions.
--   Add stable effect idempotency keys and persisted effect receipts for wallet writes, credential sends, feed writes, and external calls.
--   Define lease renewal/fencing, cancellation, timeout, retry, dead-letter, manual replay, and operator override semantics.
--   Prove replay after every partial-failure boundary without duplicating irreversible effects.
--   Complete threat modeling and security review, including LC-1882 controls.
+- Inventory autonomous tools and classify read-only, reversible, approval-required, and irreversible effects.
+- Add per-tool capability and consent policy with explicit user UX for autonomous wallet/outbound actions.
+- Add stable effect idempotency keys and persisted effect receipts for wallet writes, credential sends, feed writes, and external calls.
+- Define lease renewal/fencing, cancellation, timeout, retry, dead-letter, manual replay, and operator override semantics.
+- Prove replay after every partial-failure boundary without duplicating irreversible effects.
+- Complete threat modeling and security review, including LC-1882 controls.
 
 **Dependencies**
 
@@ -281,12 +281,12 @@ The spike emits bounded CLI summaries and encrypted Mongo traces but has no prod
 
 **Acceptance criteria**
 
--   Emit metrics for due lag, queue delay, run duration/status, contention, abandonment, lease renewal failure, tool/provider latency/failure, cards, retros, and effect receipts.
--   Correlate scheduler occurrence, agent run, tool calls, Assistant card, and retro with owner-safe identifiers.
--   Add alerts and dashboards for stuck queues, failure/abandonment rates, lease loss, provider limits, budget exhaustion, and delivery failures.
--   Enforce per-run, per-user/day, provider, tenant, and global token/tool/cost limits with visible user/operator outcomes.
--   Define encrypted trace/run/card retention, deletion, and audit-access policy.
--   Add real Mongo multi-process contention, recovery, and load integration tests.
+- Emit metrics for due lag, queue delay, run duration/status, contention, abandonment, lease renewal failure, tool/provider latency/failure, cards, retros, and effect receipts.
+- Correlate scheduler occurrence, agent run, tool calls, Assistant card, and retro with owner-safe identifiers.
+- Add alerts and dashboards for stuck queues, failure/abandonment rates, lease loss, provider limits, budget exhaustion, and delivery failures.
+- Enforce per-run, per-user/day, provider, tenant, and global token/tool/cost limits with visible user/operator outcomes.
+- Define encrypted trace/run/card retention, deletion, and audit-access policy.
+- Add real Mongo multi-process contention, recovery, and load integration tests.
 
 **Dependencies**
 
@@ -300,12 +300,12 @@ The spike guarantees only an in-app card. It has no push/email/SMS policy, quiet
 
 **Acceptance criteria**
 
--   Define per-schedule delivery channels and defaults, including in-app-only behavior when no external channel is approved.
--   Add timezone-aware quiet hours, per-user/channel caps, priority rules, and digest behavior.
--   Prevent duplicate cards and already-seen news/recommendations across retries, schedules, and delivery channels.
--   Feed read/dismiss/thumbs-down behavior into suppression without hiding audit history.
--   Add user-visible schedule run history, delivery status, failure reason, and pause/delete controls.
--   Prove channel retries and provider failures do not duplicate notifications.
+- Define per-schedule delivery channels and defaults, including in-app-only behavior when no external channel is approved.
+- Add timezone-aware quiet hours, per-user/channel caps, priority rules, and digest behavior.
+- Prevent duplicate cards and already-seen news/recommendations across retries, schedules, and delivery channels.
+- Feed read/dismiss/thumbs-down behavior into suppression without hiding audit history.
+- Add user-visible schedule run history, delivery status, failure reason, and pause/delete controls.
+- Prove channel retries and provider failures do not duplicate notifications.
 
 **Dependencies**
 
@@ -319,12 +319,12 @@ The dev worker is restricted by a fixture allowlist, but production non-interact
 
 **Acceptance criteria**
 
--   Enforce AI enablement, minor status, tenant policy, and account eligibility on the server before every non-interactive occurrence.
--   Validate ConsentFlow contract freshness, granted scopes, revocation, credential availability, and least-privilege tool access at run time.
--   Stop or constrain a run when consent/privacy state changes while queued or executing.
--   Provide user export/delete for schedules, run history, cards, traces, retros, memories, and effect receipts.
--   Define audited operator authorization for inspection, pause, replay, and deletion without exposing decrypted user content broadly.
--   Complete privacy, child-safety, data-retention, and security review.
+- Enforce AI enablement, minor status, tenant policy, and account eligibility on the server before every non-interactive occurrence.
+- Validate ConsentFlow contract freshness, granted scopes, revocation, credential availability, and least-privilege tool access at run time.
+- Stop or constrain a run when consent/privacy state changes while queued or executing.
+- Provide user export/delete for schedules, run history, cards, traces, retros, memories, and effect receipts.
+- Define audited operator authorization for inspection, pause, replay, and deletion without exposing decrypted user content broadly.
+- Complete privacy, child-safety, data-retention, and security review.
 
 **Dependencies**
 

@@ -81,30 +81,30 @@ workspace packages first.
 
 ## Health, telemetry, and AWS deployment
 
--   `GET /api/health/live` is a process liveness probe.
--   `GET /api/health/ready` returns 503 until the model provider and MongoDB are ready.
--   `GET /api/health` retains detailed feature/configuration status, including the Sentry deployment-delivery check.
--   Every response includes `X-Request-ID`; agent runs also return a `runId`.
--   Concise logfmt application lines correlate HTTP, model, tool, run, and post-run stages without recording DIDs, prompts, responses, memory, tool payloads, or exception messages. ECS sends metrics directly to CloudWatch instead of mixing EMF JSON records into the log stream.
--   Ordinary application logs go to CloudWatch only. Sentry receives the verified deployment event, sanitized operational exceptions, and sampled performance transactions—not the log stream.
+- `GET /api/health/live` is a process liveness probe.
+- `GET /api/health/ready` returns 503 until the model provider and MongoDB are ready.
+- `GET /api/health` retains detailed feature/configuration status, including the Sentry deployment-delivery check.
+- Every response includes `X-Request-ID`; agent runs also return a `runId`.
+- Concise logfmt application lines correlate HTTP, model, tool, run, and post-run stages without recording DIDs, prompts, responses, memory, tool payloads, or exception messages. ECS sends metrics directly to CloudWatch instead of mixing EMF JSON records into the log stream.
+- Ordinary application logs go to CloudWatch only. Sentry receives the verified deployment event, sanitized operational exceptions, and sampled performance transactions—not the log stream.
 
 The production ARM64 container, reusable-infrastructure ECS/Fargate CloudFormation stack, deployment workflow, alarms, dashboard, staging smoke test, rollout procedure, key rotation, troubleshooting, and rollback steps are documented in [RUNBOOK.md](./RUNBOOK.md).
 
 ## Shape
 
--   `src/agent/types.ts` defines the provider and tool interfaces.
--   `src/agent/skills.ts` adds native skill-backed tool support with `listSkills` and `readSkill`.
--   `src/agent/openAIProvider.ts` is the first provider adapter.
--   `src/consentFlow.ts` resolves the configured ConsentFlow contract and preloads consented user data.
--   `src/helpers/learnCard.helpers.ts` initializes and caches the configured LearnCard wallet.
--   `src/mongo.ts` provides lazy MongoDB client/database access.
--   `src/selfImprovement/` stores per-DID Markdown docs, sanitized run traces, and retro results.
--   `src/runtime.ts` composes the provider, wallet, tools, ConsentFlow, Assistant, memory, trace, and awaited retro path shared by HTTP and autonomous execution.
--   `src/autonomy/` stores schedules/runs/leases and implements the development-only full-agent dispatcher.
--   `src/tools/index.ts` registers tools for the agent.
--   `src/tools/learnCardWallet/` exposes the configured wallet through one freeform `learnCardWallet` tool and a bundled `SKILL.md`.
--   `src/tools/consentedUserData.ts` exposes request-scoped consented user data when a DID is supplied.
--   `src/tools/webSearch/` defines the provider-neutral current-info search adapter contract, the stable `webSearch` agent tool, and the Brave Web Search provider.
+- `src/agent/types.ts` defines the provider and tool interfaces.
+- `src/agent/skills.ts` adds native skill-backed tool support with `listSkills` and `readSkill`.
+- `src/agent/openAIProvider.ts` is the first provider adapter.
+- `src/consentFlow.ts` resolves the configured ConsentFlow contract and preloads consented user data.
+- `src/helpers/learnCard.helpers.ts` initializes and caches the configured LearnCard wallet.
+- `src/mongo.ts` provides lazy MongoDB client/database access.
+- `src/selfImprovement/` stores per-DID Markdown docs, sanitized run traces, and retro results.
+- `src/runtime.ts` composes the provider, wallet, tools, ConsentFlow, Assistant, memory, trace, and awaited retro path shared by HTTP and autonomous execution.
+- `src/autonomy/` stores schedules/runs/leases and implements the development-only full-agent dispatcher.
+- `src/tools/index.ts` registers tools for the agent.
+- `src/tools/learnCardWallet/` exposes the configured wallet through one freeform `learnCardWallet` tool and a bundled `SKILL.md`.
+- `src/tools/consentedUserData.ts` exposes request-scoped consented user data when a DID is supplied.
+- `src/tools/webSearch/` defines the provider-neutral current-info search adapter contract, the stable `webSearch` agent tool, and the Brave Web Search provider.
 
 The authenticated HTTP service is request/response. `POST /api/agent/heartbeat` is a manually
 invoked proactive HTTP request; it is not the recurring scheduler. The separate, default-disabled
@@ -115,8 +115,8 @@ It never starts from the production HTTP service and is not a production deploym
 
 Tools can include a `skill` definition. When at least one tool does this, the agent automatically receives:
 
--   `listSkills` for the compact index of available skill documents.
--   `readSkill` for loading the full `SKILL.md` only when needed.
+- `listSkills` for the compact index of available skill documents.
+- `readSkill` for loading the full `SKILL.md` only when needed.
 
 This keeps the core loop simple while letting broad tools ship their own usage instructions.
 When a DID-backed request has active Mongo docs, those docs are merged into the same compact
@@ -138,8 +138,8 @@ To add another provider, implement `WebSearchProvider` in `src/tools/webSearch/`
 
 Set `AI_AGENT_CONSENT_FLOW_CONTRACT_URI` to the contract the agent should use. When the configured network is not production and no URI is set, the service lazily creates a development contract the first time `/api/consent-flow/contract` or a DID-backed chat run needs one. If the default OpenAI provider is not configured, these paths return 503 before attempting any ConsentFlow work.
 
--   `GET /api/consent-flow/contract` resolves the active contract and returns a consent URL.
--   `POST /api/agent/run` accepts an optional `did`. When present, the service starts loading consented data immediately and adds a request-scoped `getConsentedUserData` tool for the agent to call only if needed.
+- `GET /api/consent-flow/contract` resolves the active contract and returns a consent URL.
+- `POST /api/agent/run` accepts an optional `did`. When present, the service starts loading consented data immediately and adds a request-scoped `getConsentedUserData` tool for the agent to call only if needed.
 
 ## LearnCard Assistant
 
@@ -156,16 +156,16 @@ name and personality used in the system prompt. Missing profiles fall back to `M
 
 Endpoints:
 
--   `GET /api/users/:did/assistant-feed` returns latest cards for one DID. Optional `limit` clamps to `1..50`.
--   `POST /api/users/:did/assistant-feed/:id/read` marks one card read.
--   `POST /api/users/:did/assistant-feed/:id/feedback` records `{ type: 'thumbs-down' }`.
--   `POST /api/agent/heartbeat` accepts `{ did, consentFlowContractUri?, maxItems? }` and runs a cron-invokable proactive pass. `maxItems` clamps to `1..5`.
--   `POST /api/debug/users/:did/assistant-feed` writes one validated card for local QA and seeded UI demos.
--   `GET /api/users/:did/assistant-profile` returns the assistant profile.
--   `PATCH /api/users/:did/assistant-profile` updates `{ name?, personality? }`.
--   `GET /api/users/:did/assistant-memories` returns the memory manifest and safe memory docs.
--   `POST /api/users/:did/assistant-memories/:name/approve` approves a proposed memory.
--   `POST /api/users/:did/assistant-memories/:name/archive` removes an active or proposed memory.
+- `GET /api/users/:did/assistant-feed` returns latest cards for one DID. Optional `limit` clamps to `1..50`.
+- `POST /api/users/:did/assistant-feed/:id/read` marks one card read.
+- `POST /api/users/:did/assistant-feed/:id/feedback` records `{ type: 'thumbs-down' }`.
+- `POST /api/agent/heartbeat` accepts `{ did, consentFlowContractUri?, maxItems? }` and runs a cron-invokable proactive pass. `maxItems` clamps to `1..5`.
+- `POST /api/debug/users/:did/assistant-feed` writes one validated card for local QA and seeded UI demos.
+- `GET /api/users/:did/assistant-profile` returns the assistant profile.
+- `PATCH /api/users/:did/assistant-profile` updates `{ name?, personality? }`.
+- `GET /api/users/:did/assistant-memories` returns the memory manifest and safe memory docs.
+- `POST /api/users/:did/assistant-memories/:name/approve` approves a proposed memory.
+- `POST /api/users/:did/assistant-memories/:name/archive` removes an active or proposed memory.
 
 ## Assistant Schedules and Development Autonomy
 
@@ -176,18 +176,18 @@ not author raw cron.
 
 DID-authenticated matching-owner endpoints:
 
--   `GET /api/users/:did/assistant-schedules` lists schedules.
--   `POST /api/users/:did/assistant-schedules` creates one schedule.
--   `PATCH /api/users/:did/assistant-schedules/:id` updates cadence, prompt, name, or enabled state.
--   `DELETE /api/users/:did/assistant-schedules/:id` permanently deletes one schedule.
+- `GET /api/users/:did/assistant-schedules` lists schedules.
+- `POST /api/users/:did/assistant-schedules` creates one schedule.
+- `PATCH /api/users/:did/assistant-schedules/:id` updates cadence, prompt, name, or enabled state.
+- `DELETE /api/users/:did/assistant-schedules/:id` permanently deletes one schedule.
 
 Mongo collections:
 
--   `agentAutonomySchedules` stores queryable cadence/next-run metadata and DAG-JWE-encrypted
-    schedule names/prompts.
--   `agentAutonomousRuns` stores one unique owner/schedule/occurrence with lease-fenced status and
-    encrypted success summary or sanitized error.
--   `agentAutonomousLeases` serializes full-agent execution per owner across worker processes.
+- `agentAutonomySchedules` stores queryable cadence/next-run metadata and DAG-JWE-encrypted
+  schedule names/prompts.
+- `agentAutonomousRuns` stores one unique owner/schedule/occurrence with lease-fenced status and
+  encrypted success summary or sanitized error.
+- `agentAutonomousLeases` serializes full-agent execution per owner across worker processes.
 
 Run one deliberately gated development cycle:
 
@@ -275,10 +275,10 @@ DID-backed runs also receive a compact memory manifest that separates durable me
 ConsentFlow data and credentials. The manifest tells the agent which docs are visible, which are
 proposed, and how to treat source precedence. The request-scoped memory tools are:
 
--   `getUserMemoryManifest` for current memory state.
--   `rememberUserMemory` for explicit user-approved saves and updates.
--   `proposeUserMemory` for inferred, ambiguous, or sensitive memories that need approval.
--   `forgetUserMemory` for user-requested memory removal.
+- `getUserMemoryManifest` for current memory state.
+- `rememberUserMemory` for explicit user-approved saves and updates.
+- `proposeUserMemory` for inferred, ambiguous, or sensitive memories that need approval.
+- `forgetUserMemory` for user-requested memory removal.
 
 After a successful response is sent, the service stores a bounded run trace in `agentRunTraces`.
 ConsentFlow results are summarized so raw personal values and credential payloads are not written
@@ -289,7 +289,7 @@ state, expiry, and version history.
 
 Debug endpoints:
 
--   `GET /api/debug/users/:did/docs` returns docs for one DID.
--   `GET /api/debug/users/:did/memory` returns a manifest plus docs for one DID.
--   `POST /api/debug/users/:did/memory` creates, updates, approves, or archives a memory.
--   `GET /api/debug/runs/:runId` returns a stored trace and retro results.
+- `GET /api/debug/users/:did/docs` returns docs for one DID.
+- `GET /api/debug/users/:did/memory` returns a manifest plus docs for one DID.
+- `POST /api/debug/users/:did/memory` creates, updates, approves, or archives a memory.
+- `GET /api/debug/runs/:runId` returns a stored trace and retro results.

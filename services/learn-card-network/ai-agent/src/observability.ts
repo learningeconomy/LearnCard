@@ -55,7 +55,7 @@ let cloudWatchFlushPromise: Promise<void> | undefined;
 let cloudWatchFlushTimer: ReturnType<typeof setTimeout> | undefined;
 let sentryInitialized = false;
 let sentryDeliveryState: SentryDeliveryState = 'disabled';
-let pendingMetrics: MetricDatum[] = [];
+const pendingMetrics: MetricDatum[] = [];
 
 const sanitizeField = (value: TelemetryValue): TelemetryValue =>
     typeof value === 'string' ? value.slice(0, MAX_FIELD_LENGTH) : value;
@@ -172,15 +172,13 @@ const writeMetrics = (
 
     pendingMetrics.push(
         ...dimensionSets.flatMap(Dimensions =>
-            metrics.map(
-                ({ name: MetricName, unit: Unit, value: Value }): MetricDatum => ({
-                    MetricName,
-                    Unit,
-                    Value,
-                    Timestamp,
-                    Dimensions,
-                })
-            )
+            metrics.map(({ name: MetricName, unit: Unit, value: Value }): MetricDatum => ({
+                MetricName,
+                Unit,
+                Value,
+                Timestamp,
+                Dimensions,
+            }))
         )
     );
     scheduleCloudWatchFlush();
@@ -269,7 +267,6 @@ export const verifySentryDelivery = async (config: ServiceConfig): Promise<boole
     if (!config.sentryDsn || !sentryInitialized) return false;
 
     const client = Sentry.getCurrentHub().getClient();
-    let eventId: string | undefined;
     let timeout: ReturnType<typeof setTimeout> | undefined;
     const response = new Promise<number | undefined>(resolve => {
         client?.on?.('afterSendEvent', (event, result) => {
@@ -277,7 +274,7 @@ export const verifySentryDelivery = async (config: ServiceConfig): Promise<boole
         });
     });
 
-    eventId = Sentry.captureMessage('AI Agent deployment observability check', {
+    const eventId = Sentry.captureMessage('AI Agent deployment observability check', {
         level: 'info',
         fingerprint: ['ai-agent-deployment-observability-check'],
         tags: sanitizeFields({

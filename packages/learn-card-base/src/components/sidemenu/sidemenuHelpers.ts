@@ -118,7 +118,7 @@ export const getSideMenuLinkLabel = (
     const translationKey = getSideMenuTranslationKey(link.id == null ? undefined : String(link.id));
     const message = messages[`sidemenu.links.${translationKey}`];
 
-    return typeof message === 'function' ? (message as () => string)() : link.label ?? '';
+    return typeof message === 'function' ? (message as () => string)() : (link.label ?? '');
 };
 
 export type SideMenuLinks = {

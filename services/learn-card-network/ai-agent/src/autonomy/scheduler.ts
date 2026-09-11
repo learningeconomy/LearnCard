@@ -191,9 +191,14 @@ export const createAutonomousScheduler = ({
 
                 return { ...baseResult, status: 'skipped', runId };
             }
-            heartbeatTimer = setInterval(() => {
-                heartbeatPromise = heartbeatPromise.then(renewLease).catch(handleHeartbeatError);
-            }, Math.max(1_000, Math.floor(leaseMs / 3)));
+            heartbeatTimer = setInterval(
+                () => {
+                    heartbeatPromise = heartbeatPromise
+                        .then(renewLease)
+                        .catch(handleHeartbeatError);
+                },
+                Math.max(1_000, Math.floor(leaseMs / 3))
+            );
 
             let result: RunChatResult;
 
@@ -209,8 +214,9 @@ export const createAutonomousScheduler = ({
                 clearInterval(heartbeatTimer);
                 heartbeatTimer = undefined;
                 await heartbeatPromise;
-                if (heartbeatError) throw heartbeatError;
             }
+
+            if (heartbeatError) throw heartbeatError;
 
             await renewLease();
 
@@ -247,12 +253,15 @@ export const createAutonomousScheduler = ({
                 runId,
             };
         } catch (error) {
+            const failure = heartbeatError ?? error;
             if (runCreated) {
                 await runRepository.markFailed(
                     runId,
                     leaseId,
                     now(),
-                    error instanceof Error ? `${error.name}: ${error.message}` : String(error)
+                    failure instanceof Error
+                        ? `${failure.name}: ${failure.message}`
+                        : String(failure)
                 );
             }
 
