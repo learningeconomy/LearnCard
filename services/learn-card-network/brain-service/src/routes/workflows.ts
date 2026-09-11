@@ -28,11 +28,8 @@ import {
 } from '@cache/claim-links';
 
 import { validateInboxClaimToken } from '@helpers/contact-method.helpers';
-import { getPendingOrIssuedInboxCredentialsForContactMethodId } from '@accesslayer/inbox-credential/read';
-import {
-    markInboxCredentialAsIsAccepted,
-    markInboxCredentialAsIssued,
-} from '@accesslayer/inbox-credential/update';
+import { getPendingInboxCredentialsForContactMethodId } from '@accesslayer/inbox-credential/read';
+import { finalizeAndWipeInboxCredential } from '@accesslayer/inbox-credential/update';
 import { createClaimedRelationship } from '@accesslayer/inbox-credential/relationships/create';
 import { getContactMethodById, getProfileByContactMethod } from '@accesslayer/contact-method/read';
 import { getProfileByDid, getProfileByProfileId } from '@accesslayer/profile/read';
@@ -49,6 +46,7 @@ import { getNotificationMessage } from '@helpers/notificationMessages';
 import { resolveRecipientLocale } from '@helpers/getRecipientLocale.helpers';
 import { logCredentialClaimed, logCredentialFailed } from '@helpers/activity.helpers';
 import { handleConnectionPromptsForCredentialClaim } from '@helpers/connectionPrompt.helpers';
+import { decryptInboxCredential } from '@helpers/inbox-encryption.helpers';
 import {
     EXHAUSTED,
     exhaustExchangeChallengeForToken,
@@ -324,7 +322,7 @@ async function handlePresentationForClaim(
 
     // Use the generator's profile for SA lookup if available, fall back to boost owner
     const saOwner = generatorProfileId
-        ? (await getProfileByProfileId(generatorProfileId)) ?? boostOwner
+        ? ((await getProfileByProfileId(generatorProfileId)) ?? boostOwner)
         : boostOwner;
 
     const saOwnerProfile = 'profileId' in saOwner ? saOwner : getBoostOwnerProfile(saOwner);
@@ -441,7 +439,7 @@ async function handleInboxClaimInitiation(claimToken: string, domain: string) {
     }
 
     // Verify there are pending credentials for this contact method
-    const pendingCredentials = await getPendingOrIssuedInboxCredentialsForContactMethodId(
+    const pendingCredentials = await getPendingInboxCredentialsForContactMethodId(
         claimTokenData.contactMethodId
     );
     if (pendingCredentials.length === 0) {
@@ -584,9 +582,7 @@ async function handleInboxClaimPresentation(
     }
 
     // Get pending credentials for this contact method
-    const pendingCredentials = await getPendingOrIssuedInboxCredentialsForContactMethodId(
-        contactMethod.id
-    );
+    const pendingCredentials = await getPendingInboxCredentialsForContactMethodId(contactMethod.id);
 
     if (pendingCredentials.length === 0) {
         throw new TRPCError({
@@ -601,13 +597,14 @@ async function handleInboxClaimPresentation(
     const credentialProcessingPromises = pendingCredentials.map(async inboxCredential => {
         try {
             let finalCredential: VC;
+            const credentialPayload = await decryptInboxCredential(inboxCredential.credential);
 
             if (inboxCredential.isSigned) {
                 // Credential is already signed
-                finalCredential = JSON.parse(inboxCredential.credential) as VC;
+                finalCredential = JSON.parse(credentialPayload) as VC;
             } else {
                 // Need to sign the credential using signing authority
-                const unsignedCredential = JSON.parse(inboxCredential.credential) as UnsignedVC;
+                const unsignedCredential = JSON.parse(credentialPayload) as UnsignedVC;
                 const inboxCredentialSigningAuthorityEndpoint =
                     (inboxCredential.signingAuthority?.endpoint as string) ?? undefined;
                 const inboxCredentialSigningAuthorityName =
@@ -668,9 +665,6 @@ async function handleInboxClaimPresentation(
                 )) as VC;
             }
 
-            await markInboxCredentialAsIssued(inboxCredential.id);
-            await markInboxCredentialAsIsAccepted(inboxCredential.id);
-
             // Store credential and create boost relationship if this was a boost issuance
             const boostUri = (inboxCredential as any).boostUri as string | undefined;
             if (holderProfile && boostUri) {
@@ -679,7 +673,11 @@ async function handleInboxClaimPresentation(
 
                 if (boost && issuerProfile) {
                     // Store the credential in the database
-                    const credentialInstance = await storeCredential(finalCredential);
+                    const learnCard = await getLearnCard();
+                    const encryptedDelivery = await learnCard.invoke.createDagJwe(finalCredential, [
+                        holderDid,
+                    ]);
+                    const credentialInstance = await storeCredential(encryptedDelivery);
 
                     // Create the boost instance relationship
                     await createBoostInstanceOfRelationship(credentialInstance, boost);
@@ -693,7 +691,11 @@ async function handleInboxClaimPresentation(
                 }
             }
 
-            // Create claimed relationship if holder has a profile
+            const finalized = await finalizeAndWipeInboxCredential(inboxCredential.id);
+            if (!finalized) throw new Error('Inbox credential is no longer pending');
+
+            // Record the claim only after finalization succeeds so failed compare-and-swap
+            // attempts cannot leave a misleading audit relationship behind.
             if (holderProfile) {
                 await createClaimedRelationship(
                     holderProfile.profileId,
@@ -706,7 +708,10 @@ async function handleInboxClaimPresentation(
             // activityId and integrationId are stored on the inbox credential
             const activityId = inboxCredential.activityId;
             const integrationId = inboxCredential.integrationId;
-            const issuerProfileForActivity = await getProfileByDid(inboxCredential.issuerDid);
+            // Once escrow is wiped, optional side effects must not discard the only response.
+            const issuerProfileForActivity = await getProfileByDid(inboxCredential.issuerDid).catch(
+                () => null
+            );
             if (issuerProfileForActivity) {
                 if (
                     holderProfile &&
@@ -717,7 +722,12 @@ async function handleInboxClaimPresentation(
                         claimer: holderProfile,
                         sender: issuerProfileForActivity,
                         triggerId: `inbox:${inboxCredential.id}`,
-                    });
+                    }).catch(() =>
+                        console.error(
+                            'Failed to create inbox connection prompts',
+                            inboxCredential.id
+                        )
+                    );
                 }
 
                 await logCredentialClaimed({
@@ -729,40 +739,44 @@ async function handleInboxClaimPresentation(
                     boostUri,
                     integrationId,
                     source: 'claimLink',
-                });
+                }).catch(() => console.error('Failed to log inbox claim', inboxCredential.id));
             }
 
             // Trigger webhook if configured
             if (inboxCredential.webhookUrl) {
-                const learnCard = await getLearnCard();
-                await addNotificationToQueue({
-                    webhookUrl: inboxCredential.webhookUrl,
-                    type: LCNNotificationTypeEnumValidator.enum.ISSUANCE_CLAIMED,
-                    from: { did: learnCard.id.did() },
-                    to: { did: inboxCredential.issuerDid },
-                    message: getNotificationMessage(
-                        'issuanceClaimed',
-                        // issuerProfileForActivity is the issuer (the webhook recipient),
-                        // loaded just above; falls back to 'en' when the issuer has no
-                        // LearnCard profile.
-                        resolveRecipientLocale(issuerProfileForActivity),
-                        { value: contactMethod.value }
-                    ),
-                    data: {
-                        inbox: {
-                            issuanceId: inboxCredential.id,
-                            status: LCNInboxStatusEnumValidator.enum.ISSUED,
-                            recipient: {
-                                contactMethod: {
-                                    type: contactMethod.type,
-                                    value: contactMethod.value,
+                try {
+                    const learnCard = await getLearnCard();
+                    await addNotificationToQueue({
+                        webhookUrl: inboxCredential.webhookUrl,
+                        type: LCNNotificationTypeEnumValidator.enum.ISSUANCE_CLAIMED,
+                        from: { did: learnCard.id.did() },
+                        to: { did: inboxCredential.issuerDid },
+                        message: getNotificationMessage(
+                            'issuanceClaimed',
+                            // issuerProfileForActivity is the issuer (the webhook recipient),
+                            // loaded just above; falls back to 'en' when the issuer has no
+                            // LearnCard profile.
+                            resolveRecipientLocale(issuerProfileForActivity),
+                            { value: contactMethod.value }
+                        ),
+                        data: {
+                            inbox: {
+                                issuanceId: inboxCredential.id,
+                                status: LCNInboxStatusEnumValidator.enum.ISSUED,
+                                recipient: {
+                                    contactMethod: {
+                                        type: contactMethod.type,
+                                        value: contactMethod.value,
+                                    },
+                                    learnCardId: holderProfile?.did || holderDid,
                                 },
-                                learnCardId: holderProfile?.did || holderDid,
+                                timestamp: new Date().toISOString(),
                             },
-                            timestamp: new Date().toISOString(),
                         },
-                    },
-                });
+                    });
+                } catch {
+                    console.error('Failed to enqueue inbox claimed webhook', inboxCredential.id);
+                }
             }
 
             return finalCredential;

@@ -23,6 +23,7 @@ import {
 } from './src/helpers/sentry.helpers';
 import { environment } from './src/config/environment';
 import { toServerlessApplication } from './src/helpers/serverlessApplication';
+import { runInboxMaintenance } from './src/helpers/inbox-maintenance.helpers';
 
 Sentry.AWSLambda.init({
     dsn: environment.SENTRY_DSN,
@@ -137,4 +138,9 @@ export const notificationsWorker: SQSHandler = Sentry.AWSLambda.wrapHandler(asyn
             (failure): failure is { itemIdentifier: string } => failure !== undefined
         ),
     } satisfies SQSBatchResponse;
+});
+
+export const inboxMaintenanceHandler = Sentry.AWSLambda.wrapHandler(async (): Promise<void> => {
+    const counts = await runInboxMaintenance();
+    console.log('Universal Inbox maintenance completed', counts);
 });

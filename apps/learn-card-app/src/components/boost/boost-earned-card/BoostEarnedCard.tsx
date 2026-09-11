@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- legacy credential shapes and callback APIs are intentionally untyped. */
 import React from 'react';
 import moment from 'moment';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -51,7 +52,7 @@ import { VC, VerificationItem } from '@learncard/types';
 import { LCR } from 'learn-card-base/types/credential-records';
 import { ID_CARD_DISPLAY_TYPES } from 'learn-card-base/helpers/credentials/ids';
 import { getDefaultDisplayType } from '../boostHelpers';
-import { useCredentialStatus } from 'src/hooks/useCredentialStatus';
+import { useCredentialStatus } from '../../../hooks/useCredentialStatus';
 
 type BoostEarnedCardProps = {
     credential?: VC;
@@ -141,7 +142,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
         categoryMetadata[categoryType] ?? categoryMetadata['Achievement' as CredentialCategory];
     const type = categoryInfo.walletSubtype;
 
-    let {
+    const {
         issuerName,
         issuerProfileImageElement,
 

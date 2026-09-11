@@ -5,8 +5,8 @@ import { Capacitor } from '@capacitor/core';
 
 import * as m from '../../../paraglide/messages.js';
 import { ProfilePicture } from 'learn-card-base';
-import X from 'src/components/svgs/X';
-import Pencil from 'src/components/svgs/Pencil';
+import X from '../../../components/svgs/X';
+import Pencil from '../../../components/svgs/Pencil';
 import SkillProfileProgressBar, { useSkillProfileCompletion } from './SkillProfileProgressBar';
 import SkillProfileStep1 from './SkillProfileStep1';
 import SkillProfileStep2 from './SkillProfileStep2';

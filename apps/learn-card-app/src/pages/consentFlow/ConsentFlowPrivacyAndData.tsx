@@ -12,7 +12,7 @@ import {
 } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import useConsentFlow from './useConsentFlow';
-import useGuardianGate from 'src/hooks/useGuardianGate';
+import useGuardianGate from '../../hooks/useGuardianGate';
 
 import { IonToggle } from '@ionic/react';
 import ConsentFlowFooter from './ConsentFlowFooter';
@@ -378,7 +378,12 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                                 <p className="text-grayscale-600 text-[14px] font-notoSans">
                                     <TransP
                                         m={m['consentFlow.privacyData.liveSyncDescription']}
-                                        components={[<span className="font-[600] font-notoSans" />]}
+                                        components={[
+                                            <span
+                                                key="emphasis"
+                                                className="font-[600] font-notoSans"
+                                            />,
+                                        ]}
                                     />
                                 </p>
                             </div>
@@ -436,7 +441,12 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                             <p className="text-grayscale-600 text-[14px] font-notoSans">
                                 <TransP
                                     m={m['consentFlow.privacyData.anonymizeDescription']}
-                                    components={[<span className="font-[600] font-notoSans" />]}
+                                    components={[
+                                        <span
+                                            key="emphasis"
+                                            className="font-[600] font-notoSans"
+                                        />,
+                                    ]}
                                 />
                             </p>
                         </div>
@@ -499,7 +509,12 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                                     <TransP
                                         m={m['consentFlow.privacyData.writeDescription']}
                                         values={{ brand: brandingConfig?.name ?? '' }}
-                                        components={[<span className="font-[600] font-notoSans" />]}
+                                        components={[
+                                            <span
+                                                key="emphasis"
+                                                className="font-[600] font-notoSans"
+                                            />,
+                                        ]}
                                     />
                                 </p>
                             </div>

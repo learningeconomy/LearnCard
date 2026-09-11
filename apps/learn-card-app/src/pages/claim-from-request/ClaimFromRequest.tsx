@@ -61,6 +61,7 @@ import * as m from '../../paraglide/messages.js';
 import {
     getClaimInteractionBoostUri,
     getClaimInteractionDuplicateLookup,
+    shouldCompleteInboxClaimLocally,
 } from './claimRequest.helpers';
 
 export type RequestMetadata = {
@@ -70,7 +71,8 @@ export type RequestMetadata = {
     issuedDate: string;
 };
 
-export enum ExchangeState { // For state machine
+export enum ExchangeState {
+    // For state machine
     Initiate,
     PresentationRequest,
     AcceptCredentials,
@@ -150,7 +152,8 @@ const ClaimBoostBodyPreviewOverride: React.FC<{ boostVC: VC }> = ({ boostVC }) =
     const isLoggedIn = useIsLoggedIn();
     const currentUser = useCurrentUser();
 
-    const issuer = typeof boostVC.issuer === 'string' ? boostVC.issuer : boostVC?.issuer?.id ?? '';
+    const issuer =
+        typeof boostVC.issuer === 'string' ? boostVC.issuer : (boostVC?.issuer?.id ?? '');
 
     const isLCNetworkUrlIssuer = issuer?.includes('did:web');
 
@@ -605,6 +608,15 @@ const ClaimFromRequest: React.FC = () => {
     });
 
     const handleRequest = async (body: any = {}, credentialClaimCount?: number) => {
+        // Inbox credentials are finalized before the returned VCs are shown to the learner.
+        // Once the learner saves that batch locally, there is no server-side completion request
+        // left to make: posting an empty body would be interpreted as a new claim initiation and
+        // incorrectly return "No pending credentials found".
+        if (shouldCompleteInboxClaimLocally(vc_request_url, credentialClaimCount, body)) {
+            void handleAfterCredentialClaim();
+            return;
+        }
+
         setExchangeState({ state: ExchangeState.Loading });
         try {
             if (!vc_request_url) {
