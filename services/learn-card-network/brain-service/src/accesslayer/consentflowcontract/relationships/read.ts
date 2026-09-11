@@ -673,6 +673,7 @@ AND ${contractWhereClause}
                 credentials: Object.entries(term.terms.read.credentials.categories).flatMap(
                     ([category, { shared, sharing, shareUntil }]) => {
                         if (
+                            term.terms.read.credentials.sharing === false ||
                             !sharing ||
                             !isConsentExpiryActive(shareUntil, now) ||
                             !shouldIncludeCategory(params.credentials?.categories, category)

@@ -2,12 +2,7 @@ import React from 'react';
 
 import { useHistory } from 'react-router-dom';
 import type { History } from 'history';
-import {
-    getAiPassportLaunchUrl,
-    ModalTypes,
-    useGetCurrentLCNUser,
-    useModal,
-} from 'learn-card-base';
+import { ModalTypes, useModal } from 'learn-card-base';
 
 import NewAiSessionContainer from './NewAiSessionContainer';
 import TopicNewSessionGate from './TopicNewSessionGate';
@@ -70,14 +65,11 @@ const seedRevisitWithTopic = (topicUri: string, topicTitle?: string) => {
 // no-sessions path lands users directly in chat rather than opening the
 // Revisit modal (whose pathway picker would just fall back to the same nav,
 // leaving a stale modal stacked on the chat page).
-const navToFreshChat = (history: History, uri: string, app: AiAppContext, did?: string) => {
+const navToFreshChat = (history: History, uri: string, app: AiAppContext) => {
     if (app?.type === AiPassportAppsEnum.learncardapp) {
         history.push(`/chats?topicUri=${encodeURIComponent(uri)}`);
     } else if (app?.url) {
-        window.location.href = getAiPassportLaunchUrl(
-            `${app.url}/chats?topicUri=${encodeURIComponent(uri)}`,
-            did
-        );
+        window.location.href = `${app.url}/chats?topicUri=${encodeURIComponent(uri)}`;
     } else {
         history.push(`/chats?topicUri=${encodeURIComponent(uri)}`);
     }
@@ -118,7 +110,6 @@ export const useNewSessionForTopicMobile = () => {
 
 export const useNewSessionForTopicDesktop = () => {
     const history = useHistory();
-    const { currentLCNUser } = useGetCurrentLCNUser();
 
     return (
         params: TopicNewSessionParams,
@@ -128,7 +119,7 @@ export const useNewSessionForTopicDesktop = () => {
         if (!topicUri) return;
 
         if (sessionCount === 0) {
-            navToFreshChat(history, topicBoostUri ?? topicUri, app, currentLCNUser?.did);
+            navToFreshChat(history, topicBoostUri ?? topicUri, app);
             return;
         }
 

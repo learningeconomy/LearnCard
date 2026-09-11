@@ -24,7 +24,6 @@ import {
     getAiPassportAuthMode,
     getAiPassportWebSocketProtocols,
     getAiPassportUrl,
-    waitForAiPassportAuthMode,
 } from '../../helpers/aiPassportAuth';
 import { createDeferred } from '../../helpers/deferred';
 
@@ -117,20 +116,12 @@ export const planSections = atom({
 
 export const getBackendUrl = (): string => networkStore.get.aiServiceUrl();
 
-const ensureChatAiPassportAuth = async (did: string, refreshLegacy = false) => {
-    const mode = getAiPassportAuthMode(did);
-
-    if (mode && (!refreshLegacy || mode === 'session')) return mode;
-
+const ensureChatAiPassportAuth = async (did: string) => {
     const wallet = walletStore.get.wallet();
-
-    if (wallet) return ensureAiPassportSession(wallet);
-
-    const pendingMode = await waitForAiPassportAuthMode(did);
-
-    if (pendingMode) return pendingMode;
-
-    throw new Error('AI Passport authentication requires an initialized wallet');
+    if (!wallet) throw new Error('AI Passport authentication requires an initialized wallet');
+    if (wallet.id.did() !== did) throw new Error('AI Passport wallet identity mismatch');
+    if (getAiPassportAuthMode(did) === 'session') return 'session';
+    return ensureAiPassportSession(wallet);
 };
 
 /** @deprecated Use getBackendUrl() for dynamic tenant-aware URL */
@@ -558,7 +549,7 @@ const reconnectWebSocket = async (): Promise<void> => {
     reconnectAttempts += 1;
 
     try {
-        await ensureChatAiPassportAuth(did, true);
+        await ensureChatAiPassportAuth(did);
 
         if (!shouldReconnect) return;
 
@@ -596,19 +587,26 @@ export function connectWebSocket(): Promise<WebSocket | null> {
 const createWebSocket = async (generation: number): Promise<WebSocket | null> => {
     const { did } = auth.get();
     if (!did) throw new Error('Authentication required');
+    const serviceUrl = getBackendUrl();
 
-    const wsUrl = getAiPassportUrl('/', did);
+    const wsUrl = getAiPassportUrl('/');
 
     wsUrl.protocol = wsUrl.protocol === 'https:' ? 'wss:' : 'ws:';
     if (currentThreadId.get()) wsUrl.searchParams.set('threadId', currentThreadId.get() ?? '');
 
     const protocols = await getAiPassportWebSocketProtocols(did);
 
-    if (!shouldReconnect || generation !== connectionGeneration) return null;
+    if (
+        !shouldReconnect ||
+        generation !== connectionGeneration ||
+        auth.get().did !== did ||
+        walletStore.get.wallet()?.id.did() !== did ||
+        getBackendUrl() !== serviceUrl ||
+        getAiPassportAuthMode(did) !== 'session'
+    )
+        return null;
 
-    ws = protocols
-        ? new WebSocket(addActiveLocaleToUrl(wsUrl.toString()), protocols)
-        : new WebSocket(addActiveLocaleToUrl(wsUrl.toString()));
+    ws = new WebSocket(addActiveLocaleToUrl(wsUrl.toString()), protocols);
     const socket = ws;
 
     ws.onmessage = event => {
@@ -1289,7 +1287,7 @@ export async function startTopicWithUri(topicUri: string) {
     // in-flight connection generation when negotiation completes.
     disconnectWebSocket();
     currentThreadId.set(null);
-    await ensureChatAiPassportAuth(did, true);
+    await ensureChatAiPassportAuth(did);
 
     // Ensure WebSocket connection is established
     if (!ws || ws.readyState !== WebSocket.OPEN) {
@@ -1370,7 +1368,7 @@ export async function startLearningPathway(topicUri: string, pathwayUri: string)
     // Cancel the previous socket before auth negotiation begins.
     disconnectWebSocket();
     currentThreadId.set(null);
-    await ensureChatAiPassportAuth(did, true);
+    await ensureChatAiPassportAuth(did);
 
     // Ensure WebSocket connection is established
     if (!ws || ws.readyState !== WebSocket.OPEN) {
@@ -1417,7 +1415,7 @@ export async function startTopic(topic: string, mode: AiSessionMode = AiSessionM
     }
 
     disconnectWebSocket();
-    await ensureChatAiPassportAuth(did, true);
+    await ensureChatAiPassportAuth(did);
 
     if (!ws || ws.readyState !== WebSocket.OPEN) {
         try {
@@ -1471,7 +1469,7 @@ export async function startInsightsSession(topic: string, initialText?: string) 
     currentThreadId.set(null);
 
     try {
-        await ensureChatAiPassportAuth(did, true);
+        await ensureChatAiPassportAuth(did);
         await connectWebSocket();
         await waitForSocketConnection();
     } catch (error) {

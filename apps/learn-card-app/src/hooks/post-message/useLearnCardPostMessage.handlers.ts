@@ -5,7 +5,7 @@ import {
     VerifiablePresentationRequest,
     AppEvent,
 } from './useLearnCardPostMessage';
-import type { LearnerContextRequestOptions } from './learnerContextCache.helpers';
+import type { LearnerContextRequestOptions } from './learnerContext.helpers';
 
 type LearnerContextResponseData = {
     prompt: string;
@@ -16,16 +16,14 @@ type LearnerContextResponseData = {
     did: string;
     displayName?: string;
     metadata?: {
-        cacheStatus?:
-            'browser-hit' | 'browser-miss' | 'backend-hit' | 'backend-miss' | 'structured';
+        consentRevision?: string;
+        cacheStatus?: 'backend-hit' | 'backend-miss' | 'structured';
         timings?: {
             totalMs: number;
             sdkRoundTripMs?: number;
             appEventMs?: number;
             credentialReadMs?: number;
             promptizerMs?: number;
-            cacheLookupMs?: number;
-            prewarmAgeMs?: number;
         };
         backendMetadata?: Record<string, unknown>;
     };

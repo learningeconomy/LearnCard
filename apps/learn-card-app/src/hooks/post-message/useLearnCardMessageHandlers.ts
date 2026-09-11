@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import React, { useMemo, useCallback, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useHistory } from 'react-router-dom';
@@ -16,7 +17,6 @@ import {
 } from 'learn-card-base';
 import { UnsignedVP, VC, VP } from '@learncard/types';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
-import { networkStore } from 'learn-card-base/stores/NetworkStore';
 
 import { ActionHandlers, AppEvent, VerifiablePresentationRequest } from './useLearnCardPostMessage';
 import { createActionHandlers } from './useLearnCardPostMessage.handlers';
@@ -30,15 +30,10 @@ import {
     flushOnError as flushSendCredentialFlowOnError,
 } from '../../helpers/sendCredentialFlow.helpers';
 import {
-    clearLearnerContextCache,
-    LEARNER_CONTEXT_CACHE_TTL_MS,
-    getLearnerContextCacheKey,
-    readLearnerContextCache,
-    writeLearnerContextCache,
-    type LearnerContextCacheEntry,
+    formatLearnerContext,
     type LearnerContextRequestOptions,
     type LearnerContextSourceData,
-} from './learnerContextCache.helpers';
+} from './learnerContext.helpers';
 
 interface LaunchConfig {
     url?: string;
@@ -65,27 +60,15 @@ interface UseLearnCardMessageHandlersOptions {
 import { getLogger } from 'learn-card-base';
 const moduleLog = getLogger('use-learn-card-message-handlers');
 
-type LearnerContextFillTimings = {
-    credentialReadMs?: number;
-    promptizerMs?: number;
-};
-
-const learnerContextCacheFills = new Map<
-    string,
-    { promise: Promise<LearnerContextCacheEntry>; timings: LearnerContextFillTimings }
->();
-const prewarmedCacheKeys = new Map<string, number>();
-
 type LearnerContextMetadata = {
-    cacheStatus?: 'browser-hit' | 'browser-miss' | 'backend-hit' | 'backend-miss' | 'structured';
+    consentRevision?: string;
+    cacheStatus?: 'backend-hit' | 'backend-miss' | 'structured';
     timings?: {
         totalMs: number;
         sdkRoundTripMs?: number;
         appEventMs?: number;
         credentialReadMs?: number;
         promptizerMs?: number;
-        cacheLookupMs?: number;
-        prewarmAgeMs?: number;
     };
     backendMetadata?: Record<string, unknown>;
 };
@@ -101,16 +84,10 @@ const createDeferred = <T>(): {
     return { promise, resolve };
 };
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-    Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-
-const getStringValue = (
-    record: Record<string, unknown> | undefined,
-    key: string
-): string | undefined => {
-    const value = record?.[key];
-    return typeof value === 'string' ? value : undefined;
-};
+const LearnerContextAppSourceValidator = z.object({
+    credentialUris: z.array(z.string().min(1)),
+    personalData: z.record(z.string(), z.string()).optional(),
+});
 
 const getPendingSyncStatus = (contractUri?: string) => {
     const allJobs = Object.values(pendingContractSyncStore.get.jobs());
@@ -431,173 +408,51 @@ export function useLearnCardMessageHandlers({
                 detailLevel: options.detailLevel,
             });
 
-            const rawCredentialUris = Array.isArray(result.credentialUris)
-                ? result.credentialUris
-                : [];
+            const authorized = LearnerContextAppSourceValidator.parse(result);
             const credentialUris =
                 options.includeCredentials === false
                     ? []
-                    : Array.from(
-                          new Set(
-                              rawCredentialUris.filter(
-                                  (uri): uri is string => typeof uri === 'string'
-                              )
-                          )
-                      ).sort();
-            const personalData =
-                options.includePersonalData && isRecord(result.personalData)
-                    ? result.personalData
-                    : undefined;
+                    : Array.from(new Set(authorized.credentialUris)).sort();
+            const personalData = options.includePersonalData ? authorized.personalData : undefined;
 
             return {
                 appId,
-                did: typeof result.did === 'string' ? result.did : await learnCard.id.did(),
+                did: learnCard.id.did(),
                 credentialUris,
                 personalData,
-                displayName:
-                    getStringValue(personalData, 'name') ??
-                    getStringValue(personalData, 'displayName'),
+                displayName: personalData?.name ?? personalData?.displayName,
             };
         },
         [appId]
     );
 
     const resolveLearnerContextCredentials = useCallback(
-        async (learnCard: LearnCardWallet, credentialUris: string[]): Promise<unknown[]> => {
-            const credentials = await Promise.all(
+        async (learnCard: LearnCardWallet, credentialUris: string[]): Promise<unknown[]> =>
+            Promise.all(
                 credentialUris.map(async uri => {
-                    try {
-                        return learnCard.read.get(uri);
-                    } catch (error) {
-                        logError(`Failed to resolve credential ${uri}:`, error);
-                        return undefined;
-                    }
+                    const credential = await learnCard.read.get(uri);
+                    if (!credential)
+                        throw new Error(`Failed to resolve authorized credential ${uri}`);
+                    return credential;
                 })
-            );
-
-            return credentials.filter(credential => credential !== undefined);
-        },
-        [logError]
+            ),
+        []
     );
 
     const generatePromptForLearnerContext = useCallback(
         async (
-            credentials: unknown[],
-            personalData: Record<string, unknown> | undefined,
-            options: LearnerContextRequestOptions
-        ): Promise<{ prompt: string; backendMetadata?: Record<string, unknown> }> => {
-            const aiServiceUrl = networkStore.get.aiServiceUrl().replace(/\/+$/, '');
-
-            try {
-                // The formatter URL is tenant/deployment configuration, not partner input.
-                // End-user authorization happens before this point via login + ConsentFlow.
-                const promptizerResponse = await fetch(
-                    `${aiServiceUrl}/ai/learner-context/format`,
-                    {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            credentials,
-                            personalData,
-                            instructions: options.instructions,
-                            detailLevel: options.detailLevel,
-                            includeStructuredContext: false,
-                            maxCredentials: credentials.length,
-                        }),
-                    }
-                );
-
-                if (!promptizerResponse.ok) {
-                    return {
-                        prompt: `User has ${credentials.length} credentials.`,
-                        backendMetadata: { promptizerError: true },
-                    };
-                }
-
-                const promptizerData: unknown = await promptizerResponse.json();
-
-                return {
-                    prompt:
-                        isRecord(promptizerData) && typeof promptizerData.prompt === 'string'
-                            ? promptizerData.prompt
-                            : '',
-                    backendMetadata:
-                        isRecord(promptizerData) && isRecord(promptizerData.metadata)
-                            ? promptizerData.metadata
-                            : undefined,
-                };
-            } catch (error) {
-                logError('Failed to call promptizer:', error);
-
-                return {
-                    prompt: `User has ${credentials.length} credentials.`,
-                    backendMetadata: { promptizerError: true },
-                };
-            }
-        },
-        [logError]
-    );
-
-    const fillLearnerContextCache = useCallback(
-        async (
             learnCard: LearnCardWallet,
             source: LearnerContextSourceData,
-            options: LearnerContextRequestOptions,
-            key: string,
-            timings?: LearnerContextMetadata['timings']
-        ): Promise<LearnerContextCacheEntry> => {
-            const existingFill = learnerContextCacheFills.get(key);
-            if (existingFill) {
-                const entry = await existingFill.promise;
-                if (timings) Object.assign(timings, existingFill.timings);
-                return entry;
-            }
-
-            const fillTimings: LearnerContextFillTimings = {};
-
-            const fillPromise = (async () => {
-                const credentialReadStartedAt = performance.now();
-                const credentials = await resolveLearnerContextCredentials(
-                    learnCard,
-                    source.credentialUris
-                );
-                fillTimings.credentialReadMs = performance.now() - credentialReadStartedAt;
-
-                const promptizerStartedAt = performance.now();
-                const { prompt, backendMetadata } = await generatePromptForLearnerContext(
-                    credentials,
-                    source.personalData,
-                    options
-                );
-                fillTimings.promptizerMs = performance.now() - promptizerStartedAt;
-
-                const entry: LearnerContextCacheEntry = {
-                    key,
-                    prompt,
-                    did: source.did,
-                    displayName: source.displayName,
-                    credentialUris: source.credentialUris,
-                    personalData: source.personalData,
-                    backendMetadata,
-                    createdAt: Date.now(),
-                };
-
-                writeLearnerContextCache(entry);
-
-                return entry;
-            })();
-
-            learnerContextCacheFills.set(key, { promise: fillPromise, timings: fillTimings });
-
-            try {
-                const entry = await fillPromise;
-                if (timings) Object.assign(timings, fillTimings);
-                return entry;
-            } finally {
-                learnerContextCacheFills.delete(key);
-            }
-        },
-        [generatePromptForLearnerContext, resolveLearnerContextCredentials]
+            options: LearnerContextRequestOptions
+        ) =>
+            formatLearnerContext(learnCard, {
+                credentialUris: source.credentialUris,
+                personalFields: Object.keys(source.personalData ?? {}),
+                instructions: options.instructions,
+                detailLevel: options.detailLevel ?? 'compact',
+                includeStructuredContext: false,
+            }),
+        []
     );
 
     const prewarmLearnerContext = useCallback(
@@ -605,31 +460,18 @@ export function useLearnCardMessageHandlers({
             try {
                 const learnCard = await initWallet();
                 if (!learnCard) return;
-
                 const options = normalizeLearnerContextOptions(inputOptions);
+                if (options.format === 'structured') return;
                 const source = await fetchLearnerContextSource(learnCard, options);
-                const key = getLearnerContextCacheKey(source, options);
-
-                const now = Date.now();
-                const lastPrewarmAt = prewarmedCacheKeys.get(key);
-                if (
-                    lastPrewarmAt !== undefined &&
-                    now - lastPrewarmAt < LEARNER_CONTEXT_CACHE_TTL_MS
-                ) {
-                    return;
-                }
-
-                if (readLearnerContextCache(key, now)) return;
-
-                await fillLearnerContextCache(learnCard, source, options, key);
-                prewarmedCacheKeys.set(key, Date.now());
+                // Warm only the server cache: every SDK request rechecks both authorizations.
+                await generatePromptForLearnerContext(learnCard, source, options);
             } catch (error) {
                 log('Learner context prewarm skipped', error);
             }
         },
         [
             fetchLearnerContextSource,
-            fillLearnerContextCache,
+            generatePromptForLearnerContext,
             initWallet,
             log,
             normalizeLearnerContextOptions,
@@ -1547,44 +1389,29 @@ export function useLearnCardMessageHandlers({
                               };
                           }
 
-                          const cacheLookupStartedAt = performance.now();
-                          const key = getLearnerContextCacheKey(source, options);
-                          const cached = readLearnerContextCache(key);
-                          timings.cacheLookupMs = performance.now() - cacheLookupStartedAt;
-
-                          if (cached) {
-                              timings.prewarmAgeMs = Date.now() - cached.createdAt;
-                              timings.totalMs = performance.now() - startedAt;
-
-                              return {
-                                  prompt: cached.prompt,
-                                  did: source.did,
-                                  displayName: cached.displayName ?? source.displayName,
-                                  metadata: {
-                                      cacheStatus: 'browser-hit',
-                                      timings,
-                                      backendMetadata: cached.backendMetadata,
-                                  },
-                              };
-                          }
-
-                          const entry = await fillLearnerContextCache(
+                          const promptizerStartedAt = performance.now();
+                          const result = await generatePromptForLearnerContext(
                               learnCard,
                               source,
-                              options,
-                              key,
-                              timings
+                              options
                           );
+                          timings.promptizerMs = performance.now() - promptizerStartedAt;
                           timings.totalMs = performance.now() - startedAt;
 
                           return {
-                              prompt: entry.prompt,
+                              prompt: result.prompt,
                               did: source.did,
-                              displayName: entry.displayName ?? source.displayName,
+                              displayName: source.displayName,
                               metadata: {
-                                  cacheStatus: 'browser-miss',
+                                  consentRevision: result.metadata.consentRevision,
+                                  cacheStatus:
+                                      result.metadata.promptCacheHit === undefined
+                                          ? undefined
+                                          : result.metadata.promptCacheHit
+                                            ? 'backend-hit'
+                                            : 'backend-miss',
                                   timings,
-                                  backendMetadata: entry.backendMetadata,
+                                  backendMetadata: result.metadata,
                               },
                           };
                       }
@@ -1611,20 +1438,12 @@ export function useLearnCardMessageHandlers({
             queryClient,
             getIntegrationForListing,
             fetchLearnerContextSource,
-            fillLearnerContextCache,
+            generatePromptForLearnerContext,
             normalizeLearnerContextOptions,
             prewarmLearnerContext,
             resolveLearnerContextCredentials,
         ]
     );
-
-    useEffect(() => {
-        if (isLoggedIn) return;
-
-        clearLearnerContextCache();
-        learnerContextCacheFills.clear();
-        prewarmedCacheKeys.clear();
-    }, [isLoggedIn]);
 
     useEffect(() => {
         if (!isLoggedIn || !appId || !embedOrigin) return;

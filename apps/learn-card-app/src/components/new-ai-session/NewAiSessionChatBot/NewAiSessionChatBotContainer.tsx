@@ -18,14 +18,7 @@ import {
     newSessionQAInitState,
 } from './newAiSessionChatbot.helpers';
 
-import {
-    getLogger,
-    getAiPassportLaunchUrl,
-    useGetCurrentLCNUser,
-    useModal,
-    useDeviceTypeByWidth,
-    LaunchPadAppListItem,
-} from 'learn-card-base';
+import { getLogger, useModal, useDeviceTypeByWidth, LaunchPadAppListItem } from 'learn-card-base';
 import type { ActiveSessionStatus } from 'learn-card-base/types/ai-chat';
 import { getActiveSessionStatus, resumeThread } from 'learn-card-base/stores/nanoStores/chatStore';
 import { showErrorModal } from 'learn-card-base/stores/nanoStores/ErrorModalStore';
@@ -62,7 +55,6 @@ export const NewAiSessionChatBotContainer: React.FC<{
     const query = usePathQuery();
     const { isDesktop } = useDeviceTypeByWidth();
     const { closeAllModals } = useModal();
-    const { currentLCNUser } = useGetCurrentLCNUser();
 
     // const [chatBotQA, setChatBotQA] = useState<ChatBotQA[]>(newSessionQAInitState);
     const { chatBotQA: chatBotQA } = useChatBotQA(newSessionQAInitState);
@@ -266,10 +258,7 @@ export const NewAiSessionChatBotContainer: React.FC<{
             closeAllModals();
             const url = aiPassportApps.find(app => app.id === appAnswer)?.url;
 
-            window.location.href = getAiPassportLaunchUrl(
-                `${url}/chats?topic=${encodeURIComponent(topicAnswer || '')}`,
-                currentLCNUser?.did
-            );
+            window.location.href = `${url}/chats?topic=${encodeURIComponent(topicAnswer || '')}`;
         }, 3000);
     };
 

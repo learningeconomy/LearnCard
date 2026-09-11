@@ -8,20 +8,22 @@ import {
     clearAiPassportAuth,
     ensureAiPassportSession,
     getAiPassportAuthMode,
-    getAiPassportLaunchUrl,
     getAiPassportWebSocketProtocols,
-    getAiPassportUrl,
 } from './aiPassportAuth';
 
 const originalFetch = globalThis.fetch;
 
-const wallet = (did: string, issuePresentation: Mock) =>
-    ({
+const wallet = (did: string, issuePresentation: Mock) => {
+    const account = {
         id: { did: () => did },
         invoke: { issuePresentation },
-    } as unknown as BespokeLearnCard);
+    } as unknown as BespokeLearnCard;
+    walletStore.set.wallet(account);
+    return account;
+};
 
 afterEach(() => {
+    clearAiPassportAuth();
     globalThis.fetch = originalFetch;
     walletStore.set.wallet(null);
 });
@@ -164,99 +166,63 @@ describe('ensureAiPassportSession', () => {
         expect(fetchMock).toHaveBeenCalledOnce();
     });
 
-    it('falls back only when the challenge capability is deterministically absent', async () => {
-        const did = 'did:key:legacy';
+    it('rejects unsupported challenge authentication without sending user data', async () => {
+        const did = 'did:key:unsupported';
         const issuePresentation = vi.fn();
         const fetchMock = vi
             .fn()
-            .mockResolvedValueOnce(
-                Response.json({ error: 'Authentication required' }, { status: 401 })
-            )
-            .mockResolvedValueOnce(
-                Response.json({ error: 'Authentication required' }, { status: 401 })
-            );
-
-        networkStore.set.aiServiceUrl('https://legacy.example.test');
+            .mockResolvedValueOnce(new Response(null, { status: 401 }))
+            .mockResolvedValueOnce(new Response(null, { status: 404 }));
+        networkStore.set.aiServiceUrl('https://unsupported.example.test');
         globalThis.fetch = fetchMock as typeof fetch;
+        wallet(did, issuePresentation);
 
-        await expect(ensureAiPassportSession(wallet(did, issuePresentation))).resolves.toBe(
-            'legacy'
-        );
-
+        await expect(
+            aiPassportFetch(
+                '/ai/learner-context/format',
+                {
+                    method: 'POST',
+                    body: JSON.stringify({ instructions: 'Private learner instructions' }),
+                },
+                did
+            )
+        ).rejects.toThrow();
+        expect(getAiPassportAuthMode(did)).toBeUndefined();
         expect(issuePresentation).not.toHaveBeenCalled();
-        expect(getAiPassportAuthMode(did)).toBe('legacy');
-        expect(getAiPassportUrl('/threads', did).searchParams.get('did')).toBe(did);
-        expect(
-            new URL(
-                getAiPassportLaunchUrl('https://legacy-app.example.test/chats?topic=test', did)
-            ).searchParams.get('did')
-        ).toBe(did);
-        await expect(getAiPassportWebSocketProtocols(did)).resolves.toBeUndefined();
-        expect(fetchMock).toHaveBeenCalledTimes(2);
+        expect(fetchMock.mock.calls.map(call => new URL(call[0]).pathname)).toEqual([
+            '/auth/session',
+            '/auth/challenge',
+        ]);
     });
 
-    it('renegotiates a legacy tab after the backend upgrades without requiring reload', async () => {
-        const did = 'did:key:rollout';
-        const issuePresentation = vi.fn(async () => 'rollout.jwt');
+    it('does not resend user data if session renewal is unsupported', async () => {
+        const did = 'did:key:renewal';
+        networkStore.set.aiServiceUrl('https://renewal.example.test');
         const fetchMock = vi
             .fn()
+            .mockResolvedValueOnce(Response.json({ authenticated: true, did }))
             .mockResolvedValueOnce(new Response(null, { status: 401 }))
-            .mockResolvedValueOnce(
-                Response.json({ error: 'Authentication required' }, { status: 401 })
-            )
-            .mockResolvedValueOnce(
-                Response.json({ error: 'Authentication required' }, { status: 401 })
-            )
             .mockResolvedValueOnce(new Response(null, { status: 401 }))
-            .mockResolvedValueOnce(
-                Response.json({
-                    audience: 'https://rollout.example.test',
-                    binding: 'rollout-binding',
-                    challenge: 'rollout-challenge',
-                })
-            )
-            .mockResolvedValueOnce(
-                Response.json({ authenticated: true, did, token: 'rollout-token' })
-            )
-            .mockResolvedValueOnce(Response.json([]))
-            .mockResolvedValueOnce(Response.json({ status: 'queued' }))
-            .mockResolvedValueOnce(Response.json({ ticket: 't'.repeat(43) }));
-
-        networkStore.set.aiServiceUrl('https://rollout.example.test');
+            .mockResolvedValueOnce(new Response(null, { status: 404 }));
         globalThis.fetch = fetchMock as typeof fetch;
-        const account = wallet(did, issuePresentation);
-
-        await expect(ensureAiPassportSession(account)).resolves.toBe('legacy');
-
-        const response = await aiPassportFetch('/threads', {}, did);
-        const legacyRequest = new URL(fetchMock.mock.calls[2]![0] as URL);
-        const retriedRequest = new URL(fetchMock.mock.calls[6]![0] as URL);
-        const retriedHeaders = new Headers(fetchMock.mock.calls[6]![1]?.headers);
-        const form = new FormData();
-
-        form.set('threadId', 'thread-1');
-        form.set('event', 'visible');
-        await aiPassportFetch(
-            '/threads/visibility',
-            { method: 'POST', body: form, keepalive: true },
-            did
-        );
-
-        const visibilityOptions = fetchMock.mock.calls[7]![1]!;
-        const visibilityHeaders = new Headers(visibilityOptions.headers);
-
-        expect(response.status).toBe(200);
-        expect(getAiPassportAuthMode(did)).toBe('session');
-        expect(issuePresentation).toHaveBeenCalledOnce();
-        expect(legacyRequest.searchParams.get('did')).toBe(did);
-        expect(retriedRequest.searchParams.has('did')).toBe(false);
-        await expect(getAiPassportWebSocketProtocols(did)).resolves.toEqual([
-            'ai-passport',
-            `ai-passport-ticket.${'t'.repeat(43)}`,
+        await ensureAiPassportSession(wallet(did, vi.fn()));
+        await expect(
+            aiPassportFetch(
+                '/threads',
+                {
+                    method: 'POST',
+                    body: 'private learner data',
+                },
+                did
+            )
+        ).rejects.toThrow();
+        expect(fetchMock.mock.calls.map(call => new URL(call[0]).pathname)).toEqual([
+            '/auth/session',
+            '/threads',
+            '/auth/session',
+            '/auth/challenge',
         ]);
-        expect(retriedHeaders.get('Authorization')).toBe('Bearer rollout-token');
-        expect(visibilityOptions.keepalive).toBe(true);
-        expect(visibilityHeaders.get('Authorization')).toBe('Bearer rollout-token');
+        expect(getAiPassportAuthMode(did)).toBeUndefined();
     });
 
     it('mints a fresh one-time ticket without exposing the durable bearer', async () => {
@@ -451,4 +417,111 @@ describe('ensureAiPassportSession', () => {
         );
         expect(getAiPassportAuthMode(did)).toBeUndefined();
     });
+
+    it('does not exchange an in-flight signature or send user data after logout', async () => {
+        const did = 'did:key:logout-signing';
+        let finishSigning!: (value: string) => void;
+        let signingStarted!: () => void;
+        const started = new Promise<void>(resolve => {
+            signingStarted = resolve;
+        });
+        const signature = new Promise<string>(resolve => {
+            finishSigning = resolve;
+        });
+        const issuePresentation = vi.fn(() => {
+            signingStarted();
+            return signature;
+        });
+        networkStore.set.aiServiceUrl('https://logout.example.test');
+        const fetchMock = vi
+            .fn()
+            .mockResolvedValueOnce(new Response(null, { status: 401 }))
+            .mockResolvedValueOnce(
+                Response.json({
+                    audience: 'https://logout.example.test',
+                    binding: 'binding',
+                    challenge: 'challenge',
+                })
+            );
+        globalThis.fetch = fetchMock as typeof fetch;
+        wallet(did, issuePresentation);
+        const request = aiPassportFetch('/threads', { method: 'POST', body: 'private' }, did);
+        const rejected = expect(request).rejects.toThrow();
+        await started;
+        clearAiPassportAuth();
+        walletStore.set.wallet(null);
+        finishSigning('signed.jwt');
+        await rejected;
+        expect(getAiPassportAuthMode(did)).toBeUndefined();
+        expect(fetchMock.mock.calls.map(call => new URL(call[0]).pathname)).toEqual([
+            '/auth/session',
+            '/auth/challenge',
+        ]);
+    });
+
+    it('does not let an old negotiation restore or erase state after logout and login', async () => {
+        const did = 'did:key:logout-pending';
+        let finishOld!: (value: Response) => void;
+        const oldResponse = new Promise<Response>(resolve => {
+            finishOld = resolve;
+        });
+        networkStore.set.aiServiceUrl('https://pending.example.test');
+        const fetchMock = vi
+            .fn()
+            .mockReturnValueOnce(oldResponse)
+            .mockResolvedValueOnce(Response.json({ authenticated: true, did }));
+        globalThis.fetch = fetchMock as typeof fetch;
+        const oldRequest = ensureAiPassportSession(wallet(did, vi.fn()));
+        const rejected = expect(oldRequest).rejects.toThrow();
+        clearAiPassportAuth();
+        await ensureAiPassportSession(wallet(did, vi.fn()));
+        finishOld(Response.json({ authenticated: true, did, token: 'old-token' }));
+        await rejected;
+        expect(getAiPassportAuthMode(did)).toBe('session');
+        fetchMock.mockResolvedValueOnce(Response.json({ ok: true }));
+        await aiPassportFetch('/threads', {}, did);
+        expect(new Headers(fetchMock.mock.calls[2]![1]?.headers).has('Authorization')).toBe(false);
+    });
+
+    it.each(['account', 'service'] as const)(
+        'does not retry after switching %s away and back',
+        async switchKind => {
+            const did = 'did:key:switch';
+            let finishRequest!: (value: Response) => void;
+            let requestStarted!: () => void;
+            const started = new Promise<void>(resolve => {
+                requestStarted = resolve;
+            });
+            const response = new Promise<Response>(resolve => {
+                finishRequest = resolve;
+            });
+            networkStore.set.aiServiceUrl('https://switch.example.test');
+            const fetchMock = vi
+                .fn()
+                .mockResolvedValueOnce(Response.json({ authenticated: true, did }))
+                .mockImplementationOnce(() => {
+                    requestStarted();
+                    return response;
+                });
+            globalThis.fetch = fetchMock as typeof fetch;
+            const account = wallet(did, vi.fn());
+            await ensureAiPassportSession(account);
+            const request = aiPassportFetch('/threads', {}, did);
+            const rejected = expect(request).rejects.toThrow();
+            await started;
+            if (switchKind === 'account') {
+                wallet('did:key:other', vi.fn());
+                walletStore.set.wallet(account);
+            } else {
+                networkStore.set.aiServiceUrl('https://other.example.test');
+                networkStore.set.aiServiceUrl('https://switch.example.test');
+            }
+            finishRequest(new Response(null, { status: 401 }));
+            await rejected;
+            expect(fetchMock.mock.calls.map(call => new URL(call[0]).pathname)).toEqual([
+                '/auth/session',
+                '/threads',
+            ]);
+        }
+    );
 });
