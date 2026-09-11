@@ -76,10 +76,23 @@ services/*/*/node_modules/**
 
 # Common exclusions
 *.log
+.env
+.env.*
+**/.env
+**/.env.*
 .git
 .github
 docs
 examples
+
+# Bun validates every workspace manifest against bun.lock even when source is omitted.
+!reference/
+!reference/package.json
+!examples/
+!examples/**/
+!examples/**/package.json
+!scripts/siwa-migration/
+!scripts/siwa-migration/package.json
 *.md
 .vscode
 .idea

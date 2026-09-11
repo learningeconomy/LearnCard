@@ -106,6 +106,7 @@
             "alerts": "Alerts",
             "personalize": "Personalize",
             "adminTools": "Admin Tools",
+            "myAssistant": "My Assistant",
             "wallet": "Wallet",
             "passport": "Passport",
             "aiTopics": "AI Sessions",
@@ -125,6 +126,12 @@
         "newAiSession": "New AI Session",
         "settings": "Settings",
         "closeMenu": "Close menu"
+    },
+    "myAssistant": {
+        "schedules": {
+            "autonomyUnavailableTitle": "Automatic tasks aren't enabled yet",
+            "autonomyUnavailableDescription": "You can still chat with your assistant. Recurring schedules are only available to selected testing accounts."
+        }
     },
     "passport": {
         "buildMyLearnCard": {

@@ -9,6 +9,7 @@ import {
     LaunchPadAppListItem,
     useWallet,
     useUpdateTerms,
+    useCurrentUser,
 } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import useConsentFlow from './useConsentFlow';
@@ -23,15 +24,17 @@ import PrivacyAndDataHeader from './PrivacyAndDataHeader';
 import ConsentFlowVerifiableDataSharingItem from './ConsentFlowVerifiableDataSharingItem';
 
 import { curriedStateSlice } from '@learncard/helpers';
-import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
 import * as m from '../../paraglide/messages.js';
 import TransP from '../../i18n/TransP';
 import {
+    getPersonalEntry,
     getAllCredentialUrisForCategory,
     getPrivacyAndDataInfo,
+    isSupportedPersonalField,
     isVerifiableDataContractCategory,
     VERIFIABLE_DATA_CONTRACT_CATEGORIES,
 } from '../../helpers/contract.helpers';
+import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
 
 type ConsentFlowPrivacyAndDataProps = {
     contractDetails: ConsentFlowContractDetails;
@@ -72,6 +75,7 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
     const { presentToast } = useToast();
     const brandingConfig = useBrandingConfig();
     const { guardedAction } = useGuardianGate();
+    const currentUser = useCurrentUser();
 
     // Use passed termsUri/ownerDid if provided (e.g., from ManageDataSharingModal)
     // Otherwise fall back to useConsentFlow lookup
@@ -236,6 +240,21 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
 
     const isUpdated = !isEqual(initialTerms, terms);
 
+    const handleToggleAnonymize = () => {
+        const nextAnonymize = !readTerms.anonymize;
+
+        updateSlice('read', oldRead => {
+            oldRead.anonymize = nextAnonymize;
+            oldRead.personal ??= {};
+
+            Object.keys(contractDetails.contract.read.personal ?? {}).forEach(key => {
+                if (oldRead.personal[key] && isSupportedPersonalField(key)) {
+                    oldRead.personal[key] = getPersonalEntry(key, currentUser, nextAnonymize);
+                }
+            });
+        });
+    };
+
     const allReadToggle = Object.keys(readCredentials.categories ?? {})
         .filter(category => !isVerifiableDataContractCategory(category))
         .every(category => {
@@ -243,7 +262,6 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
 
             return Boolean(categoryState?.sharing && categoryState.shareAll);
         });
-    const allWriteToggle = Object.values(terms.write.credentials.categories).every(Boolean);
 
     const handleToggleAllCategoryReadToggles = () => {
         updateSlice('read', oldRead => {
@@ -410,12 +428,12 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                                 <label className="flex flex-col gap-[2px]">
                                     <output
                                         className={`font-[600] text-[14px] font-notoSans ${
-                                            terms.read.anonymize
+                                            readTerms.anonymize
                                                 ? 'text-emerald-700'
                                                 : 'text-grayscale-500'
                                         }`}
                                     >
-                                        {terms.read.anonymize
+                                        {readTerms.anonymize
                                             ? m['consentFlow.status.on']()
                                             : m['consentFlow.status.off']()}
                                     </output>
@@ -428,7 +446,7 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                                     mode="ios"
                                     className="[--background:white]"
                                     color="emerald-700"
-                                    onClick={() => updateRead('anonymize', !readTerms.anonymize)}
+                                    onClick={handleToggleAnonymize}
                                     checked={readTerms.anonymize}
                                 />
                             </div>

@@ -14,24 +14,27 @@ export const callbackLink = (callback: () => Promise<void>): TRPCLink<AppRouter>
                     attempts += 1;
                     request?.unsubscribe();
                     request = next(op).subscribe({
-                        error: async error => {
-                            if (attempts > 5 || error.data?.httpStatus !== 401) {
-                                return observer.error(error);
-                            }
+                        error: error => {
+                            if (isDone) return;
 
-                            try {
-                                await callback();
-                            } catch {
-                                // Forward the original request error if refreshing auth fails.
-                                if (!isDone) observer.error(error);
+                            if (attempts > 5 || error.data?.httpStatus !== 401) {
+                                observer.error(error);
                                 return;
                             }
 
-                            if (!isDone) attempt();
+                            void callback().then(
+                                () => {
+                                    if (!isDone) attempt();
+                                },
+                                () => {
+                                    // Forward the original request error if refreshing auth fails.
+                                    if (!isDone) observer.error(error);
+                                }
+                            );
                         },
                         next: result => observer.next(result),
                         complete: () => {
-                            if (isDone) observer.complete();
+                            if (!isDone) observer.complete();
                         },
                     });
                 };

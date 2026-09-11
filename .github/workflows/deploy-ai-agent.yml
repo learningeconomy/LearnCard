@@ -1,0 +1,306 @@
+name: Deploy AI Agent
+
+on:
+    pull_request:
+        types: [opened, synchronize, reopened, ready_for_review]
+    workflow_call:
+        inputs:
+            target-environment:
+                description: Target environment
+                required: true
+                type: string
+
+concurrency:
+    group: deploy-ai-agent-${{ github.event.pull_request.number || inputs.target-environment }}
+    cancel-in-progress: false
+
+permissions:
+    contents: read
+
+jobs:
+    validate:
+        name: AI Agent CI
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        env:
+            CI: true
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v7
+
+            - name: Use composite setup action
+              uses: ./.github/actions/setup
+
+            - name: Run AI Agent tests
+              run: bun run --cwd services/learn-card-network/ai-agent test -- run
+
+            - name: Build AI Agent
+              run: bun run --cwd services/learn-card-network/ai-agent build
+
+            - name: Lint CloudFormation template
+              run: pipx run cfn-lint services/learn-card-network/ai-agent/infra/aws/template.yml
+
+    deploy:
+        name: Deploy AI Agent
+        if: github.event_name != 'pull_request'
+        needs: validate
+        permissions:
+            contents: read
+            id-token: write
+        runs-on: ubuntu-latest
+        environment: learn-card-ai-agent-${{ inputs.target-environment }}
+        env:
+            CI: true
+            TARGET_ENVIRONMENT: ${{ inputs.target-environment }}
+            AWS_DEFAULT_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v7
+
+            - name: Use composite setup action
+              uses: ./.github/actions/setup
+
+            - name: Validate deployment configuration
+              env:
+                  ECR_REPOSITORY_URL: ${{ vars.AI_AGENT_ECR_REPOSITORY_URL }}
+                  CLOUDFORMATION_STACK: ${{ vars.AI_AGENT_CLOUDFORMATION_STACK }}
+                  BASE_URL: ${{ vars.AI_AGENT_BASE_URL }}
+                  AWS_ROLE_ARN: ${{ vars.AI_AGENT_AWS_ROLE_ARN }}
+                  TRIGGER_SECRET_KEY_SECRET_ARN: ${{ vars.AI_AGENT_TRIGGER_SECRET_KEY_SECRET_ARN }}
+                  TRIGGER_PROJECT_REF: ${{ vars.AI_AGENT_TRIGGER_PROJECT_REF }}
+                  LAUNCHDARKLY_SDK_KEY_SECRET_ARN: ${{ vars.AI_AGENT_LAUNCHDARKLY_SDK_KEY_SECRET_ARN }}
+                  TRIGGER_ACCESS_TOKEN: ${{ secrets.TRIGGER_ACCESS_TOKEN }}
+              run: |
+                  test -n "$ECR_REPOSITORY_URL" || { echo "::error::AI_AGENT_ECR_REPOSITORY_URL is missing"; exit 1; }
+                  test -n "$CLOUDFORMATION_STACK" || { echo "::error::AI_AGENT_CLOUDFORMATION_STACK is missing"; exit 1; }
+                  test -n "$BASE_URL" || { echo "::error::AI_AGENT_BASE_URL is missing"; exit 1; }
+                  test -n "$AWS_ROLE_ARN" || { echo "::error::AI_AGENT_AWS_ROLE_ARN is missing"; exit 1; }
+
+                  test -n "$TRIGGER_SECRET_KEY_SECRET_ARN" || { echo "::error::AI_AGENT_TRIGGER_SECRET_KEY_SECRET_ARN is missing"; exit 1; }
+                  test -n "$TRIGGER_PROJECT_REF" || { echo "::error::AI_AGENT_TRIGGER_PROJECT_REF is missing"; exit 1; }
+                  test -n "$LAUNCHDARKLY_SDK_KEY_SECRET_ARN" || { echo "::error::AI_AGENT_LAUNCHDARKLY_SDK_KEY_SECRET_ARN is missing"; exit 1; }
+                  test -n "$TRIGGER_ACCESS_TOKEN" || { echo "::error::TRIGGER_ACCESS_TOKEN is missing"; exit 1; }
+
+                  case "$TARGET_ENVIRONMENT" in
+                    staging) EXPECTED_TRIGGER_PROJECT_REF=proj_lhgapsbwrnrqrszcpgzn ;;
+                    production) EXPECTED_TRIGGER_PROJECT_REF=proj_lyfepdqcmztsyzcqmcvx ;;
+                    *) echo "::error::Unsupported AI Agent deployment environment"; exit 1 ;;
+                  esac
+
+                  if [ "$TRIGGER_PROJECT_REF" != "$EXPECTED_TRIGGER_PROJECT_REF" ]; then
+                    echo "::error::AI_AGENT_TRIGGER_PROJECT_REF does not match $TARGET_ENVIRONMENT"
+                    exit 1
+                  fi
+            - name: Configure AWS credentials
+              uses: aws-actions/configure-aws-credentials@v5
+              with:
+                  role-to-assume: ${{ vars.AI_AGENT_AWS_ROLE_ARN }}
+                  role-session-name: learncard-ai-agent-${{ env.TARGET_ENVIRONMENT }}-${{ github.run_id }}
+                  aws-region: ${{ env.AWS_DEFAULT_REGION }}
+            - name: Validate CloudFormation template
+              run: |
+                  aws cloudformation validate-template \
+                    --template-body file://services/learn-card-network/ai-agent/infra/aws/template.yml
+            - name: Verify ECR and stack consistency
+              env:
+                  ECR_REPOSITORY_URL: ${{ vars.AI_AGENT_ECR_REPOSITORY_URL }}
+                  CLOUDFORMATION_STACK: ${{ vars.AI_AGENT_CLOUDFORMATION_STACK }}
+              run: |
+                  STACK_ECR_REPOSITORY_URL="$(aws cloudformation describe-stacks \
+                    --stack-name "$CLOUDFORMATION_STACK" \
+                    --query "Stacks[0].Outputs[?OutputKey=='EcrRepositoryUrl'].OutputValue" \
+                    --output text)"
+
+                  if [ "$STACK_ECR_REPOSITORY_URL" != "$ECR_REPOSITORY_URL" ]; then
+                    echo "::error::AI_AGENT_ECR_REPOSITORY_URL does not match $CLOUDFORMATION_STACK"
+                    exit 1
+                  fi
+
+                  STACK_ENVIRONMENT="$(aws cloudformation describe-stacks \
+                    --stack-name "$CLOUDFORMATION_STACK" \
+                    --query "Stacks[0].Parameters[?ParameterKey=='Environment'].ParameterValue | [0]" \
+                    --output text)"
+
+                  if [ "$STACK_ENVIRONMENT" != "$TARGET_ENVIRONMENT" ]; then
+                    echo "::error::CloudFormation stack environment does not match $TARGET_ENVIRONMENT"
+                    exit 1
+                  fi
+
+            - name: Deploy Trigger.dev tasks
+              working-directory: services/learn-card-network/ai-agent
+              env:
+                  AI_AGENT_TRIGGER_PROJECT_REF: ${{ vars.AI_AGENT_TRIGGER_PROJECT_REF }}
+                  AI_AGENT_TRIGGER_ENVIRONMENT: ${{ env.TARGET_ENVIRONMENT }}
+                  TRIGGER_ACCESS_TOKEN: ${{ secrets.TRIGGER_ACCESS_TOKEN }}
+              run: bunx trigger deploy --env prod --skip-update-check
+
+            - name: Login to Amazon ECR
+              uses: aws-actions/amazon-ecr-login@v2
+
+            - name: Set up QEMU
+              uses: docker/setup-qemu-action@v3
+              with:
+                  platforms: arm64
+
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
+
+            - name: Check immutable AI Agent image
+              id: image
+              env:
+                  ECR_REPOSITORY_URL: ${{ vars.AI_AGENT_ECR_REPOSITORY_URL }}
+              run: |
+                  set -euo pipefail
+
+                  REPOSITORY_NAME="${ECR_REPOSITORY_URL#*/}"
+                  IMAGE_COUNT="$(aws ecr list-images \
+                    --repository-name "$REPOSITORY_NAME" \
+                    --filter tagStatus=TAGGED \
+                    --query "length(imageIds[?imageTag=='sha-${{ github.sha }}'])" \
+                    --output text)"
+
+                  if [ "$IMAGE_COUNT" = '0' ]; then
+                    echo 'exists=false' >> "$GITHUB_OUTPUT"
+                  elif [ "$IMAGE_COUNT" = '1' ]; then
+                    echo 'exists=true' >> "$GITHUB_OUTPUT"
+                  else
+                    echo "::error::Unexpected immutable image count: $IMAGE_COUNT"
+                    exit 1
+                  fi
+
+            - name: Build and push AI Agent image
+              if: steps.image.outputs.exists != 'true'
+              uses: docker/build-push-action@v6
+              with:
+                  context: .
+                  file: ./services/learn-card-network/ai-agent/Dockerfile
+                  push: true
+                  platforms: linux/arm64
+                  build-args: GIT_SHA=${{ github.sha }}
+                  cache-from: type=gha,scope=ai-agent-image
+                  cache-to: type=gha,mode=max,scope=ai-agent-image
+                  tags: ${{ vars.AI_AGENT_ECR_REPOSITORY_URL }}:sha-${{ github.sha }}
+
+            - name: Reject vulnerable runtime image
+              env:
+                  ECR_REPOSITORY_URL: ${{ vars.AI_AGENT_ECR_REPOSITORY_URL }}
+              run: |
+                  set -euo pipefail
+
+                  REPOSITORY_NAME="${ECR_REPOSITORY_URL#*/}"
+                  ARM64_DIGEST="$(docker buildx imagetools inspect \
+                    "$ECR_REPOSITORY_URL:sha-${{ github.sha }}" \
+                    --raw | jq -r \
+                    '.manifests[] | select(.platform.os == "linux" and .platform.architecture == "arm64") | .digest')"
+
+                  test -n "$ARM64_DIGEST" || {
+                    echo "::error::Could not resolve the pushed ARM64 image digest"
+                    exit 1
+                  }
+
+                  aws ecr wait image-scan-complete \
+                    --repository-name "$REPOSITORY_NAME" \
+                    --image-id "imageDigest=$ARM64_DIGEST"
+
+                  FINDINGS="$(aws ecr describe-image-scan-findings \
+                    --repository-name "$REPOSITORY_NAME" \
+                    --image-id "imageDigest=$ARM64_DIGEST" \
+                    --query imageScanFindings.findingSeverityCounts \
+                    --output json)"
+                  CRITICAL_FINDINGS="$(jq -r '.CRITICAL // 0' <<< "$FINDINGS")"
+                  HIGH_FINDINGS="$(jq -r '.HIGH // 0' <<< "$FINDINGS")"
+
+                  if (( CRITICAL_FINDINGS > 0 || HIGH_FINDINGS > 0 )); then
+                    echo "::error::ARM64 runtime image has $CRITICAL_FINDINGS critical and $HIGH_FINDINGS high findings"
+                    exit 1
+                  fi
+
+            - name: Deploy ECS/Fargate service
+              env:
+                  CLOUDFORMATION_STACK: ${{ vars.AI_AGENT_CLOUDFORMATION_STACK }}
+                  TRIGGER_SECRET_KEY_SECRET_ARN: ${{ vars.AI_AGENT_TRIGGER_SECRET_KEY_SECRET_ARN }}
+                  LAUNCHDARKLY_SDK_KEY_SECRET_ARN: ${{ vars.AI_AGENT_LAUNCHDARKLY_SDK_KEY_SECRET_ARN }}
+              run: |
+                  aws cloudformation deploy \
+                    --stack-name "$CLOUDFORMATION_STACK" \
+                    --template-file services/learn-card-network/ai-agent/infra/aws/template.yml \
+                    --capabilities CAPABILITY_NAMED_IAM \
+                    --parameter-overrides \
+                      CreateService=true \
+                      ImageTag=sha-${{ github.sha }} \
+                      DeploymentId=${{ github.run_id }}-${{ github.run_attempt }} \
+                      Model=gpt-5.6-luna \
+                      ModelInputCostUsdPerMillion=0.2 \
+                      ModelOutputCostUsdPerMillion=1.2 \
+                      EnableTriggerSchedules=true \
+                      TriggerSecretKeySecretArn="$TRIGGER_SECRET_KEY_SECRET_ARN" \
+                      LaunchDarklySdkKeySecretArn="$LAUNCHDARKLY_SDK_KEY_SECRET_ARN" \
+                    --tags \
+                      Project=learncard \
+                      Service=learncard-ai-agent \
+                      Environment="$TARGET_ENVIRONMENT" \
+                    --no-fail-on-empty-changeset
+
+            - name: Verify readiness
+              uses: nick-fields/retry@v2
+              with:
+                  timeout_seconds: 15
+                  max_attempts: 10
+                  retry_wait_seconds: 10
+                  command: bun -e "const r = await fetch('${{ vars.AI_AGENT_BASE_URL }}/api/health/ready'); if (!r.ok) throw new Error('Readiness returned ' + r.status); const body = await r.json(); if (!body.ok) throw new Error('Service is not ready')"
+
+            - name: Verify observability delivery
+              run: |
+                  bun -e "
+                    const response = await fetch('${{ vars.AI_AGENT_BASE_URL }}/api/health');
+                    if (!response.ok) throw new Error('Health returned ' + response.status);
+                    const body = await response.json();
+                    if (!body.observability?.cloudWatchMetrics) {
+                      throw new Error('Direct CloudWatch metrics are not enabled');
+                    }
+                    if (body.observability?.sentry?.delivery !== 'delivered') {
+                      throw new Error('Sentry deployment event was not delivered');
+                    }
+                  "
+
+            - name: Run authenticated staging smoke test
+              id: staging-smoke
+              if: env.TARGET_ENVIRONMENT == 'staging'
+              continue-on-error: true
+              env:
+                  AI_AGENT_SMOKE_BASE_URL: ${{ vars.AI_AGENT_BASE_URL }}
+                  AI_AGENT_SMOKE_SEED: ${{ secrets.AI_AGENT_SMOKE_SEED }}
+              run: bun run --cwd services/learn-card-network/ai-agent smoke:staging
+
+            - name: Verify readable CloudWatch application logs
+              if: always() && env.TARGET_ENVIRONMENT == 'staging'
+              uses: nick-fields/retry@v2
+              with:
+                  timeout_seconds: 20
+                  max_attempts: 5
+                  retry_wait_seconds: 10
+                  command: |
+                      set -euo pipefail
+                      LOG_GROUP="$(aws cloudformation describe-stacks \
+                        --stack-name '${{ vars.AI_AGENT_CLOUDFORMATION_STACK }}' \
+                        --query "Stacks[0].Outputs[?OutputKey=='ApplicationLogGroupName'].OutputValue | [0]" \
+                        --output text)"
+                      START_TIME="$(( $(date +%s) * 1000 - 600000 ))"
+                      MESSAGES="$(aws logs filter-log-events \
+                        --log-group-name "$LOG_GROUP" \
+                        --start-time "$START_TIME" \
+                        --query 'events[].message' \
+                        --output text)"
+                      [[ "$MESSAGES" == *'agent.run.'* ]]
+                      [[ "$MESSAGES" != *'"_aws"'* ]]
+                      printf '%s\n' "$MESSAGES"
+
+            - name: Require staging smoke success
+              if: always() && env.TARGET_ENVIRONMENT == 'staging'
+              env:
+                  SMOKE_OUTCOME: ${{ steps.staging-smoke.outcome }}
+              run: |
+                  if [ "$SMOKE_OUTCOME" != 'success' ]; then
+                    echo "::error::Authenticated staging smoke test failed"
+                    exit 1
+                  fi

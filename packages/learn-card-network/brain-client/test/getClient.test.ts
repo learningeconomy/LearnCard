@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { observable } from '@trpc/server/observable';
 
+import { callbackLink } from '../src/callbackLink';
 import { getClient } from '../src/index';
 
 const CHALLENGES = ['challenge-1', 'challenge-2', 'challenge-3'];
@@ -101,16 +103,21 @@ describe('getClient challenge fetching', () => {
         vi.unstubAllGlobals();
     });
 
-    it('prefetches challenges at construction', async () => {
-        const { challengeCalls, challengeRequested } = stubFetch();
+    it('defers challenge requests until the first authenticated operation', async () => {
+        const { challengeCalls } = stubFetch();
+        const client = await getClient(
+            'https://example.com/api',
+            async challenge => `jwt:${challenge ?? ''}`
+        );
 
-        await getClient('https://example.com/api', async challenge => `jwt:${challenge ?? ''}`);
-        await challengeRequested;
+        expect(challengeCalls()).toHaveLength(0);
+
+        await client.utilities.healthCheck.query();
 
         expect(challengeCalls()).toHaveLength(1);
     });
 
-    it('shares the eager in-flight prefetch with the first request', async () => {
+    it('shares the lazy in-flight refill with the first request', async () => {
         const challengeGate = Promise.withResolvers<void>();
         const { challengeCalls, challengeRequested } = stubFetch({
             challengeGate: challengeGate.promise,
@@ -118,8 +125,8 @@ describe('getClient challenge fetching', () => {
         const didAuthFunction = vi.fn(async (challenge?: string) => `jwt:${challenge ?? 'none'}`);
         const client = await getClient('https://example.com/api', didAuthFunction);
 
-        await challengeRequested;
         const firstRequest = client.utilities.healthCheck.query();
+        await challengeRequested;
 
         expect(challengeCalls()).toHaveLength(1);
 
@@ -143,9 +150,9 @@ describe('getClient challenge fetching', () => {
             async challenge => `jwt:${challenge ?? ''}`
         );
 
-        await challengeRequested;
         const first = client.utilities.healthCheck.query();
         const second = client.utilities.healthCheck.query();
+        await challengeRequested;
         challengeGate.resolve();
 
         await Promise.all([first, second]);
@@ -163,8 +170,8 @@ describe('getClient challenge fetching', () => {
         const didAuthFunction = vi.fn(async (challenge?: string) => `jwt:${challenge ?? 'none'}`);
         const client = await getClient('https://example.com/api', didAuthFunction);
 
-        await challengeRequested;
         const first = client.utilities.healthCheck.query();
+        await challengeRequested;
         await healthRequested;
         const second = client.utilities.healthCheck.query();
         await secondChallengeRequested;
@@ -190,8 +197,8 @@ describe('getClient challenge fetching', () => {
             async challenge => `jwt:${challenge ?? ''}`
         );
 
-        await challengeRequested;
         const request = client.utilities.healthCheck.query();
+        await challengeRequested;
         challengeGate.resolve();
 
         await expect(request).rejects.toThrow('Challenge refill returned no challenges');
@@ -212,5 +219,32 @@ describe('getClient challenge fetching', () => {
 
         const healthCalls = calls.filter(call => call.url.includes('healthCheck'));
         expect(healthCalls).toHaveLength(2);
+    });
+    it('forwards completion and tears down the upstream subscription once', () => {
+        const upstreamCleanup = vi.fn();
+        const complete = vi.fn();
+        const next = vi.fn(() =>
+            observable(observer => {
+                observer.next({ result: { data: 'OK' } } as never);
+                observer.complete();
+
+                return upstreamCleanup;
+            })
+        );
+        const link = callbackLink(async () => undefined)({} as never);
+        const subscription = link({
+            op: {} as never,
+            next,
+        }).subscribe({
+            next: vi.fn(),
+            error: vi.fn(),
+            complete,
+        });
+
+        expect(complete).toHaveBeenCalledOnce();
+
+        subscription.unsubscribe();
+
+        expect(upstreamCleanup).toHaveBeenCalledOnce();
     });
 });

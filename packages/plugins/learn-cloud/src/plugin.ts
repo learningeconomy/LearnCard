@@ -77,47 +77,90 @@ export const getLearnCloudPlugin = async (
     let client = await getLearnCloudClient(url, learnCard);
 
     let dids: string[] = [learnCard.id.did()];
+    let didsLoaded = false;
 
-    void client.user.getDids
-        .query()
-        .then(result => (dids = result))
-        .catch(error => learnCard.debug?.('Unable to preload LearnCloud DIDs', error));
+    const loadDids = async (currentClient: LearnCloudClient): Promise<void> => {
+        if (didsLoaded) return;
 
-    let otherClients: Record<string, LearnCloudClient> = {};
-
-    let learnCloudDid: ReturnType<typeof client.utilities.getDid.query> | undefined;
-    const getLearnCloudDid = () => (learnCloudDid ??= client.utilities.getDid.query());
-
-    const getOtherClient = async (url: string) => {
-        if (!otherClients[url]) otherClients[url] = await getLearnCloudClient(url, learnCard);
-
-        return otherClients[url]!;
+        dids = await currentClient.user.getDids.query();
+        didsLoaded = true;
     };
 
-    const updateLearnCard = async (
-        _learnCard: LearnCard<any, 'id', LearnCloudPluginDependentMethods>
-    ) => {
-        const oldDid = learnCard.id.did();
-        const newDid = _learnCard.id.did();
+    const otherClients = new Map<string, Promise<LearnCloudClient>>();
+    const learnCloudDids = new WeakMap<LearnCloudClient, Promise<string>>();
 
-        if (oldDid !== newDid) {
-            if (!dids.includes(newDid) && automaticallyAssociateDids) {
-                const presentation = await _learnCard.invoke.getDidAuthVp();
+    const getLearnCloudDid = (currentClient: LearnCloudClient): Promise<string> => {
+        let learnCloudDid = learnCloudDids.get(currentClient);
 
-                await client.user.addDid.mutate({ presentation });
-
-                if (newDid.split(':')[1] === 'web') {
-                    await client.user.setPrimaryDid.mutate({ presentation });
-                }
-
-                dids = await client.user.getDids.query();
-            }
-
-            client = await getLearnCloudClient(url, _learnCard);
-            learnCloudDid = undefined;
+        if (!learnCloudDid) {
+            learnCloudDid = currentClient.utilities.getDid.query();
+            learnCloudDids.set(currentClient, learnCloudDid);
         }
 
-        learnCard = _learnCard;
+        return learnCloudDid;
+    };
+
+    const getOtherClient = async (
+        otherUrl: string,
+        _learnCard: typeof initialLearnCard
+    ): Promise<LearnCloudClient> => {
+        const key = `${_learnCard.id.did()}\0${otherUrl}`;
+        let otherClient = otherClients.get(key);
+
+        if (!otherClient) {
+            otherClient = getLearnCloudClient(otherUrl, _learnCard);
+            otherClients.set(key, otherClient);
+        }
+
+        try {
+            return await otherClient;
+        } catch (error) {
+            if (otherClients.get(key) === otherClient) otherClients.delete(key);
+
+            throw error;
+        }
+    };
+
+    let updateQueue = Promise.resolve();
+
+    const updateLearnCard = (
+        _learnCard: LearnCard<any, 'id', LearnCloudPluginDependentMethods>
+    ): Promise<LearnCloudClient> => {
+        const update = updateQueue.then(async () => {
+            const oldDid = learnCard.id.did();
+            const newDid = _learnCard.id.did();
+
+            if (oldDid !== newDid) {
+                if (automaticallyAssociateDids) {
+                    await loadDids(client);
+
+                    if (!dids.includes(newDid)) {
+                        const presentation = await _learnCard.invoke.getDidAuthVp();
+
+                        await client.user.addDid.mutate({ presentation });
+
+                        if (newDid.split(':')[1] === 'web') {
+                            await client.user.setPrimaryDid.mutate({ presentation });
+                        }
+
+                        dids = await client.user.getDids.query();
+                    }
+                }
+
+                client = await getLearnCloudClient(url, _learnCard);
+            }
+
+            learnCard = _learnCard;
+
+            return client;
+        });
+
+        updateQueue = update.then(
+            () => undefined,
+            () => undefined
+        );
+
+        return update;
     };
 
     return {
@@ -126,7 +169,7 @@ export const getLearnCloudPlugin = async (
         description: 'LearnCloud Integration',
         methods: {
             learnCloudCreate: async (_learnCard, document) => {
-                await updateLearnCard(_learnCard);
+                const currentClient = await updateLearnCard(_learnCard);
 
                 const item = await generateEncryptedRecord(
                     _learnCard,
@@ -134,12 +177,16 @@ export const getLearnCloudPlugin = async (
                     unencryptedCustomFields
                 );
 
-                return client.customStorage.create.mutate({
-                    item: await generateJWE(_learnCard, await getLearnCloudDid(), item),
+                return currentClient.customStorage.create.mutate({
+                    item: await generateJWE(
+                        _learnCard,
+                        await getLearnCloudDid(currentClient),
+                        item
+                    ),
                 });
             },
             learnCloudCreateMany: async (_learnCard, documents) => {
-                await updateLearnCard(_learnCard);
+                const currentClient = await updateLearnCard(_learnCard);
 
                 const items = await Promise.all(
                     documents.map(async document =>
@@ -147,8 +194,12 @@ export const getLearnCloudPlugin = async (
                     )
                 );
 
-                return client.customStorage.createMany.mutate({
-                    items: await generateJWE(_learnCard, await getLearnCloudDid(), items),
+                return currentClient.customStorage.createMany.mutate({
+                    items: await generateJWE(
+                        _learnCard,
+                        await getLearnCloudDid(currentClient),
+                        items
+                    ),
                 });
             },
             learnCloudRead: async (_learnCard, query, includeAssociatedDids) => {
@@ -182,10 +233,10 @@ export const getLearnCloudPlugin = async (
                 paginationOptions,
                 includeAssociatedDids
             ) => {
-                await updateLearnCard(_learnCard);
+                const currentClient = await updateLearnCard(_learnCard);
 
                 if (!query) {
-                    const jwe: JWE = (await client.customStorage.read.query({
+                    const jwe: JWE = (await currentClient.customStorage.read.query({
                         includeAssociatedDids,
                         ...paginationOptions,
                     })) as any;
@@ -219,8 +270,8 @@ export const getLearnCloudPlugin = async (
                     )
                 );
 
-                const jwe: JWE = (await client.customStorage.read.query({
-                    query: await generateJWE(_learnCard, await getLearnCloudDid(), {
+                const jwe: JWE = (await currentClient.customStorage.read.query({
+                    query: await generateJWE(_learnCard, await getLearnCloudDid(currentClient), {
                         ...unencryptedEntries,
                         ...(fields.length > 0 ? { fields: { $in: fields } } : {}),
                     }),
@@ -246,9 +297,10 @@ export const getLearnCloudPlugin = async (
                 };
             },
             learnCloudCount: async (_learnCard, query, includeAssociatedDids) => {
-                await updateLearnCard(_learnCard);
+                const currentClient = await updateLearnCard(_learnCard);
 
-                if (!query) return client.customStorage.count.query({ includeAssociatedDids });
+                if (!query)
+                    return currentClient.customStorage.count.query({ includeAssociatedDids });
 
                 const fields = await generateEncryptedFieldsArray(_learnCard, query, [
                     ...unencryptedCustomFields,
@@ -261,8 +313,8 @@ export const getLearnCloudPlugin = async (
                     )
                 );
 
-                return client.customStorage.count.query({
-                    query: await generateJWE(_learnCard, await getLearnCloudDid(), {
+                return currentClient.customStorage.count.query({
+                    query: await generateJWE(_learnCard, await getLearnCloudDid(currentClient), {
                         ...unencryptedEntries,
                         ...(fields.length > 0 ? { fields: { $in: fields } } : {}),
                     }),
@@ -270,19 +322,23 @@ export const getLearnCloudPlugin = async (
                 });
             },
             learnCloudUpdate: async (_learnCard, query, update) => {
-                await updateLearnCard(_learnCard);
+                const currentClient = await updateLearnCard(_learnCard);
 
                 const documents = await _learnCard.invoke.learnCloudRead(query);
 
                 const updates = await Promise.all(
                     documents.map(async document =>
-                        client.customStorage.update.mutate({
-                            query: await generateJWE(_learnCard, await getLearnCloudDid(), {
-                                _id: document._id,
-                            }),
+                        currentClient.customStorage.update.mutate({
+                            query: await generateJWE(
+                                _learnCard,
+                                await getLearnCloudDid(currentClient),
+                                {
+                                    _id: document._id,
+                                }
+                            ),
                             update: await generateJWE(
                                 _learnCard,
-                                await getLearnCloudDid(),
+                                await getLearnCloudDid(currentClient),
                                 await generateEncryptedRecord(
                                     _learnCard,
                                     { ...document, ...update },
@@ -296,9 +352,10 @@ export const getLearnCloudPlugin = async (
                 return updates.reduce((sum, current) => current + sum, 0);
             },
             learnCloudDelete: async (_learnCard, query, includeAssociatedDids) => {
-                await updateLearnCard(_learnCard);
+                const currentClient = await updateLearnCard(_learnCard);
 
-                if (!query) return client.customStorage.delete.mutate({ includeAssociatedDids });
+                if (!query)
+                    return currentClient.customStorage.delete.mutate({ includeAssociatedDids });
 
                 const fields = await generateEncryptedFieldsArray(_learnCard, query, [
                     ...unencryptedCustomFields,
@@ -311,8 +368,8 @@ export const getLearnCloudPlugin = async (
                     )
                 );
 
-                return client.customStorage.delete.mutate({
-                    query: await generateJWE(_learnCard, await getLearnCloudDid(), {
+                return currentClient.customStorage.delete.mutate({
+                    query: await generateJWE(_learnCard, await getLearnCloudDid(currentClient), {
                         ...unencryptedEntries,
                         ...(fields.length > 0 ? { fields: { $in: fields } } : {}),
                     }),
@@ -320,7 +377,8 @@ export const getLearnCloudPlugin = async (
                 });
             },
             learnCloudBatchResolve: async (_learnCard, uris) => {
-                const results = await client.storage.batchResolve.query({ uris });
+                const currentClient = await updateLearnCard(_learnCard);
+                const results = await currentClient.storage.batchResolve.query({ uris });
 
                 return Promise.all(
                     results.map(async result => {
@@ -348,20 +406,21 @@ export const getLearnCloudPlugin = async (
         },
         read: {
             get: async (_learnCard, uri) => {
-                learnCard.debug?.('LearnCloud read.get', uri);
+                _learnCard.debug?.('LearnCloud read.get', uri);
 
                 if (!uri) return undefined;
+                const currentClient = await updateLearnCard(_learnCard);
 
                 const parts = uri.split(':');
 
-                learnCard.debug?.('LearnCloud read.get parts:', parts);
+                _learnCard.debug?.('LearnCloud read.get parts:', parts);
 
                 if (parts.length !== 5) return undefined;
 
                 const [lc, method, uriUrl] = parts as [string, string, string, string, string];
 
                 if (lc !== 'lc' || method !== 'cloud') {
-                    learnCard.debug?.('LearnCloud read.get not cloud URI!', { lc, method });
+                    _learnCard.debug?.('LearnCloud read.get not cloud URI!', { lc, method });
 
                     return undefined;
                 }
@@ -378,7 +437,7 @@ export const getLearnCloudPlugin = async (
                               }://${uriUrl}`
                     ).replaceAll('%3A', ':');
 
-                    learnCard.debug?.('LearnCloud read.get different LearnCloud!', {
+                    _learnCard.debug?.('LearnCloud read.get different LearnCloud!', {
                         uriUrl,
                         url,
                         fullUrl,
@@ -388,16 +447,16 @@ export const getLearnCloudPlugin = async (
                         },
                     });
 
-                    const otherClient = await getOtherClient(fullUrl);
+                    const otherClient = await getOtherClient(fullUrl, _learnCard);
 
                     try {
                         const result = await otherClient.storage.resolve.query({ uri: uri });
 
-                        learnCard.debug?.('LearnCloud read.get result', result);
+                        _learnCard.debug?.('LearnCloud read.get result', result);
 
                         const decryptedResult = await _learnCard.invoke.decryptDagJwe(result);
 
-                        learnCard.debug?.('LearnCloud read.get decryptedResult', decryptedResult);
+                        _learnCard.debug?.('LearnCloud read.get decryptedResult', decryptedResult);
 
                         const parsed = await VCValidator.or(VPValidator)
                             .or(StoredCredentialEnvelopeValidator)
@@ -410,13 +469,13 @@ export const getLearnCloudPlugin = async (
                 }
 
                 try {
-                    const result = await client.storage.resolve.query({ uri: uri });
+                    const result = await currentClient.storage.resolve.query({ uri });
 
-                    learnCard.debug?.('LearnCloud read.get result', result);
+                    _learnCard.debug?.('LearnCloud read.get result', result);
 
                     const decryptedResult = await _learnCard.invoke.decryptDagJwe(result);
 
-                    learnCard.debug?.('LearnCloud read.get decryptedResult', decryptedResult);
+                    _learnCard.debug?.('LearnCloud read.get decryptedResult', decryptedResult);
 
                     const parsed = await VCValidator.or(VPValidator)
                         .or(StoredCredentialEnvelopeValidator)
@@ -431,8 +490,9 @@ export const getLearnCloudPlugin = async (
         store: {
             upload: async (_learnCard, credential) => {
                 _learnCard.debug?.("learnCard.store['LearnCard Network'].upload");
+                const currentClient = await updateLearnCard(_learnCard);
 
-                return client.storage.store.mutate({
+                return currentClient.storage.store.mutate({
                     item: normalizeEnvelopeForTransport(credential),
                 });
             },
@@ -442,21 +502,23 @@ export const getLearnCloudPlugin = async (
                 { recipients = [] } = { recipients: [] }
             ) => {
                 _learnCard.debug?.("learnCard.store['LearnCard Network'].upload");
+                const currentClient = await updateLearnCard(_learnCard);
 
                 const jwe = await _learnCard.invoke.createDagJwe(
                     normalizeEnvelopeForTransport(credential),
                     [_learnCard.id.did(), ...recipients]
                 );
 
-                return client.storage.store.mutate({ item: jwe });
+                return currentClient.storage.store.mutate({ item: jwe });
             },
             delete: async (_learnCard, uri) => {
                 _learnCard.debug?.("learnCard.store['LearnCloud'].delete", { uri });
+                const currentClient = await updateLearnCard(_learnCard);
 
                 let deleted = false;
 
                 try {
-                    deleted = Boolean(await client.storage.delete.mutate({ uri }));
+                    deleted = Boolean(await currentClient.storage.delete.mutate({ uri }));
                 } catch (error) {
                     _learnCard.debug?.('LearnCloud store.delete storage.delete failed', error);
                 }
@@ -500,7 +562,7 @@ export const getLearnCloudPlugin = async (
                 return records;
             },
             getPage: async (_learnCard, query, paginationOptions) => {
-                await updateLearnCard(_learnCard);
+                const currentClient = await updateLearnCard(_learnCard);
 
                 _learnCard.debug?.('LearnCloud index.getPaginated', query, paginationOptions);
 
@@ -513,7 +575,7 @@ export const getLearnCloudPlugin = async (
 
                 if (!query) {
                     _learnCard.debug?.('LearnCloud index.get (no query)');
-                    const jwe: JWE = (await client.index.get.query(options)) as any;
+                    const jwe = await currentClient.index.get.query(options);
 
                     _learnCard.debug?.('LearnCloud index.get (no query response)', jwe);
 
@@ -555,8 +617,8 @@ export const getLearnCloudPlugin = async (
                     unencryptedEntries
                 );
 
-                const jwe: JWE = (await client.index.get.query({
-                    query: await generateJWE(_learnCard, await getLearnCloudDid(), {
+                const jwe: JWE = (await currentClient.index.get.query({
+                    query: await generateJWE(_learnCard, await getLearnCloudDid(currentClient), {
                         ...unencryptedEntries,
                         ...(fields.length > 0 ? { fields: { $in: fields } } : {}),
                     }),
@@ -584,11 +646,11 @@ export const getLearnCloudPlugin = async (
                 };
             },
             getCount: async (_learnCard, query) => {
-                await updateLearnCard(_learnCard);
+                const currentClient = await updateLearnCard(_learnCard);
 
                 if (!query) {
                     _learnCard.debug?.('LearnCloud index.count (no query)');
-                    const jwe = await client.index.count.query();
+                    const jwe = await currentClient.index.count.query();
 
                     _learnCard.debug?.('LearnCloud index.count (no query response)', jwe);
 
@@ -620,8 +682,8 @@ export const getLearnCloudPlugin = async (
                     unencryptedEntries
                 );
 
-                const jwe = await client.index.count.query({
-                    query: await generateJWE(_learnCard, await getLearnCloudDid(), {
+                const jwe = await currentClient.index.count.query({
+                    query: await generateJWE(_learnCard, await getLearnCloudDid(currentClient), {
                         ...unencryptedEntries,
                         ...(fields.length > 0 ? { fields: { $in: fields } } : {}),
                     }),
@@ -638,12 +700,12 @@ export const getLearnCloudPlugin = async (
                 return count;
             },
             add: async (_learnCard, record) => {
-                await updateLearnCard(_learnCard);
+                const currentClient = await updateLearnCard(_learnCard);
 
                 const id = record.id || _learnCard.invoke.crypto().randomUUID();
 
-                return client.index.add.mutate({
-                    record: await generateJWE(_learnCard, await getLearnCloudDid(), {
+                return currentClient.index.add.mutate({
+                    record: await generateJWE(_learnCard, await getLearnCloudDid(currentClient), {
                         ...(await generateEncryptedRecord(
                             _learnCard,
                             { ...record, id },
@@ -654,7 +716,7 @@ export const getLearnCloudPlugin = async (
                 });
             },
             addMany: async (_learnCard, _records) => {
-                await updateLearnCard(_learnCard);
+                const currentClient = await updateLearnCard(_learnCard);
 
                 const results = await Promise.all(
                     chunk(_records, 25).map(async batch => {
@@ -673,10 +735,10 @@ export const getLearnCloudPlugin = async (
                             })
                         );
 
-                        return client.index.addMany.mutate({
+                        return currentClient.index.addMany.mutate({
                             records: await generateJWE(
                                 _learnCard,
-                                await getLearnCloudDid(),
+                                await getLearnCloudDid(currentClient),
                                 records
                             ),
                         });
@@ -686,7 +748,7 @@ export const getLearnCloudPlugin = async (
                 return results.every(Boolean);
             },
             update: async (_learnCard, id, updates) => {
-                await updateLearnCard(_learnCard);
+                const currentClient = await updateLearnCard(_learnCard);
 
                 const records = await _learnCard.index.LearnCloud.get({ id });
 
@@ -696,24 +758,24 @@ export const getLearnCloudPlugin = async (
 
                 const newRecord = { ...record, ...updates };
 
-                return client.index.update.mutate({
+                return currentClient.index.update.mutate({
                     id: await hash(_learnCard, id),
                     updates: await generateJWE(
                         _learnCard,
-                        await getLearnCloudDid(),
+                        await getLearnCloudDid(currentClient),
                         await generateEncryptedRecord(_learnCard, newRecord, unencryptedFields)
                     ),
                 });
             },
             remove: async (_learnCard, id) => {
-                await updateLearnCard(_learnCard);
+                const currentClient = await updateLearnCard(_learnCard);
 
-                return client.index.remove.mutate({ id: await hash(_learnCard, id) });
+                return currentClient.index.remove.mutate({ id: await hash(_learnCard, id) });
             },
             removeAll: async _learnCard => {
-                await updateLearnCard(_learnCard);
+                const currentClient = await updateLearnCard(_learnCard);
 
-                return client.index.removeAll.mutate();
+                return currentClient.index.removeAll.mutate();
             },
         },
     };

@@ -107,6 +107,7 @@
             "alerts": "Alertes",
             "personalize": "Personnaliser",
             "adminTools": "Outils d'administration",
+            "myAssistant": "Mon assistant",
             "wallet": "Portefeuille",
             "passport": "Passeport",
             "aiTopics": "Sessions IA",
@@ -125,6 +126,12 @@
         },
         "settings": "Paramètres",
         "closeMenu": "Fermer le menu"
+    },
+    "myAssistant": {
+        "schedules": {
+            "autonomyUnavailableTitle": "Les tâches automatiques ne sont pas encore activées",
+            "autonomyUnavailableDescription": "Vous pouvez toujours discuter avec votre assistant. Les planifications récurrentes sont réservées à certains comptes de test."
+        }
     },
     "passport": {
         "buildMyLearnCard": {

@@ -11,6 +11,7 @@ describe('initNetworkStoreFromTenant', () => {
         lcaApi: 'https://api.test.com/trpc',
         xapi: 'https://cloud.test.com/xapi',
         aiService: 'https://ai.test.com',
+        aiAgentService: 'https://agent.test.com',
     };
 
     beforeEach(() => {
@@ -22,6 +23,7 @@ describe('initNetworkStoreFromTenant', () => {
         networkStore.set.apiEndpoint('https://api.learncard.app/trpc');
         networkStore.set.notificationsEndpoint('https://api.learncard.app/api/notifications/send');
         networkStore.set.aiServiceUrl('https://api.learncloud.ai');
+        networkStore.set.aiAgentUrl('http://localhost:4300');
         networkStore.set.tenantId('');
     });
 
@@ -37,6 +39,7 @@ describe('initNetworkStoreFromTenant', () => {
             'https://api.test.com/api/notifications/send'
         );
         expect(networkStore.get.aiServiceUrl()).toBe('https://ai.test.com');
+        expect(networkStore.get.aiAgentUrl()).toBe('https://agent.test.com');
     });
 
     it('derives xapi URL from cloudService when xapi is not provided', () => {
@@ -52,7 +55,7 @@ describe('initNetworkStoreFromTenant', () => {
         expect(networkStore.get.xapiUrl()).toBe('https://cloud.test.com/xapi');
     });
 
-    it('falls back to default AI service URL when aiService is not provided', () => {
+    it('falls back to default AI service URLs when they are not provided', () => {
         const apisNoAi: TenantApiConfig = {
             brainService: 'https://brain.test.com/trpc',
             brainServiceApi: 'https://brain.test.com/api',
@@ -63,6 +66,7 @@ describe('initNetworkStoreFromTenant', () => {
         initNetworkStoreFromTenant(apisNoAi);
 
         expect(networkStore.get.aiServiceUrl()).toBe('https://api.learncloud.ai');
+        expect(networkStore.get.aiAgentUrl()).toBe('http://localhost:4300');
     });
 
     it('uses explicit tenant notifications endpoint when provided', () => {

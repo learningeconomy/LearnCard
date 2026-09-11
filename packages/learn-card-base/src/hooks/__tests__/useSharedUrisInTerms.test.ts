@@ -12,7 +12,12 @@ vi.mock('learn-card-base', () => ({
     }),
 }));
 
-import { getOrCreateSharedUriForWallet } from '../useSharedUrisInTerms';
+import {
+    getOrCreateSharedUriForWallet,
+    getTermsWithSharedUrisForWallet,
+} from '../useSharedUrisInTerms';
+
+type TestWallet = Parameters<typeof getOrCreateSharedUriForWallet>[0];
 
 describe('getOrCreateSharedUriForWallet', () => {
     const contractOwnerDid = 'did:web:localhost%3A4000:users:app-owner';
@@ -61,7 +66,7 @@ describe('getOrCreateSharedUriForWallet', () => {
                     getPage: vi.fn(),
                 },
             },
-        } as any;
+        } as unknown as TestWallet;
 
         const result = await getOrCreateSharedUriForWallet(
             wallet,
@@ -83,5 +88,115 @@ describe('getOrCreateSharedUriForWallet', () => {
                 [contractOwnerDid]: ['shared:2'],
             },
         });
+    });
+
+    it('reuses a cached shared URI only from the matching credential record', async () => {
+        const credentialUri = 'cred:2';
+        const sharedUri = 'shared:2';
+        const read = vi.fn();
+        const uploadEncrypted = vi.fn();
+
+        queryClient.setQueryData(['useGetCredentialList', 'did:web:test-user', 'Achievement'], {
+            pages: [
+                {
+                    records: [
+                        {
+                            id: 'record-1',
+                            uri: 'cred:1',
+                            sharedUris: {
+                                [contractOwnerDid]: ['shared:1'],
+                            },
+                        },
+                        {
+                            id: 'record-2',
+                            uri: credentialUri,
+                            sharedUris: {
+                                [contractOwnerDid]: [sharedUri],
+                            },
+                        },
+                    ],
+                    hasMore: false,
+                },
+            ],
+            pageParams: [undefined],
+        });
+
+        await expect(
+            getOrCreateSharedUriForWallet(
+                {
+                    read: { get: read },
+                    store: { LearnCloud: { uploadEncrypted } },
+                    index: { LearnCloud: { update: vi.fn(), getPage: vi.fn() } },
+                } as unknown as TestWallet,
+                contractOwnerDid,
+                queryClient,
+                credentialUri,
+                'Achievement'
+            )
+        ).resolves.toBe(sharedUri);
+
+        expect(read).not.toHaveBeenCalled();
+        expect(uploadEncrypted).not.toHaveBeenCalled();
+    });
+
+    it('deduplicates shared URIs when replacing terms credential refs', async () => {
+        const credentialUri = 'cred:2';
+        const sharedUri = 'shared:2';
+        const getPage = vi.fn().mockResolvedValue({
+            records: [
+                {
+                    id: 'record-2',
+                    uri: credentialUri,
+                    sharedUris: {
+                        [contractOwnerDid]: [sharedUri],
+                    },
+                },
+            ],
+            hasMore: false,
+        });
+
+        queryClient.setQueryData(['useGetCredentialList', 'did:web:test-user', 'Achievement'], {
+            pages: [
+                {
+                    records: [
+                        {
+                            id: 'record-2',
+                            uri: credentialUri,
+                            sharedUris: {
+                                [contractOwnerDid]: [sharedUri],
+                            },
+                        },
+                    ],
+                    hasMore: false,
+                },
+            ],
+            pageParams: [undefined],
+        });
+
+        const result = await getTermsWithSharedUrisForWallet(
+            {
+                read: { get: vi.fn() },
+                store: { LearnCloud: { uploadEncrypted: vi.fn() } },
+                index: { LearnCloud: { update: vi.fn(), getPage } },
+            } as unknown as TestWallet,
+            contractOwnerDid,
+            queryClient,
+            {
+                terms: {
+                    read: {
+                        credentials: {
+                            categories: {
+                                Achievement: {
+                                    sharing: true,
+                                    shared: [credentialUri, credentialUri],
+                                },
+                            },
+                        },
+                    },
+                },
+            }
+        );
+
+        expect(result.terms.read.credentials.categories.Achievement.shared).toEqual([sharedUri]);
     });
 });

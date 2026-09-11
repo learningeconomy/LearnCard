@@ -107,6 +107,7 @@
             "alerts": "التنبيهات",
             "personalize": "تخصيص",
             "adminTools": "أدوات الإدارة",
+            "myAssistant": "مساعدي",
             "wallet": "المحفظة",
             "passport": "جواز السفر",
             "aiTopics": "جلسات الذكاء الاصطناعي",
@@ -125,6 +126,12 @@
         },
         "settings": "الإعدادات",
         "closeMenu": "إغلاق القائمة"
+    },
+    "myAssistant": {
+        "schedules": {
+            "autonomyUnavailableTitle": "المهام التلقائية غير مفعّلة بعد",
+            "autonomyUnavailableDescription": "لا يزال بإمكانك الدردشة مع مساعدك. الجداول المتكررة متاحة فقط لحسابات اختبار محددة."
+        }
     },
     "passport": {
         "buildMyLearnCard": {
