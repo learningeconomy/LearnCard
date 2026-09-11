@@ -10,6 +10,7 @@ Name | Type | Description | Notes
 **received** | **str** |  | [optional] 
 **boost_uris** | **List[str]** |  | 
 **credential_uris** | **List[str]** |  | [optional] 
+**status** | **str** |  | [optional] 
 
 ## Example
 

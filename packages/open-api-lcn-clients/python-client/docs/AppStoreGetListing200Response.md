@@ -22,8 +22,13 @@ Name | Type | Description | Notes
 **privacy_policy_url** | **str** |  | [optional] 
 **terms_url** | **str** |  | [optional] 
 **hero_background_color** | **str** |  | [optional] 
+**min_age** | **int** |  | [optional] 
+**age_rating** | **str** |  | [optional] 
+**submitted_at** | **str** |  | [optional] 
+**contact_email** | **str** |  | [optional] 
 **highlights** | **List[str]** |  | [optional] 
 **screenshots** | **List[str]** |  | [optional] 
+**submitter** | [**AppStoreGetListing200ResponseSubmitter**](AppStoreGetListing200ResponseSubmitter.md) |  | [optional] 
 
 ## Example
 

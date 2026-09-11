@@ -40,9 +40,24 @@ class TestStorageStoreRequestItemAnyOfAnyOf(unittest.TestCase):
                     ],
                 id = '',
                 type = None,
+                issuer = None,
+                credential_subject = None,
+                refresh_service = None,
+                credential_schema = None,
+                issuance_date = '',
+                expiration_date = '',
+                credential_status = None,
+                name = '',
+                description = '',
+                valid_from = '',
+                valid_until = '',
+                status = None,
+                terms_of_use = None,
+                evidence = None,
+                render_method = None,
+                proof = None,
                 verifiable_credential = None,
-                holder = '',
-                proof = None
+                holder = ''
             )
         else:
             return StorageStoreRequestItemAnyOfAnyOf(
@@ -50,6 +65,8 @@ class TestStorageStoreRequestItemAnyOfAnyOf(unittest.TestCase):
                     null
                     ],
                 type = None,
+                issuer = None,
+                credential_subject = None,
                 proof = None,
         )
         """

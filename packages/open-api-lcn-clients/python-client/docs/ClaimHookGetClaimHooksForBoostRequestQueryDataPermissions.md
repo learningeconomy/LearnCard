@@ -6,6 +6,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **role** | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |  | [optional] 
+**can_view** | **bool** |  | [optional] 
 **can_edit** | **bool** |  | [optional] 
 **can_issue** | **bool** |  | [optional] 
 **can_revoke** | **bool** |  | [optional] 

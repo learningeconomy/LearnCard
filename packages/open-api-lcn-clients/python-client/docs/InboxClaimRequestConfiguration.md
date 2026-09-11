@@ -7,6 +7,8 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **publishable_key** | **str** |  | 
 **signing_authority_name** | **str** |  | [optional] 
+**listing_id** | **str** |  | [optional] 
+**listing_slug** | **str** |  | [optional] 
 
 ## Example
 

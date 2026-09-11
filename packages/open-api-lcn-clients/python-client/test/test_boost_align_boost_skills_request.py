@@ -39,7 +39,8 @@ class TestBoostAlignBoostSkillsRequest(unittest.TestCase):
                 skills = [
                     openapi_client.models.boost_align_boost_skills_request_skills_inner.boost_alignBoostSkills_request_skills_inner(
                         framework_id = '', 
-                        id = '', )
+                        id = '', 
+                        proficiency_level = 1.337, )
                     ]
             )
         else:
@@ -48,7 +49,8 @@ class TestBoostAlignBoostSkillsRequest(unittest.TestCase):
                 skills = [
                     openapi_client.models.boost_align_boost_skills_request_skills_inner.boost_alignBoostSkills_request_skills_inner(
                         framework_id = '', 
-                        id = '', )
+                        id = '', 
+                        proficiency_level = 1.337, )
                     ],
         )
         """

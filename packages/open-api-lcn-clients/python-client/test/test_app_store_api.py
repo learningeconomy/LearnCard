@@ -40,6 +40,13 @@ class TestAppStoreApi(unittest.TestCase):
         """
         pass
 
+    def test_app_store_associate_listing_with_signing_authority(self) -> None:
+        """Test case for app_store_associate_listing_with_signing_authority
+
+        Associate Listing with Signing Authority
+        """
+        pass
+
     def test_app_store_browse_listed_apps(self) -> None:
         """Test case for app_store_browse_listed_apps
 
@@ -89,6 +96,13 @@ class TestAppStoreApi(unittest.TestCase):
         """
         pass
 
+    def test_app_store_get_integration_for_listing(self) -> None:
+        """Test case for app_store_get_integration_for_listing
+
+        Get Integration for Listing
+        """
+        pass
+
     def test_app_store_get_listing(self) -> None:
         """Test case for app_store_get_listing
 
@@ -103,6 +117,13 @@ class TestAppStoreApi(unittest.TestCase):
         """
         pass
 
+    def test_app_store_get_listing_signing_authority(self) -> None:
+        """Test case for app_store_get_listing_signing_authority
+
+        Get Listing Signing Authority
+        """
+        pass
+
     def test_app_store_get_listings_for_integration(self) -> None:
         """Test case for app_store_get_listings_for_integration
 
@@ -110,10 +131,24 @@ class TestAppStoreApi(unittest.TestCase):
         """
         pass
 
+    def test_app_store_get_my_credentials_from_app(self) -> None:
+        """Test case for app_store_get_my_credentials_from_app
+
+        Get credentials earned from an app
+        """
+        pass
+
     def test_app_store_get_public_listing(self) -> None:
         """Test case for app_store_get_public_listing
 
         Get Public App Listing
+        """
+        pass
+
+    def test_app_store_get_public_listing_by_slug(self) -> None:
+        """Test case for app_store_get_public_listing_by_slug
+
+        Get Public App Listing by Slug
         """
         pass
 
@@ -138,6 +173,13 @@ class TestAppStoreApi(unittest.TestCase):
         """
         pass
 
+    def test_app_store_send_app_notification(self) -> None:
+        """Test case for app_store_send_app_notification
+
+        Send App Notification
+        """
+        pass
+
     def test_app_store_submit_for_review(self) -> None:
         """Test case for app_store_submit_for_review
 
@@ -149,6 +191,13 @@ class TestAppStoreApi(unittest.TestCase):
         """Test case for app_store_uninstall_app
 
         Uninstall App
+        """
+        pass
+
+    def test_app_store_unsubmit_for_review(self) -> None:
+        """Test case for app_store_unsubmit_for_review
+
+        Unsubmit Listing from Review
         """
         pass
 

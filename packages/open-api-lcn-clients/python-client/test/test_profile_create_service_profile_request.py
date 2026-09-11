@@ -40,6 +40,9 @@ class TestProfileCreateServiceProfileRequest(unittest.TestCase):
                 short_bio = '',
                 bio = '',
                 is_private = True,
+                profile_visibility = 'public',
+                show_email = True,
+                allow_connection_requests = 'anyone',
                 email = '',
                 image = '',
                 hero_image = '',
@@ -64,6 +67,7 @@ class TestProfileCreateServiceProfileRequest(unittest.TestCase):
                 role = '',
                 dob = '',
                 country = '',
+                locale = '',
                 approved = True
             )
         else:

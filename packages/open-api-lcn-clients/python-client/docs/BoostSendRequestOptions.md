@@ -9,6 +9,7 @@ Name | Type | Description | Notes
 **webhook_url** | **str** | Webhook URL to receive claim notifications | [optional] 
 **suppress_delivery** | **bool** | If true, returns claimUrl without sending email/SMS | [optional] 
 **branding** | [**BoostSendRequestOptionsBranding**](BoostSendRequestOptionsBranding.md) |  | [optional] 
+**guardian_email** | **str** | Guardian email that must approve before student can claim | [optional] 
 
 ## Example
 

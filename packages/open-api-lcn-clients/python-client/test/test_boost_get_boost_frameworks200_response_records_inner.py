@@ -40,6 +40,7 @@ class TestBoostGetBoostFrameworks200ResponseRecordsInner(unittest.TestCase):
                 description = '',
                 image = '',
                 source_uri = '',
+                is_public = True,
                 status = 'active',
                 created_at = '',
                 updated_at = ''
@@ -48,6 +49,7 @@ class TestBoostGetBoostFrameworks200ResponseRecordsInner(unittest.TestCase):
             return BoostGetBoostFrameworks200ResponseRecordsInner(
                 id = '',
                 name = '',
+                is_public = True,
                 status = 'active',
         )
         """

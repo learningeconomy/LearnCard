@@ -40,7 +40,6 @@ class TestBoostSendBoostRequestCredentialAnyOfCredentialStatus(unittest.TestCase
             )
         else:
             return BoostSendBoostRequestCredentialAnyOfCredentialStatus(
-                id = '',
                 type = '',
         )
         """

@@ -17,21 +17,22 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field
-from typing import Any, ClassVar, Dict, List
-from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_id_any_of_any_of1_regex import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOfAnyOf1Regex
+from pydantic import BaseModel, ConfigDict, Field, StrictStr
+from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOfAnyOf1(BaseModel):
     """
     BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOfAnyOf1
     """ # noqa: E501
-    regex: BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOfAnyOf1Regex = Field(alias="$regex")
+    regex: Optional[StrictStr] = Field(default=None, alias="$regex")
     __properties: ClassVar[List[str]] = ["$regex"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -43,8 +44,7 @@ class BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOfAnyOf1(Ba
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -69,9 +69,11 @@ class BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOfAnyOf1(Ba
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # override the default output from pydantic by calling `to_dict()` of regex
-        if self.regex:
-            _dict['$regex'] = self.regex.to_dict()
+        # set to None if regex (nullable) is None
+        # and model_fields_set contains the field
+        if self.regex is None and "regex" in self.model_fields_set:
+            _dict['$regex'] = None
+
         return _dict
 
     @classmethod
@@ -84,7 +86,7 @@ class BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOfAnyOf1(Ba
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "$regex": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOfAnyOf1Regex.from_dict(obj["$regex"]) if obj.get("$regex") is not None else None
+            "$regex": obj.get("$regex")
         })
         return _obj
 

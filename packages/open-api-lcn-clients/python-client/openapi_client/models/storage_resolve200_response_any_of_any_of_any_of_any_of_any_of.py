@@ -13,158 +13,122 @@
 
 
 from __future__ import annotations
+from inspect import getfullargspec
+import json
 import pprint
 import re  # noqa: F401
-import json
+from pydantic import BaseModel, ConfigDict, Field, StrictStr, ValidationError, field_validator
+from typing import Optional
+from openapi_client.models.storage_resolve200_response_any_of_any_of_any_of_any_of_any_of_any_of import StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf
+from openapi_client.models.storage_resolve200_response_any_of_any_of_any_of_any_of_any_of_any_of1 import StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1
+from typing import Union, Any, List, Set, TYPE_CHECKING, Optional, Dict
+from typing_extensions import Literal, Self
+from pydantic import Field
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
-from typing_extensions import Annotated
-from openapi_client.models.boost_send_boost_request_credential_any_of_credential_status import BoostSendBoostRequestCredentialAnyOfCredentialStatus
-from openapi_client.models.boost_send_boost_request_credential_any_of_terms_of_use import BoostSendBoostRequestCredentialAnyOfTermsOfUse
-from openapi_client.models.boost_send_request_template_credential_any_of_context_inner import BoostSendRequestTemplateCredentialAnyOfContextInner
-from openapi_client.models.boost_send_request_template_credential_any_of_credential_subject import BoostSendRequestTemplateCredentialAnyOfCredentialSubject
-from openapi_client.models.boost_send_request_template_credential_any_of_evidence import BoostSendRequestTemplateCredentialAnyOfEvidence
-from openapi_client.models.storage_resolve200_response_any_of_any_of_any_of_any_of_any_of_issuer import StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfIssuer
-from typing import Optional, Set
-from typing_extensions import Self
+STORAGERESOLVE200RESPONSEANYOFANYOFANYOFANYOFANYOF_ANY_OF_SCHEMAS = ["StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf", "StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1"]
 
 class StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOf(BaseModel):
     """
     StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOf
-    """ # noqa: E501
-    context: List[BoostSendRequestTemplateCredentialAnyOfContextInner] = Field(alias="@context")
-    id: Optional[StrictStr] = None
-    type: Annotated[List[StrictStr], Field(min_length=1)]
-    issuer: StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfIssuer
-    credential_subject: BoostSendRequestTemplateCredentialAnyOfCredentialSubject = Field(alias="credentialSubject")
-    refresh_service: Optional[BoostSendBoostRequestCredentialAnyOfTermsOfUse] = Field(default=None, alias="refreshService")
-    credential_schema: Optional[BoostSendBoostRequestCredentialAnyOfCredentialStatus] = Field(default=None, alias="credentialSchema")
-    issuance_date: Optional[StrictStr] = Field(default=None, alias="issuanceDate")
-    expiration_date: Optional[StrictStr] = Field(default=None, alias="expirationDate")
-    credential_status: Optional[BoostSendBoostRequestCredentialAnyOfCredentialStatus] = Field(default=None, alias="credentialStatus")
-    name: Optional[StrictStr] = None
-    description: Optional[StrictStr] = None
-    valid_from: Optional[StrictStr] = Field(default=None, alias="validFrom")
-    valid_until: Optional[StrictStr] = Field(default=None, alias="validUntil")
-    status: Optional[BoostSendBoostRequestCredentialAnyOfCredentialStatus] = None
-    terms_of_use: Optional[BoostSendBoostRequestCredentialAnyOfTermsOfUse] = Field(default=None, alias="termsOfUse")
-    evidence: Optional[BoostSendRequestTemplateCredentialAnyOfEvidence] = None
-    additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["@context", "id", "type", "issuer", "credentialSubject", "refreshService", "credentialSchema", "issuanceDate", "expirationDate", "credentialStatus", "name", "description", "validFrom", "validUntil", "status", "termsOfUse", "evidence"]
+    """
 
-    model_config = ConfigDict(
-        populate_by_name=True,
-        validate_assignment=True,
-        protected_namespaces=(),
-    )
+    # data type: StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf
+    anyof_schema_1_validator: Optional[StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf] = None
+    # data type: StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1
+    anyof_schema_2_validator: Optional[StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1] = None
+    if TYPE_CHECKING:
+        actual_instance: Optional[Union[StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf, StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1]] = None
+    else:
+        actual_instance: Any = None
+    any_of_schemas: Set[str] = { "StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf", "StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1" }
 
+    model_config = {
+        "validate_assignment": True,
+        "protected_namespaces": (),
+    }
 
-    def to_str(self) -> str:
-        """Returns the string representation of the model using alias"""
-        return pprint.pformat(self.model_dump(by_alias=True))
+    def __init__(self, *args, **kwargs) -> None:
+        if args:
+            if len(args) > 1:
+                raise ValueError("If a position argument is used, only 1 is allowed to set `actual_instance`")
+            if kwargs:
+                raise ValueError("If a position argument is used, keyword arguments cannot be used.")
+            super().__init__(actual_instance=args[0])
+        else:
+            super().__init__(**kwargs)
+
+    @field_validator('actual_instance')
+    def actual_instance_must_validate_anyof(cls, v):
+        instance = StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOf.model_construct()
+        error_messages = []
+        # validate data type: StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf
+        if not isinstance(v, StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf`")
+        else:
+            return v
+
+        # validate data type: StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1
+        if not isinstance(v, StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1`")
+        else:
+            return v
+
+        if error_messages:
+            # no match
+            raise ValueError("No match found when setting the actual_instance in StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOf with anyOf schemas: StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf, StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1. Details: " + ", ".join(error_messages))
+        else:
+            return v
+
+    @classmethod
+    def from_dict(cls, obj: Dict[str, Any]) -> Self:
+        return cls.from_json(json.dumps(obj))
+
+    @classmethod
+    def from_json(cls, json_str: str) -> Self:
+        """Returns the object represented by the json string"""
+        instance = cls.model_construct()
+        error_messages = []
+        # anyof_schema_1_validator: Optional[StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf] = None
+        try:
+            instance.actual_instance = StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf.from_json(json_str)
+            return instance
+        except (ValidationError, ValueError) as e:
+             error_messages.append(str(e))
+        # anyof_schema_2_validator: Optional[StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1] = None
+        try:
+            instance.actual_instance = StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1.from_json(json_str)
+            return instance
+        except (ValidationError, ValueError) as e:
+             error_messages.append(str(e))
+
+        if error_messages:
+            # no match
+            raise ValueError("No match found when deserializing the JSON string into StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOf with anyOf schemas: StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf, StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1. Details: " + ", ".join(error_messages))
+        else:
+            return instance
 
     def to_json(self) -> str:
-        """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        """Returns the JSON representation of the actual instance"""
+        if self.actual_instance is None:
+            return "null"
 
-    @classmethod
-    def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOf from a JSON string"""
-        return cls.from_dict(json.loads(json_str))
+        if hasattr(self.actual_instance, "to_json") and callable(self.actual_instance.to_json):
+            return self.actual_instance.to_json()
+        else:
+            return json.dumps(self.actual_instance)
 
-    def to_dict(self) -> Dict[str, Any]:
-        """Return the dictionary representation of the model using alias.
-
-        This has the following differences from calling pydantic's
-        `self.model_dump(by_alias=True)`:
-
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
-        * Fields in `self.additional_properties` are added to the output dict.
-        """
-        excluded_fields: Set[str] = set([
-            "additional_properties",
-        ])
-
-        _dict = self.model_dump(
-            by_alias=True,
-            exclude=excluded_fields,
-            exclude_none=True,
-        )
-        # override the default output from pydantic by calling `to_dict()` of each item in context (list)
-        _items = []
-        if self.context:
-            for _item_context in self.context:
-                if _item_context:
-                    _items.append(_item_context.to_dict())
-            _dict['@context'] = _items
-        # override the default output from pydantic by calling `to_dict()` of issuer
-        if self.issuer:
-            _dict['issuer'] = self.issuer.to_dict()
-        # override the default output from pydantic by calling `to_dict()` of credential_subject
-        if self.credential_subject:
-            _dict['credentialSubject'] = self.credential_subject.to_dict()
-        # override the default output from pydantic by calling `to_dict()` of refresh_service
-        if self.refresh_service:
-            _dict['refreshService'] = self.refresh_service.to_dict()
-        # override the default output from pydantic by calling `to_dict()` of credential_schema
-        if self.credential_schema:
-            _dict['credentialSchema'] = self.credential_schema.to_dict()
-        # override the default output from pydantic by calling `to_dict()` of credential_status
-        if self.credential_status:
-            _dict['credentialStatus'] = self.credential_status.to_dict()
-        # override the default output from pydantic by calling `to_dict()` of status
-        if self.status:
-            _dict['status'] = self.status.to_dict()
-        # override the default output from pydantic by calling `to_dict()` of terms_of_use
-        if self.terms_of_use:
-            _dict['termsOfUse'] = self.terms_of_use.to_dict()
-        # override the default output from pydantic by calling `to_dict()` of evidence
-        if self.evidence:
-            _dict['evidence'] = self.evidence.to_dict()
-        # puts key-value pairs in additional_properties in the top level
-        if self.additional_properties is not None:
-            for _key, _value in self.additional_properties.items():
-                _dict[_key] = _value
-
-        return _dict
-
-    @classmethod
-    def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOf from a dict"""
-        if obj is None:
+    def to_dict(self) -> Optional[Union[Dict[str, Any], StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf, StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1]]:
+        """Returns the dict representation of the actual instance"""
+        if self.actual_instance is None:
             return None
 
-        if not isinstance(obj, dict):
-            return cls.model_validate(obj)
+        if hasattr(self.actual_instance, "to_dict") and callable(self.actual_instance.to_dict):
+            return self.actual_instance.to_dict()
+        else:
+            return self.actual_instance
 
-        _obj = cls.model_validate({
-            "@context": [BoostSendRequestTemplateCredentialAnyOfContextInner.from_dict(_item) for _item in obj["@context"]] if obj.get("@context") is not None else None,
-            "id": obj.get("id"),
-            "type": obj.get("type"),
-            "issuer": StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfIssuer.from_dict(obj["issuer"]) if obj.get("issuer") is not None else None,
-            "credentialSubject": BoostSendRequestTemplateCredentialAnyOfCredentialSubject.from_dict(obj["credentialSubject"]) if obj.get("credentialSubject") is not None else None,
-            "refreshService": BoostSendBoostRequestCredentialAnyOfTermsOfUse.from_dict(obj["refreshService"]) if obj.get("refreshService") is not None else None,
-            "credentialSchema": BoostSendBoostRequestCredentialAnyOfCredentialStatus.from_dict(obj["credentialSchema"]) if obj.get("credentialSchema") is not None else None,
-            "issuanceDate": obj.get("issuanceDate"),
-            "expirationDate": obj.get("expirationDate"),
-            "credentialStatus": BoostSendBoostRequestCredentialAnyOfCredentialStatus.from_dict(obj["credentialStatus"]) if obj.get("credentialStatus") is not None else None,
-            "name": obj.get("name"),
-            "description": obj.get("description"),
-            "validFrom": obj.get("validFrom"),
-            "validUntil": obj.get("validUntil"),
-            "status": BoostSendBoostRequestCredentialAnyOfCredentialStatus.from_dict(obj["status"]) if obj.get("status") is not None else None,
-            "termsOfUse": BoostSendBoostRequestCredentialAnyOfTermsOfUse.from_dict(obj["termsOfUse"]) if obj.get("termsOfUse") is not None else None,
-            "evidence": BoostSendRequestTemplateCredentialAnyOfEvidence.from_dict(obj["evidence"]) if obj.get("evidence") is not None else None
-        })
-        # store additional fields in additional_properties
-        for _key in obj.keys():
-            if _key not in cls.__properties:
-                _obj.additional_properties[_key] = obj.get(_key)
-
-        return _obj
+    def to_str(self) -> str:
+        """Returns the string representation of the actual instance"""
+        return pprint.pformat(self.model_dump())
 
 

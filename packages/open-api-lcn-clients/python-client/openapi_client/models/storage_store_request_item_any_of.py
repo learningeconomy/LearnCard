@@ -19,28 +19,28 @@ import pprint
 import re  # noqa: F401
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, ValidationError, field_validator
 from typing import Optional
-from openapi_client.models.credential_send_credential_request_credential_any_of import CredentialSendCredentialRequestCredentialAnyOf
+from openapi_client.models.credential_send_credential_request_credential_any_of1 import CredentialSendCredentialRequestCredentialAnyOf1
 from openapi_client.models.storage_store_request_item_any_of_any_of import StorageStoreRequestItemAnyOfAnyOf
 from typing import Union, Any, List, Set, TYPE_CHECKING, Optional, Dict
 from typing_extensions import Literal, Self
 from pydantic import Field
 
-STORAGESTOREREQUESTITEMANYOF_ANY_OF_SCHEMAS = ["CredentialSendCredentialRequestCredentialAnyOf", "StorageStoreRequestItemAnyOfAnyOf"]
+STORAGESTOREREQUESTITEMANYOF_ANY_OF_SCHEMAS = ["CredentialSendCredentialRequestCredentialAnyOf1", "StorageStoreRequestItemAnyOfAnyOf"]
 
 class StorageStoreRequestItemAnyOf(BaseModel):
     """
     StorageStoreRequestItemAnyOf
     """
 
-    # data type: CredentialSendCredentialRequestCredentialAnyOf
-    anyof_schema_1_validator: Optional[CredentialSendCredentialRequestCredentialAnyOf] = None
     # data type: StorageStoreRequestItemAnyOfAnyOf
-    anyof_schema_2_validator: Optional[StorageStoreRequestItemAnyOfAnyOf] = None
+    anyof_schema_1_validator: Optional[StorageStoreRequestItemAnyOfAnyOf] = None
+    # data type: CredentialSendCredentialRequestCredentialAnyOf1
+    anyof_schema_2_validator: Optional[CredentialSendCredentialRequestCredentialAnyOf1] = None
     if TYPE_CHECKING:
-        actual_instance: Optional[Union[CredentialSendCredentialRequestCredentialAnyOf, StorageStoreRequestItemAnyOfAnyOf]] = None
+        actual_instance: Optional[Union[CredentialSendCredentialRequestCredentialAnyOf1, StorageStoreRequestItemAnyOfAnyOf]] = None
     else:
         actual_instance: Any = None
-    any_of_schemas: Set[str] = { "CredentialSendCredentialRequestCredentialAnyOf", "StorageStoreRequestItemAnyOfAnyOf" }
+    any_of_schemas: Set[str] = { "CredentialSendCredentialRequestCredentialAnyOf1", "StorageStoreRequestItemAnyOfAnyOf" }
 
     model_config = {
         "validate_assignment": True,
@@ -61,21 +61,21 @@ class StorageStoreRequestItemAnyOf(BaseModel):
     def actual_instance_must_validate_anyof(cls, v):
         instance = StorageStoreRequestItemAnyOf.model_construct()
         error_messages = []
-        # validate data type: CredentialSendCredentialRequestCredentialAnyOf
-        if not isinstance(v, CredentialSendCredentialRequestCredentialAnyOf):
-            error_messages.append(f"Error! Input type `{type(v)}` is not `CredentialSendCredentialRequestCredentialAnyOf`")
-        else:
-            return v
-
         # validate data type: StorageStoreRequestItemAnyOfAnyOf
         if not isinstance(v, StorageStoreRequestItemAnyOfAnyOf):
             error_messages.append(f"Error! Input type `{type(v)}` is not `StorageStoreRequestItemAnyOfAnyOf`")
         else:
             return v
 
+        # validate data type: CredentialSendCredentialRequestCredentialAnyOf1
+        if not isinstance(v, CredentialSendCredentialRequestCredentialAnyOf1):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `CredentialSendCredentialRequestCredentialAnyOf1`")
+        else:
+            return v
+
         if error_messages:
             # no match
-            raise ValueError("No match found when setting the actual_instance in StorageStoreRequestItemAnyOf with anyOf schemas: CredentialSendCredentialRequestCredentialAnyOf, StorageStoreRequestItemAnyOfAnyOf. Details: " + ", ".join(error_messages))
+            raise ValueError("No match found when setting the actual_instance in StorageStoreRequestItemAnyOf with anyOf schemas: CredentialSendCredentialRequestCredentialAnyOf1, StorageStoreRequestItemAnyOfAnyOf. Details: " + ", ".join(error_messages))
         else:
             return v
 
@@ -88,22 +88,22 @@ class StorageStoreRequestItemAnyOf(BaseModel):
         """Returns the object represented by the json string"""
         instance = cls.model_construct()
         error_messages = []
-        # anyof_schema_1_validator: Optional[CredentialSendCredentialRequestCredentialAnyOf] = None
+        # anyof_schema_1_validator: Optional[StorageStoreRequestItemAnyOfAnyOf] = None
         try:
-            instance.actual_instance = CredentialSendCredentialRequestCredentialAnyOf.from_json(json_str)
+            instance.actual_instance = StorageStoreRequestItemAnyOfAnyOf.from_json(json_str)
             return instance
         except (ValidationError, ValueError) as e:
              error_messages.append(str(e))
-        # anyof_schema_2_validator: Optional[StorageStoreRequestItemAnyOfAnyOf] = None
+        # anyof_schema_2_validator: Optional[CredentialSendCredentialRequestCredentialAnyOf1] = None
         try:
-            instance.actual_instance = StorageStoreRequestItemAnyOfAnyOf.from_json(json_str)
+            instance.actual_instance = CredentialSendCredentialRequestCredentialAnyOf1.from_json(json_str)
             return instance
         except (ValidationError, ValueError) as e:
              error_messages.append(str(e))
 
         if error_messages:
             # no match
-            raise ValueError("No match found when deserializing the JSON string into StorageStoreRequestItemAnyOf with anyOf schemas: CredentialSendCredentialRequestCredentialAnyOf, StorageStoreRequestItemAnyOfAnyOf. Details: " + ", ".join(error_messages))
+            raise ValueError("No match found when deserializing the JSON string into StorageStoreRequestItemAnyOf with anyOf schemas: CredentialSendCredentialRequestCredentialAnyOf1, StorageStoreRequestItemAnyOfAnyOf. Details: " + ", ".join(error_messages))
         else:
             return instance
 
@@ -117,7 +117,7 @@ class StorageStoreRequestItemAnyOf(BaseModel):
         else:
             return json.dumps(self.actual_instance)
 
-    def to_dict(self) -> Optional[Union[Dict[str, Any], CredentialSendCredentialRequestCredentialAnyOf, StorageStoreRequestItemAnyOfAnyOf]]:
+    def to_dict(self) -> Optional[Union[Dict[str, Any], CredentialSendCredentialRequestCredentialAnyOf1, StorageStoreRequestItemAnyOfAnyOf]]:
         """Returns the dict representation of the actual instance"""
         if self.actual_instance is None:
             return None

@@ -12,7 +12,7 @@ Name | Type | Description | Notes
 **template** | [**BoostSendRequestTemplate**](BoostSendRequestTemplate.md) |  | [optional] 
 **signed_credential** | [**BoostSendRequestTemplateCredentialAnyOf**](BoostSendRequestTemplateCredentialAnyOf.md) |  | [optional] 
 **options** | [**BoostSendRequestOptions**](BoostSendRequestOptions.md) |  | [optional] 
-**template_data** | **Dict[str, object]** |  | [optional] 
+**template_data** | **Dict[str, Optional[object]]** |  | [optional] 
 **integration_id** | **str** | Integration ID for activity tracking | [optional] 
 
 ## Example

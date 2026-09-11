@@ -1,5 +1,3 @@
-# coding: utf-8
-
 """
     LearnCloud Network API
 
@@ -11,18 +9,21 @@
     Do not edit the class manually.
 """  # noqa: E501
 
+
 import warnings
 from pydantic import validate_call, Field, StrictFloat, StrictStr, StrictInt
 from typing import Any, Dict, List, Optional, Tuple, Union
 from typing_extensions import Annotated
 
-from pydantic import Field, StrictStr, field_validator
-from typing import List, Optional
+from datetime import datetime
+from pydantic import Field, StrictBool, StrictStr, field_validator
+from typing import Dict, List, Optional
 from typing_extensions import Annotated
 from openapi_client.models.activity_get_activity200_response import ActivityGetActivity200Response
 from openapi_client.models.activity_get_activity_chain200_response_inner import ActivityGetActivityChain200ResponseInner
 from openapi_client.models.activity_get_activity_stats200_response import ActivityGetActivityStats200Response
 from openapi_client.models.activity_get_my_activities200_response import ActivityGetMyActivities200Response
+from openapi_client.models.activity_get_my_credential_lifecycle_statuses_request import ActivityGetMyCredentialLifecycleStatusesRequest
 
 from openapi_client.api_client import ApiClient, RequestSerialized
 from openapi_client.api_response import ApiResponse
@@ -599,6 +600,10 @@ class ActivityApi:
         self,
         boost_uris: Optional[List[StrictStr]] = None,
         integration_id: Optional[StrictStr] = None,
+        listing_id: Optional[StrictStr] = None,
+        event_type: Optional[StrictStr] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -620,6 +625,14 @@ class ActivityApi:
         :type boost_uris: List[str]
         :param integration_id:
         :type integration_id: str
+        :param listing_id:
+        :type listing_id: str
+        :param event_type:
+        :type event_type: str
+        :param start_date:
+        :type start_date: datetime
+        :param end_date:
+        :type end_date: datetime
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -645,6 +658,10 @@ class ActivityApi:
         _param = self._activity_get_activity_stats_serialize(
             boost_uris=boost_uris,
             integration_id=integration_id,
+            listing_id=listing_id,
+            event_type=event_type,
+            start_date=start_date,
+            end_date=end_date,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -675,6 +692,10 @@ class ActivityApi:
         self,
         boost_uris: Optional[List[StrictStr]] = None,
         integration_id: Optional[StrictStr] = None,
+        listing_id: Optional[StrictStr] = None,
+        event_type: Optional[StrictStr] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -696,6 +717,14 @@ class ActivityApi:
         :type boost_uris: List[str]
         :param integration_id:
         :type integration_id: str
+        :param listing_id:
+        :type listing_id: str
+        :param event_type:
+        :type event_type: str
+        :param start_date:
+        :type start_date: datetime
+        :param end_date:
+        :type end_date: datetime
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -721,6 +750,10 @@ class ActivityApi:
         _param = self._activity_get_activity_stats_serialize(
             boost_uris=boost_uris,
             integration_id=integration_id,
+            listing_id=listing_id,
+            event_type=event_type,
+            start_date=start_date,
+            end_date=end_date,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -751,6 +784,10 @@ class ActivityApi:
         self,
         boost_uris: Optional[List[StrictStr]] = None,
         integration_id: Optional[StrictStr] = None,
+        listing_id: Optional[StrictStr] = None,
+        event_type: Optional[StrictStr] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -772,6 +809,14 @@ class ActivityApi:
         :type boost_uris: List[str]
         :param integration_id:
         :type integration_id: str
+        :param listing_id:
+        :type listing_id: str
+        :param event_type:
+        :type event_type: str
+        :param start_date:
+        :type start_date: datetime
+        :param end_date:
+        :type end_date: datetime
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -797,6 +842,10 @@ class ActivityApi:
         _param = self._activity_get_activity_stats_serialize(
             boost_uris=boost_uris,
             integration_id=integration_id,
+            listing_id=listing_id,
+            event_type=event_type,
+            start_date=start_date,
+            end_date=end_date,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -822,6 +871,10 @@ class ActivityApi:
         self,
         boost_uris,
         integration_id,
+        listing_id,
+        event_type,
+        start_date,
+        end_date,
         _request_auth,
         _content_type,
         _headers,
@@ -852,6 +905,40 @@ class ActivityApi:
         if integration_id is not None:
             
             _query_params.append(('integrationId', integration_id))
+            
+        if listing_id is not None:
+            
+            _query_params.append(('listingId', listing_id))
+            
+        if event_type is not None:
+            
+            _query_params.append(('eventType', event_type))
+            
+        if start_date is not None:
+            if isinstance(start_date, datetime):
+                _query_params.append(
+                    (
+                        'startDate',
+                        start_date.strftime(
+                            self.api_client.configuration.datetime_format
+                        )
+                    )
+                )
+            else:
+                _query_params.append(('startDate', start_date))
+            
+        if end_date is not None:
+            if isinstance(end_date, datetime):
+                _query_params.append(
+                    (
+                        'endDate',
+                        end_date.strftime(
+                            self.api_client.configuration.datetime_format
+                        )
+                    )
+                )
+            else:
+                _query_params.append(('endDate', end_date))
             
         # process the header parameters
         # process the form parameters
@@ -898,6 +985,10 @@ class ActivityApi:
         boost_uri: Optional[StrictStr] = None,
         event_type: Optional[StrictStr] = None,
         integration_id: Optional[StrictStr] = None,
+        listing_id: Optional[StrictStr] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        group_by_latest_status: Optional[StrictBool] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -925,6 +1016,14 @@ class ActivityApi:
         :type event_type: str
         :param integration_id:
         :type integration_id: str
+        :param listing_id:
+        :type listing_id: str
+        :param start_date:
+        :type start_date: datetime
+        :param end_date:
+        :type end_date: datetime
+        :param group_by_latest_status:
+        :type group_by_latest_status: bool
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -953,6 +1052,10 @@ class ActivityApi:
             boost_uri=boost_uri,
             event_type=event_type,
             integration_id=integration_id,
+            listing_id=listing_id,
+            start_date=start_date,
+            end_date=end_date,
+            group_by_latest_status=group_by_latest_status,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -986,6 +1089,10 @@ class ActivityApi:
         boost_uri: Optional[StrictStr] = None,
         event_type: Optional[StrictStr] = None,
         integration_id: Optional[StrictStr] = None,
+        listing_id: Optional[StrictStr] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        group_by_latest_status: Optional[StrictBool] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -1013,6 +1120,14 @@ class ActivityApi:
         :type event_type: str
         :param integration_id:
         :type integration_id: str
+        :param listing_id:
+        :type listing_id: str
+        :param start_date:
+        :type start_date: datetime
+        :param end_date:
+        :type end_date: datetime
+        :param group_by_latest_status:
+        :type group_by_latest_status: bool
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -1041,6 +1156,10 @@ class ActivityApi:
             boost_uri=boost_uri,
             event_type=event_type,
             integration_id=integration_id,
+            listing_id=listing_id,
+            start_date=start_date,
+            end_date=end_date,
+            group_by_latest_status=group_by_latest_status,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -1074,6 +1193,10 @@ class ActivityApi:
         boost_uri: Optional[StrictStr] = None,
         event_type: Optional[StrictStr] = None,
         integration_id: Optional[StrictStr] = None,
+        listing_id: Optional[StrictStr] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        group_by_latest_status: Optional[StrictBool] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -1101,6 +1224,14 @@ class ActivityApi:
         :type event_type: str
         :param integration_id:
         :type integration_id: str
+        :param listing_id:
+        :type listing_id: str
+        :param start_date:
+        :type start_date: datetime
+        :param end_date:
+        :type end_date: datetime
+        :param group_by_latest_status:
+        :type group_by_latest_status: bool
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -1129,6 +1260,10 @@ class ActivityApi:
             boost_uri=boost_uri,
             event_type=event_type,
             integration_id=integration_id,
+            listing_id=listing_id,
+            start_date=start_date,
+            end_date=end_date,
+            group_by_latest_status=group_by_latest_status,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -1157,6 +1292,10 @@ class ActivityApi:
         boost_uri,
         event_type,
         integration_id,
+        listing_id,
+        start_date,
+        end_date,
+        group_by_latest_status,
         _request_auth,
         _content_type,
         _headers,
@@ -1199,6 +1338,40 @@ class ActivityApi:
             
             _query_params.append(('integrationId', integration_id))
             
+        if listing_id is not None:
+            
+            _query_params.append(('listingId', listing_id))
+            
+        if start_date is not None:
+            if isinstance(start_date, datetime):
+                _query_params.append(
+                    (
+                        'startDate',
+                        start_date.strftime(
+                            self.api_client.configuration.datetime_format
+                        )
+                    )
+                )
+            else:
+                _query_params.append(('startDate', start_date))
+            
+        if end_date is not None:
+            if isinstance(end_date, datetime):
+                _query_params.append(
+                    (
+                        'endDate',
+                        end_date.strftime(
+                            self.api_client.configuration.datetime_format
+                        )
+                    )
+                )
+            else:
+                _query_params.append(('endDate', end_date))
+            
+        if group_by_latest_status is not None:
+            
+            _query_params.append(('groupByLatestStatus', group_by_latest_status))
+            
         # process the header parameters
         # process the form parameters
         # process the body parameter
@@ -1221,6 +1394,292 @@ class ActivityApi:
         return self.api_client.param_serialize(
             method='GET',
             resource_path='/activity/credentials',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
+    def activity_get_my_credential_lifecycle_statuses(
+        self,
+        activity_get_my_credential_lifecycle_statuses_request: ActivityGetMyCredentialLifecycleStatusesRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> Dict[str, str]:
+        """Get Credential Lifecycle Statuses
+
+        Returns the authoritative lifecycle status ('active' | 'revoked' | 'suspended') for the authenticated holder's credentials, keyed by URI. URIs the holder did not receive are omitted.
+
+        :param activity_get_my_credential_lifecycle_statuses_request: (required)
+        :type activity_get_my_credential_lifecycle_statuses_request: ActivityGetMyCredentialLifecycleStatusesRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._activity_get_my_credential_lifecycle_statuses_serialize(
+            activity_get_my_credential_lifecycle_statuses_request=activity_get_my_credential_lifecycle_statuses_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "Dict[str, str]",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def activity_get_my_credential_lifecycle_statuses_with_http_info(
+        self,
+        activity_get_my_credential_lifecycle_statuses_request: ActivityGetMyCredentialLifecycleStatusesRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[Dict[str, str]]:
+        """Get Credential Lifecycle Statuses
+
+        Returns the authoritative lifecycle status ('active' | 'revoked' | 'suspended') for the authenticated holder's credentials, keyed by URI. URIs the holder did not receive are omitted.
+
+        :param activity_get_my_credential_lifecycle_statuses_request: (required)
+        :type activity_get_my_credential_lifecycle_statuses_request: ActivityGetMyCredentialLifecycleStatusesRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._activity_get_my_credential_lifecycle_statuses_serialize(
+            activity_get_my_credential_lifecycle_statuses_request=activity_get_my_credential_lifecycle_statuses_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "Dict[str, str]",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def activity_get_my_credential_lifecycle_statuses_without_preload_content(
+        self,
+        activity_get_my_credential_lifecycle_statuses_request: ActivityGetMyCredentialLifecycleStatusesRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """Get Credential Lifecycle Statuses
+
+        Returns the authoritative lifecycle status ('active' | 'revoked' | 'suspended') for the authenticated holder's credentials, keyed by URI. URIs the holder did not receive are omitted.
+
+        :param activity_get_my_credential_lifecycle_statuses_request: (required)
+        :type activity_get_my_credential_lifecycle_statuses_request: ActivityGetMyCredentialLifecycleStatusesRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._activity_get_my_credential_lifecycle_statuses_serialize(
+            activity_get_my_credential_lifecycle_statuses_request=activity_get_my_credential_lifecycle_statuses_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "Dict[str, str]",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _activity_get_my_credential_lifecycle_statuses_serialize(
+        self,
+        activity_get_my_credential_lifecycle_statuses_request,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> RequestSerialized:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[
+            str, Union[str, bytes, List[str], List[bytes], List[Tuple[str, bytes]]]
+        ] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        # process the query parameters
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+        if activity_get_my_credential_lifecycle_statuses_request is not None:
+            _body_params = activity_get_my_credential_lifecycle_statuses_request
+
+
+        # set the HTTP header `Accept`
+        if 'Accept' not in _header_params:
+            _header_params['Accept'] = self.api_client.select_header_accept(
+                [
+                    'application/json'
+                ]
+            )
+
+        # set the HTTP header `Content-Type`
+        if _content_type:
+            _header_params['Content-Type'] = _content_type
+        else:
+            _default_content_type = (
+                self.api_client.select_header_content_type(
+                    [
+                        'application/json'
+                    ]
+                )
+            )
+            if _default_content_type is not None:
+                _header_params['Content-Type'] = _default_content_type
+
+        # authentication setting
+        _auth_settings: List[str] = [
+            'Authorization'
+        ]
+
+        return self.api_client.param_serialize(
+            method='POST',
+            resource_path='/activity/credentials/lifecycle-statuses',
             path_params=_path_params,
             query_params=_query_params,
             header_params=_header_params,

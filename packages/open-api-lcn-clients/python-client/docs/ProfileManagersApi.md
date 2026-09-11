@@ -9,8 +9,11 @@ Method | HTTP request | Description
 [**profile_manager_create_managed_profile**](ProfileManagersApi.md#profile_manager_create_managed_profile) | **POST** /profile/create-managed-profile | Create a managed profile
 [**profile_manager_create_profile_manager**](ProfileManagersApi.md#profile_manager_create_profile_manager) | **POST** /profile-manager/create | Create a profile manager
 [**profile_manager_get_managed_profiles**](ProfileManagersApi.md#profile_manager_get_managed_profiles) | **POST** /profile/managed-profiles | Managed Profiles
+[**profile_manager_get_my_guardians**](ProfileManagersApi.md#profile_manager_get_my_guardians) | **GET** /profile-manager/my-guardians | Get profiles that manage the current user
+[**profile_manager_get_my_managed_children**](ProfileManagersApi.md#profile_manager_get_my_managed_children) | **GET** /profile-manager/my-managed-children | Get profiles managed by the current user
 [**profile_manager_get_other_profile_manager**](ProfileManagersApi.md#profile_manager_get_other_profile_manager) | **GET** /profile-manager/{id} | Get profile manager information
 [**profile_manager_get_profile_manager**](ProfileManagersApi.md#profile_manager_get_profile_manager) | **GET** /profile-manager | Get your profile manager profile information
+[**profile_manager_remove_manages_relationship**](ProfileManagersApi.md#profile_manager_remove_manages_relationship) | **POST** /profile-manager/remove-manages | Remove a MANAGES relationship
 [**profile_manager_update_profile_manager**](ProfileManagersApi.md#profile_manager_update_profile_manager) | **POST** /profile-manager | Update the profile of your Profile Manager
 
 
@@ -344,7 +347,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_manager_get_managed_profiles**
-> BoostGetBoostAdmins200Response profile_manager_get_managed_profiles(profile_manager_get_managed_profiles_request=profile_manager_get_managed_profiles_request)
+> ProfileGetManagedServiceProfiles200Response profile_manager_get_managed_profiles(profile_manager_get_managed_profiles_request=profile_manager_get_managed_profiles_request)
 
 Managed Profiles
 
@@ -356,7 +359,7 @@ This route gets all of your managed profiles
 
 ```python
 import openapi_client
-from openapi_client.models.boost_get_boost_admins200_response import BoostGetBoostAdmins200Response
+from openapi_client.models.profile_get_managed_service_profiles200_response import ProfileGetManagedServiceProfiles200Response
 from openapi_client.models.profile_manager_get_managed_profiles_request import ProfileManagerGetManagedProfilesRequest
 from openapi_client.rest import ApiException
 from pprint import pprint
@@ -403,7 +406,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**BoostGetBoostAdmins200Response**](BoostGetBoostAdmins200Response.md)
+[**ProfileGetManagedServiceProfiles200Response**](ProfileGetManagedServiceProfiles200Response.md)
 
 ### Authorization
 
@@ -420,6 +423,160 @@ Name | Type | Description  | Notes
 |-------------|-------------|------------------|
 **200** | Successful response |  -  |
 **400** | Invalid input data |  -  |
+**401** | Authorization not provided |  -  |
+**403** | Insufficient access |  -  |
+**500** | Internal server error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **profile_manager_get_my_guardians**
+> List[BoostGetBoostRecipients200ResponseInnerToAnyOf3] profile_manager_get_my_guardians()
+
+Get profiles that manage the current user
+
+Returns all profiles that manage the current profile via a MANAGES relationship.
+
+### Example
+
+* Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.boost_get_boost_recipients200_response_inner_to_any_of3 import BoostGetBoostRecipients200ResponseInnerToAnyOf3
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://network.learncard.com/api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "https://network.learncard.com/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.ProfileManagersApi(api_client)
+
+    try:
+        # Get profiles that manage the current user
+        api_response = api_instance.profile_manager_get_my_guardians()
+        print("The response of ProfileManagersApi->profile_manager_get_my_guardians:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling ProfileManagersApi->profile_manager_get_my_guardians: %s\n" % e)
+```
+
+
+
+### Parameters
+
+This endpoint does not need any parameter.
+
+### Return type
+
+[**List[BoostGetBoostRecipients200ResponseInnerToAnyOf3]**](BoostGetBoostRecipients200ResponseInnerToAnyOf3.md)
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Successful response |  -  |
+**401** | Authorization not provided |  -  |
+**403** | Insufficient access |  -  |
+**500** | Internal server error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **profile_manager_get_my_managed_children**
+> List[BoostGetBoostRecipients200ResponseInnerToAnyOf3] profile_manager_get_my_managed_children()
+
+Get profiles managed by the current user
+
+Returns all profiles managed via ProfileManagers that the current profile administrates.
+
+### Example
+
+* Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.boost_get_boost_recipients200_response_inner_to_any_of3 import BoostGetBoostRecipients200ResponseInnerToAnyOf3
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://network.learncard.com/api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "https://network.learncard.com/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.ProfileManagersApi(api_client)
+
+    try:
+        # Get profiles managed by the current user
+        api_response = api_instance.profile_manager_get_my_managed_children()
+        print("The response of ProfileManagersApi->profile_manager_get_my_managed_children:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling ProfileManagersApi->profile_manager_get_my_managed_children: %s\n" % e)
+```
+
+
+
+### Parameters
+
+This endpoint does not need any parameter.
+
+### Return type
+
+[**List[BoostGetBoostRecipients200ResponseInnerToAnyOf3]**](BoostGetBoostRecipients200ResponseInnerToAnyOf3.md)
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Successful response |  -  |
 **401** | Authorization not provided |  -  |
 **403** | Insufficient access |  -  |
 **500** | Internal server error |  -  |
@@ -586,12 +743,12 @@ This endpoint does not need any parameter.
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **profile_manager_update_profile_manager**
-> bool profile_manager_update_profile_manager(profile_manager_create_child_profile_manager_request_profile)
+# **profile_manager_remove_manages_relationship**
+> bool profile_manager_remove_manages_relationship(profile_manager_remove_manages_relationship_request)
 
-Update the profile of your Profile Manager
+Remove a MANAGES relationship
 
-This route updates the profile of the current profile manager
+Removes the MANAGES relationship between the current profile and a child profile, or between a guardian and the current profile.
 
 ### Example
 
@@ -599,7 +756,7 @@ This route updates the profile of the current profile manager
 
 ```python
 import openapi_client
-from openapi_client.models.profile_manager_create_child_profile_manager_request_profile import ProfileManagerCreateChildProfileManagerRequestProfile
+from openapi_client.models.profile_manager_remove_manages_relationship_request import ProfileManagerRemoveManagesRelationshipRequest
 from openapi_client.rest import ApiException
 from pprint import pprint
 
@@ -623,11 +780,93 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ProfileManagersApi(api_client)
-    profile_manager_create_child_profile_manager_request_profile = openapi_client.ProfileManagerCreateChildProfileManagerRequestProfile() # ProfileManagerCreateChildProfileManagerRequestProfile | 
+    profile_manager_remove_manages_relationship_request = openapi_client.ProfileManagerRemoveManagesRelationshipRequest() # ProfileManagerRemoveManagesRelationshipRequest | 
+
+    try:
+        # Remove a MANAGES relationship
+        api_response = api_instance.profile_manager_remove_manages_relationship(profile_manager_remove_manages_relationship_request)
+        print("The response of ProfileManagersApi->profile_manager_remove_manages_relationship:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling ProfileManagersApi->profile_manager_remove_manages_relationship: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **profile_manager_remove_manages_relationship_request** | [**ProfileManagerRemoveManagesRelationshipRequest**](ProfileManagerRemoveManagesRelationshipRequest.md)|  | 
+
+### Return type
+
+**bool**
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Successful response |  -  |
+**400** | Invalid input data |  -  |
+**401** | Authorization not provided |  -  |
+**403** | Insufficient access |  -  |
+**500** | Internal server error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **profile_manager_update_profile_manager**
+> bool profile_manager_update_profile_manager(profile_manager_update_profile_manager_request)
+
+Update the profile of your Profile Manager
+
+This route updates the profile of the current profile manager
+
+### Example
+
+* Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.profile_manager_update_profile_manager_request import ProfileManagerUpdateProfileManagerRequest
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://network.learncard.com/api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "https://network.learncard.com/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.ProfileManagersApi(api_client)
+    profile_manager_update_profile_manager_request = openapi_client.ProfileManagerUpdateProfileManagerRequest() # ProfileManagerUpdateProfileManagerRequest | 
 
     try:
         # Update the profile of your Profile Manager
-        api_response = api_instance.profile_manager_update_profile_manager(profile_manager_create_child_profile_manager_request_profile)
+        api_response = api_instance.profile_manager_update_profile_manager(profile_manager_update_profile_manager_request)
         print("The response of ProfileManagersApi->profile_manager_update_profile_manager:\n")
         pprint(api_response)
     except Exception as e:
@@ -641,7 +880,7 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **profile_manager_create_child_profile_manager_request_profile** | [**ProfileManagerCreateChildProfileManagerRequestProfile**](ProfileManagerCreateChildProfileManagerRequestProfile.md)|  | 
+ **profile_manager_update_profile_manager_request** | [**ProfileManagerUpdateProfileManagerRequest**](ProfileManagerUpdateProfileManagerRequest.md)|  | 
 
 ### Return type
 

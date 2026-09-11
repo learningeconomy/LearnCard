@@ -39,6 +39,7 @@ class TestSkillFrameworksUpdateRequest(unittest.TestCase):
                 description = '',
                 image = '',
                 source_uri = '',
+                is_public = True,
                 status = 'active'
             )
         else:

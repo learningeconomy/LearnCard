@@ -27,6 +27,7 @@ from openapi_client.models.did_metadata_get_did_metadata200_response_service_inn
 from openapi_client.models.did_metadata_get_did_metadata200_response_verification_method_inner import DidMetadataGetDidMetadata200ResponseVerificationMethodInner
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class DidMetadataGetDidMetadata200Response(BaseModel):
     """
@@ -49,7 +50,8 @@ class DidMetadataGetDidMetadata200Response(BaseModel):
     __properties: ClassVar[List[str]] = ["@context", "id", "alsoKnownAs", "controller", "verificationMethod", "authentication", "assertionMethod", "keyAgreement", "capabilityInvocation", "capabilityDelegation", "publicKey", "service", "proof"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -61,8 +63,7 @@ class DidMetadataGetDidMetadata200Response(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -93,8 +94,7 @@ class DidMetadataGetDidMetadata200Response(BaseModel):
         _items = []
         if self.context:
             for _item_context in self.context:
-                if _item_context:
-                    _items.append(_item_context.to_dict())
+                _items.append(_item_context.to_dict() if _item_context is not None else None)
             _dict['@context'] = _items
         # override the default output from pydantic by calling `to_dict()` of controller
         if self.controller:
@@ -103,57 +103,49 @@ class DidMetadataGetDidMetadata200Response(BaseModel):
         _items = []
         if self.verification_method:
             for _item_verification_method in self.verification_method:
-                if _item_verification_method:
-                    _items.append(_item_verification_method.to_dict())
+                _items.append(_item_verification_method.to_dict() if _item_verification_method is not None else None)
             _dict['verificationMethod'] = _items
         # override the default output from pydantic by calling `to_dict()` of each item in authentication (list)
         _items = []
         if self.authentication:
             for _item_authentication in self.authentication:
-                if _item_authentication:
-                    _items.append(_item_authentication.to_dict())
+                _items.append(_item_authentication.to_dict() if _item_authentication is not None else None)
             _dict['authentication'] = _items
         # override the default output from pydantic by calling `to_dict()` of each item in assertion_method (list)
         _items = []
         if self.assertion_method:
             for _item_assertion_method in self.assertion_method:
-                if _item_assertion_method:
-                    _items.append(_item_assertion_method.to_dict())
+                _items.append(_item_assertion_method.to_dict() if _item_assertion_method is not None else None)
             _dict['assertionMethod'] = _items
         # override the default output from pydantic by calling `to_dict()` of each item in key_agreement (list)
         _items = []
         if self.key_agreement:
             for _item_key_agreement in self.key_agreement:
-                if _item_key_agreement:
-                    _items.append(_item_key_agreement.to_dict())
+                _items.append(_item_key_agreement.to_dict() if _item_key_agreement is not None else None)
             _dict['keyAgreement'] = _items
         # override the default output from pydantic by calling `to_dict()` of each item in capability_invocation (list)
         _items = []
         if self.capability_invocation:
             for _item_capability_invocation in self.capability_invocation:
-                if _item_capability_invocation:
-                    _items.append(_item_capability_invocation.to_dict())
+                _items.append(_item_capability_invocation.to_dict() if _item_capability_invocation is not None else None)
             _dict['capabilityInvocation'] = _items
         # override the default output from pydantic by calling `to_dict()` of each item in capability_delegation (list)
         _items = []
         if self.capability_delegation:
             for _item_capability_delegation in self.capability_delegation:
-                if _item_capability_delegation:
-                    _items.append(_item_capability_delegation.to_dict())
+                _items.append(_item_capability_delegation.to_dict() if _item_capability_delegation is not None else None)
             _dict['capabilityDelegation'] = _items
         # override the default output from pydantic by calling `to_dict()` of each item in public_key (list)
         _items = []
         if self.public_key:
             for _item_public_key in self.public_key:
-                if _item_public_key:
-                    _items.append(_item_public_key.to_dict())
+                _items.append(_item_public_key.to_dict() if _item_public_key is not None else None)
             _dict['publicKey'] = _items
         # override the default output from pydantic by calling `to_dict()` of each item in service (list)
         _items = []
         if self.service:
             for _item_service in self.service:
-                if _item_service:
-                    _items.append(_item_service.to_dict())
+                _items.append(_item_service.to_dict() if _item_service is not None else None)
             _dict['service'] = _items
         # override the default output from pydantic by calling `to_dict()` of proof
         if self.proof:
