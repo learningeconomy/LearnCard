@@ -18,7 +18,7 @@ import {
 } from '../../src/autonomy/accessControl';
 import type { ServiceConfig } from '../../src/config';
 
-const config: ServiceConfig = {
+const baseConfig: ServiceConfig = {
     nodeEnv: 'production',
     model: 'test-model',
     port: 0,
@@ -54,8 +54,14 @@ afterEach(async () => {
     vi.clearAllMocks();
 });
 
-describe('autonomous execution access control', () => {
-    it('evaluates the staging flag with the owner DID as the existing user context key', async () => {
+describe.each(['staging', 'production'])('%s autonomous execution access control', environment => {
+    const config = {
+        ...baseConfig,
+        triggerEnvironment: environment,
+        sentryEnvironment: environment,
+    };
+
+    it('evaluates the flag with the owner DID as the existing user context key', async () => {
         launchDarkly.init.mockReturnValue(client);
         launchDarkly.waitForInitialization.mockResolvedValue(client);
         launchDarkly.variationDetail.mockResolvedValue({
@@ -101,21 +107,39 @@ describe('autonomous execution access control', () => {
         );
     });
 
-    it('keeps the exact local DID list for the development-only worker', async () => {
-        const developmentConfig = {
-            ...config,
-            nodeEnv: 'development',
-            triggerEnvironment: 'dev',
-            launchDarklySdkKey: undefined,
-            autonomyDevDids: ['did:key:fixture'],
-        };
+    it('fails closed when LaunchDarkly initialization is unavailable', async () => {
+        launchDarkly.init.mockReturnValue(client);
+        launchDarkly.waitForInitialization.mockRejectedValue(new Error('SDK unavailable'));
 
-        await expect(
-            isAutonomousExecutionAllowed(developmentConfig, 'did:key:fixture')
-        ).resolves.toBe(true);
-        await expect(
-            isAutonomousExecutionAllowed(developmentConfig, 'did:key:other')
-        ).resolves.toBe(false);
-        expect(launchDarkly.init).not.toHaveBeenCalled();
+        await expect(assertAutonomousExecutionAllowed(config, 'did:web:example')).rejects.toThrow(
+            'SDK unavailable'
+        );
+        expect(launchDarkly.variationDetail).not.toHaveBeenCalled();
     });
+
+    it('does not allow a local DID list to bypass deployed flag access', async () => {
+        await expect(
+            assertAutonomousExecutionAllowed(
+                { ...config, launchDarklySdkKey: undefined, autonomyDevDids: ['did:web:example'] },
+                'did:web:example'
+            )
+        ).rejects.toThrow('LAUNCHDARKLY_SDK_KEY');
+    });
+});
+it('keeps the exact local DID list for the development-only worker', async () => {
+    const developmentConfig = {
+        ...baseConfig,
+        nodeEnv: 'development',
+        triggerEnvironment: 'dev',
+        launchDarklySdkKey: undefined,
+        autonomyDevDids: ['did:key:fixture'],
+    };
+
+    await expect(isAutonomousExecutionAllowed(developmentConfig, 'did:key:fixture')).resolves.toBe(
+        true
+    );
+    await expect(isAutonomousExecutionAllowed(developmentConfig, 'did:key:other')).resolves.toBe(
+        false
+    );
+    expect(launchDarkly.init).not.toHaveBeenCalled();
 });

@@ -179,30 +179,50 @@ describe('Trigger.dev environment configuration gate', () => {
         webSearchProvider: 'none',
     };
 
-    it('accepts explicit development and staging Trigger.dev configurations', () => {
-        expect(() => assertTriggerConfig(triggerConfig)).not.toThrow();
-        expect(() => assertSecurityConfig(triggerConfig)).not.toThrow();
-        expect(() => assertTriggerConfig(stagingTriggerConfig)).not.toThrow();
-        expect(() => assertSecurityConfig(stagingTriggerConfig)).not.toThrow();
+    const productionTriggerConfig: ServiceConfig = {
+        ...stagingTriggerConfig,
+        sentryEnvironment: 'production',
+        triggerEnvironment: 'production',
+        autonomyDevDids: [],
+    };
+
+    it.each([triggerConfig, stagingTriggerConfig, productionTriggerConfig])(
+        'accepts explicitly configured Trigger deployments',
+        config => {
+            expect(() => assertSecurityConfig(config)).not.toThrow();
+        }
+    );
+
+    it.each([
+        { ...productionTriggerConfig, sentryEnvironment: 'staging' },
+        { ...stagingTriggerConfig, sentryEnvironment: 'production' },
+        { ...productionTriggerConfig, sentryEnvironment: undefined },
+        { ...productionTriggerConfig, triggerEnvironment: 'dev' },
+        { ...productionTriggerConfig, nodeEnv: 'development' },
+    ])('rejects mismatched deployment environments', config => {
+        expect(() => assertTriggerConfig(config)).toThrow();
     });
 
-    it('rejects production, missing credentials, missing access control, and local polling', () => {
-        expect(() =>
-            assertTriggerConfig({
-                ...stagingTriggerConfig,
-                sentryEnvironment: 'production',
-                triggerEnvironment: 'production',
-            })
-        ).toThrow('restricted to development or the staging deployment');
+    it.each([stagingTriggerConfig, productionTriggerConfig])(
+        'requires LaunchDarkly even when local DID targets are present',
+        config => {
+            expect(() =>
+                assertTriggerConfig({
+                    ...config,
+                    launchDarklySdkKey: undefined,
+                    autonomyDevDids: ['did:key:fixture'],
+                })
+            ).toThrow('LAUNCHDARKLY_SDK_KEY');
+        }
+    );
+
+    it('rejects missing credentials, missing local access control, and local polling', () => {
         expect(() =>
             assertTriggerConfig({ ...triggerConfig, triggerSecretKey: undefined })
         ).toThrow('TRIGGER_SECRET_KEY');
         expect(() => assertTriggerConfig({ ...triggerConfig, autonomyDevDids: [] })).toThrow(
             'AI_AGENT_AUTONOMY_DEV_DIDS'
         );
-        expect(() =>
-            assertTriggerConfig({ ...stagingTriggerConfig, launchDarklySdkKey: undefined })
-        ).toThrow('LAUNCHDARKLY_SDK_KEY');
         expect(() => assertSecurityConfig({ ...triggerConfig, autonomyDevEnabled: true })).toThrow(
             'cannot both be true'
         );

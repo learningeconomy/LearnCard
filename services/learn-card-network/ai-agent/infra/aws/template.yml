@@ -64,6 +64,10 @@ Parameters:
     NetworkUrl:
         Type: String
         Default: ''
+    WalletDidWeb:
+        Type: String
+        Default: ''
+        Description: Optional authorized service profile DID for network operations; does not change the encryption seed.
     ConsentFlowContractUri:
         Type: String
         Default: ''
@@ -109,21 +113,21 @@ Parameters:
         Type: String
         Default: 'false'
         AllowedValues: ['true', 'false']
-        Description: Enable Trigger.dev schedule synchronization only in staging.
+        Description: Enable Trigger.dev schedule synchronization behind the environment's LaunchDarkly flag.
     TriggerSecretKeySecretArn:
         Type: String
         Default: arn:aws:secretsmanager:us-east-1:000000000000:secret:bootstrap-trigger
-        Description: ARN of the dedicated staging Trigger.dev project's production secret key.
+        Description: ARN of this environment's dedicated Trigger.dev project PROD secret key.
         NoEcho: true
     LaunchDarklySdkKeySecretArn:
         Type: String
         Default: arn:aws:secretsmanager:us-east-1:000000000000:secret:bootstrap-launchdarkly
-        Description: ARN of the LaunchDarkly staging environment server-side SDK key.
+        Description: ARN of this environment's LaunchDarkly server-side SDK key.
         NoEcho: true
     AutonomyLaunchDarklyFlagKey:
         Type: String
         Default: ai-agent-autonomy-enabled
-        Description: Boolean LaunchDarkly flag targeting DIDs allowed to use staging schedules.
+        Description: Boolean LaunchDarkly flag targeting DIDs allowed to use schedules.
     MongoDbName:
         Type: String
         Default: learn-card-ai-agent
@@ -242,13 +246,11 @@ Rules:
                       - !Ref BraveSearchApiKeySecretArn
                       - arn:aws:secretsmanager:us-east-1:000000000000:secret:bootstrap-brave
               AssertDescription: BraveSearchApiKeySecretArn is required when Brave is enabled.
-    TriggerSchedulesRestrictedToStaging:
+    TriggerSchedulesRequireCredentials:
         RuleCondition: !And
             - !Equals [!Ref CreateService, 'true']
             - !Equals [!Ref EnableTriggerSchedules, 'true']
         Assertions:
-            - Assert: !Equals [!Ref Environment, staging]
-              AssertDescription: Trigger.dev schedules can only be enabled in staging.
             - Assert: !Not
                   - !Equals
                     - !Ref TriggerSecretKeySecretArn
@@ -530,6 +532,8 @@ Resources:
                         Value: !Ref CloudUrl
                       - Name: AI_AGENT_NETWORK_URL
                         Value: !Ref NetworkUrl
+                      - Name: AI_AGENT_WALLET_DID_WEB
+                        Value: !Ref WalletDidWeb
                       - Name: AI_AGENT_CONSENT_FLOW_CONTRACT_URI
                         Value: !Ref ConsentFlowContractUri
                       - Name: AI_AGENT_CONSENT_FLOW_APP_URL

@@ -5,6 +5,8 @@ import type { NetworkLearnCardFromSeed } from '@learncard/init';
 
 export interface AgentLearnCardConfig {
     seed?: string;
+    /** Authorized service profile to use for network operations; the seed remains the signing key. */
+    didWeb?: string;
     cloudUrl?: string;
     networkUrl?: string;
 }
@@ -79,6 +81,7 @@ export const getEmptyAgentLearnCard = async (): Promise<{
 
 export const getAgentLearnCard = async ({
     seed,
+    didWeb,
     cloudUrl,
     networkUrl,
 }: AgentLearnCardConfig): Promise<AgentNetworkWallet> => {
@@ -90,6 +93,7 @@ export const getAgentLearnCard = async ({
 
     const cacheKey = JSON.stringify({
         seed,
+        didWeb: didWeb ?? null,
         cloudUrl: cloudUrl ?? null,
         networkUrl: networkUrl ?? null,
     });
@@ -101,6 +105,7 @@ export const getAgentLearnCard = async ({
         didkit: await getDidKitInit(),
         seed,
         network: networkUrl ?? true,
+        ...(didWeb ? { didWeb } : {}),
         ...(cloudUrl ? { cloud: { url: cloudUrl } } : {}),
     };
     const wallet = initLearnCard(initConfig) as unknown as Promise<AgentNetworkWallet>;

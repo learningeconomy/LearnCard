@@ -9,6 +9,7 @@ import { createLearnCardWalletTool } from './learnCardWallet';
 
 export interface ToolRegistryConfig {
     walletSeed?: string;
+    walletDidWeb?: string;
     cloudUrl?: string;
     networkUrl?: string;
     webSearchProvider?: WebSearchProviderName | 'none';
@@ -54,6 +55,7 @@ export const createTools = (config: ToolRegistryConfig): AgentToolDefinition[] =
     const tools = [
         createLearnCardWalletTool({
             seed: config.walletSeed,
+            didWeb: config.walletDidWeb,
             cloudUrl: config.cloudUrl,
             networkUrl: config.networkUrl,
         }),

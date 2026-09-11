@@ -7,6 +7,7 @@ export interface ServiceConfig {
     port: number;
     trustProxyHops?: number;
     walletSeed?: string;
+    walletDidWeb?: string;
     cloudUrl?: string;
     networkUrl?: string;
     maxToolRounds: number;
@@ -196,14 +197,14 @@ export const assertTriggerConfig = (config: ServiceConfig): void => {
 
     const triggerEnvironment = config.triggerEnvironment?.trim().toLowerCase();
     const isDevelopment = config.nodeEnv === 'development' && triggerEnvironment === 'dev';
-    const isStaging =
+    const isDeployed =
         config.nodeEnv === 'production' &&
-        config.sentryEnvironment === 'staging' &&
-        triggerEnvironment === 'staging';
+        (triggerEnvironment === 'staging' || triggerEnvironment === 'production') &&
+        config.sentryEnvironment === triggerEnvironment;
 
-    if (!isDevelopment && !isStaging) {
+    if (!isDevelopment && !isDeployed) {
         throw new Error(
-            'Trigger.dev autonomous execution is restricted to development or the staging deployment.'
+            'Trigger.dev requires development/dev or matching staging/production deployment environments.'
         );
     }
     if (!config.triggerSecretKey) {
@@ -215,8 +216,8 @@ export const assertTriggerConfig = (config: ServiceConfig): void => {
     if (isDevelopment && config.autonomyDevDids.length === 0) {
         throw new Error('AI_AGENT_AUTONOMY_DEV_DIDS must include at least one local test DID.');
     }
-    if (isStaging && !config.launchDarklySdkKey) {
-        throw new Error('LAUNCHDARKLY_SDK_KEY must be set for staging Trigger.dev schedules.');
+    if (isDeployed && !config.launchDarklySdkKey) {
+        throw new Error('LAUNCHDARKLY_SDK_KEY must be set for deployed Trigger.dev schedules.');
     }
 
     assertAutonomousExecutionConfig(config);
@@ -382,6 +383,7 @@ export const getConfig = (): ServiceConfig => {
         port: readNumber(process.env.AI_AGENT_PORT ?? process.env.PORT, 3000),
         trustProxyHops: readNumber(process.env.AI_AGENT_TRUST_PROXY_HOPS, 0),
         walletSeed,
+        walletDidWeb: readString(process.env.AI_AGENT_WALLET_DID_WEB),
         cloudUrl:
             readString(process.env.AI_AGENT_CLOUD_URL) ?? readString(process.env.LEARN_CLOUD_URL),
         networkUrl:

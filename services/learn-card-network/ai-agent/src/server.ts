@@ -24,6 +24,7 @@ import {
     toAgentAutonomyScheduleResponse,
 } from './autonomy/schedules';
 import { AutonomousExecutionNotEnabledError } from './autonomy/triggerScheduleProvider';
+import { isAutonomousExecutionAllowed } from './autonomy/accessControl';
 import { createConsentFlowRuntime, isProdNetworkUrl, type ConsentFlowRuntime } from './consentFlow';
 import type { ServiceConfig } from './config';
 import { getEmptyAgentLearnCard } from './helpers/learnCard.helpers';
@@ -562,6 +563,33 @@ export const createServer = ({
         next();
     };
 
+    const requireScheduleAccess: RequestHandler = async (_req, res, next) => {
+        if (config.nodeEnv !== 'production') {
+            next();
+            return;
+        }
+
+        try {
+            const ownerDid = getAuthContext(res)?.did;
+            if (
+                !config.triggerEnabled ||
+                !ownerDid ||
+                !(await isAutonomousExecutionAllowed(config, ownerDid))
+            ) {
+                res.status(403).json({
+                    ok: false,
+                    error: 'The schedule owner is not enabled for autonomous execution.',
+                });
+                return;
+            }
+
+            next();
+        } catch (error) {
+            recordServiceError('assistant-schedules.access', error);
+            res.status(503).json({ ok: false, error: 'Schedule access is unavailable.' });
+        }
+    };
+
     const requireDebugAccess: RequestHandler = (req, res, next) => {
         if (!config.debugEnabled) {
             res.status(404).json({ ok: false, error: 'Not found.' });
@@ -993,6 +1021,7 @@ export const createServer = ({
         requireDidAuth,
         requireMatchingDidParam,
         authenticatedRateLimit,
+        requireScheduleAccess,
         asyncHandler(async (_req, res) => {
             const schedules = await assistantSchedules.list(getAuthContext(res)?.did ?? '');
 
@@ -1008,6 +1037,7 @@ export const createServer = ({
         requireDidAuth,
         requireMatchingDidParam,
         authenticatedRateLimit,
+        requireScheduleAccess,
         async (req, res) => {
             const parsed = CreateAgentAutonomyScheduleBodyValidator.safeParse(req.body);
 
@@ -1046,6 +1076,7 @@ export const createServer = ({
         requireDidAuth,
         requireMatchingDidParam,
         authenticatedRateLimit,
+        requireScheduleAccess,
         async (req, res) => {
             const parsed = UpdateAgentAutonomyScheduleBodyValidator.safeParse(req.body);
 
@@ -1092,6 +1123,7 @@ export const createServer = ({
         requireDidAuth,
         requireMatchingDidParam,
         authenticatedRateLimit,
+        requireScheduleAccess,
         async (req, res) => {
             try {
                 const removed = await assistantSchedules.remove(

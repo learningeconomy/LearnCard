@@ -37,7 +37,7 @@ export const isAutonomousExecutionAllowed = async (
     }
 
     if (!config.launchDarklySdkKey) {
-        throw new Error('LAUNCHDARKLY_SDK_KEY is required for staging autonomous execution.');
+        throw new Error('LAUNCHDARKLY_SDK_KEY is required for deployed autonomous execution.');
     }
 
     const client = await getLaunchDarklyClient(config.launchDarklySdkKey);

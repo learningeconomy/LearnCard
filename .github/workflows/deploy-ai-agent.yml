@@ -74,19 +74,21 @@ jobs:
                   test -n "$BASE_URL" || { echo "::error::AI_AGENT_BASE_URL is missing"; exit 1; }
                   test -n "$AWS_ROLE_ARN" || { echo "::error::AI_AGENT_AWS_ROLE_ARN is missing"; exit 1; }
 
-                  if [ "$TARGET_ENVIRONMENT" = 'staging' ]; then
-                    test -n "$TRIGGER_SECRET_KEY_SECRET_ARN" || { echo "::error::AI_AGENT_TRIGGER_SECRET_KEY_SECRET_ARN is missing"; exit 1; }
-                    test -n "$TRIGGER_PROJECT_REF" || { echo "::error::AI_AGENT_TRIGGER_PROJECT_REF is missing"; exit 1; }
-                    test -n "$LAUNCHDARKLY_SDK_KEY_SECRET_ARN" || { echo "::error::AI_AGENT_LAUNCHDARKLY_SDK_KEY_SECRET_ARN is missing"; exit 1; }
-                    test -n "$TRIGGER_ACCESS_TOKEN" || { echo "::error::TRIGGER_ACCESS_TOKEN is missing"; exit 1; }
+                  test -n "$TRIGGER_SECRET_KEY_SECRET_ARN" || { echo "::error::AI_AGENT_TRIGGER_SECRET_KEY_SECRET_ARN is missing"; exit 1; }
+                  test -n "$TRIGGER_PROJECT_REF" || { echo "::error::AI_AGENT_TRIGGER_PROJECT_REF is missing"; exit 1; }
+                  test -n "$LAUNCHDARKLY_SDK_KEY_SECRET_ARN" || { echo "::error::AI_AGENT_LAUNCHDARKLY_SDK_KEY_SECRET_ARN is missing"; exit 1; }
+                  test -n "$TRIGGER_ACCESS_TOKEN" || { echo "::error::TRIGGER_ACCESS_TOKEN is missing"; exit 1; }
+
+                  case "$TARGET_ENVIRONMENT" in
+                    staging) EXPECTED_TRIGGER_PROJECT_REF=proj_lhgapsbwrnrqrszcpgzn ;;
+                    production) EXPECTED_TRIGGER_PROJECT_REF=proj_lyfepdqcmztsyzcqmcvx ;;
+                    *) echo "::error::Unsupported AI Agent deployment environment"; exit 1 ;;
+                  esac
+
+                  if [ "$TRIGGER_PROJECT_REF" != "$EXPECTED_TRIGGER_PROJECT_REF" ]; then
+                    echo "::error::AI_AGENT_TRIGGER_PROJECT_REF does not match $TARGET_ENVIRONMENT"
+                    exit 1
                   fi
-            - name: Deploy Trigger.dev staging tasks
-              if: env.TARGET_ENVIRONMENT == 'staging'
-              working-directory: services/learn-card-network/ai-agent
-              env:
-                  AI_AGENT_TRIGGER_PROJECT_REF: ${{ vars.AI_AGENT_TRIGGER_PROJECT_REF }}
-                  TRIGGER_ACCESS_TOKEN: ${{ secrets.TRIGGER_ACCESS_TOKEN }}
-              run: bunx trigger deploy --env prod --skip-update-check
             - name: Configure AWS credentials
               uses: aws-actions/configure-aws-credentials@v5
               with:
@@ -111,6 +113,24 @@ jobs:
                     echo "::error::AI_AGENT_ECR_REPOSITORY_URL does not match $CLOUDFORMATION_STACK"
                     exit 1
                   fi
+
+                  STACK_ENVIRONMENT="$(aws cloudformation describe-stacks \
+                    --stack-name "$CLOUDFORMATION_STACK" \
+                    --query "Stacks[0].Parameters[?ParameterKey=='Environment'].ParameterValue | [0]" \
+                    --output text)"
+
+                  if [ "$STACK_ENVIRONMENT" != "$TARGET_ENVIRONMENT" ]; then
+                    echo "::error::CloudFormation stack environment does not match $TARGET_ENVIRONMENT"
+                    exit 1
+                  fi
+
+            - name: Deploy Trigger.dev tasks
+              working-directory: services/learn-card-network/ai-agent
+              env:
+                  AI_AGENT_TRIGGER_PROJECT_REF: ${{ vars.AI_AGENT_TRIGGER_PROJECT_REF }}
+                  AI_AGENT_TRIGGER_ENVIRONMENT: ${{ env.TARGET_ENVIRONMENT }}
+                  TRIGGER_ACCESS_TOKEN: ${{ secrets.TRIGGER_ACCESS_TOKEN }}
+              run: bunx trigger deploy --env prod --skip-update-check
 
             - name: Login to Amazon ECR
               uses: aws-actions/amazon-ecr-login@v2
@@ -199,16 +219,6 @@ jobs:
                   TRIGGER_SECRET_KEY_SECRET_ARN: ${{ vars.AI_AGENT_TRIGGER_SECRET_KEY_SECRET_ARN }}
                   LAUNCHDARKLY_SDK_KEY_SECRET_ARN: ${{ vars.AI_AGENT_LAUNCHDARKLY_SDK_KEY_SECRET_ARN }}
               run: |
-                  TRIGGER_PARAMETERS=(EnableTriggerSchedules=false)
-
-                  if [ "$TARGET_ENVIRONMENT" = 'staging' ]; then
-                    TRIGGER_PARAMETERS=(
-                      EnableTriggerSchedules=true
-                      TriggerSecretKeySecretArn="$TRIGGER_SECRET_KEY_SECRET_ARN"
-                      LaunchDarklySdkKeySecretArn="$LAUNCHDARKLY_SDK_KEY_SECRET_ARN"
-                    )
-                  fi
-
                   aws cloudformation deploy \
                     --stack-name "$CLOUDFORMATION_STACK" \
                     --template-file services/learn-card-network/ai-agent/infra/aws/template.yml \
@@ -220,7 +230,9 @@ jobs:
                       Model=gpt-5.6-luna \
                       ModelInputCostUsdPerMillion=0.2 \
                       ModelOutputCostUsdPerMillion=1.2 \
-                      "${TRIGGER_PARAMETERS[@]}" \
+                      EnableTriggerSchedules=true \
+                      TriggerSecretKeySecretArn="$TRIGGER_SECRET_KEY_SECRET_ARN" \
+                      LaunchDarklySdkKeySecretArn="$LAUNCHDARKLY_SDK_KEY_SECRET_ARN" \
                     --tags \
                       Project=learncard \
                       Service=learncard-ai-agent \

@@ -37,6 +37,7 @@
     },
     { "ParameterKey": "CloudUrl", "ParameterValue": "https://cloud.example.com/trpc" },
     { "ParameterKey": "NetworkUrl", "ParameterValue": "https://network.example.com/trpc" },
+    { "ParameterKey": "WalletDidWeb", "ParameterValue": "" },
     {
         "ParameterKey": "ConsentFlowContractUri",
         "ParameterValue": "lc:network:example.com%2Ftrpc:contract:replace-me"

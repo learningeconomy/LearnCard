@@ -225,6 +225,7 @@ export const createConsentFlowRuntime = (
     config: ServiceConfig,
     walletConfig: AgentLearnCardConfig = {
         seed: config.walletSeed,
+        didWeb: config.walletDidWeb,
         cloudUrl: config.cloudUrl,
         networkUrl: config.networkUrl,
     },

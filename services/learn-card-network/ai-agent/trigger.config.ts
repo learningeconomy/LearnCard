@@ -31,7 +31,8 @@ export default defineConfig({
                     },
                     {
                         name: 'SENTRY_TRACES_SAMPLE_RATE',
-                        value: '1',
+                        value:
+                            process.env.AI_AGENT_TRIGGER_ENVIRONMENT === 'production' ? '0.1' : '1',
                     },
                     ...(process.env.GITHUB_SHA
                         ? [

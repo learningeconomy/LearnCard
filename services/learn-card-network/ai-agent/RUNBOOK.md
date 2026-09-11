@@ -1,6 +1,6 @@
 # LearnCard AI Agent AWS runbook
 
-This runbook operates the HTTP AI Agent service from `services/learn-card-network/ai-agent`. Production autonomous schedules remain disabled; staging schedules use the isolated LearnCard Staging Trigger.dev project and a LaunchDarkly boolean flag.
+This runbook operates the HTTP AI Agent service from `services/learn-card-network/ai-agent`. Staging and production schedules use separate Trigger.dev projects and fail-closed LaunchDarkly gates. Production deploys with targeting off; access is enabled only through an explicit flag rollout.
 
 ## Architecture
 
@@ -35,7 +35,7 @@ The deployed process enforces these invariants at startup:
 -   MongoDB, wallet encryption seed, OpenAI provider, DID Auth domain, LearnCard endpoints, and ConsentFlow contract are explicit.
 -   Model input/output prices are explicit so estimated cost is not silently guessed.
 -   Debug routes are disabled. Production refuses to start when `AI_AGENT_DEBUG_ENABLED=true`.
--   Local autonomy and Trigger.dev are disabled.
+-   Local autonomy is disabled. Trigger.dev requires matching deployment environment labels, its runtime secret, and the environment's LaunchDarkly server SDK key.
 -   Every run is bounded by tool rounds, wall-clock time, output tokens, measured total tokens, and estimated model cost.
 
 The load balancer calls `/api/health/ready`; a missing provider or unavailable MongoDB keeps a new task out of service. The ECS deployment circuit breaker rolls back a failed replacement while `MinimumHealthyPercent=100` preserves the working task.
@@ -53,14 +53,23 @@ Create one AWS Secrets Manager secret for each environment variable below. Store
 -   `AI_AGENT_WALLET_SEED`
 -   `AI_AGENT_MONGO_URI`
 -   `SENTRY_DSN`
--   staging only: the LaunchDarkly staging environment server-side SDK key used as
-    `LAUNCHDARKLY_SDK_KEY`
--   staging only: the dedicated staging Trigger.dev project's **PROD** secret used as
-    `TRIGGER_SECRET_KEY`
+-   the matching LaunchDarkly environment server-side SDK key used as `LAUNCHDARKLY_SDK_KEY`
+-   the dedicated Trigger.dev project's **PROD** secret used as `TRIGGER_SECRET_KEY`
 
 Do not put secret values in parameter files, CloudFormation, shell history, GitHub variables, or logs. CloudFormation receives only secret ARNs.
 
 The wallet seed is the encryption identity for persisted agent data. Back it up in the team's approved secret-recovery system before first use. Losing or replacing it makes existing encrypted records unreadable.
+
+For an existing contract owned by a service profile, set the optional CloudFormation
+`WalletDidWeb` parameter to that profile's DID. ECS exposes it as `AI_AGENT_WALLET_DID_WEB`.
+For the production LearnCloud-owned LearnCard AI contract, use
+`did:web:network.learncard.com:users:learn-cloud`. The seed's profile must already have
+authorized access to act as that service profile; this setting does not grant permissions.
+The service passes it to `initLearnCard` as `didWeb` for ConsentFlow and wallet tools.
+Leave it blank to keep the existing seed-based network identity. Mongo persistence uses a
+separate seed-only wallet, so selecting a service profile does not change encryption recipients.
+Set the same `AI_AGENT_WALLET_DID_WEB` in the corresponding Trigger.dev environment when
+using scheduled workers; CloudFormation does not populate Trigger.dev environment variables.
 
 If a secret uses a customer-managed KMS key, grant the generated task execution role `kms:Decrypt` for that key before enabling the service. Secrets encrypted with the default Secrets Manager key need no additional KMS statement.
 
@@ -241,50 +250,57 @@ Environment variables:
 -   `AI_AGENT_ECR_REPOSITORY_URL` from the stack's `EcrRepositoryUrl` output
 -   `AI_AGENT_CLOUDFORMATION_STACK`
 -   `AI_AGENT_BASE_URL`, the final public HTTPS origin
--   staging only: `AI_AGENT_TRIGGER_PROJECT_REF`, the dedicated staging Trigger.dev project ref
--   staging only: `AI_AGENT_TRIGGER_SECRET_KEY_SECRET_ARN`, the ARN of the AWS secret containing
-    that project's PROD secret
--   staging only: `AI_AGENT_LAUNCHDARKLY_SDK_KEY_SECRET_ARN`, the ARN of the AWS secret containing
-    the server-side SDK key for the LearnCard LaunchDarkly staging environment
+-   `AI_AGENT_TRIGGER_PROJECT_REF`, the environment's dedicated Trigger.dev project ref
+-   `AI_AGENT_TRIGGER_SECRET_KEY_SECRET_ARN`, the ARN of the AWS secret containing that project's PROD secret
+-   `AI_AGENT_LAUNCHDARKLY_SDK_KEY_SECRET_ARN`, the ARN of the AWS secret containing the matching LaunchDarkly environment's server-side SDK key
 
 Environment secrets:
 
 -   `AI_AGENT_SMOKE_SEED` for staging only
--   `TRIGGER_ACCESS_TOKEN` for staging only, containing a Trigger.dev personal access token
+-   `TRIGGER_ACCESS_TOKEN` in both environments, containing a Trigger.dev personal access token
     beginning with `tr_pat_`; this deploys task code and is not the runtime project secret
 
 Grant the workflow `id-token: write` and use GitHub OIDC; do not create long-lived AWS access keys. Scope the role trust policy to `repo:learningeconomy/LearnCard:environment:learn-card-ai-agent-staging` and `repo:learningeconomy/LearnCard:environment:learn-card-ai-agent-production`. Restrict its policy to the two AI Agent ECR repositories, CloudFormation stacks, and resource types the template manages. The service stack attaches only `logs:FilterLogEvents` for its own application log group so deployment can verify readable logs. Set `DeploymentRoleName` if the existing role is not named `learncard-ai-agent-github-deploy`. Require a non-self production approval and protected-branch deployment.
 
-### 9. Configure the dedicated Trigger.dev staging project
+### 9. Configure the isolated Trigger.dev projects
 
-The Learning Economy Trigger.dev plan does not expose a STAGING environment. Use a separate project
-whose PROD environment is dedicated exclusively to LearnCard staging. Set its `proj_...` reference
-as `AI_AGENT_TRIGGER_PROJECT_REF`; `trigger.config.ts` keeps the original LearnCard project as the
-local-development default.
+The Learning Economy Trigger.dev plan does not expose a STAGING environment. Both deployments
+use a project's **PROD** environment, but they must use different projects:
 
-Configure that dedicated project's **Prod** environment with the same runtime values used by the
-staging ECS task:
+| LearnCard environment | Trigger project   | Project ref                 | `SENTRY_ENV` / `AI_AGENT_TRIGGER_ENVIRONMENT` |
+| --------------------- | ----------------- | --------------------------- | --------------------------------------------- |
+| Staging               | LearnCard Staging | `proj_lhgapsbwrnrqrszcpgzn` | `staging`                                     |
+| Production            | LearnCard         | `proj_lyfepdqcmztsyzcqmcvx` | `production`                                  |
 
--   `NODE_ENV=production`, `SENTRY_ENV=staging`, `AI_AGENT_TRIGGER_ENABLED=true`,
-    `AI_AGENT_TRIGGER_ENVIRONMENT=staging`, `AI_AGENT_AUTONOMY_DEV_ENABLED=false`, and
-    `AI_AGENT_SELF_IMPROVEMENT_ENABLED=true`
--   `LAUNCHDARKLY_SDK_KEY` from the LearnCard LaunchDarkly staging environment
+The workflow rejects an incorrect project/environment pairing and checks the CloudFormation
+stack's environment before deploying any tasks. `trigger.config.ts` keeps the original LearnCard
+project as the local-development default.
+
+Configure each project's **Prod** environment with the same runtime values used by its ECS task:
+
+-   `NODE_ENV=production`, `SENTRY_ENV` and `AI_AGENT_TRIGGER_ENVIRONMENT` from the table,
+    `AI_AGENT_TRIGGER_ENABLED=true`, `AI_AGENT_AUTONOMY_DEV_ENABLED=false`,
+    `AI_AGENT_DEBUG_ENABLED=false`, and `AI_AGENT_SELF_IMPROVEMENT_ENABLED=true`
+-   `LAUNCHDARKLY_SDK_KEY` from the matching LearnCard LaunchDarkly environment
 -   `OPENAI_API_KEY`, `AI_AGENT_WALLET_SEED`, `AI_AGENT_MONGO_URI`, `SENTRY_DSN`, and
     `BRAVE_SEARCH_API_KEY` when Brave is enabled
+-   `AI_AGENT_WALLET_DID_WEB` when ECS uses a service profile, with the same value as ECS
 -   `AI_AGENT_AUTH_DOMAIN`, `AI_AGENT_CLOUD_URL`, `AI_AGENT_NETWORK_URL`,
     `AI_AGENT_CONSENT_FLOW_CONTRACT_URI`, and `AI_AGENT_CONSENT_FLOW_APP_URL`
 -   `AI_AGENT_MONGO_DB_NAME`, `AI_AGENT_ENCRYPTION_KEY_ID`, and the same
     run/budget/web-search settings as ECS
 
-`trigger.config.ts` synchronizes GPT-5.6 Luna with its current token prices, a full staging trace
-sample rate, and the Git commit release. The remaining runtime variables above are pre-provisioned
-and must be updated when their ECS counterparts rotate.
+`trigger.config.ts` synchronizes GPT-5.6 Luna with its configured token prices, the trace
+sample rate (`1` for staging, `0.1` for production), and the Git commit release. The workflow
+passes `AI_AGENT_TRIGGER_ENVIRONMENT` into the CLI; set that variable explicitly for manual
+Trigger deployments too. The remaining runtime variables above are pre-provisioned and must
+be updated when their ECS counterparts rotate.
 
 Trigger.dev injects that project's PROD `TRIGGER_SECRET_KEY` into task runs. Do not add the
 personal access token to the task environment. The deployment workflow uses that PAT only for
 `trigger deploy --env prod`, then enables ECS schedule synchronization with the AWS-stored
-dedicated-project secret. CloudFormation rejects Trigger enablement outside the staging stack or
-without the LaunchDarkly SDK-key secret.
+dedicated-project secret. CloudFormation requires both the Trigger and LaunchDarkly secret
+references when enabling schedules, in staging or production.
 
 ## Staging test-account setup
 
@@ -334,8 +350,9 @@ perform irreversible effects.
       -f deploy-ai-agent=true
     ```
 
--   Production is a manual workflow dispatch targeting `production`, keeps Trigger schedules
-    disabled, and should require GitHub environment approval.
+-   Production is a manual workflow dispatch targeting `production`, deploys its separate Trigger
+    project and enables schedule synchronization, and should require GitHub environment approval.
+    Keep the production LaunchDarkly flag off throughout the initial deployment.
 -   Images receive an immutable `sha-<git-sha>` tag. Workflow retries reuse the existing image rather than overwriting it.
 -   The workflow rejects ARM64 images with critical or high ECR findings, updates the CloudFormation image tag and deployment ID, waits for the ECS rolling deployment with circuit-breaker rollback, checks readiness, and runs the authenticated smoke test in staging.
 
@@ -348,6 +365,24 @@ Before production dispatch:
 5. Record the current production `ImageTag` parameter for rollback.
 
 After production dispatch, use the dedicated synthetic production test account for one read-only authenticated run. Do not use a real learner account for deployment verification.
+
+### Controlled production schedule rollout
+
+1. Keep production `ai-agent-autonomy-enabled` targeting **Off**, its off variation `false`,
+   and its default rule `false`. Make the flag available to client-side SDKs as well.
+2. Deploy the approved staging-tested commit. The production workflow intentionally skips the
+   staging scheduled smoke: it must not open targeting or create a production schedule.
+3. Using a dedicated synthetic production account, verify schedule API access is denied while
+   the flag is off. The frontend alone is not an access-control boundary.
+4. When ready for an internal trial, target only the synthetic account's production `did:web`
+   with `true` and turn targeting on. Exercise a read-only scheduled run and inspect its run
+   record, Assistant card, and telemetry before expanding access.
+5. Turning targeting off blocks future schedule API calls, dispatches, and executions at their
+   next access check, including queued work. It does not cancel an already-running agent.
+
+Schedule occurrence deduplication and owner leases remain in place. They do not provide
+tool-level idempotency or a reduced tool capability set; broad rollout requires separate
+review of irreversible tool effects.
 
 ## Trace and troubleshoot one run
 
@@ -400,8 +435,8 @@ Staging samples all traces; production defaults to `0.1`.
 ## Secret and key rotation
 
 -   **OpenAI, Brave, or Sentry:** create a new provider credential, update the existing Secrets Manager value, run the deployment workflow to force a new ECS revision, verify, then revoke the old credential.
--   **LaunchDarkly:** rotate the server-side staging SDK key in both AWS Secrets Manager and the
-    dedicated Trigger.dev staging project, deploy and verify, then revoke the old key.
+-   **LaunchDarkly:** rotate the matching environment's server SDK key in both AWS Secrets Manager
+    and its dedicated Trigger.dev project, deploy and verify, then revoke the old key.
 -   **MongoDB:** create a second database user, update `AI_AGENT_MONGO_URI`, deploy and verify, then remove the old user.
 -   **AI Agent wallet seed:** do not rotate in place. It is required to decrypt existing DAG-JWE records. Build and verify an explicit decrypt/re-encrypt migration with both identities before changing the secret.
 -   **`AI_AGENT_ENCRYPTION_KEY_ID`:** do not change it casually; it is part of the persisted encryption envelope/AAD contract. Treat a change as a data migration.
@@ -410,7 +445,10 @@ The workflow changes `DeploymentId` on every run so ECS replaces tasks and resol
 
 ## Rollback
 
-Roll back by updating CloudFormation to a known-good immutable image:
+Turn the affected environment's autonomy flag off first, then roll back CloudFormation to a
+known-good immutable image. Disable schedule synchronization during rollback, including when
+returning to an image that predates production Trigger support. Turning the flag off does not
+cancel already-running Trigger tasks; handle those explicitly in the Trigger dashboard.
 
 ```bash
 STACK_NAME="learncard-ai-agent-staging" # or production
@@ -422,6 +460,7 @@ aws cloudformation deploy \
   --capabilities CAPABILITY_NAMED_IAM \
   --parameter-overrides \
     CreateService=true \
+    EnableTriggerSchedules=false \
     ImageTag="sha-$GOOD_SHA" \
     DeploymentId="rollback-$(date +%s)"
 ```

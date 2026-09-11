@@ -79,6 +79,7 @@ export const createAgentServiceRuntime = (
     let encryptionService = options.encryptionService;
 
     const getEncryption = (): EncryptionService => {
+        // Persistence stays on the seed identity, independent of the network service profile.
         encryptionService ??= createLearnCardDagJweEncryptionService({
             keyId: config.encryptionKeyId,
             getWallet: () =>
@@ -134,6 +135,7 @@ export const createAgentServiceRuntime = (
         options.tools ??
         createTools({
             walletSeed: config.walletSeed,
+            walletDidWeb: config.walletDidWeb,
             cloudUrl: config.cloudUrl,
             networkUrl: config.networkUrl,
             webSearchProvider: config.webSearchProvider,

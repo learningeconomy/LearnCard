@@ -2,6 +2,11 @@
 
 Measured on 2026-07-15 against the local LearnCard development stack. This document describes an internal development spike, not a production-safe autonomy system.
 
+Current rollout note: staging and production now support isolated Trigger.dev projects behind
+environment-specific LaunchDarkly gates; production starts with targeting off. See
+[RUNBOOK.md](./RUNBOOK.md) for current operation. The historical effect-safety findings below
+still apply: access gating is not tool-level idempotency or a capability restriction.
+
 ## Result
 
 The spike proved that a user-defined recurring schedule can invoke the same full LearnCard Agent runtime used by authenticated chat, await the post-run retrospective, write a learner-facing Assistant Inbox card, and persist an encrypted, DID-scoped audit record. The development dispatcher remained outside the HTTP service and selected only explicitly allowlisted fixture DIDs.
@@ -188,9 +193,9 @@ synchronizes imperative schedules using project-scoped, environment-prefixed ded
 thin scheduled dispatch task creates a globally idempotent occurrence and enqueues the full-agent
 execution task with per-owner concurrency 1. The execution task retains the Mongo occurrence and
 renewable lease fences, re-checks schedule existence/enabled state, and records `trigger`
-provenance. Configuration permits only local `dev` and the `staging` deployment. Local development
-uses an exact test-DID list; staging uses the fail-closed `ai-agent-autonomy-enabled` LaunchDarkly
-flag with the authenticated DID as the user context key. Production enablement remains rejected.
+provenance. At the time of this evaluation, configuration permitted only local `dev` and the
+`staging` deployment, and production enablement was rejected. The current implementation also
+supports production behind its own fail-closed LaunchDarkly gate; see the current runbook.
 
 Live development verification selected Node plus `medium-1x` for the execution task. The first Bun
 worker could not load `@learncard/didkit-plugin-node`; the default 0.5 GB Node worker then exhausted
