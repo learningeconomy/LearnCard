@@ -32,7 +32,17 @@ import type {
     EscrowRecoveryStart,
     EscrowEnrollmentState,
 } from './types';
-import { EscrowPinLockedError, EscrowPinMismatchError, EscrowPinThrottledError } from './types';
+import {
+    EscrowPinLockedError,
+    EscrowPinMismatchError,
+    EscrowPinThrottledError,
+    EscrowPinUnavailableError,
+} from './types';
+import {
+    ESCROW_PIN_LOCKED_MESSAGE,
+    ESCROW_PIN_MISMATCH_PATTERN,
+    ESCROW_PIN_UNAVAILABLE_MESSAGE,
+} from '@learncard/types';
 import {
     validatePin,
     generatePinSalt,
@@ -742,8 +752,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     body &&
                     typeof body === 'object' &&
                     'message' in body &&
-                    body.message ===
-                        'Too many incorrect PIN attempts. You can still recover by waiting.'
+                    body.message === ESCROW_PIN_LOCKED_MESSAGE
                 ) {
                     throw new EscrowPinLockedError();
                 }
@@ -755,10 +764,18 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     body &&
                     typeof body === 'object' &&
                     'message' in body &&
+                    body.message === ESCROW_PIN_UNAVAILABLE_MESSAGE
+                ) {
+                    throw new EscrowPinUnavailableError();
+                }
+                if (
+                    body &&
+                    typeof body === 'object' &&
+                    'message' in body &&
                     typeof body.message === 'string' &&
                     body.message.startsWith('Incorrect PIN.')
                 ) {
-                    const match = /^Incorrect PIN\. (\d+) attempts left\.$/.exec(body.message);
+                    const match = ESCROW_PIN_MISMATCH_PATTERN.exec(body.message);
                     const remaining = match ? Number(match[1]) : 0;
                     // Older/malformed responses must not invent remaining guesses; use 0.
                     throw new EscrowPinMismatchError(
@@ -1393,11 +1410,21 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         },
 
         async setEscrowPin({ pin, ...params }): Promise<void> {
-            await this.enableEscrowRecovery!({ ...params, options: { pin } });
+            const result = await withRotationLock(() =>
+                ensureEscrowEnrollmentUnguarded(this, { ...params, options: { pin } })
+            );
+            if (!result.enrolled) {
+                throw new Error('Automatic recovery is not available for this account.');
+            }
         },
 
         async clearEscrowPin(params): Promise<void> {
-            await withRotationLock(() => ensureEscrowEnrollmentUnguarded(this, params, true));
+            const result = await withRotationLock(() =>
+                ensureEscrowEnrollmentUnguarded(this, params, true)
+            );
+            if (!result.enrolled) {
+                throw new Error('Automatic recovery is not available for this account.');
+            }
         },
 
         /** Enroll missing/stale escrow material using the standard atomic rotation. */
@@ -1428,19 +1455,23 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             const pair = await generateEscrowKeyPair();
             const result = await escrowRequest<
                 Omit<EscrowRecoveryStart, 'clientEphemeralPrivateKey'>
-            >('/recover', {
-                method: 'POST',
-                headers: buildHeaders('', undefined, params.tenantId ?? tenantId),
-                body: JSON.stringify({
-                    clientEphemeralPublicKey: pair.publicKey,
-                    ...(params.options?.releasePolicy
-                        ? { releasePolicy: params.options.releasePolicy }
-                        : {}),
-                    ...(sessionProof
-                        ? { recoverySessionToken: params.recoverySessionToken }
-                        : { authToken: params.token, providerType: params.providerType }),
-                }),
-            });
+            >(
+                '/recover',
+                {
+                    method: 'POST',
+                    headers: buildHeaders('', undefined, params.tenantId ?? tenantId),
+                    body: JSON.stringify({
+                        clientEphemeralPublicKey: pair.publicKey,
+                        ...(params.options?.releasePolicy
+                            ? { releasePolicy: params.options.releasePolicy }
+                            : {}),
+                        ...(sessionProof
+                            ? { recoverySessionToken: params.recoverySessionToken }
+                            : { authToken: params.token, providerType: params.providerType }),
+                    }),
+                },
+                params.options?.releasePolicy === 'pin'
+            );
             return { ...result, clientEphemeralPrivateKey: pair.privateKey };
         },
 
