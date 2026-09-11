@@ -2,10 +2,10 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { RecoveryPinSetupOverlay } from './RecoveryPinSetupOverlay';
-import { useBaseAuthCoordinator } from 'learn-card-base';
+import { useAuthCoordinator } from 'learn-card-base';
 
 vi.mock('learn-card-base', () => ({
-    useBaseAuthCoordinator: vi.fn(),
+    useAuthCoordinator: vi.fn(),
     Overlay: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
@@ -16,9 +16,9 @@ describe('RecoveryPinSetupOverlay', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
-        vi.mocked(useBaseAuthCoordinator).mockReturnValue({
+        vi.mocked(useAuthCoordinator).mockReturnValue({
             setEscrowPin: mockSetEscrowPin,
-        } as unknown as ReturnType<typeof useBaseAuthCoordinator>);
+        } as unknown as ReturnType<typeof useAuthCoordinator>);
     });
 
     it('rejects trivial PINs', () => {
@@ -72,5 +72,36 @@ describe('RecoveryPinSetupOverlay', () => {
         render(<RecoveryPinSetupOverlay onComplete={mockOnComplete} onSkip={mockOnSkip} />);
         fireEvent.click(screen.getByText('Skip for Now'));
         expect(mockOnSkip).toHaveBeenCalled();
+    });
+
+    it.each([
+        'PIN must contain 6–12 digits.',
+        'Choose a PIN without trivial or sequential patterns.',
+        'Automatic recovery is not available for this account.',
+    ])('displays the safe validation message: %s', async message => {
+        mockSetEscrowPin.mockRejectedValueOnce(new Error(message));
+        render(<RecoveryPinSetupOverlay onComplete={mockOnComplete} onSkip={mockOnSkip} />);
+        fireEvent.paste(screen.getAllByLabelText(/PIN digit/)[0], {
+            clipboardData: { getData: () => '135790' },
+        });
+        fireEvent.paste(screen.getAllByLabelText(/PIN digit/)[0], {
+            clipboardData: { getData: () => '135790' },
+        });
+        expect(await screen.findByText(message)).toBeInTheDocument();
+        expect(mockOnComplete).not.toHaveBeenCalled();
+    });
+
+    it('does not report success when PIN setup is unavailable', async () => {
+        vi.mocked(useAuthCoordinator).mockReturnValue({} as ReturnType<typeof useAuthCoordinator>);
+        render(<RecoveryPinSetupOverlay onComplete={mockOnComplete} onSkip={mockOnSkip} />);
+        fireEvent.paste(screen.getAllByLabelText(/PIN digit/)[0], {
+            clipboardData: { getData: () => '135790' },
+        });
+        fireEvent.paste(screen.getAllByLabelText(/PIN digit/)[0], {
+            clipboardData: { getData: () => '135790' },
+        });
+        await waitFor(() => expect(screen.getByText('Confirm your PIN')).toBeInTheDocument());
+        expect(screen.queryByText('PIN set successfully')).not.toBeInTheDocument();
+        expect(mockSetEscrowPin).not.toHaveBeenCalled();
     });
 });
