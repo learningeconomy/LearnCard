@@ -6,7 +6,9 @@ description: 'How-To Guide: Add a credential claim button to any website using t
 
 Add a "Claim Credential" button to any webpage. When a user clicks it, a modal walks them through email verification and deposits the credential into their LearnCard wallet.
 
-**~15 minutes · Needs:** a publishable key and a signing authority — the CLI below sets up both.
+{% hint style="info" %}
+**~15 min** · Start here — the CLI sets up everything it needs.
+{% endhint %}
 
 ## The one-line version
 

@@ -6,7 +6,9 @@ description: 'How-To Guide: Sending and issuing credentials with LearnCard'
 
 ---
 
-**~10 minutes · Needs:** a seed or API token from the [Quickstart](../quick-start/your-first-integration.md).
+{% hint style="info" %}
+**~10 min** · After the [Quickstart](../quick-start/your-first-integration.md).
+{% endhint %}
 
 ## The one-line version
 

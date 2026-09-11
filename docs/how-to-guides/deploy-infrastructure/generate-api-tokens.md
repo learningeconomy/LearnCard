@@ -4,7 +4,9 @@ description: Create a scoped token so your server can call the LearnCard API wit
 
 # Generate API Tokens
 
-**~5 minutes · Needs:** a LearnCard profile (the Quickstart creates one)
+{% hint style="info" %}
+**~5 min** · After the [Quickstart](../../quick-start/your-first-integration.md).
+{% endhint %}
 
 ## The one-line version
 

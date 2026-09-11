@@ -2,7 +2,9 @@
 
 A signed credential can't be edited. To correct one, revoke it and issue a replacement. Revocation works for anything you sent through `send()` — from a template or as your own signed credential.
 
-**~5 minutes · Needs:** the template URI you sent from (returned by `send()` as `uri`, or from `createBoost`) and the recipient's profile ID.
+{% hint style="info" %}
+**~5 min** · After you've sent a credential.
+{% endhint %}
 
 ## The one-line version
 

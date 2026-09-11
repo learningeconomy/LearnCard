@@ -6,7 +6,9 @@ description: After a user connects their LearnCard, log what they do — and let
 
 You've connected a user's LearnCard to your platform — see [Connect a User's LearnCard](create-a-consentflow.md). Now log what they do there. Each activity becomes an [xAPI statement](../core-concepts/credentials-and-data/xapi-data.md) stored in the user's own LearnCloud, and shows up in their LearnCard Activity Feed.
 
-**~15 minutes · Needs:** the consent tutorial's `consent-callback.mjs` and `read-user-data.mjs`, your `SECURE_SEED`, and the `CONTRACT_URI` and `CONSENT_VP` from your own test consent.
+{% hint style="info" %}
+**~15 min** · After [Connect a User's LearnCard](create-a-consentflow.md).
+{% endhint %}
 
 ## 1. The consent `vp` is your permission slip
 

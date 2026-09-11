@@ -2,7 +2,9 @@
 
 Before issuing credentials to real users, you should test your integration safely. LearnCard provides several mechanisms to test issuance without sending unwanted emails or SMS messages to real users.
 
-**~5 minutes · Needs:** A LearnCard wallet and an API token.
+{% hint style="info" %}
+**~5 min** · After the [Quickstart](../../quick-start/your-first-integration.md).
+{% endhint %}
 
 ## Environments
 

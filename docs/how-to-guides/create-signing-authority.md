@@ -6,7 +6,9 @@ description: 'Every credential is signed by a key. Decide whether you hold it or
 
 Every credential is signed by a private key. You have two choices: **you sign** with your own seed, or **LearnCard signs for you** with a key it hosts on your behalf — a _signing authority_. Pick one; you can change later.
 
-**~5 minutes · Needs:** a LearnCard profile (the Quickstart creates one)
+{% hint style="info" %}
+**~5 min** · After the [Quickstart](../quick-start/your-first-integration.md).
+{% endhint %}
 
 ## The one-line version
 

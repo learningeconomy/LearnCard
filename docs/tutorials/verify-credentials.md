@@ -6,7 +6,9 @@ description: Sign a credential locally, verify it, and understand tampered, expi
 
 Verification checks the signature, detects changes to signed data, checks expiry, and checks revocation or suspension when the credential carries a supported `credentialStatus`. You will generate a real signed Open Badges 3.0 credential locally, then try two failing cases. No account or API token is needed for these three examples.
 
-**~10 minutes · Needs:** Node.js (v20+), a terminal; a network-issued credential for the optional revocation step
+{% hint style="info" %}
+**~10 min** · Start here — nothing to set up.
+{% endhint %}
 
 ## The one-line version
 

@@ -2,7 +2,9 @@
 
 A checklist for the day you switch from test recipients to real ones. Each line links to the page that covers it.
 
-**~10 minutes · Needs:** a working integration on staging.
+{% hint style="info" %}
+**~10 min** · After your integration works on [staging](deploy-infrastructure/test-safely.md).
+{% endhint %}
 
 ## Switch from staging to production
 

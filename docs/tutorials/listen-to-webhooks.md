@@ -6,7 +6,9 @@ description: 'Get a webhook the moment a credential you sent is delivered, and a
 
 Sending a credential doesn't tell you what happened to it. Pass a webhook URL with the send and LearnCard `POST`s to your server the moment it's delivered, and again the moment it's claimed — no polling.
 
-**~15 minutes · Needs:** Node.js 20+, a public URL (e.g., ngrok)
+{% hint style="info" %}
+**~15 min** · After the [Quickstart](../quick-start/your-first-integration.md) · ngrok or another tunnel.
+{% endhint %}
 
 ## The one-line version
 

@@ -6,7 +6,9 @@ description: Build, test, and publish an app that runs inside LearnCard and issu
 
 Users install your app from the LearnCard app store. The [Partner Connect SDK](../sdks/partner-connect/README.md) provides single sign-on, credential issuance, notifications, and learner context.
 
-**~20 minutes to a working local app · Needs:** Node.js 18+, a LearnCard account for step 2.
+{% hint style="info" %}
+**~20 min to a working local app** · Start here — a LearnCard account is needed only at step 2.
+{% endhint %}
 
 ## 1. Build locally — no registration needed
 

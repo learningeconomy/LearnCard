@@ -6,7 +6,9 @@ description: Add your organization's DID to the LEF Trusted Issuer Registry so r
 
 The LEF Member Trusted Issuer Registry is the list LearnCard checks to decide whether an issuer is known. Listed issuers show as trusted in the LearnCard app instead of triggering an unverified-issuer notice, and listing also unlocks features reserved for registry members, such as sending credentials to phone numbers.
 
-**~10 minutes · Needs:** a GitHub account, your organization's DID
+{% hint style="info" %}
+**~10 min** · You have a GitHub account and your organization's DID.
+{% endhint %}
 
 ## What to prepare
 
