@@ -112,7 +112,7 @@ export const globalSetup = async (config: FullConfig) => {
     await page2.goto(new URL('/developer/sign-in', appURL).href);
     await page2.getByRole('textbox').fill('2'.repeat(64));
 
-    await page2.getByRole('button', { name: /sign in/i }).click();
+    await page2.getByRole('button', { name: 'Sign in', exact: true }).click();
     await page2.waitForURL(/wallet/);
 
     try {

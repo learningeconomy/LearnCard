@@ -23,7 +23,7 @@ test.describe('Signing in with a seed', () => {
 
         await page.getByRole('textbox').fill('c'.repeat(64));
 
-        await page.getByRole('button', { name: /sign in/i }).click();
+        await page.getByRole('button', { name: 'Sign in', exact: true }).click();
         await page.waitForURL(/wallet/);
     });
 
@@ -32,7 +32,7 @@ test.describe('Signing in with a seed', () => {
 
         await page.getByRole('textbox').fill('abc123'.repeat(30).slice(0, 64));
 
-        await page.getByRole('button', { name: /sign in/i }).click();
+        await page.getByRole('button', { name: 'Sign in', exact: true }).click();
         await page.waitForURL(/wallet/);
 
         await page.getByRole('button', { name: /boost/i }).click();

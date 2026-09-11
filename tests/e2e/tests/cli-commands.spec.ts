@@ -254,9 +254,11 @@ describe('CLI: one folder, every command', () => {
             expect(cliRaw('verify', 'vc.json')).toMatch(/✓ proof/);
             expect(() => cliRaw('verify', 'bad.json')).toThrow();
             expect(
-                execFileSync('sh', ['-c', `cat vc.json | node ${CLI} verify -`], {
+                execFileSync(process.execPath, [CLI, 'verify', '-'], {
                     cwd: dir,
                     encoding: 'utf8',
+                    input: readFileSync(join(dir, 'vc.json'), 'utf8'),
+                    env: { ...process.env, LCA_API_URL },
                 })
             ).toMatch(/✓ proof/);
 

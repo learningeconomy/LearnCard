@@ -9,7 +9,7 @@ test.describe('Show network prompt', () => {
 
         await page.getByRole('textbox').fill('123abc'.repeat(30).slice(0, 64));
 
-        await page.getByRole('button', { name: /sign in/i }).click();
+        await page.getByRole('button', { name: 'Sign in', exact: true }).click();
         await page.waitForURL(/wallet/);
 
         // Intercept the request and simulate a network failure
