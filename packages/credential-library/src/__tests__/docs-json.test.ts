@@ -3,14 +3,15 @@ import { readFile } from 'fs/promises';
 import { fileURLToPath } from 'url';
 
 import { beforeAll, describe, expect, it } from 'vitest';
-import { initLearnCard } from '@learncard/init';
+import { initLearnCard, type LearnCardFromSeed } from '@learncard/init';
 import { AlignmentValidator, LCNBoostStatus, UnsignedVCValidator } from '@learncard/types';
 
 const didkit = readFile(
     require.resolve('@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm')
 );
 
-let wallet: Awaited<ReturnType<typeof initLearnCard>>;
+// `initLearnCard` is overloaded; `ReturnType` would pick the no-arg EmptyLearnCard overload.
+let wallet: LearnCardFromSeed['returnValue'];
 let subjectDid: string;
 
 beforeAll(async () => {
@@ -128,11 +129,10 @@ describe('Understand documentation JSON', () => {
                     for (const subject of entries(prepared.credentialSubject)) {
                         if (isObject(subject)) subject.id ??= subjectDid;
                     }
-                    const dateField = prepared['@context'].includes(
-                        'https://www.w3.org/ns/credentials/v2'
-                    )
-                        ? 'validFrom'
-                        : 'issuanceDate';
+                    const isVcV2 = (prepared['@context'] as unknown[]).some(
+                        ctx => ctx === 'https://www.w3.org/ns/credentials/v2'
+                    );
+                    const dateField = isVcV2 ? 'validFrom' : 'issuanceDate';
                     prepared[dateField] ??= new Date().toISOString();
                     // Docs omit issuer/date intentionally: these are supplied during issuance.
                     const unsigned = UnsignedVCValidator.parse(prepared);
