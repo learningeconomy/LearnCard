@@ -47,6 +47,7 @@ import type {
     AuthProvider,
     AuthUser,
     EscrowPinStatus,
+    EscrowEnrollmentState,
     KeyDerivationStrategy,
     RecoveryMethodInfo,
     SssActivationState,
@@ -71,6 +72,7 @@ export type UnifiedAuthState =
     | { status: 'needs_migration'; authUser: AuthUser; migrationData?: Record<string, unknown> }
     | {
           status: 'needs_recovery';
+          escrowPin?: EscrowPinStatus;
           authUser: AuthUser;
           recoveryMethods: RecoveryMethodInfo[];
           recoveryReason: RecoveryReason;
@@ -96,6 +98,7 @@ export type UnifiedAuthState =
     | { status: 'deriving_key' }
     | {
           status: 'ready';
+          escrowEnrollment?: EscrowEnrollmentState['state'];
           pendingEscrowHold?: { holdId: string; requestedAt: string; releaseAfter: string };
           /** Whether a recovery PIN is set on the escrow release policy, and attempts remaining. */
           escrowPin?: EscrowPinStatus;

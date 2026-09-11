@@ -167,7 +167,7 @@ export class AuthCoordinator {
             if (!isCurrentAccount()) return;
             const signDidAuthVp = this.config.signDidAuthVp;
             if (signDidAuthVp && this.keyDerivation.ensureEscrowEnrollment) {
-                void this.runEscrowOperation(async () =>
+                await this.runEscrowOperation(async () =>
                     isCurrentAccount()
                         ? this.keyDerivation.ensureEscrowEnrollment?.({
                               ...credentials,
@@ -177,13 +177,18 @@ export class AuthCoordinator {
                         : undefined
                 ).catch(err => log.warn('escrow.enrollment.failed', err));
             }
+            if (!isCurrentAccount()) return;
             if (this.keyDerivation.getEscrowEnrollmentState) {
                 try {
                     const enrollment = normalizeEscrowEnrollmentState(
                         await this.keyDerivation.getEscrowEnrollmentState(credentials)
                     );
                     if (isCurrentAccount() && this.state.status === 'ready') {
-                        this.setState({ ...this.state, escrowPin: enrollment.escrowPin });
+                        this.setState({
+                            ...this.state,
+                            escrowPin: enrollment.escrowPin,
+                            escrowEnrollment: enrollment.state,
+                        });
                     }
                 } catch (err) {
                     log.warn('escrow.pin.status.failed', err);
@@ -323,7 +328,7 @@ export class AuthCoordinator {
             throw new Error('Sign in on a trusted device to manage recovery');
         }
         const generation = ++this.escrowStatusGeneration;
-        this.setState({ ...ready, escrowPin: undefined });
+        this.setState({ ...ready, escrowPin: undefined, escrowEnrollment: undefined });
         try {
             await this.runEscrowOperation(async () =>
                 this.keyDerivation.setEscrowPin!({
@@ -349,7 +354,7 @@ export class AuthCoordinator {
             throw new Error('Sign in on a trusted device to manage recovery');
         }
         const generation = ++this.escrowStatusGeneration;
-        this.setState({ ...ready, escrowPin: undefined });
+        this.setState({ ...ready, escrowPin: undefined, escrowEnrollment: undefined });
         try {
             await this.runEscrowOperation(async () =>
                 this.keyDerivation.clearEscrowPin!({
@@ -379,7 +384,11 @@ export class AuthCoordinator {
                 this.state.privateKey === ready.privateKey &&
                 this.state.authUser?.id === ready.authUser?.id
             ) {
-                this.setState({ ...this.state, escrowPin: enrollment.escrowPin });
+                this.setState({
+                    ...this.state,
+                    escrowPin: enrollment.escrowPin,
+                    escrowEnrollment: enrollment.state,
+                });
             }
         } catch (err) {
             log.warn('escrow.pin.refresh.failed', err);
@@ -626,6 +635,7 @@ export class AuthCoordinator {
                     authUser,
                     recoveryMethods,
                     recoveryReason: 'new_device',
+                    escrowPin: serverStatus.escrowPin,
                     maskedRecoveryEmail: serverStatus.maskedRecoveryEmail ?? null,
                     sssActivationState: serverStatus.sssActivationState ?? null,
                 });
@@ -643,6 +653,7 @@ export class AuthCoordinator {
                     authUser,
                     recoveryMethods,
                     recoveryReason: 'missing_server_data',
+                    escrowPin: serverStatus.escrowPin,
                     maskedRecoveryEmail: serverStatus.maskedRecoveryEmail ?? null,
                     sssActivationState: serverStatus.sssActivationState ?? null,
                 });
@@ -680,6 +691,7 @@ export class AuthCoordinator {
                             authUser,
                             recoveryMethods,
                             recoveryReason: 'stale_local_key',
+                            escrowPin: serverStatus.escrowPin,
                             maskedRecoveryEmail: serverStatus.maskedRecoveryEmail ?? null,
                             sssActivationState: serverStatus.sssActivationState ?? null,
                         });
@@ -930,6 +942,15 @@ export class AuthCoordinator {
     }
 
     private async executeRecovery(input: unknown): Promise<UnifiedAuthState> {
+        if (
+            this.state.status === 'identity_recovery' &&
+            input &&
+            typeof input === 'object' &&
+            'method' in input &&
+            input.method === 'escrow-pin'
+        ) {
+            throw new Error('PIN recovery requires signing in first.');
+        }
         const isEscrow = isEscrowRecoveryMethod(input);
         if (isEscrow && this.escrowRecoveryInFlight) throw new Error('Recovery is already running');
         if (
