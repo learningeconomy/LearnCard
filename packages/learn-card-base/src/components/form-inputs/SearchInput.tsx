@@ -39,6 +39,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
     return (
         <TextInput
             {...textInputProps}
+            aria-label={textInputProps['aria-label'] ?? placeholder}
             value={value}
             onChange={onChange}
             placeholder={placeholder}
@@ -53,7 +54,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
                         onClick={handleClear}
                         aria-label={clearButtonAriaLabel}
                         disabled={disabled}
-                        className="flex items-center justify-center"
+                        className="flex items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                     >
                         <X className={clearIconClassName} />
                     </button>

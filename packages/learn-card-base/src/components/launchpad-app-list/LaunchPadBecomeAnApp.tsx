@@ -27,7 +27,7 @@ export const LaunchPadBecomeAnApp: React.FC = () => {
         >
             <div className="flex items-center justify-start w-[100%]">
                 <div className="rounded-lg shadow-3xl overflow-hidden w-[50px] h-[50px] mr-3 min-w-[50px] min-h-[50px]">
-                    <img className="w-full h-full object-cover" src={LEFLogo} />
+                    <img className="w-full h-full object-cover" src={LEFLogo} alt="" />
                 </div>
                 <div className="right-side flex justify-between w-full">
                     <div className="flex flex-col items-start justify-center text-left">

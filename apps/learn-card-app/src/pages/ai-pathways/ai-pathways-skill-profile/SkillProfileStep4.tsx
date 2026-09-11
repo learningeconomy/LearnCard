@@ -114,7 +114,7 @@ const SkillProfileStep4: React.FC<SkillProfileStep4Props> = ({ handleNext, handl
                 value={workLifeBalance}
                 onChange={setWorkLifeBalance}
                 options={getWorkLifeBalanceOptions()}
-                name="work_life_balance"
+                aria-label={m['aiPathways.workLifeBalance']()}
                 columns={2}
                 allowDeselect
                 className="pb-[30px] border-b-[1px] border-solid border-grayscale-200"
@@ -128,7 +128,7 @@ const SkillProfileStep4: React.FC<SkillProfileStep4Props> = ({ handleNext, handl
                 value={jobStability}
                 onChange={setJobStability}
                 options={getJobStabilityOptions()}
-                name="job_stability"
+                aria-label={m['aiPathways.jobStability']()}
                 columns={2}
                 allowDeselect
             />

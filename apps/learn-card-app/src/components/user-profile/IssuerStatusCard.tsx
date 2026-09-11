@@ -24,14 +24,14 @@ const IssuerStatusCard: React.FC<IssuerStatusCardProps> = ({ walletDid }) => {
                     Issuer Status
                 </h4>
                 {isTrustedIssuer ? (
-                    <div className="flex items-center gap-1.5 text-green-600 font-poppins font-medium text-xs uppercase tracking-wide">
+                    <div className="flex items-center gap-1.5 text-emerald-700 font-poppins font-medium text-xs uppercase tracking-wide">
                         <span aria-hidden="true">
                             <TrustedCertIcon className="w-[22px] h-[22px]" />
                         </span>
                         Trusted Issuer
                     </div>
                 ) : (
-                    <div className="flex items-center gap-1.5 text-orange-500 font-poppins font-medium text-xs uppercase tracking-wide">
+                    <div className="flex items-center gap-1.5 text-amber-800 font-poppins font-medium text-xs uppercase tracking-wide">
                         <span aria-hidden="true">
                             <UnknownCertIcon className="w-[22px] h-[22px]" />
                         </span>

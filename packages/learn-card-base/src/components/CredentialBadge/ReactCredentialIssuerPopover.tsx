@@ -168,12 +168,16 @@ const ReactCredentialIssuerPopover: React.FC<ReactCredentialIssuerPopoverProps> 
         const handleKeyDown = (event: KeyboardEvent): void => {
             if (event.key === 'Escape') onDidDismiss?.();
         };
+        const stopPopoverInteraction = (event: MouseEvent): void => event.stopPropagation();
+        const popover = popoverRef.current;
 
         document.addEventListener('pointerdown', handlePointerDown, true);
         document.addEventListener('keydown', handleKeyDown);
+        popover?.addEventListener('click', stopPopoverInteraction);
         return () => {
             document.removeEventListener('pointerdown', handlePointerDown, true);
             document.removeEventListener('keydown', handleKeyDown);
+            popover?.removeEventListener('click', stopPopoverInteraction);
         };
     }, [isOpen, onDidDismiss]);
 
@@ -208,7 +212,6 @@ const ReactCredentialIssuerPopover: React.FC<ReactCredentialIssuerPopoverProps> 
                 left: position.left,
                 width: `min(${POPOVER_WIDTH}px, calc(100vw - ${VIEWPORT_MARGIN * 2}px))`,
             }}
-            onClick={e => e.stopPropagation()}
         >
             <p className="text-xs text-grayscale-600 leading-relaxed">
                 {getIssuerPopoverDescription(verifierState)}

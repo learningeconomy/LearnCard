@@ -42,7 +42,7 @@ export const LaunchPadAppList: React.FC<{ apps: LaunchPadAppListItem[] }> = ({ a
             >
                 <div className="flex items-center justify-start w-[100%]">
                     <div className="rounded-lg shadow-3xl overflow-hidden w-[50px] h-[50px] mr-3 min-w-[50px] min-h-[50px]">
-                        <img className="w-full h-full object-cover" src={app?.img} />
+                        <img className="w-full h-full object-cover" src={app?.img} alt={app.name} />
                     </div>
                     <div className="right-side flex justify-between w-full">
                         <div className="flex flex-col items-start justify-center text-left">

@@ -95,7 +95,7 @@ const SkillProfileStep3: React.FC<SkillProfileStep3Props> = ({ handleNext, handl
                 value={salaryType}
                 onChange={setSalaryType}
                 options={SALARY_TYPE_OPTIONS}
-                name="salary_type"
+                aria-label={m['skillProfile.step3.howMuchMoney']()}
                 columns={2}
             />
 

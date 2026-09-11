@@ -138,6 +138,7 @@ import {
 } from '../components/recovery/RecoverySetupModal';
 import { DeviceLinkModal } from '../components/device-link/DeviceLinkModal';
 import ReAuthOverlay from '../components/auth/ReAuthOverlay';
+import { m } from '../paraglide/messages.js';
 
 const log = getLogger('auth-coordinator');
 
@@ -208,10 +209,10 @@ const DeviceLinkOverlay: React.FC<{
 
     if (loading) {
         return (
-            <Overlay>
+            <Overlay aria-label={m['recovery.preparingSecureLink']()} onDismiss={onClose}>
                 <div className="p-6 flex flex-col items-center">
                     <div className="w-8 h-8 border-2 border-gray-200 border-t-emerald-600 rounded-full animate-spin mb-3" />
-                    <p className="text-sm text-gray-500">Preparing secure link...</p>
+                    <p className="text-sm text-gray-500">{m['recovery.preparingSecureLink']()}</p>
                 </div>
             </Overlay>
         );
@@ -219,17 +220,17 @@ const DeviceLinkOverlay: React.FC<{
 
     if (error || !deviceShare) {
         return (
-            <Overlay>
+            <Overlay aria-label={m['recovery.deviceLinkUnavailable']()} onDismiss={onClose}>
                 <div className="p-6 text-center">
                     <p className="text-sm text-red-600 mb-4">
-                        {error ?? 'No device key available'}
+                        {error ?? m['recovery.deviceLinkUnavailable']()}
                     </p>
 
                     <button
                         onClick={onClose}
                         className="py-2.5 px-4 rounded-lg border border-gray-300 text-gray-700 font-medium text-sm"
                     >
-                        Close
+                        {m['common.close']()}
                     </button>
                 </div>
             </Overlay>
@@ -237,7 +238,7 @@ const DeviceLinkOverlay: React.FC<{
     }
 
     return (
-        <Overlay>
+        <Overlay onDismiss={onClose}>
             <DeviceLinkModal
                 deviceShare={deviceShare}
                 approverDid={did}
@@ -1351,52 +1352,50 @@ const AuthSessionManager: React.FC<{
 
             {/* ── Recovery overlay ─────────────────────────────── */}
             {showRecovery && authProvider && (
-                <Overlay>
-                    <RecoveryFlowModal
-                        availableMethods={availableMethods}
-                        recoveryReason={
-                            coordinator.state.status === 'needs_recovery'
-                                ? coordinator.state.recoveryReason
-                                : undefined
-                        }
-                        maskedRecoveryEmail={
-                            coordinator.state.status === 'needs_recovery'
-                                ? coordinator.state.maskedRecoveryEmail
-                                : null
-                        }
-                        onRecoverWithPasskey={async (credentialId: string) => {
-                            await coordinator.recover({ method: 'passkey', credentialId });
-                        }}
-                        onRecoverWithPhrase={async (phrase: string) => {
-                            await coordinator.recover({ method: 'phrase', phrase });
-                        }}
-                        onRecoverWithBackup={async (fileContents: string, password: string) => {
-                            await coordinator.recover({ method: 'backup', fileContents, password });
-                        }}
-                        onRecoverWithEmail={async (emailShare: string) => {
-                            await coordinator.recover({ method: 'email', emailShare });
-                        }}
-                        onRecoverWithDevice={async (deviceShare: string, shareVersion?: number) => {
-                            // Store the received device share locally, then
-                            // re-initialize the coordinator so it finds both shares.
-                            await keyDerivation.storeLocalKey(deviceShare);
+                <RecoveryFlowModal
+                    availableMethods={availableMethods}
+                    recoveryReason={
+                        coordinator.state.status === 'needs_recovery'
+                            ? coordinator.state.recoveryReason
+                            : undefined
+                    }
+                    maskedRecoveryEmail={
+                        coordinator.state.status === 'needs_recovery'
+                            ? coordinator.state.maskedRecoveryEmail
+                            : null
+                    }
+                    onRecoverWithPasskey={async (credentialId: string) => {
+                        await coordinator.recover({ method: 'passkey', credentialId });
+                    }}
+                    onRecoverWithPhrase={async (phrase: string) => {
+                        await coordinator.recover({ method: 'phrase', phrase });
+                    }}
+                    onRecoverWithBackup={async (fileContents: string, password: string) => {
+                        await coordinator.recover({ method: 'backup', fileContents, password });
+                    }}
+                    onRecoverWithEmail={async (emailShare: string) => {
+                        await coordinator.recover({ method: 'email', emailShare });
+                    }}
+                    onRecoverWithDevice={async (deviceShare: string, shareVersion?: number) => {
+                        // Store the received device share locally, then
+                        // re-initialize the coordinator so it finds both shares.
+                        await keyDerivation.storeLocalKey(deviceShare);
 
-                            if (shareVersion != null) {
-                                log.debug('[Recovery via Device] storing shareVersion', {
-                                    shareVersion,
-                                });
-                                await keyDerivation.storeLocalShareVersion?.(shareVersion);
-                            } else {
-                                log.warn(
-                                    '[Recovery via Device] no shareVersion received from approver device'
-                                );
-                            }
+                        if (shareVersion != null) {
+                            log.debug('[Recovery via Device] storing shareVersion', {
+                                shareVersion,
+                            });
+                            await keyDerivation.storeLocalShareVersion?.(shareVersion);
+                        } else {
+                            log.warn(
+                                '[Recovery via Device] no shareVersion received from approver device'
+                            );
+                        }
 
-                            await coordinator.initialize();
-                        }}
-                        onCancel={handleLogout}
-                    />
-                </Overlay>
+                        await coordinator.initialize();
+                    }}
+                    onCancel={handleLogout}
+                />
             )}
 
             {/* ── Phone→email upgrade gate ─────────────────────── */}
@@ -1591,11 +1590,14 @@ const AuthSessionManager: React.FC<{
                     // Session check still in progress — show loading
                     if (recoverySessionValid === null) {
                         return (
-                            <Overlay>
+                            <Overlay
+                                aria-label={m['recovery.verifyingSession']()}
+                                onDismiss={closeRecoverySetup}
+                            >
                                 <div className="p-8 flex flex-col items-center">
                                     <div className="w-8 h-8 border-2 border-grayscale-200 border-t-emerald-600 rounded-full animate-spin mb-3" />
                                     <p className="text-sm text-grayscale-500">
-                                        Verifying session...
+                                        {m['recovery.verifyingSession']()}
                                     </p>
                                 </div>
                             </Overlay>
@@ -1605,7 +1607,7 @@ const AuthSessionManager: React.FC<{
                     // Session expired — show in-place re-auth overlay
                     if (recoverySessionValid === false) {
                         return (
-                            <Overlay>
+                            <Overlay onDismiss={closeRecoverySetup}>
                                 <ReAuthOverlay
                                     onSuccess={() => setRecoverySessionValid(true)}
                                     onCancel={closeRecoverySetup}
@@ -1676,7 +1678,7 @@ const AuthSessionManager: React.FC<{
                     };
 
                     return (
-                        <Overlay>
+                        <Overlay onDismiss={closeRecoverySetup}>
                             <RecoverySetupModal
                                 existingMethods={[]}
                                 maskedRecoveryEmail={null}

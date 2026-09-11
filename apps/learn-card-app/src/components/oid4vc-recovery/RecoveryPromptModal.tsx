@@ -11,14 +11,11 @@ const SEVERITY_HEADER_CLASS: Record<UserPrompt['severity'], string> = {
     warning: 'bg-gradient-to-r from-amber-500 to-orange-500',
 };
 
-export const RecoveryPromptModal: React.FC<RecoveryPromptModalProps> = ({
-    prompt,
-    onResolve,
-}) => {
+export const RecoveryPromptModal: React.FC<RecoveryPromptModalProps> = ({ prompt, onResolve }) => {
     if (!prompt) return null;
 
     return (
-        <Overlay>
+        <Overlay onDismiss={prompt.cancelCta ? () => onResolve(false) : undefined}>
             <div className={`${SEVERITY_HEADER_CLASS[prompt.severity]} p-6 sm:rounded-t-[20px]`}>
                 <h2 className="text-xl font-semibold text-white">{prompt.title}</h2>
             </div>
