@@ -1,5 +1,14 @@
 # @learncard/open-badge-v2-plugin
 
+## 1.1.34
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/core@9.4.33
+    - @learncard/crypto-plugin@1.1.33
+    - @learncard/vc-plugin@1.5.13
+
 ## 1.1.33
 
 ### Patch Changes

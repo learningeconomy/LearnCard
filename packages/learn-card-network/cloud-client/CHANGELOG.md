@@ -1,5 +1,14 @@
 # @learncard/network-brain-client
 
+## 1.6.39
+
+### Patch Changes
+
+- [#1534](https://github.com/learningeconomy/LearnCard/pull/1534) [`50f8d26c271d1a16240c5024402d0ea75c475a3d`](https://github.com/learningeconomy/LearnCard/commit/50f8d26c271d1a16240c5024402d0ea75c475a3d) Thanks [@goblincore](https://github.com/goblincore)! - fix: [LC-2137] Surface the original request error when auth refresh fails instead of hanging; allow `deleteProfile` with API tokens that lack `profiles:read`; retry did:web signing on `Key mismatch` after refreshing the DID document.
+
+- Updated dependencies [[`9cc246bd0571b5b29c60b9dcff287c1b69e012cf`](https://github.com/learningeconomy/LearnCard/commit/9cc246bd0571b5b29c60b9dcff287c1b69e012cf)]:
+    - @learncard/learn-cloud-service@2.5.31
+
 ## 1.6.38
 
 ### Patch Changes
