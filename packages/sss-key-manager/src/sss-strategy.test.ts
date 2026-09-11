@@ -600,6 +600,47 @@ describe('escrow strategy', () => {
         expect(blob?.pinVerifier).toBeUndefined();
     });
 
+    it.each(['set', 'clear'])('rejects %s PIN when disabled without opting in', async action => {
+        config.escrow!.enabled = false;
+        await expect(
+            action === 'set'
+                ? strategy.setEscrowPin!({ ...params, pin: '135790' })
+                : strategy.clearEscrowPin!(params)
+        ).rejects.toThrow('Automatic recovery is not available for this account.');
+        expect(calls).toHaveLength(0);
+    });
+
+    it.each(['set', 'clear'])(
+        'rejects %s PIN for opted-out accounts without opting in',
+        async action => {
+            vi.spyOn(strategy, 'fetchServerKeyStatus').mockResolvedValue({
+                exists: true,
+                needsMigration: false,
+                primaryDid: did,
+                recoveryMethods: [],
+                escrowOptedOut: true,
+            });
+            await expect(
+                action === 'set'
+                    ? strategy.setEscrowPin!({ ...params, pin: '135790' })
+                    : strategy.clearEscrowPin!(params)
+            ).rejects.toThrow('Automatic recovery is not available for this account.');
+            expect(calls).toHaveLength(0);
+        }
+    );
+
+    it('maps unavailable PIN policy to a typed error', async () => {
+        vi.mocked(fetch).mockResolvedValue(
+            new Response(
+                JSON.stringify({
+                    message: 'PIN recovery is not available for this account.',
+                }),
+                { status: 403 }
+            )
+        );
+        await expect(recoverPin()).rejects.toMatchObject({ name: 'EscrowPinUnavailableError' });
+    });
+
     it.each(['123', '111111'])('rejects invalid enrollment PIN %s without rotating', async pin => {
         await expect(
             strategy.ensureEscrowEnrollment!({ ...params, options: { pin } })
