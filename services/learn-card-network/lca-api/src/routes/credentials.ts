@@ -106,7 +106,8 @@ export const credentialsRouter = t.router({
                         // so this targeted retry is coupled to its current error message.
                         if (
                             !verificationMethod ||
-                            !errorMessage.includes('Missing verification relationship.')
+                            (!errorMessage.includes('Missing verification relationship.') &&
+                                !errorMessage.includes('Key mismatch'))
                         ) {
                             throw error;
                         }

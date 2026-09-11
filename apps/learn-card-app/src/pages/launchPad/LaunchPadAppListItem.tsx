@@ -1,18 +1,17 @@
 import React from 'react';
+import { IonItem } from '@ionic/react';
 
 import {
     useModal,
     ModalTypes,
     LaunchPadAppListItem as LaunchPadAppListItemType,
 } from 'learn-card-base';
+import { sanitizeImageUrl } from '@learncard/helpers';
+
 import { useConsentFlowByUri } from '../consentFlow/useConsentFlow';
-
-import { IonItem } from '@ionic/react';
 import AiPassportAppProfileContainer from '../../components/ai-passport-apps/AiPassportAppProfileContainer';
-
 import { LaunchPadFilterOptionsEnum } from './LaunchPadSearch/launchpad-search.helpers';
 import * as m from '../../paraglide/messages.js';
-
 import useTheme from '../../theme/hooks/useTheme';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 import { ColorSetEnum } from '../../theme/colors';
@@ -43,6 +42,10 @@ const LaunchPadAppListItem: React.FC<LaunchPadAppListItemProps> = ({ app, filter
     const isAiApp = !!app.type;
     const isConnected = app.contractUri ? hasConsented : app.isConnected;
     const isLoading = app.contractUri ? consentedContractLoading : app.isConnected === null;
+
+    // Sanitize URLs to prevent XSS - returns reconstructed URL or undefined
+    const safeImgUrl = sanitizeImageUrl(app?.img);
+    const safeEmbedUrl = sanitizeImageUrl(app?.embedUrl);
 
     const handleConnect = (appItem: LaunchPadAppListItemType) => {
         if (appItem.contractUri && !isConnected) {
@@ -82,11 +85,13 @@ const LaunchPadAppListItem: React.FC<LaunchPadAppListItemProps> = ({ app, filter
         >
             <div className="flex items-center justify-start w-full bg-white-100">
                 <div className="rounded-lg w-[50px] h-[50px] mr-3 min-w-[50px] min-h-[50px]">
-                    <img
-                        className="w-full h-full object-cover bg-white rounded-lg"
-                        src={app?.img}
-                        alt={`${app.name} icon`}
-                    />
+                    {safeImgUrl && (
+                        <img
+                            className="w-full h-full object-cover bg-white rounded-lg"
+                            src={safeImgUrl}
+                            alt={`${app.name} icon`}
+                        />
+                    )}
                 </div>
                 <div className="right-side flex justify-between w-full">
                     <div className="flex flex-col items-start justify-center text-left">
@@ -96,13 +101,13 @@ const LaunchPadAppListItem: React.FC<LaunchPadAppListItemProps> = ({ app, filter
                         </p>
                     </div>
 
-                    {app?.embedUrl && (
+                    {safeEmbedUrl && (
                         <div className="flex app-connect-btn-container items-center">
                             <button
                                 onClick={() =>
                                     newModal(
                                         <EmbedIframeModal
-                                            embedUrl={app.embedUrl}
+                                            embedUrl={safeEmbedUrl}
                                             appId={app.id}
                                             appName={app.name}
                                         />
@@ -115,7 +120,7 @@ const LaunchPadAppListItem: React.FC<LaunchPadAppListItemProps> = ({ app, filter
                         </div>
                     )}
 
-                    {!app?.embedUrl && app?.comingSoon && (
+                    {!safeEmbedUrl && app?.comingSoon && (
                         <div className="flex app-connect-btn-container items-center">
                             <button disabled className={connectedButtonClass}>
                                 {m['launchpad.appCard.soon']()}
@@ -123,7 +128,7 @@ const LaunchPadAppListItem: React.FC<LaunchPadAppListItemProps> = ({ app, filter
                         </div>
                     )}
 
-                    {!app?.embedUrl && !app?.comingSoon && (
+                    {!safeEmbedUrl && !app?.comingSoon && (
                         <div className="flex app-connect-btn-container items-center">
                             {isLoading && (
                                 <button className={buttonClass}>

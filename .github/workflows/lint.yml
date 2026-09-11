@@ -107,6 +107,10 @@ jobs:
                     echo "Running $contract"
                     bash "$contract"
                   done
+                  for contract in .github/tests/*.test.cjs; do
+                    echo "Running $contract"
+                    node "$contract"
+                  done
 
     NoJest:
         name: Reject active Jest usage
