@@ -356,7 +356,7 @@ const BuildMode: React.FC = () => {
                     onReorder={handleReorder}
                 />
 
-                <main className="min-w-0">
+                <div className="min-w-0">
                     {selectedNode ? (
                         <InspectorPane
                             pathway={activePathway}
@@ -374,7 +374,7 @@ const BuildMode: React.FC = () => {
                             </p>
                         </div>
                     )}
-                </main>
+                </div>
 
                 {/*
                     PreviewPane is only rendered on xl+ viewports
