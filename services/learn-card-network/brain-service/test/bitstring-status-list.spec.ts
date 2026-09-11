@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { Profile, Credential, Boost, StatusList } from '@models';
 import { app as statusListsApp } from '../src/status-lists';
 import { decodeBitstring } from '../src/helpers/status-list.helpers';
@@ -42,7 +44,7 @@ const isStatusBitSet = async (entry: any): Promise<boolean> => {
     const index = Number(entry.statusListIndex);
     const byte = bitstring[Math.floor(index / 8)] ?? 0;
 
-    return (byte & (1 << index % 8)) !== 0;
+    return (byte & (1 << (index % 8))) !== 0;
 };
 
 const statusBoostTemplate = {
@@ -78,18 +80,18 @@ const sendBoostWithStatus = async (
     const boostUri = await userA.clients.fullAuth.boost.createBoost({
         credential: template,
     });
-    const statusEntries =
-        statusPurpose === 'suspension'
-            ? await userA.clients.fullAuth.boost.allocateCredentialStatus({
-                  statusPurposes: ['suspension'],
-              })
-            : [];
+    // Status coordinates must be included in the issuer's signature. The network
+    // no longer adds a certified wrapper after receiving the signed credential.
+    const statusEntries = await userA.clients.fullAuth.boost.allocateCredentialStatus({
+        statusPurposes:
+            statusPurpose === 'suspension' ? ['suspension'] : ['revocation', 'suspension'],
+    });
 
     const signedCredential = await userA.learnCard.invoke.issueCredential({
         ...template,
         issuer: userA.learnCard.id.did(),
         validFrom: new Date().toISOString(),
-        ...(statusEntries[0] ? { credentialStatus: statusEntries[0] } : {}),
+        credentialStatus: statusEntries,
         credentialSubject: {
             id: userB.learnCard.id.did(),
         },
@@ -105,6 +107,7 @@ const sendBoostWithStatus = async (
     await userB.clients.fullAuth.credential.acceptCredential({ uri: credentialUri });
 
     const credential = await userB.clients.fullAuth.storage.resolve({ uri: credentialUri });
+    expect(credential).toEqual(signedCredential);
 
     return { credentialUri, credential, boostUri };
 };
@@ -140,7 +143,7 @@ describe('Bitstring Status List issuance', () => {
         expect(await isStatusBitSet(getEntryForPurpose(credential, 'revocation'))).toBe(false);
     });
 
-    it('allocates BOTH revocation and suspension entries by default (no statusPurposes passed)', async () => {
+    it('preserves both issuer-signed revocation and suspension entries', async () => {
         const { credential } = await sendBoostWithStatus();
         expect(getEntryForPurpose(credential, 'revocation').type).toBe('BitstringStatusListEntry');
         expect(getEntryForPurpose(credential, 'suspension').type).toBe('BitstringStatusListEntry');

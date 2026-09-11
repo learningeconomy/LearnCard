@@ -167,7 +167,7 @@ export const reconsentTerms = async (
                         boostCredential,
                         contractOwnerSigningAuthority,
                         domain,
-                        false
+                        true
                     );
 
                     // Create transaction to record the boost issuance
@@ -382,7 +382,7 @@ export const updateTerms = async (
                         boostCredential,
                         contractOwnerSigningAuthority,
                         domain,
-                        false
+                        true
                     );
 
                     // Create transaction to record the boost issuance

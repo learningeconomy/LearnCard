@@ -2854,18 +2854,28 @@ export const getVerifyBoostPlugin = async (
                 );
                 const boostCredential = credential?.boostCredential;
                 try {
-                    if (boostCredential) {
-                        const verifyBoostCredential =
-                            await learnCard.invoke.verifyCredential(boostCredential);
-                        const boostCredentialErrors = verifyBoostCredential.errors ?? [];
-                        if (verifyBoostCredential.status?.length) {
+                    // Legacy credentials contain a separately signed inner VC. New
+                    // credentials are the issuer-signed VC itself with boostId metadata.
+                    const boostId = boostCredential?.boostId ?? credential?.boostId;
+                    if (
+                        boostCredential ||
+                        credential?.boostId ||
+                        credential?.type?.includes('BoostCredential')
+                    ) {
+                        const verifyBoostCredential = boostCredential
+                            ? await learnCard.invoke.verifyCredential(boostCredential)
+                            : verificationCheck;
+                        const boostCredentialErrors = boostCredential
+                            ? (verifyBoostCredential.errors ?? [])
+                            : [];
+                        if (boostCredential && verifyBoostCredential.status?.length) {
                             verificationCheck.status = [
                                 ...(verificationCheck.status ?? []),
                                 ...verifyBoostCredential.status,
                             ];
                         }
 
-                        if (!boostCredential?.boostId && !credential?.boostId) {
+                        if (!boostId) {
                             verificationCheck.warnings.push(
                                 'Boost Authenticity could not be verified: Boost ID metadata is missing.'
                             );
@@ -2887,7 +2897,13 @@ export const getVerifyBoostPlugin = async (
                                 ...(verificationCheck.errors || []),
                                 'Boost Credential could not be verified.',
                             ];
-                        } else if (boostCredential?.boostId !== credential?.boostId) {
+                        } else if (!boostId || verificationCheck.errors?.length) {
+                            // Missing association metadata or a failed signature/status check
+                            // cannot establish authenticity.
+                        } else if (
+                            boostCredential &&
+                            boostCredential.boostId !== credential.boostId
+                        ) {
                             verificationCheck.errors.push(
                                 'Boost Authenticity could not be verified: Boost ID metadata is mismatched.'
                             );

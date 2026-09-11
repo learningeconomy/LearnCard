@@ -397,10 +397,12 @@ export const setCredentialBitstringStatus = async (
     const credential = await Credential.findOne({ where: { id: credentialId } });
     if (!credential) return false;
 
-    const parsedCredential = JSON.parse(credential.credential);
-    const entries = getBitstringStatusListEntries(parsedCredential).filter(
-        entry => entry.statusPurpose === statusPurpose
-    );
+    // Encrypted SA credentials retain only public status coordinates separately.
+    // Legacy plaintext/wrapped credentials continue using their embedded entries.
+    const statusEntries: BitstringStatusListEntry[] = credential.statusEntries
+        ? JSON.parse(credential.statusEntries)
+        : getBitstringStatusListEntries(JSON.parse(credential.credential));
+    const entries = statusEntries.filter(entry => entry.statusPurpose === statusPurpose);
 
     if (entries.length === 0) return false;
 
