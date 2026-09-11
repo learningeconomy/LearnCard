@@ -23,6 +23,7 @@ import {
     IdentityRecoverySessionConsumedError,
     parseVersionedEmailShare,
     selectRecoveryPhraseChallengeIndices,
+    withRotationLock,
 } from './sss-strategy';
 import { reconstructFromShares } from './sss';
 import { AtomicUpdateError, splitAndVerify, verifyStoredShares } from './atomic-operations';
@@ -32,6 +33,9 @@ import { decryptEmailRelayPayload, type EmailRelayEnvelope } from './email-relay
 
 import type { SSSStorageFunctions } from './sss-strategy';
 import type { SSSKeyDerivationStrategy } from './types';
+import type { EscrowBlobPlaintext, EscrowReleasePlaintext } from './escrow-crypto';
+import { generateEscrowKeyPair, decryptEscrowBlob, sealEscrowRelease } from './escrow-crypto';
+import * as passkey from './passkey';
 
 // ---------------------------------------------------------------------------
 // In-memory storage mock
@@ -107,6 +111,467 @@ const createMemoryStorage = (): SSSStorageFunctions & {
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
+
+describe('escrow strategy', () => {
+    let optedOut: boolean;
+    let optOutStatus: number;
+    const privateKey = 'a'.repeat(64);
+    const did = 'did:key:escrow-test';
+    const token = 'provider-secret';
+    const providerType = 'firebase';
+    const signDidAuthVp = async (_key: string, challenge?: string): Promise<string> =>
+        challenge ? `vp-${challenge}` : 'bootstrap';
+    const params = { token, providerType, privateKey, signDidAuthVp };
+    let storage: ReturnType<typeof createMemoryStorage>;
+    let strategy: SSSKeyDerivationStrategy;
+    let config: Parameters<typeof createSSSStrategy>[0];
+    let version: number;
+    let authShare: string;
+    let blob: EscrowBlobPlaintext | undefined;
+    let enclaveKeys: Awaited<ReturnType<typeof generateEscrowKeyPair>>;
+    let clientPublicKey: string;
+    let holdStarted: boolean;
+    let cancelled: boolean;
+    let attestationFailure: boolean;
+    let overrides: Partial<EscrowReleasePlaintext>;
+    let methods: Array<{
+        type: string;
+        createdAt: string;
+        confirmedAt?: string;
+        shareVersion: number;
+    }>;
+    let calls: Array<{ path: string; init?: RequestInit }>;
+    const hold = () => ({
+        holdId: 'escrow-hold',
+        status: cancelled ? 'cancelled' : 'pending',
+        requestedAt: '2026-01-01T00:00:00.000Z',
+        releaseAfter: '2026-01-08T00:00:00.000Z',
+    });
+    const json = (value: unknown): Response => new Response(JSON.stringify(value), { status: 200 });
+
+    beforeEach(async () => {
+        optedOut = false;
+        optOutStatus = 200;
+        storage = createMemoryStorage();
+        enclaveKeys = await generateEscrowKeyPair();
+        version = 1;
+        authShare = (await splitAndVerify(privateKey)).shares.authShare;
+        blob = undefined;
+        clientPublicKey = '';
+        holdStarted = false;
+        cancelled = false;
+        attestationFailure = false;
+        overrides = {};
+        methods = [];
+        calls = [];
+        config = {
+            serverUrl: 'https://test.example/api',
+            storage,
+            tenantId: 'test-tenant',
+            escrow: {
+                enabled: true,
+                attestation: { mode: 'software', pinnedPublicKeys: [enclaveKeys.publicKey] },
+            },
+            onEscrowError: vi.fn(),
+        };
+        strategy = createSSSStrategy(config);
+        vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, init) => {
+            const parsed = new URL(String(url));
+            const path = parsed.pathname.replace('/api', '');
+            calls.push({ path, init });
+            const body = JSON.parse(String(init?.body ?? '{}'));
+            if (path === '/keys/challenge') return json({ challenge: String(calls.length) });
+            if (path === '/keys/auth-share') {
+                if (init?.method === 'PUT') {
+                    authShare = body.authShare.encryptedData;
+                    version++;
+                    return json({ shareVersion: version });
+                }
+                return json({
+                    primaryDid: did,
+                    authShare: { encryptedData: authShare, encryptedDek: '', iv: '' },
+                    shareVersion: version,
+                    recoveryMethods: methods,
+                    escrowOptedOut: optedOut,
+                });
+            }
+            if (path === '/keys/recovery' || path === '/keys/recovery/confirm')
+                return json({ success: true });
+            if (path === '/keys/escrow/attestation') {
+                if (attestationFailure) return new Response(null, { status: 503 });
+                return json({
+                    attestation: {
+                        mode: 'software',
+                        keyId: 'test',
+                        publicKey: enclaveKeys.publicKey,
+                        measurements: {},
+                        document: 'e30=',
+                        issuedAt: new Date().toISOString(),
+                    },
+                    holdDurationMs: 604800000,
+                });
+            }
+            if (
+                path === '/keys/escrow/opt-in' ||
+                (path === '/keys/escrow' && init?.method === 'DELETE')
+            ) {
+                expect(new Headers(init?.headers).get('Authorization')).toMatch(/^Bearer vp-/);
+                expect(new Headers(init?.headers).get('X-Tenant-Id')).toBe('test-tenant');
+                if (init?.method === 'DELETE') {
+                    expect(body).toEqual({ authToken: token, providerType, optOut: true });
+                    if (optOutStatus !== 200)
+                        return new Response('sensitive server response', { status: optOutStatus });
+                    optedOut = true;
+                    methods = [];
+                } else {
+                    expect(body).toEqual({ authToken: token, providerType });
+                    optedOut = false;
+                }
+                return json({ success: true });
+            }
+            if (path === '/keys/escrow') {
+                expect(new Headers(init?.headers).get('Authorization')).toMatch(/^Bearer vp-/);
+                blob = await decryptEscrowBlob(body.envelope, enclaveKeys.privateKey);
+                expect(blob.did).toBe(did);
+                expect(blob.shareVersion).toBe(version);
+                expect(
+                    (await reconstructFromShares([blob.recoveryShare, authShare])) === privateKey
+                ).toBe(true);
+                methods = [
+                    {
+                        type: 'escrow',
+                        createdAt: new Date().toISOString(),
+                        confirmedAt: new Date().toISOString(),
+                        shareVersion: version,
+                    },
+                ];
+                return json({ success: true, shareVersion: version });
+            }
+            if (path === '/keys/escrow/recover') {
+                if (holdStarted) return json({ ...hold(), resumeToken: null });
+                clientPublicKey = body.clientEphemeralPublicKey;
+                holdStarted = true;
+                return json({ ...hold(), resumeToken: 'resume-secret' });
+            }
+            if (path === '/keys/escrow/status') {
+                if (!parsed.searchParams.has('holdId')) {
+                    expect(parsed.searchParams.has('authToken')).toBe(false);
+                    expect(new Headers(init?.headers).get('X-Auth-Token') === token).toBe(true);
+                }
+                return json({ hold: holdStarted ? hold() : null });
+            }
+            if (path === '/keys/escrow/cancel') {
+                expect(new Headers(init?.headers).get('Authorization')).toMatch(/^Bearer vp-/);
+                const wasCancelled = cancelled;
+                cancelled = true;
+                return json({ success: true, cancelled: !wasCancelled });
+            }
+            if (path === '/keys/escrow/complete') {
+                if (!blob) throw new Error('Test enrollment missing');
+                return json({
+                    sealedShare: await sealEscrowRelease(
+                        { ...blob, holdId: 'escrow-hold', ...overrides },
+                        clientPublicKey
+                    ),
+                    primaryDid: did,
+                    shareVersion: blob.shareVersion,
+                    authShare: { encryptedData: authShare, encryptedDek: '', iv: '' },
+                    rebindSessionToken: 'rebind-secret',
+                });
+            }
+            if (path === '/keys/recovery-session/rebind') {
+                expect(body.recoverySessionToken === 'rebind-secret').toBe(true);
+                expect(new Headers(init?.headers).get('X-Auth-Token') === token).toBe(true);
+                authShare = body.authShare.encryptedData;
+                version++;
+                return json({ shareVersion: version, recoveryMethodsRequireConfirmation: [] });
+            }
+            throw new Error('Unexpected test request');
+        });
+    });
+    afterEach(() => vi.restoreAllMocks());
+
+    it('serializes concurrent rotations so device and server shares stay paired', async () => {
+        const order: string[] = [];
+        let releaseFirst!: () => void;
+        const gate = new Promise<void>(resolve => {
+            releaseFirst = resolve;
+        });
+        const first = withRotationLock(async () => {
+            order.push('first:start');
+            await gate;
+            order.push('first:end');
+        });
+        const second = withRotationLock(async () => {
+            order.push('second:start');
+            order.push('second:end');
+        });
+        await Promise.resolve();
+        expect(order).toEqual(['first:start']);
+        releaseFirst();
+        await Promise.all([first, second]);
+        expect(order).toEqual(['first:start', 'first:end', 'second:start', 'second:end']);
+    });
+
+    it('keeps the lock usable after a rotation rejects', async () => {
+        await expect(withRotationLock(() => Promise.reject(new Error('boom')))).rejects.toThrow(
+            'boom'
+        );
+        await expect(withRotationLock(async () => 'ok')).resolves.toBe('ok');
+    });
+
+    it('concurrent enrollment repairs share one rotation', async () => {
+        const results = await Promise.all([
+            strategy.ensureEscrowEnrollment!(params),
+            strategy.ensureEscrowEnrollment!(params),
+            strategy.ensureEscrowEnrollment!(params),
+        ]);
+        expect(results).toEqual(Array(3).fill({ enrolled: true, changed: true, shareVersion: 2 }));
+        expect(version).toBe(2);
+        expect(calls.filter(call => call.path === '/keys/escrow').length).toBe(1);
+    });
+
+    it('retries a failed escrow post with the same shares instead of rotating again', async () => {
+        const original = vi.mocked(globalThis.fetch).getMockImplementation()!;
+        let failPost = true;
+        vi.spyOn(globalThis, 'fetch').mockImplementation((url, init) => {
+            const path = new URL(String(url)).pathname.replace('/api', '');
+            if (failPost && path === '/keys/escrow' && init?.method === 'POST') {
+                return Promise.resolve(new Response(null, { status: 503 }));
+            }
+            return original(url, init);
+        });
+        await expect(strategy.ensureEscrowEnrollment!(params)).rejects.toMatchObject({
+            status: 503,
+        });
+        expect(version).toBe(2);
+        expect(blob).toBeUndefined();
+        failPost = false;
+        await expect(strategy.ensureEscrowEnrollment!(params)).resolves.toEqual({
+            enrolled: true,
+            changed: true,
+            shareVersion: 2,
+        });
+        expect(version).toBe(2);
+        expect(blob?.shareVersion).toBe(2);
+    });
+
+    it('opts out with a fresh owner proof', async () => {
+        await strategy.disableEscrowRecovery!(params);
+        expect(optedOut).toBe(true);
+        expect(await strategy.getEscrowEnrollmentState!(params)).toBe('opted-out');
+    });
+
+    it('does not rotate or enroll during repeated repairs after opt-out', async () => {
+        await strategy.disableEscrowRecovery!(params);
+        calls = [];
+        for (let attempt = 0; attempt < 7; attempt++) {
+            await expect(strategy.ensureEscrowEnrollment!(params)).resolves.toEqual({
+                enrolled: false,
+                reason: 'opted-out',
+            });
+        }
+        expect(version).toBe(1);
+        expect(
+            calls.every(call => call.path === '/keys/auth-share' && call.init?.method === 'POST')
+        ).toBe(true);
+        expect(blob).toBeUndefined();
+    });
+
+    it('sanitizes malformed successful responses', async () => {
+        const originalFetch = vi.mocked(globalThis.fetch).getMockImplementation()!;
+        vi.spyOn(globalThis, 'fetch').mockImplementation((url, init) =>
+            init?.method === 'DELETE'
+                ? Promise.resolve(new Response('sensitive response', { status: 200 }))
+                : originalFetch(url, init)
+        );
+        await expect(strategy.disableEscrowRecovery!(params)).rejects.toMatchObject({
+            name: 'EscrowRequestError',
+            status: 200,
+            message: 'Escrow request failed',
+        });
+    });
+
+    it('exposes the precondition status without exposing the response body', async () => {
+        optOutStatus = 412;
+        await expect(strategy.disableEscrowRecovery!(params)).rejects.toMatchObject({
+            name: 'EscrowRequestError',
+            status: 412,
+            message: 'Escrow request failed',
+        });
+        expect(optedOut).toBe(false);
+    });
+
+    it('opts in then enrolls and reports the current enrollment state', async () => {
+        optedOut = true;
+        await expect(strategy.enableEscrowRecovery!(params)).resolves.toEqual({
+            enrolled: true,
+            changed: true,
+            shareVersion: 2,
+        });
+        expect(blob).toBeDefined();
+        expect(calls.findIndex(call => call.path === '/keys/escrow/opt-in')).toBeLessThan(
+            calls.findIndex(call => call.path === '/keys/escrow')
+        );
+        expect(await strategy.getEscrowEnrollmentState!(params)).toBe('enrolled');
+        methods[0].shareVersion = 1;
+        expect(await strategy.getEscrowEnrollmentState!(params)).toBe('not-enrolled');
+        methods[0].shareVersion = version;
+        methods[0].confirmedAt = undefined;
+        expect(await strategy.getEscrowEnrollmentState!(params)).toBe('not-enrolled');
+    });
+
+    it('reports missing and disabled enrollment without unnecessary requests', async () => {
+        expect(await strategy.getEscrowEnrollmentState!(params)).toBe('not-enrolled');
+        const disabled = createSSSStrategy({ ...config, escrow: undefined });
+        calls = [];
+        expect(await disabled.getEscrowEnrollmentState!(params)).toBe('disabled');
+        expect(calls).toHaveLength(0);
+    });
+
+    it.each(['phrase', 'passkey'] as const)(
+        'enrolls after %s setup only when enabled',
+        async method => {
+            vi.spyOn(passkey, 'isWebAuthnSupported').mockReturnValue(true);
+            vi.spyOn(passkey, 'createPasskeyCredential').mockResolvedValue({
+                credentialId: 'test-credential',
+                publicKey: 'test-public-key',
+            });
+            vi.spyOn(passkey, 'encryptShareWithPasskey').mockResolvedValue({
+                credentialId: 'test-credential',
+                encryptedData: 'encrypted',
+                iv: 'iv',
+            });
+            await strategy.setupRecoveryMethod!({ ...params, input: { method } });
+            expect(blob).toBeDefined();
+            expect(calls.findIndex(call => call.path === '/keys/escrow')).toBeGreaterThan(
+                calls.findIndex(call => call.path === '/keys/recovery')
+            );
+            config.escrow!.enabled = false;
+            calls = [];
+            await strategy.setupRecoveryMethod!({ ...params, input: { method } });
+            expect(calls.some(call => call.path.startsWith('/keys/escrow'))).toBe(false);
+        }
+    );
+    it('keeps rotation successful and reports enrollment fetch failures', async () => {
+        attestationFailure = true;
+        await expect(
+            strategy.setupRecoveryMethod!({ ...params, input: { method: 'phrase' } })
+        ).resolves.toMatchObject({ method: 'phrase' });
+        expect(version).toBe(2);
+        expect(config.onEscrowError).toHaveBeenCalledOnce();
+    });
+    it('fails closed for explicit enrollment with an untrusted attestation', async () => {
+        config.escrow = { enabled: true, attestation: { mode: 'software', pinnedPublicKeys: [] } };
+        await expect(
+            strategy.setupRecoveryMethod!({ ...params, input: { method: 'escrow' } })
+        ).rejects.toThrow('not trusted');
+        expect(blob).toBeUndefined();
+    });
+    it('reports nitro verification failures without failing phrase setup', async () => {
+        config.escrow = { enabled: true, attestation: { mode: 'nitro', pinnedMeasurements: [] } };
+        await strategy.setupRecoveryMethod!({ ...params, input: { method: 'phrase' } });
+        expect(config.onEscrowError).toHaveBeenCalledWith(
+            expect.objectContaining({
+                message: 'Nitro attestation verification is not implemented yet',
+            })
+        );
+    });
+    it('ensure skips current, rotates stale, and makes no requests when disabled', async () => {
+        await expect(strategy.ensureEscrowEnrollment!(params)).resolves.toEqual({
+            enrolled: true,
+            changed: true,
+            shareVersion: 2,
+        });
+        await expect(strategy.ensureEscrowEnrollment!(params)).resolves.toEqual({
+            enrolled: true,
+            changed: false,
+        });
+        version++;
+        await expect(strategy.ensureEscrowEnrollment!(params)).resolves.toEqual({
+            enrolled: true,
+            changed: true,
+            shareVersion: 4,
+        });
+        config.escrow!.enabled = false;
+        calls = [];
+        await expect(strategy.ensureEscrowEnrollment!(params)).resolves.toEqual({
+            enrolled: false,
+            reason: 'disabled',
+        });
+        expect(calls).toHaveLength(0);
+    });
+    it('round trips real crypto, rebinds and persists a new device share', async () => {
+        await strategy.ensureEscrowEnrollment!(params);
+        const previous = await storage.getDeviceShare();
+        const start = await strategy.startEscrowRecovery!({ token, providerType });
+        const recovered = await strategy.executeRecovery({
+            ...params,
+            input: { method: 'escrow', ...start, resumeToken: start.resumeToken! },
+            didFromPrivateKey: async key => (key === privateKey ? did : ''),
+        });
+        expect(recovered.privateKey === privateKey).toBe(true);
+        expect((await storage.getDeviceShare()) === previous).toBe(false);
+        expect(
+            (await reconstructFromShares([(await storage.getDeviceShare())!, authShare])) ===
+                privateKey
+        ).toBe(true);
+        expect(version).toBe(3);
+        expect(blob?.shareVersion).toBe(3);
+        expect(strategy.hasPendingIdentityRecovery!()).toBe(false);
+        expect(calls.some(call => call.path === '/keys/recovery-session/rebind')).toBe(true);
+    });
+    it('keeps the OTP-style pending state until a replacement login completes rebind', async () => {
+        await strategy.ensureEscrowEnrollment!(params);
+        const start = await strategy.startEscrowRecovery!({
+            recoverySessionToken: 'otp-session',
+            tenantId: 'other-tenant',
+        });
+        await strategy.executeRecovery({
+            token: '',
+            providerType,
+            input: { method: 'escrow', ...start, resumeToken: start.resumeToken! },
+            didFromPrivateKey: async () => did,
+        });
+        expect(strategy.hasPendingIdentityRecovery!()).toBe(true);
+        expect(version).toBe(2);
+        await strategy.completeIdentityRecovery!(params);
+        expect(version).toBe(3);
+        expect(strategy.hasPendingIdentityRecovery!()).toBe(false);
+    });
+    it.each([{ did: 'did:key:other' }, { holdId: 'wrong-hold' }, { shareVersion: 999 }])(
+        'rejects release binding mismatch %j',
+        async mismatch => {
+            await strategy.ensureEscrowEnrollment!(params);
+            const start = await strategy.startEscrowRecovery!({ token, providerType });
+            overrides = mismatch;
+            await expect(
+                strategy.executeRecovery({
+                    ...params,
+                    input: { method: 'escrow', ...start, resumeToken: start.resumeToken! },
+                    didFromPrivateKey: async () => did,
+                })
+            ).rejects.toThrow('does not match');
+            expect(version).toBe(2);
+            expect(strategy.hasPendingIdentityRecovery!()).toBe(false);
+        }
+    );
+    it('supports both status proofs, existing holds and fresh-proof cancellation', async () => {
+        expect(await strategy.getEscrowRecoveryStatus!({ token, providerType })).toBeNull();
+        const first = await strategy.startEscrowRecovery!({ token, providerType });
+        const again = await strategy.startEscrowRecovery!({ token, providerType });
+        expect(again.resumeToken).toBeNull();
+        expect(again.clientEphemeralPrivateKey).toBeTruthy();
+        expect(
+            await strategy.getEscrowRecoveryStatus!({
+                holdId: first.holdId,
+                resumeToken: first.resumeToken!,
+            })
+        ).toEqual(hold());
+        expect(await strategy.getEscrowRecoveryStatus!({ token, providerType })).toEqual(hold());
+        await expect(strategy.cancelEscrowRecovery!(params)).resolves.toEqual({ cancelled: true });
+    });
+});
 
 describe('createSSSStrategy', () => {
     let strategy: SSSKeyDerivationStrategy;

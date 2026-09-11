@@ -237,6 +237,7 @@ export interface ServerKeyStatus {
     authShare: string | null;
     shareVersion: number | null;
     maskedRecoveryEmail?: string | null;
+    escrowOptedOut?: boolean;
     sssActivationState?: SssActivationState | null;
 }
 
@@ -407,6 +408,83 @@ export interface KeyDerivationStrategy<
     activate?(token: string, providerType: AuthProviderType, didAuthVp?: string): Promise<void>;
 
     // --- Recovery ---
+
+    /** Read the current automatic recovery enrollment status. */
+    getEscrowEnrollmentState?(params: {
+        token: string;
+        providerType: AuthProviderType;
+    }): Promise<'enrolled' | 'not-enrolled' | 'opted-out' | 'disabled'>;
+
+    /** Opt out with an owner proof; requires another confirmed recovery method. */
+    disableEscrowRecovery?(params: {
+        token: string;
+        providerType: AuthProviderType;
+        privateKey: string;
+        signDidAuthVp: DidAuthVpSigner;
+    }): Promise<void>;
+
+    /** Opt back in and enroll automatic recovery material. */
+    enableEscrowRecovery?(params: {
+        token: string;
+        providerType: AuthProviderType;
+        privateKey: string;
+        signDidAuthVp: DidAuthVpSigner;
+    }): Promise<
+        | { enrolled: false; reason: 'disabled' | 'opted-out' }
+        | { enrolled: true; changed: false }
+        | { enrolled: true; changed: true; shareVersion: number }
+    >;
+
+    /** Repair escrow enrollment, rotating shares only when no current confirmed enrollment exists. */
+    ensureEscrowEnrollment?(params: {
+        token: string;
+        providerType: AuthProviderType;
+        privateKey: string;
+        signDidAuthVp: DidAuthVpSigner;
+    }): Promise<
+        | { enrolled: false; reason: 'disabled' | 'opted-out' }
+        | { enrolled: true; changed: false }
+        | { enrolled: true; changed: true; shareVersion: number }
+    >;
+
+    /** Start an escrow hold. Securely persist the returned secrets; null means an existing hold. */
+    startEscrowRecovery?(params: {
+        token?: string;
+        providerType?: AuthProviderType;
+        recoverySessionToken?: string;
+        tenantId?: string;
+    }): Promise<{
+        holdId: string;
+        status: 'pending' | 'cancelled' | 'completed' | 'expired';
+        requestedAt: string;
+        releaseAfter: string;
+        cancelledAt?: string;
+        completedAt?: string;
+        resumeToken: string | null;
+        clientEphemeralPrivateKey: string;
+    }>;
+
+    /** Read a hold using its resume proof or the active device's provider session. */
+    getEscrowRecoveryStatus?(
+        params:
+            | { holdId: string; resumeToken: string }
+            | { token: string; providerType: AuthProviderType }
+    ): Promise<{
+        holdId: string;
+        status: 'pending' | 'cancelled' | 'completed' | 'expired';
+        requestedAt: string;
+        releaseAfter: string;
+        cancelledAt?: string;
+        completedAt?: string;
+    } | null>;
+
+    /** Cancel a pending hold with a fresh, owner-signed DID challenge. */
+    cancelEscrowRecovery?(params: {
+        token: string;
+        providerType: AuthProviderType;
+        privateKey: string;
+        signDidAuthVp: DidAuthVpSigner;
+    }): Promise<{ cancelled: boolean }>;
 
     /** Execute a recovery flow and return the recovered private key + DID */
     executeRecovery(params: {

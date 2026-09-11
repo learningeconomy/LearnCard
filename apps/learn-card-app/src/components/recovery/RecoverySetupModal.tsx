@@ -18,12 +18,13 @@ import { isWebAuthnSupported } from '@learncard/sss-key-manager';
 import * as m from '../../paraglide/messages.js';
 import { getLogger } from 'learn-card-base';
 import { toFriendlyRecoveryError } from './recoveryErrors';
+import { AutomaticRecoveryCard, type AutomaticRecoveryProps } from './AutomaticRecoveryCard';
 
 const log = getLogger('recovery-setup-modal');
 
 export type RecoverySetupType = 'passkey' | 'phrase' | 'backup' | 'email';
 
-interface RecoverySetupModalProps {
+interface RecoverySetupModalProps extends Partial<AutomaticRecoveryProps> {
     onSetupPasskey: () => Promise<string>;
     onGeneratePhrase: () => Promise<{ phrase: string; challengeWordIndices: number[] }>;
     onConfirmPhrase: (challengeWords: string[]) => Promise<void>;
@@ -57,6 +58,9 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     initialMethod,
     onCompleted,
     onClose,
+    onGetEscrowEnrollmentState,
+    onDisableEscrowRecovery,
+    onEnableEscrowRecovery,
 }) => {
     const webAuthnSupported = isWebAuthnSupported();
     const isNative = Capacitor.isNativePlatform();
@@ -69,7 +73,8 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     const isConfigured = (type: RecoverySetupType): boolean =>
         hasExistingMethod(type) || sessionConfigured.has(type);
 
-    const anyConfigured = existingMethods.length > 0 || sessionConfigured.size > 0;
+    const anyConfigured =
+        existingMethods.some(method => method.type !== 'escrow') || sessionConfigured.size > 0;
 
     // Default to the first unconfigured method in priority order:
     // email > phrase > backup > passkey
@@ -479,6 +484,14 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                         : m['recovery.setupRecovery']()}
                 </p>
             </div>
+
+            {onGetEscrowEnrollmentState && onDisableEscrowRecovery && onEnableEscrowRecovery && (
+                <AutomaticRecoveryCard
+                    onGetEscrowEnrollmentState={onGetEscrowEnrollmentState}
+                    onDisableEscrowRecovery={onDisableEscrowRecovery}
+                    onEnableEscrowRecovery={onEnableEscrowRecovery}
+                />
+            )}
 
             {/* Tabs */}
             <div className="flex gap-1.5 mb-6">
