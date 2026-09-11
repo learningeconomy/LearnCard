@@ -34,8 +34,8 @@ The modal uses a flex column layout with `overflow-y-auto` on the contract list:
 </div>
 ```
 
--   `flex-1 min-h-0` ensures the scroll area shrinks correctly inside the modal
--   `-mx-2 px-2` compensates for internal padding so scrollbars sit flush
+- `flex-1 min-h-0` ensures the scroll area shrinks correctly inside the modal
+- `-mx-2 px-2` compensates for internal padding so scrollbars sit flush
 
 ### Revoke: Two-Modal Close Limit
 
@@ -73,15 +73,15 @@ After revocation, `onUpdate?.()` calls `refetch()` on the `useConsentedContracts
 
 Tapping a contract row opens a detail modal showing:
 
--   App name, image, description
--   **Data Access Permissions** section with read/write category chips
-    -   Read chips use `bg-cyan-50 border-cyan-100 text-cyan-700`
-    -   Write chips use `bg-emerald-50 border-emerald-100 text-emerald-700`
-    -   Each chip shows the category icon via `contractCategoryNameToCategoryMetadata(...).IconWithShape`
--   **Open App** button (if `redirectUrl` is set) — generates a delegate VP and opens the app
--   **xAPI Data Feed** button
--   **Edit Permissions** button — opens `ConsentFlowPrivacyAndData` in a right-side modal
--   **Revoke Access** button — opens the confirmation modal
+- App name, image, description
+- **Data Access Permissions** section with read/write category chips
+    - Read chips use `bg-cyan-50 border-cyan-100 text-cyan-700`
+    - Write chips use `bg-emerald-50 border-emerald-100 text-emerald-700`
+    - Each chip shows the category icon via `contractCategoryNameToCategoryMetadata(...).IconWithShape`
+- **Open App** button (if `redirectUrl` is set) — generates a delegate VP and opens the app
+- **xAPI Data Feed** button
+- **Edit Permissions** button — opens `ConsentFlowPrivacyAndData` in a right-side modal
+- **Revoke Access** button — opens the confirmation modal
 
 ### `PermissionsList` Component
 
@@ -103,16 +103,16 @@ This ensures only actually-shared categories are displayed.
 
 Special handling for the LearnCard AI contract:
 
--   **Icon**: Red trash can on red background
--   **Title**: "Disable AI features?" (instead of "Revoke Access?")
--   **Body**: "This will revoke LearnCard AI access and turn off AI features."
--   **Confirm button**: "Disable AI & Revoke" (instead of "Yes, Revoke Access")
+- **Icon**: Red trash can on red background
+- **Title**: "Disable AI features?" (instead of "Revoke Access?")
+- **Body**: "This will revoke LearnCard AI access and turn off AI features."
+- **Confirm button**: "Disable AI & Revoke" (instead of "Yes, Revoke Access")
 
 For all other contracts:
 
--   **Title**: "Revoke Access?"
--   **Body**: "{name} will no longer be able to access your {brandName} data."
--   **Confirm button**: "Yes, Revoke Access"
+- **Title**: "Revoke Access?"
+- **Body**: "{name} will no longer be able to access your {brandName} data."
+- **Confirm button**: "Yes, Revoke Access"
 
 ---
 
@@ -129,7 +129,7 @@ For all other contracts:
 
 ## UX Notes
 
--   Empty state: shield icon + "No data sharing yet" + "When you connect apps, they'll appear here."
--   Each contract row shows the app image, name, and a permission summary like "3 read, 1 write"
--   ChevronRight icon indicates the row is tappable
--   The detail modal height is fixed at `80vh` with internal scrolling for permissions
+- Empty state: shield icon + "No data sharing yet" + "When you connect apps, they'll appear here."
+- Each contract row shows the app image, name, and a permission summary like "3 read, 1 write"
+- ChevronRight icon indicates the row is tappable
+- The detail modal height is fixed at `80vh` with internal scrolling for permissions

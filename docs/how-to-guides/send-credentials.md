@@ -193,7 +193,7 @@ The guardian gets an approval email with a 6-digit code; the learner sees a pend
 
     inbox?: {               // only for email/phone recipients
         issuanceId: string,
-        status: 'PENDING' | 'ISSUED',
+        status: 'PENDING' | 'ISSUED' | 'DELIVERED' | 'CLAIMED' | 'EXPIRED', // PENDING or ISSUED right after send()
         claimUrl?: string,  // present when PENDING
         guardianStatus?: 'AWAITING_GUARDIAN' | 'GUARDIAN_APPROVED' | 'GUARDIAN_REJECTED',
     },

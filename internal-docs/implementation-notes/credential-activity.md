@@ -66,10 +66,10 @@ Boost "Employee Badge"
 
 **Key points:**
 
--   `activityId` tracks a **single issuance lifecycle**, not a boost or recipient
--   Same boost sent twice = two different `activityId`s
--   Same recipient receiving twice = two different `activityId`s
--   The `boostUri` field links activities to the boost template for aggregate stats
+- `activityId` tracks a **single issuance lifecycle**, not a boost or recipient
+- Same boost sent twice = two different `activityId`s
+- Same recipient receiving twice = two different `activityId`s
+- The `boostUri` field links activities to the boost template for aggregate stats
 
 ## Source Types
 
@@ -98,11 +98,11 @@ GET /activity/credentials
 
 **Query Parameters:**
 
--   `limit` (number, default: 25) - Max results per page
--   `cursor` (string) - Pagination cursor
--   `boostUri` (string) - Filter by boost template
--   `eventType` (string) - Filter by event type
--   `integrationId` (string) - Filter by integration
+- `limit` (number, default: 25) - Max results per page
+- `cursor` (string) - Pagination cursor
+- `boostUri` (string) - Filter by boost template
+- `eventType` (string) - Filter by event type
+- `integrationId` (string) - Filter by integration
 
 **Response:**
 
@@ -143,8 +143,8 @@ GET /activity/credentials/stats
 
 **Query Parameters:**
 
--   `boostUris` (string[]) - Filter by boost templates
--   `integrationId` (string) - Filter by integration
+- `boostUris` (string[]) - Filter by boost templates
+- `integrationId` (string) - Filter by integration
 
 **Response:**
 

@@ -6,8 +6,8 @@ This note documents how the LearnCard app currently consumes AI-generated sugges
 
 It is intended to be useful for both:
 
--   humans trying to understand the system
--   AI agents trying to modify or trace the flow safely
+- humans trying to understand the system
+- AI agents trying to modify or trace the flow safely
 
 ## High-level summary
 
@@ -21,60 +21,60 @@ Instead, it:
 
 The important consequence is:
 
--   if the stored AI Insight credential is stale, the UI will also feel stale
--   changing goals or skills in LearnCard still does **not** directly guarantee a refresh
--   credential changes in LearnCard now **do** trigger regeneration automatically when they affect the AI Insight seed data
--   the app now requests a refresh after targeted consent syncs and after credential deletions, including the full-sync fallback when the targeted prune route is unavailable
--   the client briefly polls for a newer credential while the AI Insight refresh store is pending, then stops once it detects the update or hits a timeout window
+- if the stored AI Insight credential is stale, the UI will also feel stale
+- changing goals or skills in LearnCard still does **not** directly guarantee a refresh
+- credential changes in LearnCard now **do** trigger regeneration automatically when they affect the AI Insight seed data
+- the app now requests a refresh after targeted consent syncs and after credential deletions, including the full-sync fallback when the targeted prune route is unavailable
+- the client briefly polls for a newer credential while the AI Insight refresh store is pending, then stops once it detects the update or hits a timeout window
 
 ## Key LearnCard files involved
 
 ### AI Insight generation / caching
 
--   `packages/learn-card-base/src/hooks/useAiInsightCredential.ts`
-    -   fetches the AI insight credential from AI Passport
-    -   stores it in LearnCloud under the special id `__ai_insight__`
-    -   exposes the React Query hook used across the app
-    -   watches `aiInsightRefreshStore` so it can poll while a regeneration request is pending
-    -   exposes `useAiPathways()` for pathway credential resolution
-    -   exposes `useAiInsightCredentialMutation()` for forcing regeneration
+- `packages/learn-card-base/src/hooks/useAiInsightCredential.ts`
+    - fetches the AI insight credential from AI Passport
+    - stores it in LearnCloud under the special id `__ai_insight__`
+    - exposes the React Query hook used across the app
+    - watches `aiInsightRefreshStore` so it can poll while a regeneration request is pending
+    - exposes `useAiPathways()` for pathway credential resolution
+    - exposes `useAiInsightCredentialMutation()` for forcing regeneration
 
 ### AI Insights display
 
--   `apps/learn-card-app/src/pages/ai-insights/AiInsights.tsx`
--   `apps/learn-card-app/src/pages/ai-insights/AiInsightsLearningSnapshots.tsx`
--   `apps/learn-card-app/src/pages/ai-insights/AiInsightsLearningPathways.tsx`
--   `apps/learn-card-app/src/pages/ai-insights/AiInsightsWidgets.tsx`
+- `apps/learn-card-app/src/pages/ai-insights/AiInsights.tsx`
+- `apps/learn-card-app/src/pages/ai-insights/AiInsightsLearningSnapshots.tsx`
+- `apps/learn-card-app/src/pages/ai-insights/AiInsightsLearningPathways.tsx`
+- `apps/learn-card-app/src/pages/ai-insights/AiInsightsWidgets.tsx`
 
 ### Grow Skills display
 
--   `apps/learn-card-app/src/pages/ai-pathways/GrowSkillsPathwaysHome.tsx`
--   `apps/learn-card-app/src/pages/ai-pathways/useGrowSkillsContent.ts`
--   `apps/learn-card-app/src/pages/ai-pathways/ExploreRoles.tsx`
+- `apps/learn-card-app/src/pages/ai-pathways/GrowSkillsPathwaysHome.tsx`
+- `apps/learn-card-app/src/pages/ai-pathways/useGrowSkillsContent.ts`
+- `apps/learn-card-app/src/pages/ai-pathways/ExploreRoles.tsx`
 
 ### Skill profile inputs that should matter, but currently do not drive AI refresh directly
 
--   `apps/learn-card-app/src/pages/ai-pathways/ai-pathways-skill-profile/SkillProfileStep1.tsx`
-    -   saves goals and professional profile
--   `apps/learn-card-app/src/pages/ai-pathways/ai-pathways-skill-profile/SkillProfileStep5.tsx`
-    -   saves self-assigned skills
+- `apps/learn-card-app/src/pages/ai-pathways/ai-pathways-skill-profile/SkillProfileStep1.tsx`
+    - saves goals and professional profile
+- `apps/learn-card-app/src/pages/ai-pathways/ai-pathways-skill-profile/SkillProfileStep5.tsx`
+    - saves self-assigned skills
 
 ### Credential change path that does trigger AI refresh today
 
--   `apps/learn-card-app/src/hooks/useUploadFile.tsx`
-    -   calls `useAiInsightCredentialMutation().mutate()` after some upload / parse flows
+- `apps/learn-card-app/src/hooks/useUploadFile.tsx`
+    - calls `useAiInsightCredentialMutation().mutate()` after some upload / parse flows
 
 ### Consent sync / delete paths that now trigger targeted AI refresh
 
--   `packages/learn-card-base/src/react-query/mutations/syncConsentFlow.ts`
-    -   after syncing credentials to the current AI Passport contract, it calls the AI Passport refresh endpoint
--   `packages/learn-card-base/src/react-query/mutations/mutations.ts`
-    -   after deleting a credential, it calls the same AI Passport refresh path
-    -   if the targeted prune route is unavailable, it falls back to full sync and then requests AI Passport refresh
--   `packages/learn-card-base/src/hooks/useAiInsightCredential.ts`
-    -   polls only while the refresh store is pending
-    -   stops when a newer credential is detected
-    -   also stops after a bounded wait window if the credential never changes
+- `packages/learn-card-base/src/react-query/mutations/syncConsentFlow.ts`
+    - after syncing credentials to the current AI Passport contract, it calls the AI Passport refresh endpoint
+- `packages/learn-card-base/src/react-query/mutations/mutations.ts`
+    - after deleting a credential, it calls the same AI Passport refresh path
+    - if the targeted prune route is unavailable, it falls back to full sync and then requests AI Passport refresh
+- `packages/learn-card-base/src/hooks/useAiInsightCredential.ts`
+    - polls only while the refresh store is pending
+    - stops when a newer credential is detected
+    - also stops after a bounded wait window if the credential never changes
 
 ## Current data flow
 
@@ -97,9 +97,9 @@ flowchart TD
 
 `AiInsightsLearningSnapshots.tsx` reads:
 
--   `resolvedAiInsightCredential?.insights?.strongestArea`
--   `resolvedAiInsightCredential?.insights?.weakestArea`
--   `resolvedAiInsightCredential?.insights?.roomForGrowth`
+- `resolvedAiInsightCredential?.insights?.strongestArea`
+- `resolvedAiInsightCredential?.insights?.weakestArea`
+- `resolvedAiInsightCredential?.insights?.roomForGrowth`
 
 It does not compute these values itself.
 
@@ -107,7 +107,7 @@ It does not compute these values itself.
 
 `AiInsightsLearningPathways.tsx` reads:
 
--   `aiInsightCredential?.insights?.suggestedPathways`
+- `aiInsightCredential?.insights?.suggestedPathways`
 
 Then it resolves each returned credential URI and renders the pathway cards.
 
@@ -115,12 +115,12 @@ Then it resolves each returned credential URI and renders the pathway cards.
 
 `useGrowSkillsContent.ts` uses the AI Insight credential as a seed:
 
--   prefers `aiInsightCredential?.insights?.strongestArea?.keywords?.occupations`
--   falls back to keywords from `useAiPathways()`
--   uses the first keyword to query:
-    -   occupations
-    -   training programs
-    -   YouTube videos
+- prefers `aiInsightCredential?.insights?.strongestArea?.keywords?.occupations`
+- falls back to keywords from `useAiPathways()`
+- uses the first keyword to query:
+    - occupations
+    - training programs
+    - YouTube videos
 
 So Grow Skills is a downstream consumer of the stored AI insight credential, not an independent recommendation engine.
 
@@ -130,20 +130,20 @@ So Grow Skills is a downstream consumer of the stored AI insight credential, not
 
 1. **Manual button in AI Insights**
 
--   `AiInsights.tsx`
--   calls `useAiInsightCredentialMutation()`
+- `AiInsights.tsx`
+- calls `useAiInsightCredentialMutation()`
 
 1. **After file upload / parsing flows**
 
--   `apps/learn-card-app/src/hooks/useUploadFile.tsx`
--   calls `aiInsightMutation.mutate()` after certain credential save flows
+- `apps/learn-card-app/src/hooks/useUploadFile.tsx`
+- calls `aiInsightMutation.mutate()` after certain credential save flows
 
 ### Query cache behavior
 
 `useAiInsightCredential()` currently uses a long React Query stale time:
 
--   `staleTime: 1000 * 60 * 60 * 24 * 7`
-    -   1 week
+- `staleTime: 1000 * 60 * 60 * 24 * 7`
+    - 1 week
 
 That means the UI can remain on an old AI Insight credential for a long time unless something explicitly refreshes it.
 
@@ -155,10 +155,10 @@ When refresh is requested, the app also flips the shared refresh store to `pendi
 
 I could not find any direct refresh wiring from these changes to AI Insight generation:
 
--   saving goals in `SkillProfileStep1.tsx`
--   saving professional title / profile in `SkillProfileStep1.tsx`
--   saving self-assigned skills in `SkillProfileStep5.tsx`
--   most generic credential deletion flows outside the LearnCard AI contract
+- saving goals in `SkillProfileStep1.tsx`
+- saving professional title / profile in `SkillProfileStep1.tsx`
+- saving self-assigned skills in `SkillProfileStep5.tsx`
+- most generic credential deletion flows outside the LearnCard AI contract
 
 So, as of the current code, goals and skills are **stored**, but they are **not part of an obvious local refresh pipeline** for AI Insights.
 
@@ -168,22 +168,22 @@ Note: deletions for credentials that belong to the LearnCard AI contract are now
 
 The only clearly visible AI Passport call on the LearnCard side is:
 
--   `POST ${networkStore.get.aiServiceUrl()}/credentials/ai-insight?did=<did>`
+- `POST ${networkStore.get.aiServiceUrl()}/credentials/ai-insight?did=<did>`
 
 From this repository alone, I could **not** confirm:
 
--   the generation algorithm
--   whether AI Passport reads LearnCard data directly
--   whether it uses goals and skills today
--   whether it recomputes immediately or via batch / scheduled jobs
--   whether it persists a cached result server-side
+- the generation algorithm
+- whether AI Passport reads LearnCard data directly
+- whether it uses goals and skills today
+- whether it recomputes immediately or via batch / scheduled jobs
+- whether it persists a cached result server-side
 
 In other words:
 
--   LearnCard knows how to request and display the credential
--   AI Passport owns the actual insight generation logic
--   the current backend-side AI Passport implementation still uses the OpenAI contract
--   the LearnCard AI contract is wired in the client and appears to be the future target, but it is not the active backend contract yet
+- LearnCard knows how to request and display the credential
+- AI Passport owns the actual insight generation logic
+- the current backend-side AI Passport implementation still uses the OpenAI contract
+- the LearnCard AI contract is wired in the client and appears to be the future target, but it is not the active backend contract yet
 
 ## Known request / response shape from this repo
 
@@ -191,7 +191,7 @@ In other words:
 
 The request visible here is:
 
--   `POST /credentials/ai-insight?did=<userDid>`
+- `POST /credentials/ai-insight?did=<userDid>`
 
 No additional payload is visible in this repo.
 
@@ -199,7 +199,7 @@ No additional payload is visible in this repo.
 
 The LearnCard code expects a response that includes:
 
--   `data.credential`
+- `data.credential`
 
 That credential is then:
 
@@ -211,11 +211,11 @@ That credential is then:
 
 These are the LearnCard events that seem most important:
 
--   credential added (done)
--   credential deleted (done)
--   goals changed
--   professional title changed
--   self-assigned skills changed
+- credential added (done)
+- credential deleted (done)
+- goals changed
+- professional title changed
+- self-assigned skills changed
 
 Credential add/delete events already trigger refresh today in the targeted consent-sync and delete flows.
 

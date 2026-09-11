@@ -8,6 +8,7 @@ on:
             - 'scripts/check-docs-links.mjs'
             - 'scripts/check-docs-snippets.mjs'
             - 'scripts/docs-links-allowlist.json'
+            - 'scripts/docs-migration-map.csv'
             - '.github/workflows/docs-links.yml'
     push:
         branches:
@@ -18,6 +19,7 @@ on:
             - 'scripts/check-docs-links.mjs'
             - 'scripts/check-docs-snippets.mjs'
             - 'scripts/docs-links-allowlist.json'
+            - 'scripts/docs-migration-map.csv'
             - '.github/workflows/docs-links.yml'
 
 permissions:

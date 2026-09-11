@@ -53,10 +53,10 @@ flowchart TD
 
 The resolution order is deliberate:
 
--   **`X-Tenant-Id`** is explicit and wins over everything else. Native apps and any SSS client with `tenantId` configured always send it.
--   **`Origin` / `Referer`** covers web browsers, which send the page origin but can't inject custom headers for all requests. Hostnames are looked up in `ORIGIN_MAP` with progressive subdomain stripping — `alpha.vetpass.app` matches the `vetpass.app` entry.
--   **`DEFAULT_TENANT_ID`** env var is for server-to-server callers: cron jobs, webhooks, and per-tenant deploys that have no meaningful request headers.
--   **`'learncard'`** is the final fallback.
+- **`X-Tenant-Id`** is explicit and wins over everything else. Native apps and any SSS client with `tenantId` configured always send it.
+- **`Origin` / `Referer`** covers web browsers, which send the page origin but can't inject custom headers for all requests. Hostnames are looked up in `ORIGIN_MAP` with progressive subdomain stripping — `alpha.vetpass.app` matches the `vetpass.app` entry.
+- **`DEFAULT_TENANT_ID`** env var is for server-to-server callers: cron jobs, webhooks, and per-tenant deploys that have no meaningful request headers.
+- **`'learncard'`** is the final fallback.
 
 `resolveTenantFromRequest()` returns a `ResolvedTenant`:
 
@@ -120,10 +120,10 @@ flowchart TD
 
 Key points:
 
--   **Sentinel aliases** (`'recovery-key'`, `'recovery-email-code'`, `'login-verification-code'`, etc.) are pre-registered in `LOCAL_TEMPLATE_ALIASES` so callers can pass them directly without needing an env var override. This is the default path.
--   **Heuristic matching** kicks in when a caller passes a real Postmark alias (e.g. from `POSTMARK_LOGIN_CODE_TEMPLATE_ALIAS`) and the adapter infers the local template from the `templateModel` shape.
--   **When local render fails for a sentinel**, the adapter re-throws rather than falling through to `sendEmailWithTemplate`, because the sentinel alias doesn't exist in Postmark. You see the real rendering error instead of a confusing "template not found" from Postmark.
--   **Fallback to Postmark's template engine** is reserved for legacy aliases that haven't been migrated yet. All currently-sent emails go through local rendering.
+- **Sentinel aliases** (`'recovery-key'`, `'recovery-email-code'`, `'login-verification-code'`, etc.) are pre-registered in `LOCAL_TEMPLATE_ALIASES` so callers can pass them directly without needing an env var override. This is the default path.
+- **Heuristic matching** kicks in when a caller passes a real Postmark alias (e.g. from `POSTMARK_LOGIN_CODE_TEMPLATE_ALIAS`) and the adapter infers the local template from the `templateModel` shape.
+- **When local render fails for a sentinel**, the adapter re-throws rather than falling through to `sendEmailWithTemplate`, because the sentinel alias doesn't exist in Postmark. You see the real rendering error instead of a confusing "template not found" from Postmark.
+- **Fallback to Postmark's template engine** is reserved for legacy aliases that haven't been migrated yet. All currently-sent emails go through local rendering.
 
 ## Template IDs
 
@@ -192,13 +192,13 @@ If you're writing a client that talks to `lca-api` or `brain-service`:
 
 ## What this doesn't solve (yet)
 
--   **`config.json` → `TENANT_EMAIL_BRANDING` wiring.** The schema field exists; the backend wiring does not. Today, adding a tenant requires a PR to `@learncard/email-templates`.
--   **Scouts.** The scouts app has no tenant config system, so it doesn't send `X-Tenant-Id`. Emails sent on behalf of scouts users use LearnCard defaults. This is intentional — scouts is single-tenant.
--   **Per-user branding overrides.** Branding is resolved per-tenant, not per-user. A user who claims a VetPass credential while signed into LearnCard gets LearnCard branding on the resulting notification, because the request carries the LearnCard tenant header.
+- **`config.json` → `TENANT_EMAIL_BRANDING` wiring.** The schema field exists; the backend wiring does not. Today, adding a tenant requires a PR to `@learncard/email-templates`.
+- **Scouts.** The scouts app has no tenant config system, so it doesn't send `X-Tenant-Id`. Emails sent on behalf of scouts users use LearnCard defaults. This is intentional — scouts is single-tenant.
+- **Per-user branding overrides.** Branding is resolved per-tenant, not per-user. A user who claims a VetPass credential while signed into LearnCard gets LearnCard branding on the resulting notification, because the request carries the LearnCard tenant header.
 
 ## Related
 
--   [Configure Tenant-Branded Emails](../how-to-guides/configure-tenant-branded-emails.md) — operator-facing how-to
--   [SSS Key Management Configuration](../how-to-guides/deploy-infrastructure/sss-key-management-config.md) — env vars for deployers
--   [`@learncard/email-templates` README](https://github.com/learningeconomy/LearnCard/tree/main/packages/email-templates) — package-level reference
--   [`@learncard/sss-key-manager`](../sdks/sss-key-manager.md) — client-side SSS + `tenantId`
+- [Configure Tenant-Branded Emails](../how-to-guides/configure-tenant-branded-emails.md) — operator-facing how-to
+- [SSS Key Management Configuration](../how-to-guides/deploy-infrastructure/sss-key-management-config.md) — env vars for deployers
+- [`@learncard/email-templates` README](https://github.com/learningeconomy/LearnCard/tree/main/packages/email-templates) — package-level reference
+- [`@learncard/sss-key-manager`](../sdks/sss-key-manager.md) — client-side SSS + `tenantId`

@@ -136,9 +136,9 @@ LC-1644's measurements speak directly to Goal A and only tangentially to Goal B.
 
 The "5–10 seconds" was real but it was caused by connection setup, not architecture. We measured:
 
--   Signing-service HTTP call: **51ms median** (it was already fine — the framing was wrong)
--   Backend total: **292ms median** after one connection-reuse change
--   End-to-end user-perceived: **~1.5 seconds** from Japan, projected **~500ms** in the US
+- Signing-service HTTP call: **51ms median** (it was already fine — the framing was wrong)
+- Backend total: **292ms median** after one connection-reuse change
+- End-to-end user-perceived: **~1.5 seconds** from Japan, projected **~500ms** in the US
 
 There is no remaining 5–10 second latency to architect away. Even the most aggressive theoretical custody change (replacing the signing-service HTTP hop with an in-process KMS call) would save **~20–40ms on a 292ms warm path**. Not nothing, but not worth a rewrite.
 
@@ -148,10 +148,10 @@ There is no remaining 5–10 second latency to architect away. Even the most agg
 
 The security questions in LC-1811 stand on their own merits:
 
--   **Blast radius.** Where should LEF private keys live so brain-service doesn't hold them in memory? KMS, a Nitro Enclave, or a co-located signer all have different security/ops trade-offs. LC-1644 doesn't change those trade-offs — it just removes latency from the calculation, which is honestly _helpful_ for designing this cleanly.
--   **`Signer` abstraction.** Wrapping the current HTTP-based signing call in a typed interface (`LefSigner`, `PartnerSigner`) makes per-signer routing explicit, surfaces the trust boundary in code, and makes future custody changes a 1-impl swap instead of a refactor.
--   **Partner-SA isolation.** Partner-hosted signing endpoints run on partner-controlled infrastructure. The current setup is fine but the boundary should be explicit, not implicit.
--   **Audit log unification.** One signing-event audit pipeline regardless of which signer ran. Cheap to add when the abstraction lands.
+- **Blast radius.** Where should LEF private keys live so brain-service doesn't hold them in memory? KMS, a Nitro Enclave, or a co-located signer all have different security/ops trade-offs. LC-1644 doesn't change those trade-offs — it just removes latency from the calculation, which is honestly _helpful_ for designing this cleanly.
+- **`Signer` abstraction.** Wrapping the current HTTP-based signing call in a typed interface (`LefSigner`, `PartnerSigner`) makes per-signer routing explicit, surfaces the trust boundary in code, and makes future custody changes a 1-impl swap instead of a refactor.
+- **Partner-SA isolation.** Partner-hosted signing endpoints run on partner-controlled infrastructure. The current setup is fine but the boundary should be explicit, not implicit.
+- **Audit log unification.** One signing-event audit pipeline regardless of which signer ran. Cheap to add when the abstraction lands.
 
 None of this needs to be load-bearing on latency claims. It's the kind of architecture work that pays off in security posture, ops simplicity, and our ability to make custody changes confidently later.
 
@@ -161,16 +161,16 @@ None of this needs to be load-bearing on latency claims. It's the kind of archit
 
 Update LC-1811 with a comment containing:
 
--   Link to this summary
--   Headline numbers (the table above)
--   Decision: _we will not build a Signer abstraction or KMS-backed LEF custody for latency reasons; we may still do that same work for security reasons under a re-scoped ticket_
+- Link to this summary
+- Headline numbers (the table above)
+- Decision: _we will not build a Signer abstraction or KMS-backed LEF custody for latency reasons; we may still do that same work for security reasons under a re-scoped ticket_
 
 Then either edit LC-1811's title/description or open a successor ticket with revised driving questions:
 
--   _"What should the trust boundary between brain-service, LEF signing, and partner SAs look like in code?"_ (architecture, not perf)
--   _"Where should LEF private material live?"_ (security, not perf — graded on blast radius, ops complexity, rotation story)
--   _"How do we migrate without breaking the partner-hosted SA contract?"_ (unchanged from original framing)
--   Soft latency floor: _don't regress below 292ms p50._
+- _"What should the trust boundary between brain-service, LEF signing, and partner SAs look like in code?"_ (architecture, not perf)
+- _"Where should LEF private material live?"_ (security, not perf — graded on blast radius, ops complexity, rotation story)
+- _"How do we migrate without breaking the partner-hosted SA contract?"_ (unchanged from original framing)
+- Soft latency floor: _don't regress below 292ms p50._
 
 The work surface is roughly the same. The framing and the success metrics change — and the design will be cleaner without latency anxiety driving choices that should be about security.
 
@@ -178,9 +178,9 @@ The work surface is roughly the same. The framing and the success metrics change
 
 A few residual latency follow-ups exist but they're small, orthogonal, and should not be bundled with LC-1811's security work:
 
--   **Partner-hosted SA measurement.** We benchmarked the LEF signing service. Partner-hosted signing services run on partner infra and we have no data. Worth a small spike to confirm there's no surprise.
--   **Lambda cold-start mitigation.** After a deploy, the first request still pays a 4–5 second cold-init cost. Addressable via AWS Provisioned Concurrency (~$20–60/mo per instance) or an EventBridge keepalive ping (~$1–2/mo, probabilistic). Worth doing when production cold-start metrics tell us it matters to real users.
--   **Continue to monitor PostHog.** The telemetry we built is now permanent. Any regression — backend or frontend — shows up in dashboards.
+- **Partner-hosted SA measurement.** We benchmarked the LEF signing service. Partner-hosted signing services run on partner infra and we have no data. Worth a small spike to confirm there's no surprise.
+- **Lambda cold-start mitigation.** After a deploy, the first request still pays a 4–5 second cold-init cost. Addressable via AWS Provisioned Concurrency (~$20–60/mo per instance) or an EventBridge keepalive ping (~$1–2/mo, probabilistic). Worth doing when production cold-start metrics tell us it matters to real users.
+- **Continue to monitor PostHog.** The telemetry we built is now permanent. Any regression — backend or frontend — shows up in dashboards.
 
 These are 1–3 day tickets each, none of them architectural.
 
@@ -190,10 +190,10 @@ These are 1–3 day tickets each, none of them architectural.
 
 So leadership has the full picture:
 
--   **All measurements from a Tokyo client → US-east staging.** US users will see roughly half the absolute latencies (~150–250ms one-way RTT removed). Projections are math, not direct measurements.
--   **Bench-driven, not real partner flows yet.** The triggering harness drives the same code path a real partner app would, but it's synthetic. No production telemetry on the live flow yet — PR #1225 adds that.
--   **LCA-managed Signing Authority only.** The backend optimizations and the staging measurements both target the LCA-managed Signing Authority (the `lca-api` service holding LEF's keys). Partner-hosted Signing Authorities — running on partner-controlled infrastructure — are explicitly not in scope and unmeasured. Their signing time is opaque to us. If partner SAs turn out to be a separate bottleneck, that's its own follow-up.
--   **Lambda cold-start tail still exists.** Post-deploy first-request can hit 4–5 seconds. This is independent of anything LC-1644 touched and is addressable separately.
+- **All measurements from a Tokyo client → US-east staging.** US users will see roughly half the absolute latencies (~150–250ms one-way RTT removed). Projections are math, not direct measurements.
+- **Bench-driven, not real partner flows yet.** The triggering harness drives the same code path a real partner app would, but it's synthetic. No production telemetry on the live flow yet — PR #1225 adds that.
+- **LCA-managed Signing Authority only.** The backend optimizations and the staging measurements both target the LCA-managed Signing Authority (the `lca-api` service holding LEF's keys). Partner-hosted Signing Authorities — running on partner-controlled infrastructure — are explicitly not in scope and unmeasured. Their signing time is opaque to us. If partner SAs turn out to be a separate bottleneck, that's its own follow-up.
+- **Lambda cold-start tail still exists.** Post-deploy first-request can hit 4–5 seconds. This is independent of anything LC-1644 touched and is addressable separately.
 
 ## One-page summary if forwarded
 

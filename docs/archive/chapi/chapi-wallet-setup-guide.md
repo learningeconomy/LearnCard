@@ -6,12 +6,12 @@ description: Learn how to use LearnCard to build a CHAPI compliant wallet applic
 
 In order to make a CHAPI compliant wallet, there are six things that your site will need to do:
 
--   Install/run the web-credential-polyfill
--   Run the `installHandler` method
--   Host a public manifest.json file
--   Host a public wallet service worker
--   \[Optional] Host a storage endpoint for users to visit when storing a credential via CHAPI
--   \[Optional] Host a get endpoint for users to visit when retrieving a credential via CHAPI
+- Install/run the web-credential-polyfill
+- Run the `installHandler` method
+- Host a public manifest.json file
+- Host a public wallet service worker
+- \[Optional] Host a storage endpoint for users to visit when storing a credential via CHAPI
+- \[Optional] Host a get endpoint for users to visit when retrieving a credential via CHAPI
 
 ## Install/run the web-credential-polyfill
 

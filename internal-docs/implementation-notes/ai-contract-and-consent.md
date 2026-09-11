@@ -10,17 +10,17 @@ This PR introduced a **dedicated LearnCard AI ConsentFlow contract** that is sep
 
 ### Network Consent Contract
 
--   **URI**: `lc:network:network.learncard.com/trpc:contract:2ed7b889-c06e-47c4-835b-d924c17e9891`
--   **Location**: `packages/learn-card-base/src/react-query/mutations/networkConsent.ts`
--   **Purpose**: General network participation; grants broad read/write access across credential categories
--   **Behavior**: Unchanged by this PR
+- **URI**: `lc:network:network.learncard.com/trpc:contract:2ed7b889-c06e-47c4-835b-d924c17e9891`
+- **Location**: `packages/learn-card-base/src/react-query/mutations/networkConsent.ts`
+- **Purpose**: General network participation; grants broad read/write access across credential categories
+- **Behavior**: Unchanged by this PR
 
 ### LearnCard AI Passport Contract
 
--   **URI**: `lc:network:network.learncard.com/trpc:contract:fd6649c7-52c9-4d02-b5ab-fade649d5a0b`
--   **Location**: `packages/learn-card-base/src/constants/aiPassport.ts`
--   **Purpose**: Scoped access to My Skill Profile verifiable data categories for AI features
--   **Detection**: `isLearnCardAiPassportContractUri(contractUri)` helper
+- **URI**: `lc:network:network.learncard.com/trpc:contract:fd6649c7-52c9-4d02-b5ab-fade649d5a0b`
+- **Location**: `packages/learn-card-base/src/constants/aiPassport.ts`
+- **Purpose**: Scoped access to My Skill Profile verifiable data categories for AI features
+- **Detection**: `isLearnCardAiPassportContractUri(contractUri)` helper
 
 Previously, both network consent and AI consent shared a single contract. Separating them means:
 
@@ -65,9 +65,9 @@ This hook provides two operations:
 
 A `useEffect` watches `[isLoggedIn, currentUser, isAiEnabled]` and calls `autoConsentLearnCardAi({ enabled: true })` whenever:
 
--   User is logged in
--   AI Features are enabled
--   Name/profileImage may have changed (used for consent terms)
+- User is logged in
+- AI Features are enabled
+- Name/profileImage may have changed (used for consent terms)
 
 This means **already-logged-in users** get auto-consented without needing to visit onboarding or toggle the setting.
 
@@ -107,18 +107,18 @@ For child profiles (`profileType === 'child'`), the ON flow is wrapped in `guard
 
 The AI Features toggle now shows transient connection status:
 
--   `connecting` → "Connecting..."
--   `connected` → "Connected" (green checkmark, auto-hides after 2s)
--   `disconnecting` → "Disconnecting..."
--   `disconnected` → "Successfully Disconnected" (green checkmark, auto-hides after 2s)
+- `connecting` → "Connecting..."
+- `connected` → "Connected" (green checkmark, auto-hides after 2s)
+- `disconnecting` → "Disconnecting..."
+- `disconnected` → "Successfully Disconnected" (green checkmark, auto-hides after 2s)
 
 **Warning banner**: If `preferences.aiEnabled === true` but no active LearnCard AI consent exists, a red warning banner appears with a "Try again" button that triggers `handleRetryAiConsent`.
 
 **Toggle disabled states**:
 
--   `aiFeatureGateReason === 'disabled_minor'` (minor user)
--   `isSyncingAiConsent` (toggle in progress)
--   `retryingAiConsent` (retry in progress)
+- `aiFeatureGateReason === 'disabled_minor'` (minor user)
+- `isSyncingAiConsent` (toggle in progress)
+- `retryingAiConsent` (retry in progress)
 
 ---
 
@@ -130,9 +130,9 @@ The AI Features toggle now shows transient connection status:
 
 Revoking the LearnCard AI contract shows a special confirmation:
 
--   Title: "Disable AI features?"
--   Body: "This will revoke LearnCard AI access and turn off AI features."
--   Button: "Disable AI & Revoke"
+- Title: "Disable AI features?"
+- Body: "This will revoke LearnCard AI access and turn off AI features."
+- Button: "Disable AI & Revoke"
 
 On confirm, `handleAiToggle(false)` is called, which withdraws consent **and** updates preferences. The modal stack closes only 2 levels (detail modal + confirmation modal) so the user lands back on the Data Sharing list.
 
@@ -154,5 +154,5 @@ On confirm, `handleAiToggle(false)` is called, which withdraws consent **and** u
 
 ## Known Limitations
 
--   The **AI Passport side** (OpenAI integration) still uses the old contract until [LC-1824](https://welibrary.atlassian.net/browse/LC-1824) is implemented. This PR only updates the LearnCard App contract and consent logic.
--   `autoConsentLearnCardAi` iterates all credential URIs per category, which can be slow for wallets with many credentials. The bug fix for "too many credentials" was addressed by improving the shared URI enrichment path.
+- The **AI Passport side** (OpenAI integration) still uses the old contract until [LC-1824](https://welibrary.atlassian.net/browse/LC-1824) is implemented. This PR only updates the LearnCard App contract and consent logic.
+- `autoConsentLearnCardAi` iterates all credential URIs per category, which can be slow for wallets with many credentials. The bug fix for "too many credentials" was addressed by improving the shared URI enrichment path.

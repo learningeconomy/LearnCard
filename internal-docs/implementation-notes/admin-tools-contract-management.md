@@ -25,16 +25,16 @@ Previously, clicking a contract in the Admin Tools list showed consent records (
 
 Each category entry shows a pill indicating how it behaves in the consent modal:
 
--   **Required** (`required: true`) — dark pill, user cannot opt out
--   **Opt-out** (`required: false`, `defaultEnabled: true`) — amber pill, user can uncheck
--   **Opt-in** (`required: false`, `defaultEnabled: false`) — gray pill, user must check
+- **Required** (`required: true`) — dark pill, user cannot opt out
+- **Opt-out** (`required: false`, `defaultEnabled: true`) — amber pill, user can uncheck
+- **Opt-in** (`required: false`, `defaultEnabled: false`) — gray pill, user must check
 
 ### Icons
 
 Categories use `contractCategoryNameToCategoryMetadata(...)` from `learn-card-base` to resolve:
 
--   `IconWithShape` — colored shape icon (for verifiable-data categories like Goals, Work Experience, etc.)
--   `IconComponent` — fallback grayscale icon inside a circular background
+- `IconWithShape` — colored shape icon (for verifiable-data categories like Goals, Work Experience, etc.)
+- `IconComponent` — fallback grayscale icon inside a circular background
 
 ---
 
@@ -55,11 +55,11 @@ The modal accepts an optional `templateContract?: ConsentFlowContractDetails` pr
 
 When a template is provided:
 
--   `getContractTypeForTemplate(template)` determines the initial tab (`Classic`, `GameFlow`, or `Front Door Cred`)
--   `getInitialContractState(template)` clones the template's:
-    -   `contract.read` / `contract.write` (including personal fields and credential categories)
-    -   `name`, `subtitle`, `description`, `image`, `expiresAt`, `reasonForAccessing`, `redirectUrl`, `frontDoorBoostUri`
-    -   `needsGuardianConsent`
+- `getContractTypeForTemplate(template)` determines the initial tab (`Classic`, `GameFlow`, or `Front Door Cred`)
+- `getInitialContractState(template)` clones the template's:
+    - `contract.read` / `contract.write` (including personal fields and credential categories)
+    - `name`, `subtitle`, `description`, `image`, `expiresAt`, `reasonForAccessing`, `redirectUrl`, `frontDoorBoostUri`
+    - `needsGuardianConsent`
 
 The admin can then edit any field before creating the new contract.
 
@@ -69,11 +69,11 @@ The admin can then edit any field before creating the new contract.
 
 ### Layout
 
--   Max-width: `!max-w-[500px]`
--   Max-height: `!max-h-[70vh]` for create modal
--   Scrollable content inside the detail view
--   Two-column grid on desktop for Contract Details / Sharing Metadata and Read / Write permissions
--   Single column on mobile
+- Max-width: `!max-w-[500px]`
+- Max-height: `!max-h-[70vh]` for create modal
+- Scrollable content inside the detail view
+- Two-column grid on desktop for Contract Details / Sharing Metadata and Read / Write permissions
+- Single column on mobile
 
 ### Consent Records Collapsible
 
@@ -88,9 +88,9 @@ The admin can then edit any field before creating the new contract.
 </details>
 ```
 
--   Chevron rotates 180° when open
--   Loading spinner shown while `consentDataLoading` is true
--   Empty state: "No one has consented to this contract yet"
+- Chevron rotates 180° when open
+- Loading spinner shown while `consentDataLoading` is true
+- Empty state: "No one has consented to this contract yet"
 
 ---
 
@@ -107,5 +107,5 @@ The admin can then edit any field before creating the new contract.
 
 ## Future Improvements
 
--   Consent records could be rendered as a table or cards instead of raw JSON
--   Could add a "Clone and publish" one-click action without opening the create modal
+- Consent records could be rendered as a table or cards instead of raw JSON
+- Could add a "Clone and publish" one-click action without opening the create modal

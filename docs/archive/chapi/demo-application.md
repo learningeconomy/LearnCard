@@ -249,11 +249,11 @@ Once we've got CHAPI set up and we're able to store credentials in our wallet, w
 
 In order to set up CHAPI, we'll need to do a few things:
 
--   Install/run the web-credential-polyfill
--   Run the `installHandler` method
--   Host a public manifest.json file
--   Host a public wallet service worker
--   Host a storage endpoint for users to visit when storing a credential via CHAPI
+- Install/run the web-credential-polyfill
+- Run the `installHandler` method
+- Host a public manifest.json file
+- Host a public wallet service worker
+- Host a storage endpoint for users to visit when storing a credential via CHAPI
 
 Let's run through those now!
 
