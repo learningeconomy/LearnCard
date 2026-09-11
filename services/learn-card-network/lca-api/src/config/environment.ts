@@ -34,6 +34,12 @@ export const lcaApiEnvironmentShape = {
     POSTMARK_RECOVERY_KEY_TEMPLATE_ALIAS: optionalEnvironmentString,
     ESCROW_RELAY_URL: optionalEnvironmentUrl,
     ESCROW_RELAY_AUTH_TOKEN: optionalEnvironmentString,
+    ESCROW_ENCLAVE_MODE: optionalEnvironmentString.pipe(z.enum(['software', 'remote']).optional()),
+    ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON: optionalEnvironmentString,
+    ESCROW_ENCLAVE_ACTIVE_KEY_ID: optionalEnvironmentString,
+    ESCROW_HOLD_DURATION_MS: optionalEnvironmentString
+        .transform(value => (value === undefined ? 604_800_000 : Number(value)))
+        .pipe(z.number().int().positive().max(Number.MAX_SAFE_INTEGER)),
     ANDROID_PUSH_ICON: optionalEnvironmentString,
     REDIS_HOST: optionalEnvironmentString,
     REDIS_PORT: optionalEnvironmentPort,
@@ -52,6 +58,30 @@ export const lcaApiEnvironmentShape = {
 export const lcaApiEnvironmentSchema = z
     .object(lcaApiEnvironmentShape)
     .superRefine((environment, context) => {
+        if (environment.ESCROW_ENCLAVE_MODE === 'software') {
+            try {
+                const keys = parseEscrowPrivateKeys(
+                    environment.ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON ?? ''
+                );
+                if (
+                    !environment.ESCROW_ENCLAVE_ACTIVE_KEY_ID ||
+                    !Object.hasOwn(keys, environment.ESCROW_ENCLAVE_ACTIVE_KEY_ID)
+                ) {
+                    context.addIssue({
+                        code: 'custom',
+                        path: ['ESCROW_ENCLAVE_ACTIVE_KEY_ID'],
+                        message: 'Software escrow requires an active key ID present in the key map',
+                    });
+                }
+            } catch {
+                context.addIssue({
+                    code: 'custom',
+                    path: ['ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON'],
+                    message:
+                        'Software escrow requires a valid nonempty key ID to private key JSON map',
+                });
+            }
+        }
         if (
             environment.NODE_ENV === 'production' &&
             !environment.IS_OFFLINE &&
@@ -101,6 +131,19 @@ export const parseLcaApiEnvironment = (
             examplePath: 'services/learn-card-network/lca-api/.env.example',
         }
     );
+};
+
+/** Parse configuration without exposing secret values in validation errors. */
+export const parseEscrowPrivateKeys = (serialized: string): Record<string, string> => {
+    try {
+        const parsed: unknown = JSON.parse(serialized);
+        return z
+            .record(z.string().regex(/^[A-Za-z0-9._-]{1,128}$/), z.string().trim().min(1))
+            .refine(keys => Object.keys(keys).length > 0)
+            .parse(parsed);
+    } catch {
+        throw new Error('Invalid escrow private key configuration');
+    }
 };
 
 export const environment = parseLcaApiEnvironment(process.env);

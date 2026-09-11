@@ -60,6 +60,24 @@ export type {
 } from './email-relay-crypto';
 
 export {
+    ESCROW_ENVELOPE_VERSION,
+    ESCROW_ALGORITHM,
+    ESCROW_BLOB_INFO,
+    ESCROW_RELEASE_INFO,
+    ESCROW_CLIENT_KEY_ID,
+    parseEscrowEnvelope,
+    parseEscrowBlobPlaintext,
+    parseEscrowReleasePlaintext,
+    generateEscrowKeyPair,
+    encryptEscrowBlob,
+    decryptEscrowBlob,
+    sealEscrowRelease,
+    openEscrowRelease,
+} from './escrow-crypto';
+
+export type { EscrowEnvelope, EscrowBlobPlaintext, EscrowReleasePlaintext } from './escrow-crypto';
+
+export {
     createPasskeyCredential,
     deriveKeyFromPasskey,
     encryptShareWithPasskey,

@@ -53,6 +53,21 @@ The `keysRouter` implements the server side of Shamir Secret Sharing key managem
 | `POST /keys/upgrade-contact-method` | Upgrade phone-only users to email + phone                                                                       |
 | `POST /keys/migrate`                | Mark a UserKey as migrated from the legacy Web3Auth pathway                                                     |
 
+### Escrow recovery routes
+
+The `escrow` tRPC router is disabled unless `ESCROW_ENCLAVE_MODE` is configured.
+
+| Route                          | Procedure                 | Purpose                                                            |
+| ------------------------------ | ------------------------- | ------------------------------------------------------------------ |
+| `GET /keys/escrow/attestation` | `escrow.getAttestation`   | Enclave public key and hold duration                               |
+| `POST /keys/escrow`            | `escrow.enroll`           | Verify and store automatic recovery material                       |
+| `DELETE /keys/escrow`          | `escrow.remove`           | Remove material and optionally opt out                             |
+| `POST /keys/escrow/opt-in`     | `escrow.optIn`            | Allow enrollment again                                             |
+| `POST /keys/escrow/recover`    | `escrow.startRecovery`    | Start a waiting period without resetting an existing hold          |
+| `GET /keys/escrow/status`      | `escrow.getStatus`        | Check status; active devices send provider auth via `X-Auth-Token` |
+| `POST /keys/escrow/cancel`     | `escrow.cancelRecovery`   | DID owner cancels a pending hold                                   |
+| `POST /keys/escrow/complete`   | `escrow.completeRecovery` | Claim an elapsed hold and release sealed recovery material once    |
+
 ### Important Invariants
 
 - **Auth shares are encrypted at rest** with a KEK derived from `SEED`. Losing `SEED` means every stored auth share is permanently unrecoverable.
@@ -108,7 +123,7 @@ See [`docs/how-to-guides/deploy-infrastructure/sss-key-management-config.md`](..
 
 ## Testing Notes
 
-- Test files in `test/` spin up a Fastify server via `getClient()` and exercise routes with `fetch`.
+- Test files using `getClient()` exercise tRPC procedures via `appRouter.createCaller()`, not an HTTP server. Header-context tests inject `providerToken`; they do not verify HTTP header extraction or CORS.
 - `IS_E2E_TEST=true` disables Firebase Admin SDK calls and switches email delivery to the log adapter.
 - For tenant-aware tests, set `X-Tenant-Id` on the request; `createContext` will pick it up and `ctx.tenant.emailBranding` will be populated from the registry in `@learncard/email-templates`.
 
