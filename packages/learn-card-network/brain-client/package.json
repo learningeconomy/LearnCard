@@ -37,7 +37,7 @@
         "@learncard/types": "workspace:*",
         "dts-bundle-generator": "^6.10.0",
         "esbuild": "^0.27.1",
-        "vitest": "4.1.10"
+        "vitest": "4.1.11"
     },
     "dependencies": {
         "@learncard/network-brain-service": "workspace:*",

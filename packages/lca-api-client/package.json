@@ -41,7 +41,7 @@
         "rimraf": "^3.0.2",
         "shx": "^0.3.4",
         "typescript": "^5.5.4",
-        "vitest": "4.1.10"
+        "vitest": "4.1.11"
     },
     "dependencies": {
         "@trpc/client": "11.8.0"
