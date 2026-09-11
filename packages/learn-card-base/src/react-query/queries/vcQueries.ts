@@ -28,6 +28,11 @@ import {
 import { getOrFetchConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 import { getOrFetchCredentialRecordForBoost } from 'learn-card-base/hooks/useGetCredentialRecordForBoost';
 import { useBackfillBoostUris } from 'learn-card-base/helpers/backfills';
+import {
+    demoSessionStore,
+    getDemoVC,
+    isDemoSessionActive,
+} from 'learn-card-base/stores/demoSessionStore';
 import { getLogger } from '../../logging/logger';
 const log = getLogger('vc-queries');
 
@@ -35,6 +40,9 @@ const log = getLogger('vc-queries');
 const globalProcessedCredentials = new Set<string>();
 
 const resolveCredential = async (uri: string, initWallet: () => Promise<BespokeLearnCard>) => {
+    const demoVC = getDemoVC(uri);
+    if (demoVC) return demoVC;
+
     const wallet = await initWallet();
 
     return (wallet.read.get(uri) as Promise<VC | undefined>) ?? null;
@@ -72,7 +80,9 @@ export const useResolveManyCredentials = (uris: string[] | undefined, enabled = 
         queryFn: async () => {
             if (!uris) return [];
             const wallet = await initWallet();
-            return Promise.all(uris.map(uri => wallet.read.get(uri) as Promise<VC | undefined>));
+            return Promise.all(
+                uris.map(uri => getDemoVC(uri) ?? (wallet.read.get(uri) as Promise<VC | undefined>))
+            );
         },
         staleTime: 1000 * 60 * 60 * 24 * 7, // 1 week
         enabled: enabled && Boolean(uris && uris.length > 0),
@@ -90,6 +100,9 @@ export const useGetResolvedCredentials = (uris?: (string | undefined)[], enabled
                       staleTime: 1000 * 60 * 60 * 24 * 7,
                       queryFn: async () => {
                           try {
+                              const demoVC = getDemoVC(uri);
+                              if (demoVC) return demoVC;
+
                               const wallet = await initWallet();
                               const vc = (await wallet.read.get(uri)) as VC | undefined;
                               if (vc) return vc;
@@ -108,9 +121,10 @@ export const useGetCredentialList = (category?: CredentialCategory, enabled: boo
     const { initWallet } = useWallet();
     const didWeb = switchedProfileStore.use.switchedDid();
     const backfillBoostUris = useBackfillBoostUris();
+    const demoPersonaId = demoSessionStore.use.activePersonaId();
 
     return useInfiniteQuery({
-        queryKey: ['useGetCredentialList', didWeb ?? '', category ?? ''],
+        queryKey: ['useGetCredentialList', didWeb ?? '', category ?? '', demoPersonaId ?? ''],
         queryFn: async ({ pageParam }) => {
             try {
                 const wallet = await initWallet();
@@ -120,7 +134,11 @@ export const useGetCredentialList = (category?: CredentialCategory, enabled: boo
                     { cursor: pageParam, limit: 12 }
                 );
 
-                backfillBoostUris(data?.records ?? []);
+                // Call-time check (not the render closure): during demo entry,
+                // invalidation refetches old-key queries whose closures predate
+                // the mode switch, but the adapter already serves demo records —
+                // backfilling those would fire blocked index writes.
+                if (!isDemoSessionActive()) backfillBoostUris(data?.records ?? []);
 
                 return {
                     ...data,
@@ -243,9 +261,10 @@ export const usePrefetchCredentials = (category?: CredentialCategory, enabled = 
 export const useGetCredentialCount = (category?: CredentialCategory, enabled: boolean = true) => {
     const { initWallet } = useWallet();
     const switchedDid = switchedProfileStore.use.switchedDid();
+    const demoPersonaId = demoSessionStore.use.activePersonaId();
 
     return useQuery<string | number | null>({
-        queryKey: ['useGetCredentialCount', switchedDid ?? '', category],
+        queryKey: ['useGetCredentialCount', switchedDid ?? '', category, demoPersonaId ?? ''],
         queryFn: async () => {
             try {
                 const wallet = await initWallet();
@@ -366,9 +385,10 @@ export const useGetCredentials = (
 ) => {
     const { initWallet } = useWallet();
     const switchedDid = switchedProfileStore.use.switchedDid();
+    const demoPersonaId = demoSessionStore.use.activePersonaId();
 
     return useQuery<VC[] | VC_WITH_URI[]>({
-        queryKey: ['useGetCredentials', switchedDid, category, returnUri],
+        queryKey: ['useGetCredentials', switchedDid, category, returnUri, demoPersonaId ?? ''],
         queryFn: async () => {
             try {
                 if (initialCredentials) return initialCredentials;
@@ -426,9 +446,10 @@ export const useGetCredentials = (
 export const useGetCredentialsForSkills = (enabled: boolean = true) => {
     const { initWallet } = useWallet();
     const switchedDid = switchedProfileStore.use.switchedDid();
+    const demoPersonaId = demoSessionStore.use.activePersonaId();
 
     return useQuery<VC[] | VC_WITH_URI[]>({
-        queryKey: ['useGetSkills', switchedDid ?? ''],
+        queryKey: ['useGetSkills', switchedDid ?? '', demoPersonaId ?? ''],
         queryFn: async () => {
             try {
                 const wallet = await initWallet();
@@ -839,6 +860,13 @@ export const useSyncConsentFlow = (enabled = true) => {
     }>({
         queryKey: ['useSyncConsentFlow', switchedDid ?? ''],
         queryFn: async () => {
+            // Sample Wallet mode: this background flow accepts/stores/syncs real
+            // credentials — skip entirely so blocked writes never fire without
+            // user intent (they would surface the demo gate sheet unprompted).
+            if (isDemoSessionActive()) {
+                return { allRecords: [], recordsByCategory: {}, allContracts: [] };
+            }
+
             const learnCard = await initWallet();
 
             // Fetch and accumulate credential records

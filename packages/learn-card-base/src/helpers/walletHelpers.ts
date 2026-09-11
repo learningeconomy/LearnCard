@@ -16,6 +16,8 @@ import { networkStore } from 'learn-card-base/stores/NetworkStore';
 import { QueryClient } from '@tanstack/react-query';
 import { getGuardianApprovalVP } from 'learn-card-base/stores/guardianApprovalStore';
 import { PRODUCTION_NETWORK_URL } from './networkHelpers';
+import { wrapWalletForDemo } from './demoWalletAdapter';
+import { demoSessionStore } from 'learn-card-base/stores/demoSessionStore';
 import { getLogger } from '../logging/logger';
 
 const log = getLogger('wallet-helpers');
@@ -73,11 +75,13 @@ export const getBespokeLearnCard = async (
     const offline = options?.offline ?? false;
     const cacheKey = [seed, didWeb, offline ? 'offline' : 'full'].toString();
 
-    LEARN_CARDS[cacheKey] ??= buildBespokeLearnCard(seed, didWeb, offline).catch(error => {
-        delete LEARN_CARDS[cacheKey];
+    LEARN_CARDS[cacheKey] ??= buildBespokeLearnCard(seed, didWeb, offline)
+        .then(wrapWalletForDemo)
+        .catch(error => {
+            delete LEARN_CARDS[cacheKey];
 
-        throw error;
-    });
+            throw error;
+        });
 
     return LEARN_CARDS[cacheKey];
 };
@@ -150,6 +154,8 @@ const buildBespokeLearnCard = async (
 export const switchProfile = async (didWeb?: string) => {
     const queryClient = new QueryClient();
     const pk = await requireCurrentUserPrivateKey();
+
+    demoSessionStore.set.exitDemo();
 
     walletStore.set.wallet(await getBespokeLearnCard(pk, didWeb));
     switchedProfileStore.set.switchedDid(didWeb);
