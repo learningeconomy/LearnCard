@@ -760,6 +760,25 @@ export const reserveEscrowPinAttempt = async (
         { returnDocument: 'after' }
     );
 
+/** Refund infrastructure/claim failures without modifying a replacement PIN enrollment. */
+export const refundEscrowPinAttempt = async (
+    authProvider: AuthProviderMapping,
+    shareVersion: number,
+    expectedCiphertext: string
+): Promise<void> => {
+    await getUserKeysCollection().updateOne(
+        {
+            ...getAuthProviderFilter(authProvider),
+            shareVersion,
+            'escrowPin.shareVersion': shareVersion,
+            'escrowPin.failedAttempts': { $gt: 0 },
+            'escrowPin.disabledAt': { $exists: false },
+            'escrowBlob.envelope.ciphertext': expectedCiphertext,
+        },
+        { $inc: { 'escrowPin.failedAttempts': -1 }, $set: { updatedAt: new Date() } }
+    );
+};
+
 export const resetEscrowPinAttempts = async (
     authProvider: AuthProviderMapping,
     shareVersion?: number,
