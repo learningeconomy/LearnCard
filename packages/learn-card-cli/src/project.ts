@@ -247,6 +247,17 @@ export const resolveServices = (
  * another network, rewrite that one line in the generated file so the code a
  * developer keeps matches the network their .env is on.
  */
+export const PRODUCTION_APP = 'https://learncard.app';
+export const STAGING_APP = 'https://staging.learncard.ai';
+
+/** The LearnCard app that pairs with a network. Local networks have no hosted app; callers pass --app-url. */
+export const appUrlFor = (network: string, override?: string): string => {
+    if (override) return override.replace(/\/$/, '');
+    if (network === STAGING_NETWORK) return STAGING_APP;
+    if (network === PRODUCTION_NETWORK) return PRODUCTION_APP;
+    return PRODUCTION_APP;
+};
+
 export const localizeSnippet = (
     source: string,
     services: ReturnType<typeof resolveServices>

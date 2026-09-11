@@ -11,6 +11,7 @@ import {
     STAGING_NETWORK,
     PRODUCTION_NETWORK,
     type ProjectOptions,
+    appUrlFor,
 } from './project';
 import {
     CREATE_CONTRACT_MJS,
@@ -21,10 +22,7 @@ import {
 import { writeSnippet } from './snippet-files';
 
 export const consentUrl = (uri: string, returnTo: string, network: string): string => {
-    const url = new URL(
-        '/consent-flow',
-        network === STAGING_NETWORK ? 'https://staging.learncard.ai' : 'https://learncard.app'
-    );
+    const url = new URL('/consent-flow', appUrlFor(network));
     url.searchParams.set('uri', uri);
     url.searchParams.set('returnTo', returnTo);
     return url.toString();
@@ -103,4 +101,5 @@ export const runConsentContract = async (
     );
     console.log('Read scripts require a verified CONSENT_VP, not a bare DID.');
     console.log('Next: node --env-file=.env consent-callback.mjs');
+    console.log('See the contract in the app: npx @learncard/cli open contract');
 };

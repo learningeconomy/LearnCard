@@ -104,5 +104,7 @@ export const runSetupSigning = async (options: ProjectOptions): Promise<void> =>
     const learnCard = await connect(project, { ...options, lca: true });
     await ensureProfile(learnCard, identity);
     await setupSigning(project, learnCard, options.name);
-    console.log('Send from a template: npx @learncard/cli send you@example.com --template');
+    console.log(
+        'Send from a template: npx @learncard/cli send you@example.com --template\nSee it in the app: npx @learncard/cli open'
+    );
 };

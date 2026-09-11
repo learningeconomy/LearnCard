@@ -153,4 +153,5 @@ export const runSend = async (recipientEmail: string, options: SendOptions): Pro
             `\nThe code that just ran is in ./${filename} — run it yourself:\n  npm install @learncard/init\n  node --env-file=.env ${filename} ${recipientEmail}`
         );
     }
+    console.log(`See it in the app: npx @learncard/cli open${options.template ? ' template' : ''}`);
 };

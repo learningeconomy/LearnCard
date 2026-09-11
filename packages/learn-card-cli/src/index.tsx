@@ -478,6 +478,26 @@ commandOptions(
         })
     );
 
+program
+    .command('open [target]')
+    .description(
+        'Open the LearnCard app signed in as this project. Targets: portal (default), wallet, template, contract, integration.'
+    )
+    .option('--network <url>', 'network tRPC URL or staging (default: production)')
+    .option('--app-url <url>', 'LearnCard app URL for self-hosted or local networks')
+    .option('--url-fragment', 'pass the seed in the URL fragment instead of the clipboard')
+    .option('--no-browser', 'print the URL without opening a browser')
+    .action((target, options) =>
+        runCommand(async () => {
+            const { runOpen, OPEN_TARGETS } = await import('./open');
+            if (target && !(target in OPEN_TARGETS))
+                throw new Error(
+                    `Unknown target "${target}". Use one of: ${Object.keys(OPEN_TARGETS).join(', ')}.`
+                );
+            await runOpen(target, options);
+        })
+    );
+
 commandOptions(
     program.command('webhook [email]').description('Know when your credential was claimed.')
 )

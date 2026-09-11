@@ -91,7 +91,7 @@ export const runEmbed = async (
           : undefined;
     console.log(
         origin
-            ? `Next: Open claim-button.html from ${origin} (a whitelisted origin), not file://.`
+            ? `Next: Open claim-button.html from ${origin} (a whitelisted origin), not file://.\nSee the integration in the app: npx @learncard/cli open integration`
             : 'Next: add a whitelisted origin in the Developer Portal, then serve claim-button.html there, not file://.'
     );
 };
