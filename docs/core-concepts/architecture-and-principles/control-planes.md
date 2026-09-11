@@ -1,6 +1,8 @@
 # Control Planes
 
-Control Planes are a primary way for consumers to interact with a LearnCard. A Control Plane provides an abstraction for a higher-order wallet object to initiate complex workflows while being agnostic to the means of accomplishing the workflow.&#x20;
+A control plane is a fixed set of methods — `read.get`, `store.upload`, `index.get`, `id.did`, and so on — that several plugins can implement. You call `learnCard.read.get(uri)`; the core works out which plugin can resolve that URI. Six planes cover identity, reading, storing, indexing, caching, and JSON-LD context resolution.
+
+You'll use these methods constantly and almost never think about the planes themselves. This page is the method-by-method reference for each.
 
 ```mermaid
 graph TD
@@ -27,13 +29,13 @@ graph TD
 
 ### Control Planes:
 
-* Align plugins based on **primary action categories**: Identity, Signing, Verification, Storage, Caching, and Communication.
-* Specify **interfaces** for conforming plugins to implement.&#x20;
-* Provide execution environments that support more complex workflows.&#x20;
-* Allows for utilizing multiple plugins to support a particular request.
-* Streamline functionality for high-quality UX requirements, such as caching and querying capabilities.
-* Incentivizes plugin convergence, rather than divergence.
-* Enables plugin discovery, both internal and external.
+- Align plugins based on **primary action categories**: Identity, Signing, Verification, Storage, Caching, and Communication.
+- Specify **interfaces** for conforming plugins to implement.&#x20;
+- Provide execution environments that support more complex workflows.&#x20;
+- Allows for utilizing multiple plugins to support a particular request.
+- Streamline functionality for high-quality UX requirements, such as caching and querying capabilities.
+- Incentivizes plugin convergence, rather than divergence.
+- Enables plugin discovery, both internal and external.
 
 {% hint style="info" %}
 **For Example:** when a user stores a credential, they may have a preference over _where_ the credential is stored. Leveraging Controls Planes, a consumer of LearnCard may query for available storage options (IPFS, LocalStorage, DWN, Device Storage, etc.), ask the user which option they would like to use, and then initiate the storage workflow for the user's selection from a **generic** **store** function.&#x20;
@@ -41,14 +43,14 @@ graph TD
 
 Each control plane serves a specific purpose:
 
-| Control Plane | Purpose                         | Key Methods                               |
-| ------------- | ------------------------------- | ----------------------------------------- |
-| ID            | Identity management             | `did`, `keypair`                          |
-| Read          | Resolving URIs to credentials   | `get`                                     |
+| Control Plane | Purpose                         | Key Methods                                         |
+| ------------- | ------------------------------- | --------------------------------------------------- |
+| ID            | Identity management             | `did`, `keypair`                                    |
+| Read          | Resolving URIs to credentials   | `get`                                               |
 | Store         | Storing credentials             | `upload`, `uploadEncrypted`, `uploadMany`, `delete` |
-| Index         | Managing credential references  | `get`, `add`, `update`, `remove`          |
-| Cache         | Caching for performance         | `getIndex`, `setIndex`, `getVc`, `setVc`  |
-| Context       | Managing contextual information | `resolveDocument`                         |
+| Index         | Managing credential references  | `get`, `add`, `update`, `remove`                    |
+| Cache         | Caching for performance         | `getIndex`, `setIndex`, `getVc`, `setVc`            |
+| Context       | Managing contextual information | `resolveDocument`                                   |
 
 {% embed url="https://www.figma.com/board/DPGBfPLlss2K6KmDLCN3ul/Untitled?node-id=0-1&t=D1vNNNkDPV4eX0w5-1" %}
 Diagram showing basic lifecycle of control plane interactions.
@@ -80,12 +82,12 @@ The `did` method (optionally) takes in a [method](https://www.w3.org/TR/did-core
 
 ### id.keypair
 
-The `keypair` method (optionally) takes in a cryptographic algorithm (e.g. ed25519, secp256k1, etc), and returns  a [JWK](https://www.rfc-editor.org/rfc/rfc7517).
+The `keypair` method (optionally) takes in a cryptographic algorithm (e.g. ed25519, secp256k1, etc), and returns a [JWK](https://www.rfc-editor.org/rfc/rfc7517).
 
 ### Example plugins that implement the ID Plane
 
-{% content-ref url="../../sdks/official-plugins/did-key.md" %}
-[did-key.md](../../sdks/official-plugins/did-key.md)
+{% content-ref url="../../sdks/official-plugins/README.md#included-by-default" %}
+[README.md](../../sdks/official-plugins/README.md#included-by-default)
 {% endcontent-ref %}
 
 ##
@@ -150,6 +152,7 @@ console.log(learnCard.store.providers);
 //     }
 // }
 ```
+
 {% endhint %}
 
 The Store Plane implements four methods: `upload`, (optionally) `uploadEncrypted`, (optionally) `uploadMany`, and (optionally) `delete`
@@ -183,6 +186,7 @@ Note: This method is optional
 The `delete` method allows you to remove a stored credential by its URI. This enables credential cleanup, storage lifecycle management, and supports GDPR-style "right to be forgotten" workflows.
 
 **Parameters:**
+
 - `uri` (string): The URI of the credential to delete
 - `options` (PlaneOptions, optional): Optional configuration including cache behavior
 
@@ -247,9 +251,10 @@ console.log(learnCard.index.providers);
 //     }
 // }
 ```
+
 {% endhint %}
 
-The Index Plane implements eight  methods: `get`, (optionally) `getPage`, (optionally) `getCount`, `add`, `addMany`, `update`, `remove`, and `removeAll.`
+The Index Plane implements eight methods: `get`, (optionally) `getPage`, (optionally) `getCount`, `add`, `addMany`, `update`, `remove`, and `removeAll.`
 
 ### index.get
 
@@ -260,6 +265,7 @@ The Index Plane implements eight  methods: `get`, (optionally) `getPage`, (optio
 console.log(await learnCard.index.all.get());
 // []
 ```
+
 {% endhint %}
 
 The `get` method takes in a Mongo-style query and returns a list of `CredentialRecords`, which are primarily an ID, a [URI](../credentials-and-data/uris.md), and some metadata.
@@ -337,8 +343,8 @@ The optional `removeAll` method flushes all `CredentialRecord`s from the holder'
 
 ### Example plugins that implement the Index Plane
 
-{% content-ref url="../../sdks/official-plugins/idx.md" %}
-[idx.md](../../sdks/official-plugins/idx.md)
+{% content-ref url="../../sdks/official-plugins/README.md#install-separately" %}
+[README.md](../../sdks/official-plugins/README.md#install-separately)
 {% endcontent-ref %}
 
 {% content-ref url="../../sdks/official-plugins/learncloud.md" %}
@@ -418,6 +424,7 @@ When creating a Plugin that implements the Context Plane, you _must_ implement t
 When creating a Plugin that implements the Context Plane, you _may_ implement the `resolveRemoteDocument` method. This method is identical to `resolveStaticDocument`, but by using this method, you are signifying that contexts will be loaded dynamically.
 
 {% hint style="warning" %}
+
 ### Security Considerations
 
 Resolving JSON-LD contexts dynamically comes with some serious security implications. Please read the following for more detail: [https://www.w3.org/TR/json-ld11/#iana-security](https://www.w3.org/TR/json-ld11/#iana-security)
@@ -425,10 +432,6 @@ Resolving JSON-LD contexts dynamically comes with some serious security implicat
 
 ## Example Plugins that implement the Context Plane
 
-{% content-ref url="../../sdks/official-plugins/didkit.md" %}
-[didkit.md](../../sdks/official-plugins/didkit.md)
-{% endcontent-ref %}
-
-{% content-ref url="../../sdks/official-plugins/dynamic-loader.md" %}
-[dynamic-loader.md](../../sdks/official-plugins/dynamic-loader.md)
+{% content-ref url="../../sdks/official-plugins/README.md#included-by-default" %}
+[README.md](../../sdks/official-plugins/README.md#included-by-default)
 {% endcontent-ref %}

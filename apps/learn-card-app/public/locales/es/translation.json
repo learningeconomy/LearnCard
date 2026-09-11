@@ -993,9 +993,31 @@
             "import": "Importar pasaporte",
             "error": {
                 "invalidChars": "La semilla solo debe contener números y letras (a–f).",
-                "tooShort": "La frase semilla debe tener 64 caracteres.",
+                "wrongLength": "La semilla debe tener exactamente 64 caracteres.",
                 "generic": "Algo salió mal. Intenta de nuevo."
             }
+        },
+        "developerSignIn": {
+            "title": "Inicia sesión con tu semilla de desarrollador",
+            "description": "Es el SECURE_SEED del archivo .env de tu proyecto. Se queda en este dispositivo: nunca lo enviamos a ningún lado.",
+            "pasteAction": "Pegar desde el portapapeles",
+            "signingIn": "Iniciando sesión...",
+            "switching": "Cambiando de cuenta...",
+            "or": "o",
+            "seedLabel": "Semilla",
+            "signInAction": "Iniciar sesión",
+            "signOutAndSwitch": "Cerrar sesión y cambiar",
+            "alreadySignedIn": "Ya has iniciado sesión",
+            "alreadySignedInAs": "Has iniciado sesión como {{name}}",
+            "alreadySignedInBody": "Iniciar sesión con una semilla cierra primero la sesión de tu cuenta actual.",
+            "linkSwitchBody": "Este enlace incluye una semilla de otra cuenta. Al cambiar se cerrará la sesión de tu cuenta actual.",
+            "switchAction": "Cambiar de cuenta",
+            "stayAction": "Seguir con la sesión actual",
+            "continueAs": "Continuar como {{name}}",
+            "notDeveloper": "¿No eres desarrollador? ",
+            "signInNormally": "Iniciar sesión normalmente",
+            "securityWarning": "Mantén tu semilla en privado. Cualquiera que la tenga controla esta cuenta.",
+            "pasteHint": "Pégala en el campo de abajo."
         },
         "loader": {
             "messages": {
@@ -4326,35 +4348,6 @@
                 "admin": "Admin",
                 "selectProject": "Seleccionar Proyecto"
             },
-            "betaGate": {
-                "betaAccessRequired": "Acceso Beta Requerido",
-                "betaAccessDesc": "Esta función está actualmente en beta. Introduce tu código de acceso para continuar.",
-                "accessCode": "Código de Acceso",
-                "accessCodePlaceholder": "Introduce tu código de acceso beta",
-                "continue": "Continuar",
-                "noAccessCode": "¿No tienes un código de acceso?",
-                "contactUs": "Contáctanos",
-                "backToDeveloperPortal": "← Volver al Portal de Desarrolladores",
-                "invalidAccessCode": "Código de acceso inválido. Verifica e inténtalo de nuevo.",
-                "welcomeToBeta": "¡Bienvenido a la Beta!",
-                "welcomeDesc": "Estás viendo en vista previa nuevas herramientas para desarrolladores antes de que estén disponibles públicamente.",
-                "betaPreviewNotice": "Aviso de Vista Previa Beta",
-                "betaPreviewDesc": "Esta es una funcionalidad de prelanzamiento. Las funciones pueden cambiar y puedes encontrar errores. ¡Tus comentarios son valiosos!",
-                "yourAccessIncludes": "Tu acceso incluye:",
-                "integrationDashboard": "Panel de integración",
-                "apiTokenManagement": "Gestión de tokens API",
-                "allIntegrationGuides": "Todas las guías de integración",
-                "otherGuidesLocked": "Otras guías (bloqueadas)",
-                "letsGo": "¡Vamos!",
-                "feedbackContact": "support@learncard.com",
-                "questionsFeedback": "¿Preguntas o comentarios?",
-                "guideLockedTitle": "{{name}}",
-                "guideLockedDesc": "Esta guía no está disponible con tu acceso beta actual. Contáctanos para solicitar acceso ampliado.",
-                "requestAccess": "Solicitar Acceso",
-                "locked": "bloqueada",
-                "guideNotAvailable": "Esta guía no está disponible con tu acceso beta actual.",
-                "guideLabel": "guía"
-            },
             "codeBlock": {
                 "copyCode": "Copiar código",
                 "copied": "¡Copiado!"
@@ -6622,8 +6615,6 @@
             },
             "hub": {
                 "comingSoon": "Próximamente",
-                "locked": "Bloqueado",
-                "requestAccess": "Solicitar Acceso",
                 "inProgress": "En Progreso",
                 "getStarted": "Comenzar",
                 "createProject": {

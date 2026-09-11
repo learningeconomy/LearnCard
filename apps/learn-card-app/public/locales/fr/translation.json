@@ -993,9 +993,31 @@
             "import": "Importer le passeport",
             "error": {
                 "invalidChars": "La phrase ne doit contenir que des chiffres et des lettres (a–f).",
-                "tooShort": "La phrase de récupération doit comporter 64 caractères.",
+                "wrongLength": "Le seed doit comporter exactement 64 caractères.",
                 "generic": "Une erreur est survenue. Veuillez réessayer."
             }
+        },
+        "developerSignIn": {
+            "title": "Connectez-vous avec votre seed de développeur",
+            "description": "Il s'agit du SECURE_SEED dans le fichier .env de votre projet. Il reste sur cet appareil : nous ne l'envoyons jamais nulle part.",
+            "pasteAction": "Coller depuis le presse-papiers",
+            "signingIn": "Connexion en cours...",
+            "switching": "Changement de compte...",
+            "or": "ou",
+            "seedLabel": "Seed (clé de développeur)",
+            "signInAction": "Se connecter",
+            "signOutAndSwitch": "Se déconnecter et changer",
+            "alreadySignedIn": "Vous êtes déjà connecté",
+            "alreadySignedInAs": "Vous êtes connecté en tant que {{name}}",
+            "alreadySignedInBody": "La connexion avec un seed vous déconnecte d'abord de votre compte actuel.",
+            "linkSwitchBody": "Ce lien contient le seed d'un autre compte. Changer de compte vous déconnectera de votre compte actuel.",
+            "switchAction": "Changer de compte",
+            "stayAction": "Rester connecté",
+            "continueAs": "Continuer en tant que {{name}}",
+            "notDeveloper": "Vous n'êtes pas développeur ? ",
+            "signInNormally": "Se connecter normalement",
+            "securityWarning": "Gardez votre seed privé. Quiconque le possède contrôle ce compte.",
+            "pasteHint": "Collez-le dans le champ ci-dessous."
         },
         "loader": {
             "messages": {
@@ -4326,35 +4348,6 @@
                 "admin": "Administration",
                 "selectProject": "Sélectionner un Projet"
             },
-            "betaGate": {
-                "betaAccessRequired": "Accès Beta Requis",
-                "betaAccessDesc": "Cette fonctionnalité est actuellement en version beta. Saisissez votre code d'accès pour continuer.",
-                "accessCode": "Code d'Accès",
-                "accessCodePlaceholder": "Entrez votre code d'accès beta",
-                "continue": "Continuer",
-                "noAccessCode": "Vous n'avez pas de code d'accès ?",
-                "contactUs": "Contactez-nous",
-                "backToDeveloperPortal": "← Retour au Portail Développeur",
-                "invalidAccessCode": "Code d'accès invalide. Vérifiez et réessayez.",
-                "welcomeToBeta": "Bienvenue dans la Beta !",
-                "welcomeDesc": "Vous prévisualisez de nouveaux outils développeur avant leur disponibilité publique.",
-                "betaPreviewNotice": "Avis d'Aperçu Beta",
-                "betaPreviewDesc": "Ceci est une fonctionnalité de pré-lancement. Les fonctionnalités peuvent changer et vous pouvez rencontrer des bugs. Vos commentaires sont précieux !",
-                "yourAccessIncludes": "Votre accès inclut :",
-                "integrationDashboard": "Tableau de bord d'intégration",
-                "apiTokenManagement": "Gestion des jetons API",
-                "allIntegrationGuides": "Tous les guides d'intégration",
-                "otherGuidesLocked": "Autres guides (verrouillés)",
-                "letsGo": "C'est Parti !",
-                "feedbackContact": "support@learncard.com",
-                "questionsFeedback": "Des questions ou des commentaires ?",
-                "guideLockedTitle": "{{name}}",
-                "guideLockedDesc": "Ce guide n'est pas disponible avec votre accès bêta actuel. Contactez-nous pour demander un accès étendu.",
-                "requestAccess": "Demander l'Accès",
-                "locked": "verrouillée",
-                "guideNotAvailable": "Ce guide n'est pas disponible avec votre accès beta actuel.",
-                "guideLabel": "guide"
-            },
             "codeBlock": {
                 "copyCode": "Copier le code",
                 "copied": "Copié !"
@@ -6622,8 +6615,6 @@
             },
             "hub": {
                 "comingSoon": "Prochainement",
-                "locked": "Verrouillé",
-                "requestAccess": "Demander l'Accès",
                 "inProgress": "En Cours",
                 "getStarted": "Commencer",
                 "createProject": {

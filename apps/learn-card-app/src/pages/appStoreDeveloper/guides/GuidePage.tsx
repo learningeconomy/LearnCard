@@ -11,7 +11,6 @@ import { AppStoreHeader } from '../components/AppStoreHeader';
 import { HeaderIntegrationSelector } from '../components/HeaderIntegrationSelector';
 import { useDeveloperPortalContext } from '../DeveloperPortalContext';
 import { USE_CASES, UseCaseId } from './types';
-import { useBetaAccess, LockedGuideOverlay } from '../components/BetaGate';
 
 import IssueCredentialsGuide from './useCases/IssueCredentialsGuide';
 import EmbedClaimGuide from './useCases/EmbedClaimGuide';
@@ -40,9 +39,6 @@ const GUIDE_COMPONENTS: Record<UseCaseId, React.FC<GuideProps>> = {
 const GuidePage: React.FC = () => {
     const history = useHistory();
     const { useCase } = useParams<{ useCase: string }>();
-
-    // Beta access check - to remove beta gate, delete this line and the locked check below
-    const { isGuideUnlocked } = useBetaAccess();
 
     // Use context for all state management
     const {
@@ -189,22 +185,15 @@ const GuidePage: React.FC = () => {
         </div>
     );
 
-    // Beta access check - to remove beta gate, delete this block
-    const isUnlocked = isGuideUnlocked(useCaseId);
-
     return (
         <IonPage>
             <AppStoreHeader title={mDynamic(useCaseConfig.titleKey)} rightContent={headerContent} />
 
             <IonContent className="ion-padding">
-                {isUnlocked ? (
-                    <GuideComponent
-                        selectedIntegration={currentIntegration}
-                        setSelectedIntegration={handleSetSelectedIntegration}
-                    />
-                ) : (
-                    <LockedGuideOverlay guideName={mDynamic(useCaseConfig.titleKey)} />
-                )}
+                <GuideComponent
+                    selectedIntegration={currentIntegration}
+                    setSelectedIntegration={handleSetSelectedIntegration}
+                />
             </IonContent>
         </IonPage>
     );

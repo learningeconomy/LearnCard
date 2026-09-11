@@ -29,26 +29,26 @@ The app supports multiple tenants (LearnCard, VetPass, etc.) from a single codeb
 
 ### Config System
 
--   **Schema**: `packages/learn-card-base/src/config/tenantConfigSchema.ts` (Zod)
--   **Defaults**: `packages/learn-card-base/src/config/tenantDefaults.ts`
--   **Resolution**: `packages/learn-card-base/src/config/resolveTenantConfig.ts` — merges `tenantDefaults → config.json → config.<stage>.json`
--   **Auth config**: `packages/learn-card-base/src/config/authConfig.ts` — use `getAuthConfig()`, `getSSSConfig()`, `getFirebaseConfig()` helpers
--   **Runtime store**: `packages/learn-card-base/src/config/tenantConfig.ts` (Zustand) + `TenantConfigProvider.tsx` (React context)
+- **Schema**: `packages/learn-card-base/src/config/tenantConfigSchema.ts` (Zod)
+- **Defaults**: `packages/learn-card-base/src/config/tenantDefaults.ts`
+- **Resolution**: `packages/learn-card-base/src/config/resolveTenantConfig.ts` — merges `tenantDefaults → config.json → config.<stage>.json`
+- **Auth config**: `packages/learn-card-base/src/config/authConfig.ts` — use `getAuthConfig()`, `getSSSConfig()`, `getFirebaseConfig()` helpers
+- **Runtime store**: `packages/learn-card-base/src/config/tenantConfig.ts` (Zustand) + `TenantConfigProvider.tsx` (React context)
 
 ### Theme System
 
 Themes are JSON files in `src/theme/schemas/<name>/theme.json`. They define color palettes, category colors, nav links, labels, and icon sets.
 
--   **Factory**: `src/theme/shared/createTheme.ts` — hydrates a full runtime theme from JSON
--   **Loader**: `src/theme/helpers/loadJsonTheme.ts` — loads and validates theme JSON
--   **Validators**: `src/theme/validators/themeJson.validators.ts`
--   **Store**: `src/theme/store/themeStore.ts` — enforces tenant's `allowedThemes` / `defaultTheme`
+- **Factory**: `src/theme/shared/createTheme.ts` — hydrates a full runtime theme from JSON
+- **Loader**: `src/theme/helpers/loadJsonTheme.ts` — loads and validates theme JSON
+- **Validators**: `src/theme/validators/themeJson.validators.ts`
+- **Store**: `src/theme/store/themeStore.ts` — enforces tenant's `allowedThemes` / `defaultTheme`
 
 ### Toasts and User Feedback
 
--   **Shared hook**: use `useToast()` from `learn-card-base` for success and error feedback instead of `console.error` in user-facing flows.
--   **Error toasts**: use `presentToast(message, { type: ToastTypeEnum.Error, hasDismissButton: true })` for mutation and action failures.
--   **Success toasts**: use `presentToast(message, { type: ToastTypeEnum.Success, hasDismissButton: true })` when an action completes successfully.
+- **Shared hook**: use `useToast()` from `learn-card-base` for success and error feedback instead of `console.error` in user-facing flows.
+- **Error toasts**: use `presentToast(message, { type: ToastTypeEnum.Error, hasDismissButton: true })` for mutation and action failures.
+- **Success toasts**: use `presentToast(message, { type: ToastTypeEnum.Success, hasDismissButton: true })` when an action completes successfully.
 
 ### Generated Files (gitignored)
 
@@ -78,11 +78,11 @@ bun run lc tenants  # List tenants, stages, and themes
 
 ### Important Rules
 
--   **Never hardcode tenant-specific values** in components — read from theme or tenant config
--   **Auth config access**: use `getSSSConfig()`, `getFirebaseConfig()`, not raw `authConfig.*` fields
--   **Colors**: always use theme-derived colors, not generic Tailwind colors (see UI/UX guidelines above)
--   **Adding a new tenant**: use `bun run lc create` or follow `environments/README.md`
--   **Adding a new theme**: create `src/theme/schemas/<name>/theme.json`, validate with `bun run lc validate`
+- **Never hardcode tenant-specific values** in components — read from theme or tenant config
+- **Auth config access**: use `getSSSConfig()`, `getFirebaseConfig()`, not raw `authConfig.*` fields
+- **Colors**: always use theme-derived colors, not generic Tailwind colors (see UI/UX guidelines above)
+- **Adding a new tenant**: use `bun run lc create` or follow `environments/README.md`
+- **Adding a new theme**: create `src/theme/schemas/<name>/theme.json`, validate with `bun run lc validate`
 
 ## E2E Testing (Playwright)
 
@@ -135,7 +135,7 @@ The test fixture (`tests/fixtures/test.ts`) automatically calls `/delete-all` af
 
 **Storage state authentication does NOT work** — the app requires a `privateKey` stored separately from localStorage. When localStorage is restored without the privateKey, the app logs out.
 
-Instead, tests use seed-based login via `/hidden/seed`:
+Instead, tests use seed-based login via `/developer/sign-in`:
 
 ```typescript
 // Basic login (lands on /wallet)
@@ -151,7 +151,7 @@ await waitForAuthenticatedState(page, {
 });
 ```
 
-The `LoginWithSeed` page (`src/pages/hidden/LoginWithSeed.tsx`) creates a wallet from the seed and optionally creates a network profile if `?profileId=xxx` is in the URL.
+The `/developer/sign-in` page creates a wallet from the seed.
 
 ### Global Setup
 
@@ -195,15 +195,15 @@ const page2 = await context2.newPage();
 
 The app uses `useIonModal` (Ionic) in many components. These create phantom `ion-modal` DOM elements that:
 
--   Persist in the DOM with `show-modal` class even after dismiss
--   Set `aria-hidden="true"` on main content, blocking `getByRole` selectors
--   Intercept mouse events at the coordinate level, even with Playwright's `force: true`
+- Persist in the DOM with `show-modal` class even after dismiss
+- Set `aria-hidden="true"` on main content, blocking `getByRole` selectors
+- Intercept mouse events at the coordinate level, even with Playwright's `force: true`
 
 **Workarounds for tests:**
 
--   Use `data-testid` attributes on buttons behind modals
--   Use `dispatchEvent('click')` instead of `.click()` to bypass hit-testing
--   Example: `page.locator('[data-testid="boost-cms-save"]').dispatchEvent('click')`
+- Use `data-testid` attributes on buttons behind modals
+- Use `dispatchEvent('click')` instead of `.click()` to bypass hit-testing
+- Example: `page.locator('[data-testid="boost-cms-save"]').dispatchEvent('click')`
 
 ### Credential Issuance Flow (Test Perspective)
 
@@ -255,8 +255,8 @@ Clicking a credential card opens a FullScreen modal with `VCDisplayCard2`. Key s
 
 App store tests seed data directly into Neo4j (`app-store.helpers.ts`):
 
--   `seedAppListing()` — creates an Integration + AppStoreListing with `CURATED_LIST` promotion level
--   Profile creation uses `waitForAuthenticatedState(page, { profileId: 'testa' })` — no direct Neo4j needed
+- `seedAppListing()` — creates an Integration + AppStoreListing with `CURATED_LIST` promotion level
+- Profile creation uses `waitForAuthenticatedState(page, { profileId: 'testa' })` — no direct Neo4j needed
 
 The embed URL is mocked via `mockEmbedRoute(page)` to serve a simple HTML page instead of making real network requests.
 
@@ -304,19 +304,19 @@ schemaType === 'custom'  → JSON-Only Mode
 
 **Key CLR types** (`types.ts`):
 
--   `ClrSubjectTemplate` — holds `achievements: AchievementEntryTemplate[]` and `associations: AssociationTemplate[]`
--   `AchievementEntryTemplate` — wraps an `AchievementTemplate` with per-entry `creditsEarned`, `activityStartDate`, `activityEndDate`, `result[]`
--   `AssociationTemplate` — `sourceAchievementId`, `associationType` (enum: `isChildOf`, `isPartOf`, `isRelatedTo`, `isPeerOf`, `isEnabledBy`, `precedes`, `replacedBy`), `targetAchievementId`
+- `ClrSubjectTemplate` — holds `achievements: AchievementEntryTemplate[]` and `associations: AssociationTemplate[]`
+- `AchievementEntryTemplate` — wraps an `AchievementTemplate` with per-entry `creditsEarned`, `activityStartDate`, `activityEndDate`, `result[]`
+- `AssociationTemplate` — `sourceAchievementId`, `associationType` (enum: `isChildOf`, `isPartOf`, `isRelatedTo`, `isPeerOf`, `isEnabledBy`, `precedes`, `replacedBy`), `targetAchievementId`
 
 **Serialization** (`utils.ts`):
 
--   `clrTemplateToJson()` → outputs `ClrCredential` type, CLR v2p0 `@context`, `ClrSubject` with `achievement[]` and `association[]`
--   `jsonToClrTemplate()` → parses CLR JSON back into `clrSubject`; association IDs are stable UUIDs injected into each achievement JSON at serialization time so they survive round-trips
+- `clrTemplateToJson()` → outputs `ClrCredential` type, CLR v2p0 `@context`, `ClrSubject` with `achievement[]` and `association[]`
+- `jsonToClrTemplate()` → parses CLR JSON back into `clrSubject`; association IDs are stable UUIDs injected into each achievement JSON at serialization time so they survive round-trips
 
 **UI sections** (`sections/`):
 
--   `AchievementsListSection` — add/remove/expand-collapse/edit entries; drag-and-drop reorder via `GripVertical` handle (HTML5 DnD; dragged item fades to 40% opacity, drop target gets indigo ring)
--   `AssociationsSection` — source/type/target dropdowns, inline human-readable summary, referential validation
+- `AchievementsListSection` — add/remove/expand-collapse/edit entries; drag-and-drop reorder via `GripVertical` handle (HTML5 DnD; dragged item fades to 40% opacity, drop target gets indigo ring)
+- `AssociationsSection` — source/type/target dropdowns, inline human-readable summary, referential validation
 
 **Presets** (`presets.ts`): `CLR2_PRESETS` — Blank CLR, Academic Transcript, Program Completion, Competency Record. Combined with OBv3 presets in `ALL_PRESETS`. The template selector groups them under "CLR 2.0 (Multi-Achievement)".
 
@@ -340,9 +340,9 @@ CLR context: https://purl.imsglobal.org/spec/clr/v2p0/context.json (bundled in C
 
 ### Consumers of CredentialBuilder
 
--   `TemplateListManager.tsx` — used by IssueCredentialsGuide (LC-1635), tracks validation status, blocks save on errors
--   `TemplateBuilderStep.tsx` — used by other partner guides (CourseCatalog, Embed), multi-template support
--   `ChildEditModal.tsx` — inline editing in template lists
+- `TemplateListManager.tsx` — used by IssueCredentialsGuide (LC-1635), tracks validation status, blocks save on errors
+- `TemplateBuilderStep.tsx` — used by other partner guides (CourseCatalog, Embed), multi-template support
+- `ChildEditModal.tsx` — inline editing in template lists
 
 ## App Dashboard Analytics Export
 
@@ -370,8 +370,8 @@ The system supports two different viewing modes for credential activity:
 
 This is controlled by the `groupByLatestStatus` parameter in `getMyActivities`:
 
--   `false` (default): Returns all individual events
--   `true`: Groups by `activityId`, returns only the latest event per credential
+- `false` (default): Returns all individual events
+- `true`: Groups by `activityId`, returns only the latest event per credential
 
 ### Event Types
 
@@ -383,8 +383,8 @@ type CredentialActivityEventType = 'CREATED' | 'DELIVERED' | 'CLAIMED' | 'EXPIRE
 
 When exporting with an event type filter (e.g., "Delivered"), the system returns credentials whose **current status** matches, not credentials that ever had that event. Example:
 
--   Credential A: CREATED → DELIVERED → CLAIMED (current status: CLAIMED)
--   Credential B: CREATED → DELIVERED (current status: DELIVERED)
+- Credential A: CREATED → DELIVERED → CLAIMED (current status: CLAIMED)
+- Credential B: CREATED → DELIVERED (current status: DELIVERED)
 
 Filtering by "Delivered" returns only Credential B.
 

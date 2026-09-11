@@ -985,9 +985,31 @@
             "import": "Import Passport",
             "error": {
                 "invalidChars": "Seed must only contain numbers and letters (a–f).",
-                "tooShort": "Seed phrase needs to be 64 characters long.",
+                "wrongLength": "Seed must be exactly 64 characters long.",
                 "generic": "Something went wrong. Please try again."
             }
+        },
+        "developerSignIn": {
+            "title": "Sign in with your developer seed",
+            "description": "This is the SECURE_SEED in your project's .env. It stays on this device — we never send it anywhere.",
+            "pasteAction": "Paste from clipboard",
+            "signingIn": "Signing in...",
+            "switching": "Switching accounts...",
+            "or": "or",
+            "seedLabel": "Seed",
+            "signInAction": "Sign in",
+            "signOutAndSwitch": "Sign out and switch",
+            "alreadySignedIn": "You're already signed in",
+            "alreadySignedInAs": "You're signed in as {{name}}",
+            "alreadySignedInBody": "Signing in with a seed signs you out of your current account first.",
+            "linkSwitchBody": "This link includes a seed for another account. Switching signs you out of your current account.",
+            "switchAction": "Switch account",
+            "stayAction": "Stay signed in",
+            "continueAs": "Continue as {{name}}",
+            "notDeveloper": "Not a developer? ",
+            "signInNormally": "Sign in normally",
+            "securityWarning": "Keep your seed private. Anyone with it controls this account.",
+            "pasteHint": "Paste it into the field below."
         },
         "sharedComputer": "Shared or public computer",
         "signInFromAnotherDevice": "Sign in from another device",
@@ -4332,35 +4354,6 @@
                 "admin": "Admin",
                 "selectProject": "Select Project"
             },
-            "betaGate": {
-                "betaAccessRequired": "Beta Access Required",
-                "betaAccessDesc": "This feature is currently in beta. Enter your access code to continue.",
-                "accessCode": "Access Code",
-                "accessCodePlaceholder": "Enter your beta access code",
-                "continue": "Continue",
-                "noAccessCode": "Don't have an access code?",
-                "contactUs": "Contact us",
-                "backToDeveloperPortal": "← Back to Developer Portal",
-                "invalidAccessCode": "Invalid access code. Please check and try again.",
-                "welcomeToBeta": "Welcome to the Beta!",
-                "welcomeDesc": "You're previewing new developer tools before they're publicly available.",
-                "betaPreviewNotice": "Beta Preview Notice",
-                "betaPreviewDesc": "This is pre-release functionality. Features may change, and you may encounter bugs. Your feedback is valuable!",
-                "yourAccessIncludes": "Your access includes:",
-                "integrationDashboard": "Integration dashboard",
-                "apiTokenManagement": "API token management",
-                "allIntegrationGuides": "All integration guides",
-                "otherGuidesLocked": "Other guides (locked)",
-                "letsGo": "Let's Go!",
-                "feedbackContact": "support@learncard.com",
-                "questionsFeedback": "Questions or feedback?",
-                "guideLockedTitle": "{{name}}",
-                "guideLockedDesc": "This guide is not available with your current beta access. Contact us to request expanded access.",
-                "requestAccess": "Request Access",
-                "locked": "locked",
-                "guideNotAvailable": "This guide is not available with your current beta access.",
-                "guideLabel": "guide"
-            },
             "codeBlock": {
                 "copyCode": "Copy code",
                 "copied": "Copied!"
@@ -6628,8 +6621,6 @@
             },
             "hub": {
                 "comingSoon": "Coming Soon",
-                "locked": "Locked",
-                "requestAccess": "Request Access",
                 "inProgress": "In Progress",
                 "getStarted": "Get Started",
                 "createProject": {

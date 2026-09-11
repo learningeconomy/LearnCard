@@ -4,23 +4,34 @@ description: 'How-To Guide: Add a credential claim button to any website using t
 
 # Embed a Claim Button
 
-Add a "Claim Credential" button to any webpage — a course completion page, an event landing page, an onboarding flow. When a user clicks it, a polished modal walks them through email verification and deposits the credential directly into their LearnCard wallet.
+Add a "Claim Credential" button to any webpage. When a user clicks it, a modal walks them through email verification and deposits the credential into their LearnCard wallet.
 
 {% hint style="info" %}
-This is for **external websites** that want to award credentials to visitors. If you're building an app that runs _inside_ the LearnCard App Store, see [Connect an Embedded App](connect-an-embedded-app.md) instead.
+**~15 min** · Start here — the CLI sets up everything it needs.
 {% endhint %}
 
-## Prerequisites
+## The one-line version
 
--   A LearnCard developer account with an **Embed** integration created in the [Developer Dashboard](https://learncard.app)
--   At least one **credential template** attached to that integration
--   Your integration's **publishable key** (`pk_...`)
+```bash
+npx @learncard/cli embed --domains https://yoursite.com
+```
 
-## Step 1: Create Your Integration & Template
+Sets up LearnCard to sign for you, registers an integration whitelisted to your origins, saves the publishable key to `.env`, and writes `claim-button.html` — a working page with the key filled in. Serve it from a whitelisted origin (not `file://`) and click the button.
 
-1. Go to the Developer Dashboard → **New Integration** → choose **Embed Claim Button**
-2. Follow the setup guide: set your partner name, create a credential template
-3. Copy your **publishable key** from the Embed Code tab
+The rest of this page is the same setup by hand.
+
+{% hint style="info" %}
+This is for **external websites** that want to award credentials to visitors. If you're building an app that runs _inside_ the LearnCard App Store, see [Build an App Inside LearnCard](../publish-your-app.md) instead.
+{% endhint %}
+
+## Step 1: Get a publishable key
+
+The button is keyed to an **integration** — a record that holds your allowed origins and a publishable key (`pk_…`). Either:
+
+- run `npx @learncard/cli embed --domains https://yoursite.com` (creates it and saves `PUBLISHABLE_KEY` to `.env`), or
+- in the [Developer Portal](https://learncard.app/app-store/developer) open **Guides → Embed Claim Button**, follow the setup, and copy the key from the **Embed Code** tab.
+
+Credentials claimed through the button are signed by your primary [signing authority](../create-signing-authority.md); the CLI sets one up if you don't have one.
 
 ## Step 2: Add the SDK
 
@@ -63,7 +74,7 @@ Add a target element and call `init()`:
 </script>
 ```
 
-The credential name must match a template you created in the dashboard. The SDK resolves it server-side — you don't need to embed the full credential JSON.
+The credential name must match a template you created in the Developer Portal. The SDK resolves it server-side.
 
 ## Step 4: Customize Branding (Optional)
 
@@ -84,7 +95,7 @@ LearnCard.init({
 
 ## Step 5: Handle Success (Optional)
 
-By default, after claiming, the SDK opens the wallet in a new tab (deep-linked to the credential via `handoffUrl`) and shows a success screen. You can hook into this with `onSuccess`:
+After claiming, the SDK opens the wallet in a new tab (deep-linked to the credential via `handoffUrl`) and shows a success screen. Hook into this with `onSuccess`:
 
 ```js
 LearnCard.init({
@@ -100,117 +111,90 @@ LearnCard.init({
 
 To suppress the automatic wallet redirect entirely, set `branding.walletUrl: ''`:
 
-````js
+```js
 LearnCard.init({
-  publishableKey: 'pk_your_key_here',
-  target: '#claim-credential',
-  credential: { name: 'Course Completion' },
-  branding: { walletUrl: '' },  // Disable auto-open
-  onSuccess: ({ credentialId, handoffUrl }) => {
-    // You fully control what happens next
-    document.getElementById('success-message').style.display = 'block';
-  },
+    publishableKey: 'pk_your_key_here',
+    target: '#claim-credential',
+    credential: { name: 'Course Completion' },
+    branding: { walletUrl: '' }, // Disable auto-open
+    onSuccess: ({ credentialId, handoffUrl }) => {
+        // You fully control what happens next
+        document.getElementById('success-message').style.display = 'block';
+    },
 });
+```
 
 ## Complete Example
 
+This is the file `npx @learncard/cli embed` writes, with `PUBLISHABLE_KEY_PLACEHOLDER` replaced by your key:
+
+<!-- snippet: cli/claim-button.html -->
+
 ```html
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>Course Complete</title>
-  </head>
-  <body>
-    <h1>Congratulations! You finished the course.</h1>
-    <p>Claim your credential to add it to your LearnCard wallet.</p>
-
-    <div id="claim-credential"></div>
-    <div id="success" style="display:none; color: green;">
-      ✅ Credential claimed! Check your LearnCard wallet.
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/@learncard/embed-sdk@latest/dist/learncard.js"></script>
-    <script>
-      LearnCard.init({
-        publishableKey: 'pk_your_key_here',
-        target: '#claim-credential',
-        credential: { name: 'Intro to Digital Credentials — Course' },
-        partnerName: 'Learning Economy Academy',
-        branding: {
-          primaryColor: '#2EC4A5',
-          partnerLogoUrl: 'https://your-org.com/logo.png',
-        },
-        onSuccess: () => {
-          document.getElementById('success').style.display = 'block';
-        },
-      });
-    </script>
-  </body>
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Claim your badge</title>
+    </head>
+    <body>
+        <h1>Claim your badge</h1>
+        <div id="claim-button"></div>
+        <script src="https://cdn.jsdelivr.net/npm/@learncard/embed-sdk@latest/dist/learncard.js"></script>
+        <script>
+            // init renders the Claim button into #claim-button.
+            LearnCard.init({
+                target: '#claim-button',
+                publishableKey: 'PUBLISHABLE_KEY_PLACEHOLDER',
+                apiBaseUrl: 'https://network.learncard.com/api',
+                // A full unsigned badge works without a named integration template.
+                credential: {
+                    '@context': [
+                        'https://www.w3.org/ns/credentials/v2',
+                        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+                        'https://ctx.learncard.com/boosts/1.0.3.json',
+                    ],
+                    type: ['VerifiableCredential', 'OpenBadgeCredential', 'BoostCredential'],
+                    name: 'Badge Name',
+                    credentialSubject: {
+                        type: ['AchievementSubject'],
+                        achievement: {
+                            id: 'urn:uuid:552bf83b-7700-4c3a-b1ce-2d8f8ee68811',
+                            type: ['Achievement'],
+                            name: 'Badge Name',
+                            description: 'Claimed a badge with LearnCard.',
+                            criteria: { narrative: 'Clicked the Claim button.' },
+                        },
+                    },
+                },
+            });
+        </script>
+    </body>
 </html>
-````
-
-## Claim Flow
-
-```mermaid
-sequenceDiagram
-    participant User
-    participant Modal as Claim Modal
-    participant API as LearnCard API
-    participant Wallet as User Wallet
-
-    User->>Modal: Clicks Claim Credential
-    Note over Modal: Step 1 — Email View
-    User->>Modal: Enters email address
-    Modal->>API: POST /contact-methods/challenge
-    API-->>User: OTP sent to email
-    Note over Modal: Step 2 — OTP View
-    User->>Modal: Enters 6-digit code
-    Modal->>API: POST /contact-methods/verify
-    API-->>Modal: Session JWT
-    Note over Modal: Step 3 — Accept View
-    User->>Modal: Clicks Accept Credential
-    Modal->>API: POST /inbox/claim with JWT
-    API->>Wallet: Issue and store credential
-    Note over Modal: Success — confetti + checkmark
-    Modal->>User: View My LearnCard button
 ```
+
+<!-- /snippet -->
 
 ## Whitelisted Domains
 
-For security, the API only accepts claims from domains you've whitelisted in the Embed Code tab of your dashboard. Add your production domain before going live.
+The API only accepts claims from domains whitelisted in the Embed Code tab of your Developer Portal. Add your production domain before going live.
 
 During local development, `localhost` is allowed automatically.
-
-## Testing Locally
-
-Use the included embed example to test without a real backend:
-
-```bash
-# From repo root
-bun --filter @learncard/embed-sdk run build
-cd examples/embed-example && bun run dev
-```
-
-| URL                                                             | Mode                                                 |
-| --------------------------------------------------------------- | ---------------------------------------------------- |
-| `http://localhost:4321`                                         | Stub mode — no backend, flows all the way to success |
-| `?pk=pk_xxx`                                                    | Live network                                         |
-| `?pk=pk_xxx&template=My+Template`                               | Live network + template by name                      |
-| `?pk=pk_xxx&api=http://localhost:4000/api&template=My+Template` | Fully local                                          |
 
 ## Troubleshooting
 
 **"This integration could not be found"**
-Your `publishableKey` doesn't match any active integration on the network. Double-check the key from your dashboard Embed Code tab and ensure your domain is whitelisted.
+Your `publishableKey` doesn't match an active integration. Check the key from your Developer Portal Embed Code tab and ensure your domain is whitelisted.
 
 **Credential not appearing after claim**
-The credential lands in the user's inbox and is finalized when they next open their wallet. If you need to verify immediately, check the dashboard's activity tab.
+The credential lands in the user's inbox and is finalized when they open their wallet. To verify immediately, check the Developer Portal's activity tab.
 
 **OTP not arriving**
 In local dev, check your brain-service logs — OTP codes are printed there when no email provider is configured.
 
 ## See Also
 
--   [Embed SDK Reference](../../sdks/embed-sdk.md)
--   [Embed Code Tab (Dashboard)](../../how-to-guides/connect-systems/connect-a-website.md)
--   [Connect an Embedded App](connect-an-embedded-app.md) — for apps inside LearnCard
+- [Embed SDK Reference](../../sdks/embed-sdk.md)
+- [Connect a User's LearnCard to Your Platform](../../tutorials/create-a-consentflow.md) — for an ongoing link instead of one-off claims
+- [Build an App Inside LearnCard](../publish-your-app.md) — for apps inside LearnCard

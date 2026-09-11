@@ -1,40 +1,34 @@
 # Network Profiles
 
-LearnCloud Network provides rich DID-based user profiles. They are the foundation for user identity and relationship management in the Network. The LearnCloud Network implements functionality for creating and managing user profiles, establishing connections between users, and managing authentication and authorization.
+A DID is an identifier. A **profile** is what makes it a participant on the LearnCard Network: a `profileId` others can address, a display name and image recipients see, and a `did:web` the network resolves for you. You need a profile before you can send, receive, or connect.
 
-## Profile Types and Data Model
+## Three kinds
 
-The LearnCard Network supports three distinct types of profiles, each serving different use cases while sharing the same underlying data model.
+| Profile     | Represents                                                                    | Created with                                               | Key held by                                |
+| ----------- | ----------------------------------------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------ |
+| **Regular** | A person using the LearnCard app or your app                                  | Sign-up in the app, or `createProfile()`                   | The person                                 |
+| **Service** | Your server, bot, or organization — anything that issues programmatically     | `createServiceProfile()`; the Quickstart does this         | You (a seed or a hosted signing authority) |
+| **Managed** | An account someone else administers: a child's account, a department, a troop | `createManagedProfile()` / `createManagedServiceProfile()` | The network, on behalf of the manager      |
 
-<table data-header-hidden data-full-width="true"><thead><tr><th width="162.50115966796875">Profile Type</th><th>Description</th><th>When to Use / Key Use Cases</th></tr></thead><tbody><tr><td>Regular Profile</td><td><p>Represents an individual person directly using an application or service. This is the standard type for most human users. </p><p><code>isServiceProfile = false</code></p></td><td>Ideal for individual human users. Enables direct self-management of personal data and settings. Suits typical interactive use, like logging into apps or websites.</td></tr><tr><td>Service Profile</td><td>Represents a non-human actor, like an application, script, or automated process, that needs to interact with APIs or services programmatically. <code>isServiceProfile = true</code></td><td>For automated systems or applications needing API access. Used for backend processes, server-to-server communication, and automated tasks. Assigns specific, often limited, permissions to software components.</td></tr><tr><td>Managed Profile</td><td>A profile whose activities, permissions, or data are overseen or controlled by another designated "Manager Profile." This supports delegation and oversight. They are created using the <code>createManagedServiceProfile</code></td><td>For accounts requiring supervision (e.g., a child's profile managed by a guardian). Represents organizational sub-units (like a department) controlled by a parent organizational account. When an entity needs to operate with permissions granted and managed by a separate authority.</td></tr></tbody></table>
+Regular and Service profiles are the same data model with `isServiceProfile` flipped; the flag mostly affects how the app displays them and which features (like the Developer Portal) they can use.
+
+A **Managed** profile has no seed of its own. The network generates its DID and lets the **manager** — a Regular or Service profile — act for it. That's how a guardian approves credentials for a child, and how ScoutPass runs a national organization → troop → scout hierarchy where each level is a managed profile under the one above.
 
 ```mermaid
-graph TB
-    subgraph "Profile Types"
-        RP["Regular Profile"]
-        SP["Service Profile"]
-        MSP["Managed Service Profile"]
-    end
-
-    subgraph "Authentication"
-        UD["User DID"]
-        GD["Generated DID"]
-    end
-
-    subgraph "Management"
-        MP["Manager Profile"]
-    end
-
-    UD --> RP
-    UD --> SP
-    GD --> MSP
-    MP --->|"manages"| MSP
-
-    style RP fill:white
-    style SP fill:white
-    style MSP fill:white
-    style UD fill:white
-    style GD fill:white
-    style MP fill:white
+graph LR
+    You["Your seed"] --> SP["Service profile<br/>did:web:…:users:acme"]
+    SP -->|manages| MP1["Managed profile<br/>Troop 12"]
+    SP -->|manages| MP2["Managed profile<br/>Troop 14"]
+    Parent["A parent"] -->|manages| Child["Managed profile<br/>a child"]
 ```
 
+## What a profile gives you
+
+- **An address.** `send({ recipient: 'acme' })` works once `acme` is a profileId. Email and phone recipients don't need one yet — the [Universal Inbox](../network-and-interactions/universal-inbox.md) holds the credential until they create one.
+- **A `did:web`.** `did:web:network.learncard.com:users:<profileId>` resolves through the network, so you can rotate keys or move signing to a hosted authority without changing your issuer identity.
+- **A face.** The `displayName` and `image` are what recipients see in the claim email and in their LearnCard.
+- **Connections.** Profiles can connect to each other, which unlocks direct sends without a claim step.
+
+## Per network
+
+Profiles live on one network. Your staging profile and your production profile are different records, even from the same seed — see [Test Safely](../../how-to-guides/deploy-infrastructure/test-safely.md).

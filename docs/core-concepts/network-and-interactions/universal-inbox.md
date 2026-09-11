@@ -1,45 +1,44 @@
 # Universal Inbox
 
-This document explains the core concepts behind the Universal Inbox feature. It's designed to give you a deep understanding of what it is, the problems it solves for both developers and end-users, and why it is a critical component of the LearnCard ecosystem.
+The Universal Inbox is what lets you send a credential to an **email address or phone number** instead of a LearnCard account. It's why `send({ recipient: 'jane@example.com' })` works even when Jane has never heard of LearnCard.
 
-## What is Universal Inbox?
+## What it does
 
-At its core, the **Universal Inbox** is an API that allows any person or organization to send a verifiable credential to any recipient using a common identifier, like an email address or phone number.
+When the recipient isn't a LearnCard profile, the network:
 
-It acts as a smart and secure "digital mailbox." An issuer can send a credential to `user@example.com` without needing to know if that person already has a LearnCard Passport. The Universal Inbox holds the credential securely and sends a simple notification to the user. When the user clicks the link in the notification, the system seamlessly guides them through either logging into their existing passport or creating a new one to claim their credential.
+1. Holds the credential in an inbox keyed to that email or phone.
+2. Sends the recipient a message — your name, what they've received, and a claim link.
+3. When they follow the link, walks them through signing in or creating an account.
+4. Delivers the credential into the account they just proved they own, and tells you it was claimed.
 
-Think of it as the universal on-ramp to the LearnCard ecosystem. It's the bridge that connects traditional communication methods with the world of self-sovereign identity.
+If the recipient **already** has a LearnCard account with that email or phone verified, steps 2–3 are skipped: the credential goes straight to their account and your `send()` comes back with `status: 'ISSUED'` instead of `'PENDING'`.
 
-## The Problem It Solves
+```mermaid
+sequenceDiagram
+    participant You
+    participant Inbox as Universal Inbox
+    participant Jane
+    You->>Inbox: send({ recipient: 'jane@example.com', … })
+    Inbox-->>You: { status: 'PENDING', claimUrl, issuanceId }
+    Inbox->>Jane: email with claim link
+    Jane->>Inbox: opens link, verifies email, signs in or signs up
+    Inbox->>Jane: credential delivered to her account
+    Inbox-->>You: webhook ISSUANCE_CLAIMED
+```
 
-Before the Universal Inbox, issuing a credential involved significant friction for both the issuer and the recipient.
+## What it doesn't do
 
-### **For the Issuer (the Developer):**
+It never creates an account for the recipient. The person proves they control the address, then creates or unlocks their own account with their own key. You get an inbox record and a claim status; you never get their account or their key. The invitation is centralized (an email), the result is not.
 
-* **The Old Problem:** To send a credential, a developer first had to solve a complex "chicken-and-egg" problem. Do they ask the user for their LearnCard DID? What if the user doesn't have one? Do they build a UI to manage one-off "claim links"? This forced every integrating partner to become an expert in decentralized identity concepts just to perform a simple action.
-* **The Solution:** The Universal Inbox removes this burden entirely. It provides a single, simple API endpoint (`POST /inbox/issue`). The developer only needs to provide the credential data and the recipient's email. Our system handles the rest, abstracting away the complexity of whether the user is new or existing.
+## Things you'll rely on
 
-### **For the Recipient (the End-User):**
+- **`claimUrl`** — returned on every `PENDING` send. Pass `suppressDelivery: true` to skip the email and deliver the link yourself (in your own email, on a receipt, in a QR code).
+- **`issuanceId`** — the handle for this send. Webhooks reference it; use it to reconcile.
+- **Guardian gating** — add `options.guardianEmail` and a parent must approve before the recipient can claim. Once a guardian has a LearnCard account managing the child, every future send to that child is gated automatically. See [Guardian-Gated Credentials](../../how-to-guides/send-credentials.md#guardian-gated-credentials).
+- **Phone delivery** is limited to issuers listed in the [trusted registry](../identities-and-keys/trust-registries.md).
 
-* **The Old Problem:** The user had to be educated about what a LearnCard Passport was _before_ they could receive their first credential. This created a learning curve and a barrier to entry.
-* **The Solution:** The Universal Inbox meets the user where they already are: their email inbox or text messages. The first interaction they have is a simple, familiar notification: "State University has sent you a digital record." The experience of creating a passport becomes a natural and necessary step to claiming something of value, not an abstract concept they have to learn upfront.
+## Build with it
 
-## Why It Matters
-
-The Universal Inbox is more than just a feature; it's a strategic pillar for adoption and growth.
-
-1. **It Radically Simplifies Integration:** By providing a familiar, RESTful API that feels like using services like Postmark or Twilio, we dramatically lower the barrier to entry. Developers can integrate our most powerful feature in minutes, not days, accelerating the growth of our entire ecosystem.
-2. **It Bridges the Centralized and Decentralized Worlds:** This is the most critical function. True adoption of self-sovereign identity requires a smooth transition from the systems people use every day. The Universal Inbox is that transition. It uses centralized identifiers (email, phone) as a secure and user-friendly invitation into a decentralized, user-owned world.
-3. **It Upholds Our Core Principles Without Compromise:** Despite its simplicity, the Universal Inbox never compromises on self-sovereignty. The partner never creates a passport on the user's behalf. The user, and only the user, creates their account and controls their private keys. The system simplifies the _invitation and delivery_, not the fundamental principles of ownership and control.
-
-In short, the Universal Inbox makes the powerful and complex world of verifiable credentials feel simple, intuitive, and accessible to everyone.
-
-## Guardian-Gated Credentials
-
-When issuing credentials to minors or managed accounts, the Universal Inbox supports **guardian gating**. By specifying a `guardianEmail` when sending a credential, the system requires a trusted guardian to approve the credential before the recipient can claim it.
-
-- The guardian receives an approval email with a secure OTP challenge
-- The credential remains in `AWAITING_GUARDIAN` status until the guardian acts
-- Once a guardian creates a LearnCard account and establishes a MANAGES relationship with the child, all future credentials to that child are automatically guardian-gated — no `guardianEmail` needed from the issuer
-
-This enables COPPA-friendly credential issuance workflows where parental consent is required. See the [Guardian-Gated Credentials](../../how-to-guides/implement-flows/guardian-gated-credentials.md) guide for implementation details.
+- [Send & Issue Credentials](../../how-to-guides/send-credentials.md) — the `send()` call and its response
+- [Know When a Credential Is Claimed](../../tutorials/listen-to-webhooks.md) — the webhooks
+- [Universal Inbox API](../../sdks/learncard-network/universal-inbox-api.md) — the lower-level REST surface

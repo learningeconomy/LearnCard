@@ -34,5 +34,6 @@
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true
     },
+    "include": ["src/**/*", "scripts/**/*.ts"],
     "exclude": ["./dist/**/*", "./node_modules/**/*"]
 }

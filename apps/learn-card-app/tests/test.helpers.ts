@@ -116,18 +116,18 @@ export const waitForAuthenticatedState = async (
         .catch(() => undefined);
 
     // Login via seed - this creates a proper user with privateKey
-    // If profileId is provided, the seed route will also create a network profile
-    const seedUrl = options.profileId
-        ? `/hidden/seed?profileId=${encodeURIComponent(options.profileId)}`
-        : '/hidden/seed';
+    const seedUrl = '/developer/sign-in';
     await page.goto(seedUrl);
 
     // Fill in the seed and submit
     await page.getByRole('textbox').fill(options.seed);
-    await page.getByRole('button', { name: /sign in with seed/i }).click();
+    await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 
-    // Wait for redirect to wallet (indicates successful login + profile creation)
     await page.waitForURL(/\/wallet/, { timeout });
+
+    if (options.profileId) {
+        await joinNetworkIfNeeded(page, options.profileId);
+    }
 
     await profileFetchPromise;
 
