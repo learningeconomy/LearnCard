@@ -20,6 +20,7 @@ import {
     ISSUE_THROUGH_CONTRACT_MJS,
 } from './generated/snippets';
 import { writeSnippet } from './snippet-files';
+import { out } from './out';
 
 export const consentUrl = (uri: string, returnTo: string, network: string): string => {
     const url = new URL('/consent-flow', appUrlFor(network));
@@ -65,12 +66,13 @@ export const runConsentContract = async (
             },
         };
         uri = await learnCard.invoke.createContract(contract);
-        console.log('Created your consent contract.');
+        out.log('Created your consent contract.');
     } else {
-        console.log('Reusing your saved consent contract.');
+        out.log('Reusing your saved consent contract.');
     }
     await saveProject(project, { [KEYS.CONTRACT_URI]: uri, RETURN_TO: returnTo });
     const services = resolveServices(project.env, options.network);
+    const files: string[] = [];
     for (const [file, source] of Object.entries({
         'create-contract.mjs': CREATE_CONTRACT_MJS,
         'consent-callback.mjs': CONSENT_CALLBACK_MJS,
@@ -88,18 +90,20 @@ export const runConsentContract = async (
                       ),
                       services
                   );
-        await writeSnippet(file, localized);
+        if (await writeSnippet(file, localized)) files.push(`./${file}`);
     }
-    console.log(consentUrl(uri, returnTo, services.network));
+    const contractConsentUrl = consentUrl(uri, returnTo, services.network);
+    out.log(contractConsentUrl);
     if (![PRODUCTION_NETWORK, STAGING_NETWORK].includes(services.network)) {
-        console.log(
+        out.log(
             'Note: this is a production app URL; use an app connected to your local network to consent.'
         );
     }
-    console.log(
+    out.log(
         'The tutorial create-contract.mjs creates a new contract and requires HTTPS; reuse CONTRACT_URI for this dev setup.'
     );
-    console.log('Read scripts require a verified CONSENT_VP, not a bare DID.');
-    console.log('Next: node --env-file=.env consent-callback.mjs');
-    console.log('See the contract in the app: npx @learncard/cli open contract');
+    out.log('Read scripts require a verified CONSENT_VP, not a bare DID.');
+    out.log('Next: node --env-file=.env consent-callback.mjs');
+    out.log('See the contract in the app: npx @learncard/cli open contract');
+    out.set({ contractUri: uri, consentUrl: contractConsentUrl, returnTo, files });
 };

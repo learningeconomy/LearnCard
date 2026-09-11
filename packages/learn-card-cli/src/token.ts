@@ -12,6 +12,7 @@ import {
     withEnvTokenLoader,
 } from './project';
 import { SEND_SH } from './generated/snippets';
+import { out } from './out';
 
 // Route-derived resources documented in auth-grants-and-api-tokens.md (not the stale singular aliases).
 export const SCOPE_RESOURCES = [
@@ -66,8 +67,9 @@ export const runToken = async (
     if (options.revoke) {
         if (!(await learnCard.invoke.revokeAuthGrant(options.revoke)))
             throw new Error('Could not revoke auth grant.');
-        console.log(`Revoked auth grant ${options.revoke}.`);
-        console.log('Create a replacement: npx @learncard/cli token');
+        out.log(`Revoked auth grant ${options.revoke}.`);
+        out.log('Create a replacement: npx @learncard/cli token');
+        out.set({ grantId: options.revoke });
         return;
     }
     const id = await learnCard.invoke.addAuthGrant({
@@ -78,12 +80,13 @@ export const runToken = async (
     // Tighten existing files before writing the bearer credential.
     await fs.chmod(project.envPath, 0o600);
     await saveProject(project, { API_TOKEN: token, API_TOKEN_SCOPE: scope });
-    console.log(`Created auth grant ${id}.`);
-    console.log(
+    out.log(`Created auth grant ${id}.`);
+    out.log(
         "Warning: this token won't be shown again by this command. It is saved in .env; keep it private."
     );
-    console.log(token);
+    out.log(token);
     const file = path.join(process.cwd(), 'send.sh');
+    let wroteSendSh = false;
     try {
         await fs.writeFile(
             file,
@@ -95,12 +98,14 @@ export const runToken = async (
                 mode: 0o700,
             }
         );
-        console.log('Wrote ./send.sh');
+        out.log('Wrote ./send.sh');
+        wroteSendSh = true;
     } catch (error) {
         if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
-        console.log('Kept existing ./send.sh');
+        out.log('Kept existing ./send.sh');
     }
-    console.log(
+    out.log(
         'Next: save your send payload as request.json, then run sh ./send.sh (example: https://docs.learncard.com/start-here/your-first-integration).'
     );
+    out.set({ grantId: id, scope, token, files: wroteSendSh ? ['./send.sh'] : [] });
 };

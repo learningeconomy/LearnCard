@@ -5,6 +5,7 @@ import path from 'node:path';
 import {
     assertProjectNetwork,
     KEYS,
+    createPrompts,
     ensureIdentity,
     loadProject,
     parseEnv,
@@ -14,6 +15,52 @@ import {
 } from './project';
 
 afterEach(() => vi.restoreAllMocks());
+
+describe('createPrompts non-interactive behavior', () => {
+    const originalIsTTY = process.stdin.isTTY;
+    const originalLcYes = process.env.LC_YES;
+
+    afterEach(() => {
+        Object.defineProperty(process.stdin, 'isTTY', { value: originalIsTTY, configurable: true });
+        if (originalLcYes === undefined) delete process.env.LC_YES;
+        else process.env.LC_YES = originalLcYes;
+    });
+
+    it('returns the fallback without opening a prompt when yes is true', async () => {
+        const prompts = createPrompts(true);
+        await expect(prompts.ask('Display name', 'My Organization')).resolves.toBe(
+            'My Organization'
+        );
+        prompts.close();
+    });
+
+    it('returns the fallback when stdin is not a TTY, even without --yes', async () => {
+        Object.defineProperty(process.stdin, 'isTTY', { value: false, configurable: true });
+        const prompts = createPrompts(undefined);
+        await expect(prompts.ask('Display name', 'My Organization')).resolves.toBe(
+            'My Organization'
+        );
+        prompts.close();
+    });
+
+    it('treats LC_YES=1 as non-interactive even when stdin looks like a real TTY', async () => {
+        Object.defineProperty(process.stdin, 'isTTY', { value: true, configurable: true });
+        process.env.LC_YES = '1';
+        const prompts = createPrompts(undefined);
+        await expect(prompts.ask('Display name', 'My Organization')).resolves.toBe(
+            'My Organization'
+        );
+        prompts.close();
+    });
+
+    it('throws a descriptive error when non-interactive and no fallback exists', async () => {
+        const prompts = createPrompts(true);
+        await expect(prompts.ask('Recipient email (--to <email>)', '')).rejects.toThrow(
+            'Recipient email (--to <email>) is required when running non-interactively. Pass it as an argument or flag.'
+        );
+        prompts.close();
+    });
+});
 describe('project context', () => {
     it('parses exported and commented seeds without changing identity', () => {
         expect(

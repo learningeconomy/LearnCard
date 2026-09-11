@@ -14,6 +14,7 @@ import {
 } from './project';
 import { setupSigning } from './setup-signing';
 import { SEND_MJS, SEND_FROM_TEMPLATE_MJS } from './generated/snippets';
+import { out } from './out';
 
 export { SEND_MJS } from './generated/snippets';
 export { parseEnv, upsertEnv, toProfileId } from './project';
@@ -109,7 +110,7 @@ export const runSend = async (recipientEmail: string, options: SendOptions): Pro
             );
             await saveProject(project, { TEMPLATE_URI: uri });
         } else {
-            console.log(
+            out.log(
                 `Reusing template ${project.env.TEMPLATE_URI}; its saved badge name and description are unchanged.`
             );
         }
@@ -128,19 +129,20 @@ export const runSend = async (recipientEmail: string, options: SendOptions): Pro
             signedCredential: credential,
         });
     }
-    console.log('');
+    out.log('');
     if (result.inbox?.status === 'PENDING') {
-        console.log(
+        out.log(
             `Sent. ${recipientEmail} will get a claim email. You can also share this link directly:\n${result.inbox.claimUrl}`
         );
     } else {
-        console.log(
+        out.log(
             `Delivered. ${recipientEmail} already uses LearnCard — the credential is in their wallet.`
         );
     }
-    console.log(`Reusable template for this badge: ${result.uri}`);
+    out.log(`Reusable template for this badge: ${result.uri}`);
     const filename = options.template ? 'send-from-template.mjs' : 'send.mjs';
     const sendPath = path.join(cwd, filename);
+    let wroteSendFile = false;
     if (!(await fs.stat(sendPath).catch(() => null))) {
         await fs.writeFile(
             sendPath,
@@ -149,9 +151,21 @@ export const runSend = async (recipientEmail: string, options: SendOptions): Pro
                 resolveServices(project.env, options.network)
             )
         );
-        console.log(
+        wroteSendFile = true;
+        out.log(
             `\nThe code that just ran is in ./${filename} — run it yourself:\n  npm install @learncard/init\n  node --env-file=.env ${filename} ${recipientEmail}`
         );
     }
-    console.log(`See it in the app: npx @learncard/cli open${options.template ? ' template' : ''}`);
+    out.log(`See it in the app: npx @learncard/cli open${options.template ? ' template' : ''}`);
+    out.set({
+        profileId: identity.profileId,
+        did: learnCard.id.did(),
+        recipient: recipientEmail,
+        status: result.inbox?.status === 'PENDING' ? 'PENDING' : 'ISSUED',
+        ...(result.inbox?.claimUrl && { claimUrl: result.inbox.claimUrl }),
+        templateUri: result.uri,
+        ...(result.credentialUri && { credentialUri: result.credentialUri }),
+        ...(result.inbox?.issuanceId && { issuanceId: result.inbox.issuanceId }),
+        files: wroteSendFile ? [`./${filename}`] : [],
+    });
 };

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { openPath, signInUrl } from './open';
+import { impliesNoBrowser, openPath, signInUrl } from './open';
 import { appUrlFor, PRODUCTION_NETWORK, STAGING_NETWORK } from './project';
 
 describe('open', () => {
@@ -25,5 +25,16 @@ describe('open', () => {
         const withSeed = new URL(signInUrl('https://learncard.app', '/wallet', 'ab'.repeat(32)));
         expect(withSeed.hash).toBe(`#seed=${'ab'.repeat(32)}`);
         expect(withSeed.search).not.toContain('ab'.repeat(32));
+    });
+
+    it('never launches a browser when headless, --json, or --no-browser', () => {
+        // A real TTY with no flags: fine to launch.
+        expect(impliesNoBrowser({}, true)).toBe(false);
+        // --json always implies headless, even at a real TTY.
+        expect(impliesNoBrowser({ json: true }, true)).toBe(true);
+        // No TTY (piped/CI) implies headless regardless of flags.
+        expect(impliesNoBrowser({}, false)).toBe(true);
+        // Explicit --no-browser (commander's `browser: false`) always wins.
+        expect(impliesNoBrowser({ browser: false }, true)).toBe(true);
     });
 });

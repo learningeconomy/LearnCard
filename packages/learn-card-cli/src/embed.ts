@@ -12,6 +12,7 @@ import {
 import { setupSigning } from './setup-signing';
 import { CLAIM_BUTTON_HTML } from './generated/snippets';
 import { writeSnippet } from './snippet-files';
+import { out } from './out';
 
 export const validateDomains = (domains: string): string[] =>
     domains.split(',').map(domain => {
@@ -68,30 +69,34 @@ export const runEmbed = async (
         /\/trpc\/?$/,
         '/api'
     );
-    await writeSnippet(
+    const wroteClaimButton = await writeSnippet(
         'claim-button.html',
         personalizeClaimButton(integration.publishableKey, apiBase)
     );
-    console.log(`Publishable key: ${integration.publishableKey}`);
-    console.log(`Whitelisted origins: ${integration.whitelistedDomains.join(', ')}`);
+    out.log(`Publishable key: ${integration.publishableKey}`);
+    out.log(`Whitelisted origins: ${integration.whitelistedDomains.join(', ')}`);
     if (options.domains && reused) {
-        console.log(
+        out.log(
             'Existing integrations keep their saved origins; change them in the Developer Portal.'
         );
     }
     if (options.rotateKey)
-        console.log(
-            'Update the publishable key in any existing claim-button.html and deployed pages.'
-        );
+        out.log('Update the publishable key in any existing claim-button.html and deployed pages.');
     const firstDomain = integration.whitelistedDomains[0];
     const origin = firstDomain?.startsWith('http')
         ? firstDomain
         : firstDomain
           ? `http://${firstDomain}`
           : undefined;
-    console.log(
+    out.log(
         origin
             ? `Next: Open claim-button.html from ${origin} (a whitelisted origin), not file://.\nSee the integration in the app: npx @learncard/cli open integration`
             : 'Next: add a whitelisted origin in the Developer Portal, then serve claim-button.html there, not file://.'
     );
+    out.set({
+        integrationId: id,
+        publishableKey: integration.publishableKey,
+        whitelistedDomains: integration.whitelistedDomains,
+        files: wroteClaimButton ? ['./claim-button.html'] : [],
+    });
 };

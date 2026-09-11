@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { initLearnCard, type NetworkLearnCardFromSeed } from '@learncard/init';
 import { initLCALearnCard, type LCALearnCard } from '@learncard/lca-api-plugin';
 import { generateRandomSeed } from './random';
+import { out } from './out';
 
 export const KEYS = {
     SECURE_SEED: 'SECURE_SEED', // Private issuer seed; never regenerate or print.
@@ -32,6 +33,7 @@ export interface ProjectOptions {
     profileId?: string;
     network?: string;
     didkit?: Promise<Buffer>;
+    json?: boolean;
 }
 
 export type NetworkCard = NetworkLearnCardFromSeed['returnValue'];
@@ -150,7 +152,7 @@ export const saveProject = async (
         await fs.rename(temporary, project.envPath);
         project.existing = next;
         Object.assign(project.env, changed);
-        console.log(`Wrote ${Object.keys(changed).join(' and ')} to .env`);
+        out.log(`Wrote ${Object.keys(changed).join(' and ')} to .env`);
     } finally {
         await fs.rm(temporary, { force: true });
         await lock.close();
@@ -158,11 +160,21 @@ export const saveProject = async (
     }
 };
 
+/** Never block on input from a script, CI job, or agent: only prompt when a human is at a real TTY. */
 export const createPrompts = (yes?: boolean) => {
-    const rl = yes ? null : createInterface({ input: process.stdin, output: process.stdout });
+    const interactive = !yes && !!process.stdin.isTTY && process.env.LC_YES !== '1';
+    const rl = interactive
+        ? createInterface({ input: process.stdin, output: process.stdout })
+        : null;
     return {
-        ask: async (question: string, fallback: string): Promise<string> =>
-            rl ? (await rl.question(`${question} [${fallback}] `)).trim() || fallback : fallback,
+        ask: async (question: string, fallback: string): Promise<string> => {
+            if (rl) return (await rl.question(`${question} [${fallback}] `)).trim() || fallback;
+            if (!fallback)
+                throw new Error(
+                    `${question} is required when running non-interactively. Pass it as an argument or flag.`
+                );
+            return fallback;
+        },
         close: (): void => {
             rl?.close();
         },
@@ -187,7 +199,7 @@ export const ensureIdentity = async (project: Project, options: ProjectOptions) 
     if (await fs.stat(gitignorePath).catch(() => null)) {
         if (!gitignore.split('\n').some(line => line.trim() === '.env')) {
             await fs.writeFile(gitignorePath, `${gitignore.replace(/\n?$/, '\n')}.env\n`);
-            console.log('Added .env to .gitignore');
+            out.log('Added .env to .gitignore');
         }
     }
     return { seed, profileId, displayName };
@@ -314,7 +326,7 @@ export async function connect(
             NETWORK_URL: services.network === PRODUCTION_NETWORK ? '' : services.network,
         });
     }
-    console.log('Connecting to the LearnCard Network...');
+    out.log('Connecting to the LearnCard Network...');
     const config = {
         seed,
         network: services.network,
@@ -343,6 +355,6 @@ export const ensureProfile = async (
             bio: '',
             shortBio: '',
         });
-        console.log(`Created profile "${identity.displayName}" (${identity.profileId})`);
+        out.log(`Created profile "${identity.displayName}" (${identity.profileId})`);
     }
 };

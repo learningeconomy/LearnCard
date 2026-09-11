@@ -9,6 +9,7 @@ import {
     STAGING_NETWORK,
     type ProjectOptions,
 } from './project';
+import { out } from './out';
 
 export type OpenTarget = 'portal' | 'wallet' | 'template' | 'contract' | 'integration';
 
@@ -64,8 +65,17 @@ const launchBrowser = (url: string): void => {
 export interface OpenOptions extends ProjectOptions {
     appUrl?: string;
     urlFragment?: boolean;
-    noBrowser?: boolean;
+    /** commander's attribute name for `--no-browser`; false only when that flag is passed. */
+    browser?: boolean;
 }
+
+export type SeedDelivery = 'clipboard' | 'fragment' | 'none';
+
+/** A script or `--json` run has nowhere to click "paste"; never launch a browser for it. */
+export const impliesNoBrowser = (
+    options: { browser?: boolean; json?: boolean },
+    isTTY: boolean
+): boolean => options.browser === false || !isTTY || !!options.json;
 
 export const runOpen = async (
     target: OpenTarget = 'portal',
@@ -90,26 +100,40 @@ export const runOpen = async (
             `${network} has no hosted LearnCard app. Pass --app-url <url> for the app connected to it.`
         );
     const appUrl = appUrlFor(network, options.appUrl);
+    const noBrowser = impliesNoBrowser(options, !!process.stdout.isTTY);
 
     let url: string;
+    let seedDelivery: SeedDelivery;
     if (options.urlFragment) {
         url = signInUrl(appUrl, path, seed);
-        console.log(
+        out.log(
             'Warning: --url-fragment puts your seed in the browser URL (history, screenshots).'
         );
+        seedDelivery = 'fragment';
     } else {
         url = signInUrl(appUrl, path);
-        await clipboard.write(seed);
-        console.log(`Copied your seed to the clipboard (clears in ${CLIPBOARD_TTL_MS / 1000}s).`);
-        setTimeout(async () => {
-            if ((await clipboard.read().catch(() => '')) === seed)
-                await clipboard.write('').catch(() => {});
-        }, CLIPBOARD_TTL_MS).unref();
+        try {
+            await clipboard.write(seed);
+            out.log(`Copied your seed to the clipboard (clears in ${CLIPBOARD_TTL_MS / 1000}s).`);
+            seedDelivery = 'clipboard';
+            setTimeout(async () => {
+                if ((await clipboard.read().catch(() => '')) === seed)
+                    await clipboard.write('').catch(() => {});
+            }, CLIPBOARD_TTL_MS).unref();
+        } catch {
+            out.log(
+                'Clipboard unavailable. Paste the seed from .env, or re-run with --url-fragment.'
+            );
+            seedDelivery = 'none';
+        }
     }
 
-    console.log(
+    if (!options.urlFragment) out.log('→ Click "Paste from clipboard", then Sign in.');
+    if (!noBrowser) launchBrowser(url);
+    // Printed last so `$(cli open | tail -1)` captures this line in non-json mode.
+    out.log(
         `Opening ${OPEN_TARGETS[target]}: ${options.urlFragment ? url.split('#')[0] + '#seed=…' : url}`
     );
-    if (!options.noBrowser) launchBrowser(url);
-    if (!options.urlFragment) console.log('→ Click "Paste from clipboard", then Sign in.');
+
+    out.set({ url, target, next: path, seedDelivery });
 };

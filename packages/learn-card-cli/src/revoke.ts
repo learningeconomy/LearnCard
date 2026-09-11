@@ -1,4 +1,5 @@
 import { connect, ensureIdentity, loadProject, type ProjectOptions } from './project';
+import { out } from './out';
 
 export interface RevokeOptions extends ProjectOptions {
     suspend?: boolean;
@@ -55,9 +56,10 @@ export const runRevoke = async (uri: string, options: RevokeOptions): Promise<vo
         : await learnCard.invoke.revokeBoostRecipient(target.templateUri, target.profileId, uri);
     if (!result) throw new Error('The network did not update this credential.');
     const status = options.suspend ? 'suspended' : 'revoked';
-    console.log(
+    out.log(
         `${options.suspend ? 'Suspended' : 'Revoked'} ${uri}. Verifiers will see status: ${status} when they next refresh its status list; no propagation interval is documented.`
     );
-    console.log('Only credentials with a credentialStatus entry support status-list verification.');
-    console.log('Check the delivered JSON: npx @learncard/cli verify credential.json');
+    out.log('Only credentials with a credentialStatus entry support status-list verification.');
+    out.log('Check the delivered JSON: npx @learncard/cli verify credential.json');
+    out.set({ credentialUri: uri, templateUri, recipient: profileId, action: status });
 };

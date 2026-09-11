@@ -17,6 +17,7 @@ import { DEFAULT_BADGE, templateCredential } from './send';
 import { WEBHOOK_MJS } from './generated/snippets';
 import { writeSnippet } from './snippet-files';
 import { setupSigning } from './setup-signing';
+import { out } from './out';
 
 interface WebhookModule {
     extractBearer: (header: unknown) => string | undefined;
@@ -62,9 +63,63 @@ export const loadWebhookModule = async (): Promise<WebhookModule> => {
     return import(`data:text/javascript;base64,${Buffer.from(WEBHOOK_MJS).toString('base64')}`);
 };
 
+export interface WebhookEvent {
+    type: string;
+    status?: string;
+    issuanceId?: string;
+    recipient?: string;
+}
+
+/** The embedded receiver logs one space-separated line per event: type, status, issuanceId, recipient DID. */
+export const parseWebhookLogLine = (line: string): WebhookEvent | undefined => {
+    const [type, status, issuanceId, recipient] = line.trim().split(/\s+/);
+    if (!type) return undefined;
+    return {
+        type,
+        ...(status && { status }),
+        ...(issuanceId && { issuanceId }),
+        ...(recipient && { recipient }),
+    };
+};
+
+/**
+ * `--json` mode does not stream: intercept the receiver's own console.log lines (never
+ * forwarding them to real stdout) and resolve with everything seen once ISSUANCE_DELIVERED
+ * (and ISSUANCE_CLAIMED, if requested) has arrived, or once the timeout elapses.
+ */
+export const collectWebhookEvents = (
+    timeoutMs: number,
+    waitForClaim: boolean
+): Promise<WebhookEvent[]> =>
+    new Promise(resolve => {
+        const events: WebhookEvent[] = [];
+        const originalLog = console.log;
+        const finish = (): void => {
+            clearTimeout(timer);
+            console.log = originalLog;
+            resolve(events);
+        };
+        const timer = setTimeout(finish, Math.max(0, timeoutMs));
+        console.log = (...args: unknown[]): void => {
+            const [first] = args;
+            const event = typeof first === 'string' ? parseWebhookLogLine(first) : undefined;
+            if (!event) return;
+            events.push(event);
+            const delivered = events.some(e => e.type === 'ISSUANCE_DELIVERED');
+            const claimed = events.some(e => e.type === 'ISSUANCE_CLAIMED');
+            if (delivered && (!waitForClaim || claimed)) finish();
+        };
+    });
+
 export const runWebhook = async (
     email: string | undefined,
-    options: ProjectOptions & { to?: string; url?: string; port?: string }
+    options: ProjectOptions & {
+        to?: string;
+        url?: string;
+        port?: string;
+        timeout?: string;
+        waitForClaim?: boolean;
+    }
 ): Promise<void> => {
     const project = await loadProject(process.cwd());
     const { port, expectedDid } = webhookConfig(project.env, options);
@@ -75,7 +130,7 @@ export const runWebhook = async (
     const identity = await ensureIdentity(project, options);
     const learnCard = await connect(project, { ...options, lca: true });
     await ensureProfile(learnCard, identity);
-    await writeSnippet(
+    const wroteWebhookMjs = await writeSnippet(
         'webhook.mjs',
         localizeSnippet(WEBHOOK_MJS, resolveServices(project.env, options.network))
     );
@@ -90,23 +145,25 @@ export const runWebhook = async (
             resolve();
         });
     });
-    console.log(`Listening on http://localhost:${port}`);
+    out.log(`Listening on http://localhost:${port}`);
     try {
         if (!options.url) {
-            console.log(
+            out.log(
                 `Next: expose port ${port} with ngrok/cloudflared and re-run with --url <publicUrl>. No credential sent.`
             );
+            out.set({ port, files: wroteWebhookMjs ? ['./webhook.mjs'] : [] });
             return;
         }
         if (!expectedDid) {
-            console.log(
+            out.log(
                 'Demo: signatures are verified, but any DID is accepted. Set EXPECTED_NETWORK_DID to your trusted network DID before production.'
             );
         }
         const prompts = createPrompts(options.yes);
         let recipient: string;
         try {
-            recipient = email || options.to || (await prompts.ask('Recipient email', ''));
+            recipient =
+                email || options.to || (await prompts.ask('Recipient email (--to <email>)', ''));
         } finally {
             prompts.close();
         }
@@ -121,18 +178,34 @@ export const runWebhook = async (
             });
             await saveProject(project, { [KEYS.TEMPLATE_URI]: uri });
         }
+        const templateUri = project.env[KEYS.TEMPLATE_URI]!;
         const result = await learnCard.invoke.send({
             type: 'boost',
             recipient,
-            templateUri: project.env[KEYS.TEMPLATE_URI]!,
+            templateUri,
             options: { webhookUrl: options.url },
         });
-        console.log(`Sent. Watch for ISSUANCE_DELIVERED ${result.inbox?.status ?? ''}.`);
-        console.log(
+        out.log(`Sent. Watch for ISSUANCE_DELIVERED ${result.inbox?.status ?? ''}.`);
+        out.log(
             result.inbox?.status === 'PENDING'
                 ? `Next: click the claim link in your email to see ISSUANCE_CLAIMED. Ctrl+C to stop.`
                 : 'Next: this recipient already has LearnCard; no claim event is expected. Ctrl+C to stop.'
         );
+        if (out.json) {
+            const timeoutMs = (Number(options.timeout) > 0 ? Number(options.timeout) : 60) * 1000;
+            const onServerError = (): void => {};
+            server.on('error', onServerError);
+            const events = await collectWebhookEvents(timeoutMs, !!options.waitForClaim);
+            server.removeListener('error', onServerError);
+            out.set({
+                port,
+                url: options.url,
+                templateUri,
+                issuanceId: result.inbox?.issuanceId,
+                events,
+            });
+            return;
+        }
         await new Promise<void>((resolve, reject) => {
             const stop = (): void => {
                 cleanup();

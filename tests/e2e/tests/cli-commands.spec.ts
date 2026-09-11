@@ -118,6 +118,13 @@ describe('CLI: one folder, every command', () => {
             const again = cli('setup-signing');
             expect(again).toContain('is already your primary');
             expect(env().SECURE_SEED).toBe(e.SECURE_SEED);
+
+            const json = JSON.parse(cli('setup-signing', '--json'));
+            expect(json.ok).toBe(true);
+            expect(json.command).toBe('setup-signing');
+            expect(json.signingAuthority.name).toBe('default-issuer');
+            expect(json.signingAuthority.endpoint).toBe(e.SIGNING_AUTHORITY_ENDPOINT);
+            expect(json.alreadyConfigured).toBe(true);
         }
 
         // send --template creates one template and reuses it; generated file runs standalone
@@ -151,6 +158,22 @@ describe('CLI: one folder, every command', () => {
                 { cwd: dir, encoding: 'utf8', timeout: 60_000 }
             );
             expect(run).toMatch(/^Sent\./m);
+
+            const json = JSON.parse(
+                cli(
+                    'send',
+                    `cli-d-${randomBytes(3).toString('hex')}@test.com`,
+                    '--template',
+                    '--json'
+                )
+            );
+            expect(json.ok).toBe(true);
+            expect(json.command).toBe('send');
+            expect(json.templateUri).toBe(templateUri);
+            expect(json.status).toBe('PENDING');
+            expect(json.did).toMatch(/^did:/);
+            expect(json.issuanceId).toMatch(/^[0-9a-f-]{36}$/);
+            expect(json.claimUrl).toContain('/interactions/inbox-claim/');
         }
 
         // token writes API_TOKEN + send.sh, and send.sh sends over HTTP
@@ -180,6 +203,14 @@ describe('CLI: one folder, every command', () => {
                 type: 'boost',
                 inbox: { status: 'PENDING' },
             });
+
+            const json = JSON.parse(cli('token', '--json'));
+            expect(json.ok).toBe(true);
+            expect(json.command).toBe('token');
+            expect(json.token.split('.')).toHaveLength(3);
+            expect(json.scope).toBe('boosts:write');
+            expect(json.grantId).toBeTruthy();
+            expect(json.files).toEqual([]); // send.sh already exists from the call above
         }
 
         // verify: valid passes, tampered fails, revoke flips status
@@ -203,6 +234,11 @@ describe('CLI: one folder, every command', () => {
                 })
             ).toMatch(/✓ proof/);
 
+            // verify --json keeps its pre-existing meaning: the raw verification result, unwrapped.
+            const verifyJson = JSON.parse(cliRaw('verify', 'vc.json', '--json'));
+            expect(verifyJson.errors).toEqual([]);
+            expect(verifyJson.ok).toBeUndefined(); // not wrapped like other --json commands
+
             const bProfile = await recipient.invoke.getProfile();
             const sent = await issuer.invoke.send({
                 type: 'boost',
@@ -215,6 +251,23 @@ describe('CLI: one folder, every command', () => {
             const credentialUri = sent.credentialUri || mine.uri;
 
             expect(cli('revoke', credentialUri)).toContain('Revoked');
+
+            // Fresh credential so the --json revoke assertion doesn't depend on re-revoking.
+            const sent2 = await issuer.invoke.send({
+                type: 'boost',
+                recipient: bProfile!.profileId,
+                templateUri: e.TEMPLATE_URI!,
+            });
+            const incoming2 = await recipient.invoke.getIncomingCredentials();
+            const mine2 = incoming2.find(c => c.uri === sent2.credentialUri) ?? incoming2[0]!;
+            await recipient.invoke.acceptCredential(mine2.uri);
+            const credentialUri2 = sent2.credentialUri || mine2.uri;
+            const revokeJson = JSON.parse(cli('revoke', credentialUri2, '--json'));
+            expect(revokeJson.ok).toBe(true);
+            expect(revokeJson.credentialUri).toBe(credentialUri2);
+            expect(revokeJson.templateUri).toBe(e.TEMPLATE_URI);
+            expect(revokeJson.recipient).toBe(bProfile!.profileId);
+            expect(revokeJson.action).toBe('revoked');
 
             const verifier = await initLearnCard({
                 seed: randomBytes(32).toString('hex'),
@@ -246,6 +299,13 @@ describe('CLI: one folder, every command', () => {
 
             cli('embed');
             expect(env().INTEGRATION_ID).toBe(e.INTEGRATION_ID);
+
+            const json = JSON.parse(cli('embed', '--json'));
+            expect(json.ok).toBe(true);
+            expect(json.command).toBe('embed');
+            expect(json.integrationId).toBe(e.INTEGRATION_ID);
+            expect(json.publishableKey).toBe(e.PUBLISHABLE_KEY);
+            expect(json.whitelistedDomains).toContain('http://localhost:3000');
         }
 
         // consent-contract creates once; a consenting user is readable; callback verifies a real vp
@@ -256,6 +316,13 @@ describe('CLI: one folder, every command', () => {
             expect(e.CONTRACT_URI).toMatch(/^lc:network:.*:contract:/);
             cli('consent-contract');
             expect(env().CONTRACT_URI).toBe(e.CONTRACT_URI);
+
+            const json = JSON.parse(cli('consent-contract', '--json'));
+            expect(json.ok).toBe(true);
+            expect(json.command).toBe('consent-contract');
+            expect(json.contractUri).toBe(e.CONTRACT_URI);
+            expect(json.consentUrl).toContain('consent-flow?uri=');
+            expect(json.returnTo).toBe(e.RETURN_TO);
 
             const user = await initLearnCard({
                 seed: randomBytes(32).toString('hex'),
@@ -362,6 +429,30 @@ describe('CLI: one folder, every command', () => {
             } finally {
                 proc.kill();
             }
+        }
+
+        // webhook --json without --url: same as human mode's "no credential sent", but structured
+        {
+            const json = JSON.parse(cli('webhook', '--json', '--port', String(WEBHOOK_PORT + 1)));
+            expect(json.ok).toBe(true);
+            expect(json.command).toBe('webhook');
+            expect(json.port).toBe(WEBHOOK_PORT + 1);
+            expect(Array.isArray(json.files)).toBe(true);
+            expect(json.events).toBeUndefined();
+        }
+
+        // open --json implies --no-browser and never touches stdout other than the JSON line.
+        // The project's saved NETWORK_URL is local, so --app-url stands in for a hosted app.
+        {
+            const json = JSON.parse(
+                cli('open', '--json', '--no-browser', '--app-url', 'https://example.com')
+            );
+            expect(json.ok).toBe(true);
+            expect(json.command).toBe('open');
+            expect(json.url).toContain('https://example.com/developer/sign-in');
+            expect(json.next).toBe('/app-store/developer');
+            // Headless CI may lack a clipboard utility entirely; either delivery is a pass.
+            expect(['clipboard', 'none']).toContain(json.seedDelivery);
         }
 
         // .env accumulated every key across the run

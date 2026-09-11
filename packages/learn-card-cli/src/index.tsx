@@ -20,6 +20,7 @@ import { getRenderMethodPlugin } from '@learncard/render-method-plugin';
 
 import { generateRandomSeed } from './random';
 import { runSend } from './send';
+import { out } from './out';
 import {
     createLearnCardBundle,
     exportLearnCardBundle as writeLearnCardBundle,
@@ -342,6 +343,7 @@ program
     )
     .option('--network <url>', 'network tRPC URL (default: production)')
     .option('--template', 'send using a reusable template and hosted signing authority')
+    .option('--json', 'print a single JSON result on stdout')
     .action(
         async (
             email: string,
@@ -353,17 +355,32 @@ program
                 profileId?: string;
                 network?: string;
                 template?: boolean;
+                json?: boolean;
             }
         ) => {
+            out.json = !!opts.json;
+            out.result = {};
             const didkit = fs.readFile(
                 require.resolve('@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm')
             );
             try {
                 await runSend(email, { ...opts, didkit });
+                if (out.json) {
+                    process.stdout.write(
+                        JSON.stringify({ ok: true, command: 'send', ...out.result }) + '\n'
+                    );
+                }
                 process.exit(0);
             } catch (error) {
                 const message = error instanceof Error ? error.message : String(error);
-                console.error(`\n${message.split('\n')[0]}`);
+                const firstLine = message.split('\n')[0]!;
+                if (out.json) {
+                    process.stdout.write(
+                        JSON.stringify({ ok: false, command: 'send', error: firstLine }) + '\n'
+                    );
+                    process.exit(1);
+                }
+                console.error(`\n${firstLine}`);
                 console.error(
                     'Troubleshooting: https://docs.learncard.com/start-here/your-first-integration#if-something-goes-wrong'
                 );
@@ -376,20 +393,41 @@ const commandOptions = (command: ReturnType<typeof program.command>) =>
     command
         .option('-y, --yes', 'accept defaults without prompting')
         .option('--profile-id <id>', 'public handle for your issuer profile')
-        .option('--network <url>', 'network tRPC URL or staging (default: production)');
+        .option('--network <url>', 'network tRPC URL or staging (default: production)')
+        .option('--json', 'print a single JSON result on stdout');
 
-const runCommand = async (action: (didkit: Promise<Buffer>) => Promise<void>) => {
+/**
+ * Shared runner for every subcommand except `send` (which has its own didkit/error
+ * formatting). Sets up `out` for this run and, in `--json` mode, prints exactly one
+ * envelope on stdout instead of the human-mode stderr message. Pass `wrap: false` for
+ * commands (only `verify` today) that already print their own `--json` output.
+ */
+const runCommand = async (
+    command: string,
+    options: { json?: boolean },
+    action: (didkit: Promise<Buffer>) => Promise<void>,
+    wrap: boolean = true
+) => {
+    out.json = !!options.json;
+    out.result = {};
     try {
         await action(
             fs.readFile(require.resolve('@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm'))
         );
+        if (out.json && wrap) {
+            process.stdout.write(JSON.stringify({ ok: true, command, ...out.result }) + '\n');
+        }
         process.exit(process.exitCode || 0);
     } catch (error) {
-        console.error(
+        const message =
             error instanceof Error
-                ? error.message.split('\n')[0]
-                : 'Command failed. Please try again.'
-        );
+                ? error.message.split('\n')[0]!
+                : 'Command failed. Please try again.';
+        if (out.json && wrap) {
+            process.stdout.write(JSON.stringify({ ok: false, command, error: message }) + '\n');
+            process.exit(1);
+        }
+        console.error(message);
         process.exit(1);
     }
 };
@@ -403,7 +441,7 @@ commandOptions(
         'callback URL (default: http://localhost:3000/consent-callback)'
     )
     .action(options =>
-        runCommand(async didkit => {
+        runCommand('consent-contract', options, async didkit => {
             const { runConsentContract } = await import('./consent-contract');
             await runConsentContract({ ...options, didkit });
         })
@@ -417,7 +455,7 @@ commandOptions(program.command('embed').description('Put a Claim button on your 
     )
     .option('--rotate-key', 'rotate the integration publishable key')
     .action(options =>
-        runCommand(async didkit => {
+        runCommand('embed', options, async didkit => {
             const { runEmbed } = await import('./embed');
             await runEmbed({ ...options, didkit });
         })
@@ -430,7 +468,7 @@ commandOptions(
 )
     .option('--name <name>', 'signing authority name (default: default-issuer)')
     .action(options =>
-        runCommand(async didkit => {
+        runCommand('setup-signing', options, async didkit => {
             const { runSetupSigning } = await import('./setup-signing');
             await runSetupSigning({ ...options, didkit });
         })
@@ -443,7 +481,7 @@ commandOptions(
     .option('--scope <scope>', 'space-separated permissions (default: boosts:write)')
     .option('--revoke <grantId>', 'revoke an existing auth grant')
     .action(options =>
-        runCommand(async didkit => {
+        runCommand('token', options, async didkit => {
             const { runToken } = await import('./token');
             await runToken({ ...options, didkit });
         })
@@ -454,10 +492,15 @@ program
     .description('Verify a credential or presentation JSON file; use - for stdin.')
     .option('--json', 'print the raw verification result')
     .action((file, options) =>
-        runCommand(async didkit => {
-            const { runVerify } = await import('./verify');
-            await runVerify(file, { ...options, didkit });
-        })
+        runCommand(
+            'verify',
+            options,
+            async didkit => {
+                const { runVerify } = await import('./verify');
+                await runVerify(file, { ...options, didkit });
+            },
+            false
+        )
     );
 
 commandOptions(
@@ -472,7 +515,7 @@ commandOptions(
         'recipient profile ID if it cannot be read from the credential'
     )
     .action((uri, options) =>
-        runCommand(async didkit => {
+        runCommand('revoke', options, async didkit => {
             const { runRevoke } = await import('./revoke');
             await runRevoke(uri, { ...options, didkit });
         })
@@ -483,12 +526,14 @@ program
     .description(
         'Open the LearnCard app signed in as this project. Targets: portal (default), wallet, template, contract, integration.'
     )
+    .option('-y, --yes', 'accept defaults without prompting')
     .option('--network <url>', 'network tRPC URL or staging (default: production)')
     .option('--app-url <url>', 'LearnCard app URL for self-hosted or local networks')
     .option('--url-fragment', 'pass the seed in the URL fragment instead of the clipboard')
     .option('--no-browser', 'print the URL without opening a browser')
+    .option('--json', 'print a single JSON result on stdout')
     .action((target, options) =>
-        runCommand(async () => {
+        runCommand('open', options, async () => {
             const { runOpen, OPEN_TARGETS } = await import('./open');
             if (target && !(target in OPEN_TARGETS))
                 throw new Error(
@@ -505,12 +550,23 @@ commandOptions(
     .option('--url <publicUrl>', 'public HTTPS webhook URL')
     .option('--port <n>', 'receiver port (default: 8787)')
     .option('--name <name>', 'display name for your issuer profile')
+    .option(
+        '--timeout <seconds>',
+        'in --json mode, seconds to wait for webhook events (default: 60)'
+    )
+    .option('--wait-for-claim', 'in --json mode, also wait for ISSUANCE_CLAIMED before exiting')
     .action((email, options) =>
-        runCommand(async didkit => {
+        runCommand('webhook', options, async didkit => {
             const { runWebhook } = await import('./webhook');
             await runWebhook(email, { ...options, didkit });
         })
     );
+
+program.addHelpText(
+    'after',
+    '\nEnvironment:\n' +
+        '  LC_YES=1  Same as passing -y/--yes to every command: never prompt, always use defaults.\n'
+);
 
 program
     .version(packageJson.version)
