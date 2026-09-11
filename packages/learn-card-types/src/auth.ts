@@ -227,6 +227,14 @@ export type SssActivationState = 'provisional' | 'active';
 /** Optional PIN enrollment requires rotating the existing escrow share. */
 export type EscrowEnrollmentOptions = { pin?: string };
 
+/** Stable error-message contract shared by PIN recovery clients and servers. */
+export const ESCROW_PIN_LOCKED_MESSAGE =
+    'Too many incorrect PIN attempts. You can still recover by waiting.';
+export const ESCROW_PIN_UNAVAILABLE_MESSAGE = 'PIN recovery is not available for this account.';
+export const ESCROW_PIN_MISMATCH_PATTERN = /^Incorrect PIN\. (\d+) attempts left\.$/;
+export const escrowPinMismatchMessage = (attemptsRemaining: number): string =>
+    `Incorrect PIN. ${attemptsRemaining} attempts left.`;
+
 /** Public PIN availability and remaining lifetime attempts; never includes the verifier. */
 export interface EscrowPinStatus {
     enabled: boolean;
