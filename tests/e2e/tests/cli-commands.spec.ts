@@ -104,6 +104,16 @@ describe('CLI: one folder, every command', () => {
     });
 
     test('every command, one folder, one .env', async () => {
+        // init creates the identity without sending; a typo is caught, not swallowed by the REPL
+        {
+            const init = JSON.parse(cli('init', '--json'));
+            expect(init.created).toBe(true);
+            expect(init.profileId).toBeTruthy();
+            expect(JSON.parse(cli('init', '--json')).created).toBe(false);
+            expect(() => cliRaw('sned', 'x@y.com')).toThrow(/unknown command 'sned'/);
+            expect(() => cli('send', 'notanemail')).toThrow(/not an email address/);
+        }
+
         // setup-signing creates identity + profile + primary signing authority, idempotently
         {
             const out = cli('setup-signing');

@@ -153,7 +153,12 @@ export const saveProject = async (
         await fs.rename(temporary, project.envPath);
         project.existing = next;
         Object.assign(project.env, changed);
-        out.log(`Wrote ${Object.keys(changed).join(' and ')} to .env`);
+        const keys = Object.keys(changed);
+        const list =
+            keys.length > 2
+                ? `${keys.slice(0, -1).join(', ')}, and ${keys.at(-1)}`
+                : keys.join(' and ');
+        out.log(`Wrote ${list} to .env`);
     } finally {
         await fs.rm(temporary, { force: true });
         await lock.close();
@@ -197,6 +202,16 @@ export const ensureIdentity = async (project: Project, options: ProjectOptions) 
         }
     }
     if (!displayName) displayName = 'My Organization';
+    if (!project.env.SECURE_SEED) {
+        const { network } = resolveServices(project.env, options.network);
+        const where =
+            network === PRODUCTION_NETWORK
+                ? 'production'
+                : network === STAGING_NETWORK
+                  ? 'staging'
+                  : network;
+        out.log(`No .env here — creating a new ${where} identity in ${process.cwd()}`);
+    }
     const seed = project.env.SECURE_SEED || generateRandomSeed();
     const profileId = project.env.PROFILE_ID || options.profileId || toProfileId(displayName);
     await saveProject(project, {

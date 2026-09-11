@@ -388,9 +388,11 @@ program
                     process.exit(1);
                 }
                 console.error(`\n${firstLine}`);
-                console.error(
-                    'Troubleshooting: https://docs.learncard.com/start-here/your-first-integration#if-something-goes-wrong'
-                );
+                // Input mistakes explain themselves; keep the docs link for network/auth failures.
+                if (!/is not an email address/.test(firstLine))
+                    console.error(
+                        'Troubleshooting: https://docs.learncard.com/start-here/your-first-integration#if-something-goes-wrong'
+                    );
                 process.exit(1);
             }
         }
@@ -595,169 +597,218 @@ commandOptions(
         })
     );
 
-program.addHelpText(
-    'after',
-    '\nEnvironment:\n' +
-        '  LC_YES=1  Same as passing -y/--yes to every command: never prompt, always use defaults.\n'
+const JOURNEY = [
+    'send',
+    'status',
+    'setup-signing',
+    'token',
+    'webhook',
+    'consent-contract',
+    'embed',
+    'verify',
+    'revoke',
+    'open',
+    'init',
+    'repl',
+];
+
+program
+    .name('learncard')
+    .description(
+        'Issue, track, and verify credentials from the terminal. Every command shares the .env in the current folder.'
+    )
+    .showSuggestionAfterError()
+    .configureHelp({
+        sortSubcommands: false,
+        visibleCommands: cmd =>
+            [...cmd.commands].sort((a, b) => JOURNEY.indexOf(a.name()) - JOURNEY.indexOf(b.name())),
+    })
+    .addHelpText(
+        'before',
+        '\nStart here:  npx @learncard/cli send you@example.com\nThen:        npx @learncard/cli status\n'
+    )
+    .addHelpText(
+        'after',
+        '\nEvery command: -y skips prompts, --json prints one machine-readable result, --network staging|<url> picks the network.\n' +
+            'Environment:\n' +
+            '  LC_YES=1  Same as passing -y to every command.\n' +
+            '  LCA_API_URL, NETWORK_URL  Override service URLs for self-hosted networks.\n'
+    );
+
+const runRepl = async (_seed: string = generateRandomSeed()) => {
+    console.clear();
+
+    const envSeed = process.env.LEARNCARD_CLI_SEED ?? process.env.SEED;
+    const seedInput = envSeed ?? _seed;
+    const seed = seedInput.padStart(64, '0');
+
+    console.log(
+        gradient(['cyan', 'green'])(figlet.textSync('Learn Card', 'Big Money-ne' as figlet.Fonts))
+    );
+    console.log('Welcome to the Learn Card CLI!\n');
+
+    console.log(`Your seed is ${seed}\n`);
+
+    if (envSeed) {
+        console.log('Using seed from LEARNCARD_CLI_SEED / SEED.\n');
+    }
+
+    console.log('Creating wallet...');
+
+    cliGlobals.seed = seed;
+    cliGlobals.generateRandomSeed = generateRandomSeed;
+    cliGlobals.emptyLearnCard = emptyLearnCard;
+    cliGlobals.learnCardFromSeed = learnCardFromSeed;
+    cliGlobals.initLearnCard = initLearnCard;
+
+    const didkit = fs.readFile(
+        require.resolve('@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm')
+    );
+
+    const _learnCard = await initLearnCard({
+        seed,
+        network: true,
+        allowRemoteContexts: true,
+        didkit,
+    });
+
+    const lcaApiLc = await _learnCard.addPlugin(
+        await getLCAPlugin(_learnCard, 'https://api.learncard.app/trpc')
+    );
+
+    cliGlobals.learnCard = await lcaApiLc.addPlugin(getLerRsPlugin(lcaApiLc));
+    // Add LinkedClaims plugin so endorse/verify/store/getEndorsements are available in the CLI
+    cliGlobals.learnCard = await cliGlobals.learnCard.addPlugin(
+        getLinkedClaimsPlugin(cliGlobals.learnCard)
+    );
+
+    // Add OpenBadge v2 wrapper plugin for backwards-compatible OBv2 -> VC wrapping
+    cliGlobals.learnCard = await cliGlobals.learnCard.addPlugin(
+        openBadgeV2Plugin(cliGlobals.learnCard)
+    );
+
+    // Add Render Method plugin for attaching W3C renderMethod to VCs
+    cliGlobals.learnCard = await cliGlobals.learnCard.addPlugin(
+        getRenderMethodPlugin(cliGlobals.learnCard)
+    );
+
+    cliGlobals.types = types;
+    cliGlobals.getTestCache = getTestCache;
+
+    cliGlobals.copy = copyFunction;
+    cliGlobals.getLearnCardBundlePassword = getLearnCardBundlePassword;
+    cliGlobals.exportLearnCardBundle = createExportLearnCardBundleHelper(
+        writeLearnCardBundle,
+        cliGlobals.learnCard
+    );
+
+    cliGlobals.restoreLearnCardFromBundle = createRestoreLearnCardFromBundleHelper(restoreBundle, {
+        network: true,
+        allowRemoteContexts: true,
+        didkit,
+    });
+    cliGlobals.importLearnCardBundle = importLearnCardBundle;
+    cliGlobals.createLearnCardBundle = createLearnCardBundle;
+    cliGlobals.readLearnCardBundle = readLearnCardBundle;
+
+    // delete 'Creating wallet...' message
+    process.stdout.moveCursor?.(0, -1);
+    process.stdout.clearLine?.(1);
+
+    console.log('Wallet created!\n');
+
+    console.log('┌───────────────────────────────────────────────────────────────┐');
+    console.log('│                        Variables Available                    │');
+    console.log('├────────────────────────────┬──────────────────────────────────┤');
+    console.log('│      Variable              │             Description          │');
+    console.log('├────────────────────────────┼──────────────────────────────────┤');
+    console.log(`│                  ${g.learnCard} │ Learn Card Wallet                │`);
+    console.log(`│              ${g.initLearnCard} │ Wallet Instantiation Function    │`);
+    console.log(`│                       ${g.seed} │ Seed used to generate wallet     │`);
+    console.log(`│         ${g.generateRandomSeed} │ Generates a random seed          │`);
+    console.log(`│                      ${g.types} │ Helpful zod validators           │`);
+    console.log(`│                       ${g.copy} │ Copy text to clipboard           │`);
+    console.log(`│ ${g.getLearnCardBundlePassword} │ Prompt for bundle password      │`);
+    console.log(`│      ${g.exportLearnCardBundle} │ Export wallet continuity ZIP     │`);
+    console.log(`│      ${g.importLearnCardBundle} │ Import continuity ZIP            │`);
+    console.log(`│ ${g.restoreLearnCardFromBundle} │ Restore original wallet from ZIP │`);
+    console.log('└────────────────────────────┴──────────────────────────────────┘');
+
+    console.log('');
+
+    console.log('For help/documentation regarding your wallet, please read the documentation at\n');
+
+    console.log('https://docs.learncard.com/sdks/learncard-core/construction\n');
+
+    console.log("To get a feel for what's possible, try some of the following commands\n");
+
+    console.log(
+        '┌─────────────────────────┬───────────────────────────────────────────────────────────────────────────────────┐'
+    );
+    console.log(
+        '│        Description      │                       Command                                                     │'
+    );
+    console.log(
+        '├─────────────────────────┼───────────────────────────────────────────────────────────────────────────────────┤'
+    );
+    console.log(
+        `│           View your did │ ${g.learnCard}.id.did();                                                               │`
+    );
+    console.log(
+        `│ Generate an unsigned VC │ ${g.learnCard}.invoke.getTestVc();                                                     │`
+    );
+    console.log(
+        `│       Issue a signed VC │ await ${g.learnCard}.invoke.issueCredential(uvc);                                      │`
+    );
+    console.log(
+        `│      Verify a signed VC │ await ${g.learnCard}.invoke.verifyCredential(vc);                                      │`
+    );
+    console.log(
+        `│       Issue a signed VP │ await ${g.learnCard}.invoke.issuePresentation(vc);                                     │`
+    );
+    console.log(
+        `│      Verify a signed VP │ await ${g.learnCard}.invoke.verifyPresentation(vp);                                    │`
+    );
+    console.log(
+        `│  Prompt bundle password │ const password = await ${g.getLearnCardBundlePassword}();                         │`
+    );
+    console.log(
+        `│       Export wallet ZIP │ await ${g.exportLearnCardBundle}(${g.learnCard}, { out: './export.zip', password }); │`
+    );
+    console.log(
+        `│ Restore original wallet │ await ${g.restoreLearnCardFromBundle}('./export.zip', { password });                │`
+    );
+    console.log(
+        '└─────────────────────────┴───────────────────────────────────────────────────────────────────────────────────┘'
+    );
+
+    console.log('');
+
+    await startCliRepl(colorizeReplInput);
+};
+
+commandOptions(
+    program
+        .command('init')
+        .description("Create this folder's issuer identity and profile without sending anything.")
+        .option('--name <displayName>', 'display name for your issuer profile')
+).action(options =>
+    runCommand('init', options, async didkit => {
+        const { runInit } = await import('./init');
+        await runInit({ ...options, didkit });
+    })
 );
 
 program
-    .version(packageJson.version)
-    .argument('[seed]')
-    .action(async (_seed: string = generateRandomSeed()) => {
-        console.clear();
+    .command('repl [seed]')
+    .description('Interactive JavaScript console with a LearnCard preloaded (advanced).')
+    .action(runRepl);
 
-        const envSeed = process.env.LEARNCARD_CLI_SEED ?? process.env.SEED;
-        const seedInput = envSeed ?? _seed;
-        const seed = seedInput.padStart(64, '0');
+program.version(packageJson.version);
 
-        console.log(
-            gradient(['cyan', 'green'])(figlet.textSync('Learn Card', 'Big Money-ne' as any))
-        );
-        console.log('Welcome to the Learn Card CLI!\n');
-
-        console.log(`Your seed is ${seed}\n`);
-
-        if (envSeed) {
-            console.log('Using seed from LEARNCARD_CLI_SEED / SEED.\n');
-        }
-
-        console.log('Creating wallet...');
-
-        cliGlobals.seed = seed;
-        cliGlobals.generateRandomSeed = generateRandomSeed;
-        cliGlobals.emptyLearnCard = emptyLearnCard;
-        cliGlobals.learnCardFromSeed = learnCardFromSeed;
-        cliGlobals.initLearnCard = initLearnCard;
-
-        const didkit = fs.readFile(
-            require.resolve('@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm')
-        );
-
-        const _learnCard = await initLearnCard({
-            seed,
-            network: true,
-            allowRemoteContexts: true,
-            didkit,
-        });
-
-        const lcaApiLc = await _learnCard.addPlugin(
-            await getLCAPlugin(_learnCard, 'https://api.learncard.app/trpc')
-        );
-
-        cliGlobals.learnCard = await lcaApiLc.addPlugin(getLerRsPlugin(lcaApiLc));
-        // Add LinkedClaims plugin so endorse/verify/store/getEndorsements are available in the CLI
-        cliGlobals.learnCard = await cliGlobals.learnCard.addPlugin(
-            getLinkedClaimsPlugin(cliGlobals.learnCard)
-        );
-
-        // Add OpenBadge v2 wrapper plugin for backwards-compatible OBv2 -> VC wrapping
-        cliGlobals.learnCard = await cliGlobals.learnCard.addPlugin(
-            openBadgeV2Plugin(cliGlobals.learnCard)
-        );
-
-        // Add Render Method plugin for attaching W3C renderMethod to VCs
-        cliGlobals.learnCard = await cliGlobals.learnCard.addPlugin(
-            getRenderMethodPlugin(cliGlobals.learnCard)
-        );
-
-        cliGlobals.types = types;
-        cliGlobals.getTestCache = getTestCache;
-
-        cliGlobals.copy = copyFunction;
-        cliGlobals.getLearnCardBundlePassword = getLearnCardBundlePassword;
-        cliGlobals.exportLearnCardBundle = createExportLearnCardBundleHelper(
-            writeLearnCardBundle,
-            cliGlobals.learnCard
-        );
-
-        cliGlobals.restoreLearnCardFromBundle = createRestoreLearnCardFromBundleHelper(
-            restoreBundle,
-            {
-                network: true,
-                allowRemoteContexts: true,
-                didkit,
-            }
-        );
-        cliGlobals.importLearnCardBundle = importLearnCardBundle;
-        cliGlobals.createLearnCardBundle = createLearnCardBundle;
-        cliGlobals.readLearnCardBundle = readLearnCardBundle;
-
-        // delete 'Creating wallet...' message
-        process.stdout.moveCursor?.(0, -1);
-        process.stdout.clearLine?.(1);
-
-        console.log('Wallet created!\n');
-
-        console.log('┌───────────────────────────────────────────────────────────────┐');
-        console.log('│                        Variables Available                    │');
-        console.log('├────────────────────────────┬──────────────────────────────────┤');
-        console.log('│      Variable              │             Description          │');
-        console.log('├────────────────────────────┼──────────────────────────────────┤');
-        console.log(`│                  ${g.learnCard} │ Learn Card Wallet                │`);
-        console.log(`│              ${g.initLearnCard} │ Wallet Instantiation Function    │`);
-        console.log(`│                       ${g.seed} │ Seed used to generate wallet     │`);
-        console.log(`│         ${g.generateRandomSeed} │ Generates a random seed          │`);
-        console.log(`│                      ${g.types} │ Helpful zod validators           │`);
-        console.log(`│                       ${g.copy} │ Copy text to clipboard           │`);
-        console.log(`│ ${g.getLearnCardBundlePassword} │ Prompt for bundle password      │`);
-        console.log(`│      ${g.exportLearnCardBundle} │ Export wallet continuity ZIP     │`);
-        console.log(`│      ${g.importLearnCardBundle} │ Import continuity ZIP            │`);
-        console.log(`│ ${g.restoreLearnCardFromBundle} │ Restore original wallet from ZIP │`);
-        console.log('└────────────────────────────┴──────────────────────────────────┘');
-
-        console.log('');
-
-        console.log(
-            'For help/documentation regarding your wallet, please read the documentation at\n'
-        );
-
-        console.log('https://docs.learncard.com/sdks/learncard-core/construction\n');
-
-        console.log("To get a feel for what's possible, try some of the following commands\n");
-
-        console.log(
-            '┌─────────────────────────┬───────────────────────────────────────────────────────────────────────────────────┐'
-        );
-        console.log(
-            '│        Description      │                       Command                                                     │'
-        );
-        console.log(
-            '├─────────────────────────┼───────────────────────────────────────────────────────────────────────────────────┤'
-        );
-        console.log(
-            `│           View your did │ ${g.learnCard}.id.did();                                                               │`
-        );
-        console.log(
-            `│ Generate an unsigned VC │ ${g.learnCard}.invoke.getTestVc();                                                     │`
-        );
-        console.log(
-            `│       Issue a signed VC │ await ${g.learnCard}.invoke.issueCredential(uvc);                                      │`
-        );
-        console.log(
-            `│      Verify a signed VC │ await ${g.learnCard}.invoke.verifyCredential(vc);                                      │`
-        );
-        console.log(
-            `│       Issue a signed VP │ await ${g.learnCard}.invoke.issuePresentation(vc);                                     │`
-        );
-        console.log(
-            `│      Verify a signed VP │ await ${g.learnCard}.invoke.verifyPresentation(vp);                                    │`
-        );
-        console.log(
-            `│  Prompt bundle password │ const password = await ${g.getLearnCardBundlePassword}();                         │`
-        );
-        console.log(
-            `│       Export wallet ZIP │ await ${g.exportLearnCardBundle}(${g.learnCard}, { out: './export.zip', password }); │`
-        );
-        console.log(
-            `│ Restore original wallet │ await ${g.restoreLearnCardFromBundle}('./export.zip', { password });                │`
-        );
-        console.log(
-            '└─────────────────────────┴───────────────────────────────────────────────────────────────────────────────────┘'
-        );
-
-        console.log('');
-
-        await startCliRepl(colorizeReplInput);
-    })
-    .parse(process.argv);
+// Bare `learncard` with a TTY opens the console, as it always has; anything else is a command.
+if (process.argv.length <= 2 && process.stdin.isTTY) {
+    runRepl();
+} else {
+    program.parse(process.argv);
+}

@@ -84,7 +84,14 @@ export const personalizeSendMjs = (displayName: string, badge: Badge): string =>
             JSON.stringify(badge.description)
         );
 
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE = /^\+?\d{10,15}$/;
+
 export const runSend = async (recipientEmail: string, options: SendOptions): Promise<void> => {
+    if (!EMAIL.test(recipientEmail) && !PHONE.test(recipientEmail))
+        throw new Error(
+            `"${recipientEmail}" is not an email address or phone number. Example: npx @learncard/cli send you@example.com`
+        );
     const cwd = process.cwd();
     const project = await loadProject(cwd);
     const prompts = createPrompts(options.yes);
