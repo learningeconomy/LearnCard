@@ -343,6 +343,13 @@ program
     )
     .option('--network <url>', 'network tRPC URL (default: production)')
     .option('--template', 'send using a reusable template and hosted signing authority')
+    .option('--template-uri <uri>', 'send from a specific template (implies --template)')
+    .option('--webhook-url <url>', 'receive ISSUANCE_DELIVERED / ISSUANCE_CLAIMED at this URL')
+    .option('--suppress-delivery', 'skip the claim email; you deliver inbox.claimUrl yourself')
+    .option(
+        '--guardian-email <email>',
+        "require a guardian's approval before the recipient can claim"
+    )
     .option('--json', 'print a single JSON result on stdout')
     .action(
         async (
@@ -440,6 +447,11 @@ commandOptions(
         '--redirect-url <url>',
         'callback URL (default: http://localhost:3000/consent-callback)'
     )
+    .option('--description <text>', 'what users see when asked to consent')
+    .option(
+        '--needs-guardian-consent',
+        'GameFlow: minors need a guardian to approve the connection'
+    )
     .action(options =>
         runCommand('consent-contract', options, async didkit => {
             const { runConsentContract } = await import('./consent-contract');
@@ -467,6 +479,8 @@ commandOptions(
         .description('Set up LearnCard to sign credentials for your project.')
 )
     .option('--name <name>', 'signing authority name (default: default-issuer)')
+    .option('--endpoint <url>', 'register your own VC-API signing service instead (with --did)')
+    .option('--did <did>', 'DID of your own signing service (with --endpoint)')
     .action(options =>
         runCommand('setup-signing', options, async didkit => {
             const { runSetupSigning } = await import('./setup-signing');
@@ -480,6 +494,8 @@ commandOptions(
     .option('--name <name>', 'auth grant name (default: cli-<date>)')
     .option('--scope <scope>', 'space-separated permissions (default: boosts:write)')
     .option('--revoke <grantId>', 'revoke an existing auth grant')
+    .option('--expires <days>', 'token lifetime in days (default: no expiry)')
+    .option('--list', 'list your auth grants')
     .action(options =>
         runCommand('token', options, async didkit => {
             const { runToken } = await import('./token');

@@ -129,7 +129,7 @@ export const runWebhook = async (
     }
     const identity = await ensureIdentity(project, options);
     const learnCard = await connect(project, { ...options, lca: true });
-    await ensureProfile(learnCard, identity);
+    await ensureProfile(learnCard, identity, project);
     const wroteWebhookMjs = await writeSnippet(
         'webhook.mjs',
         localizeSnippet(WEBHOOK_MJS, resolveServices(project.env, options.network))

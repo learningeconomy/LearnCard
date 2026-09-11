@@ -57,13 +57,33 @@ export const validateScope = (scope: string): string => {
 };
 
 export const runToken = async (
-    options: ProjectOptions & { scope?: string; revoke?: string }
+    options: ProjectOptions & { scope?: string; revoke?: string; expires?: string; list?: boolean }
 ): Promise<void> => {
     const scope = validateScope(options.scope ?? 'boosts:write');
     const project = await loadProject(process.cwd());
     const identity = await ensureIdentity(project, { ...options, name: undefined });
     const learnCard = await connect(project, options);
-    await ensureProfile(learnCard, identity);
+    await ensureProfile(learnCard, identity, project);
+    if (options.list) {
+        const grants = (await learnCard.invoke.getAuthGrants()) ?? [];
+        for (const g of grants)
+            out.log(
+                `${g.id}  ${(g.status ?? '').padEnd(8)} ${(g.scope ?? '').padEnd(22)} ${g.name ?? ''}${
+                    g.expiresAt ? `  expires ${g.expiresAt.slice(0, 10)}` : ''
+                }`
+            );
+        if (!grants.length) out.log('No auth grants yet.');
+        out.set({
+            grants: grants.map(g => ({
+                id: g.id,
+                name: g.name,
+                scope: g.scope,
+                status: g.status,
+                expiresAt: g.expiresAt,
+            })),
+        });
+        return;
+    }
     if (options.revoke) {
         if (!(await learnCard.invoke.revokeAuthGrant(options.revoke)))
             throw new Error('Could not revoke auth grant.');
@@ -75,6 +95,13 @@ export const runToken = async (
     const id = await learnCard.invoke.addAuthGrant({
         name: options.name ?? `cli-${new Date().toISOString().slice(0, 10)}`,
         scope,
+        ...(options.expires
+            ? {
+                  expiresAt: new Date(
+                      Date.now() + Number(options.expires) * 86_400_000
+                  ).toISOString(),
+              }
+            : {}),
     });
     const token = await learnCard.invoke.getAPITokenForAuthGrant(id);
     // Tighten existing files before writing the bearer credential.

@@ -88,6 +88,7 @@ describe('project context', () => {
         expect(Object.keys(KEYS)).toEqual([
             'SECURE_SEED',
             'PROFILE_ID',
+            'DISPLAY_NAME',
             'NETWORK_URL',
             'SIGNING_AUTHORITY_NAME',
             'SIGNING_AUTHORITY_ENDPOINT',
@@ -106,6 +107,26 @@ describe('project context', () => {
         });
         expect(result).toBe('# keep\nOTHER=one\nAPI_TOKEN_SCOPE="boosts:write inbox:read"\n');
         expect(parseEnv(result).API_TOKEN_SCOPE).toBe('boosts:write inbox:read');
+    });
+    it('does not ask for a display name when a profile already exists', async () => {
+        const cwd = await fs.mkdtemp(path.join(os.tmpdir(), 'lc-project-'));
+        vi.spyOn(console, 'log').mockImplementation(() => {});
+        try {
+            await fs.writeFile(path.join(cwd, '.env'), 'SECURE_SEED=existing\nPROFILE_ID=issuer\n');
+            const project = await loadProject(cwd);
+            vi.spyOn(process.stdin, 'isTTY', 'get').mockReturnValue(true);
+            const identity = await Promise.race([
+                ensureIdentity(project, {}),
+                new Promise<never>((_, reject) =>
+                    setTimeout(() => reject(new Error('prompted for a display name')), 500)
+                ),
+            ]);
+            expect(identity.profileId).toBe('issuer');
+            expect((await loadProject(cwd)).env.DISPLAY_NAME).toBeUndefined();
+        } finally {
+            vi.restoreAllMocks();
+            await fs.rm(cwd, { recursive: true, force: true });
+        }
     });
     it('accumulates keys, does not rewrite unchanged values, and never replaces a seed', async () => {
         const cwd = await fs.mkdtemp(path.join(os.tmpdir(), 'lc-project-'));

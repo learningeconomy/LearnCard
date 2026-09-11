@@ -39,7 +39,7 @@ export const runEmbed = async (
     const project = await loadProject(process.cwd());
     const identity = await ensureIdentity(project, options);
     const learnCard = await connect(project, { ...options, lca: true });
-    await ensureProfile(learnCard, identity);
+    await ensureProfile(learnCard, identity, project);
     await setupSigning(project, learnCard);
     let id = project.env[KEYS.INTEGRATION_ID];
     const reused = Boolean(id);

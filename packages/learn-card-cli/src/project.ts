@@ -10,6 +10,7 @@ import { out } from './out';
 export const KEYS = {
     SECURE_SEED: 'SECURE_SEED', // Private issuer seed; never regenerate or print.
     PROFILE_ID: 'PROFILE_ID', // Public issuer handle shared by all commands.
+    DISPLAY_NAME: 'DISPLAY_NAME', // Issuer display name; set at creation, then synced from the network.
     NETWORK_URL: 'NETWORK_URL', // Non-default network tRPC endpoint.
     SIGNING_AUTHORITY_NAME: 'SIGNING_AUTHORITY_NAME', // Registered primary signer name.
     SIGNING_AUTHORITY_ENDPOINT: 'SIGNING_AUTHORITY_ENDPOINT', // Hosted signing endpoint.
@@ -182,18 +183,27 @@ export const createPrompts = (yes?: boolean) => {
 };
 
 export const ensureIdentity = async (project: Project, options: ProjectOptions) => {
-    const prompts = createPrompts(options.yes);
-    let displayName: string;
-    try {
-        displayName =
-            options.name ??
-            (await prompts.ask('Display name for your issuer profile', 'My Organization'));
-    } finally {
-        prompts.close();
+    const existingProfileId = project.env.PROFILE_ID || options.profileId;
+    let displayName = options.name ?? project.env.DISPLAY_NAME ?? '';
+    if (!existingProfileId && !displayName) {
+        const prompts = createPrompts(options.yes);
+        try {
+            displayName = await prompts.ask(
+                'Display name for your issuer profile',
+                'My Organization'
+            );
+        } finally {
+            prompts.close();
+        }
     }
+    if (!displayName) displayName = 'My Organization';
     const seed = project.env.SECURE_SEED || generateRandomSeed();
     const profileId = project.env.PROFILE_ID || options.profileId || toProfileId(displayName);
-    await saveProject(project, { SECURE_SEED: seed, PROFILE_ID: profileId });
+    await saveProject(project, {
+        SECURE_SEED: seed,
+        PROFILE_ID: profileId,
+        ...(existingProfileId ? {} : { DISPLAY_NAME: displayName }),
+    });
     const gitignorePath = path.join(path.dirname(project.envPath), '.gitignore');
     const gitignore = await readOptional(gitignorePath);
     if (await fs.stat(gitignorePath).catch(() => null)) {
@@ -346,15 +356,21 @@ export async function connect(
 
 export const ensureProfile = async (
     learnCard: { invoke: Pick<NetworkCard['invoke'], 'getProfile' | 'createProfile'> },
-    identity: { profileId: string; displayName: string }
+    identity: { profileId: string; displayName: string },
+    project?: Project
 ): Promise<void> => {
-    if (!(await learnCard.invoke.getProfile())) {
-        await learnCard.invoke.createProfile({
-            profileId: identity.profileId,
-            displayName: identity.displayName,
-            bio: '',
-            shortBio: '',
-        });
-        out.log(`Created profile "${identity.displayName}" (${identity.profileId})`);
+    const existing = await learnCard.invoke.getProfile();
+    if (existing) {
+        out.log(`Signed in as "${existing.displayName}" (${existing.profileId})`);
+        if (project && project.env.DISPLAY_NAME !== existing.displayName)
+            await saveProject(project, { DISPLAY_NAME: existing.displayName });
+        return;
     }
+    await learnCard.invoke.createProfile({
+        profileId: identity.profileId,
+        displayName: identity.displayName,
+        bio: '',
+        shortBio: '',
+    });
+    out.log(`Created profile "${identity.displayName}" (${identity.profileId})`);
 };

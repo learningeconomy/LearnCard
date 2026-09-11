@@ -7,6 +7,7 @@ import {
     saveProject,
     type Project,
     type ProjectOptions,
+    type NetworkCard,
 } from './project';
 import { out } from './out';
 
@@ -112,12 +113,63 @@ export const setupSigning = async (
     };
 };
 
-export const runSetupSigning = async (options: ProjectOptions): Promise<void> => {
+type SetupSigningOptions = ProjectOptions & { endpoint?: string; did?: string };
+
+/** Register a signing service you run yourself instead of a LearnCard-hosted one. */
+const registerOwnAuthority = async (
+    project: Project,
+    learnCard: {
+        invoke: Pick<
+            NetworkCard['invoke'],
+            'registerSigningAuthority' | 'setPrimaryRegisteredSigningAuthority'
+        >;
+    },
+    name: string,
+    endpoint: string,
+    did: string
+) => {
+    if (!/^https:\/\//.test(endpoint)) throw new Error('--endpoint must be an https:// URL.');
+    if (!/^did:/.test(did)) throw new Error('--did must be a DID (did:web:..., did:key:...).');
+    if (!(await learnCard.invoke.registerSigningAuthority(endpoint, name, did)))
+        throw new Error('Could not register the signing authority.');
+    if (!(await learnCard.invoke.setPrimaryRegisteredSigningAuthority(endpoint, name)))
+        throw new Error('Could not set the signing authority as primary.');
+    await saveProject(project, {
+        SIGNING_AUTHORITY_NAME: name,
+        SIGNING_AUTHORITY_ENDPOINT: endpoint,
+    });
+    out.log(`Your service at ${endpoint} will now sign credentials for this profile.`);
+    out.log('What this did:');
+    out.log(
+        `  await learnCard.invoke.registerSigningAuthority(${JSON.stringify(endpoint)}, ${JSON.stringify(name)}, ${JSON.stringify(did)});`
+    );
+    out.log(
+        `  await learnCard.invoke.setPrimaryRegisteredSigningAuthority(${JSON.stringify(endpoint)}, ${JSON.stringify(name)});`
+    );
+    return { name, endpoint, did, alreadyConfigured: false };
+};
+
+export const runSetupSigning = async (options: SetupSigningOptions): Promise<void> => {
     const project = await loadProject(process.cwd());
     const identity = await ensureIdentity(project, { ...options, name: undefined });
-    const learnCard = await connect(project, { ...options, lca: true });
-    await ensureProfile(learnCard, identity);
-    const authority = await setupSigning(project, learnCard, options.name);
+    if ((options.endpoint && !options.did) || (!options.endpoint && options.did))
+        throw new Error('Pass both --endpoint and --did to register your own signing service.');
+    let authority;
+    if (options.endpoint) {
+        const learnCard = await connect(project, options);
+        await ensureProfile(learnCard, identity, project);
+        authority = await registerOwnAuthority(
+            project,
+            learnCard,
+            options.name ?? 'my-issuer',
+            options.endpoint,
+            options.did!
+        );
+    } else {
+        const learnCard = await connect(project, { ...options, lca: true });
+        await ensureProfile(learnCard, identity, project);
+        authority = await setupSigning(project, learnCard, options.name);
+    }
     out.set({
         profileId: identity.profileId,
         signingAuthority: {

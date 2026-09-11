@@ -53,7 +53,24 @@ export const templateCredential = (issuerDid: string, badge: Badge = DEFAULT_BAD
     return credential;
 };
 
-type SendOptions = ProjectOptions & { badge?: string; description?: string; template?: boolean };
+type SendOptions = ProjectOptions & {
+    badge?: string;
+    description?: string;
+    template?: boolean;
+    templateUri?: string;
+    webhookUrl?: string;
+    suppressDelivery?: boolean;
+    guardianEmail?: string;
+};
+
+const sendOptions = (options: SendOptions) => {
+    const picked = {
+        webhookUrl: options.webhookUrl,
+        suppressDelivery: options.suppressDelivery,
+        guardianEmail: options.guardianEmail,
+    };
+    return Object.values(picked).some(v => v !== undefined) ? { options: picked } : {};
+};
 
 /** Substitute the user's choices into the template that the docs snippet uses. */
 export const personalizeSendMjs = (displayName: string, badge: Badge): string =>
@@ -71,12 +88,13 @@ export const runSend = async (recipientEmail: string, options: SendOptions): Pro
     const cwd = process.cwd();
     const project = await loadProject(cwd);
     const prompts = createPrompts(options.yes);
-    let displayName: string;
+    let displayName: string | undefined;
     let badge: Badge;
     try {
-        displayName =
-            options.name ??
-            (await prompts.ask('Display name for your issuer profile', 'My Organization'));
+        const needsName = !project.env.PROFILE_ID && !options.profileId && !options.name;
+        displayName = needsName
+            ? await prompts.ask('Display name for your issuer profile', 'My Organization')
+            : options.name;
         badge = {
             name: options.badge ?? (await prompts.ask('Badge name', DEFAULT_BADGE.name)),
             description: options.description ?? DEFAULT_BADGE.description,
@@ -85,13 +103,14 @@ export const runSend = async (recipientEmail: string, options: SendOptions): Pro
         prompts.close();
     }
     const identity = await ensureIdentity(project, { ...options, name: displayName, yes: true });
-    const learnCard = options.template
+    const useTemplate = options.template || !!options.templateUri;
+    const learnCard = useTemplate
         ? await connect(project, { ...options, lca: true })
         : await connect(project, options);
-    await ensureProfile(learnCard, identity);
+    await ensureProfile(learnCard, identity, project);
 
     let result;
-    if (options.template) {
+    if (useTemplate) {
         // This branch connected with the LCA plugin; setupSigning accepts its required methods.
         await setupSigning(
             project,
@@ -99,7 +118,9 @@ export const runSend = async (recipientEmail: string, options: SendOptions): Pro
                 ReturnType<typeof import('@learncard/lca-api-plugin').initLCALearnCard>
             >
         );
-        if (!project.env.TEMPLATE_URI) {
+        if (options.templateUri) {
+            out.log(`Sending from template ${options.templateUri}.`);
+        } else if (!project.env.TEMPLATE_URI) {
             const uri = await learnCard.invoke.createBoost(
                 templateCredential(learnCard.id.did(), badge),
                 {
@@ -117,7 +138,8 @@ export const runSend = async (recipientEmail: string, options: SendOptions): Pro
         result = await learnCard.invoke.send({
             type: 'boost',
             recipient: recipientEmail,
-            templateUri: project.env.TEMPLATE_URI!,
+            templateUri: options.templateUri ?? project.env.TEMPLATE_URI!,
+            ...sendOptions(options),
         });
     } else {
         const credential = await learnCard.invoke.issueCredential(
@@ -127,6 +149,7 @@ export const runSend = async (recipientEmail: string, options: SendOptions): Pro
             type: 'boost',
             recipient: recipientEmail,
             signedCredential: credential,
+            ...sendOptions(options),
         });
     }
     out.log('');
@@ -147,7 +170,9 @@ export const runSend = async (recipientEmail: string, options: SendOptions): Pro
         await fs.writeFile(
             sendPath,
             localizeSnippet(
-                options.template ? SEND_FROM_TEMPLATE_MJS : personalizeSendMjs(displayName, badge),
+                options.template
+                    ? SEND_FROM_TEMPLATE_MJS
+                    : personalizeSendMjs(identity.displayName, badge),
                 resolveServices(project.env, options.network)
             )
         );

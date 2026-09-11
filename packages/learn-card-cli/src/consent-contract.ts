@@ -30,7 +30,11 @@ export const consentUrl = (uri: string, returnTo: string, network: string): stri
 };
 
 export const runConsentContract = async (
-    options: ProjectOptions & { redirectUrl?: string }
+    options: ProjectOptions & {
+        redirectUrl?: string;
+        description?: string;
+        needsGuardianConsent?: boolean;
+    }
 ): Promise<void> => {
     const project = await loadProject(process.cwd());
     const returnTo =
@@ -40,7 +44,7 @@ export const runConsentContract = async (
     }
     const identity = await ensureIdentity(project, options);
     const learnCard = await connect(project, options);
-    await ensureProfile(learnCard, identity);
+    await ensureProfile(learnCard, identity, project);
     let uri = project.env[KEYS.CONTRACT_URI];
     if (!uri) {
         const prompts = createPrompts(options.yes);
@@ -52,7 +56,10 @@ export const runConsentContract = async (
         }
         const contract = {
             name,
-            description: 'Allow us to read your name and achievements and send achievements.',
+            description:
+                options.description ??
+                'Allow us to read your name and achievements and send achievements.',
+            ...(options.needsGuardianConsent ? { needsGuardianConsent: true } : {}),
             redirectUrl: returnTo,
             contract: {
                 read: {
