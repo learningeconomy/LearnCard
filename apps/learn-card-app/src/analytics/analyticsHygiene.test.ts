@@ -21,7 +21,7 @@ const { mockCapacitor, mockEnvironment, mockGetResolvedTenantConfig } = vi.hoist
 }));
 
 vi.mock('@capacitor/core', () => ({ Capacitor: mockCapacitor }));
-vi.mock('../config/bootstrapTenantConfig', () => ({
+vi.mock('../config/tenantConfigState', () => ({
     getResolvedTenantConfig: mockGetResolvedTenantConfig,
 }));
 vi.mock('../config/environment', () => ({ environment: mockEnvironment }));

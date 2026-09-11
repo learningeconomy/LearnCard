@@ -6,7 +6,7 @@ import type { AnalyticsProvider, AnalyticsProviderName } from './types';
 import type { AnalyticsEventName, EventPayload, FeedbackIdeaPayload } from './events';
 import { NoopProvider } from './providers/noop';
 import { getSharedEventContext, shouldDropEvents } from './sharedContext';
-import { getResolvedTenantConfig } from '../config/bootstrapTenantConfig';
+import { getResolvedTenantConfig } from '../config/tenantConfigState';
 import { setAnalyticsProvider as setSendCredentialFlowProvider } from '../helpers/sendCredentialFlow.helpers';
 
 /**
