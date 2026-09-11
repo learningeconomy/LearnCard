@@ -46,6 +46,12 @@ import {
 import type { DeviceShareEntry } from '@learncard/sss-key-manager';
 
 import { createNativeSSSStorage } from 'learn-card-base/security/nativeSSSStorage';
+import {
+    loadPendingEscrowRecovery,
+    type PendingEscrowRecovery,
+} from '../recovery/escrowRecoveryStorage';
+import type { EscrowEnrollmentState } from '@learncard/types';
+import type { EscrowHoldStatus } from '@learncard/sss-key-manager';
 import type { NativeShareEntry } from 'learn-card-base/security/nativeSSSStorage';
 
 import {
@@ -180,10 +186,20 @@ interface ServerState {
     exists: boolean;
     needsMigration: boolean;
     primaryDid: string | null;
-    recoveryMethods: Array<{ type: string; createdAt?: string; shareVersion?: number }>;
+    recoveryMethods: Array<{
+        type: string;
+        createdAt?: string;
+        shareVersion?: number;
+        confirmedAt?: string;
+        confirmationStatus?: string;
+    }>;
     authShareFingerprint: string | null;
     rawAuthShare: string | null;
     shareVersion: number | null;
+    escrowOptedOut?: boolean;
+    escrowPin?: { enabled: boolean; attemptsRemaining: number; salt?: string };
+    sssActivationState?: string;
+    maskedRecoveryEmail?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -203,6 +219,7 @@ export const AuthDebugTab: React.FC = () => {
     const [deviceShareExists, setDeviceShareExists] = useState<boolean | null>(null);
     const [deviceSharePreview, setDeviceSharePreview] = useState<string | null>(null);
     const [allShares, setAllShares] = useState<Array<DeviceShareEntry | NativeShareEntry>>([]);
+
     const [events, setEvents] = useState<AuthDebugEvent[]>([]);
     const [expandedEvents, setExpandedEvents] = useState<Set<string>>(new Set());
     const [keyIntegrityResult, setKeyIntegrityResult] = useState<boolean | null>(null);
@@ -227,9 +244,17 @@ export const AuthDebugTab: React.FC = () => {
         hasLCNAccount,
         verifyKeyIntegrity,
         initialize: reinitialize,
+        getEscrowEnrollmentState,
+        getEscrowRecoveryStatus,
+        cancelEscrowRecovery,
+        enableEscrowRecovery,
+        disableEscrowRecovery,
+        setEscrowPin,
+        clearEscrowPin,
     } = useAuthCoordinator();
 
     const meta = getMeta(state.status);
+    const readyState = state.status === 'ready' ? state : undefined;
 
     // --- Other stores (supplementary) ---
     const authUser = authUserStore.use.currentUser();
@@ -237,6 +262,184 @@ export const AuthDebugTab: React.FC = () => {
     const typeOfLogin = authStore.use.typeOfLogin();
 
     const authConfig = useMemo(() => getAuthConfig(), []);
+
+    const [escrowEnrollmentState, setEscrowEnrollmentState] =
+        useState<EscrowEnrollmentState | null>(null);
+    const [escrowHoldStatus, setEscrowHoldStatus] = useState<Awaited<
+        ReturnType<typeof getEscrowRecoveryStatus>
+    > | null>(null);
+    const [escrowAttestation, setEscrowAttestation] = useState<unknown>(null);
+    const [pendingEscrowRecovery, setPendingEscrowRecovery] =
+        useState<PendingEscrowRecovery | null>(null);
+    const [escrowPinInput, setEscrowPinInput] = useState('');
+    const [escrowActionLoading, setEscrowActionLoading] = useState(false);
+    const [escrowActionError, setEscrowActionError] = useState<string | null>(null);
+    const [recoveryPinPromptFlag, setRecoveryPinPromptFlag] = useState<string | null>(null);
+
+    const fetchLocalEscrowState = useCallback(async () => {
+        if (!authUser || !did) {
+            setPendingEscrowRecovery(null);
+            setRecoveryPinPromptFlag(null);
+            return;
+        }
+        const { serverUrl } = getSSSConfig();
+        const scope = JSON.stringify([serverUrl, authUser.id]);
+        try {
+            const pending = await loadPendingEscrowRecovery(scope);
+            setPendingEscrowRecovery(pending ?? null);
+        } catch (e) {
+            log.error('Failed to load pending escrow recovery', e);
+            setPendingEscrowRecovery(null);
+        }
+
+        try {
+            const flag = localStorage.getItem(`lc:recovery-pin-prompt:${did}`);
+            setRecoveryPinPromptFlag(flag);
+        } catch {
+            setRecoveryPinPromptFlag(null);
+        }
+    }, [authUser, did]);
+
+    useEffect(() => {
+        fetchLocalEscrowState();
+    }, [fetchLocalEscrowState, refreshKey]);
+
+    const handleFetchEscrowEnrollment = async () => {
+        setEscrowActionLoading(true);
+        setEscrowActionError(null);
+        try {
+            const res = await getEscrowEnrollmentState();
+            setEscrowEnrollmentState(res);
+        } catch (e) {
+            log.error('Escrow action error', e);
+            setEscrowActionError(e instanceof Error ? e.message : String(e));
+        } finally {
+            setEscrowActionLoading(false);
+        }
+    };
+
+    const handleFetchEscrowHoldStatus = async () => {
+        setEscrowActionLoading(true);
+        setEscrowActionError(null);
+        try {
+            const res = await getEscrowRecoveryStatus();
+            setEscrowHoldStatus(res);
+        } catch (e) {
+            log.error('Escrow action error', e);
+            setEscrowActionError(e instanceof Error ? e.message : String(e));
+        } finally {
+            setEscrowActionLoading(false);
+        }
+    };
+
+    const handleFetchEscrowAttestation = async () => {
+        setEscrowActionLoading(true);
+        setEscrowActionError(null);
+        try {
+            const { serverUrl } = getSSSConfig();
+            const res = await fetch(`${serverUrl}/keys/escrow/attestation`);
+            if (!res.ok) {
+                if (res.status === 404) {
+                    setEscrowAttestation({ error: '404 Not Found (Enclave mode disabled?)' });
+                    return;
+                }
+                throw new Error(`HTTP ${res.status}`);
+            }
+            const data = await res.json();
+            setEscrowAttestation(data);
+        } catch (e) {
+            log.error('Escrow action error', e);
+            setEscrowActionError(e instanceof Error ? e.message : String(e));
+        } finally {
+            setEscrowActionLoading(false);
+        }
+    };
+
+    const handleCancelEscrowRecovery = async () => {
+        if (!confirm('Cancel pending escrow recovery?')) return;
+        setEscrowActionLoading(true);
+        setEscrowActionError(null);
+        try {
+            await cancelEscrowRecovery();
+            await fetchLocalEscrowState();
+        } catch (e) {
+            log.error('Escrow action error', e);
+            setEscrowActionError(e instanceof Error ? e.message : String(e));
+        } finally {
+            setEscrowActionLoading(false);
+        }
+    };
+
+    const handleEnableEscrow = async () => {
+        if (!confirm('Enable escrow recovery?')) return;
+        setEscrowActionLoading(true);
+        setEscrowActionError(null);
+        try {
+            await enableEscrowRecovery();
+            await handleFetchEscrowEnrollment();
+        } catch (e) {
+            log.error('Escrow action error', e);
+            setEscrowActionError(e instanceof Error ? e.message : String(e));
+        } finally {
+            setEscrowActionLoading(false);
+        }
+    };
+
+    const handleDisableEscrow = async () => {
+        if (!confirm('Disable escrow recovery (opt out)?')) return;
+        setEscrowActionLoading(true);
+        setEscrowActionError(null);
+        try {
+            await disableEscrowRecovery();
+            await handleFetchEscrowEnrollment();
+        } catch (e) {
+            log.error('Escrow action error', e);
+            setEscrowActionError(e instanceof Error ? e.message : String(e));
+        } finally {
+            setEscrowActionLoading(false);
+        }
+    };
+
+    const handleSetEscrowPin = async () => {
+        if (!escrowPinInput || escrowPinInput.length < 4) {
+            setEscrowActionError('PIN must be at least 4 characters');
+            return;
+        }
+        if (!confirm('Set new escrow PIN?')) return;
+        setEscrowActionLoading(true);
+        setEscrowActionError(null);
+        try {
+            await setEscrowPin(escrowPinInput);
+            setEscrowPinInput('');
+            await handleFetchEscrowEnrollment();
+        } catch (e) {
+            log.error('Escrow action error', e);
+            setEscrowActionError(e instanceof Error ? e.message : String(e));
+        } finally {
+            setEscrowActionLoading(false);
+        }
+    };
+
+    const handleClearEscrowPin = async () => {
+        if (!confirm('Clear escrow PIN?')) return;
+        setEscrowActionLoading(true);
+        setEscrowActionError(null);
+        try {
+            await clearEscrowPin();
+            await handleFetchEscrowEnrollment();
+        } catch (e) {
+            log.error('Escrow action error', e);
+            setEscrowActionError(e instanceof Error ? e.message : String(e));
+        } finally {
+            setEscrowActionLoading(false);
+        }
+    };
+
+    const handleClearPinPromptFlag = () => {
+        if (!did) return;
+        localStorage.removeItem(`lc:recovery-pin-prompt:${did}`);
+        fetchLocalEscrowState();
+    };
 
     // --- State-specific details ---
     const stateDetails = useMemo((): Array<{ label: string; value: unknown }> => {
@@ -260,7 +463,7 @@ export const AuthDebugTab: React.FC = () => {
             const authUser = 'authUser' in state ? state.authUser : null;
 
             if (authUser) {
-                rows.push({ label: 'Auth UID', value: authUser.uid });
+                rows.push({ label: 'Auth UID', value: authUser.id });
                 rows.push({ label: 'Auth Email', value: authUser.email ?? '—' });
             }
         }
@@ -515,6 +718,10 @@ export const AuthDebugTab: React.FC = () => {
                 authShareFingerprint: rawAuth ? fingerprint(rawAuth) : null,
                 rawAuthShare: rawAuth || null,
                 shareVersion: data.shareVersion ?? null,
+                escrowOptedOut: data.escrowOptedOut,
+                escrowPin: data.escrowPin,
+                sssActivationState: data.sssActivationState,
+                maskedRecoveryEmail: data.maskedRecoveryEmail,
             });
 
             setServerError(null);
@@ -586,6 +793,23 @@ export const AuthDebugTab: React.FC = () => {
             didWebDid,
             serverState,
             localShareVersion,
+
+            escrow: {
+                enrollmentState: escrowEnrollmentState,
+                holdStatus: escrowHoldStatus,
+                attestation: escrowAttestation,
+                pendingRecovery: pendingEscrowRecovery
+                    ? {
+                          holdId: pendingEscrowRecovery.holdId,
+                          releaseAfter: pendingEscrowRecovery.releaseAfter,
+                          resumeTokenFingerprint: fingerprint(pendingEscrowRecovery.resumeToken),
+                          clientEphemeralPrivateKeyFingerprint: fingerprint(
+                              pendingEscrowRecovery.clientEphemeralPrivateKey
+                          ),
+                      }
+                    : null,
+                recoveryPinPromptFlag,
+            },
             deviceShares: allShares.map(s => ({
                 id: s.id,
                 preview: s.preview,
@@ -641,8 +865,8 @@ export const AuthDebugTab: React.FC = () => {
                                         keyIntegrityResult === true
                                             ? 'text-emerald-400'
                                             : keyIntegrityResult === false
-                                            ? 'text-red-400'
-                                            : 'text-gray-500'
+                                              ? 'text-red-400'
+                                              : 'text-gray-500'
                                     }`}
                                 />
                             </button>
@@ -750,8 +974,8 @@ export const AuthDebugTab: React.FC = () => {
                         isNative
                             ? 'SQLite (native)'
                             : isPublicComputerMode()
-                            ? 'sessionStorage (ephemeral)'
-                            : 'IndexedDB (persistent)'
+                              ? 'sessionStorage (ephemeral)'
+                              : 'IndexedDB (persistent)'
                     }
                     mono={false}
                     copied={copied}
@@ -1101,10 +1325,10 @@ export const AuthDebugTab: React.FC = () => {
                                             rm.type === 'password'
                                                 ? 'bg-sky-500/20 text-sky-400'
                                                 : rm.type === 'passkey'
-                                                ? 'bg-purple-500/20 text-purple-400'
-                                                : rm.type === 'phrase'
-                                                ? 'bg-amber-500/20 text-amber-400'
-                                                : 'bg-gray-700 text-gray-400'
+                                                  ? 'bg-purple-500/20 text-purple-400'
+                                                  : rm.type === 'phrase'
+                                                    ? 'bg-amber-500/20 text-amber-400'
+                                                    : 'bg-gray-700 text-gray-400'
                                         }`}
                                     >
                                         {rm.type}
@@ -1126,6 +1350,22 @@ export const AuthDebugTab: React.FC = () => {
                                             }`}
                                         >
                                             v{rm.shareVersion}
+                                        </span>
+                                    )}
+                                    {rm.confirmationStatus && (
+                                        <span
+                                            className={`text-[8px] font-mono px-1 py-0.5 rounded ${
+                                                rm.confirmationStatus === 'confirmed'
+                                                    ? 'bg-emerald-500/20 text-emerald-400'
+                                                    : 'bg-yellow-500/20 text-yellow-400'
+                                            }`}
+                                        >
+                                            {rm.confirmationStatus}
+                                        </span>
+                                    )}
+                                    {rm.confirmedAt && (
+                                        <span className="text-gray-600 text-[8px]">
+                                            {new Date(rm.confirmedAt).toLocaleDateString()}
                                         </span>
                                     )}
                                 </div>
@@ -1218,8 +1458,8 @@ export const AuthDebugTab: React.FC = () => {
                         {isNative
                             ? 'No device shares in SQLite'
                             : isPublicComputerMode()
-                            ? 'No device shares in sessionStorage (public mode)'
-                            : 'No device shares in IndexedDB'}
+                              ? 'No device shares in sessionStorage (public mode)'
+                              : 'No device shares in IndexedDB'}
                     </p>
                 ) : (
                     <div className="mt-1.5 space-y-1">
@@ -1251,8 +1491,8 @@ export const AuthDebugTab: React.FC = () => {
                                                 {isLegacy
                                                     ? '(legacy default)'
                                                     : userSuffix
-                                                    ? `user: ${truncate(userSuffix, 16)}`
-                                                    : entry.id}
+                                                      ? `user: ${truncate(userSuffix, 16)}`
+                                                      : entry.id}
                                             </span>
 
                                             {isActive && (
@@ -1304,6 +1544,316 @@ export const AuthDebugTab: React.FC = () => {
                                 </div>
                             );
                         })}
+                    </div>
+                )}
+            </Section>
+
+            {/* ── Automatic Recovery (Escrow) & PIN ── */}
+            <Section
+                title="Automatic Recovery (Escrow) & PIN"
+                icon={<ShieldCheck className="w-3 h-3 text-gray-500" />}
+                badge={
+                    <span
+                        className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${
+                            getSSSConfig().escrowEnclaveMode !== 'off'
+                                ? 'bg-emerald-500/20 text-emerald-400'
+                                : 'bg-gray-700 text-gray-500'
+                        }`}
+                    >
+                        {getSSSConfig().escrowEnclaveMode !== 'off' ? 'enabled' : 'disabled'}
+                    </span>
+                }
+            >
+                <p className="text-[9px] font-semibold text-gray-500 uppercase tracking-wider mt-1 mb-0.5">
+                    Config
+                </p>
+                <KVRow
+                    label="Escrow Enabled"
+                    value={getSSSConfig().escrowEnclaveMode !== 'off'}
+                    copied={copied}
+                    onCopy={copyToClipboard}
+                />
+                <KVRow
+                    label="Enclave Mode"
+                    value={getSSSConfig().escrowEnclaveMode}
+                    copied={copied}
+                    onCopy={copyToClipboard}
+                />
+
+                <p className="text-[9px] font-semibold text-gray-500 uppercase tracking-wider mt-2.5 mb-0.5">
+                    Coordinator State
+                </p>
+                <KVRow
+                    label="Escrow Enrollment"
+                    value={readyState?.escrowEnrollment}
+                    copied={copied}
+                    onCopy={copyToClipboard}
+                />
+                <KVRow
+                    label="PIN Enabled"
+                    value={readyState?.escrowPin?.enabled}
+                    copied={copied}
+                    onCopy={copyToClipboard}
+                />
+                <KVRow
+                    label="PIN Attempts Remaining"
+                    value={readyState?.escrowPin?.attemptsRemaining}
+                    copied={copied}
+                    onCopy={copyToClipboard}
+                />
+                <KVRow
+                    label="PIN Salt"
+                    value={fingerprint(readyState?.escrowPin?.salt)}
+                    copied={copied}
+                    onCopy={copyToClipboard}
+                />
+                <KVRow
+                    label="Pending Hold ID"
+                    value={readyState?.pendingEscrowHold?.holdId}
+                    copied={copied}
+                    onCopy={copyToClipboard}
+                />
+                <KVRow
+                    label="Pending Hold Release After"
+                    value={readyState?.pendingEscrowHold?.releaseAfter}
+                    copied={copied}
+                    onCopy={copyToClipboard}
+                />
+                {readyState?.pendingEscrowHold?.releaseAfter && (
+                    <KVRow
+                        label="Hold Countdown"
+                        value={
+                            new Date(readyState?.pendingEscrowHold.releaseAfter).getTime() >
+                            Date.now()
+                                ? Math.ceil(
+                                      (new Date(
+                                          readyState?.pendingEscrowHold.releaseAfter
+                                      ).getTime() -
+                                          Date.now()) /
+                                          1000 /
+                                          60
+                                  ) + ' mins'
+                                : 'Ready'
+                        }
+                        copied={copied}
+                        onCopy={copyToClipboard}
+                    />
+                )}
+
+                <p className="text-[9px] font-semibold text-gray-500 uppercase tracking-wider mt-2.5 mb-0.5">
+                    Server State
+                </p>
+                <KVRow
+                    label="Escrow Opted Out"
+                    value={serverState?.escrowOptedOut}
+                    copied={copied}
+                    onCopy={copyToClipboard}
+                />
+                <KVRow
+                    label="SSS Activation State"
+                    value={serverState?.sssActivationState}
+                    copied={copied}
+                    onCopy={copyToClipboard}
+                />
+                <KVRow
+                    label="Masked Recovery Email"
+                    value={serverState?.maskedRecoveryEmail}
+                    copied={copied}
+                    onCopy={copyToClipboard}
+                />
+                <KVRow
+                    label="Server PIN Enabled"
+                    value={serverState?.escrowPin?.enabled}
+                    copied={copied}
+                    onCopy={copyToClipboard}
+                />
+                <KVRow
+                    label="Server PIN Attempts"
+                    value={serverState?.escrowPin?.attemptsRemaining}
+                    copied={copied}
+                    onCopy={copyToClipboard}
+                />
+
+                <p className="text-[9px] font-semibold text-gray-500 uppercase tracking-wider mt-2.5 mb-0.5">
+                    Local State
+                </p>
+                <KVRow
+                    label="PIN Prompt Flag"
+                    value={recoveryPinPromptFlag}
+                    copied={copied}
+                    onCopy={copyToClipboard}
+                />
+                <KVRow
+                    label="Local Pending Hold ID"
+                    value={pendingEscrowRecovery?.holdId}
+                    copied={copied}
+                    onCopy={copyToClipboard}
+                />
+                <KVRow
+                    label="Local Pending Release After"
+                    value={pendingEscrowRecovery?.releaseAfter}
+                    copied={copied}
+                    onCopy={copyToClipboard}
+                />
+                <KVRow
+                    label="Local Resume Token"
+                    value={fingerprint(pendingEscrowRecovery?.resumeToken)}
+                    copied={copied}
+                    onCopy={copyToClipboard}
+                />
+                <KVRow
+                    label="Local Ephemeral Key"
+                    value={fingerprint(pendingEscrowRecovery?.clientEphemeralPrivateKey)}
+                    copied={copied}
+                    onCopy={copyToClipboard}
+                />
+
+                <p className="text-[9px] font-semibold text-gray-500 uppercase tracking-wider mt-2.5 mb-0.5">
+                    Actions
+                </p>
+                {escrowActionError && (
+                    <div className="text-[9px] text-red-400 bg-red-950/30 rounded p-1.5 text-left break-words mb-2">
+                        <span className="font-semibold">Error:</span> {escrowActionError}
+                    </div>
+                )}
+                <div className="space-y-1.5">
+                    <div className="flex gap-1.5">
+                        <button
+                            onClick={handleFetchEscrowEnrollment}
+                            disabled={!isReady || escrowActionLoading}
+                            className="flex-1 text-[10px] py-1.5 px-2 rounded-md bg-gray-800 text-gray-300 hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        >
+                            Fetch Enrollment
+                        </button>
+                        <button
+                            onClick={handleFetchEscrowHoldStatus}
+                            disabled={!isReady || escrowActionLoading}
+                            className="flex-1 text-[10px] py-1.5 px-2 rounded-md bg-gray-800 text-gray-300 hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        >
+                            Fetch Hold Status
+                        </button>
+                        <button
+                            onClick={handleFetchEscrowAttestation}
+                            disabled={escrowActionLoading}
+                            className="flex-1 text-[10px] py-1.5 px-2 rounded-md bg-gray-800 text-gray-300 hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        >
+                            Fetch Attestation
+                        </button>
+                    </div>
+
+                    <div className="flex gap-1.5">
+                        <button
+                            onClick={handleEnableEscrow}
+                            disabled={!isReady || escrowActionLoading}
+                            className="flex-1 text-[10px] py-1.5 px-2 rounded-md bg-emerald-950/40 text-emerald-400 hover:bg-emerald-900/50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        >
+                            Enable Escrow
+                        </button>
+                        <button
+                            onClick={handleDisableEscrow}
+                            disabled={!isReady || escrowActionLoading}
+                            className="flex-1 text-[10px] py-1.5 px-2 rounded-md bg-amber-950/40 text-amber-400 hover:bg-amber-900/50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        >
+                            Disable Escrow
+                        </button>
+                        <button
+                            onClick={handleCancelEscrowRecovery}
+                            disabled={!isReady || escrowActionLoading}
+                            className="flex-1 text-[10px] py-1.5 px-2 rounded-md bg-red-950/40 text-red-400 hover:bg-red-900/50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        >
+                            Cancel Hold
+                        </button>
+                    </div>
+
+                    <div className="flex gap-1.5 items-center">
+                        <input
+                            type="text"
+                            value={escrowPinInput}
+                            onChange={e => setEscrowPinInput(e.target.value)}
+                            placeholder="6-digit PIN"
+                            className="flex-1 text-[10px] py-1.5 px-2 rounded-md bg-gray-900 border border-gray-700 text-gray-300 focus:outline-none focus:border-sky-500"
+                        />
+                        <button
+                            onClick={handleSetEscrowPin}
+                            disabled={!isReady || escrowActionLoading || !escrowPinInput}
+                            className="text-[10px] py-1.5 px-3 rounded-md bg-sky-950/40 text-sky-400 hover:bg-sky-900/50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        >
+                            Set PIN
+                        </button>
+                        <button
+                            onClick={handleClearEscrowPin}
+                            disabled={!isReady || escrowActionLoading}
+                            className="text-[10px] py-1.5 px-3 rounded-md bg-red-950/40 text-red-400 hover:bg-red-900/50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        >
+                            Clear PIN
+                        </button>
+                    </div>
+
+                    <button
+                        onClick={handleClearPinPromptFlag}
+                        disabled={!did}
+                        className="w-full text-[10px] py-1.5 px-2 rounded-md bg-gray-800 text-gray-300 hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >
+                        Clear PIN Prompt Flag
+                    </button>
+                </div>
+
+                {(!!escrowEnrollmentState || !!escrowHoldStatus || !!escrowAttestation) && (
+                    <div className="mt-2 space-y-1.5">
+                        {escrowEnrollmentState && (
+                            <div className="bg-gray-900/50 rounded p-1.5">
+                                <div className="flex justify-between items-center mb-1">
+                                    <span className="text-[9px] font-semibold text-gray-500">
+                                        Enrollment State
+                                    </span>
+                                    <button
+                                        onClick={() => setEscrowEnrollmentState(null)}
+                                        className="text-[9px] text-gray-500 hover:text-gray-300"
+                                    >
+                                        Clear
+                                    </button>
+                                </div>
+                                <pre className="text-[8px] text-gray-400 overflow-x-auto whitespace-pre-wrap break-words">
+                                    {JSON.stringify(escrowEnrollmentState, null, 2)}
+                                </pre>
+                            </div>
+                        )}
+                        {escrowHoldStatus && (
+                            <div className="bg-gray-900/50 rounded p-1.5">
+                                <div className="flex justify-between items-center mb-1">
+                                    <span className="text-[9px] font-semibold text-gray-500">
+                                        Hold Status
+                                    </span>
+                                    <button
+                                        onClick={() => setEscrowHoldStatus(null)}
+                                        className="text-[9px] text-gray-500 hover:text-gray-300"
+                                    >
+                                        Clear
+                                    </button>
+                                </div>
+                                <pre className="text-[8px] text-gray-400 overflow-x-auto whitespace-pre-wrap break-words">
+                                    {JSON.stringify(escrowHoldStatus, null, 2)}
+                                </pre>
+                            </div>
+                        )}
+                        {!!escrowAttestation && (
+                            <div className="bg-gray-900/50 rounded p-1.5">
+                                <div className="flex justify-between items-center mb-1">
+                                    <span className="text-[9px] font-semibold text-gray-500">
+                                        Attestation
+                                    </span>
+                                    <button
+                                        onClick={() => setEscrowAttestation(null)}
+                                        className="text-[9px] text-gray-500 hover:text-gray-300"
+                                    >
+                                        Clear
+                                    </button>
+                                </div>
+                                <pre className="text-[8px] text-gray-400 overflow-x-auto whitespace-pre-wrap break-words">
+                                    {JSON.stringify(escrowAttestation, null, 2)}
+                                </pre>
+                            </div>
+                        )}
                     </div>
                 )}
             </Section>
