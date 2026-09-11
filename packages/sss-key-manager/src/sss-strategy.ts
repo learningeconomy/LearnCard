@@ -30,7 +30,25 @@ import type {
     EscrowAttestationPolicy,
     EscrowHoldStatus,
     EscrowRecoveryStart,
+    EscrowEnrollmentState,
 } from './types';
+import {
+    EscrowPinLockedError,
+    EscrowPinMismatchError,
+    EscrowPinThrottledError,
+    EscrowPinUnavailableError,
+} from './types';
+import {
+    ESCROW_PIN_LOCKED_MESSAGE,
+    ESCROW_PIN_MISMATCH_PATTERN,
+    ESCROW_PIN_UNAVAILABLE_MESSAGE,
+} from '@learncard/types';
+import {
+    validatePin,
+    generatePinSalt,
+    derivePinProof,
+    ESCROW_PIN_MAX_ATTEMPTS,
+} from './escrow-pin';
 import { encryptEscrowBlob, generateEscrowKeyPair, openEscrowRelease } from './escrow-crypto';
 import { verifyEnclaveAttestation } from './escrow-attestation';
 import type { EmailRelayBranding } from './email-relay-crypto';
@@ -717,13 +735,60 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
     let unenrolledRotation:
         { shares: SSSShares; shareVersion: number; primaryDid: string } | undefined;
 
-    const escrowRequest = async <T>(path: string, init: RequestInit): Promise<T> => {
+    const escrowRequest = async <T>(
+        path: string,
+        init: RequestInit,
+        pinAttempt = false
+    ): Promise<T> => {
         const response = await fetch(`${serverUrl}/keys/escrow${path}`, {
             signal: requestTimeoutSignal(),
             ...init,
         });
         // Never propagate response bodies or status text that could contain secrets.
-        if (!response.ok) throw new EscrowRequestError(response.status);
+        if (!response.ok) {
+            if (pinAttempt && response.status === 429) {
+                const body: unknown = await response.json().catch(() => undefined);
+                if (
+                    body &&
+                    typeof body === 'object' &&
+                    'message' in body &&
+                    body.message === ESCROW_PIN_LOCKED_MESSAGE
+                ) {
+                    throw new EscrowPinLockedError();
+                }
+                throw new EscrowPinThrottledError();
+            }
+            if (pinAttempt && response.status === 403) {
+                const body: unknown = await response.json().catch(() => undefined);
+                if (
+                    body &&
+                    typeof body === 'object' &&
+                    'message' in body &&
+                    body.message === ESCROW_PIN_UNAVAILABLE_MESSAGE
+                ) {
+                    throw new EscrowPinUnavailableError();
+                }
+                if (
+                    body &&
+                    typeof body === 'object' &&
+                    'message' in body &&
+                    typeof body.message === 'string' &&
+                    body.message.startsWith('Incorrect PIN.')
+                ) {
+                    const match = ESCROW_PIN_MISMATCH_PATTERN.exec(body.message);
+                    const remaining = match ? Number(match[1]) : 0;
+                    // Older/malformed responses must not invent remaining guesses; use 0.
+                    throw new EscrowPinMismatchError(
+                        Number.isSafeInteger(remaining) &&
+                            remaining >= 0 &&
+                            remaining < ESCROW_PIN_MAX_ATTEMPTS
+                            ? remaining
+                            : 0
+                    );
+                }
+            }
+            throw new EscrowRequestError(response.status);
+        }
         try {
             return await response.json();
         } catch {
@@ -748,13 +813,19 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         shares: SSSShares,
         shareVersion: number,
         signDidAuthVp?: DidAuthVpSigner,
-        verifiedKey?: { publicKey: string; keyId: string }
+        verifiedKey?: { publicKey: string; keyId: string },
+        pinMaterial?: { pinSalt: string; pinVerifier: string }
     ): Promise<void> => {
         if (!config.escrow?.enabled) throw new Error('Escrow enrollment is disabled');
         if (!signDidAuthVp) throw new Error('DID proof signing is required for escrow enrollment');
         const { publicKey, keyId } = verifiedKey ?? (await fetchVerifiedEnclaveKey());
         const envelope = await encryptEscrowBlob(
-            { recoveryShare: shares.recoveryShare, did: primaryDid, shareVersion },
+            {
+                recoveryShare: shares.recoveryShare,
+                did: primaryDid,
+                shareVersion,
+                ...(pinMaterial ? { pinVerifier: pinMaterial.pinVerifier } : {}),
+            },
             publicKey,
             keyId
         );
@@ -774,6 +845,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 envelope,
                 shareVersion,
                 enclaveKeyId: keyId,
+                ...(pinMaterial ? { pinSalt: pinMaterial.pinSalt } : {}),
             }),
         });
     };
@@ -795,12 +867,25 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
 
     const ensureEscrowEnrollmentUnguarded = async (
         self: SSSKeyDerivationStrategy,
-        params: Parameters<NonNullable<SSSKeyDerivationStrategy['ensureEscrowEnrollment']>>[0]
+        params: Parameters<NonNullable<SSSKeyDerivationStrategy['ensureEscrowEnrollment']>>[0],
+        forceRotate = false
     ): Promise<EscrowEnrollmentResult> => {
         if (!config.escrow?.enabled) return { enrolled: false, reason: 'disabled' };
+        const pin = params.options?.pin;
+        if (pin !== undefined) {
+            const validation = validatePin(pin);
+            if (!validation.ok)
+                throw new Error(
+                    validation.reason === 'length'
+                        ? 'PIN must contain 6–12 digits.'
+                        : 'Choose a PIN without trivial or sequential patterns.'
+                );
+        }
         const status = await self.fetchServerKeyStatus(params.token, params.providerType);
         if (status.escrowOptedOut) return { enrolled: false, reason: 'opted-out' };
         if (
+            !forceRotate &&
+            pin === undefined &&
             status.shareVersion !== null &&
             status.recoveryMethods.some(
                 method =>
@@ -811,12 +896,17 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                             method.confirmationStatus === 'confirmed'))
             )
         )
+            // Automatic repair preserves current enrollment regardless of PIN status.
+            // Forced rotations cannot preserve a PIN we do not retain: recovery and
+            // email-link rotations drop it, so callers must prompt to set it again.
             return { enrolled: true, changed: false };
         if (!status.primaryDid) throw new Error('Cannot enroll escrow without a primary DID');
         if (!params.signDidAuthVp) {
             throw new Error('DID proof signing is required for escrow enrollment');
         }
         if (
+            !forceRotate &&
+            pin === undefined &&
             unenrolledRotation &&
             unenrolledRotation.shareVersion === status.shareVersion &&
             unenrolledRotation.primaryDid === status.primaryDid
@@ -837,7 +927,12 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         // Verify the enclave before rotating: a bad attestation must not burn
         // a share version (and, repeated, the retained auth-share history).
         const verifiedKey = await fetchVerifiedEnclaveKey();
-        const { shares, shareVersion } = await persistSharesAtomically(
+        const pinSalt = pin !== undefined ? generatePinSalt() : undefined;
+        const pinMaterial =
+            pin !== undefined && pinSalt !== undefined
+                ? { pinSalt, pinVerifier: await derivePinProof(pin, pinSalt) }
+                : undefined;
+        const { shares, shareVersion } = await persistSharesAtomicallyUnlocked(
             params.privateKey,
             serverUrl,
             params.token,
@@ -857,7 +952,9 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             authShare: shares.authShare,
             primaryDid: status.primaryDid,
         };
-        unenrolledRotation = { shares, shareVersion, primaryDid: status.primaryDid };
+        unenrolledRotation = pinMaterial
+            ? undefined
+            : { shares, shareVersion, primaryDid: status.primaryDid };
         await enrollEscrow(
             params.token,
             params.providerType,
@@ -866,7 +963,8 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             shares,
             shareVersion,
             params.signDidAuthVp,
-            verifiedKey
+            verifiedKey,
+            pinMaterial
         );
         unenrolledRotation = undefined;
         return { enrolled: true, changed: true, shareVersion };
@@ -1179,6 +1277,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 shareVersion: serverVersion,
                 maskedRecoveryEmail: data.maskedRecoveryEmail ?? null,
                 escrowOptedOut: data.escrowOptedOut === true,
+                escrowPin: data.escrowPin,
                 sssActivationState: data.sssActivationState ?? 'active',
             };
         },
@@ -1244,11 +1343,12 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
 
         // --- Recovery execution ---
 
-        async getEscrowEnrollmentState(params) {
-            if (!config.escrow?.enabled) return 'disabled';
+        async getEscrowEnrollmentState(params): Promise<EscrowEnrollmentState> {
+            if (!config.escrow?.enabled) return { state: 'disabled' };
             const status = await this.fetchServerKeyStatus(params.token, params.providerType);
-            if (status.escrowOptedOut) return 'opted-out';
-            return status.shareVersion !== null &&
+            if (status.escrowOptedOut) return { state: 'opted-out', escrowPin: status.escrowPin };
+            const state =
+                status.shareVersion !== null &&
                 status.recoveryMethods.some(
                     method =>
                         method.type === 'escrow' &&
@@ -1257,8 +1357,9 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                             ('confirmationStatus' in method &&
                                 method.confirmationStatus === 'confirmed'))
                 )
-                ? 'enrolled'
-                : 'not-enrolled';
+                    ? 'enrolled'
+                    : 'not-enrolled';
+            return { state, escrowPin: status.escrowPin };
         },
 
         async disableEscrowRecovery(params): Promise<void> {
@@ -1283,32 +1384,57 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         },
 
         async enableEscrowRecovery(params) {
-            if (!config.escrow?.enabled)
-                return { enrolled: false as const, reason: 'disabled' as const };
-            const status = await this.fetchServerKeyStatus(params.token, params.providerType);
-            if (!status.primaryDid) throw new Error('Cannot enable escrow without a primary DID');
-            const vp = await requestFreshDidAuthVp(
-                serverUrl,
-                params.privateKey,
-                status.primaryDid,
-                params.signDidAuthVp,
-                tenantId
-            );
-            await escrowRequest('/opt-in', {
-                method: 'POST',
-                headers: buildHeaders(params.token, vp, tenantId),
-                body: JSON.stringify({
-                    authToken: params.token,
-                    providerType: params.providerType,
-                }),
+            return withRotationLock(async () => {
+                if (!config.escrow?.enabled)
+                    return { enrolled: false as const, reason: 'disabled' as const };
+                const status = await this.fetchServerKeyStatus(params.token, params.providerType);
+                if (!status.primaryDid)
+                    throw new Error('Cannot enable escrow without a primary DID');
+                const vp = await requestFreshDidAuthVp(
+                    serverUrl,
+                    params.privateKey,
+                    status.primaryDid,
+                    params.signDidAuthVp,
+                    tenantId
+                );
+                await escrowRequest('/opt-in', {
+                    method: 'POST',
+                    headers: buildHeaders(params.token, vp, tenantId),
+                    body: JSON.stringify({
+                        authToken: params.token,
+                        providerType: params.providerType,
+                    }),
+                });
+                return ensureEscrowEnrollmentUnguarded(this, params);
             });
-            return this.ensureEscrowEnrollment!(params);
+        },
+
+        async setEscrowPin({ pin, ...params }): Promise<void> {
+            const result = await withRotationLock(() =>
+                ensureEscrowEnrollmentUnguarded(this, { ...params, options: { pin } })
+            );
+            if (!result.enrolled) {
+                throw new Error('Automatic recovery is not available for this account.');
+            }
+        },
+
+        async clearEscrowPin(params): Promise<void> {
+            const result = await withRotationLock(() =>
+                ensureEscrowEnrollmentUnguarded(this, params, true)
+            );
+            if (!result.enrolled) {
+                throw new Error('Automatic recovery is not available for this account.');
+            }
         },
 
         /** Enroll missing/stale escrow material using the standard atomic rotation. */
         async ensureEscrowEnrollment(params): Promise<EscrowEnrollmentResult> {
+            if (params.options?.pin !== undefined)
+                return withRotationLock(() => ensureEscrowEnrollmentUnguarded(this, params));
             if (escrowEnrollmentInFlight) return escrowEnrollmentInFlight;
-            escrowEnrollmentInFlight = ensureEscrowEnrollmentUnguarded(this, params);
+            escrowEnrollmentInFlight = withRotationLock(() =>
+                ensureEscrowEnrollmentUnguarded(this, params)
+            );
             try {
                 return await escrowEnrollmentInFlight;
             } finally {
@@ -1329,16 +1455,23 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             const pair = await generateEscrowKeyPair();
             const result = await escrowRequest<
                 Omit<EscrowRecoveryStart, 'clientEphemeralPrivateKey'>
-            >('/recover', {
-                method: 'POST',
-                headers: buildHeaders('', undefined, params.tenantId ?? tenantId),
-                body: JSON.stringify({
-                    clientEphemeralPublicKey: pair.publicKey,
-                    ...(sessionProof
-                        ? { recoverySessionToken: params.recoverySessionToken }
-                        : { authToken: params.token, providerType: params.providerType }),
-                }),
-            });
+            >(
+                '/recover',
+                {
+                    method: 'POST',
+                    headers: buildHeaders('', undefined, params.tenantId ?? tenantId),
+                    body: JSON.stringify({
+                        clientEphemeralPublicKey: pair.publicKey,
+                        ...(params.options?.releasePolicy
+                            ? { releasePolicy: params.options.releasePolicy }
+                            : {}),
+                        ...(sessionProof
+                            ? { recoverySessionToken: params.recoverySessionToken }
+                            : { authToken: params.token, providerType: params.providerType }),
+                    }),
+                },
+                params.options?.releasePolicy === 'pin'
+            );
             return { ...result, clientEphemeralPrivateKey: pair.privateKey };
         },
 
@@ -1394,22 +1527,46 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         }): Promise<RecoveryResult> {
             const { token, providerType, input, didFromPrivateKey, signDidAuthVp } = params;
 
-            if (input.method === 'escrow') {
+            if (input.method === 'escrow' || input.method === 'escrow-pin') {
                 if (!didFromPrivateKey)
                     throw new Error('DID verification is required for escrow recovery');
+                // Each PIN call owns a fresh, single-use hold and in-memory key pair.
+                // Never persist this key or retry completion after a burned attempt.
+                const start =
+                    input.method === 'escrow-pin'
+                        ? await this.startEscrowRecovery!({
+                              token,
+                              providerType,
+                              options: { releasePolicy: 'pin' },
+                          })
+                        : input;
+                let pinProof: string | undefined;
+                if (input.method === 'escrow-pin') {
+                    if (!('pinSalt' in start) || !start.pinSalt || !start.resumeToken)
+                        throw new Error('PIN recovery response is missing required material');
+                    pinProof = await derivePinProof(input.pin, start.pinSalt);
+                }
                 const material = await escrowRequest<
                     IdentityRecoveryMaterialResponse & { sealedShare: unknown }
-                >('/complete', {
-                    method: 'POST',
-                    headers: buildHeaders('', undefined, tenantId),
-                    body: JSON.stringify({ holdId: input.holdId, resumeToken: input.resumeToken }),
-                });
+                >(
+                    '/complete',
+                    {
+                        method: 'POST',
+                        headers: buildHeaders('', undefined, tenantId),
+                        body: JSON.stringify({
+                            holdId: start.holdId,
+                            resumeToken: start.resumeToken,
+                            ...(pinProof ? { pinProof } : {}),
+                        }),
+                    },
+                    input.method === 'escrow-pin'
+                );
                 const plaintext = await openEscrowRelease(
                     material.sealedShare,
-                    input.clientEphemeralPrivateKey
+                    start.clientEphemeralPrivateKey
                 );
                 if (
-                    plaintext.holdId !== input.holdId ||
+                    plaintext.holdId !== start.holdId ||
                     plaintext.did !== material.primaryDid ||
                     plaintext.shareVersion !== material.shareVersion
                 ) {
@@ -1651,6 +1808,21 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             signDidAuthVp?: DidAuthVpSigner;
         }): Promise<RecoverySetupResult> {
             const { token, providerType, privateKey, input, authUser, signDidAuthVp } = params;
+
+            if (input.method === 'escrow' && input.pin !== undefined) {
+                if (!signDidAuthVp)
+                    throw new Error('DID proof signing is required for escrow enrollment');
+                const result = await this.enableEscrowRecovery!({
+                    token,
+                    providerType,
+                    privateKey,
+                    signDidAuthVp,
+                    options: { pin: input.pin },
+                });
+                if (!result.enrolled || !result.changed)
+                    throw new Error('Escrow enrollment is disabled');
+                return { method: 'escrow', shareVersion: result.shareVersion };
+            }
 
             if (input.method === 'escrow' && !config.escrow?.enabled) {
                 throw new Error('Escrow enrollment is disabled');

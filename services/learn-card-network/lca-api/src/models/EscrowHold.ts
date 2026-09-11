@@ -14,6 +14,8 @@ export const EscrowHoldValidator = z.object({
     identityProofType: z.enum(['auth-token', 'recovery-session']),
     requestedAt: z.date(),
     releaseAfter: z.date(),
+    releasePolicy: z.enum(['hold', 'pin']).default('hold'),
+    cancelReason: z.enum(['pin-mismatch', 'pin-locked', 'superseded', 'release-failed']).optional(),
     cancelledAt: z.date().optional(),
     cancelledBy: z.enum(['did', 'system']).optional(),
     completedAt: z.date().optional(),
@@ -33,7 +35,7 @@ export const EscrowHoldValidator = z.object({
 });
 export type EscrowHold = z.infer<typeof EscrowHoldValidator>;
 export type CreateEscrowHoldInput = Omit<
-    EscrowHold,
+    z.input<typeof EscrowHoldValidator>,
     | '_id'
     | 'status'
     | 'createdAt'
@@ -42,6 +44,7 @@ export type CreateEscrowHoldInput = Omit<
     | 'cancelledAt'
     | 'cancelledBy'
     | 'completedAt'
+    | 'cancelReason'
 >;
 
 export const getEscrowHoldsCollection = (): Collection<EscrowHold> =>
@@ -60,9 +63,10 @@ const runIndexMigrationOperation = async (operation: () => Promise<unknown>): Pr
                 indexes.some(
                     index =>
                         index.unique &&
-                        Object.keys(index.key ?? {}).length === 2 &&
+                        Object.keys(index.key ?? {}).length === 3 &&
                         index.key?.['authProvider.type'] === 1 &&
                         index.key?.['authProvider.id'] === 1 &&
+                        index.key?.releasePolicy === 1 &&
                         Object.keys(index.partialFilterExpression ?? {}).length === 1 &&
                         index.partialFilterExpression?.status === 'pending'
                 )
@@ -75,16 +79,28 @@ const runIndexMigrationOperation = async (operation: () => Promise<unknown>): Pr
 
 export const createEscrowHoldsIndexes = async (): Promise<void> => {
     const collection = getEscrowHoldsCollection();
+    // Normalize legacy rows while the old, stricter index still protects them.
+    await collection.updateMany(
+        { releasePolicy: { $exists: false } },
+        { $set: { releasePolicy: 'hold' } }
+    );
     await runIndexMigrationOperation(() =>
         collection.createIndex(
-            { 'authProvider.type': 1, 'authProvider.id': 1 },
+            { 'authProvider.type': 1, 'authProvider.id': 1, releasePolicy: 1 },
             {
-                name: 'pending_escrow_identity_unique',
+                name: 'pending_escrow_identity_policy_unique',
                 unique: true,
                 partialFilterExpression: { status: 'pending' },
             }
         )
     );
+    // Install the replacement before dropping the old index: no uniqueness gap.
+    try {
+        await collection.dropIndex('pending_escrow_identity_unique');
+    } catch (error) {
+        if (!(typeof error === 'object' && error !== null && 'code' in error && error.code === 27))
+            throw error;
+    }
     await runIndexMigrationOperation(() =>
         collection.createIndex({ 'authProvider.type': 1, 'authProvider.id': 1, status: 1 })
     );
@@ -107,24 +123,37 @@ export const createEscrowHold = async (input: CreateEscrowHoldInput): Promise<Es
     return hold;
 };
 export const findPendingEscrowHoldByAuthProvider = async (
-    authProvider: AuthProviderMapping
+    authProvider: AuthProviderMapping,
+    releasePolicy?: EscrowHold['releasePolicy']
 ): Promise<EscrowHold | null> =>
     getEscrowHoldsCollection().findOne({
         'authProvider.type': authProvider.type,
         'authProvider.id': authProvider.id,
         status: 'pending',
+        ...(releasePolicy === 'hold'
+            ? { $or: [{ releasePolicy: 'hold' as const }, { releasePolicy: { $exists: false } }] }
+            : releasePolicy
+              ? { releasePolicy }
+              : {}),
     });
 export const findEscrowHoldById = async (id: string): Promise<EscrowHold | null> =>
     getEscrowHoldsCollection().findOne({ _id: id });
 export const cancelEscrowHold = async (
     id: string,
-    cancelledBy: 'did' | 'system'
+    cancelledBy: 'did' | 'system',
+    cancelReason?: EscrowHold['cancelReason']
 ): Promise<EscrowHold | null> => {
     const now = new Date();
     return getEscrowHoldsCollection().findOneAndUpdate(
         { _id: id, status: 'pending' },
         {
-            $set: { status: 'cancelled', cancelledBy, cancelledAt: now, updatedAt: now },
+            $set: {
+                status: 'cancelled',
+                cancelledBy,
+                cancelledAt: now,
+                updatedAt: now,
+                ...(cancelReason ? { cancelReason } : {}),
+            },
         },
         { returnDocument: 'after' }
     );
@@ -148,6 +177,27 @@ export const expireStaleEscrowHolds = async (now: Date): Promise<number> => {
         { $set: { status: 'expired', updatedAt: now } }
     );
     return result.modifiedCount;
+};
+
+/** Only rewrite the completed row claimed by this request; never reopen a burned hold. */
+export const markClaimedEscrowHoldFailed = async (
+    id: string,
+    reason: 'pin-mismatch' | 'pin-locked' | 'release-failed',
+    completedAt: Date
+): Promise<void> => {
+    const now = new Date();
+    await getEscrowHoldsCollection().updateOne(
+        { _id: id, status: 'completed', completedAt },
+        {
+            $set: {
+                status: 'cancelled',
+                cancelledBy: 'system',
+                cancelReason: reason,
+                cancelledAt: now,
+                updatedAt: now,
+            },
+        }
+    );
 };
 export const hashEscrowResumeToken = (token: string): string =>
     createHash('sha256').update(token).digest('hex');

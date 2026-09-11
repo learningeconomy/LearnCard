@@ -17,6 +17,9 @@ import {
     expireStaleEscrowHolds,
     generateEscrowResumeToken,
     hashEscrowResumeToken,
+    findPendingEscrowHoldByAuthProvider,
+    reserveEscrowPinAttempt,
+    refundEscrowPinAttempt,
     type EscrowBlob,
     type AuthProviderMapping,
 } from '@models';
@@ -38,7 +41,10 @@ const blob: EscrowBlob = {
     shareVersion: 1,
     createdAt: new Date(),
 };
-const createHold = (releaseAfter = new Date()): ReturnType<typeof createEscrowHold> =>
+const createHold = (
+    releaseAfter = new Date(),
+    releasePolicy: 'hold' | 'pin' = 'hold'
+): ReturnType<typeof createEscrowHold> =>
     createEscrowHold({
         authProvider: provider,
         primaryDid: 'did:key:test',
@@ -46,6 +52,7 @@ const createHold = (releaseAfter = new Date()): ReturnType<typeof createEscrowHo
         identityProofType: 'auth-token',
         requestedAt: new Date(),
         releaseAfter,
+        releasePolicy,
         clientEphemeralPublicKey: 'public-key',
         resumeTokenHash: hashEscrowResumeToken(generateEscrowResumeToken()),
     });
@@ -70,6 +77,63 @@ afterAll(async () => {
 });
 
 describe('escrow model invariants', () => {
+    it('migrates legacy pending holds before replacing the identity-only unique index', async () => {
+        const collection = getEscrowHoldsCollection();
+        await collection.createIndex(
+            { 'authProvider.type': 1, 'authProvider.id': 1 },
+            {
+                name: 'pending_escrow_identity_unique',
+                unique: true,
+                partialFilterExpression: { status: 'pending' },
+            }
+        );
+        const hold = await createHold();
+        await collection.updateOne({ _id: hold._id }, { $unset: { releasePolicy: '' } });
+        expect((await findPendingEscrowHoldByAuthProvider(provider, 'hold'))?._id).toBe(hold._id);
+        await createEscrowHoldsIndexes();
+        const indexes = await collection.listIndexes().toArray();
+        expect(indexes.some(index => index.name === 'pending_escrow_identity_unique')).toBe(false);
+        expect(
+            indexes.find(index => index.name === 'pending_escrow_identity_policy_unique')
+        ).toMatchObject({
+            key: { 'authProvider.type': 1, 'authProvider.id': 1, releasePolicy: 1 },
+            unique: true,
+            partialFilterExpression: { status: 'pending' },
+        });
+        expect((await findPendingEscrowHoldByAuthProvider(provider, 'hold'))?.releasePolicy).toBe(
+            'hold'
+        );
+        const pin = await createHold(new Date(), 'pin');
+        expect((await findPendingEscrowHoldByAuthProvider(provider, 'pin'))?._id).toBe(pin._id);
+        await expect(createHold()).rejects.toMatchObject({ code: 11000 });
+        await expect(createHold(new Date(), 'pin')).rejects.toMatchObject({ code: 11000 });
+    });
+
+    it('refunds only matching active reservations and never makes attempts negative', async () => {
+        await setEscrowBlobByAuthProvider(provider, blob, 1, {
+            salt: Buffer.alloc(16).toString('base64'),
+        });
+        await reserveEscrowPinAttempt(provider, 1, blob.envelope.ciphertext);
+        await refundEscrowPinAttempt(provider, 2, blob.envelope.ciphertext);
+        await refundEscrowPinAttempt(provider, 1, 'replacement');
+        expect(
+            (await findUserKeyByAuthProvider(provider.type, provider.id))?.escrowPin?.failedAttempts
+        ).toBe(1);
+        await refundEscrowPinAttempt(provider, 1, blob.envelope.ciphertext);
+        await refundEscrowPinAttempt(provider, 1, blob.envelope.ciphertext);
+        expect(
+            (await findUserKeyByAuthProvider(provider.type, provider.id))?.escrowPin?.failedAttempts
+        ).toBe(0);
+        await reserveEscrowPinAttempt(provider, 1, blob.envelope.ciphertext);
+        await getUserKeysCollection().updateOne(
+            { 'authProviders.id': provider.id },
+            { $set: { 'escrowPin.disabledAt': new Date() } }
+        );
+        await refundEscrowPinAttempt(provider, 1, blob.envelope.ciphertext);
+        expect(
+            (await findUserKeyByAuthProvider(provider.type, provider.id))?.escrowPin?.failedAttempts
+        ).toBe(1);
+    });
     it('atomically replaces escrow without duplicate methods and preserves literal values', async () => {
         await setEscrowBlobByAuthProvider(provider, blob, 1);
         const result = await setEscrowBlobByAuthProvider(provider, blob, 1);

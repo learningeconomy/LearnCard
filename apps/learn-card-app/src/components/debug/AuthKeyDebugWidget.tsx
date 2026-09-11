@@ -392,7 +392,7 @@ export const AuthKeyDebugWidget: React.FC = () => {
             const authUser = 'authUser' in state ? state.authUser : null;
 
             if (authUser) {
-                rows.push({ label: 'Auth UID', value: authUser.uid });
+                rows.push({ label: 'Auth UID', value: authUser.id });
                 rows.push({ label: 'Auth Email', value: authUser.email ?? '—' });
             }
         }

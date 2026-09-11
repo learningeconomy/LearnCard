@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { IonIcon } from '@ionic/react';
 import { alertCircleOutline } from 'ionicons/icons';
 import type { KeyDerivationStrategy } from '@learncard/types';
+import { escrowPinMismatchMessage } from '@learncard/types';
 import {
     clearPendingEscrowRecovery,
     loadPendingEscrowRecovery,
@@ -9,10 +10,13 @@ import {
     isEscrowRecoveryStorageAvailable,
 } from './escrowRecoveryStorage';
 import type { PendingEscrowRecovery } from './escrowRecoveryStorage';
+import { RecoveryPinInput } from './RecoveryPinInput';
+import * as m from '../../paraglide/messages.js';
 
 export interface EscrowRecoveryPanelProps {
     scope?: string;
     available: boolean;
+    pinAvailable?: boolean;
     canResumeCompleted?: () => boolean;
     onStart: () => ReturnType<NonNullable<KeyDerivationStrategy['startEscrowRecovery']>>;
     onStatus: (proof: {
@@ -20,13 +24,16 @@ export interface EscrowRecoveryPanelProps {
         resumeToken: string;
     }) => ReturnType<NonNullable<KeyDerivationStrategy['getEscrowRecoveryStatus']>>;
     onRecover: (
-        input: Omit<PendingEscrowRecovery, 'releaseAfter'> & { method: 'escrow' }
+        input:
+            | (Omit<PendingEscrowRecovery, 'releaseAfter'> & { method: 'escrow' })
+            | { method: 'escrow-pin'; pin: string }
     ) => Promise<void>;
 }
 
 export const EscrowRecoveryPanel = ({
     scope = 'default',
     available,
+    pinAvailable = false,
     onStart,
     onStatus,
     onRecover,
@@ -43,6 +50,11 @@ export const EscrowRecoveryPanel = ({
     const [notice, setNotice] = useState('');
     const [now, setNow] = useState(Date.now());
     const storageAvailable = isEscrowRecoveryStorageAvailable();
+
+    const [showPinFlow, setShowPinFlow] = useState(pinAvailable);
+    const [pinInput, setPinInput] = useState('');
+    const [pinError, setPinError] = useState('');
+
     useEffect(() => {
         active.current = true;
         return () => {
@@ -88,6 +100,43 @@ export const EscrowRecoveryPanel = ({
             setLoading(false);
         }
     };
+
+    const handlePinRecover = async (pin: string) => {
+        setLoading(true);
+        setPinError('');
+        try {
+            await onRecover({ method: 'escrow-pin', pin });
+        } catch (cause) {
+            const err = cause instanceof Error ? cause : new Error();
+            if (err.name === 'EscrowPinMismatchError') {
+                const attempts = 'attemptsRemaining' in err ? Number(err.attemptsRemaining) : 0;
+                setPinError(escrowPinMismatchMessage(attempts));
+                setPinInput('');
+            } else if (err.name === 'EscrowPinThrottledError') {
+                setPinError(m['recovery.pin.throttled']());
+                setPinInput('');
+            } else if (err.name === 'EscrowPinLockedError') {
+                setPinError('Too many attempts. You can still recover by waiting 7 days.');
+                setShowPinFlow(false);
+            } else {
+                if (
+                    err.name === 'EscrowPinUnavailableError' ||
+                    (err.name === 'EscrowRequestError' && 'status' in err && err.status === 403)
+                ) {
+                    setPinError(
+                        "PIN sign-in isn't available for this account. Start a 7-day recovery instead."
+                    );
+                    setShowPinFlow(false);
+                } else {
+                    setPinError('Something went wrong. Please try again.');
+                }
+                setPinInput('');
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const button =
         'w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed';
     const spinner = (text: string) => (
@@ -237,37 +286,95 @@ export const EscrowRecoveryPanel = ({
             ) : (
                 available && (
                     <>
-                        <button
-                            className={button}
-                            disabled={!loaded || loading || !storageAvailable}
-                            onClick={() =>
-                                void run(async () => {
-                                    const result = await onStart();
-                                    if (!active.current) return;
-                                    if (!result.resumeToken) {
-                                        setNotice(
-                                            'A recovery request is already waiting. Continue on the device where you started it, or cancel it from a signed-in device.'
-                                        );
-                                        return;
+                        {showPinFlow ? (
+                            <div className="space-y-4">
+                                <h3 className="text-xl font-semibold text-grayscale-900">
+                                    Do you have a recovery PIN?
+                                </h3>
+                                <p className="text-sm text-grayscale-600 leading-relaxed">
+                                    Enter your 6-digit PIN for instant recovery.
+                                </p>
+                                <div className="flex justify-center py-2">
+                                    <RecoveryPinInput
+                                        value={pinInput}
+                                        onChange={val => {
+                                            setPinInput(val);
+                                            setPinError('');
+                                        }}
+                                        onComplete={handlePinRecover}
+                                        disabled={loading}
+                                        error={!!pinError}
+                                    />
+                                </div>
+                                {pinError && (
+                                    <p className="text-sm text-red-600 text-center">{pinError}</p>
+                                )}
+                                {loading && (
+                                    <div className="flex justify-center">
+                                        {spinner('Verifying...')}
+                                    </div>
+                                )}
+                                <button
+                                    onClick={() => setShowPinFlow(false)}
+                                    className="w-full py-2.5 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
+                                    disabled={loading}
+                                >
+                                    I don't have a PIN
+                                </button>
+                            </div>
+                        ) : (
+                            <>
+                                {pinError && (
+                                    <div
+                                        role="alert"
+                                        className="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5 mb-4"
+                                    >
+                                        <IonIcon
+                                            icon={alertCircleOutline}
+                                            className="text-red-400 text-lg mt-0.5 shrink-0"
+                                        />
+                                        <span className="text-sm text-red-700 leading-relaxed">
+                                            {pinError}
+                                        </span>
+                                    </div>
+                                )}
+                                <button
+                                    className={button}
+                                    disabled={!loaded || loading || !storageAvailable}
+                                    onClick={() =>
+                                        void run(async () => {
+                                            const result = await onStart();
+                                            if (!active.current) return;
+                                            if (!result.resumeToken) {
+                                                setNotice(
+                                                    'A recovery request is already waiting. Continue on the device where you started it, or cancel it from a signed-in device.'
+                                                );
+                                                return;
+                                            }
+                                            const record = {
+                                                holdId: result.holdId,
+                                                resumeToken: result.resumeToken,
+                                                clientEphemeralPrivateKey:
+                                                    result.clientEphemeralPrivateKey,
+                                                releaseAfter: result.releaseAfter,
+                                            };
+                                            setPending(record);
+                                            setSaved(false);
+                                            await savePendingEscrowRecovery(record, scope);
+                                            setSaved(true);
+                                        })
                                     }
-                                    const record = {
-                                        holdId: result.holdId,
-                                        resumeToken: result.resumeToken,
-                                        clientEphemeralPrivateKey: result.clientEphemeralPrivateKey,
-                                        releaseAfter: result.releaseAfter,
-                                    };
-                                    setPending(record);
-                                    setSaved(false);
-                                    await savePendingEscrowRecovery(record, scope);
-                                    setSaved(true);
-                                })
-                            }
-                        >
-                            {loading ? spinner('Starting recovery...') : 'Start a 7-day recovery'}
-                        </button>
-                        <p className="text-sm text-grayscale-600 leading-relaxed">
-                            Wait 7 days, then return to this browser to restore your account.
-                        </p>
+                                >
+                                    {loading
+                                        ? spinner('Starting recovery...')
+                                        : 'Start a 7-day recovery'}
+                                </button>
+                                <p className="text-sm text-grayscale-600 leading-relaxed">
+                                    Wait 7 days, then return to this browser to restore your
+                                    account.
+                                </p>
+                            </>
+                        )}
                     </>
                 )
             )}

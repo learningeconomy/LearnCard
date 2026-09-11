@@ -102,6 +102,8 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
         disableEscrowRecovery,
         enableEscrowRecovery,
         getEscrowEnrollmentState,
+        setEscrowPin,
+        clearEscrowPin,
     } = useAppAuth();
 
     const description = user?.bio ?? user?.shortBio;
@@ -501,6 +503,8 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                             onGetEscrowEnrollmentState={getEscrowEnrollmentState}
                             onDisableEscrowRecovery={disableEscrowRecovery}
                             onEnableEscrowRecovery={enableEscrowRecovery}
+                            onSetEscrowPin={setEscrowPin}
+                            onClearEscrowPin={clearEscrowPin}
                             existingMethods={existingMethods.map(m => ({
                                 type: m.type,
                                 createdAt:

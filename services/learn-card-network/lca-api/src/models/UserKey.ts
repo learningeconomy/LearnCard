@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { Filter } from 'mongodb';
+import { ESCROW_PIN_MAX_ATTEMPTS } from '@learncard/sss-key-manager';
 
 import mongodb from '@mongo';
 import { pruneOrphanedRecoveryMethods } from './pruneOrphanedRecoveryMethods';
@@ -75,8 +76,47 @@ export const EscrowBlobValidator = z.object({
 });
 export type EscrowBlob = z.infer<typeof EscrowBlobValidator>;
 
+export const EscrowPinSaltValidator = z
+    .string()
+    .length(24)
+    .refine(
+        salt =>
+            Buffer.from(salt, 'base64').length === 16 &&
+            Buffer.from(salt, 'base64').toString('base64') === salt,
+        'Expected a base64-encoded 16-byte salt.'
+    );
+export const EscrowPinValidator = z.object({
+    salt: EscrowPinSaltValidator,
+    failedAttempts: z.number().int().nonnegative(),
+    enabledAt: z.date(),
+    disabledAt: z.date().optional(),
+    shareVersion: z.number().int().positive(),
+});
+export const EscrowPinStatusValidator = z.object({
+    enabled: z.boolean(),
+    attemptsRemaining: z.number().int().nonnegative(),
+    salt: EscrowPinSaltValidator.optional(),
+});
+
+export const getEscrowPinStatus = (
+    userKey: MongoUserKeyType
+): z.infer<typeof EscrowPinStatusValidator> => {
+    const pin = userKey.escrowPin;
+    const enabled =
+        !!pin &&
+        !pin.disabledAt &&
+        pin.shareVersion === userKey.shareVersion &&
+        pin.failedAttempts < ESCROW_PIN_MAX_ATTEMPTS;
+    return {
+        enabled,
+        attemptsRemaining: pin ? Math.max(0, ESCROW_PIN_MAX_ATTEMPTS - pin.failedAttempts) : 0,
+        ...(enabled ? { salt: pin.salt } : {}),
+    };
+};
+
 const MongoUserKeyBaseValidator = z.object({
     escrowBlob: EscrowBlobValidator.optional(),
+    escrowPin: EscrowPinValidator.optional(),
     escrowOptedOutAt: z.date().optional(),
     _id: z.string().optional(),
 
@@ -424,7 +464,8 @@ export const upsertUserKey = async (
             (updateOps.$set as Record<string, unknown>).recoveryMethods = prunedMethods;
             if (!prunedMethods.some(method => method.type === 'escrow')) {
                 delete (updateOps.$set as Record<string, unknown>).escrowBlob;
-                updateOps.$unset = { escrowBlob: '' };
+                delete (updateOps.$set as Record<string, unknown>).escrowPin;
+                updateOps.$unset = { escrowBlob: '', escrowPin: '' };
             }
         } else if (data.authShare) {
             // First auth share — no history to push
@@ -525,7 +566,8 @@ export const upsertUserKeyByAuthProvider = async (
             (updateOps.$set as Record<string, unknown>).recoveryMethods = prunedMethods;
             if (!prunedMethods.some(method => method.type === 'escrow')) {
                 delete (updateOps.$set as Record<string, unknown>).escrowBlob;
-                updateOps.$unset = { escrowBlob: '' };
+                delete (updateOps.$set as Record<string, unknown>).escrowPin;
+                updateOps.$unset = { escrowBlob: '', escrowPin: '' };
             }
         } else if (data.authShare) {
             updateOps.$inc = { shareVersion: 1 };
@@ -611,7 +653,8 @@ const getAuthProviderFilter = (authProvider: AuthProviderMapping): Filter<MongoU
 export const setEscrowBlobByAuthProvider = async (
     authProvider: AuthProviderMapping,
     blob: EscrowBlob,
-    expectedShareVersion: number
+    expectedShareVersion: number,
+    pin?: { salt: string }
 ): Promise<MongoUserKeyType | null> => {
     const now = new Date();
     const parsed = EscrowBlobValidator.safeParse(blob);
@@ -633,6 +676,16 @@ export const setEscrowBlobByAuthProvider = async (
             {
                 $set: {
                     escrowBlob: { $literal: validated },
+                    escrowPin: pin
+                        ? {
+                              $literal: EscrowPinValidator.parse({
+                                  salt: pin.salt,
+                                  failedAttempts: 0,
+                                  enabledAt: now,
+                                  shareVersion: expectedShareVersion,
+                              }),
+                          }
+                        : '$$REMOVE',
                     updatedAt: now,
                     recoveryMethods: {
                         $concatArrays: [
@@ -669,7 +722,7 @@ export const clearEscrowByAuthProvider = async (
     return getUserKeysCollection().findOneAndUpdate(
         getAuthProviderFilter(authProvider),
         {
-            $unset: { escrowBlob: '' },
+            $unset: { escrowBlob: '', escrowPin: '' },
             $pull: { recoveryMethods: { type: 'escrow' } },
             $set: { updatedAt: now, ...(optOut ? { escrowOptedOutAt: now } : {}) },
         },
@@ -685,6 +738,83 @@ export const setEscrowOptInByAuthProvider = async (
         { $unset: { escrowOptedOutAt: '' }, $set: { updatedAt: new Date() } },
         { returnDocument: 'after' }
     );
+
+/** Reserve before claiming a hold or invoking the enclave; never read-then-increment. */
+export const reserveEscrowPinAttempt = async (
+    authProvider: AuthProviderMapping,
+    shareVersion: number,
+    expectedCiphertext?: string
+): Promise<MongoUserKeyType | null> =>
+    getUserKeysCollection().findOneAndUpdate(
+        {
+            ...getAuthProviderFilter(authProvider),
+            shareVersion,
+            'escrowPin.shareVersion': shareVersion,
+            'escrowPin.failedAttempts': { $lt: ESCROW_PIN_MAX_ATTEMPTS },
+            'escrowPin.disabledAt': { $exists: false },
+            ...(expectedCiphertext === undefined
+                ? {}
+                : { 'escrowBlob.envelope.ciphertext': expectedCiphertext }),
+        },
+        { $inc: { 'escrowPin.failedAttempts': 1 }, $set: { updatedAt: new Date() } },
+        { returnDocument: 'after' }
+    );
+
+/** Refund infrastructure/claim failures without modifying a replacement PIN enrollment. */
+export const refundEscrowPinAttempt = async (
+    authProvider: AuthProviderMapping,
+    shareVersion: number,
+    expectedCiphertext: string
+): Promise<void> => {
+    await getUserKeysCollection().updateOne(
+        {
+            ...getAuthProviderFilter(authProvider),
+            shareVersion,
+            'escrowPin.shareVersion': shareVersion,
+            'escrowPin.failedAttempts': { $gt: 0 },
+            'escrowPin.disabledAt': { $exists: false },
+            'escrowBlob.envelope.ciphertext': expectedCiphertext,
+        },
+        { $inc: { 'escrowPin.failedAttempts': -1 }, $set: { updatedAt: new Date() } }
+    );
+};
+
+export const resetEscrowPinAttempts = async (
+    authProvider: AuthProviderMapping,
+    shareVersion?: number,
+    expectedCiphertext?: string
+): Promise<void> => {
+    await getUserKeysCollection().updateOne(
+        {
+            ...getAuthProviderFilter(authProvider),
+            escrowPin: { $exists: true },
+            ...(shareVersion === undefined ? {} : { 'escrowPin.shareVersion': shareVersion }),
+            ...(expectedCiphertext === undefined
+                ? {}
+                : { 'escrowBlob.envelope.ciphertext': expectedCiphertext }),
+        },
+        { $set: { 'escrowPin.failedAttempts': 0, updatedAt: new Date() } }
+    );
+};
+
+export const disableEscrowPin = async (
+    authProvider: AuthProviderMapping,
+    shareVersion?: number,
+    expectedCiphertext?: string
+): Promise<boolean> => {
+    const result = await getUserKeysCollection().updateOne(
+        {
+            ...getAuthProviderFilter(authProvider),
+            escrowPin: { $exists: true },
+            ...(shareVersion === undefined ? {} : { 'escrowPin.shareVersion': shareVersion }),
+            ...(expectedCiphertext === undefined
+                ? {}
+                : { 'escrowBlob.envelope.ciphertext': expectedCiphertext }),
+        },
+        { $set: { 'escrowPin.disabledAt': new Date(), updatedAt: new Date() } }
+    );
+    return result.matchedCount === 1;
+};
 
 const addRecoveryMethodWithFilter = async (
     filter: Filter<MongoUserKeyType>,
@@ -750,7 +880,9 @@ export const removeRecoveryMethodFromUserKeyByAuthProvider = async (
 
     await getUserKeysCollection().updateOne(getAuthProviderFilter(authProvider), {
         $pull: { recoveryMethods: pullFilter },
-        ...(type === 'escrow' ? { $unset: { escrowBlob: '' as const } } : {}),
+        ...(type === 'escrow'
+            ? { $unset: { escrowBlob: '' as const, escrowPin: '' as const } }
+            : {}),
         $set: { updatedAt: new Date() },
     });
 };
@@ -928,6 +1060,7 @@ export const purgeExpiredProvisionalMigrationByAuthProvider = async (
             $unset: {
                 authShare: '',
                 escrowBlob: '',
+                escrowPin: '',
                 shareUpdatedAt: '',
                 sssActivationState: '',
                 provisionalCreatedAt: '',
@@ -1113,7 +1246,7 @@ export const completeIdentityRebind = async (
                 sssActivationState: 'active',
                 updatedAt: now,
             },
-            $unset: { provisionalCreatedAt: '', escrowBlob: '' },
+            $unset: { provisionalCreatedAt: '', escrowBlob: '', escrowPin: '' },
         },
         { returnDocument: 'after' }
     );

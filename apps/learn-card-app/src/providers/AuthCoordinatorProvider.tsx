@@ -137,6 +137,7 @@ import { Overlay, ErrorOverlay, StalledMigrationOverlay, EmailLinkOverlay } from
 
 import { RecoveryFlowModal } from '../components/recovery/RecoveryFlowModal';
 import { EscrowRecoveryHoldBanner } from '../components/recovery/EscrowRecoveryHoldBanner';
+import { RecoveryPinResetBanner } from '../components/recovery/RecoveryPinResetBanner';
 import { clearAllPendingEscrowRecovery } from '../components/recovery/escrowRecoveryStorage';
 import {
     RecoverySetupModal,
@@ -146,6 +147,18 @@ import { DeviceLinkModal } from '../components/device-link/DeviceLinkModal';
 import ReAuthOverlay from '../components/auth/ReAuthOverlay';
 
 const log = getLogger('auth-coordinator');
+
+/**
+ * Records whether the user has set or explicitly skipped a recovery PIN for a
+ * given DID. Read by the post-setup "set a PIN" overlay (skip once, don't
+ * re-nag) and by the "your PIN was reset" banner after a forced rotation.
+ * Must be called from every code path that sets/clears/skips the PIN so the
+ * flag stays in sync regardless of whether the change came from the
+ * post-setup overlay or the recovery settings row.
+ */
+const writeRecoveryPinPromptFlag = (did: string, value: 'set' | 'skipped'): void => {
+    localStorage.setItem(`lc:recovery-pin-prompt:${did}`, value);
+};
 
 export interface RecoverySetupOptions {
     initialMethod?: RecoverySetupType;
@@ -637,12 +650,35 @@ const AuthSessionManager: React.FC<{
         }
     }, [coordinator.state.status]);
 
+    const [showRecoveryPinSetup, setShowRecoveryPinSetup] = useState(false);
+    const [showRecoveryPinReset, setShowRecoveryPinReset] = useState(false);
+    const readyDid = coordinator.state.status === 'ready' ? coordinator.state.did : undefined;
+    const readyPinEnabled =
+        coordinator.state.status === 'ready' ? coordinator.state.escrowPin?.enabled : undefined;
+    const readyEnrollment =
+        coordinator.state.status === 'ready' ? coordinator.state.escrowEnrollment : undefined;
+
     // Track whether the user went through needs_setup (new user flow)
     useEffect(() => {
         if (coordinator.state.status === 'needs_setup') {
             wasNewUserRef.current = true;
         }
     }, [coordinator.state.status]);
+
+    useEffect(() => {
+        if (coordinator.state.status === 'ready') {
+            const did = coordinator.state.did;
+            const flag = localStorage.getItem(`lc:recovery-pin-prompt:${did}`);
+
+            if (wasNewUserRef.current && !flag && readyEnrollment === 'enrolled') {
+                setShowRecoveryPinSetup(true);
+            }
+
+            if (flag === 'set' && coordinator.state.escrowPin?.enabled === false) {
+                setShowRecoveryPinReset(true);
+            }
+        }
+    }, [coordinator.state.status, readyDid, readyPinEnabled, readyEnrollment]);
 
     // --- QR login device share pickup from sessionStorage ---
     // When Device B completes Firebase auth after a QR login, the coordinator
@@ -1317,6 +1353,26 @@ const AuthSessionManager: React.FC<{
         setDeviceLinkVisible(true);
     }, []);
 
+    // Record the prompt flag when a PIN is set/removed from recovery settings
+    // (MyLearnCardModal -> AutomaticRecoveryCard), mirroring what the
+    // post-setup RecoveryPinSetupOverlay already does on its own callbacks.
+    const setEscrowPin = useCallback<AppAuthContextValue['setEscrowPin']>(
+        async pin => {
+            await coordinator.setEscrowPin(pin);
+            if (coordinator.state.status === 'ready') {
+                writeRecoveryPinPromptFlag(coordinator.state.did, 'set');
+            }
+        },
+        [coordinator]
+    );
+
+    const clearEscrowPin = useCallback<AppAuthContextValue['clearEscrowPin']>(async () => {
+        await coordinator.clearEscrowPin();
+        if (coordinator.state.status === 'ready') {
+            writeRecoveryPinPromptFlag(coordinator.state.did, 'skipped');
+        }
+    }, [coordinator]);
+
     const enrichedValue: AppAuthContextValue = useMemo(
         () => ({
             // Spread all base coordinator fields
@@ -1341,6 +1397,8 @@ const AuthSessionManager: React.FC<{
             recoveryMethodCount,
             recoveryActivationPending: coordinator.needsActivation,
             openRecoverySetup,
+            setEscrowPin,
+            clearEscrowPin,
 
             // Provider-agnostic auth provider (consumers should use this
             // instead of importing Firebase directly)
@@ -1359,6 +1417,8 @@ const AuthSessionManager: React.FC<{
             deviceLinkVisible,
             recoveryMethodCount,
             openRecoverySetup,
+            setEscrowPin,
+            clearEscrowPin,
             authProvider,
         ]
     );
@@ -1366,13 +1426,24 @@ const AuthSessionManager: React.FC<{
     return (
         <AppAuthContext.Provider value={enrichedValue}>
             {children}
-            {coordinator.state.status === 'ready' && coordinator.state.pendingEscrowHold && (
-                <div className="fixed top-6 inset-x-4 z-[10000] max-w-md mx-auto">
-                    <EscrowRecoveryHoldBanner
-                        key={coordinator.state.pendingEscrowHold.holdId}
-                        requestedAt={coordinator.state.pendingEscrowHold.requestedAt}
-                        onCancel={coordinator.cancelEscrowRecovery}
-                    />
+            {coordinator.state.status === 'ready' && (
+                <div className="fixed top-6 inset-x-4 z-[10000] max-w-md mx-auto space-y-2">
+                    {coordinator.state.pendingEscrowHold && (
+                        <EscrowRecoveryHoldBanner
+                            key={coordinator.state.pendingEscrowHold.holdId}
+                            requestedAt={coordinator.state.pendingEscrowHold.requestedAt}
+                            onCancel={coordinator.cancelEscrowRecovery}
+                        />
+                    )}
+                    {showRecoveryPinReset && (
+                        <RecoveryPinResetBanner
+                            onDismiss={() => {
+                                if (!readyDid) return;
+                                writeRecoveryPinPromptFlag(readyDid, 'skipped');
+                                setShowRecoveryPinReset(false);
+                            }}
+                        />
+                    )}
                 </div>
             )}
 
@@ -1381,6 +1452,9 @@ const AuthSessionManager: React.FC<{
                 <Overlay>
                     <RecoveryFlowModal
                         escrowRecovery={{
+                            pinAvailable:
+                                coordinator.state.status === 'needs_recovery' &&
+                                coordinator.state.escrowPin?.enabled === true,
                             scope: JSON.stringify([
                                 getSSSConfig().serverUrl,
                                 coordinator.state.status === 'needs_recovery'
@@ -1660,6 +1734,21 @@ const AuthSessionManager: React.FC<{
                         setShowEmailLinkGate(false);
                     }}
                     onLogout={handleLogout}
+                />
+            )}
+
+            {showRecoveryPinSetup && coordinator.state.status === 'ready' && (
+                <RecoveryPinSetupOverlay
+                    onComplete={() => {
+                        if (!readyDid) return;
+                        writeRecoveryPinPromptFlag(readyDid, 'set');
+                        setShowRecoveryPinSetup(false);
+                    }}
+                    onSkip={() => {
+                        if (!readyDid) return;
+                        writeRecoveryPinPromptFlag(readyDid, 'skipped');
+                        setShowRecoveryPinSetup(false);
+                    }}
                 />
             )}
 
@@ -1943,6 +2032,8 @@ const AuthSessionManager: React.FC<{
         </AppAuthContext.Provider>
     );
 };
+
+import { RecoveryPinSetupOverlay } from '../components/recovery/RecoveryPinSetupOverlay';
 
 // --- Cached private key retrieval for private-key-first init ---
 // In public computer mode, skip the persistent cache so the coordinator

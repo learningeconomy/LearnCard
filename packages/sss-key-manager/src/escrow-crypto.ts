@@ -34,6 +34,7 @@ export interface EscrowBlobPlaintext {
     recoveryShare: string;
     did: string;
     shareVersion: number;
+    pinVerifier?: string;
 }
 
 /** Released recovery share additionally bound to its recovery hold. */
@@ -113,6 +114,15 @@ export const parseEscrowBlobPlaintext = (value: unknown): EscrowBlobPlaintext =>
         }).toLowerCase(),
         did: requireString(value, 'did', { max: 2_048, pattern: /^did:/ }),
         shareVersion: value.shareVersion,
+        ...(value.pinVerifier !== undefined
+            ? {
+                  pinVerifier: requireString(value, 'pinVerifier', {
+                      min: 64,
+                      max: 64,
+                      pattern: /^[0-9a-f]{64}$/i,
+                  }).toLowerCase(),
+              }
+            : {}),
     };
 };
 
