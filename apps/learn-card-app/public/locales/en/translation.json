@@ -8631,6 +8631,10 @@
                 "label": "Points",
                 "eg": "e.g. 720"
             },
+            "RubricCriterionLevel": {
+                "label": "Rubric level",
+                "eg": "e.g. 3"
+            },
             "Status": {
                 "label": "Status",
                 "eg": ""
@@ -8643,6 +8647,52 @@
                 "OnHold": "On Hold",
                 "Provisional": "Provisional",
                 "Withdrew": "Withdrew"
+            },
+            "editor": {
+                "skillAlignedTypes": "Skill-aligned result types",
+                "otherTypes": "Other result types",
+                "otherTypesHint": "These types aren’t included in the Open Skill Alignment profile.",
+                "percentRange": "Percent results use a 0–100 range.",
+                "minimum": "Minimum",
+                "maximum": "Maximum",
+                "minimumPlaceholder": "e.g. 0",
+                "maximumPlaceholder": "e.g. 800",
+                "rubricLevels": "Rubric levels",
+                "rubricHint": "Define each level before choosing the one achieved.",
+                "levelNumber": "Level {{number}}",
+                "removeRubricLevel": "Remove rubric level {{number}}",
+                "id": "ID",
+                "name": "Name",
+                "level": "Level",
+                "points": "Points",
+                "proficientPlaceholder": "Proficient",
+                "addLevel": "Add Level",
+                "achievedLevel": "Achieved level",
+                "chooseLevel": "Choose a level…",
+                "resultAlignments": "Result alignments",
+                "resultAlignmentsHint": "Link this result to a CTDL resource in the Credential Registry.",
+                "alignmentNumber": "Alignment {{number}}",
+                "removeAlignment": "Remove result alignment {{number}}",
+                "skillPlaceholder": "Skill or competency",
+                "ctdlResourceUrl": "CTDL resource URL",
+                "ctdlUrlPlaceholder": "https://credentialengineregistry.org/resources/...",
+                "addResultAlignment": "Add Result Alignment"
+            },
+            "validation": {
+                "alignmentNameUrl": "Add a name and URL for each result alignment.",
+                "alignmentUrl": "Enter a valid URL for each result alignment.",
+                "numericBounds": "Use numeric minimum and maximum values.",
+                "minimumExceedsMaximum": "The minimum result cannot exceed the maximum result.",
+                "addRubricLevel": "Add at least one rubric level.",
+                "completeRubricLevel": "Complete the id, name, level, and points for each rubric level.",
+                "uniqueRubricId": "Use a unique id for each rubric level.",
+                "numericRubricPoints": "Enter numeric points for each rubric level.",
+                "chooseAchievedLevel": "Choose an achieved rubric level.",
+                "chooseDeclaredRubricLevel": "Choose one of the declared rubric levels.",
+                "numericResult": "Enter a numeric result.",
+                "resultRange": "Enter a result from {{minimum}} to {{maximum}}.",
+                "resultMinimum": "Enter a result of at least {{minimum}}.",
+                "resultMaximum": "Enter a result no higher than {{maximum}}."
             }
         },
         "field": {
