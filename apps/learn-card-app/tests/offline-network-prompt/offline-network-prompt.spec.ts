@@ -5,11 +5,11 @@ test.describe('Show network prompt', () => {
     test.use({ storageState: { cookies: [], origins: [] } });
 
     test('Prompts the user to join the network, when getProfile request fail', async ({ page }) => {
-        await page.goto('/hidden/seed');
+        await page.goto('/developer/sign-in');
 
         await page.getByRole('textbox').fill('123abc'.repeat(30).slice(0, 64));
 
-        await page.getByRole('button', { name: /sign in with seed/i }).click();
+        await page.getByRole('button', { name: /sign in/i }).click();
         await page.waitForURL(/wallet/);
 
         // Intercept the request and simulate a network failure

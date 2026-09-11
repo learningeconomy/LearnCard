@@ -997,6 +997,19 @@
                 "generic": "حدث خطأ ما. يرجى المحاولة مرة أخرى."
             }
         },
+        "developerSignIn": {
+            "title": "Sign in with your developer seed",
+            "description": "This is the SECURE_SEED in your project's .env. It stays on this device — we never send it anywhere.",
+            "pasteAction": "Paste from clipboard",
+            "signingIn": "Signing in...",
+            "or": "or",
+            "seedLabel": "Seed",
+            "signInAction": "Sign in",
+            "notDeveloper": "Not a developer? ",
+            "signInNormally": "Sign in normally",
+            "securityWarning": "Keep your seed private. Anyone with it controls this account.",
+            "pasteHint": "Paste it into the field below."
+        },
         "loader": {
             "messages": {
                 "0": "بيانات الاعتماد في الطريق!",

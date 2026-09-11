@@ -6,6 +6,8 @@ Before issuing credentials to real users, you should test your integration safel
 
 ## Environments
 
+To see a staging project in the staging app: `npx @learncard/cli open --network staging` (the `.env` in that folder must already be on staging).
+
 Staging and production are separate networks — nothing below carries over between them; see [What carries over](#what-carries-over).
 
 | Item                     | Staging                                            | Production                                  |

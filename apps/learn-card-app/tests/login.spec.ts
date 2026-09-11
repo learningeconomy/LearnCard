@@ -19,20 +19,20 @@ test.describe('Signing in with a seed', () => {
     test.use({ storageState: { cookies: [], origins: [] } });
 
     test('Signing in with a seed', async ({ page }) => {
-        await page.goto('/hidden/seed');
+        await page.goto('/developer/sign-in');
 
         await page.getByRole('textbox').fill('c'.repeat(64));
 
-        await page.getByRole('button', { name: /sign in with seed/i }).click();
+        await page.getByRole('button', { name: /sign in/i }).click();
         await page.waitForURL(/wallet/);
     });
 
     test('Signing up for the LCN', async ({ page }) => {
-        await page.goto('/hidden/seed');
+        await page.goto('/developer/sign-in');
 
         await page.getByRole('textbox').fill('abc123'.repeat(30).slice(0, 64));
 
-        await page.getByRole('button', { name: /sign in with seed/i }).click();
+        await page.getByRole('button', { name: /sign in/i }).click();
         await page.waitForURL(/wallet/);
 
         await page.getByRole('button', { name: /boost/i }).click();

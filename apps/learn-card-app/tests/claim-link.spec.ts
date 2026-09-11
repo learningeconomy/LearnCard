@@ -71,9 +71,9 @@ test.describe('Claimable Boost', () => {
         await page.getByRole('button', { name: 'Accept' }).click();
         await page.getByRole('button', { name: 'Login' }).click();
 
-        await page.goto('/hidden/seed');
+        await page.goto('/developer/sign-in');
         await page.getByRole('textbox').fill('2'.repeat(64));
-        await page.getByRole('button', { name: /sign in with seed/i }).click();
+        await page.getByRole('button', { name: /sign in/i }).click();
 
         await page.goto(clipboardURL);
         await page.getByRole('button', { name: 'Accept' }).click({ timeout: 11000 });

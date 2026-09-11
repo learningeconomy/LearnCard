@@ -217,6 +217,18 @@ The response is JSON:
 
 Every `send` saves the badge as a **template** (a Boost). To send the same badge to more people, pass `templateUri: result.uri` instead of `signedCredential`. LearnCard fills in and signs each one server-side once you set up a [signing authority](../how-to-guides/create-signing-authority.md).
 
+## See it in the app
+
+The seed in your `.env` is a LearnCard account. Open it:
+
+```bash
+npx @learncard/cli open
+```
+
+That copies your seed to the clipboard and opens the app's developer sign-in page — click **Paste from clipboard** and you're in as the same profile that just sent the badge, with your template in the Developer Portal. `open template`, `open contract`, and `open integration` jump straight to what other commands created.
+
+Your seed is only ever copied, never put in a URL. It also means anyone with your `.env` can sign in as your issuer — keep it out of git.
+
 ## If something goes wrong
 
 | You see                                                                                             | Why                                                                                | Fix                                                                                                             |

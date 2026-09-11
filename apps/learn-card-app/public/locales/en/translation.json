@@ -989,6 +989,19 @@
                 "generic": "Something went wrong. Please try again."
             }
         },
+        "developerSignIn": {
+            "title": "Sign in with your developer seed",
+            "description": "This is the SECURE_SEED in your project's .env. It stays on this device — we never send it anywhere.",
+            "pasteAction": "Paste from clipboard",
+            "signingIn": "Signing in...",
+            "or": "or",
+            "seedLabel": "Seed",
+            "signInAction": "Sign in",
+            "notDeveloper": "Not a developer? ",
+            "signInNormally": "Sign in normally",
+            "securityWarning": "Keep your seed private. Anyone with it controls this account.",
+            "pasteHint": "Paste it into the field below."
+        },
         "sharedComputer": "Shared or public computer",
         "signInFromAnotherDevice": "Sign in from another device",
         "social": {
