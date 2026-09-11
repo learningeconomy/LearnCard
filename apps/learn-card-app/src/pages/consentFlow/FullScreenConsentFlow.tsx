@@ -145,84 +145,19 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
             await handleSwitchAccount(_childInsightsProfile as LCNProfile);
         }
 
-        setStep(ConsentFlowStep.connecting);
+        await guardedAction(async () => {
+            setStep(ConsentFlowStep.connecting);
 
-        try {
-            const { redirectUrl } = await consentToContract({
-                terms,
-                expiresAt: shareDuration.customDuration,
-                oneTime: shareDuration.oneTimeShare,
-            });
-
-            // Sync any auto-boost credentials (if any). No need to wait.
-            fetchNewContractCredentials();
-
-            successCallback?.();
-
-            if (isInlineInsightsRequest) {
-                setIsPostConsentLocal(true);
-                setStep(ConsentFlowStep.confirmation);
-            } else if (!successCallback || shouldDisableRedirect) {
-                closeAllModals();
-            }
-
-            if (!shouldDisableRedirect) {
-                const contractRedirectUrl = getConsentFlowContractRedirect({
-                    challenge,
-                    contractRedirectUrl: redirectUrl,
-                    domain,
+            try {
+                const { redirectUrl } = await consentToContract({
+                    terms,
+                    expiresAt: shareDuration.customDuration,
+                    oneTime: shareDuration.oneTimeShare,
                 });
 
-                if (contractRedirectUrl) {
-                    window.location.href = contractRedirectUrl;
-                    return;
-                }
+                // Sync any auto-boost credentials (if any). No need to wait.
+                fetchNewContractCredentials();
 
-                if (returnTo && !Array.isArray(returnTo)) {
-                    if (returnTo.startsWith('http://') || returnTo.startsWith('https://')) {
-                        const wallet = await initWallet();
-                        const ownerDid = contractDetails?.owner?.did;
-
-                        if (!ownerDid || !contractDetails?.uri) {
-                            throw new Error('Invalid consent request');
-                        }
-
-                        window.location.href = await getConsentFlowDidAuthRedirect({
-                            challenge,
-                            contractUri: contractDetails.uri,
-                            domain,
-                            ownerDid,
-                            returnTo,
-                            wallet,
-                        });
-                    } else history.push(returnTo);
-                }
-            }
-
-            if (childInsightsProfile && isSwitchedProfile) {
-                // Switch back to parent profile after consenting on childs behalf
-                await handleSwitchBackToParentAccount();
-            }
-
-            presentToast(`Successfully connected to ${app?.name ?? contractDetails?.name}`, {
-                type: ToastTypeEnum.Success,
-            });
-
-            if (app) {
-                setTimeout(() => {
-                    newModal(
-                        <AiPassportAppProfileConnectedView app={app} />,
-                        {},
-                        { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
-                    );
-                }, 301);
-            }
-        } catch (e) {
-            const err = e as any;
-            const isAlreadyConsented =
-                err?.data?.code === 'CONFLICT' || err?.message?.includes('already consented');
-
-            if (isAlreadyConsented) {
                 successCallback?.();
 
                 if (isInlineInsightsRequest) {
@@ -232,19 +167,91 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
                     closeAllModals();
                 }
 
+                if (!shouldDisableRedirect) {
+                    const contractRedirectUrl = getConsentFlowContractRedirect({
+                        challenge,
+                        contractRedirectUrl: redirectUrl,
+                        domain,
+                    });
+
+                    if (contractRedirectUrl) {
+                        window.location.href = contractRedirectUrl;
+                        return;
+                    }
+
+                    if (returnTo && !Array.isArray(returnTo)) {
+                        if (returnTo.startsWith('http://') || returnTo.startsWith('https://')) {
+                            const wallet = await initWallet();
+                            const ownerDid = contractDetails?.owner?.did;
+
+                            if (!ownerDid || !contractDetails?.uri) {
+                                throw new Error('Invalid consent request');
+                            }
+
+                            window.location.href = await getConsentFlowDidAuthRedirect({
+                                challenge,
+                                contractUri: contractDetails.uri,
+                                domain,
+                                ownerDid,
+                                returnTo,
+                                wallet,
+                            });
+                        } else history.push(returnTo);
+                    }
+                }
+
                 if (childInsightsProfile && isSwitchedProfile) {
+                    // Switch back to parent profile after consenting on childs behalf
                     await handleSwitchBackToParentAccount();
                 }
 
-                return;
-            }
+                presentToast(`Successfully connected to ${app?.name ?? contractDetails?.name}`, {
+                    type: ToastTypeEnum.Success,
+                });
 
-            log.error(e);
-            presentToast(`Failed to accept contract: ${err.message}`, {
-                type: ToastTypeEnum.Error,
-            });
-            setStep(ConsentFlowStep.confirmation);
-        }
+                if (app) {
+                    setTimeout(() => {
+                        newModal(
+                            <AiPassportAppProfileConnectedView app={app} />,
+                            {},
+                            { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
+                        );
+                    }, 301);
+                }
+            } catch (e) {
+                const message = e instanceof Error ? e.message : String(e);
+                const data = e && typeof e === 'object' && 'data' in e ? e.data : undefined;
+                const isAlreadyConsented =
+                    (data &&
+                        typeof data === 'object' &&
+                        'code' in data &&
+                        data.code === 'CONFLICT') ||
+                    message.includes('already consented');
+
+                if (isAlreadyConsented) {
+                    successCallback?.();
+
+                    if (isInlineInsightsRequest) {
+                        setIsPostConsentLocal(true);
+                        setStep(ConsentFlowStep.confirmation);
+                    } else if (!successCallback || shouldDisableRedirect) {
+                        closeAllModals();
+                    }
+
+                    if (childInsightsProfile && isSwitchedProfile) {
+                        await handleSwitchBackToParentAccount();
+                    }
+
+                    return;
+                }
+
+                log.error(e);
+                presentToast(`Failed to accept contract: ${message}`, {
+                    type: ToastTypeEnum.Error,
+                });
+                setStep(ConsentFlowStep.confirmation);
+            }
+        });
     };
 
     const handleNextStep = async () => {

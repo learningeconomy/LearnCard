@@ -373,99 +373,90 @@ export const verifiedContactRoute = openRoute.use(async ({ ctx, next }) => {
 export type GuardianApprovalToken = {
     iss: string;
     sub: string;
-    iat: number;
+    iat?: number;
     exp: number;
     scope: string;
 };
 
+// Match the existing guardian UI's five-minute approval window.
+const GUARDIAN_APPROVAL_MAX_TTL_SECONDS = 5 * 60;
+
 export const guardianGatedRoute = profileRoute.use(async ({ ctx, next }) => {
     const { profile } = ctx.user;
     const guardianApprovalToken = ctx._guardianApprovalToken;
-
     const isChildAccount = await isProfileManaged(profile.profileId);
+    let guardianIdentity: { profileId: string; did: string } | undefined;
 
-    if (!isChildAccount) {
-        return next({
-            ctx: { ...ctx, isChildAccount: false, hasGuardianApproval: false },
-        });
-    }
-
-    if (!guardianApprovalToken) {
-        return next({
-            ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false },
-        });
-    }
-
-    try {
-        const learnCard = await getEmptyLearnCard();
-
-        const result = await learnCard.invoke.verifyPresentation(guardianApprovalToken, {
-            proofFormat: 'jwt',
-        });
-
-        if (result.errors.length > 0 || !result.checks.includes('JWS')) {
-            return next({
-                ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false },
-            });
-        }
-
-        const jwtPayload = jwtDecode<{ vp?: { proof?: { challenge?: string } }; nonce?: string }>(
-            guardianApprovalToken
-        );
-
-        const challengeStr = jwtPayload.vp?.proof?.challenge ?? jwtPayload.nonce;
-        if (!challengeStr) {
-            return next({
-                ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false },
-            });
-        }
-
-        let guardianClaims: GuardianApprovalToken;
+    if (isChildAccount && guardianApprovalToken) {
         try {
-            guardianClaims = JSON.parse(challengeStr);
+            const learnCard = await getEmptyLearnCard();
+            const result = await learnCard.invoke.verifyPresentation(guardianApprovalToken, {
+                proofFormat: 'jwt',
+            });
+
+            if (
+                result.errors.length === 0 &&
+                result.warnings.length === 0 &&
+                result.checks.includes('JWS')
+            ) {
+                const jwtHeader = jwtDecode<{ kid?: string }>(guardianApprovalToken, {
+                    header: true,
+                });
+                const jwtPayload = jwtDecode<{
+                    iss?: string;
+                    vp?: { holder?: string; proof?: { challenge?: string } };
+                    nonce?: string;
+                }>(guardianApprovalToken);
+                const challenge = jwtPayload.vp?.proof?.challenge ?? jwtPayload.nonce;
+                const claims: GuardianApprovalToken | null =
+                    typeof challenge === 'string' ? JSON.parse(challenge) : null;
+                const now = Date.now() / 1000;
+                const signerDid =
+                    typeof jwtHeader.kid === 'string' ? jwtHeader.kid.split('#')[0] : undefined;
+
+                // Verification proves the key's signature; bind every identity claim to that key.
+                // The current UI does not include iat in its challenge, so it remains optional.
+                if (
+                    claims &&
+                    signerDid &&
+                    jwtPayload.iss === signerDid &&
+                    jwtPayload.vp?.holder === signerDid &&
+                    claims.iss === signerDid &&
+                    typeof claims.exp === 'number' &&
+                    Number.isFinite(claims.exp) &&
+                    claims.exp > now &&
+                    claims.exp <= now + GUARDIAN_APPROVAL_MAX_TTL_SECONDS &&
+                    (claims.iat === undefined ||
+                        (typeof claims.iat === 'number' &&
+                            Number.isFinite(claims.iat) &&
+                            claims.iat <= now &&
+                            claims.exp > claims.iat &&
+                            claims.exp - claims.iat <= GUARDIAN_APPROVAL_MAX_TTL_SECONDS)) &&
+                    claims.scope === 'guardian-approval' &&
+                    claims.sub === getDidWeb(ctx.domain, profile.profileId)
+                ) {
+                    const managers = await getProfilesThatManageAProfile(profile.profileId);
+                    const guardian = managers.find(
+                        manager =>
+                            signerDid === manager.did ||
+                            signerDid === getDidWeb(ctx.domain, manager.profileId)
+                    );
+                    if (guardian) {
+                        guardianIdentity = { profileId: guardian.profileId, did: signerDid };
+                    }
+                }
+            }
         } catch {
-            return next({
-                ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false },
-            });
+            // Malformed or unverifiable presentations never authorize a guardian-only mutation.
         }
-
-        if (!guardianClaims.exp || guardianClaims.exp * 1000 < Date.now()) {
-            return next({
-                ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false },
-            });
-        }
-
-        if (guardianClaims.scope !== 'guardian-approval') {
-            return next({
-                ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false },
-            });
-        }
-
-        const childDidWeb = getDidWeb(ctx.domain, profile.profileId);
-        if (guardianClaims.sub !== childDidWeb) {
-            return next({
-                ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false },
-            });
-        }
-
-        const managers = await getProfilesThatManageAProfile(profile.profileId);
-        const guardianProfile = managers.find(manager => {
-            const managerDidWeb = getDidWeb(ctx.domain, manager.profileId);
-            return guardianClaims.iss === managerDidWeb || guardianClaims.iss === manager.did;
-        });
-
-        if (!guardianProfile) {
-            return next({
-                ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false },
-            });
-        }
-
-        return next({
-            ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: true },
-        });
-    } catch {
-        return next({
-            ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false },
-        });
     }
+
+    return next({
+        ctx: {
+            ...ctx,
+            isChildAccount,
+            hasGuardianApproval: guardianIdentity !== undefined,
+            guardianIdentity,
+        },
+    });
 });

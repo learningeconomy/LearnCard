@@ -3,6 +3,7 @@ import { v4 as uuid } from 'uuid';
 import {
     ConsentFlowTerms as ConsentFlowTermsType,
     ConsentFlowTransaction as ConsentFlowTransactionType,
+    ConsentFlowGuardianApproval,
     LCNNotificationTypeEnumValidator,
     LCNProfile,
     VC,
@@ -34,10 +35,12 @@ export const reconsentTerms = async (
         terms,
         expiresAt,
         oneTime,
+        guardianApproval,
     }: {
         terms: ConsentFlowTermsType;
         expiresAt?: string;
         oneTime?: boolean;
+        guardianApproval?: ConsentFlowGuardianApproval;
     },
     domain: string
 ): Promise<boolean> => {
@@ -49,15 +52,27 @@ export const reconsentTerms = async (
         ...(typeof oneTime === 'boolean' ? { oneTime } : {}),
     } as const satisfies ConsentFlowTransactionType;
 
+    const existingFlat = flattenObject({
+        terms: relationship.terms.terms,
+        guardianApproval: relationship.terms.guardianApproval,
+    });
+    const newFlat = flattenObject({ terms, ...(guardianApproval ? { guardianApproval } : {}) });
+    const removedProperties = Object.fromEntries(
+        Object.keys(existingFlat)
+            .filter(key => !(key in newFlat))
+            .map(key => [key, null])
+    );
+
     const result = await new QueryBuilder(
         new BindParam({
-            params: flattenObject({
-                terms,
-                updatedAt: new Date().toISOString(),
+            params: {
+                ...newFlat,
+                ...removedProperties,
+                updatedAt: transaction.date,
                 status: oneTime ? 'stale' : 'live',
                 ...(typeof expiresAt === 'string' ? { expiresAt } : {}),
                 ...(typeof oneTime === 'boolean' ? { oneTime } : {}),
-            }),
+            },
         })
     )
         .match({
@@ -244,7 +259,13 @@ export const updateTerms = async (
         terms,
         expiresAt,
         oneTime,
-    }: { terms: ConsentFlowTermsType; expiresAt?: string; oneTime?: boolean },
+        guardianApproval,
+    }: {
+        terms: ConsentFlowTermsType;
+        expiresAt?: string;
+        oneTime?: boolean;
+        guardianApproval?: ConsentFlowGuardianApproval;
+    },
     domain: string
 ): Promise<boolean> => {
     const transaction = {
@@ -260,8 +281,14 @@ export const updateTerms = async (
     /* -------------------------------------------------------------------------- */
 
     // 1. Flatten both the existing stored terms and the new terms we are saving
-    const existingFlat = flattenObject({ terms: relationship.terms.terms });
-    const newFlatInner = flattenObject({ terms });
+    const existingFlat = flattenObject({
+        terms: relationship.terms.terms,
+        guardianApproval: relationship.terms.guardianApproval,
+    });
+    const newFlatInner = flattenObject({
+        terms,
+        ...(guardianApproval ? { guardianApproval } : {}),
+    });
 
     // 2. Determine keys that are present in the existing node but NOT in the new update
     const keysToRemove = Object.keys(existingFlat).filter(key => !(key in newFlatInner));
@@ -269,7 +296,7 @@ export const updateTerms = async (
     // 3. Build a params object: keys for new/updated properties + keys to delete (set to null)
     const paramsForSet = {
         ...newFlatInner,
-        updatedAt: new Date().toISOString(),
+        updatedAt: transaction.date,
         status: oneTime ? 'stale' : 'live',
         ...(typeof expiresAt === 'string' ? { expiresAt } : {}),
         ...(typeof oneTime === 'boolean' ? { oneTime } : {}),

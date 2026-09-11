@@ -123,7 +123,7 @@ import {
     getCredentialInstanceForBoostAndProfile,
 } from '@accesslayer/credential/read';
 import {
-    getContractTermsForProfile,
+    getConsentedDataBetweenProfiles,
     getContractDetailsByUri,
 } from '@accesslayer/consentflowcontract/relationships/read';
 import { getBoostPermissions, getBoostRecipients } from '@accesslayer/boost/relationships/read';
@@ -1122,8 +1122,8 @@ const handleGetTemplateRecipientsEvent = async (
                     sent.status === 'suspended'
                         ? ('suspended' as const)
                         : received
-                        ? ('claimed' as const)
-                        : ('pending' as const),
+                          ? ('claimed' as const)
+                          : ('pending' as const),
             };
         })
         .filter(
@@ -1159,10 +1159,10 @@ const handleGetTemplateRecipientsEvent = async (
                 record.status === 'revoked'
                     ? ('revoked' as const)
                     : record.status === 'suspended'
-                    ? ('suspended' as const)
-                    : record.received
-                    ? ('claimed' as const)
-                    : ('pending' as const),
+                      ? ('suspended' as const)
+                      : record.received
+                        ? ('claimed' as const)
+                        : ('pending' as const),
         })),
     ]
         .filter(record => Boolean(record.credentialUri))
@@ -1198,59 +1198,75 @@ const handleRequestLearnerContextEvent = async (
         detailLevel?: string;
     };
 
-    const credentialUris: string[] = [];
+    const credentialUris = new Set<string>();
     let personalData: Record<string, string> = {};
-
-    const sentCredentials = await getCredentialsSentByListingToProfile(
-        listingId,
-        profile.profileId,
-        { limit: 100 }
-    );
-
-    for (const sentCred of sentCredentials) {
-        const credentialUri = getCredentialUri(sentCred.credentialId, ctx.domain);
-        credentialUris.push(credentialUri);
-    }
-
-    // Resolve contractUri from launch_config_json or guideState
-    let contractUri = getContractUriFromLaunchConfig(listing);
-
-    if (!contractUri) {
-        const integration = await getIntegrationForListing(listingId);
-        contractUri = getContractUriFromGuideState(integration);
-    }
+    const integration = await getIntegrationForListing(listingId);
+    const contractUri =
+        getContractUriFromLaunchConfig(listing) ?? getContractUriFromGuideState(integration);
 
     if (contractUri) {
-        try {
-            const contractDetails = await getContractDetailsByUri(contractUri);
+        const contractDetails = await getContractDetailsByUri(contractUri);
+        const owner = integration ? await getOwnerProfileForIntegration(integration.id) : null;
+        if (
+            !contractDetails ||
+            !owner ||
+            contractDetails.contractOwner.profileId !== owner.profileId
+        ) {
+            throw new TRPCError({
+                code: 'FORBIDDEN',
+                message: 'The app must use a consent contract owned by its integration',
+            });
+        }
 
-            if (contractDetails?.contract) {
-                const terms = await getContractTermsForProfile(profile, contractDetails.contract);
-
-                if (event.includeCredentials && terms?.terms?.read?.credentials) {
-                    const uris = Object.values(terms.terms.read.credentials.categories).flatMap(
-                        (category: unknown) => (category as { shared?: string[] })?.shared ?? []
-                    );
-
-                    credentialUris.push(...uris);
-                }
-
-                if (event.includePersonalData && terms?.terms?.read?.personal) {
-                    personalData = terms.terms.read.personal;
-                }
+        // Use the same live/expiry/category/guardian evaluation as data-provider reads.
+        // An app's contract is not interchangeable with another app's or AI's grant.
+        const [consent] = await getConsentedDataBetweenProfiles(
+            owner.profileId,
+            profile.profileId,
+            { query: { id: contractDetails.contract.id }, limit: 1, domain: ctx.domain }
+        );
+        if (
+            !consent ||
+            consent.status !== 'live' ||
+            (consent.guardian.required && !consent.guardian.approved)
+        ) {
+            throw new TRPCError({
+                code: 'FORBIDDEN',
+                message: 'Current app consent and applicable guardian approval are required',
+            });
+        }
+        if (event.includeCredentials === true) {
+            for (const credential of consent.credentials) credentialUris.add(credential.uri);
+        }
+        if (event.includePersonalData === true) personalData = consent.personal;
+    } else if (event.includeCredentials === true) {
+        // Without a read contract, only this app's own accepted, active issuances
+        // are available. Never supplement a restricted contract with these records.
+        const sentCredentials = await getCredentialsSentByListingToProfile(
+            listingId,
+            profile.profileId,
+            { limit: 501 }
+        );
+        if (sentCredentials.length > 500) {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'Learner context supports up to 500 selected credentials',
+            });
+        }
+        for (const credential of sentCredentials) {
+            if (credential.status === 'claimed') {
+                credentialUris.add(getCredentialUri(credential.credentialId, ctx.domain));
             }
-        } catch (error) {
-            console.error('Error fetching contract credentials:', error);
         }
     }
 
     return {
-        credentialUris,
+        credentialUris: [...credentialUris],
         personalData,
         instructions,
         detailLevel,
-        maxCredentials: credentialUris.length,
-        did: `did:web:${ctx.domain}:${profile.profileId}`,
+        maxCredentials: credentialUris.size,
+        did: getDidWeb(ctx.domain, profile.profileId),
     };
 };
 

@@ -192,11 +192,12 @@ export const getCredentialsSentByListingToProfile = async (
             const isReceived = record.get('isReceived');
             const sentStatus = record.get('sentStatus');
             const receivedStatus = record.get('receivedStatus');
-            const rawStatus = sentStatus ?? receivedStatus;
             let status: 'pending' | 'claimed' | 'revoked' | 'suspended' = 'pending';
 
-            if (rawStatus === 'revoked' || rawStatus === 'suspended') {
-                status = rawStatus;
+            if (sentStatus === 'revoked' || receivedStatus === 'revoked') {
+                status = 'revoked';
+            } else if (sentStatus === 'suspended' || receivedStatus === 'suspended') {
+                status = 'suspended';
             } else if (isReceived) {
                 status = 'claimed';
             }

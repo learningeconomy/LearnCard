@@ -698,21 +698,6 @@ export const PaginatedConsentFlowDataValidator = PaginationResponseValidator.ext
 });
 export type PaginatedConsentFlowData = z.infer<typeof PaginatedConsentFlowDataValidator>;
 
-export const ConsentFlowContractDataForDidValidator = z.object({
-    credentials: z.object({ category: z.string(), uri: z.string() }).array(),
-    personal: z.record(z.string(), z.string()).default({}),
-    date: z.string(),
-    contractUri: z.string(),
-});
-export type ConsentFlowContractDataForDid = z.infer<typeof ConsentFlowContractDataForDidValidator>;
-
-export const PaginatedConsentFlowDataForDidValidator = PaginationResponseValidator.extend({
-    records: ConsentFlowContractDataForDidValidator.array(),
-});
-export type PaginatedConsentFlowDataForDid = z.infer<
-    typeof PaginatedConsentFlowDataForDidValidator
->;
-
 export const ConsentFlowTermValidator = z.object({
     sharing: z.boolean().optional(),
     shared: z.string().array().optional(),
@@ -761,6 +746,42 @@ export const PaginatedConsentFlowTermsValidator = PaginationResponseValidator.ex
         .array(),
 });
 export type PaginatedConsentFlowTerms = z.infer<typeof PaginatedConsentFlowTermsValidator>;
+
+export const ConsentFlowGuardianApprovalValidator = z.object({
+    guardianProfileId: z.string(),
+    guardianDid: z.string(),
+    approvedAt: z.string().datetime(),
+    contractUpdatedAt: z.string(),
+});
+export type ConsentFlowGuardianApproval = z.infer<typeof ConsentFlowGuardianApprovalValidator>;
+
+export const ConsentFlowContractDataForDidValidator = z.object({
+    credentials: z.object({ category: z.string(), uri: z.string() }).array(),
+    personal: z.record(z.string(), z.string()).default({}),
+    date: z.string(),
+    createdAt: z.string().optional(),
+    contractUpdatedAt: z.string(),
+    contractExpiresAt: z.string().optional(),
+    reasonForAccessing: z.string().optional(),
+    guardian: z.object({
+        required: z.boolean(),
+        approved: z.boolean(),
+        approval: ConsentFlowGuardianApprovalValidator.optional(),
+    }),
+    contractUri: z.string(),
+    termsUri: z.string(),
+    status: ConsentFlowTermsStatusValidator,
+    expiresAt: z.string().optional(),
+    terms: ConsentFlowTermsValidator,
+});
+export type ConsentFlowContractDataForDid = z.infer<typeof ConsentFlowContractDataForDidValidator>;
+
+export const PaginatedConsentFlowDataForDidValidator = PaginationResponseValidator.extend({
+    records: ConsentFlowContractDataForDidValidator.array(),
+});
+export type PaginatedConsentFlowDataForDid = z.infer<
+    typeof PaginatedConsentFlowDataForDidValidator
+>;
 
 export const ConsentFlowContractQueryValidator = z.object({
     read: z
@@ -875,6 +896,7 @@ export const ConsentFlowTransactionValidator = z.object({
     expiresAt: z.string().optional(),
     oneTime: z.boolean().optional(),
     terms: ConsentFlowTermsValidator.optional(),
+    guardianApproval: ConsentFlowGuardianApprovalValidator.optional(),
     id: z.string(),
     action: ConsentFlowTransactionActionValidator,
     date: z.string(),

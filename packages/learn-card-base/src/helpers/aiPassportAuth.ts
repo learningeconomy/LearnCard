@@ -4,7 +4,7 @@ import type { BespokeLearnCard } from '../types/learn-card';
 import { networkStore } from '../stores/NetworkStore';
 import { walletStore } from '../stores/walletStore';
 
-export type AiPassportAuthMode = 'legacy' | 'session';
+export type AiPassportAuthMode = 'session';
 
 type ChallengeResponse = {
     audience: string;
@@ -27,47 +27,52 @@ const WEBSOCKET_TICKET_PATTERN = /^[A-Za-z0-9_-]{32,128}$/;
 const authRequests = new Map<string, Promise<AiPassportAuthMode>>();
 const authModes = new Map<string, AiPassportAuthMode>();
 const authTokens = new Map<string, string>();
-const authWallets = new Map<string, BespokeLearnCard>();
+let authGeneration = 0;
 
 const getAuthKey = (did: string): string => `${networkStore.get.aiServiceUrl()}|${did}`;
 
-/**
- * Drop all negotiated AI Passport auth state (modes, durable bearer tokens,
- * cached wallets, and in-flight negotiations). Call on logout so a durable
- * session bearer never outlives the account that minted it.
- */
+/** Invalidate both negotiated sessions and every continuation of an in-flight request. */
 export const clearAiPassportAuth = (): void => {
+    authGeneration += 1;
     authRequests.clear();
     authModes.clear();
     authTokens.clear();
-    authWallets.clear();
+};
+
+// Invalidate even an away-and-back switch while a negotiation is suspended.
+walletStore.store.subscribe((state, previous) => {
+    if (state.wallet !== previous.wallet) clearAiPassportAuth();
+});
+networkStore.store.subscribe((state, previous) => {
+    if (state.aiServiceUrl !== previous.aiServiceUrl) clearAiPassportAuth();
+});
+
+const guardCurrentIdentity = (did: string) => {
+    const wallet = walletStore.get.wallet();
+    if (!wallet) throw new Error('AI Passport authentication requires an initialized wallet');
+    if (wallet.id.did() !== did) throw new Error('AI Passport wallet identity mismatch');
+    const generation = authGeneration;
+    const key = getAuthKey(did);
+
+    return () => {
+        if (
+            generation !== authGeneration ||
+            getAuthKey(did) !== key ||
+            walletStore.get.wallet() !== wallet ||
+            wallet.id.did() !== did
+        ) {
+            throw new Error('AI Passport session identity or service changed');
+        }
+    };
 };
 
 export const getAiPassportAuthMode = (did: string): AiPassportAuthMode | undefined =>
-    authModes.get(getAuthKey(did));
+    walletStore.get.wallet()?.id.did() === did ? authModes.get(getAuthKey(did)) : undefined;
 
-export const waitForAiPassportAuthMode = async (
-    did: string
-): Promise<AiPassportAuthMode | undefined> =>
-    getAiPassportAuthMode(did) ?? (await authRequests.get(getAuthKey(did)));
+export const getAiPassportUrl = (path: string): URL =>
+    new URL(path, networkStore.get.aiServiceUrl());
 
-export const getAiPassportUrl = (path: string, did?: string): URL => {
-    const url = new URL(path, networkStore.get.aiServiceUrl());
-
-    if (did && getAiPassportAuthMode(did) === 'legacy') url.searchParams.set('did', did);
-
-    return url;
-};
-
-export const getAiPassportLaunchUrl = (url: string, did?: string): string => {
-    const launchUrl = new URL(url);
-
-    if (did && getAiPassportAuthMode(did) === 'legacy') launchUrl.searchParams.set('did', did);
-
-    return launchUrl.toString();
-};
-
-const getAiPassportFetchUrl = (path: string, did?: string): URL => {
+const getAiPassportFetchUrl = (path: string): URL => {
     const backendUrl = new URL(networkStore.get.aiServiceUrl());
     const url = new URL(path, backendUrl);
 
@@ -77,66 +82,52 @@ const getAiPassportFetchUrl = (path: string, did?: string): URL => {
         );
     }
 
-    if (did && getAiPassportAuthMode(did) === 'legacy') url.searchParams.set('did', did);
-
     return url;
 };
 
 export const aiPassportFetch = async (
     path: string,
     init: RequestInit = {},
-    did?: string
+    did: string
 ): Promise<Response> => {
     getAiPassportFetchUrl(path);
+    const assertCurrent = guardCurrentIdentity(did);
+    const key = getAuthKey(did);
+    const wallet = walletStore.get.wallet()!;
 
-    if (did && !getAiPassportAuthMode(did)) {
-        const pending = authRequests.get(getAuthKey(did));
+    if (!getAiPassportAuthMode(did)) await ensureAiPassportSession(wallet);
+    assertCurrent();
 
-        if (pending) await pending;
-        else {
-            const wallet = authWallets.get(getAuthKey(did)) ?? walletStore.get.wallet();
-
-            if (!wallet) {
-                throw new Error('AI Passport authentication requires an initialized wallet');
-            }
-
-            await ensureAiPassportSession(wallet);
+    const request = async () => {
+        assertCurrent();
+        if (getAiPassportAuthMode(did) !== 'session') {
+            throw new Error('AI Passport session or service changed');
         }
-    }
-
-    const initialMode = did ? getAiPassportAuthMode(did) : undefined;
-    const request = () => {
         const headers = new Headers(init.headers);
-        const token = did ? authTokens.get(getAuthKey(did)) : undefined;
-
+        // Only a token negotiated for this identity may authenticate the request.
+        headers.delete('Authorization');
+        const token = authTokens.get(key);
         if (token) headers.set('Authorization', `Bearer ${token}`);
 
-        return fetch(getAiPassportFetchUrl(path, did), {
+        const response = await fetch(getAiPassportFetchUrl(path), {
             ...init,
             headers,
             credentials: 'include',
         });
+        assertCurrent();
+        return response;
     };
     const response = await request();
-
-    if (!did || !initialMode || response.status !== 401) return response;
-
-    const key = getAuthKey(did);
-    const wallet = authWallets.get(key);
-
-    if (!wallet) return response;
+    if (response.status !== 401) return response;
 
     authModes.delete(key);
     await ensureAiPassportSession(wallet);
-
+    assertCurrent();
     return request();
 };
 
-export const getAiPassportWebSocketProtocols = async (
-    did: string
-): Promise<string[] | undefined> => {
-    if (getAiPassportAuthMode(did) !== 'session') return;
-
+export const getAiPassportWebSocketProtocols = async (did: string): Promise<string[]> => {
+    const assertCurrent = guardCurrentIdentity(did);
     const response = await aiPassportFetch('/auth/websocket-ticket', { method: 'POST' }, did);
 
     if (!response.ok) {
@@ -144,7 +135,7 @@ export const getAiPassportWebSocketProtocols = async (
     }
 
     const { ticket } = (await response.json()) as WebSocketTicketResponse;
-
+    assertCurrent();
     if (typeof ticket !== 'string' || !WEBSOCKET_TICKET_PATTERN.test(ticket)) {
         throw new Error('AI Passport WebSocket ticket response is invalid');
     }
@@ -152,74 +143,60 @@ export const getAiPassportWebSocketProtocols = async (
     return ['ai-passport', `ai-passport-ticket.${ticket}`];
 };
 
-/**
- * Detects a pre-challenge (legacy) AI Passport backend so the client can fall
- * back to DID-in-query transport. SECURITY CONTRACT with the hardened backend
- * (WeLibraryOS/AI-Passport#65): `POST /auth/challenge` only ever returns 200,
- * 403, or 405 — never `401 {error:"Authentication required"}`. If the backend
- * ever emits that exact 401 shape from the challenge route, every client
- * silently downgrades to the legacy transport.
- */
-const isLegacyChallengeResponse = async (response: Response): Promise<boolean> => {
-    if (response.status === 404 || response.status === 405) return true;
-    if (response.status !== 401) return false;
-
-    try {
-        const payload = (await response.clone().json()) as { error?: unknown };
-
-        return payload.error === 'Authentication required';
-    } catch {
-        return false;
-    }
-};
-
 export const ensureAiPassportSession = async (
     wallet: BespokeLearnCard
 ): Promise<AiPassportAuthMode> => {
     const did = wallet.id.did();
+    const assertCurrent = guardCurrentIdentity(did);
     const key = getAuthKey(did);
-    authWallets.set(key, wallet);
     const existing = authRequests.get(key);
+    if (existing) {
+        const mode = await existing;
+        assertCurrent();
+        return mode;
+    }
+    authModes.delete(key);
 
-    if (existing) return existing;
-
+    const authFetch = async (path: string, init: RequestInit = {}) => {
+        assertCurrent();
+        const response = await fetch(getAiPassportFetchUrl(path), {
+            ...init,
+            credentials: 'include',
+        });
+        assertCurrent();
+        return response;
+    };
     const request = (async (): Promise<AiPassportAuthMode> => {
         const sessionHeaders = new Headers();
         const existingToken = authTokens.get(key);
-
         if (existingToken) sessionHeaders.set('Authorization', `Bearer ${existingToken}`);
 
-        const currentSession = await fetch(getAiPassportUrl('/auth/session', did), {
-            credentials: 'include',
-            headers: sessionHeaders,
-        });
-
+        const currentSession = await authFetch('/auth/session', { headers: sessionHeaders });
         if (currentSession.ok) {
             const session = (await currentSession.json()) as SessionResponse;
-
+            assertCurrent();
             if (session.authenticated && session.did === did) {
                 authModes.set(key, 'session');
-
                 return 'session';
             }
         }
 
-        const challengeResponse = await aiPassportFetch('/auth/challenge', {
-            method: 'POST',
-        });
-
+        const challengeResponse = await authFetch('/auth/challenge', { method: 'POST' });
         if (!challengeResponse.ok) {
-            if (await isLegacyChallengeResponse(challengeResponse)) {
-                authModes.set(key, 'legacy');
-
-                return 'legacy';
-            }
-
             throw new Error(`AI Passport challenge request failed (${challengeResponse.status})`);
         }
-
         const { audience, binding, challenge } =
             (await challengeResponse.json()) as ChallengeResponse;
+        assertCurrent();
+        if (
+            audience !== new URL(networkStore.get.aiServiceUrl()).origin ||
+            typeof binding !== 'string' ||
+            !binding ||
+            typeof challenge !== 'string' ||
+            !challenge
+        ) {
+            throw new Error('AI Passport challenge response is invalid');
+        }
         const unsignedPresentation: UnsignedVP = {
             '@context': ['https://www.w3.org/2018/credentials/v1'],
             type: ['VerifiablePresentation'],
@@ -231,23 +208,21 @@ export const ensureAiPassportSession = async (
             proofFormat: 'jwt',
             proofPurpose: 'authentication',
         })) as unknown;
-
+        assertCurrent();
         if (typeof presentation !== 'string') {
             throw new Error('AI Passport DID Auth presentation must be a JWT');
         }
 
-        const sessionResponse = await aiPassportFetch('/auth/session', {
+        const sessionResponse = await authFetch('/auth/session', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ binding, challenge, vp: presentation }),
         });
-
         if (!sessionResponse.ok) {
             throw new Error(`AI Passport session request failed (${sessionResponse.status})`);
         }
-
         const session = (await sessionResponse.json()) as SessionResponse;
-
+        assertCurrent();
         if (!session.authenticated || session.did !== did) {
             throw new Error('AI Passport session identity mismatch');
         }
@@ -255,14 +230,19 @@ export const ensureAiPassportSession = async (
         authModes.set(key, 'session');
         authTokens.delete(key);
         if (typeof session.token === 'string') authTokens.set(key, session.token);
-
         return 'session';
     })();
 
     authRequests.set(key, request);
-
     try {
         return await request;
+    } catch (error) {
+        // An invalidated negotiation must not erase a newer account's session.
+        if (authRequests.get(key) === request) {
+            authModes.delete(key);
+            authTokens.delete(key);
+        }
+        throw error;
     } finally {
         if (authRequests.get(key) === request) authRequests.delete(key);
     }

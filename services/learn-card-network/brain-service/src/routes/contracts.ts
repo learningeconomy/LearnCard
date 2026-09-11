@@ -45,6 +45,7 @@ import {
     getContractTermsForProfile,
     getTransactionsForTerms,
     hasProfileConsentedToContract,
+    hasGuardianApprovalHistory,
     isProfileConsentFlowContractAdmin,
     getWritersForContract,
 } from '@accesslayer/consentflowcontract/relationships/read';
@@ -907,7 +908,7 @@ export const contractsRouter = t.router({
         .output(z.object({ termsUri: z.string(), redirectUrl: z.string().optional() }))
         .mutation(async ({ input, ctx }) => {
             const { profile } = ctx.user;
-            const { isChildAccount, hasGuardianApproval } = ctx;
+            const { isChildAccount, hasGuardianApproval, guardianIdentity } = ctx;
 
             if (isChildAccount && !hasGuardianApproval) {
                 throw new TRPCError({
@@ -936,6 +937,19 @@ export const contractsRouter = t.router({
                     code: 'CONFLICT',
                     message: "You've already consented to this contract!",
                 });
+            }
+
+            if (!guardianIdentity) {
+                const previousTerms = await getContractTermsForProfile(
+                    profile,
+                    contractDetails.contract
+                );
+                if (previousTerms && (await hasGuardianApprovalHistory(previousTerms))) {
+                    throw new TRPCError({
+                        code: 'FORBIDDEN',
+                        message: 'This consent requires approval from a current guardian',
+                    });
+                }
             }
 
             if (!areTermsValid(terms, contractDetails.contract.contract)) {
@@ -1077,7 +1091,19 @@ export const contractsRouter = t.router({
             await consentToContract(
                 profile,
                 contractDetails,
-                { terms, expiresAt, oneTime },
+                {
+                    terms,
+                    expiresAt,
+                    oneTime,
+                    guardianApproval: guardianIdentity
+                        ? {
+                              guardianProfileId: guardianIdentity.profileId,
+                              guardianDid: guardianIdentity.did,
+                              approvedAt: new Date().toISOString(),
+                              contractUpdatedAt: contractDetails.contract.updatedAt,
+                          }
+                        : undefined,
+                },
                 ctx.domain
             );
 
@@ -1196,7 +1222,7 @@ export const contractsRouter = t.router({
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { isChildAccount, hasGuardianApproval } = ctx;
+            const { isChildAccount, hasGuardianApproval, guardianIdentity } = ctx;
 
             if (isChildAccount && !hasGuardianApproval) {
                 throw new TRPCError({
@@ -1225,6 +1251,13 @@ export const contractsRouter = t.router({
                 });
             }
 
+            if (!guardianIdentity && (await hasGuardianApprovalHistory(relationship.terms))) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'This consent requires approval from a current guardian',
+                });
+            }
+
             if (!areTermsValid(terms, relationship.contract.contract)) {
                 throw new TRPCError({
                     code: 'BAD_REQUEST',
@@ -1242,7 +1275,23 @@ export const contractsRouter = t.router({
             }
 
             await Promise.all([
-                updateTerms(relationship, { terms, expiresAt, oneTime }, ctx.domain),
+                updateTerms(
+                    relationship,
+                    {
+                        terms,
+                        expiresAt,
+                        oneTime,
+                        guardianApproval: guardianIdentity
+                            ? {
+                                  guardianProfileId: guardianIdentity.profileId,
+                                  guardianDid: guardianIdentity.did,
+                                  approvedAt: new Date().toISOString(),
+                                  contractUpdatedAt: relationship.contract.updatedAt,
+                              }
+                            : undefined,
+                    },
+                    ctx.domain
+                ),
                 deleteStorageForUri(uri),
             ]);
 

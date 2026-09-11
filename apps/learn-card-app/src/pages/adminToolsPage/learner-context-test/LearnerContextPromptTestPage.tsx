@@ -1,129 +1,42 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import type { FC } from 'react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('learner-context-prompt-test-page');
 
 import { IonSpinner } from '@ionic/react';
-import type { VC } from '@learncard/types';
-import { useQueryClient } from '@tanstack/react-query';
 
-import {
-    CREDENTIAL_CATEGORIES,
-    LEARNCARD_AI_URL,
-    ModalTypes,
-    useGetCredentialCount,
-    useModal,
-    useToast,
-    useWallet,
-} from 'learn-card-base';
+import { networkStore, useToast, useWallet } from 'learn-card-base';
 import type { CredentialCategory } from 'learn-card-base';
 
 import AdminPageStructure from '../AdminPageStructure';
-import AdminToolsLearnerContextCredentialSelectorModal from './AdminToolsLearnerContextCredentialSelectorModal';
-import { getInfoFromContractKey } from '../../../helpers/contract.helpers';
+import {
+    formatLearnerContext,
+    type LearnerContextFormatResponse,
+} from '../../../hooks/post-message/learnerContext.helpers';
+import {
+    AiPassportAppsEnum,
+    aiPassportApps,
+} from '../../../components/ai-passport-apps/aiPassport-apps.helpers';
 
-const LEARNER_CONTEXT_BACKEND_URL_KEY = 'learncard-admin-learner-context-backend-url';
-
-type LearnerContextResponse = {
-    prompt: string;
-    metadata?: Record<string, unknown>;
-    structuredContext?: unknown;
-    [key: string]: unknown;
-};
-
-const getLearnerContextEndpoint = (baseUrl: string) => {
-    const trimmed = baseUrl.trim().replace(/\/+$/, '');
-    return trimmed.endsWith('/ai/learner-context/format')
-        ? trimmed
-        : `${trimmed}/ai/learner-context/format`;
-};
-
-const parseJsonObject = (value: string, fieldName: string) => {
-    if (!value.trim()) return {};
-
-    const parsed = JSON.parse(value);
-
-    if (!parsed || Array.isArray(parsed) || typeof parsed !== 'object') {
-        throw new Error(`${fieldName} must be a JSON object.`);
-    }
-
-    return parsed as Record<string, unknown>;
-};
-
-type CategorySelectionRowProps = {
-    category: string;
-    selectedCount: number;
-    onOpen: () => void;
-};
-
-const CategorySelectionRow: FC<CategorySelectionRowProps> = ({
-    category,
-    selectedCount,
-    onOpen,
-}) => {
-    const { data: count } = useGetCredentialCount(category as CredentialCategory);
-    const { IconComponent, iconSrc, title, iconClassName, iconCircleClass } =
-        getInfoFromContractKey(category);
-
-    if (!count) return null;
-
-    return (
-        <button
-            type="button"
-            onClick={onOpen}
-            className="w-full flex items-center gap-[12px] rounded-[16px] bg-white px-[14px] py-[14px] shadow-box-bottom text-left hover:bg-grayscale-50 transition-colors"
-        >
-            <div
-                className={`flex items-center justify-center h-[42px] w-[42px] rounded-full shrink-0 ${iconCircleClass}`}
-            >
-                {iconSrc ? (
-                    <img src={iconSrc} alt="" className="h-[28px] w-[28px] text-white" />
-                ) : (
-                    <IconComponent className={`h-[28px] w-[28px] ${iconClassName}`} />
-                )}
-            </div>
-
-            <div className="flex-1 min-w-0">
-                <h3 className="text-[17px] font-[600] font-notoSans text-grayscale-900 line-clamp-1">
-                    {title}
-                </h3>
-                <p className="text-[14px] text-grayscale-600 font-notoSans">
-                    {selectedCount > 0
-                        ? `${selectedCount} selected of ${count}`
-                        : `${count} available`}
-                </p>
-            </div>
-
-            <span className="text-[14px] font-[600] font-notoSans text-emerald-700 shrink-0">
-                {selectedCount > 0 ? 'Edit' : 'Choose'}
-            </span>
-        </button>
-    );
-};
+const hasNotExpired = (expiresAt?: string) =>
+    !expiresAt || (Number.isFinite(Date.parse(expiresAt)) && Date.parse(expiresAt) > Date.now());
 
 const LearnerContextPromptTestPage: FC = () => {
     const { initWallet } = useWallet();
-    const { newModal } = useModal({ desktop: ModalTypes.Right, mobile: ModalTypes.Right });
     const { presentToast } = useToast();
-    const queryClient = useQueryClient();
-
-    const [backendUrl, setBackendUrl] = useState(LEARNCARD_AI_URL);
+    const backendUrl = networkStore.use.aiServiceUrl();
     const [instructions, setInstructions] = useState('');
     const [detailLevel, setDetailLevel] = useState<'compact' | 'expanded'>('compact');
-    const [personalDataJson, setPersonalDataJson] = useState('');
+    const [personalFields, setPersonalFields] = useState<string[]>([]);
+    const [availablePersonalFields, setAvailablePersonalFields] = useState<string[]>([]);
+    const [availableByCategory, setAvailableByCategory] = useState<Record<string, string[]>>({});
     const [selectedByCategory, setSelectedByCategory] = useState<Record<string, string[]>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [response, setResponse] = useState<LearnerContextResponse | null>(null);
+    const [response, setResponse] = useState<LearnerContextFormatResponse | null>(null);
     const [responseError, setResponseError] = useState<string | null>(null);
 
     const [formatterTimingMs, setFormatterTimingMs] = useState<number | null>(null);
     const [isSeeding, setIsSeeding] = useState(false);
-    useEffect(() => {
-        const savedBackendUrl = localStorage.getItem(LEARNER_CONTEXT_BACKEND_URL_KEY);
-        if (savedBackendUrl) setBackendUrl(savedBackendUrl);
-    }, []);
-
-    const categories = useMemo(() => Array.from(new Set(CREDENTIAL_CATEGORIES)), []);
     const selectedUris = useMemo(
         () => Object.values(selectedByCategory).flat(),
         [selectedByCategory]
@@ -144,68 +57,73 @@ const LearnerContextPromptTestPage: FC = () => {
         });
     };
 
-    const handleOpenCategory = (category: string) => {
-        newModal(
-            <AdminToolsLearnerContextCredentialSelectorModal
-                category={category}
-                selectedUris={selectedByCategory[category] ?? []}
-                onSave={uris => updateCategorySelection(category, uris)}
-            />,
-            {},
-            { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
+    const loadConsentedSelection = async () => {
+        const wallet = await initWallet();
+        const contractUri = aiPassportApps.find(
+            app => app.type === AiPassportAppsEnum.learncardapp
+        )?.contractUri;
+        if (!contractUri) throw new Error('LearnCard AI consent contract is not configured.');
+        let page = await wallet.invoke.getConsentedContracts();
+        const records = [...page.records];
+        while (page.hasMore) {
+            if (!page.cursor) throw new Error('Consent pagination returned no cursor.');
+            page = await wallet.invoke.getConsentedContracts({ cursor: page.cursor });
+            records.push(...page.records);
+        }
+        const consent = records.find(
+            record =>
+                record.contract.uri === contractUri &&
+                record.status === 'live' &&
+                hasNotExpired(record.expiresAt) &&
+                hasNotExpired(record.contract.expiresAt)
         );
+        if (!consent)
+            throw new Error('Enable LearnCard AI data sharing before running a benchmark.');
+        const byCategory: Record<string, string[]> = {};
+        if (consent.terms.read.credentials.sharing !== false) {
+            for (const [category, term] of Object.entries(
+                consent.terms.read.credentials.categories
+            )) {
+                if (
+                    term.sharing !== false &&
+                    hasNotExpired(term.shareUntil) &&
+                    term.shared?.length
+                ) {
+                    byCategory[category] = [...new Set(term.shared)];
+                }
+            }
+        }
+        return {
+            wallet,
+            byCategory,
+            personalFields: Object.keys(consent.terms.read.personal),
+        };
     };
 
     const handleSelectAllCategories = async () => {
-        presentToast('Loading all credentials from all categories...');
         try {
-            const wallet = await initWallet();
-            const allCredentialsByCategory: Record<string, string[]> = {};
-
-            for (const category of categories) {
-                const infiniteData = await queryClient.fetchInfiniteQuery({
-                    queryKey: ['useGetCredentialList', '', category],
-                    queryFn: async ({ pageParam }) => {
-                        const data = await wallet.index.LearnCloud.getPage?.(
-                            { category: category as CredentialCategory },
-                            { cursor: pageParam, limit: 50 }
-                        );
-                        return data ?? { records: [], hasMore: false };
-                    },
-                    initialPageParam: undefined as undefined | string,
-                    getNextPageParam: (lastPage: { hasMore?: boolean; cursor?: string }) =>
-                        lastPage?.hasMore ? lastPage?.cursor : undefined,
-                });
-
-                const allRecords = infiniteData.pages.flatMap(
-                    (page: { records?: { uri: string }[] }) => page.records ?? []
-                );
-                const uris = allRecords.map((record: { uri: string }) => record.uri);
-
-                if (uris.length > 0) {
-                    allCredentialsByCategory[category] = uris;
-                }
-            }
-
-            setSelectedByCategory(allCredentialsByCategory);
-            const totalSelected = Object.values(allCredentialsByCategory).flat().length;
+            const selection = await loadConsentedSelection();
+            setAvailableByCategory(selection.byCategory);
+            setAvailablePersonalFields(selection.personalFields);
+            setSelectedByCategory(selection.byCategory);
+            setPersonalFields(current =>
+                current.filter(field => selection.personalFields.includes(field))
+            );
+            setResponseError(null);
             presentToast(
-                `Selected ${totalSelected} credentials across ${
-                    Object.keys(allCredentialsByCategory).length
-                } categories.`
+                'Loaded current AI-consented selections. The server rechecks consent on every request.'
             );
         } catch (error) {
-            log.error('Failed to load credentials:', error);
-            presentToast(
-                `Failed to load credentials: ${
-                    error instanceof Error ? error.message : 'Unknown error'
-                }`
-            );
+            const message =
+                error instanceof Error ? error.message : 'Failed to load consented data.';
+            setResponseError(message);
+            presentToast(message);
         }
     };
 
     const handleClearAllCategories = () => {
         setSelectedByCategory({});
+        setPersonalFields([]);
         presentToast('Cleared all selections.');
     };
 
@@ -249,9 +167,9 @@ const LearnerContextPromptTestPage: FC = () => {
                         'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.2.json',
                     ],
                     id: `urn:uuid:${uuid}`,
-                    type: ['VerifiableCredential', 'OpenBadgeCredential', 'BoostCredential'],
+                    type: ['VerifiableCredential', 'OpenBadgeCredential'],
                     issuer: did,
-                    issuanceDate: date,
+                    issuanceDate: `${date}T00:00:00Z`,
                     name: title,
                     credentialSubject: {
                         id: did,
@@ -267,16 +185,14 @@ const LearnerContextPromptTestPage: FC = () => {
                             name: title,
                             alignment: [
                                 {
+                                    type: ['Alignment'],
+                                    targetUrl: `https://example.test/learner-context-benchmark/skills/${i % 5}`,
                                     targetName: skill,
                                     targetDescription: `${skill} demonstrated through ${role} work.`,
                                     targetFramework: 'Learner Context Benchmark',
                                 },
                             ],
                         },
-                    },
-                    display: {
-                        backgroundImage: '',
-                        backgroundColor: '',
                     },
                 };
                 const vc = await wallet.invoke.issueCredential(unsignedCredential);
@@ -292,8 +208,9 @@ const LearnerContextPromptTestPage: FC = () => {
                 });
             }
 
-            presentToast(`Seeded ${count} benchmark credentials.`);
-            await handleSelectAllCategories();
+            presentToast(
+                `Seeded ${count} benchmark credentials. Share them through LearnCard AI data sharing, wait for sync, then reload consented selections.`
+            );
         } catch (error) {
             const message =
                 error instanceof Error ? error.message : 'Failed to seed benchmark credentials.';
@@ -306,12 +223,12 @@ const LearnerContextPromptTestPage: FC = () => {
 
     const handleSubmit = async () => {
         if (!backendUrl.trim()) {
-            presentToast('Please enter a backend URL.');
+            presentToast('The AI Passport service is not configured.');
             return;
         }
 
-        if (selectedCount === 0) {
-            presentToast('Select at least one credential to send.');
+        if (selectedCount === 0 && personalFields.length === 0) {
+            presentToast('Select at least one consented credential or personal field.');
             return;
         }
 
@@ -321,48 +238,26 @@ const LearnerContextPromptTestPage: FC = () => {
         setFormatterTimingMs(null);
 
         try {
-            const personalData = parseJsonObject(personalDataJson, 'Personal data');
-            const wallet = await initWallet();
-            const credentials = (
-                await Promise.all(selectedUris.map(uri => wallet.read.get(uri)))
-            ).filter(Boolean) as VC[];
-
-            const endpoint = getLearnerContextEndpoint(backendUrl);
-
-            localStorage.setItem(LEARNER_CONTEXT_BACKEND_URL_KEY, backendUrl);
-
+            const fresh = await loadConsentedSelection();
+            const allowedUris = new Set(Object.values(fresh.byCategory).flat());
+            if (
+                selectedUris.some(uri => !allowedUris.has(uri)) ||
+                personalFields.some(field => !fresh.personalFields.includes(field))
+            ) {
+                throw new Error('Selection is no longer consented. Reload consented selections.');
+            }
             const formatterStartedAt = performance.now();
-
-            const result = await fetch(endpoint, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    credentials,
-                    personalData,
-                    instructions: instructions.trim() || undefined,
-                    detailLevel,
-                    includeStructuredContext: true,
-                    maxCredentials: credentials.length,
-                }),
+            const data = await formatLearnerContext(fresh.wallet, {
+                credentialUris: [...new Set(selectedUris)],
+                personalFields,
+                instructions: instructions.trim() || undefined,
+                detailLevel,
+                includeStructuredContext: true,
             });
 
             setFormatterTimingMs(performance.now() - formatterStartedAt);
 
-            const data = (await result.json().catch(() => null)) as
-                LearnerContextResponse | { error?: string } | null;
-
-            if (!result.ok) {
-                const errorMessage =
-                    data &&
-                    'error' in data &&
-                    typeof data.error === 'string' &&
-                    data.error.trim().length > 0
-                        ? data.error
-                        : 'Request failed';
-                throw new Error(errorMessage);
-            }
-
-            setResponse(data as LearnerContextResponse);
+            setResponse(data);
             presentToast('Learner context response received.');
         } catch (error) {
             const message =
@@ -385,8 +280,9 @@ const LearnerContextPromptTestPage: FC = () => {
                             Backend Request
                         </h2>
                         <p className="text-[14px] text-grayscale-600 font-notoSans mt-[4px]">
-                            Pick a backend URL, choose wallet credentials, and send a full learner
-                            context formatting request.
+                            Choose currently AI-consented data and benchmark the configured service.
+                            Credentials and personal values are resolved by the server, not posted
+                            here.
                         </p>
                     </div>
 
@@ -396,8 +292,7 @@ const LearnerContextPromptTestPage: FC = () => {
                         </span>
                         <input
                             value={backendUrl}
-                            onChange={event => setBackendUrl(event.target.value)}
-                            placeholder={LEARNCARD_AI_URL}
+                            readOnly
                             className="rounded-[14px] border border-grayscale-200 bg-grayscale-50 px-[14px] py-[12px] text-[15px] font-notoSans text-grayscale-900 outline-none focus:border-emerald-600"
                         />
                     </label>
@@ -447,18 +342,32 @@ const LearnerContextPromptTestPage: FC = () => {
                     </div>
 
                     <div className="grid gap-[14px] lg:grid-cols-2">
-                        <label className="flex flex-col gap-[8px]">
+                        <fieldset className="flex flex-col gap-[8px]">
                             <span className="text-[14px] font-[600] font-notoSans text-grayscale-800">
-                                Personal Data JSON
+                                Consented Personal Fields
                             </span>
-                            <textarea
-                                value={personalDataJson}
-                                onChange={event => setPersonalDataJson(event.target.value)}
-                                placeholder={'{"name":"Taylor"}'}
-                                rows={5}
-                                className="rounded-[14px] border border-grayscale-200 bg-grayscale-50 px-[14px] py-[12px] text-[14px] font-mono text-grayscale-900 outline-none focus:border-emerald-600 resize-y"
-                            />
-                        </label>
+                            <div className="flex flex-wrap gap-3">
+                                {availablePersonalFields.map(field => (
+                                    <label key={field} className="flex items-center gap-2">
+                                        <input
+                                            type="checkbox"
+                                            checked={personalFields.includes(field)}
+                                            onChange={event =>
+                                                setPersonalFields(current =>
+                                                    event.target.checked
+                                                        ? [...current, field]
+                                                        : current.filter(value => value !== field)
+                                                )
+                                            }
+                                        />
+                                        {field}
+                                    </label>
+                                ))}
+                                {availablePersonalFields.length === 0 && (
+                                    <p>Load consented selections to choose personal field names.</p>
+                                )}
+                            </div>
+                        </fieldset>
                     </div>
                 </div>
 
@@ -474,7 +383,7 @@ const LearnerContextPromptTestPage: FC = () => {
                                     onClick={handleSelectAllCategories}
                                     className="rounded-full bg-emerald-700 text-white px-4 py-2 text-sm font-[600] font-notoSans"
                                 >
-                                    Select All Categories
+                                    Load / Select All Consented
                                 </button>
                                 <button
                                     type="button"
@@ -487,8 +396,8 @@ const LearnerContextPromptTestPage: FC = () => {
                             </div>
                         </div>
                         <p className="text-[14px] text-grayscale-600 font-notoSans">
-                            This mirrors the ConsentFlow credential-picking experience, but nothing
-                            is shared or persisted. It only builds a one-off request payload.
+                            Only storage URIs already shared with LearnCard AI are selectable.
+                            Seeding does not grant consent or automatically share new credentials.
                         </p>
                     </div>
 
@@ -507,13 +416,44 @@ const LearnerContextPromptTestPage: FC = () => {
                     </div>
 
                     <div className="grid gap-[12px] md:grid-cols-2 xl:grid-cols-3">
-                        {categories.map(category => (
-                            <CategorySelectionRow
-                                key={category}
-                                category={category}
-                                selectedCount={selectedByCategory[category]?.length ?? 0}
-                                onOpen={() => handleOpenCategory(category)}
-                            />
+                        {Object.entries(availableByCategory).map(([category, uris]) => (
+                            <fieldset key={category} className="border rounded-[14px] p-3 min-w-0">
+                                <legend>
+                                    {category} ({uris.length})
+                                </legend>
+                                <div className="max-h-[260px] overflow-auto flex flex-col gap-2">
+                                    {uris.map(uri => (
+                                        <label
+                                            key={uri}
+                                            className="flex items-start gap-2 break-all text-sm"
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                checked={
+                                                    selectedByCategory[category]?.includes(uri) ??
+                                                    false
+                                                }
+                                                onChange={event =>
+                                                    updateCategorySelection(
+                                                        category,
+                                                        event.target.checked
+                                                            ? [
+                                                                  ...(selectedByCategory[
+                                                                      category
+                                                                  ] ?? []),
+                                                                  uri,
+                                                              ]
+                                                            : (
+                                                                  selectedByCategory[category] ?? []
+                                                              ).filter(value => value !== uri)
+                                                    )
+                                                }
+                                            />
+                                            {uri}
+                                        </label>
+                                    ))}
+                                </div>
+                            </fieldset>
                         ))}
                     </div>
                 </div>

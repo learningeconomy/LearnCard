@@ -4,10 +4,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createDeferred } from '../../helpers/deferred';
 
 const mocks = vi.hoisted(() => ({
-    authMode: 'session' as 'legacy' | 'session' | undefined,
+    authMode: 'session' as 'session' | undefined,
     ensureCalls: 0,
     ensureError: null as Error | null,
-    ensureMode: 'session' as 'legacy' | 'session',
     ensureGate: null as Promise<void> | null,
     fetch: vi.fn(),
     showErrorModal: vi.fn(),
@@ -29,35 +28,25 @@ vi.mock('../walletStore', () => ({
     },
 }));
 vi.mock('../../helpers/aiPassportAuth', () => {
-    const getUrl = (path: string, did?: string) => {
-        const url = new URL(path, 'http://localhost:3001');
-
-        if (mocks.authMode === 'legacy' && did) url.searchParams.set('did', did);
-
-        return url;
-    };
+    const getUrl = (path: string) => new URL(path, 'http://localhost:3001');
 
     return {
-        aiPassportFetch: (path: string, init: RequestInit = {}, did?: string) =>
-            mocks.fetch(getUrl(path, did), { ...init, credentials: 'include' }),
+        aiPassportFetch: (path: string, init: RequestInit = {}) =>
+            mocks.fetch(getUrl(path), { ...init, credentials: 'include' }),
         ensureAiPassportSession: async () => {
             mocks.ensureCalls += 1;
             if (mocks.ensureError) throw mocks.ensureError;
             if (mocks.ensureGate) await mocks.ensureGate;
 
-            mocks.authMode = mocks.ensureMode;
+            mocks.authMode = 'session';
             return mocks.authMode;
         },
         getAiPassportAuthMode: () => mocks.authMode,
-        getAiPassportWebSocketProtocols: async () =>
-            mocks.authMode === 'session'
-                ? [
-                      'ai-passport',
-                      `ai-passport-ticket.ticket-${String(++mocks.ticketCount).padStart(32, '0')}`,
-                  ]
-                : undefined,
+        getAiPassportWebSocketProtocols: async () => [
+            'ai-passport',
+            `ai-passport-ticket.ticket-${String(++mocks.ticketCount).padStart(32, '0')}`,
+        ],
         getAiPassportUrl: getUrl,
-        waitForAiPassportAuthMode: async () => mocks.authMode,
     };
 });
 vi.mock('../../logging/logger', () => ({
@@ -188,7 +177,6 @@ describe('chat session startup', () => {
         mocks.ensureCalls = 0;
         mocks.ensureError = null;
         mocks.ensureGate = null;
-        mocks.ensureMode = 'session';
         mocks.ticketCount = 0;
         // getActiveLocale reads this key; clear it so cases that don't set a
         // language get the 'en' default rather than a previous test's value.
@@ -232,8 +220,7 @@ describe('chat session startup', () => {
 
         await firstStart;
 
-        mocks.authMode = 'legacy';
-        mocks.ensureMode = 'session';
+        mocks.authMode = undefined;
         const { promise, resolve } = Promise.withResolvers<void>();
 
         mocks.ensureGate = promise;
@@ -253,25 +240,8 @@ describe('chat session startup', () => {
         expect(secondSocket).not.toBe(firstSocket);
     });
 
-    it('uses the legacy DID query only for a legacy backend', async () => {
-        mocks.authMode = 'legacy';
-        mocks.ensureMode = 'legacy';
-
-        const start = startTopic('Legacy Algebra');
-        await Promise.resolve();
-        await Promise.resolve();
-        const socket = await openLatestSocket();
-
-        await start;
-
-        expect(new URL(socket.url).searchParams.get('did')).toBe('did:example:learner');
-        expect(socket.protocols).toBeUndefined();
-        expect(JSON.parse(socket.sent[0]!)).not.toHaveProperty('did');
-    });
-
     it('actively negotiates before the cold active-session preflight', async () => {
         mocks.authMode = undefined;
-        mocks.ensureMode = 'legacy';
         mocks.fetch.mockResolvedValueOnce(Response.json({ isActive: false, activeThreadId: null }));
 
         await expect(getActiveSessionStatus()).resolves.toEqual({
@@ -282,7 +252,7 @@ describe('chat session startup', () => {
         const requestUrl = new URL(mocks.fetch.mock.calls[0]![0] as URL);
 
         expect(requestUrl.pathname).toBe('/api/chat/active-session-status');
-        expect(requestUrl.searchParams.get('did')).toBe('did:example:learner');
+        expect(requestUrl.searchParams.has('did')).toBe(false);
     });
 
     it('finalizes session JSON without caller DID transport in session mode', async () => {
@@ -304,51 +274,6 @@ describe('chat session startup', () => {
         expect(headers.get('Content-Type')).toBe('application/json');
         expect(body).toEqual({ threadId: 'thread-session' });
         expect(options.body).not.toContain('did:example:learner');
-    });
-
-    it('limits legacy session finalization DID transport to the compatibility query', async () => {
-        mocks.authMode = 'legacy';
-        mocks.ensureMode = 'legacy';
-        currentThreadId.set('thread-legacy');
-        mocks.fetch.mockResolvedValueOnce(
-            Response.json({ event: 'no_conversation_summary', threadId: 'thread-legacy' })
-        );
-
-        await finishSession();
-
-        const [request, options] = mocks.fetch.mock.calls[0]!;
-        const url = new URL(request as URL);
-        const headers = new Headers(options.headers);
-
-        expect(url.searchParams.get('did')).toBe('did:example:learner');
-        expect(headers.get('Content-Type')).toBe('application/json');
-        expect(JSON.parse(options.body as string)).toEqual({ threadId: 'thread-legacy' });
-        expect(options.body).not.toContain('did:example:learner');
-    });
-
-    it('renegotiates before reconnecting a legacy socket after backend rollout', async () => {
-        mocks.authMode = 'legacy';
-        mocks.ensureMode = 'legacy';
-
-        const start = startTopic('Long-running legacy session');
-        await Promise.resolve();
-        await Promise.resolve();
-        const legacySocket = await openLatestSocket();
-
-        await start;
-        expect(new URL(legacySocket.url).searchParams.get('did')).toBe('did:example:learner');
-
-        mocks.ensureMode = 'session';
-        legacySocket.close();
-        await Promise.resolve();
-        await vi.advanceTimersByTimeAsync(1000);
-        await Promise.resolve();
-        await Promise.resolve();
-
-        const sessionSocket = FakeWebSocket.instances.at(-1);
-
-        expect(sessionSocket).not.toBe(legacySocket);
-        expect(new URL(sessionSocket!.url).searchParams.has('did')).toBe(false);
     });
 
     it('uses a fresh one-time ticket for every authenticated reconnect', async () => {
@@ -381,7 +306,7 @@ describe('chat session startup', () => {
         await start;
         isTyping.set(true);
         isLoading.set(true);
-        mocks.authMode = 'legacy';
+        mocks.authMode = undefined;
         mocks.ensureError = new Error('authentication unavailable');
         socket.close();
         await Promise.resolve();
@@ -404,8 +329,7 @@ describe('chat session startup', () => {
         const firstSocket = await openLatestSocket();
 
         await start;
-        mocks.authMode = 'legacy';
-        mocks.ensureMode = 'session';
+        mocks.authMode = undefined;
         firstSocket.close();
         await Promise.resolve();
         await vi.advanceTimersByTimeAsync(1000);
@@ -413,7 +337,7 @@ describe('chat session startup', () => {
         const secondSocket = FakeWebSocket.instances.at(-1)!;
 
         secondSocket.open();
-        mocks.authMode = 'legacy';
+        mocks.authMode = undefined;
         mocks.ensureError = new Error('authentication unavailable');
         secondSocket.close();
         await Promise.resolve();

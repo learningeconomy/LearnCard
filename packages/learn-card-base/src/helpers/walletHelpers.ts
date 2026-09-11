@@ -112,7 +112,7 @@ const buildBespokeLearnCard = async (
               seed,
               didkit,
               allowRemoteContexts: true,
-              guardianApprovalGetter: getGuardianApprovalVP,
+              guardianApprovalGetter: () => getGuardianApprovalVP(didWeb),
               extraHeaders,
               ...(didWeb && { didWeb }),
           })
@@ -122,7 +122,7 @@ const buildBespokeLearnCard = async (
               network: network,
               cloud: { url: cloudUrl, automaticallyAssociateDids: !Boolean(didWeb) },
               allowRemoteContexts: true,
-              guardianApprovalGetter: getGuardianApprovalVP,
+              guardianApprovalGetter: () => getGuardianApprovalVP(didWeb),
               extraHeaders,
               ...(didWeb && { didWeb }),
           });

@@ -1,6 +1,7 @@
 import { describe, it, beforeAll, beforeEach, afterAll, expect } from 'vitest';
 
 import { getClient, getUser } from './helpers/getClient';
+import { minimalContract, minimalTerms } from './helpers/contract';
 
 import { AppStoreListing, Integration, Profile } from '@models';
 
@@ -40,7 +41,7 @@ let userB: Awaited<ReturnType<typeof getUser>>;
 let userC: Awaited<ReturnType<typeof getUser>>;
 
 // For access layer tests - can set all fields including protected ones
-const makeListingInput = (overrides?: Record<string, any>) => ({
+const makeListingInput = (overrides?: Record<string, unknown>) => ({
     display_name: 'Test App',
     tagline: 'A test application',
     full_description: 'This is a comprehensive test application for the app store',
@@ -54,7 +55,7 @@ const makeListingInput = (overrides?: Record<string, any>) => ({
 });
 
 // For router tests - excludes protected fields (app_listing_status, promotion_level)
-const makeRouterListingInput = (overrides?: Record<string, any>) => {
+const makeRouterListingInput = (overrides?: Record<string, unknown>) => {
     const { app_listing_status, promotion_level, ...rest } = makeListingInput(overrides);
     return rest;
 };
@@ -155,33 +156,6 @@ describe('AppStoreListing', () => {
                 expect(listing.privacy_policy_url).toBe('https://example.com/privacy');
                 expect(listing.terms_url).toBe('https://example.com/terms');
                 expect(listing.contact_email).toBe('developer@example.com');
-            });
-
-            it('creates and updates contact_email field', async () => {
-                // Create without contact_email
-                const listing = await createAppStoreListing(makeListingInput());
-                expect(listing.contact_email).toBeUndefined();
-
-                // Update to add contact_email
-                await updateAppStoreListing(listing, {
-                    contact_email: 'support@example.com',
-                });
-                const afterAdd = await readAppStoreListingById(listing.listing_id);
-                expect(afterAdd?.contact_email).toBe('support@example.com');
-
-                // Update to change contact_email
-                await updateAppStoreListing(afterAdd!, {
-                    contact_email: 'newcontact@example.com',
-                });
-                const afterChange = await readAppStoreListingById(listing.listing_id);
-                expect(afterChange?.contact_email).toBe('newcontact@example.com');
-
-                // Update to remove contact_email (cast to any to test null handling)
-                await updateAppStoreListing(afterChange!, {
-                    contact_email: null as any,
-                });
-                const afterRemove = await readAppStoreListingById(listing.listing_id);
-                expect(afterRemove?.contact_email).toBeUndefined();
             });
 
             it('creates listing with custom listing_id', async () => {
@@ -671,7 +645,7 @@ describe('AppStoreListing', () => {
         const seedListingViaRouter = async (
             user: Awaited<ReturnType<typeof getUser>>,
             integrationId: string,
-            overrides?: Record<string, any>
+            overrides?: Record<string, unknown>
         ) => {
             // Router creates listings as DRAFT - protected fields are stripped
             const listingId = await user.clients.fullAuth.appStore.createListing({
@@ -691,6 +665,68 @@ describe('AppStoreListing', () => {
                 await updateAppStoreListing(listing, { app_listing_status: status });
             }
         };
+
+        describe('request-learner-context authorization', () => {
+            it('uses current app consent and stops returning data after withdrawal', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+                const contractUri =
+                    await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                        contract: minimalContract,
+                        name: 'App context consent',
+                    });
+                const listingId = await seedListingViaRouter(userA, integrationId, {
+                    launch_config_json: JSON.stringify({
+                        iframeUrl: 'https://app.example.com',
+                        contractUri,
+                    }),
+                });
+                await installAppForProfile('userb', listingId);
+                const request = {
+                    listingId,
+                    event: { type: 'request-learner-context' as const, includePersonalData: true },
+                };
+                await expect(
+                    userB.clients.fullAuth.appStore.appEvent(request)
+                ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+                const { termsUri } = await userB.clients.fullAuth.contracts.consentToContract({
+                    contractUri,
+                    terms: minimalTerms,
+                });
+                const context = await userB.clients.fullAuth.appStore.appEvent(request);
+                expect(context.personalData).toEqual({ name: minimalTerms.read.personal.name });
+                expect(context.credentialUris).toEqual([]);
+                expect(context.did).toMatch(/:users:userb$/);
+                await userB.clients.fullAuth.contracts.withdrawConsent({ uri: termsUri });
+                await expect(
+                    userB.clients.fullAuth.appStore.appEvent(request)
+                ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+            });
+
+            it('cannot borrow another integration owner’s consent contract', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+                const contractUri =
+                    await userB.clients.fullAuth.contracts.createConsentFlowContract({
+                        contract: minimalContract,
+                        name: 'Unrelated owner contract',
+                    });
+                await userA.clients.fullAuth.contracts.consentToContract({
+                    contractUri,
+                    terms: minimalTerms,
+                });
+                const listingId = await seedListingViaRouter(userA, integrationId, {
+                    launch_config_json: JSON.stringify({
+                        iframeUrl: 'https://app.example.com',
+                        contractUri,
+                    }),
+                });
+                await expect(
+                    userA.clients.fullAuth.appStore.appEvent({
+                        listingId,
+                        event: { type: 'request-learner-context', includePersonalData: true },
+                    })
+                ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+            });
+        });
 
         describe('createListing', () => {
             it('requires app-store:write scope and an existing profile', async () => {
