@@ -1,5 +1,30 @@
 # Changelog
 
+## 1.98.7
+
+### Patch Changes
+
+- [#1544](https://github.com/learningeconomy/LearnCard/pull/1544) [`9a092b333fcf9db4a1d0f8f33bdf985525b8930d`](https://github.com/learningeconomy/LearnCard/commit/9a092b333fcf9db4a1d0f8f33bdf985525b8930d) Thanks [@smurflo2](https://github.com/smurflo2)! - fix: [LC-2077] Keep My Skill Profile fields reachable above the mobile keyboard.
+
+- [#1567](https://github.com/learningeconomy/LearnCard/pull/1567) [`44bc3039b34a7c2940cd77ff2b1839285552a8e0`](https://github.com/learningeconomy/LearnCard/commit/44bc3039b34a7c2940cd77ff2b1839285552a8e0) Thanks [@Custard7](https://github.com/Custard7)! - fix: native apps no longer fail to boot with "TenantConfig endpoint /__tenant-config returned invalid JSON"
+
+    Native builds skip the relative `/__tenant-config` overlay fetch (it only exists as a web edge function; Capacitor SPA-fallbacks it to `index.html` with HTTP 200) and boot from the baked config. As a safety net, `resolveTenantConfig` now treats a non-JSON overlay response as non-fatal whenever a baked config exists.
+
+- [#1549](https://github.com/learningeconomy/LearnCard/pull/1549) [`9cc246bd0571b5b29c60b9dcff287c1b69e012cf`](https://github.com/learningeconomy/LearnCard/commit/9cc246bd0571b5b29c60b9dcff287c1b69e012cf) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-2175] & [LC-2176] Fixing CodeQL alerts
+
+    **Breaking change in @learncard/openid4vc-plugin**: `defaultMakeId` now throws if
+    `crypto.getRandomValues` is unavailable (no `Math.random()` fallback). This affects
+    legacy environments without Web Crypto API — modern browsers and Node.js are unaffected.
+
+- Updated dependencies [[`9cc246bd0571b5b29c60b9dcff287c1b69e012cf`](https://github.com/learningeconomy/LearnCard/commit/9cc246bd0571b5b29c60b9dcff287c1b69e012cf)]:
+    - @learncard/helpers@1.4.1
+    - @learncard/react@2.12.4
+    - @learncard/lca-api-plugin@2.0.3
+    - @learncard/credential-library@2.0.1
+    - @learncard/render-method-plugin@5.0.1
+    - @learncard/ler-rs-plugin@0.1.24
+    - @learncard/open-badge-v2-plugin@1.1.34
+
 ## 1.98.6
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # consent-flow-test
 
+## 1.0.31
+
+### Patch Changes
+
+- Updated dependencies [[`50f8d26c271d1a16240c5024402d0ea75c475a3d`](https://github.com/learningeconomy/LearnCard/commit/50f8d26c271d1a16240c5024402d0ea75c475a3d)]:
+    - @learncard/network-brain-client@2.5.54
+    - @learncard/init@2.4.14
+
 ## 1.0.30
 
 ### Patch Changes

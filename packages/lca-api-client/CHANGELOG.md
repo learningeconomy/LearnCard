@@ -1,34 +1,40 @@
 # @welibraryos/lca-api-client
 
+## 1.2.5
+
+### Patch Changes
+
+- [#1534](https://github.com/learningeconomy/LearnCard/pull/1534) [`50f8d26c271d1a16240c5024402d0ea75c475a3d`](https://github.com/learningeconomy/LearnCard/commit/50f8d26c271d1a16240c5024402d0ea75c475a3d) Thanks [@goblincore](https://github.com/goblincore)! - fix: [LC-2137] Surface the original request error when auth refresh fails instead of hanging; allow `deleteProfile` with API tokens that lack `profiles:read`; retry did:web signing on `Key mismatch` after refreshing the DID document.
+
 ## 1.2.4
 
 ### Patch Changes
 
--   [#1453](https://github.com/learningeconomy/LearnCard/pull/1453) [`7427cf62082e753eeeaa815f392b6fac39315575`](https://github.com/learningeconomy/LearnCard/commit/7427cf62082e753eeeaa815f392b6fac39315575) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Retire the legacy CHAPI example, MetaMask Snap projects, Discord bot, and Simple Signing service, client, and plugin.
+- [#1453](https://github.com/learningeconomy/LearnCard/pull/1453) [`7427cf62082e753eeeaa815f392b6fac39315575`](https://github.com/learningeconomy/LearnCard/commit/7427cf62082e753eeeaa815f392b6fac39315575) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Retire the legacy CHAPI example, MetaMask Snap projects, Discord bot, and Simple Signing service, client, and plugin.
 
     Managed signing authority consumers now use `@learncard/lca-api-plugin`. Replace `getSimpleSigningPlugin(learnCard, endpoint)` with `getLCAPlugin(learnCard, endpoint)`. Historical implementations remain available through Git history.
 
--   [#1473](https://github.com/learningeconomy/LearnCard/pull/1473) [`80bce3e745d8e3dcca0e1c07337d97ec13c4b417`](https://github.com/learningeconomy/LearnCard/commit/80bce3e745d8e3dcca0e1c07337d97ec13c4b417) Thanks [@Custard7](https://github.com/Custard7)! - fix: bump @trpc/server, fastify, @fastify/static (7 high Dependabot alerts)
+- [#1473](https://github.com/learningeconomy/LearnCard/pull/1473) [`80bce3e745d8e3dcca0e1c07337d97ec13c4b417`](https://github.com/learningeconomy/LearnCard/commit/80bce3e745d8e3dcca0e1c07337d97ec13c4b417) Thanks [@Custard7](https://github.com/Custard7)! - fix: bump @trpc/server, fastify, @fastify/static (7 high Dependabot alerts)
 
 ## 1.2.3
 
 ### Patch Changes
 
--   [#1394](https://github.com/learningeconomy/LearnCard/pull/1394) [`147d2a5fda49ba33f20077400ac3aae633bddb05`](https://github.com/learningeconomy/LearnCard/commit/147d2a5fda49ba33f20077400ac3aae633bddb05) Thanks [@goblincore](https://github.com/goblincore)! - perf: eagerly prefetch DID-Auth challenges with single-flight refills so client setup overlaps network latency without duplicate pools when the first request races construction.
+- [#1394](https://github.com/learningeconomy/LearnCard/pull/1394) [`147d2a5fda49ba33f20077400ac3aae633bddb05`](https://github.com/learningeconomy/LearnCard/commit/147d2a5fda49ba33f20077400ac3aae633bddb05) Thanks [@goblincore](https://github.com/goblincore)! - perf: eagerly prefetch DID-Auth challenges with single-flight refills so client setup overlaps network latency without duplicate pools when the first request races construction.
 
 ## 1.2.2
 
 ### Patch Changes
 
--   [`9b1f8352946f78f382f85d95c5e983d86449ea68`](https://github.com/learningeconomy/LearnCard/commit/9b1f8352946f78f382f85d95c5e983d86449ea68) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Republish package metadata with concrete internal dependency versions instead of workspace protocol ranges.
+- [`9b1f8352946f78f382f85d95c5e983d86449ea68`](https://github.com/learningeconomy/LearnCard/commit/9b1f8352946f78f382f85d95c5e983d86449ea68) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Republish package metadata with concrete internal dependency versions instead of workspace protocol ranges.
 
 ## 1.2.1
 
 ### Patch Changes
 
--   [#1303](https://github.com/learningeconomy/LearnCard/pull/1303) [`59d79e9c2aed145284d6cc3de4c53ef0d3415299`](https://github.com/learningeconomy/LearnCard/commit/59d79e9c2aed145284d6cc3de4c53ef0d3415299) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Switch workspace development to Bun source-mode resolution while preserving package build outputs for npm publishing.
+- [#1303](https://github.com/learningeconomy/LearnCard/pull/1303) [`59d79e9c2aed145284d6cc3de4c53ef0d3415299`](https://github.com/learningeconomy/LearnCard/commit/59d79e9c2aed145284d6cc3de4c53ef0d3415299) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Switch workspace development to Bun source-mode resolution while preserving package build outputs for npm publishing.
 
--   [#1335](https://github.com/learningeconomy/LearnCard/pull/1335) [`8bcccce23f919e9bcd0d22d87e7d33242b557930`](https://github.com/learningeconomy/LearnCard/commit/8bcccce23f919e9bcd0d22d87e7d33242b557930) Thanks [@goblincore](https://github.com/goblincore)! - fix(packaging): ship ESM-clean named exports from the tRPC client packages and route `@learncard/init`'s Node ESM entry at the real ESM bundle
+- [#1335](https://github.com/learningeconomy/LearnCard/pull/1335) [`8bcccce23f919e9bcd0d22d87e7d33242b557930`](https://github.com/learningeconomy/LearnCard/commit/8bcccce23f919e9bcd0d22d87e7d33242b557930) Thanks [@goblincore](https://github.com/goblincore)! - fix(packaging): ship ESM-clean named exports from the tRPC client packages and route `@learncard/init`'s Node ESM entry at the real ESM bundle
 
     The four generated tRPC client packages (`lca-api-client`, `simple-signing-client`,
     `network-brain-client`, `learn-cloud-client`) previously exposed only a CJS
@@ -59,162 +65,162 @@
 
 ### Minor Changes
 
--   [#986](https://github.com/learningeconomy/LearnCard/pull/986) [`34ced8d1c933ca7015dd1d3bd37b6b2ff847de3c`](https://github.com/learningeconomy/LearnCard/commit/34ced8d1c933ca7015dd1d3bd37b6b2ff847de3c) Thanks [@Custard7](https://github.com/Custard7)! - ### SSS Key Management & AuthCoordinator
+- [#986](https://github.com/learningeconomy/LearnCard/pull/986) [`34ced8d1c933ca7015dd1d3bd37b6b2ff847de3c`](https://github.com/learningeconomy/LearnCard/commit/34ced8d1c933ca7015dd1d3bd37b6b2ff847de3c) Thanks [@Custard7](https://github.com/Custard7)! - ### SSS Key Management & AuthCoordinator
 
     **New packages:**
 
-    -   `@learncard/types` — Added provider-agnostic auth and key derivation interfaces (`src/auth.ts`)
-    -   `@learncard/sss-key-manager` — Shamir Secret Sharing key manager replacing Web3Auth SFA
+    - `@learncard/types` — Added provider-agnostic auth and key derivation interfaces (`src/auth.ts`)
+    - `@learncard/sss-key-manager` — Shamir Secret Sharing key manager replacing Web3Auth SFA
 
     **LCA API (`@learncard/lca-api-service`):**
 
-    -   Added SSS key management routes (`/keys/*`): store/retrieve encrypted auth shares, add/remove recovery methods (passkey, backup, phrase, email), share versioning
-    -   Added recovery email verification flow with 6-digit OTP codes
-    -   Added email backup share relay (fire-and-forget, share never persisted)
-    -   Added QR-based cross-device login routes (`/qr-login/*`)
-    -   Added contact method upgrade route for phone→email transitions
-    -   Added provider-agnostic delivery service abstraction (Postmark adapter + log adapter for dev)
-    -   Added optional Postmark template support for recovery emails (`POSTMARK_RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS`, `POSTMARK_RECOVERY_KEY_TEMPLATE_ALIAS`) with plain-text fallback
-    -   Renamed `POSTMARK_LOGIN_CODE_TEMPLATE_ID` → `POSTMARK_LOGIN_CODE_TEMPLATE_ALIAS` and `POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ID` → `POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS`
-    -   Added Sentry integration for error tracking
-    -   Added share encryption helpers (AES-256-GCM with HKDF-derived keys)
+    - Added SSS key management routes (`/keys/*`): store/retrieve encrypted auth shares, add/remove recovery methods (passkey, backup, phrase, email), share versioning
+    - Added recovery email verification flow with 6-digit OTP codes
+    - Added email backup share relay (fire-and-forget, share never persisted)
+    - Added QR-based cross-device login routes (`/qr-login/*`)
+    - Added contact method upgrade route for phone→email transitions
+    - Added provider-agnostic delivery service abstraction (Postmark adapter + log adapter for dev)
+    - Added optional Postmark template support for recovery emails (`POSTMARK_RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS`, `POSTMARK_RECOVERY_KEY_TEMPLATE_ALIAS`) with plain-text fallback
+    - Renamed `POSTMARK_LOGIN_CODE_TEMPLATE_ID` → `POSTMARK_LOGIN_CODE_TEMPLATE_ALIAS` and `POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ID` → `POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS`
+    - Added Sentry integration for error tracking
+    - Added share encryption helpers (AES-256-GCM with HKDF-derived keys)
 
     **Brain Service (`@learncard/network-brain-service`):**
 
-    -   Added skill embedding support with Google AI model integration
-    -   Added background backfill for skill embeddings on startup
-    -   Added Sentry integration for error tracking
+    - Added skill embedding support with Google AI model integration
+    - Added background backfill for skill embeddings on startup
+    - Added Sentry integration for error tracking
 
     **Apps (learn-card-app, scoutpass-app):**
 
-    -   Integrated AuthCoordinator for unified auth and key lifecycle management
-    -   Added account recovery flows (passkey, email backup, recovery phrase)
-    -   Added QR-based cross-device login
-    -   Replaced Web3Auth key derivation with SSS as default (`VITE_KEY_DERIVATION=sss`)
-    -   Added automatic Web3Auth → SSS migration for existing users
-    -   Removed deprecated `REACT_APP_ENABLE_SSS_MIGRATION` env var (migration is now automatic)
-    -   Removed stale `WEB3AUTH_MAINNET_CLIENT_ID` / `WEB3AUTH_TESTNET_CLIENT_ID` from vite config
-    -   Added `.env.example` files documenting all environment variables
-    -   Added SSS/auth VITE environment variables to all CI workflows (deploy, capgo, fastlane)
+    - Integrated AuthCoordinator for unified auth and key lifecycle management
+    - Added account recovery flows (passkey, email backup, recovery phrase)
+    - Added QR-based cross-device login
+    - Replaced Web3Auth key derivation with SSS as default (`VITE_KEY_DERIVATION=sss`)
+    - Added automatic Web3Auth → SSS migration for existing users
+    - Removed deprecated `REACT_APP_ENABLE_SSS_MIGRATION` env var (migration is now automatic)
+    - Removed stale `WEB3AUTH_MAINNET_CLIENT_ID` / `WEB3AUTH_TESTNET_CLIENT_ID` from vite config
+    - Added `.env.example` files documenting all environment variables
+    - Added SSS/auth VITE environment variables to all CI workflows (deploy, capgo, fastlane)
 
     **CI/CD:**
 
-    -   Propagated `VITE_AUTH_PROVIDER`, `VITE_KEY_DERIVATION`, `VITE_SSS_SERVER_URL`, `VITE_ENABLE_EMAIL_BACKUP_SHARE`, `VITE_ENABLE_AUTH_DEBUG_WIDGET`, `VITE_REQUIRE_EMAIL_FOR_PHONE_USERS` as `vars` across all app build workflows
-    -   Fixed Postmark template env var renames in deploy workflow
-    -   Added `.env.example` for lca-api service
+    - Propagated `VITE_AUTH_PROVIDER`, `VITE_KEY_DERIVATION`, `VITE_SSS_SERVER_URL`, `VITE_ENABLE_EMAIL_BACKUP_SHARE`, `VITE_ENABLE_AUTH_DEBUG_WIDGET`, `VITE_REQUIRE_EMAIL_FOR_PHONE_USERS` as `vars` across all app build workflows
+    - Fixed Postmark template env var renames in deploy workflow
+    - Added `.env.example` for lca-api service
 
 ## 1.1.13
 
 ### Patch Changes
 
--   Updated dependencies [[`50e72d3dd3abc9a8d4309ce1b3c1637f1baf6dbe`](https://github.com/learningeconomy/LearnCard/commit/50e72d3dd3abc9a8d4309ce1b3c1637f1baf6dbe)]:
-    -   @learncard/lca-api-service@1.1.13
+- Updated dependencies [[`50e72d3dd3abc9a8d4309ce1b3c1637f1baf6dbe`](https://github.com/learningeconomy/LearnCard/commit/50e72d3dd3abc9a8d4309ce1b3c1637f1baf6dbe)]:
+    - @learncard/lca-api-service@1.1.13
 
 ## 1.1.12
 
 ### Patch Changes
 
--   Updated dependencies [[`efdfced27681ae5e68818a8a595eb76da59bd842`](https://github.com/learningeconomy/LearnCard/commit/efdfced27681ae5e68818a8a595eb76da59bd842)]:
-    -   @learncard/lca-api-service@1.1.12
+- Updated dependencies [[`efdfced27681ae5e68818a8a595eb76da59bd842`](https://github.com/learningeconomy/LearnCard/commit/efdfced27681ae5e68818a8a595eb76da59bd842)]:
+    - @learncard/lca-api-service@1.1.12
 
 ## 1.1.11
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/lca-api-service@1.1.11
+- Updated dependencies []:
+    - @learncard/lca-api-service@1.1.11
 
 ## 1.1.10
 
 ### Patch Changes
 
--   Updated dependencies [[`d2b259d3afabd9509d96d8879c6080fcd707f3d6`](https://github.com/learningeconomy/LearnCard/commit/d2b259d3afabd9509d96d8879c6080fcd707f3d6)]:
-    -   @learncard/lca-api-service@1.1.10
+- Updated dependencies [[`d2b259d3afabd9509d96d8879c6080fcd707f3d6`](https://github.com/learningeconomy/LearnCard/commit/d2b259d3afabd9509d96d8879c6080fcd707f3d6)]:
+    - @learncard/lca-api-service@1.1.10
 
 ## 1.1.9
 
 ### Patch Changes
 
--   Updated dependencies [[`175a828f712da5b44eeb3c242e8fd604736df073`](https://github.com/learningeconomy/LearnCard/commit/175a828f712da5b44eeb3c242e8fd604736df073)]:
-    -   @learncard/lca-api-service@1.1.9
+- Updated dependencies [[`175a828f712da5b44eeb3c242e8fd604736df073`](https://github.com/learningeconomy/LearnCard/commit/175a828f712da5b44eeb3c242e8fd604736df073)]:
+    - @learncard/lca-api-service@1.1.9
 
 ## 1.1.8
 
 ### Patch Changes
 
--   Updated dependencies [[`c04ff8e86677b7f88fb2858be2b9b3f8bb28f427`](https://github.com/learningeconomy/LearnCard/commit/c04ff8e86677b7f88fb2858be2b9b3f8bb28f427)]:
-    -   @learncard/lca-api-service@1.1.8
+- Updated dependencies [[`c04ff8e86677b7f88fb2858be2b9b3f8bb28f427`](https://github.com/learningeconomy/LearnCard/commit/c04ff8e86677b7f88fb2858be2b9b3f8bb28f427)]:
+    - @learncard/lca-api-service@1.1.8
 
 ## 1.1.7
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/lca-api-service@1.1.7
+- Updated dependencies []:
+    - @learncard/lca-api-service@1.1.7
 
 ## 1.1.6
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/lca-api-service@1.1.6
+- Updated dependencies []:
+    - @learncard/lca-api-service@1.1.6
 
 ## 1.1.5
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/lca-api-service@1.1.5
+- Updated dependencies []:
+    - @learncard/lca-api-service@1.1.5
 
 ## 1.1.4
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/lca-api-service@1.1.4
+- Updated dependencies []:
+    - @learncard/lca-api-service@1.1.4
 
 ## 1.1.3
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/lca-api-service@1.1.3
+- Updated dependencies []:
+    - @learncard/lca-api-service@1.1.3
 
 ## 1.1.2
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/lca-api-service@1.1.2
+- Updated dependencies []:
+    - @learncard/lca-api-service@1.1.2
 
 ## 1.1.1
 
 ### Patch Changes
 
--   Updated dependencies [[`4b1d40356ffd974915396fbee05d656f6c16f9c0`](https://github.com/learningeconomy/LearnCard/commit/4b1d40356ffd974915396fbee05d656f6c16f9c0)]:
-    -   @learncard/lca-api-service@1.1.1
+- Updated dependencies [[`4b1d40356ffd974915396fbee05d656f6c16f9c0`](https://github.com/learningeconomy/LearnCard/commit/4b1d40356ffd974915396fbee05d656f6c16f9c0)]:
+    - @learncard/lca-api-service@1.1.1
 
 ## 1.1.0
 
 ### Minor Changes
 
--   [#858](https://github.com/learningeconomy/LearnCard/pull/858) [`279e0491c5f284f9343ef0c39f3c38cd76e608f9`](https://github.com/learningeconomy/LearnCard/commit/279e0491c5f284f9343ef0c39f3c38cd76e608f9) Thanks [@Custard7](https://github.com/Custard7)! - Upgrade build tooling (esbuild `0.27.1`) and migrate to Zod v4 + TypeScript `5.9.3` across the monorepo.
+- [#858](https://github.com/learningeconomy/LearnCard/pull/858) [`279e0491c5f284f9343ef0c39f3c38cd76e608f9`](https://github.com/learningeconomy/LearnCard/commit/279e0491c5f284f9343ef0c39f3c38cd76e608f9) Thanks [@Custard7](https://github.com/Custard7)! - Upgrade build tooling (esbuild `0.27.1`) and migrate to Zod v4 + TypeScript `5.9.3` across the monorepo.
 
     This includes follow-up fixes for Zod v4 behavior and typing changes:
 
-    -   Update query validators to preserve runtime deep-partial semantics while keeping TypeScript inference compatible with `{}` defaults.
-    -   Prevent `.partial()` + `.default()` from materializing omitted fields in permission updates (`canManageChildrenProfiles`).
-    -   Allow `Infinity` for generational query inputs in brain-service routes.
-    -   Document running Vitest in non-watch mode (`bun run test -- run`).
+    - Update query validators to preserve runtime deep-partial semantics while keeping TypeScript inference compatible with `{}` defaults.
+    - Prevent `.partial()` + `.default()` from materializing omitted fields in permission updates (`canManageChildrenProfiles`).
+    - Allow `Infinity` for generational query inputs in brain-service routes.
+    - Document running Vitest in non-watch mode (`bun run test -- run`).
 
 ### Patch Changes
 
--   Updated dependencies [[`279e0491c5f284f9343ef0c39f3c38cd76e608f9`](https://github.com/learningeconomy/LearnCard/commit/279e0491c5f284f9343ef0c39f3c38cd76e608f9)]:
-    -   @learncard/lca-api-service@1.1.0
+- Updated dependencies [[`279e0491c5f284f9343ef0c39f3c38cd76e608f9`](https://github.com/learningeconomy/LearnCard/commit/279e0491c5f284f9343ef0c39f3c38cd76e608f9)]:
+    - @learncard/lca-api-service@1.1.0
 
 ## 1.0.1
 
 ### Patch Changes
 
--   Updated dependencies [[`f294ed7af55904656f3945cef471f788b64dfbb5`](https://github.com/learningeconomy/LearnCard/commit/f294ed7af55904656f3945cef471f788b64dfbb5)]:
-    -   @learncard/lca-api-service@1.0.5
+- Updated dependencies [[`f294ed7af55904656f3945cef471f788b64dfbb5`](https://github.com/learningeconomy/LearnCard/commit/f294ed7af55904656f3945cef471f788b64dfbb5)]:
+    - @learncard/lca-api-service@1.0.5
