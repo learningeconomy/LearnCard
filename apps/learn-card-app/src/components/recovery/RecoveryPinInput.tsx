@@ -1,4 +1,4 @@
-import React, { useRef, KeyboardEvent, ClipboardEvent } from 'react';
+import React, { useRef, useState, useEffect, KeyboardEvent, ClipboardEvent } from 'react';
 
 interface RecoveryPinInputProps {
     value: string;
@@ -18,6 +18,23 @@ export const RecoveryPinInput: React.FC<RecoveryPinInputProps> = ({
     length = 6,
 }) => {
     const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+    const [digits, setDigits] = useState(() => Array.from({ length }, (_, i) => value[i] ?? ''));
+    const digitsRef = useRef(digits);
+    const emittedValue = useRef(value);
+    useEffect(() => {
+        if (value !== emittedValue.current || value === '' || digitsRef.current.length !== length) {
+            digitsRef.current = Array.from({ length }, (_, i) => value[i] ?? '');
+            setDigits(digitsRef.current);
+            emittedValue.current = value;
+        }
+    }, [value, length]);
+
+    const updateDigits = (next: string[]) => {
+        digitsRef.current = next;
+        setDigits(next);
+        emittedValue.current = next.join('');
+        onChange(emittedValue.current);
+    };
 
     const handleChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
         const val = e.target.value;
@@ -25,32 +42,33 @@ export const RecoveryPinInput: React.FC<RecoveryPinInputProps> = ({
 
         const char = val.slice(-1);
 
-        const newValue = value.split('');
+        const newValue = [...digits];
         newValue[index] = char;
         const newPin = newValue.join('');
 
-        onChange(newPin);
+        updateDigits(newValue);
 
         if (char && index < length - 1) {
             inputRefs.current[index + 1]?.focus();
         }
 
-        if (newPin.length === length && onComplete) {
+        if (newValue.every(Boolean) && onComplete) {
             onComplete(newPin);
         }
     };
 
     const handleKeyDown = (index: number, e: KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Backspace') {
-            if (!value[index] && index > 0) {
-                const newValue = value.split('');
+            e.preventDefault();
+            if (!digits[index] && index > 0) {
+                const newValue = [...digits];
                 newValue[index - 1] = '';
-                onChange(newValue.join(''));
+                updateDigits(newValue);
                 inputRefs.current[index - 1]?.focus();
             } else {
-                const newValue = value.split('');
+                const newValue = [...digits];
                 newValue[index] = '';
-                onChange(newValue.join(''));
+                updateDigits(newValue);
             }
         } else if (e.key === 'ArrowLeft' && index > 0) {
             inputRefs.current[index - 1]?.focus();
@@ -63,7 +81,7 @@ export const RecoveryPinInput: React.FC<RecoveryPinInputProps> = ({
         e.preventDefault();
         const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, length);
         if (pastedData) {
-            onChange(pastedData);
+            updateDigits(Array.from({ length }, (_, i) => pastedData[i] ?? ''));
             if (pastedData.length === length && onComplete) {
                 onComplete(pastedData);
             }
@@ -77,12 +95,20 @@ export const RecoveryPinInput: React.FC<RecoveryPinInputProps> = ({
             {Array.from({ length }).map((_, index) => (
                 <input
                     key={index}
-                    ref={el => (inputRefs.current[index] = el)}
+                    ref={el => {
+                        inputRefs.current[index] = el;
+                    }}
                     type="password"
                     inputMode="numeric"
                     pattern="\d*"
                     maxLength={1}
-                    value={value[index] || ''}
+                    value={digits[index] || ''}
+                    onFocus={() => {
+                        const firstEmpty = digitsRef.current.findIndex(digit => !digit);
+                        if (firstEmpty >= 0 && index > firstEmpty) {
+                            inputRefs.current[firstEmpty]?.focus();
+                        }
+                    }}
                     onChange={e => handleChange(index, e)}
                     onKeyDown={e => handleKeyDown(index, e)}
                     onPaste={handlePaste}

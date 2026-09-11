@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Overlay, useBaseAuthCoordinator } from 'learn-card-base';
+import { Overlay, useAuthCoordinator } from 'learn-card-base';
+import { validatePin } from '@learncard/sss-key-manager';
 import { RecoveryPinInput } from './RecoveryPinInput';
 import { m } from '../../paraglide/messages.js';
 
@@ -12,30 +13,14 @@ export const RecoveryPinSetupOverlay: React.FC<RecoveryPinSetupOverlayProps> = (
     onComplete,
     onSkip,
 }) => {
-    const coordinator = useBaseAuthCoordinator();
+    const coordinator = useAuthCoordinator();
     const [step, setStep] = useState<'enter' | 'confirm' | 'saving' | 'success'>('enter');
     const [pin, setPin] = useState('');
     const [confirmPin, setConfirmPin] = useState('');
     const [error, setError] = useState('');
 
-    const validatePin = (p: string) => {
-        if (p.length < 6) return false;
-        if (/^(\d)\1+$/.test(p)) return false;
-        if (p === '123456' || p === '000000') return false;
-
-        let isAscending = true;
-        let isDescending = true;
-        for (let i = 1; i < p.length; i++) {
-            if (parseInt(p[i]) !== parseInt(p[i - 1]) + 1) isAscending = false;
-            if (parseInt(p[i]) !== parseInt(p[i - 1]) - 1) isDescending = false;
-        }
-        if (isAscending || isDescending) return false;
-
-        return true;
-    };
-
     const handleEnterComplete = (p: string) => {
-        if (!validatePin(p)) {
+        if (!validatePin(p).ok) {
             setError(m['recovery.pin.trivial']());
             return;
         }
@@ -55,12 +40,20 @@ export const RecoveryPinSetupOverlay: React.FC<RecoveryPinSetupOverlayProps> = (
         setStep('saving');
 
         try {
-            if (coordinator.setEscrowPin) {
-                await coordinator.setEscrowPin(p);
-            }
+            if (!coordinator.setEscrowPin) throw new Error('PIN setup is unavailable');
+            await coordinator.setEscrowPin(p);
             setStep('success');
         } catch (e) {
-            setError(m['recovery.pin.saveFailed']());
+            const message = e instanceof Error ? e.message : '';
+            setError(
+                [
+                    'PIN must contain 6–12 digits.',
+                    'Choose a PIN without trivial or sequential patterns.',
+                    'Automatic recovery is not available for this account.',
+                ].includes(message)
+                    ? message
+                    : m['recovery.pin.saveFailed']()
+            );
             setStep('confirm');
             setConfirmPin('');
         }

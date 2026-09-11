@@ -11,6 +11,44 @@ vi.mock('./escrowRecoveryStorage', () => ({
 }));
 
 describe('EscrowRecoveryPanel', () => {
+    it('defaults to delayed recovery when PIN availability is unknown', async () => {
+        render(
+            <EscrowRecoveryPanel
+                available
+                onStart={vi.fn()}
+                onStatus={vi.fn()}
+                onRecover={vi.fn()}
+            />
+        );
+        expect(screen.queryByLabelText('PIN digit 1')).not.toBeInTheDocument();
+        expect(await screen.findByText('Start a 7-day recovery')).toBeInTheDocument();
+    });
+
+    it.each(['EscrowPinUnavailableError', 'EscrowRequestError'])(
+        'falls back safely for %s',
+        async name => {
+            const error = Object.assign(new Error('private server details'), { name, status: 403 });
+            render(
+                <EscrowRecoveryPanel
+                    available
+                    pinAvailable
+                    onStart={vi.fn()}
+                    onStatus={vi.fn()}
+                    onRecover={vi.fn().mockRejectedValue(error)}
+                />
+            );
+            fireEvent.paste(screen.getAllByLabelText(/PIN digit/)[0], {
+                clipboardData: { getData: () => '135790' },
+            });
+            expect(
+                await screen.findByText(
+                    "PIN sign-in isn't available for this account. Start a 7-day recovery instead."
+                )
+            ).toBeInTheDocument();
+            expect(screen.queryByLabelText('PIN digit 1')).not.toBeInTheDocument();
+            expect(screen.queryByText('private server details')).not.toBeInTheDocument();
+        }
+    );
     const mockOnStart = vi.fn();
     const mockOnStatus = vi.fn();
     const mockOnRecover = vi.fn();
@@ -23,6 +61,7 @@ describe('EscrowRecoveryPanel', () => {
         render(
             <EscrowRecoveryPanel
                 available={true}
+                pinAvailable
                 onStart={mockOnStart}
                 onStatus={mockOnStatus}
                 onRecover={mockOnRecover}
@@ -42,6 +81,7 @@ describe('EscrowRecoveryPanel', () => {
         render(
             <EscrowRecoveryPanel
                 available={true}
+                pinAvailable
                 onStart={mockOnStart}
                 onStatus={mockOnStatus}
                 onRecover={mockOnRecover}
@@ -64,6 +104,7 @@ describe('EscrowRecoveryPanel', () => {
         render(
             <EscrowRecoveryPanel
                 available
+                pinAvailable
                 onStart={mockOnStart}
                 onStatus={mockOnStatus}
                 onRecover={mockOnRecover}
@@ -89,6 +130,7 @@ describe('EscrowRecoveryPanel', () => {
         render(
             <EscrowRecoveryPanel
                 available={true}
+                pinAvailable
                 onStart={mockOnStart}
                 onStatus={mockOnStatus}
                 onRecover={mockOnRecover}
@@ -110,6 +152,7 @@ describe('EscrowRecoveryPanel', () => {
         render(
             <EscrowRecoveryPanel
                 available={true}
+                pinAvailable
                 onStart={mockOnStart}
                 onStatus={mockOnStatus}
                 onRecover={mockOnRecover}
