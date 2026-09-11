@@ -653,6 +653,11 @@ const AuthSessionManager: React.FC<{
 
     const [showRecoveryPinSetup, setShowRecoveryPinSetup] = useState(false);
     const [showRecoveryPinReset, setShowRecoveryPinReset] = useState(false);
+    const readyDid = coordinator.state.status === 'ready' ? coordinator.state.did : undefined;
+    const readyPinEnabled =
+        coordinator.state.status === 'ready' ? coordinator.state.escrowPin?.enabled : undefined;
+    const readyEnrollment =
+        coordinator.state.status === 'ready' ? coordinator.state.escrowEnrollment : undefined;
 
     // Track whether the user went through needs_setup (new user flow)
     useEffect(() => {
@@ -666,7 +671,7 @@ const AuthSessionManager: React.FC<{
             const did = coordinator.state.did;
             const flag = localStorage.getItem(`lc:recovery-pin-prompt:${did}`);
 
-            if (wasNewUserRef.current && !flag) {
+            if (wasNewUserRef.current && !flag && readyEnrollment === 'enrolled') {
                 setShowRecoveryPinSetup(true);
             }
 
@@ -674,7 +679,7 @@ const AuthSessionManager: React.FC<{
                 setShowRecoveryPinReset(true);
             }
         }
-    }, [coordinator.state.status, coordinator.state.escrowPin?.enabled]);
+    }, [coordinator.state.status, readyDid, readyPinEnabled, readyEnrollment]);
 
     // --- QR login device share pickup from sessionStorage ---
     // When Device B completes Firebase auth after a QR login, the coordinator
@@ -1434,7 +1439,8 @@ const AuthSessionManager: React.FC<{
                     {showRecoveryPinReset && (
                         <RecoveryPinResetBanner
                             onDismiss={() => {
-                                writeRecoveryPinPromptFlag(coordinator.state.did, 'skipped');
+                                if (!readyDid) return;
+                                writeRecoveryPinPromptFlag(readyDid, 'skipped');
                                 setShowRecoveryPinReset(false);
                             }}
                         />
@@ -1447,6 +1453,9 @@ const AuthSessionManager: React.FC<{
                 <Overlay>
                     <RecoveryFlowModal
                         escrowRecovery={{
+                            pinAvailable:
+                                coordinator.state.status === 'needs_recovery' &&
+                                coordinator.state.escrowPin?.enabled === true,
                             scope: JSON.stringify([
                                 getSSSConfig().serverUrl,
                                 coordinator.state.status === 'needs_recovery'
@@ -1732,11 +1741,13 @@ const AuthSessionManager: React.FC<{
             {showRecoveryPinSetup && coordinator.state.status === 'ready' && (
                 <RecoveryPinSetupOverlay
                     onComplete={() => {
-                        writeRecoveryPinPromptFlag(coordinator.state.did, 'set');
+                        if (!readyDid) return;
+                        writeRecoveryPinPromptFlag(readyDid, 'set');
                         setShowRecoveryPinSetup(false);
                     }}
                     onSkip={() => {
-                        writeRecoveryPinPromptFlag(coordinator.state.did, 'skipped');
+                        if (!readyDid) return;
+                        writeRecoveryPinPromptFlag(readyDid, 'skipped');
                         setShowRecoveryPinSetup(false);
                     }}
                 />

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { IonIcon } from '@ionic/react';
 import { alertCircleOutline } from 'ionicons/icons';
 import type { KeyDerivationStrategy } from '@learncard/types';
+import { escrowPinMismatchMessage } from '@learncard/types';
 import {
     clearPendingEscrowRecovery,
     loadPendingEscrowRecovery,
@@ -15,6 +16,7 @@ import * as m from '../../paraglide/messages.js';
 export interface EscrowRecoveryPanelProps {
     scope?: string;
     available: boolean;
+    pinAvailable?: boolean;
     canResumeCompleted?: () => boolean;
     onStart: () => ReturnType<NonNullable<KeyDerivationStrategy['startEscrowRecovery']>>;
     onStatus: (proof: {
@@ -31,6 +33,7 @@ export interface EscrowRecoveryPanelProps {
 export const EscrowRecoveryPanel = ({
     scope = 'default',
     available,
+    pinAvailable = false,
     onStart,
     onStatus,
     onRecover,
@@ -48,7 +51,7 @@ export const EscrowRecoveryPanel = ({
     const [now, setNow] = useState(Date.now());
     const storageAvailable = isEscrowRecoveryStorageAvailable();
 
-    const [showPinFlow, setShowPinFlow] = useState(true);
+    const [showPinFlow, setShowPinFlow] = useState(pinAvailable);
     const [pinInput, setPinInput] = useState('');
     const [pinError, setPinError] = useState('');
 
@@ -104,10 +107,10 @@ export const EscrowRecoveryPanel = ({
         try {
             await onRecover({ method: 'escrow-pin', pin });
         } catch (cause) {
-            const err = cause as Error;
+            const err = cause instanceof Error ? cause : new Error();
             if (err.name === 'EscrowPinMismatchError') {
                 const attempts = 'attemptsRemaining' in err ? Number(err.attemptsRemaining) : 0;
-                setPinError(`Incorrect PIN. ${attempts} attempts left.`);
+                setPinError(escrowPinMismatchMessage(attempts));
                 setPinInput('');
             } else if (err.name === 'EscrowPinThrottledError') {
                 setPinError(m['recovery.pin.throttled']());
@@ -116,7 +119,17 @@ export const EscrowRecoveryPanel = ({
                 setPinError('Too many attempts. You can still recover by waiting 7 days.');
                 setShowPinFlow(false);
             } else {
-                setPinError(err.message || 'Something went wrong. Please try again.');
+                if (
+                    err.name === 'EscrowPinUnavailableError' ||
+                    (err.name === 'EscrowRequestError' && 'status' in err && err.status === 403)
+                ) {
+                    setPinError(
+                        "PIN sign-in isn't available for this account. Start a 7-day recovery instead."
+                    );
+                    setShowPinFlow(false);
+                } else {
+                    setPinError('Something went wrong. Please try again.');
+                }
                 setPinInput('');
             }
         } finally {
