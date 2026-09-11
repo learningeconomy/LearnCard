@@ -626,21 +626,19 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                         <>
                             <div>
                                 <h3 className="text-sm font-semibold text-grayscale-900 mb-1">
-                                    {m['recovery.setup.phrase.verifyTitle']?.() ??
-                                        'Verify your phrase'}
+                                    {m['recovery.setup.phrase.verifyTitle']()}
                                 </h3>
                                 <p className="text-sm text-grayscale-600 leading-relaxed">
-                                    {m['recovery.setup.phrase.verifyDesc']?.() ??
-                                        'Please enter the requested words from your recovery phrase to confirm you have saved it.'}
+                                    {m['recovery.setup.phrase.verifyDesc']()}
                                 </p>
                             </div>
 
                             {phraseChallengeWordIndices.map((wordIndex, challengeIndex) => (
                                 <div key={wordIndex}>
                                     <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
-                                        {m['recovery.setup.phrase.wordNumber']?.({
+                                        {m['recovery.setup.phrase.wordNumber']({
                                             number: wordIndex + 1,
-                                        }) ?? `Word #${wordIndex + 1}`}
+                                        })}
                                     </label>
                                     <input
                                         type="text"
@@ -840,8 +838,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                 <div className="space-y-4">
                                     <div>
                                         <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
-                                            {m['recovery.setup.backup.reenterPassword']?.() ??
-                                                'Re-enter password'}
+                                            {m['recovery.setup.backup.reenterPassword']()}
                                         </label>
                                         <input
                                             type="password"
@@ -855,8 +852,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                             className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                                         />
                                         <p className="mt-1.5 text-xs text-grayscale-500">
-                                            {m['recovery.setup.backup.verifyDesc']?.() ??
-                                                'Enter the password you just created to verify your backup file.'}
+                                            {m['recovery.setup.backup.verifyDesc']()}
                                         </p>
                                     </div>
 
@@ -1029,10 +1025,9 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                         <>
                             <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-2xl">
                                 <p className="text-sm text-emerald-700 leading-relaxed">
-                                    {m['recovery.setup.email.confirmationCodeSent']?.({
+                                    {m['recovery.setup.email.confirmationCodeSent']({
                                         email: emailMasked,
-                                    }) ??
-                                        `We sent a confirmation code to ${emailMasked}. Please enter it below to verify you received the recovery key.`}
+                                    })}
                                 </p>
                             </div>
 
@@ -1056,8 +1051,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                             </div>
 
                             {primaryButton(
-                                m['recovery.setup.email.confirmKeyBtn']?.() ??
-                                    'Confirm Recovery Key',
+                                m['recovery.setup.email.confirmKeyBtn'](),
                                 handleConfirmEmailRecovery,
                                 loading || emailRecoveryCode.length !== 6,
                                 m['common.verifying']()
