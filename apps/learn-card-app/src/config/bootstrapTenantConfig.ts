@@ -6,6 +6,7 @@
  */
 
 import * as Sentry from '@sentry/browser';
+import { Capacitor } from '@capacitor/core';
 
 import type { TenantConfig } from 'learn-card-base';
 import {
@@ -248,7 +249,14 @@ export const bootstrapTenantConfig = async (): Promise<TenantConfig> => {
     bootstrapState.bootstrapPromise = (async () => {
         const t0 = Date.now();
 
-        const config = bootstrapState.resolvedConfig ?? (await resolveTenantConfig({ onEvent }));
+        // The `/__tenant-config` overlay is a Netlify edge function that only exists on
+        // web origins. Native webviews (capacitor://localhost) have no such route and
+        // SPA-fallback it to index.html, so native boots from the baked config only.
+        const isNative = Capacitor.isNativePlatform();
+
+        const config =
+            bootstrapState.resolvedConfig ??
+            (await resolveTenantConfig({ onEvent, offlineOnly: isNative }));
 
         setResolvedTenantConfig(config);
         initializeTenantSubsystems(config);
