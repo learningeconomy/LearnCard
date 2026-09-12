@@ -33,11 +33,7 @@ export type DidMethod =
 
 /** @group DIDKit Plugin */
 export type DataIntegrityCryptosuite =
-    | 'eddsa-rdfc-2022'
-    | 'eddsa-2022'
-    | 'json-eddsa-2022'
-    | 'ecdsa-2019'
-    | 'jcs-ecdsa-2019';
+    'eddsa-rdfc-2022' | 'eddsa-2022' | 'json-eddsa-2022' | 'ecdsa-2019' | 'jcs-ecdsa-2019';
 
 /** @group DIDKit Plugin */
 export type ProofOptions = {
@@ -72,7 +68,15 @@ export type DidkitPluginMethods = {
         options: ProofOptions,
         keypair: JWKWithPrivateKey
     ) => Promise<VC>;
-    verifyCredential: (credential: VC, options?: ProofOptions) => Promise<VerificationCheck>;
+    /**
+     * Verify a credential. Accepts either a JSON-LD credential object or a raw
+     * compact VC-JWT string. Compact tokens are passed to DIDKit unchanged and
+     * must be verified with `options.proofFormat === 'jwt'`.
+     */
+    verifyCredential: (
+        credential: VC | string,
+        options?: ProofOptions
+    ) => Promise<VerificationCheck>;
     issuePresentation: (
         presentation: UnsignedVP,
         options: ProofOptions,

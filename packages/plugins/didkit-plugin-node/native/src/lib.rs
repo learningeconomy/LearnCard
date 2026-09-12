@@ -22,8 +22,8 @@ fn block_on<F: std::future::Future>(f: F) -> F::Output {
 }
 
 use didkit::{
-    get_verification_method, DIDWeb, JWTOrLDPOptions, LinkedDataProofOptions, ProofFormat,
-    ResolutionResult, Source, VerifiableCredential, VerifiablePresentation, DID_METHODS, JWK,
+    get_verification_method, DIDWeb, JWTOrLDPOptions, ProofFormat, ResolutionResult, Source,
+    VerifiableCredential, VerifiablePresentation, DID_METHODS, JWK,
 };
 use ssi::jsonld::ContextLoader;
 
@@ -176,20 +176,41 @@ pub async fn verify_credential(
     proof_options: String,
     context_map: String,
 ) -> Result<String> {
-    let vc = VerifiableCredential::from_json(&credential)
-        .map_err(|e| Error::from_reason(format!("vc: {}", e)))?;
-    let options: LinkedDataProofOptions = serde_json::from_str(&proof_options)
+    // Mirror the pinned didkit WASM `verify_credential` dispatch exactly so the
+    // browser and native runtimes agree on format handling and result shape.
+    let options: JWTOrLDPOptions = serde_json::from_str(&proof_options)
         .map_err(|e| Error::from_reason(format!("serde: {}", e)))?;
     let context_map: HashMap<String, String> = serde_json::from_str(&context_map)
         .map_err(|e| Error::from_reason(format!("serde: {}", e)))?;
+    let proof_format = options.proof_format.unwrap_or_default();
     let resolver = DID_METHODS.to_resolver();
     let mut context_loader = ContextLoader::default()
         .with_context_map_from(context_map)
         .map_err(|e| Error::from_reason(format!("context: {}", e)))?;
 
-    let result = vc
-        .verify(Some(options), resolver, &mut context_loader)
-        .await;
+    let result = match proof_format {
+        ProofFormat::JWT => {
+            VerifiableCredential::verify_jwt(
+                &credential,
+                Some(options.ldp_options),
+                resolver,
+                &mut context_loader,
+            )
+            .await
+        }
+        ProofFormat::LDP => {
+            let vc = VerifiableCredential::from_json_unsigned(&credential)
+                .map_err(|e| Error::from_reason(format!("vc: {}", e)))?;
+            vc.verify(Some(options.ldp_options), resolver, &mut context_loader)
+                .await
+        }
+        _ => {
+            return Err(Error::from_reason(format!(
+                "Unknown proof format: {}",
+                proof_format
+            )))
+        }
+    };
     serde_json::to_string(&result).map_err(|e| Error::from_reason(format!("serde: {}", e)))
 }
 
@@ -241,7 +262,10 @@ pub async fn verify_presentation(
     proof_options: String,
     context_map: String,
 ) -> Result<String> {
-    let options: LinkedDataProofOptions = serde_json::from_str(&proof_options)
+    // Mirror the pinned didkit WASM `verify_presentation` dispatch. When the
+    // caller does not pass an explicit proof format, retain the historical
+    // "eyJ" heuristic so older linked-data-only callers keep working.
+    let options: JWTOrLDPOptions = serde_json::from_str(&proof_options)
         .map_err(|e| Error::from_reason(format!("serde: {}", e)))?;
     let context_map: HashMap<String, String> = serde_json::from_str(&context_map)
         .map_err(|e| Error::from_reason(format!("serde: {}", e)))?;
@@ -250,22 +274,36 @@ pub async fn verify_presentation(
         .with_context_map_from(context_map)
         .map_err(|e| Error::from_reason(format!("context: {}", e)))?;
 
-    // Check if this is a JWT (starts with "eyJ")
-    let result = if presentation.starts_with("eyJ") {
-        // Verify JWT presentation
-        VerifiablePresentation::verify_jwt(
-            &presentation,
-            Some(options),
-            resolver,
-            &mut context_loader,
-        )
-        .await
-    } else {
-        // Verify JSON-LD presentation
-        let vp = VerifiablePresentation::from_json(&presentation)
-            .map_err(|e| Error::from_reason(format!("vp: {}", e)))?;
-        vp.verify(Some(options), resolver, &mut context_loader)
+    let proof_format = options.proof_format.unwrap_or_else(|| {
+        if presentation.starts_with("eyJ") {
+            ProofFormat::JWT
+        } else {
+            ProofFormat::LDP
+        }
+    });
+
+    let result = match proof_format {
+        ProofFormat::JWT => {
+            VerifiablePresentation::verify_jwt(
+                &presentation,
+                Some(options.ldp_options),
+                resolver,
+                &mut context_loader,
+            )
             .await
+        }
+        ProofFormat::LDP => {
+            let vp = VerifiablePresentation::from_json_unsigned(&presentation)
+                .map_err(|e| Error::from_reason(format!("vp: {}", e)))?;
+            vp.verify(Some(options.ldp_options), resolver, &mut context_loader)
+                .await
+        }
+        _ => {
+            return Err(Error::from_reason(format!(
+                "Unknown proof format: {}",
+                proof_format
+            )))
+        }
     };
 
     serde_json::to_string(&result).map_err(|e| Error::from_reason(format!("serde: {}", e)))
@@ -771,5 +809,116 @@ mod tests {
             .as_array()
             .unwrap()
             .contains(&json!("proof")));
+    }
+
+    fn jwt_proof_options() -> String {
+        json!({
+            "proofFormat": "jwt",
+            "verificationMethod": VM,
+            "proofPurpose": "assertionMethod"
+        })
+        .to_string()
+    }
+
+    fn issue_jwt(credential: Value) -> Result<String> {
+        block_on(issue_credential(
+            credential.to_string(),
+            jwt_proof_options(),
+            KEY.to_string(),
+            "{}".to_string(),
+        ))
+    }
+
+    fn verify_jwt(credential: &str) -> Value {
+        serde_json::from_str(
+            &block_on(verify_credential(
+                credential.to_string(),
+                json!({ "proofFormat": "jwt" }).to_string(),
+                "{}".to_string(),
+            ))
+            .unwrap(),
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn issues_and_verifies_compact_jwt_credential() {
+        let credential = json!({
+            "@context": ["https://www.w3.org/2018/credentials/v1"],
+            "id": "urn:uuid:11111111-1111-1111-1111-111111111111",
+            "type": ["VerifiableCredential"],
+            "issuer": DID,
+            "issuanceDate": "2020-01-01T00:00:00Z",
+            "expirationDate": "2100-01-01T00:00:00Z",
+            "credentialSubject": { "id": "did:example:subject" }
+        });
+        let jwt = issue_jwt(credential).unwrap();
+
+        assert_eq!(jwt.split('.').count(), 3);
+
+        let result = verify_jwt(&jwt);
+        assert_eq!(result["errors"], json!([]));
+        assert!(result["checks"].as_array().unwrap().contains(&json!("JWS")));
+    }
+
+    #[test]
+    fn verifies_compact_v2_jwt_credential() {
+        let credential = json!({
+            "@context": ["https://www.w3.org/ns/credentials/v2"],
+            "id": "urn:uuid:22222222-2222-2222-2222-222222222222",
+            "type": ["VerifiableCredential"],
+            "issuer": DID,
+            "validFrom": "2020-01-01T00:00:00Z",
+            "validUntil": "2100-01-01T00:00:00Z",
+            "credentialSubject": { "id": "did:example:subject" }
+        });
+        let jwt = issue_jwt(credential).unwrap();
+
+        let result = verify_jwt(&jwt);
+        assert_eq!(result["errors"], json!([]));
+        assert!(result["checks"].as_array().unwrap().contains(&json!("JWS")));
+    }
+
+    #[test]
+    fn rejects_tampered_jwt_credential_signature() {
+        let credential = json!({
+            "@context": ["https://www.w3.org/2018/credentials/v1"],
+            "type": ["VerifiableCredential"],
+            "issuer": DID,
+            "issuanceDate": "2020-01-01T00:00:00Z",
+            "expirationDate": "2100-01-01T00:00:00Z",
+            "credentialSubject": { "id": "did:example:subject" }
+        });
+        let jwt = issue_jwt(credential).unwrap();
+
+        let parts: Vec<&str> = jwt.split('.').collect();
+        let mut signature = parts[2].to_string();
+        signature.truncate(signature.len() - 4);
+        signature.push_str("AAAA");
+        let tampered = format!("{}.{}.{}", parts[0], parts[1], signature);
+
+        let result = verify_jwt(&tampered);
+        assert_ne!(result["errors"], json!([]));
+        assert!(!result["checks"].as_array().unwrap().contains(&json!("JWS")));
+    }
+
+    #[test]
+    fn rejects_unsupported_credential_proof_format() {
+        let credential = json!({
+            "@context": ["https://www.w3.org/2018/credentials/v1"],
+            "type": ["VerifiableCredential"],
+            "issuer": DID,
+            "issuanceDate": "2020-01-01T00:00:00Z",
+            "credentialSubject": { "id": "did:example:subject" }
+        });
+        let jwt = issue_jwt(credential).unwrap();
+
+        let result = block_on(verify_credential(
+            jwt,
+            json!({ "proofFormat": "cose" }).to_string(),
+            "{}".to_string(),
+        ));
+
+        assert!(result.is_err());
     }
 }

@@ -22,6 +22,8 @@ import { getDocumentMap } from './helpers';
 
 import { DIDKitPlugin, DidMethod } from './types';
 
+import type { VC } from '@learncard/types';
+
 /**
  j
  * @group Plugins
@@ -67,26 +69,38 @@ export const getDidKitPlugin = async (
             didToVerificationMethod: async (_learnCard, did) => didToVerificationMethod(did),
 
             issueCredential: async (_learnCard, credential, options, keypair) => {
-                return JSON.parse(
-                    await issueCredential(
-                        JSON.stringify(credential),
-                        JSON.stringify(options),
-                        JSON.stringify(keypair),
-                        JSON.stringify(
-                            await getDocumentMap(_learnCard, credential, allowRemoteContexts)
-                        )
+                const isJwt = options.proofFormat === 'jwt';
+
+                const result = await issueCredential(
+                    JSON.stringify(credential),
+                    JSON.stringify(options),
+                    JSON.stringify(keypair),
+                    JSON.stringify(
+                        await getDocumentMap(_learnCard, credential, allowRemoteContexts)
                     )
                 );
+
+                // DIDKit returns the signed compact serialization for JWT proofs;
+                // only linked-data-proof results are JSON objects.
+                return (isJwt ? result : JSON.parse(result)) as VC;
             },
 
             verifyCredential: async (_learnCard, credential, options = {}) => {
+                // A compact VC-JWT is an opaque string. Passing it through
+                // JSON.stringify would wrap it in quotes and DIDKit would fail to
+                // split the JWS, so route raw tokens straight through with JWT
+                // options instead of resolving JSON-LD contexts.
+                const isJwt = typeof credential === 'string';
+
                 return JSON.parse(
                     await verifyCredential(
-                        JSON.stringify(credential),
+                        isJwt ? credential : JSON.stringify(credential),
                         JSON.stringify(options),
-                        JSON.stringify(
-                            await getDocumentMap(_learnCard, credential, allowRemoteContexts)
-                        )
+                        isJwt
+                            ? '{}'
+                            : JSON.stringify(
+                                  await getDocumentMap(_learnCard, credential, allowRemoteContexts)
+                              )
                     )
                 );
             },

@@ -1,6 +1,6 @@
 import type { InitInput } from '@learncard/types';
 import type { DIDKitPlugin, DidMethod } from '@learncard/didkit-plugin';
-import type { JWKWithPrivateKey } from '@learncard/types';
+import type { JWKWithPrivateKey, VC, VP } from '@learncard/types';
 
 // Native addon interface
 interface NativeAddon {
@@ -169,6 +169,7 @@ export const getDidKitPlugin = async (
 
             issueCredential: async (_learnCard, credential, options, keypair) => {
                 const { getDocumentMap } = await import('@learncard/didkit-plugin');
+                const isJwt = options.proofFormat === 'jwt';
                 const contextMap = await getDocumentMap(
                     _learnCard,
                     credential,
@@ -180,18 +181,21 @@ export const getDidKitPlugin = async (
                     JSON.stringify(keypair),
                     JSON.stringify(contextMap)
                 );
-                return JSON.parse(result);
+                // DIDKit returns a compact JWS for JWT proofs and JSON otherwise.
+                return isJwt ? (result as unknown as VC) : JSON.parse(result);
             },
 
             verifyCredential: async (_learnCard, credential, options = {}) => {
                 const { getDocumentMap } = await import('@learncard/didkit-plugin');
-                const contextMap = await getDocumentMap(
-                    _learnCard,
-                    credential,
-                    _allowRemoteContexts
-                );
+                // A compact VC-JWT is opaque; passing it through JSON.stringify
+                // would wrap it in quotes and break JWS splitting. Route raw
+                // tokens straight through with their JWT options.
+                const isJwt = typeof credential === 'string';
+                const contextMap = isJwt
+                    ? {}
+                    : await getDocumentMap(_learnCard, credential, _allowRemoteContexts);
                 const result = await native.verifyCredential(
-                    JSON.stringify(credential),
+                    isJwt ? credential : JSON.stringify(credential),
                     JSON.stringify(options),
                     JSON.stringify(contextMap)
                 );
@@ -212,7 +216,7 @@ export const getDidKitPlugin = async (
                     JSON.stringify(keypair),
                     JSON.stringify(contextMap)
                 );
-                return isJwt ? result : JSON.parse(result);
+                return isJwt ? (result as unknown as VP) : JSON.parse(result);
             },
 
             verifyPresentation: async (_learnCard, presentation, options = {}) => {
@@ -221,11 +225,11 @@ export const getDidKitPlugin = async (
                 const contextMap = isJwt
                     ? {}
                     : await getDocumentMap(_learnCard, presentation, _allowRemoteContexts);
-                // Filter out proofFormat as it's not part of LinkedDataProofOptions in Rust
-                const { proofFormat, ...nativeOptions } = options as any;
+                // The native addon mirrors DIDKit's JWTOrLDPOptions dispatch and
+                // accepts proofFormat directly, so do not strip it here.
                 const result = await native.verifyPresentation(
                     isJwt ? presentation : JSON.stringify(presentation),
-                    JSON.stringify(nativeOptions),
+                    JSON.stringify(options),
                     JSON.stringify(contextMap)
                 );
                 return JSON.parse(result);
