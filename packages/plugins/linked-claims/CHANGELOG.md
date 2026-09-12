@@ -1,5 +1,13 @@
 # @learncard/linked-claims-plugin
 
+## 0.2.33
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/core@9.4.33
+    - @learncard/vc-plugin@1.5.13
+
 ## 0.2.32
 
 ### Patch Changes

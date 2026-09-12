@@ -128,6 +128,46 @@ describe('resolveTenantConfig – full boot path', () => {
         expect(result.tenantId).toBe('baked');
     });
 
+    it('falls back to baked config when /__tenant-config returns HTTP 200 with non-JSON (native SPA fallback)', async () => {
+        const bakedConfig = buildFullConfig({ tenantId: 'baked' });
+
+        fetchMock.mockImplementation(async (url: string) => {
+            if (typeof url === 'string' && url.includes('tenant-config.json')) {
+                return { ok: true, json: async () => bakedConfig };
+            }
+
+            return {
+                ok: true,
+                status: 200,
+                json: async () => {
+                    throw new SyntaxError('Unexpected token <');
+                },
+            };
+        });
+
+        const result = await resolveTenantConfig();
+
+        expect(result.tenantId).toBe('baked');
+    });
+
+    it('rejects non-JSON /__tenant-config response when no baked config exists', async () => {
+        fetchMock.mockImplementation(async (url: string) => {
+            if (typeof url === 'string' && url.includes('tenant-config.json')) {
+                return { ok: false, status: 404 };
+            }
+
+            return {
+                ok: true,
+                status: 200,
+                json: async () => {
+                    throw new SyntaxError('Unexpected token <');
+                },
+            };
+        });
+
+        await expect(resolveTenantConfig()).rejects.toThrow(/returned invalid JSON/);
+    });
+
     it('prefers fresh edge-function config over baked config', async () => {
         const bakedConfig = buildFullConfig({ tenantId: 'baked' });
         const freshConfig = buildFullConfig({ tenantId: 'fresh-edge' });
