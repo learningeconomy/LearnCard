@@ -23,6 +23,7 @@ import type { LearnCardPlugin } from '@learncard/learn-card-plugin';
 import { getDidWebPlugin } from '@learncard/did-web-plugin';
 import type { DidWebPlugin } from '@learncard/did-web-plugin';
 import { DynamicLoaderPlugin } from '@learncard/dynamic-loader-plugin';
+import type { JWE } from '@learncard/types';
 
 // The DIDKit WASM is copied next to the compiled handler at build time (see
 // esbuildPlugins.cjs). The Lambda bundle's node_modules layout doesn't match what
@@ -129,9 +130,17 @@ export type DidWebLearnCard = LearnCard<
     ]
 >;
 
+/**
+ * The wallet level captured _before_ the Encryption plugin is added. Its
+ * `invoke.createDagJwe` is the lower-level DIDKit method, which encrypts for
+ * exactly the given recipients.
+ */
+export type DidKeyLearnCard = LearnCard<[CryptoPluginType, DIDKitPlugin, DidKeyPlugin<DidMethod>]>;
+
 let emptyLearnCard: EmptyLearnCard;
 
 const learnCards: Record<string, SeedLearnCard> = {};
+const didKeyLearnCards: Record<string, DidKeyLearnCard> = {};
 let didWebLearnCard: DidWebLearnCard;
 
 const IS_OFFLINE = environment.IS_OFFLINE;
@@ -173,6 +182,8 @@ export const getLearnCard = async (
             await getDidKeyPlugin<DidMethod>(didkitLc, seed, 'key')
         );
 
+        didKeyLearnCards[cacheKey] = didkeyLc as DidKeyLearnCard;
+
         const encryptionLc = await didkeyLc.addPlugin(await getEncryptionPlugin(didkeyLc));
 
         const vcLc = await encryptionLc.addPlugin(getVCPlugin(encryptionLc));
@@ -193,6 +204,31 @@ export const getLearnCard = async (
     }
 
     return learnCard;
+};
+
+/**
+ * Encrypts `cleartext` for exactly `recipients` — no implicit caller recipient.
+ *
+ * The Encryption plugin's convenience `createDagJwe` always adds the calling
+ * wallet's own DID, which would hand this service a persistent decrypt capability
+ * for every managed refresh payload. Managed credential refresh (LC-2135) requires
+ * holder-only payloads, so this helper deliberately uses the lower-level DIDKit
+ * plugin method on the wallet level captured before the Encryption plugin is added.
+ *
+ * Private to brain-service: do not re-export beyond this service's helpers.
+ */
+export const createDagJweForRecipients = async <T>(
+    cleartext: T,
+    recipients: string[],
+    seed = environment.SEED
+): Promise<JWE> => {
+    await getLearnCard(seed);
+
+    const wallet = didKeyLearnCards[`${seed}:false`];
+
+    if (!wallet) throw new Error('LearnCard not initialized');
+
+    return wallet.invoke.createDagJwe(cleartext, recipients);
 };
 
 export const getServerDidWebDID = (): string => {

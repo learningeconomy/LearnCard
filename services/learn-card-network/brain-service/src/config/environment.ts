@@ -11,6 +11,11 @@ import {
     requiredEnvironmentString,
 } from '@learncard/helpers';
 
+const credentialRefreshNotificationWindowHours = z.preprocess(
+    value => (value === '' || value === undefined ? undefined : value),
+    z.coerce.number().finite().positive().default(24)
+);
+
 export const brainServiceEnvironmentShape = {
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
     PORT: environmentPort.default(3000),
@@ -68,6 +73,9 @@ export const brainServiceEnvironmentShape = {
     SKILL_EMBEDDING_BACKFILL_PAGE_SIZE: optionalEnvironmentPort,
     SKILL_SEMANTIC_SEARCH_RATE_LIMIT_PER_MIN: optionalEnvironmentPort,
     BITSTRING_STATUS_LIST_SIZE: optionalEnvironmentPort,
+    CREDENTIAL_REFRESH_DIGEST_SECRET: optionalEnvironmentString,
+    CREDENTIAL_REFRESH_ENABLED: optionalEnvironmentBoolean.default(false),
+    CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS: credentialRefreshNotificationWindowHours,
     IS_OFFLINE: optionalEnvironmentBoolean.default(false),
     IS_CI: optionalEnvironmentBoolean.default(false),
     IS_E2E_TEST: optionalEnvironmentBoolean.default(false),
@@ -122,6 +130,18 @@ export const brainServiceEnvironmentSchema = z
                 message: 'Required when SKILL_EMBEDDING_BACKFILL_ON_STARTUP=true',
             });
         }
+
+        if (
+            environment.NODE_ENV !== 'test' &&
+            environment.CREDENTIAL_REFRESH_ENABLED &&
+            !environment.CREDENTIAL_REFRESH_DIGEST_SECRET
+        ) {
+            context.addIssue({
+                code: 'custom',
+                path: ['CREDENTIAL_REFRESH_DIGEST_SECRET'],
+                message: 'Required when CREDENTIAL_REFRESH_ENABLED=true',
+            });
+        }
     });
 
 const notificationRuntimeEnvironmentSchema = z
@@ -145,6 +165,42 @@ export type NotificationRuntimeEnvironment = z.output<typeof notificationRuntime
 export const getNotificationRuntimeEnvironment = (): NotificationRuntimeEnvironment =>
     parseEnvironment(notificationRuntimeEnvironmentSchema, process.env, {
         project: 'brain-service',
+        source: 'process environment',
+        examplePath: 'services/learn-card-network/brain-service/.env.example',
+    });
+
+const credentialRefreshRuntimeEnvironmentSchema = z
+    .object({
+        NODE_ENV: brainServiceEnvironmentShape.NODE_ENV,
+        DOMAIN_NAME: brainServiceEnvironmentShape.DOMAIN_NAME,
+        CREDENTIAL_REFRESH_DIGEST_SECRET:
+            brainServiceEnvironmentShape.CREDENTIAL_REFRESH_DIGEST_SECRET,
+        CREDENTIAL_REFRESH_ENABLED: brainServiceEnvironmentShape.CREDENTIAL_REFRESH_ENABLED,
+        CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS:
+            brainServiceEnvironmentShape.CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS,
+    })
+    .superRefine((environment, context) => {
+        if (
+            environment.NODE_ENV !== 'test' &&
+            environment.CREDENTIAL_REFRESH_ENABLED &&
+            !environment.CREDENTIAL_REFRESH_DIGEST_SECRET
+        ) {
+            context.addIssue({
+                code: 'custom',
+                path: ['CREDENTIAL_REFRESH_DIGEST_SECRET'],
+                message: 'Required when CREDENTIAL_REFRESH_ENABLED=true',
+            });
+        }
+    });
+
+export type CredentialRefreshRuntimeEnvironment = z.output<
+    typeof credentialRefreshRuntimeEnvironmentSchema
+>;
+
+/** Reads refresh settings at call time so tests and local route registration can override them. */
+export const getCredentialRefreshRuntimeEnvironment = (): CredentialRefreshRuntimeEnvironment =>
+    parseEnvironment(credentialRefreshRuntimeEnvironmentSchema, process.env, {
+        project: 'brain-service credential refresh',
         source: 'process environment',
         examplePath: 'services/learn-card-network/brain-service/.env.example',
     });

@@ -28,6 +28,10 @@ services:
 
         volumes:
             - ../../services/learn-card-network/brain-service/src:/app/services/learn-card-network/brain-service/src
+            # Workspace packages are baked into the shared image, so mount the refresh
+            # contracts explicitly to exercise branch-local validator changes without a
+            # full monorepo image rebuild.
+            - ../../packages/learn-card-types/src:/app/packages/learn-card-types/src
 
         environment:
             PORT: 4000
@@ -60,6 +64,14 @@ services:
             SKILLS_PROVIDER_API_KEY: ${SKILLS_PROVIDER_API_KEY:-notARealKey}
 
             APP_STORE_ADMIN_PROFILE_IDS: ${APP_STORE_ADMIN_PROFILE_IDS:-testa}
+
+            # Managed credential refresh (LC-2117/LC-2135/LC-2136)
+            CREDENTIAL_REFRESH_ENABLED: 'true'
+            CREDENTIAL_REFRESH_DIGEST_SECRET: ${CREDENTIAL_REFRESH_DIGEST_SECRET:-e2e-only-credential-refresh-digest-secret}
+            # 18-second delivery window so tests can deterministically observe window rollover
+            CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS: ${CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS:-0.005}
+            # Deliver notifications directly to the lca-api container (offline webhook fallback)
+            NOTIFICATIONS_SERVICE_PORT: ${NOTIFICATIONS_SERVICE_PORT:-5200}
 
     cloud:
         image: learncard-monorepo-local
@@ -130,6 +142,9 @@ services:
 
         extra_hosts:
             - 'localhost:host-gateway'
+
+        volumes:
+            - ../../services/learn-card-network/lca-api/src:/app/services/learn-card-network/lca-api/src
 
         environment:
             PORT: 5200

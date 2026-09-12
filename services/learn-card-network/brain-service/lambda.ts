@@ -12,6 +12,7 @@ import * as Sentry from '@sentry/serverless';
 import app from './src/openapi';
 import skillsViewerApp from './src/skills-viewer';
 import statusListsApp from './src/status-lists';
+import credentialRefreshApp from './src/credential-refresh';
 import { appRouter, createContext } from './src/app';
 import { deliverQueuedNotification } from './src/helpers/notificationQueue.helpers';
 import { startSkillEmbeddingBackfill } from './src/helpers/skill-embedding.helpers';
@@ -48,6 +49,14 @@ export const swaggerUiHandler = serverlessHttp(toServerlessApplication(app), {
 export const skillsViewerHandler = serverlessHttp(toServerlessApplication(skillsViewerApp));
 
 export const statusListsHandler = serverlessHttp(toServerlessApplication(statusListsApp));
+
+// Passing the Fastify instance selects serverless-http's inject adapter, which
+// drops the API Gateway source address. The HTTP server path preserves it.
+const credentialRefreshProxy = serverlessHttp(toServerlessApplication(credentialRefreshApp.server));
+export const credentialRefreshHandler: typeof credentialRefreshProxy = async (event, context) => {
+    await credentialRefreshApp.ready();
+    return credentialRefreshProxy(event, context);
+};
 
 export const _openApiHandler = createOpenApiAwsLambdaHandler({
     router: appRouter,

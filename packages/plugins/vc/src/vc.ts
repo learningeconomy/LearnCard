@@ -2,6 +2,7 @@ import { issueCredential } from './issueCredential';
 import { verifyCredential } from './verifyCredential';
 import { issuePresentation } from './issuePresentation';
 import { verifyPresentation } from './verifyPresentation';
+import { refreshCredential } from './refreshCredential';
 
 import { VCDependentLearnCard, VCPlugin } from './types';
 import { UnsignedVP } from '@learncard/types';
@@ -20,6 +21,7 @@ export const getVCPlugin = (learnCard: VCDependentLearnCard): VCPlugin => {
             verifyCredential: verifyCredential(learnCard),
             issuePresentation: issuePresentation(learnCard),
             verifyPresentation: verifyPresentation(learnCard),
+            refreshCredential: refreshCredential(learnCard),
             getTestVc: (_learnCard, subject = 'did:example:d23dd687a7dc6787646f2eb98d0') => {
                 const did = _learnCard.id.did();
 

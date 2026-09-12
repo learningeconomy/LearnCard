@@ -25,6 +25,33 @@ export const openApiDocument = generateOpenApiDocument(appRouter, {
     ],
 });
 
+// trpc-to-openapi requires a top-level ZodObject and cannot render the validator's
+// cross-field refinement. Preserve the runtime-safe object parser while documenting
+// the two mutually exclusive publication shapes for generated OpenAPI clients.
+const publishRequestBody =
+    openApiDocument.paths?.['/credential-refresh/publish']?.post?.requestBody;
+
+if (publishRequestBody && !('$ref' in publishRequestBody)) {
+    const publishSchema = publishRequestBody.content?.['application/json']?.schema;
+
+    if (publishSchema && !('$ref' in publishSchema)) {
+        publishSchema.oneOf = [
+            {
+                properties: { mode: { const: 'issuer-signed' } },
+                required: ['signedCredential'],
+                not: {
+                    anyOf: [{ required: ['credential'] }, { required: ['signingAuthority'] }],
+                },
+            },
+            {
+                properties: { mode: { const: 'signing-authority' } },
+                required: ['credential', 'signingAuthority'],
+                not: { required: ['signedCredential'] },
+            },
+        ];
+    }
+}
+
 const SCALAR_HTML = `<!DOCTYPE html>
 <html lang="en">
 <head>

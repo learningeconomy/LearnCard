@@ -21,11 +21,22 @@ import NotificationGuardianApprovalCard from './NotificationGuardianApprovalCard
 import NotificationGuardianOutcomeCard from './NotificationGuardianOutcomeCard';
 import NotificationAppNotificationCard from './NotificationAppNotificationCard';
 import NotificationCredentialStatusCard from './NotificationCredentialStatusCard';
+import NotificationCredentialRefreshedCard from './NotificationCredentialRefreshedCard';
 import { useQueryClient } from '@tanstack/react-query';
 
 type NotificationCardProps = {
     className?: string;
     notification: NotificationType;
+};
+
+type NotificationPage = {
+    notifications?: NotificationType[];
+    [key: string]: unknown;
+};
+
+type NotificationPages = {
+    pages?: NotificationPage[];
+    [key: string]: unknown;
 };
 
 export const NOTIFICATION_TYPES = {
@@ -47,6 +58,7 @@ export const NOTIFICATION_TYPES = {
     CREDENTIAL_REVOKED: 'CREDENTIAL_REVOKED',
     CREDENTIAL_SUSPENDED: 'CREDENTIAL_SUSPENDED',
     CREDENTIAL_UNSUSPENDED: 'CREDENTIAL_UNSUSPENDED',
+    CREDENTIAL_REFRESHED: 'CREDENTIAL_REFRESHED',
 };
 
 import { getLogger } from 'learn-card-base';
@@ -78,7 +90,7 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
 
     const { type, message, from, to, sent } = notification;
     const displayDate = moment(sent).format('MMMM Do, YYYY');
-    const messageBody = message && 'body' in message ? message.body ?? '' : '';
+    const messageBody = message && 'body' in message ? (message.body ?? '') : '';
     const parsedPrompt = LCNConnectionPromptMetadataValidator.safeParse(
         notification.data?.metadata?.connectionPrompt
     );
@@ -128,21 +140,24 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
             log.warn('Failed to persist notification meta after accept', error);
         }
 
-        queryClient.setQueriesData({ queryKey: ['useGetUserNotifications'] }, (old: any) => {
-            if (!old?.pages) return old;
+        queryClient.setQueriesData<NotificationPages>(
+            { queryKey: ['useGetUserNotifications'] },
+            old => {
+                if (!old?.pages) return old;
 
-            return {
-                ...old,
-                pages: old.pages.map((page: any) => ({
-                    ...page,
-                    notifications: page?.notifications?.map((n: any) =>
-                        n?._id === notification?._id
-                            ? { ...n, actionStatus: 'COMPLETED', read: true }
-                            : n
-                    ),
-                })),
-            };
-        });
+                return {
+                    ...old,
+                    pages: old.pages.map(page => ({
+                        ...page,
+                        notifications: page.notifications?.map(item =>
+                            item._id === notification?._id
+                                ? { ...item, actionStatus: 'COMPLETED', read: true }
+                                : item
+                        ),
+                    })),
+                };
+            }
+        );
 
         queryClient.invalidateQueries({ queryKey: ['useGetUnreadUserNotifications'] });
 
@@ -419,6 +434,16 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
             <NotificationCredentialStatusCard
                 notification={notification}
                 variant="unsuspended"
+                onRead={handleMarkAsRead}
+            />
+        );
+    }
+
+    /* A credential you hold was updated by its issuer (managed refresh) */
+    if (type === NOTIFICATION_TYPES.CREDENTIAL_REFRESHED) {
+        return (
+            <NotificationCredentialRefreshedCard
+                notification={notification}
                 onRead={handleMarkAsRead}
             />
         );

@@ -4,7 +4,13 @@ import { describe, it, expect, beforeAll } from 'vitest';
 
 import { initLearnCard } from '@learncard/init';
 
-import { getAllFixtures, getFixture, isCredentialFixture, prepareFixture } from '../index';
+import {
+    getAllFixtures,
+    getFixture,
+    isCredentialFixture,
+    prepareFixture,
+    buildFinalTranscriptVariant,
+} from '../index';
 
 import type { CredentialFixture } from '../types';
 
@@ -68,5 +74,29 @@ describe('Credential issuance', () => {
         const signed = await offlineWallet.invoke.issueCredential(prepared);
 
         expect(signed.proof).toBeDefined();
+    }, 30_000);
+
+    it('issues the provisional transcript fixture and its final variant without remote contexts', async () => {
+        const offlineWallet = await initLearnCard({
+            seed: 'c'.repeat(64),
+            didkit,
+            allowRemoteContexts: false,
+        });
+
+        const provisional = prepareFixture(getFixture('clr/provisional-transcript'), {
+            issuerDid: offlineWallet.id.did(),
+            subjectDid: 'did:example:test-subject-123',
+        });
+        const signedProvisional = await offlineWallet.invoke.issueCredential(provisional);
+
+        expect(signedProvisional.proof).toBeDefined();
+
+        const final = buildFinalTranscriptVariant(provisional, {
+            validFrom: new Date().toISOString(),
+        });
+        const signedFinal = await offlineWallet.invoke.issueCredential(final);
+
+        expect(signedFinal.proof).toBeDefined();
+        expect(signedFinal.id).toBe(signedProvisional.id);
     }, 30_000);
 });
