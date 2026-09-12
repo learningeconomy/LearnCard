@@ -85,7 +85,7 @@ const allocation = await issuer.invoke.allocateCredentialRefresh({
 // allocation.refreshService:
 // {
 //     id: 'https://network.learncard.app/refresh/<unguessable-id>',
-//     type: '1EdTechCredentialRefresh',
+//     type: 'LearnCardCredentialRefresh2026',
 //     authorization: { type: 'LearnCardDIDAuth' },
 // }
 
@@ -99,8 +99,8 @@ const unsigned = {
     '@context': [
         ...credentialContexts,
         {
-            '1EdTechCredentialRefresh':
-                'https://purl.imsglobal.org/spec/ob/v3p0#1EdTechCredentialRefresh',
+            'LearnCardCredentialRefresh2026':
+                'https://learncard.com/refresh#LearnCardCredentialRefresh2026',
             authorization: {
                 '@id': 'https://purl.imsglobal.org/spec/ob/v3p0#authorization',
                 '@context': {
@@ -125,7 +125,7 @@ const uri = await issuer.invoke.sendRefreshableCredential(
 ```
 
 {% hint style="warning" %}
-The inline `@context` fragment above is **required** for signing. Neither VCDM 1.1/2.0 nor the live Open Badges 3.0 contexts define the terms `1EdTechCredentialRefresh`, `authorization`, or `LearnCardDIDAuth`, so DIDKit's data-loss detection will refuse to sign a credential that carries them without an inline mapping. The convenience API injects this fragment automatically.
+The inline `@context` fragment above is **required** for signing. Neither VCDM 1.1/2.0 nor the live Open Badges 3.0 contexts define the terms `LearnCardCredentialRefresh2026`, `authorization`, or `LearnCardDIDAuth`, so DIDKit's data-loss detection will refuse to sign a credential that carries them without an inline mapping. The convenience API injects this fragment automatically.
 {% endhint %}
 
 ---

@@ -8,7 +8,7 @@ import { JWEValidator } from './crypto';
  *
  * The generic `RefreshServiceValidator` in vc.ts intentionally remains permissive so
  * unknown third-party refresh services keep parsing. These validators model the
- * LearnCard-managed `1EdTechCredentialRefresh` service, its allocation/publication
+ * LearnCard-managed `LearnCardCredentialRefresh2026` service, its allocation/publication
  * lifecycle, the holder-facing response envelopes, and safe refresh outcomes.
  */
 
@@ -21,18 +21,33 @@ export type LearnCardRefreshAuthorization = z.infer<typeof LearnCardRefreshAutho
 /**
  * Managed refresh service descriptor.
  *
- * Requires a resolvable `id` and the standard 1EdTech type, and optionally carries a
- * LearnCard authorization descriptor (permitted by the extensible 1EdTech model).
+ * Requires a resolvable `id` and the versioned LearnCard type, and optionally carries a
+ * LearnCard authorization descriptor. This is distinct from the 1EdTech protocol.
  */
 export const ManagedCredentialRefreshServiceValidator = z
     .object({
         id: z.string().min(1),
-        type: z.literal('1EdTechCredentialRefresh'),
+        type: z.literal('LearnCardCredentialRefresh2026'),
         authorization: LearnCardRefreshAuthorizationValidator.optional(),
     })
     .catchall(z.any());
 export type ManagedCredentialRefreshService = z.infer<
     typeof ManagedCredentialRefreshServiceValidator
+>;
+
+/** Standard 1EdTech protocol: HTTPS GET returning a signed VC or VC-JWT. */
+export const StandardCredentialRefreshServiceValidator = z
+    .object({
+        id: z.string().min(1),
+        type: z.literal('1EdTechCredentialRefresh'),
+    })
+    .catchall(z.any());
+export const SupportedCredentialRefreshServiceValidator = z.union([
+    ManagedCredentialRefreshServiceValidator,
+    StandardCredentialRefreshServiceValidator,
+]);
+export type SupportedCredentialRefreshService = z.infer<
+    typeof SupportedCredentialRefreshServiceValidator
 >;
 
 // --- Allocation (before signing) -------------------------------------------
@@ -160,7 +175,8 @@ export const PublishCredentialRefreshInputValidator = z
         }
     });
 export type PublishCredentialRefreshInput =
-    PublishIssuerSignedRefresh | PublishSigningAuthorityRefresh;
+    | PublishIssuerSignedRefresh
+    | PublishSigningAuthorityRefresh;
 
 export const PublishCredentialRefreshNotificationValidator = z.enum([
     'queued',

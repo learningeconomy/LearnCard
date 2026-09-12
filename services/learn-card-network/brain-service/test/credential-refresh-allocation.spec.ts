@@ -75,8 +75,8 @@ const buildUnsignedCredential = (
         '@context': [
             'https://www.w3.org/ns/credentials/v2',
             {
-                '1EdTechCredentialRefresh':
-                    'https://purl.imsglobal.org/spec/ob/v3p0#1EdTechCredentialRefresh',
+                'LearnCardCredentialRefresh2026':
+                    'https://learncard.com/refresh#LearnCardCredentialRefresh2026',
                 authorization: {
                     '@id': 'https://purl.imsglobal.org/spec/ob/v3p0#authorization',
                     '@context': {
@@ -258,7 +258,7 @@ describe('Credential Refresh Allocation', () => {
             const allocation = await allocate();
 
             expect(allocation.refreshId).toMatch(/^[A-Za-z0-9_-]{43}$/);
-            expect(allocation.refreshService.type).toEqual('1EdTechCredentialRefresh');
+            expect(allocation.refreshService.type).toEqual('LearnCardCredentialRefresh2026');
             expect(allocation.refreshService.id).toMatch(
                 new RegExp(`/refresh/${allocation.refreshId}$`)
             );

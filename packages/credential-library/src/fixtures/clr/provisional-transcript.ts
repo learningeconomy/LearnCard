@@ -3,7 +3,7 @@ import { UnsignedClrCredentialValidator, type UnsignedVC } from '@learncard/type
 import type { CredentialFixture } from '../../types';
 
 /**
- * Provisional CLR 2.0 transcript with a `1EdTechCredentialRefresh` service, built for
+ * Provisional CLR 2.0 transcript with a `LearnCardCredentialRefresh2026` service, built for
  * the managed credential refresh flow (LC-2117 / LC-2135 / LC-2136).
  *
  * The credential starts as a provisional transcript; `buildFinalTranscriptVariant`
@@ -11,14 +11,15 @@ import type { CredentialFixture } from '../../types';
  * mirroring a registrar publishing the finalized record to the same refresh service.
  *
  * JSON-LD note: neither the VCDM 1.1/2.0 nor the live OBv3/CLR contexts define the
- * term `1EdTechCredentialRefresh` (or the LearnCard `authorization` extension), so
+ * term `LearnCardCredentialRefresh2026` (or the LearnCard `authorization` extension), so
  * the fixture carries an inline context fragment — DIDKit's data-loss detection
  * otherwise refuses to sign.
  */
 
 /** Inline JSON-LD context fragment defining the refresh-service terms inline. */
 export const REFRESH_SERVICE_INLINE_CONTEXT = {
-    '1EdTechCredentialRefresh': 'https://purl.imsglobal.org/spec/ob/v3p0#1EdTechCredentialRefresh',
+    'LearnCardCredentialRefresh2026':
+        'https://learncard.com/refresh#LearnCardCredentialRefresh2026',
     authorization: {
         '@id': 'https://purl.imsglobal.org/spec/ob/v3p0#authorization',
         '@context': {
@@ -34,7 +35,7 @@ export const REFRESH_SERVICE_INLINE_CONTEXT = {
  */
 const PLACEHOLDER_REFRESH_SERVICE = {
     id: 'https://refresh.example.com/refresh/placeholder',
-    type: '1EdTechCredentialRefresh',
+    type: 'LearnCardCredentialRefresh2026',
     authorization: { type: 'LearnCardDIDAuth' },
 } as const;
 
@@ -42,7 +43,7 @@ export const clrProvisionalTranscript: CredentialFixture = {
     id: 'clr/provisional-transcript',
     name: 'Provisional Transcript (Refreshable)',
     description:
-        'A CLR v2 provisional transcript carrying a 1EdTechCredentialRefresh service. Paired with buildFinalTranscriptVariant, it demonstrates the managed provisional-to-final credential refresh flow.',
+        'A CLR v2 provisional transcript carrying a LearnCardCredentialRefresh2026 service. Paired with buildFinalTranscriptVariant, it demonstrates the managed provisional-to-final credential refresh flow.',
     spec: 'clr-v2',
     profile: 'learner-record',
     features: ['refresh-service', 'results'],

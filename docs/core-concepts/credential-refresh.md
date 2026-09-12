@@ -17,7 +17,7 @@ Refresh works for VCDM 1.1, VCDM 2.0, Open Badges 3.0, and CLR 2.0 credentials.
 
 ### Public / interoperable services
 
-Any issuer can stand up a standards-compliant `1EdTechCredentialRefresh` endpoint that returns an updated, signed credential to anyone who asks. LearnCard wallets can consume these services even if the issuer has no LearnCard integration — the wallet verifies the returned credential's proof, checks that the issuer and credential ID match the original, and replaces its local copy.
+Any issuer can stand up a standards-compliant `1EdTechCredentialRefresh` endpoint that returns an updated, signed credential to anyone who asks. LearnCard wallets can consume the JSON credential responses from these services even if the issuer has no LearnCard integration — the wallet verifies the returned credential's proof, checks that the issuer and credential ID match the original, and replaces its local copy.
 
 ### LearnCard-managed services
 
@@ -29,13 +29,13 @@ A managed service descriptor looks like this inside the signed credential:
 {
     "refreshService": {
         "id": "https://network.learncard.app/refresh/a1b2c3…",
-        "type": "1EdTechCredentialRefresh",
+        "type": "LearnCardCredentialRefresh2026",
         "authorization": { "type": "LearnCardDIDAuth" }
     }
 }
 ```
 
-The `authorization` extension tells compatible wallets to authenticate with a DID-auth challenge. Plain 1EdTech wallets simply `GET` the URL; the challenge/response upgrade is transparent.
+The `authorization` extension tells compatible wallets to authenticate with a DID-auth challenge. This is a LearnCard-specific protocol, not the 1EdTech protocol. A standard 1EdTech client cannot consume the encrypted envelope or authenticate with this extension. The type expands to `https://learncard.com/refresh#LearnCardCredentialRefresh2026` in the signing context.
 
 ## How managed refresh works
 
@@ -118,3 +118,17 @@ Failure codes: `UNAVAILABLE`, `TIMEOUT`, `UNSUPPORTED_SERVICE`, `UNAUTHORIZED`, 
 Local history currently retains every prior URI on the encrypted index record. Bounding or moving that index is follow-up work; pruning must preserve access to retained versions, including after revocation, when server history is unavailable.
 
 Managed refreshes now fingerprint the original subject identifier list at first send and reject changes before publication. Refreshes created before that fingerprint existed must be reissued before publishing further versions; their original encrypted contents cannot be safely reconstructed server-side for backfill.
+
+## Standards scope and compatibility
+
+Checked against W3C VCDM 1.1 §5.5 and the published VCDM 2.0 Recommendation (May 15, 2025) §5.4, plus the [1EdTech refresh protocol](https://www.imsglobal.org/spec/vccr/v1p0/#protocol).
+
+The W3C property is an extension point; it does not prescribe LearnCard authentication, encryption, stable IDs, or history. Managed credentials use `LearnCardCredentialRefresh2026` for those requirements. Standard JSON services use `1EdTechCredentialRefresh`; credentials without IDs are supported when both the held and replacement credentials omit the ID. Issuer and subject identity must still match. LearnCard does not send its DID-auth proof to standard services.
+
+Previously issued QA credentials advertising `1EdTechCredentialRefresh` for an encrypted managed endpoint must be reissued. Do not edit signed credentials or reinterpret that standard type as a managed protocol. Existing stored credentials and local history remain readable.
+
+Local HTTP testing is explicitly non-conformant transport; interoperable deployment requires HTTPS with TLS 1.2 or 1.3. Foreground polling, notifications, and in-place history are LearnCard product behavior, not W3C requirements.
+
+### Explicit format limitation
+
+The standard service adapter currently supports signed JSON credentials only. It does not claim complete 1EdTech Refresh Service conformance: `text/plain` compact VC-JWT responses remain unsupported and fail closed. End-to-end JWT signature verification, registered-claim normalization, and preservation of the original signed token are tracked in [LC-2195](https://welibrary.atlassian.net/browse/LC-2195); base64 decoding alone must never be treated as verification. Unknown refresh types are ignored rather than interpreted as LearnCard services.

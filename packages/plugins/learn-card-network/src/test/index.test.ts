@@ -58,7 +58,7 @@ const ALLOCATION = {
     refreshId: REFRESH_ID,
     refreshService: {
         id: `https://network.example/refresh/${REFRESH_ID}`,
-        type: '1EdTechCredentialRefresh',
+        type: 'LearnCardCredentialRefresh2026',
         authorization: { type: 'LearnCardDIDAuth' },
     },
 };
@@ -455,7 +455,7 @@ describe('credential refresh methods', () => {
         expect(signedInput.id).toEqual(allocateInput.credentialId);
         expect(signedInput.refreshService).toEqual(ALLOCATION.refreshService);
         expect(signedInput['@context']).toContainEqual(
-            expect.objectContaining({ '1EdTechCredentialRefresh': expect.any(String) })
+            expect.objectContaining({ 'LearnCardCredentialRefresh2026': expect.any(String) })
         );
 
         // Dedicated managed-send procedure is used instead of legacy credential storage,

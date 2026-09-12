@@ -33,7 +33,7 @@ const makeCredential = (overrides: Record<string, any> = {}): Record<string, any
     issuer: 'did:example:issuer',
     validFrom: '2026-01-01T00:00:00.000Z',
     credentialSubject: { id: 'did:example:holder', achievement: { name: 'Provisional' } },
-    refreshService: { id: REFRESH_SERVICE_ID, type: '1EdTechCredentialRefresh' },
+    refreshService: { id: REFRESH_SERVICE_ID, type: 'LearnCardCredentialRefresh2026' },
     proof: {
         type: 'DataIntegrityProof',
         created: '2026-01-01T00:00:00Z',
@@ -97,6 +97,36 @@ describe('refreshCredential', () => {
             resolveHost: async () => [PUBLIC_IP],
             ...options,
         });
+
+    it('refreshes a standard JSON credential without a credential ID', async () => {
+        const service = { id: REFRESH_SERVICE_ID, type: '1EdTechCredentialRefresh' };
+        const held = makeCredential({ id: undefined, refreshService: service });
+        const next = makeCredential({
+            id: undefined,
+            refreshService: service,
+            validFrom: '2026-03-01T00:00:00Z',
+        });
+        fetchMock.mockResolvedValue(jsonResponse(next));
+        expect(await runRefresh(held)).toMatchObject({ status: 'updated' });
+    });
+
+    it('does not sign a LearnCard challenge from a standard service', async () => {
+        fetchMock.mockResolvedValue(jsonResponse({}, { status: 401 }));
+        const held = makeCredential({
+            refreshService: { id: REFRESH_SERVICE_ID, type: '1EdTechCredentialRefresh' },
+        });
+        expect(await runRefresh(held)).toMatchObject({ status: 'failed', code: 'UNAUTHORIZED' });
+        expect(learnCard.invoke.getDidAuthVp).not.toHaveBeenCalled();
+    });
+
+    it('rejects a managed envelope advertised as a standard service', async () => {
+        fetchMock.mockResolvedValue(jsonResponse({ format: 'jwe', jwe: validJwe }));
+        const held = makeCredential({
+            refreshService: { id: REFRESH_SERVICE_ID, type: '1EdTechCredentialRefresh' },
+        });
+        expect(await runRefresh(held)).toMatchObject({ status: 'failed' });
+        expect(learnCard.invoke.decryptDagJwe).not.toHaveBeenCalled();
+    });
 
     beforeEach(() => {
         fetchMock = vi.fn();
@@ -499,7 +529,7 @@ describe('refreshCredential', () => {
             const credential = makeCredential({
                 refreshService: {
                     id: 'http://refresh.example.com/refresh/refresh-1',
-                    type: '1EdTechCredentialRefresh',
+                    type: 'LearnCardCredentialRefresh2026',
                 },
             });
 
@@ -524,7 +554,7 @@ describe('refreshCredential', () => {
             ['6to4 transition prefix', 'https://[2002:a9fe:a9fe::]/latest/meta-data'],
         ])('rejects %s host literals as UNSAFE_ENDPOINT', async (_label, id) => {
             const credential = makeCredential({
-                refreshService: { id, type: '1EdTechCredentialRefresh' },
+                refreshService: { id, type: 'LearnCardCredentialRefresh2026' },
             });
 
             const result = await runRefresh(credential);
@@ -546,7 +576,7 @@ describe('refreshCredential', () => {
             const credential = makeCredential({
                 refreshService: {
                     id: 'http://localhost:4000/refresh/refresh-1',
-                    type: '1EdTechCredentialRefresh',
+                    type: 'LearnCardCredentialRefresh2026',
                 },
             });
 
@@ -620,7 +650,7 @@ describe('refreshCredential', () => {
                 makeCredential({
                     refreshService: {
                         id: 'https://[2606:4700:4700::1111]/refresh/x',
-                        type: '1EdTechCredentialRefresh',
+                        type: 'LearnCardCredentialRefresh2026',
                     },
                 }),
                 {},
@@ -643,7 +673,7 @@ describe('refreshCredential', () => {
             const credential = makeCredential({
                 refreshService: {
                     id: 'http://refresh.example.com/refresh/refresh-1',
-                    type: '1EdTechCredentialRefresh',
+                    type: 'LearnCardCredentialRefresh2026',
                 },
             });
 

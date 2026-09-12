@@ -50,8 +50,8 @@ const buildUnsignedCredential = (
         '@context': [
             'https://www.w3.org/ns/credentials/v2',
             {
-                '1EdTechCredentialRefresh':
-                    'https://purl.imsglobal.org/spec/ob/v3p0#1EdTechCredentialRefresh',
+                'LearnCardCredentialRefresh2026':
+                    'https://learncard.com/refresh#LearnCardCredentialRefresh2026',
                 authorization: {
                     '@id': 'https://purl.imsglobal.org/spec/ob/v3p0#authorization',
                     '@context': {

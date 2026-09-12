@@ -22,7 +22,8 @@ import { RefreshCredentialOptions, VCDependentLearnCard, VCImplicitLearnCard } f
  * Generic holder-side credential refresh primitive (LC-2117, LC-2135, LC-2136).
  *
  * `refreshCredential` fetches a candidate replacement from a credential's
- * `1EdTechCredentialRefresh` service, verifies both the current and candidate
+ * `1EdTechCredentialRefresh` (JSON only) or `LearnCardCredentialRefresh2026` service,
+ * verifies both the current and candidate
  * proofs, enforces identity stability and non-regressing freshness, and returns a
  * typed result. It performs no storage or index mutation.
  *
@@ -441,7 +442,8 @@ const fetchWithGuards = async (
  * signal observable until streaming completes.
  */
 type BodyReadOutcome =
-    { body: string } | { result: CredentialRefreshResult; reason: 'timeout' | 'malformed' };
+    | { body: string }
+    | { result: CredentialRefreshResult; reason: 'timeout' | 'malformed' };
 
 const readBodyWithLimit = async (
     response: Response,
@@ -746,8 +748,11 @@ export const refreshCredential = (_initLearnCard: VCDependentLearnCard) => {
             return invalidProof();
         }
 
-        // Refresh requires a stable nonempty credential ID.
-        if (typeof credential.id !== 'string' || credential.id.length === 0) {
+        // Managed publication requires a stable ID. Standard credentials may omit it.
+        if (
+            service.type === 'LearnCardCredentialRefresh2026' &&
+            (typeof credential.id !== 'string' || credential.id.length === 0)
+        ) {
             return failed('ID_MISMATCH', false);
         }
 
@@ -763,7 +768,7 @@ export const refreshCredential = (_initLearnCard: VCDependentLearnCard) => {
         let response = guardedResponse.response;
 
         // Managed endpoints authenticate with a single DID-auth retry.
-        if (response.status === 401) {
+        if (response.status === 401 && service.type === 'LearnCardCredentialRefresh2026') {
             // Only the origin signed into the credential may request a holder proof.
             if (guardedResponse.endpoint.url.origin !== validated.url.origin) {
                 await discardGuardedResponse(guardedResponse);
@@ -868,6 +873,10 @@ export const refreshCredential = (_initLearnCard: VCDependentLearnCard) => {
             return malformedResponse();
         }
 
+        // The standard protocol returns a bare credential, never a LearnCard envelope.
+        if (service.type === '1EdTechCredentialRefresh' && !VCValidator.safeParse(json).success) {
+            return malformedResponse();
+        }
         const decoded = await decodeCandidate(_learnCard, json, response);
 
         if ('status' in decoded) return decoded;
@@ -886,7 +895,7 @@ export const refreshCredential = (_initLearnCard: VCDependentLearnCard) => {
         // Identity stability: same credential ID, normalized issuer, and holder. Holder
         // changes are surfaced as ID_MISMATCH because the holder identity is part of the
         // credential's identity for refresh purposes.
-        if (typeof candidate.id !== 'string' || candidate.id !== credential.id) {
+        if (candidate.id !== credential.id) {
             return failed('ID_MISMATCH', false);
         }
 

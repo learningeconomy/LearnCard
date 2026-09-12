@@ -77,6 +77,11 @@ describe('getSupportedRefreshService', () => {
     };
     const unsupportedService = { id: 'https://example.com/other', type: 'SomeOtherService' };
 
+    it('selects the separately typed encrypted managed service', () => {
+        const service = { ...managedService, type: 'LearnCardCredentialRefresh2026' };
+        expect(getSupportedRefreshService({ refreshService: service })).toEqual(service);
+    });
+
     it('returns the single supported refresh service', () => {
         const vc = { ...vcdm2Credential, refreshService: managedService };
 

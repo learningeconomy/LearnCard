@@ -163,7 +163,7 @@ describe('Credential Refresh (managed)', () => {
         });
 
         expect(allocation.refreshId).toBeTruthy();
-        expect(allocation.refreshService.type).toBe('1EdTechCredentialRefresh');
+        expect(allocation.refreshService.type).toBe('LearnCardCredentialRefresh2026');
         expect(allocation.refreshService.authorization.type).toBe('LearnCardDIDAuth');
 
         unsigned.refreshService = allocation.refreshService as any;
@@ -247,7 +247,7 @@ describe('Credential Refresh (managed)', () => {
                 uri: finalLearnCloudUri,
                 refresh: {
                     serviceId: allocation.refreshService.id,
-                    serviceType: '1EdTechCredentialRefresh',
+                    serviceType: 'LearnCardCredentialRefresh2026',
                     credentialId,
                     etag: refreshed.etag,
                     managedVersion: refreshed.managedVersion,
@@ -439,7 +439,7 @@ describe('Credential Refresh (managed)', () => {
         const held = (await holder.read.get(sentUri)) as VC;
         const refreshService = (held as any).refreshService;
 
-        expect(refreshService?.type).toBe('1EdTechCredentialRefresh');
+        expect(refreshService?.type).toBe('LearnCardCredentialRefresh2026');
 
         // Holder keeps a local encrypted copy.
         const recordId = 'e2e-managed-refresh-revoked';

@@ -51,7 +51,10 @@ const BASE_CREDENTIAL: Record<string, unknown> = {
         achievement: { name: 'Algebra I', result: 'Pass' },
     },
     evidence: [{ type: 'Evidence', name: 'Report card' }],
-    refreshService: { id: 'https://example.com/refresh/abc', type: '1EdTechCredentialRefresh' },
+    refreshService: {
+        id: 'https://example.com/refresh/abc',
+        type: 'LearnCardCredentialRefresh2026',
+    },
     credentialStatus: {
         id: 'https://status.example.com/lists/42#7',
         type: 'BitstringStatusListEntry',
@@ -121,7 +124,7 @@ describe('credential refresh materiality (unit)', () => {
             digestOf({
                 refreshService: {
                     id: 'https://example.com/refresh/rotated',
-                    type: '1EdTechCredentialRefresh',
+                    type: 'LearnCardCredentialRefresh2026',
                 },
             })
         ).toEqual(baseDigest);
@@ -300,8 +303,8 @@ const buildUnsignedCredential = (
         '@context': [
             'https://www.w3.org/ns/credentials/v2',
             {
-                '1EdTechCredentialRefresh':
-                    'https://purl.imsglobal.org/spec/ob/v3p0#1EdTechCredentialRefresh',
+                'LearnCardCredentialRefresh2026':
+                    'https://learncard.com/refresh#LearnCardCredentialRefresh2026',
                 authorization: {
                     '@id': 'https://purl.imsglobal.org/spec/ob/v3p0#authorization',
                     '@context': {
@@ -405,8 +408,8 @@ describe('credential refresh notification events', () => {
                 '@context': [
                     'https://www.w3.org/ns/credentials/v2',
                     {
-                        '1EdTechCredentialRefresh':
-                            'https://purl.imsglobal.org/spec/ob/v3p0#1EdTechCredentialRefresh',
+                        'LearnCardCredentialRefresh2026':
+                            'https://learncard.com/refresh#LearnCardCredentialRefresh2026',
                         authorization: {
                             '@id': 'https://purl.imsglobal.org/spec/ob/v3p0#authorization',
                             '@context': {

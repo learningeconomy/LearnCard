@@ -444,15 +444,16 @@ const issueCredentialWithNetworkStatus = async (
 
 /**
  * Inline JSON-LD context fragment required to sign credentials carrying a
- * LearnCard-managed `1EdTechCredentialRefresh` refresh service.
+ * LearnCard-managed `LearnCardCredentialRefresh2026` refresh service.
  *
  * Neither VCDM 1.1 (which defines only `ManualRefreshService2018`), VCDM 2.0, nor the
- * live OBv3 contexts define the term `1EdTechCredentialRefresh` (nor the LearnCard
+ * live OBv3 contexts define the term `LearnCardCredentialRefresh2026` (nor the LearnCard
  * `authorization` / `LearnCardDIDAuth` extension terms), so DIDKit's data-loss
  * detection refuses to sign unless issuers define these terms inline.
  */
 const MANAGED_REFRESH_SERVICE_CONTEXT = {
-    '1EdTechCredentialRefresh': 'https://purl.imsglobal.org/spec/ob/v3p0#1EdTechCredentialRefresh',
+    'LearnCardCredentialRefresh2026':
+        'https://learncard.com/refresh#LearnCardCredentialRefresh2026',
     authorization: {
         '@id': 'https://purl.imsglobal.org/spec/ob/v3p0#authorization',
         '@context': {
@@ -477,7 +478,7 @@ const injectManagedRefreshService = (
         entry =>
             !!entry &&
             typeof entry === 'object' &&
-            '1EdTechCredentialRefresh' in (entry as Record<string, unknown>)
+            'LearnCardCredentialRefresh2026' in (entry as Record<string, unknown>)
     );
 
     return {

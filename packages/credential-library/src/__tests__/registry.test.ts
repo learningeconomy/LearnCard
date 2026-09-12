@@ -177,7 +177,7 @@ describe('Query API', () => {
     // -----------------------------------------------------------------------
 
     describe('clr/provisional-transcript', () => {
-        it('is discoverable as a valid CLR 2.0 fixture with a 1EdTech refresh service', () => {
+        it('is discoverable as a valid CLR 2.0 fixture with a LearnCard managed refresh service', () => {
             const fixture = getFixture('clr/provisional-transcript');
 
             expect(isCredentialFixture(fixture)).toBe(true);
@@ -192,7 +192,7 @@ describe('Query API', () => {
                 fixture.credential as { refreshService?: { type?: unknown; id?: unknown } }
             ).refreshService;
 
-            expect(refreshService?.type).toBe('1EdTechCredentialRefresh');
+            expect(refreshService?.type).toBe('LearnCardCredentialRefresh2026');
             expect(typeof refreshService?.id).toBe('string');
         });
 
@@ -588,7 +588,8 @@ describe('prepareFixture', () => {
             ? (programAchievement?.resultDescription as UnknownArrayRecord[])
             : [];
         const programResultDescriptionId = programResults[0]?.resultDescription as
-            string | undefined;
+            | string
+            | undefined;
         const programResultDescription = programResultDescriptions[0]?.id as string | undefined;
 
         expect(programResultDescriptionId).toBe(programResultDescription);

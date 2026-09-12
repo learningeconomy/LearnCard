@@ -130,7 +130,7 @@ export const allocateCredentialRefresh = async (
         refreshId,
         refreshService: {
             id: getCredentialRefreshServiceUrl(refreshId, domain),
-            type: '1EdTechCredentialRefresh',
+            type: 'LearnCardCredentialRefresh2026',
             authorization: { type: 'LearnCardDIDAuth' },
         },
     };
@@ -161,7 +161,7 @@ const hasAllocatedRefreshService = (credential: VC, refreshId: string, domain: s
             service &&
             typeof service === 'object' &&
             (service as { id?: unknown }).id === expectedId &&
-            (service as { type?: unknown }).type === '1EdTechCredentialRefresh'
+            (service as { type?: unknown }).type === 'LearnCardCredentialRefresh2026'
     );
 };
 

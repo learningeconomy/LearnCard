@@ -23,7 +23,7 @@ const { prepareFixtureById, buildFinalTranscriptVariant, wallet } = vi.hoisted((
             refreshId: 'safe-refresh-id',
             refreshService: {
                 id: 'https://network.example/refresh/safe-refresh-id',
-                type: '1EdTechCredentialRefresh',
+                type: 'LearnCardCredentialRefresh2026',
                 authorization: { type: 'LearnCardDIDAuth' },
             },
         }),

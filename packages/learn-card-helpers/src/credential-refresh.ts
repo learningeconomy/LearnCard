@@ -1,6 +1,6 @@
 import {
-    ManagedCredentialRefreshServiceValidator,
-    type ManagedCredentialRefreshService,
+    SupportedCredentialRefreshServiceValidator,
+    type SupportedCredentialRefreshService,
 } from '@learncard/types';
 
 /**
@@ -24,14 +24,14 @@ type RefreshableCredential = Record<string, unknown> & {
  * Selects the first supported refresh service from a credential's `refreshService`.
  *
  * Accepts a single service object or an array. An array is treated as ordered: the
- * first entry whose type is supported is selected. Currently the only supported type
- * is `1EdTechCredentialRefresh` (managed or interoperable public services).
+ * first entry whose type is supported is selected. Supported types are
+ * `1EdTechCredentialRefresh` and `LearnCardCredentialRefresh2026`.
  *
  * @returns the supported service, or `undefined` when none is present/supported
  */
 export const getSupportedRefreshService = (
     vc: RefreshableCredential
-): ManagedCredentialRefreshService | undefined => {
+): SupportedCredentialRefreshService | undefined => {
     const refreshService = vc?.refreshService;
 
     if (!refreshService) return undefined;
@@ -39,7 +39,7 @@ export const getSupportedRefreshService = (
     const services = Array.isArray(refreshService) ? refreshService : [refreshService];
 
     for (const service of services) {
-        const parsed = ManagedCredentialRefreshServiceValidator.safeParse(service);
+        const parsed = SupportedCredentialRefreshServiceValidator.safeParse(service);
 
         if (parsed.success) return parsed.data;
     }
