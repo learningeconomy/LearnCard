@@ -66,6 +66,9 @@ export type Cache = {
     /** Gets a key from the cache, optionally reseting it's time to live */
     get: (key: RedisKey, resetTTL?: boolean, ttl?: number) => Promise<string | null | undefined>;
 
+    /** Atomically gets and evicts a key from the cache */
+    getdel: (key: RedisKey) => Promise<string | null | undefined>;
+
     /** Returns an array of keys matching a pattern */
     keys: (pattern: string) => Promise<RedisKey[] | undefined>;
 
@@ -169,6 +172,17 @@ export const getCache = (): Cache => {
                 }
             } catch (e) {
                 // logger.error('Cache get error', e);
+            }
+
+            return undefined;
+        },
+        getdel: async key => {
+            try {
+                const redis = cache.redis ?? cache.node;
+
+                return await redis.getdel(key);
+            } catch (e) {
+                console.error('Cache getdel error', e);
             }
 
             return undefined;

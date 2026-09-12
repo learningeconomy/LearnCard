@@ -7,6 +7,7 @@ import ShareBoostLink from './ShareBoostLink';
 import JsonPreviewModal from './JsonPreviewModal';
 import BracketsIcon from '../../svgs/BracketsIcon';
 import ReplyIcon from 'learn-card-base/svgs/ReplyIcon';
+import TimeCircle from 'learn-card-base/svgs/TimeCircle';
 
 import { ModalTypes, useModal, useConfirmation, useGetRecordForUri } from 'learn-card-base';
 
@@ -24,6 +25,11 @@ type BoostOptionsMenuProps = {
     categoryType?: string;
     handleManageIssuances?: () => void;
     /**
+     * Earned credentials only: opens the previous-version history sheet. Provided by the
+     * caller only when encrypted local history exists on the record.
+     */
+    onViewHistory?: () => void;
+    /**
      * For managed boosts: whether the boost is a DRAFT. Deleting is only offered for drafts
      * (a LIVE managed boost has issued credentials). When omitted, delete is left enabled to
      * preserve existing behavior for non-status-aware callers.
@@ -40,6 +46,7 @@ const BoostOptionsMenu: React.FC<BoostOptionsMenuProps> = ({
     menuType,
     categoryType,
     handleManageIssuances,
+    onViewHistory,
     isDraft,
 }) => {
     const confirm = useConfirmation();
@@ -133,6 +140,18 @@ const BoostOptionsMenu: React.FC<BoostOptionsMenuProps> = ({
             icon: <ReplyIcon version="2" className="text-grayscale-900" />,
             onClick: () => handleShare(),
         });
+
+        if (onViewHistory) {
+            boostMenuOptions.push({
+                id: 4,
+                title: m['boost.menu.viewPreviousVersions'](),
+                icon: <TimeCircle className="text-grayscale-900 w-5 h-5" />,
+                onClick: () => {
+                    handleCloseModal();
+                    onViewHistory();
+                },
+            });
+        }
     }
 
     boostMenuOptions.push({
