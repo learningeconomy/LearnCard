@@ -33,11 +33,7 @@ export type DidMethod =
 
 /** @group DIDKit Plugin */
 export type DataIntegrityCryptosuite =
-    | 'eddsa-rdfc-2022'
-    | 'eddsa-2022'
-    | 'json-eddsa-2022'
-    | 'ecdsa-2019'
-    | 'jcs-ecdsa-2019';
+    'eddsa-rdfc-2022' | 'eddsa-2022' | 'json-eddsa-2022' | 'ecdsa-2019' | 'jcs-ecdsa-2019';
 
 /** @group DIDKit Plugin */
 export type ProofOptions = {
@@ -72,7 +68,34 @@ export type DidkitPluginMethods = {
         options: ProofOptions,
         keypair: JWKWithPrivateKey
     ) => Promise<VC>;
-    verifyCredential: (credential: VC, options?: ProofOptions) => Promise<VerificationCheck>;
+    /**
+     * Verify a credential. Accepts either a JSON-LD credential object or a raw
+     * compact VC-JWT string. Compact tokens are passed to DIDKit unchanged and
+     * must be verified with `options.proofFormat === 'jwt'`.
+     */
+    verifyCredential: (
+        credential: VC | string,
+        options?: ProofOptions
+    ) => Promise<VerificationCheck>;
+    /**
+     * Renewal-only verification of a compact JWT credential.
+     *
+     * Identical to {@link verifyCredential} except that a signature-valid token
+     * whose `exp` is already in the past is accepted, and the successful result
+     * additionally reports the `JWSRenewalExpired` check. `nbf`, signature,
+     * issuer key authorization, proof purpose, nonce and audience checks are
+     * unchanged. The result is **renewal-only valid** and must never be treated
+     * as ordinary credential validity.
+     *
+     * This is a dedicated, explicitly named opt-in. The ordinary
+     * `verifyCredential` never honors a caller-supplied low-level
+     * `allowExpiredCredential` option. Presentations and JSON-LD credentials
+     * are rejected, not silently weakened.
+     */
+    verifyCredentialForRenewal: (
+        credential: string,
+        options?: ProofOptions
+    ) => Promise<VerificationCheck>;
     issuePresentation: (
         presentation: UnsignedVP,
         options: ProofOptions,

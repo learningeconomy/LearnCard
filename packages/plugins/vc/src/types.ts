@@ -20,7 +20,20 @@ export type VCPluginDependentMethods = {
         options: ProofOptions,
         keypair: JWKWithPrivateKey
     ) => Promise<VC>;
-    verifyCredential: (credential: VC, options?: ProofOptions) => Promise<VerificationCheck>;
+    verifyCredential: (
+        credential: VC | string,
+        options?: ProofOptions
+    ) => Promise<VerificationCheck>;
+    /**
+     * Renewal-only verification of a compact JWT credential. Used only for the
+     * held credential in `refreshCredential`; ordinary verification stays
+     * strict. The successful result additionally reports the
+     * `JWSRenewalExpired` check and is not ordinary credential validity.
+     */
+    verifyCredentialForRenewal: (
+        credential: string,
+        options?: ProofOptions
+    ) => Promise<VerificationCheck>;
     issuePresentation: (
         presentation: UnsignedVP,
         options: ProofOptions,
@@ -40,7 +53,7 @@ export type VCPluginMethods = {
         signingOptions?: Partial<ProofOptions>
     ) => Promise<VC>;
     verifyCredential: (
-        credential: VC,
+        credential: VC | string,
         options?: Partial<ProofOptions>
     ) => Promise<VerificationCheck>;
     issuePresentation: (
@@ -55,7 +68,7 @@ export type VCPluginMethods = {
     getTestVp: (credential?: VC) => Promise<UnsignedVP>;
     getDidAuthVp: (options?: ProofOptions) => Promise<VP | string>;
     refreshCredential: (
-        credential: VC,
+        credential: VC | string,
         options?: RefreshCredentialOptions
     ) => Promise<CredentialRefreshResult>;
 };
@@ -100,7 +113,7 @@ export type VCImplicitLearnCard = LearnCard<any, 'id', VCPluginMethods & VCPlugi
 /** @group VC Plugin */
 export type VerifyExtension = {
     verifyCredential: (
-        credential: VC,
+        credential: VC | string,
         options?: Partial<ProofOptions>
     ) => Promise<VerificationCheck>;
 };

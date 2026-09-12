@@ -12,20 +12,33 @@ import {
     credentialContentsEqual,
     getCredentialEffectiveTime,
     getCredentialIssuerId,
+    getCredentialSubjectIds,
     getSupportedRefreshService,
 } from '@learncard/helpers';
 
 import { fetchWithPinnedAddress, type PinnedAddress } from './refreshCredential.fetch';
 import { RefreshCredentialOptions, VCDependentLearnCard, VCImplicitLearnCard } from './types';
+import {
+    extractCompactJwt,
+    verifyCredentialJwt,
+    type VerifiedCredentialJwtResult,
+    type VerifyCredentialJwtPolicy,
+} from './verifyCredentialJwt';
 
 /**
  * Generic holder-side credential refresh primitive (LC-2117, LC-2135, LC-2136).
  *
  * `refreshCredential` fetches a candidate replacement from a credential's
- * `1EdTechCredentialRefresh` (JSON only) or `LearnCardCredentialRefresh2026` service,
- * verifies both the current and candidate
+ * `1EdTechCredentialRefresh` (JSON or `text/plain` compact VC-JWT) or
+ * `LearnCardCredentialRefresh2026` service, verifies both the current and candidate
  * proofs, enforces identity stability and non-regressing freshness, and returns a
  * typed result. It performs no storage or index mutation.
+ *
+ * The held credential is verified and normalized BEFORE any endpoint is selected or
+ * contacted: JWT-backed inputs (raw compact token, `jwt-vc-json` envelope or legacy
+ * `JwtProof2020` projection) go through `verifyCredentialJwt`, and every
+ * identity/freshness decision uses the token-derived metadata rather than a mutable
+ * display object. JSON inputs keep the existing DIDKit linked-data-proof behavior.
  *
  * The generic primitive permits same-issuer-signed changes to credentialStatus and
  * refreshService. It does not pin those fields; applications requiring immutable
@@ -58,7 +71,19 @@ const ACCEPTED_MEDIA_TYPES = new Set([
     'application/jwe+json',
 ]);
 
+/**
+ * Compact VC-JWT bodies are only permitted for the standard 1EdTech protocol and
+ * only when advertised as `text/plain`. They are never accepted for a managed
+ * LearnCard service and never accepted as a JSON media type.
+ */
+const COMPACT_MEDIA_TYPE = 'text/plain';
+
 const ACCEPT_HEADER = [...ACCEPTED_MEDIA_TYPES].join(', ');
+
+const acceptHeaderFor = (serviceType: string): string =>
+    serviceType === '1EdTechCredentialRefresh'
+        ? `${ACCEPT_HEADER}, ${COMPACT_MEDIA_TYPE}`
+        : ACCEPT_HEADER;
 
 const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
 
@@ -76,13 +101,14 @@ const malformedResponse = () => failed('MALFORMED_RESPONSE', false);
 const invalidProof = () => failed('INVALID_PROOF', false);
 const unauthorized = () => failed('UNAUTHORIZED', false);
 // Deliberately fail closed on verifier warnings until each warning is reviewed.
+// JWT-backed credentials report `'JWS'`; JSON-LD credentials report `'proof'`.
 const proofVerified = (
     check: { checks: string[]; warnings: string[]; errors: string[] } | null | undefined
 ): boolean =>
     !!check &&
     check.errors.length === 0 &&
     check.warnings.length === 0 &&
-    check.checks.includes('proof');
+    (check.checks.includes('proof') || check.checks.includes('JWS'));
 
 type ResolvedRefreshOptions = {
     etag?: string;
@@ -355,7 +381,8 @@ const discardGuardedResponse = async (guarded: GuardedResponse): Promise<void> =
 const fetchWithGuards = async (
     initialEndpoint: ValidatedRefreshUrl,
     options: ResolvedRefreshOptions,
-    authorization?: string
+    authorization?: string,
+    accept: string = ACCEPT_HEADER
 ): Promise<FetchOutcome> => {
     if (typeof globalThis.fetch !== 'function') {
         return { result: failed('UNAVAILABLE', false) };
@@ -376,7 +403,7 @@ const fetchWithGuards = async (
         let response: Response;
 
         try {
-            const headers: Record<string, string> = { accept: ACCEPT_HEADER };
+            const headers: Record<string, string> = { accept };
 
             if (options.etag) headers['if-none-match'] = options.etag;
             if (auth) headers.authorization = auth;
@@ -442,8 +469,7 @@ const fetchWithGuards = async (
  * signal observable until streaming completes.
  */
 type BodyReadOutcome =
-    | { body: string }
-    | { result: CredentialRefreshResult; reason: 'timeout' | 'malformed' };
+    { body: string } | { result: CredentialRefreshResult; reason: 'timeout' | 'malformed' };
 
 const readBodyWithLimit = async (
     response: Response,
@@ -507,13 +533,138 @@ const readBodyWithLimit = async (
     return { body: new TextDecoder().decode(merged) };
 };
 
-const isAcceptedMediaType = (contentType: string | null): boolean => {
-    if (!contentType) return false;
-
-    const mediaType = contentType.split(';', 1)[0]?.trim().toLowerCase() ?? '';
-
-    return ACCEPTED_MEDIA_TYPES.has(mediaType);
+type ParsedContentType = {
+    mediaType?: string;
+    charset?: string;
+    /** False only when a charset parameter is present but not a supported text encoding. */
+    charsetSupported: boolean;
 };
+
+/**
+ * Parses a Content-Type header deliberately: the media type is lower-cased and
+ * parameter values are unquoted. Only JSON media types and `text/plain` are ever
+ * accepted, and a `charset` parameter must name a supported encoding.
+ */
+const parseContentType = (header: string | null): ParsedContentType => {
+    if (!header) return { charsetSupported: true };
+
+    const [rawType, ...rawParams] = header.split(';');
+    const mediaType = rawType?.trim().toLowerCase() ?? '';
+
+    let charset: string | undefined;
+
+    for (const param of rawParams) {
+        const separator = param.indexOf('=');
+
+        if (separator < 0) continue;
+
+        const name = param.slice(0, separator).trim().toLowerCase();
+
+        if (name !== 'charset') continue;
+
+        charset = param
+            .slice(separator + 1)
+            .trim()
+            .replace(/^"|"$/g, '')
+            .toLowerCase();
+    }
+
+    const charsetSupported =
+        charset === undefined ||
+        charset === 'utf-8' ||
+        charset === 'utf8' ||
+        charset === 'us-ascii' ||
+        charset === 'ascii';
+
+    return { mediaType: mediaType || undefined, charset, charsetSupported };
+};
+
+// --- Verified normalization ------------------------------------------------------
+
+/**
+ * Typed comparison view derived from a *verified* credential.
+ *
+ * For JWT-backed inputs every field comes from `verifyCredentialJwt`'s
+ * token-derived metadata, so mutable display metadata can never influence
+ * identity, stability or freshness decisions. For JSON inputs the verified
+ * credential itself is authoritative.
+ */
+type VerifiedView = {
+    /** Normalized credential; for JWT inputs it retains the exact compact token under proof.jwt. */
+    credential: VC;
+    issuer: string | undefined;
+    subjectIds: string[];
+    id: string | undefined;
+    /** Rollback timestamp: normalized issuance time. */
+    effectiveTime: number | undefined;
+    expiresAt: number | undefined;
+    notBefore: number | undefined;
+    jwtBacked: boolean;
+};
+
+const parseTimestamp = (value: unknown): number | undefined => {
+    if (typeof value !== 'string' || value.length === 0) return undefined;
+
+    const parsed = Date.parse(value);
+
+    return Number.isNaN(parsed) ? undefined : parsed;
+};
+
+const sortedSubjectIds = (credential: VC): string[] =>
+    [...getCredentialSubjectIds(credential)].sort();
+
+const viewFromVerifiedJwt = (
+    verified: Extract<VerifiedCredentialJwtResult, { verified: true }>
+): VerifiedView => ({
+    credential: verified.credential,
+    issuer: verified.metadata.issuer,
+    subjectIds: [...verified.metadata.subjectIds].sort(),
+    id: verified.metadata.id,
+    effectiveTime: parseTimestamp(verified.metadata.issuedAt),
+    expiresAt: parseTimestamp(verified.metadata.expiresAt),
+    notBefore: parseTimestamp(verified.metadata.notBefore),
+    jwtBacked: true,
+});
+
+const viewFromJson = (credential: VC): VerifiedView => {
+    const rawExpiration =
+        (credential as { expirationDate?: unknown; validUntil?: unknown }).expirationDate ??
+        (credential as { validUntil?: unknown }).validUntil;
+
+    return {
+        credential,
+        issuer: getCredentialIssuerId(credential),
+        subjectIds: sortedSubjectIds(credential),
+        id:
+            typeof credential.id === 'string' && credential.id.length > 0
+                ? credential.id
+                : undefined,
+        effectiveTime: getCredentialEffectiveTime(credential),
+        expiresAt: parseTimestamp(rawExpiration),
+        notBefore: parseTimestamp((credential as { validFrom?: unknown }).validFrom),
+        jwtBacked: false,
+    };
+};
+
+type TemporalStatus = 'valid' | 'expired' | 'not-yet-valid';
+
+/**
+ * Narrowly scoped temporal evaluation of a verified credential.
+ *
+ * `expiresAt` and `notBefore` are only ever read from verified/authoritative
+ * fields. Expired *held* credentials are handled separately by the caller: a
+ * valid signature, issuer authorization and claim binding are still required
+ * before any network access, and an invalid held signature never reaches here.
+ */
+const temporalStatusOf = (view: VerifiedView, at: number = Date.now()): TemporalStatus => {
+    if (view.expiresAt !== undefined && at >= view.expiresAt) return 'expired';
+    if (view.notBefore !== undefined && at < view.notBefore) return 'not-yet-valid';
+
+    return 'valid';
+};
+
+const arraysEqual = (first: string[], second: string[]): boolean =>
+    first.length === second.length && first.every((value, index) => value === second[index]);
 
 // --- Managed DID-auth challenge -------------------------------------------------
 
@@ -687,23 +838,6 @@ const decodeCandidate = async (
 
 // --- Stability and freshness --------------------------------------------------------
 
-const getHolderIds = (vc: VC): string[] => {
-    const subject = vc.credentialSubject as { id?: unknown } | Array<{ id?: unknown }>;
-    const subjects = Array.isArray(subject) ? subject : [subject];
-
-    return subjects.map(entry => (typeof entry?.id === 'string' ? entry.id : '')).sort();
-};
-
-const holdersEqual = (first: VC, second: VC): boolean => {
-    const firstIds = getHolderIds(first);
-    const secondIds = getHolderIds(second);
-
-    return (
-        firstIds.length === secondIds.length &&
-        firstIds.every((id, index) => id === secondIds[index])
-    );
-};
-
 /**
  * Holder-side refresh primitive. See the module docblock for the safety contract.
  *
@@ -721,7 +855,7 @@ export const refreshCredential = (_initLearnCard: VCDependentLearnCard) => {
 
     return async (
         _learnCard: VCImplicitLearnCard,
-        credential: VC,
+        credential: VC | string,
         options: RefreshCredentialOptions = {}
     ): Promise<CredentialRefreshResult> => {
         const resolved: ResolvedRefreshOptions = {
@@ -735,24 +869,66 @@ export const refreshCredential = (_initLearnCard: VCDependentLearnCard) => {
                 options.resolveHost ?? (isNodeRuntime ? resolveHostnameWithNodeDns : undefined),
         };
 
-        const service = getSupportedRefreshService(credential);
+        /**
+         * Verify an input (held credential or candidate) and derive the
+         * authoritative comparison view. JWT-backed inputs go through the typed
+         * verified-normalization path, which binds the result to the exact token
+         * bytes; JSON inputs keep the existing DIDKit linked-data-proof behavior.
+         */
+        const verifyToView = async (
+            input: VC | string,
+            policy: VerifyCredentialJwtPolicy = 'strict'
+        ): Promise<
+            { ok: true; view: VerifiedView } | { ok: false; result: CredentialRefreshResult }
+        > => {
+            if (extractCompactJwt(input)) {
+                let verified: VerifiedCredentialJwtResult;
+
+                try {
+                    verified = await verifyCredentialJwt(_initLearnCard, input, { policy });
+                } catch {
+                    return { ok: false, result: invalidProof() };
+                }
+
+                if (!verified.verified) return { ok: false, result: invalidProof() };
+
+                return { ok: true, view: viewFromVerifiedJwt(verified) };
+            }
+
+            try {
+                const check = await _learnCard.invoke.verifyCredential(input as VC);
+
+                if (!proofVerified(check)) return { ok: false, result: invalidProof() };
+            } catch {
+                return { ok: false, result: invalidProof() };
+            }
+
+            return { ok: true, view: viewFromJson(input as VC) };
+        };
+
+        // The held credential is verified in renewal-only mode: signature, issuer
+        // key authorization, `nbf`, proof purpose, nonce and audience are all
+        // still enforced, but an already-expired `exp` is tolerated so a held
+        // token can discover and fetch its replacement. The candidate is always
+        // verified strictly below.
+        const heldVerification = await verifyToView(credential, 'allow-expired-for-renewal');
+
+        if (!heldVerification.ok) return heldVerification.result;
+
+        const held = heldVerification.view;
+
+        // A not-yet-valid held credential may never initiate a refresh. An expired
+        // held credential (JSON-LD or compact JWT) may renew because its
+        // signature was verified above with the renewal-only policy.
+        if (temporalStatusOf(held) === 'not-yet-valid') return invalidProof();
+
+        const service = getSupportedRefreshService(held.credential);
 
         if (!service) return { status: 'unsupported' };
 
-        // Verify the currently held credential before contacting the endpoint.
-        try {
-            const check = await _learnCard.invoke.verifyCredential(credential);
-
-            if (!proofVerified(check)) return invalidProof();
-        } catch {
-            return invalidProof();
-        }
-
-        // Managed publication requires a stable ID. Standard credentials may omit it.
-        if (
-            service.type === 'LearnCardCredentialRefresh2026' &&
-            (typeof credential.id !== 'string' || credential.id.length === 0)
-        ) {
+        // Managed publication requires a stable, non-empty ID. Standard credentials
+        // may omit it. The ID comes from the verified view, never display metadata.
+        if (service.type === 'LearnCardCredentialRefresh2026' && !held.id) {
             return failed('ID_MISMATCH', false);
         }
 
@@ -760,7 +936,9 @@ export const refreshCredential = (_initLearnCard: VCDependentLearnCard) => {
 
         if ('result' in validated) return validated.result;
 
-        const initial = await fetchWithGuards(validated, resolved);
+        const accept = acceptHeaderFor(service.type);
+
+        const initial = await fetchWithGuards(validated, resolved, undefined, accept);
 
         if ('result' in initial) return initial.result;
 
@@ -816,7 +994,8 @@ export const refreshCredential = (_initLearnCard: VCDependentLearnCard) => {
             const retry = await fetchWithGuards(
                 guardedResponse.endpoint,
                 resolved,
-                `Bearer ${typeof vp === 'string' ? vp : JSON.stringify(vp)}`
+                `Bearer ${typeof vp === 'string' ? vp : JSON.stringify(vp)}`,
+                accept
             );
 
             if ('result' in retry) return retry.result;
@@ -850,7 +1029,13 @@ export const refreshCredential = (_initLearnCard: VCDependentLearnCard) => {
             return failed('UNAVAILABLE', response.status >= 500);
         }
 
-        if (!isAcceptedMediaType(response.headers.get('content-type'))) {
+        const contentType = parseContentType(response.headers.get('content-type'));
+        const isStandardService = service.type === '1EdTechCredentialRefresh';
+        const isCompactStandard = isStandardService && contentType.mediaType === COMPACT_MEDIA_TYPE;
+        const isJsonResponse =
+            contentType.mediaType !== undefined && ACCEPTED_MEDIA_TYPES.has(contentType.mediaType);
+
+        if ((!isCompactStandard && !isJsonResponse) || !contentType.charsetSupported) {
             await discardGuardedResponse(guardedResponse);
             return malformedResponse();
         }
@@ -865,68 +1050,89 @@ export const refreshCredential = (_initLearnCard: VCDependentLearnCard) => {
 
         if ('result' in bodyRead) return bodyRead.result;
 
-        let json: unknown;
+        let candidateInput: VC | string;
+        let candidateEtag: string | undefined = response.headers.get('etag') ?? undefined;
+        let candidateManagedVersion: number | undefined;
 
-        try {
-            json = JSON.parse(bodyRead.body);
-        } catch {
-            return malformedResponse();
+        if (isCompactStandard) {
+            const compact = extractCompactJwt(bodyRead.body.trim());
+
+            if (!compact) return malformedResponse();
+
+            candidateInput = compact;
+        } else {
+            let json: unknown;
+
+            try {
+                json = JSON.parse(bodyRead.body);
+            } catch {
+                return malformedResponse();
+            }
+
+            // The standard protocol returns a bare credential, never a LearnCard envelope.
+            if (isStandardService && !VCValidator.safeParse(json).success) {
+                return malformedResponse();
+            }
+
+            const decoded = await decodeCandidate(_learnCard, json, response);
+
+            if ('status' in decoded) return decoded;
+
+            candidateInput = decoded.credential;
+            candidateEtag = decoded.etag;
+            candidateManagedVersion = decoded.managedVersion;
         }
 
-        // The standard protocol returns a bare credential, never a LearnCard envelope.
-        if (service.type === '1EdTechCredentialRefresh' && !VCValidator.safeParse(json).success) {
-            return malformedResponse();
-        }
-        const decoded = await decodeCandidate(_learnCard, json, response);
+        // Verify the replacement (and re-derive its authoritative claims) before any
+        // stability/freshness checks.
+        const candidateVerification = await verifyToView(candidateInput);
 
-        if ('status' in decoded) return decoded;
+        if (!candidateVerification.ok) return candidateVerification.result;
 
-        const candidate = decoded.credential;
+        const candidate = candidateVerification.view;
 
-        // Verify the replacement proof before any stability/freshness checks.
-        try {
-            const check = await _learnCard.invoke.verifyCredential(candidate);
-
-            if (!proofVerified(check)) return invalidProof();
-        } catch {
-            return invalidProof();
-        }
+        // Replacements retain full temporal validity: expired or future replacements fail.
+        if (temporalStatusOf(candidate) !== 'valid') return invalidProof();
 
         // Identity stability: same credential ID, normalized issuer, and holder. Holder
         // changes are surfaced as ID_MISMATCH because the holder identity is part of the
-        // credential's identity for refresh purposes.
-        if (candidate.id !== credential.id) {
+        // credential's identity for refresh purposes. Every value is the verified view,
+        // so display metadata cannot substitute for token-derived claims.
+        if (candidate.id !== held.id) {
             return failed('ID_MISMATCH', false);
         }
 
-        if (getCredentialIssuerId(candidate) !== getCredentialIssuerId(credential)) {
+        if (candidate.issuer !== held.issuer) {
             return failed('ISSUER_MISMATCH', false);
         }
 
-        if (!holdersEqual(credential, candidate)) return failed('ID_MISMATCH', false);
+        if (!arraysEqual(candidate.subjectIds, held.subjectIds)) {
+            return failed('ID_MISMATCH', false);
+        }
 
         // Freshness: reject a strictly older effective timestamp.
-        const currentTime = getCredentialEffectiveTime(credential);
-        const candidateTime = getCredentialEffectiveTime(candidate);
-
         if (
-            currentTime !== undefined &&
-            candidateTime !== undefined &&
-            candidateTime < currentTime
+            held.effectiveTime !== undefined &&
+            candidate.effectiveTime !== undefined &&
+            candidate.effectiveTime < held.effectiveTime
         ) {
             return failed('ROLLBACK', false);
         }
 
         // Proof-insensitive canonical comparison distinguishes updated from unchanged.
-        if (credentialContentsEqual(credential, candidate)) {
-            return { status: 'unchanged', checkedAt: new Date().toISOString(), etag: decoded.etag };
+        if (credentialContentsEqual(held.credential, candidate.credential)) {
+            return {
+                status: 'unchanged',
+                checkedAt: new Date().toISOString(),
+                etag: candidateEtag,
+            };
         }
 
         return {
             status: 'updated',
-            credential: candidate,
-            ...(decoded.etag ? { etag: decoded.etag } : {}),
-            ...(decoded.managedVersion ? { managedVersion: decoded.managedVersion } : {}),
+            credential: candidate.credential,
+            ...(candidateEtag ? { etag: candidateEtag } : {}),
+            ...(candidateManagedVersion ? { managedVersion: candidateManagedVersion } : {}),
         };
     };
 };

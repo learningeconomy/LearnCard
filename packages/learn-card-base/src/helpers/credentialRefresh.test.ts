@@ -474,4 +474,59 @@ describe('refreshLearnCloudCredential', () => {
             expect(storeDelete).toHaveBeenCalledWith('lc:earn:new');
         });
     });
+
+    describe('JWT-backed replacement preservation', () => {
+        const token =
+            'eyJhbGciOiJFZERTQSIsImtpZCI6ImRpZDprZXk6ejZNa3EifQ.eyJ2YyI6e319.c2lnbmF0dXJl';
+        const nextToken =
+            'eyJhbGciOiJFZERTQSIsImtpZCI6ImRpZDprZXk6ejZNa3EifQ.eyJ2YyI6e30sIm5iZiI6MX0.c2lnbmF0dXJlMg';
+
+        const jwtHeld = {
+            ...currentVc,
+            proof: { type: 'JwtProof2020', jwt: token },
+        } as VC;
+
+        const jwtReplacement = {
+            ...updatedVc,
+            proof: { type: 'JwtProof2020', jwt: nextToken },
+        } as VC;
+
+        it('uploads a JWT-backed replacement with the exact compact token intact', async () => {
+            const { wallet, readGet, uploadEncrypted, refreshCredential } = makeWallet();
+
+            readGet.mockResolvedValue(jwtHeld);
+            refreshCredential.mockResolvedValue({
+                status: 'updated',
+                credential: jwtReplacement,
+                etag: 'etag-2',
+                managedVersion: 2,
+            });
+
+            const result = await refreshLearnCloudCredential({ wallet, record: baseRecord() });
+
+            expect(result.status).toBe('updated');
+            expect(refreshCredential).toHaveBeenCalledWith(jwtHeld, { etag: 'etag-1' });
+            expect(uploadEncrypted).toHaveBeenCalledWith(jwtReplacement);
+            expect((uploadEncrypted.mock.calls[0]![0] as VC).proof).toMatchObject({
+                type: 'JwtProof2020',
+                jwt: nextToken,
+            });
+        });
+
+        it('does not upload a replacement when a JWT-backed held credential is unchanged', async () => {
+            const { wallet, readGet, uploadEncrypted, refreshCredential } = makeWallet();
+
+            readGet.mockResolvedValue(jwtHeld);
+            refreshCredential.mockResolvedValue({
+                status: 'unchanged',
+                checkedAt: NOW_ISO,
+                etag: 'etag-1',
+            });
+
+            const result = await refreshLearnCloudCredential({ wallet, record: baseRecord() });
+
+            expect(result.status).toBe('unchanged');
+            expect(uploadEncrypted).not.toHaveBeenCalled();
+        });
+    });
 });

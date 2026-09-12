@@ -4,6 +4,7 @@ import {
     getSupportedRefreshService,
     getCredentialIssuerId,
     getCredentialEffectiveTime,
+    getCredentialSubjectIds,
     canonicalizeCredentialContent,
     canonicalizeCredentialJson,
     credentialContentsEqual,
@@ -67,6 +68,30 @@ describe('getCredentialEffectiveTime', () => {
 
     it('returns undefined when no effective timestamp exists', () => {
         expect(getCredentialEffectiveTime({})).toBeUndefined();
+    });
+});
+
+describe('getCredentialSubjectIds', () => {
+    it('returns the single subject id', () => {
+        expect(getCredentialSubjectIds(vcdm11Credential)).toEqual(['did:example:holder']);
+    });
+
+    it('returns every non-empty subject id in credential order', () => {
+        const vc = {
+            credentialSubject: [
+                { id: 'did:example:two' },
+                { id: 'did:example:one' },
+                { id: '' },
+                { name: 'no id' },
+            ],
+        };
+
+        expect(getCredentialSubjectIds(vc)).toEqual(['did:example:two', 'did:example:one']);
+    });
+
+    it('returns an empty array when there is no usable subject id', () => {
+        expect(getCredentialSubjectIds({})).toEqual([]);
+        expect(getCredentialSubjectIds({ credentialSubject: { name: 'anonymous' } })).toEqual([]);
     });
 });
 

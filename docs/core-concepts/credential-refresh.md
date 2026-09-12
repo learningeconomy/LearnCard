@@ -129,6 +129,14 @@ Previously issued QA credentials advertising `1EdTechCredentialRefresh` for an e
 
 Local HTTP testing is explicitly non-conformant transport; interoperable deployment requires HTTPS with TLS 1.2 or 1.3. Foreground polling, notifications, and in-place history are LearnCard product behavior, not W3C requirements.
 
-### Explicit format limitation
+### Compact VC-JWT support (LC-2195)
 
-The standard service adapter currently supports signed JSON credentials only. It does not claim complete 1EdTech Refresh Service conformance: `text/plain` compact VC-JWT responses remain unsupported and fail closed. End-to-end JWT signature verification, registered-claim normalization, and preservation of the original signed token are tracked in [LC-2195](https://welibrary.atlassian.net/browse/LC-2195); base64 decoding alone must never be treated as verification. Unknown refresh types are ignored rather than interpreted as LearnCard services.
+The standard service adapter now accepts a bare compact VC-JWT from a verified `1EdTechCredentialRefresh` endpoint when it is served as `text/plain` (a `charset` of `utf-8`, `utf8`, `us-ascii`, or `ascii` is accepted). JSON-LD credentials keep the existing JSON media types, and the managed `LearnCardCredentialRefresh2026` protocol stays JWE-only and rejects `text/plain` with `MALFORMED_RESPONSE`.
+
+A verified compact token is the authority. Verification returns the exact original token plus token-derived metadata (`issuer`, `subjectIds`, `id`, `issuedAt`, `expiresAt`, `algorithm`, `keyId`), and the normalized credential retains the signed bytes under `proof.jwt` (`JwtProof2020`) so a storage and read round trip re-derives the same claims. Registered claims (`iss`, `sub`, `jti`, `iat`, `nbf`, `exp`) are reconciled against the embedded `vc` claim, and contradictions reject. Ed25519 `did:key` with JOSE `alg: EdDSA` is the supported positive fixture; `alg: none` and symmetric `HS*` algorithms are rejected, and other JWT algorithms are delegated to DIDKit but are not claimed supported. VCDM 2.0 is supported only as the legacy JOSE `vc`-claim wrapping profile (`vc-jwt-2.0-legacy`), not as general VC-JOSE-COSE conformance. SD-JWT is out of scope.
+
+#### Expired compact-VC-JWT renewal
+
+A holder may renew a signature-valid but **expired** compact VC-JWT. Verification of the held token runs in an explicit **renewal-only** mode: the compact JWS signature, issuer-authorized key (`kid`), `nbf`, proof purpose, nonce and audience are still enforced, but an already-expired `exp` is tolerated. A successful renewal-only verification reports the additional `JWSRenewalExpired` check alongside `JWS`; that result is **renewal-only valid** and is never ordinary credential validity. An expired or future replacement, a future-`nbf` held token, a forged signature or a wrong signer still fails closed before any network request.
+
+Renewal is a credential-only opt-in. Ordinary `verifyCredential` / `verify_jwt` and every presentation verification remain strict, and the low-level `allowExpiredCredential` option is rejected for linked-data proofs and presentations rather than silently weakening them. Full 1EdTech Refresh Service conformance is not claimed: base64 decoding alone is never treated as verification. Unknown refresh types are ignored rather than interpreted as LearnCard services.

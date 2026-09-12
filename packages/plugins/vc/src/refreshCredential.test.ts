@@ -1,7 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- refresh protocol tests use intentionally partial wallet and credential doubles */
+import { readFile } from 'node:fs/promises';
+
 import { vi } from 'vitest';
 
-import type { CredentialRefreshResult, VC } from '@learncard/types';
+import type { CredentialRefreshResult, JWKWithPrivateKey, VC } from '@learncard/types';
+import { getDidKitPlugin } from '@learncard/didkit-plugin';
 
 import { getVCPlugin } from './vc';
 import { refreshCredential } from './refreshCredential';
@@ -1139,6 +1142,672 @@ describe('refreshCredential', () => {
                 'Bearer signed-vp:srv-challenge-1:refresh.example.com'
             );
             expect(result.status).toBe('updated');
+        });
+    });
+
+    describe('real signed VC-JWT refresh (LC-2195 Task 3)', () => {
+        const FIXTURE_SEED = new Uint8Array(32).fill(31);
+        const OTHER_SEED = new Uint8Array(32).fill(32);
+
+        const didKitCard = {
+            context: { resolveDocument: async (_url: string) => undefined },
+            debug: () => undefined,
+        } as never;
+
+        let plugin: Awaited<ReturnType<typeof getDidKitPlugin>>;
+        let key: JWKWithPrivateKey;
+        let did: string;
+        let verificationMethod: string;
+        let otherKey: JWKWithPrivateKey;
+        let otherDid: string;
+
+        const issueOptions = () => ({
+            proofFormat: 'jwt',
+            verificationMethod,
+            proofPurpose: 'assertionMethod',
+        });
+
+        const issueJwt = async (credential: Record<string, unknown>): Promise<string> =>
+            (await plugin.methods.issueCredential(
+                didKitCard,
+                credential as never,
+                issueOptions() as never,
+                key
+            )) as unknown as string;
+
+        const didKitVerifier = {
+            invoke: {
+                verifyCredential: (credential: VC | string, options?: unknown) =>
+                    plugin.methods.verifyCredential(didKitCard, credential, options as never),
+                verifyCredentialForRenewal: (credential: string, options?: unknown) =>
+                    plugin.methods.verifyCredentialForRenewal(
+                        didKitCard,
+                        credential,
+                        options as never
+                    ),
+            },
+        };
+
+        const decodePayload = (token: string): Record<string, unknown> =>
+            JSON.parse(Buffer.from(token.split('.')[1]!, 'base64url').toString('utf8'));
+
+        const projectionOf = (
+            token: string,
+            overrides: Record<string, unknown> = {}
+        ): Record<string, unknown> => ({
+            ...(decodePayload(token).vc as Record<string, unknown>),
+            proof: { type: 'JwtProof2020', jwt: token },
+            ...overrides,
+        });
+
+        const service = (type = '1EdTechCredentialRefresh') => ({
+            id: REFRESH_SERVICE_ID,
+            type,
+        });
+
+        // JSON-LD holders/candidates are verified by a mock in the transition tests,
+        // but VCValidator still requires a proof envelope to accept them.
+        const jsonProof = () => ({
+            type: 'DataIntegrityProof',
+            created: '2026-01-01T00:00:00Z',
+            proofPurpose: 'assertionMethod',
+            verificationMethod: 'did:example:issuer#key-1',
+            proofValue: 'z1',
+        });
+
+        const v1Unsigned = (overrides: Record<string, unknown> = {}) => ({
+            '@context': ['https://www.w3.org/2018/credentials/v1'],
+            id: 'urn:uuid:11111111-1111-1111-1111-111111111111',
+            type: ['VerifiableCredential'],
+            issuer: did,
+            issuanceDate: '2026-01-01T00:00:00Z',
+            refreshService: service(),
+            credentialSubject: { id: 'did:example:holder', achievement: { name: 'V1' } },
+            ...overrides,
+        });
+
+        const v2Unsigned = (overrides: Record<string, unknown> = {}) => ({
+            '@context': ['https://www.w3.org/ns/credentials/v2'],
+            id: 'urn:uuid:22222222-2222-2222-2222-222222222222',
+            type: ['VerifiableCredential'],
+            issuer: did,
+            validFrom: '2026-01-01T00:00:00Z',
+            refreshService: service(),
+            credentialSubject: { id: 'did:example:holder', achievement: { name: 'V2' } },
+            ...overrides,
+        });
+
+        const refreshWith = (
+            held: VC | string,
+            options: RefreshCredentialOptions = {},
+            init: unknown = didKitVerifier,
+            lc: unknown = didKitVerifier
+        ) =>
+            refreshCredential(init as never)(lc as never, held as never, {
+                resolveHost: async () => [PUBLIC_IP],
+                ...options,
+            });
+
+        const textResponse = (
+            body: string,
+            init: { status?: number; headers?: Record<string, string> } = {}
+        ) =>
+            new Response(body, {
+                status: init.status ?? 200,
+                headers: { 'content-type': 'text/plain', ...(init.headers ?? {}) },
+            });
+
+        beforeAll(async () => {
+            const wasmBytes = new Uint8Array(
+                await readFile(
+                    new URL('../../didkit/src/didkit/pkg/didkit_wasm_bg.wasm', import.meta.url)
+                )
+            );
+
+            plugin = await getDidKitPlugin(wasmBytes);
+
+            key = plugin.methods.generateEd25519KeyFromBytes(
+                didKitCard,
+                FIXTURE_SEED
+            ) as JWKWithPrivateKey;
+            did = plugin.methods.keyToDid(didKitCard, 'key', key);
+            verificationMethod = await plugin.methods.keyToVerificationMethod(
+                didKitCard,
+                'key',
+                key
+            );
+
+            otherKey = plugin.methods.generateEd25519KeyFromBytes(
+                didKitCard,
+                OTHER_SEED
+            ) as JWKWithPrivateKey;
+            otherDid = plugin.methods.keyToDid(didKitCard, 'key', otherKey);
+        });
+
+        it('refreshes a valid VCDM 1.1 VC-JWT from a text/plain 1EdTech endpoint', async () => {
+            const held = await issueJwt(v1Unsigned());
+            const replacement = await issueJwt(
+                v1Unsigned({
+                    credentialSubject: {
+                        id: 'did:example:holder',
+                        achievement: { name: 'V1 updated' },
+                    },
+                })
+            );
+
+            fetchMock.mockResolvedValue(
+                textResponse(replacement, { headers: { etag: 'W/"jwt-2"' } })
+            );
+
+            const result = await refreshWith(held);
+
+            expect(result.status).toBe('updated');
+            if (result.status !== 'updated') return;
+
+            // The exact verified wire bytes survive in the returned representation.
+            expect((result.credential.proof as any).jwt).toBe(replacement);
+            expect(result.etag).toBe('W/"jwt-2"');
+
+            const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+            expect(url).toBe(REFRESH_SERVICE_ID);
+            expect((init.headers as Record<string, string>).accept).toContain('text/plain');
+        });
+
+        it('refreshes a supported VCDM 2.0 VC-JWT from a text/plain endpoint', async () => {
+            const held = await issueJwt(v2Unsigned());
+            const replacement = await issueJwt(
+                v2Unsigned({
+                    credentialSubject: {
+                        id: 'did:example:holder',
+                        achievement: { name: 'V2 updated' },
+                    },
+                })
+            );
+
+            fetchMock.mockResolvedValue(textResponse(replacement));
+
+            const result = await refreshWith(held);
+
+            expect(result.status).toBe('updated');
+            if (result.status !== 'updated') return;
+            expect((result.credential.proof as any).jwt).toBe(replacement);
+        });
+
+        it('accepts text/plain with an explicit charset parameter and rejects unsupported charsets', async () => {
+            const held = await issueJwt(v1Unsigned());
+            const replacement = await issueJwt(
+                v1Unsigned({
+                    credentialSubject: {
+                        id: 'did:example:holder',
+                        achievement: { name: 'charset ok' },
+                    },
+                })
+            );
+
+            fetchMock.mockResolvedValue(
+                textResponse(replacement, {
+                    headers: { 'content-type': 'text/plain; charset=UTF-8' },
+                })
+            );
+
+            expect((await refreshWith(held)).status).toBe('updated');
+
+            fetchMock.mockReset();
+            fetchMock.mockResolvedValue(
+                textResponse(replacement, {
+                    headers: { 'content-type': 'text/plain; charset=utf-16' },
+                })
+            );
+
+            expect(await refreshWith(held)).toEqual({
+                status: 'failed',
+                code: 'MALFORMED_RESPONSE',
+                retryable: false,
+            });
+        });
+
+        it('uses the token refreshService and identity, not mutated display metadata', async () => {
+            const held = await issueJwt(v1Unsigned());
+            const replacement = await issueJwt(
+                v1Unsigned({
+                    credentialSubject: {
+                        id: 'did:example:holder',
+                        achievement: { name: 'display mutation ignored' },
+                    },
+                })
+            );
+
+            const mutated = projectionOf(held, {
+                id: 'urn:uuid:attacker',
+                issuer: 'did:example:attacker',
+                issuanceDate: '1990-01-01T00:00:00Z',
+                credentialSubject: { id: 'did:example:attacker' },
+                refreshService: {
+                    id: 'https://attacker.example/refresh/x',
+                    type: '1EdTechCredentialRefresh',
+                },
+            });
+
+            fetchMock.mockResolvedValue(textResponse(replacement));
+
+            const result = await refreshWith(mutated as VC);
+
+            expect(result.status).toBe('updated');
+            expect(fetchMock).toHaveBeenCalledTimes(1);
+            expect((fetchMock.mock.calls[0] as [string])[0]).toBe(REFRESH_SERVICE_ID);
+        });
+
+        it('never contacts the endpoint when the held token signature is invalid', async () => {
+            const held = await issueJwt(v1Unsigned());
+            const [header, payload, signature] = held.split('.');
+            const forged = `${header}.${payload}.${signature!.slice(0, -4)}AAAA`;
+
+            const result = await refreshWith(forged);
+
+            expect(result).toEqual({ status: 'failed', code: 'INVALID_PROOF', retryable: false });
+            expect(fetchMock).not.toHaveBeenCalled();
+        });
+
+        it('renews an expired held token from a text/plain endpoint with a valid replacement', async () => {
+            const held = await issueJwt(
+                v1Unsigned({
+                    issuanceDate: '2019-01-01T00:00:00Z',
+                    expirationDate: '2020-01-01T00:00:00Z',
+                })
+            );
+            const replacement = await issueJwt(
+                v1Unsigned({
+                    issuanceDate: '2026-06-01T00:00:00Z',
+                    expirationDate: '2100-01-01T00:00:00Z',
+                    credentialSubject: {
+                        id: 'did:example:holder',
+                        achievement: { name: 'renewed' },
+                    },
+                })
+            );
+
+            fetchMock.mockResolvedValueOnce(textResponse(replacement));
+
+            const result = await refreshWith(held);
+
+            expect(result.status).toBe('updated');
+            if (result.status !== 'updated') return;
+            expect((result.credential.proof as any).jwt).toBe(replacement);
+            expect(fetchMock).toHaveBeenCalledTimes(1);
+        });
+
+        it('rejects a future-nbf held token even in renewal mode', async () => {
+            const held = await issueJwt(
+                v1Unsigned({
+                    issuanceDate: '2100-01-01T00:00:00Z',
+                    expirationDate: '2101-01-01T00:00:00Z',
+                })
+            );
+
+            const result = await refreshWith(held);
+
+            expect(result).toEqual({ status: 'failed', code: 'INVALID_PROOF', retryable: false });
+            expect(fetchMock).not.toHaveBeenCalled();
+        });
+
+        it('survives a persistence round trip and a second refresh with the exact token', async () => {
+            const held = await issueJwt(
+                v1Unsigned({
+                    credentialSubject: { id: 'did:example:holder', achievement: { name: 'one' } },
+                })
+            );
+            const second = await issueJwt(
+                v1Unsigned({
+                    credentialSubject: { id: 'did:example:holder', achievement: { name: 'two' } },
+                })
+            );
+            const third = await issueJwt(
+                v1Unsigned({
+                    credentialSubject: {
+                        id: 'did:example:holder',
+                        achievement: { name: 'three' },
+                    },
+                })
+            );
+
+            fetchMock.mockResolvedValueOnce(textResponse(second));
+            const first = await refreshWith(held);
+
+            expect(first.status).toBe('updated');
+            if (first.status !== 'updated') return;
+            expect((first.credential.proof as any).jwt).toBe(second);
+
+            // Simulate store/read/export: serialize, then re-project the candidate.
+            const stored = JSON.parse(JSON.stringify(first.credential)) as VC;
+            const projected = projectionOf((stored.proof as any).jwt) as VC;
+
+            fetchMock.mockResolvedValueOnce(textResponse(third));
+            const refreshedAgain = await refreshWith(projected);
+
+            expect(refreshedAgain.status).toBe('updated');
+            if (refreshedAgain.status !== 'updated') return;
+            expect((refreshedAgain.credential.proof as any).jwt).toBe(third);
+        });
+
+        it('rejects a validly-signed replacement that changes the issuer', async () => {
+            const held = await issueJwt(v1Unsigned());
+            const otherVerificationMethod = await plugin.methods.keyToVerificationMethod(
+                didKitCard,
+                'key',
+                otherKey
+            );
+            const replacement = (await plugin.methods.issueCredential(
+                didKitCard,
+                v1Unsigned({ issuer: otherDid }) as never,
+                {
+                    proofFormat: 'jwt',
+                    verificationMethod: otherVerificationMethod,
+                    proofPurpose: 'assertionMethod',
+                } as never,
+                otherKey
+            )) as unknown as string;
+
+            fetchMock.mockResolvedValue(textResponse(replacement));
+
+            expect(await refreshWith(held)).toEqual({
+                status: 'failed',
+                code: 'ISSUER_MISMATCH',
+                retryable: false,
+            });
+        });
+
+        it('rejects a replacement that changes the holder or credential ID', async () => {
+            const held = await issueJwt(v1Unsigned());
+
+            fetchMock.mockResolvedValue(
+                textResponse(
+                    await issueJwt(v1Unsigned({ credentialSubject: { id: 'did:example:mallory' } }))
+                )
+            );
+            expect(await refreshWith(held)).toEqual({
+                status: 'failed',
+                code: 'ID_MISMATCH',
+                retryable: false,
+            });
+
+            fetchMock.mockReset();
+            fetchMock.mockResolvedValue(
+                textResponse(
+                    await issueJwt(
+                        v1Unsigned({ id: 'urn:uuid:33333333-3333-3333-3333-333333333333' })
+                    )
+                )
+            );
+            expect(await refreshWith(held)).toEqual({
+                status: 'failed',
+                code: 'ID_MISMATCH',
+                retryable: false,
+            });
+        });
+
+        it('rejects a rollback replacement with an older verified issuance time', async () => {
+            const held = await issueJwt(v1Unsigned({ issuanceDate: '2026-06-01T00:00:00Z' }));
+            const replacement = await issueJwt(
+                v1Unsigned({
+                    issuanceDate: '2025-06-01T00:00:00Z',
+                    credentialSubject: {
+                        id: 'did:example:holder',
+                        achievement: { name: 'rollback' },
+                    },
+                })
+            );
+
+            fetchMock.mockResolvedValue(textResponse(replacement));
+
+            expect(await refreshWith(held)).toEqual({
+                status: 'failed',
+                code: 'ROLLBACK',
+                retryable: false,
+            });
+        });
+
+        it('rejects forged and expired replacement tokens', async () => {
+            const held = await issueJwt(v1Unsigned());
+
+            const forgedReplacement = await issueJwt(
+                v1Unsigned({
+                    credentialSubject: {
+                        id: 'did:example:holder',
+                        achievement: { name: 'forged' },
+                    },
+                })
+            );
+            const [header, payload, signature] = forgedReplacement.split('.');
+            fetchMock.mockResolvedValue(
+                textResponse(`${header}.${payload}.${signature!.slice(0, -4)}AAAA`)
+            );
+            expect(await refreshWith(held)).toEqual({
+                status: 'failed',
+                code: 'INVALID_PROOF',
+                retryable: false,
+            });
+
+            fetchMock.mockReset();
+            fetchMock.mockResolvedValue(
+                textResponse(
+                    await issueJwt(
+                        v1Unsigned({
+                            issuanceDate: '2019-01-01T00:00:00Z',
+                            expirationDate: '2020-01-01T00:00:00Z',
+                            credentialSubject: {
+                                id: 'did:example:holder',
+                                achievement: { name: 'expired' },
+                            },
+                        })
+                    )
+                )
+            );
+            expect(await refreshWith(held)).toEqual({
+                status: 'failed',
+                code: 'INVALID_PROOF',
+                retryable: false,
+            });
+        });
+
+        it('rejects malformed and oversized text/plain bodies', async () => {
+            const held = await issueJwt(v1Unsigned());
+
+            fetchMock.mockResolvedValue(textResponse('this is not a compact jwt'));
+            expect(await refreshWith(held)).toEqual({
+                status: 'failed',
+                code: 'MALFORMED_RESPONSE',
+                retryable: false,
+            });
+
+            fetchMock.mockReset();
+            fetchMock.mockResolvedValue(textResponse('x'.repeat(4096)));
+            expect(await refreshWith(held, { maxResponseBytes: 100 })).toEqual({
+                status: 'failed',
+                code: 'MALFORMED_RESPONSE',
+                retryable: false,
+            });
+        });
+
+        it('does not accept text/plain for a managed service', async () => {
+            const held = await issueJwt(
+                v1Unsigned({ refreshService: service('LearnCardCredentialRefresh2026') })
+            );
+
+            fetchMock.mockResolvedValue(textResponse(await issueJwt(v1Unsigned())));
+
+            expect(await refreshWith(held)).toEqual({
+                status: 'failed',
+                code: 'MALFORMED_RESPONSE',
+                retryable: false,
+            });
+        });
+
+        it('rejects a managed JWT held credential without a stable ID before fetching', async () => {
+            const { id: _omit, ...rest } = v1Unsigned();
+            const held = await issueJwt({
+                ...rest,
+                refreshService: service('LearnCardCredentialRefresh2026'),
+            });
+
+            const result = await refreshWith(held);
+
+            expect(result).toEqual({ status: 'failed', code: 'ID_MISMATCH', retryable: false });
+            expect(fetchMock).not.toHaveBeenCalled();
+        });
+
+        it('accepts a JSON-held credential and a JWT replacement with the same verified identity', async () => {
+            const replacement = await issueJwt(
+                v1Unsigned({
+                    credentialSubject: {
+                        id: 'did:example:holder',
+                        achievement: { name: 'from json' },
+                    },
+                })
+            );
+            const jsonHeld = {
+                '@context': ['https://www.w3.org/2018/credentials/v1'],
+                id: 'urn:uuid:11111111-1111-1111-1111-111111111111',
+                type: ['VerifiableCredential'],
+                issuer: did,
+                issuanceDate: '2026-01-01T00:00:00Z',
+                refreshService: service(),
+                credentialSubject: { id: 'did:example:holder', achievement: { name: 'json held' } },
+                proof: jsonProof(),
+            } as VC;
+            const jsonVerifier = { invoke: { verifyCredential: vi.fn(async () => okCheck) } };
+
+            fetchMock.mockResolvedValue(textResponse(replacement));
+
+            const result = await refreshWith(jsonHeld, {}, didKitVerifier, jsonVerifier);
+
+            expect(result.status).toBe('updated');
+            if (result.status !== 'updated') return;
+            expect((result.credential.proof as any).jwt).toBe(replacement);
+        });
+
+        it('accepts a JWT-held credential and a JSON replacement with the same verified identity', async () => {
+            const held = await issueJwt(
+                v1Unsigned({
+                    credentialSubject: {
+                        id: 'did:example:holder',
+                        achievement: { name: 'jwt held' },
+                    },
+                })
+            );
+            const jsonReplacement = {
+                '@context': ['https://www.w3.org/2018/credentials/v1'],
+                id: 'urn:uuid:11111111-1111-1111-1111-111111111111',
+                type: ['VerifiableCredential'],
+                issuer: did,
+                issuanceDate: '2026-02-01T00:00:00Z',
+                credentialSubject: {
+                    id: 'did:example:holder',
+                    achievement: { name: 'json replacement' },
+                },
+                proof: jsonProof(),
+            } as VC;
+            const jsonVerifier = { invoke: { verifyCredential: vi.fn(async () => okCheck) } };
+
+            fetchMock.mockResolvedValue(jsonResponse(jsonReplacement));
+
+            const result = await refreshWith(held, {}, didKitVerifier, jsonVerifier);
+
+            expect(result.status).toBe('updated');
+            if (result.status !== 'updated') return;
+            expect(result.credential).toEqual(jsonReplacement);
+        });
+
+        it('renews an expired JSON-held credential only after its proof verifies', async () => {
+            const jsonVerifier = { invoke: { verifyCredential: vi.fn(async () => okCheck) } };
+            const held = {
+                '@context': ['https://www.w3.org/2018/credentials/v1'],
+                id: 'urn:uuid:44444444-4444-4444-4444-444444444444',
+                type: ['VerifiableCredential'],
+                issuer: did,
+                issuanceDate: '2019-01-01T00:00:00Z',
+                expirationDate: '2020-01-01T00:00:00Z',
+                refreshService: service(),
+                credentialSubject: {
+                    id: 'did:example:holder',
+                    achievement: { name: 'expired json' },
+                },
+                proof: jsonProof(),
+            } as VC;
+            const replacement = {
+                ...held,
+                issuanceDate: '2026-02-01T00:00:00Z',
+                expirationDate: undefined,
+                credentialSubject: {
+                    id: 'did:example:holder',
+                    achievement: { name: 'renewed json' },
+                },
+            } as VC;
+
+            fetchMock.mockResolvedValue(jsonResponse(replacement));
+
+            const result = await refreshWith(held, {}, didKitVerifier, jsonVerifier);
+
+            expect(result.status).toBe('updated');
+            expect(fetchMock).toHaveBeenCalledTimes(1);
+        });
+
+        it('never contacts the endpoint for an expired JSON-held credential whose proof fails', async () => {
+            const jsonVerifier = {
+                invoke: {
+                    verifyCredential: vi.fn(async () => ({
+                        checks: [],
+                        warnings: [],
+                        errors: ['signature verification failed'],
+                    })),
+                },
+            };
+            const held = {
+                '@context': ['https://www.w3.org/2018/credentials/v1'],
+                id: 'urn:uuid:55555555-5555-5555-5555-555555555555',
+                type: ['VerifiableCredential'],
+                issuer: did,
+                issuanceDate: '2019-01-01T00:00:00Z',
+                expirationDate: '2020-01-01T00:00:00Z',
+                refreshService: service(),
+                credentialSubject: { id: 'did:example:holder' },
+                proof: jsonProof(),
+            } as VC;
+
+            const result = await refreshWith(held, {}, didKitVerifier, jsonVerifier);
+
+            expect(result).toEqual({ status: 'failed', code: 'INVALID_PROOF', retryable: false });
+            expect(fetchMock).not.toHaveBeenCalled();
+        });
+
+        it('refreshes a standard ID-less VCDM 1.1 JSON credential', async () => {
+            const jsonVerifier = { invoke: { verifyCredential: vi.fn(async () => okCheck) } };
+            const held = {
+                '@context': ['https://www.w3.org/2018/credentials/v1'],
+                type: ['VerifiableCredential'],
+                issuer: did,
+                issuanceDate: '2026-01-01T00:00:00Z',
+                refreshService: service(),
+                credentialSubject: { id: 'did:example:holder', achievement: { name: 'v1 no id' } },
+                proof: jsonProof(),
+            } as VC;
+            const replacement = {
+                ...held,
+                issuanceDate: '2026-02-01T00:00:00Z',
+                credentialSubject: {
+                    id: 'did:example:holder',
+                    achievement: { name: 'v1 no id updated' },
+                },
+                proof: jsonProof(),
+            } as VC;
+
+            fetchMock.mockResolvedValue(jsonResponse(replacement));
+
+            const result = await refreshWith(held, {}, didKitVerifier, jsonVerifier);
+
+            expect(result.status).toBe('updated');
+            expect((fetchMock.mock.calls[0] as [string, RequestInit])[1].headers).toMatchObject({
+                accept: expect.stringContaining('text/plain'),
+            });
         });
     });
 });

@@ -251,6 +251,92 @@ The app builds on the primitive so holders don't have to think about refresh:
 
 ---
 
+## Standard compact VC-JWT (text/plain 1EdTech refresh)
+
+A standard [`1EdTechCredentialRefresh`](https://www.imsglobal.org/spec/vccr/v1p0/) service may answer a refresh `GET` with a bare compact VC-JWT in a `text/plain` body instead of a JSON credential. The primitive accepts these responses for the standard service type only, verifies the token with the pinned DIDKit/SSI implementation, and normalizes the replacement from the verified token. It also accepts a JWT-backed **held** credential — a raw compact token, a canonical `{ format: 'jwt-vc-json', data }` envelope, or a legacy `JwtProof2020` / `proof.jwt` projection.
+
+```typescript
+// The held credential may be a compact VC-JWT, a jwt-vc-json envelope, or a
+// JwtProof2020 / proof.jwt projection. The signed token's refreshService — not a
+// mutable display object — selects the endpoint.
+const result = await holder.invoke.refreshCredential(heldCompactJwt, {
+    etag: lastKnownEtag, // optional: sent as If-None-Match
+});
+
+switch (result.status) {
+    case 'updated':
+        // result.credential is the normalized replacement. It retains the exact
+        // signed replacement token under proof.jwt, so persisting and reading it
+        // back re-derives the same authoritative claims.
+        await holder.store.LearnCloud.uploadEncrypted(result.credential);
+        break;
+    case 'unchanged':
+    case 'unsupported':
+        break;
+    case 'failed':
+        // result.code is a safe machine-readable code; result.retryable hints next steps
+        break;
+}
+
+// Verify a compact token directly. DIDKit reports JWT success as checks: ['JWS'].
+const check = await holder.invoke.verifyCredential(compactJwt, { proofFormat: 'jwt' });
+// check: { checks: ['JWS'], warnings: [], errors: [] } for a valid token.
+```
+
+`@learncard/vc-plugin` also exports the lower-level `verifyCredentialJwt`, which returns the exact verified token and token-derived metadata instead of the `VerificationCheck` projection:
+
+```typescript
+import { verifyCredentialJwt } from '@learncard/vc-plugin';
+
+// The first argument is the VC plugin's DIDKit-backed dependency object (the
+// object getVCPlugin receives), not the merged top-level wallet, which would
+// recurse into learnCard.invoke.verifyCredential.
+const verified = await verifyCredentialJwt(didkitBackedLearnCard, compactJwt);
+
+if (verified.verified) {
+    const { token, metadata } = verified;
+
+    // token is the exact compact JWS that was verified.
+    // metadata is token-derived; display metadata cannot substitute for it:
+    // { version, profile, issuer, subjectIds, id, issuedAt, expiresAt, algorithm, keyId }
+    console.log(token, metadata.issuer);
+}
+```
+
+`learnCard.invoke.verifyCredential(compactJwt, { proofFormat: 'jwt' })` routes through this same normalization.
+
+The compact token is the authority. Verification returns the exact original token plus token-derived metadata; display objects cannot substitute for it. Store, read and export retain the token as `proof.jwt` (`JwtProof2020`) or a `jwt-vc-json` envelope.
+
+### Supported algorithms, profiles and media types
+
+| Dimension           | Supported                                                                                                                                                         | Rejected or not claimed                                                                                                                                  |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Signature algorithm | Ed25519 `did:key` with JOSE `alg: EdDSA` (the positive fixture); the algorithm is read from the protected header and verified against the key resolved from `kid` | `alg: none`; symmetric `HS256` / `HS384` / `HS512` (algorithm confusion). Other JWT algorithms are delegated to DIDKit but are **not** claimed supported |
+| Securing profile    | VCDM 1.1; VCDM 2.0 only as the legacy JOSE `vc`-claim wrapping profile (`vc-jwt-2.0-legacy`)                                                                      | General VC-JOSE-COSE conformance; unknown contexts and unknown `proofFormat`                                                                             |
+| Refresh transport   | `text/plain` bare compact VC-JWT for a verified `refreshService.type === '1EdTechCredentialRefresh'`; `charset` of `utf-8`, `utf8`, `us-ascii`, or `ascii`        | `text/plain` for managed `LearnCardCredentialRefresh2026` (`MALFORMED_RESPONSE`). JSON-LD credentials keep the existing JSON media types                 |
+| Token input         | Raw compact JWS; `jwt-vc-json` envelope; `JwtProof2020` / `proof.jwt` projection                                                                                  | SD-JWT; non-object or unsigned payloads                                                                                                                  |
+
+### Registered claim mapping
+
+The normalized credential is reconciled against the embedded `vc` claim; contradictions reject.
+
+| JWT claim | Credential field                                                                   |
+| --------- | ---------------------------------------------------------------------------------- |
+| `iss`     | `issuer`                                                                           |
+| `sub`     | `credentialSubject.id` (single subject only; multi-subject is ambiguous and fails) |
+| `jti`     | `id`                                                                               |
+| `iat`     | `issuanceDate` (takes precedence over `nbf`)                                       |
+| `nbf`     | `issuanceDate` (used only when `iat` is absent)                                    |
+| `exp`     | `expirationDate`                                                                   |
+
+Issuer DID assertion-method authorization is enforced: a `kid` bound to a different DID than the normalized issuer is rejected. Unsupported contexts, malformed headers or claims, and unknown `proofFormat` values fail closed.
+
+{% hint style="info" %}
+**Expired compact VC-JWT renewal.** A signature-valid but **expired** compact VC-JWT held by the holder is renewed through an explicit, credential-only renewal-only verification mode: the JWS signature, issuer-authorized key (`kid`), `nbf`, proof purpose, nonce and audience are still enforced, but an expired `exp` is tolerated. A successful renewal-only result reports the additional `JWSRenewalExpired` check alongside `JWS` and is **not** ordinary credential validity. Replacements are always verified strictly, so an expired or future replacement, a future-`nbf` held token, a forged signature or a wrong signer still fails closed (`INVALID_PROOF`) before any request. Ordinary verification and every presentation remain strict; `allowExpiredCredential` is rejected for them. SD-JWT is out of scope.
+{% endhint %}
+
+---
+
 ## Configuration & feature flags
 
 | Setting                                        | Where                    | Default      | Purpose                                                             |
@@ -353,6 +439,7 @@ This CLI covers the provisional-to-final path. Notification-collapse and Boost-r
 - Refresh is **foreground-only**; manual pull-to-refresh is a planned follow-up.
 - The app replaces the wallet record in place, but exact cross-device compare-and-swap is out of scope; devices converge on their next foreground check.
 - Revocation stops the endpoint from serving versions; the holder's locally retained history is not remotely deleted.
+- **Expired compact VC-JWT refresh is supported through an explicit renewal-only mode.** The held token's JWS signature, issuer-authorized key, `nbf`, proof purpose, nonce and audience are verified, and an expired `exp` is tolerated only for the held credential. The successful result carries the `JWSRenewalExpired` check in addition to `JWS` and must not be treated as ordinary validity. Replacements and ordinary verification remain strict. This capability ships with the rebuilt WASM/native artifacts from the LC-2195 fork commits; the source commits are local-only until the forks are published.
 
 ## See also
 

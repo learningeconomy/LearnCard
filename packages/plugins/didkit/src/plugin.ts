@@ -19,8 +19,24 @@ import init, {
     clearCache,
 } from './didkit/index';
 import { getDocumentMap } from './helpers';
+import { DIDKitPlugin, DidMethod, ProofOptions } from './types';
 
-import { DIDKitPlugin, DidMethod } from './types';
+import type { VC } from '@learncard/types';
+
+/**
+ * Remove the low-level DIDKit renewal opt-in from caller-supplied proof options.
+ *
+ * The ordinary `verifyCredential` must always be strict, even if an untyped
+ * JavaScript caller smuggles `allowExpiredCredential` into the options object.
+ * Renewal is only reachable through the dedicated `verifyCredentialForRenewal`
+ * method, which refresh uses for the held credential alone.
+ */
+const strictProofOptions = (options: ProofOptions): Record<string, unknown> => {
+    const sanitized: Record<string, unknown> = { ...options };
+    delete sanitized.allowExpiredCredential;
+
+    return sanitized;
+};
 
 /**
  j
@@ -67,29 +83,54 @@ export const getDidKitPlugin = async (
             didToVerificationMethod: async (_learnCard, did) => didToVerificationMethod(did),
 
             issueCredential: async (_learnCard, credential, options, keypair) => {
+                const isJwt = options.proofFormat === 'jwt';
+
+                const result = await issueCredential(
+                    JSON.stringify(credential),
+                    JSON.stringify(options),
+                    JSON.stringify(keypair),
+                    JSON.stringify(
+                        await getDocumentMap(_learnCard, credential, allowRemoteContexts)
+                    )
+                );
+
+                // DIDKit returns the signed compact serialization for JWT proofs;
+                // only linked-data-proof results are JSON objects.
+                return (isJwt ? result : JSON.parse(result)) as VC;
+            },
+
+            verifyCredential: async (_learnCard, credential, options = {}) => {
+                // A compact VC-JWT is an opaque string. Passing it through
+                // JSON.stringify would wrap it in quotes and DIDKit would fail to
+                // split the JWS, so route raw tokens straight through with JWT
+                // options instead of resolving JSON-LD contexts.
+                const isJwt = typeof credential === 'string';
+
                 return JSON.parse(
-                    await issueCredential(
-                        JSON.stringify(credential),
-                        JSON.stringify(options),
-                        JSON.stringify(keypair),
-                        JSON.stringify(
-                            await getDocumentMap(_learnCard, credential, allowRemoteContexts)
-                        )
+                    await verifyCredential(
+                        isJwt ? credential : JSON.stringify(credential),
+                        JSON.stringify(strictProofOptions(options)),
+                        isJwt
+                            ? '{}'
+                            : JSON.stringify(
+                                  await getDocumentMap(_learnCard, credential, allowRemoteContexts)
+                              )
                     )
                 );
             },
 
-            verifyCredential: async (_learnCard, credential, options = {}) => {
-                return JSON.parse(
+            verifyCredentialForRenewal: async (_learnCard, credential, options = {}) =>
+                JSON.parse(
                     await verifyCredential(
-                        JSON.stringify(credential),
-                        JSON.stringify(options),
-                        JSON.stringify(
-                            await getDocumentMap(_learnCard, credential, allowRemoteContexts)
-                        )
+                        credential,
+                        JSON.stringify({
+                            ...strictProofOptions(options),
+                            proofFormat: 'jwt',
+                            allowExpiredCredential: true,
+                        }),
+                        '{}'
                     )
-                );
-            },
+                ),
 
             issuePresentation: async (_learnCard, presentation, options, keypair) => {
                 const isJwt = options.proofFormat === 'jwt';
