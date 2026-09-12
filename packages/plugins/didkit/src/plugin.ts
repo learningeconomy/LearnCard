@@ -19,10 +19,24 @@ import init, {
     clearCache,
 } from './didkit/index';
 import { getDocumentMap } from './helpers';
-
-import { DIDKitPlugin, DidMethod } from './types';
+import { DIDKitPlugin, DidMethod, ProofOptions } from './types';
 
 import type { VC } from '@learncard/types';
+
+/**
+ * Remove the low-level DIDKit renewal opt-in from caller-supplied proof options.
+ *
+ * The ordinary `verifyCredential` must always be strict, even if an untyped
+ * JavaScript caller smuggles `allowExpiredCredential` into the options object.
+ * Renewal is only reachable through the dedicated `verifyCredentialForRenewal`
+ * method, which refresh uses for the held credential alone.
+ */
+const strictProofOptions = (options: ProofOptions): Record<string, unknown> => {
+    const sanitized: Record<string, unknown> = { ...options };
+    delete sanitized.allowExpiredCredential;
+
+    return sanitized;
+};
 
 /**
  j
@@ -95,7 +109,7 @@ export const getDidKitPlugin = async (
                 return JSON.parse(
                     await verifyCredential(
                         isJwt ? credential : JSON.stringify(credential),
-                        JSON.stringify(options),
+                        JSON.stringify(strictProofOptions(options)),
                         isJwt
                             ? '{}'
                             : JSON.stringify(
@@ -104,6 +118,19 @@ export const getDidKitPlugin = async (
                     )
                 );
             },
+
+            verifyCredentialForRenewal: async (_learnCard, credential, options = {}) =>
+                JSON.parse(
+                    await verifyCredential(
+                        credential,
+                        JSON.stringify({
+                            ...strictProofOptions(options),
+                            proofFormat: 'jwt',
+                            allowExpiredCredential: true,
+                        }),
+                        '{}'
+                    )
+                ),
 
             issuePresentation: async (_learnCard, presentation, options, keypair) => {
                 const isJwt = options.proofFormat === 'jwt';

@@ -199,6 +199,61 @@ record('still verifies compact JWT presentations', async () => {
     assert.ok(result.checks.includes('JWS'));
 });
 
+record('accepts an expired token through the dedicated renewal method', async () => {
+    const jwt = await issueJwt({ ...v1Credential(did), expirationDate: '2000-01-01T00:00:00Z' });
+    const result = await plugin.methods.verifyCredentialForRenewal(fakeLearnCard, jwt, {
+        proofFormat: 'jwt',
+    });
+    assert.deepEqual(result.errors, []);
+    assert.ok(result.checks.includes('JWS'));
+    assert.ok(result.checks.includes('JWSRenewalExpired'));
+});
+
+record(
+    'keeps ordinary verifyCredential strict when the low-level renewal option is smuggled',
+    async () => {
+        const jwt = await issueJwt({
+            ...v1Credential(did),
+            expirationDate: '2000-01-01T00:00:00Z',
+        });
+        expectFailure(await verifyJwt(jwt, { allowExpiredCredential: true }), 'smuggled strict');
+    }
+);
+
+record('does not mark an ordinarily valid token as renewal-only', async () => {
+    const jwt = await issueJwt(v1Credential(did));
+    const result = await plugin.methods.verifyCredentialForRenewal(fakeLearnCard, jwt, {
+        proofFormat: 'jwt',
+    });
+    assert.deepEqual(result.errors, []);
+    assert.ok(result.checks.includes('JWS'));
+    assert.ok(!result.checks.includes('JWSRenewalExpired'));
+});
+
+record('rejects a future-nbf token in renewal mode', async () => {
+    const jwt = await issueJwt({
+        ...v1Credential(did),
+        issuanceDate: '2100-01-01T00:00:00Z',
+        expirationDate: '2101-01-01T00:00:00Z',
+    });
+    expectFailure(
+        await plugin.methods.verifyCredentialForRenewal(fakeLearnCard, jwt, {
+            proofFormat: 'jwt',
+        }),
+        'future nbf renewal'
+    );
+});
+
+record('rejects the renewal option on presentation verification', async () => {
+    await assert.rejects(
+        plugin.methods.verifyPresentation(fakeLearnCard, 'eyJ.e30.', {
+            proofFormat: 'jwt',
+            allowExpiredCredential: true,
+        }),
+        /not supported for presentation/i
+    );
+});
+
 await Promise.all(checks);
 
 console.log('\nNative compact VC-JWT parity matrix passed.');

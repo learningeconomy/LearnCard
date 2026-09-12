@@ -83,7 +83,21 @@ export type VerifiedCredentialJwtResult =
 export type VerifyCredentialJwtOptions = {
     /** Proof options forwarded to the existing verifier. `proofFormat` is always forced to `jwt`. */
     proofOptions?: Partial<ProofOptions>;
+    /**
+     * Temporal policy for this verification.
+     *
+     * Defaults to `'strict'`. `'allow-expired-for-renewal'` additionally accepts
+     * an already-expired but signature-valid token as **renewal-only valid**,
+     * reporting the `JWSRenewalExpired` check. It is used only by
+     * `refreshCredential` for the held credential; replacements and ordinary
+     * verification are always strict. The value is a typed, explicit opt-in and
+     * the low-level `allowExpiredCredential` field is never forwarded from
+     * caller-supplied `proofOptions`.
+     */
+    policy?: VerifyCredentialJwtPolicy;
 };
+
+export type VerifyCredentialJwtPolicy = 'strict' | 'allow-expired-for-renewal';
 
 export type VerifiedCredentialTemporalStatus = 'valid' | 'expired' | 'not-yet-valid';
 
@@ -596,7 +610,7 @@ const proofVerified = (check: VerificationCheck | null | undefined): boolean =>
     !!check &&
     check.errors.length === 0 &&
     check.warnings.length === 0 &&
-    (check.checks.includes('JWS') || check.checks.includes('proof'));
+    check.checks.includes('JWS');
 
 /**
  * Verify and normalize a JWT-backed credential.
@@ -646,11 +660,20 @@ export const verifyCredentialJwt = async (
 
     let check: VerificationCheck;
 
+    // Never forward a caller-supplied low-level renewal opt-in. Renewal is
+    // selected only by the typed `policy` through the dedicated renewal method.
+    const forwardedOptions: Partial<ProofOptions> = {
+        ...options.proofOptions,
+        proofFormat: 'jwt',
+    };
+    delete (forwardedOptions as Record<string, unknown>).allowExpiredCredential;
+
     try {
-        check = await initLearnCard.invoke.verifyCredential(token, {
-            ...options.proofOptions,
-            proofFormat: 'jwt',
-        });
+        if (options.policy === 'allow-expired-for-renewal') {
+            check = await initLearnCard.invoke.verifyCredentialForRenewal(token, forwardedOptions);
+        } else {
+            check = await initLearnCard.invoke.verifyCredential(token, forwardedOptions);
+        }
     } catch (error) {
         return failure([
             `VC-JWT verification failed: ${
@@ -672,14 +695,13 @@ export const verifyCredentialJwt = async (
 };
 
 /**
- * Renewal-specific temporal API (handoff to LC-2195 Task 3).
- *
  * Evaluates the verified token's temporal position without re-parsing
- * unverified bytes. The pinned verifier still enforces `nbf`/`exp` during
- * `verifyCredentialJwt`, so an expired held token cannot currently reach a
- * refresh endpoint; Task 3 must thread the minimal pinned-fork temporal-policy
- * opt-in described in the Task 1 report before using this to authorize renewal
- * of an expired-but-signed token.
+ * unverified bytes.
+ *
+ * A token verified with `policy: 'allow-expired-for-renewal'` returns
+ * `'expired'` here; that is expected and is what lets `refreshCredential` renew
+ * an expired held credential while still rejecting a replacement that is not
+ * temporally valid.
  */
 export const getVerifiedCredentialTemporalStatus = (
     verified: VerifiedCredentialJwt,

@@ -24,6 +24,16 @@ export type VCPluginDependentMethods = {
         credential: VC | string,
         options?: ProofOptions
     ) => Promise<VerificationCheck>;
+    /**
+     * Renewal-only verification of a compact JWT credential. Used only for the
+     * held credential in `refreshCredential`; ordinary verification stays
+     * strict. The successful result additionally reports the
+     * `JWSRenewalExpired` check and is not ordinary credential validity.
+     */
+    verifyCredentialForRenewal: (
+        credential: string,
+        options?: ProofOptions
+    ) => Promise<VerificationCheck>;
     issuePresentation: (
         presentation: UnsignedVP,
         options: ProofOptions,

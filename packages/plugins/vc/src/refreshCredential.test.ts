@@ -1179,6 +1179,12 @@ describe('refreshCredential', () => {
             invoke: {
                 verifyCredential: (credential: VC | string, options?: unknown) =>
                     plugin.methods.verifyCredential(didKitCard, credential, options as never),
+                verifyCredentialForRenewal: (credential: string, options?: unknown) =>
+                    plugin.methods.verifyCredentialForRenewal(
+                        didKitCard,
+                        credential,
+                        options as never
+                    ),
             },
         };
 
@@ -1402,11 +1408,39 @@ describe('refreshCredential', () => {
             expect(fetchMock).not.toHaveBeenCalled();
         });
 
-        it('fails closed on an expired held token and never contacts the endpoint (pinned-verifier blocker)', async () => {
+        it('renews an expired held token from a text/plain endpoint with a valid replacement', async () => {
             const held = await issueJwt(
                 v1Unsigned({
                     issuanceDate: '2019-01-01T00:00:00Z',
                     expirationDate: '2020-01-01T00:00:00Z',
+                })
+            );
+            const replacement = await issueJwt(
+                v1Unsigned({
+                    issuanceDate: '2026-06-01T00:00:00Z',
+                    expirationDate: '2100-01-01T00:00:00Z',
+                    credentialSubject: {
+                        id: 'did:example:holder',
+                        achievement: { name: 'renewed' },
+                    },
+                })
+            );
+
+            fetchMock.mockResolvedValueOnce(textResponse(replacement));
+
+            const result = await refreshWith(held);
+
+            expect(result.status).toBe('updated');
+            if (result.status !== 'updated') return;
+            expect((result.credential.proof as any).jwt).toBe(replacement);
+            expect(fetchMock).toHaveBeenCalledTimes(1);
+        });
+
+        it('rejects a future-nbf held token even in renewal mode', async () => {
+            const held = await issueJwt(
+                v1Unsigned({
+                    issuanceDate: '2100-01-01T00:00:00Z',
+                    expirationDate: '2101-01-01T00:00:00Z',
                 })
             );
 

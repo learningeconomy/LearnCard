@@ -182,6 +182,7 @@ pub async fn verify_credential(
         .map_err(|e| Error::from_reason(format!("serde: {}", e)))?;
     let context_map: HashMap<String, String> = serde_json::from_str(&context_map)
         .map_err(|e| Error::from_reason(format!("serde: {}", e)))?;
+    let allow_expired_credential = options.allow_expired_credential();
     let proof_format = options.proof_format.unwrap_or_default();
     let resolver = DID_METHODS.to_resolver();
     let mut context_loader = ContextLoader::default()
@@ -190,15 +191,33 @@ pub async fn verify_credential(
 
     let result = match proof_format {
         ProofFormat::JWT => {
-            VerifiableCredential::verify_jwt(
-                &credential,
-                Some(options.ldp_options),
-                resolver,
-                &mut context_loader,
-            )
-            .await
+            if allow_expired_credential {
+                // Renewal-only credential verification: strict on nbf,
+                // signature, issuer key authorization, purpose, nonce and aud.
+                VerifiableCredential::verify_jwt_renewal(
+                    &credential,
+                    Some(options.ldp_options),
+                    resolver,
+                    &mut context_loader,
+                )
+                .await
+            } else {
+                VerifiableCredential::verify_jwt(
+                    &credential,
+                    Some(options.ldp_options),
+                    resolver,
+                    &mut context_loader,
+                )
+                .await
+            }
         }
         ProofFormat::LDP => {
+            if allow_expired_credential {
+                return Err(Error::from_reason(
+                    "allowExpiredCredential is only supported for compact JWT credentials"
+                        .to_string(),
+                ));
+            }
             let vc = VerifiableCredential::from_json_unsigned(&credential)
                 .map_err(|e| Error::from_reason(format!("vc: {}", e)))?;
             vc.verify(Some(options.ldp_options), resolver, &mut context_loader)
@@ -269,6 +288,13 @@ pub async fn verify_presentation(
         .map_err(|e| Error::from_reason(format!("serde: {}", e)))?;
     let context_map: HashMap<String, String> = serde_json::from_str(&context_map)
         .map_err(|e| Error::from_reason(format!("serde: {}", e)))?;
+    if options.allow_expired_credential() {
+        // The renewal-only policy is credential-only: never silently weaken
+        // presentation verification.
+        return Err(Error::from_reason(
+            "allowExpiredCredential is not supported for presentation verification".to_string(),
+        ));
+    }
     let resolver = DID_METHODS.to_resolver();
     let mut context_loader = ContextLoader::default()
         .with_context_map_from(context_map)

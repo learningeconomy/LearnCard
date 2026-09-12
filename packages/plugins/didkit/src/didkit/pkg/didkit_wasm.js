@@ -216,86 +216,36 @@ function makeMutClosure(arg0, arg1, dtor, f) {
     return real;
 }
 /**
- * @returns {string}
- */
-export function getVersion() {
-    let deferred1_0;
-    let deferred1_1;
-    try {
-        const ret = wasm.getVersion();
-        deferred1_0 = ret[0];
-        deferred1_1 = ret[1];
-        return getStringFromWasm0(ret[0], ret[1]);
-    } finally {
-        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
-    }
-}
-
-/**
- * @param {string} presentation
- * @param {string} preparation
- * @param {string} signature
+ * @param {string} did
+ * @param {string} input_metadata
  * @returns {Promise<any>}
  */
-export function completeIssuePresentation(presentation, preparation, signature) {
-    const ptr0 = passStringToWasm0(presentation, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+export function resolveDID(did, input_metadata) {
+    const ptr0 = passStringToWasm0(did, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len0 = WASM_VECTOR_LEN;
-    const ptr1 = passStringToWasm0(preparation, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const ptr1 = passStringToWasm0(input_metadata, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len1 = WASM_VECTOR_LEN;
-    const ptr2 = passStringToWasm0(signature, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len2 = WASM_VECTOR_LEN;
-    const ret = wasm.completeIssuePresentation(ptr0, len0, ptr1, len1, ptr2, len2);
+    const ret = wasm.resolveDID(ptr0, len0, ptr1, len1);
     return ret;
 }
 
 /**
- * @param {string} vp
+ * @param {string} credential
  * @param {string} proof_options
- * @param {string} context_map
- * @returns {Promise<any>}
- */
-export function verifyPresentation(vp, proof_options, context_map) {
-    const ptr0 = passStringToWasm0(vp, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len0 = WASM_VECTOR_LEN;
-    const ptr1 = passStringToWasm0(proof_options, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len1 = WASM_VECTOR_LEN;
-    const ptr2 = passStringToWasm0(context_map, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len2 = WASM_VECTOR_LEN;
-    const ret = wasm.verifyPresentation(ptr0, len0, ptr1, len1, ptr2, len2);
-    return ret;
-}
-
-/**
- * @param {string} holder
- * @param {string} linked_data_proof_options
  * @param {string} key
  * @param {string} context_map
  * @returns {Promise<any>}
  */
-export function DIDAuth(holder, linked_data_proof_options, key, context_map) {
-    const ptr0 = passStringToWasm0(holder, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+export function issueCredential(credential, proof_options, key, context_map) {
+    const ptr0 = passStringToWasm0(credential, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len0 = WASM_VECTOR_LEN;
-    const ptr1 = passStringToWasm0(linked_data_proof_options, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const ptr1 = passStringToWasm0(proof_options, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len1 = WASM_VECTOR_LEN;
     const ptr2 = passStringToWasm0(key, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len2 = WASM_VECTOR_LEN;
     const ptr3 = passStringToWasm0(context_map, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len3 = WASM_VECTOR_LEN;
-    const ret = wasm.DIDAuth(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3);
-    return ret;
-}
-
-/**
- * @param {string} invocation
- * @param {string} delegation
- * @returns {Promise<any>}
- */
-export function verifyInvocation(invocation, delegation) {
-    const ptr0 = passStringToWasm0(invocation, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len0 = WASM_VECTOR_LEN;
-    const ptr1 = passStringToWasm0(delegation, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len1 = WASM_VECTOR_LEN;
-    const ret = wasm.verifyInvocation(ptr0, len0, ptr1, len1);
+    const ret = wasm.issueCredential(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3);
     return ret;
 }
 
@@ -307,85 +257,6 @@ export function contextLoader(url) {
     const ptr0 = passStringToWasm0(url, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len0 = WASM_VECTOR_LEN;
     const ret = wasm.contextLoader(ptr0, len0);
-    return ret;
-}
-
-/**
- * @param {string} tz
- * @returns {Promise<any>}
- */
-export function JWKFromTezos(tz) {
-    const ptr0 = passStringToWasm0(tz, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len0 = WASM_VECTOR_LEN;
-    const ret = wasm.JWKFromTezos(ptr0, len0);
-    return ret;
-}
-
-/**
- * @param {string} capability
- * @param {string} linked_data_proof_options
- * @param {string} parents
- * @param {string} key
- * @returns {Promise<any>}
- */
-export function delegateCapability(capability, linked_data_proof_options, parents, key) {
-    const ptr0 = passStringToWasm0(capability, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len0 = WASM_VECTOR_LEN;
-    const ptr1 = passStringToWasm0(linked_data_proof_options, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len1 = WASM_VECTOR_LEN;
-    const ptr2 = passStringToWasm0(parents, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len2 = WASM_VECTOR_LEN;
-    const ptr3 = passStringToWasm0(key, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len3 = WASM_VECTOR_LEN;
-    const ret = wasm.delegateCapability(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3);
-    return ret;
-}
-
-/**
- * @param {string} capability
- * @param {string} linked_data_proof_options
- * @param {string} parents
- * @param {string} public_key
- * @returns {Promise<any>}
- */
-export function prepareDelegateCapability(capability, linked_data_proof_options, parents, public_key) {
-    const ptr0 = passStringToWasm0(capability, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len0 = WASM_VECTOR_LEN;
-    const ptr1 = passStringToWasm0(linked_data_proof_options, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len1 = WASM_VECTOR_LEN;
-    const ptr2 = passStringToWasm0(parents, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len2 = WASM_VECTOR_LEN;
-    const ptr3 = passStringToWasm0(public_key, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len3 = WASM_VECTOR_LEN;
-    const ret = wasm.prepareDelegateCapability(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3);
-    return ret;
-}
-
-/**
- * @param {string} capability
- * @param {string} preparation
- * @param {string} signature
- * @returns {Promise<any>}
- */
-export function completeDelegateCapability(capability, preparation, signature) {
-    const ptr0 = passStringToWasm0(capability, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len0 = WASM_VECTOR_LEN;
-    const ptr1 = passStringToWasm0(preparation, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len1 = WASM_VECTOR_LEN;
-    const ptr2 = passStringToWasm0(signature, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len2 = WASM_VECTOR_LEN;
-    const ret = wasm.completeDelegateCapability(ptr0, len0, ptr1, len1, ptr2, len2);
-    return ret;
-}
-
-/**
- * @param {string} delegation
- * @returns {Promise<any>}
- */
-export function verifyDelegation(delegation) {
-    const ptr0 = passStringToWasm0(delegation, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len0 = WASM_VECTOR_LEN;
-    const ret = wasm.verifyDelegation(ptr0, len0);
     return ret;
 }
 
@@ -406,6 +277,23 @@ export function invokeCapability(invocation, target_id, linked_data_proof_option
     const ptr3 = passStringToWasm0(key, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len3 = WASM_VECTOR_LEN;
     const ret = wasm.invokeCapability(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3);
+    return ret;
+}
+
+/**
+ * @param {string} presentation
+ * @param {string} preparation
+ * @param {string} signature
+ * @returns {Promise<any>}
+ */
+export function completeIssuePresentation(presentation, preparation, signature) {
+    const ptr0 = passStringToWasm0(presentation, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ptr1 = passStringToWasm0(preparation, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len1 = WASM_VECTOR_LEN;
+    const ptr2 = passStringToWasm0(signature, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len2 = WASM_VECTOR_LEN;
+    const ret = wasm.completeIssuePresentation(ptr0, len0, ptr1, len1, ptr2, len2);
     return ret;
 }
 
@@ -431,6 +319,107 @@ export function prepareInvokeCapability(invocation, target_id, linked_data_proof
 
 /**
  * @param {string} invocation
+ * @param {string} delegation
+ * @returns {Promise<any>}
+ */
+export function verifyInvocation(invocation, delegation) {
+    const ptr0 = passStringToWasm0(invocation, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ptr1 = passStringToWasm0(delegation, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len1 = WASM_VECTOR_LEN;
+    const ret = wasm.verifyInvocation(ptr0, len0, ptr1, len1);
+    return ret;
+}
+
+function passArray8ToWasm0(arg, malloc) {
+    const ptr = malloc(arg.length * 1, 1) >>> 0;
+    getUint8ArrayMemory0().set(arg, ptr / 1);
+    WASM_VECTOR_LEN = arg.length;
+    return ptr;
+}
+
+function takeFromExternrefTable0(idx) {
+    const value = wasm.__wbindgen_export_4.get(idx);
+    wasm.__externref_table_dealloc(idx);
+    return value;
+}
+/**
+ * @param {Uint8Array} bytes
+ * @returns {string}
+ */
+export function generateSecp256k1KeyFromBytes(bytes) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passArray8ToWasm0(bytes, wasm.__wbindgen_malloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.generateSecp256k1KeyFromBytes(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * @returns {Promise<any>}
+ */
+export function clearCache() {
+    const ret = wasm.clearCache();
+    return ret;
+}
+
+/**
+ * @returns {string}
+ */
+export function generateSecp256k1Key() {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ret = wasm.generateSecp256k1Key();
+        var ptr1 = ret[0];
+        var len1 = ret[1];
+        if (ret[3]) {
+            ptr1 = 0; len1 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred2_0 = ptr1;
+        deferred2_1 = len1;
+        return getStringFromWasm0(ptr1, len1);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
+ * @param {string} presentation
+ * @param {string} proof_options
+ * @param {string} key
+ * @param {string} context_map
+ * @returns {Promise<any>}
+ */
+export function issuePresentation(presentation, proof_options, key, context_map) {
+    const ptr0 = passStringToWasm0(presentation, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ptr1 = passStringToWasm0(proof_options, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len1 = WASM_VECTOR_LEN;
+    const ptr2 = passStringToWasm0(key, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len2 = WASM_VECTOR_LEN;
+    const ptr3 = passStringToWasm0(context_map, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len3 = WASM_VECTOR_LEN;
+    const ret = wasm.issuePresentation(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3);
+    return ret;
+}
+
+/**
+ * @param {string} invocation
  * @param {string} preparation
  * @param {string} signature
  * @returns {Promise<any>}
@@ -447,6 +436,203 @@ export function completeInvokeCapability(invocation, preparation, signature) {
 }
 
 /**
+ * @param {string} vp
+ * @param {string} proof_options
+ * @param {string} context_map
+ * @returns {Promise<any>}
+ */
+export function verifyPresentation(vp, proof_options, context_map) {
+    const ptr0 = passStringToWasm0(vp, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ptr1 = passStringToWasm0(proof_options, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len1 = WASM_VECTOR_LEN;
+    const ptr2 = passStringToWasm0(context_map, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len2 = WASM_VECTOR_LEN;
+    const ret = wasm.verifyPresentation(ptr0, len0, ptr1, len1, ptr2, len2);
+    return ret;
+}
+
+function passArrayJsValueToWasm0(array, malloc) {
+    const ptr = malloc(array.length * 4, 4) >>> 0;
+    for (let i = 0; i < array.length; i++) {
+        const add = addToExternrefTable0(array[i]);
+        getDataViewMemory0().setUint32(ptr + 4 * i, add, true);
+    }
+    WASM_VECTOR_LEN = array.length;
+    return ptr;
+}
+/**
+ * @param {string} cleartext
+ * @param {string[]} recipients
+ * @returns {Promise<any>}
+ */
+export function createJwe(cleartext, recipients) {
+    const ptr0 = passStringToWasm0(cleartext, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ptr1 = passArrayJsValueToWasm0(recipients, wasm.__wbindgen_malloc);
+    const len1 = WASM_VECTOR_LEN;
+    const ret = wasm.createJwe(ptr0, len0, ptr1, len1);
+    return ret;
+}
+
+/**
+ * @param {string} capability
+ * @param {string} preparation
+ * @param {string} signature
+ * @returns {Promise<any>}
+ */
+export function completeDelegateCapability(capability, preparation, signature) {
+    const ptr0 = passStringToWasm0(capability, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ptr1 = passStringToWasm0(preparation, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len1 = WASM_VECTOR_LEN;
+    const ptr2 = passStringToWasm0(signature, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len2 = WASM_VECTOR_LEN;
+    const ret = wasm.completeDelegateCapability(ptr0, len0, ptr1, len1, ptr2, len2);
+    return ret;
+}
+
+/**
+ * @param {string} capability
+ * @param {string} linked_data_proof_options
+ * @param {string} parents
+ * @param {string} public_key
+ * @returns {Promise<any>}
+ */
+export function prepareDelegateCapability(capability, linked_data_proof_options, parents, public_key) {
+    const ptr0 = passStringToWasm0(capability, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ptr1 = passStringToWasm0(linked_data_proof_options, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len1 = WASM_VECTOR_LEN;
+    const ptr2 = passStringToWasm0(parents, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len2 = WASM_VECTOR_LEN;
+    const ptr3 = passStringToWasm0(public_key, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len3 = WASM_VECTOR_LEN;
+    const ret = wasm.prepareDelegateCapability(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3);
+    return ret;
+}
+
+/**
+ * @param {Uint8Array} bytes
+ * @returns {string}
+ */
+export function generateEd25519KeyFromBytes(bytes) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passArray8ToWasm0(bytes, wasm.__wbindgen_malloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.generateEd25519KeyFromBytes(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * @param {string} holder
+ * @param {string} linked_data_proof_options
+ * @param {string} key
+ * @param {string} context_map
+ * @returns {Promise<any>}
+ */
+export function DIDAuth(holder, linked_data_proof_options, key, context_map) {
+    const ptr0 = passStringToWasm0(holder, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ptr1 = passStringToWasm0(linked_data_proof_options, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len1 = WASM_VECTOR_LEN;
+    const ptr2 = passStringToWasm0(key, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len2 = WASM_VECTOR_LEN;
+    const ptr3 = passStringToWasm0(context_map, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len3 = WASM_VECTOR_LEN;
+    const ret = wasm.DIDAuth(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3);
+    return ret;
+}
+
+/**
+ * @param {string} tz
+ * @returns {Promise<any>}
+ */
+export function JWKFromTezos(tz) {
+    const ptr0 = passStringToWasm0(tz, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.JWKFromTezos(ptr0, len0);
+    return ret;
+}
+
+/**
+ * @param {string} method_pattern
+ * @param {string} jwk
+ * @returns {Promise<any>}
+ */
+export function keyToVerificationMethod(method_pattern, jwk) {
+    const ptr0 = passStringToWasm0(method_pattern, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ptr1 = passStringToWasm0(jwk, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len1 = WASM_VECTOR_LEN;
+    const ret = wasm.keyToVerificationMethod(ptr0, len0, ptr1, len1);
+    return ret;
+}
+
+/**
+ * @param {string} vc
+ * @param {string} proof_options
+ * @param {string} context_map
+ * @returns {Promise<any>}
+ */
+export function verifyCredential(vc, proof_options, context_map) {
+    const ptr0 = passStringToWasm0(vc, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ptr1 = passStringToWasm0(proof_options, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len1 = WASM_VECTOR_LEN;
+    const ptr2 = passStringToWasm0(context_map, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len2 = WASM_VECTOR_LEN;
+    const ret = wasm.verifyCredential(ptr0, len0, ptr1, len1, ptr2, len2);
+    return ret;
+}
+
+/**
+ * @returns {string}
+ */
+export function generateEd25519Key() {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ret = wasm.generateEd25519Key();
+        var ptr1 = ret[0];
+        var len1 = ret[1];
+        if (ret[3]) {
+            ptr1 = 0; len1 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred2_0 = ptr1;
+        deferred2_1 = len1;
+        return getStringFromWasm0(ptr1, len1);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
+ * @param {string} did
+ * @returns {Promise<any>}
+ */
+export function didToVerificationMethod(did) {
+    const ptr0 = passStringToWasm0(did, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.didToVerificationMethod(ptr0, len0);
+    return ret;
+}
+
+/**
  * @param {string} invocation
  * @returns {Promise<any>}
  */
@@ -458,46 +644,48 @@ export function verifyInvocationSignature(invocation) {
 }
 
 /**
+ * @param {any} cleartext
+ * @param {string[]} recipients
  * @returns {Promise<any>}
  */
-export function clearCache() {
-    const ret = wasm.clearCache();
+export function createDagJwe(cleartext, recipients) {
+    const ptr0 = passArrayJsValueToWasm0(recipients, wasm.__wbindgen_malloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.createDagJwe(cleartext, ptr0, len0);
     return ret;
 }
 
 /**
- * @param {string} did
- * @param {string} input_metadata
+ * @param {string} credential
+ * @param {string} linked_data_proof_options
+ * @param {string} public_key
  * @returns {Promise<any>}
  */
-export function didResolver(did, input_metadata) {
-    const ptr0 = passStringToWasm0(did, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+export function prepareIssueCredential(credential, linked_data_proof_options, public_key) {
+    const ptr0 = passStringToWasm0(credential, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len0 = WASM_VECTOR_LEN;
-    const ptr1 = passStringToWasm0(input_metadata, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const ptr1 = passStringToWasm0(linked_data_proof_options, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len1 = WASM_VECTOR_LEN;
-    const ret = wasm.didResolver(ptr0, len0, ptr1, len1);
+    const ptr2 = passStringToWasm0(public_key, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len2 = WASM_VECTOR_LEN;
+    const ret = wasm.prepareIssueCredential(ptr0, len0, ptr1, len1, ptr2, len2);
     return ret;
 }
 
 /**
- * @param {string} did
- * @param {string} input_metadata
+ * @param {string} jwe
+ * @param {string[]} jwks
  * @returns {Promise<any>}
  */
-export function resolveDID(did, input_metadata) {
-    const ptr0 = passStringToWasm0(did, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+export function decryptDagJwe(jwe, jwks) {
+    const ptr0 = passStringToWasm0(jwe, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len0 = WASM_VECTOR_LEN;
-    const ptr1 = passStringToWasm0(input_metadata, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const ptr1 = passArrayJsValueToWasm0(jwks, wasm.__wbindgen_malloc);
     const len1 = WASM_VECTOR_LEN;
-    const ret = wasm.resolveDID(ptr0, len0, ptr1, len1);
+    const ret = wasm.decryptDagJwe(ptr0, len0, ptr1, len1);
     return ret;
 }
 
-function takeFromExternrefTable0(idx) {
-    const value = wasm.__wbindgen_export_4.get(idx);
-    wasm.__externref_table_dealloc(idx);
-    return value;
-}
 /**
  * @param {string} method_pattern
  * @param {string} jwk
@@ -527,64 +715,33 @@ export function keyToDID(method_pattern, jwk) {
 }
 
 /**
- * @param {string} method_pattern
- * @param {string} jwk
- * @returns {Promise<any>}
- */
-export function keyToVerificationMethod(method_pattern, jwk) {
-    const ptr0 = passStringToWasm0(method_pattern, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len0 = WASM_VECTOR_LEN;
-    const ptr1 = passStringToWasm0(jwk, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len1 = WASM_VECTOR_LEN;
-    const ret = wasm.keyToVerificationMethod(ptr0, len0, ptr1, len1);
-    return ret;
-}
-
-/**
- * @param {string} did
- * @returns {Promise<any>}
- */
-export function didToVerificationMethod(did) {
-    const ptr0 = passStringToWasm0(did, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len0 = WASM_VECTOR_LEN;
-    const ret = wasm.didToVerificationMethod(ptr0, len0);
-    return ret;
-}
-
-/**
- * @param {string} credential
- * @param {string} proof_options
- * @param {string} key
- * @param {string} context_map
- * @returns {Promise<any>}
- */
-export function issueCredential(credential, proof_options, key, context_map) {
-    const ptr0 = passStringToWasm0(credential, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len0 = WASM_VECTOR_LEN;
-    const ptr1 = passStringToWasm0(proof_options, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len1 = WASM_VECTOR_LEN;
-    const ptr2 = passStringToWasm0(key, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len2 = WASM_VECTOR_LEN;
-    const ptr3 = passStringToWasm0(context_map, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len3 = WASM_VECTOR_LEN;
-    const ret = wasm.issueCredential(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3);
-    return ret;
-}
-
-/**
- * @param {string} credential
+ * @param {string} presentation
  * @param {string} linked_data_proof_options
  * @param {string} public_key
  * @returns {Promise<any>}
  */
-export function prepareIssueCredential(credential, linked_data_proof_options, public_key) {
-    const ptr0 = passStringToWasm0(credential, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+export function prepareIssuePresentation(presentation, linked_data_proof_options, public_key) {
+    const ptr0 = passStringToWasm0(presentation, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len0 = WASM_VECTOR_LEN;
     const ptr1 = passStringToWasm0(linked_data_proof_options, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len1 = WASM_VECTOR_LEN;
     const ptr2 = passStringToWasm0(public_key, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len2 = WASM_VECTOR_LEN;
-    const ret = wasm.prepareIssueCredential(ptr0, len0, ptr1, len1, ptr2, len2);
+    const ret = wasm.prepareIssuePresentation(ptr0, len0, ptr1, len1, ptr2, len2);
+    return ret;
+}
+
+/**
+ * @param {string} jwe
+ * @param {string[]} jwks
+ * @returns {Promise<any>}
+ */
+export function decryptJwe(jwe, jwks) {
+    const ptr0 = passStringToWasm0(jwe, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ptr1 = passArrayJsValueToWasm0(jwks, wasm.__wbindgen_malloc);
+    const len1 = WASM_VECTOR_LEN;
+    const ret = wasm.decryptJwe(ptr0, len0, ptr1, len1);
     return ret;
 }
 
@@ -606,232 +763,76 @@ export function completeIssueCredential(credential, preparation, signature) {
 }
 
 /**
- * @param {string} vc
- * @param {string} proof_options
- * @param {string} context_map
+ * @param {string} delegation
  * @returns {Promise<any>}
  */
-export function verifyCredential(vc, proof_options, context_map) {
-    const ptr0 = passStringToWasm0(vc, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+export function verifyDelegation(delegation) {
+    const ptr0 = passStringToWasm0(delegation, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len0 = WASM_VECTOR_LEN;
-    const ptr1 = passStringToWasm0(proof_options, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len1 = WASM_VECTOR_LEN;
-    const ptr2 = passStringToWasm0(context_map, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len2 = WASM_VECTOR_LEN;
-    const ret = wasm.verifyCredential(ptr0, len0, ptr1, len1, ptr2, len2);
+    const ret = wasm.verifyDelegation(ptr0, len0);
     return ret;
 }
 
 /**
- * @param {string} presentation
- * @param {string} proof_options
- * @param {string} key
- * @param {string} context_map
- * @returns {Promise<any>}
- */
-export function issuePresentation(presentation, proof_options, key, context_map) {
-    const ptr0 = passStringToWasm0(presentation, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len0 = WASM_VECTOR_LEN;
-    const ptr1 = passStringToWasm0(proof_options, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len1 = WASM_VECTOR_LEN;
-    const ptr2 = passStringToWasm0(key, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len2 = WASM_VECTOR_LEN;
-    const ptr3 = passStringToWasm0(context_map, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len3 = WASM_VECTOR_LEN;
-    const ret = wasm.issuePresentation(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3);
-    return ret;
-}
-
-/**
- * @param {string} presentation
+ * @param {string} capability
  * @param {string} linked_data_proof_options
- * @param {string} public_key
+ * @param {string} parents
+ * @param {string} key
  * @returns {Promise<any>}
  */
-export function prepareIssuePresentation(presentation, linked_data_proof_options, public_key) {
-    const ptr0 = passStringToWasm0(presentation, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+export function delegateCapability(capability, linked_data_proof_options, parents, key) {
+    const ptr0 = passStringToWasm0(capability, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len0 = WASM_VECTOR_LEN;
     const ptr1 = passStringToWasm0(linked_data_proof_options, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len1 = WASM_VECTOR_LEN;
-    const ptr2 = passStringToWasm0(public_key, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const ptr2 = passStringToWasm0(parents, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len2 = WASM_VECTOR_LEN;
-    const ret = wasm.prepareIssuePresentation(ptr0, len0, ptr1, len1, ptr2, len2);
+    const ptr3 = passStringToWasm0(key, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len3 = WASM_VECTOR_LEN;
+    const ret = wasm.delegateCapability(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3);
     return ret;
 }
 
 /**
  * @returns {string}
  */
-export function generateEd25519Key() {
-    let deferred2_0;
-    let deferred2_1;
+export function getVersion() {
+    let deferred1_0;
+    let deferred1_1;
     try {
-        const ret = wasm.generateEd25519Key();
-        var ptr1 = ret[0];
-        var len1 = ret[1];
-        if (ret[3]) {
-            ptr1 = 0; len1 = 0;
-            throw takeFromExternrefTable0(ret[2]);
-        }
-        deferred2_0 = ptr1;
-        deferred2_1 = len1;
-        return getStringFromWasm0(ptr1, len1);
+        const ret = wasm.getVersion();
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
     } finally {
-        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
-    }
-}
-
-function passArray8ToWasm0(arg, malloc) {
-    const ptr = malloc(arg.length * 1, 1) >>> 0;
-    getUint8ArrayMemory0().set(arg, ptr / 1);
-    WASM_VECTOR_LEN = arg.length;
-    return ptr;
-}
-/**
- * @param {Uint8Array} bytes
- * @returns {string}
- */
-export function generateEd25519KeyFromBytes(bytes) {
-    let deferred3_0;
-    let deferred3_1;
-    try {
-        const ptr0 = passArray8ToWasm0(bytes, wasm.__wbindgen_malloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.generateEd25519KeyFromBytes(ptr0, len0);
-        var ptr2 = ret[0];
-        var len2 = ret[1];
-        if (ret[3]) {
-            ptr2 = 0; len2 = 0;
-            throw takeFromExternrefTable0(ret[2]);
-        }
-        deferred3_0 = ptr2;
-        deferred3_1 = len2;
-        return getStringFromWasm0(ptr2, len2);
-    } finally {
-        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
     }
 }
 
 /**
- * @returns {string}
- */
-export function generateSecp256k1Key() {
-    let deferred2_0;
-    let deferred2_1;
-    try {
-        const ret = wasm.generateSecp256k1Key();
-        var ptr1 = ret[0];
-        var len1 = ret[1];
-        if (ret[3]) {
-            ptr1 = 0; len1 = 0;
-            throw takeFromExternrefTable0(ret[2]);
-        }
-        deferred2_0 = ptr1;
-        deferred2_1 = len1;
-        return getStringFromWasm0(ptr1, len1);
-    } finally {
-        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
-    }
-}
-
-/**
- * @param {Uint8Array} bytes
- * @returns {string}
- */
-export function generateSecp256k1KeyFromBytes(bytes) {
-    let deferred3_0;
-    let deferred3_1;
-    try {
-        const ptr0 = passArray8ToWasm0(bytes, wasm.__wbindgen_malloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.generateSecp256k1KeyFromBytes(ptr0, len0);
-        var ptr2 = ret[0];
-        var len2 = ret[1];
-        if (ret[3]) {
-            ptr2 = 0; len2 = 0;
-            throw takeFromExternrefTable0(ret[2]);
-        }
-        deferred3_0 = ptr2;
-        deferred3_1 = len2;
-        return getStringFromWasm0(ptr2, len2);
-    } finally {
-        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
-    }
-}
-
-function passArrayJsValueToWasm0(array, malloc) {
-    const ptr = malloc(array.length * 4, 4) >>> 0;
-    for (let i = 0; i < array.length; i++) {
-        const add = addToExternrefTable0(array[i]);
-        getDataViewMemory0().setUint32(ptr + 4 * i, add, true);
-    }
-    WASM_VECTOR_LEN = array.length;
-    return ptr;
-}
-/**
- * @param {string} cleartext
- * @param {string[]} recipients
+ * @param {string} did
+ * @param {string} input_metadata
  * @returns {Promise<any>}
  */
-export function createJwe(cleartext, recipients) {
-    const ptr0 = passStringToWasm0(cleartext, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+export function didResolver(did, input_metadata) {
+    const ptr0 = passStringToWasm0(did, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len0 = WASM_VECTOR_LEN;
-    const ptr1 = passArrayJsValueToWasm0(recipients, wasm.__wbindgen_malloc);
+    const ptr1 = passStringToWasm0(input_metadata, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len1 = WASM_VECTOR_LEN;
-    const ret = wasm.createJwe(ptr0, len0, ptr1, len1);
+    const ret = wasm.didResolver(ptr0, len0, ptr1, len1);
     return ret;
 }
 
-/**
- * @param {string} jwe
- * @param {string[]} jwks
- * @returns {Promise<any>}
- */
-export function decryptJwe(jwe, jwks) {
-    const ptr0 = passStringToWasm0(jwe, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len0 = WASM_VECTOR_LEN;
-    const ptr1 = passArrayJsValueToWasm0(jwks, wasm.__wbindgen_malloc);
-    const len1 = WASM_VECTOR_LEN;
-    const ret = wasm.decryptJwe(ptr0, len0, ptr1, len1);
-    return ret;
+function __wbg_adapter_8(arg0, arg1) {
+    wasm.wasm_bindgen__convert__closures_____invoke__h154a06e7c4f0cc46(arg0, arg1);
 }
 
-/**
- * @param {any} cleartext
- * @param {string[]} recipients
- * @returns {Promise<any>}
- */
-export function createDagJwe(cleartext, recipients) {
-    const ptr0 = passArrayJsValueToWasm0(recipients, wasm.__wbindgen_malloc);
-    const len0 = WASM_VECTOR_LEN;
-    const ret = wasm.createDagJwe(cleartext, ptr0, len0);
-    return ret;
+function __wbg_adapter_13(arg0, arg1, arg2) {
+    wasm.closure4301_externref_shim(arg0, arg1, arg2);
 }
 
-/**
- * @param {string} jwe
- * @param {string[]} jwks
- * @returns {Promise<any>}
- */
-export function decryptDagJwe(jwe, jwks) {
-    const ptr0 = passStringToWasm0(jwe, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len0 = WASM_VECTOR_LEN;
-    const ptr1 = passArrayJsValueToWasm0(jwks, wasm.__wbindgen_malloc);
-    const len1 = WASM_VECTOR_LEN;
-    const ret = wasm.decryptDagJwe(ptr0, len0, ptr1, len1);
-    return ret;
-}
-
-function __wbg_adapter_6(arg0, arg1, arg2) {
-    wasm.closure4278_externref_shim(arg0, arg1, arg2);
-}
-
-function __wbg_adapter_15(arg0, arg1) {
-    wasm.wasm_bindgen_d32f3dfee079a7d6___convert__closures_____invoke______(arg0, arg1);
-}
-
-function __wbg_adapter_165(arg0, arg1, arg2, arg3) {
-    wasm.closure4664_externref_shim(arg0, arg1, arg2, arg3);
+function __wbg_adapter_163(arg0, arg1, arg2, arg3) {
+    wasm.closure4685_externref_shim(arg0, arg1, arg2, arg3);
 }
 
 const __wbindgen_enum_RequestCache = ["default", "no-store", "reload", "no-cache", "force-cache", "only-if-cached"];
@@ -1051,7 +1052,7 @@ function __wbg_get_imports() {
                 const a = state0.a;
                 state0.a = 0;
                 try {
-                    return __wbg_adapter_165(a, state0.b, arg0, arg1);
+                    return __wbg_adapter_163(a, state0.b, arg0, arg1);
                 } finally {
                     state0.a = a;
                 }
@@ -1317,6 +1318,11 @@ function __wbg_get_imports() {
     imports.wbg.__wbg_wbindgenthrow_451ec1a8469d7eb6 = function(arg0, arg1) {
         throw new Error(getStringFromWasm0(arg0, arg1));
     };
+    imports.wbg.__wbindgen_cast_1fd5f6e051ebe9b4 = function(arg0, arg1) {
+        // Cast intrinsic for `Closure(Closure { dtor_idx: 4300, function: Function { arguments: [Externref], shim_idx: 4301, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
+        const ret = makeMutClosure(arg0, arg1, 4300, __wbg_adapter_13);
+        return ret;
+    };
     imports.wbg.__wbindgen_cast_2241b6af4c4b2941 = function(arg0, arg1) {
         // Cast intrinsic for `Ref(String) -> Externref`.
         const ret = getStringFromWasm0(arg0, arg1);
@@ -1332,24 +1338,19 @@ function __wbg_get_imports() {
         const ret = BigInt.asUintN(64, arg0);
         return ret;
     };
+    imports.wbg.__wbindgen_cast_808eee3a93b0eefb = function(arg0, arg1) {
+        // Cast intrinsic for `Closure(Closure { dtor_idx: 4259, function: Function { arguments: [], shim_idx: 4260, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
+        const ret = makeMutClosure(arg0, arg1, 4259, __wbg_adapter_8);
+        return ret;
+    };
     imports.wbg.__wbindgen_cast_9ae0607507abb057 = function(arg0) {
         // Cast intrinsic for `I64 -> Externref`.
         const ret = arg0;
         return ret;
     };
-    imports.wbg.__wbindgen_cast_a80d8bd71297895c = function(arg0, arg1) {
-        // Cast intrinsic for `Closure(Closure { dtor_idx: 4277, function: Function { arguments: [Externref], shim_idx: 4278, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
-        const ret = makeMutClosure(arg0, arg1, 4277, __wbg_adapter_6);
-        return ret;
-    };
     imports.wbg.__wbindgen_cast_cb9088102bce6b30 = function(arg0, arg1) {
         // Cast intrinsic for `Ref(Slice(U8)) -> NamedExternref("Uint8Array")`.
         const ret = getArrayU8FromWasm0(arg0, arg1);
-        return ret;
-    };
-    imports.wbg.__wbindgen_cast_ce402fe3678a2ac0 = function(arg0, arg1) {
-        // Cast intrinsic for `Closure(Closure { dtor_idx: 4243, function: Function { arguments: [], shim_idx: 4244, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
-        const ret = makeMutClosure(arg0, arg1, 4243, __wbg_adapter_15);
         return ret;
     };
     imports.wbg.__wbindgen_cast_d6cd19b81560fd6e = function(arg0) {

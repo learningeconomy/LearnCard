@@ -216,4 +216,59 @@ describe('didkit-plugin compact VC-JWT verification', () => {
         const tampered: VC = { ...signed, expirationDate: '2001-01-01T00:00:00Z' };
         expectFailure(await verify(tampered, { proofFormat: 'ldp' }));
     });
+
+    it('accepts an expired token only through the dedicated renewal method', async () => {
+        const jwt = await issueJwt({ ...v1Credential(), expirationDate: '2000-01-01T00:00:00Z' });
+
+        const renewal = await plugin.methods.verifyCredentialForRenewal(fakeLearnCard, jwt, {
+            proofFormat: 'jwt',
+        });
+
+        expect(renewal.errors).toEqual([]);
+        expect(renewal.checks).toContain('JWS');
+        expect(renewal.checks).toContain('JWSRenewalExpired');
+    });
+
+    it('keeps ordinary verifyCredential strict even when the low-level renewal option is smuggled', async () => {
+        const jwt = await issueJwt({ ...v1Credential(), expirationDate: '2000-01-01T00:00:00Z' });
+
+        expectFailure(
+            await verify(jwt, { proofFormat: 'jwt', allowExpiredCredential: true } as never)
+        );
+    });
+
+    it('does not mark an ordinarily valid token as renewal-only', async () => {
+        const jwt = await issueJwt(v1Credential());
+
+        const renewal = await plugin.methods.verifyCredentialForRenewal(fakeLearnCard, jwt, {
+            proofFormat: 'jwt',
+        });
+
+        expect(renewal.errors).toEqual([]);
+        expect(renewal.checks).toContain('JWS');
+        expect(renewal.checks).not.toContain('JWSRenewalExpired');
+    });
+
+    it('rejects a future-nbf token in renewal mode', async () => {
+        const jwt = await issueJwt({
+            ...v1Credential(),
+            issuanceDate: '2100-01-01T00:00:00Z',
+            expirationDate: '2101-01-01T00:00:00Z',
+        });
+
+        expectFailure(
+            await plugin.methods.verifyCredentialForRenewal(fakeLearnCard, jwt, {
+                proofFormat: 'jwt',
+            })
+        );
+    });
+
+    it('rejects the renewal option on presentation verification', async () => {
+        await expect(
+            plugin.methods.verifyPresentation(fakeLearnCard, 'eyJ.e30.', {
+                proofFormat: 'jwt',
+                allowExpiredCredential: true,
+            } as never)
+        ).rejects.toThrow(/not supported for presentation/i);
+    });
 });

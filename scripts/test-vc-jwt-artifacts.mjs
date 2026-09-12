@@ -35,6 +35,10 @@ const args = new Set(process.argv.slice(2));
 const DIDKIT_DIST_WASM = path.join(root, 'packages/plugins/didkit/dist/didkit/didkit_wasm_bg.wasm');
 const BROWSER_ENTRY = path.join(root, 'scripts/vc-jwt-browser-entry.ts');
 const NATIVE_TEST = path.join(root, 'packages/plugins/didkit-plugin-node/test-jwt-verify.mjs');
+const NATIVE_REFRESH_TEST = path.join(
+    root,
+    'packages/plugins/didkit-plugin-node/test-native-refresh.mjs'
+);
 
 const failures = [];
 const checks = [];
@@ -270,6 +274,25 @@ const phase3 = () => {
     if (result.stderr) console.error(result.stderr);
 
     check('native addon JWT parity matrix passes', result.status === 0, `exit ${result.status}`);
+
+    if (!existsSync(NATIVE_REFRESH_TEST)) {
+        check('native renewal refresh test present', false, NATIVE_REFRESH_TEST);
+        return;
+    }
+
+    const refresh = spawnSync(process.execPath, [NATIVE_REFRESH_TEST], {
+        cwd: path.dirname(NATIVE_REFRESH_TEST),
+        encoding: 'utf8',
+    });
+
+    console.log(refresh.stdout || '');
+    if (refresh.stderr) console.error(refresh.stderr);
+
+    check(
+        'native addon exercises expired-held -> HTTP -> replacement refresh',
+        refresh.status === 0,
+        `exit ${refresh.status}`
+    );
 };
 
 const main = async () => {

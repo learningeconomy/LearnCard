@@ -65,6 +65,16 @@ const check = await wallet.invoke.verifyCredential(compactJwt, { proofFormat: 'j
 
 Ed25519 `did:key` with JOSE `alg: EdDSA` is the supported positive fixture. `alg: none` and symmetric `HS256` / `HS384` / `HS512` are rejected as algorithm confusion; other JWT algorithms are delegated to DIDKit but are not claimed supported. VCDM 2.0 is supported only as the legacy JOSE `vc`-claim wrapping profile (`vc-jwt-2.0-legacy`).
 
+#### Renewal-only verification
+
+`verifyCredentialForRenewal` is a dedicated, explicit opt-in for compact JWT credentials whose `exp` has already passed. It still enforces the JWS signature, issuer-authorized key, `nbf`, proof purpose, nonce and audience; only the expired `exp` is tolerated. A successful result reports `checks: ['JWS', 'JWSRenewalExpired']` and is **renewal-only valid** — never ordinary credential validity.
+
+```js
+const renewal = await wallet.invoke.verifyCredentialForRenewal(compactJwt, { proofFormat: 'jwt' });
+```
+
+Only `refreshCredential` uses this for the held credential. Ordinary `verifyCredential` stays strict even if a caller smuggles the low-level `allowExpiredCredential` option, and that option is rejected for linked-data proofs and for presentation verification. Lower-level callers can set `allowExpiredCredential` directly on the DIDKit `JWTOrLDPOptions` to obtain the same credential-only behavior.
+
 #### Issue a presentation
 
 ```js

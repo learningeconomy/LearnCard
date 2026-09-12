@@ -193,6 +193,41 @@ const main = async (): Promise<void> => {
         expiredCheck
     );
 
+    const renewalCheck = await plugin.methods.verifyCredentialForRenewal(fakeLC, expiredToken, {
+        proofFormat: 'jwt',
+    });
+    expect(
+        'expired compact VC-JWT accepted in renewal-only mode',
+        renewalCheck.errors.length === 0 &&
+            renewalCheck.checks.includes('JWS') &&
+            renewalCheck.checks.includes('JWSRenewalExpired'),
+        renewalCheck
+    );
+
+    const smuggledCheck = await plugin.methods.verifyCredential(fakeLC, expiredToken, {
+        proofFormat: 'jwt',
+        allowExpiredCredential: true,
+    });
+    expect(
+        'ordinary verifyCredential ignores a smuggled renewal option',
+        !smuggledCheck.checks.includes('JWS') && smuggledCheck.errors.length > 0,
+        smuggledCheck
+    );
+
+    const futureToken = await issue(
+        v1({ issuanceDate: '2100-01-01T00:00:00Z', expirationDate: '2101-01-01T00:00:00Z' })
+    );
+    const futureRenewalCheck = await plugin.methods.verifyCredentialForRenewal(
+        fakeLC,
+        futureToken,
+        { proofFormat: 'jwt' }
+    );
+    expect(
+        'future nbf rejected in renewal-only mode',
+        !futureRenewalCheck.checks.includes('JWS') && futureRenewalCheck.errors.length > 0,
+        futureRenewalCheck
+    );
+
     const noneHeader = b64url(JSON.stringify({ alg: 'none', kid: issuerVm }));
     const noneCheck = await verify(`${noneHeader}.${p1}.`);
     expect(
@@ -249,6 +284,8 @@ const main = async (): Promise<void> => {
         invoke: {
             verifyCredential: (credential: any, options: any) =>
                 plugin.methods.verifyCredential(fakeLC, credential, options),
+            verifyCredentialForRenewal: (credential: any, options: any) =>
+                plugin.methods.verifyCredentialForRenewal(fakeLC, credential, options),
         },
     };
 
@@ -449,21 +486,37 @@ const main = async (): Promise<void> => {
         );
     }
 
-    // Expired held compact JWT: documented fail-closed blocker, zero requests.
+    // Expired held compact JWT: renewal-only verification accepts the signed
+    // token, fetches the text/plain replacement and preserves exact bytes.
     const expiredHeldToken = await issue(
         v1({
             id: 'urn:uuid:held-credential-3',
-            expirationDate: '2000-01-01T00:00:00Z',
+            issuanceDate: '2019-01-01T00:00:00Z',
+            expirationDate: '2020-01-01T00:00:00Z',
             refreshService: { id: refreshUrl, type: '1EdTechCredentialRefresh' },
         })
     );
+    const expiredHeldReplacement = await issue(
+        v1({
+            id: 'urn:uuid:held-credential-3',
+            issuanceDate: '2026-09-01T00:00:00Z',
+            expirationDate: '2100-01-01T00:00:00Z',
+            credentialSubject: { id: holderDid, achievement: { name: 'Renewed after expiry' } },
+            refreshService: { id: refreshUrl, type: '1EdTechCredentialRefresh' },
+        })
+    );
+    await fetch('/set-replacement', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ token: expiredHeldReplacement }),
+    });
     const beforeExpired = await hits();
     const expiredHeldRefresh = await invokeRefresh(implicitLC, expiredHeldToken, loopbackOpts);
     expect(
-        'expired compact-JWT held renewal fails closed without network (browser)',
-        expiredHeldRefresh.status === 'failed' &&
-            expiredHeldRefresh.code === 'INVALID_PROOF' &&
-            (await hits()).standard === beforeExpired.standard,
+        'expired compact-JWT held renewal succeeds via text/plain replacement (browser)',
+        expiredHeldRefresh.status === 'updated' &&
+            (expiredHeldRefresh.credential as any).proof?.jwt === expiredHeldReplacement &&
+            (await hits()).standard === beforeExpired.standard + 1,
         expiredHeldRefresh
     );
 

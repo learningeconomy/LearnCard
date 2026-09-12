@@ -49,6 +49,14 @@ const check = await learnCard.invoke.verifyCredential(compactJwt, { proofFormat:
 
 Ed25519 `did:key` with JOSE `alg: EdDSA` is the supported positive fixture. `alg: none` and symmetric `HS256` / `HS384` / `HS512` reject as algorithm confusion; other JWT algorithms are delegated to DIDKit but are not claimed supported. VCDM 2.0 is supported only as the legacy JOSE `vc`-claim wrapping profile (`vc-jwt-2.0-legacy`).
 
+`verifyCredentialForRenewal` is the dedicated native/WASM-parity opt-in for a signature-valid but expired held compact VC-JWT. It still enforces the JWS signature, issuer-authorized key, `nbf`, proof purpose, nonce and audience; the result reports `checks: ['JWS', 'JWSRenewalExpired']` and is renewal-only valid. Ordinary `verifyCredential` and all presentation verification stay strict, and `allowExpiredCredential` is rejected for linked-data proofs and presentations.
+
+```typescript
+const renewal = await learnCard.invoke.verifyCredentialForRenewal(compactJwt, {
+    proofFormat: 'jwt',
+});
+```
+
 ## Building from Source
 
 If prebuilt binaries aren't available for your platform:
@@ -88,6 +96,7 @@ bun run build
 - `didToVerificationMethod`
 - `issueCredential`
 - `verifyCredential`
+- `verifyCredentialForRenewal`
 - `issuePresentation`
 - `verifyPresentation`
 - `contextLoader`

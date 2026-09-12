@@ -1,6 +1,21 @@
 import type { InitInput } from '@learncard/types';
-import type { DIDKitPlugin, DidMethod } from '@learncard/didkit-plugin';
+import type { DIDKitPlugin, DidMethod, ProofOptions } from '@learncard/didkit-plugin';
 import type { JWKWithPrivateKey, VC, VP } from '@learncard/types';
+
+/**
+ * Remove the low-level DIDKit renewal opt-in from caller-supplied proof options.
+ *
+ * The ordinary `verifyCredential` must always be strict, even if an untyped
+ * JavaScript caller smuggles `allowExpiredCredential` into the options object.
+ * Renewal is only reachable through the dedicated `verifyCredentialForRenewal`
+ * method, which refresh uses for the held credential alone.
+ */
+const strictProofOptions = (options: ProofOptions): Record<string, unknown> => {
+    const sanitized: Record<string, unknown> = { ...options };
+    delete sanitized.allowExpiredCredential;
+
+    return sanitized;
+};
 
 // Native addon interface
 interface NativeAddon {
@@ -196,8 +211,21 @@ export const getDidKitPlugin = async (
                     : await getDocumentMap(_learnCard, credential, _allowRemoteContexts);
                 const result = await native.verifyCredential(
                     isJwt ? credential : JSON.stringify(credential),
-                    JSON.stringify(options),
+                    JSON.stringify(strictProofOptions(options)),
                     JSON.stringify(contextMap)
+                );
+                return JSON.parse(result);
+            },
+
+            verifyCredentialForRenewal: async (_learnCard, credential, options = {}) => {
+                const result = await native.verifyCredential(
+                    credential,
+                    JSON.stringify({
+                        ...strictProofOptions(options),
+                        proofFormat: 'jwt',
+                        allowExpiredCredential: true,
+                    }),
+                    '{}'
                 );
                 return JSON.parse(result);
             },

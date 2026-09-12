@@ -22,6 +22,7 @@ import {
     extractCompactJwt,
     verifyCredentialJwt,
     type VerifiedCredentialJwtResult,
+    type VerifyCredentialJwtPolicy,
 } from './verifyCredentialJwt';
 
 /**
@@ -875,7 +876,8 @@ export const refreshCredential = (_initLearnCard: VCDependentLearnCard) => {
          * bytes; JSON inputs keep the existing DIDKit linked-data-proof behavior.
          */
         const verifyToView = async (
-            input: VC | string
+            input: VC | string,
+            policy: VerifyCredentialJwtPolicy = 'strict'
         ): Promise<
             { ok: true; view: VerifiedView } | { ok: false; result: CredentialRefreshResult }
         > => {
@@ -883,7 +885,7 @@ export const refreshCredential = (_initLearnCard: VCDependentLearnCard) => {
                 let verified: VerifiedCredentialJwtResult;
 
                 try {
-                    verified = await verifyCredentialJwt(_initLearnCard, input);
+                    verified = await verifyCredentialJwt(_initLearnCard, input, { policy });
                 } catch {
                     return { ok: false, result: invalidProof() };
                 }
@@ -904,21 +906,20 @@ export const refreshCredential = (_initLearnCard: VCDependentLearnCard) => {
             return { ok: true, view: viewFromJson(input as VC) };
         };
 
-        // Verify and normalize the held credential BEFORE selecting its signed
-        // refresh endpoint or issuing any network request. Display metadata never
-        // influences the endpoint, identity, freshness or rollback decisions below.
-        const heldVerification = await verifyToView(credential);
+        // The held credential is verified in renewal-only mode: signature, issuer
+        // key authorization, `nbf`, proof purpose, nonce and audience are all
+        // still enforced, but an already-expired `exp` is tolerated so a held
+        // token can discover and fetch its replacement. The candidate is always
+        // verified strictly below.
+        const heldVerification = await verifyToView(credential, 'allow-expired-for-renewal');
 
         if (!heldVerification.ok) return heldVerification.result;
 
         const held = heldVerification.view;
 
         // A not-yet-valid held credential may never initiate a refresh. An expired
-        // *JSON-LD* held credential may renew because its signature was verified
-        // above. An expired compact JWT cannot reach this point against the pinned
-        // DIDKit artifact, which enforces `nbf`/`exp` inside verification and
-        // reports an indistinguishable verification failure (Task 3 documented
-        // blocker; see docs/superpowers/plans/2026-09-12-lc-2195-task-3-results.md).
+        // held credential (JSON-LD or compact JWT) may renew because its
+        // signature was verified above with the renewal-only policy.
         if (temporalStatusOf(held) === 'not-yet-valid') return invalidProof();
 
         const service = getSupportedRefreshService(held.credential);

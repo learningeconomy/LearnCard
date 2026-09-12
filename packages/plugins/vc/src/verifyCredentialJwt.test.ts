@@ -17,7 +17,15 @@ type DidKit = Awaited<ReturnType<typeof getDidKitPlugin>>;
 
 const fakeLearnCard = {
     context: {
-        resolveDocument: async (_url: string) => undefined,
+        resolveDocument: async (url: string) => {
+            try {
+                return (
+                    (await plugin.methods.contextLoader(fakeLearnCard as never, url)) ?? undefined
+                );
+            } catch {
+                return undefined;
+            }
+        },
     },
     debug: () => undefined,
 } as never;
@@ -36,7 +44,7 @@ const issueOptions = () => ({
     proofPurpose: 'assertionMethod',
 });
 
-const v1Unsigned = (): Record<string, unknown> => ({
+const v1Unsigned = (overrides: Record<string, unknown> = {}): Record<string, unknown> => ({
     '@context': ['https://www.w3.org/2018/credentials/v1'],
     id: 'urn:uuid:11111111-1111-1111-1111-111111111111',
     type: ['VerifiableCredential'],
@@ -44,6 +52,7 @@ const v1Unsigned = (): Record<string, unknown> => ({
     issuanceDate: '2026-01-01T00:00:00Z',
     expirationDate: '2100-01-01T00:00:00Z',
     credentialSubject: { id: 'did:example:subject', achievement: { name: 'V1' } },
+    ...overrides,
 });
 
 const v2Unsigned = (): Record<string, unknown> => ({
@@ -64,11 +73,16 @@ const issueJwt = async (credential: Record<string, unknown>) =>
         key
     )) as unknown as string;
 
-const verifierFor = (verify: DidKit['methods']['verifyCredential']): VCDependentLearnCard =>
+const verifierFor = (
+    verify: DidKit['methods']['verifyCredential'],
+    verifyForRenewal: DidKit['methods']['verifyCredentialForRenewal'] = verify as never
+): VCDependentLearnCard =>
     ({
         invoke: {
             verifyCredential: (credential: VC | string, options?: unknown) =>
                 verify(fakeLearnCard, credential, options as never),
+            verifyCredentialForRenewal: (credential: string, options?: unknown) =>
+                verifyForRenewal(fakeLearnCard, credential, options as never),
         },
     }) as unknown as VCDependentLearnCard;
 
@@ -506,6 +520,80 @@ describe('verifyCredentialJwt — store/read/export round trip', () => {
         expect(second.verified).toBe(true);
         if (!second.verified) return;
         expect(second.token).toBe(token);
+    });
+});
+
+describe('renewal-only policy', () => {
+    const renewalVerifier = () =>
+        verifierFor(plugin.methods.verifyCredential, plugin.methods.verifyCredentialForRenewal);
+
+    const expiredToken = () =>
+        issueJwt(
+            v1Unsigned({
+                issuanceDate: '2019-01-01T00:00:00Z',
+                expirationDate: '2020-01-01T00:00:00Z',
+            })
+        );
+
+    it('rejects an expired token under the default strict policy', async () => {
+        const result = await verifyCredentialJwt(verifier, await expiredToken());
+
+        expect(result.verified).toBe(false);
+    });
+
+    it('does not let caller proofOptions smuggle the low-level renewal flag', async () => {
+        const result = await verifyCredentialJwt(verifier, await expiredToken(), {
+            proofOptions: { allowExpiredCredential: true } as never,
+        });
+
+        expect(result.verified).toBe(false);
+    });
+
+    it('accepts an expired token only under the typed renewal policy', async () => {
+        const result = await verifyCredentialJwt(renewalVerifier(), await expiredToken(), {
+            policy: 'allow-expired-for-renewal',
+        });
+
+        expect(result.verified).toBe(true);
+    });
+});
+
+describe('JWS-only success (embedded-proof fallback)', () => {
+    it('does not let a valid inner linked-data proof authenticate an unmatched outer JWT', async () => {
+        const inner = (await plugin.methods.issueCredential(
+            fakeLearnCard,
+            v1Unsigned({
+                issuanceDate: '2019-01-01T00:00:00Z',
+                expirationDate: '2020-01-01T00:00:00Z',
+                credentialSubject: { id: 'did:example:subject' },
+            }) as never,
+            {
+                proofFormat: 'ldp',
+                verificationMethod,
+                proofPurpose: 'assertionMethod',
+            } as never,
+            key
+        )) as VC;
+
+        // The inner linked-data proof is genuinely valid and cryptographically
+        // verified by the pinned WASM.
+        const innerCheck = await plugin.methods.verifyCredential(fakeLearnCard, inner, {
+            proofFormat: 'ldp',
+        });
+        expect(innerCheck.errors).toEqual([]);
+        expect(innerCheck.checks).toContain('proof');
+        expect(innerCheck.checks).not.toContain('JWS');
+
+        const expired = Math.floor(Date.parse('2020-01-01T00:00:00Z') / 1000);
+        const token = await signPayload({ vc: inner, exp: expired });
+
+        // Model the fork's embedded-proof fallback: the outer JWT is temporally
+        // unmatched, so only the valid inner linked-data proof is reported.
+        // `verifyCredentialJwt` must not accept that as token authentication.
+        const fallbackVerifier = verifierFor(async () => innerCheck);
+
+        const result = await verifyCredentialJwt(fallbackVerifier, token);
+        expect(result.verified).toBe(false);
     });
 });
 

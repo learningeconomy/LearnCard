@@ -13,4 +13,5 @@ export type {
     VerifiedCredentialProfile,
     VerifiedCredentialTemporalStatus,
     VerifyCredentialJwtOptions,
+    VerifyCredentialJwtPolicy,
 } from './verifyCredentialJwt';

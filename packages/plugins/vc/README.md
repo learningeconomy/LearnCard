@@ -63,6 +63,8 @@ else console.log('This credential is valid!');
 
 Ed25519 `did:key` with JOSE `alg: EdDSA` is the supported positive fixture; `alg: none` and symmetric `HS*` reject, and other JWT algorithms are delegated but not claimed. VCDM 2.0 is the legacy JOSE `vc`-claim wrapping profile only (`vc-jwt-2.0-legacy`).
 
+`refreshCredential` may renew a signature-valid but **expired** held compact VC-JWT. The held token is verified in an explicit renewal-only mode (signature, issuer-authorized key, `nbf`, proof purpose, nonce and audience still enforced; expired `exp` tolerated) and the replacement is always verified strictly. A successful renewal-only verification reports the `JWSRenewalExpired` check alongside `JWS` and is not ordinary validity. `verifyCredentialJwt` accepts `{ policy: 'allow-expired-for-renewal' }` for this; the default is `'strict'`, and a caller-supplied low-level `allowExpiredCredential` option is never forwarded.
+
 #### Issue a presentation
 
 ```js

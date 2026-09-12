@@ -77,6 +77,25 @@ export type DidkitPluginMethods = {
         credential: VC | string,
         options?: ProofOptions
     ) => Promise<VerificationCheck>;
+    /**
+     * Renewal-only verification of a compact JWT credential.
+     *
+     * Identical to {@link verifyCredential} except that a signature-valid token
+     * whose `exp` is already in the past is accepted, and the successful result
+     * additionally reports the `JWSRenewalExpired` check. `nbf`, signature,
+     * issuer key authorization, proof purpose, nonce and audience checks are
+     * unchanged. The result is **renewal-only valid** and must never be treated
+     * as ordinary credential validity.
+     *
+     * This is a dedicated, explicitly named opt-in. The ordinary
+     * `verifyCredential` never honors a caller-supplied low-level
+     * `allowExpiredCredential` option. Presentations and JSON-LD credentials
+     * are rejected, not silently weakened.
+     */
+    verifyCredentialForRenewal: (
+        credential: string,
+        options?: ProofOptions
+    ) => Promise<VerificationCheck>;
     issuePresentation: (
         presentation: UnsignedVP,
         options: ProofOptions,

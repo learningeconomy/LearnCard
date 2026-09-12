@@ -331,8 +331,8 @@ The normalized credential is reconciled against the embedded `vc` claim; contrad
 
 Issuer DID assertion-method authorization is enforced: a `kid` bound to a different DID than the normalized issuer is rejected. Unsupported contexts, malformed headers or claims, and unknown `proofFormat` values fail closed.
 
-{% hint style="warning" %}
-**Limitation — expired compact VC-JWT.** A signature-valid but **expired** compact VC-JWT cannot currently be distinguished from an invalid one. The pinned DIDKit/SSI `jwt_matches` predicate enforces `nbf` / `exp` unconditionally during verification, so `refreshCredential` returns `INVALID_PROOF` and makes **zero** network requests. Expired **JSON-LD** held credentials may renew once signature, issuer authorization and claim binding pass; an expired JSON held credential with a failing proof also makes zero requests. The minimal fix is an opt-in temporal policy threaded through the pinned fork plus rebuilt WASM/native artifacts, which is not implemented yet. SD-JWT is out of scope.
+{% hint style="info" %}
+**Expired compact VC-JWT renewal.** A signature-valid but **expired** compact VC-JWT held by the holder is renewed through an explicit, credential-only renewal-only verification mode: the JWS signature, issuer-authorized key (`kid`), `nbf`, proof purpose, nonce and audience are still enforced, but an expired `exp` is tolerated. A successful renewal-only result reports the additional `JWSRenewalExpired` check alongside `JWS` and is **not** ordinary credential validity. Replacements are always verified strictly, so an expired or future replacement, a future-`nbf` held token, a forged signature or a wrong signer still fails closed (`INVALID_PROOF`) before any request. Ordinary verification and every presentation remain strict; `allowExpiredCredential` is rejected for them. SD-JWT is out of scope.
 {% endhint %}
 
 ---
@@ -439,7 +439,7 @@ This CLI covers the provisional-to-final path. Notification-collapse and Boost-r
 - Refresh is **foreground-only**; manual pull-to-refresh is a planned follow-up.
 - The app replaces the wallet record in place, but exact cross-device compare-and-swap is out of scope; devices converge on their next foreground check.
 - Revocation stops the endpoint from serving versions; the holder's locally retained history is not remotely deleted.
-- **Expired compact VC-JWT refresh is blocked**: the pinned DIDKit/SSI verifier enforces `nbf` / `exp` during verification, so a signature-valid expired compact token is indistinguishable from an invalid one. `refreshCredential` fails closed with `INVALID_PROOF` and makes no network request. The documented fix is an opt-in temporal policy in the pinned fork with rebuilt WASM/native artifacts.
+- **Expired compact VC-JWT refresh is supported through an explicit renewal-only mode.** The held token's JWS signature, issuer-authorized key, `nbf`, proof purpose, nonce and audience are verified, and an expired `exp` is tolerated only for the held credential. The successful result carries the `JWSRenewalExpired` check in addition to `JWS` and must not be treated as ordinary validity. Replacements and ordinary verification remain strict. This capability ships with the rebuilt WASM/native artifacts from the LC-2195 fork commits; the source commits are local-only until the forks are published.
 
 ## See also
 
