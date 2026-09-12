@@ -20,7 +20,10 @@ export type VCPluginDependentMethods = {
         options: ProofOptions,
         keypair: JWKWithPrivateKey
     ) => Promise<VC>;
-    verifyCredential: (credential: VC, options?: ProofOptions) => Promise<VerificationCheck>;
+    verifyCredential: (
+        credential: VC | string,
+        options?: ProofOptions
+    ) => Promise<VerificationCheck>;
     issuePresentation: (
         presentation: UnsignedVP,
         options: ProofOptions,
@@ -40,7 +43,7 @@ export type VCPluginMethods = {
         signingOptions?: Partial<ProofOptions>
     ) => Promise<VC>;
     verifyCredential: (
-        credential: VC,
+        credential: VC | string,
         options?: Partial<ProofOptions>
     ) => Promise<VerificationCheck>;
     issuePresentation: (
@@ -100,7 +103,7 @@ export type VCImplicitLearnCard = LearnCard<any, 'id', VCPluginMethods & VCPlugi
 /** @group VC Plugin */
 export type VerifyExtension = {
     verifyCredential: (
-        credential: VC,
+        credential: VC | string,
         options?: Partial<ProofOptions>
     ) => Promise<VerificationCheck>;
 };

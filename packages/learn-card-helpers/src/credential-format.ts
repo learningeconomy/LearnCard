@@ -469,13 +469,32 @@ const projectJwtVcCompactToVc = (compact: string): VC | undefined => {
     // projected VC stays verifiable and VC-validator compatible, mirroring
     // normalizeIssuedCredential. Returning only payload.vc drops the issuer
     // signature and yields a proofless object downstream consumers reject.
+    //
+    // The compact token IS the authoritative wire form for a jwt-vc-json
+    // credential, so the projection always re-attaches it even when the
+    // embedded claim carried its own proof — otherwise a store/read/export
+    // round trip would silently drop the signed bytes.
     const vc = { ...(vcClaim as Record<string, unknown>) } as Record<string, unknown>;
-    if (!vc.proof) {
-        vc.proof = {
-            type: 'JwtProof2020',
-            jwt: compact,
-        };
+    const jwtProof = { type: 'JwtProof2020', jwt: compact };
+
+    if (Array.isArray(vc.proof)) {
+        vc.proof = [
+            ...vc.proof.filter(
+                entry =>
+                    !(
+                        entry &&
+                        typeof entry === 'object' &&
+                        typeof (entry as { jwt?: unknown }).jwt === 'string'
+                    )
+            ),
+            jwtProof,
+        ];
+    } else if (vc.proof && typeof vc.proof === 'object') {
+        vc.proof = { ...(vc.proof as Record<string, unknown>), ...jwtProof };
+    } else {
+        vc.proof = jwtProof;
     }
+
     return vc as VC;
 };
 
