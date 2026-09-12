@@ -79,6 +79,32 @@ export const getCredentialEffectiveTime = (vc: RefreshableCredential): number | 
 };
 
 /**
+ * Returns the non-empty credential subject identifiers in credential order.
+ *
+ * Handles both a single subject object and an array of subjects. Subjects without
+ * a usable `id` are skipped so this normalized view can be compared against the
+ * token-derived subject IDs produced for JWT-backed credentials.
+ */
+export const getCredentialSubjectIds = (vc: RefreshableCredential): string[] => {
+    const subject = vc?.credentialSubject;
+
+    if (subject === undefined || subject === null) return [];
+
+    const subjects = Array.isArray(subject) ? subject : [subject];
+    const ids: string[] = [];
+
+    for (const entry of subjects) {
+        if (entry === null || typeof entry !== 'object') continue;
+
+        const id = (entry as { id?: unknown }).id;
+
+        if (typeof id === 'string' && id.length > 0) ids.push(id);
+    }
+
+    return ids;
+};
+
+/**
  * Deterministically canonicalizes a JSON-like value: object keys are recursively
  * sorted, array order is preserved, and primitives pass through unchanged.
  */

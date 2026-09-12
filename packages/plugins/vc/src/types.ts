@@ -58,7 +58,7 @@ export type VCPluginMethods = {
     getTestVp: (credential?: VC) => Promise<UnsignedVP>;
     getDidAuthVp: (options?: ProofOptions) => Promise<VP | string>;
     refreshCredential: (
-        credential: VC,
+        credential: VC | string,
         options?: RefreshCredentialOptions
     ) => Promise<CredentialRefreshResult>;
 };
