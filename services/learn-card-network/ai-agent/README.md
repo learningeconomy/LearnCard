@@ -223,8 +223,9 @@ Missing SDK keys, initialization failures, and evaluation errors fail closed. Tu
 does not cancel an already-running agent or undo its effects.
 
 The main **Deploy** workflow sends affected `main` commits to staging and Changesets releases
-that update the AI Agent package to production. It reuses `deploy-ai-agent.yml`, which validates
-the environment/project pairing and enables ECS schedule synchronization in both environments.
+that update the AI Agent package to production. All deployment steps live in `deploy.yml`,
+including environment/project validation and ECS schedule synchronization in both environments.
+`test-ai-agent.yml` contains only pull-request validation.
 Production retains its environment approval; no separate action dispatch is required.
 See [RUNBOOK.md](./RUNBOOK.md) for CI, release metadata, environment setup, and controlled rollout.
 

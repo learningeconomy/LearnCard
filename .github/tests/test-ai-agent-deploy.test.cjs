@@ -28,9 +28,10 @@ const readWorkflow = file => {
 };
 const main = readWorkflow(process.argv[2] || path.join(root, '.github/workflows/deploy.yml'));
 const agent = readWorkflow(
-    process.argv[3] || path.join(root, '.github/workflows/deploy-ai-agent.yml')
+    process.argv[3] || path.join(root, '.github/workflows/test-ai-agent.yml')
 );
 const determine = main.jobs['determine-affected'];
+const validate = main.jobs['validate-ai-agent'];
 const deploy = main.jobs['deploy-ai-agent'];
 const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'learncard-ai-deploy-'));
 let invocation = 0;
@@ -84,6 +85,8 @@ const route = ({
     environment = 'staging',
     cancelled = false,
     detection = 'success',
+    validation = 'success',
+    eventName = 'push',
 } = {}) => {
     const steps = {
         affected: { outputs: { affected } },
@@ -103,13 +106,29 @@ const route = ({
         'test-affected': { result: tests },
     };
     const context = {
-        github: { event_name: manual ? 'workflow_dispatch' : 'push' },
+        github: { event_name: manual ? 'workflow_dispatch' : eventName },
         inputs: { 'deploy-ai-agent': selected, 'target-environment': environment },
-        needs: Object.fromEntries((deploy.needs || []).map(name => [name, results[name]])),
         cancelled: () => cancelled,
     };
+    context.needs = Object.fromEntries(validate.needs.map(name => [name, results[name]]));
+    const validationSelected = evaluate(validate.if, context);
+    results['validate-ai-agent'] = {
+        result: validationSelected ? validation : 'skipped',
+        outputs: Object.fromEntries(
+            Object.entries(validate.outputs).map(([name, expression]) => [
+                name,
+                evaluate(expression, context),
+            ])
+        ),
+    };
+    context.needs = Object.fromEntries(deploy.needs.map(name => [name, results[name]]));
     if (!evaluate(deploy.if, context)) return undefined;
-    return evaluate(deploy.with['target-environment'], context);
+    const target = evaluate(deploy.env.TARGET_ENVIRONMENT, context);
+    const interpolate = value =>
+        value.replace(/\$\{\{.*?\}\}/g, expression => evaluate(expression, context));
+    assert.equal(interpolate(deploy.environment), `learn-card-ai-agent-${target}`);
+    assert.equal(interpolate(deploy.concurrency.group), `deploy-ai-agent-${target}`);
+    return target;
 };
 
 try {
@@ -127,6 +146,11 @@ try {
         'failed staging tests must block deployment'
     );
     assert.equal(
+        route({ eventName: 'pull_request' }),
+        undefined,
+        'pull requests must never deploy even if validation succeeds'
+    );
+    assert.equal(
         route({ affected: 'scouts' }),
         undefined,
         'unrelated main pushes must not deploy AI'
@@ -138,6 +162,16 @@ try {
         route({ ...release, files: [aiPackage] }),
         'production',
         'AI version releases must deploy production'
+    );
+    assert.equal(
+        route({ ...release, files: [aiPackage], validation: 'failure' }),
+        undefined,
+        'failed AI validation must block production before environment approval'
+    );
+    assert.equal(
+        route({ tests: 'skipped' }),
+        undefined,
+        'ordinary staging deployments must not bypass skipped tests'
     );
     assert.equal(
         route({ ...release, files: ['apps/learn-card-app/package.json'] }),
@@ -179,11 +213,15 @@ try {
         false,
         'manual overrides belong to main Deploy'
     );
-    assert.equal(
-        evaluate(agent.jobs.deploy.if, { github: { event_name: 'pull_request' } }),
-        false,
-        'PR validation must never deploy'
-    );
+    assert.deepEqual(Object.keys(agent.on), ['pull_request'], 'AI test workflow is PR-only');
+    for (const job of Object.values(agent.jobs)) {
+        assert.equal(
+            job.environment,
+            undefined,
+            'PR checks must not enter deployment environments'
+        );
+        assert.deepEqual(job.permissions ?? agent.permissions, { contents: 'read' });
+    }
     assert.equal(agent.on.pull_request.paths, undefined, 'AI CI must also report on unrelated PRs');
     console.log(
         'AI Agent routing passed: affected staging, Changesets production, failure/cancellation gates, manual overrides, and PR isolation.'

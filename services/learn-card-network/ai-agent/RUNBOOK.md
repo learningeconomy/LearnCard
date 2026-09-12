@@ -355,10 +355,11 @@ perform irreversible effects.
 - Include a changeset for `@learncard/ai-agent-service` with deployable changes. The package
   is private and is not published to npm, but Changesets still versions it and includes
   its bump in the usual release PR.
-- `deploy-ai-agent.yml` is the reusable deployment implementation and PR validation entry.
-  It has no independent `push` or manual-dispatch trigger, so a `main` push cannot start
-  a second AI Agent rollout. Selected deployments rerun **AI Agent CI** before the
+- All AI Agent deployment logic lives in `deploy.yml`: validation, Trigger.dev deployment,
+  image build/scan, ECS rollout, and live checks. Its **AI Agent CI** job runs before the
   environment-protected deployment job starts.
+- `test-ai-agent.yml` only runs pull-request validation. It has no deployment jobs,
+  deployment environments, or callable workflow entry point.
 - Production begins automatically from the Changesets release; existing GitHub environment
   approval still applies. No separate action needs to be dispatched. Keep the production
   LaunchDarkly flag off throughout the initial deployment; workflows never open targeting.
