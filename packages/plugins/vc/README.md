@@ -55,6 +55,14 @@ if (result.errors.length > 0) console.error('This credential is not valid!', res
 else console.log('This credential is valid!');
 ```
 
+### Compact VC-JWT
+
+`verifyCredential` accepts JWT-backed credentials — a raw compact VC-JWT, a `jwt-vc-json` storage envelope, or a `JwtProof2020` / `proof.jwt` projection — and normalizes the result from the verified token. The compact token is the authority: verification binds the result to the exact token bytes and token-derived metadata, and the normalized credential retains the signed token under `proof.jwt`. Contradictions between registered claims (`iss`, `sub`, `jti`, `iat`, `nbf`, `exp`) and the embedded `vc` claim reject.
+
+`@learncard/vc-plugin` also exports the lower-level `verifyCredentialJwt`, which returns `{ verified: true, token, credential, metadata }`. It must be given the VC plugin's DIDKit-backed dependency object, not the merged top-level wallet.
+
+Ed25519 `did:key` with JOSE `alg: EdDSA` is the supported positive fixture; `alg: none` and symmetric `HS*` reject, and other JWT algorithms are delegated but not claimed. VCDM 2.0 is the legacy JOSE `vc`-claim wrapping profile only (`vc-jwt-2.0-legacy`).
+
 #### Issue a presentation
 
 ```js

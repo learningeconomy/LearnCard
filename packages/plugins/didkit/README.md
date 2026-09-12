@@ -55,6 +55,16 @@ if (result.errors.length > 0) console.error('This credential is not valid!', res
 else console.log('This credential is valid!');
 ```
 
+### Compact VC-JWT
+
+`verifyCredential` accepts a compact VC-JWT string as well as a JSON-LD credential. A string input is passed to DIDKit unchanged (never `JSON.stringify`d) and must be verified with `proofFormat: 'jwt'`. A successful JWT verification reports `checks: ['JWS']`.
+
+```js
+const check = await wallet.invoke.verifyCredential(compactJwt, { proofFormat: 'jwt' });
+```
+
+Ed25519 `did:key` with JOSE `alg: EdDSA` is the supported positive fixture. `alg: none` and symmetric `HS256` / `HS384` / `HS512` are rejected as algorithm confusion; other JWT algorithms are delegated to DIDKit but are not claimed supported. VCDM 2.0 is supported only as the legacy JOSE `vc`-claim wrapping profile (`vc-jwt-2.0-legacy`).
+
 #### Issue a presentation
 
 ```js
