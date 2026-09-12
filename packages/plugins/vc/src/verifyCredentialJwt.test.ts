@@ -298,6 +298,7 @@ describe('verifyCredentialJwt — claim reconciliation', () => {
             sub: 'did:example:subject',
             jti: 'urn:uuid:bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
             iat: 1_767_225_600,
+            nbf: 1_767_312_000,
             exp: 4_102_444_800,
             vc: baseVc(),
         };
@@ -309,13 +310,15 @@ describe('verifyCredentialJwt — claim reconciliation', () => {
 
         expect(result.credential.id).toBe('urn:uuid:bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb');
         expect(result.metadata.subjectIds).toEqual(['did:example:subject']);
+        expect(result.credential.issuanceDate).toBe(new Date(payload.nbf * 1000).toISOString());
+        expect(result.metadata.issuedAt).toBe(result.credential.issuanceDate);
     });
 
     it('accepts iat and nbf differing while both remain valid', async () => {
         const payload = {
             ...basePayload(),
-            iat: 1_767_225_600,
-            nbf: 1_767_312_000,
+            iat: 1_767_312_000,
+            nbf: 1_767_225_600,
         };
         const vc = payload.vc;
 
@@ -324,9 +327,9 @@ describe('verifyCredentialJwt — claim reconciliation', () => {
         expect(result.verified).toBe(true);
         if (!result.verified) return;
 
-        expect(result.metadata.issuedAt).toBe(new Date(payload.iat * 1000).toISOString());
+        expect(result.metadata.issuedAt).toBe(new Date(payload.nbf * 1000).toISOString());
         expect(result.metadata.notBefore).toBe(new Date(payload.nbf * 1000).toISOString());
-        expect(result.metadata.notBefore).not.toBe(result.metadata.issuedAt);
+        expect(result.metadata.notBefore).toBe(result.metadata.issuedAt);
         expect(vc.issuanceDate).toBeTruthy();
     });
 
@@ -377,15 +380,24 @@ describe('verifyCredentialJwt — claim reconciliation', () => {
         expect(result.check.errors.join(' ')).toMatch(/ambiguous/i);
     });
 
-    it('rejects a conflicting iat against the embedded issuance timeline', async () => {
+    it('rejects conflicting nbf even when iat matches embedded issuanceDate', async () => {
         const payload = basePayload();
-        payload.iat = 1_600_000_000;
+        payload.nbf = 1_600_000_000;
 
         const result = await verifyCredentialJwt(verifier, await signPayload(payload));
 
         expect(result.verified).toBe(false);
         if (result.verified) return;
-        expect(result.check.errors.join(' ')).toMatch(/iat.*conflicts/i);
+        expect(result.check.errors.join(' ')).toMatch(/nbf.*conflicts/i);
+    });
+
+    it('does not substitute iat for a missing VC 1.1 issuanceDate and nbf', async () => {
+        const payload = { ...basePayload(), vc: baseVc(), nbf: undefined };
+        const result = await verifyCredentialJwt(verifier, await signPayload(payload));
+
+        expect(result.verified).toBe(false);
+        if (result.verified) return;
+        expect(result.check.errors.join(' ')).toMatch(/issuanceDate.*nbf/i);
     });
 
     it('rejects a conflicting exp against the embedded expiration timeline', async () => {

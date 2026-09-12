@@ -57,7 +57,7 @@ else console.log('This credential is valid!');
 
 ### Compact VC-JWT
 
-`verifyCredential` accepts JWT-backed credentials — a raw compact VC-JWT, a `jwt-vc-json` storage envelope, or a `JwtProof2020` / `proof.jwt` projection — and normalizes the result from the verified token. The compact token is the authority: verification binds the result to the exact token bytes and token-derived metadata, and the normalized credential retains the signed token under `proof.jwt`. Contradictions between registered claims (`iss`, `sub`, `jti`, `iat`, `nbf`, `exp`) and the embedded `vc` claim reject.
+`verifyCredential` accepts JWT-backed credentials — a raw compact VC-JWT, a `jwt-vc-json` storage envelope, or a `JwtProof2020` / `proof.jwt` projection — and normalizes the result from the verified token. The compact token is the authority: verification binds the result to the exact token bytes and token-derived metadata, and the normalized credential retains the signed token under `proof.jwt`. Contradictions between mapped registered claims and the embedded `vc` claim reject. For VC 1.1, `nbf` maps to `issuanceDate` and determines credential freshness; `iat` dates the JWT itself, may differ, and cannot replace a missing `issuanceDate`/`nbf`. This does not change the separately supported legacy VC 2.0 profile's mapping.
 
 `@learncard/vc-plugin` also exports the lower-level `verifyCredentialJwt`, which returns `{ verified: true, token, credential, metadata }`. It must be given the VC plugin's DIDKit-backed dependency object, not the merged top-level wallet.
 

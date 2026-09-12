@@ -14,6 +14,7 @@
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 import { getDidKitPlugin } from '@learncard/didkit-plugin';
+import { importJWK, SignJWT } from 'jose';
 import {
     getVerifiedCredentialTemporalStatus,
     refreshCredential,
@@ -290,6 +291,55 @@ const main = async (): Promise<void> => {
     };
 
     const normalized = await verifyCredentialJwt(dependentLC, v1Token);
+    const signingKey = await importJWK(issuerKey, 'EdDSA');
+    const signClaims = (claims: any) =>
+        new SignJWT(claims).setProtectedHeader({ alg: 'EdDSA', kid: issuerVm }).sign(signingKey);
+    const timestampClaims = {
+        ...decodePayload(v1Token),
+        nbf: 1_767_225_600,
+        iat: 1_767_312_000,
+    };
+    const timestampToken = await signClaims(timestampClaims);
+    const timestampResult = await verifyCredentialJwt(dependentLC, timestampToken);
+    expect(
+        'VC 1.1 issuance uses nbf, not a differing iat (built browser artifacts)',
+        timestampResult.verified &&
+            timestampResult.metadata.issuedAt === '2026-01-01T00:00:00.000Z' &&
+            Date.parse(timestampResult.credential.issuanceDate!) === timestampClaims.nbf * 1000 &&
+            timestampResult.token === timestampToken,
+        timestampResult
+    );
+    const registeredOnlyTimestamp = await verifyCredentialJwt(
+        dependentLC,
+        await signClaims({
+            ...timestampClaims,
+            vc: { ...timestampClaims.vc, issuanceDate: undefined },
+        })
+    );
+    expect(
+        'registered-only nbf reconstructs issuanceDate (built browser artifacts)',
+        registeredOnlyTimestamp.verified &&
+            registeredOnlyTimestamp.credential.issuanceDate === '2026-01-01T00:00:00.000Z' &&
+            registeredOnlyTimestamp.metadata.issuedAt === '2026-01-01T00:00:00.000Z',
+        registeredOnlyTimestamp
+    );
+    const conflictingTimestamp = await verifyCredentialJwt(
+        dependentLC,
+        await signClaims({
+            ...timestampClaims,
+            iat: timestampClaims.nbf,
+            nbf: timestampClaims.iat,
+            vc: { ...timestampClaims.vc, issuanceDate: '2026-01-01T00:00:00Z' },
+        })
+    );
+    expect(
+        'conflicting nbf cannot hide behind matching iat (built browser artifacts)',
+        !conflictingTimestamp.verified &&
+            conflictingTimestamp.check.errors.some((error: string) =>
+                /nbf.*conflicts/i.test(error)
+            ),
+        conflictingTimestamp
+    );
     expect(
         'verifyCredentialJwt verifies and normalizes in browser',
         normalized.verified === true,

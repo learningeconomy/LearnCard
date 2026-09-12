@@ -479,13 +479,18 @@ const reconcileVerifiedClaims = (
         ...validUntil.errors
     );
 
-    const embeddedIssuedAt = issuanceDate.seconds ?? validFrom.seconds;
+    const isV1 = profile.version === '1.1';
+    const embeddedIssuedAt = isV1
+        ? issuanceDate.seconds
+        : (issuanceDate.seconds ?? validFrom.seconds);
     const embeddedExpiresAt = expirationDate.seconds ?? validUntil.seconds;
+    const registeredIssuedAt = isV1 ? nbf.seconds : (iat.seconds ?? nbf.seconds);
 
-    // `iat` takes precedence over `nbf` for the issuance instant. When both the
-    // registered claim and the embedded timestamp exist they must agree; `nbf`
-    // may legitimately differ from `iat` and is validated independently.
+    // VCDM 1.1 maps `nbf` to issuanceDate. `iat` dates the JWT itself and must
+    // neither replace that mapping nor suppress its consistency check.
+    // Preserve the separately supported legacy V2 profile's existing mapping.
     if (
+        !isV1 &&
         iat.seconds !== undefined &&
         embeddedIssuedAt !== undefined &&
         iat.seconds !== embeddedIssuedAt
@@ -496,7 +501,7 @@ const reconcileVerifiedClaims = (
     }
 
     if (
-        iat.seconds === undefined &&
+        (isV1 || iat.seconds === undefined) &&
         nbf.seconds !== undefined &&
         embeddedIssuedAt !== undefined &&
         nbf.seconds !== embeddedIssuedAt
@@ -504,6 +509,10 @@ const reconcileVerifiedClaims = (
         errors.push(
             `Registered claim "nbf" (${nbf.seconds}) conflicts with embedded issuance timeline (${embeddedIssuedAt})`
         );
+    }
+
+    if (isV1 && embeddedIssuedAt === undefined && nbf.seconds === undefined) {
+        errors.push('VC 1.1 requires issuanceDate or its mapped registered claim "nbf"');
     }
 
     if (
@@ -516,7 +525,7 @@ const reconcileVerifiedClaims = (
         );
     }
 
-    const issuedAtSeconds = embeddedIssuedAt ?? iat.seconds ?? nbf.seconds;
+    const issuedAtSeconds = embeddedIssuedAt ?? registeredIssuedAt;
     const expiresAtSeconds = embeddedExpiresAt ?? exp.seconds;
 
     if (
@@ -550,12 +559,12 @@ const reconcileVerifiedClaims = (
     if (id !== undefined) normalized.id = id;
     if (normalizedSubject !== undefined) normalized.credentialSubject = normalizedSubject;
 
-    if (iat.seconds !== undefined || nbf.seconds !== undefined) {
-        const seconds = iat.seconds ?? nbf.seconds;
+    if (registeredIssuedAt !== undefined) {
+        const seconds = registeredIssuedAt;
 
         if (
             embedded.issuanceDate === undefined &&
-            embedded.validFrom === undefined &&
+            (isV1 || embedded.validFrom === undefined) &&
             seconds !== undefined
         ) {
             normalized.issuanceDate = new Date(seconds * 1000).toISOString();
