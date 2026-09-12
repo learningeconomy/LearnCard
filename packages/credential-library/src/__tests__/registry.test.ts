@@ -588,8 +588,7 @@ describe('prepareFixture', () => {
             ? (programAchievement?.resultDescription as UnknownArrayRecord[])
             : [];
         const programResultDescriptionId = programResults[0]?.resultDescription as
-            | string
-            | undefined;
+            string | undefined;
         const programResultDescription = programResultDescriptions[0]?.id as string | undefined;
 
         expect(programResultDescriptionId).toBe(programResultDescription);

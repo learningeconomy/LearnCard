@@ -442,8 +442,7 @@ const fetchWithGuards = async (
  * signal observable until streaming completes.
  */
 type BodyReadOutcome =
-    | { body: string }
-    | { result: CredentialRefreshResult; reason: 'timeout' | 'malformed' };
+    { body: string } | { result: CredentialRefreshResult; reason: 'timeout' | 'malformed' };
 
 const readBodyWithLimit = async (
     response: Response,

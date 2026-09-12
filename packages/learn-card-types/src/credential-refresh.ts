@@ -175,8 +175,7 @@ export const PublishCredentialRefreshInputValidator = z
         }
     });
 export type PublishCredentialRefreshInput =
-    | PublishIssuerSignedRefresh
-    | PublishSigningAuthorityRefresh;
+    PublishIssuerSignedRefresh | PublishSigningAuthorityRefresh;
 
 export const PublishCredentialRefreshNotificationValidator = z.enum([
     'queued',
