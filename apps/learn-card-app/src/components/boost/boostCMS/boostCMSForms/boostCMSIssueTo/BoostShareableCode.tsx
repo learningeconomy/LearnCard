@@ -8,6 +8,7 @@ const log = getLogger('boost-shareable-code');
 
 import useDebounce from 'apps/learn-card-app/src/hooks/useDebounce';
 import { getAppBaseUrl } from 'apps/learn-card-app/src/config/bootstrapTenantConfig';
+import { pickUserOwnedSigningAuthority } from 'apps/learn-card-app/src/helpers/signingAuthority.helpers';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 
 import {
@@ -164,9 +165,13 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
         try {
             const rsas = await getRegisteredSigningAuthorities();
 
-            if (rsas?.length > 0) {
-                const rsa = rsas?.[0];
+            // User-shared boosts must sign with a user-owned SA — app-owned SAs
+            // (dev portal `app-` prefix) are keyed by the app DID and would issue
+            // under the app's identity (LC-1942). Falls through to auto-creating
+            // `lca-sa` below when the user has no user-owned SA yet.
+            const rsa = pickUserOwnedSigningAuthority(rsas);
 
+            if (rsa) {
                 if (generateClaimLink) {
                     let _ttlSeconds = undefined;
                     if (expirationDate) {
