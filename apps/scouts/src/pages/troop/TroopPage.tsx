@@ -49,8 +49,8 @@ const TroopPage: React.FC<TroopPageProps> = ({
     // Get current user's actual permissions to determine if they have elevated access
     const { data: myTroopIds } = useGetCurrentUserTroopIds();
 
-    let _credential = boost ? boost : credential.boostCredential ?? credential;
-    let _boostUri = boostUri || _credential?.boostId;
+    let _credential = boost ? boost : (credential.boostCredential ?? credential);
+    const _boostUri = boostUri || _credential?.boostId;
 
     // Get parent boost (network) to check permissions
     const { data: parentBoosts } = useGetBoostParents(_boostUri);

@@ -2,10 +2,10 @@
 
 ## Key Concepts
 
--   **Troop**: A group that issues TroopID credentials to scouts
--   **TroopID**: A credential issued to scouts when they join a troop
--   **Boost**: A credential template that can be issued to recipients
--   **NSO hierarchy**: National → Troop → Scout
+- **Troop**: A group that issues TroopID credentials to scouts
+- **TroopID**: A credential issued to scouts when they join a troop
+- **Boost**: A credential template that can be issued to recipients
+- **NSO hierarchy**: National → Troop → Scout
 
 ## Running
 
@@ -17,12 +17,12 @@ bun run docker-start     # Start backend services (Neo4j, brain-service)
 
 ## Troop credential lifecycle
 
--   `learn-card-base/useCredentialStatus` is the shared authoritative holder lifecycle hook.
--   `TroopIdStatusButton.tsx` adapts lifecycle plus explicit acceptance metadata for ScoutPass presentation.
--   Earned views must pass a credential-record URI; managed views must not pass a Boost URI as a credential URI.
--   Missing/query-error recipient data must never be interpreted as revocation.
--   Administrator group removal uses `useRevokeBoostRecipientGroup`; the existing singular mutation remains per-instance.
--   Revoked credentials remain visible. Do not mount deletion-based revoked-credential synchronization in ScoutPass.
+- `learn-card-base/useCredentialStatus` is the shared authoritative holder lifecycle hook.
+- `TroopIdStatusButton.tsx` adapts lifecycle plus explicit acceptance metadata for ScoutPass presentation.
+- Earned views must pass a credential-record URI; managed views must not pass a Boost URI as a credential URI.
+- Missing/query-error recipient data must never be interpreted as revocation.
+- Administrator group removal uses `useRevokeBoostRecipientGroup`; the existing singular mutation remains per-instance.
+- Revoked credentials remain visible. Do not mount deletion-based revoked-credential synchronization in ScoutPass.
 
 ## Key Files
 
@@ -39,8 +39,8 @@ bun run docker-start     # Start backend services (Neo4j, brain-service)
 
 ## Address Book
 
--   **Main contacts**: `useGetConnections()` → `CONNECTED_WITH` relationships
--   **Troop-filtered**: `getPaginatedBoostRecipientsWithChildren()` → boost recipients
+- **Main contacts**: `useGetConnections()` → `CONNECTED_WITH` relationships
+- **Troop-filtered**: `getPaginatedBoostRecipientsWithChildren()` → boost recipients
 
 ## ScoutPass-Specific Permissions
 
@@ -48,5 +48,5 @@ bun run docker-start     # Start backend services (Neo4j, brain-service)
 
 Network admins (Directors) can issue Scout IDs for troops under their networks:
 
--   `troops.helpers.ts`: `canIssueChildren` and `canRevokeChildren` for `network` and `global` roles set to `'*'`
--   `InviteSelectionModal.tsx`: Allows selecting between Leader ID and Scout ID for elevated permissions
+- `troops.helpers.ts`: `canIssueChildren` and `canRevokeChildren` for `network` and `global` roles set to `'*'`
+- `InviteSelectionModal.tsx`: Allows selecting between Leader ID and Scout ID for elevated permissions

@@ -66,7 +66,7 @@ export const useTroopMembers = (credential: VC, tab?: MemberTabsEnum, boostUri?:
     // Calculate total count
     const totalCount = isScoutOrLeader
         ? (scoutCount ?? 0) + (leaderCount ?? 0)
-        : currentBoostCount ?? '...';
+        : (currentBoostCount ?? '...');
 
     // Process members data when dependencies change
     useEffect(() => {

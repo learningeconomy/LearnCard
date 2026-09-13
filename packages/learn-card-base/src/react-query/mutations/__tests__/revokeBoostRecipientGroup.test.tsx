@@ -35,10 +35,10 @@ const expectConsumerQueriesInvalidated = (queryClient: QueryClient) => {
     }
 };
 
-const makeWrapper =
-    (queryClient: QueryClient) =>
-    ({ children }: { children: React.ReactNode }) =>
-        React.createElement(QueryClientProvider, { client: queryClient }, children);
+const makeWrapper = (queryClient: QueryClient) =>
+    function QueryWrapper({ children }: { children: React.ReactNode }) {
+        return React.createElement(QueryClientProvider, { client: queryClient }, children);
+    };
 
 describe('useRevokeBoostRecipientGroup', () => {
     beforeEach(() => {

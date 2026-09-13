@@ -89,8 +89,7 @@ export const getReceivedCredentialsForProfile = async (
             sent: sentProps.date as string,
             received: receivedProps.date as string,
             metadata: (receivedProps.metadata ?? sentProps.metadata) as
-                | Record<string, unknown>
-                | undefined,
+                Record<string, unknown> | undefined,
         };
     });
 };
@@ -151,8 +150,7 @@ export const getSentCredentialsForProfile = async (
             sent: sentProps.date as string,
             received: receivedProps?.date as string | undefined,
             metadata: (sentProps.metadata ?? receivedProps?.metadata) as
-                | Record<string, unknown>
-                | undefined,
+                Record<string, unknown> | undefined,
         };
     });
 };
@@ -256,10 +254,10 @@ export const getCredentialStatusesForBoostAndProfile = async (
                     rawStatus === 'revoked'
                         ? ('revoked' as const)
                         : rawStatus === 'suspended'
-                        ? ('suspended' as const)
-                        : receivedProps
-                        ? ('claimed' as const)
-                        : ('pending' as const),
+                          ? ('suspended' as const)
+                          : receivedProps
+                            ? ('claimed' as const)
+                            : ('pending' as const),
             };
         })
     );
