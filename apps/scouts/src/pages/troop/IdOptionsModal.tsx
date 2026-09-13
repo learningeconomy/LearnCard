@@ -9,7 +9,6 @@ import PeaceIcon from 'learn-card-base/svgs/PeaceIcon';
 import GreenScoutsIdCard from '../../components/svgs/GreenScoutsIdCard';
 import {
     ModalTypes,
-    ProfilePicture,
     useConfirmation,
     useGetCurrentUserTroopIds,
     useModal,
@@ -23,7 +22,7 @@ import { getScoutsRole } from '../../helpers/troop.helpers';
 import { VC } from '@learncard/types';
 import * as m from '../../paraglide/messages.js';
 import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
-import { getGroupRemovalOutcome, isRemovableGroupMemberRole } from './groupRemoval.helpers';
+import { hasGroupRemovalFailures, isRemovableGroupMemberRole } from './groupRemoval.helpers';
 import { canSharePersonalTroopId, type TroopIdIssuanceState } from './troopIdStatus.helpers';
 import { useTroopIDStatus } from './TroopIdStatusButton';
 import { getLogger } from 'learn-card-base';
@@ -129,7 +128,7 @@ const IdOptionsModal: React.FC<IdOptionsModalProps> = ({
                         boostUri,
                         recipientProfileId: ownerProfileId,
                     });
-                    if (getGroupRemovalOutcome(result) === 'partial') {
+                    if (hasGroupRemovalFailures(result)) {
                         presentToast(m['troops.options.removeFailed']({ owner: ownerName }), {
                             type: ToastTypeEnum.Error,
                             hasDismissButton: true,
@@ -181,21 +180,6 @@ const IdOptionsModal: React.FC<IdOptionsModalProps> = ({
 
     return (
         <div className="flex flex-col px-[30px] py-[20px]">
-            {/* hidden for now because Profile has not been implemented */}
-            {!isPersonalId && false && (
-                <IdOptionRow
-                    text={m['troops.actions.viewProfile']()}
-                    icon={
-                        <ProfilePicture
-                            customContainerClass="h-[35px] w-[35px] overflow-hidden"
-                            overrideSrcURL={ownerImage}
-                            overrideSrc
-                        />
-                    }
-                    onClick={() => log.debug('TODO profile')}
-                />
-            )}
-
             <IdOptionRow
                 text={m['troops.actions.viewTroopId']()}
                 icon={<GreenScoutsIdCard />}

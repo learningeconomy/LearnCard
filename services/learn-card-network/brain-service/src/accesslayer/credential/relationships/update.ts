@@ -4,6 +4,7 @@ import { Credential } from '@models';
 import { revokeCredentialRefreshForCredential } from '@accesslayer/credential-refresh/update';
 import { neogma } from '@instance';
 import {
+    setCredentialBitstringStatus,
     setCredentialBitstringStatusWithResult,
     type CredentialBitstringStatusUpdateResult,
 } from '@helpers/status-list.helpers';
@@ -49,6 +50,18 @@ export const revokeCredentialForProfile = async (
         return { found: false, wasAlreadyRevoked: false, statusList: 'failed' };
     }
 
+    // Every revocation path, including group removal, must invalidate a managed
+    // refresh chain for the original credential. The holder endpoint also checks
+    // canonical relationship state, so this denormalized update remains best-effort.
+    try {
+        await revokeCredentialRefreshForCredential(credentialId);
+    } catch (error) {
+        console.error('[revokeCredentialForProfile] failed to revoke credential refresh', {
+            credentialId,
+            error,
+        });
+    }
+
     let statusList: CredentialBitstringStatusUpdateResult = 'failed';
     try {
         statusList = await setCredentialBitstringStatusWithResult(credentialId, 'revocation', true);
@@ -85,20 +98,6 @@ export const revokeCredentialReceived = async (
             credentialId,
             reason: result.statusList,
         });
-    }
-
-    // Managed credential refresh coupling (LC-2117/LC-2135): revoking the original
-    // sent credential invalidates the whole refresh chain. Best-effort — the holder
-    // endpoint independently cross-checks this canonical relationship state on every
-    // authenticated request, so a failed write here cannot leave a revoked credential
-    // servable.
-    try {
-        await revokeCredentialRefreshForCredential(credentialId);
-    } catch (error) {
-        console.error(
-            '[revokeCredentialReceived] failed to revoke credential refresh aggregate:',
-            error
-        );
     }
 
     return true;

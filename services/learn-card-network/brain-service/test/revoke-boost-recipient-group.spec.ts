@@ -34,23 +34,38 @@ const statusBoostTemplate = {
     credentialSubject: { id: 'did:example:subject' },
 };
 
-const getStatusEntries = (credential: any): any[] => {
-    if (!credential || typeof credential !== 'object') return [];
-
-    const statuses = credential.credentialStatus;
-    const entries = Array.isArray(statuses) ? statuses : statuses ? [statuses] : [];
-    return [...entries, ...getStatusEntries(credential.boostCredential)];
+type TestStatusEntry = {
+    statusPurpose?: string;
+    statusListCredential: string;
+    statusListIndex: string | number;
 };
 
-const getEntryForPurpose = (credential: any, statusPurpose: 'revocation' | 'suspension') => {
+type CredentialWithStatuses = {
+    credentialStatus?: TestStatusEntry | TestStatusEntry[];
+    boostCredential?: CredentialWithStatuses;
+};
+
+const getStatusEntries = (credential: unknown): TestStatusEntry[] => {
+    if (!credential || typeof credential !== 'object') return [];
+
+    const typedCredential = credential as CredentialWithStatuses;
+    const statuses = typedCredential.credentialStatus;
+    const entries = Array.isArray(statuses) ? statuses : statuses ? [statuses] : [];
+    return [...entries, ...getStatusEntries(typedCredential.boostCredential)];
+};
+
+const getEntryForPurpose = (
+    credential: unknown,
+    statusPurpose: 'revocation' | 'suspension'
+): TestStatusEntry => {
     const entry = getStatusEntries(credential).find(
-        (status: any) => status.statusPurpose === statusPurpose
+        status => status.statusPurpose === statusPurpose
     );
     if (!entry) throw new Error(`Missing ${statusPurpose} status entry`);
     return entry;
 };
 
-const isStatusBitSet = async (entry: any): Promise<boolean> => {
+const isStatusBitSet = async (entry: TestStatusEntry): Promise<boolean> => {
     const listId = entry.statusListCredential.split('/').pop();
     const response = await statusListsApp.inject({
         method: 'GET',
@@ -62,12 +77,12 @@ const isStatusBitSet = async (entry: any): Promise<boolean> => {
     const bitstring = decodeBitstring(statusListCredential.credentialSubject.encodedList, 131_072);
     const index = Number(entry.statusListIndex);
     const byte = bitstring[Math.floor(index / 8)] ?? 0;
-    return (byte & (1 << index % 8)) !== 0;
+    return (byte & (1 << (index % 8))) !== 0;
 };
 
 const issueStatusInstanceToUserB = async (
     boostUri: string
-): Promise<{ credentialUri: string; credential: any }> => {
+): Promise<{ credentialUri: string; credential: unknown }> => {
     const signedCredential = await userA.learnCard.invoke.issueCredential({
         ...statusBoostTemplate,
         issuer: userA.learnCard.id.did(),
@@ -301,7 +316,7 @@ describe('Revoke Boost Recipient Group (LC-1950)', { timeout: 30_000 }, () => {
         expect(notificationSpy).not.toHaveBeenCalled();
     });
 
-    it('authoritatively revokes legacy credentials while logging a migration gap', async () => {
+    it('authoritatively revokes credentials that have no status-list entry', async () => {
         const boostUri = await userA.clients.fullAuth.boost.createBoost({
             credential: testUnsignedBoost,
         });
@@ -319,7 +334,7 @@ describe('Revoke Boost Recipient Group (LC-1950)', { timeout: 30_000 }, () => {
         });
         expect(result.revokedCredentialUris).toEqual([uri]);
         expect(warnSpy).toHaveBeenCalledWith(
-            '[revokeBoostRecipientGroup] migration-gap',
+            '[revokeBoostRecipientGroup] missing-status-entry',
             expect.objectContaining({ credentialId: expect.any(String), reason: 'missing-entry' })
         );
     });

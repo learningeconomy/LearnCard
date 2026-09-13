@@ -1,32 +1,32 @@
-import { describe, expect, it } from 'bun:test';
-import { getGroupRemovalOutcome, isRemovableGroupMemberRole } from '../groupRemoval.helpers';
+import { describe, expect, it } from 'vitest';
+import { hasGroupRemovalFailures, isRemovableGroupMemberRole } from '../groupRemoval.helpers';
 
-describe('getGroupRemovalOutcome', () => {
+describe('hasGroupRemovalFailures', () => {
     it('accepts new and already-revoked complete outcomes', () => {
         expect(
-            getGroupRemovalOutcome({
+            hasGroupRemovalFailures({
                 revokedCredentialUris: ['credential:1'],
                 alreadyRevokedCredentialUris: [],
                 failedCredentialUris: [],
             })
-        ).toBe('complete');
+        ).toBe(false);
         expect(
-            getGroupRemovalOutcome({
+            hasGroupRemovalFailures({
                 revokedCredentialUris: [],
                 alreadyRevokedCredentialUris: ['credential:1'],
                 failedCredentialUris: [],
             })
-        ).toBe('complete');
+        ).toBe(false);
     });
 
     it('reports a retryable partial outcome when any URI failed', () => {
         expect(
-            getGroupRemovalOutcome({
+            hasGroupRemovalFailures({
                 revokedCredentialUris: ['credential:1'],
                 alreadyRevokedCredentialUris: [],
                 failedCredentialUris: ['credential:2'],
             })
-        ).toBe('partial');
+        ).toBe(true);
     });
 });
 

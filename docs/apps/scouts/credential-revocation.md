@@ -11,7 +11,3 @@ Removing a member revokes every active, pending, or suspended credential issued 
 ## Holder experience
 
 Revoked IDs remain in the holder's credential list and display **ID Revoked**. Suspended and unaccepted IDs display **ID Suspended** and **Pending Acceptance**. Sharing and membership-protected actions are unavailable in all three states.
-
-## Legacy credentials
-
-Credentials issued before Bitstring Status List support still receive authoritative LearnCard Network revocation, but their old signed copies cannot be changed. External cryptographic revocation for those IDs requires controlled reissuance, retirement or blocklisting of old identifiers, and verifier cutover in a separate migration cycle.

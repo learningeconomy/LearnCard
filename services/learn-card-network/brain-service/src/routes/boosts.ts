@@ -1982,9 +1982,8 @@ export const boostsRouter = t.router({
             }
 
             // Revoke the credential
-            const { revokeCredentialReceived } = await import(
-                '@accesslayer/credential/relationships/update'
-            );
+            const { revokeCredentialReceived } =
+                await import('@accesslayer/credential/relationships/update');
             const revoked = await revokeCredentialReceived(
                 credential.id,
                 resolvedRecipientProfileId
@@ -2075,12 +2074,10 @@ export const boostsRouter = t.router({
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Recipient profile not found' });
             }
 
-            const { getCredentialStatusesForBoostAndProfile } = await import(
-                '@accesslayer/credential/read'
-            );
-            const { revokeCredentialForProfile } = await import(
-                '@accesslayer/credential/relationships/update'
-            );
+            const { getCredentialStatusesForBoostAndProfile } =
+                await import('@accesslayer/credential/read');
+            const { revokeCredentialForProfile } =
+                await import('@accesslayer/credential/relationships/update');
             const instances = await getCredentialStatusesForBoostAndProfile(
                 boost.id,
                 resolvedRecipientProfileId
@@ -2109,7 +2106,7 @@ export const boostsRouter = t.router({
                     const hooksFailed = hookResult.some(item => item.status === 'rejected');
 
                     if (revocation.statusList === 'missing-entry') {
-                        console.warn('[revokeBoostRecipientGroup] migration-gap', {
+                        console.warn('[revokeBoostRecipientGroup] missing-status-entry', {
                             credentialId: instance.credential.id,
                             reason: 'missing-entry',
                         });
@@ -2234,9 +2231,8 @@ export const boostsRouter = t.router({
                 });
             }
 
-            const { suspendCredentialReceived } = await import(
-                '@accesslayer/credential/relationships/update'
-            );
+            const { suspendCredentialReceived } =
+                await import('@accesslayer/credential/relationships/update');
             const suspended = await suspendCredentialReceived(
                 credential.id,
                 resolvedRecipientProfileId
@@ -2342,9 +2338,8 @@ export const boostsRouter = t.router({
                 });
             }
 
-            const { unsuspendCredentialReceived } = await import(
-                '@accesslayer/credential/relationships/update'
-            );
+            const { unsuspendCredentialReceived } =
+                await import('@accesslayer/credential/relationships/update');
             const unsuspended = await unsuspendCredentialReceived(
                 credential.id,
                 resolvedRecipientProfileId
@@ -3611,7 +3606,7 @@ export const boostsRouter = t.router({
 
             // Use the generator's profile for SA lookup if available, fall back to boost owner
             const saOwner = generatorProfileId
-                ? (await getProfileByProfileId(generatorProfileId)) ?? boostOwner
+                ? ((await getProfileByProfileId(generatorProfileId)) ?? boostOwner)
                 : boostOwner;
 
             const saOwnerProfile: ProfileType =
@@ -3620,12 +3615,12 @@ export const boostsRouter = t.router({
                 'profileId' in saOwner
                     ? { type: 'profile' as const, profile: saOwner }
                     : saOwner.type === 'profile'
-                    ? { type: 'profile' as const, profile: saOwner.profile }
-                    : {
-                          type: 'appStoreListing' as const,
-                          listing: saOwner.listing,
-                          ownerProfile: saOwner.ownerProfile,
-                      };
+                      ? { type: 'profile' as const, profile: saOwner.profile }
+                      : {
+                            type: 'appStoreListing' as const,
+                            listing: saOwner.listing,
+                            ownerProfile: saOwner.ownerProfile,
+                        };
 
             const signingAuthority = await getSigningAuthorityForUserByName(
                 saOwnerProfile,
