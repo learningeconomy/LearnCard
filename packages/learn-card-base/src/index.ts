@@ -76,6 +76,8 @@ export * from './constants/Networks';
 export * from './i18n';
 
 export * from './hooks/useWallet';
+export * from './hooks/deriveLifecycleStatus';
+export * from './hooks/useCredentialStatus';
 export * from './hooks/useContract';
 export * from './hooks/useGetContracts';
 export * from './hooks/useGetCredentialsFromContract';
@@ -271,6 +273,7 @@ export * from './react-query/queries/notifications';
 export * from './react-query/queries/aiPassport-queries';
 export * from './react-query/connectionPrompts';
 export * from './react-query/mutations/mutations';
+export * from './react-query/mutations/revokeBoostRecipientGroup';
 export * from './react-query/mutations/notifications';
 export * from './react-query/mutations/boosts';
 export * from './react-query/mutations/mutation.helpers';

@@ -1600,6 +1600,13 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.boost.revokeBoostRecipient.mutate(input);
             },
+            revokeBoostRecipientGroup: async (_learnCard, boostUri, recipientProfileId) => {
+                await ensureUser();
+                return client.boost.revokeBoostRecipientGroup.mutate({
+                    boostUri,
+                    recipientProfileId,
+                });
+            },
             suspendBoostRecipient: async (
                 _learnCard,
                 boostUri,

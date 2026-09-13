@@ -21,6 +21,7 @@ import { ScoutsRoleEnum } from '../../stores/troopPageStore';
 import { useCanInviteTroop } from './useCanInviteTroop';
 import InviteSelectionModal from './InviteSelectionModal';
 import { VC } from '@learncard/types';
+import { hasReachableMembers } from './troopPage.helpers';
 
 export enum MemberTabsEnum {
     All = 'All',
@@ -169,6 +170,8 @@ const TroopPageMembersBox: React.FC<TroopPageMembersBoxProps> = ({
                     ownerProfileId={member.profileId}
                     handleShare={handleShare}
                     boostUri={member.boostUri}
+                    credentialUri={member.credentialUri}
+                    issuanceState={member.issuanceState}
                     type={member?.type}
                 />,
                 { sectionClassName: '!max-w-[400px]' }
@@ -191,7 +194,7 @@ const TroopPageMembersBox: React.FC<TroopPageMembersBoxProps> = ({
         [scoutCount, leaderCount, totalCount]
     );
 
-    const membersExist = Number(totalCount) > 0;
+    const membersExist = hasReachableMembers(totalCount, memberRows);
     const containerClasses = `bg-white rounded-[20px] shadow-box-bottom overflow-hidden flex flex-col px-5 pt-5 ${
         membersExist ? 'pb-2.5' : 'pb-5'
     }`;

@@ -16,7 +16,7 @@ import * as m from '../../../paraglide/messages.js';
 type BoostOptionsMenuProps = {
     handleCloseModal: () => void;
     showCloseButton?: boolean;
-    title?: String | React.ReactNode;
+    title?: string | React.ReactNode;
     handleDeleteBoost: () => void;
     showDeleteButton?: boolean;
     boost: VC;
@@ -24,6 +24,7 @@ type BoostOptionsMenuProps = {
     boostUri: string;
     menuType?: BoostMenuType;
     categoryType?: string;
+    showShareButton?: boolean;
 };
 
 const BoostOptionsMenu: React.FC<BoostOptionsMenuProps> = ({
@@ -37,6 +38,7 @@ const BoostOptionsMenu: React.FC<BoostOptionsMenuProps> = ({
     boostUri,
     menuType,
     categoryType,
+    showShareButton = true,
 }) => {
     const confirm = useConfirmation();
 
@@ -119,7 +121,7 @@ const BoostOptionsMenu: React.FC<BoostOptionsMenuProps> = ({
         });
     }
 
-    if (menuType === BoostMenuType.earned) {
+    if (menuType === BoostMenuType.earned && showShareButton) {
         boostMenuOptions.push({
             id: 2,
             title: m['common.share'](),

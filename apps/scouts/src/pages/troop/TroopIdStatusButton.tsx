@@ -1,12 +1,18 @@
 import React, { useEffect } from 'react';
 
 import { BoostSkeleton } from 'learn-card-base/components/boost/boostSkeletonLoaders/BoostSkeletons';
-
+import { useGetBoost, useCredentialStatus } from 'learn-card-base';
 import useVerifyCredential from 'learn-card-base/hooks/useVerifyCredential';
-import { useGetBoost, useGetBoostRecipients, useGetCurrentLCNUser, useGetIDs } from 'learn-card-base';
+
+import { VC, VerificationStatusEnum } from '@learncard/types';
 
 import { isCredentialExpired } from '../../components/boost/boostHelpers';
-import { VC, VerificationStatusEnum } from '@learncard/types';
+import {
+    deriveTroopIdStatus,
+    shouldShowTroopIdStatus,
+    type TroopIdIssuanceState,
+} from './troopIdStatus.helpers';
+import type { TroopIdStatusResult } from './troopIdStatus.types';
 
 enum TroopIdStatusEnum {
     Valid,
@@ -14,129 +20,78 @@ enum TroopIdStatusEnum {
     Expired,
     Revoked,
     Pending,
+    Suspended,
+    Unavailable,
 }
 
-type TroopIdStatusButtonProps = {
+export interface TroopIdStatusButtonProps {
     credential: VC;
+    credentialUri?: string;
+    issuanceState?: TroopIdIssuanceState;
+    lifecycleEnabled?: boolean;
     checkProof?: boolean;
     onClick?: () => void;
     skeletonStyles?: React.CSSProperties;
     isHidden?: boolean;
-    otherUserProfileID?: string;
-};
+}
 
-// Status type for credential state
-export type TroopIdCredentialStatus = 'valid' | 'pending' | 'revoked' | undefined;
+export interface UseTroopIdStatusOptions {
+    credential?: VC;
+    credentialUri?: string;
+    issuanceState?: TroopIdIssuanceState;
+    enabled?: boolean;
+}
 
-/**
- * Check the status of a troop ID credential.
- * Returns: 'valid' (claimed), 'pending' (sent but not claimed), 'revoked', or undefined (loading)
- */
-export const useTroopIDStatus = (
-    credential: VC,
-    otherUserProfileID?: string,
-    boostUri?: string
-): TroopIdCredentialStatus => {
-    const { currentLCNUser } = useGetCurrentLCNUser();
-    const profileId = otherUserProfileID ?? currentLCNUser?.profileId;
-    const _boostUri = credential?.boostId || boostUri;
+export const useTroopIDStatus = ({
+    credential,
+    credentialUri,
+    issuanceState = 'accepted',
+    enabled = true,
+}: UseTroopIdStatusOptions): TroopIdStatusResult => {
+    const lifecycle = useCredentialStatus({
+        credential,
+        uri: credentialUri,
+        enabled: enabled && Boolean(credentialUri),
+    });
 
-    // Unconditional (rules of hooks) — used for pre-Feb-13 backcompat check below
-    const { data: walletIds } = useGetIDs();
-
-    // Query 1: Get claimed recipients only (default: includeUnacceptedBoosts=false)
-    const { 
-        data: claimedRecipients, 
-        isLoading: isLoadingClaimed, 
-        isError: isClaimedError 
-    } = useGetBoostRecipients(_boostUri, true, false);
-
-    // Query 2: Get all recipients including pending (includeUnacceptedBoosts=true)
-    const { 
-        data: allRecipients, 
-        isLoading: isLoadingAll, 
-        isError: isAllError 
-    } = useGetBoostRecipients(_boostUri, true, true);
-
-    // Still loading
-    if (isLoadingClaimed || isLoadingAll) return undefined;
-
-    // Error fetching - could be boost doesn't exist
-    if (isClaimedError || isAllError) return 'revoked';
-
-    // No data yet
-    if (!claimedRecipients || !allRecipients) return undefined;
-
-    // Check if user is in claimed recipients
-    const isInClaimedRecipients = claimedRecipients.some(r => r.to.profileId === profileId);
-    if (isInClaimedRecipients) return 'valid';
-
-    // Check if user is in all recipients (includes pending)
-    const isInAllRecipients = allRecipients.some(r => r.to.profileId === profileId);
-    if (isInAllRecipients) {
-        // Backcompat for pre-Feb-13 credentials: the old acceptance flow added credentials
-        // to the LearnCloud wallet index directly without calling acceptCredential on the
-        // brain-service, so CREDENTIAL_SENT exists but CREDENTIAL_RECEIVED was never created.
-        // If the credential is already in the user's local wallet, treat it as claimed.
-        // This is safe because revoked credentials are excluded from BOTH recipient queries
-        // (status='revoked' filter), so they show as 'revoked' — this check only fires for
-        // 'pending' and cannot accidentally override a real revocation.
-        // Only applies to the current user's own credentials (not admin viewing another user).
-        if (!otherUserProfileID && walletIds) {
-            const credBoostId = credential?.boostId;
-            const isInWallet =
-                credBoostId &&
-                walletIds.some(
-                    (id: any) => id?.boostId === credBoostId || id?.vc?.boostId === credBoostId
-                );
-            if (isInWallet) return 'valid';
-        }
-        return 'pending';
-    }
-
-    // Not in any list - revoked
-    return 'revoked';
-};
-
-// Legacy compatibility wrapper
-export const useIsTroopIDRevoked = (
-    credential: VC,
-    otherUserProfileID?: string,
-    boostUri?: string
-): boolean | undefined => {
-    const status = useTroopIDStatus(credential, otherUserProfileID, boostUri);
-    if (status === undefined) return undefined;
-    return status === 'revoked';
-};
-
-/** @deprecated Use useTroopIDStatus instead */
-export const useIsTroopIDRevokedFake = (
-    credential: VC,
-    _isError: boolean,
-    _error: any,
-    otherUserProfileID?: string,
-    boostUri?: string
-): boolean => {
-    const result = useIsTroopIDRevoked(credential, otherUserProfileID, boostUri);
-    return result ?? false;
+    return {
+        ...lifecycle,
+        status: deriveTroopIdStatus({
+            lifecycleStatus: lifecycle.status,
+            issuanceState,
+            isLoading: lifecycle.isLoading,
+            isError: lifecycle.isError,
+            lifecycleEnabled: enabled && Boolean(credentialUri),
+        }),
+    };
 };
 
 const TroopIdStatusButton: React.FC<TroopIdStatusButtonProps> = ({
     credential,
+    credentialUri,
+    issuanceState,
+    lifecycleEnabled = true,
     checkProof = true,
     onClick,
     skeletonStyles,
     isHidden,
-    otherUserProfileID,
 }) => {
     const { verifyCredential, worstVerificationStatus } = useVerifyCredential(checkProof);
-    const { isLoading, error, isError } = useGetBoost(credential?.boostId);
+    const { isLoading: isProofLoading } = useGetBoost(credential?.boostId);
+    const {
+        status: credentialStatus,
+        isLoading: isLifecycleLoading,
+        isError: isLifecycleError,
+    } = useTroopIDStatus({
+        credential,
+        credentialUri,
+        issuanceState,
+        enabled: lifecycleEnabled,
+    });
 
     useEffect(() => {
         verifyCredential(credential);
     }, [checkProof, credential]);
-
-    const credentialStatus = useTroopIDStatus(credential, otherUserProfileID);
 
     let status: TroopIdStatusEnum = TroopIdStatusEnum.Valid;
     if (isCredentialExpired(credential)) {
@@ -146,8 +101,12 @@ const TroopIdStatusButton: React.FC<TroopIdStatusButtonProps> = ({
         worstVerificationStatus !== VerificationStatusEnum.Success
     ) {
         status = TroopIdStatusEnum.Invalid;
+    } else if (isLifecycleError) {
+        status = TroopIdStatusEnum.Unavailable;
     } else if (credentialStatus === 'revoked') {
         status = TroopIdStatusEnum.Revoked;
+    } else if (credentialStatus === 'suspended') {
+        status = TroopIdStatusEnum.Suspended;
     } else if (credentialStatus === 'pending') {
         status = TroopIdStatusEnum.Pending;
     }
@@ -175,13 +134,21 @@ const TroopIdStatusButton: React.FC<TroopIdStatusButtonProps> = ({
             text = 'Pending Acceptance';
             buttonColor = 'bg-amber-500';
             break;
+        case TroopIdStatusEnum.Suspended:
+            text = 'ID Suspended';
+            buttonColor = 'bg-amber-500';
+            break;
+        case TroopIdStatusEnum.Unavailable:
+            text = 'Status Unavailable';
+            buttonColor = 'bg-amber-500';
+            break;
     }
 
-    if (isHidden) return <></>;
+    if (isHidden || !shouldShowTroopIdStatus({ lifecycleEnabled, credentialUri })) return <></>;
 
     return (
         <>
-            {isLoading ? (
+            {isProofLoading || isLifecycleLoading ? (
                 <BoostSkeleton
                     containerClassName="rounded-full w-full flex items-center justify-end relative"
                     skeletonStyles={skeletonStyles}
