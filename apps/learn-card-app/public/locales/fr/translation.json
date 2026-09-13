@@ -12,6 +12,7 @@
         "claimedType": "Justificatif réclamé"
     },
     "common": {
+        "tryAgain": "Réessayer",
         "share": "Partager",
         "open": "Ouvrir",
         "accept": "Accepter",
@@ -1712,6 +1713,26 @@
         }
     },
     "recovery": {
+        "prompt": {
+            "openAria": "Configurer un moyen de se reconnecter",
+            "snoozeAria": "Me le rappeler dans 7 jours",
+            "calm": {
+                "title": "Ajoutez un moyen de vous reconnecter",
+                "body": "Si vous perdez cet appareil, vous pourrez ainsi vous reconnecter. Cela prend une minute."
+            },
+            "urgent": {
+                "title": "Cette session se termine lorsque vous fermez l’onglet",
+                "body": "Configurez un moyen de vous reconnecter, sinon vous perdrez l’accès à votre compte."
+            },
+            "success": {
+                "title": "Votre compte est protégé",
+                "body": "Vous pouvez vous reconnecter depuis n’importe quel appareil."
+            },
+            "action": {
+                "passkey": "Utiliser Face ID ou Touch ID",
+                "phrase": "Obtenir une phrase de récupération"
+            }
+        },
         "protectAccount": "Protégez votre compte",
         "accountRecovery": "Récupération de compte",
         "restoreAccess": "Restaurer l'accès",
@@ -1911,7 +1932,22 @@
         "loadingNotifications": "Chargement des notifications...",
         "refresh": "Actualiser",
         "restored": "Rétabli",
-        "unableToLoad": "Impossible de charger la notification"
+        "unableToLoad": "Impossible de charger la notification",
+        "credentialUpdated": "Titre mis à jour",
+        "updated": "Mis à jour",
+        "checkingForUpdate": "Recherche de mises à jour…",
+        "updateCheckFailed": "Problème de connexion. Vérifiez votre connexion internet et réessayez.",
+        "updatedCredentialUnavailable": "Ce titre n'est pas encore disponible. Veuillez réessayer plus tard."
+    },
+    "credentialHistory": {
+        "title": "Versions précédentes",
+        "empty": "Aucune version précédente n'est enregistrée sur cet appareil.",
+        "unavailable": "Cette version n'est pas disponible sur cet appareil.",
+        "view": "Voir",
+        "loadingVersion": "Chargement de la version…",
+        "done": "Terminé",
+        "updatedOn": "Mis à jour le {{date}}",
+        "versionFrom": "Version du {{date}}"
     },
     "share": {
         "addContact": "Ajouter un contact",
@@ -2338,7 +2374,8 @@
         },
         "menu": {
             "manageIssuances": "Gérer les émissions",
-            "viewData": "Voir les données"
+            "viewData": "Voir les données",
+            "viewPreviousVersions": "Voir les versions précédentes"
         },
         "shortBoost": {
             "selectRecipient": "Sélectionner le destinataire",
@@ -2783,6 +2820,7 @@
             "deleteCredentialError": "Erreur lors de la suppression de l'accréditation : impossible de localiser l'ID d'enregistrement.",
             "shareLinkCopied": "Lien de partage copié dans le presse-papiers",
             "shareLinkCopyFailed": "Impossible de copier le lien de partage",
+            "shareLinkGenerationFailed": "Nous n’avons pas pu créer de lien de partage. Réessayez.",
             "templateIdCopied": "ID de modèle copié dans le presse-papiers",
             "templateIdCopyFailed": "Impossible de copier l'ID de modèle",
             "boostLinkCopied": "Lien du boost copié dans le presse-papiers",

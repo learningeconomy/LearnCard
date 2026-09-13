@@ -1,5 +1,6 @@
 services:
     app:
+        image: learn-card-e2e-app
         build:
             context: ../../
             dockerfile: apps/learn-card-app/Dockerfile
@@ -19,6 +20,7 @@ services:
             - 'localhost:host-gateway'
 
     delete-service:
+        image: learn-card-e2e-delete-service
         build: ../../services/playwright-delete-service
         ports:
             - '3100:3100'

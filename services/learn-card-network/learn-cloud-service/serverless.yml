@@ -92,6 +92,7 @@ package:
     # WASM ships inside the bundle (esbuildPlugins.cjs); native ships via the Layer.
     patterns:
         - '!node_modules/**'
+        - 'generated/swagger-ui/**'
 
 # Ships @learncard/didkit-plugin-node (JS wrapper + linux-x64 napi binary) and
 # its runtime @learncard/didkit-plugin dependency at /opt/nodejs/node_modules so

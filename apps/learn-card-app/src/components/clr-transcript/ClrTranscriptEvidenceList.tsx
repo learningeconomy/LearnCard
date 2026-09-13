@@ -6,7 +6,7 @@ import { formatClrDate } from '../../helpers/clrRenderer.helpers';
 import type { EvidenceDisplayModel } from '../../helpers/clrRenderer.helpers';
 
 export type ClrEvidenceSourceSummary = {
-    kind: 'transcript' | 'course' | 'program';
+    kind: 'transcript' | 'course' | 'program' | 'assessment';
     title: string;
     humanCode?: string;
     dateLabel?: string;
@@ -19,7 +19,9 @@ const getEvidenceUrl = (item: EvidenceDisplayModel): string => item.id?.value ??
 const getEvidenceTypeText = (item: EvidenceDisplayModel): string => {
     const rawType = item.type?.value;
 
-    return Array.isArray(rawType) ? rawType.join(' ').toLowerCase() : rawType?.toLowerCase() ?? '';
+    return Array.isArray(rawType)
+        ? rawType.join(' ').toLowerCase()
+        : (rawType?.toLowerCase() ?? '');
 };
 
 const inferEvidenceKind = (item: EvidenceDisplayModel): EvidenceKind => {

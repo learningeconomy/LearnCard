@@ -9,6 +9,7 @@ import {
 export const learnCardAppEnvironmentShape = {
     MODE: z.string().trim().min(1),
     VITE_ENABLE_AUTH_DEBUG_WIDGET: optionalEnvironmentBoolean.default(false),
+    VITE_CREDENTIAL_REFRESH_LOCAL_QA: optionalEnvironmentBoolean.default(false),
     VITE_DOCKER_SOURCE: optionalEnvironmentBoolean.default(false),
     VITE_APP_VERSION: optionalEnvironmentString,
     ANALYZE: optionalEnvironmentBoolean.default(false),

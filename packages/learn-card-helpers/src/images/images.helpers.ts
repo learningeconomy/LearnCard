@@ -4,14 +4,31 @@ import * as discord from './discord.helpers';
 
 const Providers = { filestack, unsplash, discord };
 
+/**
+ * Checks if the hostname matches exactly or is a subdomain of the target domain.
+ */
+const isHostnameMatch = (hostname: string, target: string): boolean => {
+    return hostname === target || hostname.endsWith(`.${target}`);
+};
+
 export const getProvider = (url?: string): keyof typeof Providers | null => {
-    if (url?.includes('cdn.filestackcontent.com')) return 'filestack';
+    if (!url) return null;
 
-    if (url?.includes('images.unsplash.com')) return 'unsplash';
+    try {
+        // Handle protocol-relative URLs (e.g., //cdn.filestackcontent.com/...)
+        // by prepending https: so URL parsing succeeds
+        const normalizedUrl = url.startsWith('//') ? `https:${url}` : url;
+        const { hostname } = new URL(normalizedUrl);
 
-    if (url?.includes('cdn.discordapp.com')) return 'discord';
+        // Check exact hostname or proper subdomain to prevent bypass via attacker-controlled domains
+        if (isHostnameMatch(hostname, 'cdn.filestackcontent.com')) return 'filestack';
+        if (isHostnameMatch(hostname, 'images.unsplash.com')) return 'unsplash';
+        if (isHostnameMatch(hostname, 'cdn.discordapp.com')) return 'discord';
 
-    return null;
+        return null;
+    } catch {
+        return null;
+    }
 };
 
 export const changeQuality = (url: string, quality: number): string => {

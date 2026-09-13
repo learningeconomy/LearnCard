@@ -4,6 +4,7 @@ import type { VC } from '@learncard/types';
 import { clrUniversityTranscript } from '../../../../packages/credential-library/src/fixtures/clr/university-transcript';
 import { clrNdStudentTranscript } from '../../../../packages/credential-library/src/fixtures/clr/nd-student-transcript';
 import { clrGreatPlainsFull } from '../../../../packages/credential-library/src/fixtures/clr/great-plains-full';
+import { clrDemoIsdDiplomaAssessments } from '../../../../packages/credential-library/src/fixtures/clr/demo-isd-diploma-assessments';
 import { obv3CourseCompletion } from '../../../../packages/credential-library/src/fixtures/obv3/course-completion';
 import { obv3StandaloneFullCourse } from '../../../../packages/credential-library/src/fixtures/obv3/standalone-full-course';
 
@@ -88,6 +89,84 @@ describe('normalizeClrTranscriptDisplayModel', () => {
         expect(
             model.otherRecords.some(record => record.reason === 'unsupportedAchievementType')
         ).toBeTruthy();
+    });
+
+    describe('assessments (demo ISD diploma fixture)', () => {
+        const model = normalizeClrTranscriptDisplayModel(
+            clrDemoIsdDiplomaAssessments.credential as unknown as Record<string, unknown>
+        );
+
+        it('classifies Assessment achievements separately from courses', () => {
+            expect(model.courses.length).toBe(33);
+            expect(model.assessments.length).toBe(2);
+            expect(model.summary.assessmentCount).toBe(2);
+            expect(model.assessments.map(a => a.name?.value)).toEqual(
+                expect.arrayContaining(['ACT', 'Durable Skills Assessment'])
+            );
+        });
+
+        it('keeps plain score assessments as numeric results with min/max', () => {
+            const act = model.assessments.find(a => a.name?.value === 'ACT')!;
+
+            expect(act.isRubric).toBe(false);
+            expect(act.alignments).toEqual([]);
+            expect(act.results.length).toBe(5);
+            expect(act.results.every(r => r.valueMin?.value && r.valueMax?.value)).toBe(true);
+            expect(act.results.every(r => r.rubricLevels === undefined)).toBe(true);
+        });
+
+        it('resolves rubric levels, achieved level, status and alignments', () => {
+            const skills = model.assessments.find(
+                a => a.name?.value === 'Durable Skills Assessment'
+            )!;
+
+            expect(skills.isRubric).toBe(true);
+            expect(skills.alignments.length).toBe(10);
+            expect(skills.alignments[0].targetFramework?.value).toBe(
+                'Carnegie Skills Progressions'
+            );
+            expect(skills.results.length).toBe(10);
+
+            const communication = skills.results.find(r => r.label?.value?.startsWith('COM.1'))!;
+            expect(communication.resultType?.value).toBe('RubricCriterionLevel');
+            expect(communication.status?.value).toBe('Completed');
+            expect(communication.rubricLevels?.map(l => l.name)).toEqual([
+                'Exploring',
+                'Analyzing',
+                'Integrating',
+                'Extending',
+            ]);
+            expect(communication.achievedLevel?.name).toBe('Integrating');
+            expect(communication.achievedLevel?.points).toBe('3');
+            expect(communication.achievedLevel?.description).toBeTruthy();
+            expect(communication.value.value).toBe('Integrating');
+        });
+
+        it('falls back to matching the achieved level by value when achievedLevel is absent', () => {
+            const credential = structuredClone(
+                clrDemoIsdDiplomaAssessments.credential
+            ) as unknown as Record<string, unknown>;
+            type NestedVc = {
+                credentialSubject: {
+                    achievement: { name: string };
+                    result: Array<{ achievedLevel?: string }>;
+                };
+            };
+            const subject = credential.credentialSubject as { verifiableCredential: NestedVc[] };
+            const skills = subject.verifiableCredential.find(
+                vc => vc.credentialSubject.achievement.name === 'Durable Skills Assessment'
+            )!;
+            skills.credentialSubject.result.forEach(r => delete r.achievedLevel);
+
+            const fallback = normalizeClrTranscriptDisplayModel(credential);
+            const skillsModel = fallback.assessments.find(
+                a => a.name?.value === 'Durable Skills Assessment'
+            )!;
+
+            expect(skillsModel.results.every(r => r.achievedLevel?.name === r.value.value)).toBe(
+                true
+            );
+        });
     });
 
     it('normalizes an eligible standalone OBv3 Course as a single course record', () => {

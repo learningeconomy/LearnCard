@@ -7,11 +7,17 @@ import { ChevronDown, ChevronUp, Paperclip } from 'lucide-react';
 import { SkillsIcon } from 'learn-card-base/svgs/wallet/SkillsIcon';
 
 import type { VC } from '@learncard/types';
-import type { CourseDisplayModel } from '../../helpers/clrRenderer.helpers';
+import type { AssessmentDisplayModel, CourseDisplayModel } from '../../helpers/clrRenderer.helpers';
 import { formatClrDate } from '../../helpers/clrRenderer.helpers';
 
+type CollapsibleRecord = Pick<
+    CourseDisplayModel,
+    'name' | 'achievementType' | 'earnedAt' | 'evidence'
+> &
+    Partial<Pick<CourseDisplayModel, 'fieldOfStudy'>>;
+
 const ClrCourseCredentialCollapsible: React.FC<{
-    course: CourseDisplayModel;
+    course: CollapsibleRecord | AssessmentDisplayModel;
     issuerName?: string;
     issuerLogo?: string;
     skillCount?: number;
@@ -54,7 +60,8 @@ const ClrCourseCredentialCollapsible: React.FC<{
                                 </p>
                                 <p className="text-xs font-semibold text-grayscale-500 uppercase tracking-wide truncate">
                                     {course.achievementType.value}
-                                    {course.fieldOfStudy?.value &&
+                                    {'fieldOfStudy' in course &&
+                                        course.fieldOfStudy?.value &&
                                         ` • ${course.fieldOfStudy.value}`}
                                 </p>
                                 {issuerName && (
