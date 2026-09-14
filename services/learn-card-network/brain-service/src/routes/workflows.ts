@@ -7,6 +7,7 @@ import {
     UnsignedVC,
     VP,
     VPValidator,
+    VCValidator,
     LCNNotificationTypeEnumValidator,
     LCNInboxStatusEnumValidator,
 } from '@learncard/types';
@@ -84,6 +85,7 @@ const VerifiablePresentationRequestValidator = z.object({
 
 const ParticipateInExchangeResponseValidator = z.object({
     verifiablePresentation: VPValidator.optional(),
+    inboxDeliveries: z.array(z.object({ id: z.string(), credential: VCValidator })).optional(),
     verifiablePresentationRequest: VerifiablePresentationRequestValidator.optional(),
     redirectUrl: z.string().optional(),
 });
@@ -788,7 +790,7 @@ async function handleInboxClaimPresentation(
                 }
             }
 
-            return finalCredential;
+            return { id: inboxCredential.id, credential: finalCredential };
         } catch (error) {
             console.error(`Failed to process inbox credential ${inboxCredential.id}:`, error);
 
@@ -865,7 +867,8 @@ async function handleInboxClaimPresentation(
     });
 
     const settledCredentials = await Promise.all(credentialProcessingPromises);
-    claimedCredentials.push(...settledCredentials.filter((c): c is VC => c !== null));
+    const inboxDeliveries = settledCredentials.filter(c => c !== null);
+    claimedCredentials.push(...inboxDeliveries.map(delivery => delivery.credential));
 
     // Create response VP with all claimed credentials
     const responseVP = await issueResponsePresentationWithVcs(claimedCredentials);
@@ -879,6 +882,7 @@ async function handleInboxClaimPresentation(
 
     return {
         verifiablePresentation: responseVP,
+        inboxDeliveries,
     };
 }
 

@@ -701,6 +701,7 @@ export type LearnCardNetworkPluginMethods = {
         errors: number;
         guardianPending: number;
         verifiableCredentials: VC[];
+        deliveries: { id: string; credential: VC }[];
     }>;
 
     // Guardian Approval

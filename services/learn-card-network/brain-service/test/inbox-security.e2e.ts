@@ -132,11 +132,16 @@ describe('Universal Inbox escrow (HTTP + isolated Neo4j/Redis)', () => {
         const response = await post(path, { verifiablePresentation: vp });
         const body = await response.json();
         expect(response.status, JSON.stringify(body)).toBe(200);
+        expect(
+            body.inboxDeliveries.map((delivery: { credential: VC }) => delivery.credential)
+        ).toEqual(body.verifiablePresentation.verifiableCredential);
+        expect(body.inboxDeliveries.every((delivery: { id: string }) => !!delivery.id)).toBe(true);
         return body.verifiablePresentation.verifiableCredential;
     };
 
-    const signedCredential = async (): Promise<VC> => {
+    const signedCredential = async (withoutId = false): Promise<VC> => {
         const unsigned = await issuer.learnCard.invoke.getTestVc();
+        if (withoutId) delete unsigned.id;
         unsigned.credentialSubject = { ...unsigned.credentialSubject, name: marker };
         unsigned['@context'] = [...unsigned['@context'], { name: 'https://schema.org/name' }];
         return issuer.learnCard.invoke.issueCredential(unsigned);
@@ -329,6 +334,9 @@ describe('Universal Inbox escrow (HTTP + isolated Neo4j/Redis)', () => {
         const result = await response.json();
         expect(response.status).toBe(200);
         expect(result).toMatchObject({ claimed: 1, errors: 0 });
+        expect(result.deliveries).toEqual([
+            { id: issued.issuanceId, credential: result.verifiableCredentials[0] },
+        ]);
         expect(result.verifiableCredentials[0]).toMatchObject({
             type: ['VerifiableCredential', 'ClrCredential'],
             proof: expect.anything(),
@@ -444,6 +452,31 @@ describe('Universal Inbox escrow (HTTP + isolated Neo4j/Redis)', () => {
             ).toHaveProperty('credentialName', credential.name);
         }
     });
+
+    it.each(['finalize', 'claim link'])(
+        'preserves the inbox id for an id-less %s credential',
+        async path => {
+            const credential = await signedCredential(true);
+            expect(credential.id).toBeUndefined();
+            const issued = await issue({
+                credential,
+                recipient: { type: 'email', value: 'idless@example.test' },
+            });
+            if (path === 'finalize') {
+                await updateInboxCredential(issued.issuanceId, { isAccepted: true });
+                await verifyRecipientContact('idless@example.test');
+                const response = await post('/api/inbox/finalize', {}, recipient);
+                expect(response.status).toBe(200);
+                expect((await response.json()).deliveries).toEqual([
+                    { id: issued.issuanceId, credential },
+                ]);
+            } else {
+                expect(await claim(issued.claimUrl!)).toEqual([credential]);
+            }
+            const recovered = await (await post('/api/inbox/deliveries', {}, recipient)).json();
+            expect(recovered.records[0].id).toBe(issued.issuanceId);
+        }
+    );
 
     it('recovers did:web claims for the authenticated controller, excluding unrelated profiles', async () => {
         const issued = await issue({

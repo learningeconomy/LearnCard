@@ -30,6 +30,7 @@ export async function finalizeInboxCredentialsForProfile(
     errors: number;
     guardianPending: number;
     verifiableCredentials: VC[];
+    deliveries: { id: string; credential: VC }[];
 }> {
     const contactMethods = await getContactMethodsForProfile(profile.did);
     const verifiedContacts = contactMethods.filter(cm => cm.isVerified);
@@ -47,6 +48,7 @@ export async function finalizeInboxCredentialsForProfile(
     } catch {}
 
     const verifiableCredentials: VC[] = [];
+    const deliveries: { id: string; credential: VC }[] = [];
 
     for (const cm of verifiedContacts) {
         const pending = await getAcceptedPendingInboxCredentialsForContactMethodId(cm.id);
@@ -218,6 +220,7 @@ export async function finalizeInboxCredentialsForProfile(
 
                 claimed += 1;
                 verifiableCredentials.push(finalCredential);
+                deliveries.push({ id: inboxCredential.id, credential: finalCredential });
             } catch (error) {
                 console.error(`Failed to finalize inbox credential ${inboxCredential.id}:`, error);
 
@@ -280,5 +283,5 @@ export async function finalizeInboxCredentialsForProfile(
         }
     }
 
-    return { processed, claimed, errors, guardianPending, verifiableCredentials };
+    return { processed, claimed, errors, guardianPending, verifiableCredentials, deliveries };
 }

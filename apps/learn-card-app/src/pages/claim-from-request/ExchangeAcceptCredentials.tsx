@@ -55,10 +55,12 @@ import type { DuplicateCredentialLookup } from '../../components/credentials/dup
 import type { DuplicateCredentialResolution } from '../../components/credentials/duplicate-credential/useDuplicateCredentialGuard';
 
 import { VCAPIRequestStrategy } from './ClaimFromRequest';
+import { getInboxDeliveryId, type InboxDelivery } from './inboxDelivery';
 
 interface ExchangeAcceptCredentialsProps {
+    inboxDeliveries?: InboxDelivery[];
     verifiablePresentation: VP; // Contains the verifiablePresentation from the server
-    onAccept: (body: any, credentialClaimCount: number) => void; // Callback to continue the exchange
+    onAccept: (body: Record<string, unknown>, credentialClaimCount: number) => void; // Callback to continue the exchange
     requestDuplicateResolution: (
         credential: VC,
         lookup?: DuplicateCredentialLookup
@@ -70,6 +72,7 @@ interface ExchangeAcceptCredentialsProps {
 
 const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
     verifiablePresentation,
+    inboxDeliveries,
     onAccept,
     requestDuplicateResolution,
     isCheckingDuplicate,
@@ -323,6 +326,11 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                         credential,
                         {
                             title: name,
+                            inboxDeliveryId: getInboxDeliveryId(
+                                credential,
+                                inboxDeliveries,
+                                credentials.indexOf(credential)
+                            ),
                             allowDuplicate: duplicateResolution.isDuplicate,
                             boostUri: sourceBoostUri,
                         },

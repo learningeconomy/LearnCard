@@ -733,6 +733,7 @@ export const inboxRouter = t.router({
                 errors: z.number(),
                 guardianPending: z.number(),
                 verifiableCredentials: z.array(VCValidator),
+                deliveries: z.array(z.object({ id: z.string(), credential: VCValidator })),
             })
         )
         .mutation(async ({ ctx }) => {

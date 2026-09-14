@@ -20,12 +20,17 @@ Claims are single-use: after successful delivery, starting another exchange for 
 
 The LearnCard app sweeps these recovery deliveries at sign-in, even if finalization fails or has already completed. It saves missing credentials to the personal index and uses the inbox delivery ID to deduplicate retries. Failed saves remain eligible for recovery on the next sign-in.
 
+Claim responses include stable delivery metadata without changing signed credentials. `/inbox/finalize` returns `deliveries: [{ id, credential }]` alongside the existing `verifiableCredentials` array. VC-API inbox exchanges return `inboxDeliveries: [{ id, credential }]` alongside the signed presentation. Save `inboxDeliveryId: id` in the personal index on both claim and recovery paths, including for credentials without their own `id`.
+
+Recovery recognizes the authenticated profile's controller and profile DID aliases. A single undecryptable or invalid delivery does not block the page: the SDK reports its count in `failed` and preserves the server's pagination cursor. Continue through all pages even when a page has no valid records. Empty app sweeps do not show a sync notification.
+
 The SDK handles local decryption:
 
 ```typescript
 const page = await learnCard.invoke.recoverInboxCredentials({ limit: 25 });
 // page.records contains { id, credential, expiresAt }, with decrypted credentials.
 // Persist each credential once per id; fetch subsequent pages using page.cursor.
+// page.failed counts deliveries that could not be decrypted or validated.
 ```
 
 The service and issuer cannot decrypt claim recovery copies. Ordinary automatic deliveries to existing profiles remain readable by both recipient and issuer and are durably stored before the inbox receipt is created. These paths do not create temporary escrow.

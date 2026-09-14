@@ -99,6 +99,17 @@ it('saves a good delivery while counting an SDK decrypt failure on the same page
     expect(records).toHaveLength(1);
 });
 
+it('does not duplicate an id-less credential saved by the claim page', async () => {
+    records.push({ id: 'inbox:inbox-1', inboxDeliveryId: 'inbox-1' });
+    wallet.invoke.recoverInboxCredentials.mockResolvedValue({
+        records: [{ ...delivery, credential: { type: ['VerifiableCredential'] } }],
+        failed: 0,
+        hasMore: false,
+    });
+    expect(await recover()).toEqual({ stored: 0, failed: 0 });
+    expect(wallet.store.LearnCloud.uploadEncrypted).not.toHaveBeenCalled();
+});
+
 it('continues to the next page when every delivery on the first page failed decryption', async () => {
     wallet.invoke.recoverInboxCredentials
         .mockResolvedValueOnce({ records: [], failed: 1, hasMore: true, cursor: 'bad-delivery' })
