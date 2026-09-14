@@ -667,12 +667,30 @@ New Boosts are stored as the issuer-signed credential itself, without a network 
 The `boostId` claim and the network `INSTANCE_OF` relationship provide Boost association.
 Wallets continue to unwrap legacy wrappers when present.
 
-There is no new network counter-signature or server-side template-derivation check. Trust
-rests on the issuer's signature and the signed `boostId` claim. Signing-authority responses
-are encrypted for the subject and issuing owner (the trusted signing authority also has
+There is no new network counter-signature or full server-side template-derivation check.
+Plaintext credentials must have a `boostId` matching the Boost being sent; encrypted
+payloads cannot be inspected by the server. Trust rests on the issuer's signature and
+the signed `boostId` claim. For direct credentials, VerifyBoost matches the network in
+that claim against the trusted registry. This identifies the issuer-claimed network
+association, not a separate network attestation. Legacy wrappers still use their outer
+issuer for the registry check. Signing-authority responses
+are encrypted for every subject and the issuing owner; delegated consent AutoBoosts
+also include the contract owner (the trusted signing authority also has
 access); the brain service cannot decrypt these responses. Only public status-list
 coordinates are retained separately so encrypted credentials can still be revoked or
 suspended.
+
+### Important tradeoffs
+
+Client-encrypted credentials submitted as `signedCredential` are stored unchanged.
+Unlike the previous wrapper flow, the server cannot add status entries or recover
+their coordinates from these payloads. Without status metadata retained during
+server-managed issuance, network revocation only changes the recipient relationship;
+it cannot update the signed credential's status list. A holder calling
+`verifyCredential` therefore will not see that network revocation. Integrations that
+encrypt before upload must manage and publish their own signed status-list updates,
+or use server-managed signing-authority issuance to retain network status support.
+The server logs a warning when it stores an encrypted credential without status metadata.
 
 This is the only issuance path; no environment flag is required. Previously stored
 wrapped credentials remain supported by verification and display.
