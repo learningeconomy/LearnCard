@@ -53,6 +53,7 @@ import {
     SocialLoginTypes,
     getAuthConfig,
     getSSSConfig,
+    getEscrowStrategyConfig,
     getLogger,
     type AuthCoordinatorContextValue,
     type AuthProvider,
@@ -88,7 +89,6 @@ import { alertCircleOutline } from 'ionicons/icons';
 import {
     createSSSStrategy,
     generateEd25519PrivateKey,
-    createAdaptiveStorage,
     isPublicComputerMode,
 } from '@learncard/sss-key-manager';
 import type {
@@ -97,7 +97,7 @@ import type {
     RecoverySetupInput,
 } from '@learncard/sss-key-manager';
 import useSQLiteStorage from 'learn-card-base/hooks/useSQLiteStorage';
-import { createNativeSSSStorage } from 'learn-card-base/security/nativeSSSStorage';
+import { createDeviceShareStorage } from 'learn-card-base/security/deviceShareStorage';
 
 import { getBespokeLearnCard, getSigningLearnCard } from 'learn-card-base/helpers/walletHelpers';
 import {
@@ -136,6 +136,8 @@ import {
 import { Overlay, ErrorOverlay, StalledMigrationOverlay, EmailLinkOverlay } from 'learn-card-base';
 
 import { RecoveryFlowModal } from '../components/recovery/RecoveryFlowModal';
+import { EscrowRecoveryHoldBanner } from '../components/recovery/EscrowRecoveryHoldBanner';
+import { clearAllPendingEscrowRecovery } from '../components/recovery/escrowRecoveryStorage';
 import {
     RecoverySetupModal,
     type RecoverySetupType,
@@ -278,11 +280,11 @@ registerKeyDerivationFactory('sss', () => {
 
     return createSSSStrategy({
         serverUrl: sss.serverUrl,
-        // On native Capacitor (iOS/Android), use encrypted SQLite instead of
-        // IndexedDB to avoid iOS WKWebView IndexedDB eviction issues.
-        // On web, use adaptive storage that routes to sessionStorage when the
-        // user has enabled "public computer" mode.
-        storage: Capacitor.isNativePlatform() ? createNativeSSSStorage() : createAdaptiveStorage(),
+        escrowRelayPublicKey: sss.escrowRelayPublicKey,
+        escrowRelayKeyId: sss.escrowRelayKeyId,
+        escrow: getEscrowStrategyConfig(sss),
+        onEscrowError: err => log.warn('escrow.enrollment.failed', err),
+        storage: createDeviceShareStorage(),
         enableEmailBackupShare: sss.enableEmailBackupShare,
         tenantId,
     });
@@ -1364,11 +1366,35 @@ const AuthSessionManager: React.FC<{
     return (
         <AppAuthContext.Provider value={enrichedValue}>
             {children}
+            {coordinator.state.status === 'ready' && coordinator.state.pendingEscrowHold && (
+                <div className="fixed top-6 inset-x-4 z-[10000] max-w-md mx-auto">
+                    <EscrowRecoveryHoldBanner
+                        key={coordinator.state.pendingEscrowHold.holdId}
+                        requestedAt={coordinator.state.pendingEscrowHold.requestedAt}
+                        onCancel={coordinator.cancelEscrowRecovery}
+                    />
+                </div>
+            )}
 
             {/* ── Recovery overlay ─────────────────────────────── */}
             {showRecovery && (
                 <Overlay>
                     <RecoveryFlowModal
+                        escrowRecovery={{
+                            scope: JSON.stringify([
+                                getSSSConfig().serverUrl,
+                                coordinator.state.status === 'needs_recovery'
+                                    ? coordinator.state.authUser.id
+                                    : coordinator.state.status === 'identity_recovery'
+                                      ? coordinator.state.email
+                                      : undefined,
+                            ]),
+                            onStart: coordinator.startEscrowRecovery,
+                            onStatus: coordinator.getEscrowRecoveryStatus,
+                            onRecover: coordinator.recover,
+                            canResumeCompleted: () =>
+                                coordinator.keyDerivation.hasPendingIdentityRecovery?.() ?? false,
+                        }}
                         availableMethods={availableMethods}
                         recoveryReason={
                             coordinator.state.status === 'needs_recovery'
@@ -1594,19 +1620,31 @@ const AuthSessionManager: React.FC<{
                                 const freshToken = await authProvider.getIdToken();
                                 const pk = coordinator.state.privateKey;
                                 const did = coordinator.state.did;
-                                const vpJwt = await signDidAuthVp(pk);
+                                const providerType = authProvider.getProviderType();
 
-                                const { localKey, remoteKey } = await keyDerivation.splitKey(pk);
+                                if (keyDerivation.atomicUpdateShares) {
+                                    await keyDerivation.atomicUpdateShares({
+                                        token: freshToken,
+                                        providerType,
+                                        privateKey: pk,
+                                        did,
+                                        signDidAuthVp,
+                                    });
+                                } else {
+                                    const vpJwt = await signDidAuthVp(pk);
+                                    const { localKey, remoteKey } =
+                                        await keyDerivation.splitKey(pk);
 
-                                await keyDerivation.storeLocalKey(localKey);
+                                    await keyDerivation.storeLocalKey(localKey);
 
-                                await keyDerivation.storeAuthShare(
-                                    freshToken,
-                                    authProvider.getProviderType(),
-                                    remoteKey,
-                                    did,
-                                    vpJwt
-                                );
+                                    await keyDerivation.storeAuthShare(
+                                        freshToken,
+                                        providerType,
+                                        remoteKey,
+                                        did,
+                                        vpJwt
+                                    );
+                                }
 
                                 await keyDerivation.sendEmailBackupShare(
                                     freshToken,
@@ -2055,6 +2093,7 @@ export const AuthCoordinatorProvider: React.FC<AppAuthCoordinatorProviderProps> 
                 signDidAuthVp={signDidAuthVp}
                 getCachedPrivateKey={getCachedPrivateKey}
                 onLogout={handleAppLogout}
+                clearPendingEscrowRecovery={clearAllPendingEscrowRecovery}
                 onDebugEvent={handleDebugEvent}
                 legacyAccountThresholdMs={5 * 60 * 1000}
                 // The coordinator is always enabled. To switch key derivation
