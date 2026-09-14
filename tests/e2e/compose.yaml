@@ -120,8 +120,6 @@ services:
 
     lca-api:
         image: lca-api-service
-        volumes:
-            - ../../services/learn-card-network/lca-api/src:/app/services/learn-card-network/lca-api/src
         build:
             context: ../../
             dockerfile: Dockerfile.monorepo
@@ -144,9 +142,6 @@ services:
 
         extra_hosts:
             - 'localhost:host-gateway'
-
-        volumes:
-            - ../../services/learn-card-network/lca-api/src:/app/services/learn-card-network/lca-api/src
 
         environment:
             PORT: 5200
