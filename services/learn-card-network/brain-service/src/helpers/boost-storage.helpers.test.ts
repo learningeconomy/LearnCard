@@ -154,6 +154,20 @@ describe('boost payload storage', () => {
         expect(mocks.issue).not.toHaveBeenCalled();
     });
 
+    it.each(['lc:network:network.example/boost:other', undefined])(
+        'rejects a plaintext credential with a mismatched or missing boostId (%s) before storage',
+        async boostId => {
+            await expect(
+                sendBoost({ ...options, credential: { ...vc, boostId } })
+            ).rejects.toMatchObject({
+                code: 'BAD_REQUEST',
+            });
+            expect(mocks.store).not.toHaveBeenCalled();
+            expect(mocks.instanceOf).not.toHaveBeenCalled();
+            expect(mocks.sent).not.toHaveBeenCalled();
+        }
+    );
+
     it('preserves explicit notification and acceptance opt-outs', async () => {
         await sendBoost({
             ...options,

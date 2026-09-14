@@ -1,5 +1,5 @@
 import cloneDeep from 'lodash/cloneDeep';
-import { isVC2Format } from '@learncard/helpers';
+import { isEncrypted, isVC2Format } from '@learncard/helpers';
 import { TRPCError } from '@trpc/server';
 import {
     VC,
@@ -138,6 +138,13 @@ export const sendBoost = async ({
         async () => {
             const sourceBoostUri = getBoostUri(boost.dataValues.id, domain);
             const fromProfile = getIssuerOwnerProfile(from);
+
+            if (!isEncrypted(credential) && (credential as VC).boostId !== sourceBoostUri) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Credential boostId must match the Boost being sent.',
+                });
+            }
 
             // Preserve the issuer's payload without decrypting or counter-signing it.
             const credentialInstance = await traceDb('storeCredential', () =>
