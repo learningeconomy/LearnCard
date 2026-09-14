@@ -1654,6 +1654,25 @@
         },
         "loadError": "تعذّر تحميل جهات الاتصال. يرجى المحاولة مرة أخرى."
     },
+    "bulkImport": {
+        "title": "استيراد بيانات الاعتماد بالجملة",
+        "step": "الخطوة {{number}}",
+        "prepareTitle": "إعداد ملفك وتصديره",
+        "fillSheetPrefix": "املأ",
+        "googleSheet": "جدول بيانات Google",
+        "fillSheetSuffix": "باستخدام:",
+        "fullImageUrls": "روابط الصور الكاملة (https://...) للاستخدام المباشر",
+        "simpleFilenames": "أو أسماء ملفات بسيطة (image.png) للصور التي ستحمّلها في ملف ZIP",
+        "exportCsv": "التصدير إلى CSV:",
+        "downloadCsvPath": "ملف ← تنزيل ← قيم مفصولة بفواصل (.csv)",
+        "uploadCsvTitle": "حمّل ملف ‎.csv‎",
+        "zipHelp": "إذا استخدمت أسماء ملفات بدلاً من الروابط، فحمّل ملف ZIP يحتوي على ملفات الصور تلك.",
+        "checkBeforeUploading": "تحقق قبل التحميل",
+        "checkBeforeUploadingDescription": "تأكد من وجود جميع الصور ومن إصلاح أي أخطاء في الملفات قبل المتابعة.",
+        "uploading": "جارٍ التحميل...",
+        "uploadImagesZip": "تحميل ملف ZIP للصور",
+        "previewCredentials": "معاينة {{count}} من بيانات الاعتماد"
+    },
     "consentFlow": {
         "title": "الموافقة",
         "acceptAndSync": "قبول ومزامنة",
@@ -2750,6 +2769,15 @@
         "none": "بدون",
         "colorHexCode": "رمز اللون السداسي",
         "confirmRemoveMember": "هل أنت متأكد أنك تريد إزالة هذا {{title}}؟",
+        "titleOptions": {
+            "guardians": "أولياء الأمور",
+            "parents": "الآباء والأمهات",
+            "grandparents": "الأجداد",
+            "caretakers": "مقدمو الرعاية",
+            "advocates": "المناصرون",
+            "children": "الأطفال",
+            "kids": "الصغار"
+        },
         "titlesToggle": {
             "admins": "المسؤولون",
             "kids": "الأطفال"

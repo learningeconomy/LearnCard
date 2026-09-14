@@ -55,3 +55,26 @@ export const familyTitleOptions = {
         },
     ],
 };
+
+/** Localize the UI label without changing the English value persisted in family credentials. */
+export const getFamilyTitleLabel = (plural: string): string => {
+    switch (plural) {
+        case 'Guardians':
+            return m['family.titleOptions.guardians']();
+        case 'Parents':
+            return m['family.titleOptions.parents']();
+        case 'Grandparents':
+            return m['family.titleOptions.grandparents']();
+        case 'Caretakers':
+            return m['family.titleOptions.caretakers']();
+        case 'Advocates':
+            return m['family.titleOptions.advocates']();
+        case 'Children':
+            return m['family.titleOptions.children']();
+        case 'Kids':
+            return m['family.titleOptions.kids']();
+        default:
+            return plural;
+    }
+};
+import * as m from '../../../../paraglide/messages.js';

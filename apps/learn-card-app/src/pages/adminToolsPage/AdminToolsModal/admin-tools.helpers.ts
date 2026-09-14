@@ -26,7 +26,7 @@ export const adminToolOptions: AdminToolOption[] = [
     {
         id: 1,
         label: 'Import Credentials',
-        title: 'Bulk Import Credentials',
+        title: m['bulkImport.title'](),
         description: 'Upload multiple credentials at once.',
         actionLabel: 'Add Credentials',
 

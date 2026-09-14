@@ -1654,6 +1654,25 @@
         },
         "loadError": "We couldn't load your contacts. Please try again."
     },
+    "bulkImport": {
+        "title": "Bulk Import Credentials",
+        "step": "Step {{number}}",
+        "prepareTitle": "Prepare & Export Your File",
+        "fillSheetPrefix": "Fill out this",
+        "googleSheet": "Google Sheet",
+        "fillSheetSuffix": "using:",
+        "fullImageUrls": "Full image URLs (https://...) for direct use",
+        "simpleFilenames": "OR simple filenames (image.png) for images you'll upload in a ZIP",
+        "exportCsv": "Export to CSV:",
+        "downloadCsvPath": "File → Download → Comma Separated Values (.csv)",
+        "uploadCsvTitle": "Upload Your .csv File",
+        "zipHelp": "If you used filenames instead of URLs, upload a ZIP file containing those image files.",
+        "checkBeforeUploading": "Check Before Uploading",
+        "checkBeforeUploadingDescription": "Ensure all images are in place and any file errors are fixed before continuing.",
+        "uploading": "Uploading...",
+        "uploadImagesZip": "Upload Images ZIP",
+        "previewCredentials": "Preview {{count}} Credentials"
+    },
     "consentFlow": {
         "acceptAndSync": "Accept & Sync",
         "accepted": "Accepted",
@@ -2443,6 +2462,15 @@
         "none": "None",
         "colorHexCode": "Color Hex Code",
         "confirmRemoveMember": "Are you sure you want to remove this {{title}}?",
+        "titleOptions": {
+            "guardians": "Guardians",
+            "parents": "Parents",
+            "grandparents": "Grandparents",
+            "caretakers": "Caretakers",
+            "advocates": "Advocates",
+            "children": "Children",
+            "kids": "Kids"
+        },
         "titlesToggle": {
             "admins": "Admins",
             "kids": "Kids"

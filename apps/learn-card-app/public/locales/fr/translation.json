@@ -1654,6 +1654,25 @@
         },
         "loadError": "Impossible de charger vos contacts. Veuillez réessayer."
     },
+    "bulkImport": {
+        "title": "Importation groupée de justificatifs",
+        "step": "Étape {{number}}",
+        "prepareTitle": "Préparez et exportez votre fichier",
+        "fillSheetPrefix": "Remplissez cette",
+        "googleSheet": "feuille Google",
+        "fillSheetSuffix": "en utilisant :",
+        "fullImageUrls": "URL complètes des images (https://...) pour une utilisation directe",
+        "simpleFilenames": "OU des noms de fichiers simples (image.png) pour les images à téléverser dans un ZIP",
+        "exportCsv": "Exporter au format CSV :",
+        "downloadCsvPath": "Fichier → Télécharger → Valeurs séparées par des virgules (.csv)",
+        "uploadCsvTitle": "Téléversez votre fichier .csv",
+        "zipHelp": "Si vous avez utilisé des noms de fichiers plutôt que des URL, téléversez un fichier ZIP contenant ces images.",
+        "checkBeforeUploading": "Vérifiez avant de téléverser",
+        "checkBeforeUploadingDescription": "Vérifiez que toutes les images sont présentes et corrigez les erreurs avant de continuer.",
+        "uploading": "Téléversement...",
+        "uploadImagesZip": "Téléverser le ZIP d’images",
+        "previewCredentials": "Aperçu de {{count}} justificatifs"
+    },
     "consentFlow": {
         "title": "Consentement",
         "acceptAndSync": "Accepter et synchroniser",
@@ -2750,6 +2769,15 @@
         "none": "Aucun",
         "colorHexCode": "Code couleur hex",
         "confirmRemoveMember": "Voulez-vous vraiment retirer ce {{title}} ?",
+        "titleOptions": {
+            "guardians": "Tuteurs",
+            "parents": "Parents",
+            "grandparents": "Grands-parents",
+            "caretakers": "Responsables",
+            "advocates": "Défenseurs",
+            "children": "Enfants",
+            "kids": "Jeunes"
+        },
         "titlesToggle": {
             "admins": "Administrateurs",
             "kids": "Enfants"

@@ -1654,6 +1654,25 @@
         },
         "loadError": "No pudimos cargar tus contactos. Inténtalo de nuevo."
     },
+    "bulkImport": {
+        "title": "Importación masiva de credenciales",
+        "step": "Paso {{number}}",
+        "prepareTitle": "Prepara y exporta tu archivo",
+        "fillSheetPrefix": "Completa esta",
+        "googleSheet": "hoja de Google",
+        "fillSheetSuffix": "usando:",
+        "fullImageUrls": "URL completas de imágenes (https://...) para uso directo",
+        "simpleFilenames": "O nombres de archivo simples (imagen.png) para las imágenes que subirás en un ZIP",
+        "exportCsv": "Exportar a CSV:",
+        "downloadCsvPath": "Archivo → Descargar → Valores separados por comas (.csv)",
+        "uploadCsvTitle": "Sube tu archivo .csv",
+        "zipHelp": "Si usaste nombres de archivo en lugar de URL, sube un archivo ZIP que contenga esas imágenes.",
+        "checkBeforeUploading": "Comprueba antes de subir",
+        "checkBeforeUploadingDescription": "Asegúrate de que todas las imágenes estén incluidas y corrige cualquier error antes de continuar.",
+        "uploading": "Subiendo...",
+        "uploadImagesZip": "Subir ZIP de imágenes",
+        "previewCredentials": "Vista previa de {{count}} credenciales"
+    },
     "consentFlow": {
         "title": "Consentimiento",
         "acceptAndSync": "Aceptar y sincronizar",
@@ -2750,6 +2769,15 @@
         "none": "Ninguno",
         "colorHexCode": "Código de color hex",
         "confirmRemoveMember": "¿Seguro que quieres eliminar a este {{title}}?",
+        "titleOptions": {
+            "guardians": "Tutores",
+            "parents": "Padres",
+            "grandparents": "Abuelos",
+            "caretakers": "Cuidadores",
+            "advocates": "Defensores",
+            "children": "Niños",
+            "kids": "Pequeños"
+        },
         "titlesToggle": {
             "admins": "Administradores",
             "kids": "Niños"
