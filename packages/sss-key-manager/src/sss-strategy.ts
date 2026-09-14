@@ -668,6 +668,28 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         tenantId,
     } = config;
     const storage = config.storage || defaultStorage;
+    let storageGeneration = 0;
+    const localWrites = new Set<Promise<void>>();
+
+    // Capture before any await (including the rotation lock). A forgotten device
+    // must not be restored by a late write or by atomic-update rollback.
+    const guardedStorage = (): SSSStorageFunctions => {
+        const generation = storageGeneration;
+        const write = (operation: () => Promise<void>): Promise<void> => {
+            if (generation !== storageGeneration) {
+                return Promise.reject(new Error('This recovery request was cancelled.'));
+            }
+            const pending = operation();
+            localWrites.add(pending);
+            return pending.finally(() => localWrites.delete(pending));
+        };
+        return {
+            ...storage,
+            storeDeviceShare: (share, id) => write(() => storage.storeDeviceShare(share, id)),
+            storeShareVersion: (version, id) => write(() => storage.storeShareVersion(version, id)),
+            clearAllShares: id => write(() => storage.clearAllShares(id)),
+        };
+    };
 
     /**
      * Per-user storage ID. When set, device shares are keyed as
@@ -868,6 +890,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
     const ensureEscrowEnrollmentUnguarded = async (
         self: SSSKeyDerivationStrategy,
         params: Parameters<NonNullable<SSSKeyDerivationStrategy['ensureEscrowEnrollment']>>[0],
+        storage: SSSStorageFunctions,
         forceRotate = false
     ): Promise<EscrowEnrollmentResult> => {
         if (!config.escrow?.enabled) return { enrolled: false, reason: 'disabled' };
@@ -983,6 +1006,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         // --- User scoping ---
 
         setActiveUser(userId: string): void {
+            if (activeStorageId !== `sss-device-share:${userId}`) storageGeneration++;
             activeStorageId = `sss-device-share:${userId}`;
             lastServerSnapshot = null;
             pendingPhraseConfirmation = undefined;
@@ -1003,6 +1027,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         },
 
         async getLocalKey(): Promise<string | null> {
+            const storage = guardedStorage();
             const scoped = await storage.getDeviceShare(activeStorageId);
 
             if (scoped) return scoped;
@@ -1027,6 +1052,8 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         },
 
         async clearLocalKeys(): Promise<void> {
+            storageGeneration++;
+            await Promise.allSettled(localWrites);
             return storage.clearAllShares(activeStorageId);
         },
 
@@ -1073,6 +1100,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         },
 
         async atomicUpdateShares(params): Promise<void> {
+            const storage = guardedStorage();
             const result = await persistSharesAtomically(
                 params.privateKey,
                 serverUrl,
@@ -1097,6 +1125,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         },
 
         async reconcileShares(params): Promise<RecoveryResult | null> {
+            const storage = guardedStorage();
             const deviceShare = await storage.getDeviceShare(activeStorageId);
 
             if (!deviceShare) return null;
@@ -1221,6 +1250,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             token: string,
             providerType: AuthProviderType
         ): Promise<ServerKeyStatus> {
+            const storage = guardedStorage();
             // Pass the local device share's version so the server returns the matching auth share
             const localVersion = await storage.getShareVersion(activeStorageId);
 
@@ -1289,6 +1319,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             primaryDid: string,
             didAuthVp?: string
         ): Promise<void> {
+            const storage = guardedStorage();
             const { shareVersion } = await withRotationLock(() =>
                 putAuthShare(
                     serverUrl,
@@ -1384,6 +1415,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         },
 
         async enableEscrowRecovery(params) {
+            const storage = guardedStorage();
             return withRotationLock(async () => {
                 if (!config.escrow?.enabled)
                     return { enrolled: false as const, reason: 'disabled' as const };
@@ -1405,13 +1437,14 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                         providerType: params.providerType,
                     }),
                 });
-                return ensureEscrowEnrollmentUnguarded(this, params);
+                return ensureEscrowEnrollmentUnguarded(this, params, storage);
             });
         },
 
         async setEscrowPin({ pin, ...params }): Promise<void> {
+            const storage = guardedStorage();
             const result = await withRotationLock(() =>
-                ensureEscrowEnrollmentUnguarded(this, { ...params, options: { pin } })
+                ensureEscrowEnrollmentUnguarded(this, { ...params, options: { pin } }, storage)
             );
             if (!result.enrolled) {
                 throw new Error('Automatic recovery is not available for this account.');
@@ -1419,8 +1452,9 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         },
 
         async clearEscrowPin(params): Promise<void> {
+            const storage = guardedStorage();
             const result = await withRotationLock(() =>
-                ensureEscrowEnrollmentUnguarded(this, params, true)
+                ensureEscrowEnrollmentUnguarded(this, params, storage, true)
             );
             if (!result.enrolled) {
                 throw new Error('Automatic recovery is not available for this account.');
@@ -1429,11 +1463,14 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
 
         /** Enroll missing/stale escrow material using the standard atomic rotation. */
         async ensureEscrowEnrollment(params): Promise<EscrowEnrollmentResult> {
+            const storage = guardedStorage();
             if (params.options?.pin !== undefined)
-                return withRotationLock(() => ensureEscrowEnrollmentUnguarded(this, params));
+                return withRotationLock(() =>
+                    ensureEscrowEnrollmentUnguarded(this, params, storage)
+                );
             if (escrowEnrollmentInFlight) return escrowEnrollmentInFlight;
             escrowEnrollmentInFlight = withRotationLock(() =>
-                ensureEscrowEnrollmentUnguarded(this, params)
+                ensureEscrowEnrollmentUnguarded(this, params, storage)
             );
             try {
                 return await escrowEnrollmentInFlight;
@@ -1525,6 +1562,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             didFromPrivateKey?: (privateKey: string) => Promise<string>;
             signDidAuthVp?: DidAuthVpSigner;
         }): Promise<RecoveryResult> {
+            const storage = guardedStorage();
             const { token, providerType, input, didFromPrivateKey, signDidAuthVp } = params;
 
             if (input.method === 'escrow' || input.method === 'escrow-pin') {
@@ -1807,6 +1845,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             authUser?: AuthUser;
             signDidAuthVp?: DidAuthVpSigner;
         }): Promise<RecoverySetupResult> {
+            const storage = guardedStorage();
             const { token, providerType, privateKey, input, authUser, signDidAuthVp } = params;
 
             if (input.method === 'escrow' && input.pin !== undefined) {
@@ -2351,6 +2390,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         },
 
         async completeIdentityRecovery(params): Promise<RecoveryResult> {
+            const storage = guardedStorage();
             const pending = pendingIdentityRecovery;
             const signDidAuthVp = params.signDidAuthVp;
 
@@ -2359,45 +2399,43 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 throw new Error('DID proof signing is required to bind a new sign-in');
             }
 
-            const previousDeviceShare = await storage.getDeviceShare(activeStorageId);
             let shareVersion: number | undefined;
+            // No local rollback here. The rebind token is single-use and the server
+            // purges share history on commit, so a lost ack after a successful rebind
+            // would otherwise delete the only device share that pairs with the new
+            // auth share. Leaving the new share in place is safe: if the server really
+            // rejected, the stale-key check on next login clears it.
             const result = await withRotationLock(() =>
-                atomicRecovery(
-                    pending.recoveryShare,
-                    pending.authShare,
-                    {
-                        storeDevice: share => storage.storeDeviceShare(share, activeStorageId),
-                        clearDevice: () => storage.clearAllShares(activeStorageId),
-                        storeAuth: async share => {
-                            const didAuthVp = await requestFreshDidAuthVp(
-                                serverUrl,
-                                pending.privateKey,
-                                pending.primaryDid,
-                                signDidAuthVp,
-                                tenantId
-                            );
-                            const response = await postJson<{
-                                shareVersion: number;
-                                recoveryMethodsRequireConfirmation: string[];
-                            }>(
-                                `${serverUrl}/keys/recovery-session/rebind`,
-                                {
-                                    recoverySessionToken: pending.rebindSessionToken,
-                                    providerType: params.providerType,
-                                    primaryDid: pending.primaryDid,
-                                    authShare: { encryptedData: share, encryptedDek: '', iv: '' },
-                                },
-                                {
-                                    ...buildHeaders('', didAuthVp, tenantId),
-                                    'X-Auth-Token': params.token,
-                                }
-                            );
+                atomicRecovery(pending.recoveryShare, pending.authShare, {
+                    storeDevice: share => storage.storeDeviceShare(share, activeStorageId),
+                    storeAuth: async share => {
+                        const didAuthVp = await requestFreshDidAuthVp(
+                            serverUrl,
+                            pending.privateKey,
+                            pending.primaryDid,
+                            signDidAuthVp,
+                            tenantId
+                        );
+                        const response = await postJson<{
+                            shareVersion: number;
+                            recoveryMethodsRequireConfirmation: string[];
+                        }>(
+                            `${serverUrl}/keys/recovery-session/rebind`,
+                            {
+                                recoverySessionToken: pending.rebindSessionToken,
+                                providerType: params.providerType,
+                                primaryDid: pending.primaryDid,
+                                authShare: { encryptedData: share, encryptedDek: '', iv: '' },
+                            },
+                            {
+                                ...buildHeaders('', didAuthVp, tenantId),
+                                'X-Auth-Token': params.token,
+                            }
+                        );
 
-                            shareVersion = response.shareVersion;
-                        },
+                        shareVersion = response.shareVersion;
                     },
-                    { previousDeviceShare: previousDeviceShare ?? undefined }
-                )
+                })
             );
 
             if (shareVersion === undefined) throw new Error('Server did not confirm the new share');
@@ -2517,7 +2555,8 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         },
 
         async cleanup(): Promise<void> {
-            // No additional cleanup beyond clearLocalKeys for SSS
+            storageGeneration++;
+            await Promise.allSettled(localWrites);
         },
     };
 }

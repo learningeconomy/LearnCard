@@ -313,6 +313,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
 
         return () => {
             stale = true;
+            coordinator.destroy();
             coordinatorRef.current = null;
         };
     }, [

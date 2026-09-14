@@ -15,6 +15,7 @@ import {
     cancelEscrowHold,
     completeEscrowHold,
     expireStaleEscrowHolds,
+    ESCROW_HOLD_STALE_WINDOW_MS,
     generateEscrowResumeToken,
     hashEscrowResumeToken,
     findPendingEscrowHoldByAuthProvider,
@@ -194,7 +195,9 @@ describe('escrow model invariants', () => {
     });
     it('expires only stale pending holds and creates random hashed resume tokens', async () => {
         const now = new Date();
-        const hold = await createHold(new Date(now.getTime() - 31 * 86_400_000));
+        const hold = await createHold(new Date(now.getTime() - ESCROW_HOLD_STALE_WINDOW_MS - 1));
+        // Claiming must enforce expiry even before lazy cleanup has run.
+        expect(await completeEscrowHold(hold._id)).toBeNull();
         expect(await expireStaleEscrowHolds(now)).toBe(1);
         expect(await completeEscrowHold(hold._id)).toBeNull();
         expect(await cancelEscrowHold(hold._id, 'did')).toBeNull();

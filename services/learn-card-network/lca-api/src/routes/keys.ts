@@ -1069,7 +1069,10 @@ export const keysRouter = t.router({
 
             assertDidOwner(userKey, ctx.user.did);
 
+            // Legacy accounts with no prior record are created by storeAuthShare as a
+            // provisional 'sss' key; treat markMigrated as an idempotent no-op for them.
             if (userKey.keyProvider !== 'web3auth') {
+                if (userKey.sssActivationState === 'provisional') return { success: true };
                 throw new TRPCError({
                     code: 'BAD_REQUEST',
                     message: 'This key record is not eligible for migration.',

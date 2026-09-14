@@ -6,6 +6,8 @@
  * coupling consumers to any specific implementation.
  */
 
+import { z } from 'zod';
+
 // ---------------------------------------------------------------------------
 // Auth Session Error
 // ---------------------------------------------------------------------------
@@ -236,11 +238,13 @@ export const escrowPinMismatchMessage = (attemptsRemaining: number): string =>
     `Incorrect PIN. ${attemptsRemaining} attempts left.`;
 
 /** Public PIN availability and remaining lifetime attempts; never includes the verifier. */
-export interface EscrowPinStatus {
-    enabled: boolean;
-    attemptsRemaining: number;
-    salt?: string;
-}
+export const EscrowPinStatusValidator = z.object({
+    state: z.enum(['none', 'enabled', 'locked', 'stale']),
+    enabled: z.boolean(),
+    attemptsRemaining: z.number().int().nonnegative(),
+    salt: z.string().optional(),
+});
+export type EscrowPinStatus = z.infer<typeof EscrowPinStatusValidator>;
 
 /** Enrollment details for PIN-aware strategies. Legacy strategies may still return a string. */
 export interface EscrowEnrollmentState {

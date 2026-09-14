@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { Filter } from 'mongodb';
 import { ESCROW_PIN_MAX_ATTEMPTS } from '@learncard/sss-key-manager';
+import { EscrowPinStatusValidator as SharedEscrowPinStatusValidator } from '@learncard/types';
 
 import mongodb from '@mongo';
 import { pruneOrphanedRecoveryMethods } from './pruneOrphanedRecoveryMethods';
@@ -92,9 +93,7 @@ export const EscrowPinValidator = z.object({
     disabledAt: z.date().optional(),
     shareVersion: z.number().int().positive(),
 });
-export const EscrowPinStatusValidator = z.object({
-    enabled: z.boolean(),
-    attemptsRemaining: z.number().int().nonnegative(),
+export const EscrowPinStatusValidator = SharedEscrowPinStatusValidator.extend({
     salt: EscrowPinSaltValidator.optional(),
 });
 
@@ -108,6 +107,13 @@ export const getEscrowPinStatus = (
         pin.shareVersion === userKey.shareVersion &&
         pin.failedAttempts < ESCROW_PIN_MAX_ATTEMPTS;
     return {
+        state: !pin
+            ? 'none'
+            : pin.disabledAt || pin.failedAttempts >= ESCROW_PIN_MAX_ATTEMPTS
+              ? 'locked'
+              : pin.shareVersion !== userKey.shareVersion
+                ? 'stale'
+                : 'enabled',
         enabled,
         attemptsRemaining: pin ? Math.max(0, ESCROW_PIN_MAX_ATTEMPTS - pin.failedAttempts) : 0,
         ...(enabled ? { salt: pin.salt } : {}),
