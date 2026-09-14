@@ -436,6 +436,16 @@ jobs:
                     exit 1
                   fi
 
+            - name: Validate credential refresh configuration
+              env:
+                  CREDENTIAL_REFRESH_ENABLED: ${{ vars.CREDENTIAL_REFRESH_ENABLED || 'false' }}
+                  CREDENTIAL_REFRESH_DIGEST_SECRET: ${{ secrets.CREDENTIAL_REFRESH_DIGEST_SECRET }}
+              run: |
+                  if [[ "$CREDENTIAL_REFRESH_ENABLED" == "true" && -z "$CREDENTIAL_REFRESH_DIGEST_SECRET" ]]; then
+                    echo "::error::CREDENTIAL_REFRESH_DIGEST_SECRET must be configured when credential refresh is enabled."
+                    exit 1
+                  fi
+
             - name: Deploy Brain Service Lambda
               run: bunx nx serverless-deploy network-brain-service --stage ${{ vars.SERVERLESS_STAGE }} --region ${{ vars.SERVERLESS_REGION }}
               env:
@@ -452,6 +462,9 @@ jobs:
                   SERVERLESS_REGION: ${{ vars.SERVERLESS_REGION }}
                   SERVERLESS_SERVICE_NAME: ${{ vars.SERVERLESS_SERVICE_NAME }}
                   APP_STORE_ADMIN_PROFILE_IDS: ${{ vars.APP_STORE_ADMIN_PROFILE_IDS }}
+                  CREDENTIAL_REFRESH_ENABLED: ${{ vars.CREDENTIAL_REFRESH_ENABLED || 'false' }}
+                  CREDENTIAL_REFRESH_DIGEST_SECRET: ${{ secrets.CREDENTIAL_REFRESH_DIGEST_SECRET }}
+                  CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS: ${{ vars.CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS || '24' }}
                   SEED: ${{ secrets.SEED }}
                   DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
                   NOTIFICATIONS_SERVICE_WEBHOOK_URL: ${{ secrets.NOTIFICATIONS_SERVICE_WEBHOOK_URL }}
