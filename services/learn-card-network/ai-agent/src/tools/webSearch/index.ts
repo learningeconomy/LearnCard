@@ -218,7 +218,7 @@ export const createWebSearchTool = ({
             context.signal?.throwIfAborted();
             if (error instanceof WebSearchInputError) throw error;
 
-            throw new Error(`webSearch failed for provider ${provider.name}.`);
+            throw new Error(`webSearch failed for provider ${provider.name}.`, { cause: error });
         }
     },
 });

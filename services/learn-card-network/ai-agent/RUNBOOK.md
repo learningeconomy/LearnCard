@@ -358,8 +358,8 @@ perform irreversible effects.
 - All AI Agent deployment logic lives in `deploy.yml`: validation, Trigger.dev deployment,
   image build/scan, ECS rollout, and live checks. Its **AI Agent CI** job runs before the
   environment-protected deployment job starts.
-- `test-ai-agent.yml` only runs pull-request validation. It has no deployment jobs,
-  deployment environments, or callable workflow entry point.
+- The existing `test.yml` workflow runs the PR-only **AI Agent CI** job with read-only
+  permissions and no deployment environment. There are no separate AI Agent workflow files.
 - Production begins automatically from the Changesets release; existing GitHub environment
   approval still applies. No separate action needs to be dispatched. Keep the production
   LaunchDarkly flag off throughout the initial deployment; workflows never open targeting.

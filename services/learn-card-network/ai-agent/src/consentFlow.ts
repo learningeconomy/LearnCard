@@ -298,7 +298,7 @@ export const createConsentFlowRuntime = (
         let credentialCount = 0;
         let hydratedCredentialCount = 0;
         let cursor: string | undefined;
-        let hasMore = false;
+        let hasMore: boolean;
         let pagesRead = 0;
 
         do {

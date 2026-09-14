@@ -27,9 +27,7 @@ const readWorkflow = file => {
     return workflow;
 };
 const main = readWorkflow(process.argv[2] || path.join(root, '.github/workflows/deploy.yml'));
-const agent = readWorkflow(
-    process.argv[3] || path.join(root, '.github/workflows/test-ai-agent.yml')
-);
+const agent = readWorkflow(process.argv[3] || path.join(root, '.github/workflows/test.yml'));
 const determine = main.jobs['determine-affected'];
 const validate = main.jobs['validate-ai-agent'];
 const deploy = main.jobs['deploy-ai-agent'];
@@ -208,20 +206,23 @@ try {
         [main],
         'main Deploy must be the only automatic deployment entrypoint'
     );
+    const aiChecks = agent.jobs['ai-agent'];
     assert.equal(
-        Object.hasOwn(agent.on, 'workflow_dispatch'),
-        false,
-        'manual overrides belong to main Deploy'
+        evaluate(aiChecks.if, { github: { event_name: 'pull_request' } }),
+        true,
+        'AI checks must run on pull requests'
     );
-    assert.deepEqual(Object.keys(agent.on), ['pull_request'], 'AI test workflow is PR-only');
-    for (const job of Object.values(agent.jobs)) {
-        assert.equal(
-            job.environment,
-            undefined,
-            'PR checks must not enter deployment environments'
-        );
-        assert.deepEqual(job.permissions ?? agent.permissions, { contents: 'read' });
-    }
+    assert.equal(
+        evaluate(aiChecks.if, { github: { event_name: 'workflow_dispatch' } }),
+        false,
+        'manual test fallback must not run the PR-only AI job'
+    );
+    assert.equal(
+        aiChecks.environment,
+        undefined,
+        'AI checks must not enter deployment environments'
+    );
+    assert.deepEqual(aiChecks.permissions, { contents: 'read' });
     assert.equal(agent.on.pull_request.paths, undefined, 'AI CI must also report on unrelated PRs');
     console.log(
         'AI Agent routing passed: affected staging, Changesets production, failure/cancellation gates, manual overrides, and PR isolation.'

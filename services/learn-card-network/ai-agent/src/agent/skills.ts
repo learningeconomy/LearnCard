@@ -148,7 +148,9 @@ export const createFileBackedSkill = ({
             if (fallbackContent) return fallbackContent;
 
             const message = error instanceof Error ? error.message : 'Could not read skill file.';
-            throw new Error(`Could not load ${name} skill from ${filePath}: ${message}`);
+            throw new Error(`Could not load ${name} skill from ${filePath}: ${message}`, {
+                cause: error,
+            });
         }
     },
 });
