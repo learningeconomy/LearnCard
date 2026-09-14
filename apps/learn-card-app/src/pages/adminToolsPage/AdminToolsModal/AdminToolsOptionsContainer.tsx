@@ -11,8 +11,6 @@ import AdminToolsSigningAuthorityOption from '../signingAuthority/AdminToolsSign
 import AdminToolsSyncAllCredentialsOption from '../AdminToolsSyncAllCredentials/AdminToolsSyncAllCredentialsOption';
 import AdminToolsCLIOption from '../AdminToolsCLI/AdminToolsCLIOption';
 import AdminToolsLearnerContextTestOption from '../learner-context-test/AdminToolsLearnerContextTestOption';
-import AdminToolsGuardianCredentialTestOption from '../guardian-credential-test/AdminToolsGuardianCredentialTestOption';
-import AdminToolsAppEventPerfBenchOption from '../appevent-perf-bench/AdminToolsAppEventPerfBenchOption';
 
 import { AdminToolOption, AdminToolOptionsEnum } from './admin-tools.helpers';
 
@@ -48,12 +46,6 @@ export const AdminToolsOptionsContainer: React.FC<{ option: AdminToolOption }> =
             break;
         case AdminToolOptionsEnum.CLI:
             adminToolContent = <AdminToolsCLIOption option={option} />;
-            break;
-        case AdminToolOptionsEnum.GUARDIAN_CREDENTIAL_TEST:
-            adminToolContent = <AdminToolsGuardianCredentialTestOption option={option} />;
-            break;
-        case AdminToolOptionsEnum.APPEVENT_PERF_BENCH:
-            adminToolContent = <AdminToolsAppEventPerfBenchOption option={option} />;
             break;
         default:
             adminToolContent = null;

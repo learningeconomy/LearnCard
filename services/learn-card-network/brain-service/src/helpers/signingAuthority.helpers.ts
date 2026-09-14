@@ -122,7 +122,12 @@ export async function issueCredentialWithSigningAuthority(
     signingAuthorityForUser: SigningAuthorityForUserType,
     domain: string,
     encrypt = true,
-    ownerDidOverride?: string
+    ownerDidOverride?: string,
+    // LC-2135: managed credential refresh publishes new versions of an already-issued
+    // credential. Allocating fresh Bitstring status entries per version would leak
+    // writes and replace the descriptor the issuer supplied, so refresh publication
+    // opts out. Defaults to true so every existing caller is preserved.
+    appendCredentialStatus = true
 ): Promise<VC | JWE> {
     const issuerEndpoint = `${signingAuthorityForUser.signingAuthority.endpoint}/credentials/issue`;
     const saName = signingAuthorityForUser.relationship.name;
@@ -130,11 +135,9 @@ export async function issueCredentialWithSigningAuthority(
     const ownerProfile = getIssuerOwnerProfile(issuer);
     const ownerDid =
         ownerDidOverride ?? getDidWeb(domain ?? 'network.learncard.com', ownerProfile.profileId);
-    const credentialToIssue = await appendBitstringStatusListEntries(
-        credential,
-        ownerProfile.profileId,
-        domain
-    );
+    const credentialToIssue = appendCredentialStatus
+        ? await appendBitstringStatusListEntries(credential, ownerProfile.profileId, domain)
+        : credential;
 
     const logContext = {
         issuer: getIssuerProfileId(issuer),

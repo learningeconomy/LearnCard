@@ -54,7 +54,10 @@ export type NotificationMessageKey =
     | 'credentialSuspendedNamed'
     | 'credentialSuspendedUnnamed'
     | 'credentialRestoredNamed'
-    | 'credentialRestoredUnnamed';
+    | 'credentialRestoredUnnamed'
+    // --- Managed credential refresh (LC-2136) — generic copy only: never name the
+    // credential, the holder's claims, or implementation terms (refresh/sync/etc.) ---
+    | 'credentialRefreshed';
 
 type MessageTemplate = { title: string; body: string };
 type LocaleCatalog = Record<NotificationMessageKey, MessageTemplate>;
@@ -209,6 +212,10 @@ const en: LocaleCatalog = {
         title: 'Credential restored',
         body: 'Your credential was restored by {issuer}.',
     },
+    credentialRefreshed: {
+        title: 'Credential updated',
+        body: '{from} updated one of your credentials.',
+    },
 };
 
 const es: LocaleCatalog = {
@@ -355,6 +362,10 @@ const es: LocaleCatalog = {
     credentialRestoredUnnamed: {
         title: 'Credencial restaurada',
         body: 'Tu credencial fue restaurada por {issuer}.',
+    },
+    credentialRefreshed: {
+        title: 'Credencial actualizada',
+        body: '{from} actualizó una de tus credenciales.',
     },
 };
 
@@ -503,6 +514,10 @@ const fr: LocaleCatalog = {
         title: 'Titre rétabli',
         body: 'Votre titre a été rétabli par {issuer}.',
     },
+    credentialRefreshed: {
+        title: 'Titre mis à jour',
+        body: "{from} a mis à jour l'un de vos titres.",
+    },
 };
 
 const ar: LocaleCatalog = {
@@ -649,6 +664,10 @@ const ar: LocaleCatalog = {
     credentialRestoredUnnamed: {
         title: 'تمت استعادة الشهادة',
         body: 'تمت استعادة شهادتك بواسطة {issuer}.',
+    },
+    credentialRefreshed: {
+        title: 'تم تحديث الشهادة',
+        body: 'قام {from} بتحديث إحدى شهاداتك.',
     },
 };
 

@@ -41,6 +41,15 @@ export type VerificationSummary = {
     credentialStatusType?: string;
 };
 
+/** One level of a rubric criterion (`ResultDescription.rubricCriterionLevel[]`). */
+export type RubricLevelDisplayModel = {
+    id?: string;
+    name: string;
+    level?: string;
+    description?: string;
+    points?: string;
+};
+
 /** Normalized result value and optional resolved semantics from ResultDescription. */
 export type ResultDisplayModel = {
     value: SourceMappedField<string | number | boolean>;
@@ -50,6 +59,12 @@ export type ResultDisplayModel = {
     valueMax?: SourceMappedField<string>;
     valueMin?: SourceMappedField<string>;
     allowedValue?: SourceMappedField<string[]>;
+    /** `Result.status` (for example `Completed`), when present alongside a value. */
+    status?: SourceMappedField<string>;
+    /** Ordered rubric levels declared on the result description, if it is rubric-based. */
+    rubricLevels?: RubricLevelDisplayModel[];
+    /** The rubric level the learner achieved, resolved from `Result.achievedLevel` or `Result.value`. */
+    achievedLevel?: RubricLevelDisplayModel;
 };
 
 /** Normalized evidence metadata with inline payload safety flags. */
@@ -135,9 +150,16 @@ export type CompetencyDisplayModel = {
 export type AssessmentDisplayModel = {
     name?: SourceMappedField<string>;
     description?: SourceMappedField<string>;
+    achievementType: SourceMappedField<string>;
     earnedAt?: SourceMappedField<string>;
     sourceCredentialId: string;
     results: ResultDisplayModel[];
+    /** Framework competency links declared on this achievement via `achievement.alignment`. */
+    alignments: AlignmentDisplayModel[];
+    /** Evidence/attachments scoped to this assessment credential. */
+    evidence: EvidenceDisplayModel[];
+    /** True when at least one result is rubric-based (`resultType: RubricCriterionLevel`). */
+    isRubric: boolean;
 };
 
 /** Catch-all for transcript-adjacent records that do not meet strict transcript classifications. */
@@ -147,10 +169,7 @@ export type OtherAcademicRecordModel = {
     earnedAt?: SourceMappedField<string>;
     sourceCredentialId: string;
     reason:
-        | 'unsupportedAchievementType'
-        | 'ambiguous'
-        | 'missingAchievement'
-        | 'notTranscriptSpecific';
+        'unsupportedAchievementType' | 'ambiguous' | 'missingAchievement' | 'notTranscriptSpecific';
 };
 
 /** A single resolved association between two credentials in this CLR. */
@@ -201,6 +220,7 @@ export type ClrTranscriptDisplayModel = {
     summary: {
         gpa?: SourceMappedField<string | number | boolean>;
         courseCount: number;
+        assessmentCount: number;
         totalCreditsAvailable?: number;
         explicitCompetencyCount: number;
         evidenceCount: number;
@@ -286,9 +306,7 @@ const getSingleCredentialSubject = (
 ): Record<string, unknown> | undefined => {
     const subjects = asArray<Record<string, unknown>>(
         rawCredential.credentialSubject as
-            | Record<string, unknown>
-            | Record<string, unknown>[]
-            | undefined
+            Record<string, unknown> | Record<string, unknown>[] | undefined
     );
 
     return subjects.length === 1 ? subjects[0] : undefined;
@@ -629,11 +647,74 @@ const mapResults = (
                               sourceCredentialId
                           )
                         : undefined,
+                status:
+                    entry.value !== undefined && typeof entry.status === 'string'
+                        ? asMapped(
+                              entry.status,
+                              `${basePath}[${index}].status`,
+                              'result.status',
+                              sourceCredentialId
+                          )
+                        : undefined,
             };
+
+            const rubricLevels = mapRubricLevels(resultDescription?.rubricCriterionLevel);
+            if (rubricLevels.length > 0) {
+                mapped.rubricLevels = rubricLevels;
+                mapped.achievedLevel = resolveAchievedLevel(rubricLevels, entry, value);
+            }
 
             return [mapped];
         }
     );
+};
+
+const mapRubricLevels = (rubricCriterionLevel: unknown): RubricLevelDisplayModel[] =>
+    asArray<Record<string, unknown>>(rubricCriterionLevel as Record<string, unknown>[]).flatMap(
+        level => {
+            const name =
+                typeof level.name === 'string'
+                    ? level.name
+                    : typeof level.level === 'string'
+                      ? level.level
+                      : undefined;
+            if (!name) return [];
+
+            return [
+                {
+                    id: typeof level.id === 'string' ? level.id : undefined,
+                    name,
+                    level: typeof level.level === 'string' ? level.level : undefined,
+                    description:
+                        typeof level.description === 'string' ? level.description : undefined,
+                    points:
+                        typeof level.points === 'string' || typeof level.points === 'number'
+                            ? String(level.points)
+                            : undefined,
+                },
+            ];
+        }
+    );
+
+/**
+ * OB 3.0 lets a rubric result point at the achieved level either by IRI
+ * (`Result.achievedLevel`) or by repeating the level name in `Result.value`; accept both.
+ */
+const resolveAchievedLevel = (
+    rubricLevels: RubricLevelDisplayModel[],
+    entry: Record<string, unknown>,
+    value: unknown
+): RubricLevelDisplayModel | undefined => {
+    if (typeof entry.achievedLevel === 'string') {
+        const byId = rubricLevels.find(level => level.id === entry.achievedLevel);
+        if (byId) return byId;
+    }
+
+    if (typeof value === 'string') {
+        return rubricLevels.find(level => level.name === value || level.level === value);
+    }
+
+    return undefined;
 };
 
 const classifyRecord = (
@@ -848,9 +929,18 @@ const classifyRecord = (
             assessment: {
                 name: achievementName,
                 description: achievementDescription,
+                achievementType: asMapped(
+                    achievementType ?? 'Assessment',
+                    'achievement.achievementType',
+                    'achievement.achievementType',
+                    nestedId
+                ),
                 earnedAt,
                 sourceCredentialId: nestedId,
                 results,
+                alignments,
+                evidence,
+                isRubric: results.some(result => (result.rubricLevels?.length ?? 0) > 0),
             },
             gpa: hasGpaResult?.value,
             evidence,
@@ -1193,6 +1283,7 @@ export const normalizeClrTranscriptDisplayModel = (
         summary: {
             gpa: explicitGpa,
             courseCount: courses.length,
+            assessmentCount: assessments.length,
             totalCreditsAvailable,
             explicitCompetencyCount: competencies.length,
             evidenceCount: evidence.length,

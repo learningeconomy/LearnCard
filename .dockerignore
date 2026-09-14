@@ -92,6 +92,7 @@ examples
 **/__tests__
 **/playwright-report
 **/test-results
+e2e-artifacts/
 
 # Native build artifacts
 **/*.node
@@ -106,3 +107,6 @@ apps/*/android
 # Stray local dir not covered by .gitignore (Docker context is not git-aware,
 # so it must be listed explicitly).
 ~
+
+# Local QA issuer keys and signed retry state must not be baked into images.
+.credential-refresh-qa

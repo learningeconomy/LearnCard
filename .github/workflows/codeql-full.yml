@@ -1,0 +1,83 @@
+name: CodeQL full comparison
+on:
+    workflow_dispatch:
+        inputs:
+            target_ref:
+                description: 'Target branch, commit SHA, or refs/pull/NUMBER/head'
+                required: true
+                type: string
+            baseline_ref:
+                description: 'Baseline branch or commit SHA'
+                default: main
+                required: true
+                type: string
+permissions:
+    contents: read
+    actions: read
+jobs:
+    scan:
+        name: Full scan (${{ matrix.side }})
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                side: [baseline, target]
+        env:
+            CODEQL_ACTION_DIFF_INFORMED_QUERIES: 'false'
+        steps:
+            - uses: actions/checkout@v7
+              with:
+                  ref: ${{ matrix.side == 'baseline' && inputs.baseline_ref || inputs.target_ref }}
+                  persist-credentials: false
+            - name: Prepare scan configuration
+              shell: bash
+              run: |
+                  if [[ -f .github/codeql-config.yml ]]; then
+                      cp .github/codeql-config.yml "$GITHUB_WORKSPACE/.codeql-full-config.yml"
+                  else
+                      printf 'name: Full CodeQL scan\n' > "$GITHUB_WORKSPACE/.codeql-full-config.yml"
+                  fi
+            - uses: github/codeql-action/init@v4
+              with:
+                  # Pin both sides to one query bundle for a meaningful comparison.
+                  tools: https://github.com/github/codeql-action/releases/download/codeql-bundle-v2.27.0/codeql-bundle-linux64.tar.zst
+                  languages: javascript
+                  config-file: ./.codeql-full-config.yml
+            - uses: github/codeql-action/autobuild@v4
+            - uses: github/codeql-action/analyze@v4
+              with:
+                  output: ${{ runner.temp }}/full-codeql-results
+                  upload: never
+                  upload-database: false
+            # analyze recreates its output directory, so add metadata afterwards.
+            - name: Record scan metadata
+              run: |
+                  git rev-parse HEAD > "$RUNNER_TEMP/full-codeql-results/commit.txt"
+                  cp "$GITHUB_WORKSPACE/.codeql-full-config.yml" "$RUNNER_TEMP/full-codeql-results/config.yml"
+            - uses: actions/upload-artifact@v4
+              with:
+                  name: codeql-full-${{ matrix.side }}
+                  path: ${{ runner.temp }}/full-codeql-results
+                  retention-days: 14
+    compare:
+        needs: scan
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v7
+              with:
+                  # Use the workflow revision's comparison script, not target code.
+                  ref: ${{ github.workflow_sha }}
+                  persist-credentials: false
+            - uses: actions/download-artifact@v4
+              with:
+                  pattern: codeql-full-*
+                  path: results
+            - name: Compare findings
+              run: |
+                  python3 scripts/codeql/compare.py results/codeql-full-baseline results/codeql-full-target > comparison.md
+                  cat comparison.md >> "$GITHUB_STEP_SUMMARY"
+            - uses: actions/upload-artifact@v4
+              with:
+                  name: codeql-full-comparison
+                  path: comparison.md
+                  retention-days: 14

@@ -19,9 +19,15 @@ export const callbackLink = (callback: () => Promise<void>): TRPCLink<AppRouter>
                                 return observer.error(error);
                             }
 
-                            await callback();
+                            try {
+                                await callback();
+                            } catch {
+                                // Forward the original request error if refreshing auth fails.
+                                if (!isDone) observer.error(error);
+                                return;
+                            }
 
-                            attempt();
+                            if (!isDone) attempt();
                         },
                         next: result => observer.next(result),
                         complete: () => {
