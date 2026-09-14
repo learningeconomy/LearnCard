@@ -238,6 +238,7 @@ export type ClrTranscriptDisplayModel = {
         gpa?: SourceMappedField<string | number | boolean>;
         courseCount: number;
         assessmentCount: number;
+        awardCount: number;
         totalCreditsAvailable?: number;
         explicitCompetencyCount: number;
         evidenceCount: number;
@@ -1355,6 +1356,7 @@ export const normalizeClrTranscriptDisplayModel = (
             gpa: explicitGpa,
             courseCount: courses.length,
             assessmentCount: assessments.length,
+            awardCount: awards.length,
             totalCreditsAvailable,
             explicitCompetencyCount: competencies.length,
             evidenceCount: evidence.length,
