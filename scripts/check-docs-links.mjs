@@ -223,15 +223,17 @@ if (rootDecl && !/^\.?\/?$/.test(rootDecl[1].replace(/\/$/, ''))) {
 }
 const redirects = {};
 let inRedirects = false;
-for (const line of gitbookYaml.split('\n')) {
-    if (/^redirects:\s*(\{\})?\s*$/.test(line)) {
-        inRedirects = !line.includes('{}');
+for (const rawLine of gitbookYaml.split('\n')) {
+    if (/^redirects:\s*(\{\})?\s*$/.test(rawLine)) {
+        inRedirects = !rawLine.includes('{}');
         continue;
     }
     if (inRedirects) {
+        const line = rawLine.replace(/\s+#.*$/, '');
+        if (!line.trim()) continue; // blank or comment-only line: stay in section
         const entry = line.match(/^\s+([^\s:#][^:]*):\s*(\S+)\s*$/);
         if (entry) redirects[entry[1].trim()] = entry[2].trim();
-        else if (line.trim() && !line.trim().startsWith('#')) inRedirects = false;
+        else if (!/^\s/.test(rawLine)) inRedirects = false; // non-indented top-level key ends the section
     }
 }
 

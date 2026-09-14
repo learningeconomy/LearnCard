@@ -72,6 +72,7 @@ redirects:
     core-concepts/credentials-and-data/boost-credentials: core-concepts/credentials-and-data/boost-credentials.md
     core-concepts/credentials-and-data/building-verifiable-credentials: core-concepts/credentials-and-data/building-verifiable-credentials.md
     core-concepts/credentials-and-data/credential-lifecycle: core-concepts/credentials-and-data/verifiable-credentials-vcs.md
+    core-concepts/credentials-and-data/credential-refresh: core-concepts/credential-refresh.md
     core-concepts/credentials-and-data/credential-status-and-bitstring-status-lists: core-concepts/credentials-and-data/credential-status-and-bitstring-status-lists.md
     core-concepts/credentials-and-data/display-hint-tags: core-concepts/credentials-and-data/display-hint-tags.md
     core-concepts/credentials-and-data/getting-started-with-boosts: core-concepts/credentials-and-data/boost-credentials.md
@@ -109,6 +110,7 @@ redirects:
     how-to-guides/implement-flows/claim-data-after-guardian-consent: how-to-guides/send-credentials.md
     how-to-guides/implement-flows/guardian-gated-credentials: how-to-guides/send-credentials.md
     how-to-guides/interoperate-with-learncard: how-to-guides/interoperate-with-learncard.md
+    how-to-guides/issue-and-refresh-a-managed-credential: how-to-guides/issue-and-refresh-a-managed-credential.md
     how-to-guides/send-credentials: how-to-guides/send-credentials.md
     how-to-guides/verify-my-issuer: how-to-guides/verify-my-issuer.md
     introduction/ecosystem-architecture: introduction/ecosystem-architecture.md

@@ -52,15 +52,50 @@ export const signInUrl = (appUrl: string, next: string, seedInFragment?: string)
 
 const CLIPBOARD_TTL_MS = 60_000;
 
+/** Only plain http(s) URLs may reach the OS browser launcher or seed a sign-in link. */
+const isHttpUrl = (value: string): boolean => {
+    try {
+        return ['http:', 'https:'].includes(new URL(value).protocol);
+    } catch {
+        return false;
+    }
+};
+
 const launchBrowser = (url: string): void => {
     const [cmd, args] =
         process.platform === 'darwin'
             ? ['open', [url]]
             : process.platform === 'win32'
-              ? ['cmd', ['/c', 'start', '', url]]
+              ? // No shell involved: rundll32 receives the URL as a normal argv entry, so
+                // cmd.exe metacharacters (&, |, ^, etc.) in the URL are never interpreted.
+                ['rundll32', ['url.dll,FileProtocolHandler', url]]
               : ['xdg-open', [url]];
     spawn(cmd, args, { stdio: 'ignore', detached: true }).unref();
 };
+
+/**
+ * Clears the clipboard after the TTL, or immediately on Ctrl-C, but only if it still holds the
+ * seed we wrote (the user may have copied something else). Resolves once the clipboard is safe.
+ */
+const waitForClipboardClear = (seed: string): Promise<void> =>
+    new Promise(resolve => {
+        let settled = false;
+        const finish = async (): Promise<void> => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            process.removeListener('SIGINT', onSigint);
+            if ((await clipboard.read().catch(() => '')) === seed)
+                await clipboard.write('').catch(() => {});
+            out.log('Clipboard cleared.');
+            resolve();
+        };
+        const onSigint = (): void => {
+            void finish();
+        };
+        const timer = setTimeout(() => void finish(), CLIPBOARD_TTL_MS);
+        process.once('SIGINT', onSigint);
+    });
 
 export interface OpenOptions extends ProjectOptions {
     appUrl?: string;
@@ -95,6 +130,8 @@ export const runOpen = async (
         );
 
     const { network } = resolveServices(project.env, options.network);
+    if (options.appUrl && !isHttpUrl(options.appUrl))
+        throw new Error('--app-url must be a valid http(s) URL.');
     if (!options.appUrl && network !== PRODUCTION_NETWORK && network !== STAGING_NETWORK)
         throw new Error(
             `${network} has no hosted LearnCard app. Pass --app-url <url> for the app connected to it.`
@@ -104,22 +141,28 @@ export const runOpen = async (
 
     let url: string;
     let seedDelivery: SeedDelivery;
+    let clipboardCleared: Promise<void> | undefined;
     if (options.urlFragment) {
         url = signInUrl(appUrl, path, seed);
         out.log(
             'Warning: --url-fragment puts your seed in the browser URL (history, screenshots).'
         );
         seedDelivery = 'fragment';
+    } else if (out.json) {
+        // Non-interactive: nobody is there to paste, and blocking a script for the clipboard TTL
+        // would be worse than not copying. Scripts that need the seed use --url-fragment.
+        url = signInUrl(appUrl, path);
+        out.log(
+            'Seed not copied in --json mode. Paste it from .env, or re-run with --url-fragment.'
+        );
+        seedDelivery = 'none';
     } else {
         url = signInUrl(appUrl, path);
         try {
             await clipboard.write(seed);
             out.log(`Copied your seed to the clipboard (clears in ${CLIPBOARD_TTL_MS / 1000}s).`);
             seedDelivery = 'clipboard';
-            setTimeout(async () => {
-                if ((await clipboard.read().catch(() => '')) === seed)
-                    await clipboard.write('').catch(() => {});
-            }, CLIPBOARD_TTL_MS).unref();
+            clipboardCleared = waitForClipboardClear(seed);
         } catch {
             out.log(
                 'Clipboard unavailable. Paste the seed from .env, or re-run with --url-fragment.'
@@ -136,4 +179,8 @@ export const runOpen = async (
     );
 
     out.set({ url, target, next: path, seedDelivery });
+
+    // Keep the process alive until the clipboard is actually cleared (or Ctrl-C clears it early);
+    // index.tsx's runCommand exits right after this promise resolves.
+    await clipboardCleared;
 };

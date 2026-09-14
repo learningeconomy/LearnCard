@@ -38,8 +38,11 @@ const walk = dir =>
     });
 
 // Prettier puts a blank line between an HTML comment and a fence; tolerate and emit that.
+// Capture the fence run and language separately so 4+ backtick fences (used when a snippet's
+// body itself contains a literal ``` sequence) round-trip correctly instead of the 4th
+// backtick being swallowed into the language and the closer being re-emitted as just ```.
 const BLOCK =
-    /<!--\s*snippet:\s*([^\s]+)\s*-->\s*\n```([^\n]*)\r?\n([\s\S]*?)```\s*\n<!--\s*\/snippet\s*-->/g;
+    /<!--\s*snippet:\s*([^\s]+)\s*-->\s*\n(`{3,})([^\n]*)\r?\n([\s\S]*?)\2\s*\n<!--\s*\/snippet\s*-->/g;
 
 const errors = [];
 const referenced = new Set();
@@ -50,7 +53,7 @@ for (const file of walk(DOCS).filter(f => f.endsWith('.md'))) {
     const original = readFileSync(file, 'utf8');
     let changed = false;
 
-    const updated = original.replace(BLOCK, (whole, snippetPath, lang, body) => {
+    const updated = original.replace(BLOCK, (whole, snippetPath, fence, lang, body) => {
         const snippetFile = join(SNIPPETS, snippetPath);
         referenced.add(snippetPath);
         if (!existsSync(snippetFile)) {
@@ -62,7 +65,7 @@ for (const file of walk(DOCS).filter(f => f.endsWith('.md'))) {
         if (body === expectedBody) return whole;
         if (FIX) {
             changed = true;
-            return `<!-- snippet: ${snippetPath} -->\n\n\`\`\`${lang}\n${expectedBody}\`\`\`\n\n<!-- /snippet -->`;
+            return `<!-- snippet: ${snippetPath} -->\n\n${fence}${lang}\n${expectedBody}${fence}\n\n<!-- /snippet -->`;
         }
         errors.push(
             `${rel}: code block out of sync with docs/snippets/${snippetPath} (run: node scripts/check-docs-snippets.mjs --fix)`

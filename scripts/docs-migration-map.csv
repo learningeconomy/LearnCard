@@ -27,6 +27,7 @@ core-concepts/credentials-and-data/achievement-types-and-categories,reference/le
 core-concepts/credentials-and-data/boost-credentials,understand/verifiable-credentials-vcs/boost-credentials,moved,redirected
 core-concepts/credentials-and-data/building-verifiable-credentials,understand/verifiable-credentials-vcs/building-verifiable-credentials,moved,redirected
 core-concepts/credentials-and-data/credential-lifecycle,understand/verifiable-credentials-vcs,merge,redirected
+core-concepts/credentials-and-data/credential-refresh,understand/verifiable-credentials-vcs/credential-refresh,moved,redirected
 core-concepts/credentials-and-data/credential-status-and-bitstring-status-lists,understand/verifiable-credentials-vcs/credential-status-and-bitstring-status-lists,moved,redirected
 core-concepts/credentials-and-data/display-hint-tags,understand/verifiable-credentials-vcs/display-hint-tags,moved,redirected
 core-concepts/credentials-and-data/general-best-practices-and-troubleshooting,understand/verifiable-credentials-vcs/building-verifiable-credentials,delete,redirected
@@ -79,6 +80,7 @@ how-to-guides/implement-flows/chapi/using-learncard-to-interact-with-a-chapi-wal
 how-to-guides/implement-flows/claim-data-after-guardian-consent,build/send-credentials,merge,redirected
 how-to-guides/implement-flows/guardian-gated-credentials,build/send-credentials,merge,redirected
 how-to-guides/interoperate-with-learncard,build/interoperate-with-learncard,moved,redirected
+how-to-guides/issue-and-refresh-a-managed-credential,build/send-credentials/issue-and-refresh-a-managed-credential,moved,redirected
 how-to-guides/send-credentials,build/send-credentials,moved,redirected
 how-to-guides/verify-my-issuer,build/go-to-production/verify-my-issuer,moved,redirected
 introduction/ecosystem-architecture,understand/ecosystem-architecture,moved,redirected

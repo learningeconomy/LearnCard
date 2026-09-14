@@ -89,7 +89,8 @@ export const parseWebhookLogLine = (line: string): WebhookEvent | undefined => {
  */
 export const collectWebhookEvents = (
     timeoutMs: number,
-    waitForClaim: boolean
+    waitForClaim: boolean,
+    registerStop?: (stop: () => void) => void
 ): Promise<WebhookEvent[]> =>
     new Promise(resolve => {
         const events: WebhookEvent[] = [];
@@ -100,6 +101,7 @@ export const collectWebhookEvents = (
             resolve(events);
         };
         const timer = setTimeout(finish, Math.max(0, timeoutMs));
+        registerStop?.(finish);
         console.log = (...args: unknown[]): void => {
             const [first] = args;
             const event = typeof first === 'string' ? parseWebhookLogLine(first) : undefined;
@@ -179,23 +181,38 @@ export const runWebhook = async (
             await saveProject(project, { [KEYS.TEMPLATE_URI]: uri });
         }
         const templateUri = project.env[KEYS.TEMPLATE_URI]!;
-        const result = await learnCard.invoke.send({
-            type: 'boost',
-            recipient,
-            templateUri,
-            options: { webhookUrl: options.url },
-        });
+        // Start collecting before send() so an ISSUANCE_DELIVERED that arrives mid-call isn't missed.
+        const timeoutMs = (Number(options.timeout) > 0 ? Number(options.timeout) : 60) * 1000;
+        let stopCollectingEvents: (() => void) | undefined;
+        const eventsPromise = out.json
+            ? collectWebhookEvents(timeoutMs, !!options.waitForClaim, stop => {
+                  stopCollectingEvents = stop;
+              })
+            : undefined;
+        const onServerError = (): void => {};
+        if (eventsPromise) server.on('error', onServerError);
+        const result = await learnCard.invoke
+            .send({
+                type: 'boost',
+                recipient,
+                templateUri,
+                options: { webhookUrl: options.url },
+            })
+            .catch(error => {
+                if (eventsPromise) {
+                    server.removeListener('error', onServerError);
+                    stopCollectingEvents?.();
+                }
+                throw error;
+            });
         out.log(`Sent. Watch for ISSUANCE_DELIVERED ${result.inbox?.status ?? ''}.`);
         out.log(
             result.inbox?.status === 'PENDING'
                 ? `Next: click the claim link in your email to see ISSUANCE_CLAIMED. Ctrl+C to stop.`
                 : 'Next: this recipient already has LearnCard; no claim event is expected. Ctrl+C to stop.'
         );
-        if (out.json) {
-            const timeoutMs = (Number(options.timeout) > 0 ? Number(options.timeout) : 60) * 1000;
-            const onServerError = (): void => {};
-            server.on('error', onServerError);
-            const events = await collectWebhookEvents(timeoutMs, !!options.waitForClaim);
+        if (eventsPromise) {
+            const events = await eventsPromise;
             server.removeListener('error', onServerError);
             out.set({
                 port,

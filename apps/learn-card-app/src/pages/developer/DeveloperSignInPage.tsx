@@ -9,19 +9,46 @@ import {
     alertCircleOutline,
     personCircleOutline,
 } from 'ionicons/icons';
-import { useIsLoggedIn, useCurrentUser, useGetCurrentLCNUser } from 'learn-card-base';
+import {
+    useIsLoggedIn,
+    useCurrentUser,
+    useGetCurrentLCNUser,
+    useHasCurrentUserHydrated,
+    getLogger,
+} from 'learn-card-base';
 import useTheme from '../../theme/hooks/useTheme';
 import useLogout from '../../hooks/useLogout';
 import { useSeedLogin } from '../login/useSeedLogin';
 import { sanitizeNextPath } from './sanitizeNextPath';
 import * as m from '../../paraglide/messages.js';
 
-const SEED_HASH_PREFIX = '#seed=';
+const log = getLogger('developer-sign-in-page');
 
+const SEED_HASH_PREFIX = '#seed=';
+/** Namespaced sessionStorage key `handleSwitchAccount` uses to carry a seed across
+ *  its logout redirect, instead of putting it in the URL. */
+const PENDING_SEED_STORAGE_KEY = 'lc:developer-sign-in:pending-seed';
+
+/** External entry point (e.g. the CLI's `--url-fragment`) still supported on read. */
 const readSeedFromHash = (): string | null => {
     const { hash } = window.location;
     return hash.startsWith(SEED_HASH_PREFIX) ? hash.slice(SEED_HASH_PREFIX.length) : null;
 };
+
+const readAndClearPendingSeed = (): string | null => {
+    try {
+        const seed = window.sessionStorage.getItem(PENDING_SEED_STORAGE_KEY);
+        if (seed !== null) window.sessionStorage.removeItem(PENDING_SEED_STORAGE_KEY);
+        return seed;
+    } catch (e) {
+        log.warn('Failed to read pending seed from sessionStorage', e);
+        return null;
+    }
+};
+
+/** Our own switch-account round-trip (sessionStorage) takes priority over the
+ *  `#seed=` fragment, which remains for external entry points only. */
+const readPendingSeed = (): string | null => readAndClearPendingSeed() ?? readSeedFromHash();
 
 const DeveloperSignInPage: React.FC = () => {
     const { colors } = useTheme();
@@ -32,6 +59,7 @@ const DeveloperSignInPage: React.FC = () => {
     const location = useLocation();
     const isLoggedIn = useIsLoggedIn();
     const currentUser = useCurrentUser();
+    const hasHydrated = useHasCurrentUserHydrated();
     const { currentLCNUser } = useGetCurrentLCNUser();
     const { signInWithSeed, validate } = useSeedLogin();
     const { handleLogout, isLoggingOut } = useLogout();
@@ -41,10 +69,11 @@ const DeveloperSignInPage: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [isSigningIn, setIsSigningIn] = useState(false);
     const [hint, setHint] = useState<string | null>(null);
-    const [hashSeed] = useState<string | null>(readSeedFromHash);
+    const [pendingSeed] = useState<string | null>(readPendingSeed);
     const [hasPendingSwitch, setHasPendingSwitch] = useState(false);
 
     const inputRef = useRef<HTMLInputElement>(null);
+    const pendingSeedHandledRef = useRef(false);
 
     const nextPath = sanitizeNextPath(new URLSearchParams(location.search).get('next'));
     const isBusy = isSigningIn || isLoggingOut;
@@ -56,30 +85,46 @@ const DeveloperSignInPage: React.FC = () => {
         null;
 
     useEffect(() => {
-        if (hashSeed === null) return;
+        if (pendingSeed === null || pendingSeedHandledRef.current) return;
+        // currentUser is a persisted Zustand store, and its privateKey field is
+        // stripped from persistence and backfilled asynchronously (see
+        // useGetCurrentUser). Wait for hydration so isLoggedIn/privateKey below
+        // reflect reality instead of a stale first-render snapshot.
+        if (!hasHydrated) return;
 
-        window.history.replaceState(null, '', location.pathname + location.search);
-        setSeed(hashSeed);
+        setSeed(pendingSeed);
 
-        const validationError = validate(hashSeed);
+        const validationError = validate(pendingSeed);
         if (validationError) {
+            pendingSeedHandledRef.current = true;
+            window.history.replaceState(null, '', location.pathname + location.search);
             setError(validationError);
             return;
         }
 
         if (!isLoggedIn) {
-            handleSignIn(hashSeed);
+            pendingSeedHandledRef.current = true;
+            window.history.replaceState(null, '', location.pathname + location.search);
+            handleSignIn(pendingSeed);
             return;
         }
 
-        if (currentUser?.privateKey === hashSeed) {
+        const privateKey = currentUser?.privateKey;
+        // Logged in, but privateKey hasn't finished its own async backfill yet —
+        // wait rather than risk wrongly concluding "different account".
+        if (!privateKey) return;
+
+        pendingSeedHandledRef.current = true;
+        window.history.replaceState(null, '', location.pathname + location.search);
+
+        if (privateKey === pendingSeed) {
             history.replace(nextPath);
             return;
         }
 
         setHasPendingSwitch(true);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [hasHydrated, isLoggedIn, currentUser?.privateKey]);
 
     const handleSignIn = async (seedToUse: string) => {
         const validationError = validate(seedToUse);
@@ -116,7 +161,14 @@ const DeveloperSignInPage: React.FC = () => {
         setError(null);
         setHint(null);
 
-        const returnUrl = `${window.location.origin}${location.pathname}${location.search}${SEED_HASH_PREFIX}${seedToUse}`;
+        try {
+            window.sessionStorage.setItem(PENDING_SEED_STORAGE_KEY, seedToUse);
+        } catch (e) {
+            log.error('Failed to stash pending seed before account switch', e);
+        }
+
+        // `?next=` lives in location.search, which is preserved as-is — no fragment.
+        const returnUrl = `${window.location.origin}${location.pathname}${location.search}`;
         await handleLogout({ overrideRedirectUrl: returnUrl });
     };
 

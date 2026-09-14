@@ -51,22 +51,27 @@ const BASE_URL = (
 const yaml = readFileSync(join(DOCS, '.gitbook.yaml'), 'utf8');
 const redirects = {};
 let inRedirects = false;
-for (const line of yaml.split('\n')) {
-    if (/^redirects:\s*$/.test(line)) {
+for (const rawLine of yaml.split('\n')) {
+    if (/^redirects:\s*$/.test(rawLine)) {
         inRedirects = true;
         continue;
     }
     if (!inRedirects) continue;
+    const line = rawLine.replace(/\s+#.*$/, '');
+    if (!line.trim()) continue; // blank or comment-only line: stay in section
     const entry = line.match(/^\s+([^\s:#][^:]*):\s*(\S+)\s*$/);
     if (entry) redirects[entry[1].trim()] = entry[2].trim();
-    else if (line.trim() && !line.trim().startsWith('#')) inRedirects = false;
+    else if (!/^\s/.test(rawLine)) inRedirects = false; // non-indented top-level key ends the section
 }
 
+// check-docs-links.mjs prints `url<TAB>file` per line, including a bare-tab line for the
+// homepage (url ''). Split on newlines *before* trimming so the leading tab on that line
+// survives (a whole-string .trim() previously ate it, dropping README.md from this map).
 const urlByFile = new Map(
     execFileSync('node', [CHECKER, '--urls'], { encoding: 'utf8' })
-        .trim()
         .split('\n')
-        .map(l => l.split('\t'))
+        .filter(Boolean)
+        .map(l => l.split('\t').map(part => part.trim()))
         .map(([url, file]) => [file, url])
 );
 
@@ -99,9 +104,13 @@ if (flag('--verify')) {
                     ? `${new URL(BASE_URL).origin}${location}`
                     : location;
                 let verdict;
-                if (status >= 300 && status < 400 && normalize(target) === normalize(item.destAbs))
-                    verdict = 'OK';
-                else if (status >= 300 && status < 400) verdict = 'WRONG_TARGET';
+                if (status >= 300 && status < 400 && normalize(target) === normalize(item.destAbs)) {
+                    // Location header matches, but that alone doesn't prove the destination is
+                    // actually live — follow up on the resolved destination and fail on non-2xx.
+                    const dest = await fetchStatus(item.destAbs);
+                    verdict =
+                        dest.status >= 200 && dest.status < 300 ? 'OK' : `DEST_HTTP_${dest.status}`;
+                } else if (status >= 300 && status < 400) verdict = 'WRONG_TARGET';
                 else if (status === 200) verdict = 'LIVE_PAGE (redirect ignored)';
                 else verdict = `HTTP_${status}`;
                 results.push({ ...item, status, target, verdict });

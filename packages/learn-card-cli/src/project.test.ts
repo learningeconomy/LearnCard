@@ -136,6 +136,7 @@ describe('project context', () => {
                 path.join(cwd, '.env'),
                 '# keep\nSECURE_SEED=existing\nPROFILE_ID=issuer\n'
             );
+            await fs.writeFile(path.join(cwd, '.gitignore'), '.env\n');
             const project = await loadProject(cwd);
             const identity = await ensureIdentity(project, { yes: true, profileId: 'ignored' });
             expect(identity.seed).toBe('existing');

@@ -63,8 +63,14 @@ type SendOptions = ProjectOptions & {
     guardianEmail?: string;
 };
 
-const sendOptions = (options: SendOptions) => {
-    const picked = {
+type SendDeliveryOptions = {
+    webhookUrl?: string;
+    suppressDelivery?: boolean;
+    guardianEmail?: string;
+};
+
+const sendOptions = (options: SendOptions): { options?: SendDeliveryOptions } => {
+    const picked: SendDeliveryOptions = {
         webhookUrl: options.webhookUrl,
         suppressDelivery: options.suppressDelivery,
         guardianEmail: options.guardianEmail,
@@ -72,17 +78,47 @@ const sendOptions = (options: SendOptions) => {
     return Object.values(picked).some(v => v !== undefined) ? { options: picked } : {};
 };
 
+/** Inserts the effective send() delivery options right after `anchor` so a re-run of the
+ *  generated script reproduces the same call. */
+const withDeliveryOptions = (
+    content: string,
+    anchor: string,
+    deliveryOptions?: SendDeliveryOptions
+): string =>
+    deliveryOptions
+        ? content.replace(
+              anchor,
+              () => `${anchor}\n    options: ${JSON.stringify(deliveryOptions)},`
+          )
+        : content;
+
 /** Substitute the user's choices into the template that the docs snippet uses. */
-export const personalizeSendMjs = (displayName: string, badge: Badge): string =>
-    SEND_MJS.replace(
-        "displayName: 'My Organization'",
-        () => `displayName: ${JSON.stringify(displayName)}`
-    )
-        .split("'Quickstart Complete'")
-        .join(JSON.stringify(badge.name))
-        .replace("'Sent a verifiable credential with LearnCard.'", () =>
-            JSON.stringify(badge.description)
-        );
+export const personalizeSendMjs = (
+    displayName: string,
+    badge: Badge,
+    deliveryOptions?: SendDeliveryOptions
+): string =>
+    withDeliveryOptions(
+        SEND_MJS.replace(
+            "displayName: 'My Organization'",
+            () => `displayName: ${JSON.stringify(displayName)}`
+        )
+            .split("'Quickstart Complete'")
+            .join(JSON.stringify(badge.name))
+            .replace("'Sent a verifiable credential with LearnCard.'", () =>
+                JSON.stringify(badge.description)
+            ),
+        '    signedCredential: credential,',
+        deliveryOptions
+    );
+
+/** Substitute the effective send() delivery options into the from-template script. */
+export const personalizeSendFromTemplateMjs = (deliveryOptions?: SendDeliveryOptions): string =>
+    withDeliveryOptions(
+        SEND_FROM_TEMPLATE_MJS,
+        '    templateUri: process.env.TEMPLATE_URI,',
+        deliveryOptions
+    );
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE = /^\+?\d{10,15}$/;
@@ -116,6 +152,7 @@ export const runSend = async (recipientEmail: string, options: SendOptions): Pro
         : await connect(project, options);
     await ensureProfile(learnCard, identity, project);
 
+    const effectiveSendOptions = sendOptions(options);
     let result;
     if (useTemplate) {
         // This branch connected with the LCA plugin; setupSigning accepts its required methods.
@@ -127,6 +164,9 @@ export const runSend = async (recipientEmail: string, options: SendOptions): Pro
         );
         if (options.templateUri) {
             out.log(`Sending from template ${options.templateUri}.`);
+            if (!project.env.TEMPLATE_URI) {
+                await saveProject(project, { TEMPLATE_URI: options.templateUri });
+            }
         } else if (!project.env.TEMPLATE_URI) {
             const uri = await learnCard.invoke.createBoost(
                 templateCredential(learnCard.id.did(), badge),
@@ -146,7 +186,7 @@ export const runSend = async (recipientEmail: string, options: SendOptions): Pro
             type: 'boost',
             recipient: recipientEmail,
             templateUri: options.templateUri ?? project.env.TEMPLATE_URI!,
-            ...sendOptions(options),
+            ...effectiveSendOptions,
         });
     } else {
         const credential = await learnCard.invoke.issueCredential(
@@ -156,7 +196,7 @@ export const runSend = async (recipientEmail: string, options: SendOptions): Pro
             type: 'boost',
             recipient: recipientEmail,
             signedCredential: credential,
-            ...sendOptions(options),
+            ...effectiveSendOptions,
         });
     }
     out.log('');
@@ -170,16 +210,16 @@ export const runSend = async (recipientEmail: string, options: SendOptions): Pro
         );
     }
     out.log(`Reusable template for this badge: ${result.uri}`);
-    const filename = options.template ? 'send-from-template.mjs' : 'send.mjs';
+    const filename = useTemplate ? 'send-from-template.mjs' : 'send.mjs';
     const sendPath = path.join(cwd, filename);
     let wroteSendFile = false;
     if (!(await fs.stat(sendPath).catch(() => null))) {
         await fs.writeFile(
             sendPath,
             localizeSnippet(
-                options.template
-                    ? SEND_FROM_TEMPLATE_MJS
-                    : personalizeSendMjs(identity.displayName, badge),
+                useTemplate
+                    ? personalizeSendFromTemplateMjs(effectiveSendOptions.options)
+                    : personalizeSendMjs(identity.displayName, badge, effectiveSendOptions.options),
                 resolveServices(project.env, options.network)
             )
         );

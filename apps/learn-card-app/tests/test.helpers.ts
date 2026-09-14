@@ -79,7 +79,7 @@ export const issueBadgeToSelf = async (page: Page, timeout = 60_000) => {
  * a privateKey that is stored separately from localStorage for security. When
  * localStorage is restored without the privateKey, the app logs out the user.
  *
- * This helper uses the /hidden/seed route which creates a proper user with a
+ * This helper uses the /developer/sign-in route which creates a proper user with a
  * private key derived from the seed.
  *
  * @param page - Playwright page object

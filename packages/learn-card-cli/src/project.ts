@@ -226,6 +226,9 @@ export const ensureIdentity = async (project: Project, options: ProjectOptions) 
             await fs.writeFile(gitignorePath, `${gitignore.replace(/\n?$/, '\n')}.env\n`);
             out.log('Added .env to .gitignore');
         }
+    } else {
+        await fs.writeFile(gitignorePath, '.env\n');
+        out.log('Created .gitignore with .env');
     }
     return { seed, profileId, displayName };
 };
