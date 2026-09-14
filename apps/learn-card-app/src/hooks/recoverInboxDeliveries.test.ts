@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { recoverInboxDeliveries } from './recoverInboxDeliveries';
+import { recoverInboxDeliveries, storeInboxDeliveries } from './recoverInboxDeliveries';
 
 vi.mock('learn-card-base', () => ({ getCategoryForCredential: async () => 'Achievement' }));
 
@@ -119,4 +119,40 @@ it('continues to the next page when every delivery on the first page failed decr
         limit: 100,
         cursor: 'bad-delivery',
     });
+});
+
+it('deduplicates an id-less finalize response against the recovery backstop', async () => {
+    const finalized = {
+        ...delivery,
+        credential: {
+            '@context': ['https://www.w3.org/ns/credentials/v2'],
+            type: ['VerifiableCredential'],
+            issuer: 'did:key:issuer',
+            credentialSubject: {},
+            proof: {
+                type: 'Ed25519Signature2020',
+                created: '2026-09-14T00:00:00.000Z',
+                proofPurpose: 'assertionMethod',
+                verificationMethod: 'did:key:issuer#key',
+            },
+        },
+    };
+    wallet.invoke.recoverInboxCredentials.mockResolvedValue({
+        records: [finalized],
+        hasMore: false,
+    });
+    const onStored = vi.fn();
+    expect(
+        await storeInboxDeliveries(
+            wallet as unknown as Parameters<typeof storeInboxDeliveries>[0],
+            [finalized],
+            onStored
+        )
+    ).toEqual({ stored: 1, failed: 0 });
+    expect(await recover()).toEqual({ stored: 0, failed: 0 });
+    expect(records).toEqual([
+        expect.objectContaining({ id: 'inbox:inbox-1', inboxDeliveryId: 'inbox-1' }),
+    ]);
+    expect(wallet.store.LearnCloud.uploadEncrypted).toHaveBeenCalledOnce();
+    expect(onStored).toHaveBeenCalledOnce();
 });

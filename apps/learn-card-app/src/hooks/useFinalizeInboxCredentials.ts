@@ -21,7 +21,7 @@ import {
     SESSION_START_KEY,
 } from '@analytics';
 
-import { recoverInboxDeliveries } from './recoverInboxDeliveries';
+import { recoverInboxDeliveries, storeInboxDeliveries } from './recoverInboxDeliveries';
 
 // Finalize cache settings
 const FINALIZE_CACHE_TTL_MS = 30 * 60_000; // 30 minutes
@@ -74,6 +74,7 @@ export const useFinalizeInboxCredentials = () => {
 
         (async () => {
             if (!isLCNUser || !isLoggedIn) return;
+            let storedCount = 0;
             try {
                 inFlightRef.current = true;
 
@@ -85,21 +86,7 @@ export const useFinalizeInboxCredentials = () => {
                 const profileId = hasProfileId(profile) ? profile.profileId : undefined;
                 if (!profileId) return;
 
-                // Even if the response is dropped after finalization, recovery can still
-                // retrieve the committed holder-only copy. Also sweep older claims at login.
-                let finalizeFailed = false;
-                if (needsFinalize(profileId)) {
-                    try {
-                        await wallet.invoke.finalizeInboxCredentials();
-                    } catch (error) {
-                        finalizeFailed = true;
-                        captureException(error);
-                    }
-                }
-
-                await queryClient.invalidateQueries({ queryKey: connectionPromptKeys.all });
-                let storedCount = 0;
-                const recovery = await recoverInboxDeliveries(wallet, () => {
+                const onStored = (): void => {
                     if (storedCount === 0) {
                         walletStore.set.setIsSyncing(WalletSyncState.Syncing);
                         capture();
@@ -124,13 +111,45 @@ export const useFinalizeInboxCredentials = () => {
                     } catch (_) {
                         // analytics must not break credential storage
                     }
-                });
-                if (recovery.stored) {
+                };
+                const refreshCredentials = async (): Promise<void> => {
                     await Promise.all([
                         queryClient.invalidateQueries({ queryKey: ['useGetCredentialList'] }),
                         queryClient.invalidateQueries({ queryKey: ['useGetCredentialCount'] }),
                     ]);
+                };
+
+                // Save the finalize response immediately. Delivery IDs let recovery skip
+                // these records, while still retrying lost responses and failed local saves.
+                let finalizeFailed = false;
+                if (needsFinalize(profileId)) {
+                    try {
+                        const finalized = await wallet.invoke.finalizeInboxCredentials();
+                        const saved = await storeInboxDeliveries(
+                            wallet,
+                            finalized.deliveries ?? [],
+                            onStored
+                        );
+                        finalizeFailed = saved.failed > 0 || finalized.errors > 0;
+                        if (saved.stored) await refreshCredentials();
+                    } catch (error) {
+                        finalizeFailed = true;
+                        captureException(error);
+                    }
                 }
+
+                await queryClient.invalidateQueries({ queryKey: connectionPromptKeys.all });
+                const countBeforeRecovery = storedCount;
+                let recoveryFailed = false;
+                try {
+                    const recovery = await recoverInboxDeliveries(wallet, onStored);
+                    recoveryFailed = recovery.failed > 0;
+                } catch (error) {
+                    recoveryFailed = true;
+                    captureException(error);
+                }
+                // Also refresh partial progress if a later recovery page was unavailable.
+                if (storedCount > countBeforeRecovery) await refreshCredentials();
 
                 // complete syncing
                 if (storedCount > 0) {
@@ -140,7 +159,7 @@ export const useFinalizeInboxCredentials = () => {
                 }
 
                 // Mark as finalized for this profile in ephemeral cache
-                if (!finalizeFailed && recovery.failed === 0) markFinalized(profileId);
+                if (!finalizeFailed && !recoveryFailed) markFinalized(profileId);
             } catch (e) {
                 // Capture and reset syncing state on error
                 captureException(e);

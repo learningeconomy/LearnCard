@@ -1,8 +1,46 @@
 import type { VC } from '@learncard/types';
 import { getCategoryForCredential } from 'learn-card-base';
 import type { useWallet } from 'learn-card-base';
+import type { InboxDelivery } from '../pages/claim-from-request/inboxDelivery';
 
 type Wallet = Awaited<ReturnType<ReturnType<typeof useWallet>['initWallet']>>;
+
+/** Persist finalize and recovery responses using the same delivery identity. */
+export const storeInboxDeliveries = async (
+    wallet: Wallet,
+    deliveries: InboxDelivery[],
+    onStored: (credential: VC) => void = () => {}
+): Promise<{ stored: number; failed: number }> => {
+    let stored = 0;
+    let failed = 0;
+    for (const delivery of deliveries) {
+        try {
+            // The inbox id also works for credentials without a VC id. Preserve the
+            // normal claim path's VC index id to avoid duplicating an already-saved claim.
+            const id = delivery.credential.id || `inbox:${delivery.id}`;
+            const existing = await wallet.index.LearnCloud.get({
+                inboxDeliveryId: delivery.id,
+            });
+            if (existing.length || (await wallet.index.LearnCloud.get({ id })).length) continue;
+            const category = await getCategoryForCredential(delivery.credential, wallet, false);
+            const uri = await wallet.store.LearnCloud.uploadEncrypted?.(delivery.credential);
+            if (!uri) throw new Error('Recovery upload did not return a URI');
+            const added = await wallet.index.LearnCloud.add({
+                id,
+                uri,
+                category,
+                inboxDeliveryId: delivery.id,
+            });
+            if (!added) throw new Error('Recovery credential was not indexed');
+            stored += 1;
+            onStored(delivery.credential);
+        } catch {
+            // A failed upload/index must remain retryable, without blocking other records.
+            failed += 1;
+        }
+    }
+    return { stored, failed };
+};
 
 /** Save recovery deliveries once, using persistent index records rather than a session cache. */
 export const recoverInboxDeliveries = async (
@@ -18,32 +56,9 @@ export const recoverInboxDeliveries = async (
     while (hasMore) {
         const page = await wallet.invoke.recoverInboxCredentials({ limit: 100, cursor });
         failed += page.failed ?? 0;
-        for (const delivery of page.records) {
-            try {
-                // The inbox id also works for credentials without a VC id. Preserve the
-                // normal claim path's VC index id to avoid duplicating an already-saved claim.
-                const id = delivery.credential.id || `inbox:${delivery.id}`;
-                const existing = await wallet.index.LearnCloud.get({
-                    inboxDeliveryId: delivery.id,
-                });
-                if (existing.length || (await wallet.index.LearnCloud.get({ id })).length) continue;
-                const category = await getCategoryForCredential(delivery.credential, wallet, false);
-                const uri = await wallet.store.LearnCloud.uploadEncrypted?.(delivery.credential);
-                if (!uri) throw new Error('Recovery upload did not return a URI');
-                const added = await wallet.index.LearnCloud.add({
-                    id,
-                    uri,
-                    category,
-                    inboxDeliveryId: delivery.id,
-                });
-                if (!added) throw new Error('Recovery credential was not indexed');
-                stored += 1;
-                onStored(delivery.credential);
-            } catch {
-                // A failed upload/index must remain retryable, without blocking other records.
-                failed += 1;
-            }
-        }
+        const result = await storeInboxDeliveries(wallet, page.records, onStored);
+        stored += result.stored;
+        failed += result.failed;
         hasMore = page.hasMore;
         if (!hasMore) break;
         const nextCursor = page.cursor;

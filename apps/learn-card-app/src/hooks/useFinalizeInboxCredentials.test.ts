@@ -4,6 +4,7 @@ import { renderHook, waitFor } from '@testing-library/react';
 const mocks = vi.hoisted(() => ({
     finalize: vi.fn(),
     recover: vi.fn(),
+    store: vi.fn(),
     invalidate: vi.fn(),
     syncing: vi.fn(),
     capture: vi.fn(),
@@ -37,13 +38,17 @@ vi.mock('@analytics', () => ({
     ACCOUNT_CREATED_AT_KEY: 'created',
     SESSION_START_KEY: 'session',
 }));
-vi.mock('./recoverInboxDeliveries', () => ({ recoverInboxDeliveries: mocks.recover }));
+vi.mock('./recoverInboxDeliveries', () => ({
+    recoverInboxDeliveries: mocks.recover,
+    storeInboxDeliveries: mocks.store,
+}));
 import { clearFinalizeCache, useFinalizeInboxCredentials } from './useFinalizeInboxCredentials';
 
 beforeEach(() => {
     vi.clearAllMocks();
     clearFinalizeCache();
-    mocks.finalize.mockResolvedValue({ verifiableCredentials: [] });
+    mocks.finalize.mockResolvedValue({ verifiableCredentials: [], deliveries: [], errors: 0 });
+    mocks.store.mockResolvedValue({ stored: 0, failed: 0 });
     mocks.recover.mockImplementation(async (_wallet, onStored) => {
         onStored({});
         return { stored: 1, failed: 0 };
@@ -101,4 +106,52 @@ it('starts syncing and captures only once when the first delivery is stored', as
     await waitFor(() => expect(mocks.syncing).toHaveBeenCalledWith('completed', 2));
     expect(mocks.capture).toHaveBeenCalledOnce();
     expect(mocks.syncing.mock.calls).toEqual([['syncing'], ['completed', 2]]);
+});
+
+it('stores and refreshes finalize deliveries before starting recovery, even if recovery fails', async () => {
+    const deliveries = [{ id: 'inbox-1', credential: { type: ['VerifiableCredential'] } }];
+    mocks.finalize.mockResolvedValue({ deliveries, errors: 0 });
+    mocks.store.mockImplementation(async (_wallet, received, onStored) => {
+        expect(received).toEqual(deliveries);
+        expect(mocks.recover).not.toHaveBeenCalled();
+        onStored(deliveries[0].credential);
+        return { stored: 1, failed: 0 };
+    });
+    mocks.recover.mockImplementation(async () => {
+        expect(mocks.invalidate).toHaveBeenCalledWith({ queryKey: ['useGetCredentialList'] });
+        throw new Error('recovery unavailable');
+    });
+    renderHook(() => useFinalizeInboxCredentials());
+    await waitFor(() => expect(mocks.syncing).toHaveBeenCalledWith('completed', 1));
+    expect(mocks.capture).toHaveBeenCalledOnce();
+});
+
+it('counts direct and recovered saves together with only one snapshot', async () => {
+    mocks.store.mockImplementation(async (_wallet, _deliveries, onStored) => {
+        onStored({});
+        return { stored: 1, failed: 0 };
+    });
+    renderHook(() => useFinalizeInboxCredentials());
+    await waitFor(() => expect(mocks.syncing).toHaveBeenCalledWith('completed', 2));
+    expect(mocks.capture).toHaveBeenCalledOnce();
+});
+
+it('refreshes partial recovery progress when a later page request fails', async () => {
+    mocks.recover.mockImplementation(async (_wallet, onStored) => {
+        onStored({});
+        throw new Error('second page unavailable');
+    });
+    renderHook(() => useFinalizeInboxCredentials());
+    await waitFor(() => expect(mocks.syncing).toHaveBeenCalledWith('completed', 1));
+    expect(mocks.invalidate).toHaveBeenCalledWith({ queryKey: ['useGetCredentialList'] });
+});
+
+it('retries finalization after a direct save fails', async () => {
+    mocks.store.mockResolvedValueOnce({ stored: 0, failed: 1 });
+    mocks.recover.mockResolvedValue({ stored: 0, failed: 0 });
+    const first = renderHook(() => useFinalizeInboxCredentials());
+    await waitFor(() => expect(mocks.syncing).toHaveBeenCalledWith('not-syncing'));
+    first.unmount();
+    renderHook(() => useFinalizeInboxCredentials());
+    await waitFor(() => expect(mocks.finalize).toHaveBeenCalledTimes(2));
 });
