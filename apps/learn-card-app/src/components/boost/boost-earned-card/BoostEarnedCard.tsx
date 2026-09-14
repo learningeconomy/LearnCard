@@ -1,8 +1,5 @@
 import React from 'react';
 import moment from 'moment';
-import 'moment/locale/ar';
-import 'moment/locale/es';
-import 'moment/locale/fr';
 import { ErrorBoundary } from 'react-error-boundary';
 import { getLocale } from '../../../paraglide/runtime.js';
 
@@ -418,7 +415,14 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
         uppercaseDate: false,
     });
 
-    const issueDate = moment(createdAt).locale(getLocale()).format('MMMM DD YYYY');
+    const createdAtDate = new Date(createdAt);
+    const issueDate = Number.isNaN(createdAtDate.getTime())
+        ? moment(createdAt).format('MMMM DD YYYY')
+        : new Intl.DateTimeFormat(getLocale(), {
+              month: 'long',
+              day: '2-digit',
+              year: 'numeric',
+          }).format(createdAtDate);
 
     const isCardView = boostPageViewMode === BoostPageViewMode.Card;
 
