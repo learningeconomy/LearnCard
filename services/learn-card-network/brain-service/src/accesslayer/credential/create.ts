@@ -13,6 +13,12 @@ export const storeCredential = async (
     const statusEntries = isEncrypted(credential)
         ? getIssuedCredentialStatus(credential as JWE)
         : undefined;
+    if (isEncrypted(credential) && !statusEntries) {
+        console.warn(
+            '[storeCredential] Encrypted credential has no status metadata; network revocation and suspension cannot update its signed status list.',
+            { credentialId: id }
+        );
+    }
     return Credential.createOne({
         id,
         credential: JSON.stringify(credential),
