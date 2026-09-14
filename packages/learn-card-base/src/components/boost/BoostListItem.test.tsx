@@ -57,7 +57,10 @@ vi.mock('learn-card-base/stores/newCredsStore', () => ({
     newCredsStore: { use: { newCreds: () => ({}) } },
 }));
 vi.mock('../../svgs/DotIcon', () => ({ default: () => null }));
-vi.mock('learn-card-base/i18n', () => ({ useT: () => (key: string) => key }));
+vi.mock('learn-card-base/i18n', () => ({
+    getActiveLocale: () => 'en',
+    useT: () => (key: string) => key,
+}));
 
 import BoostListItem from './BoostListItem';
 
