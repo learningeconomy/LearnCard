@@ -98,11 +98,13 @@ export const useFinalizeInboxCredentials = () => {
                 }
 
                 await queryClient.invalidateQueries({ queryKey: connectionPromptKeys.all });
-                walletStore.set.setIsSyncing(WalletSyncState.Syncing);
-                capture();
-                storedCountAtStartRef.current = snapshotRef.current.credentialCount;
                 let storedCount = 0;
                 const recovery = await recoverInboxDeliveries(wallet, () => {
+                    if (storedCount === 0) {
+                        walletStore.set.setIsSyncing(WalletSyncState.Syncing);
+                        capture();
+                        storedCountAtStartRef.current = snapshotRef.current.credentialCount;
+                    }
                     storedCount += 1;
                     // LC-1853: fire profile_item_added for each auto-accepted credential
                     try {
@@ -131,7 +133,11 @@ export const useFinalizeInboxCredentials = () => {
                 }
 
                 // complete syncing
-                walletStore.set.setIsSyncing(WalletSyncState.Completed, storedCount);
+                if (storedCount > 0) {
+                    walletStore.set.setIsSyncing(WalletSyncState.Completed, storedCount);
+                } else {
+                    walletStore.set.setIsSyncing(WalletSyncState.NotSyncing);
+                }
 
                 // Mark as finalized for this profile in ephemeral cache
                 if (!finalizeFailed && recovery.failed === 0) markFinalized(profileId);

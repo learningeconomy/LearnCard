@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
     recover: vi.fn(),
     invalidate: vi.fn(),
     syncing: vi.fn(),
+    capture: vi.fn(),
     snapshotRef: { current: { credentialCount: 0 } },
 }));
 vi.mock('learn-card-base', () => ({
@@ -30,7 +31,7 @@ vi.mock('../stores/autoVerifyStore', () => ({ useVerifySuccessTick: () => 0 }));
 vi.mock('@sentry/react', () => ({ captureException: vi.fn() }));
 vi.mock('@analytics', () => ({
     useAnalytics: () => ({ track: vi.fn() }),
-    useProfileSnapshotCapture: () => ({ capture: vi.fn(), snapshotRef: mocks.snapshotRef }),
+    useProfileSnapshotCapture: () => ({ capture: mocks.capture, snapshotRef: mocks.snapshotRef }),
     AnalyticsEvents: {},
     ProfileBuildMethod: {},
     ACCOUNT_CREATED_AT_KEY: 'created',
@@ -43,7 +44,10 @@ beforeEach(() => {
     vi.clearAllMocks();
     clearFinalizeCache();
     mocks.finalize.mockResolvedValue({ verifiableCredentials: [] });
-    mocks.recover.mockResolvedValue({ stored: 1, failed: 0 });
+    mocks.recover.mockImplementation(async (_wallet, onStored) => {
+        onStored({});
+        return { stored: 1, failed: 0 };
+    });
 });
 
 it.each([false, true])(
@@ -61,7 +65,7 @@ it.each([false, true])(
 it('does not cache a failed local save, allowing another startup attempt', async () => {
     mocks.recover.mockResolvedValueOnce({ stored: 0, failed: 1 });
     const first = renderHook(() => useFinalizeInboxCredentials());
-    await waitFor(() => expect(mocks.syncing).toHaveBeenCalledWith('completed', 0));
+    await waitFor(() => expect(mocks.syncing).toHaveBeenCalledWith('not-syncing'));
     first.unmount();
     renderHook(() => useFinalizeInboxCredentials());
     await waitFor(() => expect(mocks.recover).toHaveBeenCalledTimes(2));
@@ -69,9 +73,32 @@ it('does not cache a failed local save, allowing another startup attempt', async
 
 it('sweeps recovery on a later login even while finalization is cached', async () => {
     const first = renderHook(() => useFinalizeInboxCredentials());
-    await waitFor(() => expect(mocks.syncing).toHaveBeenCalledWith('completed', 0));
+    await waitFor(() => expect(mocks.syncing).toHaveBeenCalledWith('completed', 1));
     first.unmount();
     renderHook(() => useFinalizeInboxCredentials());
     await waitFor(() => expect(mocks.recover).toHaveBeenCalledTimes(2));
     expect(mocks.finalize).toHaveBeenCalledTimes(1);
+});
+
+it('keeps empty sweeps silent and does not capture a profile snapshot', async () => {
+    mocks.recover.mockResolvedValue({ stored: 0, failed: 0 });
+    renderHook(() => useFinalizeInboxCredentials());
+    await waitFor(() => expect(mocks.syncing).toHaveBeenCalledWith('not-syncing'));
+    expect(mocks.syncing).not.toHaveBeenCalledWith('syncing');
+    expect(mocks.syncing).not.toHaveBeenCalledWith('completed', 0);
+    expect(mocks.capture).not.toHaveBeenCalled();
+});
+
+it('starts syncing and captures only once when the first delivery is stored', async () => {
+    mocks.recover.mockImplementation(async (_wallet, onStored) => {
+        expect(mocks.syncing).not.toHaveBeenCalled();
+        expect(mocks.capture).not.toHaveBeenCalled();
+        onStored({});
+        onStored({});
+        return { stored: 2, failed: 0 };
+    });
+    renderHook(() => useFinalizeInboxCredentials());
+    await waitFor(() => expect(mocks.syncing).toHaveBeenCalledWith('completed', 2));
+    expect(mocks.capture).toHaveBeenCalledOnce();
+    expect(mocks.syncing.mock.calls).toEqual([['syncing'], ['completed', 2]]);
 });
