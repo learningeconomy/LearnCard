@@ -27,6 +27,7 @@ export default createVitestConfig(brainServicePreset, {
             'src/helpers/percentile.helpers.test.ts',
             'src/helpers/perf.test.ts',
             'src/helpers/signingAuthority.helpers.test.ts',
+            'src/helpers/status-list.helpers.test.ts',
             'src/helpers/boost-storage.helpers.test.ts',
             'src/accesslayer/credential/create.test.ts',
         ],
