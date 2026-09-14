@@ -112,6 +112,11 @@ describe('boost payload storage', () => {
     it.each([
         ['encrypted', jwe],
         ['issuer-signed', vc],
+        ['pre-signed without a Boost claim', { ...vc, boostId: undefined }],
+        [
+            'ordinary VC without a Boost claim',
+            { ...vc, type: ['VerifiableCredential'], boostId: undefined },
+        ],
         [
             'serialized issuance result',
             JSON.parse(
@@ -165,8 +170,8 @@ describe('boost payload storage', () => {
         expect(mocks.issue).not.toHaveBeenCalled();
     });
 
-    it.each(['lc:network:network.example/boost:other', undefined])(
-        'rejects a plaintext credential with a mismatched or missing boostId (%s) before storage',
+    it.each(['lc:network:network.example/boost:other', '', null])(
+        'rejects a plaintext credential with an explicit conflicting boostId (%s) before storage',
         async boostId => {
             await expect(
                 sendBoost({ ...options, credential: { ...vc, boostId } })

@@ -668,8 +668,10 @@ The `boostId` claim and the network `INSTANCE_OF` relationship provide Boost ass
 Wallets continue to unwrap legacy wrappers when present.
 
 There is no new network counter-signature or full server-side template-derivation check.
-Plaintext credentials must have a `boostId` matching the Boost being sent; encrypted
-payloads cannot be inspected by the server. Trust rests on the issuer's signature and
+An explicit plaintext `boostId` must match the Boost being sent. Pre-signed credentials
+without that claim are stored unchanged and linked only in the network index; VerifyBoost
+cannot establish Boost authenticity for them. Encrypted payloads cannot be inspected
+by the server. Trust rests on the issuer's signature and
 the signed `boostId` claim. For direct credentials, VerifyBoost matches the network in
 that claim against the trusted registry. This identifies the issuer-claimed network
 association, not a separate network attestation. Legacy wrappers still use their outer

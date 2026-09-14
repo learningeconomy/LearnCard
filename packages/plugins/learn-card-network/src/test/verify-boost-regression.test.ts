@@ -27,6 +27,25 @@ describe('VerifyBoost wrapper transition', () => {
             type: ['BoostCredential'],
         } as unknown as VC);
         expect(verified.checks).toContain('Boost is Authentic. Verified by Test Network.');
+        expect(verified.errors).toEqual([]);
+        expect(verified.warnings).toEqual([]);
+    });
+
+    it('does not infer authenticity for a pre-signed Boost without a signed association', async () => {
+        const card = {
+            invoke: { verifyCredential: vi.fn().mockResolvedValue(result()) },
+        } as unknown as Parameters<typeof getVerifyBoostPlugin>[0];
+        const plugin = await getVerifyBoostPlugin(card);
+        const verified = await plugin.methods.verifyCredential(card, {
+            issuer: trustedIssuer,
+            type: ['BoostCredential'],
+        } as unknown as VC);
+        expect(verified.errors).toEqual([]);
+        expect(verified.checks).toContain('proof');
+        expect(verified.checks.some(check => check.includes('Boost is Authentic'))).toBe(false);
+        expect(verified.warnings).toEqual([
+            'Boost Authenticity could not be verified: Boost ID metadata is missing.',
+        ]);
     });
 
     it.each([

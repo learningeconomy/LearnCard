@@ -142,7 +142,14 @@ export const sendBoost = async ({
             const fromProfile = getIssuerOwnerProfile(from);
 
             const payload = getIssuedCredentialPayload(credential);
-            if (!isEncrypted(payload) && (payload as VC).boostId !== sourceBoostUri) {
+            // Pre-signed credentials may predate their network Boost (send can create
+            // one from the signed payload). Preserve them without inventing a signed
+            // association; only an explicit conflicting claim is rejected.
+            if (
+                !isEncrypted(payload) &&
+                (payload as VC).boostId !== undefined &&
+                (payload as VC).boostId !== sourceBoostUri
+            ) {
                 throw new TRPCError({
                     code: 'BAD_REQUEST',
                     message: 'Credential boostId must match the Boost being sent.',
