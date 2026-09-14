@@ -208,6 +208,7 @@
     "fr:endorsement.media.document",
     "fr:endorsement.media.photo",
     "fr:family.titleOptions.parents",
+    "fr:family.titleOptions.parent",
     "fr:issue.actions",
     "fr:issueFlow.catalog.Badge.label",
     "fr:issueFlow.catalog.Certification.label",

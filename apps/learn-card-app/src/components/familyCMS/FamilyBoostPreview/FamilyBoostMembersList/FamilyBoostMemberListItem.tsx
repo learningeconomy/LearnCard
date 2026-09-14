@@ -13,6 +13,7 @@ import FamilyMemberActionMenu from './FamilyMemberActionMenu';
 import { FamilyMember } from '../../familyCMSState';
 import { VC } from '@learncard/types';
 import * as m from '../../../../paraglide/messages.js';
+import { getFamilyTitleLabel } from '../../FamilyCMSMemberTitlesForm/FamilyCMSMemberTitlesToggle/familyTitles.helpers';
 
 export const FamilyBoostMembersListItem: React.FC<{
     credential: VC;
@@ -76,7 +77,7 @@ export const FamilyBoostMembersListItem: React.FC<{
                 </div>
             </div>
             <div className="flex items-center justify-center text-grayscale-600 font-poppins text-sm">
-                {familyTitles?.singular}
+                {getFamilyTitleLabel(familyTitles?.singular ?? user.type)}
                 <SlimCaretRight className="text-grayscale-400 w-[20px] h-auto" />
             </div>
         </button>

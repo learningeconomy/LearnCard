@@ -2726,7 +2726,9 @@
         },
         "actionMenu": {
             "editFamily": "Editar familia",
-            "shareFamily": "Compartir familia"
+            "shareFamily": "Compartir familia",
+            "viewProfile": "Ver perfil",
+            "boost": "Reconocimiento"
         },
         "childInvite": {
             "title": "Cuenta de niño",
@@ -2771,12 +2773,19 @@
         "colorHexCode": "Código de color hex",
         "confirmRemoveMember": "¿Seguro que quieres eliminar a este {{title}}?",
         "titleOptions": {
+            "guardian": "Tutor",
             "guardians": "Tutores",
+            "parent": "Padre o madre",
             "parents": "Padres",
+            "grandparent": "Abuelo o abuela",
             "grandparents": "Abuelos",
+            "caretaker": "Cuidador",
             "caretakers": "Cuidadores",
+            "advocate": "Defensor",
             "advocates": "Defensores",
+            "child": "Niño",
             "children": "Niños",
+            "kid": "Pequeño",
             "kids": "Pequeños"
         },
         "titlesToggle": {

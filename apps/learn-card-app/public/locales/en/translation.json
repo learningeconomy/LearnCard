@@ -2419,7 +2419,9 @@
         },
         "actionMenu": {
             "editFamily": "Edit Family",
-            "shareFamily": "Share Family"
+            "shareFamily": "Share Family",
+            "viewProfile": "View Profile",
+            "boost": "Boost"
         },
         "childInvite": {
             "title": "Child Account",
@@ -2464,12 +2466,19 @@
         "colorHexCode": "Color Hex Code",
         "confirmRemoveMember": "Are you sure you want to remove this {{title}}?",
         "titleOptions": {
+            "guardian": "Guardian",
             "guardians": "Guardians",
+            "parent": "Parent",
             "parents": "Parents",
+            "grandparent": "Grandparent",
             "grandparents": "Grandparents",
+            "caretaker": "Caretaker",
             "caretakers": "Caretakers",
+            "advocate": "Advocate",
             "advocates": "Advocates",
+            "child": "Child",
             "children": "Children",
+            "kid": "Kid",
             "kids": "Kids"
         },
         "titlesToggle": {

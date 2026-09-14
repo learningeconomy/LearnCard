@@ -59,18 +59,32 @@ export const familyTitleOptions = {
 /** Localize the UI label without changing the English value persisted in family credentials. */
 export const getFamilyTitleLabel = (plural: string): string => {
     switch (plural) {
+        case 'Guardian':
+            return m['family.titleOptions.guardian']();
         case 'Guardians':
             return m['family.titleOptions.guardians']();
+        case 'Parent':
+            return m['family.titleOptions.parent']();
         case 'Parents':
             return m['family.titleOptions.parents']();
+        case 'Grandparent':
+            return m['family.titleOptions.grandparent']();
         case 'Grandparents':
             return m['family.titleOptions.grandparents']();
+        case 'Caretaker':
+            return m['family.titleOptions.caretaker']();
         case 'Caretakers':
             return m['family.titleOptions.caretakers']();
+        case 'Advocate':
+            return m['family.titleOptions.advocate']();
         case 'Advocates':
             return m['family.titleOptions.advocates']();
+        case 'Child':
+            return m['family.titleOptions.child']();
         case 'Children':
             return m['family.titleOptions.children']();
+        case 'Kid':
+            return m['family.titleOptions.kid']();
         case 'Kids':
             return m['family.titleOptions.kids']();
         default:

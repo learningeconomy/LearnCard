@@ -18,6 +18,7 @@ import { useIonModal } from '@ionic/react';
 
 import { VC } from '@learncard/types';
 import { FamilyMembersListTabsEnum } from '../../FamilyCMSMembersList/FamilyCMSMembersList';
+import { getFamilyTitleLabel } from '../../FamilyCMSMemberTitlesForm/FamilyCMSMemberTitlesToggle/familyTitles.helpers';
 
 export const FamilyBoostMembersList: React.FC<{
     credential: VC;
@@ -149,9 +150,11 @@ export const FamilyBoostMembersList: React.FC<{
                             }`}
                         >
                             {childrenCount}{' '}
-                            {childrenCount === 1
-                                ? dependentTitle?.singular || m['family.members.child']()
-                                : dependentTitle?.plural || m['family.members.children']()}
+                            {getFamilyTitleLabel(
+                                childrenCount === 1
+                                    ? dependentTitle?.singular || m['family.members.child']()
+                                    : dependentTitle?.plural || m['family.members.children']()
+                            )}
                         </button>
                     )}
 
@@ -164,15 +167,17 @@ export const FamilyBoostMembersList: React.FC<{
                         }`}
                     >
                         {guardiansCount}{' '}
-                        {guardiansCount === 1
-                            ? guardianTitle?.singular || m['family.members.guardian']()
-                            : guardianTitle?.plural || m['family.members.guardians']()}
+                        {getFamilyTitleLabel(
+                            guardiansCount === 1
+                                ? guardianTitle?.singular || m['family.members.guardian']()
+                                : guardianTitle?.plural || m['family.members.guardians']()
+                        )}
                     </button>
                 </div>
 
                 <div className="mt-1 w-full">
                     {guardiansAndDependents?.map(user => {
-                        let _familyTitles =
+                        const _familyTitles =
                             user?.type === 'Guardian' ? guardianTitle : dependentTitle;
 
                         return (

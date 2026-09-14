@@ -2726,7 +2726,9 @@
         },
         "actionMenu": {
             "editFamily": "تعديل العائلة",
-            "shareFamily": "مشاركة العائلة"
+            "shareFamily": "مشاركة العائلة",
+            "viewProfile": "عرض الملف الشخصي",
+            "boost": "منح تعزيز"
         },
         "childInvite": {
             "title": "حساب طفل",
@@ -2771,12 +2773,19 @@
         "colorHexCode": "رمز اللون السداسي",
         "confirmRemoveMember": "هل أنت متأكد أنك تريد إزالة هذا {{title}}؟",
         "titleOptions": {
+            "guardian": "ولي أمر",
             "guardians": "أولياء الأمور",
+            "parent": "أحد الوالدين",
             "parents": "الآباء والأمهات",
+            "grandparent": "أحد الأجداد",
             "grandparents": "الأجداد",
+            "caretaker": "مقدم رعاية",
             "caretakers": "مقدمو الرعاية",
+            "advocate": "مناصر",
             "advocates": "المناصرون",
+            "child": "طفل",
             "children": "الأطفال",
+            "kid": "صغير",
             "kids": "الصغار"
         },
         "titlesToggle": {
