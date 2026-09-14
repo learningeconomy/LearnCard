@@ -17,6 +17,7 @@ export const recoverInboxDeliveries = async (
     let hasMore = true;
     while (hasMore) {
         const page = await wallet.invoke.recoverInboxCredentials({ limit: 100, cursor });
+        failed += page.failed ?? 0;
         for (const delivery of page.records) {
             try {
                 // The inbox id also works for credentials without a VC id. Preserve the

@@ -88,3 +88,24 @@ describe('inbox delivery recovery', () => {
         });
     });
 });
+
+it('saves a good delivery while counting an SDK decrypt failure on the same page', async () => {
+    wallet.invoke.recoverInboxCredentials.mockResolvedValue({
+        records: [delivery],
+        failed: 1,
+        hasMore: false,
+    });
+    expect(await recover()).toEqual({ stored: 1, failed: 1 });
+    expect(records).toHaveLength(1);
+});
+
+it('continues to the next page when every delivery on the first page failed decryption', async () => {
+    wallet.invoke.recoverInboxCredentials
+        .mockResolvedValueOnce({ records: [], failed: 1, hasMore: true, cursor: 'bad-delivery' })
+        .mockResolvedValueOnce({ records: [delivery], failed: 0, hasMore: false });
+    expect(await recover()).toEqual({ stored: 1, failed: 1 });
+    expect(wallet.invoke.recoverInboxCredentials).toHaveBeenLastCalledWith({
+        limit: 100,
+        cursor: 'bad-delivery',
+    });
+});

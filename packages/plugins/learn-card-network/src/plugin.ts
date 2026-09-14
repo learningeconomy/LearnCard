@@ -2410,7 +2410,7 @@ export async function getLearnCardNetworkPlugin(
             },
             recoverInboxCredentials: async (learnCard, options = {}) => {
                 const result = await client.inbox.getMyInboxDeliveries.query(options);
-                const records = await Promise.all(
+                const results = await Promise.allSettled(
                     result.records.map(async record => ({
                         ...record,
                         credential: VCValidator.parse(
@@ -2420,7 +2420,10 @@ export async function getLearnCardNetworkPlugin(
                         ),
                     }))
                 );
-                return { ...result, records };
+                const records = results.flatMap(record =>
+                    record.status === 'fulfilled' ? [record.value] : []
+                );
+                return { ...result, records, failed: results.length - records.length };
             },
             sendGuardianApprovalEmail: async (_learnCard, options) => {
                 await ensureUser();

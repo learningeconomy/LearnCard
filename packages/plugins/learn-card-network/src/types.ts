@@ -690,6 +690,8 @@ export type LearnCardNetworkPluginMethods = {
     /** Recover and locally decrypt claims for seven days; deduplicate by the stable inbox id. */
     recoverInboxCredentials: (options?: { limit?: number; cursor?: string }) => Promise<{
         records: { id: string; credential: VC; expiresAt: string }[];
+        /** Deliveries that could not be decrypted or validated on this page. */
+        failed: number;
         hasMore: boolean;
         cursor?: string;
     }>;
