@@ -415,7 +415,7 @@ export const escrowRouter = t.router({
             }
             await expireStaleEscrowHolds(now);
             await ensureHoldIndexes();
-            // Policies coexist; PIN starts can only supersede other PIN requests.
+            // Policies coexist; reuse waiting holds only while their material is current.
             const pending = await findPendingEscrowHoldByAuthProvider(
                 authProvider,
                 input.releasePolicy
@@ -423,7 +423,8 @@ export const escrowRouter = t.router({
             if (
                 pending &&
                 input.releasePolicy === 'hold' &&
-                (pending.releasePolicy ?? 'hold') === 'hold'
+                (pending.releasePolicy ?? 'hold') === 'hold' &&
+                pending.shareVersion === userKey.escrowBlob.shareVersion
             )
                 return { ...serializeHold(pending), status: 'pending' as const, resumeToken: null };
             if (pending) {
@@ -466,7 +467,8 @@ export const escrowRouter = t.router({
                     if (
                         raced &&
                         input.releasePolicy === 'hold' &&
-                        (raced.releasePolicy ?? 'hold') === 'hold'
+                        (raced.releasePolicy ?? 'hold') === 'hold' &&
+                        raced.shareVersion === userKey.escrowBlob.shareVersion
                     )
                         return {
                             ...serializeHold(raced),
@@ -638,6 +640,32 @@ export const escrowRouter = t.router({
                     code: 'CONFLICT',
                     message: 'Recovery state changed; please retry.',
                 });
+            }
+            // Revalidate after the claim so a rotation or removal cannot release the old snapshot.
+            const current = await findUserKeyByAuthProvider(
+                hold.authProvider.type,
+                hold.authProvider.id
+            );
+            if (
+                !current?.escrowBlob ||
+                current.escrowOptedOutAt ||
+                current.shareVersion !== userKey.shareVersion ||
+                current.escrowBlob.shareVersion !== hold.shareVersion ||
+                current.escrowBlob.envelope.ciphertext !== expectedCiphertext ||
+                !hasConfirmedEscrow(current, hold.shareVersion)
+            ) {
+                await markClaimedEscrowHoldFailed(
+                    hold._id,
+                    'release-failed',
+                    completed.completedAt!
+                );
+                if (reserved)
+                    await refundEscrowPinAttempt(
+                        hold.authProvider,
+                        hold.shareVersion,
+                        expectedCiphertext
+                    );
+                throw new TRPCError({ code: 'FORBIDDEN', message: invalidMessage });
             }
             const release = await enclaveOperation(async () => {
                 try {

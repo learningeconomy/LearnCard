@@ -5,6 +5,7 @@ import mongodb from '@mongo';
 import { AuthProviderMappingValidator, type AuthProviderMapping } from './UserKey';
 
 export const ESCROW_HOLDS_COLLECTION = 'escrowholds';
+export const ESCROW_HOLD_STALE_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 export const EscrowHoldValidator = z.object({
     _id: z.string().uuid(),
     authProvider: AuthProviderMappingValidator,
@@ -161,7 +162,11 @@ export const cancelEscrowHold = async (
 export const completeEscrowHold = async (id: string): Promise<EscrowHold | null> => {
     const now = new Date();
     return getEscrowHoldsCollection().findOneAndUpdate(
-        { _id: id, status: 'pending' },
+        {
+            _id: id,
+            status: 'pending',
+            releaseAfter: { $gte: new Date(now.getTime() - ESCROW_HOLD_STALE_WINDOW_MS) },
+        },
         {
             $set: { status: 'completed', completedAt: now, updatedAt: now },
         },
@@ -172,7 +177,7 @@ export const expireStaleEscrowHolds = async (now: Date): Promise<number> => {
     const result = await getEscrowHoldsCollection().updateMany(
         {
             status: 'pending',
-            releaseAfter: { $lt: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000) },
+            releaseAfter: { $lt: new Date(now.getTime() - ESCROW_HOLD_STALE_WINDOW_MS) },
         },
         { $set: { status: 'expired', updatedAt: now } }
     );

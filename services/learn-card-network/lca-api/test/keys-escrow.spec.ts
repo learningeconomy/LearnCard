@@ -238,6 +238,72 @@ describe('A6 escrow recovery', () => {
         expect(results.filter(result => result.resumeToken !== null)).toHaveLength(1);
     });
 
+    it('supersedes a waiting hold after share rotation and escrow re-enrollment', async () => {
+        await enroll();
+        const first = await start();
+        await owner().keys.storeAuthShare({
+            ...auth,
+            primaryDid: did,
+            authShare: { encryptedData: shares.authShare, encryptedDek: '', iv: '' },
+        });
+        const replacement = await encryptEscrowBlob(
+            { recoveryShare: shares.recoveryShare, did, shareVersion: 2 },
+            enclaveKeys.publicKey,
+            keyId
+        );
+        await owner().escrow.enroll({
+            ...auth,
+            envelope: replacement,
+            shareVersion: 2,
+            enclaveKeyId: keyId,
+        });
+        const second = await start();
+        expect(second.holdId).not.toBe(first.holdId);
+        expect(second.resumeToken).toBeTruthy();
+        expect(await findEscrowHoldById(first.holdId)).toMatchObject({
+            status: 'cancelled',
+            cancelReason: 'superseded',
+        });
+        expect(await findEscrowHoldById(second.holdId)).toMatchObject({
+            status: 'pending',
+            shareVersion: 2,
+        });
+    });
+
+    it.each(['version', 'rotation', 'ciphertext', 'removed'] as const)(
+        'burns the claim without releasing material changed during claim: %s',
+        async change => {
+            setDuration(1);
+            await enroll();
+            const hold = await start();
+            await new Promise(resolve => setTimeout(resolve, 5));
+            const claim = models.completeEscrowHold;
+            vi.spyOn(models, 'completeEscrowHold').mockImplementationOnce(async id => {
+                await getUserKeysCollection().updateOne(
+                    { 'authProviders.id': authProvider.id },
+                    change === 'removed'
+                        ? { $unset: { escrowBlob: '' } }
+                        : change === 'version'
+                          ? { $set: { 'escrowBlob.shareVersion': 2 } }
+                          : change === 'rotation'
+                            ? { $set: { shareVersion: 2 } }
+                            : { $set: { 'escrowBlob.envelope.ciphertext': 'replacement' } }
+                );
+                return claim(id);
+            });
+            const release = vi.spyOn(getEscrowEnclave(), 'releaseEscrow');
+            await expect(getClient().escrow.completeRecovery(resume(hold))).rejects.toMatchObject({
+                code: 'FORBIDDEN',
+                message: 'This recovery request is no longer valid.',
+            });
+            expect(release).not.toHaveBeenCalled();
+            expect(await findEscrowHoldById(hold.holdId)).toMatchObject({
+                status: 'cancelled',
+                cancelReason: 'release-failed',
+            });
+        }
+    );
+
     it('5: accepts one-use recover sessions and hides invalid or unavailable identities', async () => {
         await enroll();
         const recoverySessionToken = await createRecoverySession({
@@ -891,11 +957,13 @@ describe('escrow PIN release', () => {
 
     it('reports enabled, disabled, absent and stale PIN metadata without leaking salt when disabled', async () => {
         expect((await owner().keys.getAuthShare(auth))?.escrowPin).toEqual({
+            state: 'none',
             enabled: false,
             attemptsRemaining: 0,
         });
         await enrollPin();
         expect((await owner().keys.getAuthShare(auth))?.escrowPin).toEqual({
+            state: 'enabled',
             enabled: true,
             attemptsRemaining: 10,
             salt: pinSalt,
@@ -905,6 +973,7 @@ describe('escrow PIN release', () => {
             { $set: { 'escrowPin.failedAttempts': 10, 'escrowPin.disabledAt': new Date() } }
         );
         expect((await owner().keys.getAuthShare(auth))?.escrowPin).toEqual({
+            state: 'locked',
             enabled: false,
             attemptsRemaining: 0,
         });
@@ -914,6 +983,7 @@ describe('escrow PIN release', () => {
             { $set: { 'escrowPin.shareVersion': 2 } }
         );
         expect((await owner().keys.getAuthShare(auth))?.escrowPin).toEqual({
+            state: 'stale',
             enabled: false,
             attemptsRemaining: 10,
         });
@@ -973,7 +1043,12 @@ describe('escrow PIN release', () => {
             codeHash: createHmac('sha256', environment.SEED).update('123456').digest('hex'),
         });
         const result = await getClient().keys.verifyRecoverySession({ email, code: '123456' });
-        expect(result.escrowPin).toEqual({ enabled: true, attemptsRemaining: 10, salt: pinSalt });
+        expect(result.escrowPin).toEqual({
+            state: 'enabled',
+            enabled: true,
+            attemptsRemaining: 10,
+            salt: pinSalt,
+        });
     });
 
     it('does not reserve on invalid tokens, and burns missing-proof releases fail-closed', async () => {

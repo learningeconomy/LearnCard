@@ -94,6 +94,10 @@ export class AuthCoordinator {
     private escrowStatusGeneration = 0;
     private escrowOperations = new Set<Promise<unknown>>();
     private endingSession = false;
+    private destroyed = false;
+    private stopEscrowPolling?: () => void;
+
+    static readonly ESCROW_STATUS_REFRESH_MS = 60_000;
 
     /** Upper bound on waiting for in-flight escrow writes before logout / forget-device proceeds. */
     static readonly ESCROW_DRAIN_TIMEOUT_MS = 10_000;
@@ -139,10 +143,83 @@ export class AuthCoordinator {
             (this.state.status !== 'ready' ||
                 (!this.state.authSessionValid && newState.authSessionValid));
         this.state = newState;
+        if (newState.status !== 'ready' || !newState.authSessionValid) {
+            this.stopEscrowPolling?.();
+        } else if (!this.stopEscrowPolling && !this.endingSession && !this.destroyed) {
+            this.startEscrowPolling();
+        }
         this.config.onStateChange?.(newState);
         if (enteringReady && newState.status === 'ready' && newState.authSessionValid) {
             void this.refreshEscrow(newState);
         }
+    }
+
+    /** Poll only hold status; background discovery must never rotate shares. */
+    private startEscrowPolling(): void {
+        if (typeof document === 'undefined' || !this.keyDerivation.getEscrowRecoveryStatus) return;
+        let stopped = false;
+        let inFlight = false;
+        const refresh = async (): Promise<void> => {
+            const ready = this.state;
+            if (
+                stopped ||
+                inFlight ||
+                this.endingSession ||
+                ready.status !== 'ready' ||
+                !ready.authSessionValid ||
+                document.visibilityState !== 'visible'
+            )
+                return;
+            const generation = this.escrowStatusGeneration;
+            const isCurrent = () =>
+                !stopped &&
+                !this.endingSession &&
+                generation === this.escrowStatusGeneration &&
+                this.state.status === 'ready' &&
+                this.state.authSessionValid &&
+                this.state.privateKey === ready.privateKey &&
+                this.state.authUser?.id === ready.authUser?.id;
+            inFlight = true;
+            try {
+                const credentials = await this.getAuthCredentials();
+                if (!isCurrent()) return;
+                const hold = await this.keyDerivation.getEscrowRecoveryStatus!(credentials);
+                if (!isCurrent() || this.state.status !== 'ready') return;
+                const pendingEscrowHold =
+                    hold?.status === 'pending'
+                        ? {
+                              holdId: hold.holdId,
+                              requestedAt: hold.requestedAt,
+                              releaseAfter: hold.releaseAfter,
+                          }
+                        : undefined;
+                // Only emit when the hold actually changed; avoid a render every tick.
+                if (this.state.pendingEscrowHold?.holdId !== pendingEscrowHold?.holdId) {
+                    this.setState({ ...this.state, pendingEscrowHold });
+                }
+            } catch (err) {
+                log.warn('escrow.status.failed', err);
+            } finally {
+                inFlight = false;
+            }
+        };
+        const onVisible = () => {
+            void refresh();
+        };
+        const timer = setInterval(onVisible, AuthCoordinator.ESCROW_STATUS_REFRESH_MS);
+        document.addEventListener('visibilitychange', onVisible);
+        this.stopEscrowPolling = () => {
+            stopped = true;
+            clearInterval(timer);
+            document.removeEventListener('visibilitychange', onVisible);
+            this.stopEscrowPolling = undefined;
+        };
+    }
+
+    /** Release background status observers when the coordinator is disposed. */
+    destroy(): void {
+        this.destroyed = true;
+        this.stopEscrowPolling?.();
     }
 
     /** Best-effort repair and hold discovery must never block account access. */
@@ -1331,6 +1408,7 @@ export class AuthCoordinator {
      */
     async logout(): Promise<void> {
         this.endingSession = true;
+        this.stopEscrowPolling?.();
         this.recoveryGeneration++;
         this.escrowStatusGeneration++;
         try {
@@ -1362,6 +1440,7 @@ export class AuthCoordinator {
      */
     async forgetDevice(): Promise<void> {
         this.endingSession = true;
+        this.stopEscrowPolling?.();
         this.recoveryGeneration++;
         this.escrowStatusGeneration++;
         try {

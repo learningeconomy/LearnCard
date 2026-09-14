@@ -56,6 +56,10 @@ export const EscrowRecoveryPanel = ({
     const [pinError, setPinError] = useState('');
 
     useEffect(() => {
+        if (pinAvailable) setShowPinFlow(true);
+    }, [pinAvailable]);
+
+    useEffect(() => {
         active.current = true;
         return () => {
             active.current = false;
@@ -344,8 +348,8 @@ export const EscrowRecoveryPanel = ({
                                     onClick={() =>
                                         void run(async () => {
                                             const result = await onStart();
-                                            if (!active.current) return;
                                             if (!result.resumeToken) {
+                                                if (!active.current) return;
                                                 setNotice(
                                                     'A recovery request is already waiting. Continue on the device where you started it, or cancel it from a signed-in device.'
                                                 );
@@ -358,9 +362,12 @@ export const EscrowRecoveryPanel = ({
                                                     result.clientEphemeralPrivateKey,
                                                 releaseAfter: result.releaseAfter,
                                             };
-                                            setPending(record);
-                                            setSaved(false);
+                                            if (active.current) {
+                                                setPending(record);
+                                                setSaved(false);
+                                            }
                                             await savePendingEscrowRecovery(record, scope);
+                                            if (!active.current) return;
                                             setSaved(true);
                                         })
                                     }
