@@ -190,6 +190,10 @@ Your `publishableKey` doesn't match an active integration. Check the key from yo
 **Credential not appearing after claim**
 The credential lands in the user's inbox and is finalized when they open their wallet. To verify immediately, check the Developer Portal's activity tab.
 
+{% hint style="warning" %}
+Embedded claims stay claimable for **720 days** by default. For transcripts, CLRs, or other sensitive learner records, pass a shorter `expiresInDays` (1–720) in the `/inbox/claim` configuration, e.g. `configuration: { publishableKey, expiresInDays: 7 }`. This controls how long the encrypted payload can be claimed, not the credential's own validity dates.
+{% endhint %}
+
 **OTP not arriving**
 In local dev, check your brain-service logs — OTP codes are printed there when no email provider is configured.
 

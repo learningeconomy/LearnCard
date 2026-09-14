@@ -37,6 +37,17 @@ It never creates an account for the recipient. The person proves they control th
 - **Guardian gating** — add `options.guardianEmail` and a parent must approve before the recipient can claim. Once a guardian has a LearnCard account managing the child, every future send to that child is gated automatically. See [Guardian-Gated Credentials](../../how-to-guides/send-credentials.md#guardian-gated-credentials).
 - **Phone delivery** is limited to issuers listed in the [trusted registry](../identities-and-keys/trust-registries.md).
 
+## Security and retention
+
+Until the recipient has an account there is no recipient key to encrypt to, so the network holds the waiting credential encrypted to itself. At claim time it decrypts once, saves a copy encrypted only to the claimant's DID, marks the claim issued, and deletes the service-readable copy — all in one transaction. After that, neither the network nor you can read it.
+
+- **Claim window.** `/inbox/issue` holds a credential for **30 days** by default; embedded claim buttons default to 720. Set `configuration.expiresInDays` (1–720) to shorten it. Use the shortest practical window for transcripts, CLRs, and other sensitive learner records. This controls how long the payload is claimable, not the credential's own validity dates.
+- **Claims are single-use.** Once delivered, re-running the claim returns nothing new. Clients should persist what they receive immediately.
+- **Recovery.** If the claiming client loses the response, the same DID can fetch its deliveries for **seven days** via `POST /inbox/deliveries` (`inbox:read` scope) or `learnCard.invoke.recoverInboxCredentials()`. Records come back as `{ id, credential, expiresAt }` with `credential` as a JWE the holder decrypts locally; use `id` to deduplicate.
+- **Issuer routes return metadata only.** `/inbox/issued`, `/inbox/credentials/{id}`, and the `/inbox/claim` tracking record never include the credential body. Content is only available through the claim response or recovery.
+
+Direct deliveries to existing accounts don't go through this escrow; they are stored to the recipient before the inbox receipt is written and remain readable to both parties.
+
 ## Build with it
 
 - [Send & Issue Credentials](../../how-to-guides/send-credentials.md) — the `send()` call and its response

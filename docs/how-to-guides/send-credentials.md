@@ -162,6 +162,8 @@ options: {
 }
 ```
 
+Email and phone sends are held for the recipient for **30 days**. Claims are single-use, and the network can't read the credential after it's claimed. To shorten the claim window for sensitive records such as transcripts or CLRs, use the lower-level [`/inbox/issue`](../sdks/learncard-network/universal-inbox-api.md) with `configuration.expiresInDays`. Details in [Universal Inbox](../core-concepts/network-and-interactions/universal-inbox.md#security-and-retention).
+
 ### Guardian approval
 
 ```typescript

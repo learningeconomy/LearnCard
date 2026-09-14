@@ -23,7 +23,7 @@ import { useDeveloperPortal } from '../useDeveloperPortal';
 import { USE_CASES, UseCaseId } from './types';
 import * as m from '../../../paraglide/messages.js';
 import { mDynamic } from '../../../i18n/mDynamic';
-import { openExternalLink } from 'src/helpers/externalLinkHelpers';
+import { openExternalLink } from '../../../helpers/externalLinkHelpers';
 
 const ICON_MAP: Record<string, React.FC<{ className?: string }>> = {
     'award': Award,
@@ -347,7 +347,7 @@ const IntegrationHub: React.FC = () => {
                                                             ? m[
                                                                   USE_CASES[
                                                                       integration.guideType as UseCaseId
-                                                                  ]?.titleKey!
+                                                                  ]?.titleKey
                                                               ]()
                                                             : USE_CASES[
                                                                   integration.guideType as UseCaseId

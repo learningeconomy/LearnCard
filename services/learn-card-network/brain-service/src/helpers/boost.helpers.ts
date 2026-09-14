@@ -414,7 +414,9 @@ export const sendBoost = async ({
         'boost',
         'sendBoost',
         async () => {
-            const decryptedCredential = await decryptCredential(credential);
+            const decryptedCredential = skipCertification
+                ? false
+                : await decryptCredential(credential);
             let boostUri: string | undefined;
             const sourceBoostUri = getBoostUri(boost.dataValues.id, domain);
             const fromProfile = getIssuerOwnerProfile(from);

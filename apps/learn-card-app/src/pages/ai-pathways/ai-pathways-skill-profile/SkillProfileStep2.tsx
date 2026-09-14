@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- legacy credential and skill payloads are dynamically shaped. */
 import React, { useState, useRef, useEffect } from 'react';
 
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -27,15 +28,15 @@ import {
     type SkillProfileWorkHistoryData,
 } from './SkillProfileStep2.constants';
 
-import SelectFrameworkToManageModal from 'src/pages/SkillFrameworks/SelectFrameworkToManageModal';
-import BrowseFrameworkPage from 'src/pages/SkillFrameworks/BrowseFrameworkPage';
-import DatePickerInput from 'src/components/date-picker/DatePickerInput';
-import CompetencyIcon from 'src/pages/SkillFrameworks/CompetencyIcon';
-import BoostEarnedCard from 'src/components/boost/boost-earned-card/BoostEarnedCard';
-import SlimCaretLeft from 'src/components/svgs/SlimCaretLeft';
-import SlimCaretRight from 'src/components/svgs/SlimCaretRight';
-import Plus from 'src/components/svgs/Plus';
-import X from 'src/components/svgs/X';
+import SelectFrameworkToManageModal from '../../../pages/SkillFrameworks/SelectFrameworkToManageModal';
+import BrowseFrameworkPage from '../../../pages/SkillFrameworks/BrowseFrameworkPage';
+import DatePickerInput from '../../../components/date-picker/DatePickerInput';
+import CompetencyIcon from '../../../pages/SkillFrameworks/CompetencyIcon';
+import BoostEarnedCard from '../../../components/boost/boost-earned-card/BoostEarnedCard';
+import SlimCaretLeft from '../../../components/svgs/SlimCaretLeft';
+import SlimCaretRight from '../../../components/svgs/SlimCaretRight';
+import Plus from '../../../components/svgs/Plus';
+import X from '../../../components/svgs/X';
 import { MapPin } from 'lucide-react';
 
 import { ExperiencesIconWithShape } from 'learn-card-base/svgs/wallet/ExperiencesIcon';
