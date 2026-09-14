@@ -178,7 +178,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
     const ageRating: string | undefined = listing.age_rating;
 
     // Map age_rating to numeric value for display purposes
-    const ageRatingMinAge = ageRating ? AGE_RATING_TO_MIN_AGE[ageRating] ?? 0 : 0;
+    const ageRatingMinAge = ageRating ? (AGE_RATING_TO_MIN_AGE[ageRating] ?? 0) : 0;
 
     // Calculate user's age from DOB
     const userAge = useMemo(() => {
@@ -682,9 +682,8 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                         unsignedDelegateCredential
                     );
 
-                    const unsignedDidAuthVp = await wallet.invoke.newPresentation(
-                        delegateCredential
-                    );
+                    const unsignedDidAuthVp =
+                        await wallet.invoke.newPresentation(delegateCredential);
 
                     const vp = (await wallet.invoke.issuePresentation(unsignedDidAuthVp, {
                         proofPurpose: 'authentication',

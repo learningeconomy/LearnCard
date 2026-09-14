@@ -33,6 +33,7 @@ import { getLogger, useModal, ModalTypes, resolveTenantConfig } from 'learn-card
 import { toastStore } from 'learn-card-base/stores/toastStore';
 import { useAnalytics } from '@analytics';
 import * as m from '../../paraglide/messages.js';
+import { environment } from '../../config/environment';
 
 import { FeedbackComposer } from './FeedbackComposer';
 import { FeedbackPromptToast } from './FeedbackPromptToast';
@@ -133,7 +134,7 @@ export const useFeedback = (): FeedbackController => {
 };
 
 /** Wallet display version used when the app/plugin calls cannot resolve one. */
-const FALLBACK_VERSION = (import.meta.env.VITE_APP_VERSION as string | undefined) ?? 'unknown';
+const FALLBACK_VERSION = environment.VITE_APP_VERSION ?? 'unknown';
 /**
  * Default context collector. The tenant id resolves offline-only: by capture
  * time the config is always bootstrapped (baked, cached, or defaults), so
@@ -444,8 +445,7 @@ export const FeedbackProvider: React.FC<{
     const presentPromptToast = useCallback(
         (draft: FeedbackDraft, pendingContext?: Promise<FeedbackContextData>) => {
             promptDraftRef.current = draft;
-            let prompt: React.ReactNode;
-            prompt = (
+            const prompt: React.ReactNode = (
                 <FeedbackPromptToast
                     onReport={() => {
                         if (

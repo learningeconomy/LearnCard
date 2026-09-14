@@ -34,7 +34,7 @@ const hasVisibleCopy = value => {
 const propertyName = node => node?.key?.name ?? node?.key?.value;
 
 const isUserFacingScope = (context, node) => {
-    const source = context.getSourceCode();
+    const source = context.sourceCode;
     let current = node.parent;
 
     while (current && current.type !== 'Program') {

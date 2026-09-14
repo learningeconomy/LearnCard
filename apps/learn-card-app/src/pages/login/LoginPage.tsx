@@ -436,8 +436,8 @@ export const LoginContent: React.FC = () => {
                             {isNewUserSetup
                                 ? m['login.prompt.newUser']()
                                 : isReturningUser
-                                ? m['login.prompt.returning']()
-                                : m['login.prompt.default']()}
+                                  ? m['login.prompt.returning']()
+                                  : m['login.prompt.default']()}
                         </p>
                     </IonRow>
 

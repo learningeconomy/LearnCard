@@ -2,6 +2,7 @@
  * Provider-agnostic auth verification helpers
  */
 
+import { environment } from '@environment';
 import { TRPCError } from '@trpc/server';
 import admin from 'firebase-admin';
 
@@ -16,7 +17,7 @@ export type AuthProviderType = 'firebase' | 'supertokens' | 'keycloak' | 'oidc';
 
 export async function verifyFirebaseToken(token: string): Promise<VerifiedUser> {
     // E2E test or offline bypass - parse JWT without Firebase Admin verification
-    if (process.env.IS_E2E_TEST === 'true' || process.env.IS_OFFLINE === 'true') {
+    if (environment.IS_E2E_TEST || environment.IS_OFFLINE) {
         try {
             const parts = token.split('.');
             const payloadPart = parts[1];
@@ -108,7 +109,9 @@ export async function verifyAuthToken(
     }
 }
 
-export function getContactMethodFromUser(user: VerifiedUser): { type: 'email' | 'phone'; value: string } | null {
+export function getContactMethodFromUser(
+    user: VerifiedUser
+): { type: 'email' | 'phone'; value: string } | null {
     if (user.email) {
         return { type: 'email', value: user.email.toLowerCase() };
     }

@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
@@ -952,7 +953,7 @@ export const contractsRouter = t.router({
             let redirectUrl: string | undefined;
             // SmartResume handling
             const isSmartResume =
-                contractUri === process.env.SMART_RESUME_CONTRACT_URI ||
+                contractUri === environment.SMART_RESUME_CONTRACT_URI ||
                 contractUri ===
                     'lc:network:network.learncard.com/trpc:contract:55b738f0-49f4-4b33-b6c1-afa99b605cd6'; // hardcode for quick fix purposes
             if (isSmartResume) {
@@ -960,13 +961,13 @@ export const contractsRouter = t.router({
                     throw new Error('Missing recipientToken for SmartResume');
                 }
 
-                const isProduction = !process.env.IS_OFFLINE;
+                const isProduction = !environment.IS_OFFLINE;
 
                 const srUrl = isProduction
                     ? 'https://my.smartresume.com/'
                     : 'https://mystage.smartresume.com/';
-                const clientId = process.env.SMART_RESUME_CLIENT_ID;
-                const accessKey = process.env.SMART_RESUME_ACCESS_KEY;
+                const clientId = environment.SMART_RESUME_CLIENT_ID;
+                const accessKey = environment.SMART_RESUME_ACCESS_KEY;
 
                 const accessTokenResponse = (await fetch(`${srUrl}api/v1/token`, {
                     method: 'POST',
@@ -2070,8 +2071,8 @@ export const contractsRouter = t.router({
             const contract = contractUri
                 ? await getContractByUri(contractUri)
                 : contractId
-                ? await getContractById(contractId)
-                : null;
+                  ? await getContractById(contractId)
+                  : null;
 
             if (!contract)
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract not found' });
@@ -2361,9 +2362,8 @@ export const contractsRouter = t.router({
                 });
             }
 
-            const results = await getSharedInsightsRequestsForTargetProfile(
-                resolvedTargetProfileId
-            );
+            const results =
+                await getSharedInsightsRequestsForTargetProfile(resolvedTargetProfileId);
 
             return results.map(({ contractId, ...rest }) => ({
                 ...rest,

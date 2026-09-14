@@ -4,8 +4,9 @@ import PaperClip from '../svgs/PaperClip';
 import { FlatIcon } from 'learn-card-base/components/FlatIcon';
 import { SkillsIcon } from 'learn-card-base/svgs/wallet/SkillsIcon';
 import { StudiesIcon } from 'learn-card-base/svgs/wallet/StudiesIcon';
+import { ClipboardCheck } from 'lucide-react';
 
-export type StatCardType = 'gpa' | 'courses' | 'competencies' | 'evidence';
+export type StatCardType = 'gpa' | 'courses' | 'assessments' | 'competencies' | 'evidence';
 
 type StatCardConfig = {
     label: string;
@@ -25,6 +26,11 @@ const STAT_CARD_CONFIG: Record<StatCardType, StatCardConfig> = {
                 <StudiesIcon className="w-5 h-5" />
             </FlatIcon>
         ),
+        variant: 'default',
+    },
+    assessments: {
+        label: 'Assessments',
+        icon: <ClipboardCheck className="w-5 h-5" />,
         variant: 'default',
     },
     competencies: {

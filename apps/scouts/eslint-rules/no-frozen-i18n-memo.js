@@ -46,7 +46,7 @@ module.exports = {
         },
     },
     create(context) {
-        const source = context.getSourceCode();
+        const source = context.sourceCode;
 
         return {
             CallExpression(node) {

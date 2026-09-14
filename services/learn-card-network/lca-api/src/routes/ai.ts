@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import OpenAI from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
@@ -89,8 +90,8 @@ const IconListContainerValidator = z.object({
     ),
 });
 
-const openai = process.env.OPENAI_API_KEY
-    ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+const openai = environment.OPENAI_API_KEY
+    ? new OpenAI({ apiKey: environment.OPENAI_API_KEY })
     : undefined;
 
 export const aiRouter = t.router({

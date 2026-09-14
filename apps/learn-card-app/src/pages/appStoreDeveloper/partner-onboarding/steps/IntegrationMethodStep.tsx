@@ -143,8 +143,8 @@ export const IntegrationMethodStep: React.FC<IntegrationMethodStepProps> = ({
                                 method.comingSoon
                                     ? 'border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed'
                                     : isSelected
-                                    ? 'border-cyan-500 bg-cyan-50 shadow-md'
-                                    : 'border-gray-200 hover:border-gray-300 bg-white'
+                                      ? 'border-cyan-500 bg-cyan-50 shadow-md'
+                                      : 'border-gray-200 hover:border-gray-300 bg-white'
                             }`}
                         >
                             <div className="flex items-start gap-4">

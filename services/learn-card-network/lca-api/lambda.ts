@@ -8,14 +8,23 @@ import didWebApp from './src/dids';
 import { appRouter, createContext } from './src/app';
 import { getEmptyLearnCard } from './src/helpers/learnCard.helpers';
 import { createOpenApiAwsLambdaHandler } from './src/helpers/shim';
-import { handleTrpcError, sentryBeforeSend, getTracesSampleRate } from './src/helpers/sentry.helpers';
+import {
+    handleTrpcError,
+    sentryBeforeSend,
+    getTracesSampleRate,
+} from './src/helpers/sentry.helpers';
+import { environment } from './src/config/environment';
+import { toServerlessApplication } from './src/helpers/serverlessApplication';
 
-let promise = getEmptyLearnCard(); // Load WASM in for better cold starts
+const promise = getEmptyLearnCard(); // Load WASM in for better cold starts
+
+const isWarmupEvent = (event: APIGatewayProxyEventV2): boolean =>
+    'source' in event && event.source === 'serverless-plugin-warmup';
 
 Sentry.AWSLambda.init({
-    dsn: process.env.SENTRY_DSN,
-    environment: process.env.SENTRY_ENV,
-    enabled: Boolean(process.env.SENTRY_DSN),
+    dsn: environment.SENTRY_DSN,
+    environment: environment.SENTRY_ENV,
+    enabled: Boolean(environment.SENTRY_DSN),
     tracesSampleRate: getTracesSampleRate(),
     beforeSend: sentryBeforeSend,
     integrations: [
@@ -26,8 +35,10 @@ Sentry.AWSLambda.init({
     ],
 });
 
-export const swaggerUiHandler = serverlessHttp(app, { basePath: '/docs' });
-export const didWebHandler = serverlessHttp(didWebApp);
+export const swaggerUiHandler = serverlessHttp(toServerlessApplication(app), {
+    basePath: '/docs',
+});
+export const didWebHandler = serverlessHttp(toServerlessApplication(didWebApp));
 
 export const _openApiHandler = createOpenApiAwsLambdaHandler({
     router: appRouter,
@@ -63,7 +74,7 @@ export const openApiHandler = Sentry.AWSLambda.wrapHandler(
     async (event: APIGatewayProxyEventV2, context: Context): Promise<APIGatewayProxyResultV2> => {
         await promise;
 
-        if ((event as any).source === 'serverless-plugin-warmup') {
+        if (isWarmupEvent(event)) {
             console.log('[Warmup] Initializing LearnCard...');
             await getEmptyLearnCard();
             console.log('[Warmup] Done!');
@@ -89,7 +100,7 @@ export const trpcHandler = Sentry.AWSLambda.wrapHandler(
     async (event: APIGatewayProxyEventV2, context: Context): Promise<APIGatewayProxyResultV2> => {
         await promise;
 
-        if ((event as any).source === 'serverless-plugin-warmup') {
+        if (isWarmupEvent(event)) {
             console.log('[Warmup] Initializing LearnCard...');
             await getEmptyLearnCard();
             console.log('[Warmup] Done!');

@@ -24,11 +24,11 @@ This app simulates what a partner's website does when integrating with LearnCard
 
 ### Prerequisites
 
--   LearnCard app running locally (default: `http://localhost:3000`)
--   Brain service running locally (default: `http://localhost:4000/trpc`) — or use production
--   A ConsentFlow contract URI (create one in the developer portal)
--   A credential template/boost URI
--   An issuer seed (64-character hex string)
+- LearnCard app running locally (default: `http://localhost:3000`)
+- Brain service running locally (default: `http://localhost:4000/trpc`) — or use production
+- A ConsentFlow contract URI (create one in the developer portal)
+- A credential template/boost URI
+- An issuer seed (64-character hex string)
 
 ### Configuration Fields
 
@@ -54,8 +54,8 @@ Enter your issuer seed and click **Test LearnCard Init**. This initializes the S
 
 Enter a contract URI and click **Open Consent Flow**. This redirects you to LearnCard where you (or a test user) can grant consent. After consenting, LearnCard redirects back to this app with:
 
--   `did` — the user's decentralized identifier
--   `vp` — a Verifiable Presentation JWT proving consent
+- `did` — the user's decentralized identifier
+- `vp` — a Verifiable Presentation JWT proving consent
 
 ### Step 3: Send a Credential
 
@@ -63,8 +63,8 @@ After the callback, the send form is pre-filled with the user's DID and your sav
 
 The app also shows:
 
--   Decoded VP JWT payload
--   The equivalent TypeScript code for your own backend
+- Decoded VP JWT payload
+- The equivalent TypeScript code for your own backend
 
 ## Architecture
 
@@ -152,3 +152,13 @@ node server.js
 | Consent flow shows "Loading..." forever   | Check that brain-service is running and the contract URI is valid   |
 | Redirect goes to blank page               | Verify the LearnCard app is running at the selected environment URL |
 | "Failed to connect to server"             | Run `node server.js` first                                          |
+
+### Trusted network endpoints
+
+The server accepts the production network/API endpoints and `http://localhost:4000/trpc`. Other endpoints must be configured by the server operator, not supplied arbitrarily by a browser request:
+
+```sh
+CONSENT_FLOW_TRUSTED_NETWORK_URLS=https://your-network.example/trpc npm start
+```
+
+Use a comma-separated list for multiple trusted endpoints. Values must match exactly, including scheme, port, and path. Only configure services you trust to receive the submitted credentials.

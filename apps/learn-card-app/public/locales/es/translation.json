@@ -12,6 +12,7 @@
         "claimedType": "Credencial reclamada"
     },
     "common": {
+        "tryAgain": "Reintentar",
         "share": "Compartir",
         "open": "Abrir",
         "accept": "Aceptar",
@@ -1712,6 +1713,26 @@
         }
     },
     "recovery": {
+        "prompt": {
+            "openAria": "Configurar una forma de volver a iniciar sesión",
+            "snoozeAria": "Recordármelo en 7 días",
+            "calm": {
+                "title": "Añade una forma de volver a entrar",
+                "body": "Si pierdes este dispositivo, así volverás a iniciar sesión. Solo toma un minuto."
+            },
+            "urgent": {
+                "title": "Esta sesión termina cuando cierres la pestaña",
+                "body": "Configura una forma de volver a iniciar sesión o perderás el acceso a tu cuenta."
+            },
+            "success": {
+                "title": "Tu cuenta está protegida",
+                "body": "Puedes volver a iniciar sesión desde cualquier dispositivo."
+            },
+            "action": {
+                "passkey": "Usa Face ID o Touch ID",
+                "phrase": "Obtén una frase de recuperación"
+            }
+        },
         "protectAccount": "Protege tu cuenta",
         "accountRecovery": "Recuperación de cuenta",
         "restoreAccess": "Restaurar acceso",
@@ -1911,7 +1932,22 @@
         "loadingNotifications": "Cargando notificaciones...",
         "refresh": "Actualizar",
         "restored": "Restaurada",
-        "unableToLoad": "No se pudo cargar la notificación"
+        "unableToLoad": "No se pudo cargar la notificación",
+        "credentialUpdated": "Credencial actualizada",
+        "updated": "Actualizada",
+        "checkingForUpdate": "Buscando actualizaciones…",
+        "updateCheckFailed": "Problema de conexión. Comprueba tu conexión a internet e inténtalo de nuevo.",
+        "updatedCredentialUnavailable": "Esta credencial aún no está disponible. Inténtalo de nuevo más tarde."
+    },
+    "credentialHistory": {
+        "title": "Versiones anteriores",
+        "empty": "No hay versiones anteriores almacenadas en este dispositivo.",
+        "unavailable": "Esta versión no está disponible en este dispositivo.",
+        "view": "Ver",
+        "loadingVersion": "Cargando versión…",
+        "done": "Listo",
+        "updatedOn": "Actualizada el {{date}}",
+        "versionFrom": "Versión del {{date}}"
     },
     "share": {
         "addContact": "Agregar contacto",
@@ -2338,7 +2374,8 @@
         },
         "menu": {
             "manageIssuances": "Gestionar emisiones",
-            "viewData": "Ver datos"
+            "viewData": "Ver datos",
+            "viewPreviousVersions": "Ver versiones anteriores"
         },
         "shortBoost": {
             "selectRecipient": "Seleccionar destinatario",
@@ -2783,6 +2820,7 @@
             "deleteCredentialError": "Error al eliminar credencial: no se pudo ubicar el ID del registro.",
             "shareLinkCopied": "Enlace para compartir copiado al portapapeles",
             "shareLinkCopyFailed": "No se pudo copiar el enlace para compartir",
+            "shareLinkGenerationFailed": "No pudimos crear un enlace para compartir. Inténtalo de nuevo.",
             "templateIdCopied": "ID de plantilla copiado al portapapeles",
             "templateIdCopyFailed": "No se pudo copiar el ID de plantilla",
             "boostLinkCopied": "Enlace del boost copiado al portapapeles",

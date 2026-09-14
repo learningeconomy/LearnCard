@@ -1,4 +1,5 @@
 import { getLogger } from 'learn-card-base';
+import { isDebugEnvironmentEnabled } from '../../config/environment';
 const log = getLogger('auth-debug-events');
 /**
  * Auth/SSS Debug Event Logger
@@ -63,21 +64,13 @@ type EventListener = (event: AuthDebugEvent) => void;
 const MAX_EVENTS = 100;
 
 let events: AuthDebugEvent[] = [];
-let listeners: Set<EventListener> = new Set();
+const listeners: Set<EventListener> = new Set();
 let eventIdCounter = 0;
 
 /**
  * Check if debug mode is enabled
  */
-const isDebugEnabled = (): boolean => {
-    if (typeof window === 'undefined') return false;
-
-    try {
-        return import.meta.env.VITE_ENABLE_AUTH_DEBUG_WIDGET === 'true' || import.meta.env.DEV;
-    } catch {
-        return false;
-    }
-};
+const isDebugEnabled = isDebugEnvironmentEnabled;
 
 /**
  * Emit an auth debug event

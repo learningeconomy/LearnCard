@@ -604,8 +604,8 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                     {isPreview
                         ? m['appInstall.previewOnly']()
                         : isConsenting
-                        ? m['appInstall.connecting']()
-                        : m['appInstall.install']()}
+                          ? m['appInstall.connecting']()
+                          : m['appInstall.install']()}
                 </button>
             </div>
         </div>

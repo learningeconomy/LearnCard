@@ -1,12 +1,12 @@
 import React, { useState, useCallback } from 'react';
 import { ChevronDown, ChevronRight, Copy, Check, ScrollText, Trash2, Download } from 'lucide-react';
+import { environment } from '../../config/environment';
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
-export const WIDGET_ENABLED =
-    import.meta.env.VITE_ENABLE_AUTH_DEBUG_WIDGET === 'true' || import.meta.env.DEV;
+export const WIDGET_ENABLED = environment.VITE_ENABLE_AUTH_DEBUG_WIDGET || environment.DEV;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -16,8 +16,14 @@ export const truncate = (s: string, len: number): string =>
     s.length > len ? s.slice(0, len) + '...' : s;
 
 export const formatTime = (date: Date): string =>
-    date.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }) +
-    '.' + date.getMilliseconds().toString().padStart(3, '0');
+    date.toLocaleTimeString('en-US', {
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+    }) +
+    '.' +
+    date.getMilliseconds().toString().padStart(3, '0');
 
 /** Short fingerprint for a share/key: first4…last4 */
 export const fingerprint = (s: string | null | undefined): string => {
@@ -51,20 +57,32 @@ export const KVRow: React.FC<{
     copied: string | null;
     onCopy: (key: string, value: unknown) => void;
 }> = ({ label, value, mono = true, copied, onCopy }) => {
-    const display = typeof value === 'boolean'
-        ? (value ? 'true' : 'false')
-        : (value === null || value === undefined ? '—' : String(value));
+    const display =
+        typeof value === 'boolean'
+            ? value
+                ? 'true'
+                : 'false'
+            : value === null || value === undefined
+              ? '—'
+              : String(value);
 
-    const color = typeof value === 'boolean'
-        ? (value ? 'text-emerald-400' : 'text-red-400')
-        : (display === '—' ? 'text-gray-600' : 'text-cyan-400');
+    const color =
+        typeof value === 'boolean'
+            ? value
+                ? 'text-emerald-400'
+                : 'text-red-400'
+            : display === '—'
+              ? 'text-gray-600'
+              : 'text-cyan-400';
 
     return (
         <div className="flex items-center justify-between text-[11px] py-[3px] border-t border-gray-700/40 group">
             <span className="text-gray-500 shrink-0">{label}</span>
 
             <div className="flex items-center gap-1 min-w-0 ml-2">
-                <span className={`${color} ${mono ? 'font-mono' : ''} text-[10px] truncate max-w-[160px]`}>
+                <span
+                    className={`${color} ${mono ? 'font-mono' : ''} text-[10px] truncate max-w-[160px]`}
+                >
                     {display}
                 </span>
 
@@ -73,9 +91,11 @@ export const KVRow: React.FC<{
                     className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-gray-600 transition-all shrink-0"
                     title="Copy"
                 >
-                    {copied === label
-                        ? <Check className="w-2.5 h-2.5 text-emerald-400" />
-                        : <Copy className="w-2.5 h-2.5 text-gray-500" />}
+                    {copied === label ? (
+                        <Check className="w-2.5 h-2.5 text-emerald-400" />
+                    ) : (
+                        <Copy className="w-2.5 h-2.5 text-gray-500" />
+                    )}
                 </button>
             </div>
         </div>
@@ -98,7 +118,12 @@ export const Section: React.FC<{
                 role="button"
                 tabIndex={0}
                 onClick={() => setOpen(!open)}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(!open); } }}
+                onKeyDown={e => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setOpen(!open);
+                    }
+                }}
                 className="w-full px-3 py-2 flex items-center justify-between hover:bg-gray-700/40 transition-colors text-left cursor-pointer"
             >
                 <div className="flex items-center gap-2">
@@ -109,13 +134,15 @@ export const Section: React.FC<{
 
                 <div className="flex items-center gap-1">
                     {actions && open && (
-                        <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1">
+                        <div onClick={e => e.stopPropagation()} className="flex items-center gap-1">
                             {actions}
                         </div>
                     )}
-                    {open
-                        ? <ChevronDown className="w-3.5 h-3.5 text-gray-500" />
-                        : <ChevronRight className="w-3.5 h-3.5 text-gray-500" />}
+                    {open ? (
+                        <ChevronDown className="w-3.5 h-3.5 text-gray-500" />
+                    ) : (
+                        <ChevronRight className="w-3.5 h-3.5 text-gray-500" />
+                    )}
                 </div>
             </div>
 
@@ -136,7 +163,9 @@ export const useCopyToClipboard = (): [string | null, (key: string, value: unkno
             await navigator.clipboard.writeText(String(value));
             setCopied(key);
             setTimeout(() => setCopied(null), 1500);
-        } catch { /* ignore */ }
+        } catch {
+            /* ignore */
+        }
     }, []);
 
     return [copied, copyToClipboard];
@@ -164,7 +193,16 @@ export const EventTimeline: React.FC<{
     exportCopied?: boolean;
     title?: string;
     emptyMessage?: string;
-}> = ({ events, copied, onCopy, onClear, onExport, exportCopied = false, title = 'Event Timeline', emptyMessage = 'Events appear as actions occur' }) => {
+}> = ({
+    events,
+    copied,
+    onCopy,
+    onClear,
+    onExport,
+    exportCopied = false,
+    title = 'Event Timeline',
+    emptyMessage = 'Events appear as actions occur',
+}) => {
     const [expandedEvents, setExpandedEvents] = useState<Set<string>>(new Set());
 
     const toggleEventExpanded = useCallback((eventId: string) => {
@@ -186,53 +224,82 @@ export const EventTimeline: React.FC<{
             title={title}
             icon={<ScrollText className="w-3 h-3 text-gray-500" />}
             defaultOpen
-            badge={events.length > 0 ? (
-                <span className="text-[9px] bg-sky-500/20 text-sky-400 px-1.5 py-0.5 rounded-full font-medium">
-                    {events.length}
-                </span>
-            ) : undefined}
-            actions={events.length > 0 ? (
-                <div className="flex items-center gap-0.5">
-                    <button onClick={onExport} className="p-1 rounded hover:bg-gray-600 transition-colors" title={exportCopied ? 'Copied!' : 'Export events'}>
-                        {exportCopied ? <Check className="w-3 h-3 text-emerald-400" /> : <Download className="w-3 h-3 text-gray-500" />}
-                    </button>
+            badge={
+                events.length > 0 ? (
+                    <span className="text-[9px] bg-sky-500/20 text-sky-400 px-1.5 py-0.5 rounded-full font-medium">
+                        {events.length}
+                    </span>
+                ) : undefined
+            }
+            actions={
+                events.length > 0 ? (
+                    <div className="flex items-center gap-0.5">
+                        <button
+                            onClick={onExport}
+                            className="p-1 rounded hover:bg-gray-600 transition-colors"
+                            title={exportCopied ? 'Copied!' : 'Export events'}
+                        >
+                            {exportCopied ? (
+                                <Check className="w-3 h-3 text-emerald-400" />
+                            ) : (
+                                <Download className="w-3 h-3 text-gray-500" />
+                            )}
+                        </button>
 
-                    <button onClick={onClear} className="p-1 rounded hover:bg-gray-600 transition-colors" title="Clear events">
-                        <Trash2 className="w-3 h-3 text-gray-500" />
-                    </button>
-                </div>
-            ) : undefined}
+                        <button
+                            onClick={onClear}
+                            className="p-1 rounded hover:bg-gray-600 transition-colors"
+                            title="Clear events"
+                        >
+                            <Trash2 className="w-3 h-3 text-gray-500" />
+                        </button>
+                    </div>
+                ) : undefined
+            }
         >
             <div className="max-h-48 overflow-y-auto -mx-1">
                 {events.length === 0 ? (
-                    <p className="text-[10px] text-gray-600 text-center py-3">
-                        {emptyMessage}
-                    </p>
+                    <p className="text-[10px] text-gray-600 text-center py-3">{emptyMessage}</p>
                 ) : (
                     <div className="space-y-0.5">
-                        {events.map((event) => {
+                        {events.map(event => {
                             const isExpanded = expandedEvents.has(event.id);
 
                             return (
-                                <div key={event.id} className="rounded bg-gray-900/50 hover:bg-gray-900/80 transition-colors overflow-hidden">
+                                <div
+                                    key={event.id}
+                                    className="rounded bg-gray-900/50 hover:bg-gray-900/80 transition-colors overflow-hidden"
+                                >
                                     <button
                                         onClick={() => toggleEventExpanded(event.id)}
                                         className="w-full flex items-start gap-1.5 py-1 px-2 text-left"
                                     >
-                                        <div className={`w-1.5 h-1.5 rounded-full mt-[5px] shrink-0 ${levelDot[event.level] ?? levelDot.info}`} />
+                                        <div
+                                            className={`w-1.5 h-1.5 rounded-full mt-[5px] shrink-0 ${levelDot[event.level] ?? levelDot.info}`}
+                                        />
 
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-1">
-                                                <span className="text-[8px] text-gray-600 font-mono">{formatTime(event.timestamp)}</span>
-                                                <span className={`text-[8px] font-semibold ${levelText[event.level] ?? levelText.info}`}>{event.type}</span>
+                                                <span className="text-[8px] text-gray-600 font-mono">
+                                                    {formatTime(event.timestamp)}
+                                                </span>
+                                                <span
+                                                    className={`text-[8px] font-semibold ${levelText[event.level] ?? levelText.info}`}
+                                                >
+                                                    {event.type}
+                                                </span>
                                             </div>
 
-                                            <p className={`text-[9px] text-gray-400 ${isExpanded ? 'whitespace-pre-wrap break-words' : 'truncate'}`}>
+                                            <p
+                                                className={`text-[9px] text-gray-400 ${isExpanded ? 'whitespace-pre-wrap break-words' : 'truncate'}`}
+                                            >
                                                 {event.message}
                                             </p>
                                         </div>
 
-                                        <ChevronRight className={`w-2.5 h-2.5 text-gray-600 shrink-0 mt-1 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                                        <ChevronRight
+                                            className={`w-2.5 h-2.5 text-gray-600 shrink-0 mt-1 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                                        />
                                     </button>
 
                                     {isExpanded && event.data && (
@@ -242,7 +309,13 @@ export const EventTimeline: React.FC<{
                                             </pre>
 
                                             <button
-                                                onClick={(e) => { e.stopPropagation(); onCopy(event.id, JSON.stringify(event.data, null, 2)); }}
+                                                onClick={e => {
+                                                    e.stopPropagation();
+                                                    onCopy(
+                                                        event.id,
+                                                        JSON.stringify(event.data, null, 2)
+                                                    );
+                                                }}
                                                 className="text-[8px] text-gray-600 hover:text-gray-400 mt-0.5"
                                             >
                                                 {copied === event.id ? 'Copied!' : 'Copy data'}
@@ -251,7 +324,9 @@ export const EventTimeline: React.FC<{
                                     )}
 
                                     {isExpanded && !event.data && (
-                                        <p className="text-[8px] text-gray-600 italic px-2 pb-1.5 ml-4">No additional data</p>
+                                        <p className="text-[8px] text-gray-600 italic px-2 pb-1.5 ml-4">
+                                            No additional data
+                                        </p>
                                     )}
                                 </div>
                             );

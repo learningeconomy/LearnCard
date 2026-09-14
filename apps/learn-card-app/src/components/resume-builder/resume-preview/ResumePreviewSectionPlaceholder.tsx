@@ -94,8 +94,8 @@ export const ResumePreviewSectionPlaceholder: React.FC<{
         isLoadingExactCredentials || isLoadingAllCredentials
             ? 'Checking credentials...'
             : hasAvailableCredentials
-            ? 'No credentials selected'
-            : 'No credentials found';
+              ? 'No credentials selected'
+              : 'No credentials found';
     const shouldSelectExistingCredentials = hasAvailableCredentials && onOpenCredentialPanel;
     const actionLabel = shouldSelectExistingCredentials ? 'Select Credentials' : copy.actionLabel;
     const handleActionClick = () => {

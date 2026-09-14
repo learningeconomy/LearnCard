@@ -17,11 +17,7 @@ type LearnerContextResponseData = {
     displayName?: string;
     metadata?: {
         cacheStatus?:
-            | 'browser-hit'
-            | 'browser-miss'
-            | 'backend-hit'
-            | 'backend-miss'
-            | 'structured';
+            'browser-hit' | 'browser-miss' | 'backend-hit' | 'backend-miss' | 'structured';
         timings?: {
             totalMs: number;
             sdkRoundTripMs?: number;
@@ -49,7 +45,7 @@ export type { ActionHandler, ActionHandlers };
 export const createRequestIdentityHandler = (dependencies: {
     isUserAuthenticated: () => boolean;
     mintDelegatedToken: (challenge?: string) => Promise<string>;
-    getUserInfo: () => Promise<{ did: string; profile: any }>;
+    getUserInfo: () => Promise<{ did: string; profile: unknown }>;
     showLoginConsentModal: (origin: string, appName?: string) => Promise<boolean>;
 }): ActionHandler<'REQUEST_IDENTITY'> => {
     return async ({ payload, origin }) => {
@@ -190,7 +186,7 @@ export const createRequestConsentHandler = (dependencies: {
  * Partner wants to send a credential to the user.
  */
 export const createSendCredentialHandler = (dependencies: {
-    showCredentialAcceptanceModal: (credential: any) => Promise<string | boolean>;
+    showCredentialAcceptanceModal: (credential: unknown) => Promise<string | boolean>;
 }): ActionHandler<'SEND_CREDENTIAL'> => {
     return async ({ payload }) => {
         const { showCredentialAcceptanceModal } = dependencies;
@@ -247,9 +243,9 @@ export const createSendCredentialHandler = (dependencies: {
  * Partner needs a specific credential by ID.
  */
 export const createAskCredentialSpecificHandler = (dependencies: {
-    getCredentialById: (id: string) => Promise<any | null>;
-    showShareCredentialModal: (credential: any) => Promise<boolean>;
-    signPresentation: (presentation: any) => Promise<any>;
+    getCredentialById: (id: string) => Promise<unknown | null>;
+    showShareCredentialModal: (credential: unknown) => Promise<boolean>;
+    signPresentation: (presentation: unknown) => Promise<unknown>;
 }): ActionHandler<'ASK_CREDENTIAL_SPECIFIC'> => {
     return async ({ payload }) => {
         const { getCredentialById, showShareCredentialModal, signPresentation } = dependencies;
@@ -318,7 +314,9 @@ export const createAskCredentialSpecificHandler = (dependencies: {
  * Partner needs credentials matching certain criteria via a VPR.
  */
 export const createAskCredentialSearchHandler = (dependencies: {
-    showVprModal: (verifiablePresentationRequest: VerifiablePresentationRequest) => Promise<any>;
+    showVprModal: (
+        verifiablePresentationRequest: VerifiablePresentationRequest
+    ) => Promise<unknown>;
 }): ActionHandler<'ASK_CREDENTIAL_SEARCH'> => {
     return async ({ payload }) => {
         const { showVprModal } = dependencies;

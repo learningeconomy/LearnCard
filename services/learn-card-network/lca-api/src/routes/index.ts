@@ -1,10 +1,13 @@
+import { environment } from '@environment';
 import { initTRPC, TRPCError } from '@trpc/server';
 import type { APIGatewayProxyEventV2 } from 'aws-lambda';
 import { CreateAWSLambdaContextOptions } from '@trpc/server/adapters/aws-lambda';
 import { CreateFastifyContextOptions } from '@trpc/server/adapters/fastify';
+import type { NodeHTTPCreateContextFnOptions } from '@trpc/server/adapters/node-http';
 import { OpenApiMeta } from 'trpc-to-openapi';
 import jwtDecode from 'jwt-decode';
 import * as Sentry from '@sentry/serverless';
+import type { IncomingMessage, ServerResponse } from 'node:http';
 
 import { resolveTenantFromRequest, type ResolvedTenant } from '@learncard/email-templates';
 
@@ -36,22 +39,26 @@ export type Context = {
 export const t = initTRPC.context<Context>().meta<OpenApiMeta>().create();
 
 export const createContext = async (
-    options: CreateAWSLambdaContextOptions<APIGatewayProxyEventV2> | CreateFastifyContextOptions
+    options:
+        | CreateAWSLambdaContextOptions<APIGatewayProxyEventV2>
+        | CreateFastifyContextOptions
+        | NodeHTTPCreateContextFnOptions<IncomingMessage, ServerResponse>
 ): Promise<Context> => {
     const event = 'event' in options ? options.event : options.req;
     const authHeader = event.headers.authorization;
     const domainName = 'requestContext' in event ? event.requestContext.domainName : '';
-    const debug = process.env.NODE_ENV === 'test';
+    const debug = environment.NODE_ENV === 'test';
 
     const domain =
-        !domainName || process.env.IS_OFFLINE
-            ? `localhost%3A${process.env.PORT || 3000}`
+        !domainName || environment.IS_OFFLINE
+            ? `localhost%3A${environment.PORT || 3000}`
             : domainName;
 
     // Resolve tenant from request headers (X-Tenant-Id → Origin → env → default)
-    const rawHeaders = 'event' in options
-        ? (options.event.headers as Record<string, string | undefined>)
-        : (options.req.headers as Record<string, string | string[] | undefined>);
+    const rawHeaders =
+        'event' in options
+            ? (options.event.headers as Record<string, string | undefined>)
+            : (options.req.headers as Record<string, string | string[] | undefined>);
 
     const tenant = resolveTenantFromRequest(rawHeaders);
 
@@ -60,11 +67,19 @@ export const createContext = async (
 
     if ('event' in options) {
         const awsEvent = options.event as APIGatewayProxyEventV2;
-        clientIp = awsEvent.requestContext?.http?.sourceIp
-            ?? awsEvent.headers?.['x-forwarded-for']?.split(',')[0]?.trim();
+        clientIp =
+            awsEvent.requestContext?.http?.sourceIp ??
+            awsEvent.headers?.['x-forwarded-for']?.split(',')[0]?.trim();
     } else {
-        clientIp = options.req.ip
-            ?? options.req.headers['x-forwarded-for']?.toString().split(',')[0]?.trim();
+        const forwardedIp = options.req.headers['x-forwarded-for']
+            ?.toString()
+            .split(',')[0]
+            ?.trim();
+
+        clientIp =
+            'ip' in options.req && typeof options.req.ip === 'string'
+                ? options.req.ip
+                : forwardedIp;
     }
 
     try {
@@ -89,7 +104,7 @@ export const createContext = async (
 
                     Sentry.setUser({ id: did });
 
-                    const authorizedDids = process.env.AUTHORIZED_DIDS?.split(' ') ?? [
+                    const authorizedDids = environment.AUTHORIZED_DIDS?.split(' ') ?? [
                         'did:web:network.learncard.com',
                     ];
                     const authorizedDid = authorizedDids?.includes(did);

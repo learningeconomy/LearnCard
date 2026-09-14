@@ -120,9 +120,8 @@ const CreateManagedProfileModal: React.FC<CreateManagedProfileModalProps> = ({})
                 );
 
                 // upload boost to parent's LearnCloud
-                const issuedVcUri = await parentWallet?.store?.LearnCloud?.uploadEncrypted?.(
-                    sentBoost
-                );
+                const issuedVcUri =
+                    await parentWallet?.store?.LearnCloud?.uploadEncrypted?.(sentBoost);
 
                 // add credential to parent's wallet
                 await addCredentialToWallet({ uri: issuedVcUri, didOverride: true });

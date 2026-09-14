@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import { TRPCError } from '@trpc/server';
 import { VCValidator, JWEValidator } from '@learncard/types';
 import { isVC2Format } from '@learncard/helpers';
@@ -9,7 +10,7 @@ import { t, authorizedDidRoute, openRoute } from '@routes';
 import { getSigningAuthorityLearnCard } from '@helpers/learnCard.helpers';
 
 const ENDORSEMENT_REQUEST_TEMPLATE_ALIAS =
-    process.env.POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS ?? '';
+    environment.POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS ?? '';
 
 export const credentialsRouter = t.router({
     issueCredential: authorizedDidRoute
@@ -82,7 +83,8 @@ export const credentialsRouter = t.router({
                         // so this targeted retry is coupled to its current error message.
                         if (
                             !verificationMethod ||
-                            !errorMessage.includes('Missing verification relationship.')
+                            (!errorMessage.includes('Missing verification relationship.') &&
+                                !errorMessage.includes('Key mismatch'))
                         ) {
                             throw error;
                         }

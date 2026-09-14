@@ -2,6 +2,7 @@ import React from 'react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { VC } from '@learncard/types';
+import { createDeferred } from 'learn-card-base/helpers/deferred';
 
 import type { DuplicateCredentialLookup } from './findDuplicateCredential';
 import type { DuplicateCredentialResolution } from './useDuplicateCredentialGuard';
@@ -60,11 +61,11 @@ type RequestDuplicateResolution = (
     lookup?: DuplicateCredentialLookup
 ) => Promise<DuplicateCredentialResolution>;
 
-let requestDuplicateResolution: RequestDuplicateResolution;
+const requestDuplicateResolution = vi.fn<RequestDuplicateResolution>();
 
 const Harness = () => {
     const guard = useDuplicateCredentialGuard();
-    requestDuplicateResolution = guard.requestDuplicateResolution;
+    requestDuplicateResolution.mockImplementation(guard.requestDuplicateResolution);
 
     return (
         <>
@@ -220,7 +221,7 @@ describe('useDuplicateCredentialGuard', () => {
     });
 
     it('cancels when the claim surface unmounts during the wallet check', async () => {
-        const { promise: check, resolve: resolveCheck } = Promise.withResolvers<
+        const { promise: check, resolve: resolveCheck } = createDeferred<
             typeof existingMatch | null
         >();
         mocks.findDuplicateCredential.mockReturnValue(check);

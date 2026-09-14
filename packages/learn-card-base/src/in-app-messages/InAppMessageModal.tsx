@@ -170,8 +170,8 @@ export const InAppMessageModal: React.FC<InAppMessageModalProps> = ({ message, o
                                         capgo.status === 'checking'
                                             ? 'Checking...'
                                             : capgo.status === 'downloading'
-                                            ? `Downloading... ${Math.round(capgo.progress)}%`
-                                            : 'Installing...';
+                                              ? `Downloading... ${Math.round(capgo.progress)}%`
+                                              : 'Installing...';
 
                                     return (
                                         <div

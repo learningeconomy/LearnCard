@@ -1,5 +1,6 @@
 /// <reference path="../global.d.ts" />
 
+import { environment } from '@environment';
 import Redis, { RedisValue, RedisKey } from 'ioredis';
 import MemoryRedis, { Redis as RedisMockType } from 'ioredis-mock';
 
@@ -64,6 +65,9 @@ export type Cache = {
 
     /** Gets a key from the cache, optionally reseting it's time to live */
     get: (key: RedisKey, resetTTL?: boolean, ttl?: number) => Promise<string | null | undefined>;
+
+    /** Atomically gets and evicts a key from the cache */
+    getdel: (key: RedisKey) => Promise<string | null | undefined>;
 
     /** Returns an array of keys matching a pattern */
     keys: (pattern: string) => Promise<RedisKey[] | undefined>;
@@ -172,6 +176,17 @@ export const getCache = (): Cache => {
 
             return undefined;
         },
+        getdel: async key => {
+            try {
+                const redis = cache.redis ?? cache.node;
+
+                return await redis.getdel(key);
+            } catch (e) {
+                console.error('Cache getdel error', e);
+            }
+
+            return undefined;
+        },
         keys: async pattern => {
             try {
                 if (cache?.redis) return await simpleScan(cache.redis, pattern);
@@ -246,15 +261,14 @@ export const getCache = (): Cache => {
     };
 
     try {
-        const { REDIS_HOST: url, REDIS_PORT: _port } = process.env;
-        const port = parseInt(_port ?? '');
+        const { REDIS_HOST: host, REDIS_PORT: port } = environment;
 
-        if (url && !Number.isNaN(port)) {
+        if (host && port) {
             console.info('Setting up Redis-backed cache');
 
             cache.redis = new Redis({
-                host: url,
-                port: port,
+                host,
+                port,
                 retryStrategy: (times: number) => Math.min(times * 50, 2000),
                 enableAutoPipelining: true,
             });

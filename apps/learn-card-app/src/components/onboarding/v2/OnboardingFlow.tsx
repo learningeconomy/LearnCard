@@ -809,7 +809,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                     >
                                         <span id="onboarding-country-value">
                                             {country
-                                                ? COUNTRIES[country] ?? country
+                                                ? (COUNTRIES[country] ?? country)
                                                 : m['onboarding.v2.selectCountry']()}
                                         </span>
                                         <LocationIcon
@@ -1024,11 +1024,11 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                                     id="onboarding-profile-id"
                                                     aria-invalid={Boolean(
                                                         profileIdError ||
-                                                            (profileId &&
-                                                                (!isLengthValid ||
-                                                                    !isFormatValid ||
-                                                                    (!uniqueProfileFetching &&
-                                                                        !isUniqueValid)))
+                                                        (profileId &&
+                                                            (!isLengthValid ||
+                                                                !isFormatValid ||
+                                                                (!uniqueProfileFetching &&
+                                                                    !isUniqueValid)))
                                                     )}
                                                     aria-describedby={
                                                         profileIdError
@@ -1129,8 +1129,8 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                                         {uniqueProfileFetching
                                                             ? m['onboarding.v2.checkingAvail']()
                                                             : isUniqueValid
-                                                            ? m['onboarding.v2.available']()
-                                                            : m['onboarding.v2.alreadyTaken']()}
+                                                              ? m['onboarding.v2.available']()
+                                                              : m['onboarding.v2.alreadyTaken']()}
                                                     </div>
                                                 </div>
                                             ) : (
@@ -1167,7 +1167,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                                     })}
                                                     checked={Boolean(
                                                         privacyPreferences?.aiEnabled &&
-                                                            !privacyPreferences?.isMinor
+                                                        !privacyPreferences?.isMinor
                                                     )}
                                                     disabled={privacyPreferences?.isMinor}
                                                     onChange={() =>
