@@ -91,6 +91,19 @@
                 "script": "test:watch"
             }
         },
+        "test:inbox:e2e": {
+            "executor": "nx:run-script",
+            "cache": false,
+            "inputs": [
+                "source",
+                "tests",
+                "{projectRoot}/vitest.inbox-e2e.config.ts",
+                "{projectRoot}/inbox-e2e-setup.ts"
+            ],
+            "options": {
+                "script": "test:inbox:e2e"
+            }
+        },
         "test:integration": {
             "executor": "nx:run-script",
             "inputs": ["source", "tests"],

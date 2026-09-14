@@ -133,36 +133,13 @@ describe('Inbox', () => {
             });
             expect(vprResponse2.status).toBe(400);
 
-            // Starting the claim process over, with a new empty request to get a new challenge should succeed
+            // Escrow is single-use: after delivery, its payload has been wiped.
             const vcapiResponse2 = await fetch(vcapiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({}),
             });
-            expect(vcapiResponse2.status).toBe(200);
-            const vcapiData2 = await vcapiResponse2.json();
-            expect(vcapiData2).toBeDefined();
-
-            const vpr2 = vcapiData2.verifiablePresentationRequest;
-            expect(vpr2).toBeDefined();
-
-            const vp2 = await b_anonymous.invoke.getDidAuthVp({
-                challenge: vpr2.challenge,
-                domain: vpr2.domain,
-            });
-            expect(vp2).toBeDefined();
-
-            const vprResponse3 = await fetch(vcapiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ verifiablePresentation: vp2 }),
-            });
-            expect(vprResponse3.status).toBe(200);
-            const vprData3 = await vprResponse3.json();
-            expect(vprData3).toBeDefined();
-
-            const vc3 = vprData3.verifiablePresentation.verifiableCredential[0];
-            expect(vc3).toMatchObject(credentialToSend);
+            expect(vcapiResponse2.status).toBe(404);
         });
 
         test('(2) an existing user can claim a credential sent via universal inbox with a new contact method', async () => {
