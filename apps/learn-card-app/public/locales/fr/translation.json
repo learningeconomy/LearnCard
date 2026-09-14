@@ -2819,7 +2819,9 @@
             "enterTitle": "Saisir le PIN",
             "enterSubtext": "Veuillez saisir votre PIN actuel pour continuer",
             "verifying": "Vérification...",
-            "forUser": "pour {{name}}"
+            "forUser": "pour {{name}}",
+            "requiresFiveDigits": "Le code PIN doit comporter 5 chiffres",
+            "invalidPin": "Code PIN incorrect. Veuillez réessayer"
         },
         "guardianInvite": {
             "shareTitle": "Invitation de tuteur",

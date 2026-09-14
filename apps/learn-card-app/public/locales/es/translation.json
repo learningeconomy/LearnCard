@@ -2819,7 +2819,9 @@
             "enterTitle": "Ingresar PIN",
             "enterSubtext": "Ingresa tu PIN actual para continuar",
             "verifying": "Verificando...",
-            "forUser": "para {{name}}"
+            "forUser": "para {{name}}",
+            "requiresFiveDigits": "El PIN debe tener 5 dígitos",
+            "invalidPin": "PIN no válido. Inténtalo de nuevo"
         },
         "guardianInvite": {
             "shareTitle": "Invitación de tutor",

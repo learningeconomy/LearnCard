@@ -2512,7 +2512,9 @@
             "enterTitle": "Enter PIN",
             "enterSubtext": "Please enter your current PIN to proceed",
             "verifying": "Verifying...",
-            "forUser": "for {{name}}"
+            "forUser": "for {{name}}",
+            "requiresFiveDigits": "PIN requires 5 digits",
+            "invalidPin": "Invalid PIN. Please try again"
         },
         "guardianInvite": {
             "shareTitle": "Guardian Invite",

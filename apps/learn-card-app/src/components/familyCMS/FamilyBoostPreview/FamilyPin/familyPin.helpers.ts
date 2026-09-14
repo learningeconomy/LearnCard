@@ -1,14 +1,15 @@
 import { z } from 'zod';
 import * as m from '../../../../paraglide/messages.js';
 
-export const pinValidator = z.object({
-    pin: z.array(z.string()).length(5, 'Pin requires 5 digits'),
-});
+export const getPinValidator = () =>
+    z.object({
+        pin: z.array(z.string()).length(5, m['family.pinModal.requiresFiveDigits']()),
+    });
 
 export const getConfirmPinValidator = () =>
     z
         .object({
-            pin: z.array(z.string()).length(5, 'Pin requires 5 digits'),
+            pin: z.array(z.string()).length(5, m['family.pinModal.requiresFiveDigits']()),
             confirmPin: z.array(z.string()).length(5, ' '),
         })
         .refine(data => data.pin.join('') === data.confirmPin.join(''), {
@@ -16,12 +17,13 @@ export const getConfirmPinValidator = () =>
             path: ['confirmPin'],
         });
 
-export const existingPinValidator = z
-    .object({
-        pin: z.array(z.string()).length(5, 'Pin requires 5 digits'),
-        confirmPin: z.array(z.string()).length(5, ' '),
-    })
-    .refine(data => data.pin.join('') === data.confirmPin.join(''), {
-        message: 'Invalid PIN. Please try again',
-        path: ['confirmPin'],
-    });
+export const getExistingPinValidator = () =>
+    z
+        .object({
+            pin: z.array(z.string()).length(5, m['family.pinModal.requiresFiveDigits']()),
+            confirmPin: z.array(z.string()).length(5, ' '),
+        })
+        .refine(data => data.pin.join('') === data.confirmPin.join(''), {
+            message: m['family.pinModal.invalidPin'](),
+            path: ['confirmPin'],
+        });

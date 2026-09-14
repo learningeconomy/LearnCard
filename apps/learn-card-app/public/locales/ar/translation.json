@@ -2819,7 +2819,9 @@
             "enterTitle": "إدخال رقم التعريف",
             "enterSubtext": "يرجى إدخال رقم التعريف الحالي للمتابعة",
             "verifying": "جارٍ التحقق...",
-            "forUser": "لـ {{name}}"
+            "forUser": "لـ {{name}}",
+            "requiresFiveDigits": "يجب أن يتكون رقم التعريف من 5 أرقام",
+            "invalidPin": "رقم التعريف غير صحيح. يرجى المحاولة مرة أخرى"
         },
         "guardianInvite": {
             "shareTitle": "دعوة ولي أمر",
