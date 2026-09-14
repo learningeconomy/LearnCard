@@ -101,13 +101,15 @@ export const expireInboxCredentials = async (
     return expiredCount?.toNumber() ?? 0;
 };
 
-/** Removes expired holder-only recovery copies, preserving the issuer's audit record. */
+/** Removes expired holder-only recovery copies, preserving the issuer's audit record.
+ * Delivery timestamps are canonical UTC ISO strings; direct comparison permits an index range seek.
+ */
 export const wipeExpiredInboxDeliveries = async (
     limit = INBOX_MAINTENANCE_BATCH_SIZE
 ): Promise<number> => {
-    const result = await new QueryBuilder()
+    const result = await new QueryBuilder(new BindParam({ now: new Date().toISOString() }))
         .match({ model: InboxCredential, identifier: 'ic' })
-        .where('ic.deliveryCredential IS NOT NULL AND datetime(ic.deliveryExpiresAt) <= datetime()')
+        .where('ic.deliveryCredential IS NOT NULL AND ic.deliveryExpiresAt <= $now')
         .with('ic')
         .orderBy('ic.deliveryExpiresAt, ic.id')
         .limit(limit)

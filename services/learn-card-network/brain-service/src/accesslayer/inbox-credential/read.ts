@@ -24,10 +24,12 @@ export const getInboxDeliveriesForDid = async (
     recipientDid: string,
     { limit = 25, cursor }: { limit?: number; cursor?: string }
 ): Promise<{ id: string; credential: JWE; expiresAt: string }[]> => {
-    const result = await new QueryBuilder(new BindParam({ recipientDid, cursor: cursor ?? '' }))
+    const result = await new QueryBuilder(
+        new BindParam({ recipientDid, cursor: cursor ?? '', now: new Date().toISOString() })
+    )
         .match({ model: InboxCredential, identifier: 'ic' })
         .where(
-            'ic.currentStatus = "ISSUED" AND ic.deliveryRecipientDid = $recipientDid AND ic.deliveryCredential IS NOT NULL AND datetime(ic.deliveryExpiresAt) > datetime() AND ic.id > $cursor'
+            'ic.currentStatus = "ISSUED" AND ic.deliveryRecipientDid = $recipientDid AND ic.deliveryCredential IS NOT NULL AND ic.deliveryExpiresAt > $now AND ic.id > $cursor'
         )
         .return(
             'ic.id AS id, ic.deliveryCredential AS credential, ic.deliveryExpiresAt AS expiresAt'

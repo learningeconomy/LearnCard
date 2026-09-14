@@ -445,6 +445,37 @@ describe('Universal Inbox escrow (HTTP + isolated Neo4j/Redis)', () => {
         }
     });
 
+    it('provides recipient and expiry indexes for recovery queries', async () => {
+        await expect
+            .poll(
+                async () => {
+                    const result = await neogma.queryRunner.run(
+                        "SHOW INDEXES YIELD name, state, properties WHERE name IN ['inbox_delivery_recipient_idx', 'inbox_delivery_expires_idx'] RETURN name, state, properties"
+                    );
+                    return result.records
+                        .map(record => ({
+                            name: record.get('name'),
+                            state: record.get('state'),
+                            properties: record.get('properties'),
+                        }))
+                        .sort((a, b) => a.name.localeCompare(b.name));
+                },
+                { timeout: 30000 }
+            )
+            .toEqual([
+                {
+                    name: 'inbox_delivery_expires_idx',
+                    state: 'ONLINE',
+                    properties: ['deliveryExpiresAt'],
+                },
+                {
+                    name: 'inbox_delivery_recipient_idx',
+                    state: 'ONLINE',
+                    properties: ['deliveryRecipientDid'],
+                },
+            ]);
+    });
+
     it('bounds expiry and audit deletion transactions and leaves remaining records for the next batch', async () => {
         await neogma.queryRunner.run(
             'UNWIND range(1, 5) AS id CREATE (:InboxCredential {id: toString(id), currentStatus: "PENDING", expiresAt: "2020-01-01T00:00:00.000Z", credential: "legacy"})'
