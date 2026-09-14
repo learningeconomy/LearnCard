@@ -2957,6 +2957,13 @@ export const getVerifyBoostPlugin = async (
         if (!issuerDID) return;
         return boostRegistry.find(o => o.did === issuerDID);
     };
+    const getTrustedBoostNetwork = (boostId: unknown): TrustedBoostRegistryEntry | undefined => {
+        if (typeof boostId !== 'string') return;
+        const match = /^lc:network:([^?#\s]+)\/(?:trpc:)?boost:([^/?#\s]+)$/.exec(boostId);
+        if (!match) return;
+        const networkDid = `did:web:${match[1]!.replace(/\//g, ':')}`;
+        return boostRegistry.find(entry => entry.did === networkDid);
+    };
     return {
         name: 'VerifyBoost',
         displayName: 'Verify Boost Extension',
@@ -3023,7 +3030,12 @@ export const getVerifyBoostPlugin = async (
                                 'Boost Authenticity could not be verified: Boost ID metadata is mismatched.'
                             );
                         } else {
-                            const trustedBoostIssuer = getTrustedBoostVerifier(credential?.issuer);
+                            // A direct VC is signed by the issuing authority, not by the
+                            // network. Its signed boostId identifies the associated network.
+                            // Legacy wrappers still establish trust through the outer issuer.
+                            const trustedBoostIssuer = boostCredential
+                                ? getTrustedBoostVerifier(credential?.issuer)
+                                : getTrustedBoostNetwork(boostId);
                             if (trustedBoostIssuer) {
                                 verificationCheck.checks.push(
                                     `Boost is Authentic. Verified by ${trustedBoostIssuer.id}.`

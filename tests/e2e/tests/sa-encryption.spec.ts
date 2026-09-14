@@ -94,9 +94,28 @@ test('SA issuance stores encrypted credentials and supports claim and revocation
     const brain = await initLearnCard({ seed: 'a' });
     expect(await brain.invoke.decryptDagJwe(jwe).catch(() => undefined)).toBeFalsy();
     expect(subjectVc.boostCredential).toBeUndefined();
+    expect(typeof subjectVc.issuer === 'string' ? subjectVc.issuer : subjectVc.issuer.id).toBe(
+        sa.did
+    );
     expect(subjectVc.boostId).toBe(boostUri);
     expect(subjectVc.name).toBe(testUnsignedBoost.name);
-    expect((await student.invoke.verifyCredential(subjectVc)).errors).toEqual([]);
+    // Trust the local test network explicitly; the credential issuer is the SA DID.
+    const verifier = await initLearnCard({
+        seed: crypto.randomBytes(32).toString('hex'),
+        network: 'http://localhost:4000/trpc',
+        trustedBoostRegistry: `data:application/json,${encodeURIComponent(
+            JSON.stringify([
+                {
+                    id: 'LearnCard Network',
+                    url: 'http://localhost:4000',
+                    did: 'did:web:localhost%3A4000',
+                },
+            ])
+        )}`,
+    });
+    const verification = await verifier.invoke.verifyCredential(subjectVc);
+    expect(verification.errors).toEqual([]);
+    expect(verification.checks).toContain('Boost is Authentic. Verified by LearnCard Network.');
 
     expect((await student.invoke.getIncomingCredentials()).some(item => item.uri === uri)).toBe(
         true
