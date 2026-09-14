@@ -26,6 +26,8 @@ import {
 import * as encryption from '@helpers/inbox-encryption.helpers';
 import * as notifications from '@helpers/notifications.helpers';
 import * as activity from '@helpers/activity.helpers';
+import * as credentialStorage from '@accesslayer/credential/create';
+import { testUnsignedBoost } from './helpers/send';
 import { clrMinimal } from '../../../../packages/credential-library/src/fixtures/clr/minimal';
 
 // HTTP requests exercise the production routers, JWT auth, real crypto, Neo4j and Redis.
@@ -227,6 +229,60 @@ describe('Universal Inbox escrow (HTTP + isolated Neo4j/Redis)', () => {
             404
         );
     });
+
+    it.each(['success', 'lost race', 'storage failure'] as const)(
+        'indexes boost claims only after finalization: %s',
+        async outcome => {
+            const boostUri = await issuer.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                name: 'Inbox concurrency test',
+                category: 'Achievement',
+            });
+            const credential = await signedCredential();
+            const issued = await issue({
+                credential,
+                recipient: { type: 'email', value: 'boost-claim@example.test' },
+            });
+            await updateInboxCredential(issued.issuanceId, { boostUri });
+            const store = credentialStorage.storeCredential;
+            const storeSpy = vi
+                .spyOn(credentialStorage, 'storeCredential')
+                .mockImplementation(async payload => {
+                    expect(await getRecord(issued.issuanceId)).toMatchObject({
+                        currentStatus: 'ISSUED',
+                    });
+                    if (outcome === 'storage failure') throw new Error('Storage unavailable');
+                    return store(payload);
+                });
+            if (outcome === 'lost race') {
+                // Another request wins after this request has read the pending payload.
+                const decrypt = encryption.decryptInboxCredential;
+                vi.spyOn(encryption, 'decryptInboxCredential').mockImplementationOnce(
+                    async value => {
+                        const plaintext = await decrypt(value);
+                        expect(
+                            await finalizeAndWipeInboxCredential(issued.issuanceId)
+                        ).not.toBeNull();
+                        return plaintext;
+                    }
+                );
+            }
+
+            expect(await claim(issued.claimUrl!)).toEqual(
+                outcome === 'lost race' ? [] : [credential]
+            );
+            expect(storeSpy).toHaveBeenCalledTimes(outcome === 'lost race' ? 0 : 1);
+            const stored = await neogma.queryRunner.run(
+                'MATCH (n:Credential) RETURN n.credential AS payload'
+            );
+            expect(stored.records).toHaveLength(outcome === 'success' ? 1 : 0);
+            const audit = await neogma.queryRunner.run(
+                'MATCH ()-[r:CLAIMED_INBOX_CREDENTIAL]->(n:InboxCredential {id: $id}) RETURN count(r) AS count',
+                { id: issued.issuanceId }
+            );
+            expect(audit.records[0]!.get('count').toNumber()).toBe(outcome === 'lost race' ? 0 : 1);
+        }
+    );
 
     it('decrypts an unsigned CLR only at finalize and wipes after signing', async () => {
         await SigningAuthority.createOne({ endpoint: 'https://signer.example' });

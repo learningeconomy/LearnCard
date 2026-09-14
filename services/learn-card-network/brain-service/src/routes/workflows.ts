@@ -665,32 +665,6 @@ async function handleInboxClaimPresentation(
                 )) as VC;
             }
 
-            // Store credential and create boost relationship if this was a boost issuance
-            const boostUri = (inboxCredential as any).boostUri as string | undefined;
-            if (holderProfile && boostUri) {
-                const boost = await getBoostByUri(boostUri);
-                const issuerProfile = await getProfileByDid(inboxCredential.issuerDid);
-
-                if (boost && issuerProfile) {
-                    // Store the credential in the database
-                    const learnCard = await getLearnCard();
-                    const encryptedDelivery = await learnCard.invoke.createDagJwe(finalCredential, [
-                        holderDid,
-                    ]);
-                    const credentialInstance = await storeCredential(encryptedDelivery);
-
-                    // Create the boost instance relationship
-                    await createBoostInstanceOfRelationship(credentialInstance, boost);
-
-                    // Create the sent/received credential relationship
-                    await createSentCredentialRelationship(
-                        { type: 'profile', profile: issuerProfile },
-                        holderProfile,
-                        credentialInstance
-                    );
-                }
-            }
-
             const finalized = await finalizeAndWipeInboxCredential(inboxCredential.id);
             if (!finalized) throw new Error('Inbox credential is no longer pending');
 
@@ -702,6 +676,38 @@ async function handleInboxClaimPresentation(
                     inboxCredential.id,
                     claimToken
                 );
+            }
+
+            // Store credential and create boost relationship if this was a boost issuance
+            const boostUri = inboxCredential.boostUri;
+            if (holderProfile && boostUri) {
+                try {
+                    const boost = await getBoostByUri(boostUri);
+                    const issuerProfile = await getProfileByDid(inboxCredential.issuerDid);
+
+                    if (boost && issuerProfile) {
+                        // Store the credential in the database
+                        const learnCard = await getLearnCard();
+                        const encryptedDelivery = await learnCard.invoke.createDagJwe(
+                            finalCredential,
+                            [holderDid]
+                        );
+                        const credentialInstance = await storeCredential(encryptedDelivery);
+
+                        // Create the boost instance relationship
+                        await createBoostInstanceOfRelationship(credentialInstance, boost);
+
+                        // Create the sent/received credential relationship
+                        await createSentCredentialRelationship(
+                            { type: 'profile', profile: issuerProfile },
+                            holderProfile,
+                            credentialInstance
+                        );
+                    }
+                } catch {
+                    // Escrow is already wiped; preserve delivery even if indexing fails.
+                    console.error('Failed to index claimed inbox boost', inboxCredential.id);
+                }
             }
 
             // Log CLAIMED activity - chain to original activityId/integrationId if available
