@@ -30,3 +30,6 @@ yarn-error.log*
 
 /.serverless
 /.esbuild
+
+# Generated Swagger UI (npm assets plus custom HTML/config)
+/generated/swagger-ui/

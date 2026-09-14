@@ -121,6 +121,14 @@ vi.mock('learn-card-base/components/id/IDDisplayCard', () => ({ default: () => n
 vi.mock('learn-card-base/components/CredentialBadge/CredentialBadgeNew', () => ({
     default: () => null,
 }));
+// The credential-history module imports the generated paraglide bundle (absent in tests);
+// the refresh indicator behavior is covered by CredentialHistoryModal.test.tsx.
+vi.mock('../../credentials/credential-history/CredentialUpdatedIndicator', () => ({
+    default: () => null,
+}));
+vi.mock('../../credentials/credential-history/useMarkCredentialUpdateRead', () => ({
+    useMarkCredentialUpdateRead: () => vi.fn(async () => false),
+}));
 
 import BoostEarnedCard from './BoostEarnedCard';
 

@@ -13,6 +13,7 @@ import {
 } from 'learn-card-base';
 import { LCR } from 'learn-card-base/types/credential-records';
 import BoostOptionsMenu from '../boost-options-menu/BoostOptionsMenu';
+import CredentialHistoryModal from '../../credentials/credential-history/CredentialHistoryModal';
 
 import { UnsignedVC, VC } from '@learncard/types';
 import * as m from '../../../paraglide/messages.js';
@@ -74,6 +75,19 @@ const useBoostMenu = ({
 
     const record = retrievedRecord || _record;
 
+    // View Previous Versions is offered only when encrypted local history exists on the
+    // record; managed remote history is optional enrichment and never gates the entry.
+    const hasCredentialHistory = Boolean(record?.refresh?.history?.length);
+
+    const presentCredentialHistory = () => {
+        if (!record?.refresh?.history?.length) return;
+
+        newModal(
+            <CredentialHistoryModal record={record as LCR} handleCloseModal={() => closeModal()} />,
+            { sectionClassName: '!max-w-[480px]' }
+        );
+    };
+
     const handleDelete = async () => {
         if (menuType === BoostMenuType.managed) {
             await deleteManagedBoost({ boostUri, category: categoryType });
@@ -111,6 +125,11 @@ const useBoostMenu = ({
                 menuType={menuType}
                 categoryType={categoryType}
                 handleManageIssuances={onManageIssuances}
+                onViewHistory={
+                    menuType === BoostMenuType.earned && hasCredentialHistory
+                        ? presentCredentialHistory
+                        : undefined
+                }
                 isDraft={isDraft}
             />,
             { sectionClassName: '!max-w-[400px]' }
