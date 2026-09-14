@@ -2,6 +2,7 @@ import { QueryBuilder, BindParam, QueryRunner } from 'neogma';
 import { InboxCredential, ContactMethod } from '@models';
 import { InboxCredentialType, InboxCredentialQuery, ContactMethodType } from '@learncard/types';
 import { ProfileType } from 'types/profile';
+import type { JWE } from '@learncard/types';
 import { inflateObject } from '@helpers/objects.helpers';
 import { convertObjectRegExpToNeo4j, buildWhereForQueryBuilder } from '@helpers/neo4j.helpers';
 
@@ -16,6 +17,29 @@ export const getInboxCredentialById = async (id: string): Promise<InboxCredentia
     const credential = result.records[0]?.get('ic')?.properties;
     if (!credential) return null;
     return inflateObject<InboxCredentialType>(credential);
+};
+
+/** Returns only unexpired deliveries bound to the authenticated claiming DID. */
+export const getInboxDeliveriesForDid = async (
+    recipientDid: string,
+    { limit = 25, cursor }: { limit?: number; cursor?: string }
+): Promise<{ id: string; credential: JWE; expiresAt: string }[]> => {
+    const result = await new QueryBuilder(new BindParam({ recipientDid, cursor: cursor ?? '' }))
+        .match({ model: InboxCredential, identifier: 'ic' })
+        .where(
+            'ic.currentStatus = "ISSUED" AND ic.deliveryRecipientDid = $recipientDid AND ic.deliveryCredential IS NOT NULL AND datetime(ic.deliveryExpiresAt) > datetime() AND ic.id > $cursor'
+        )
+        .return(
+            'ic.id AS id, ic.deliveryCredential AS credential, ic.deliveryExpiresAt AS expiresAt'
+        )
+        .orderBy('ic.id')
+        .limit(limit)
+        .run();
+    return result.records.map(record => ({
+        id: record.get('id'),
+        credential: JSON.parse(record.get('credential')) as JWE,
+        expiresAt: record.get('expiresAt'),
+    }));
 };
 
 export const getPendingInboxCredentialsForContactMethod = async (

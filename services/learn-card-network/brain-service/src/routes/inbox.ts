@@ -1,7 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
-import { t, profileRoute, openRoute, verifiedContactRoute } from '@routes';
+import { t, profileRoute, openRoute, verifiedContactRoute, scopedRoute } from '@routes';
 import {
     PaginationOptionsValidator,
     IssueInboxCredentialValidator,
@@ -14,6 +14,7 @@ import {
     LCNNotificationTypeEnumValidator,
     VCValidator,
     UnsignedVC,
+    JWEValidator,
 } from '@learncard/types';
 import { getInboxCredentialMeta } from '@helpers/credential-meta.helpers';
 import { claimIntoInbox, issueToInbox } from '@helpers/inbox.helpers';
@@ -37,6 +38,7 @@ import {
     getInboxCredentialByIdAndGuardianEmail,
     getContactMethodForInboxCredential,
     getInboxCredentialById,
+    getInboxDeliveriesForDid,
 } from '@accesslayer/inbox-credential/read';
 import { updateInboxCredential } from '@accesslayer/inbox-credential/update';
 import { readIntegrationByPublishableKey } from '@accesslayer/integration/read';
@@ -87,6 +89,48 @@ const EMBED_INBOX_EXPIRY_DAYS = 720;
 const InboxCredentialMetadataValidator = InboxCredentialValidator.omit({ credential: true });
 
 export const inboxRouter = t.router({
+    getMyInboxDeliveries: scopedRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/inbox/deliveries',
+                tags: ['Universal Inbox'],
+                summary: 'Recover claimed inbox deliveries',
+                description:
+                    'Returns the same holder-encrypted delivery for seven days after a claim, including claims made without a network profile. Decrypt locally with the claiming DID.',
+            },
+            requiredScope: 'inbox:read',
+        })
+        .input(
+            z
+                .object({
+                    limit: z.number().int().min(1).max(100).default(25),
+                    cursor: z.string().optional(),
+                })
+                .default({ limit: 25 })
+        )
+        .output(
+            z.object({
+                records: z.array(
+                    z.object({ id: z.string(), credential: JWEValidator, expiresAt: z.string() })
+                ),
+                hasMore: z.boolean(),
+                cursor: z.string().optional(),
+            })
+        )
+        .query(async ({ ctx, input }) => {
+            const deliveries = await getInboxDeliveriesForDid(ctx.user.did, {
+                ...input,
+                limit: input.limit + 1,
+            });
+            const records = deliveries.slice(0, input.limit);
+            return {
+                records,
+                hasMore: deliveries.length > input.limit,
+                cursor: records.at(-1)?.id,
+            };
+        }),
     // Request guardian approval via email
     sendGuardianApprovalEmail: profileRoute
         .meta({

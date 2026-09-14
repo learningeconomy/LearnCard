@@ -665,7 +665,15 @@ async function handleInboxClaimPresentation(
                 )) as VC;
             }
 
-            const finalized = await finalizeAndWipeInboxCredential(inboxCredential.id);
+            // Avoid the seeded encryption wrapper, which adds the service as a recipient.
+            const deliveryLearnCard = await getEmptyLearnCard();
+            const encryptedDelivery = await deliveryLearnCard.invoke.createDagJwe(finalCredential, [
+                holderDid,
+            ]);
+            const finalized = await finalizeAndWipeInboxCredential(inboxCredential.id, {
+                recipientDid: holderDid,
+                credential: encryptedDelivery,
+            });
             if (!finalized) throw new Error('Inbox credential is no longer pending');
 
             // Record the claim only after finalization succeeds so failed compare-and-swap
@@ -687,11 +695,6 @@ async function handleInboxClaimPresentation(
 
                     if (boost && issuerProfile) {
                         // Store the credential in the database
-                        const learnCard = await getLearnCard();
-                        const encryptedDelivery = await learnCard.invoke.createDagJwe(
-                            finalCredential,
-                            [holderDid]
-                        );
                         const credentialInstance = await storeCredential(encryptedDelivery);
 
                         // Create the boost instance relationship

@@ -3,7 +3,10 @@ import { BindParam, QueryBuilder, QueryRunner } from 'neogma';
 import type { InboxCredentialType } from '@learncard/types';
 import { InboxCredential } from '@models';
 import { encryptInboxCredential, INBOX_JWE_PREFIX } from '@helpers/inbox-encryption.helpers';
-import { expireInboxCredentials } from '@accesslayer/inbox-credential/update';
+import {
+    expireInboxCredentials,
+    wipeExpiredInboxDeliveries,
+} from '@accesslayer/inbox-credential/update';
 import { deleteExpiredInboxCredentials } from '@accesslayer/inbox-credential/delete';
 import { parseCredentialMeta } from '@helpers/credential-meta.helpers';
 
@@ -86,12 +89,14 @@ export const runInboxMaintenance = async (): Promise<{
     wiped: number;
     expired: number;
     deleted: number;
+    deliveriesWiped: number;
 }> => {
     let migrated = 0;
     let wiped = 0;
 
     // Retention must still run if encryption is unavailable during a key/configuration outage.
     const expired = await expireInboxCredentials();
+    const deliveriesWiped = await wipeExpiredInboxDeliveries();
     const deleted = await deleteExpiredInboxCredentials();
 
     while (true) {
@@ -106,5 +111,5 @@ export const runInboxMaintenance = async (): Promise<{
         }
     }
 
-    return { migrated, wiped, expired, deleted };
+    return { migrated, wiped, expired, deleted, deliveriesWiped };
 };

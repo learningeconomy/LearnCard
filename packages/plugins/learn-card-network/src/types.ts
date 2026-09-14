@@ -630,6 +630,12 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<PaginatedInboxCredentialsType>;
 
     getInboxCredential: (id: string) => Promise<InboxCredentialType | null>;
+    /** Recover and locally decrypt claims for seven days; deduplicate by the stable inbox id. */
+    recoverInboxCredentials: (options?: { limit?: number; cursor?: string }) => Promise<{
+        records: { id: string; credential: VC; expiresAt: string }[];
+        hasMore: boolean;
+        cursor?: string;
+    }>;
     finalizeInboxCredentials: () => Promise<{
         processed: number;
         claimed: number;

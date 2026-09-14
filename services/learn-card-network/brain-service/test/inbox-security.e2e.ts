@@ -18,11 +18,13 @@ import { getInboxCredentialById } from '@accesslayer/inbox-credential/read';
 import {
     finalizeAndWipeInboxCredential,
     updateInboxCredential,
+    wipeExpiredInboxDeliveries,
 } from '@accesslayer/inbox-credential/update';
 import {
     migrateLegacyInboxCredentials,
     runInboxMaintenance,
 } from '@helpers/inbox-maintenance.helpers';
+import { getLearnCard } from '@helpers/learnCard.helpers';
 import { getInboxCredentialMeta } from '@helpers/credential-meta.helpers';
 import * as encryption from '@helpers/inbox-encryption.helpers';
 import * as notifications from '@helpers/notifications.helpers';
@@ -137,6 +139,13 @@ describe('Universal Inbox escrow (HTTP + isolated Neo4j/Redis)', () => {
         unsigned['@context'] = [...unsigned['@context'], { name: 'https://schema.org/name' }];
         return issuer.learnCard.invoke.issueCredential(unsigned);
     };
+
+    const recoveryDelivery = async () => ({
+        recipientDid: recipient.learnCard.id.did(),
+        credential: await recipient.learnCard.invoke.createDagJwe(await signedCredential(), [
+            recipient.learnCard.id.did(),
+        ]),
+    });
 
     const verifyRecipientContact = async (email: string): Promise<void> => {
         await recipient.clients.fullAuth.contactMethods.addContactMethod({
@@ -262,7 +271,10 @@ describe('Universal Inbox escrow (HTTP + isolated Neo4j/Redis)', () => {
                     async value => {
                         const plaintext = await decrypt(value);
                         expect(
-                            await finalizeAndWipeInboxCredential(issued.issuanceId)
+                            await finalizeAndWipeInboxCredential(
+                                issued.issuanceId,
+                                await recoveryDelivery()
+                            )
                         ).not.toBeNull();
                         return plaintext;
                     }
@@ -330,6 +342,77 @@ describe('Universal Inbox escrow (HTTP + isolated Neo4j/Redis)', () => {
             errors: 0,
         });
     });
+
+    it.each(['finalize', 'claim link', 'claim without profile'] as const)(
+        'recovers exactly one holder-only delivery after discarding the %s response',
+        async path => {
+            const credential = await signedCredential();
+            const issued = await issue({
+                credential,
+                recipient: { type: 'email', value: 'lost-response@example.test' },
+            });
+            if (path === 'finalize') {
+                await updateInboxCredential(issued.issuanceId, { isAccepted: true });
+                await verifyRecipientContact('lost-response@example.test');
+                // Consume and discard the first successful body, simulating failure to persist locally.
+                const first = await post('/api/inbox/finalize', {}, recipient);
+                expect(first.status).toBe(200);
+                await first.arrayBuffer();
+            } else {
+                if (path === 'claim without profile') {
+                    await neogma.queryRunner.run(
+                        'MATCH (p:Profile {profileId: "escrow-recipient"}) DETACH DELETE p'
+                    );
+                }
+                await claim(issued.claimUrl!);
+            }
+            const recoveries = await Promise.all(
+                Array.from({ length: 8 }, async () => {
+                    const response = await post('/api/inbox/deliveries', {}, recipient);
+                    expect(response.status).toBe(200);
+                    return response.json();
+                })
+            );
+            for (const result of recoveries) {
+                expect(result.records).toHaveLength(1);
+                expect(result.records[0].id).toBe(issued.issuanceId);
+                expect(result).toEqual(recoveries[0]);
+                expect(
+                    await recipient.learnCard.invoke.decryptDagJwe(result.records[0].credential)
+                ).toEqual(credential);
+            }
+            const recovery = recoveries[0].records[0];
+            const service = await getLearnCard();
+            expect(
+                (await service.invoke.decryptDagJwe(recovery.credential).catch(() => null)) || null
+            ).toBeNull();
+            expect(
+                (await issuer.learnCard.invoke
+                    .decryptDagJwe(recovery.credential)
+                    .catch(() => null)) || null
+            ).toBeNull();
+            expect((await post('/api/inbox/deliveries', {})).status).toBe(401);
+            expect(
+                (await (await post('/api/inbox/deliveries', {}, issuer)).json()).records
+            ).toEqual([]);
+            const record = (await getRecord(issued.issuanceId))!;
+            expect(record).not.toHaveProperty('credential');
+            expect(
+                Date.parse(record.deliveryExpiresAt as string) -
+                    Date.parse(record.finalizedAt as string)
+            ).toBeCloseTo(7 * 86400000, -3);
+            await neogma.queryRunner.run(
+                'MATCH (n:InboxCredential {id: $id}) SET n.deliveryExpiresAt = "2020-01-01T00:00:00.000Z"',
+                { id: issued.issuanceId }
+            );
+            expect(
+                (await (await post('/api/inbox/deliveries', {}, recipient)).json()).records
+            ).toEqual([]);
+            expect(await wipeExpiredInboxDeliveries()).toBe(1);
+            expect(await getRecord(issued.issuanceId)).not.toHaveProperty('deliveryCredential');
+            expect(await getRecord(issued.issuanceId)).toHaveProperty('currentStatus', 'ISSUED');
+        }
+    );
 
     it('returns metadata without escrow in issuer responses, including legacy plaintext', async () => {
         const credential = { ...(await signedCredential()), name: 'Legacy credential name' };
@@ -562,7 +645,13 @@ describe('Universal Inbox escrow (HTTP + isolated Neo4j/Redis)', () => {
             { records }
         );
         const counts = await runInboxMaintenance();
-        expect(counts).toEqual({ migrated: 101, wiped: 1, expired: 1, deleted: 1 });
+        expect(counts).toEqual({
+            migrated: 101,
+            wiped: 1,
+            expired: 1,
+            deleted: 1,
+            deliveriesWiped: 0,
+        });
         expect(await getRecord('old-expired')).toBeUndefined();
         expect(await getRecord('past-due')).toMatchObject({
             currentStatus: 'EXPIRED',
@@ -580,6 +669,7 @@ describe('Universal Inbox escrow (HTTP + isolated Neo4j/Redis)', () => {
         expect(await runInboxMaintenance()).toEqual({
             migrated: 0,
             wiped: 0,
+            deliveriesWiped: 0,
             expired: 0,
             deleted: 0,
         });
@@ -602,7 +692,9 @@ describe('Universal Inbox escrow (HTTP + isolated Neo4j/Redis)', () => {
         );
         const encrypt = encryption.encryptInboxCredential;
         vi.spyOn(encryption, 'encryptInboxCredential').mockImplementationOnce(async value => {
-            expect(await finalizeAndWipeInboxCredential(issued.issuanceId)).not.toBeNull();
+            expect(
+                await finalizeAndWipeInboxCredential(issued.issuanceId, await recoveryDelivery())
+            ).not.toBeNull();
             return encrypt(value);
         });
         expect(await migrateLegacyInboxCredentials()).toMatchObject({ encrypted: 0, scanned: 1 });
@@ -616,7 +708,9 @@ describe('Universal Inbox escrow (HTTP + isolated Neo4j/Redis)', () => {
             recipient: { type: 'email', value: 'concurrent@example.test' },
         });
         const results = await Promise.all(
-            Array.from({ length: 8 }, () => finalizeAndWipeInboxCredential(issued.issuanceId))
+            Array.from({ length: 8 }, async () =>
+                finalizeAndWipeInboxCredential(issued.issuanceId, await recoveryDelivery())
+            )
         );
         expect(results.filter(Boolean)).toHaveLength(1);
         const expired = await issue({
@@ -624,7 +718,9 @@ describe('Universal Inbox escrow (HTTP + isolated Neo4j/Redis)', () => {
             recipient: { type: 'email', value: 'expired@example.test' },
         });
         await updateInboxCredential(expired.issuanceId, { expiresAt: '2020-01-01T00:00:00.000Z' });
-        expect(await finalizeAndWipeInboxCredential(expired.issuanceId)).toBeNull();
+        expect(
+            await finalizeAndWipeInboxCredential(expired.issuanceId, await recoveryDelivery())
+        ).toBeNull();
         await runInboxMaintenance();
         expect(await getInboxCredentialById(expired.issuanceId)).toMatchObject({
             currentStatus: 'EXPIRED',

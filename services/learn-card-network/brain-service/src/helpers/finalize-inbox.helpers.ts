@@ -16,7 +16,7 @@ import { getAppDidWeb } from '@helpers/did.helpers';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { getNotificationMessage } from '@helpers/notificationMessages';
 import { resolveRecipientLocale } from '@helpers/getRecipientLocale.helpers';
-import { getLearnCard } from '@helpers/learnCard.helpers';
+import { getLearnCard, getEmptyLearnCard } from '@helpers/learnCard.helpers';
 import { logCredentialClaimed, logCredentialFailed } from '@helpers/activity.helpers';
 import { handleConnectionPromptsForCredentialClaim } from '@helpers/connectionPrompt.helpers';
 import { decryptInboxCredential } from '@helpers/inbox-encryption.helpers';
@@ -134,7 +134,15 @@ export async function finalizeInboxCredentialsForProfile(
                     finalCredential = JSON.parse(credentialPayload) as VC;
                 }
 
-                const finalized = await finalizeAndWipeInboxCredential(inboxCredential.id);
+                // The seeded encryption plugin adds the service DID; use explicit recipients.
+                const learnCard = await getEmptyLearnCard();
+                const recoveryCredential = await learnCard.invoke.createDagJwe(finalCredential, [
+                    profile.did,
+                ]);
+                const finalized = await finalizeAndWipeInboxCredential(inboxCredential.id, {
+                    recipientDid: profile.did,
+                    credential: recoveryCredential,
+                });
                 if (!finalized) throw new Error('Inbox credential is no longer pending');
 
                 // Only write a claim audit edge once the record is actually finalized.

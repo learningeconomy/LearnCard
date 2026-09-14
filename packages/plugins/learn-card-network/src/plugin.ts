@@ -2153,6 +2153,20 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.inbox.finalize.mutate();
             },
+            recoverInboxCredentials: async (learnCard, options = {}) => {
+                const result = await client.inbox.getMyInboxDeliveries.query(options);
+                const records = await Promise.all(
+                    result.records.map(async record => ({
+                        ...record,
+                        credential: VCValidator.parse(
+                            await learnCard.invoke.decryptDagJwe(record.credential, [
+                                learnCard.id.keypair(),
+                            ])
+                        ),
+                    }))
+                );
+                return { ...result, records };
+            },
             sendGuardianApprovalEmail: async (_learnCard, options) => {
                 await ensureUser();
 

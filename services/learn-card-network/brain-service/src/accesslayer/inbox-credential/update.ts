@@ -2,6 +2,11 @@ import { QueryBuilder, BindParam } from 'neogma';
 import { InboxCredential } from '@models';
 import { InboxCredentialType } from '@learncard/types';
 import { flattenObject, inflateObject } from '@helpers/objects.helpers';
+import {
+    InboxDelivery,
+    INBOX_DELIVERY_RETENTION_DAYS,
+    INBOX_MAINTENANCE_BATCH_SIZE,
+} from 'types/inbox-delivery';
 
 export const updateInboxCredential = async (
     id: string,
@@ -25,10 +30,20 @@ export const updateInboxCredential = async (
 /** Atomically completes an eligible claim and removes its sensitive payload. */
 export const finalizeAndWipeInboxCredential = async (
     id: string,
+    delivery: InboxDelivery,
     { isAccepted = true }: { isAccepted?: boolean } = {}
 ): Promise<InboxCredentialType | null> => {
     const result = await new QueryBuilder(
-        new BindParam({ id, isAccepted, finalizedAt: new Date().toISOString() })
+        new BindParam({
+            id,
+            isAccepted,
+            finalizedAt: new Date().toISOString(),
+            deliveryCredential: JSON.stringify(delivery.credential),
+            deliveryRecipientDid: delivery.recipientDid,
+            deliveryExpiresAt: new Date(
+                Date.now() + INBOX_DELIVERY_RETENTION_DAYS * 86400000
+            ).toISOString(),
+        })
     )
         .match({ model: InboxCredential, identifier: 'inboxCredential' })
         .where('inboxCredential.id = $id')
@@ -43,6 +58,9 @@ export const finalizeAndWipeInboxCredential = async (
         )
         .set(
             'inboxCredential.currentStatus = "ISSUED", inboxCredential.isAccepted = $isAccepted, inboxCredential.finalizedAt = $finalizedAt, inboxCredential.credential = null, inboxCredential.credentialName = null, inboxCredential.achievementType = null'
+        )
+        .set(
+            'inboxCredential.deliveryCredential = $deliveryCredential, inboxCredential.deliveryRecipientDid = $deliveryRecipientDid, inboxCredential.deliveryExpiresAt = $deliveryExpiresAt'
         )
         .return('inboxCredential')
         .limit(1)
@@ -76,4 +94,20 @@ export const expireInboxCredentials = async (): Promise<number> => {
 
     const expiredCount = result.records[0]?.get('expiredCount');
     return expiredCount?.toNumber() ?? 0;
+};
+
+/** Removes expired holder-only recovery copies, preserving the issuer's audit record. */
+export const wipeExpiredInboxDeliveries = async (
+    limit = INBOX_MAINTENANCE_BATCH_SIZE
+): Promise<number> => {
+    const result = await new QueryBuilder()
+        .match({ model: InboxCredential, identifier: 'ic' })
+        .where('ic.deliveryCredential IS NOT NULL AND datetime(ic.deliveryExpiresAt) <= datetime()')
+        .with('ic')
+        .orderBy('ic.deliveryExpiresAt, ic.id')
+        .limit(limit)
+        .remove('ic.deliveryCredential, ic.deliveryRecipientDid, ic.deliveryExpiresAt')
+        .return('count(ic) AS wiped')
+        .run();
+    return result.records[0]?.get('wiped')?.toNumber() ?? 0;
 };
