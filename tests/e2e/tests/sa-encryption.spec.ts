@@ -41,7 +41,7 @@ test('delegated AutoBoosts remain readable by the contract owner across consent 
     const owner = await getLearnCardForUser('a');
     const student = await getLearnCardForUser('b');
     const writer = await getLearnCardForUser('c');
-    const sa = await writer.invoke.createSigningAuthority('delegated-encryption');
+    const sa = await writer.invoke.createSigningAuthority('delegated-sa');
     if (!sa) throw new Error('Signing authority creation failed');
     await writer.invoke.registerSigningAuthority(sa.endpoint, sa.name, sa.did);
     const boostUri = await writer.invoke.createBoost(testUnsignedBoost, {
@@ -60,7 +60,7 @@ test('delegated AutoBoosts remain readable by the contract owner across consent 
     });
     const seen = new Set<string>();
     const brain = await initLearnCard({ seed: 'a' });
-    const assertNewCredentialReaders = async (): Promise<void> => {
+    const assertNewCredentialReaders = async (termsUri: string): Promise<void> => {
         const { records } = await student.invoke.getCredentialsForContract(termsUri);
         const newlyIssued = records.filter(record => !seen.has(record.credentialUri));
         expect(newlyIssued).toHaveLength(1);
@@ -78,11 +78,14 @@ test('delegated AutoBoosts remain readable by the contract owner across consent 
             expect(await brain.invoke.decryptDagJwe(jwe).catch(() => undefined)).toBeFalsy();
         }
     };
-    await assertNewCredentialReaders();
-    await student.invoke.consentToContract(contractUri, { terms: normalFullTerms });
-    await assertNewCredentialReaders();
-    await student.invoke.updateContractTerms(termsUri, { terms: normalFullTerms });
-    await assertNewCredentialReaders();
+    await assertNewCredentialReaders(termsUri);
+    await student.invoke.withdrawConsent(termsUri);
+    const { termsUri: reconsentedTermsUri } = await student.invoke.consentToContract(contractUri, {
+        terms: normalFullTerms,
+    });
+    await assertNewCredentialReaders(reconsentedTermsUri);
+    await student.invoke.updateContractTerms(reconsentedTermsUri, { terms: normalFullTerms });
+    await assertNewCredentialReaders(reconsentedTermsUri);
 });
 
 test('SA issuance stores encrypted credentials and supports claim and revocation', async () => {
@@ -143,12 +146,14 @@ test('SA issuance stores encrypted credentials and supports claim and revocation
     const brain = await initLearnCard({ seed: 'a' });
     expect(await brain.invoke.decryptDagJwe(jwe).catch(() => undefined)).toBeFalsy();
     expect(subjectVc.boostCredential).toBeUndefined();
+    const issuerDid = 'did:web:localhost%3A4000:users:encryption-org';
     expect(typeof subjectVc.issuer === 'string' ? subjectVc.issuer : subjectVc.issuer.id).toBe(
-        sa.did
+        issuerDid
     );
+    expect(subjectVc.proof).toMatchObject({ verificationMethod: `${issuerDid}#${sa.name}` });
     expect(subjectVc.boostId).toBe(boostUri);
     expect(subjectVc.name).toBe(testUnsignedBoost.name);
-    // Trust the local test network explicitly; the credential issuer is the SA DID.
+    // The SA signs on behalf of the organization's did:web identity.
     const verifier = await initLearnCard({
         seed: crypto.randomBytes(32).toString('hex'),
         network: 'http://localhost:4000/trpc',
