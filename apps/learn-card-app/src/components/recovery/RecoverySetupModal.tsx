@@ -61,6 +61,8 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     onGetEscrowEnrollmentState,
     onDisableEscrowRecovery,
     onEnableEscrowRecovery,
+    onSetEscrowPin,
+    onClearEscrowPin,
 }) => {
     const webAuthnSupported = isWebAuthnSupported();
     const isNative = Capacitor.isNativePlatform();
@@ -490,6 +492,8 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                     onGetEscrowEnrollmentState={onGetEscrowEnrollmentState}
                     onDisableEscrowRecovery={onDisableEscrowRecovery}
                     onEnableEscrowRecovery={onEnableEscrowRecovery}
+                    onSetEscrowPin={onSetEscrowPin}
+                    onClearEscrowPin={onClearEscrowPin}
                 />
             )}
 

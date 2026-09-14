@@ -258,6 +258,38 @@ describe('P0-1 provisional SSS activation', () => {
         }
     });
 
+    it('accepts markMigrated for a legacy account whose first record was created provisional', async () => {
+        const suffix = `${Date.now()}-${randomUUID()}`;
+        const email = `legacy-no-record-${suffix}@example.com`;
+        const uid = `uid-${suffix}`;
+        const token = makeMockToken(email, uid);
+        const { learnCard } = await getUser('7'.repeat(64));
+        const collection = getUserKeysCollection();
+        const caller = getClient({ did: learnCard.id.did(), isChallengeValid: true });
+
+        try {
+            await caller.keys.storeAuthShare({
+                authToken: token,
+                providerType: 'firebase',
+                primaryDid: learnCard.id.did(),
+                authShare: { encryptedData: 'share', encryptedDek: '', iv: '' },
+            });
+
+            await expect(
+                caller.keys.markMigrated({ authToken: token, providerType: 'firebase' })
+            ).resolves.toEqual({ success: true });
+
+            const stored = await collection.findOne({
+                authProviders: { $elemMatch: { type: 'firebase', id: uid } },
+            });
+
+            expect(stored?.keyProvider).toBe('sss');
+            expect(stored?.sssActivationState).toBe('provisional');
+        } finally {
+            await collection.deleteMany({ 'contactMethod.value': email });
+        }
+    });
+
     it('atomically activates a migration with a confirmed version-matched recovery method', async () => {
         const suffix = `${Date.now()}-${randomUUID()}`;
         const email = `activation-ready-${suffix}@example.com`;

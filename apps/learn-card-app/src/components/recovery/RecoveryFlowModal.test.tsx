@@ -70,6 +70,7 @@ describe('RecoveryFlowModal', () => {
                 escrowRecovery={escrowRecovery}
             />
         );
+        expect(screen.queryByLabelText('PIN digit 1')).not.toBeInTheDocument();
         expect(
             await screen.findByRole('button', { name: 'Start a 7-day recovery' })
         ).toBeDisabled();

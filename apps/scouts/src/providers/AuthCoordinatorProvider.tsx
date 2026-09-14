@@ -1428,6 +1428,12 @@ const AuthSessionManager: React.FC<{
                                         authUser
                                     );
 
+                                    // Passkey setup confirms server-side in one step, so it
+                                    // never reaches confirmMethod; activate here instead.
+                                    if (coordinator.needsActivation) {
+                                        await coordinator.activate();
+                                    }
+
                                     setRecoveryMethodCount(prev => (prev ?? 0) + 1);
                                     return result.method === 'passkey' ? result.credentialId : '';
                                 }}
