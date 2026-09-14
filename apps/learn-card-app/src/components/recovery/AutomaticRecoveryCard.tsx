@@ -6,6 +6,17 @@ import type { KeyDerivationStrategy } from '@learncard/types';
 import * as m from '../../paraglide/messages.js';
 import { RecoveryPinInput } from './RecoveryPinInput';
 
+const pinErrorMessage = (cause: unknown): string => {
+    const message = cause instanceof Error ? cause.message : '';
+    return [
+        'PIN must contain 6–12 digits.',
+        'Choose a PIN without trivial or sequential patterns.',
+        'Automatic recovery is not available for this account.',
+    ].includes(message)
+        ? message
+        : 'Something went wrong. Please try again.';
+};
+
 type EnrollmentState = Awaited<
     ReturnType<NonNullable<KeyDerivationStrategy['getEscrowEnrollmentState']>>
 >;
@@ -99,7 +110,7 @@ export const AutomaticRecoveryCard: React.FC<AutomaticRecoveryProps> = ({
             setPinInput('');
             setPinConfirmInput('');
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'generic');
+            setError(pinErrorMessage(e));
             setPinConfirmInput('');
             setPinMode('confirm');
         } finally {
@@ -119,7 +130,7 @@ export const AutomaticRecoveryCard: React.FC<AutomaticRecoveryProps> = ({
             setState(await onGetEscrowEnrollmentState());
             setPinMode('none');
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'generic');
+            setError(pinErrorMessage(e));
         } finally {
             setLoading(null);
             busy.current = false;
@@ -129,8 +140,9 @@ export const AutomaticRecoveryCard: React.FC<AutomaticRecoveryProps> = ({
     const enrollmentState = typeof state === 'string' ? state : state?.state;
     const escrowPin = typeof state === 'object' ? state?.escrowPin : undefined;
 
-    const isPinLocked = escrowPin && !escrowPin.enabled && escrowPin.attemptsRemaining === 0;
-    const pinStatusText = isPinLocked ? 'Locked' : escrowPin?.enabled ? 'On' : 'Not set';
+    const isPinLocked = escrowPin?.state === 'locked';
+    const isPinEnabled = escrowPin?.state === 'enabled';
+    const pinStatusText = isPinLocked ? 'Locked' : isPinEnabled ? 'On' : 'Not set';
 
     if (enrollmentState === 'disabled' || (state === null && !error)) return null;
 
@@ -180,7 +192,7 @@ export const AutomaticRecoveryCard: React.FC<AutomaticRecoveryProps> = ({
                         </div>
                         {pinMode === 'none' && onSetEscrowPin && (
                             <div className="flex gap-2">
-                                {escrowPin?.enabled || isPinLocked ? (
+                                {isPinEnabled || isPinLocked ? (
                                     <>
                                         <button
                                             onClick={() => setPinMode('set')}
