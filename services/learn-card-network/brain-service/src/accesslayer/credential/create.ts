@@ -1,17 +1,22 @@
-import { UnsignedVC, VC, JWE } from '@learncard/types';
+import { BitstringStatusListEntryValidator, UnsignedVC, VC, JWE } from '@learncard/types';
 import { v4 as uuid } from 'uuid';
 import { isEncrypted } from '@learncard/helpers';
-import { getIssuedCredentialStatus } from '@helpers/issuedCredentialStatus.helpers';
+import { isIssuedCredential } from '@helpers/issuedCredentialStatus.helpers';
+import type { IssuedCredential } from 'types/credential';
 
 import { Credential, CredentialInstance } from '@models';
 
 export const storeCredential = async (
-    credential: UnsignedVC | VC | JWE
+    input: UnsignedVC | VC | JWE | IssuedCredential
 ): Promise<CredentialInstance> => {
     const id = uuid();
 
-    const statusEntries = isEncrypted(credential)
-        ? getIssuedCredentialStatus(credential as JWE)
+    const issued = isIssuedCredential(input);
+    const credential = issued ? input.credential : input;
+    // Fail if an internal issuance result lost its metadata. Client-encrypted
+    // wire payloads remain supported, with an explicit revocation warning.
+    const statusEntries = issued
+        ? BitstringStatusListEntryValidator.array().parse(input.statusEntries)
         : undefined;
     if (isEncrypted(credential) && !statusEntries) {
         console.warn(

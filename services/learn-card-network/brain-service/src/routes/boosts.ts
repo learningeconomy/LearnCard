@@ -175,6 +175,7 @@ import {
 } from '@accesslayer/role/relationships/create';
 import { updateDefaultPermissionsForBoost } from '@accesslayer/role/relationships/update';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
+import type { IssuedCredential } from '../types/credential';
 import { removeConnectionsForBoost } from '@helpers/connection.helpers';
 import { issueToInbox } from '@helpers/inbox.helpers';
 import { findInboxServiceEndpoint } from '@helpers/federation.helpers';
@@ -1060,17 +1061,19 @@ export const boostsRouter = t.router({
                             signedVc = await traceInternal(
                                 'issueCredentialWithSigningAuthority:remoteInbox',
                                 async () =>
-                                    issueCredentialWithSigningAuthority(
-                                        { type: 'profile', profile },
-                                        await appendBitstringStatusListEntries(
-                                            unsignedVc,
-                                            profile.profileId,
-                                            domain
-                                        ),
-                                        signingAuthority,
-                                        domain,
-                                        false
-                                    )
+                                    (
+                                        await issueCredentialWithSigningAuthority(
+                                            { type: 'profile', profile },
+                                            await appendBitstringStatusListEntries(
+                                                unsignedVc,
+                                                profile.profileId,
+                                                domain
+                                            ),
+                                            signingAuthority,
+                                            domain,
+                                            false
+                                        )
+                                    ).credential
                             );
                         }
 
@@ -1266,17 +1269,19 @@ export const boostsRouter = t.router({
                         signedVc = await traceInternal(
                             'issueCredentialWithSigningAuthority',
                             async () =>
-                                issueCredentialWithSigningAuthority(
-                                    { type: 'profile', profile },
-                                    await appendBitstringStatusListEntries(
-                                        unsignedVc,
-                                        profile.profileId,
-                                        domain
-                                    ),
-                                    signingAuthority,
-                                    domain,
-                                    false
-                                )
+                                (
+                                    await issueCredentialWithSigningAuthority(
+                                        { type: 'profile', profile },
+                                        await appendBitstringStatusListEntries(
+                                            unsignedVc,
+                                            profile.profileId,
+                                            domain
+                                        ),
+                                        signingAuthority,
+                                        domain,
+                                        false
+                                    )
+                                ).credential
                         );
                     }
 
@@ -3807,7 +3812,7 @@ export const boostsRouter = t.router({
                 });
             }
 
-            let credential: VC | JWE;
+            let credential: IssuedCredential;
             try {
                 credential = await issueCredentialWithSigningAuthority(
                     { type: 'profile', profile },

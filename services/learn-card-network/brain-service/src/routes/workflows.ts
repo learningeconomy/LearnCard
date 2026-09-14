@@ -324,7 +324,7 @@ async function handlePresentationForClaim(
 
     // Use the generator's profile for SA lookup if available, fall back to boost owner
     const saOwner = generatorProfileId
-        ? (await getProfileByProfileId(generatorProfileId)) ?? boostOwner
+        ? ((await getProfileByProfileId(generatorProfileId)) ?? boostOwner)
         : boostOwner;
 
     const saOwnerProfile = 'profileId' in saOwner ? saOwner : getBoostOwnerProfile(saOwner);
@@ -405,13 +405,15 @@ async function handlePresentationForClaim(
         // Inject OBv3 skill alignments based on boost's framework/skills
         await injectObv3AlignmentsIntoCredentialForBoost(boostCredential, boost, domain);
 
-        const vc = (await issueCredentialWithSigningAuthority(
-            { type: 'profile', profile: saOwnerProfile },
-            boostCredential,
-            signingAuthorityForUser,
-            domain,
-            false
-        )) as VC;
+        const vc = (
+            await issueCredentialWithSigningAuthority(
+                { type: 'profile', profile: saOwnerProfile },
+                boostCredential,
+                signingAuthorityForUser,
+                domain,
+                false
+            )
+        ).credential as VC;
 
         // Mark the challenge as used
         await useClaimLinkForBoost(exchangeInfo.boostUri, exchangeInfo.challenge);
@@ -659,13 +661,15 @@ async function handleInboxClaimPresentation(
                 unsignedCredential.issuer = signingAuthorityForUser.relationship.did;
 
                 // Sign the credential
-                finalCredential = (await issueCredentialWithSigningAuthority(
-                    { type: 'profile', profile: issuerProfile },
-                    unsignedCredential,
-                    signingAuthorityForUser,
-                    ctx.domain,
-                    false // don't encrypt
-                )) as VC;
+                finalCredential = (
+                    await issueCredentialWithSigningAuthority(
+                        { type: 'profile', profile: issuerProfile },
+                        unsignedCredential,
+                        signingAuthorityForUser,
+                        ctx.domain,
+                        false // don't encrypt
+                    )
+                ).credential as VC;
             }
 
             await markInboxCredentialAsIssued(inboxCredential.id);

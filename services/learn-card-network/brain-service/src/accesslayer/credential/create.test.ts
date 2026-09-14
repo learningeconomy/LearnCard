@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { JWE, UnsignedVC } from '@learncard/types';
+import type { JWE } from '@learncard/types';
+import type { IssuedCredential } from '../../types/credential';
 
 const mocks = vi.hoisted(() => ({ createOne: vi.fn(async input => input) }));
 vi.mock('@models', () => ({ Credential: { createOne: mocks.createOne } }));
 
-import { rememberIssuedCredentialStatus } from '@helpers/issuedCredentialStatus.helpers';
 import { storeCredential } from './create';
 
 const statusEntry = {
@@ -14,7 +14,6 @@ const statusEntry = {
     statusListIndex: '42',
     statusListCredential: 'https://network.example/status/1',
 };
-const unsigned = { credentialStatus: statusEntry } as unknown as UnsignedVC;
 const createJwe = (): JWE => ({
     protected: 'header',
     iv: 'iv',
@@ -29,11 +28,15 @@ describe('encrypted credential status storage', () => {
         vi.clearAllMocks();
     });
 
-    it('persists public status coordinates from server-managed issuance', async () => {
+    it('persists public status coordinates after serializing an issuance result', async () => {
         const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
         const jwe = createJwe();
-        rememberIssuedCredentialStatus(jwe, unsigned);
-        await storeCredential(jwe);
+        const issued: IssuedCredential = {
+            kind: 'issued-credential',
+            credential: jwe,
+            statusEntries: [statusEntry],
+        };
+        await storeCredential(JSON.parse(JSON.stringify(issued)));
         expect(mocks.createOne).toHaveBeenCalledWith(
             expect.objectContaining({
                 credential: JSON.stringify(jwe),
@@ -43,20 +46,35 @@ describe('encrypted credential status storage', () => {
         expect(warn).not.toHaveBeenCalled();
     });
 
-    it.each(['client-encrypted', 'copied'])(
-        'warns when a %s JWE has no sidecar, without logging its payload',
-        async source => {
-            const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-            const original = createJwe();
-            if (source === 'copied') rememberIssuedCredentialStatus(original, unsigned);
-            const jwe = { ...original };
-            await storeCredential(jwe);
-            expect(warn).toHaveBeenCalledExactlyOnceWith(
-                expect.stringContaining('Encrypted credential has no status metadata'),
-                { credentialId: expect.any(String) }
-            );
-            expect(mocks.createOne.mock.calls[0]![0].statusEntries).toBeUndefined();
-            expect(mocks.createOne.mock.calls[0]![0].credential).toBe(JSON.stringify(jwe));
-        }
-    );
+    it('warns when a client-encrypted JWE has no metadata, without logging its payload', async () => {
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        const original = createJwe();
+        const jwe = { ...original };
+        await storeCredential(jwe);
+        expect(warn).toHaveBeenCalledExactlyOnceWith(
+            expect.stringContaining('Encrypted credential has no status metadata'),
+            { credentialId: expect.any(String) }
+        );
+        expect(mocks.createOne.mock.calls[0]![0].statusEntries).toBeUndefined();
+        expect(mocks.createOne.mock.calls[0]![0].credential).toBe(JSON.stringify(jwe));
+    });
+
+    it('rejects internal issuance results that lost their status metadata before writing', async () => {
+        const issued = { kind: 'issued-credential', credential: createJwe() } as IssuedCredential;
+        await expect(storeCredential(issued)).rejects.toThrow();
+        expect(mocks.createOne).not.toHaveBeenCalled();
+    });
+
+    it('does not treat a wire JWE with extra envelope-like fields as trusted issuance metadata', async () => {
+        vi.spyOn(console, 'warn').mockImplementation(() => {});
+        const jwe = {
+            ...createJwe(),
+            kind: 'issued-credential',
+            credential: createJwe(),
+            statusEntries: [statusEntry],
+        };
+        await storeCredential(jwe);
+        expect(mocks.createOne.mock.calls[0]![0].statusEntries).toBeUndefined();
+        expect(mocks.createOne.mock.calls[0]![0].credential).toBe(JSON.stringify(jwe));
+    });
 });

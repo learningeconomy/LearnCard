@@ -42,6 +42,8 @@ import { BoostStatus, getBoostOwnerProfile } from 'types/boost';
 import { getDidWeb } from './did.helpers';
 import { DbTermsType } from 'types/consentflowcontract';
 import { appendBitstringStatusListEntries } from './status-list.helpers';
+import { getIssuedCredentialPayload } from './issuedCredentialStatus.helpers';
+import type { IssuedCredential } from '../types/credential';
 
 export const getBoostUri = (id: string, domain: string): string =>
     constructUri('boost', id, domain);
@@ -122,7 +124,7 @@ export const sendBoost = async ({
     from: CredentialIssuer;
     to: ProfileType;
     boost: BoostInstance;
-    credential: VC | JWE;
+    credential: VC | JWE | IssuedCredential;
     domain: string;
     skipNotification?: boolean;
     autoAcceptCredential?: boolean;
@@ -139,7 +141,8 @@ export const sendBoost = async ({
             const sourceBoostUri = getBoostUri(boost.dataValues.id, domain);
             const fromProfile = getIssuerOwnerProfile(from);
 
-            if (!isEncrypted(credential) && (credential as VC).boostId !== sourceBoostUri) {
+            const payload = getIssuedCredentialPayload(credential);
+            if (!isEncrypted(payload) && (payload as VC).boostId !== sourceBoostUri) {
                 throw new TRPCError({
                     code: 'BAD_REQUEST',
                     message: 'Credential boostId must match the Boost being sent.',

@@ -11,7 +11,8 @@ import { trace, traceCrypto, traceHttp } from '@tracing';
 import { PerfTracker } from '@helpers/perf';
 import { benchContextStorage } from '@helpers/bench-context.helpers';
 import { appendBitstringStatusListEntries } from './status-list.helpers';
-import { rememberIssuedCredentialStatus } from './issuedCredentialStatus.helpers';
+import { getBitstringStatusListEntries } from '@learncard/helpers';
+import type { IssuedCredential } from '../types/credential';
 
 const IS_TEST_ENVIRONMENT = environment.NODE_ENV === 'test';
 
@@ -131,7 +132,7 @@ export async function issueCredentialWithSigningAuthority(
     appendCredentialStatus = true,
     // Additional authorized readers (e.g. a contract owner delegating issuance).
     additionalEncryptionRecipients: string[] = []
-): Promise<VC | JWE> {
+): Promise<IssuedCredential> {
     const issuerEndpoint = `${signingAuthorityForUser.signingAuthority.endpoint}/credentials/issue`;
     const saName = signingAuthorityForUser.relationship.name;
     const saDid = signingAuthorityForUser.relationship.did;
@@ -153,6 +154,10 @@ export async function issueCredentialWithSigningAuthority(
     const credentialToIssue = appendCredentialStatus
         ? await appendBitstringStatusListEntries(credential, ownerProfile.profileId, domain)
         : credential;
+    // Capture the exact unsigned body once. Retries reuse both this body and its
+    // status coordinates, even if the caller later mutates its input object.
+    const serializedCredential = JSON.stringify(credentialToIssue);
+    const statusEntries = getBitstringStatusListEntries(JSON.parse(serializedCredential));
 
     const logContext = {
         issuer: getIssuerProfileId(issuer),
@@ -163,7 +168,7 @@ export async function issueCredentialWithSigningAuthority(
         encrypt,
     };
 
-    return trace(
+    const issuedCredential = await trace(
         'signing-authority',
         'issueCredentialWithSigningAuthority',
         async () => {
@@ -171,7 +176,9 @@ export async function issueCredentialWithSigningAuthority(
 
             try {
                 if (IS_TEST_ENVIRONMENT) {
-                    return await _mockIssueCredentialWithSigningAuthority(credentialToIssue);
+                    return await _mockIssueCredentialWithSigningAuthority(
+                        JSON.parse(serializedCredential)
+                    );
                 }
 
                 console.log('[SA Helper] Initiating credential issuance', logContext);
@@ -210,7 +217,7 @@ export async function issueCredentialWithSigningAuthority(
                 });
 
                 const requestBody = JSON.stringify({
-                    credential: credentialToIssue,
+                    credential: JSON.parse(serializedCredential),
                     signingAuthority: {
                         ownerDid,
                         name: saName,
@@ -332,7 +339,6 @@ export async function issueCredentialWithSigningAuthority(
                                 retryable: false,
                             });
                         }
-                        rememberIssuedCredentialStatus(validationResult.data, credentialToIssue);
                         return validationResult.data;
                     }
                     const validationResult = await VCValidator.spa(res);
@@ -418,4 +424,5 @@ export async function issueCredentialWithSigningAuthority(
             saEndpoint: signingAuthorityForUser.signingAuthority.endpoint,
         }
     );
+    return { kind: 'issued-credential', credential: issuedCredential, statusEntries };
 }

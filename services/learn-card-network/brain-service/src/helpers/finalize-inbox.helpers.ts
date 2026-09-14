@@ -118,20 +118,21 @@ export async function finalizeInboxCredentialsForProfile(
 
                     // For app-based SAs (listings), use the app did:web as ownerDid
                     const listingSlug = (inboxCredential.signingAuthority as any)?.listingSlug as
-                        | string
-                        | undefined;
+                        string | undefined;
                     const ownerDidOverride = listingSlug
                         ? getAppDidWeb(domain, listingSlug)
                         : undefined;
 
-                    finalCredential = (await issueCredentialWithSigningAuthority(
-                        { type: 'profile', profile: issuerProfile },
-                        unsignedCredential,
-                        signingAuthorityForUser,
-                        domain,
-                        false,
-                        ownerDidOverride
-                    )) as VC;
+                    finalCredential = (
+                        await issueCredentialWithSigningAuthority(
+                            { type: 'profile', profile: issuerProfile },
+                            unsignedCredential,
+                            signingAuthorityForUser,
+                            domain,
+                            false,
+                            ownerDidOverride
+                        )
+                    ).credential as VC;
                 } else {
                     finalCredential = JSON.parse(inboxCredential.credential) as VC;
                 }

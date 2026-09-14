@@ -112,6 +112,12 @@ describe('boost payload storage', () => {
     it.each([
         ['encrypted', jwe],
         ['issuer-signed', vc],
+        [
+            'serialized issuance result',
+            JSON.parse(
+                JSON.stringify({ kind: 'issued-credential', credential: jwe, statusEntries: [] })
+            ),
+        ],
     ] as const)(
         'stores %s payload unchanged and preserves graph, claim, and notification behavior',
         async (_kind, credential) => {
@@ -174,7 +180,8 @@ describe('boost payload storage', () => {
     );
 
     it('assigns the claimant to every template subject without requiring a did field', async () => {
-        mocks.signingAuthority.mockResolvedValue(jwe);
+        const issued = { kind: 'issued-credential', credential: jwe, statusEntries: [] };
+        mocks.signingAuthority.mockResolvedValue(issued);
         const boost = {
             ...options.boost,
             dataValues: {
@@ -193,7 +200,7 @@ describe('boost payload storage', () => {
             { name: 'First', id: 'did:web:network.example:users:student' },
             { name: 'Second', id: 'did:web:network.example:users:student' },
         ]);
-        expect(mocks.store).toHaveBeenCalledWith(jwe);
+        expect(mocks.store).toHaveBeenCalledWith(issued);
     });
 
     it('preserves explicit notification and acceptance opt-outs', async () => {

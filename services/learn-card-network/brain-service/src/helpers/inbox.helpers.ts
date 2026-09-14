@@ -106,14 +106,16 @@ export const claimIntoInbox = async (
                 ? getAppDidWeb(ctx.domain, listingSlug)
                 : undefined;
 
-            finalCredential = (await issueCredentialWithSigningAuthority(
-                { type: 'profile', profile: issuerProfile },
-                credential as UnsignedVC,
-                signingAuthorityForUser,
-                ctx.domain,
-                false, // don't encrypt
-                ownerDidOverride
-            )) as VC;
+            finalCredential = (
+                await issueCredentialWithSigningAuthority(
+                    { type: 'profile', profile: issuerProfile },
+                    credential as UnsignedVC,
+                    signingAuthorityForUser,
+                    ctx.domain,
+                    false, // don't encrypt
+                    ownerDidOverride
+                )
+            ).credential as VC;
         }
 
         // Create inbox record for tracking
@@ -270,13 +272,15 @@ export const issueToInbox = async (
                 });
             }
 
-            finalCredential = (await issueCredentialWithSigningAuthority(
-                { type: 'profile', profile: issuerProfile },
-                credential as UnsignedVC,
-                signingAuthorityForUser,
-                ctx.domain,
-                false // don't encrypt
-            )) as VC;
+            finalCredential = (
+                await issueCredentialWithSigningAuthority(
+                    { type: 'profile', profile: issuerProfile },
+                    credential as UnsignedVC,
+                    signingAuthorityForUser,
+                    ctx.domain,
+                    false // don't encrypt
+                )
+            ).credential as VC;
         }
 
         // Create inbox record for tracking

@@ -161,4 +161,38 @@ describe('SA encryption boundary', () => {
         ).rejects.toMatchObject({ status: 400, retryable: false, kind: 'http_4xx' });
         expect(mocks.fetch).toHaveBeenCalledTimes(1);
     });
+
+    it('keeps retry status metadata bound to the serialized request body', async () => {
+        const status = {
+            type: 'BitstringStatusListEntry' as const,
+            statusPurpose: 'revocation' as const,
+            statusListIndex: '42',
+            statusListCredential: 'https://network.example/status/1',
+        };
+        const unsigned = { ...credential, credentialStatus: status };
+        mocks.fetch
+            .mockImplementationOnce(async () => {
+                status.statusListIndex = '99';
+                return {
+                    ok: false,
+                    status: 503,
+                    statusText: 'Unavailable',
+                    text: async () => 'retry',
+                };
+            })
+            .mockResolvedValueOnce({ ok: true, status: 200, json: async () => jwe });
+        const issued = await issueCredentialWithSigningAuthority(
+            issuer,
+            unsigned,
+            sa,
+            'network.example'
+        );
+        expect(mocks.append).toHaveBeenCalledTimes(1);
+        expect(mocks.fetch).toHaveBeenCalledTimes(2);
+        const bodies = mocks.fetch.mock.calls.map(call => JSON.parse(call[1].body));
+        expect(bodies[0].credential).toEqual(bodies[1].credential);
+        expect(issued.statusEntries).toEqual([bodies[1].credential.credentialStatus]);
+        expect(issued.statusEntries[0]?.statusListIndex).toBe('42');
+        expect(JSON.parse(JSON.stringify(issued)).credential).toEqual(jwe);
+    });
 });

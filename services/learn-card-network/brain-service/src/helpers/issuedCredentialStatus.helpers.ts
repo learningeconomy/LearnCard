@@ -1,23 +1,11 @@
-import { getBitstringStatusListEntries } from '@learncard/helpers';
-import type { BitstringStatusListEntry, JWE, UnsignedVC } from '@learncard/types';
+import type { JWE, UnsignedVC, VC } from '@learncard/types';
+import type { IssuedCredential } from '../types/credential';
 
-// Request-local sidecar: retain only public status-list coordinates from the unsigned
-// SA request. Never decrypt the returned JWE to recover them. Weak keys prevent retention
-// when issuance fails or a credential is returned without being stored on this server.
-const issuedStatus = new WeakMap<JWE, BitstringStatusListEntry[]>();
+/** Internal envelopes never have the top-level fields of a wire-format VC or JWE. */
+export const isIssuedCredential = (
+    value: UnsignedVC | VC | JWE | IssuedCredential
+): value is IssuedCredential =>
+    !('@context' in value) && !('ciphertext' in value) && value.kind === 'issued-credential';
 
-export const rememberIssuedCredentialStatus = (jwe: JWE, unsigned: UnsignedVC): void => {
-    issuedStatus.set(
-        jwe,
-        getBitstringStatusListEntries(unsigned).map(entry => ({
-            id: entry.id,
-            type: entry.type,
-            statusPurpose: entry.statusPurpose,
-            statusListIndex: entry.statusListIndex,
-            statusListCredential: entry.statusListCredential,
-        }))
-    );
-};
-
-export const getIssuedCredentialStatus = (jwe: JWE): BitstringStatusListEntry[] | undefined =>
-    issuedStatus.get(jwe);
+export const getIssuedCredentialPayload = (value: VC | JWE | IssuedCredential): VC | JWE =>
+    isIssuedCredential(value) ? value.credential : value;
