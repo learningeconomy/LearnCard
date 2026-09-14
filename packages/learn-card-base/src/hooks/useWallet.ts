@@ -383,19 +383,35 @@ export const useWallet = () => {
             title: string;
             imgUrl: string;
             allowDuplicate: boolean;
+            inboxDeliveryId: string;
             boostUri: string;
         }> = {},
         location: 'SQLite' | 'LearnCloud' = 'LearnCloud',
         skipLCNUser?: boolean // skip steps requiring a LCN account eg didweb
     ): Promise<{ result: boolean; credentialUri: string; category: string }> => {
-        const { title, imgUrl, allowDuplicate, boostUri: sourceBoostUri } = metadata;
-        const _id = allowDuplicate ? uuidv4() : vc.id || uuidv4();
+        const {
+            title,
+            imgUrl,
+            allowDuplicate,
+            inboxDeliveryId,
+            boostUri: sourceBoostUri,
+        } = metadata;
+        const _id = inboxDeliveryId
+            ? vc.id || `inbox:${inboxDeliveryId}`
+            : allowDuplicate
+              ? uuidv4()
+              : vc.id || uuidv4();
         let returnUri: string | undefined;
 
         try {
             const wallet = await getWallet();
 
             const category = await getCategoryForCredential(vc, wallet);
+            if (inboxDeliveryId) {
+                const existing = await wallet.index[location].get({ inboxDeliveryId });
+                const saved = existing[0] ?? (await wallet.index[location].get({ id: _id }))[0];
+                if (saved) return { result: true, credentialUri: saved.uri, category };
+            }
             const boostUri = sourceBoostUri ?? vc.boostId ?? unwrapBoostCredential(vc)?.boostId;
             let result: boolean | undefined;
 
@@ -406,6 +422,7 @@ export const useWallet = () => {
                     uri: uri2,
                     category,
                     ...(boostUri ? { boostUri } : {}),
+                    ...(inboxDeliveryId ? { inboxDeliveryId } : {}),
                     ...(title ? { title } : {}),
                     ...(imgUrl ? { imgUrl } : {}),
                 };
@@ -422,6 +439,7 @@ export const useWallet = () => {
                     uri,
                     category,
                     ...(boostUri ? { boostUri } : {}),
+                    ...(inboxDeliveryId ? { inboxDeliveryId } : {}),
                     ...(title ? { title } : {}),
                     ...(imgUrl ? { imgUrl } : {}),
                 };
