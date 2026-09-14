@@ -680,6 +680,11 @@ access); the brain service cannot decrypt these responses. Only public status-li
 coordinates are retained separately so encrypted credentials can still be revoked or
 suspended.
 
+Signing-authority encryption resolves recipients once and uses the captured X25519
+public keys throughout issuance. The internal issuance result carries the encrypted
+credential and its status entries together through storage, including after JSON
+serialization. Missing internal status metadata is rejected before storage.
+
 ### Important tradeoffs
 
 Client-encrypted credentials submitted as `signedCredential` are stored unchanged.
