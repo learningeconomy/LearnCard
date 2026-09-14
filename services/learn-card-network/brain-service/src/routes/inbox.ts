@@ -1,3 +1,4 @@
+import { getDidWeb } from '@helpers/did.helpers';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
@@ -120,10 +121,21 @@ export const inboxRouter = t.router({
             })
         )
         .query(async ({ ctx, input }) => {
-            const deliveries = await getInboxDeliveriesForDid(ctx.user.did, {
-                ...input,
-                limit: input.limit + 1,
-            });
+            // DID-auth JWTs may use the controller key while the claim VP uses
+            // the profile's did:web. Only include aliases of the authenticated profile.
+            const recipientDids = new Set([ctx.user.did]);
+            if (ctx.user.profile) {
+                recipientDids.add(ctx.user.profile.did);
+                recipientDids.add(getDidWeb(ctx.domain, ctx.user.profile.profileId));
+            }
+            const pages = await Promise.all(
+                [...recipientDids].map(did =>
+                    getInboxDeliveriesForDid(did, { ...input, limit: input.limit + 1 })
+                )
+            );
+            const deliveries = pages
+                .flat()
+                .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
             const records = deliveries.slice(0, input.limit);
             return {
                 records,

@@ -445,6 +445,26 @@ describe('Universal Inbox escrow (HTTP + isolated Neo4j/Redis)', () => {
         }
     });
 
+    it('recovers did:web claims for the authenticated controller, excluding unrelated profiles', async () => {
+        const issued = await issue({
+            credential: await signedCredential(),
+            recipient: { type: 'email', value: 'alias@example.test' },
+        });
+        await claim(issued.claimUrl!);
+        await neogma.queryRunner.run(
+            'MATCH (n:InboxCredential {id: $id}) SET n.deliveryRecipientDid = $did',
+            { id: issued.issuanceId, did: 'did:web:localhost%3A3000:users:escrow-recipient' }
+        );
+        const response = await post('/api/inbox/deliveries', {}, recipient);
+        expect(response.status).toBe(200);
+        expect((await response.json()).records).toEqual([
+            expect.objectContaining({ id: issued.issuanceId }),
+        ]);
+        expect((await (await post('/api/inbox/deliveries', {}, issuer)).json()).records).toEqual(
+            []
+        );
+    });
+
     it('provides recipient and expiry indexes for recovery queries', async () => {
         await expect
             .poll(
