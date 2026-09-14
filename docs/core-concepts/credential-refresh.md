@@ -1,29 +1,24 @@
 ---
-description: 'Core Concept: Refreshing Verifiable Credentials after issuance'
+description: How an issued credential can be updated in place, and what the network can and can't see while doing it.
 ---
 
 # Credential Refresh
 
-Credentials describe the world as it was when they were signed — but the world changes. A transcript is provisional until final grades post, a certification gains an endorsement, a license renews. Credential refresh lets an issuer publish an _updated version_ of an already-issued Verifiable Credential (VC) and lets the holder's wallet pick that update up in place, without issuing a brand-new credential or cluttering the wallet with duplicates.
+A credential describes the world as it was when it was signed. Sometimes the world moves on: a provisional transcript becomes final, a certification gains an endorsement, a license renews. Credential refresh lets an issuer publish a newer version of a credential they already sent, and lets the recipient's wallet swap its copy for the new one without a duplicate appearing.
 
-LearnCard implements refresh on **both sides** of the exchange, following open standards so third-party wallets and issuers can participate:
+To do it, follow [Issue and Refresh a Managed Credential](../how-to-guides/issue-and-refresh-a-managed-credential.md). This page explains what's going on.
 
-- **[W3C Verifiable Credentials Data Model 2.0 — Refreshing](https://www.w3.org/TR/vc-data-model-2.0/#refreshing)**: a credential may carry a `refreshService` property describing how a wallet can obtain a fresher version.
-- **[1EdTech Credential Refresh Service 1.0](https://www.imsglobal.org/spec/vccr/v1p0/)**: the concrete service type (`1EdTechCredentialRefresh`) and interaction (a simple `GET` that returns the refreshed credential). Used by Open Badges 3.0 and CLR 2.0 ecosystems.
+## The standard part
 
-Refresh works for VCDM 1.1, VCDM 2.0, Open Badges 3.0, and CLR 2.0 credentials.
+The [W3C Verifiable Credentials](credentials-and-data/verifiable-credentials-vcs.md) data model lets a credential carry a `refreshService`: a small object saying "here's where to ask for a fresher version." [1EdTech's Credential Refresh Service](https://www.imsglobal.org/spec/vccr/v1p0/) defines the common shape: a `1EdTechCredentialRefresh` service that answers a plain `GET` with the updated, signed credential.
 
-## The two flavors of refresh service
+LearnCard wallets consume those services from any issuer, whether or not the issuer uses LearnCard. The wallet verifies the returned credential's signature, checks that the issuer and credential ID match what it already holds, checks that it isn't older, and then replaces its copy. Refresh works for VCDM 1.1, VCDM 2.0, Open Badges 3.0, and CLR 2.0 credentials.
 
-### Public / interoperable services
+## The LearnCard-managed part
 
-Any issuer can stand up a standards-compliant `1EdTechCredentialRefresh` endpoint that returns an updated, signed credential to anyone who asks. LearnCard wallets can consume the JSON credential responses from these services even if the issuer has no LearnCard integration — the wallet verifies the returned credential's proof, checks that the issuer and credential ID match the original, and replaces its local copy.
+Running a refresh endpoint yourself means running a server that hands out credentials to anyone who asks for the URL. Many issuers would rather not. So the LearnCard Network can host it for you.
 
-### LearnCard-managed services
-
-A LearnCard issuer can ask the network to **host** the refresh service. The issuer allocates a service _before signing_ (the service URL is inside the signed credential, so it must exist first), then publishes new versions over time. The network stores each version **encrypted to the holder only** and serves it behind DID authentication, so no one — not even the network operator — can read credential content at rest or learn anything by probing the endpoint.
-
-A managed service descriptor looks like this inside the signed credential:
+A managed service looks like this inside the signed credential:
 
 ```json
 {
@@ -35,100 +30,54 @@ A managed service descriptor looks like this inside the signed credential:
 }
 ```
 
-The `authorization` extension tells compatible wallets to authenticate with a DID-auth challenge. This is a LearnCard-specific protocol, not the 1EdTech protocol. A standard 1EdTech client cannot consume the encrypted envelope or authenticate with this extension. The type expands to `https://learncard.com/refresh#LearnCardCredentialRefresh2026` in the signing context.
+Two things differ from the plain 1EdTech service. The URL is unguessable, and the endpoint requires the wallet to prove it controls the recipient's identity before it answers. That means a standard 1EdTech client can't read a managed service, and LearnCard wallets never send their identity proof to a standard service.
 
-## How managed refresh works
+### What the network stores
 
-### The refresh aggregate
+Every version of a managed credential is stored encrypted to the recipient. The network can't read it, and neither can the issuer once it's sent. During publication the network briefly sees the new version in memory to verify the signature and decide whether the change is worth a notification, but plaintext is never written to storage, logs, or error messages.
 
-Managed refresh is built around a dedicated **refresh aggregate** — a small record that owns authorization and concurrency for one refreshable credential:
-
-- a cryptographically random, unguessable `refreshId` used in the public URL
-- the issuer (publication authority) and the intended holder (read authority)
-- the stable credential ID shared by every version
-- an immutable chain of **versions**, with a single mutable **head** pointer
-- a lifecycle state: `awaiting_claim` → `active` → `revoked`
-
-Credential versions themselves are immutable. Publishing creates a new version and moves the head — history is never rewritten.
+The endpoint gives nothing away to someone who doesn't hold the recipient's keys: the first response is the same authentication challenge whether or not the URL exists.
 
 ### The lifecycle
 
-1. **Allocate** — before signing, the issuer allocates a refresh service bound to a holder and a credential ID. The returned service object is embedded in the credential and signed.
-2. **Claim** — the aggregate starts `awaiting_claim`. The issuer may already publish updates, but nothing is served and nothing notifies anyone until the holder accepts the credential, which moves the aggregate to `active`.
-3. **Publish** — the issuer publishes updates, either fully signed themselves or as unsigned claims signed by an authorized [signing authority](identities-and-keys/signing-authorities.md). Each publication is validated (proof, same issuer, same credential ID, no back-dating) and stored as a new immutable, holder-encrypted version.
-4. **Serve** — the holder's wallet authenticates with a single-use DID challenge and receives the holder-encrypted current version (or `304 Not Modified` when its ETag is current).
-5. **Revoke** — revocation stops all serving. The holder keeps their locally retained copy and history; the issuer keeps metadata-only audit history.
+1. **Allocate.** Before signing, the issuer asks the network for a refresh service bound to a recipient and a credential ID. The service goes into the credential and gets signed along with everything else, which is why it can't be added afterwards.
+2. **Send and claim.** The credential is delivered like any other. The issuer may publish updates before the recipient claims, but nothing is served or announced until they do.
+3. **Publish.** The issuer publishes a complete new version, either signed by them or signed by the network with their [signing authority](identities-and-keys/signing-authorities.md). The network checks the signature, that the issuer and credential ID haven't changed, and that the version isn't dated earlier than the current one. Versions are never rewritten; a new one is appended and becomes current.
+4. **Serve.** The wallet authenticates and receives the current version, or a `304 Not Modified` if it already has it.
+5. **Revoke.** Revocation stops the network from serving anything. The recipient keeps what's already in their wallet.
 
-### Holder-side in-place replacement
+### What the recipient sees
 
-When a wallet refreshes a credential, it does **not** add a new entry. It updates the same wallet record in one index write:
+The LearnCard app checks refreshable credentials when it opens or resumes (at most once a day per credential) and right away when the user taps a "credential updated" notification. There's no background polling.
 
-- the record's URI points at the newly verified, re-encrypted credential
-- the previous URI is appended to an encrypted, holder-only **history** so old versions stay viewable ("View Previous Versions")
-- on a failure before that index write, the current credential is left untouched; cross-device races follow the eventual-convergence limitation below
+When a newer version arrives, the app replaces the credential in place. The previous version is kept, encrypted, under **View Previous Versions**, and the credential shows an **Updated** marker until the user opens it. If anything fails on the way, the current credential is untouched.
 
-Refresh checks run **in the foreground only**: on app launch/resume and when a refresh notification is tapped. By default a credential is checked at most once per **24 hours** (a named, configurable interval — `CREDENTIAL_REFRESH_CHECK_INTERVAL_MS`) and at most once per foreground session. There is no native background scheduler in Phase 1.
+Issuers don't get to spam. The network only notifies when the change is something the recipient would notice (new grades, a new title, new evidence), not when a signature or timestamp changes. Repeated updates within a day collapse into one notification. Issuers can override this with `notifyHolder: true` or `false`.
 
-## Privacy model
+## What can go wrong
 
-Managed refresh is designed so the network never holds plaintext credential content at rest:
+Refresh on the wallet side never throws. It returns one of:
 
-- **Holder-encrypted at rest**: every stored version is a JWE encrypted to the holder's key. The brain service's own DID is deliberately **not** a recipient.
-- **Transient plaintext only**: during publication the server briefly sees plaintext to verify proofs and compute materiality, but plaintext is never written to databases, caches, queues, logs, metrics, or error responses.
-- **Non-disclosing endpoint**: the unauthenticated `401` challenge reveals nothing about whether a `refreshId` exists; authorization, existence, and lifecycle distinctions are only made _after_ authentication, to the authenticated holder alone.
-- **Opaque identifiers**: ETags are derived from the encrypted payload; materiality digests are keyed with a server secret; logs and metrics carry only opaque IDs and safe outcome codes.
-- **SSRF-hardened fetching**: the wallet treats `refreshService.id` as untrusted input — HTTPS-only, private/loopback/metadata IP rejection after DNS resolution, revalidated redirects, strict timeouts, bounded response size, and no credential forwarding across origins.
+| Status        | Meaning                                                                            |
+| ------------- | ---------------------------------------------------------------------------------- |
+| `updated`     | A verified newer version came back                                                 |
+| `unchanged`   | What you hold is current                                                           |
+| `unsupported` | The credential has no refresh service the wallet understands                       |
+| `failed`      | Something went wrong; a `code` says what and `retryable` says whether to try later |
 
-## Notification model
+Failure codes: `UNAVAILABLE` and `TIMEOUT` (retryable), then `UNAUTHORIZED`, `MALFORMED_RESPONSE`, `INVALID_PROOF`, `ISSUER_MISMATCH`, `ID_MISMATCH`, `ROLLBACK` (the service returned something older than you hold), `REVOKED`, `UNSUPPORTED_SERVICE`, and `UNSAFE_ENDPOINT`.
 
-Issuers shouldn't spam holders, and holders shouldn't miss meaningful changes:
+That last one matters. A `refreshService` URL is data from a credential, which is to say from a stranger, so the wallet treats it as untrusted: HTTPS only, no private or loopback addresses, a redirect limit, a timeout, and a response size cap. Local development can opt out; production code shouldn't.
 
-- After each publication, the service decides whether the change is **material** by comparing a canonical projection of user-visible content (subject claims, titles, evidence, results, expiration) — ignoring proofs, identifiers, timestamps, and the refresh machinery itself.
-- The issuer can force (`notifyHolder: true`) or suppress (`notifyHolder: false`) notification.
-- The first material update sends a push and creates an in-app notification. Repeat updates inside a configurable **24-hour delivery window** (`CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS`) update the same unread in-app record instead of stacking new ones; a new window starts a new record. Notification windows are fixed wall-clock buckets, not sliding rate limits: updates across a bucket boundary can notify separately even when only minutes apart.
-- Revocation stays on its own lifecycle path — a status-only change never masquerades as an "updated" notification.
+## Current limits
 
-## Error semantics
-
-Holder-side refresh never throws raw network or parsing failures at the caller. The result is a typed union:
-
-| Status        | Meaning                                                                       |
-| ------------- | ----------------------------------------------------------------------------- |
-| `updated`     | A verified newer version was returned (carries the credential, ETag, version) |
-| `unchanged`   | The service confirms the held credential is current                           |
-| `unsupported` | The credential has no supported refresh service                               |
-| `failed`      | A safe, machine-readable `code` plus a `retryable` flag                       |
-
-Failure codes: `UNAVAILABLE`, `TIMEOUT`, `UNSUPPORTED_SERVICE`, `UNAUTHORIZED`, `MALFORMED_RESPONSE`, `INVALID_PROOF`, `ISSUER_MISMATCH`, `ID_MISMATCH`, `ROLLBACK` (the candidate is older than the held credential), `REVOKED`, and `UNSAFE_ENDPOINT`. Raw response bodies are never surfaced.
-
-## Phase 1 limitations
-
-- **Foreground-only**: no native background refresh; checks happen on launch/resume and notification taps. A credential-detail or pull-to-refresh control is a planned follow-up (the underlying forced-refresh mutation is already reusable).
-- **Allocate-before-signing only**: managed refresh cannot be retrofitted onto credentials that were already signed, because `refreshService` is part of the signed payload.
-- **Transient server-side plaintext**: publication validates proofs and computes materiality in memory on the server. A detached signed-manifest design may remove this in a later phase.
-- **Cross-device convergence is eventual**: a pre-write comparison prevents obvious stale writes, but a true compare-and-swap across devices is future work; devices converge on their next foreground check.
-- **24-hour defaults**: both the staleness interval and the notification collapse window are named, configurable values to be reviewed against real usage.
+- Refresh must be set up before signing. It can't be retrofitted.
+- Wallet checks happen in the foreground only. A manual refresh control is planned.
+- Two devices refreshing the same credential at the same time converge on the next check rather than coordinating in real time.
+- The standard-service adapter accepts signed JSON credentials only, not compact JWT responses.
 
 ## Where to go next
 
-- [Issue and Refresh a Managed Credential (How-To)](../how-to-guides/issue-and-refresh-a-managed-credential.md)
+- [Issue and Refresh a Managed Credential](../how-to-guides/issue-and-refresh-a-managed-credential.md)
 - [Credentials & Data](credentials-and-data/verifiable-credentials-vcs.md)
-- [Credential Status & Bitstring Status Lists](credentials-and-data/credential-status-and-bitstring-status-lists.md)
-
-Local history currently retains every prior URI on the encrypted index record. Bounding or moving that index is follow-up work; pruning must preserve access to retained versions, including after revocation, when server history is unavailable.
-
-Managed refreshes now fingerprint the original subject identifier list at first send and reject changes before publication. Refreshes created before that fingerprint existed must be reissued before publishing further versions; their original encrypted contents cannot be safely reconstructed server-side for backfill.
-
-## Standards scope and compatibility
-
-Checked against W3C VCDM 1.1 §5.5 and the published VCDM 2.0 Recommendation (May 15, 2025) §5.4, plus the [1EdTech refresh protocol](https://www.imsglobal.org/spec/vccr/v1p0/#protocol).
-
-The W3C property is an extension point; it does not prescribe LearnCard authentication, encryption, stable IDs, or history. Managed credentials use `LearnCardCredentialRefresh2026` for those requirements. Standard JSON services use `1EdTechCredentialRefresh`; credentials without IDs are supported when both the held and replacement credentials omit the ID. Issuer and subject identity must still match. LearnCard does not send its DID-auth proof to standard services.
-
-Previously issued QA credentials advertising `1EdTechCredentialRefresh` for an encrypted managed endpoint must be reissued. Do not edit signed credentials or reinterpret that standard type as a managed protocol. Existing stored credentials and local history remain readable.
-
-Local HTTP testing is explicitly non-conformant transport; interoperable deployment requires HTTPS with TLS 1.2 or 1.3. Foreground polling, notifications, and in-place history are LearnCard product behavior, not W3C requirements.
-
-### Explicit format limitation
-
-The standard service adapter currently supports signed JSON credentials only. It does not claim complete 1EdTech Refresh Service conformance: `text/plain` compact VC-JWT responses remain unsupported and fail closed. End-to-end JWT signature verification, registered-claim normalization, and preservation of the original signed token are tracked in [LC-2195](https://welibrary.atlassian.net/browse/LC-2195); base64 decoding alone must never be treated as verification. Unknown refresh types are ignored rather than interpreted as LearnCard services.
+- [Credential Status & Revocation](credentials-and-data/credential-status-and-bitstring-status-lists.md)
