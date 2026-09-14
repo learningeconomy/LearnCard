@@ -11,6 +11,7 @@ describe('VerifyBoost wrapper transition', () => {
     it.each([
         ['lc:network:localhost%3A4000/trpc:boost:test', 'did:web:localhost%3A4000'],
         ['lc:network:preview.example/brain/trpc:boost:test', 'did:web:preview.example:brain'],
+        ['lc:network:preview.example/trpc/trpc:boost:test', 'did:web:preview.example:trpc'],
         ['lc:network:network.learncard.com/boost:test', trustedIssuer],
     ])('resolves the registry network from %s', async (boostId, did) => {
         const card = {
@@ -70,19 +71,25 @@ describe('VerifyBoost wrapper transition', () => {
         }
     );
 
-    it('does not label an unwrapped VC with an invalid signature authentic', async () => {
-        const card = {
-            invoke: { verifyCredential: vi.fn().mockResolvedValue(result(['Invalid signature'])) },
-        } as unknown as Parameters<typeof getVerifyBoostPlugin>[0];
-        const plugin = await getVerifyBoostPlugin(card);
-        const verified = await plugin.methods.verifyCredential(card, {
-            issuer: trustedIssuer,
-            boostId,
-            type: ['BoostCredential'],
-        } as unknown as VC);
-        expect(verified.errors).toContain('Invalid signature');
-        expect(verified.checks.some(check => check.includes('Boost is Authentic'))).toBe(false);
-    });
+    it.each(['Invalid signature', 'Credential revoked'])(
+        'explains why a direct credential with %s cannot establish Boost authenticity',
+        async error => {
+            const card = {
+                invoke: { verifyCredential: vi.fn().mockResolvedValue(result([error])) },
+            } as unknown as Parameters<typeof getVerifyBoostPlugin>[0];
+            const plugin = await getVerifyBoostPlugin(card);
+            const verified = await plugin.methods.verifyCredential(card, {
+                issuer: trustedIssuer,
+                boostId,
+                type: ['BoostCredential'],
+            } as unknown as VC);
+            expect(verified.errors).toEqual([error]);
+            expect(verified.warnings).toContain(
+                'Boost Authenticity could not be verified: Credential verification failed.'
+            );
+            expect(verified.checks.some(check => check.includes('Boost is Authentic'))).toBe(false);
+        }
+    );
 
     it('preserves legacy inner verification failures even when both boost IDs are missing', async () => {
         const verifyCredential = vi

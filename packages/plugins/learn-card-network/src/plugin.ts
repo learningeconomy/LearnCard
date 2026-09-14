@@ -2974,6 +2974,7 @@ export const getVerifyBoostPlugin = async (
                     credential,
                     options
                 );
+                const hasOuterVerificationErrors = Boolean(verificationCheck.errors?.length);
                 const boostCredential = credential?.boostCredential;
                 try {
                     // Legacy credentials contain a separately signed inner VC. New
@@ -3019,9 +3020,12 @@ export const getVerifyBoostPlugin = async (
                                 ...(verificationCheck.errors || []),
                                 'Boost Credential could not be verified.',
                             ];
-                        } else if (!boostId || verificationCheck.errors?.length) {
-                            // Missing association metadata or a failed signature/status check
-                            // cannot establish authenticity.
+                        } else if (hasOuterVerificationErrors) {
+                            verificationCheck.warnings.push(
+                                'Boost Authenticity could not be verified: Credential verification failed.'
+                            );
+                        } else if (!boostId) {
+                            // The missing metadata warning above explains why trust is unknown.
                         } else if (
                             boostCredential &&
                             boostCredential.boostId !== credential.boostId
