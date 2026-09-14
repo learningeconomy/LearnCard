@@ -9,7 +9,7 @@ import { fastifyTRPCOpenApiPlugin, CreateOpenApiFastifyPluginOptions } from 'trp
 import { appRouter, type AppRouter, createContext } from './app';
 import { openApiDocument } from './openapi';
 import { didFastifyPlugin } from './dids';
-import { ensureUserKeysIndexes } from './models';
+import { ensureUserKeysIndexes, createEscrowHoldsIndexes } from './models';
 
 const server = Fastify({ maxParamLength: 5000 });
 
@@ -107,6 +107,7 @@ server.register(didFastifyPlugin);
     try {
         console.log('Server starting on port ', environment.PORT || 3000);
         await ensureUserKeysIndexes();
+        await createEscrowHoldsIndexes();
         await server.listen({ host: '0.0.0.0', port: Number(environment.PORT || 3000) });
     } catch (err) {
         console.error(err);

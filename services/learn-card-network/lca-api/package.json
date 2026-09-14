@@ -58,6 +58,7 @@
         "@learncard/init": "workspace:*",
         "@learncard/helpers": "workspace:*",
         "@learncard/types": "workspace:*",
+        "@learncard/sss-key-manager": "workspace:*",
         "@sentry/serverless": "^7.61.0",
         "@trpc/server": "11.8.0",
         "@types/jsonwebtoken": "^9.0.8",
