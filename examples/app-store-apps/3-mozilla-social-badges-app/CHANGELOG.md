@@ -1,5 +1,12 @@
 # @learncard/app-store-demo-mozilla-social-badges
 
+## 0.0.42
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/init@2.4.14
+
 ## 0.0.41
 
 ### Patch Changes

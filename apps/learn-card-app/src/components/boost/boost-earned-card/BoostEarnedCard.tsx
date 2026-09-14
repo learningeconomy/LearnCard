@@ -39,6 +39,10 @@ import CredentialBadgeNew from 'learn-card-base/components/CredentialBadge/Crede
 import CustomBoostTitleDisplay from './helpers/CustomBoostTitleDisplay';
 import BoostLinkedCredentialsBox from '../boostLinkedCredentials/BoostLinkedCredentialsBox';
 import ClrAchievementsSummaryBox from '../boostLinkedCredentials/ClrAchievementsSummaryBox';
+import type {
+    ClrAchievement,
+    ClrAssociation,
+} from '../boostLinkedCredentials/ClrAchievementsSummaryBox';
 import { getClrLinkedCredentials } from 'learn-card-base/helpers/credentialHelpers';
 import { getClrTranscriptKind, getClrTranscriptIssuerInfo } from '../../clr-transcript';
 
@@ -53,13 +57,15 @@ import { LCR } from 'learn-card-base/types/credential-records';
 import { ID_CARD_DISPLAY_TYPES } from 'learn-card-base/helpers/credentials/ids';
 import { getDefaultDisplayType } from '../boostHelpers';
 import { useCredentialStatus } from 'src/hooks/useCredentialStatus';
+import CredentialUpdatedIndicator from '../../credentials/credential-history/CredentialUpdatedIndicator';
+import { useMarkCredentialUpdateRead } from '../../credentials/credential-history/useMarkCredentialUpdateRead';
 
 type BoostEarnedCardProps = {
     credential?: VC;
     record?: Partial<LCR>;
     defaultImg?: string;
-    onCheckMarkClick?: any;
-    selectAll?: any;
+    onCheckMarkClick?: () => void;
+    selectAll?: boolean;
     initialCheckmarkState?: boolean;
     categoryType: CredentialCategory;
     sizeLg?: number;
@@ -142,7 +148,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
         categoryMetadata[categoryType] ?? categoryMetadata['Achievement' as CredentialCategory];
     const type = categoryInfo.walletSubtype;
 
-    let {
+    const {
         issuerName,
         issuerProfileImageElement,
 
@@ -193,6 +199,10 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
         onDelete: closeAllModals,
     });
 
+    // Persists refresh.unreadUpdate=false on the encrypted index record; invoked after
+    // the latest credential successfully renders in a detail view.
+    const markCredentialUpdateRead = useMarkCredentialUpdateRead(record);
+
     const newCreds = newCredsStore.use.newCreds();
     const newCredsForCategory = newCreds?.[categoryType as CredentialCategory] ?? [];
     const showNewItemIndicator = newCredsForCategory?.includes(record?.uri) ?? false;
@@ -233,7 +243,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             }
         } else if (click === 'onCheckClick') {
             hasBeenClicked = true;
-            onCheckMarkClick();
+            onCheckMarkClick?.();
         }
     };
 
@@ -241,13 +251,13 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
         handlePresentBoostMenuModal();
     };
 
-    const clrAchievements: any[] =
+    const clrAchievements: ClrAchievement[] =
         isClrCredential && Array.isArray(cred?.credentialSubject?.achievement)
-            ? cred.credentialSubject.achievement
+            ? (cred.credentialSubject.achievement as ClrAchievement[])
             : [];
-    const clrAssociations: any[] =
+    const clrAssociations: ClrAssociation[] =
         isClrCredential && Array.isArray(cred?.credentialSubject?.association)
-            ? cred.credentialSubject.association
+            ? (cred.credentialSubject.association as ClrAssociation[])
             : [];
 
     const customLinkedCredentialsComponent =
@@ -384,6 +394,10 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                 backgroundImage: bgImage,
             });
         }
+
+        // The detail opened with a renderable credential: clear the unread refresh
+        // indicator. The pill only disappears once the cleared flag is persisted.
+        void markCredentialUpdateRead();
     };
 
     if (renderPreviewTrigger) {
@@ -414,17 +428,20 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
         customTitle = <CustomBoostTitleDisplay showSkeleton />;
     } else {
         customTitle = (
-            <CustomBoostTitleDisplay
-                displayType={displayType}
-                title={title}
-                formattedDisplayType={formattedAchievementType}
-                textColor={darkColor}
-                indicatorColor={indicatorColor}
-                credential={cred}
-                mediaTitleContainerClassName="!mt-[14px]"
-                isEarnedBoost
-                showNewItemIndicator={showNewItemIndicator}
-            />
+            <>
+                <CustomBoostTitleDisplay
+                    displayType={displayType}
+                    title={title}
+                    formattedDisplayType={formattedAchievementType}
+                    textColor={darkColor}
+                    indicatorColor={indicatorColor}
+                    credential={cred}
+                    mediaTitleContainerClassName="!mt-[14px]"
+                    isEarnedBoost
+                    showNewItemIndicator={showNewItemIndicator}
+                />
+                <CredentialUpdatedIndicator refresh={record?.refresh} className="mt-1" />
+            </>
         );
     }
 

@@ -1,5 +1,19 @@
 # @welibraryos/react-learn-card
 
+## 2.12.4
+
+### Patch Changes
+
+- [#1549](https://github.com/learningeconomy/LearnCard/pull/1549) [`9cc246bd0571b5b29c60b9dcff287c1b69e012cf`](https://github.com/learningeconomy/LearnCard/commit/9cc246bd0571b5b29c60b9dcff287c1b69e012cf) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-2175] & [LC-2176] Fixing CodeQL alerts
+
+    **Breaking change in @learncard/openid4vc-plugin**: `defaultMakeId` now throws if
+    `crypto.getRandomValues` is unavailable (no `Math.random()` fallback). This affects
+    legacy environments without Web Crypto API — modern browsers and Node.js are unaffected.
+
+- Updated dependencies [[`9cc246bd0571b5b29c60b9dcff287c1b69e012cf`](https://github.com/learningeconomy/LearnCard/commit/9cc246bd0571b5b29c60b9dcff287c1b69e012cf)]:
+    - @learncard/helpers@1.4.1
+    - @learncard/init@2.4.14
+
 ## 2.12.3
 
 ### Patch Changes

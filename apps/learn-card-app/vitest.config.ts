@@ -8,6 +8,7 @@ import type { LearnCardAppEnvironment } from './src/config/buildEnvironment';
 const TEST_BUILD_ENVIRONMENT = {
     MODE: 'test',
     VITE_ENABLE_AUTH_DEBUG_WIDGET: false,
+    VITE_CREDENTIAL_REFRESH_LOCAL_QA: false,
     VITE_DOCKER_SOURCE: false,
     ANALYZE: false,
     CHOKIDAR_USEPOLLING: false,

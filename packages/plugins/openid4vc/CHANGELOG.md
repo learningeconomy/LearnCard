@@ -1,5 +1,20 @@
 # @learncard/openid4vc-plugin
 
+## 0.3.6
+
+### Patch Changes
+
+- [#1549](https://github.com/learningeconomy/LearnCard/pull/1549) [`9cc246bd0571b5b29c60b9dcff287c1b69e012cf`](https://github.com/learningeconomy/LearnCard/commit/9cc246bd0571b5b29c60b9dcff287c1b69e012cf) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-2175] & [LC-2176] Fixing CodeQL alerts
+
+    **Breaking change in @learncard/openid4vc-plugin**: `defaultMakeId` now throws if
+    `crypto.getRandomValues` is unavailable (no `Math.random()` fallback). This affects
+    legacy environments without Web Crypto API — modern browsers and Node.js are unaffected.
+
+- Updated dependencies [[`55284a9b1613d46491a03d2d527b192eb2db64c9`](https://github.com/learningeconomy/LearnCard/commit/55284a9b1613d46491a03d2d527b192eb2db64c9), [`55284a9b1613d46491a03d2d527b192eb2db64c9`](https://github.com/learningeconomy/LearnCard/commit/55284a9b1613d46491a03d2d527b192eb2db64c9)]:
+    - @learncard/didkit-plugin@1.9.13
+    - @learncard/core@9.4.33
+    - @learncard/vc-plugin@1.5.13
+
 ## 0.3.5
 
 ### Patch Changes

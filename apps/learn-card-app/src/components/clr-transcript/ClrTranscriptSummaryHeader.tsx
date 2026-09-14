@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { useClrLearnerIdentity } from './useClrLearnerIdentity';
+
 import { StatCard } from './ClrStatCard';
 import ClrIssuerBadge from './ClrIssuerBadge';
 import ClrEvidenceDetailPanel from './ClrEvidenceDetailPanel';
@@ -25,6 +27,7 @@ const ClrTranscriptSummaryHeader: React.FC<{
     adminMode?: boolean;
 }> = ({ model, boost, boostUri, adminMode = false }) => {
     const { newModal } = useModal({ desktop: ModalTypes.Right, mobile: ModalTypes.Right });
+    const learner = useClrLearnerIdentity(model.header.learnerName?.value);
     const issuerLogo = getClrIssuerLogo(model);
     const transcriptTitle = model.header.title?.value || 'Official Academic Transcript';
     const scrollToCourseHistory = () => {
@@ -79,14 +82,14 @@ const ClrTranscriptSummaryHeader: React.FC<{
             {/* Top: avatar + identity + QR */}
             <div className="relative flex flex-col gap-4 md:flex-row md:items-start">
                 <UserProfilePicture
-                    user={{ displayName: model.header.learnerName?.value }}
+                    user={learner}
                     customContainerClass="w-16 h-16 shrink-0 text-2xl self-start"
                     customImageClass="w-16 h-16"
                 />
 
                 <div className="w-full min-w-0 md:flex-1 md:pt-1">
                     <p className="text-[22px] text-grayscale-900 leading-tight truncate">
-                        {model.header.learnerName?.value ?? 'Unknown learner'}
+                        {learner.displayName}
                     </p>
                     <div className="border-t border-grayscale-200 my-2" />
                     {model.header.issuerName?.value && (
