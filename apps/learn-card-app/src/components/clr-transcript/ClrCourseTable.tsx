@@ -33,7 +33,11 @@ const ClrCourseTable: React.FC<{
     const toggle = (label: string) =>
         setCollapsed(prev => {
             const next = new Set(prev);
-            next.has(label) ? next.delete(label) : next.add(label);
+            if (next.has(label)) {
+                next.delete(label);
+            } else {
+                next.add(label);
+            }
             return next;
         });
 
@@ -42,7 +46,12 @@ const ClrCourseTable: React.FC<{
             {groups.map(({ label, courses: gc }) => {
                 const isCollapsed = collapsed.has(label);
                 const termCredits = gc.reduce<number>(
-                    (s, c) => s + (c.creditsEarned?.value ?? c.creditsAvailable?.value ?? 0),
+                    (s, c) =>
+                        s +
+                        ((c.creditsEarned?.value ??
+                            c.creditsAvailable?.value ??
+                            Number(c.description?.value.match(/(\d+(?:\.\d+)?)\s*credit/i)?.[1])) ||
+                            0),
                     0
                 );
 
@@ -100,7 +109,12 @@ const ClrCourseTable: React.FC<{
                                         : undefined;
                                     const credits =
                                         course.creditsEarned?.value ??
-                                        course.creditsAvailable?.value;
+                                        course.creditsAvailable?.value ??
+                                        Number(
+                                            course.description?.value.match(
+                                                /(\d+(?:\.\d+)?)\s*credit/i
+                                            )?.[1]
+                                        );
                                     const competencyCount = getLinkedCompetencies(
                                         course.sourceCredentialId,
                                         competencies,
