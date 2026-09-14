@@ -15,6 +15,8 @@ export const DEFAULT_INBOX_EXPIRY_DAYS = 30;
 
 export const createInboxCredential = async (input: {
     credential: string;
+    /** Only set after the normal delivery helper has durably stored the credential. */
+    delivered?: boolean;
     isSigned: boolean;
     isAccepted?: boolean;
     recipient: ContactMethodQueryType;
@@ -41,15 +43,18 @@ export const createInboxCredential = async (input: {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + (input.expiresInDays ?? DEFAULT_INBOX_EXPIRY_DAYS));
     // Encrypt before persisting so the credential itself is not stored in plaintext in the inbox.
-    const encryptedCredential = await encryptInboxCredential(input.credential);
-    const credentialMeta = parseCredentialMeta(input.credential);
+    const encryptedCredential = input.delivered
+        ? undefined
+        : await encryptInboxCredential(input.credential);
+    const credentialMeta = input.delivered ? {} : parseCredentialMeta(input.credential);
 
     const inboxCredentialData = {
         id,
         credential: encryptedCredential,
         ...credentialMeta,
         isSigned: input.isSigned,
-        currentStatus: 'PENDING' as const,
+        currentStatus: input.delivered ? ('ISSUED' as const) : ('PENDING' as const),
+        ...(input.delivered ? { finalizedAt: new Date().toISOString() } : {}),
         isAccepted: input.isAccepted ?? false,
         expiresAt: expiresAt.toISOString(),
         createdAt: new Date().toISOString(),

@@ -386,11 +386,13 @@ describe('Universal Inbox escrow (HTTP + isolated Neo4j/Redis)', () => {
     it('encrypts ordinary credential storage on auto-delivery and wipes escrow', async () => {
         await verifyRecipientContact('existing@example.test');
         const credential = await signedCredential();
+        const escrowEncrypt = vi.spyOn(encryption, 'encryptInboxCredential');
         const issued = await issue({
             credential,
             recipient: { type: 'email', value: 'existing@example.test' },
         });
         expect(issued.status).toBe('ISSUED');
+        expect(escrowEncrypt).not.toHaveBeenCalled();
         expect(await getRecord(issued.issuanceId)).toMatchObject({
             isAccepted: false,
             currentStatus: 'ISSUED',
@@ -402,6 +404,7 @@ describe('Universal Inbox escrow (HTTP + isolated Neo4j/Redis)', () => {
         expect(deliveries.records).toHaveLength(1);
         const stored = JSON.parse(deliveries.records[0]!.get('payload'));
         expect(await recipient.learnCard.invoke.decryptDagJwe(stored)).toEqual(credential);
+        expect(await issuer.learnCard.invoke.decryptDagJwe(stored)).toEqual(credential);
         await expectNoPlaintext();
     });
 
