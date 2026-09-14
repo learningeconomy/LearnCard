@@ -158,7 +158,7 @@ export const createMongoLearnCardAssistantProfileRepository = (
     const migrateExisting = async (): Promise<void> => {
         const profiles = await collection.find({}).toArray();
 
-        await Promise.all(
+        const migrations = await Promise.allSettled(
             profiles
                 .filter(
                     profile =>
@@ -174,16 +174,26 @@ export const createMongoLearnCardAssistantProfileRepository = (
                     );
                 })
         );
+        // Keep the retry barrier closed until every started replacement has finished.
+        const failed = migrations.find(result => result.status === 'rejected');
+        if (failed?.status === 'rejected') throw failed.reason;
     };
 
     const ensureIndexes = async (): Promise<void> => {
         indexesReady ??= collection
             .createIndex({ ownerDid: 1 }, { unique: true })
-            .then(() => undefined);
+            .then(() => undefined)
+            .catch(error => {
+                indexesReady = undefined;
+                throw error;
+            });
 
         await indexesReady;
 
-        migrationReady ??= migrateExisting();
+        migrationReady ??= migrateExisting().catch(error => {
+            migrationReady = undefined;
+            throw error;
+        });
 
         await migrationReady;
     };
@@ -287,7 +297,10 @@ export const createLearnCardAssistantProfileRuntime = ({
                 await mongoRuntime.getDb(),
                 getEncryption()
             );
-        })();
+        })().catch(error => {
+            servicePromise = undefined;
+            throw error;
+        });
 
         return servicePromise;
     };

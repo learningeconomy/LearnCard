@@ -350,6 +350,7 @@ export const runChatRequest = async ({
 
         const result = await runAgent({
             model: config.model,
+            ownerDid,
             messages: parsed.data.messages,
             provider,
             tools: agentTools,
@@ -378,19 +379,48 @@ export const runChatRequest = async ({
             },
             afterResponse: async afterResponseSignal => {
                 const postRunStartedAt = Date.now();
+                const postRunController = new AbortController();
+                const deadlineAt = startedAt + (config.runTimeoutMs ?? 120_000);
+                const remainingMs = deadlineAt - Date.now();
+                const timeoutError = new Error(
+                    'Agent post-run exceeded its configured time limit.'
+                );
+                const postRunTimeout = setTimeout(
+                    () => postRunController.abort(timeoutError),
+                    Math.max(0, remainingMs)
+                );
+                if (remainingMs <= 0) postRunController.abort(timeoutError);
+                const abortPostRun = (): void => {
+                    postRunController.abort(afterResponseSignal?.reason ?? signal?.reason);
+                };
+                for (const parentSignal of [signal, afterResponseSignal]) {
+                    if (parentSignal?.aborted) abortPostRun();
+                    else parentSignal?.addEventListener('abort', abortPostRun, { once: true });
+                }
 
                 try {
-                    await selfImprovementRuntime?.runAfterResponse({
-                        ownerDid: did,
-                        model: config.model,
-                        inputMessages: toStoredInputMessages(parsed.data.messages),
-                        result,
-                        ...(afterResponseSignal ? { signal: afterResponseSignal } : {}),
-                    });
+                    postRunController.signal.throwIfAborted();
+                    await awaitWithSignal(
+                        selfImprovementRuntime?.runAfterResponse({
+                            ownerDid: did,
+                            model: config.model,
+                            inputMessages: toStoredInputMessages(parsed.data.messages),
+                            result,
+                            signal: postRunController.signal,
+                            deadlineAt,
+                            observer: telemetry.observer,
+                        }) ?? Promise.resolve(),
+                        postRunController.signal
+                    );
                     telemetry.postRunSucceeded(Date.now() - postRunStartedAt);
                 } catch (error) {
                     telemetry.postRunFailed(error, Date.now() - postRunStartedAt);
                     throw error;
+                } finally {
+                    clearTimeout(postRunTimeout);
+                    for (const parentSignal of [signal, afterResponseSignal]) {
+                        parentSignal?.removeEventListener('abort', abortPostRun);
+                    }
                 }
             },
         };
@@ -805,70 +835,75 @@ export const createServer = ({
         trackPostRun(result.afterResponse);
     });
 
-    app.post('/api/agent/heartbeat', requireDidAuth, agentRateLimit, async (req, res) => {
-        if (!providerConfigured) {
-            res.status(503).json({ error: OPENAI_API_KEY_REQUIRED_ERROR });
-            return;
-        }
+    app.post(
+        '/api/agent/heartbeat',
+        requireDidAuth,
+        agentRateLimit,
+        asyncHandler(async (req, res) => {
+            if (!providerConfigured) {
+                res.status(503).json({ error: OPENAI_API_KEY_REQUIRED_ERROR });
+                return;
+            }
 
-        const parsed = HeartbeatRequestValidator.safeParse(req.body);
+            const parsed = HeartbeatRequestValidator.safeParse(req.body);
 
-        if (!parsed.success) {
-            res.status(400).json({ ok: false, error: 'Invalid heartbeat request.' });
-            return;
-        }
+            if (!parsed.success) {
+                res.status(400).json({ ok: false, error: 'Invalid heartbeat request.' });
+                return;
+            }
 
-        const auth = getAuthContext(res);
+            const auth = getAuthContext(res);
 
-        if (!auth) {
-            res.status(401).json({ ok: false, error: 'DID Auth is required.' });
-            return;
-        }
+            if (!auth) {
+                res.status(401).json({ ok: false, error: 'DID Auth is required.' });
+                return;
+            }
 
-        if (parsed.data.did && parsed.data.did !== auth.did) {
-            res.status(403).json({ error: 'Authenticated DID does not match request DID.' });
-            return;
-        }
+            if (parsed.data.did && parsed.data.did !== auth.did) {
+                res.status(403).json({ error: 'Authenticated DID does not match request DID.' });
+                return;
+            }
 
-        const maxItems = getLimitedQueryValue(parsed.data.maxItems, 3, 5);
-        const result = await runChatRequest({
-            body: {
-                consentFlowContractUri: parsed.data.consentFlowContractUri,
-                messages: [
-                    {
-                        role: 'user',
-                        content: `Run a proactive LearnCard Assistant heartbeat for this learner. Review approved profile data and current memory. Create at most ${maxItems} Assistant inbox cards by calling recordLearnCardAssistantCard. Only create concrete, useful cards. Use type message for a general note or check-in, job-suggestion for job matches, pathway-update for progress or pathway changes, and action-item when the learner needs to review or decide something. Use priority high only when the learner should see it immediately.`,
-                    },
-                ],
-            },
-            ownerDid: auth.did,
-            config,
-            provider: agentProvider,
-            tools: agentTools,
-            consentFlowRuntime: consentRuntime,
-            selfImprovementRuntime: selfImprovement,
-            assistantFeedRuntime: assistantFeed,
-            assistantProfileRuntime: assistantProfile,
-            ...(typeof res.locals.agentRequestId === 'string'
-                ? { requestId: res.locals.agentRequestId }
-                : {}),
-        });
+            const maxItems = getLimitedQueryValue(parsed.data.maxItems, 3, 5);
+            const result = await runChatRequest({
+                body: {
+                    consentFlowContractUri: parsed.data.consentFlowContractUri,
+                    messages: [
+                        {
+                            role: 'user',
+                            content: `Run a proactive LearnCard Assistant heartbeat for this learner. Review approved profile data and current memory. Create at most ${maxItems} Assistant inbox cards by calling recordLearnCardAssistantCard. Only create concrete, useful cards. Use type message for a general note or check-in, job-suggestion for job matches, pathway-update for progress or pathway changes, and action-item when the learner needs to review or decide something. Use priority high only when the learner should see it immediately.`,
+                        },
+                    ],
+                },
+                ownerDid: auth.did,
+                config,
+                provider: agentProvider,
+                tools: agentTools,
+                consentFlowRuntime: consentRuntime,
+                selfImprovementRuntime: selfImprovement,
+                assistantFeedRuntime: assistantFeed,
+                assistantProfileRuntime: assistantProfile,
+                ...(typeof res.locals.agentRequestId === 'string'
+                    ? { requestId: res.locals.agentRequestId }
+                    : {}),
+            });
 
-        if (result.status !== 200) {
-            res.status(result.status).json(result.payload);
-            return;
-        }
+            if (result.status !== 200) {
+                res.status(result.status).json(result.payload);
+                return;
+            }
 
-        await result.afterResponse?.();
+            await result.afterResponse?.();
 
-        res.json({
-            ok: true,
-            run: result.payload,
-            items: (await assistantFeed.listLatest(auth.did, maxItems)).map(
-                toLearnCardAssistantCardResponse
-            ),
-        });
-    });
+            res.json({
+                ok: true,
+                run: result.payload,
+                items: (await assistantFeed.listLatest(auth.did, maxItems)).map(
+                    toLearnCardAssistantCardResponse
+                ),
+            });
+        })
+    );
 
     app.get(
         '/api/users/:did/assistant-feed',

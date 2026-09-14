@@ -548,24 +548,41 @@ export const createLearnCardAssistantDebugCard = async (
     return payload.item;
 };
 
+const boundAgentHistory = (
+    messages: LearnCardAssistantAgentMessage[]
+): LearnCardAssistantAgentMessage[] => {
+    if (messages.length <= 50) return messages;
+
+    let start = messages.length - 50;
+    // Do not send an orphaned assistant reply without its preceding user turn.
+    while (start < messages.length && messages[start]?.role !== 'user') start += 1;
+    return messages.slice(start);
+};
+
 export const runLearnCardAssistantAgent = async (
     agentUrl: string,
     auth: LearnCardAssistantAuth,
     messages: LearnCardAssistantAgentMessage[],
-    consentFlowContractUri?: string
+    consentFlowContractUri?: string,
+    signal?: AbortSignal
 ): Promise<LearnCardAssistantAgentRunResponse> => {
+    signal?.throwIfAborted();
+    const headers = await auth.getHeaders();
+    signal?.throwIfAborted();
     const response = await fetch(`${normalizeAgentUrl(agentUrl)}/api/agent/run`, {
         method: 'POST',
-        headers: { ...(await auth.getHeaders()), 'Content-Type': 'application/json' },
+        signal,
+        headers: { ...headers, 'Content-Type': 'application/json' },
         body: JSON.stringify({
             did: auth.did,
-            messages,
+            messages: boundAgentHistory(messages),
             ...(consentFlowContractUri ? { consentFlowContractUri } : {}),
         }),
     });
     const payload = await parseJson<LearnCardAssistantAgentRunResponse & { error?: string }>(
         response
     );
+    signal?.throwIfAborted();
 
     if (!response.ok) throw new Error(payload.error || 'The assistant did not respond.');
 

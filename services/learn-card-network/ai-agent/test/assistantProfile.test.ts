@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import type { Db } from 'mongodb';
+import { createLearnCardDagJweEncryptionService } from '../src/security/encryption';
 
 import {
     createInMemoryLearnCardAssistantProfileRepository,
@@ -22,6 +24,39 @@ const createService = () =>
     createLearnCardAssistantProfileService(createInMemoryLearnCardAssistantProfileRepository());
 
 describe('LearnCard Assistant profile', () => {
+    it('retries lazy profile initialization after a transient Mongo outage', async () => {
+        let connected = false;
+        const runtime = createLearnCardAssistantProfileRuntime({
+            mongoRuntime: {
+                ...unavailableMongoRuntime,
+                getStatus: async () => ({ configured: true, connected, dbName: 'test' }),
+                getDb: async () =>
+                    ({
+                        collection: () => ({
+                            createIndex: async () => 'owner-index',
+                            find: () => ({ toArray: async () => [] }),
+                            findOne: async () => undefined,
+                        }),
+                    }) as unknown as Db,
+            },
+            getEncryption: () =>
+                createLearnCardDagJweEncryptionService({
+                    keyId: 'unused-test-key',
+                    getWallet: async () => {
+                        throw new Error('An empty profile needs no wallet.');
+                    },
+                }),
+        });
+        await expect(runtime.getProfile('did:key:user')).rejects.toThrow(
+            'storage is not available'
+        );
+        connected = true;
+        await expect(runtime.getProfile('did:key:user')).resolves.toMatchObject({
+            ownerDid: 'did:key:user',
+            name: 'My Assistant',
+        });
+    });
+
     it('returns the default profile when none exists', async () => {
         const profile = await createService().getProfile('did:key:user');
 

@@ -31,6 +31,8 @@ export interface AgentAutonomySchedule {
     triggerSyncedAt?: Date;
     createdAt: Date;
     updatedAt: Date;
+    /** Changes on configuration edits, not on occurrence advancement. */
+    configurationId?: string;
 }
 
 export interface DueAgentAutonomySchedule {
@@ -99,7 +101,8 @@ export interface AgentAutonomyScheduleRepository {
         id: string,
         scheduledFor: Date,
         nextRunAt: Date,
-        updatedAt: Date
+        updatedAt: Date,
+        expectedSchedule?: AgentAutonomySchedule
     ): Promise<boolean>;
 }
 
@@ -121,7 +124,13 @@ export interface AgentAutonomyScheduleService {
     ): Promise<boolean>;
     clearTriggerScheduleSync(ownerDid: string, id: string): Promise<boolean>;
     listDue(ownerDids: string[], at?: Date): Promise<DueAgentAutonomySchedule[]>;
-    advanceNextRun(ownerDid: string, id: string, scheduledFor: Date, now?: Date): Promise<boolean>;
+    advanceNextRun(
+        ownerDid: string,
+        id: string,
+        scheduledFor: Date,
+        now?: Date,
+        expectedSchedule?: AgentAutonomySchedule
+    ): Promise<boolean>;
 }
 
 export interface LearnCardAssistantSchedulesRuntime extends AgentAutonomyScheduleService {
@@ -293,6 +302,18 @@ export const toAgentAutonomyScheduleResponse = (
     updatedAt: schedule.updatedAt.toISOString(),
 });
 
+const matchesScheduleClaim = (
+    schedule: AgentAutonomySchedule,
+    expected: AgentAutonomySchedule
+): boolean =>
+    schedule.enabled === expected.enabled &&
+    schedule.configurationId === expected.configurationId &&
+    schedule.updatedAt.getTime() === expected.updatedAt.getTime() &&
+    schedule.cron === expected.cron &&
+    schedule.timezone === expected.timezone &&
+    schedule.triggerScheduleId === expected.triggerScheduleId &&
+    schedule.triggerSyncedAt?.getTime() === expected.triggerSyncedAt?.getTime();
+
 export const createMongoAgentAutonomyScheduleRepository = (
     db: Db,
     encryption: EncryptionService
@@ -331,7 +352,12 @@ export const createMongoAgentAutonomyScheduleRepository = (
             collection.createIndex({ ownerDid: 1, id: 1 }, { unique: true }),
             collection.createIndex({ ownerDid: 1, enabled: 1, nextRunAt: 1 }),
             collection.createIndex({ triggerScheduleId: 1 }, { unique: true, sparse: true }),
-        ]).then(() => undefined);
+        ])
+            .then(() => undefined)
+            .catch(error => {
+                indexesReady = undefined;
+                throw error;
+            });
 
         await indexesReady;
     };
@@ -441,11 +467,39 @@ export const createMongoAgentAutonomyScheduleRepository = (
                 nextRunAt: new Date(schedule.nextRunAt),
             }));
         },
-        advanceNextRun: async (ownerDid, id, scheduledFor, nextRunAt, updatedAt) => {
+        advanceNextRun: async (
+            ownerDid,
+            id,
+            scheduledFor,
+            nextRunAt,
+            updatedAt,
+            expectedSchedule
+        ) => {
             await ensureIndexes();
 
             const result = await collection.updateOne(
-                { ownerDid, id, nextRunAt: scheduledFor } as Filter<StoredAgentAutonomySchedule>,
+                {
+                    ownerDid,
+                    id,
+                    nextRunAt: scheduledFor,
+                    ...(expectedSchedule
+                        ? {
+                              enabled: expectedSchedule.enabled,
+                              configurationId: expectedSchedule.configurationId ?? {
+                                  $exists: false,
+                              },
+                              updatedAt: expectedSchedule.updatedAt,
+                              cron: expectedSchedule.cron,
+                              timezone: expectedSchedule.timezone,
+                              triggerScheduleId: expectedSchedule.triggerScheduleId ?? {
+                                  $exists: false,
+                              },
+                              triggerSyncedAt: expectedSchedule.triggerSyncedAt ?? {
+                                  $exists: false,
+                              },
+                          }
+                        : {}),
+                } as Filter<StoredAgentAutonomySchedule>,
                 { $set: { nextRunAt, updatedAt } }
             );
 
@@ -544,11 +598,19 @@ export const createInMemoryAgentAutonomyScheduleRepository = (
                     }))
             );
         },
-        advanceNextRun: async (ownerDid, id, scheduledFor, nextRunAt, updatedAt) => {
+        advanceNextRun: async (
+            ownerDid,
+            id,
+            scheduledFor,
+            nextRunAt,
+            updatedAt,
+            expectedSchedule
+        ) => {
             const scheduleKey = key(ownerDid, id);
             const schedule = schedules.get(scheduleKey);
 
             if (!schedule || schedule.nextRunAt.getTime() !== scheduledFor.getTime()) return false;
+            if (expectedSchedule && !matchesScheduleClaim(schedule, expectedSchedule)) return false;
 
             schedules.set(scheduleKey, {
                 ...schedule,
@@ -594,6 +656,7 @@ export const createAgentAutonomyScheduleService = (
         const schedule: AgentAutonomySchedule = {
             ...parsed,
             id: createId(),
+            configurationId: randomUUID(),
             cron,
             nextRunAt: getNextScheduleRun(cron, parsed.timezone, currentTime),
             createdAt: currentTime,
@@ -622,6 +685,7 @@ export const createAgentAutonomyScheduleService = (
         const schedule: AgentAutonomySchedule = {
             ...existing,
             ...parsed,
+            configurationId: randomUUID(),
             timeOfDay,
             daysOfWeek,
             timezone,
@@ -646,14 +710,27 @@ export const createAgentAutonomyScheduleService = (
 
         return (await repository.listDue([...new Set(parsedOwnerDids)], at)).map(cloneDueSchedule);
     },
-    advanceNextRun: async (ownerDid, id, scheduledFor, currentTime = now()) => {
+    advanceNextRun: async (ownerDid, id, scheduledFor, currentTime = now(), expectedSchedule) => {
         const schedule = await repository.findById(ownerDid, id);
-        if (!schedule || schedule.nextRunAt.getTime() !== scheduledFor.getTime()) return false;
+        if (
+            !schedule ||
+            !schedule.enabled ||
+            schedule.nextRunAt.getTime() !== scheduledFor.getTime()
+        )
+            return false;
+        if (expectedSchedule && !matchesScheduleClaim(schedule, expectedSchedule)) return false;
 
         const after = new Date(Math.max(currentTime.getTime(), scheduledFor.getTime()));
         const nextRunAt = getNextScheduleRun(schedule.cron, schedule.timezone, after);
 
-        return repository.advanceNextRun(ownerDid, id, scheduledFor, nextRunAt, currentTime);
+        return repository.advanceNextRun(
+            ownerDid,
+            id,
+            scheduledFor,
+            nextRunAt,
+            currentTime,
+            expectedSchedule ?? schedule
+        );
     },
     setTriggerScheduleSync: async (ownerDid, id, triggerScheduleId, syncedAt = now()) =>
         repository.setTriggerScheduleSync(
@@ -708,7 +785,10 @@ export const createLearnCardAssistantSchedulesRuntime = ({
                 getEncryption(),
                 { now, createId }
             );
-        })();
+        })().catch(error => {
+            servicePromise = undefined;
+            throw error;
+        });
 
         return servicePromise;
     };
@@ -740,8 +820,14 @@ export const createLearnCardAssistantSchedulesRuntime = ({
         clearTriggerScheduleSync: async (ownerDid, id) =>
             (await requireService()).clearTriggerScheduleSync(ownerDid, id),
         listDue: async (ownerDids, at) => (await requireService()).listDue(ownerDids, at),
-        advanceNextRun: async (ownerDid, id, scheduledFor, currentTime) =>
-            (await requireService()).advanceNextRun(ownerDid, id, scheduledFor, currentTime),
+        advanceNextRun: async (ownerDid, id, scheduledFor, currentTime, expectedSchedule) =>
+            (await requireService()).advanceNextRun(
+                ownerDid,
+                id,
+                scheduledFor,
+                currentTime,
+                expectedSchedule
+            ),
         getStatus: async () => {
             if (service) return { configured: true, connected: true };
 

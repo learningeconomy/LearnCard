@@ -130,4 +130,20 @@ export const getApiTokenClient = async (
     return trpc;
 };
 
+/** Public routes only: no DID challenges, API tokens, or authority headers. */
+export const getAnonymousClient = (url: string): LCNClient =>
+    createTRPCClient<AppRouter>({
+        links: [
+            httpBatchLink({
+                methodOverride: 'POST',
+                url,
+                maxURLLength: 3072,
+                transformer: {
+                    input: RegExpTransformer,
+                    output: { serialize: o => o, deserialize: o => o },
+                },
+            }),
+        ],
+    });
+
 export default getClient;

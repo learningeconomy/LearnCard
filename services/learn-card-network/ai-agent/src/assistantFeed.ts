@@ -333,7 +333,7 @@ export const createMongoLearnCardAssistantFeedRepository = (
     const migrateExisting = async (): Promise<void> => {
         const items = await collection.find({}).toArray();
 
-        await Promise.all(
+        const migrations = await Promise.allSettled(
             items.filter(needsMigration).map(async item => {
                 const decrypted = await decryptItem(item);
                 await collection.replaceOne(
@@ -346,21 +346,67 @@ export const createMongoLearnCardAssistantFeedRepository = (
                 );
             })
         );
+        // Keep the retry barrier closed until every started replacement has finished.
+        const failed = migrations.find(result => result.status === 'rejected');
+        if (failed?.status === 'rejected') throw failed.reason;
+    };
+
+    const ensureDedupeIndex = async (): Promise<void> => {
+        // Install the replacement before removing the legacy index so keyed writes
+        // stay protected even when multiple service instances initialize together.
+        await collection.createIndex(
+            { ownerDid: 1, dedupeKeyHash: 1 },
+            {
+                name: 'ownerDid_dedupeKeyHash_present_unique',
+                unique: true,
+                partialFilterExpression: { dedupeKeyHash: { $exists: true } },
+            }
+        );
+        const indexes = await collection.listIndexes().toArray();
+        for (const index of indexes) {
+            if (
+                index.name &&
+                index.unique === true &&
+                index.sparse === true &&
+                Object.keys(index.key).length === 2 &&
+                index.key.ownerDid === 1 &&
+                index.key.dedupeKeyHash === 1
+            ) {
+                try {
+                    await collection.dropIndex(index.name);
+                } catch (error) {
+                    // Another initializer may already have removed this exact index.
+                    if (!(
+                        error &&
+                        typeof error === 'object' &&
+                        'code' in error &&
+                        error.code === 27
+                    )) {
+                        throw error;
+                    }
+                }
+            }
+        }
     };
 
     const ensureIndexes = async (): Promise<void> => {
         indexesReady ??= Promise.all([
             collection.createIndex({ ownerDid: 1, id: 1 }, { unique: true }),
-            collection.createIndex(
-                { ownerDid: 1, dedupeKeyHash: 1 },
-                { unique: true, sparse: true }
-            ),
+            ensureDedupeIndex(),
             collection.createIndex({ ownerDid: 1, createdAt: -1 }),
-        ]).then(() => undefined);
+        ])
+            .then(() => undefined)
+            .catch(error => {
+                indexesReady = undefined;
+                throw error;
+            });
 
         await indexesReady;
 
-        migrationReady ??= migrateExisting();
+        migrationReady ??= migrateExisting().catch(error => {
+            migrationReady = undefined;
+            throw error;
+        });
 
         await migrationReady;
     };
@@ -640,7 +686,10 @@ export const createLearnCardAssistantFeedRuntime = ({
                 await mongoRuntime.getDb(),
                 getEncryption()
             );
-        })();
+        })().catch(error => {
+            servicePromise = undefined;
+            throw error;
+        });
 
         return servicePromise;
     };

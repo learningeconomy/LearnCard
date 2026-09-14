@@ -348,7 +348,9 @@ const MyAssistantPageContent: React.FC = () => {
                     isLoadingConsent={
                         isFetchingContract || (openContractWhenLoaded && contractLoading)
                     }
-                    onSave={async input => updateProfileMutation.mutateAsync(input)}
+                    onSave={async input => {
+                        await updateProfileMutation.mutateAsync(input);
+                    }}
                     onAvatarChange={updateAvatarConfig}
                     onOpenChat={() => openChatModal()}
                     onOpenMemories={() => setMemoriesOpen(true)}

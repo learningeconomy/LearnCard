@@ -1,5 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { Express } from 'express';
+import type { Db } from 'mongodb';
+import { createLearnCardDagJweEncryptionService } from '../src/security/encryption';
 
 import type { AgentProvider, AgentToolDefinition } from '../src/agent/types';
 import type { ConsentFlowRuntime } from '../src/consentFlow';
@@ -92,6 +94,108 @@ const createDidAuthJwt = (nonce: string, holder = 'did:key:user'): string => {
 };
 
 describe('runChatRequest', () => {
+    it('shares remaining primary token and financial budgets with retrospective work', async () => {
+        for (const exhausted of ['tokens', 'cost']) {
+            const runConfig: ServiceConfig = {
+                ...testConfig,
+                maxRunTokens: exhausted === 'tokens' ? 1_000 : 50_000,
+                maxRunCostUsd: exhausted === 'cost' ? 0.001 : 1,
+                inputTokenCostUsdPerMillion: 1,
+                outputTokenCostUsdPerMillion: 1,
+                retroInputTokenCostUsdPerMillion: 1,
+                retroOutputTokenCostUsdPerMillion: 1,
+            };
+            const retroProvider = {
+                complete: vi.fn(async () => ({
+                    message: { role: 'assistant' as const, content: '{"action":"noop"}' },
+                    usage: { inputTokens: 100, outputTokens: 50, totalTokens: 150 },
+                })),
+            };
+            const selfImprovementRuntime = createSelfImprovementRuntime({
+                config: runConfig,
+                mongoRuntime: {
+                    getClient: async () => {
+                        throw new Error('Injected services only');
+                    },
+                    getDb: async () => {
+                        throw new Error('Injected services only');
+                    },
+                    getStatus: async () => ({
+                        configured: false,
+                        connected: false,
+                        dbName: 'test',
+                    }),
+                    close: async () => undefined,
+                },
+                services: {
+                    userDocs: createUserDocService(createInMemoryUserDocRepository()),
+                    runTraces: createRunTraceService(createInMemoryRunTraceRepository()),
+                    retroResults: createInMemoryRetroResultRepository(),
+                },
+                retroProvider,
+            });
+            const result = await runChatRequest({
+                ownerDid: 'did:key:user',
+                body: { messages: [{ role: 'user', content: 'Hello' }] },
+                config: runConfig,
+                tools: [],
+                selfImprovementRuntime,
+                provider: {
+                    complete: async () => ({
+                        message: { role: 'assistant', content: 'Primary complete' },
+                        usage: { inputTokens: 900, outputTokens: 100, totalTokens: 1_000 },
+                    }),
+                },
+            });
+            expect(result.status).toBe(200);
+            await expect(result.afterResponse?.()).rejects.toThrow('Retrospective failed');
+            expect(retroProvider.complete).not.toHaveBeenCalled();
+        }
+    });
+
+    it('uses only the remaining original deadline for interactive post-processing', async () => {
+        vi.useFakeTimers();
+        try {
+            const began = Date.now();
+            const postRunStarted = Promise.withResolvers<void>();
+            let postRunSignal: AbortSignal | undefined;
+            const selfImprovementRuntime = {
+                loadRequestSkills: async () => [],
+                loadRequestTools: async () => [],
+                getMemoryManifestPrompt: async () => undefined,
+                runAfterResponse: async ({ signal }: { signal?: AbortSignal }) => {
+                    postRunSignal = signal;
+                    postRunStarted.resolve();
+                    await new Promise<void>(() => undefined);
+                },
+            } as SelfImprovementRuntime;
+            const result = await runChatRequest({
+                ownerDid: 'did:key:user',
+                body: { messages: [{ role: 'user', content: 'Hello' }] },
+                config: { ...testConfig, runTimeoutMs: 100 },
+                tools: [],
+                provider: {
+                    complete: async () => {
+                        vi.setSystemTime(began + 70);
+                        return { message: { role: 'assistant', content: 'Hello' } };
+                    },
+                },
+                selfImprovementRuntime,
+            });
+            expect(result.status).toBe(200);
+            const postRun = result.afterResponse?.();
+            const rejected = expect(postRun).rejects.toThrow('time limit');
+            await postRunStarted.promise;
+            await vi.advanceTimersByTimeAsync(29);
+            expect(postRunSignal?.aborted).toBe(false);
+            await vi.advanceTimersByTimeAsync(1);
+            await rejected;
+            expect(postRunSignal?.aborted).toBe(true);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
     it('runs a request-response chat turn', async () => {
         const provider: AgentProvider = {
             complete: async () => ({
@@ -1240,6 +1344,39 @@ describe('createServer', () => {
         });
     });
 
+    it.each(['trace', 'feed'])('returns an HTTP error for heartbeat %s failure', async failure => {
+        const selfImprovement = {
+            loadRequestSkills: async () => [],
+            loadRequestTools: async () => [],
+            getMemoryManifestPrompt: async () => undefined,
+            runAfterResponse: async () => {
+                if (failure === 'trace') throw new Error('Trace storage is not available.');
+            },
+        } as SelfImprovementRuntime;
+        const feed = {
+            loadRequestTools: async () => [],
+            listLatest: async () => {
+                throw new Error('Feed storage is not available.');
+            },
+        } as unknown as LearnCardAssistantFeedRuntime;
+        const app = createAgentServer({
+            config: testConfig,
+            tools: [],
+            provider: {
+                complete: async () => ({
+                    message: { role: 'assistant', content: 'Heartbeat complete.' },
+                }),
+            },
+            selfImprovementRuntime: selfImprovement,
+            assistantFeedRuntime: feed,
+        });
+        await expect(
+            callRoute(app, 'post', '/api/agent/heartbeat', {
+                did: 'did:key:user',
+            })
+        ).resolves.toMatchObject({ status: 503, payload: { ok: false } });
+    });
+
     it('runs a heartbeat and returns cards created by the agent tool', async () => {
         let calls = 0;
         const assistantFeedService = createLearnCardAssistantFeedService(
@@ -1478,6 +1615,37 @@ describe('createServer', () => {
                 server.close(error => (error ? reject(error) : resolve()));
             });
         }
+    });
+
+    it('retries lazy self-improvement initialization after a transient Mongo outage', async () => {
+        let connected = false;
+        const cursor = { toArray: async () => [], sort: () => cursor };
+        const runtime = createSelfImprovementRuntime({
+            config: testConfig,
+            mongoRuntime: {
+                ...healthyMongoRuntime,
+                getStatus: async () => ({ configured: true, connected, dbName: 'test' }),
+                getDb: async () =>
+                    ({
+                        collection: () => ({
+                            createIndex: async () => 'test-index',
+                            find: () => cursor,
+                        }),
+                    }) as unknown as Db,
+            },
+            getEncryption: () =>
+                createLearnCardDagJweEncryptionService({
+                    keyId: 'unused-test-key',
+                    getWallet: async () => {
+                        throw new Error('Empty storage needs no wallet.');
+                    },
+                }),
+        });
+        await expect(runtime.loadRequestSkills('did:key:user')).rejects.toThrow(
+            'storage is not available'
+        );
+        connected = true;
+        await expect(runtime.loadRequestSkills('did:key:user')).resolves.toEqual([]);
     });
 
     it('skips self-improvement when Mongo is unavailable', async () => {

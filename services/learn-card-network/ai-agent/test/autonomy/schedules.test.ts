@@ -20,6 +20,7 @@ import type { ServiceConfig } from '../../src/config';
 import type { MongoRuntime } from '../../src/mongo';
 import type { EncryptedJsonEnvelopeV1, EncryptionService } from '../../src/security/encryption';
 import { createServer } from '../../src/server';
+import { createStorageTestEncryption } from '../helpers/storageEncryption';
 
 const OWNER_DID = 'did:key:owner';
 const OTHER_DID = 'did:key:other';
@@ -156,6 +157,73 @@ const callRoute = async (
 };
 
 describe('agent autonomy schedules', () => {
+    it.each(['status', 'database', 'indexes'] as const)(
+        'recovers schedule storage after failed first %s initialization',
+        async phase => {
+            const documents: Array<Record<string, unknown>> = [];
+            const collection = {
+                createIndex: vi.fn(async () => 'index'),
+                find: () => ({ toArray: async () => [...documents] }),
+                countDocuments: async () => documents.length,
+                insertOne: async (schedule: Record<string, unknown>) => {
+                    documents.push(schedule);
+                },
+            };
+            const mongoRuntime: MongoRuntime = {
+                ...unavailableMongoRuntime,
+                getStatus: vi.fn(async () => ({
+                    configured: true,
+                    connected: true,
+                    dbName: 'test',
+                })),
+                getDb: vi.fn(async () => ({ collection: () => collection }) as unknown as Db),
+            };
+            const outage = new Error('Synthetic Mongo outage.');
+            if (phase === 'status') vi.mocked(mongoRuntime.getStatus).mockRejectedValueOnce(outage);
+            if (phase === 'database') vi.mocked(mongoRuntime.getDb).mockRejectedValueOnce(outage);
+            if (phase === 'indexes') collection.createIndex.mockRejectedValueOnce(outage);
+            const runtime = createLearnCardAssistantSchedulesRuntime({
+                mongoRuntime,
+                getEncryption: createStorageTestEncryption,
+                now: () => BASE_NOW,
+            });
+
+            await expect(runtime.list(OWNER_DID)).rejects.toThrow(outage);
+            const schedule = await runtime.create(createInput());
+            await expect(runtime.list(OWNER_DID)).resolves.toMatchObject([
+                {
+                    id: schedule.id,
+                    name: 'Morning briefing',
+                    prompt: 'Create a concise morning briefing.',
+                },
+            ]);
+        }
+    );
+
+    it('rejects a same-millisecond configuration edit racing atomic advancement', async () => {
+        const repository = createInMemoryAgentAutonomyScheduleRepository();
+        const service = createAgentAutonomyScheduleService(repository, { now: () => BASE_NOW });
+        const original = await service.create(createInput());
+        const advance = repository.advanceNextRun;
+        vi.spyOn(repository, 'advanceNextRun').mockImplementationOnce(async (...args) => {
+            await service.update({
+                ownerDid: OWNER_DID,
+                id: original.id,
+                prompt: 'New instructions.',
+            });
+
+            return advance(...args);
+        });
+
+        await expect(
+            service.advanceNextRun(OWNER_DID, original.id, original.nextRunAt, BASE_NOW, original)
+        ).resolves.toBe(false);
+        await expect(service.get(OWNER_DID, original.id)).resolves.toMatchObject({
+            prompt: 'New instructions.',
+            nextRunAt: original.nextRunAt,
+        });
+    });
+
     it('validates bounds, sorts days, defaults enabled, and builds canonical cron', () => {
         const parsed = CreateAgentAutonomyScheduleValidator.parse(
             createInput({ daysOfWeek: [6, 1, 0] })

@@ -1,15 +1,68 @@
-import { describe, expect, it } from 'vitest';
+import type { Db } from 'mongodb';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
     createInMemoryLearnCardAssistantFeedRepository,
     createLearnCardAssistantFeedService,
+    createLearnCardAssistantFeedRuntime,
     createLearnCardAssistantFeedTools,
 } from '../src/assistantFeed';
+import type { MongoRuntime } from '../src/mongo';
+import { createStorageTestEncryption } from './helpers/storageEncryption';
 
 const createService = () =>
     createLearnCardAssistantFeedService(createInMemoryLearnCardAssistantFeedRepository());
 
 describe('LearnCard Assistant feed', () => {
+    it.each(['status', 'database', 'indexes', 'migration'] as const)(
+        'recovers after a failed first %s initialization',
+        async phase => {
+            const documents: Array<Record<string, unknown>> = [];
+            const toArray = vi.fn(async () => [...documents]);
+            const cursor = { toArray, sort: () => cursor, limit: () => cursor };
+            const collection = {
+                createIndex: vi.fn(async () => 'index'),
+                listIndexes: () => ({ toArray: async () => [] }),
+                find: () => cursor,
+                insertOne: async (item: Record<string, unknown>) => {
+                    documents.push(item);
+                },
+            };
+            const mongoRuntime: MongoRuntime = {
+                getStatus: vi.fn(async () => ({
+                    configured: true,
+                    connected: true,
+                    dbName: 'test',
+                })),
+                getDb: vi.fn(async () => ({ collection: () => collection }) as unknown as Db),
+                getClient: async () => {
+                    throw new Error('No real Mongo client.');
+                },
+                close: async () => undefined,
+            };
+            const outage = new Error('Synthetic Mongo outage.');
+            if (phase === 'status') vi.mocked(mongoRuntime.getStatus).mockRejectedValueOnce(outage);
+            if (phase === 'database') vi.mocked(mongoRuntime.getDb).mockRejectedValueOnce(outage);
+            if (phase === 'indexes') collection.createIndex.mockRejectedValueOnce(outage);
+            if (phase === 'migration') toArray.mockRejectedValueOnce(outage);
+            const runtime = createLearnCardAssistantFeedRuntime({
+                mongoRuntime,
+                getEncryption: createStorageTestEncryption,
+            });
+
+            await expect(runtime.listLatest('did:key:owner')).rejects.toThrow(outage);
+            const item = await runtime.recordItem({
+                ownerDid: 'did:key:owner',
+                type: 'message',
+                title: 'Recovered card',
+                description: 'Storage can be used after Mongo recovers.',
+            });
+            await expect(runtime.listLatest('did:key:owner')).resolves.toMatchObject([
+                { id: item.id, title: 'Recovered card' },
+            ]);
+        }
+    );
+
     it('rejects invalid writes', async () => {
         const service = createService();
 

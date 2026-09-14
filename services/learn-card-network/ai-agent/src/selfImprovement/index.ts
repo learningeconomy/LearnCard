@@ -4,8 +4,9 @@ import type {
     AgentRunResult,
     AgentProvider,
     AgentToolDefinition,
+    AgentRunObserver,
 } from '../agent/types';
-import type { ServiceConfig } from '../config';
+import { getModelTokenPricing, type ServiceConfig } from '../config';
 import type { MongoRuntime } from '../mongo';
 import type { EncryptionService } from '../security/encryption';
 import { createUserMemoryTools } from './memoryTools';
@@ -42,6 +43,8 @@ export interface SelfImprovementRuntime {
         inputMessages: StoredAgentMessage[];
         result: AgentRunResult;
         signal?: AbortSignal;
+        deadlineAt?: number;
+        observer?: AgentRunObserver;
     }) => Promise<void>;
     getDocsForDebug: (ownerDid: string) => Promise<AgentUserDoc[]>;
     getMemoryManifestForDebug: (ownerDid: string) => Promise<UserMemoryManifest | undefined>;
@@ -163,7 +166,10 @@ export const createSelfImprovementRuntime = ({
                     runTraces: createMongoRunTraceService(db, encryption),
                     retroResults: createMongoRetroResultRepository(db, encryption),
                 };
-            })();
+            })().catch(error => {
+                servicesPromise = undefined;
+                throw error;
+            });
         }
 
         return servicesPromise;
@@ -204,7 +210,16 @@ export const createSelfImprovementRuntime = ({
 
             return getManifestPrompt(await services.userDocs.getMemoryManifest(ownerDid));
         },
-        runAfterResponse: async ({ ownerDid, model, inputMessages, result, signal }) => {
+        runAfterResponse: async ({
+            ownerDid,
+            model,
+            inputMessages,
+            result,
+            signal,
+            deadlineAt,
+            observer,
+        }) => {
+            const retroDeadlineAt = deadlineAt ?? Date.now() + (config.runTimeoutMs ?? 120_000);
             signal?.throwIfAborted();
             if (!ownerDid) return;
 
@@ -228,7 +243,29 @@ export const createSelfImprovementRuntime = ({
             );
             signal?.throwIfAborted();
 
-            await runRetroImprovement({
+            if (result.modelRuns.some(run => !run.usage)) {
+                throw new Error(
+                    'Primary model usage is required to establish the remaining retro budget.'
+                );
+            }
+            let remainingCostUsd: number | undefined;
+            if (config.maxRunCostUsd !== undefined) {
+                const primaryPricing = getModelTokenPricing(config, model);
+                if (
+                    primaryPricing.inputTokenCostUsdPerMillion === undefined ||
+                    primaryPricing.outputTokenCostUsdPerMillion === undefined
+                ) {
+                    throw new Error(
+                        'Primary model pricing is required to establish the remaining retro budget.'
+                    );
+                }
+                remainingCostUsd =
+                    config.maxRunCostUsd -
+                    (result.usage.inputTokens * primaryPricing.inputTokenCostUsdPerMillion +
+                        result.usage.outputTokens * primaryPricing.outputTokenCostUsdPerMillion) /
+                        1_000_000;
+            }
+            const retroResult = await runRetroImprovement({
                 ownerDid,
                 model: config.retroModel,
                 provider,
@@ -237,7 +274,16 @@ export const createSelfImprovementRuntime = ({
                 ...(signal ? { signal } : {}),
                 userDocs: services.userDocs,
                 results: services.retroResults,
+                deadlineAt: retroDeadlineAt,
+                observer,
+                maxOutputTokens: config.maxOutputTokens,
+                maxTotalTokens: (config.maxRunTokens ?? 50_000) - result.usage.totalTokens,
+                maxEstimatedCostUsd: remainingCostUsd,
+                ...getModelTokenPricing(config, config.retroModel),
             });
+            if (retroResult.status === 'error') {
+                throw new Error('Retrospective failed; its audit result has been persisted.');
+            }
         },
         getDocsForDebug: async ownerDid => {
             const services = await getServices();

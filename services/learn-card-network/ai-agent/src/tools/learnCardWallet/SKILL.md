@@ -1,7 +1,7 @@
 ---
 name: learncard-wallet
-description: Use the configured LearnCard wallet through one freeform tool.
-version: 0.2.0
+description: Use the configured LearnCard wallet through approved capabilities.
+version: 0.4.0
 ---
 
 # LearnCard Wallet
@@ -10,30 +10,47 @@ version: 0.2.0
 
 Use this skill when you need a capability on the configured LearnCard wallet and there is not a dedicated narrow tool for the exact task.
 
+## Authorization Boundary
+
+Both `call` and `inspect` require the authenticated `ownerDid` supplied by the server. Model arguments cannot set or override this identity. Credential operations use the service wallet, not a learner wallet. Profile lookup and search instead use a separate anonymous Brain client with no service credentials.
+
+The complete permitted method set is:
+
+- Public identity/profile lookup: `id.did`, `invoke.getProfile`, `invoke.searchProfiles`.
+- Credential templates: `invoke.createBoost`, `invoke.createChildBoost`, `invoke.getBoost`.
+- Credential issuance/delivery: `invoke.issueCredential`, `invoke.sendBoost`, `invoke.send`, `invoke.sendCredentialViaInbox`.
+
+Every other method/path is denied, including key export, account or signing-authority management, connections/recipient lists, aggregate ConsentFlow reads, arbitrary-DID learner reads, raw storage/index/cache access, and decryption. Private learner data must use the existing owner-bound `getConsentedUserData` tool and its approved ConsentFlow contract.
+
+`invoke.getProfile` requires an explicit profile ID; it never reads the service wallet's own profile. `invoke.searchProfiles` accepts only public search options (`limit` from 1 to 99, and `includeServiceProfiles`). Self and connection-status options are denied. Public profile visibility is enforced by the Brain service's unauthenticated access tier, not by stripping selected fields from a service-authenticated response.
+
+Boost URI arguments must have the form `lc:network:<network-and-optional-path-prefix>/trpc:boost:<boost-id>`, including preview URIs such as `lc:network:pr-99.preview.learncard.ai/brain/trpc:boost:abc123` and local encoded or raw port numbers. Reuse the URI returned by `createBoost` for reads, sends, or child creation. Generic credential/storage URIs are not accepted as templates, including by send operations whose SDK otherwise falls back to storage resolution. Unified `invoke.send` supports only `type: "boost"`.
+
+`inspect` exposes only this capability facade, at `""`, `"id"`, `"invoke"`, or an exact permitted method. It never exposes raw values, function source, hidden properties, or function traversal (`call`, `apply`, `bind`). Unknown paths are denied even if a future SDK adds them.
+
 ## Tool
 
 Use `learnCardWallet` with one of two operations:
 
-- `inspect`: list functions, objects, and scalar values available at a wallet path.
-- `call`: invoke a wallet method by dot-separated path with positional `args`.
+- `inspect`: list approved namespaces and documented functions available on this wallet.
+- `call`: invoke an approved method by its exact dot-separated path with positional `args`.
 
 The `path` starts at the wallet root. Pass `args` as an array, even when there is only one argument.
 
 Inspect results can include:
 
-- parsed JavaScript parameters when available,
-- TypeScript-derived metadata for common LearnCard Network methods,
+- TypeScript-derived metadata for approved LearnCard Network methods,
 - argument details,
 - examples,
 - preconditions,
 - method notes.
 
-Bound SDK methods may still appear as native functions in JavaScript. When inspection returns `argumentDetails`, `examples`, or `metadataSource`, treat those as more reliable than `arg1`/`arg2`.
+Inspection uses curated metadata, never implementation source or default parameter values.
 
 ## Procedure
 
 1. Start with `inspect` if you do not already know the method path or argument order.
-2. Inspect the exact function before write operations such as create, send, issue, revoke, delete, or register.
+2. Inspect the exact function before credential creation, issuance, or delivery.
 3. Use the smallest method that answers the request.
 4. If a write call fails, read the structured error payload before retrying. It includes `method`, `argsSummary`, `underlyingError`, `knownUsage`, and `failureHints` when available.
 5. Summarize results in user-friendly language instead of dumping raw JSON.
@@ -66,13 +83,7 @@ Get the current wallet DID:
 { "operation": "call", "path": "id.did", "args": [] }
 ```
 
-Get the configured agent profile:
-
-```json
-{ "operation": "call", "path": "invoke.getProfile", "args": [] }
-```
-
-Get another profile:
+Get a public profile by its explicit profile ID:
 
 ```json
 { "operation": "call", "path": "invoke.getProfile", "args": ["example-profile-id"] }
@@ -84,11 +95,7 @@ Search profiles:
 { "operation": "call", "path": "invoke.searchProfiles", "args": ["Taylor"] }
 ```
 
-Read stored credential content:
-
-```json
-{ "operation": "call", "path": "read.get", "args": ["lc:credential-uri"] }
-```
+To read the current learner's shared credential content, use `getConsentedUserData`. Raw `read.get` access is intentionally unavailable.
 
 ## Boost Workflow
 
@@ -146,8 +153,8 @@ Important `sendBoost` details:
 
 - Argument order is `profileId`, then `boostUri`, then optional `options`.
 - Use profile IDs such as `"taylor"`, not DIDs, for direct profile sends.
-- `connectWith(profileId)` may create a pending connection. Check `getConnections()` and `getPendingConnections()` before assuming the recipient can receive direct sends.
-- If direct send is blocked by a pending connection, ask the user to accept the connection or use an email/phone inbox flow if appropriate.
+- Direct sends may require an accepted connection. Connection inspection and management are unavailable through this tool.
+- If a connection is required, ask the operator to arrange it outside this tool, or use an authorized email/phone inbox delivery.
 
 For email or phone recipients, use the unified `invoke.send` route when you have a Boost URI, or `sendCredentialViaInbox` for lower-level inbox issuance.
 
@@ -176,44 +183,6 @@ Useful readbacks:
     "path": "invoke.getBoost",
     "args": ["lc:network:localhost%3A4000/trpc:boost:example"]
 }
-```
-
-```json
-{
-    "operation": "call",
-    "path": "invoke.countBoostRecipients",
-    "args": ["lc:network:localhost%3A4000/trpc:boost:example"]
-}
-```
-
-## Connections
-
-Find a profile:
-
-```json
-{ "operation": "call", "path": "invoke.searchProfiles", "args": ["Taylor"] }
-```
-
-Request a connection:
-
-```json
-{ "operation": "call", "path": "invoke.connectWith", "args": ["taylor"] }
-```
-
-Check accepted and pending state:
-
-```json
-{ "operation": "call", "path": "invoke.getConnections", "args": [] }
-```
-
-```json
-{ "operation": "call", "path": "invoke.getPendingConnections", "args": [] }
-```
-
-Accept an incoming request:
-
-```json
-{ "operation": "call", "path": "invoke.acceptConnectionRequest", "args": ["profile-id"] }
 ```
 
 ## Universal Inbox
@@ -263,39 +232,7 @@ Unsigned inbox credentials require a primary registered signing authority or an 
 
 ## Signing Authorities
 
-If the wallet exposes `invoke.createSigningAuthority`, the typical managed authority setup is:
-
-```json
-{ "operation": "call", "path": "invoke.createSigningAuthority", "args": ["default-issuer"] }
-```
-
-Then register it:
-
-```json
-{
-    "operation": "call",
-    "path": "invoke.registerSigningAuthority",
-    "args": ["https://issuer.example/issue", "default-issuer", "did:key:zExample"]
-}
-```
-
-Then set it as primary:
-
-```json
-{
-    "operation": "call",
-    "path": "invoke.setPrimaryRegisteredSigningAuthority",
-    "args": ["https://issuer.example/issue", "default-issuer"]
-}
-```
-
-Read current signing authority state:
-
-```json
-{ "operation": "call", "path": "invoke.getPrimaryRegisteredSigningAuthority", "args": [] }
-```
-
-If `createSigningAuthority` is not available, you can only register an external authority if the user or system gives you its `endpoint`, `name`, and `did`.
+Signing authorities must be configured by an operator outside this tool. Creating, registering, listing, or changing the primary authority is not permitted. For inbox delivery, use an already signed credential or an existing operator-configured authority. If neither is available, report the missing prerequisite rather than attempting account management.
 
 ## Failure Diagnostics
 
@@ -324,16 +261,11 @@ Example shape:
 
 Do not keep retrying the same write call when `argsSummary` and `knownUsage` show the call shape is already correct. Use `underlyingError.message`, `code`, `statusCode`, `data`, `issues`, or `cause` to decide whether the next step is permissions, credential validation, signing authority setup, recipient lookup, or user action.
 
-## Common Planes
+## Available Namespaces
 
-- `id`: identity helpers such as `did`.
-- `read`: retrieve credential or document content by URI.
-- `store`: persist credential or document content.
-- `index`: query or update indexes.
-- `cache`: temporary key/value storage.
-- `context`: resolve JSON-LD contexts.
-- `invoke`: LearnCard and LearnCard Network plugin methods.
+- `id`: the public service wallet DID only.
+- `invoke`: only the public lookup and credential operations listed above.
 
 ## Safety
 
-Do not ask for, expose, or summarize private seed material or private keys. Do not call methods that send, issue, revoke, delete, remove, or overwrite data unless the user clearly asked for that action. Prefer read-only inspection first when the request is ambiguous.
+Do not ask for, expose, or summarize private seed material or private keys. Issue or send credentials only when the user clearly asks for that action. Prefer inspection when the request is ambiguous. Prompt instructions do not grant access to denied capabilities.

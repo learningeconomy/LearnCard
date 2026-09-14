@@ -31,32 +31,39 @@ const LEARNCARD_TYPES_SOURCE = 'packages/learn-card-types/src/lcn.ts';
 const APP_HELPER_SOURCE = 'apps/learn-card-app/src/components/boost/boostHelpers.ts';
 
 const methodMetadata: Record<string, MethodMetadataInput> = {
-    'invoke.getProfile': {
-        signature: 'getProfile(profileId?)',
-        parameters: ['profileId?'],
+    'id.did': {
+        signature: 'did()',
+        parameters: [],
         description:
-            'Get the current profile when omitted, or a visible LearnCard Network profile by profileId.',
+            'Get the configured service wallet public DID, not the authenticated learner DID.',
+        arguments: [],
+        returns: 'string',
+    },
+    'invoke.getProfile': {
+        signature: 'getProfile(profileId)',
+        parameters: ['profileId'],
+        description:
+            'Get a public LearnCard Network profile by explicit profile ID using anonymous authority, never the service wallet.',
         arguments: [
             {
                 name: 'profileId',
-                type: 'string | undefined',
-                required: false,
+                type: 'string',
+                required: true,
                 description:
-                    'Profile ID such as "taylor". Omit to get the configured wallet profile.',
+                    'Explicit profile ID such as "taylor". Self-profile lookup is unavailable.',
             },
         ],
         returns: 'Promise<LCNVisibleProfile | undefined>',
-        examples: [
-            { description: 'Current profile', args: [] },
-            { description: 'Specific profile', args: ['taylor'] },
+        examples: [{ description: 'Specific profile', args: ['taylor'] }],
+        failureHints: [
+            'Supply an explicit profile ID. Options and connection-tier fields are unavailable.',
         ],
-        failureHints: ['Use a profile ID, not a DID, when looking up a network profile.'],
     },
     'invoke.searchProfiles': {
         signature: 'searchProfiles(profileId?, options?)',
         parameters: ['profileId?', 'options?'],
         description:
-            'Search visible LearnCard Network profiles by profile ID/display text, with optional result controls.',
+            'Search public LearnCard Network profiles anonymously, without service relationships or connection-tier data.',
         arguments: [
             {
                 name: 'profileId',
@@ -66,63 +73,14 @@ const methodMetadata: Record<string, MethodMetadataInput> = {
             },
             {
                 name: 'options',
-                type: '{ limit?: number; includeSelf?: boolean; includeConnectionStatus?: boolean; includeServiceProfiles?: boolean }',
+                type: '{ limit?: number; includeServiceProfiles?: boolean }',
                 required: false,
-                description: 'Optional search controls.',
+                description:
+                    'Public search controls only. limit must be an integer from 1 to 99. Self and connection-status options are not permitted.',
             },
         ],
-        returns: 'Promise<Array<LCNVisibleProfile & { connectionStatus?: string }>>',
+        returns: 'Promise<Array<LCNVisibleProfile>>',
         examples: [{ description: 'Find Taylor', args: ['Taylor'] }],
-    },
-    'invoke.connectWith': {
-        signature: 'connectWith(profileId)',
-        parameters: ['profileId'],
-        description:
-            'Request a network connection with another profile. This may create a pending connection rather than an accepted connection.',
-        arguments: [
-            {
-                name: 'profileId',
-                type: 'string',
-                required: true,
-                description: 'Recipient profile ID such as "taylor".',
-            },
-        ],
-        returns: 'Promise<boolean>',
-        preconditions: ['The target profile must allow connection requests.'],
-        notes: [
-            'After calling connectWith, check getConnections and getPendingConnections before assuming a write operation can use the connection.',
-        ],
-        examples: [{ description: 'Request connection', args: ['taylor'] }],
-    },
-    'invoke.acceptConnectionRequest': {
-        signature: 'acceptConnectionRequest(profileId)',
-        parameters: ['profileId'],
-        description: 'Accept an incoming network connection request from a profile.',
-        arguments: [
-            {
-                name: 'profileId',
-                type: 'string',
-                required: true,
-                description: 'Profile ID that sent the incoming request.',
-            },
-        ],
-        returns: 'Promise<boolean>',
-        examples: [{ description: 'Accept usera request', args: ['usera'] }],
-    },
-    'invoke.getConnections': {
-        signature: 'getConnections()',
-        parameters: [],
-        description: 'List accepted network connections for the current profile.',
-        arguments: [],
-        returns: 'Promise<LCNVisibleProfile[]>',
-    },
-    'invoke.getPendingConnections': {
-        signature: 'getPendingConnections()',
-        parameters: [],
-        description:
-            'List outgoing pending connection requests sent by the current profile. These are not accepted connections yet.',
-        arguments: [],
-        returns: 'Promise<LCNVisibleProfile[]>',
     },
     'invoke.createBoost': {
         signature: 'createBoost(credential, metadata?)',
@@ -269,8 +227,7 @@ const methodMetadata: Record<string, MethodMetadataInput> = {
         ],
         failureHints: [
             'Usage: sendBoost(profileId, boostUri, options?). Put the profile ID first and the Boost URI second.',
-            'If connectWith only created a pending connection, ask the recipient to accept it before retrying direct sendBoost.',
-            'Read getConnections and getPendingConnections to distinguish accepted vs pending connection state.',
+            'If a direct send requires a connection, ask the operator to arrange it outside this tool or use an authorized inbox delivery.',
         ],
     },
     'invoke.send': {
@@ -310,34 +267,6 @@ const methodMetadata: Record<string, MethodMetadataInput> = {
             'recipient is a single string. The SDK auto-detects profile ID, DID, email, or phone.',
         ],
     },
-    'invoke.countBoostRecipients': {
-        signature: 'countBoostRecipients(boostUri)',
-        parameters: ['boostUri'],
-        description: 'Count recipients for a Boost URI.',
-        arguments: [
-            {
-                name: 'boostUri',
-                type: 'string',
-                required: true,
-                description: 'Boost URI to count recipients for.',
-            },
-        ],
-        returns: 'Promise<number>',
-    },
-    'invoke.getBoostRecipients': {
-        signature: 'getBoostRecipients(boostUri)',
-        parameters: ['boostUri'],
-        description: 'List recipients for a Boost URI.',
-        arguments: [
-            {
-                name: 'boostUri',
-                type: 'string',
-                required: true,
-                description: 'Boost URI to list recipients for.',
-            },
-        ],
-        returns: 'Promise<BoostRecipientInfo[]>',
-    },
     'invoke.issueCredential': {
         signature: 'issueCredential(credential)',
         parameters: ['credential'],
@@ -356,98 +285,6 @@ const methodMetadata: Record<string, MethodMetadataInput> = {
             'This is local wallet signing, not Universal Inbox signing authority registration.',
             'If this fails for a VC v2 payload, check the credential context, proof format support, and required VC fields.',
         ],
-    },
-    'invoke.createSigningAuthority': {
-        signature: 'createSigningAuthority(name, ownerDid?)',
-        parameters: ['name', 'ownerDid?'],
-        description:
-            'Create a managed signing authority when the configured wallet includes the LCA/simple-signing plugin.',
-        arguments: [
-            {
-                name: 'name',
-                type: 'string',
-                required: true,
-                description: 'Short signing authority relationship name.',
-            },
-            {
-                name: 'ownerDid',
-                type: 'string | undefined',
-                required: false,
-                description: 'Owner DID. Omit to use the current wallet DID when supported.',
-            },
-        ],
-        returns: 'Promise<{ endpoint: string; name: string; did?: string } | false>',
-        notes: [
-            'This method is only present when the wallet has the signing service plugin loaded.',
-        ],
-    },
-    'invoke.registerSigningAuthority': {
-        signature: 'registerSigningAuthority(endpoint, name, did)',
-        parameters: ['endpoint', 'name', 'did'],
-        description: 'Authorize a signing authority to issue credentials for the current profile.',
-        arguments: [
-            {
-                name: 'endpoint',
-                type: 'string',
-                required: true,
-                description:
-                    'VC-API issuer endpoint returned by createSigningAuthority or external signer.',
-            },
-            {
-                name: 'name',
-                type: 'string',
-                required: true,
-                description: 'Signing authority relationship name.',
-            },
-            {
-                name: 'did',
-                type: 'string',
-                required: true,
-                description: 'DID controlled by the signing authority.',
-            },
-        ],
-        returns: 'Promise<boolean>',
-        examples: [
-            {
-                description: 'Register a managed authority',
-                args: ['https://issuer.example/issue', 'default-issuer', 'did:key:zExample'],
-            },
-        ],
-    },
-    'invoke.setPrimaryRegisteredSigningAuthority': {
-        signature: 'setPrimaryRegisteredSigningAuthority(endpoint, name)',
-        parameters: ['endpoint', 'name'],
-        description:
-            'Set a registered signing authority as the default for unsigned Universal Inbox credentials.',
-        arguments: [
-            {
-                name: 'endpoint',
-                type: 'string',
-                required: true,
-                description: 'Registered signing authority endpoint.',
-            },
-            {
-                name: 'name',
-                type: 'string',
-                required: true,
-                description: 'Registered signing authority relationship name.',
-            },
-        ],
-        returns: 'Promise<boolean>',
-    },
-    'invoke.getPrimaryRegisteredSigningAuthority': {
-        signature: 'getPrimaryRegisteredSigningAuthority()',
-        parameters: [],
-        description: 'Read the current profile primary registered signing authority, if any.',
-        arguments: [],
-        returns: 'Promise<LCNSigningAuthorityForUserType | undefined>',
-    },
-    'invoke.getRegisteredSigningAuthorities': {
-        signature: 'getRegisteredSigningAuthorities()',
-        parameters: [],
-        description: 'List signing authorities registered for the current profile.',
-        arguments: [],
-        returns: 'Promise<LCNSigningAuthorityForUserType[]>',
     },
     'invoke.sendCredentialViaInbox': {
         signature: 'sendCredentialViaInbox(issueInboxCredential)',
@@ -471,7 +308,7 @@ const methodMetadata: Record<string, MethodMetadataInput> = {
         ],
         notes: [
             'For direct LearnCard Network profile delivery, prefer sendBoost(profileId, boostUri, options?).',
-            'If using an unsigned credential, create/register/set a signing authority first, or pass configuration.signingAuthority.',
+            'Use an operator-configured signing authority or an already signed credential. Account/signing-authority management is not available through this tool.',
         ],
         examples: [
             {
@@ -501,52 +338,17 @@ const methodMetadata: Record<string, MethodMetadataInput> = {
         failureHints: [
             'Use recipient { type: "email", value: "name@example.com" } or { type: "phone", value: "+15555555555" } only.',
             'Put signing authority under configuration.signingAuthority, not at the top level.',
-            'If no signing authority is configured, either sign the credential first or create/register/set a primary signing authority.',
+            'If no signing authority is configured, sign the credential first or ask the operator to configure one outside this tool.',
         ],
-    },
-    'read.get': {
-        signature: 'get(uri, options?)',
-        parameters: ['uri', 'options?'],
-        description: 'Read credential or document content by URI.',
-        arguments: [
-            {
-                name: 'uri',
-                type: 'string',
-                required: true,
-                description: 'Credential, Boost, or storage URI.',
-            },
-            {
-                name: 'options',
-                type: '{ cache?: "cache-first" | "network-first" | "no-cache" }',
-                required: false,
-                description: 'Read cache behavior.',
-            },
-        ],
-        returns: 'Promise<unknown>',
-    },
-    'store.LearnCloud.uploadEncrypted': {
-        signature: 'uploadEncrypted(credential, options?)',
-        parameters: ['credential', 'options?'],
-        description: 'Encrypt and upload credential content to LearnCloud storage.',
-        arguments: [
-            {
-                name: 'credential',
-                type: 'VC | VP | object',
-                required: true,
-                description: 'Credential or presentation content to store encrypted.',
-            },
-            {
-                name: 'options',
-                type: 'unknown',
-                required: false,
-                description: 'Storage-specific options.',
-            },
-        ],
-        returns: 'Promise<string> storageUri',
     },
 };
 
 const metadataSources: Record<string, string> = {
+    'id.did': 'packages/plugins/didkey/src/index.ts',
+    'invoke.getProfile':
+        'services/learn-card-network/ai-agent/src/tools/learnCardWallet/index.ts; services/learn-card-network/brain-service/src/routes/profiles.ts',
+    'invoke.searchProfiles':
+        'services/learn-card-network/ai-agent/src/tools/learnCardWallet/index.ts; services/learn-card-network/brain-service/src/routes/profiles.ts',
     'invoke.createBoost': NETWORK_TYPES_SOURCE,
     'invoke.createChildBoost': NETWORK_TYPES_SOURCE,
     'invoke.getBoost': NETWORK_TYPES_SOURCE,
@@ -554,18 +356,13 @@ const metadataSources: Record<string, string> = {
     'invoke.send': `${NETWORK_TYPES_SOURCE}; ${LEARNCARD_TYPES_SOURCE}`,
     'invoke.sendCredentialViaInbox': `${NETWORK_TYPES_SOURCE}; ${LEARNCARD_TYPES_SOURCE}`,
     'invoke.issueCredential': 'LearnCard credential plugin',
-    'invoke.createSigningAuthority': 'packages/plugins/simple-signing-plugin/src/types.ts',
-    'invoke.registerSigningAuthority': NETWORK_TYPES_SOURCE,
-    'invoke.setPrimaryRegisteredSigningAuthority': NETWORK_TYPES_SOURCE,
-    'invoke.getPrimaryRegisteredSigningAuthority': NETWORK_TYPES_SOURCE,
-    'invoke.getRegisteredSigningAuthorities': NETWORK_TYPES_SOURCE,
 };
 
 export const getLearnCardWalletMethodMetadata = (
     walletPath: string
 ): LearnCardWalletMethodMetadata | undefined => {
     const metadata = methodMetadata[walletPath];
-    if (!metadata) return undefined;
+    if (!Object.hasOwn(methodMetadata, walletPath)) return undefined;
 
     return {
         path: walletPath,

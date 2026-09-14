@@ -23,61 +23,63 @@ workspace packages first.
 
 ## Environment
 
-| Variable                                      | Default                                                                    | Purpose                                                                                                                                          |
-| --------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `OPENAI_API_KEY`                              | none                                                                       | API key for the first provider adapter.                                                                                                          |
-| `AI_AGENT_MODEL`                              | `gpt-5.6-luna`                                                             | Model name passed to the provider. Luna tool calls use Chat Completions with `reasoning_effort: none`, as required by the provider.              |
-| `AI_AGENT_WALLET_SEED`                        | `LEARNCARD_AGENT_SEED` or `SEED`                                           | Seed used by LearnCard wallet tools and Mongo persistence encryption through DIDKit DAG-JWE. Required whenever Mongo persistence is configured.  |
-| `AI_AGENT_WALLET_DID_WEB`                     | none                                                                       | Optional authorized service profile passed as `didWeb` to `initLearnCard` for ConsentFlow and wallet tools. Persistence keeps the seed identity. |
-| `AI_AGENT_CLOUD_URL`                          | `LEARN_CLOUD_URL` or `https://cloud.learncard.com/trpc`                    | LearnCloud tRPC endpoint for the agent wallet.                                                                                                   |
-| `AI_AGENT_NETWORK_URL`                        | `LEARNCARD_NETWORK_URL` or `https://network.learncard.com/trpc`            | LearnCard Network tRPC endpoint for the agent wallet.                                                                                            |
-| `AI_AGENT_PORT`                               | `PORT` or `3000`                                                           | HTTP port.                                                                                                                                       |
-| `AI_AGENT_TRUST_PROXY_HOPS`                   | `0`                                                                        | Number of known reverse-proxy hops trusted when resolving client IPs for baseline and public-endpoint rate limits.                               |
-| `AI_AGENT_MAX_TOOL_ROUNDS`                    | `8`                                                                        | Maximum tool-call rounds within one request. Integer from `1` through `20`.                                                                      |
-| `AI_AGENT_RUN_TIMEOUT_MS`                     | `120000`                                                                   | Wall-clock limit for one agent request. Allowed range: 5 seconds through 10 minutes.                                                             |
-| `AI_AGENT_MAX_OUTPUT_TOKENS`                  | `4096`                                                                     | Maximum output tokens passed to each model call.                                                                                                 |
-| `AI_AGENT_MAX_RUN_TOKENS`                     | `50000`                                                                    | Maximum measured input + output tokens across a run.                                                                                             |
-| `AI_AGENT_MAX_RUN_COST_USD`                   | `1`                                                                        | Maximum estimated model cost across a run.                                                                                                       |
-| `AI_AGENT_INPUT_TOKEN_COST_USD_PER_MILLION`   | none                                                                       | Current model input-token price used for cost telemetry and limits. Required in production.                                                      |
-| `AI_AGENT_OUTPUT_TOKEN_COST_USD_PER_MILLION`  | none                                                                       | Current model output-token price used for cost telemetry and limits. Required in production.                                                     |
-| `AI_AGENT_METRICS_NAMESPACE`                  | `LearnCard/AIAgent`                                                        | Namespace used for direct CloudWatch `PutMetricData` publishing.                                                                                 |
-| `AI_AGENT_AUTH_DOMAIN`                        | none                                                                       | Expected DID Auth domain. Required in production; local dev falls back to request origin.                                                        |
-| `AI_AGENT_AUTH_CHALLENGE_TTL_MS`              | `300000`                                                                   | DID Auth challenge lifetime in milliseconds.                                                                                                     |
-| `AI_AGENT_ENCRYPTION_KEY_ID`                  | `agent-learncard-dag-jwe-v1`                                               | Versioned key identifier stored in encrypted Mongo field envelopes.                                                                              |
-| `AI_AGENT_DEBUG_ENABLED`                      | `true` outside `NODE_ENV=production`                                       | Enables debug endpoints. Production refuses to start unless this is `false`.                                                                     |
-| `AI_AGENT_DEBUG_TOKEN`                        | none                                                                       | Optional in local development. When set, send it as `X-AI-Agent-Debug-Token` for debug endpoints.                                                |
-| `AI_AGENT_CONSENT_FLOW_CONTRACT_URI`          | none                                                                       | ConsentFlow contract URI used for user-context data. Required on production network.                                                             |
-| `AI_AGENT_CONSENT_FLOW_APP_URL`               | `https://learncard.app`                                                    | Base app URL used to build consent links.                                                                                                        |
-| `AI_AGENT_CONSENT_FLOW_DATA_PAGE_SIZE`        | `100`                                                                      | Page size when preloading consented user data.                                                                                                   |
-| `AI_AGENT_CONSENT_FLOW_DATA_MAX_PAGES`        | `10`                                                                       | Maximum pages to read for one user-data preload.                                                                                                 |
-| `AI_AGENT_CONSENT_FLOW_CREDENTIAL_READ_LIMIT` | `50`                                                                       | Maximum consented credential URIs to hydrate with `read.get`.                                                                                    |
-| `AI_AGENT_MONGO_URI`                          | `MONGO_URI`; local Mongo only outside production when a wallet seed exists | MongoDB connection URI. Production requires explicit Mongo.                                                                                      |
-| `AI_AGENT_MONGO_DB_NAME`                      | `MONGO_DB_NAME` or `learn-card-ai-agent`                                   | MongoDB database name.                                                                                                                           |
-| `AI_AGENT_SELF_IMPROVEMENT_ENABLED`           | `true` outside `NODE_ENV=production`                                       | Enables per-DID dynamic docs, trace persistence, and post-response retro updates.                                                                |
-| `AI_AGENT_RETRO_MODEL`                        | `AI_AGENT_MODEL`                                                           | Model used by the background retro agent.                                                                                                        |
-| `AI_AGENT_RETRO_MAX_TRACE_CHARS`              | `24000`                                                                    | Maximum serialized run-trace size sent to the retro agent.                                                                                       |
-| `AI_AGENT_AUTONOMY_DEV_ENABLED`               | `false`                                                                    | Enables the separate development autonomy worker. Rejected outside `NODE_ENV=development`; never starts from the HTTP service.                   |
-| `AI_AGENT_AUTONOMY_DEV_DIDS`                  | none                                                                       | Comma-separated exact test DIDs allowed by the local development worker.                                                                         |
-| `AI_AGENT_AUTONOMY_DEV_POLL_INTERVAL_MS`      | `30000`                                                                    | Delay after one completed development cycle before the next cycle starts. Minimum `1000`.                                                        |
-| `AI_AGENT_AUTONOMY_DEV_MAX_RUNS_PER_CYCLE`    | `3`                                                                        | Maximum due schedules attempted sequentially in one worker cycle. Integer from `1` through `10`.                                                 |
-| `AI_AGENT_AUTONOMY_DEV_LEASE_MS`              | `900000`                                                                   | Owner/run lease duration. Must exceed the poll interval; active runs renew leases and terminal writes are fenced.                                |
-| `AI_AGENT_TRIGGER_ENABLED`                    | `false`                                                                    | Enables Trigger.dev scheduling. Deployed environments require server-side LaunchDarkly gating.                                                   |
-| `AI_AGENT_TRIGGER_ENVIRONMENT`                | `dev` in development, otherwise `NODE_ENV`                                 | `dev` locally; `staging` or `production` when deployed, matching `SENTRY_ENV`. Included in schedule deduplication keys.                          |
-| `AI_AGENT_AUTONOMY_LAUNCHDARKLY_FLAG_KEY`     | `ai-agent-autonomy-enabled`                                                | Boolean flag evaluated with the authenticated owner's DID as the LaunchDarkly `user` context key.                                                |
-| `LAUNCHDARKLY_SDK_KEY`                        | none                                                                       | Server-side SDK key for the matching LaunchDarkly environment. Required for staging and production schedules.                                    |
-| `TRIGGER_SECRET_KEY`                          | none                                                                       | Environment-specific Trigger.dev secret used by the HTTP service to synchronize schedule CRUD. Required when Trigger integration is enabled.     |
-| `AI_AGENT_WEB_SEARCH_PROVIDER`                | `brave` when `BRAVE_SEARCH_API_KEY` exists, otherwise `none`               | Current-info provider. Supported values: `brave`, `none`; `mock` is for tests.                                                                   |
-| `BRAVE_SEARCH_API_KEY`                        | none                                                                       | Brave Web Search API key. Never returned in health responses or tool output.                                                                     |
-| `AI_AGENT_WEB_SEARCH_DEFAULT_LIMIT`           | `5`                                                                        | Default result count for `webSearch`.                                                                                                            |
-| `AI_AGENT_WEB_SEARCH_MAX_LIMIT`               | `10`                                                                       | Maximum result count exposed to the agent, hard-capped at `20`.                                                                                  |
-| `AI_AGENT_WEB_SEARCH_COUNTRY`                 | none                                                                       | Optional default 2-letter country code, such as `US`.                                                                                            |
-| `AI_AGENT_WEB_SEARCH_LANG`                    | none                                                                       | Optional default search language, such as `en`.                                                                                                  |
-| `AI_AGENT_WEB_SEARCH_SAFESEARCH`              | none                                                                       | Optional default SafeSearch level: `off`, `moderate`, or `strict`.                                                                               |
-| `AI_AGENT_CLOUDWATCH_METRICS_ENABLED`         | `false`                                                                    | Publishes metrics directly with CloudWatch `PutMetricData`; enabled on ECS only.                                                                 |
-| `SENTRY_DSN`                                  | none                                                                       | Raw Sentry DSN URL for sanitized operational errors and traces. Required in production.                                                          |
-| `SENTRY_ENV`                                  | `NODE_ENV`                                                                 | Sentry environment and CloudWatch metric environment dimension.                                                                                  |
-| `SENTRY_RELEASE`                              | `GIT_SHA`                                                                  | Deployed release identifier.                                                                                                                     |
-| `SENTRY_TRACES_SAMPLE_RATE`                   | `0.1`                                                                      | Sentry trace sampling rate from `0` through `1`; staging ECS and Trigger tasks use `1`.                                                          |
+| Variable                                           | Default                                                                    | Purpose                                                                                                                                          |
+| -------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `OPENAI_API_KEY`                                   | none                                                                       | API key for the first provider adapter.                                                                                                          |
+| `AI_AGENT_MODEL`                                   | `gpt-5.6-luna`                                                             | Model name passed to the provider. Luna tool calls use Chat Completions with `reasoning_effort: none`, as required by the provider.              |
+| `AI_AGENT_WALLET_SEED`                             | `LEARNCARD_AGENT_SEED` or `SEED`                                           | Seed used by LearnCard wallet tools and Mongo persistence encryption through DIDKit DAG-JWE. Required whenever Mongo persistence is configured.  |
+| `AI_AGENT_WALLET_DID_WEB`                          | none                                                                       | Optional authorized service profile passed as `didWeb` to `initLearnCard` for ConsentFlow and wallet tools. Persistence keeps the seed identity. |
+| `AI_AGENT_CLOUD_URL`                               | `LEARN_CLOUD_URL` or `https://cloud.learncard.com/trpc`                    | LearnCloud tRPC endpoint for the agent wallet.                                                                                                   |
+| `AI_AGENT_NETWORK_URL`                             | `LEARNCARD_NETWORK_URL` or `https://network.learncard.com/trpc`            | LearnCard Network tRPC endpoint for the agent wallet.                                                                                            |
+| `AI_AGENT_PORT`                                    | `PORT` or `3000`                                                           | HTTP port.                                                                                                                                       |
+| `AI_AGENT_TRUST_PROXY_HOPS`                        | `0`                                                                        | Number of known reverse-proxy hops trusted when resolving client IPs for baseline and public-endpoint rate limits.                               |
+| `AI_AGENT_MAX_TOOL_ROUNDS`                         | `8`                                                                        | Maximum tool-call rounds within one request. Integer from `1` through `20`.                                                                      |
+| `AI_AGENT_RUN_TIMEOUT_MS`                          | `120000`                                                                   | Shared wall-clock limit for the primary response and retrospective work. Allowed range: 5 seconds through 10 minutes.                            |
+| `AI_AGENT_MAX_OUTPUT_TOKENS`                       | `4096`                                                                     | Maximum output tokens passed to each model call.                                                                                                 |
+| `AI_AGENT_MAX_RUN_TOKENS`                          | `50000`                                                                    | Combined measured input + output token limit for the primary run and retrospective.                                                              |
+| `AI_AGENT_MAX_RUN_COST_USD`                        | `1`                                                                        | Combined estimated model cost limit for the primary run and retrospective.                                                                       |
+| `AI_AGENT_INPUT_TOKEN_COST_USD_PER_MILLION`        | none                                                                       | Current model input-token price used for cost telemetry and limits. Required in production.                                                      |
+| `AI_AGENT_OUTPUT_TOKEN_COST_USD_PER_MILLION`       | none                                                                       | Current model output-token price used for cost telemetry and limits. Required in production.                                                     |
+| `AI_AGENT_METRICS_NAMESPACE`                       | `LearnCard/AIAgent`                                                        | Namespace used for direct CloudWatch `PutMetricData` publishing.                                                                                 |
+| `AI_AGENT_AUTH_DOMAIN`                             | none                                                                       | Expected DID Auth domain. Required in production; local dev falls back to request origin.                                                        |
+| `AI_AGENT_AUTH_CHALLENGE_TTL_MS`                   | `300000`                                                                   | DID Auth challenge lifetime in milliseconds.                                                                                                     |
+| `AI_AGENT_ENCRYPTION_KEY_ID`                       | `agent-learncard-dag-jwe-v1`                                               | Versioned key identifier stored in encrypted Mongo field envelopes.                                                                              |
+| `AI_AGENT_DEBUG_ENABLED`                           | `true` outside `NODE_ENV=production`                                       | Enables debug endpoints. Production refuses to start unless this is `false`.                                                                     |
+| `AI_AGENT_DEBUG_TOKEN`                             | none                                                                       | Optional in local development. When set, send it as `X-AI-Agent-Debug-Token` for debug endpoints.                                                |
+| `AI_AGENT_CONSENT_FLOW_CONTRACT_URI`               | none                                                                       | ConsentFlow contract URI used for user-context data. Required on production network.                                                             |
+| `AI_AGENT_CONSENT_FLOW_APP_URL`                    | `https://learncard.app`                                                    | Base app URL used to build consent links.                                                                                                        |
+| `AI_AGENT_CONSENT_FLOW_DATA_PAGE_SIZE`             | `100`                                                                      | Page size when preloading consented user data.                                                                                                   |
+| `AI_AGENT_CONSENT_FLOW_DATA_MAX_PAGES`             | `10`                                                                       | Maximum pages to read for one user-data preload.                                                                                                 |
+| `AI_AGENT_CONSENT_FLOW_CREDENTIAL_READ_LIMIT`      | `50`                                                                       | Maximum consented credential URIs to hydrate with `read.get`.                                                                                    |
+| `AI_AGENT_MONGO_URI`                               | `MONGO_URI`; local Mongo only outside production when a wallet seed exists | MongoDB connection URI. Production requires explicit Mongo.                                                                                      |
+| `AI_AGENT_MONGO_DB_NAME`                           | `MONGO_DB_NAME` or `learn-card-ai-agent`                                   | MongoDB database name.                                                                                                                           |
+| `AI_AGENT_SELF_IMPROVEMENT_ENABLED`                | `true` outside `NODE_ENV=production`                                       | Enables per-DID dynamic docs, trace persistence, and post-response retro updates.                                                                |
+| `AI_AGENT_RETRO_MODEL`                             | `AI_AGENT_MODEL`                                                           | Model used by the background retro agent.                                                                                                        |
+| `AI_AGENT_RETRO_INPUT_TOKEN_COST_USD_PER_MILLION`  | main-model price when models match                                         | Input-token price for a different retrospective model; required when enforcing a cost limit.                                                     |
+| `AI_AGENT_RETRO_OUTPUT_TOKEN_COST_USD_PER_MILLION` | main-model price when models match                                         | Output-token price for a different retrospective model; required when enforcing a cost limit.                                                    |
+| `AI_AGENT_RETRO_MAX_TRACE_CHARS`                   | `24000`                                                                    | Maximum serialized run-trace size sent to the retro agent.                                                                                       |
+| `AI_AGENT_AUTONOMY_DEV_ENABLED`                    | `false`                                                                    | Enables the separate development autonomy worker. Rejected outside `NODE_ENV=development`; never starts from the HTTP service.                   |
+| `AI_AGENT_AUTONOMY_DEV_DIDS`                       | none                                                                       | Comma-separated exact test DIDs allowed by the local development worker.                                                                         |
+| `AI_AGENT_AUTONOMY_DEV_POLL_INTERVAL_MS`           | `30000`                                                                    | Delay after one completed development cycle before the next cycle starts. Minimum `1000`.                                                        |
+| `AI_AGENT_AUTONOMY_DEV_MAX_RUNS_PER_CYCLE`         | `3`                                                                        | Maximum due schedules attempted sequentially in one worker cycle. Integer from `1` through `10`.                                                 |
+| `AI_AGENT_AUTONOMY_DEV_LEASE_MS`                   | `900000`                                                                   | Owner/run lease duration. Must exceed the poll interval; active runs renew leases and terminal writes are fenced.                                |
+| `AI_AGENT_TRIGGER_ENABLED`                         | `false`                                                                    | Enables Trigger.dev scheduling. Deployed environments require server-side LaunchDarkly gating.                                                   |
+| `AI_AGENT_TRIGGER_ENVIRONMENT`                     | `dev` in development, otherwise `NODE_ENV`                                 | `dev` locally; `staging` or `production` when deployed, matching `SENTRY_ENV`. Included in schedule deduplication keys.                          |
+| `AI_AGENT_AUTONOMY_LAUNCHDARKLY_FLAG_KEY`          | `ai-agent-autonomy-enabled`                                                | Boolean flag evaluated with the authenticated owner's DID as the LaunchDarkly `user` context key.                                                |
+| `LAUNCHDARKLY_SDK_KEY`                             | none                                                                       | Server-side SDK key for the matching LaunchDarkly environment. Required for staging and production schedules.                                    |
+| `TRIGGER_SECRET_KEY`                               | none                                                                       | Environment-specific Trigger.dev secret used by the HTTP service to synchronize schedule CRUD. Required when Trigger integration is enabled.     |
+| `AI_AGENT_WEB_SEARCH_PROVIDER`                     | `brave` when `BRAVE_SEARCH_API_KEY` exists, otherwise `none`               | Current-info provider. Supported values: `brave`, `none`; `mock` is for tests.                                                                   |
+| `BRAVE_SEARCH_API_KEY`                             | none                                                                       | Brave Web Search API key. Never returned in health responses or tool output.                                                                     |
+| `AI_AGENT_WEB_SEARCH_DEFAULT_LIMIT`                | `5`                                                                        | Default result count for `webSearch`.                                                                                                            |
+| `AI_AGENT_WEB_SEARCH_MAX_LIMIT`                    | `10`                                                                       | Maximum result count exposed to the agent, hard-capped at `20`.                                                                                  |
+| `AI_AGENT_WEB_SEARCH_COUNTRY`                      | none                                                                       | Optional default 2-letter country code, such as `US`.                                                                                            |
+| `AI_AGENT_WEB_SEARCH_LANG`                         | none                                                                       | Optional default search language, such as `en`.                                                                                                  |
+| `AI_AGENT_WEB_SEARCH_SAFESEARCH`                   | none                                                                       | Optional default SafeSearch level: `off`, `moderate`, or `strict`.                                                                               |
+| `AI_AGENT_CLOUDWATCH_METRICS_ENABLED`              | `false`                                                                    | Publishes metrics directly with CloudWatch `PutMetricData`; enabled on ECS only.                                                                 |
+| `SENTRY_DSN`                                       | none                                                                       | Raw Sentry DSN URL for sanitized operational errors and traces. Required in production.                                                          |
+| `SENTRY_ENV`                                       | `NODE_ENV`                                                                 | Sentry environment and CloudWatch metric environment dimension.                                                                                  |
+| `SENTRY_RELEASE`                                   | `GIT_SHA`                                                                  | Deployed release identifier.                                                                                                                     |
+| `SENTRY_TRACES_SAMPLE_RATE`                        | `0.1`                                                                      | Sentry trace sampling rate from `0` through `1`; staging ECS and Trigger tasks use `1`.                                                          |
 
 ## Health, telemetry, and AWS deployment
 
@@ -102,8 +104,8 @@ The production ARM64 container, reusable-infrastructure ECS/Fargate CloudFormati
 - `src/runtime.ts` composes the provider, wallet, tools, ConsentFlow, Assistant, memory, trace, and awaited retro path shared by HTTP and autonomous execution.
 - `src/autonomy/` stores schedules/runs/leases and implements the development-only full-agent dispatcher.
 - `src/tools/index.ts` registers tools for the agent.
-- `src/tools/learnCardWallet/` exposes the configured wallet through one freeform `learnCardWallet` tool and a bundled `SKILL.md`.
-- `src/tools/consentedUserData.ts` exposes request-scoped consented user data when a DID is supplied.
+- `src/tools/learnCardWallet/` exposes an explicit permitted capability set through the `learnCardWallet` tool and its bundled `SKILL.md`.
+- `src/tools/consentedUserData.ts` exposes consented learner data bound to the verified request principal.
 - `src/tools/webSearch/` defines the provider-neutral current-info search adapter contract, the stable `webSearch` agent tool, and the Brave Web Search provider.
 
 The authenticated HTTP service is request/response. `POST /api/agent/heartbeat` is a manually
@@ -122,7 +124,15 @@ This keeps the core loop simple while letting broad tools ship their own usage i
 When a DID-backed request has active Mongo docs, those docs are merged into the same compact
 `listSkills` index and loaded through `readSkill`. Static file-backed skills remain read-only.
 
-The `learnCardWallet` skill-backed tool uses this pattern for a broad object API. Its `inspect` operation returns function paths, arity, parsed JavaScript parameter names when available, result counts, and truncation hints. Use `query` when inspecting large namespaces.
+The `learnCardWallet` tool requires the server-supplied authenticated owner for both `inspect` and
+`call`. Inspection exposes only permitted methods and their metadata, not hidden properties or
+function source. The capability set supports the service DID, public profile lookup, Boost
+creation/lookup/sending, credential issuance, and inbox delivery. Public profile lookups use
+anonymous authority rather than the service's connections. Key export, account administration,
+private storage/decryption, aggregate learner data, and unknown methods are unavailable.
+
+Use `getConsentedUserData` for learner-specific information. Its owner comes from verified DID Auth,
+not model-supplied tool arguments. JWT issuer and presentation holder must agree when both exist.
 
 ## Web Search / Current Information
 
@@ -139,7 +149,7 @@ To add another provider, implement `WebSearchProvider` in `src/tools/webSearch/`
 Set `AI_AGENT_CONSENT_FLOW_CONTRACT_URI` to the contract the agent should use. When the configured network is not production and no URI is set, the service lazily creates a development contract the first time `/api/consent-flow/contract` or a DID-backed chat run needs one. If the default OpenAI provider is not configured, these paths return 503 before attempting any ConsentFlow work.
 
 - `GET /api/consent-flow/contract` resolves the active contract and returns a consent URL.
-- `POST /api/agent/run` accepts an optional `did`. When present, the service starts loading consented data immediately and adds a request-scoped `getConsentedUserData` tool for the agent to call only if needed.
+- `POST /api/agent/run` uses the verified DID Auth principal and adds a request-scoped `getConsentedUserData` tool. A request-body `did` does not grant access to another learner's data.
 
 ## LearnCard Assistant
 
@@ -147,6 +157,9 @@ The LearnCard Assistant stores proactive learner-facing inbox cards in MongoDB c
 `learnCardAssistantFeedItems`. DID-backed chat and heartbeat runs receive the
 `recordLearnCardAssistantCard` tool, which creates or updates one card for the current learner.
 Use a stable `dedupeKey` when refreshing the same recommendation across runs.
+The key is optional: multiple unkeyed cards are valid for one learner. Keyed cards are unique
+per owner. Mongo initialization creates the partial unique index before removing the old sparse
+index; no card data is deleted.
 
 Assistant card types are `message`, `job-suggestion`, `pathway-update`, and `action-item`.
 Priorities are `normal` and `high`.
@@ -222,10 +235,18 @@ execution recheck access, so revoking a target also blocks queued work at its ne
 Missing SDK keys, initialization failures, and evaluation errors fail closed. Turning the flag off
 does not cancel an already-running agent or undo its effects.
 
+If an occurrence was missed before it was claimed, a later valid current-cadence tick resumes the
+schedule. Missed ticks collapse into that current tick; previously claimed effects are not replayed.
+Schedule edits, stale timestamps, owner leases, and atomic occurrence/configuration checks remain
+fences against duplicate or outdated work.
+
 The main **Deploy** workflow sends affected `main` commits to staging and Changesets releases
 that update the AI Agent package to production. All deployment steps live in `deploy.yml`,
 including environment/project validation and ECS schedule synchronization in both environments.
-The existing `test.yml` workflow runs the AI Agent pull-request checks.
+The existing `test.yml` workflow runs the AI Agent pull-request checks, including repository
+regressions against a disposable Mongo service. Locally, set `AI_AGENT_TEST_MONGO_URI` to a
+loopback-only Mongo URI to enable those integration tests; each test owns and removes its own
+temporary database.
 Production retains its environment approval; no separate action dispatch is required.
 See [RUNBOOK.md](./RUNBOOK.md) for CI, release metadata, environment setup, and controlled rollout.
 
@@ -289,6 +310,14 @@ to traces. If an OpenAI key is configured, a retro agent reviews the trace plus 
 request a validated `noop`, `create`, `update`, or `propose`. Writes go through the doc service,
 which validates names, frontmatter, content size, prompt-injection-like text, provenance, approval
 state, expiry, and version history.
+
+The retrospective consumes only the primary run's remaining time, token, and cost allowances.
+Output is capped, oversized prompts are rejected before the model call, and actual retrospective
+usage contributes to operational token/cost metrics even if the proposed update fails validation.
+A different retrospective model needs its own prices when a financial limit is enabled.
+Retrospective errors are retained in the audit result and propagate to scheduled-run outcomes.
+Cancellation is checked before starting a memory commit; it cannot roll back a write already sent
+to storage.
 
 Debug endpoints:
 

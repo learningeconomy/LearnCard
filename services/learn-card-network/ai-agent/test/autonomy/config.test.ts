@@ -1,9 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
     assertAutonomyDevConfig,
     assertSecurityConfig,
     assertTriggerConfig,
+    getConfig,
+    getModelTokenPricing,
     type ServiceConfig,
 } from '../../src/config';
 
@@ -34,6 +36,66 @@ const validConfig: ServiceConfig = {
     autonomyDevLeaseMs: 900_000,
     autonomyLaunchDarklyFlagKey: 'ai-agent-autonomy-enabled',
 };
+
+describe('retrospective model pricing', () => {
+    it('requires separate prices for a different model when enforcing a cost budget', () => {
+        const config = {
+            ...validConfig,
+            maxRunCostUsd: 1,
+            inputTokenCostUsdPerMillion: 1,
+            outputTokenCostUsdPerMillion: 2,
+        };
+        expect(() => assertSecurityConfig(config)).toThrow('A separate retro model requires');
+        expect(getModelTokenPricing(config, 'retro-model')).toEqual({
+            inputTokenCostUsdPerMillion: undefined,
+            outputTokenCostUsdPerMillion: undefined,
+        });
+        const priced = {
+            ...config,
+            retroInputTokenCostUsdPerMillion: 3,
+            retroOutputTokenCostUsdPerMillion: 4,
+        };
+        expect(getModelTokenPricing(priced, 'retro-model')).toEqual({
+            inputTokenCostUsdPerMillion: 3,
+            outputTokenCostUsdPerMillion: 4,
+        });
+        expect(() => assertSecurityConfig(priced)).not.toThrow();
+        expect(getModelTokenPricing(config, config.model)).toEqual({
+            inputTokenCostUsdPerMillion: 1,
+            outputTokenCostUsdPerMillion: 2,
+        });
+    });
+
+    it.each([-1, Infinity, NaN])('rejects invalid retro pricing %s', price => {
+        expect(() =>
+            assertSecurityConfig({
+                ...validConfig,
+                retroInputTokenCostUsdPerMillion: price,
+            })
+        ).toThrow('AI_AGENT_RETRO_INPUT_TOKEN_COST_USD_PER_MILLION');
+        expect(() =>
+            assertSecurityConfig({
+                ...validConfig,
+                retroOutputTokenCostUsdPerMillion: price,
+            })
+        ).toThrow('AI_AGENT_RETRO_OUTPUT_TOKEN_COST_USD_PER_MILLION');
+    });
+
+    it('reads the configured retro price pair from the environment', () => {
+        vi.stubEnv('NODE_ENV', 'test');
+        vi.stubEnv('AI_AGENT_RETRO_MODEL', 'separate-retro');
+        vi.stubEnv('AI_AGENT_RETRO_INPUT_TOKEN_COST_USD_PER_MILLION', '3.5');
+        vi.stubEnv('AI_AGENT_RETRO_OUTPUT_TOKEN_COST_USD_PER_MILLION', '7');
+        try {
+            expect(getModelTokenPricing(getConfig(), 'separate-retro')).toEqual({
+                inputTokenCostUsdPerMillion: 3.5,
+                outputTokenCostUsdPerMillion: 7,
+            });
+        } finally {
+            vi.unstubAllEnvs();
+        }
+    });
+});
 
 describe('autonomy development configuration gate', () => {
     it('accepts the explicit development-only fixture configuration', () => {

@@ -26,6 +26,7 @@
         "@learncard/didkit-plugin": "workspace:*",
         "@learncard/didkit-plugin-node": "workspace:*",
         "@learncard/init": "workspace:*",
+        "@learncard/network-brain-client": "workspace:*",
         "@sentry/node": "7.61.0",
         "@trigger.dev/sdk": "4.5.4",
         "cors": "^2.8.5",

@@ -175,12 +175,25 @@ export interface ArchiveUserDocInput {
     provenance?: UserDocProvenance;
 }
 
+/** Internal write controls; never part of a persisted document. */
+export interface UserDocWriteOptions {
+    signal?: AbortSignal;
+    deadlineAt?: number;
+}
+
+const assertWriteAllowed = (options?: UserDocWriteOptions): void => {
+    options?.signal?.throwIfAborted();
+    if (options?.deadlineAt !== undefined && Date.now() >= options.deadlineAt) {
+        throw new Error('Retrospective exceeded the run time limit.');
+    }
+};
+
 export interface UserDocRepository {
     findActiveByOwner: (ownerDid: string) => Promise<AgentUserDoc[]>;
     findAllByOwner: (ownerDid: string) => Promise<AgentUserDoc[]>;
     findByName: (ownerDid: string, name: string) => Promise<AgentUserDoc | undefined>;
-    insert: (doc: AgentUserDoc) => Promise<void>;
-    replace: (doc: AgentUserDoc) => Promise<void>;
+    insert: (doc: AgentUserDoc, options?: UserDocWriteOptions) => Promise<void>;
+    replace: (doc: AgentUserDoc, options?: UserDocWriteOptions) => Promise<void>;
     recordUsage: (
         ownerDid: string,
         names: string[],
@@ -193,8 +206,8 @@ export interface UserDocService {
     loadActiveDocsForDid: (ownerDid: string) => Promise<UserDocSummary[]>;
     getActiveDoc: (ownerDid: string, name: string) => Promise<AgentUserDoc | undefined>;
     getDocsForDebug: (ownerDid: string) => Promise<AgentUserDoc[]>;
-    createDoc: (input: WriteUserDocInput) => Promise<AgentUserDoc>;
-    updateDoc: (input: UpdateUserDocInput) => Promise<AgentUserDoc>;
+    createDoc: (input: WriteUserDocInput, options?: UserDocWriteOptions) => Promise<AgentUserDoc>;
+    updateDoc: (input: UpdateUserDocInput, options?: UserDocWriteOptions) => Promise<AgentUserDoc>;
     approveDoc: (
         ownerDid: string,
         name: string,
@@ -643,7 +656,7 @@ export const createMongoUserDocRepository = (
     const migrateExisting = async (): Promise<void> => {
         const docs = await collection.find({}).toArray();
 
-        await Promise.all(
+        const migrations = await Promise.allSettled(
             docs.filter(needsMigration).map(async doc => {
                 const decrypted = await decryptDoc(doc);
                 await collection.replaceOne(
@@ -653,17 +666,28 @@ export const createMongoUserDocRepository = (
                 );
             })
         );
+        // Keep the retry barrier closed until every started replacement has finished.
+        const failed = migrations.find(result => result.status === 'rejected');
+        if (failed?.status === 'rejected') throw failed.reason;
     };
 
     const ensureIndexes = async (): Promise<void> => {
         indexesReady ??= Promise.all([
             collection.createIndex({ ownerDid: 1, name: 1 }, { unique: true }),
             collection.createIndex({ ownerDid: 1, status: 1, kind: 1, name: 1 }),
-        ]).then(() => undefined);
+        ])
+            .then(() => undefined)
+            .catch(error => {
+                indexesReady = undefined;
+                throw error;
+            });
 
         await indexesReady;
 
-        migrationReady ??= migrateExisting();
+        migrationReady ??= migrateExisting().catch(error => {
+            migrationReady = undefined;
+            throw error;
+        });
 
         await migrationReady;
     };
@@ -703,15 +727,23 @@ export const createMongoUserDocRepository = (
             return Promise.all(docs.map(async doc => (await decryptDoc(doc)).doc));
         },
         findByName,
-        insert: async doc => {
+        insert: async (doc, options) => {
+            assertWriteAllowed(options);
             await ensureIndexes();
-            await collection.insertOne(await encryptDoc(doc));
+            const stored = await encryptDoc(doc);
+            assertWriteAllowed(options);
+            // Dispatch is the commit boundary: a write already sent cannot be cancelled safely.
+            await collection.insertOne(stored);
         },
-        replace: async doc => {
+        replace: async (doc, options) => {
+            assertWriteAllowed(options);
             await ensureIndexes();
+            const stored = await encryptDoc(doc);
+            assertWriteAllowed(options);
+            // Version and history commit together; do not cancel after dispatch.
             await collection.replaceOne(
                 { ownerDid: doc.ownerDid, name: doc.name } as Filter<StoredAgentUserDoc>,
-                await encryptDoc(doc),
+                stored,
                 { upsert: false }
             );
         },
@@ -758,14 +790,16 @@ export const createInMemoryUserDocRepository = (
 
             return doc ? { ...doc, history: [...doc.history] } : undefined;
         },
-        insert: async doc => {
+        insert: async (doc, options) => {
+            assertWriteAllowed(options);
             const key = keyFor(doc.ownerDid, doc.name);
 
             if (docs.has(key)) throw new Error(`User doc already exists: ${doc.name}`);
 
             docs.set(key, { ...doc, history: [...doc.history] });
         },
-        replace: async doc => {
+        replace: async (doc, options) => {
+            assertWriteAllowed(options);
             docs.set(keyFor(doc.ownerDid, doc.name), { ...doc, history: [...doc.history] });
         },
         recordUsage: async (ownerDid, names, usage) => {
@@ -803,9 +837,14 @@ export const createUserDocService = (repository: UserDocRepository): UserDocServ
         return doc && isVisibleToAgent(doc) ? doc : undefined;
     };
 
-    const createDoc = async (input: WriteUserDocInput): Promise<AgentUserDoc> => {
+    const createDoc = async (
+        input: WriteUserDocInput,
+        options?: UserDocWriteOptions
+    ): Promise<AgentUserDoc> => {
+        assertWriteAllowed(options);
         const normalized = normalizeWriteInput(input);
         const existing = await repository.findByName(normalized.ownerDid, normalized.name);
+        assertWriteAllowed(options);
 
         if (existing) throw new Error(`User doc already exists: ${normalized.name}`);
 
@@ -836,14 +875,19 @@ export const createUserDocService = (repository: UserDocRepository): UserDocServ
             history: [],
         };
 
-        await repository.insert(doc);
+        await repository.insert(doc, options);
 
         return doc;
     };
 
-    const updateDoc = async (input: UpdateUserDocInput): Promise<AgentUserDoc> => {
+    const updateDoc = async (
+        input: UpdateUserDocInput,
+        options?: UserDocWriteOptions
+    ): Promise<AgentUserDoc> => {
+        assertWriteAllowed(options);
         const normalized = normalizeUpdateInput(input);
         const existing = await repository.findByName(normalized.ownerDid, normalized.name);
+        assertWriteAllowed(options);
 
         if (!existing) throw new Error(`User doc does not exist: ${normalized.name}`);
 
@@ -902,7 +946,7 @@ export const createUserDocService = (repository: UserDocRepository): UserDocServ
             history,
         };
 
-        await repository.replace(updated);
+        await repository.replace(updated, options);
 
         return updated;
     };

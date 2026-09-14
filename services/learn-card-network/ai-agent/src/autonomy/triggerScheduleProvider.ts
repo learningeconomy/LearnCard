@@ -154,7 +154,7 @@ export const createProviderSyncedAssistantSchedulesRuntime = (
         runtime.setTriggerScheduleSync(ownerDid, id, triggerScheduleId, syncedAt),
     clearTriggerScheduleSync: (ownerDid, id) => runtime.clearTriggerScheduleSync(ownerDid, id),
     listDue: (ownerDids, at) => runtime.listDue(ownerDids, at),
-    advanceNextRun: (ownerDid, id, scheduledFor, currentTime) =>
-        runtime.advanceNextRun(ownerDid, id, scheduledFor, currentTime),
+    advanceNextRun: (ownerDid, id, scheduledFor, currentTime, expectedSchedule) =>
+        runtime.advanceNextRun(ownerDid, id, scheduledFor, currentTime, expectedSchedule),
     getStatus: () => runtime.getStatus(),
 });

@@ -9,7 +9,7 @@ import {
 import * as Sentry from '@sentry/node';
 
 import type { AgentRunObserver, AgentRunResult, AgentTokenUsage } from './agent/types';
-import type { ServiceConfig } from './config';
+import { getModelTokenPricing, type ServiceConfig } from './config';
 
 type TelemetryValue = string | number | boolean | undefined;
 type TelemetryFields = Record<string, TelemetryValue>;
@@ -218,17 +218,22 @@ const captureOperationalError = (
     });
 };
 
-const getEstimatedCostUsd = (usage: AgentTokenUsage, config: ServiceConfig): number | undefined => {
+const getEstimatedCostUsd = (
+    usage: AgentTokenUsage,
+    config: ServiceConfig,
+    model: string
+): number | undefined => {
+    const pricing = getModelTokenPricing(config, model);
     if (
-        config.inputTokenCostUsdPerMillion === undefined ||
-        config.outputTokenCostUsdPerMillion === undefined
+        pricing.inputTokenCostUsdPerMillion === undefined ||
+        pricing.outputTokenCostUsdPerMillion === undefined
     ) {
         return undefined;
     }
 
     return (
-        (usage.inputTokens * config.inputTokenCostUsdPerMillion +
-            usage.outputTokens * config.outputTokenCostUsdPerMillion) /
+        (usage.inputTokens * pricing.inputTokenCostUsdPerMillion +
+            usage.outputTokens * pricing.outputTokenCostUsdPerMillion) /
         1_000_000
     );
 };
@@ -444,10 +449,13 @@ export const createAgentRunTelemetry = ({
 
     return {
         observer: {
-            onModelComplete: ({ round, durationMs, requestId, usage }) => {
-                const estimatedCostUsd = usage ? getEstimatedCostUsd(usage, config) : undefined;
+            onModelComplete: ({ model, round, durationMs, requestId, usage }) => {
+                const estimatedCostUsd = usage
+                    ? getEstimatedCostUsd(usage, config, model)
+                    : undefined;
                 const fields = {
                     ...baseFields,
+                    model,
                     round,
                     durationMs,
                     providerRequestId: requestId,
@@ -479,17 +487,18 @@ export const createAgentRunTelemetry = ({
                 writeLog('info', 'agent.model.completed', fields);
                 recordChildTrace(
                     runTrace,
-                    `${config.model} completion`,
+                    `${model} completion`,
                     'ai.model',
                     durationMs,
                     true,
                     fields
                 );
-                writeMetrics('agent.model.metrics', metrics, fields, { Model: config.model });
+                writeMetrics('agent.model.metrics', metrics, fields, { Model: model });
             },
-            onModelError: ({ round, durationMs, error }) => {
+            onModelError: ({ model, round, durationMs, error }) => {
                 const fields = {
                     ...baseFields,
+                    model,
                     round,
                     durationMs,
                     ...getSafeErrorFields(error),
@@ -503,12 +512,12 @@ export const createAgentRunTelemetry = ({
                         { name: 'ModelCallLatency', unit: 'Milliseconds', value: durationMs },
                     ],
                     fields,
-                    { Model: config.model }
+                    { Model: model }
                 );
                 captureOperationalError('agent.model', error, baseFields);
                 recordChildTrace(
                     runTrace,
-                    `${config.model} completion`,
+                    `${model} completion`,
                     'ai.model',
                     durationMs,
                     false,

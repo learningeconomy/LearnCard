@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import type { AgentServiceRuntime } from '../runtime';
 import type { RunChatResult } from '../server';
 import { runScheduledAgentRequest } from './runner';
-import type { DueAgentAutonomySchedule } from './schedules';
+import { getNextScheduleRun, type DueAgentAutonomySchedule } from './schedules';
 import type {
     AutonomousLeaseRepository,
     AutonomousRun,
@@ -143,11 +143,31 @@ export const createAutonomousScheduler = ({
                 candidate.ownerDid,
                 candidate.id
             );
-            if (
-                !schedule ||
-                !schedule.enabled ||
-                schedule.nextRunAt.getTime() !== scheduledFor.getTime()
-            ) {
+            if (!schedule || !schedule.enabled) {
+                return { ...baseResult, status: 'skipped' };
+            }
+
+            const storedOccurrence = schedule.nextRunAt;
+            if (triggerSource === 'trigger') {
+                // Recover only the current tick of the current configuration. Older
+                // unclaimed dates are collapsed, never replayed as separate effects.
+                const tick = scheduledFor.getTime();
+                const currentTime = now().getTime();
+                if (
+                    tick < storedOccurrence.getTime() ||
+                    tick < schedule.updatedAt.getTime() ||
+                    tick > currentTime ||
+                    getNextScheduleRun(
+                        schedule.cron,
+                        schedule.timezone,
+                        new Date(tick - 1)
+                    ).getTime() !== tick ||
+                    getNextScheduleRun(schedule.cron, schedule.timezone, scheduledFor).getTime() <=
+                        currentTime
+                ) {
+                    return { ...baseResult, status: 'skipped' };
+                }
+            } else if (storedOccurrence.getTime() !== scheduledFor.getTime()) {
                 return { ...baseResult, status: 'skipped' };
             }
 
@@ -172,8 +192,9 @@ export const createAutonomousScheduler = ({
                 await runtime.assistantSchedulesRuntime.advanceNextRun(
                     candidate.ownerDid,
                     candidate.id,
-                    scheduledFor,
-                    now()
+                    storedOccurrence,
+                    now(),
+                    schedule
                 );
 
                 return { ...baseResult, status: 'skipped' };
@@ -182,8 +203,9 @@ export const createAutonomousScheduler = ({
             const advanced = await runtime.assistantSchedulesRuntime.advanceNextRun(
                 candidate.ownerDid,
                 candidate.id,
-                scheduledFor,
-                now()
+                storedOccurrence,
+                now(),
+                schedule
             );
 
             if (!advanced) {

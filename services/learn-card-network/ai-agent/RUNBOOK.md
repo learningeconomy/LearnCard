@@ -395,9 +395,16 @@ After production deployment, use the dedicated synthetic production test account
 5. Turning targeting off blocks future schedule API calls, dispatches, and executions at their
    next access check, including queued work. It does not cancel an already-running agent.
 
-Schedule occurrence deduplication and owner leases remain in place. They do not provide
-tool-level idempotency or a reduced tool capability set; broad rollout requires separate
-review of irreversible tool effects.
+Schedule occurrence deduplication and owner leases remain in place. A missed, unclaimed occurrence
+can resume at the latest valid tick of the current schedule; previously claimed effects are not
+replayed. The explicit wallet capability policy does not make permitted writes idempotent, so
+broad rollout still requires review of irreversible tool effects.
+
+Primary and retrospective work share the configured run deadline, token allowance, and cost
+allowance. A separate retrospective model requires its own input/output prices; the default
+retrospective model reuses the primary model and prices. Inspect both model dimensions when
+troubleshooting cost, or the aggregate metric for total spend. Do not add the aggregate and
+per-model views together.
 
 ## Trace and troubleshoot one run
 

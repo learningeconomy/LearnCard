@@ -1,6 +1,8 @@
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 
+import { getAnonymousClient, type LCNClient } from '@learncard/network-brain-client';
+
 import { createFileBackedSkill } from '../../agent/skills';
 import type { AgentToolDefinition } from '../../agent/types';
 import {
@@ -8,11 +10,7 @@ import {
     type AgentLearnCardConfig,
     type AgentNetworkWallet,
 } from '../../helpers/learnCard.helpers';
-import {
-    getLearnCardWalletMethodMetadata,
-    type LearnCardWalletMethodArgument,
-    type LearnCardWalletMethodExample,
-} from './methodMetadata';
+import { getLearnCardWalletMethodMetadata } from './methodMetadata';
 
 export interface LearnCardWalletToolConfig extends AgentLearnCardConfig {
     getWallet?: () => Promise<AgentNetworkWallet>;
@@ -26,31 +24,10 @@ type WalletPathResolution = {
 interface InspectOptions {
     query?: string;
     limit: number;
-    includeSource: boolean;
 }
 
-interface FunctionInspection {
-    name: string;
-    path: string;
-    arity: number;
-    async: boolean;
-    parameters: string[];
-    parametersInferred: boolean;
-    signature: string;
-    description?: string;
-    argumentDetails?: LearnCardWalletMethodArgument[];
-    returns?: string;
-    preconditions?: string[];
-    notes?: string[];
-    examples?: LearnCardWalletMethodExample[];
-    metadataSource?: string;
-    sourcePreview?: string;
-}
-
-const UNSAFE_PATH_SEGMENTS = new Set(['__proto__', 'prototype', 'constructor']);
 const DEFAULT_INSPECT_LIMIT = 50;
 const MAX_INSPECT_LIMIT = 200;
-const SOURCE_PREVIEW_LIMIT = 500;
 const MAX_ERROR_STRING_LENGTH = 1_000;
 const MAX_ERROR_DEPTH = 4;
 const MAX_ERROR_ARRAY_ITEMS = 8;
@@ -79,19 +56,34 @@ const ARG_SUMMARY_SCALAR_KEYS = new Set([
     'value',
 ]);
 
+// Authorization policy, deliberately independent of SDK metadata. New methods
+// remain inaccessible until reviewed for public lookup or credential issuance.
+const PERMITTED_METHODS: Record<string, true> = {
+    'id.did': true,
+    'invoke.getProfile': true,
+    'invoke.searchProfiles': true,
+    'invoke.createBoost': true,
+    'invoke.createChildBoost': true,
+    'invoke.getBoost': true,
+    'invoke.sendBoost': true,
+    'invoke.send': true,
+    'invoke.issueCredential': true,
+    'invoke.sendCredentialViaInbox': true,
+};
+const PERMITTED_NAMESPACES = ['', 'id', 'invoke'];
+
 const learnCardWalletParameters = {
     type: 'object',
     properties: {
         operation: {
             type: 'string',
             enum: ['call', 'inspect'],
-            description:
-                'Use "call" to invoke a wallet method, or "inspect" to list available properties at a wallet path. Defaults to "call".',
+            description: 'Call an approved wallet capability, or inspect approved capabilities.',
         },
         path: {
             type: 'string',
             description:
-                'Dot-separated path on the wallet, such as "id.did", "invoke.getProfile", or "store.LearnCloud.uploadEncrypted". Use an empty string to inspect the wallet root.',
+                'Exact approved method path, such as "id.did" or "invoke.getProfile". Inspect "", "id", or "invoke" to discover permitted capabilities.',
         },
         args: {
             type: 'array',
@@ -108,207 +100,149 @@ const learnCardWalletParameters = {
             type: 'number',
             description: `Maximum number of inspect entries to return. Defaults to ${DEFAULT_INSPECT_LIMIT}.`,
         },
-        includeSource: {
-            type: 'boolean',
-            description:
-                'When true, include a short function source preview during inspect. Defaults to false.',
-        },
     },
     additionalProperties: false,
 };
 
 const DEFAULT_SKILL_CONTENT = `---
 name: learncard-wallet
-description: Use the configured LearnCard wallet through one freeform tool.
+description: Use approved LearnCard wallet capabilities.
 ---
 
 # LearnCard Wallet
 
-Use the learnCardWallet tool with operation "inspect" to discover wallet planes and operation "call" to invoke a method by dot path. Inspect exact functions before writes; common LearnCard Network methods include TypeScript-derived argument metadata. Failed calls return a bounded diagnostic payload with method, argsSummary, underlyingError, knownUsage, and failureHints.
+Requires a server-authenticated owner. Inspect lists only approved public lookup and credential issuance capabilities. All other paths are denied. Private learner data must use getConsentedUserData. Keys, account management, aggregate reads, raw storage, and decryption are unavailable. Template URIs must be LearnCard Network Boost URIs. Inspect exact functions before writes; failed calls return bounded diagnostics.
+
+Profile reads use an anonymous Brain client, never service credentials. getProfile requires an explicit profile ID; searchProfiles permits only limit and includeServiceProfiles options. Self/connection-status options are denied. Boost URIs may include preview path prefixes and local ports; reuse the URI returned by createBoost.
 
 Examples:
 - Inspect root: {"operation":"inspect","path":""}
 - Inspect sendBoost: {"operation":"inspect","path":"invoke.sendBoost"}
 - Get this wallet DID: {"operation":"call","path":"id.did","args":[]}
 - Get a profile: {"operation":"call","path":"invoke.getProfile","args":["profileId"]}
-- Send a Boost: {"operation":"call","path":"invoke.sendBoost","args":["profileId","lc:network:.../trpc:boost:..."]}
 `;
 
-const parseWalletPath = (walletPath: string): string[] => {
-    const pathSegments = walletPath
-        .split('.')
-        .map(segment => segment.trim())
-        .filter(Boolean);
+interface PublicProfileMethods {
+    getProfile: (profileId: string) => Promise<unknown>;
+    searchProfiles: (
+        input?: string,
+        options?: { limit?: number; includeServiceProfiles?: boolean }
+    ) => Promise<unknown>;
+}
 
-    for (const segment of pathSegments) {
-        if (UNSAFE_PATH_SEGMENTS.has(segment)) {
-            throw new Error(`Unsafe wallet path segment: ${segment}`);
-        }
-    }
+const createPublicProfileMethods = (config: LearnCardWalletToolConfig): PublicProfileMethods => {
+    // Separate transport authority, not a response-field filter over service reads.
+    let client: LCNClient | undefined;
+    const getClient = () =>
+        (client ??= getAnonymousClient(config.networkUrl ?? 'https://network.learncard.com/trpc'));
+    return {
+        getProfile: (profileId: string) => getClient().profile.getOtherProfile.query({ profileId }),
+        searchProfiles: (
+            input = '',
+            options: { limit?: number; includeServiceProfiles?: boolean } = {}
+        ) =>
+            getClient().profile.searchProfiles.query({
+                input,
+                limit: options.limit,
+                includeServiceProfiles: options.includeServiceProfiles,
+                includeSelf: false,
+                includeConnectionStatus: false,
+            }),
+    };
+};
+const isPublicProfilePath = (walletPath: string): boolean =>
+    walletPath === 'invoke.getProfile' || walletPath === 'invoke.searchProfiles';
 
-    return pathSegments;
+const assertPermittedPath = (walletPath: string, operation: 'call' | 'inspect'): void => {
+    if (Object.hasOwn(PERMITTED_METHODS, walletPath)) return;
+    if (operation === 'inspect' && PERMITTED_NAMESPACES.includes(walletPath)) return;
+    throw new Error(`Wallet capability is not permitted: ${walletPath}`);
 };
 
-const getChildPath = (walletPath: string, childName: string): string =>
-    walletPath ? `${walletPath}.${childName}` : childName;
-
-const resolveWalletPath = (
-    wallet: AgentNetworkWallet,
-    walletPath: string
+const resolveWalletMethod = (
+    wallet: AgentNetworkWallet | undefined,
+    walletPath: string,
+    publicProfiles: PublicProfileMethods
 ): WalletPathResolution => {
-    const segments = parseWalletPath(walletPath);
-    let parent: unknown;
-    let value: unknown = wallet;
-
-    for (const segment of segments) {
-        if (!value || (typeof value !== 'object' && typeof value !== 'function')) {
-            throw new Error(`Wallet path is not reachable: ${walletPath}`);
-        }
-
-        parent = value;
-        value = (value as Record<string, unknown>)[segment];
-
-        if (value === undefined) {
-            throw new Error(`Unknown wallet path: ${walletPath}`);
-        }
+    assertPermittedPath(walletPath, 'call');
+    if (isPublicProfilePath(walletPath)) {
+        const method = walletPath.split('.')[1] as keyof PublicProfileMethods;
+        return { parent: publicProfiles, value: publicProfiles[method] };
     }
-
+    // Every approved path has exactly two segments; never traverse user-selected
+    // objects or function properties (call/apply/bind).
+    const [namespace, method] = walletPath.split('.') as ['id' | 'invoke', string];
+    const parent = wallet?.[namespace];
+    const value = parent && (parent as unknown as Record<string, unknown>)[method];
     return { parent, value };
 };
 
-const getInspectableKeys = (value: unknown): string[] => {
-    if (!value || (typeof value !== 'object' && typeof value !== 'function')) return [];
-
-    const keys = new Set<string>();
-    let current: unknown = value;
-
-    while (current && (typeof current === 'object' || typeof current === 'function')) {
-        for (const key of Object.getOwnPropertyNames(current)) {
-            if (!UNSAFE_PATH_SEGMENTS.has(key)) keys.add(key);
-        }
-
-        current = Object.getPrototypeOf(current);
-        if (!current || current === Object.prototype || current === Function.prototype) break;
-    }
-
-    return [...keys].sort((a, b) => a.localeCompare(b));
-};
-
-const stripSourceComments = (source: string): string =>
-    source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
-
-const splitParameters = (parameters: string): string[] => {
-    const parts: string[] = [];
-    let current = '';
-    let depth = 0;
-    let quote: string | undefined;
-
-    for (const character of parameters) {
-        if (quote) {
-            current += character;
-
-            if (character === quote) quote = undefined;
-            continue;
-        }
-
-        if (character === '"' || character === "'" || character === '`') {
-            quote = character;
-            current += character;
-            continue;
-        }
-
-        if (character === '(' || character === '[' || character === '{') depth += 1;
-        if (character === ')' || character === ']' || character === '}') depth -= 1;
-
-        if (character === ',' && depth === 0) {
-            const part = current.trim();
-            if (part) parts.push(part);
-            current = '';
-            continue;
-        }
-
-        current += character;
-    }
-
-    const finalPart = current.trim();
-    if (finalPart) parts.push(finalPart);
-
-    return parts;
-};
-
-const extractParameterText = (source: string): string | undefined => {
-    const trimmedSource = stripSourceComments(source).trim();
-    const arrowFunctionMatch = trimmedSource.match(/^(?:async\s*)?\(([^)]*)\)\s*=>/);
-    if (arrowFunctionMatch?.[1] !== undefined) return arrowFunctionMatch[1];
-
-    const singleArgumentArrowMatch = trimmedSource.match(/^(?:async\s+)?([A-Za-z_$][\w$]*)\s*=>/);
-    if (singleArgumentArrowMatch?.[1]) return singleArgumentArrowMatch[1];
-
-    const functionMatch = trimmedSource.match(
-        /^(?:async\s+)?(?:function(?:\s+[A-Za-z_$][\w$]*)?\s*)?\(([^)]*)\)/
-    );
-    if (functionMatch?.[1] !== undefined) return functionMatch[1];
-
-    const methodMatch = trimmedSource.match(
-        /^(?:async\s+)?(?:[A-Za-z_$][\w$]*\s*)?\(([^)]*)\)\s*\{/
-    );
-    if (methodMatch?.[1] !== undefined) return methodMatch[1];
-
-    return undefined;
-};
-
-const getFunctionInspection = (
-    value: (...args: unknown[]) => unknown,
-    walletPath: string,
-    fallbackName: string,
-    includeSource: boolean
-): FunctionInspection => {
-    const source = Function.prototype.toString.call(value);
-    const parameterText = extractParameterText(source);
-    const parsedParameters =
-        parameterText !== undefined ? splitParameters(parameterText) : undefined;
-    const fallbackParameters = Array.from(
-        { length: value.length },
-        (_value, index) => `arg${index + 1}`
-    );
-    const sourceParameters =
-        parsedParameters && parsedParameters.length > 0 ? parsedParameters : fallbackParameters;
-    const sourceParametersAreGeneric = sourceParameters.every(
-        (parameter, index) => parameter === `arg${index + 1}`
-    );
+const getFunctionInspection = (walletPath: string) => {
     const metadata = getLearnCardWalletMethodMetadata(walletPath);
-    const useMetadata = Boolean(metadata && sourceParametersAreGeneric);
-    const parameters = useMetadata && metadata ? metadata.parameters : sourceParameters;
-    const name =
-        useMetadata && metadata
-            ? (parseWalletPath(walletPath).at(-1) ?? fallbackName)
-            : value.name || fallbackName || '(anonymous)';
-    const asyncFunction = source.trim().startsWith('async ');
-
     return {
-        name,
+        name: walletPath.split('.')[1],
+        ...metadata,
         path: walletPath,
-        arity: value.length,
-        async: asyncFunction,
-        parameters,
-        parametersInferred: parsedParameters === undefined || sourceParametersAreGeneric,
-        signature:
-            useMetadata && metadata
-                ? metadata.signature
-                : `${asyncFunction ? 'async ' : ''}${name}(${parameters.join(', ')})`,
-        ...(metadata
-            ? {
-                  description: metadata.description,
-                  argumentDetails: metadata.arguments,
-                  returns: metadata.returns,
-                  ...(metadata.preconditions ? { preconditions: metadata.preconditions } : {}),
-                  ...(metadata.notes ? { notes: metadata.notes } : {}),
-                  ...(metadata.examples ? { examples: metadata.examples } : {}),
-                  metadataSource: metadata.metadataSource,
-              }
-            : {}),
-        ...(includeSource ? { sourcePreview: source.slice(0, SOURCE_PREVIEW_LIMIT) } : {}),
+        argumentDetails: metadata?.arguments,
     };
+};
+
+const requireBoostUri = (uri: unknown): void => {
+    // Brain constructUri/getUriParts delimit the domain (including path prefixes
+    // and encoded or raw port colons) with /trpc:, not with the first slash.
+    // sendBoost/send can otherwise fall back to resolving private storage.
+    if (
+        typeof uri !== 'string' ||
+        !/^lc:network:[^/\s?#]+(?:\/[^/\s:?#]+)*\/trpc:boost:[A-Za-z0-9_-]+$/.test(uri)
+    ) {
+        throw new Error('Only LearnCard Network Boost template URIs are permitted.');
+    }
+};
+
+const assertPermittedArguments = (walletPath: string, args: unknown[]): void => {
+    if (walletPath === 'invoke.getProfile') {
+        if (args.length !== 1 || typeof args[0] !== 'string' || !args[0].trim()) {
+            throw new Error(
+                'Public profile lookup requires an explicit profile ID and no options.'
+            );
+        }
+    }
+    if (walletPath === 'invoke.searchProfiles') {
+        if (args.length > 2 || (args[0] !== undefined && typeof args[0] !== 'string')) {
+            throw new Error('Public profile search accepts search text and public options only.');
+        }
+        const options = args[1];
+        if (
+            options !== undefined &&
+            (!isRecord(options) ||
+                Object.keys(options).some(
+                    key => key !== 'limit' && key !== 'includeServiceProfiles'
+                ) ||
+                (options.limit !== undefined &&
+                    (typeof options.limit !== 'number' ||
+                        !Number.isInteger(options.limit) ||
+                        options.limit < 1 ||
+                        options.limit >= 100)) ||
+                (options.includeServiceProfiles !== undefined &&
+                    typeof options.includeServiceProfiles !== 'boolean'))
+        ) {
+            throw new Error(
+                'Only limit and includeServiceProfiles are permitted public search options.'
+            );
+        }
+    }
+    if (walletPath === 'invoke.sendBoost') requireBoostUri(args[1]);
+    if (walletPath === 'invoke.getBoost' || walletPath === 'invoke.createChildBoost') {
+        requireBoostUri(args[0]);
+    }
+    if (walletPath === 'invoke.send' || walletPath === 'invoke.sendCredentialViaInbox') {
+        const input = args[0];
+        if (!isRecord(input)) throw new Error('A credential send input is required.');
+        if (walletPath === 'invoke.send' && input.type !== 'boost') {
+            throw new Error('Only Boost credential sends are permitted.');
+        }
+        if (input.templateUri !== undefined) requireBoostUri(input.templateUri);
+    }
 };
 
 const truncateString = (value: string, maxLength = MAX_ERROR_STRING_LENGTH): string =>
@@ -466,105 +400,59 @@ const matchesQuery = (query: string | undefined, values: string[]): boolean => {
 };
 
 const inspectWalletPath = (
-    wallet: AgentNetworkWallet,
+    wallet: AgentNetworkWallet | undefined,
     walletPath: string,
-    { query, limit, includeSource }: InspectOptions
+    { query, limit }: InspectOptions,
+    publicProfiles: PublicProfileMethods
 ): unknown => {
-    const { value } = resolveWalletPath(wallet, walletPath);
-
-    if (typeof value === 'function') {
-        return {
-            path: walletPath,
-            kind: 'function',
-            function: getFunctionInspection(
-                value as (...args: unknown[]) => unknown,
-                walletPath,
-                parseWalletPath(walletPath).at(-1) ?? '',
-                includeSource
-            ),
-        };
+    assertPermittedPath(walletPath, 'inspect');
+    if (Object.hasOwn(PERMITTED_METHODS, walletPath)) {
+        const { value } = resolveWalletMethod(wallet, walletPath, publicProfiles);
+        if (typeof value !== 'function') {
+            throw new Error(`Wallet capability is unavailable: ${walletPath}`);
+        }
+        return { path: walletPath, kind: 'function', function: getFunctionInspection(walletPath) };
     }
 
-    const functions: FunctionInspection[] = [];
-    const objects: Array<{ name: string; path: string }> = [];
-    const values: Array<{ name: string; path: string; type: string }> = [];
-    let totalFunctions = 0;
-    let totalObjects = 0;
-    let totalValues = 0;
-
-    for (const key of getInspectableKeys(value)) {
-        let child: unknown;
-        const childPath = getChildPath(walletPath, key);
-
-        try {
-            child = (value as Record<string, unknown>)[key];
-        } catch {
-            if (matchesQuery(query, [key, childPath, 'unreadable'])) {
-                totalValues += 1;
-                if (values.length < limit)
-                    values.push({ name: key, path: childPath, type: 'unreadable' });
-            }
-            continue;
-        }
-
-        if (typeof child === 'function') {
-            const functionInspection = getFunctionInspection(
-                child as (...args: unknown[]) => unknown,
-                childPath,
-                key,
-                includeSource
-            );
-
-            if (
-                matchesQuery(query, [
-                    key,
-                    childPath,
-                    functionInspection.signature,
-                    ...functionInspection.parameters,
-                ])
-            ) {
-                totalFunctions += 1;
-                if (functions.length < limit) functions.push(functionInspection);
-            }
-        } else if (child && typeof child === 'object') {
-            if (matchesQuery(query, [key, childPath, 'object'])) {
-                totalObjects += 1;
-                if (objects.length < limit) objects.push({ name: key, path: childPath });
-            }
-        } else {
-            const childType = child === null ? 'null' : typeof child;
-
-            if (matchesQuery(query, [key, childPath, childType])) {
-                totalValues += 1;
-                if (values.length < limit) {
-                    values.push({ name: key, path: childPath, type: childType });
-                }
-            }
-        }
-    }
-
-    const returned = functions.length + objects.length + values.length;
-    const total = totalFunctions + totalObjects + totalValues;
-
+    // Inspect the facade, never enumerate or read hidden wallet properties.
+    const objects = walletPath
+        ? []
+        : PERMITTED_NAMESPACES.filter(
+              namespace => namespace && wallet?.[namespace as 'id' | 'invoke']
+          )
+              .filter(namespace => matchesQuery(query, [namespace]))
+              .map(namespace => ({ name: namespace, path: namespace }));
+    const functions = walletPath
+        ? Object.keys(PERMITTED_METHODS)
+              .filter(methodPath => methodPath.startsWith(`${walletPath}.`))
+              .filter(
+                  methodPath =>
+                      typeof resolveWalletMethod(wallet, methodPath, publicProfiles).value ===
+                      'function'
+              )
+              .map(getFunctionInspection)
+              .filter(method => matchesQuery(query, [method.path, method.signature ?? '']))
+        : [];
+    const total = objects.length + functions.length;
+    const returnedObjects = objects.slice(0, limit);
+    const returnedFunctions = functions.slice(0, limit - returnedObjects.length);
+    const returned = returnedObjects.length + returnedFunctions.length;
     return {
         path: walletPath,
         kind: 'object',
         query,
         limit,
-        functions,
-        objects,
-        values,
+        functions: returnedFunctions,
+        objects: returnedObjects,
+        values: [],
         counts: {
-            functions: totalFunctions,
-            objects: totalObjects,
-            values: totalValues,
+            functions: functions.length,
+            objects: objects.length,
+            values: 0,
             total,
             returned,
         },
         truncated: returned < total,
-        ...(returned < total
-            ? { hint: 'Use query and/or a higher limit to narrow this inspection.' }
-            : {}),
     };
 };
 
@@ -586,7 +474,6 @@ const getInspectOptions = (args: Record<string, unknown>): InspectOptions => {
     return {
         limit,
         query: query || undefined,
-        includeSource: args.includeSource === true,
     };
 };
 
@@ -611,59 +498,70 @@ const skillFilePath =
 
 export const createLearnCardWalletTool = (
     config: LearnCardWalletToolConfig
-): AgentToolDefinition => ({
-    name: 'learnCardWallet',
-    description:
-        'Freeform bridge to the configured LearnCard wallet. Load the learncard-wallet skill before first use.',
-    parameters: learnCardWalletParameters,
-    skill: createFileBackedSkill({
-        name: 'learncard-wallet',
+): AgentToolDefinition => {
+    const publicProfiles = createPublicProfileMethods(config);
+    return {
+        name: 'learnCardWallet',
         description:
-            'How to inspect and call the configured LearnCard wallet with the freeform learnCardWallet tool.',
-        filePath: skillFilePath,
-        fallbackContent: DEFAULT_SKILL_CONTENT,
-    }),
-    execute: async (args, context) => {
-        const operation = getOperation(args);
-        const walletPath = getPath(args);
-        const wallet = config.getWallet
-            ? await config.getWallet()
-            : await getAgentLearnCard(config);
-        context.signal?.throwIfAborted();
-
-        if (operation === 'inspect') {
-            return inspectWalletPath(wallet, walletPath, getInspectOptions(args));
-        }
-
-        if (!walletPath) {
-            throw new Error('A wallet method path is required for call operations.');
-        }
-
-        const { parent, value } = resolveWalletPath(wallet, walletPath);
-
-        if (typeof value !== 'function') {
-            throw new Error(`Wallet path is not callable: ${walletPath}`);
-        }
-
-        const callArgs = getCallArgs(args);
-        let result: unknown;
-
-        try {
+            'Approved public lookup and credential issuance capabilities. Requires an authenticated owner. Load the learncard-wallet skill before first use.',
+        parameters: learnCardWalletParameters,
+        skill: createFileBackedSkill({
+            name: 'learncard-wallet',
+            description: 'How to inspect and call approved LearnCard wallet capabilities.',
+            filePath: skillFilePath,
+            fallbackContent: DEFAULT_SKILL_CONTENT,
+        }),
+        execute: async (args, context) => {
+            if (!context.ownerDid?.trim()) {
+                throw new Error('An authenticated owner DID is required for wallet operations.');
+            }
             context.signal?.throwIfAborted();
-            result = await value.apply(parent, callArgs);
+            const operation = getOperation(args);
+            const walletPath = getPath(args);
+            assertPermittedPath(walletPath, operation);
+            const callArgs = getCallArgs(args);
+            if (operation === 'call') assertPermittedArguments(walletPath, callArgs);
+            const wallet = isPublicProfilePath(walletPath)
+                ? undefined
+                : config.getWallet
+                  ? await config.getWallet()
+                  : await getAgentLearnCard(config);
             context.signal?.throwIfAborted();
-        } catch (error) {
-            context.signal?.throwIfAborted();
-            throw new Error(createWalletCallFailureMessage(walletPath, callArgs, error), {
-                cause: error,
-            });
-        }
 
-        return {
-            path: walletPath,
-            result: result === undefined ? null : result,
-            resultType: getResultType(result),
-            hasResult: result !== undefined,
-        };
-    },
-});
+            if (operation === 'inspect') {
+                return inspectWalletPath(
+                    wallet,
+                    walletPath,
+                    getInspectOptions(args),
+                    publicProfiles
+                );
+            }
+
+            const { parent, value } = resolveWalletMethod(wallet, walletPath, publicProfiles);
+
+            if (typeof value !== 'function') {
+                throw new Error(`Wallet path is not callable: ${walletPath}`);
+            }
+
+            let result: unknown;
+
+            try {
+                context.signal?.throwIfAborted();
+                result = await value.apply(parent, callArgs);
+                context.signal?.throwIfAborted();
+            } catch (error) {
+                context.signal?.throwIfAborted();
+                throw new Error(createWalletCallFailureMessage(walletPath, callArgs, error), {
+                    cause: error,
+                });
+            }
+
+            return {
+                path: walletPath,
+                result: result === undefined ? null : result,
+                resultType: getResultType(result),
+                hasResult: result !== undefined,
+            };
+        },
+    };
+};

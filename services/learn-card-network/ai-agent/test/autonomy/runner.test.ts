@@ -27,7 +27,19 @@ import type { ConsentFlowRuntime } from '../../src/consentFlow';
 import type { ServiceConfig } from '../../src/config';
 import type { MongoRuntime } from '../../src/mongo';
 import type { AgentServiceRuntime } from '../../src/runtime';
-import type { SelfImprovementRuntime } from '../../src/selfImprovement';
+import {
+    createSelfImprovementRuntime,
+    type SelfImprovementRuntime,
+} from '../../src/selfImprovement';
+import { createInMemoryRetroResultRepository } from '../../src/selfImprovement/retro';
+import {
+    createInMemoryRunTraceRepository,
+    createRunTraceService,
+} from '../../src/selfImprovement/runTrace';
+import {
+    createInMemoryUserDocRepository,
+    createUserDocService,
+} from '../../src/selfImprovement/userDocs';
 
 const OWNER_DID = 'did:key:scheduled-user';
 const SCHEDULED_FOR = new Date('2026-07-16T14:30:00.000Z');
@@ -210,6 +222,51 @@ const createRuntime = ({
 };
 
 describe('scheduled full-agent runner', () => {
+    it('fails a scheduled run after persisting an actual error-valued retrospective', async () => {
+        const results = createInMemoryRetroResultRepository();
+        let retroRunId = '';
+        const runtimeSelfImprovement = createSelfImprovementRuntime({
+            config,
+            mongoRuntime,
+            services: {
+                userDocs: createUserDocService(createInMemoryUserDocRepository()),
+                runTraces: createRunTraceService(createInMemoryRunTraceRepository()),
+                retroResults: {
+                    ...results,
+                    insert: async result => {
+                        retroRunId = result.runId;
+                        await results.insert(result);
+                    },
+                },
+            },
+            retroProvider: {
+                complete: async () => ({
+                    message: { role: 'assistant', content: 'malformed retrospective JSON' },
+                    usage: { inputTokens: 100, outputTokens: 50, totalTokens: 150 },
+                }),
+            },
+        });
+        const { runtime, feedService } = createRuntime({
+            provider: {
+                complete: async () => ({
+                    message: { role: 'assistant', content: 'Agent completed.' },
+                    usage: { inputTokens: 100, outputTokens: 50, totalTokens: 150 },
+                }),
+            },
+            selfImprovementRuntime: runtimeSelfImprovement,
+            baseTools: [],
+        });
+        await expect(
+            runScheduledAgentRequest({
+                schedule,
+                scheduledFor: SCHEDULED_FOR,
+                runtime,
+            })
+        ).rejects.toThrow('Retrospective failed');
+        expect(await results.findByRunId(retroRunId)).toMatchObject([{ status: 'error' }]);
+        expect(await feedService.listLatest(OWNER_DID, 10)).toEqual([]);
+    });
+
     it('uses the complete agent tool set, memory, retro, and an autonomous agent card', async () => {
         const memory = new Map<string, string>();
         const webSearch = vi.fn(async () => ({ results: [{ title: 'Current AI news' }] }));

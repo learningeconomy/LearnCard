@@ -369,4 +369,86 @@ describe('runAgent', () => {
         ).rejects.toThrow('Already lost.');
         expect(providerCalled).toBe(false);
     });
+
+    it('isolates server owner context across concurrent runs, including skill callbacks', async () => {
+        const privateRecords: Record<string, string> = {
+            'did:example:alice': 'Alice-only record',
+            'did:example:bob': 'Bob-only record',
+        };
+        const skillAccesses: string[] = [];
+        const tools: AgentToolDefinition[] = [
+            {
+                name: 'ownerRecord',
+                description: 'Synthetic owner-bound record',
+                parameters: {},
+                execute: async (_args, context) => {
+                    await Promise.resolve();
+                    return context.ownerDid ? privateRecords[context.ownerDid] : 'Unauthenticated';
+                },
+                skill: {
+                    name: 'owner-skill',
+                    description: 'Synthetic skill',
+                    load: async () => 'Fixture skill instructions',
+                    onList: async context => {
+                        skillAccesses.push(`list:${context.runId}:${context.ownerDid}`);
+                    },
+                    onRead: async context => {
+                        skillAccesses.push(`read:${context.runId}:${context.ownerDid}`);
+                    },
+                },
+            },
+        ];
+        const runForOwner = (ownerDid: string | undefined, runId: string) => {
+            let calls = 0;
+            const provider: AgentProvider = {
+                complete: async () => {
+                    calls += 1;
+                    return {
+                        message:
+                            calls === 1
+                                ? {
+                                      role: 'assistant',
+                                      content: '',
+                                      toolCalls: [
+                                          {
+                                              id: 'list',
+                                              name: 'listSkills',
+                                              arguments: { ownerDid: 'did:example:spoofed' },
+                                          },
+                                          {
+                                              id: 'read',
+                                              name: 'readSkill',
+                                              arguments: {
+                                                  name: 'owner-skill',
+                                                  ownerDid: 'did:example:spoofed',
+                                              },
+                                          },
+                                          {
+                                              id: 'record',
+                                              name: 'ownerRecord',
+                                              arguments: { ownerDid: 'did:example:spoofed' },
+                                          },
+                                      ],
+                                  }
+                                : { role: 'assistant', content: 'Done' },
+                    };
+                },
+            };
+            return runAgent({ model: 'fixture', messages: [], provider, tools, ownerDid, runId });
+        };
+        const [alice, bob] = await Promise.all([
+            runForOwner('did:example:alice', 'alice-run'),
+            runForOwner('did:example:bob', 'bob-run'),
+        ]);
+        expect(alice.toolRuns.find(run => run.id === 'record')?.result).toBe('Alice-only record');
+        expect(bob.toolRuns.find(run => run.id === 'record')?.result).toBe('Bob-only record');
+        expect(skillAccesses.sort()).toEqual([
+            'list:alice-run:did:example:alice',
+            'list:bob-run:did:example:bob',
+            'read:alice-run:did:example:alice',
+            'read:bob-run:did:example:bob',
+        ]);
+        const anonymous = await runForOwner(undefined, 'anonymous-run');
+        expect(anonymous.toolRuns.find(run => run.id === 'record')?.result).toBe('Unauthenticated');
+    });
 });

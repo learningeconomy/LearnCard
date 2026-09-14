@@ -34,14 +34,19 @@ export const AssistantAgentChatModal: React.FC<{
     const [error, setError] = useState('');
     const [isSending, setIsSending] = useState(false);
     const scrollRef = useRef<HTMLDivElement | null>(null);
+    const requestRef = useRef<AbortController | null>(null);
 
     useEffect(() => {
-        if (!open) return;
-
         setMessages([]);
-        setInput(initialPrompt ?? '');
+        setInput(open ? (initialPrompt ?? '') : '');
         setError('');
-    }, [initialPrompt, open]);
+        setIsSending(false);
+
+        return () => {
+            requestRef.current?.abort();
+            requestRef.current = null;
+        };
+    }, [agentUrl, auth, consentFlowContractUri, initialPrompt, open]);
 
     useEffect(() => {
         scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
@@ -52,6 +57,10 @@ export const AssistantAgentChatModal: React.FC<{
     const sendMessage = async (): Promise<void> => {
         const content = input.trim();
         if (!content || !auth || isSending) return;
+
+        const request = new AbortController();
+        requestRef.current = request;
+        const isCurrentRequest = () => requestRef.current === request && !request.signal.aborted;
 
         const nextMessages = [...messages, { role: 'user' as const, content }];
 
@@ -65,17 +74,22 @@ export const AssistantAgentChatModal: React.FC<{
                 agentUrl,
                 auth,
                 nextMessages,
-                consentFlowContractUri
+                consentFlowContractUri,
+                request.signal
             );
 
-            setMessages(response.messages);
+            if (isCurrentRequest()) setMessages(response.messages);
         } catch (sendError) {
+            if (!isCurrentRequest()) return;
             setMessages(messages);
             setError(
                 sendError instanceof Error ? sendError.message : 'The assistant did not respond.'
             );
         } finally {
-            setIsSending(false);
+            if (isCurrentRequest()) {
+                requestRef.current = null;
+                setIsSending(false);
+            }
         }
     };
 
@@ -98,7 +112,12 @@ export const AssistantAgentChatModal: React.FC<{
 
                     <button
                         type="button"
-                        onClick={onClose}
+                        onClick={() => {
+                            requestRef.current?.abort();
+                            requestRef.current = null;
+                            setIsSending(false);
+                            onClose();
+                        }}
                         className="p-2 rounded-full text-grayscale-500 hover:text-grayscale-900 hover:bg-grayscale-10 transition-colors"
                         aria-label="Close assistant chat"
                     >

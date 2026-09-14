@@ -1,7 +1,8 @@
 import type { Db, Filter } from 'mongodb';
 import { z } from 'zod';
 
-import type { AgentMessage, AgentProvider } from '../agent/types';
+import type { AgentMessage, AgentProvider, AgentRunObserver } from '../agent/types';
+import { awaitWithSignal } from '../agent/runAgent';
 import {
     createFieldAad,
     isEncryptedEnvelope,
@@ -99,6 +100,13 @@ export interface RetroRunInput {
     userDocs: UserDocService;
     results: RetroResultRepository;
     signal?: AbortSignal;
+    deadlineAt?: number;
+    maxOutputTokens?: number;
+    maxTotalTokens?: number;
+    maxEstimatedCostUsd?: number;
+    inputTokenCostUsdPerMillion?: number;
+    outputTokenCostUsdPerMillion?: number;
+    observer?: AgentRunObserver;
 }
 
 const OptionalExpiresAtValidator = z.preprocess(
@@ -257,15 +265,126 @@ const getResultForDecision = (
 
 export const runRetroImprovement = async (input: RetroRunInput): Promise<RetroResult> => {
     let decision: RetroDecision = { action: 'noop', reason: 'Retro did not complete.' };
+    const controller = new AbortController();
+    const abort = (): void => controller.abort(input.signal?.reason);
+    const deadlineAt = input.deadlineAt ?? Date.now() + 120_000;
+    const remainingMs = deadlineAt - Date.now();
+    const timeoutError = new Error('Retrospective exceeded the run time limit.');
+    const timeout = setTimeout(() => controller.abort(timeoutError), Math.max(0, remainingMs));
+    if (remainingMs <= 0) controller.abort(timeoutError);
+    if (input.signal?.aborted) abort();
+    else input.signal?.addEventListener('abort', abort, { once: true });
+    const signal = controller.signal;
 
     try {
-        const response = await input.provider.complete({
-            model: input.model,
-            messages: getRetroMessages(input.trace, input.activeDocs),
-            tools: [],
-            ...(input.signal ? { signal: input.signal } : {}),
-        });
-        input.signal?.throwIfAborted();
+        signal.throwIfAborted();
+        const messages = getRetroMessages(input.trace, input.activeDocs);
+        // OpenAI's byte-level tokenizer cannot use more text tokens than UTF-8 bytes.
+        // Reserve extra tokens for chat framing rather than guessing a chars/token ratio.
+        const inputTokenBound = Buffer.byteLength(JSON.stringify(messages), 'utf8') + 1_024;
+        const maxTotalTokens = input.maxTotalTokens ?? 50_000;
+        let maxOutputTokens = Math.floor(
+            Math.min(input.maxOutputTokens ?? 4_096, maxTotalTokens - inputTokenBound)
+        );
+        const inputPrice = input.inputTokenCostUsdPerMillion;
+        const outputPrice = input.outputTokenCostUsdPerMillion;
+        if (input.maxEstimatedCostUsd !== undefined) {
+            if (
+                inputPrice === undefined ||
+                outputPrice === undefined ||
+                !Number.isFinite(inputPrice) ||
+                !Number.isFinite(outputPrice) ||
+                inputPrice < 0 ||
+                outputPrice < 0
+            ) {
+                throw new Error(
+                    'Retrospective model pricing is required to enforce the cost limit.'
+                );
+            }
+            const remainingCost =
+                input.maxEstimatedCostUsd - (inputTokenBound * inputPrice) / 1_000_000;
+            if (remainingCost <= 0)
+                throw new Error('Retrospective exceeds the remaining run cost limit.');
+            if (outputPrice > 0) {
+                maxOutputTokens = Math.min(
+                    maxOutputTokens,
+                    Math.floor((remainingCost * 1_000_000) / outputPrice)
+                );
+            }
+        }
+        if (!Number.isFinite(maxOutputTokens) || maxOutputTokens < 1) {
+            throw new Error('Retrospective exceeds the remaining run token or output limit.');
+        }
+
+        const startedAt = Date.now();
+        const notify = (callback: () => void): void => {
+            try {
+                callback();
+            } catch {
+                // Telemetry must never change retrospective behavior.
+            }
+        };
+        const response = await awaitWithSignal(
+            input.provider
+                .complete({
+                    model: input.model,
+                    messages,
+                    tools: [],
+                    signal,
+                    maxOutputTokens,
+                })
+                .then(
+                    response => {
+                        notify(() =>
+                            input.observer?.onModelComplete?.({
+                                runId: input.trace.runId,
+                                model: input.model,
+                                round: 0,
+                                durationMs: Date.now() - startedAt,
+                                requestId: response.requestId,
+                                usage: response.usage,
+                            })
+                        );
+                        return response;
+                    },
+                    (error: unknown) => {
+                        notify(() =>
+                            input.observer?.onModelError?.({
+                                runId: input.trace.runId,
+                                model: input.model,
+                                round: 0,
+                                durationMs: Date.now() - startedAt,
+                                error,
+                            })
+                        );
+                        throw error;
+                    }
+                ),
+            signal
+        );
+        signal.throwIfAborted();
+        const usage = response.usage;
+        if (
+            !usage ||
+            ![usage.inputTokens, usage.outputTokens, usage.totalTokens].every(
+                value => Number.isInteger(value) && value >= 0
+            ) ||
+            usage.totalTokens < usage.inputTokens + usage.outputTokens
+        ) {
+            throw new Error('Retrospective usage is required to enforce run limits.');
+        }
+        if (usage.outputTokens > maxOutputTokens || usage.totalTokens > maxTotalTokens) {
+            throw new Error('Retrospective exceeded the run token or output limit.');
+        }
+        if (
+            input.maxEstimatedCostUsd !== undefined &&
+            inputPrice !== undefined &&
+            outputPrice !== undefined &&
+            (usage.inputTokens * inputPrice + usage.outputTokens * outputPrice) / 1_000_000 >
+                input.maxEstimatedCostUsd
+        ) {
+            throw new Error('Retrospective exceeded the run cost limit.');
+        }
         decision = parseDecision(response.message.content);
 
         if (decision.action === 'noop') {
@@ -276,59 +395,67 @@ export const runRetroImprovement = async (input: RetroRunInput): Promise<RetroRe
         }
 
         if (decision.action === 'create' || decision.action === 'propose') {
-            const doc = await input.userDocs.createDoc({
-                ownerDid: input.ownerDid,
-                name: decision.name,
-                kind: decision.kind,
-                description: decision.description,
-                content: decision.content,
-                status: decision.action === 'propose' ? 'proposed' : 'active',
-                sourceType:
-                    decision.sourceType ??
-                    (decision.action === 'propose' ? 'agent-inferred' : 'user-stated'),
-                confidence: decision.confidence,
-                sensitivity: decision.sensitivity,
-                expiresAt: decision.expiresAt,
-                requiresApproval: decision.action === 'propose',
-                createdBy: 'retro',
-                provenance: {
-                    runId: input.trace.runId,
-                    model: input.model,
-                    reason: decision.reason,
+            const doc = await input.userDocs.createDoc(
+                {
+                    ownerDid: input.ownerDid,
+                    name: decision.name,
+                    kind: decision.kind,
+                    description: decision.description,
+                    content: decision.content,
+                    status: decision.action === 'propose' ? 'proposed' : 'active',
+                    sourceType:
+                        decision.sourceType ??
+                        (decision.action === 'propose' ? 'agent-inferred' : 'user-stated'),
+                    confidence: decision.confidence,
+                    sensitivity: decision.sensitivity,
+                    expiresAt: decision.expiresAt,
+                    requiresApproval: decision.action === 'propose',
+                    createdBy: 'retro',
+                    provenance: {
+                        runId: input.trace.runId,
+                        model: input.model,
+                        reason: decision.reason,
+                    },
                 },
-            });
+                { signal, deadlineAt }
+            );
             const result = getResultForDecision(input, decision, 'applied', doc.version);
             await input.results.insert(result);
 
             return result;
         }
 
-        const doc = await input.userDocs.updateDoc({
-            ownerDid: input.ownerDid,
-            name: decision.name,
-            description: decision.description,
-            content: decision.content,
-            sourceType: decision.sourceType,
-            confidence: decision.confidence,
-            sensitivity: decision.sensitivity,
-            expiresAt: decision.expiresAt,
-            provenance: {
-                runId: input.trace.runId,
-                model: input.model,
-                reason: decision.reason,
+        const doc = await input.userDocs.updateDoc(
+            {
+                ownerDid: input.ownerDid,
+                name: decision.name,
+                description: decision.description,
+                content: decision.content,
+                sourceType: decision.sourceType,
+                confidence: decision.confidence,
+                sensitivity: decision.sensitivity,
+                expiresAt: decision.expiresAt,
+                provenance: {
+                    runId: input.trace.runId,
+                    model: input.model,
+                    reason: decision.reason,
+                },
             },
-        });
+            { signal, deadlineAt }
+        );
         const result = getResultForDecision(input, decision, 'applied', doc.version);
         await input.results.insert(result);
 
         return result;
     } catch (error) {
-        input.signal?.throwIfAborted();
         const message = error instanceof Error ? error.message : 'Retro failed.';
         const result = getResultForDecision(input, decision, 'error', undefined, message);
         await input.results.insert(result);
 
         return result;
+    } finally {
+        clearTimeout(timeout);
+        input.signal?.removeEventListener('abort', abort);
     }
 };
 
@@ -410,7 +537,7 @@ export const createMongoRetroResultRepository = (
     const migrateExisting = async (): Promise<void> => {
         const results = await collection.find({}).toArray();
 
-        await Promise.all(
+        const migrations = await Promise.allSettled(
             results.filter(needsMigration).map(async result => {
                 const decrypted = await decryptResult(result);
                 await collection.replaceOne(
@@ -424,17 +551,28 @@ export const createMongoRetroResultRepository = (
                 );
             })
         );
+        // Keep the retry barrier closed until every started replacement has finished.
+        const failed = migrations.find(result => result.status === 'rejected');
+        if (failed?.status === 'rejected') throw failed.reason;
     };
 
     const ensureIndexes = async (): Promise<void> => {
         indexesReady ??= Promise.all([
             collection.createIndex({ runId: 1, createdAt: -1 }),
             collection.createIndex({ ownerDid: 1, createdAt: -1 }),
-        ]).then(() => undefined);
+        ])
+            .then(() => undefined)
+            .catch(error => {
+                indexesReady = undefined;
+                throw error;
+            });
 
         await indexesReady;
 
-        migrationReady ??= migrateExisting();
+        migrationReady ??= migrateExisting().catch(error => {
+            migrationReady = undefined;
+            throw error;
+        });
 
         await migrationReady;
     };

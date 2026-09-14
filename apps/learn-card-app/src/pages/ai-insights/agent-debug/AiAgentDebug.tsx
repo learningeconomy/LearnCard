@@ -5,6 +5,7 @@ import { useGetCurrentLCNUser, useWallet } from 'learn-card-base';
 import { useConsentFlowByUri } from '../../consentFlow/useConsentFlow';
 import {
     AGENT_URL_STORAGE_KEY,
+    DEFAULT_AGENT_URL,
     createLearnCardAssistantAuth,
     getInitialAgentUrl,
     normalizeAgentUrl,

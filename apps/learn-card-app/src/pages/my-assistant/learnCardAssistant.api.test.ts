@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
+import { deepMerge } from 'learn-card-base/config/deepMerge';
+import { parseTenantConfig } from 'learn-card-base/config/tenantConfigSchema';
+import learncardConfig from '../../../environments/learncard/config.json';
+import localOverlay from '../../../environments/learncard/config.local.json';
+import stagingOverlay from '../../../environments/learncard/config.staging.json';
 
 const mockBuildEnvironment = vi.hoisted(() => ({
     VITE_AI_AGENT_URL: undefined as string | undefined,
@@ -28,6 +33,7 @@ import {
     updateLearnCardAssistantProfile,
     updateLearnCardAssistantSchedule,
     withDebugToken,
+    type LearnCardAssistantAgentMessage,
     type LearnCardAssistantWallet,
 } from './learnCardAssistant.api';
 
@@ -330,6 +336,91 @@ describe('learnCardAssistant API DID Auth', () => {
     });
 });
 
+describe('assistant conversation requests', () => {
+    const auth = { did, getHeaders: vi.fn().mockResolvedValue({}) };
+
+    beforeEach(() => {
+        auth.getHeaders.mockReset().mockResolvedValue({});
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({ messages: [] })));
+    });
+
+    it.each([
+        { length: 49, start: 0 },
+        { length: 50, start: 0 },
+        { length: 51, start: 2 },
+        { length: 101, start: 52 },
+    ])('keeps a coherent recent conversation at $length messages', async ({ length, start }) => {
+        const messages: LearnCardAssistantAgentMessage[] = Array.from({ length }, (_, index) => ({
+            role: index % 2 === 0 || index === length - 1 ? 'user' : 'assistant',
+            content: `Message ${index}`,
+        }));
+        const original = structuredClone(messages);
+
+        await runLearnCardAssistantAgent(agentUrl, auth, messages);
+
+        const body = JSON.parse(String(vi.mocked(fetch).mock.calls[0]?.[1]?.body));
+        expect(body.messages).toEqual(messages.slice(start));
+        expect(body.messages.length).toBeLessThanOrEqual(50);
+        expect(body.messages[0].role).toBe('user');
+        expect(body.messages.at(-1)).toEqual(messages.at(-1));
+        expect(messages).toEqual(original);
+    });
+
+    it('does not authenticate or start a run when already aborted', async () => {
+        const controller = new AbortController();
+        controller.abort();
+
+        await expect(
+            runLearnCardAssistantAgent(agentUrl, auth, [], undefined, controller.signal)
+        ).rejects.toMatchObject({ name: 'AbortError' });
+        expect(auth.getHeaders).not.toHaveBeenCalled();
+        expect(fetch).not.toHaveBeenCalled();
+    });
+
+    it('does not start a run when cancelled during authentication', async () => {
+        const controller = new AbortController();
+        const authentication = Promise.withResolvers<Record<string, string>>();
+        auth.getHeaders.mockReturnValueOnce(authentication.promise);
+        const pending = runLearnCardAssistantAgent(
+            agentUrl,
+            auth,
+            [{ role: 'user', content: 'Hello' }],
+            undefined,
+            controller.signal
+        );
+        const rejection = expect(pending).rejects.toMatchObject({ name: 'AbortError' });
+        controller.abort();
+        authentication.resolve({});
+
+        await rejection;
+        expect(fetch).not.toHaveBeenCalled();
+    });
+
+    it('cancels an in-flight fetch', async () => {
+        const controller = new AbortController();
+        const fetchStarted = Promise.withResolvers<void>();
+        vi.mocked(fetch).mockImplementationOnce((_url, options) => {
+            const request = Promise.withResolvers<Response>();
+            options?.signal?.addEventListener('abort', () =>
+                request.reject(options.signal?.reason)
+            );
+            fetchStarted.resolve();
+            return request.promise;
+        });
+        const pending = runLearnCardAssistantAgent(
+            agentUrl,
+            auth,
+            [{ role: 'user', content: 'Hello' }],
+            undefined,
+            controller.signal
+        );
+        const rejection = expect(pending).rejects.toMatchObject({ name: 'AbortError' });
+        await fetchStarted.promise;
+        controller.abort();
+        await rejection;
+    });
+});
+
 describe('getInitialAgentUrl', () => {
     beforeEach(() => {
         localStorage.clear();
@@ -347,6 +438,23 @@ describe('getInitialAgentUrl', () => {
         mockBuildEnvironment.VITE_AI_AGENT_URL = 'https://env-agent.example.com';
 
         expect(getInitialAgentUrl()).toBe('https://env-agent.example.com');
+    });
+
+    it('resolves local tenant requests to localhost without changing deployed endpoints', () => {
+        const local = parseTenantConfig(deepMerge(learncardConfig, localOverlay), 'local fixture');
+        networkStore.set.aiAgentUrl(local.apis.aiAgentService ?? '');
+        expect(getInitialAgentUrl()).toBe('http://localhost:4300');
+
+        const staging = parseTenantConfig(
+            deepMerge(learncardConfig, stagingOverlay),
+            'staging fixture'
+        );
+        networkStore.set.aiAgentUrl(staging.apis.aiAgentService ?? '');
+        expect(getInitialAgentUrl()).toBe('https://agent-staging.learncard.ai');
+
+        const production = parseTenantConfig(learncardConfig, 'production fixture');
+        networkStore.set.aiAgentUrl(production.apis.aiAgentService ?? '');
+        expect(getInitialAgentUrl()).toBe('https://agent.learncard.ai');
     });
 
     it('falls back to tenant config, then local dev default', () => {

@@ -41,6 +41,7 @@ import {
     normalizeAgentUrl,
 } from '../../pages/my-assistant/learnCardAssistant.api';
 import { useDashboardAsHome } from '../../pages/dashboard/hooks/useDashboardAsHome';
+import { environment } from '../../config/environment';
 
 type SideMenuRootLinksProps = {
     activeTab: string;
@@ -57,7 +58,7 @@ type SideMenuIconProps = {
 
 const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setActiveTab }) => {
     const { theme, getIconSet, getColorSet } = useTheme();
-    const iconSet = getIconSet(IconSetEnum.sideMenu) as Record<string, React.FC<any>>;
+    const iconSet = getIconSet(IconSetEnum.sideMenu) as Record<string, React.FC<SideMenuIconProps>>;
     const colors = getColorSet(ColorSetEnum.sideMenu);
 
     const isWalletSyncing = walletStore.useTracked.syncState();
@@ -76,8 +77,7 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
     const { isMobile } = useDeviceTypeByWidth();
     const parentLDFlags = currentUserStore.use.parentLDFlags();
     const hasAdminAccess = flags.enableAdminTools || parentLDFlags?.enableAdminTools;
-    const learnCardAssistantEnabled =
-        import.meta.env.DEV || Boolean(flags.enableLearnCardAssistant);
+    const learnCardAssistantEnabled = environment.DEV || Boolean(flags.enableLearnCardAssistant);
     const { isAiEnabled, reason } = useAiFeatureGate();
     const { presentToast } = useToast();
     // Same two-layer gate as the `/` landing redirect in Routes.tsx, so the
@@ -99,7 +99,7 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
     const { data: assistantProfile } = useQuery({
         queryKey: ['learncard-assistant-profile', currentDid, normalizedAgentUrl],
         queryFn: () => fetchLearnCardAssistantProfile(normalizedAgentUrl, assistantAuth!),
-        enabled: learnCardAssistantEnabled && Boolean(assistantAuth),
+        enabled: learnCardAssistantEnabled && isAiEnabled && Boolean(assistantAuth),
         staleTime: 60_000,
     });
     const assistantLabel = assistantProfile?.name ?? 'My Assistant';
@@ -165,9 +165,7 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
         Number(notificationsUnreadCount) >= 1000
             ? numeral(Number(notificationsUnreadCount)).format('0.0a')
             : notificationsUnreadCount;
-    let rootLinks: any = null;
-
-    rootLinks = walletLink?.map(link => {
+    const rootLinks = walletLink?.map(link => {
         if (link.id === SideMenuLinksEnum.adminTools && !hasAdminAccess) return null;
         if (link.path === '/ai/assistant' && !learnCardAssistantEnabled) return null;
         if (link.path === '/dashboard' && !dashboardAsHome) return null;
@@ -175,7 +173,7 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
         // side menu on mobile (LC-1921).
         if (link.path === '/notifications' && !isMobile) return null;
 
-        const IconComponent = iconSet[link.id as keyof typeof iconSet] as React.FC<any>;
+        const IconComponent = iconSet[link.id] as React.FC<SideMenuIconProps>;
         const linkPath = link.path;
         const linkLabel =
             linkPath === '/ai/assistant' ? assistantLabel : getSideMenuLinkLabel(m, link);

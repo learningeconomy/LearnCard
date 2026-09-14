@@ -41,6 +41,7 @@ export class AgentDidAuthError extends Error {
 const JwtPayloadValidator = z
     .object({
         nonce: z.string().min(1),
+        iss: z.string().min(1).optional(),
         vp: z.object({ holder: z.string().min(1) }).passthrough(),
     })
     .passthrough();
@@ -175,6 +176,12 @@ export const verifyDidAuthRequest = async (
 ): Promise<AgentDidAuthContext> => {
     const vpJwt = getBearerToken(req);
     const decoded = decodeJwtPayload(vpJwt);
+    // SSI normalizes JWT presentations to iss when present, otherwise vp.holder.
+    // Never authorize a nested holder different from the identity it verifies.
+    if (decoded.iss !== undefined && decoded.iss !== decoded.vp.holder) {
+        throw new AgentDidAuthError();
+    }
+    const did = decoded.iss ?? decoded.vp.holder;
     const challengeHash = hashChallenge(decoded.nonce);
     const stored = await challengeStore.getByHash(challengeHash);
 
@@ -209,7 +216,7 @@ export const verifyDidAuthRequest = async (
     if (!consumed) throw new AgentDidAuthError();
 
     return {
-        did: decoded.vp.holder,
+        did,
         challenge: decoded.nonce,
         domain: stored.domain,
     };

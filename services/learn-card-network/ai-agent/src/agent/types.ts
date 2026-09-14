@@ -15,6 +15,8 @@ export interface AgentMessage {
 
 export interface AgentToolContext {
     runId: string;
+    /** Authenticated principal supplied by the server, never by model tool arguments. */
+    ownerDid?: string;
     signal?: AbortSignal;
 }
 
@@ -112,6 +114,8 @@ export interface AgentRunRequest {
     contextPrompt?: string;
     signal?: AbortSignal;
     runId?: string;
+    /** Authenticated principal supplied by the server. */
+    ownerDid?: string;
     maxOutputTokens?: number;
     maxTotalTokens?: number;
     maxEstimatedCostUsd?: number;

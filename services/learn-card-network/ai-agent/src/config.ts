@@ -33,6 +33,8 @@ export interface ServiceConfig {
     mongoDbName: string;
     selfImprovementEnabled: boolean;
     retroModel?: string;
+    retroInputTokenCostUsdPerMillion?: number;
+    retroOutputTokenCostUsdPerMillion?: number;
     retroMaxTraceChars: number;
     webSearchProvider?: WebSearchProviderName | 'none';
     braveSearchApiKey?: string;
@@ -136,6 +138,22 @@ const isValidSentryDsn = (value: string): boolean => {
         return false;
     }
 };
+export const getModelTokenPricing = (
+    config: ServiceConfig,
+    model: string
+): { inputTokenCostUsdPerMillion?: number; outputTokenCostUsdPerMillion?: number } =>
+    model === config.model
+        ? {
+              inputTokenCostUsdPerMillion: config.inputTokenCostUsdPerMillion,
+              outputTokenCostUsdPerMillion: config.outputTokenCostUsdPerMillion,
+          }
+        : model === config.retroModel
+          ? {
+                inputTokenCostUsdPerMillion: config.retroInputTokenCostUsdPerMillion,
+                outputTokenCostUsdPerMillion: config.retroOutputTokenCostUsdPerMillion,
+            }
+          : {};
+
 export const assertAutonomousExecutionConfig = (config: ServiceConfig): void => {
     if (!config.mongoUri) {
         throw new Error('AI_AGENT_MONGO_URI or MONGO_URI must be set for autonomous execution.');
@@ -280,6 +298,32 @@ export const assertSecurityConfig = (config: ServiceConfig): void => {
             config.outputTokenCostUsdPerMillion < 0)
     ) {
         throw new Error('AI_AGENT_OUTPUT_TOKEN_COST_USD_PER_MILLION must be at least 0.');
+    }
+    for (const [name, value] of [
+        [
+            'AI_AGENT_RETRO_INPUT_TOKEN_COST_USD_PER_MILLION',
+            config.retroInputTokenCostUsdPerMillion,
+        ],
+        [
+            'AI_AGENT_RETRO_OUTPUT_TOKEN_COST_USD_PER_MILLION',
+            config.retroOutputTokenCostUsdPerMillion,
+        ],
+    ] as const) {
+        if (value !== undefined && (!Number.isFinite(value) || value < 0)) {
+            throw new Error(`${name} must be at least 0.`);
+        }
+    }
+    if (
+        config.selfImprovementEnabled &&
+        config.retroModel &&
+        config.retroModel !== config.model &&
+        config.maxRunCostUsd !== undefined &&
+        (config.retroInputTokenCostUsdPerMillion === undefined ||
+            config.retroOutputTokenCostUsdPerMillion === undefined)
+    ) {
+        throw new Error(
+            'A separate retro model requires AI_AGENT_RETRO_INPUT_TOKEN_COST_USD_PER_MILLION and AI_AGENT_RETRO_OUTPUT_TOKEN_COST_USD_PER_MILLION to enforce the run cost limit.'
+        );
     }
     if (
         config.sentryTracesSampleRate !== undefined &&
@@ -426,6 +470,12 @@ export const getConfig = (): ServiceConfig => {
             DEFAULT_MONGO_DB_NAME,
         selfImprovementEnabled,
         retroModel: readString(process.env.AI_AGENT_RETRO_MODEL) ?? model,
+        retroInputTokenCostUsdPerMillion: readOptionalNumber(
+            process.env.AI_AGENT_RETRO_INPUT_TOKEN_COST_USD_PER_MILLION
+        ),
+        retroOutputTokenCostUsdPerMillion: readOptionalNumber(
+            process.env.AI_AGENT_RETRO_OUTPUT_TOKEN_COST_USD_PER_MILLION
+        ),
         retroMaxTraceChars: readNumber(process.env.AI_AGENT_RETRO_MAX_TRACE_CHARS, 24_000),
         webSearchProvider: readWebSearchProvider(
             process.env.AI_AGENT_WEB_SEARCH_PROVIDER,

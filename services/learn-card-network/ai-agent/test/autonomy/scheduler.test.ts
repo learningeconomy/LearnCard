@@ -286,6 +286,166 @@ afterEach(() => {
 });
 
 describe('autonomous scheduler', () => {
+    it('resumes at the current Trigger tick after an unclaimed storage failure without backfilling', async () => {
+        const missedTick = new Date('2026-07-14T07:30:00.000Z');
+        const currentTick = new Date('2026-07-15T07:30:00.000Z');
+        const schedule = createSchedule('missed', OWNER_DID, missedTick);
+        const { runtime, schedulesRuntime } = createRuntime([schedule]);
+        const runs = createInMemoryAutonomousRunRepository();
+        vi.spyOn(runs, 'create').mockRejectedValueOnce(new Error('Synthetic pre-claim outage.'));
+        let currentTime = new Date('2026-07-14T12:00:00.000Z');
+        let runIndex = 0;
+        const runner = vi.fn<NonNullable<CreateAutonomousSchedulerOptions['runScheduledRequest']>>(
+            async () => successfulResult('recovered-agent')
+        );
+        const scheduler = createScheduler({
+            runtime,
+            runRepository: runs,
+            runScheduledRequest: runner,
+            now: () => currentTime,
+            createId: () => `recovery-${++runIndex}`,
+        });
+        await expect(scheduler.runOccurrence(schedule, 'trigger')).resolves.toMatchObject({
+            status: 'failed',
+        });
+        await expect(schedulesRuntime.get(OWNER_DID, schedule.id)).resolves.toMatchObject({
+            nextRunAt: missedTick,
+        });
+        currentTime = NOW;
+        const candidate = { id: schedule.id, ownerDid: OWNER_DID, nextRunAt: currentTick };
+
+        await expect(scheduler.runOccurrence(candidate, 'trigger')).resolves.toMatchObject({
+            status: 'succeeded',
+        });
+        expect(runner).toHaveBeenCalledTimes(1);
+        expect(runner.mock.calls[0]![0].scheduledFor).toEqual(currentTick);
+        await expect(
+            runs.findByOccurrence(OWNER_DID, schedule.id, missedTick)
+        ).resolves.toBeUndefined();
+        await expect(
+            runs.findByOccurrence(OWNER_DID, schedule.id, currentTick)
+        ).resolves.toMatchObject({ status: 'succeeded' });
+        await expect(schedulesRuntime.get(OWNER_DID, schedule.id)).resolves.toMatchObject({
+            nextRunAt: new Date('2026-07-16T07:30:00.000Z'),
+        });
+        await expect(scheduler.runOccurrence(candidate, 'trigger')).resolves.toMatchObject({
+            status: 'skipped',
+        });
+        expect(runner).toHaveBeenCalledTimes(1);
+    });
+
+    it.each([
+        { name: 'off-cadence timestamp', tick: '2026-07-15T07:31:00.000Z' },
+        { name: 'stale cadence tick', tick: '2026-07-14T07:30:00.000Z' },
+        { name: 'future cadence tick', tick: '2026-07-16T07:30:00.000Z' },
+        {
+            name: 'tick preceding a prompt edit',
+            tick: '2026-07-15T07:30:00.000Z',
+            editedAt: '2026-07-15T08:00:00.000Z',
+        },
+        {
+            name: 'old cadence after an edit',
+            tick: '2026-07-15T07:30:00.000Z',
+            cron: '0 8 * * 0,1,2,3,4,5,6',
+        },
+    ])('does not recover a $name', async ({ tick, editedAt, cron }) => {
+        const schedule = {
+            ...createSchedule('invalid', OWNER_DID, new Date('2026-07-13T07:30:00.000Z')),
+            ...(editedAt ? { updatedAt: new Date(editedAt) } : {}),
+            ...(cron ? { cron, timeOfDay: '08:00' } : {}),
+        };
+        const { runtime, schedulesRuntime } = createRuntime([schedule]);
+        const runs = createInMemoryAutonomousRunRepository();
+        const runner = vi.fn(async () => successfulResult('should-not-run'));
+        const scheduler = createScheduler({
+            runtime,
+            runRepository: runs,
+            runScheduledRequest: runner,
+        });
+        const nextRunAt = new Date(tick);
+
+        await expect(
+            scheduler.runOccurrence({ id: schedule.id, ownerDid: OWNER_DID, nextRunAt }, 'trigger')
+        ).resolves.toMatchObject({ status: 'skipped' });
+        expect(runner).not.toHaveBeenCalled();
+        await expect(
+            runs.findByOccurrence(OWNER_DID, schedule.id, nextRunAt)
+        ).resolves.toBeUndefined();
+        await expect(schedulesRuntime.get(OWNER_DID, schedule.id)).resolves.toMatchObject({
+            nextRunAt: schedule.nextRunAt,
+        });
+    });
+
+    it('advances past a previously claimed failed Trigger tick without replaying effects', async () => {
+        const schedule = createSchedule('claimed', OWNER_DID, new Date('2026-07-14T07:30:00.000Z'));
+        const tick = new Date('2026-07-15T07:30:00.000Z');
+        const { runtime, schedulesRuntime } = createRuntime([schedule]);
+        const runs = createInMemoryAutonomousRunRepository([
+            {
+                ...createRunningOccurrence({ ...schedule, nextRunAt: tick }),
+                status: 'failed',
+            },
+        ]);
+        const runner = vi.fn(async () => successfulResult('should-not-run'));
+        const scheduler = createScheduler({
+            runtime,
+            runRepository: runs,
+            runScheduledRequest: runner,
+        });
+
+        await expect(
+            scheduler.runOccurrence(
+                { id: schedule.id, ownerDid: OWNER_DID, nextRunAt: tick },
+                'trigger'
+            )
+        ).resolves.toMatchObject({ status: 'skipped' });
+        expect(runner).not.toHaveBeenCalled();
+        await expect(runs.findByOccurrence(OWNER_DID, schedule.id, tick)).resolves.toMatchObject({
+            status: 'failed',
+        });
+        await expect(schedulesRuntime.get(OWNER_DID, schedule.id)).resolves.toMatchObject({
+            nextRunAt: new Date('2026-07-16T07:30:00.000Z'),
+        });
+    });
+
+    it('abandons recovery if the configuration changes after the scheduler reads it', async () => {
+        const schedule = createSchedule('edited', OWNER_DID, new Date('2026-07-14T07:30:00.000Z'));
+        const tick = new Date('2026-07-15T07:30:00.000Z');
+        const { runtime, schedulesRuntime } = createRuntime([schedule]);
+        const runs = createInMemoryAutonomousRunRepository();
+        const createRun = runs.create;
+        vi.spyOn(runs, 'create').mockImplementationOnce(async run => {
+            await schedulesRuntime.update({
+                ownerDid: OWNER_DID,
+                id: schedule.id,
+                prompt: 'Edited instructions.',
+            });
+
+            return createRun(run);
+        });
+        const runner = vi.fn(async () => successfulResult('should-not-run'));
+        const scheduler = createScheduler({
+            runtime,
+            runRepository: runs,
+            runScheduledRequest: runner,
+        });
+
+        await expect(
+            scheduler.runOccurrence(
+                { id: schedule.id, ownerDid: OWNER_DID, nextRunAt: tick },
+                'trigger'
+            )
+        ).resolves.toMatchObject({ status: 'skipped' });
+        expect(runner).not.toHaveBeenCalled();
+        await expect(runs.findByOccurrence(OWNER_DID, schedule.id, tick)).resolves.toMatchObject({
+            status: 'abandoned',
+        });
+        await expect(schedulesRuntime.get(OWNER_DID, schedule.id)).resolves.toMatchObject({
+            prompt: 'Edited instructions.',
+            nextRunAt: schedule.nextRunAt,
+        });
+    });
+
     it('selects only due fixture schedules in fair order and honors the max-run cap', async () => {
         const schedules = [
             createSchedule('b', OWNER_DID, new Date(NOW.getTime() - 2_000)),

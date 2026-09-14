@@ -94,6 +94,7 @@ export const runAgent = async ({
     contextPrompt,
     signal,
     runId = crypto.randomUUID(),
+    ownerDid,
     maxOutputTokens,
     maxTotalTokens,
     maxEstimatedCostUsd,
@@ -237,6 +238,7 @@ export const runAgent = async ({
                 const result = await awaitWithSignal(
                     tool.execute(toolCall.arguments, {
                         runId,
+                        ...(ownerDid ? { ownerDid } : {}),
                         ...(signal ? { signal } : {}),
                     }),
                     signal
