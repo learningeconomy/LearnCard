@@ -12,6 +12,7 @@
 
 - [Send & Issue Credentials](how-to-guides/send-credentials.md)
     - [Revoke or Update a Credential](how-to-guides/revoke-or-update-a-credential.md)
+    - [Issue & Refresh a Managed Credential](how-to-guides/issue-and-refresh-a-managed-credential.md)
     - [Who Signs Your Credentials?](how-to-guides/create-signing-authority.md)
     - [Know When a Credential Is Claimed](tutorials/listen-to-webhooks.md)
 - [Verify Credentials](tutorials/verify-credentials.md)
@@ -31,6 +32,7 @@
     - [Building Verifiable Credentials](core-concepts/credentials-and-data/building-verifiable-credentials.md)
     - [Credential Templates (Boosts)](core-concepts/credentials-and-data/boost-credentials.md)
     - [Credential Status & Revocation](core-concepts/credentials-and-data/credential-status-and-bitstring-status-lists.md)
+    - [Credential Refresh](core-concepts/credential-refresh.md)
     - [Display Hint Tags (`lc:` convention)](core-concepts/credentials-and-data/display-hint-tags.md)
     - [Credential URIs](core-concepts/credentials-and-data/uris.md)
     - [xAPI Data](core-concepts/credentials-and-data/xapi-data.md)

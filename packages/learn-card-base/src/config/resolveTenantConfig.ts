@@ -252,6 +252,19 @@ const fetchFreshConfig = async (
         try {
             raw = await response.json();
         } catch {
+            // A baked config exists (native builds), so a bad response from the
+            // overlay endpoint is non-fatal — e.g. the Capacitor asset server
+            // SPA-fallbacks unknown paths to index.html with HTTP 200.
+            if (mergeBase) {
+                const message = `TenantConfig endpoint ${url} returned invalid JSON`;
+
+                log.warn(`[TenantConfig] ${message} — using baked config`);
+                onEvent?.('config:fetch_error', message, { url, durationMs });
+                _onFetchFailure?.({ endpoint: url, error: message });
+
+                return null;
+            }
+
             throw new TenantConfigResolutionError(
                 `TenantConfig endpoint ${url} returned invalid JSON`
             );

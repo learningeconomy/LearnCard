@@ -15,7 +15,7 @@
 import { Capacitor } from '@capacitor/core';
 import type { TenantConfig } from 'learn-card-base';
 
-import { getResolvedTenantConfig } from '../config/bootstrapTenantConfig';
+import { getResolvedTenantConfig } from '../config/tenantConfigState';
 import { environment } from '../config/environment';
 
 export type AnalyticsEnvironment = 'production' | 'staging' | 'preview' | 'development' | 'test';

@@ -85,6 +85,7 @@ export * from './Utilities';
 // Export app install helpers
 export * from './app-install';
 export * from './credential-format';
+export * from './credential-refresh';
 export * from './did';
 export * from './environment';
 
