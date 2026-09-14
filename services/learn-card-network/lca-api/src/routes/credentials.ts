@@ -8,6 +8,10 @@ import { getDeliveryService, getFrom } from '../services/delivery';
 import { IssueEndpointValidator } from 'types/credentials';
 import { t, authorizedDidRoute, openRoute } from '@routes';
 import { getSigningAuthorityLearnCard } from '@helpers/learnCard.helpers';
+import {
+    encryptCredentialForRecipients,
+    resolveRecipientEncrypters,
+} from '@helpers/recipient-encryption.helpers';
 
 const ENDORSEMENT_REQUEST_TEMPLATE_ALIAS =
     environment.POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS ?? '';
@@ -61,26 +65,11 @@ export const credentialsRouter = t.router({
                 const saDid = learnCard.id.did();
                 console.log('[LCA /credentials/issue] SA LearnCard resolved, DID:', saDid);
 
-                // DIDKit may silently omit unresolvable recipients. Resolve every requested
-                // recipient and verify coverage in the resulting JWE before returning it.
-                const recipientKeys = encryption
-                    ? await Promise.all(
-                          [...new Set([saDid, ...encryption.recipients])].map(async did => {
-                              const doc = await learnCard.invoke.resolveDid(did).catch(() => null);
-                              const keys = doc?.keyAgreement
-                                  ?.map(method => {
-                                      const id = typeof method === 'string' ? method : method.id;
-                                      return id?.startsWith('#') ? `${did}${id}` : id;
-                                  })
-                                  .filter((id): id is string => Boolean(id));
-                              if (!keys?.length) {
-                                  throw new TRPCError({
-                                      code: 'BAD_REQUEST',
-                                      message: `Recipient has no resolvable key-agreement keys: ${did}`,
-                                  });
-                              }
-                              return { did, keys };
-                          })
+                // Validate and capture each public key once, before signing. Encryption
+                // uses these same snapshots even if a DID rotates during issuance.
+                const recipientEncrypters = encryption
+                    ? await resolveRecipientEncrypters([saDid, ...encryption.recipients], did =>
+                          learnCard.invoke.resolveDid(did)
                       )
                     : [];
 
@@ -133,29 +122,19 @@ export const credentialsRouter = t.router({
                         '[LCA /credentials/issue] Encrypting JWE for recipients:',
                         recipients
                     );
-                    const jwe = await learnCard.invoke
-                        .createDagJwe(issuedCredential, recipients)
-                        .catch((error: unknown) => {
-                            // An unresolved recipient is a permanent input failure, not an issuer
-                            // failure. Return 4xx so callers do not retry it as a transient 5xx.
-                            throw new TRPCError({
-                                code: 'BAD_REQUEST',
-                                message: `Unable to encrypt for a recipient: ${
-                                    error instanceof Error ? error.message : String(error)
-                                }`,
-                            });
+                    const jwe = await encryptCredentialForRecipients(
+                        issuedCredential,
+                        recipientEncrypters
+                    ).catch((error: unknown) => {
+                        // An unresolved recipient is a permanent input failure, not an issuer
+                        // failure. Return 4xx so callers do not retry it as a transient 5xx.
+                        throw new TRPCError({
+                            code: 'BAD_REQUEST',
+                            message: `Unable to encrypt for a recipient: ${
+                                error instanceof Error ? error.message : String(error)
+                            }`,
                         });
-                    const encryptedKeys = new Set(
-                        (jwe.recipients ?? []).map(recipient => recipient.header?.kid)
-                    );
-                    for (const { did, keys } of recipientKeys) {
-                        if (!keys.some(key => encryptedKeys.has(key))) {
-                            throw new TRPCError({
-                                code: 'BAD_REQUEST',
-                                message: `Recipient has no usable X25519 key-agreement key: ${did}`,
-                            });
-                        }
-                    }
+                    });
                     console.log('[LCA /credentials/issue] JWE created successfully');
                     return jwe;
                 }
