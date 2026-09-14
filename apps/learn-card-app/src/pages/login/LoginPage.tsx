@@ -73,7 +73,7 @@ export const LoginContent: React.FC = () => {
     const { textLogo, brandMarkLight, fullLogoDark, desktopLoginBg } = useTenantBrandingAssets();
     const { theme } = useTheme();
     const { newModal, closeModal } = useModal();
-    const { state: coordinatorState } = useAppAuth();
+    const { state: coordinatorState, beginIdentityRecovery } = useAppAuth();
     const { track } = useAnalytics();
     const isLoggedIn = useIsLoggedIn();
     const currentUser = useCurrentUser();
@@ -475,6 +475,19 @@ export const LoginContent: React.FC = () => {
                         </IonRow>
                     )}
 
+                    {coordinatorState.status === 'awaiting_rebind' && (
+                        <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
+                            <div className="w-full p-4 bg-white rounded-[20px] shadow-xl text-center">
+                                <p className="text-sm font-medium text-grayscale-900">
+                                    {m['recovery.identity.signInPrompt']()}
+                                </p>
+                                <p className="text-xs text-grayscale-600 mt-1 leading-relaxed">
+                                    {m['recovery.identity.signInPromptDescription']()}
+                                </p>
+                            </div>
+                        </IonRow>
+                    )}
+
                     {installIntent?.listingId && (
                         <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
                             <div className="w-full p-3 bg-black/10 backdrop-blur-sm rounded-[20px] flex items-center gap-3 justify-center">
@@ -619,6 +632,17 @@ export const LoginContent: React.FC = () => {
                                 className="text-sm text-white hover:text-white underline transition-colors"
                             >
                                 {m['login.signInFromAnotherDevice']()}
+                            </button>
+                        </IonRow>
+                    )}
+
+                    {configCapabilities.recovery && coordinatorState.status === 'idle' && (
+                        <IonRow className="w-full max-w-[500px] flex items-center justify-center mt-3">
+                            <button
+                                onClick={beginIdentityRecovery}
+                                className="text-sm text-white hover:text-white underline transition-colors"
+                            >
+                                {m['recovery.identity.lostSchoolLogin']()}
                             </button>
                         </IonRow>
                     )}

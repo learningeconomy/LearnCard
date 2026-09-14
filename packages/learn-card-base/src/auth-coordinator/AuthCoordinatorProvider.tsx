@@ -33,6 +33,7 @@ export interface AuthCoordinatorContextValue {
     isLoading: boolean;
     needsSetup: boolean;
     needsMigration: boolean;
+    needsActivation: boolean;
     needsRecovery: boolean;
     hasError: boolean;
     error: string | null;
@@ -55,8 +56,16 @@ export interface AuthCoordinatorContextValue {
     initialize: () => Promise<void>;
     setupNewKey: (privateKey: string, did: string) => Promise<void>;
     migrate: (privateKey: string, did: string) => Promise<void>;
+    activate: () => Promise<void>;
     setMigrationData: (data: Record<string, unknown>) => void;
     recover: (input: unknown) => Promise<void>;
+    beginIdentityRecovery: () => void;
+    sendIdentityRecoveryCode: (email: string) => Promise<void>;
+    verifyIdentityRecoveryCode: (code: string) => Promise<void>;
+    prepareIdentityRecovery: (input: unknown) => Promise<void>;
+    continueIdentityRecoveryLogin: () => void;
+    finishIdentityRecovery: () => void;
+    cancelIdentityRecovery: () => void;
     logout: () => Promise<void>;
     forgetDevice: () => Promise<void>;
     retry: () => Promise<void>;
@@ -109,7 +118,7 @@ export interface AuthCoordinatorProviderProps {
     didFromPrivateKey?: (privateKey: string) => Promise<string>;
 
     /** Function to sign a DID-Auth VP JWT proving private key ownership for server write ops */
-    signDidAuthVp?: (privateKey: string) => Promise<string>;
+    signDidAuthVp?: (privateKey: string, challenge?: string) => Promise<string>;
 
     /** Optional: retrieve a cached private key for private-key-first init */
     getCachedPrivateKey?: () => Promise<string | null>;
@@ -180,7 +189,10 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
     // `state` to its deps (which would recreate the coordinator on every
     // state transition).
     const stateRef = useRef(state);
-    stateRef.current = state;
+
+    useEffect(() => {
+        stateRef.current = state;
+    }, [state]);
 
     // Helper to determine event level from state
     const getStateEventLevel = useCallback((newState: UnifiedAuthState): DebugEventLevel => {
@@ -238,7 +250,6 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
     useEffect(() => {
         if (!enabled) {
             coordinatorRef.current = null;
-            setState({ status: 'idle' });
             return;
         }
 
@@ -325,6 +336,13 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
         await coordinatorRef.current.migrate(privateKey, did);
     }, []);
 
+    const activate = useCallback(async () => {
+        if (!coordinatorRef.current) {
+            throw new Error('Coordinator not initialized');
+        }
+        await coordinatorRef.current.activate();
+    }, []);
+
     const setMigrationData = useCallback((data: Record<string, unknown>) => {
         if (!coordinatorRef.current) {
             throw new Error('Coordinator not initialized');
@@ -337,6 +355,41 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             throw new Error('Coordinator not initialized');
         }
         await coordinatorRef.current.recover(input);
+    }, []);
+
+    const beginIdentityRecovery = useCallback(() => {
+        if (!coordinatorRef.current) throw new Error('Coordinator not initialized');
+        coordinatorRef.current.beginIdentityRecovery();
+    }, []);
+
+    const sendIdentityRecoveryCode = useCallback(async (email: string) => {
+        if (!coordinatorRef.current) throw new Error('Coordinator not initialized');
+        await coordinatorRef.current.sendIdentityRecoveryCode(email);
+    }, []);
+
+    const verifyIdentityRecoveryCode = useCallback(async (code: string) => {
+        if (!coordinatorRef.current) throw new Error('Coordinator not initialized');
+        await coordinatorRef.current.verifyIdentityRecoveryCode(code);
+    }, []);
+
+    const prepareIdentityRecovery = useCallback(async (input: unknown) => {
+        if (!coordinatorRef.current) throw new Error('Coordinator not initialized');
+        await coordinatorRef.current.prepareIdentityRecovery(input);
+    }, []);
+
+    const continueIdentityRecoveryLogin = useCallback(() => {
+        if (!coordinatorRef.current) throw new Error('Coordinator not initialized');
+        coordinatorRef.current.continueIdentityRecoveryLogin();
+    }, []);
+
+    const finishIdentityRecovery = useCallback(() => {
+        if (!coordinatorRef.current) throw new Error('Coordinator not initialized');
+        coordinatorRef.current.finishIdentityRecovery();
+    }, []);
+
+    const cancelIdentityRecovery = useCallback(() => {
+        if (!coordinatorRef.current) throw new Error('Coordinator not initialized');
+        coordinatorRef.current.cancelIdentityRecovery();
     }, []);
 
     const logout = useCallback(async () => {
@@ -371,28 +424,36 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
         return coordinatorRef.current.refreshAuthSession();
     }, []);
 
-    // Derived state
-    const isReady = state.status === 'ready';
-    const isLoading = ['authenticating', 'checking_key_status', 'deriving_key'].includes(
-        state.status
-    );
-    const needsSetup = state.status === 'needs_setup';
-    const needsMigration = state.status === 'needs_migration';
-    const needsRecovery = state.status === 'needs_recovery';
-    const hasError = state.status === 'error';
-    const error = state.status === 'error' ? state.error : null;
+    // When disabled, expose idle immediately rather than synchronously resetting
+    // state from the effect that tears down the coordinator.
+    const renderedState: UnifiedAuthState = enabled ? state : { status: 'idle' };
 
-    const privateKey = state.status === 'ready' ? state.privateKey : null;
-    const did = state.status === 'ready' ? state.did : null;
-    const authSessionValid = state.status === 'ready' ? state.authSessionValid : false;
+    // Derived state
+    const isReady = renderedState.status === 'ready';
+    const isLoading = ['authenticating', 'checking_key_status', 'deriving_key'].includes(
+        renderedState.status
+    );
+    const needsSetup = renderedState.status === 'needs_setup';
+    const needsMigration = renderedState.status === 'needs_migration';
+    const needsActivation =
+        renderedState.status === 'ready' && renderedState.sssActivationState === 'provisional';
+    const needsRecovery = renderedState.status === 'needs_recovery';
+    const hasError = renderedState.status === 'error';
+    const error = renderedState.status === 'error' ? renderedState.error : null;
+
+    const privateKey = renderedState.status === 'ready' ? renderedState.privateKey : null;
+    const did = renderedState.status === 'ready' ? renderedState.did : null;
+    const authSessionValid =
+        renderedState.status === 'ready' ? renderedState.authSessionValid : false;
 
     const value: AuthCoordinatorContextValue = useMemo(
         () => ({
-            state,
+            state: renderedState,
             isReady,
             isLoading,
             needsSetup,
             needsMigration,
+            needsActivation,
             needsRecovery,
             hasError,
             error,
@@ -404,8 +465,16 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             initialize,
             setupNewKey,
             migrate,
+            activate,
             setMigrationData,
             recover,
+            beginIdentityRecovery,
+            sendIdentityRecoveryCode,
+            verifyIdentityRecoveryCode,
+            prepareIdentityRecovery,
+            continueIdentityRecoveryLogin,
+            finishIdentityRecovery,
+            cancelIdentityRecovery,
             logout,
             forgetDevice,
             retry,
@@ -413,11 +482,12 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             refreshAuthSession,
         }),
         [
-            state,
+            renderedState,
             isReady,
             isLoading,
             needsSetup,
             needsMigration,
+            needsActivation,
             needsRecovery,
             hasError,
             error,
@@ -428,8 +498,16 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             initialize,
             setupNewKey,
             migrate,
+            activate,
             setMigrationData,
             recover,
+            beginIdentityRecovery,
+            sendIdentityRecoveryCode,
+            verifyIdentityRecoveryCode,
+            prepareIdentityRecovery,
+            continueIdentityRecoveryLogin,
+            finishIdentityRecovery,
+            cancelIdentityRecovery,
             logout,
             forgetDevice,
             retry,

@@ -119,7 +119,6 @@ describe('SSS Key Management API', () => {
 
         test('should retrieve the stored recovery share', async () => {
             const params = new URLSearchParams({
-                authToken: mockAuthToken,
                 providerType: 'firebase',
                 type: 'passkey',
             });
@@ -128,6 +127,7 @@ describe('SSS Key Management API', () => {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
+                    'X-Auth-Token': mockAuthToken,
                 },
             });
 
@@ -182,7 +182,9 @@ describe('SSS Key Management API', () => {
             expect(methods).toBeDefined();
             expect(Array.isArray(methods)).toBe(true);
             // Both recovery methods added for this user are passkeys
-            expect(methods.filter((m: { type: string }) => m.type === 'passkey').length).toBeGreaterThanOrEqual(2);
+            expect(
+                methods.filter((m: { type: string }) => m.type === 'passkey').length
+            ).toBeGreaterThanOrEqual(2);
         });
     });
 
@@ -302,17 +304,18 @@ describe('SSS Key Management API', () => {
         });
 
         test('should return null for non-existent recovery method', async () => {
+            const noRecoveryToken = createMockAuthToken(
+                `no-recovery-${Date.now()}`,
+                `norecovery-${Date.now()}@example.com`
+            );
             const params = new URLSearchParams({
-                authToken: createMockAuthToken(
-                    `no-recovery-${Date.now()}`,
-                    `norecovery-${Date.now()}@example.com`
-                ),
                 providerType: 'firebase',
                 type: 'passkey',
             });
 
             const response = await fetch(`${LCA_API_URL}/api/keys/recovery?${params}`, {
                 method: 'GET',
+                headers: { 'X-Auth-Token': noRecoveryToken },
             });
 
             expect(response.status).toEqual(200);
@@ -454,7 +457,6 @@ describe('SSS Key Management API', () => {
             });
 
             const params = new URLSearchParams({
-                authToken: recoveryToken,
                 providerType: 'firebase',
                 type: 'passkey',
                 credentialId: credentialId2,
@@ -462,6 +464,7 @@ describe('SSS Key Management API', () => {
 
             const response = await fetch(`${LCA_API_URL}/api/keys/recovery?${params}`, {
                 method: 'GET',
+                headers: { 'X-Auth-Token': recoveryToken },
             });
 
             expect(response.status).toEqual(200);
@@ -472,13 +475,13 @@ describe('SSS Key Management API', () => {
 
         test('should return first passkey when no credentialId specified', async () => {
             const params = new URLSearchParams({
-                authToken: recoveryToken,
                 providerType: 'firebase',
                 type: 'passkey',
             });
 
             const response = await fetch(`${LCA_API_URL}/api/keys/recovery?${params}`, {
                 method: 'GET',
+                headers: { 'X-Auth-Token': recoveryToken },
             });
 
             expect(response.status).toEqual(200);
@@ -682,13 +685,13 @@ describe('SSS Key Management API', () => {
             });
 
             const params = new URLSearchParams({
-                authToken: saltToken,
                 providerType: 'firebase',
                 type: 'passkey',
             });
 
             const response = await fetch(`${LCA_API_URL}/api/keys/recovery?${params}`, {
                 method: 'GET',
+                headers: { 'X-Auth-Token': saltToken },
             });
 
             expect(response.status).toEqual(200);
@@ -766,7 +769,11 @@ describe('SSS Key Management API', () => {
                     body: JSON.stringify({
                         authToken: token,
                         providerType: 'firebase',
-                        authShare: { encryptedData: `share-v${v}`, encryptedDek: `dek-v${v}`, iv: `iv-v${v}` },
+                        authShare: {
+                            encryptedData: `share-v${v}`,
+                            encryptedDek: `dek-v${v}`,
+                            iv: `iv-v${v}`,
+                        },
                         primaryDid: 'did:key:z6MkPrune',
                     }),
                 });
@@ -961,13 +968,13 @@ describe('SSS Key Management API', () => {
 
         test('step 8: verify recovery method is accessible post-migration', async () => {
             const params = new URLSearchParams({
-                authToken: token,
                 providerType: 'firebase',
                 type: 'passkey',
             });
 
             const response = await fetch(`${LCA_API_URL}/api/keys/recovery?${params}`, {
                 method: 'GET',
+                headers: { 'X-Auth-Token': token },
             });
 
             expect(response.status).toEqual(200);
@@ -1083,7 +1090,9 @@ describe('SSS Key Management API', () => {
             expect(response.status).toEqual(200);
 
             const data = await response.json();
-            const emailMethod = data.recoveryMethods.find((m: { type: string }) => m.type === 'email');
+            const emailMethod = data.recoveryMethods.find(
+                (m: { type: string }) => m.type === 'email'
+            );
 
             expect(emailMethod).toBeDefined();
             expect(emailMethod.shareVersion).toBe(1);

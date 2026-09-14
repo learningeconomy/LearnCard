@@ -32,12 +32,14 @@ export const shouldResetWalletOnStatus = (status: AuthStatus): boolean =>
  * secondary recovery email (identified by its masked value) counts here.
  */
 export const countUserConfiguredRecoveryMethods = (
-    methods: Array<{ type: string }>,
+    methods: Array<{ type: string; confirmedAt?: Date | string }>,
     maskedRecoveryEmail?: string | null
 ): number => {
     const nonEmailMethods = methods.filter(method => method.type !== 'email').length;
+    const emailMethods = methods.filter(method => method.type === 'email');
+    const hasConfirmedRecoveryEmail = emailMethods.some(method => !!method.confirmedAt);
     const hasExplicitRecoveryEmail =
-        !!maskedRecoveryEmail && methods.some(method => method.type === 'email');
+        hasConfirmedRecoveryEmail || (!!maskedRecoveryEmail && emailMethods.length > 0);
 
     return nonEmailMethods + (hasExplicitRecoveryEmail ? 1 : 0);
 };
@@ -69,7 +71,7 @@ export const registerRecoveryMethodCompletion = <T extends string>(
  * Returns the updated user, or null when there is nothing to change.
  */
 export const mergeAuthUserIntoCurrentUser = <
-    T extends { uid: string; email: string; phoneNumber: string }
+    T extends { uid: string; email: string; phoneNumber: string },
 >(
     currentUser: T | null,
     authUser: { id: string; email?: string; phone?: string } | null | undefined
