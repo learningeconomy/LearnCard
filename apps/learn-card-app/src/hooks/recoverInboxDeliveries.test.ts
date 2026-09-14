@@ -1,0 +1,90 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { recoverInboxDeliveries } from './recoverInboxDeliveries';
+
+vi.mock('learn-card-base', () => ({ getCategoryForCredential: async () => 'Achievement' }));
+
+const vc = { id: 'vc-1', type: ['VerifiableCredential'] };
+const delivery = { id: 'inbox-1', credential: vc, expiresAt: '2099-01-01T00:00:00.000Z' };
+const records: { id: string; inboxDeliveryId?: string }[] = [];
+const wallet = {
+    invoke: { recoverInboxCredentials: vi.fn() },
+    store: { LearnCloud: { uploadEncrypted: vi.fn() } },
+    index: { LearnCloud: { get: vi.fn(), add: vi.fn() } },
+};
+const recover = () =>
+    recoverInboxDeliveries(wallet as unknown as Parameters<typeof recoverInboxDeliveries>[0]);
+
+beforeEach(() => {
+    vi.resetAllMocks();
+    records.length = 0;
+    wallet.invoke.recoverInboxCredentials.mockResolvedValue({
+        records: [delivery],
+        hasMore: false,
+    });
+    wallet.store.LearnCloud.uploadEncrypted.mockResolvedValue('encrypted-uri');
+    wallet.index.LearnCloud.get.mockImplementation(async query =>
+        records.filter(record =>
+            Object.entries(query).every(
+                ([key, value]) => record[key as keyof typeof record] === value
+            )
+        )
+    );
+    wallet.index.LearnCloud.add.mockImplementation(async record => {
+        records.push(record);
+        return true;
+    });
+});
+
+describe('inbox delivery recovery', () => {
+    it('persists a recovered credential and skips it on the next launch', async () => {
+        expect(await recover()).toEqual({ stored: 1, failed: 0 });
+        expect(records[0]).toMatchObject({ id: vc.id, inboxDeliveryId: delivery.id });
+        expect(await recover()).toEqual({ stored: 0, failed: 0 });
+        expect(wallet.store.LearnCloud.uploadEncrypted).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not duplicate a claim already saved through the normal claim page', async () => {
+        records.push({ id: vc.id });
+        expect(await recover()).toEqual({ stored: 0, failed: 0 });
+        expect(wallet.store.LearnCloud.uploadEncrypted).not.toHaveBeenCalled();
+    });
+
+    it('uses the stable inbox id when the credential has no id', async () => {
+        wallet.invoke.recoverInboxCredentials.mockResolvedValue({
+            records: [{ ...delivery, credential: { type: ['VerifiableCredential'] } }],
+            hasMore: false,
+        });
+        await recover();
+        await recover();
+        expect(records).toHaveLength(1);
+        expect(records[0].id).toBe('inbox:inbox-1');
+    });
+
+    it.each(['upload', 'index'])(
+        'retries a failed %s without creating another indexed credential',
+        async failure => {
+            if (failure === 'upload')
+                wallet.store.LearnCloud.uploadEncrypted.mockRejectedValueOnce(new Error('offline'));
+            else wallet.index.LearnCloud.add.mockResolvedValueOnce(false);
+            expect(await recover()).toEqual({ stored: 0, failed: 1 });
+            expect(await recover()).toEqual({ stored: 1, failed: 0 });
+            expect(await recover()).toEqual({ stored: 0, failed: 0 });
+            expect(records).toHaveLength(1);
+        }
+    );
+
+    it('continues across pages after an individual save fails', async () => {
+        wallet.invoke.recoverInboxCredentials
+            .mockResolvedValueOnce({ records: [delivery], hasMore: true, cursor: 'inbox-1' })
+            .mockResolvedValueOnce({
+                records: [{ ...delivery, id: 'inbox-2', credential: { ...vc, id: 'vc-2' } }],
+                hasMore: false,
+            });
+        wallet.store.LearnCloud.uploadEncrypted.mockRejectedValueOnce(new Error('offline'));
+        expect(await recover()).toEqual({ stored: 1, failed: 1 });
+        expect(wallet.invoke.recoverInboxCredentials).toHaveBeenLastCalledWith({
+            limit: 100,
+            cursor: 'inbox-1',
+        });
+    });
+});

@@ -18,6 +18,8 @@ The standard claim window is 30 days. Issuers can choose a shorter window with `
 
 Claims are single-use: after successful delivery, starting another exchange for the same claimed records returns no pending credentials. Repeating `/inbox/finalize` returns only newly pending records. Clients should save returned credentials immediately. If the HTTP response is lost or local storage fails, the same claiming DID can recover its delivery for **seven days** with `POST /inbox/deliveries` (authenticated, `inbox:read` scope). This also works for a claimant without a network profile. The endpoint returns a paginated list of `{ id, credential, expiresAt }`; `credential` is a JSON Web Encryption (JWE) object that the holder decrypts locally. It never re-signs or re-issues the credential. Use the stable inbox `id` to deduplicate retries, and use the returned `cursor` while `hasMore` is true.
 
+The LearnCard app sweeps these recovery deliveries at sign-in, even if finalization fails or has already completed. It saves missing credentials to the personal index and uses the inbox delivery ID to deduplicate retries. Failed saves remain eligible for recovery on the next sign-in.
+
 The SDK handles local decryption:
 
 ```typescript

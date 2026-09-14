@@ -4,13 +4,12 @@ import { useQueryClient } from '@tanstack/react-query';
 import {
     useIsLoggedIn,
     useWallet,
-    getCategoryForCredential,
     walletStore,
     WalletSyncState,
     useIsCurrentUserLCNUser,
     connectionPromptKeys,
 } from 'learn-card-base';
-import type { VC, LCNProfile } from '@learncard/types';
+import type { LCNProfile } from '@learncard/types';
 import { useVerifySuccessTick } from '../stores/autoVerifyStore';
 import { captureException } from '@sentry/react';
 import {
@@ -21,6 +20,8 @@ import {
     ACCOUNT_CREATED_AT_KEY,
     SESSION_START_KEY,
 } from '@analytics';
+
+import { recoverInboxDeliveries } from './recoverInboxDeliveries';
 
 // Finalize cache settings
 const FINALIZE_CACHE_TTL_MS = 30 * 60_000; // 30 minutes
@@ -84,86 +85,56 @@ export const useFinalizeInboxCredentials = () => {
                 const profileId = hasProfileId(profile) ? profile.profileId : undefined;
                 if (!profileId) return;
 
-                // Skip if recently finalized for this profile
-                if (!needsFinalize(profileId)) return;
-
-                const result = await wallet.invoke?.finalizeInboxCredentials();
-
-                await queryClient.invalidateQueries({ queryKey: connectionPromptKeys.all });
-
-                const vcs: VC[] = result?.verifiableCredentials || [];
-
-                if (!vcs.length) {
-                    // Nothing to store but consider finalization complete for a while
-                    markFinalized(profileId);
-                    return;
+                // Even if the response is dropped after finalization, recovery can still
+                // retrieve the committed holder-only copy. Also sweep older claims at login.
+                let finalizeFailed = false;
+                if (needsFinalize(profileId)) {
+                    try {
+                        await wallet.invoke.finalizeInboxCredentials();
+                    } catch (error) {
+                        finalizeFailed = true;
+                        captureException(error);
+                    }
                 }
 
-                // mark syncing
+                await queryClient.invalidateQueries({ queryKey: connectionPromptKeys.all });
                 walletStore.set.setIsSyncing(WalletSyncState.Syncing);
-
-                // LC-1853: freeze pre-mutation snapshot now that we know we have credentials to store.
                 capture();
                 storedCountAtStartRef.current = snapshotRef.current.credentialCount;
-
                 let storedCount = 0;
-
-                for (const vc of vcs) {
+                const recovery = await recoverInboxDeliveries(wallet, () => {
+                    storedCount += 1;
+                    // LC-1853: fire profile_item_added for each auto-accepted credential
                     try {
-                        const category = await getCategoryForCredential(vc, wallet, false);
-
-                        const uri = (await wallet.store.LearnCloud.uploadEncrypted?.(vc)) ?? '';
-
-                        if (!uri) continue;
-
-                        const id =
-                            vc?.id ||
-                            (typeof crypto !== 'undefined' && crypto.randomUUID
-                                ? crypto.randomUUID()
-                                : `${Date.now()}-${Math.random()
-                                      .toString(36)
-                                      .slice(2, 18)}-${Math.random()
-                                      .toString(36)
-                                      .slice(2, 18)}-${performance.now()}`);
-
-                        await wallet.index.LearnCloud.add({
-                            id,
-                            uri,
-                            category,
+                        const now = Date.now();
+                        const sessionStart = Number(localStorage.getItem(SESSION_START_KEY) ?? now);
+                        const accountCreatedAt = Number(
+                            localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now
+                        );
+                        track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
+                            method: ProfileBuildMethod.ReceivedBoost,
+                            itemType: 'credential',
+                            itemCount: 1,
+                            totalItemsAfter: storedCountAtStartRef.current + storedCount,
+                            msSinceAccountCreated: now - accountCreatedAt,
+                            msSinceSessionStart: now - sessionStart,
                         });
-
-                        storedCount += 1;
-
-                        // LC-1853: fire profile_item_added for each auto-accepted credential
-                        try {
-                            const now = Date.now();
-                            const sessionStart = Number(
-                                localStorage.getItem(SESSION_START_KEY) ?? now
-                            );
-                            const accountCreatedAt = Number(
-                                localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now
-                            );
-                            track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
-                                method: ProfileBuildMethod.ReceivedBoost,
-                                itemType: 'credential',
-                                itemCount: 1,
-                                totalItemsAfter: storedCountAtStartRef.current + storedCount,
-                                msSinceAccountCreated: now - accountCreatedAt,
-                                msSinceSessionStart: now - sessionStart,
-                            });
-                        } catch (_) {
-                            // analytics must not break credential storage
-                        }
                     } catch (_) {
-                        // continue storing other VCs
+                        // analytics must not break credential storage
                     }
+                });
+                if (recovery.stored) {
+                    await Promise.all([
+                        queryClient.invalidateQueries({ queryKey: ['useGetCredentialList'] }),
+                        queryClient.invalidateQueries({ queryKey: ['useGetCredentialCount'] }),
+                    ]);
                 }
 
                 // complete syncing
                 walletStore.set.setIsSyncing(WalletSyncState.Completed, storedCount);
 
                 // Mark as finalized for this profile in ephemeral cache
-                markFinalized(profileId);
+                if (!finalizeFailed && recovery.failed === 0) markFinalized(profileId);
             } catch (e) {
                 // Capture and reset syncing state on error
                 captureException(e);
