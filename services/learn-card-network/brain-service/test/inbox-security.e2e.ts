@@ -18,12 +18,14 @@ import { getInboxCredentialById } from '@accesslayer/inbox-credential/read';
 import {
     finalizeAndWipeInboxCredential,
     updateInboxCredential,
+    expireInboxCredentials,
     wipeExpiredInboxDeliveries,
 } from '@accesslayer/inbox-credential/update';
 import {
     migrateLegacyInboxCredentials,
     runInboxMaintenance,
 } from '@helpers/inbox-maintenance.helpers';
+import { deleteExpiredInboxCredentials } from '@accesslayer/inbox-credential/delete';
 import { getLearnCard } from '@helpers/learnCard.helpers';
 import { getInboxCredentialMeta } from '@helpers/credential-meta.helpers';
 import * as encryption from '@helpers/inbox-encryption.helpers';
@@ -443,6 +445,34 @@ describe('Universal Inbox escrow (HTTP + isolated Neo4j/Redis)', () => {
         }
     });
 
+    it('bounds expiry and audit deletion transactions and leaves remaining records for the next batch', async () => {
+        await neogma.queryRunner.run(
+            'UNWIND range(1, 5) AS id CREATE (:InboxCredential {id: toString(id), currentStatus: "PENDING", expiresAt: "2020-01-01T00:00:00.000Z", credential: "legacy"})'
+        );
+        expect(await expireInboxCredentials(2)).toBe(2);
+        expect(await expireInboxCredentials(2)).toBe(2);
+        expect(await expireInboxCredentials(2)).toBe(1);
+        await neogma.queryRunner.run(
+            'MATCH (n:InboxCredential) SET n.expiredAt = "2020-01-01T00:00:00.000Z"'
+        );
+        expect(await deleteExpiredInboxCredentials(90, 2)).toBe(2);
+        expect(await deleteExpiredInboxCredentials(90, 2)).toBe(2);
+        expect(await deleteExpiredInboxCredentials(90, 2)).toBe(1);
+    });
+
+    it('moves a poison record behind untouched migration candidates', async () => {
+        const credential = JSON.stringify(await signedCredential());
+        await neogma.queryRunner.run(
+            'UNWIND ["a-poison", "b-valid", "c-valid"] AS id CREATE (:InboxCredential {id: id, currentStatus: "PENDING", expiresAt: "2099-01-01T00:00:00.000Z", credential: $credential})',
+            { credential }
+        );
+        vi.spyOn(encryption, 'encryptInboxCredential').mockRejectedValueOnce(new Error('poison'));
+        expect(await migrateLegacyInboxCredentials(1)).toMatchObject({ failed: 1, encrypted: 0 });
+        expect(await migrateLegacyInboxCredentials(1)).toMatchObject({ failed: 0, encrypted: 1 });
+        expect((await getRecord('b-valid'))!.credential).toMatch(/^lc-inbox-jwe:v1:/);
+        expect((await getRecord('a-poison'))!.credential).toBe(credential);
+    });
+
     it('does not lose the claim response when webhook enqueueing or activity logging fails', async () => {
         const credential = await signedCredential();
         const issued = await issue({
@@ -644,10 +674,11 @@ describe('Universal Inbox escrow (HTTP + isolated Neo4j/Redis)', () => {
             'UNWIND $records AS record CREATE (n:InboxCredential) SET n = record CREATE (cm:ContactMethod {id: record.id}) CREATE (n)-[:ADDRESSED_TO]->(cm)',
             { records }
         );
-        const counts = await runInboxMaintenance();
+        const counts = await runInboxMaintenance({ deleteExpiredRecords: true });
         expect(counts).toEqual({
             migrated: 101,
             wiped: 1,
+            failed: 0,
             expired: 1,
             deleted: 1,
             deliveriesWiped: 0,
@@ -666,9 +697,10 @@ describe('Universal Inbox escrow (HTTP + isolated Neo4j/Redis)', () => {
                 )
             )
         ).toEqual(JSON.parse(credential));
-        expect(await runInboxMaintenance()).toEqual({
+        expect(await runInboxMaintenance({ deleteExpiredRecords: true })).toEqual({
             migrated: 0,
             wiped: 0,
+            failed: 0,
             deliveriesWiped: 0,
             expired: 0,
             deleted: 0,
@@ -677,7 +709,7 @@ describe('Universal Inbox escrow (HTTP + isolated Neo4j/Redis)', () => {
             'MATCH (n:InboxCredential {id: "past-due"}) SET n.expiredAt = $expiredAt',
             { expiredAt: daysAgo(91) }
         );
-        expect((await runInboxMaintenance()).deleted).toBe(1);
+        expect((await runInboxMaintenance({ deleteExpiredRecords: true })).deleted).toBe(1);
     });
 
     it('cannot restore escrow if a legacy claim finishes while migration encrypts it', async () => {
@@ -721,7 +753,7 @@ describe('Universal Inbox escrow (HTTP + isolated Neo4j/Redis)', () => {
         expect(
             await finalizeAndWipeInboxCredential(expired.issuanceId, await recoveryDelivery())
         ).toBeNull();
-        await runInboxMaintenance();
+        await runInboxMaintenance({ deleteExpiredRecords: true });
         expect(await getInboxCredentialById(expired.issuanceId)).toMatchObject({
             currentStatus: 'EXPIRED',
         });

@@ -72,12 +72,17 @@ export const finalizeAndWipeInboxCredential = async (
         : null;
 };
 
-export const expireInboxCredentials = async (): Promise<number> => {
+export const expireInboxCredentials = async (
+    limit = INBOX_MAINTENANCE_BATCH_SIZE
+): Promise<number> => {
     const result = await new QueryBuilder(new BindParam({ expiredAt: new Date().toISOString() }))
         .match({ model: InboxCredential, identifier: 'inboxCredential' })
         .where(
             'inboxCredential.currentStatus = "PENDING" AND datetime(inboxCredential.expiresAt) <= datetime()'
         )
+        .with('inboxCredential')
+        .orderBy('inboxCredential.expiresAt, inboxCredential.id')
+        .limit(limit)
         // As with claim finalization, serialize state changes on the inbox node before
         // re-evaluating expiry eligibility.
         .set('inboxCredential._escrowLock = true')
