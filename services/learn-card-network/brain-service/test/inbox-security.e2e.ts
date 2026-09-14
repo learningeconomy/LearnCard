@@ -23,6 +23,7 @@ import {
     migrateLegacyInboxCredentials,
     runInboxMaintenance,
 } from '@helpers/inbox-maintenance.helpers';
+import { getInboxCredentialMeta } from '@helpers/credential-meta.helpers';
 import * as encryption from '@helpers/inbox-encryption.helpers';
 import * as notifications from '@helpers/notifications.helpers';
 import * as activity from '@helpers/activity.helpers';
@@ -328,6 +329,35 @@ describe('Universal Inbox escrow (HTTP + isolated Neo4j/Redis)', () => {
             claimed: 0,
             errors: 0,
         });
+    });
+
+    it('returns metadata without escrow in issuer responses, including legacy plaintext', async () => {
+        const credential = { ...(await signedCredential()), name: 'Legacy credential name' };
+        const issued = await issue({
+            credential,
+            recipient: { type: 'email', value: 'metadata@example.test' },
+        });
+        for (const legacy of [false, true]) {
+            if (legacy) {
+                await neogma.queryRunner.run(
+                    'MATCH (n:InboxCredential {id: $id}) SET n.credential = $credential REMOVE n.credentialName',
+                    { id: issued.issuanceId, credential: JSON.stringify(credential) }
+                );
+            }
+            const response = await post('/api/inbox/issued', {}, issuer);
+            const result = await response.json();
+            expect(response.status).toBe(200);
+            expect(result.records).toHaveLength(1);
+            expect(result.records[0]).not.toHaveProperty('credential');
+            const detail = await fetch(`${baseUrl}/api/inbox/credentials/${issued.issuanceId}`, {
+                headers: { Authorization: `Bearer ${await createToken(issuer)}` },
+            });
+            expect(detail.status).toBe(200);
+            expect(await detail.json()).not.toHaveProperty('credential');
+            expect(
+                getInboxCredentialMeta((await getInboxCredentialById(issued.issuanceId))!)
+            ).toHaveProperty('credentialName', credential.name);
+        }
     });
 
     it('does not lose the claim response when webhook enqueueing or activity logging fails', async () => {

@@ -15,6 +15,7 @@ import {
     VCValidator,
     UnsignedVC,
 } from '@learncard/types';
+import { getInboxCredentialMeta } from '@helpers/credential-meta.helpers';
 import { claimIntoInbox, issueToInbox } from '@helpers/inbox.helpers';
 import { prepareCredentialFromBoost, getBoostUri } from '@helpers/boost.helpers';
 import {
@@ -82,6 +83,8 @@ import { finalizeInboxCredentialsForProfile } from '@helpers/finalize-inbox.help
 import { claimPendingGuardianLinksForProfile } from '@helpers/guardian-links.helpers';
 
 const EMBED_INBOX_EXPIRY_DAYS = 720;
+// These routes expose tracking metadata only, never escrow or holder recovery material.
+const InboxCredentialMetadataValidator = InboxCredentialValidator.omit({ credential: true });
 
 export const inboxRouter = t.router({
     // Request guardian approval via email
@@ -491,7 +494,7 @@ export const inboxRouter = t.router({
         .input(ClaimInboxCredentialValidator)
         .output(
             z.object({
-                inboxCredential: InboxCredentialValidator,
+                inboxCredential: InboxCredentialMetadataValidator,
                 status: z.string(),
                 recipientDid: z.string().optional(),
             })
@@ -702,7 +705,11 @@ export const inboxRouter = t.router({
                 recipient: ContactMethodQueryValidator.optional(),
             }).default({ limit: 25 })
         )
-        .output(PaginatedInboxCredentialsValidator)
+        .output(
+            PaginatedInboxCredentialsValidator.extend({
+                records: z.array(InboxCredentialMetadataValidator),
+            })
+        )
         .query(async ({ ctx, input }) => {
             const { profile } = ctx.user;
             const { limit, cursor, query, recipient } = input;
@@ -742,7 +749,7 @@ export const inboxRouter = t.router({
                 credentialId: z.string(),
             })
         )
-        .output(InboxCredentialValidator)
+        .output(InboxCredentialMetadataValidator)
         .query(async ({ ctx, input }) => {
             const { profile } = ctx.user;
             const { credentialId } = input;
@@ -831,7 +838,7 @@ export const inboxRouter = t.router({
 
             const issuerProfile = await getProfileByDid(inboxCredential.issuerDid);
 
-            const { credentialName } = inboxCredential;
+            const { credentialName } = getInboxCredentialMeta(inboxCredential);
 
             // Best-effort check: if the caller has an authenticated profile,
             // check MANAGES relationship for OTP-skip eligibility
@@ -1322,7 +1329,8 @@ export const inboxRouter = t.router({
             try {
                 const studentProfile = await getProfileForInboxCredential(inboxCredentialId);
                 if (studentProfile) {
-                    const { credentialName, achievementType } = inboxCredential;
+                    const { credentialName, achievementType } =
+                        getInboxCredentialMeta(inboxCredential);
 
                     await addNotificationToQueue({
                         type: LCNNotificationTypeEnumValidator.enum.GUARDIAN_APPROVED,
@@ -1426,7 +1434,8 @@ export const inboxRouter = t.router({
             try {
                 const studentProfile = await getProfileForInboxCredential(inboxCredentialId);
                 if (studentProfile) {
-                    const { credentialName, achievementType } = inboxCredential;
+                    const { credentialName, achievementType } =
+                        getInboxCredentialMeta(inboxCredential);
 
                     await addNotificationToQueue({
                         type: LCNNotificationTypeEnumValidator.enum.GUARDIAN_REJECTED,
