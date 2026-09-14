@@ -173,7 +173,7 @@ export const FamilyCMS: React.FC<FamilyCMSProps> = ({
                         itemType="family"
                         onRecover={handleRecover}
                         onDiscard={handleDiscard}
-                        discardButtonText="Create New Family"
+                        discardButtonText={m['family.createNewFamily']()}
                     />,
                     { sectionClassName: '!max-w-[400px]' },
                     { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
@@ -278,6 +278,10 @@ export const FamilyCMS: React.FC<FamilyCMSProps> = ({
             if (dependents?.length > 0) {
                 await Promise.all(
                     dependents?.map(async dependent => {
+                        const profileId = dependent.profileId;
+
+                        if (!profileId) throw new Error('Dependent profile ID is required');
+
                         const managerDid = await wallet.invoke.createChildProfileManager(boostUri, {
                             displayName: dependent?.name,
                             bio: dependent?.shortBio,
@@ -292,7 +296,7 @@ export const FamilyCMS: React.FC<FamilyCMSProps> = ({
                         const learnCardDisplayStyles = dependent?.learnCardID;
 
                         const childDid = await managerLc.invoke.createManagedProfile({
-                            profileId: dependent.profileId!, // uuid
+                            profileId, // uuid
                             displayName: '',
                             bio: '',
                             shortBio: '',
@@ -336,7 +340,7 @@ export const FamilyCMS: React.FC<FamilyCMSProps> = ({
                         // handle boosting someone else
                         const { sentBoostUri } = await sendBoostCredential(
                             wallet,
-                            dependent?.profileId!,
+                            profileId,
                             boostUri,
                             { skipNotification: true }
                         );
@@ -366,10 +370,10 @@ export const FamilyCMS: React.FC<FamilyCMSProps> = ({
                                 canViewAnalytics: false,
                                 canManageChildrenProfiles: false,
                             },
-                            dependent?.profileId!
+                            profileId
                         );
 
-                        await wallet.invoke.removeBoostAdmin(boostUri, dependent?.profileId!);
+                        await wallet.invoke.removeBoostAdmin(boostUri, profileId);
                     })
                 );
             }

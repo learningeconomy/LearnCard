@@ -2386,6 +2386,7 @@
     },
     "family": {
         "addFamilyMember": "Add Family Member",
+        "createNewFamily": "Create New Family",
         "childProfile": "Child Profile",
         "familyAccount": "Family Account",
         "joinFamily": "Join Family",
