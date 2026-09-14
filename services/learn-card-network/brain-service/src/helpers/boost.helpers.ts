@@ -255,16 +255,14 @@ export const issueClaimLinkBoost = async (
     if (Array.isArray(boostCredential.credentialSubject)) {
         boostCredential.credentialSubject = boostCredential.credentialSubject.map(subject => ({
             ...subject,
-            id: subject.did,
+            id: getDidWeb(domain, to.profileId),
         }));
     } else {
         boostCredential.credentialSubject.id = getDidWeb(domain, to.profileId);
     }
 
     // Embed the boostURI into the boost credential for verification purposes.
-    if (boostCredential?.type?.includes('BoostCredential')) {
-        boostCredential.boostId = boostURI;
-    }
+    boostCredential.boostId = boostURI;
 
     // Inject OBv3 skill alignments based on boost's framework/skills
     await injectObv3AlignmentsIntoCredentialForBoost(boostCredential, boost, domain);

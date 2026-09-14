@@ -55,18 +55,54 @@ describe('SA encryption boundary', () => {
         vi.clearAllMocks();
     });
 
-    it('rejects missing subjects before allocating status or authenticating', async () => {
-        await expect(
-            issueCredentialWithSigningAuthority(
-                issuer,
-                { ...credential, credentialSubject: {} },
-                sa,
-                'network.example'
-            )
-        ).rejects.toMatchObject({ kind: 'validation_error', retryable: false });
-        expect(mocks.append).not.toHaveBeenCalled();
-        expect(mocks.auth).not.toHaveBeenCalled();
-        expect(mocks.fetch).not.toHaveBeenCalled();
+    it.each([
+        { credentialSubject: {} },
+        { credentialSubject: [] },
+        { credentialSubject: [{ id: 'did:example:student' }, {}] },
+    ])(
+        'rejects missing subject IDs before allocating status or authenticating (%j)',
+        async ({ credentialSubject }) => {
+            await expect(
+                issueCredentialWithSigningAuthority(
+                    issuer,
+                    { ...credential, credentialSubject },
+                    sa,
+                    'network.example'
+                )
+            ).rejects.toMatchObject({ kind: 'validation_error', retryable: false });
+            expect(mocks.append).not.toHaveBeenCalled();
+            expect(mocks.auth).not.toHaveBeenCalled();
+            expect(mocks.fetch).not.toHaveBeenCalled();
+        }
+    );
+
+    it('includes every subject and the delegated contract owner without changing SA ownership', async () => {
+        mocks.fetch.mockResolvedValue({ ok: true, status: 200, json: async () => jwe });
+        await issueCredentialWithSigningAuthority(
+            issuer,
+            {
+                ...credential,
+                credentialSubject: [
+                    { id: 'did:example:student' },
+                    { id: 'did:example:second-student' },
+                    { id: 'did:example:student' },
+                ],
+            },
+            sa,
+            'network.example',
+            true,
+            undefined,
+            true,
+            ['did:example:contract-owner', 'did:web:network.example:users:org']
+        );
+        const body = JSON.parse(mocks.fetch.mock.calls[0]![1].body);
+        expect(body.signingAuthority.ownerDid).toBe('did:web:network.example:users:org');
+        expect(body.encryption.recipients).toEqual([
+            'did:example:student',
+            'did:example:second-student',
+            'did:web:network.example:users:org',
+            'did:example:contract-owner',
+        ]);
     });
 
     it.each([undefined, 'did:example:app-owner'])(

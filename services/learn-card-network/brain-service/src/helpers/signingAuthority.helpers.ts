@@ -128,7 +128,9 @@ export async function issueCredentialWithSigningAuthority(
     // credential. Allocating fresh Bitstring status entries per version would leak
     // writes and replace the descriptor the issuer supplied, so refresh publication
     // opts out. Defaults to true so every existing caller is preserved.
-    appendCredentialStatus = true
+    appendCredentialStatus = true,
+    // Additional authorized readers (e.g. a contract owner delegating issuance).
+    additionalEncryptionRecipients: string[] = []
 ): Promise<VC | JWE> {
     const issuerEndpoint = `${signingAuthorityForUser.signingAuthority.endpoint}/credentials/issue`;
     const saName = signingAuthorityForUser.relationship.name;
@@ -136,12 +138,13 @@ export async function issueCredentialWithSigningAuthority(
     const ownerProfile = getIssuerOwnerProfile(issuer);
     const ownerDid =
         ownerDidOverride ?? getDidWeb(domain ?? 'network.learncard.com', ownerProfile.profileId);
-    const subjectId = Array.isArray(credential.credentialSubject)
-        ? credential.credentialSubject[0]?.id
-        : credential.credentialSubject?.id;
-    if (encrypt && !subjectId) {
+    const subjects = Array.isArray(credential.credentialSubject)
+        ? credential.credentialSubject
+        : [credential.credentialSubject];
+    const subjectIds = subjects.map(subject => subject?.id);
+    if (encrypt && (!subjectIds.length || subjectIds.some(id => !id))) {
         throw new SaIssueError({
-            message: 'Encrypted credential issuance requires a subject DID',
+            message: 'Encrypted credential issuance requires a DID for every subject',
             status: 400,
             kind: 'validation_error',
             retryable: false,
@@ -181,7 +184,13 @@ export async function issueCredentialWithSigningAuthority(
                 // Brain authenticates the request but must not be able to decrypt the response.
                 const encryption = encrypt
                     ? {
-                          recipients: [subjectId!, ownerDid],
+                          recipients: [
+                              ...new Set([
+                                  ...subjectIds,
+                                  ownerDid,
+                                  ...additionalEncryptionRecipients,
+                              ]),
+                          ],
                       }
                     : undefined;
 
@@ -195,7 +204,7 @@ export async function issueCredentialWithSigningAuthority(
                 }
 
                 console.log('[SA Helper] Request details:', {
-                    subjectId,
+                    subjectIds,
                     encryptionRecipients: encryption?.recipients,
                     credentialType: credentialToIssue?.type,
                 });

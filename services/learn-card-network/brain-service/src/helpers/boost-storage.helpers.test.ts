@@ -11,10 +11,13 @@ const mocks = vi.hoisted(() => ({
     listing: vi.fn(),
     accept: vi.fn(),
     notify: vi.fn(async () => undefined),
+    signingAuthority: vi.fn(),
 }));
 
 vi.mock('@models', () => ({}));
-vi.mock('@services/skills-provider/inject', () => ({}));
+vi.mock('@services/skills-provider/inject', () => ({
+    injectObv3AlignmentsIntoCredentialForBoost: vi.fn(),
+}));
 vi.mock('@accesslayer/boost/relationships/read', () => ({}));
 vi.mock('./uri.helpers', () => ({
     constructUri: (kind: string, id: string, domain: string) =>
@@ -43,7 +46,9 @@ vi.mock('./learnCard.helpers', () => ({
         },
     }),
 }));
-vi.mock('./signingAuthority.helpers', () => ({}));
+vi.mock('./signingAuthority.helpers', () => ({
+    issueCredentialWithSigningAuthority: mocks.signingAuthority,
+}));
 vi.mock('./notifications.helpers', () => ({ addNotificationToQueue: mocks.notify }));
 vi.mock('./notificationMessages', () => ({ getNotificationMessage: () => 'Received' }));
 vi.mock('./getRecipientLocale.helpers', () => ({ resolveRecipientLocale: async () => 'en' }));
@@ -60,7 +65,7 @@ vi.mock('@tracing', () => ({
     traceInternal: async (_name: string, action: () => unknown) => action(),
 }));
 
-import { sendBoost } from './boost.helpers';
+import { issueClaimLinkBoost, sendBoost } from './boost.helpers';
 
 const vc = {
     '@context': ['https://www.w3.org/2018/credentials/v1'],
@@ -167,6 +172,29 @@ describe('boost payload storage', () => {
             expect(mocks.sent).not.toHaveBeenCalled();
         }
     );
+
+    it('assigns the claimant to every template subject without requiring a did field', async () => {
+        mocks.signingAuthority.mockResolvedValue(jwe);
+        const boost = {
+            ...options.boost,
+            dataValues: {
+                id: 'boost',
+                boost: JSON.stringify({
+                    ...vc,
+                    credentialSubject: [{ name: 'First' }, { name: 'Second' }],
+                }),
+            },
+        } as Parameters<typeof issueClaimLinkBoost>[0];
+        const authority = { relationship: { did: 'did:example:sa' } } as Parameters<
+            typeof issueClaimLinkBoost
+        >[4];
+        await issueClaimLinkBoost(boost, options.domain, options.from, options.to, authority);
+        expect(mocks.signingAuthority.mock.calls[0]![1].credentialSubject).toEqual([
+            { name: 'First', id: 'did:web:network.example:users:student' },
+            { name: 'Second', id: 'did:web:network.example:users:student' },
+        ]);
+        expect(mocks.store).toHaveBeenCalledWith(jwe);
+    });
 
     it('preserves explicit notification and acceptance opt-outs', async () => {
         await sendBoost({

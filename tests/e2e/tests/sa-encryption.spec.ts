@@ -4,8 +4,9 @@ import { expect, test } from 'vitest';
 import { initLearnCard } from '@learncard/init';
 import { JWEValidator, type VC } from '@learncard/types';
 import { getBitstringStatusListEntries, getBitstringStatusListBit } from '@learncard/helpers';
-import { getLearnCard } from './helpers/learncard.helpers';
+import { getLearnCard, getLearnCardForUser } from './helpers/learncard.helpers';
 import { testUnsignedBoost } from './helpers/credential.helpers';
+import { normalContract, normalFullTerms } from './helpers/contract.helpers';
 
 test('legacy signed wrappers still verify and reject tampered inner credentials', async () => {
     const issuer = await initLearnCard({ seed: 'e'.repeat(64) });
@@ -34,6 +35,54 @@ test('legacy signed wrappers still verify and reject tampered inner credentials'
     const tampered = structuredClone(legacy);
     (tampered.boostCredential as VC).name = 'Tampered name';
     expect((await verifier.invoke.verifyCredential(tampered)).errors.length).toBeGreaterThan(0);
+});
+
+test('delegated AutoBoosts remain readable by the contract owner across consent changes', async () => {
+    const owner = await getLearnCardForUser('a');
+    const student = await getLearnCardForUser('b');
+    const writer = await getLearnCardForUser('c');
+    const sa = await writer.invoke.createSigningAuthority('delegated-encryption');
+    if (!sa) throw new Error('Signing authority creation failed');
+    await writer.invoke.registerSigningAuthority(sa.endpoint, sa.name, sa.did);
+    const boostUri = await writer.invoke.createBoost(testUnsignedBoost, {
+        category: 'Achievement',
+    });
+    const contractUri = await owner.invoke.createContract({
+        contract: normalContract,
+        name: 'Delegated AutoBoost encryption',
+        writers: ['testc'],
+    });
+    await writer.invoke.addAutoBoostsToContract(contractUri, [
+        { boostUri, signingAuthority: { endpoint: sa.endpoint, name: sa.name } },
+    ]);
+    const { termsUri } = await student.invoke.consentToContract(contractUri, {
+        terms: normalFullTerms,
+    });
+    const seen = new Set<string>();
+    const brain = await initLearnCard({ seed: 'a' });
+    const assertNewCredentialReaders = async (): Promise<void> => {
+        const { records } = await student.invoke.getCredentialsForContract(termsUri);
+        const newlyIssued = records.filter(record => !seen.has(record.credentialUri));
+        expect(newlyIssued).toHaveLength(1);
+        for (const record of newlyIssued) {
+            seen.add(record.credentialUri);
+            const response = await fetch(
+                `http://localhost:4000/api/storage/resolve?uri=${encodeURIComponent(record.credentialUri)}`
+            );
+            expect(response.status).toBe(200);
+            const jwe = JWEValidator.parse(await response.json());
+            const vc = await student.invoke.decryptDagJwe<VC>(jwe);
+            expect(vc.boostId).toBe(boostUri);
+            expect(await writer.invoke.decryptDagJwe(jwe)).toEqual(vc);
+            expect(await owner.invoke.decryptDagJwe(jwe)).toEqual(vc);
+            expect(await brain.invoke.decryptDagJwe(jwe).catch(() => undefined)).toBeFalsy();
+        }
+    };
+    await assertNewCredentialReaders();
+    await student.invoke.consentToContract(contractUri, { terms: normalFullTerms });
+    await assertNewCredentialReaders();
+    await student.invoke.updateContractTerms(termsUri, { terms: normalFullTerms });
+    await assertNewCredentialReaders();
 });
 
 test('SA issuance stores encrypted credentials and supports claim and revocation', async () => {
