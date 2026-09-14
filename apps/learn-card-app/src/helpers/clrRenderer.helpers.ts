@@ -162,6 +162,23 @@ export type AssessmentDisplayModel = {
     isRubric: boolean;
 };
 
+/** Award record (achievementType: Award, Certificate, License, etc.). */
+export type AwardDisplayModel = {
+    name?: SourceMappedField<string>;
+    description?: SourceMappedField<string>;
+    achievementType: SourceMappedField<string>;
+    earnedAt?: SourceMappedField<string>;
+    validUntil?: SourceMappedField<string>;
+    sourceCredentialId: string;
+    results: ResultDisplayModel[];
+    /** Framework competency links declared on this achievement via `achievement.alignment`. */
+    alignments: AlignmentDisplayModel[];
+    /** Evidence/attachments scoped to this award credential. */
+    evidence: EvidenceDisplayModel[];
+    /** Criteria narrative describing how the award was earned. */
+    criteria?: SourceMappedField<string>;
+};
+
 /** Catch-all for transcript-adjacent records that do not meet strict transcript classifications. */
 export type OtherAcademicRecordModel = {
     name?: SourceMappedField<string>;
@@ -229,6 +246,7 @@ export type ClrTranscriptDisplayModel = {
     programs: ProgramDisplayModel[];
     competencies: CompetencyDisplayModel[];
     assessments: AssessmentDisplayModel[];
+    awards: AwardDisplayModel[];
     otherRecords: OtherAcademicRecordModel[];
     evidence: EvidenceDisplayModel[];
     associations: AssociationDisplayModel[];
@@ -263,6 +281,16 @@ const PROGRAM_TYPES = new Set([
     'DoctoralDegree',
     'MasterDegree',
     'LearningProgram',
+]);
+
+const AWARD_TYPES = new Set([
+    'Award',
+    'Certificate',
+    'License',
+    'Certification',
+    'Badge',
+    'MicroCredential',
+    'Endorsement',
 ]);
 
 const LARGE_INLINE_EVIDENCE_THRESHOLD = 100_000;
@@ -725,6 +753,7 @@ const classifyRecord = (
     program?: ProgramDisplayModel;
     competency?: CompetencyDisplayModel;
     assessment?: AssessmentDisplayModel;
+    award?: AwardDisplayModel;
     other?: OtherAcademicRecordModel;
     gpa?: SourceMappedField<string | number | boolean>;
     evidence: EvidenceDisplayModel[];
@@ -947,6 +976,41 @@ const classifyRecord = (
         };
     }
 
+    if (achievementType && AWARD_TYPES.has(achievementType)) {
+        const criteria = (achievement.criteria ?? {}) as Record<string, unknown>;
+        const criteriaNarrative =
+            typeof criteria.narrative === 'string'
+                ? asMapped(
+                      criteria.narrative,
+                      'achievement.criteria.narrative',
+                      'achievement.criteria.narrative',
+                      nestedId
+                  )
+                : undefined;
+
+        return {
+            award: {
+                name: achievementName,
+                description: achievementDescription,
+                achievementType: asMapped(
+                    achievementType,
+                    'achievement.achievementType',
+                    'achievement.achievementType',
+                    nestedId
+                ),
+                earnedAt,
+                validUntil,
+                sourceCredentialId: nestedId,
+                results,
+                alignments,
+                evidence,
+                criteria: criteriaNarrative,
+            },
+            gpa: hasGpaResult?.value,
+            evidence,
+        };
+    }
+
     warnings.push({
         code: 'AMBIGUOUS_RECORD',
         message: 'Record could not be strictly classified from CLR/OB fields.',
@@ -996,6 +1060,7 @@ export const normalizeClrTranscriptDisplayModel = (
     const programs: ProgramDisplayModel[] = [];
     const competencies: CompetencyDisplayModel[] = [];
     const assessments: AssessmentDisplayModel[] = [];
+    const awards: AwardDisplayModel[] = [];
     const otherRecords: OtherAcademicRecordModel[] = [];
     const evidence: EvidenceDisplayModel[] = [];
 
@@ -1036,6 +1101,7 @@ export const normalizeClrTranscriptDisplayModel = (
         if (normalized.program) programs.push(normalized.program);
         if (normalized.competency) competencies.push(normalized.competency);
         if (normalized.assessment) assessments.push(normalized.assessment);
+        if (normalized.award) awards.push(normalized.award);
         if (normalized.other) otherRecords.push(normalized.other);
         if (!explicitGpa && normalized.gpa) explicitGpa = normalized.gpa;
         evidence.push(...normalized.evidence);
@@ -1138,7 +1204,12 @@ export const normalizeClrTranscriptDisplayModel = (
         qualityLevel = 'rich';
     } else if (programs.length > 0) {
         qualityLevel = 'usable';
-    } else if (evidence.length > 0 || assessments.length > 0 || otherRecords.length > 0) {
+    } else if (
+        evidence.length > 0 ||
+        assessments.length > 0 ||
+        awards.length > 0 ||
+        otherRecords.length > 0
+    ) {
         qualityLevel = 'sparse';
     }
 
@@ -1292,6 +1363,7 @@ export const normalizeClrTranscriptDisplayModel = (
         programs,
         competencies,
         assessments,
+        awards,
         otherRecords,
         evidence,
         associations,
@@ -1302,6 +1374,7 @@ export const normalizeClrTranscriptDisplayModel = (
                 `courses=${courses.length}`,
                 `programs=${programs.length}`,
                 `assessments=${assessments.length}`,
+                `awards=${awards.length}`,
                 `evidence=${evidence.length}`,
                 ...(partial ? ['partial=true'] : []),
             ],
@@ -1366,6 +1439,7 @@ export const selectClrTranscriptView = (
     if (
         model.evidence.length > 0 ||
         model.assessments.length > 0 ||
+        model.awards.length > 0 ||
         model.otherRecords.length > 0
     ) {
         return 'SparseAcademicRecordView';

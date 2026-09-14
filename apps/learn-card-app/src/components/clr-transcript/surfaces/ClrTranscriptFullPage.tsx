@@ -4,6 +4,7 @@ import ClrCourseSection from '../ClrCourseSection';
 import ClrAssessmentSection from '../ClrAssessmentSection';
 import ClrAssessmentDetailPanel from '../ClrAssessmentDetailPanel';
 import ClrProgramsSection from '../ClrProgramsSection';
+import ClrAwardsSection from '../ClrAwardsSection';
 import ClrCourseDetailPanel from '../ClrCourseDetailPanel';
 import ClrProgramDetailPanel from '../ClrProgramDetailPanel';
 import CredentialSummaryView from '../views/CredentialSummaryView';
@@ -123,6 +124,13 @@ const ClrTranscriptFullPage: React.FC<{
                                 onSelectAssessment={handleSelectAssessment}
                                 adminMode={adminMode}
                             />
+                        )}
+
+                    {/* Awards & Recognitions */}
+                    {(selectedView === 'StructuredTranscriptView' ||
+                        selectedView === 'VerifierInspectionView') &&
+                        model.awards.length > 0 && (
+                            <ClrAwardsSection awards={model.awards} adminMode={adminMode} />
                         )}
 
                     {/* Sparse / summary views */}

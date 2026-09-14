@@ -54,6 +54,50 @@ const SparseAcademicRecordView: React.FC<{
                     ))}
                 </div>
             )}
+            {model.awards.length > 0 && (
+                <div className="space-y-3">
+                    <div className="flex items-center justify-between px-1 border-b border-grayscale-100 pb-2">
+                        <p className="text-xs font-semibold text-grayscale-500 uppercase tracking-widest">
+                            Awards & Recognitions
+                        </p>
+                        <p className="text-xs text-grayscale-500">
+                            {model.awards.length} item
+                            {model.awards.length !== 1 ? 's' : ''}
+                        </p>
+                    </div>
+
+                    {model.awards.map(award => (
+                        <div
+                            key={award.sourceCredentialId}
+                            className="bg-white border border-grayscale-200 rounded-[20px] overflow-hidden"
+                        >
+                            <div className="flex items-center justify-between gap-3 px-5 py-2 bg-grayscale-50 border-b border-grayscale-100">
+                                <p className="text-[15px] font-semibold text-grayscale-900 truncate">
+                                    {award.name?.value || 'Award'}
+                                </p>
+                                {award.earnedAt?.value && (
+                                    <p className="text-xs text-grayscale-500 shrink-0">
+                                        {formatClrDate(award.earnedAt.value)}
+                                    </p>
+                                )}
+                            </div>
+
+                            <div className="px-5 py-4 space-y-3">
+                                {award.description?.value && (
+                                    <p className="text-sm text-grayscale-600 leading-relaxed">
+                                        {award.description.value}
+                                    </p>
+                                )}
+                                {award.criteria?.value && (
+                                    <p className="text-xs text-grayscale-500 leading-relaxed italic">
+                                        {award.criteria.value}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
             {model.otherRecords.length > 0 && (
                 <div className="space-y-3">
                     <div className="flex items-center justify-between px-1 border-b border-grayscale-100 pb-2">
