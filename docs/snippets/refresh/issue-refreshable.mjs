@@ -11,6 +11,8 @@ const issuer = await initLearnCard({ seed: SECURE_SEED, network: true });
 if (!(await issuer.invoke.getProfile())) {
     await issuer.invoke.createProfile({ profileId: PROFILE_ID, displayName: 'Example University' });
 }
+// Your network identity. Every version of the credential must be issued by this exact DID.
+const issuerDid = (await issuer.invoke.getProfile()).did;
 
 const recipient = await issuer.invoke.getProfile(RECIPIENT_PROFILE_ID);
 if (!recipient) throw new Error(`No profile named ${RECIPIENT_PROFILE_ID}`);
@@ -43,7 +45,7 @@ const credential = await issuer.invoke.issueCredential({
     ],
     id: credentialId,
     type: ['VerifiableCredential', 'OpenBadgeCredential'],
-    issuer: issuer.id.did(),
+    issuer: issuerDid,
     validFrom: new Date().toISOString(),
     name: 'Provisional Transcript',
     refreshService,
@@ -66,6 +68,7 @@ const credentialUri = await issuer.invoke.sendRefreshableCredential(refreshId, c
 // Keep these with your own record of the credential: publishing an update needs all of them.
 const record = {
     refreshId,
+    issuerDid,
     refreshService,
     credentialId,
     credentialUri,

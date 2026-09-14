@@ -58,6 +58,8 @@ const issuer = await initLearnCard({ seed: SECURE_SEED, network: true });
 if (!(await issuer.invoke.getProfile())) {
     await issuer.invoke.createProfile({ profileId: PROFILE_ID, displayName: 'Example University' });
 }
+// Your network identity. Every version of the credential must be issued by this exact DID.
+const issuerDid = (await issuer.invoke.getProfile()).did;
 
 const recipient = await issuer.invoke.getProfile(RECIPIENT_PROFILE_ID);
 if (!recipient) throw new Error(`No profile named ${RECIPIENT_PROFILE_ID}`);
@@ -90,7 +92,7 @@ const credential = await issuer.invoke.issueCredential({
     ],
     id: credentialId,
     type: ['VerifiableCredential', 'OpenBadgeCredential'],
-    issuer: issuer.id.did(),
+    issuer: issuerDid,
     validFrom: new Date().toISOString(),
     name: 'Provisional Transcript',
     refreshService,
@@ -113,6 +115,7 @@ const credentialUri = await issuer.invoke.sendRefreshableCredential(refreshId, c
 // Keep these with your own record of the credential: publishing an update needs all of them.
 const record = {
     refreshId,
+    issuerDid,
     refreshService,
     credentialId,
     credentialUri,
@@ -128,7 +131,9 @@ console.log(JSON.stringify(record));
 RECIPIENT_PROFILE_ID=their-profile-id node --env-file=.env issue-refreshable.mjs
 ```
 
-The script writes `refresh.json`. In a real integration, store `refreshId` and `refreshService` alongside your own record of the credential (the student row, the license number). You need both to publish an update, and you can't recover them later: the network only holds the credential encrypted to the recipient.
+The script writes `refresh.json`. In a real integration, store `refreshId`, `refreshService`, and `issuerDid` alongside your own record of the credential (the student row, the license number). You need them to publish an update, and you can't recover them later: the network only holds the credential encrypted to the recipient.
+
+The issuer DID matters more than it looks. Your account has two: a local `did:key` and your network `did:web`. Every version must use the same one, so read it from `getProfile()` as the script does rather than from `id.did()`, which can return either depending on timing.
 
 The recipient sees **Provisional Transcript** in their LearnCard app once they claim it.
 
@@ -149,7 +154,7 @@ import { initLearnCard } from '@learncard/init';
 if (!process.env.SECURE_SEED) throw new Error('Set SECURE_SEED');
 
 // Written by issue-refreshable.mjs.
-const { refreshId, refreshService, credentialId, recipientDid } = JSON.parse(
+const { refreshId, refreshService, credentialId, issuerDid, recipientDid } = JSON.parse(
     readFileSync('refresh.json', 'utf8')
 );
 
@@ -173,7 +178,7 @@ const updated = await issuer.invoke.issueCredential({
     ],
     id: credentialId,
     type: ['VerifiableCredential', 'OpenBadgeCredential'],
-    issuer: issuer.id.did(),
+    issuer: issuerDid,
     validFrom: new Date().toISOString(),
     name: 'Final Transcript',
     refreshService,
@@ -289,16 +294,17 @@ Before publishing: `Up to date: Provisional Transcript`. After: `Updated to vers
 
 ## Troubleshooting
 
-| You see                                                      | Why                                                                                    | Fix                                                                                         |
-| ------------------------------------------------------------ | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `Credential refresh is not available`                        | Refresh isn't enabled on this network                                                  | Check which network you're connected to; contact us if you need it enabled                  |
-| `Profile did not allocate this credential refresh`           | Publishing with a different seed than the one that allocated                           | Use the issuer seed that ran `issue-refreshable.mjs`                                        |
-| Signing fails mentioning `refreshService` or `authorization` | The inline context object is missing from `@context`                                   | Copy the third `@context` entry from the scripts above                                      |
-| `publishCredentialRefresh` rejects the update                | `id`, `issuer`, or `refreshService` differs from the original, or `validFrom` is older | Rebuild the update from `refresh.json`; set `validFrom` to now                              |
-| `notification: "not-applicable"`                             | The recipient hasn't claimed yet                                                       | Nothing to do; they'll receive the newest version when they claim                           |
-| `refreshCredential` returns `UNSAFE_ENDPOINT`                | The service URL isn't HTTPS or resolves to a private address                           | For local development only, pass `{ allowInsecureHttp: true, allowPrivateAddresses: true }` |
-| `refreshCredential` returns `REVOKED`                        | You revoked the credential                                                             | Expected; the recipient keeps their local copy and history                                  |
-| `refreshCredential` returns `ROLLBACK`                       | The service returned something older than what the wallet holds                        | Publish a version with a newer `validFrom`                                                  |
+| You see                                                      | Why                                                                                        | Fix                                                                                         |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
+| `Credential refresh is not available`                        | Refresh isn't enabled on this network                                                      | Check which network you're connected to; contact us if you need it enabled                  |
+| `Profile did not allocate this credential refresh`           | Publishing with a different seed than the one that allocated                               | Use the issuer seed that ran `issue-refreshable.mjs`                                        |
+| Signing fails mentioning `refreshService` or `authorization` | The inline context object is missing from `@context`                                       | Copy the third `@context` entry from the scripts above                                      |
+| `Credential issuer does not match the allocated refresh`     | The update was signed with a different DID than version 1 (usually `did:key` vs `did:web`) | Use `issuerDid` from `refresh.json`, not `id.did()`                                         |
+| `publishCredentialRefresh` rejects the update                | `id` or `refreshService` differs from the original, or `validFrom` is older                | Rebuild the update from `refresh.json`; set `validFrom` to now                              |
+| `notification: "not-applicable"`                             | The recipient hasn't claimed yet                                                           | Nothing to do; they'll receive the newest version when they claim                           |
+| `refreshCredential` returns `UNSAFE_ENDPOINT`                | The service URL isn't HTTPS or resolves to a private address                               | For local development only, pass `{ allowInsecureHttp: true, allowPrivateAddresses: true }` |
+| `refreshCredential` returns `REVOKED`                        | You revoked the credential                                                                 | Expected; the recipient keeps their local copy and history                                  |
+| `refreshCredential` returns `ROLLBACK`                       | The service returned something older than what the wallet holds                            | Publish a version with a newer `validFrom`                                                  |
 
 ## Limits to know about
 

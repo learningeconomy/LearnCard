@@ -73,10 +73,10 @@ try {
         verifyBeforeImport: true,
     });
     if (report.errors.length) throw new Error('Some bundle entries could not be imported');
-    console.log('imported:', report.importedCredentials);
+    console.log(`imported: ${report.importedCredentials}`);
     const restored = await restoreLearnCardFromBundle(path, { password, init: { network: true } });
     await restored.invoke.getProfile();
-    console.log('restored:', restored.id.did() === original);
+    console.log(`restored: ${restored.id.did() === original}`);
 } finally {
     await rm(directory, { recursive: true, force: true });
 }

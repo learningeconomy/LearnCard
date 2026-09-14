@@ -29,4 +29,4 @@ const vc = await learnCard.invoke.issueCredential({
 const uri = await learnCard.store.LearnCloud.upload(vc);
 const resolved = await learnCard.read.get(uri);
 console.log('prefix:', uri.split(':').slice(0, 2).join(':') + ':');
-console.log('equal:', isDeepStrictEqual(resolved, vc));
+console.log(`equal: ${isDeepStrictEqual(resolved, vc)}`);

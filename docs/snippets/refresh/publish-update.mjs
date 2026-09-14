@@ -4,7 +4,7 @@ import { initLearnCard } from '@learncard/init';
 if (!process.env.SECURE_SEED) throw new Error('Set SECURE_SEED');
 
 // Written by issue-refreshable.mjs.
-const { refreshId, refreshService, credentialId, recipientDid } = JSON.parse(
+const { refreshId, refreshService, credentialId, issuerDid, recipientDid } = JSON.parse(
     readFileSync('refresh.json', 'utf8')
 );
 
@@ -28,7 +28,7 @@ const updated = await issuer.invoke.issueCredential({
     ],
     id: credentialId,
     type: ['VerifiableCredential', 'OpenBadgeCredential'],
-    issuer: issuer.id.did(),
+    issuer: issuerDid,
     validFrom: new Date().toISOString(),
     name: 'Final Transcript',
     refreshService,
