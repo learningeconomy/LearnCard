@@ -1,6 +1,9 @@
 import React, { useMemo } from 'react';
 import { IonRow } from '@ionic/react';
 import moment from 'moment';
+import 'moment/locale/ar';
+import 'moment/locale/es';
+import 'moment/locale/fr';
 import useGetIssuerName from 'learn-card-base/hooks/useGetIssuerName';
 import ThreeDots from 'learn-card-base/svgs/ThreeDots';
 import CredentialVerificationDisplay, {
@@ -28,7 +31,7 @@ import { BoostMediaOptionsEnum } from './boost';
 import { newCredsStore } from 'learn-card-base/stores/newCredsStore';
 import DotIcon from '../../svgs/DotIcon';
 import { CredentialLifecycleStatus } from '../CredentialBadge/CredentialStatusSealIcon';
-import { useT } from 'learn-card-base/i18n';
+import { getActiveLocale, useT } from 'learn-card-base/i18n';
 
 type BoostListItemProps = {
     title?: string;
@@ -76,6 +79,7 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
     trustedVerifierOnly = false,
 }) => {
     const t = useT();
+    const activeLocale = getActiveLocale();
     // Shared revoked/suspended treatment (kept in sync with the grid card).
     const {
         isInactive,
@@ -95,13 +99,15 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
     );
 
     const issuanceDateDisplay = useMemo(() => {
-        if (relativeDate) return moment(getIssuanceDate(credential)).fromNow();
+        if (relativeDate) {
+            return moment(getIssuanceDate(credential)).locale(activeLocale).fromNow();
+        }
 
         const { createdAt } = getInfoFromCredential(credential, 'MMMM DD YYYY', {
             uppercaseDate: false,
         });
         return createdAt;
-    }, [credential, relativeDate]);
+    }, [activeLocale, credential, relativeDate]);
 
     const { subColor } = categoryMetadata[categoryType];
 
@@ -375,6 +381,8 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                 <div
                     className={`flex-1 absolute right-0 bottom-0 w-[66px] h-[35px] flex items-center justify-center z-[3] rounded-tl-[10px]  ${linkedCredentialsClassName}`}
                 >
+                    {/* Dynamic display-type icon selected from the established icon registry. */}
+                    {/* eslint-disable-next-line react-hooks/static-components */}
                     <DisplayIcon className="w-[20px] h-[20px]" />
                     <span className="text-white font-semibold text-[14px] ml-1">
                         +{linkedCredentialsCount}
