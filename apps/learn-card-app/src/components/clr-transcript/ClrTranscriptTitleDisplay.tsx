@@ -84,19 +84,13 @@ const ClrTranscriptTitleDisplay: React.FC<{ credential: VC; fallbackTitle: strin
     }
 
     if (inferredKind === 'transcript') {
-        const transcriptName = model.header.title?.value || fallbackTitle;
+        const transcriptName = 'Transcript';
 
         return (
             <div className="flex w-full min-w-0 flex-col items-center justify-start mt-[0px] px-2">
-                {model.summary.gpa ? (
-                    <p className="mt-2 text-[14px] font-semibold text-grayscale-900 text-center">
-                        GPA: {formatClrGpa(model.summary.gpa.value)}
-                    </p>
-                ) : (
-                    <p className="mt-1 w-full max-w-full break-words text-center text-grayscale-900 text-[14px] font-notoSans font-semibold leading-[125%] line-clamp-2">
-                        {transcriptName}
-                    </p>
-                )}
+                <p className="mt-1 w-full max-w-full break-words text-center text-grayscale-900 text-[14px] font-notoSans font-semibold leading-[125%] line-clamp-2">
+                    {transcriptName}
+                </p>
                 <div className="mt-2 flex items-center justify-center gap-3 flex-wrap">
                     {model.summary.courseCount > 0 && (
                         <ClrMetricChip
