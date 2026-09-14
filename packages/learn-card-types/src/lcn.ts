@@ -1284,7 +1284,7 @@ export const IssueInboxCredentialValidator = z
                     .number()
                     .int()
                     .min(1)
-                    .max(365)
+                    .max(720)
                     .optional()
                     .describe(
                         'How many days the encrypted inbox payload remains claimable. This does not change the credential validity period.'

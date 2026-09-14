@@ -418,7 +418,19 @@ describe('Universal Inbox escrow (HTTP + isolated Neo4j/Redis)', () => {
         await expectNoPlaintext();
     });
 
-    it.each([0, -1, 1.5, 366])(
+    it.each([366, 720])('accepts issuance TTL %s days', async expiresInDays => {
+        const issued = await issue({
+            credential: await signedCredential(),
+            recipient: { type: 'email', value: 'ttl@example.test' },
+            configuration: { expiresInDays },
+        });
+        const record = (await getRecord(issued.issuanceId))!;
+        expect(
+            Date.parse(record.expiresAt as string) - Date.parse(record.createdAt as string)
+        ).toBeCloseTo(expiresInDays * 86400000, -3);
+    });
+
+    it.each([0, -1, 1.5, 721])(
         'rejects invalid issuance TTL %s before creating escrow',
         async expiresInDays => {
             const response = await post(
