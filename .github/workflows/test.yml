@@ -65,6 +65,10 @@ jobs:
             - name: Use composite setup action
               uses: ./.github/actions/setup
 
+            - name: Verify Trigger.dev deployment CLI startup
+              working-directory: services/learn-card-network/ai-agent
+              run: bunx trigger deploy --help
+
             - name: Run AI Agent tests
               run: bun run --cwd services/learn-card-network/ai-agent test -- run
 
