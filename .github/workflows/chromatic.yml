@@ -39,9 +39,12 @@ jobs:
         steps:
             - name: Checkout Repo
               uses: actions/checkout@v7
+              with:
+                  # On push to main, paths-filter diffs against github.event.before. Fetching
+                  # depth 2 keeps that commit local for squash merges (the action fetches deeper
+                  # itself when a push contains more commits, and uses the PR base on PRs).
+                  fetch-depth: 2
 
-            # On pull_request this diffs against the PR base; on push it diffs against the
-            # previous commit on main.
             - name: Detect Storybook-relevant changes
               uses: dorny/paths-filter@v3
               id: filter
