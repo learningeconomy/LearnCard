@@ -115,8 +115,12 @@ export const waitForAuthenticatedState = async (
         )
         .catch(() => undefined);
 
-    // Login via seed - this creates a proper user with privateKey
-    const seedUrl = '/developer/sign-in';
+    // Login via seed - this creates a proper user with privateKey.
+    // ?profileId= makes the page create the network profile during sign-in
+    // (deterministic), instead of relying on the Setup Profile modal appearing.
+    const seedUrl = options.profileId
+        ? `/developer/sign-in?profileId=${encodeURIComponent(options.profileId)}`
+        : '/developer/sign-in';
     await page.goto(seedUrl);
 
     // Fill in the seed and submit. The page is state-aware: the primary button reads

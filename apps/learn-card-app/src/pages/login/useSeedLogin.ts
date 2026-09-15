@@ -3,9 +3,11 @@ import * as m from '../../paraglide/messages.js';
 import {
     useSQLiteStorage,
     getRandomBaseColor,
+    getNotificationsEndpoint,
     currentUserStore,
     walletStore,
 } from 'learn-card-base';
+import { useQueryClient } from '@tanstack/react-query';
 import useWallet from 'learn-card-base/hooks/useWallet';
 import { getLogger } from 'learn-card-base';
 import { setAuthToken } from 'learn-card-base/helpers/authHelpers';
@@ -13,9 +15,15 @@ import { setPlatformPrivateKey } from 'learn-card-base/security/platformPrivateK
 
 const log = getLogger('use-seed-login');
 
+export type SeedLoginOptions = {
+    /** Create this network profile for the seed if it doesn't exist yet. */
+    profileId?: string;
+};
+
 export const useSeedLogin = () => {
     const { initWallet } = useWallet();
     const { setCurrentUser } = useSQLiteStorage();
+    const queryClient = useQueryClient();
 
     const validate = useCallback((seed: string): string | null => {
         const regex = /^[0-9a-fA-F]+$/;
@@ -28,7 +36,7 @@ export const useSeedLogin = () => {
     }, []);
 
     const signInWithSeed = useCallback(
-        async (seed: string): Promise<void> => {
+        async (seed: string, options: SeedLoginOptions = {}): Promise<void> => {
             const validationError = validate(seed);
             if (validationError) {
                 throw new Error(validationError);
@@ -62,12 +70,27 @@ export const useSeedLogin = () => {
                 }
 
                 setAuthToken('dummy');
+
+                if (options.profileId) {
+                    try {
+                        await wallet.invoke.createProfile({
+                            did: wallet.id.did(),
+                            profileId: options.profileId,
+                            displayName: 'User From Seed',
+                            notificationsWebhook: getNotificationsEndpoint(),
+                        });
+                    } catch (err) {
+                        log.info('createProfile::error (may already exist)', err);
+                    }
+                    // Drop the cached null getProfile so the LCN gate sees the new profile.
+                    await queryClient.resetQueries();
+                }
             } catch (e) {
                 log.error('login error:', e);
                 throw e;
             }
         },
-        [initWallet, setCurrentUser, validate]
+        [initWallet, queryClient, setCurrentUser, validate]
     );
 
     return { signInWithSeed, validate };

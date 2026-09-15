@@ -21,6 +21,11 @@ import useLogout from '../../hooks/useLogout';
 import { useSeedLogin } from '../login/useSeedLogin';
 import { sanitizeNextPath } from './sanitizeNextPath';
 import { PENDING_SEED_STORAGE_KEY } from './pendingSeedStorage';
+
+const PROFILE_ID_PATTERN = /^[a-z0-9][a-z0-9._-]{2,39}$/i;
+
+const sanitizeProfileId = (value: string | null): string | undefined =>
+    value && PROFILE_ID_PATTERN.test(value) ? value : undefined;
 import * as m from '../../paraglide/messages.js';
 
 const log = getLogger('developer-sign-in-page');
@@ -73,7 +78,9 @@ const DeveloperSignInPage: React.FC = () => {
     const inputRef = useRef<HTMLInputElement>(null);
     const pendingSeedHandledRef = useRef(false);
 
-    const nextPath = sanitizeNextPath(new URLSearchParams(location.search).get('next'));
+    const searchParams = new URLSearchParams(location.search);
+    const nextPath = sanitizeNextPath(searchParams.get('next'));
+    const requestedProfileId = sanitizeProfileId(searchParams.get('profileId'));
     const isBusy = isSigningIn || isLoggingOut;
 
     const currentAccountName =
@@ -136,7 +143,7 @@ const DeveloperSignInPage: React.FC = () => {
         setIsSigningIn(true);
 
         try {
-            await signInWithSeed(seedToUse);
+            await signInWithSeed(seedToUse, { profileId: requestedProfileId });
             history.replace(nextPath);
         } catch (e: unknown) {
             setError(e instanceof Error ? e.message : m['login.seedPhrase.error.generic']());
