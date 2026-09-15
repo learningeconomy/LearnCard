@@ -12,6 +12,7 @@ import {
     ClrTranscriptSurface,
     isStandaloneCourseCredential,
     normalizeClrTranscriptDisplayModel,
+    parseCreditsFromDescription,
     selectClrTranscriptView,
 } from './clrRenderer.helpers';
 import { getClrTranscriptKind } from '../components/clr-transcript/clrKind.helpers';
@@ -383,8 +384,38 @@ describe('normalizeClrTranscriptDisplayModel', () => {
         });
     });
 
-    describe('credits-from-description fallback', () => {
-        const makeClrWithCourse = (description?: string) => ({
+    describe('parseCreditsFromDescription helper', () => {
+        it('extracts integer credits from "course, N credit(s)" format', () => {
+            expect(parseCreditsFromDescription('Mathematics course, 1 credit(s).')).toBe(1);
+            expect(parseCreditsFromDescription('This is a course, 3 credits.')).toBe(3);
+        });
+
+        it('extracts decimal credits', () => {
+            expect(parseCreditsFromDescription('Elective course, 1.5 credits.')).toBe(1.5);
+        });
+
+        it('returns undefined when description lacks "course, N credit" pattern', () => {
+            expect(
+                parseCreditsFromDescription('An introductory course with no credit info.')
+            ).toBeUndefined();
+            expect(parseCreditsFromDescription('Worth 3 credits.')).toBeUndefined();
+        });
+
+        it('returns undefined when description is undefined', () => {
+            expect(parseCreditsFromDescription(undefined)).toBeUndefined();
+        });
+
+        it('returns undefined when description is empty', () => {
+            expect(parseCreditsFromDescription('')).toBeUndefined();
+        });
+    });
+
+    describe('credits-from-description normalization', () => {
+        const makeClrWithCourse = (
+            description?: string,
+            creditsEarned?: number,
+            creditsAvailable?: number
+        ) => ({
             id: 'urn:test:credits-parse',
             type: ['VerifiableCredential', 'ClrCredential'],
             name: 'Test CLR',
@@ -397,10 +428,12 @@ describe('normalizeClrTranscriptDisplayModel', () => {
                     {
                         id: 'nested-course',
                         credentialSubject: {
+                            creditsEarned,
                             achievement: {
                                 achievementType: 'Course',
                                 name: 'Test Course',
                                 description,
+                                creditsAvailable,
                             },
                         },
                     },
@@ -408,32 +441,49 @@ describe('normalizeClrTranscriptDisplayModel', () => {
             },
         });
 
-        it('extracts integer credits from description text', () => {
+        it('populates creditsFromDescription when structured fields are absent', () => {
             const model = normalizeClrTranscriptDisplayModel(
-                makeClrWithCourse('This is a 3 credit hour course.')
+                makeClrWithCourse('Mathematics course, 3 credit(s).')
             );
-            expect(model.courses[0]?.description?.value).toContain('3 credit');
+            expect(model.courses[0]?.creditsFromDescription?.value).toBe(3);
+            expect(model.courses[0]?.creditsFromDescription?.sourcePath).toBe(
+                'achievement.description'
+            );
         });
 
-        it('extracts decimal credits from description text', () => {
+        it('includes creditsFromDescription in totalCreditsAvailable', () => {
             const model = normalizeClrTranscriptDisplayModel(
-                makeClrWithCourse('Worth 1.5 credits for certification.')
+                makeClrWithCourse('Elective course, 4 credits.')
             );
-            expect(model.courses[0]?.description?.value).toContain('1.5 credits');
+            expect(model.summary.totalCreditsAvailable).toBe(4);
         });
 
-        it('does not produce NaN when description has no credit pattern', () => {
+        it('does NOT populate creditsFromDescription when creditsEarned exists', () => {
             const model = normalizeClrTranscriptDisplayModel(
-                makeClrWithCourse('An introductory course with no credit info.')
+                makeClrWithCourse('Mathematics course, 3 credits.', 4, undefined)
             );
-            expect(model.courses[0]?.creditsEarned).toBeUndefined();
-            expect(model.courses[0]?.creditsAvailable).toBeUndefined();
+            expect(model.courses[0]?.creditsEarned?.value).toBe(4);
+            expect(model.courses[0]?.creditsFromDescription).toBeUndefined();
         });
 
-        it('does not produce NaN when description is undefined', () => {
+        it('does NOT populate creditsFromDescription when creditsAvailable exists', () => {
+            const model = normalizeClrTranscriptDisplayModel(
+                makeClrWithCourse('Mathematics course, 3 credits.', undefined, 5)
+            );
+            expect(model.courses[0]?.creditsAvailable?.value).toBe(5);
+            expect(model.courses[0]?.creditsFromDescription).toBeUndefined();
+        });
+
+        it('leaves creditsFromDescription undefined when description has no credit pattern', () => {
+            const model = normalizeClrTranscriptDisplayModel(
+                makeClrWithCourse('An introductory course.')
+            );
+            expect(model.courses[0]?.creditsFromDescription).toBeUndefined();
+        });
+
+        it('leaves creditsFromDescription undefined when description is missing', () => {
             const model = normalizeClrTranscriptDisplayModel(makeClrWithCourse(undefined));
-            expect(model.courses[0]?.creditsEarned).toBeUndefined();
-            expect(model.courses[0]?.creditsAvailable).toBeUndefined();
+            expect(model.courses[0]?.creditsFromDescription).toBeUndefined();
         });
     });
 });
