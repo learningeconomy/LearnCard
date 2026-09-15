@@ -41,7 +41,7 @@ const ClrAwardsSection: React.FC<{
                                     <span>
                                         {formatAchievementType(award.achievementType.value)}
                                     </span>
-                                    {adminMode && award.earnedAt?.value && (
+                                    {award.earnedAt?.value && (
                                         <>
                                             <span className="text-grayscale-300">•</span>
                                             <span>{formatClrDate(award.earnedAt.value)}</span>
@@ -51,6 +51,11 @@ const ClrAwardsSection: React.FC<{
                                 {award.description?.value && (
                                     <p className="text-xs text-grayscale-600 leading-relaxed mt-1.5 line-clamp-2">
                                         {award.description.value}
+                                    </p>
+                                )}
+                                {award.criteria?.value && (
+                                    <p className="text-xs text-grayscale-500 leading-relaxed mt-1 italic line-clamp-2">
+                                        {award.criteria.value}
                                     </p>
                                 )}
                             </div>
