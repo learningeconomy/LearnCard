@@ -1,10 +1,16 @@
 import React from 'react';
 import moment from 'moment';
 import DatePicker from 'react-datepicker';
+import type { Locale } from 'date-fns';
+import { ar, enUS, es, fr } from 'date-fns/locale';
 import 'react-datepicker/dist/react-datepicker.css';
 import { Calendar } from 'lucide-react';
 import { IonDatetime } from '@ionic/react';
 import { useModal, ModalTypes } from 'learn-card-base';
+import { SupportedLanguage, useLocale } from '../../i18n';
+import { formatDateForLocale } from './datePicker.helpers';
+
+const DATE_PICKER_LOCALES = { ar, en: enUS, es, fr } satisfies Record<SupportedLanguage, Locale>;
 
 interface DatePickerInputProps {
     id?: string;
@@ -34,6 +40,7 @@ const DatePickerInput: React.FC<DatePickerInputProps> = ({
     disabled = false,
 }) => {
     const { newModal, closeModal } = useModal();
+    const locale = useLocale();
 
     const handleDateChange = (date: Date | null) => {
         if (!date) {
@@ -92,6 +99,7 @@ const DatePickerInput: React.FC<DatePickerInputProps> = ({
                             <div className="w-full h-full transparent flex items-center justify-center">
                                 <IonDatetime
                                     aria-label={label}
+                                    locale={locale}
                                     onIonChange={event => {
                                         if (event.detail.value) {
                                             onChange(
@@ -125,7 +133,7 @@ const DatePickerInput: React.FC<DatePickerInputProps> = ({
                         );
                     }}
                 >
-                    {value ? moment(value).format('MMMM D, YYYY') : label}
+                    {value ? formatDateForLocale(value, locale) : label}
                     <Calendar
                         aria-hidden="true"
                         className={`pointer-events-none text-grayscale-700 w-[24px] ${
@@ -153,6 +161,7 @@ const DatePickerInput: React.FC<DatePickerInputProps> = ({
                 wrapperClassName="w-full"
                 popperClassName="z-[9999]"
                 dateFormat="MMMM d, yyyy"
+                locale={DATE_PICKER_LOCALES[locale]}
                 ariaDescribedBy={ariaDescribedBy}
                 ariaInvalid={ariaInvalid ? 'true' : undefined}
                 className={`w-full flex items-center justify-between bg-grayscale-100 text-grayscale-900 placeholder:text-grayscale-400 rounded-[15px] font-poppins font-normal px-[16px] py-[16px] tracking-wider text-base ${
