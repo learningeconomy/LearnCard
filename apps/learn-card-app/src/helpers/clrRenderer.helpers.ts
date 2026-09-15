@@ -104,7 +104,6 @@ export type CourseDisplayModel = {
     fieldOfStudy?: SourceMappedField<string>;
     creditsAvailable?: SourceMappedField<number>;
     creditsEarned?: SourceMappedField<number>;
-    /** Fallback credits parsed from the description text (e.g. "3 credit hour course"). */
     creditsFromDescription?: SourceMappedField<number>;
     term?: SourceMappedField<string>;
     description?: SourceMappedField<string>;
