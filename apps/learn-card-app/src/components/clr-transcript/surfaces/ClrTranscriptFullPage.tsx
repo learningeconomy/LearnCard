@@ -129,9 +129,7 @@ const ClrTranscriptFullPage: React.FC<{
                     {/* Awards & Recognitions */}
                     {(selectedView === 'StructuredTranscriptView' ||
                         selectedView === 'VerifierInspectionView') &&
-                        model.awards.length > 0 && (
-                            <ClrAwardsSection awards={model.awards} adminMode={adminMode} />
-                        )}
+                        model.awards.length > 0 && <ClrAwardsSection awards={model.awards} />}
 
                     {/* Sparse / summary views */}
                     {selectedView === 'SparseAcademicRecordView' && (

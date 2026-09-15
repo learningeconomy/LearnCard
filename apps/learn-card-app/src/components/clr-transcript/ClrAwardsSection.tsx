@@ -10,8 +10,7 @@ import type { AwardDisplayModel } from '../../helpers/clrRenderer.helpers';
 const ClrAwardsSection: React.FC<{
     awards: AwardDisplayModel[];
     onSelectAward?: (award: AwardDisplayModel) => void;
-    adminMode?: boolean;
-}> = ({ awards, onSelectAward, adminMode = false }) => {
+}> = ({ awards, onSelectAward }) => {
     if (awards.length === 0) return null;
 
     return (
