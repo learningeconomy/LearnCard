@@ -18,6 +18,7 @@ import { openApiDocument } from './openapi';
 import { didFastifyPlugin } from './dids';
 import { skillsViewerFastifyPlugin } from './skills-viewer';
 import { statusListsFastifyPlugin } from './status-lists';
+import { credentialRefreshFastifyPlugin } from './credential-refresh';
 import { deliverQueuedNotification } from '@helpers/notificationQueue.helpers';
 import { startSkillEmbeddingBackfill } from '@helpers/skill-embedding.helpers';
 import { maybeAutoSeedSkillFrameworks } from './seed/seedSkillFrameworks';
@@ -109,6 +110,7 @@ server.get('/docs', (_request, reply) => {
 server.register(didFastifyPlugin);
 server.register(skillsViewerFastifyPlugin);
 server.register(statusListsFastifyPlugin);
+server.register(credentialRefreshFastifyPlugin);
 
 (async () => {
     try {

@@ -40,8 +40,10 @@ server.register(fastifyTRPCOpenApiPlugin, {
 } satisfies CreateOpenApiFastifyPluginOptions<AppRouter>);
 
 server.get('/docs/openapi.json', () => openApiDocument);
+
+// Serve generated assets outside the bind-mounted source tree.
 server.register(fastifyStatic, {
-    root: path.join(__dirname, '../src/swagger-ui'),
+    root: path.join(__dirname, '../generated/swagger-ui'),
     prefix: '/docs/',
 });
 

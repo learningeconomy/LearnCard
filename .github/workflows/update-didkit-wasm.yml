@@ -9,6 +9,7 @@ on:
             - '.gitmodules'
             - '.github/actions/setup/**'
             - 'packages/plugins/didkit/**'
+            - 'packages/learn-card-bridge-http/scripts/sync-didkit.ts'
             - 'lib/didkit'
             - 'lib/ssi'
     repository_dispatch:
@@ -53,6 +54,12 @@ jobs:
               uses: actions/checkout@v5
               with:
                   submodules: recursive
+
+            - name: Setup Bun and install dependencies
+              uses: ./.github/actions/setup
+
+            - name: Verify committed bridge DIDKit integrity
+              run: bun packages/learn-card-bridge-http/scripts/sync-didkit.ts
 
             - name: Setup Rust
               uses: dtolnay/rust-toolchain@stable
@@ -111,8 +118,8 @@ jobs:
             - name: Build DIDKit WASM
               run: packages/plugins/didkit/scripts/build-wasm-from-submodules.sh
 
-            - name: Setup Bun and install dependencies
-              uses: ./.github/actions/setup
+            - name: Verify generated bridge DIDKit integrity
+              run: bun packages/learn-card-bridge-http/scripts/sync-didkit.ts
 
             - name: Build DIDKit plugin
               run: bunx nx build didkit-plugin
@@ -226,6 +233,10 @@ jobs:
               if: steps.submodules.outputs.has_updates == 'false'
               run: echo 'DIDKit and SSI are already current; no WASM update is needed.' >> "${GITHUB_STEP_SUMMARY}"
 
+            - name: Setup Bun and install dependencies
+              if: steps.submodules.outputs.has_updates == 'true'
+              uses: ./.github/actions/setup
+
             - name: Setup Rust
               if: steps.submodules.outputs.has_updates == 'true'
               uses: dtolnay/rust-toolchain@stable
@@ -291,6 +302,10 @@ jobs:
                   UPDATE_DIDKIT_WASM_LOCKFILE: '1'
               run: packages/plugins/didkit/scripts/build-wasm-from-submodules.sh
 
+            - name: Verify generated bridge DIDKit integrity
+              if: steps.submodules.outputs.has_updates == 'true'
+              run: bun packages/learn-card-bridge-http/scripts/sync-didkit.ts
+
             - name: Prepare WASM upload metadata
               if: steps.submodules.outputs.has_updates == 'true'
               id: wasm
@@ -324,10 +339,6 @@ jobs:
                       exit 1
                   fi
 
-            - name: Setup Bun and install dependencies
-              if: steps.submodules.outputs.has_updates == 'true'
-              uses: ./.github/actions/setup
-
             - name: Build DIDKit plugin
               if: steps.submodules.outputs.has_updates == 'true'
               run: bunx nx build didkit-plugin
@@ -353,6 +364,8 @@ jobs:
                       lib/didkit \
                       lib/ssi \
                       packages/plugins/didkit/wasm/didkit-wasm.Cargo.lock \
+                      packages/learn-card-bridge-http/scripts/sync-didkit.ts \
+                      packages/learn-card-bridge-http/src/didkit_wasm_bg.wasm \
                       packages/plugins/didkit/src/didkit; then
                       echo "has_changes=false" >> "${GITHUB_OUTPUT}"
                       exit 0
@@ -361,9 +374,10 @@ jobs:
                   cat > .changeset/update-didkit-wasm.md <<EOF
                   ---
                   '@learncard/didkit-plugin': patch
+                  '@learncard/create-http-bridge': patch
                   ---
 
-                  Update DIDKit WASM from didkit ${DIDKIT_SHORT_SHA} and ssi ${SSI_SHORT_SHA}.
+                  Update DIDKit WASM from didkit ${DIDKIT_SHORT_SHA} and ssi ${SSI_SHORT_SHA}, including the HTTP bridge artifact and integrity pin.
                   EOF
 
                   echo "has_changes=true" >> "${GITHUB_OUTPUT}"
@@ -462,5 +476,7 @@ jobs:
                       lib/didkit
                       lib/ssi
                       packages/plugins/didkit/wasm/didkit-wasm.Cargo.lock
+                      packages/learn-card-bridge-http/scripts/sync-didkit.ts
+                      packages/learn-card-bridge-http/src/didkit_wasm_bg.wasm
                       packages/plugins/didkit/src/didkit/index.ts
                       packages/plugins/didkit/src/didkit/pkg

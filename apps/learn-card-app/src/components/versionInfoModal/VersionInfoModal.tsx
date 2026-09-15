@@ -63,9 +63,8 @@ import {
     PLATFORM_LABELS,
     type VersionInfo,
 } from './versionInfo.helpers';
+import { groupChannels, type ChannelOption } from './channelGrouping';
 
-const SEMVER_RE = /^\d+\.\d+\.\d+$/;
-const PR_RE = /^pr-(\d+)$/;
 const CHANNELS_CACHE_TTL_MS = 60_000;
 
 /**
@@ -110,112 +109,6 @@ const friendlyChannelsError = (raw: string): string => {
     }
 
     return "Couldn't load the full channel list — showing known channels.";
-};
-
-type ChannelKind = 'production' | 'staging' | 'pr' | 'custom';
-
-interface ChannelOption {
-    value: string;
-    label: string;
-    description?: string;
-    kind: ChannelKind;
-}
-
-interface GroupedChannels {
-    productionLatest?: ChannelOption;
-    productionOlder: ChannelOption[];
-    staging?: ChannelOption;
-    prPreviews: ChannelOption[];
-}
-
-const compareSemverDesc = (a: string, b: string): number => {
-    const pa = a.split('.').map(Number);
-    const pb = b.split('.').map(Number);
-
-    for (let i = 0; i < 3; i += 1) {
-        if (pa[i] !== pb[i]) return pb[i] - pa[i];
-    }
-
-    return 0;
-};
-
-/**
- * Sort the self-assignable channels returned by `CapacitorUpdater.listChannels()`
- * into the four UI buckets. The production stream is semver-named (e.g. `1.0.7`),
- * so the channel matching the build-time `__CAPGO_DEFAULT_CHANNEL__` define is the
- * "Latest" production row; any other semver channels are older production versions
- * (newest first). The staging stream shares the native compatibility prefix
- * (`<productionChannel>-staging`), and `pr-<n>` channels get their own sections.
- */
-const groupChannels = (
-    channels: { name: string }[],
-    productionChannel: string | undefined
-): GroupedChannels => {
-    const productionOlder: ChannelOption[] = [];
-    const prPreviews: ChannelOption[] = [];
-    let productionLatest: ChannelOption | undefined;
-    let staging: ChannelOption | undefined;
-    const stagingChannel = productionChannel ? `${productionChannel}-staging` : undefined;
-
-    const semverChannels = channels
-        .map(c => c.name)
-        .filter(name => SEMVER_RE.test(name))
-        .sort(compareSemverDesc);
-
-    for (const name of semverChannels) {
-        if (name === productionChannel) {
-            productionLatest = {
-                value: name,
-                label: 'Production (Latest)',
-                description: `Released app store build (\`${name}\`)`,
-                kind: 'production',
-            };
-        } else {
-            productionOlder.push({
-                value: name,
-                label: name,
-                description: 'Older production version',
-                kind: 'production',
-            });
-        }
-    }
-
-    // If the device's production channel isn't in the self-settable list (e.g.
-    // it's locked), still surface it as Latest so users can switch back to it.
-    if (!productionLatest && productionChannel) {
-        productionLatest = {
-            value: productionChannel,
-            label: 'Production (Latest)',
-            description: `Released app store build (\`${productionChannel}\`)`,
-            kind: 'production',
-        };
-    }
-
-    for (const { name } of channels) {
-        if (name === stagingChannel) {
-            staging = {
-                value: name,
-                label: 'Staging',
-                description: 'Latest merged code on `main`',
-                kind: 'staging',
-            };
-        }
-
-        const prMatch = name.match(PR_RE);
-
-        if (prMatch) {
-            prPreviews.push({
-                value: name,
-                label: `Beta #${prMatch[1]}`,
-                description: 'Open beta preview',
-                kind: 'pr',
-            });
-        }
-    }
-
-    prPreviews.sort((a, b) => Number(b.value.slice(3)) - Number(a.value.slice(3)));
-
-    return { productionLatest, productionOlder, staging, prPreviews };
 };
 
 const shorten = (value: string | undefined, head = 6, tail = 4): string => {
@@ -1014,22 +907,39 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
                                                 </ChannelPickerSection>
                                             ) : null}
 
-                                            {grouped.staging ? (
+                                            {grouped.stagingLatest ? (
                                                 <ChannelPickerSection title="Staging">
                                                     <ChannelRow
-                                                        option={grouped.staging}
+                                                        option={grouped.stagingLatest}
                                                         currentChannel={info.channel}
                                                         pending={
                                                             switchingChannel ===
-                                                            grouped.staging.value
+                                                            grouped.stagingLatest.value
                                                         }
                                                         disabled={switchingChannel !== null}
                                                         onClick={() =>
                                                             handleSwitchChannel(
-                                                                grouped.staging!.value
+                                                                grouped.stagingLatest!.value
                                                             )
                                                         }
                                                     />
+                                                </ChannelPickerSection>
+                                            ) : null}
+
+                                            {grouped.stagingOlder.length > 0 ? (
+                                                <ChannelPickerSection title="Other staging versions">
+                                                    {grouped.stagingOlder.map(opt => (
+                                                        <ChannelRow
+                                                            key={opt.value}
+                                                            option={opt}
+                                                            currentChannel={info.channel}
+                                                            pending={switchingChannel === opt.value}
+                                                            disabled={switchingChannel !== null}
+                                                            onClick={() =>
+                                                                handleSwitchChannel(opt.value)
+                                                            }
+                                                        />
+                                                    ))}
                                                 </ChannelPickerSection>
                                             ) : null}
 
