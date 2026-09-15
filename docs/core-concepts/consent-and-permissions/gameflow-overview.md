@@ -1,71 +1,33 @@
 ---
-description: What is GameFlow?
+description: ConsentFlow for products used by children — a guardian approves the connection before anything is shared.
 ---
 
-# GameFlow Overview
+# GameFlow
 
-<figure><img src="../../.gitbook/assets/image (17).png" alt=""><figcaption></figcaption></figure>
+GameFlow is [ConsentFlow](consentflow-overview.md) with one flag set: `needsGuardianConsent: true`. It exists because a ten-year-old can't meaningfully consent to data sharing. With GameFlow, a parent or guardian reviews and approves the connection between your product and the child's LearnCard before you can read or write anything.
 
-## 🔍 What is GameFlow?
+There is no separate API. You build a normal consent integration; LearnCard handles the guardian step.
 
-**GameFlow** is a lightweight integration framework built on top of LearnCard’s robust **ConsentFlow** system. It’s designed to help **educational games** and **learning apps** securely connect to a child’s LearnCard wallet, enabling features like badge issuance, progress tracking, and xAPI logging—all while putting **guardian consent and privacy** at the center.
+## What changes when the flag is set
 
-### ✨ Key Features and Benefits
+- A child's account (one managed by a guardian) cannot consent on its own. The network rejects the attempt with `Child accounts require guardian approval to consent to contracts`.
+- The LearnCard app routes the child to "get an adult". The guardian signs in — or creates an account — reviews your contract in plain language, and approves or declines on the child's behalf.
+- After approval, everything works as normal ConsentFlow: you receive the redirect with the child's DID, `verifyConsent` returns `true`, and you can issue credentials into the child's account. The guardian can withdraw at any time from their own LearnCard.
 
-* **🔒 Secure Credential Exchange**\
-  Games can issue **verifiable credentials** (like badges or achievements) directly to a child’s LearnCard wallet upon completion of specific milestones.
-* **👨‍👩‍👧 Guardian Consent Built-In**\
-  GameFlow is optimized for child-centered learning. It includes flows that **require a parent or guardian to approve** access and data sharing before any connection or credential issuance happens.
-* **🛡️ Data Ownership & Privacy**\
-  By leveraging ConsentFlow, GameFlow ensures learners (and their guardians) always know what’s being shared and have the power to **control and revoke access**.
-* **📊 Optional xAPI Logging**\
-  Games can optionally report learning activity using **xAPI statements**, authenticated with a **Delegate Credential**, so that learning analytics remain learner-owned and portable.
+Adults hitting the same contract are unaffected; they consent directly.
 
-***
+## Two ways in
 
-## 🔁 Two Entry Points for GameFlow
+**From your game.** The child taps "Connect to LearnCard" and is sent to `https://learncard.app/consent-flow?uri=<contractUri>&returnTo=<yourUrl>`. LearnCard asks for a grown-up, the guardian picks or creates the child's profile and approves, and the child lands back in your game connected. Good for onboarding inside the game.
 
-GameFlow can be initiated from **two directions**, depending on whether the experience begins inside your game or inside the LearnCard app:
+**From the LearnCard app.** A family finds your game in the LearnCard app store and taps Connect there. Same approval, then LearnCard opens your game with the connection already live. Good for discovery.
 
-***
+## What you get
 
-### 🎮 Entry 1: Starting from Your Game
+- Credentials you issue land in a real, portable account the child keeps as they grow.
+- You never store a child's identity yourself; you hold a DID and a consent record that the guardian controls.
+- The guardian, not you, is the source of truth for permission — which is what COPPA and similar rules want.
 
-This flow begins when a child opens a game and wants to **connect it to LearnCard** for saving progress or earning badges.
+## Build it
 
-**Step-by-step:**
-
-1. **User opens the game** and selects an option like “Connect to LearnCard” (via button or QR code).
-2. They’re prompted to **get an adult** to continue—ensuring COPPA-friendly guardian involvement.
-3. The adult selects or adds the child’s LearnCard profile.
-4. They review the access request and **consent to connect** the game.
-5. The game is now linked to the child’s LearnCard, and they return to **continue playing seamlessly.**
-
-✅ This is ideal for onboarding new users in-game and offering immediate access to rewards and credentials.
-
-***
-
-### 📱 Entry 2: Starting from the LearnCard App
-
-This flow starts when a guardian or child **discovers the game inside the LearnCard app store**.
-
-**Step-by-step:**
-
-1. The user browses the **LearnCard app ecosystem** and chooses a game (like “Cooking with Cookie”).
-2. They tap “Connect” and are prompted to **authorize access**—just like in the game-initiated flow.
-3. The guardian selects the child’s profile and **consents** to connect the game.
-4. Upon success, the user is returned to the game to begin playing—with LearnCard integration already active.
-
-✅ This is great for **discoverability** and for guardians who prefer to initiate and manage app connections directly from LearnCard.
-
-***
-
-## 🧠 Why Use GameFlow?
-
-By using GameFlow, developers don’t need to reinvent secure identity, consent, and credentialing systems. You can:
-
-* Trust that **data is protected** and **parental consent is verified.**
-* Offer **portable credentials** kids can take from game to game.
-* Log learning activity in ways that support teachers, researchers, and families—with **zero lock-in.**
-
-GameFlow makes it easy to do the right thing—for kids, for learning, and for privacy.
+The [Connect a User's LearnCard to Your Platform](../../tutorials/create-a-consentflow.md) tutorial is the whole integration; add `needsGuardianConsent: true` to the `createContract` call. A working example is the [Gashapon Game Corner](https://github.com/learningeconomy/LearnCard/tree/main/examples/app-store-apps/4-gashapon-game-corner).

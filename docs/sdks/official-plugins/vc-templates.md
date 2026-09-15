@@ -128,9 +128,6 @@ learnCard.invoke.newCredential({
 
 ### Other Types
 
-{% hint style="warning" %}
-More credential types are coming soon! Have a particular credential type you'd like to turn into a template? Start a conversation in our [Github Discussions](https://github.com/learningeconomy/LearnCard/discussions):&#x20;
-
--   [Post a Credential Template Request ](https://github.com/learningeconomy/LearnCard/discussions/categories/feature-requests)💡
--   [Ask for Help](https://github.com/learningeconomy/LearnCard/discussions/categories/help) 💖
-    {% endhint %}
+{% hint style="info" %}
+Have a credential type you'd like to see as a template? [Request it on the roadmap](https://roadmap.learncard.com) so others can vote for it too.
+{% endhint %}

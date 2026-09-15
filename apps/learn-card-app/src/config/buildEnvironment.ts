@@ -3,6 +3,7 @@ import {
     optionalEnvironmentBoolean,
     optionalEnvironmentPort,
     optionalEnvironmentString,
+    optionalEnvironmentUrl,
     parseEnvironment,
 } from '@learncard/helpers';
 
@@ -12,6 +13,7 @@ export const learnCardAppEnvironmentShape = {
     VITE_CREDENTIAL_REFRESH_LOCAL_QA: optionalEnvironmentBoolean.default(false),
     VITE_DOCKER_SOURCE: optionalEnvironmentBoolean.default(false),
     VITE_APP_VERSION: optionalEnvironmentString,
+    VITE_AI_AGENT_URL: optionalEnvironmentUrl,
     ANALYZE: optionalEnvironmentBoolean.default(false),
     CHOKIDAR_USEPOLLING: optionalEnvironmentBoolean.default(false),
     CHOKIDAR_INTERVAL: optionalEnvironmentPort.default(1000),

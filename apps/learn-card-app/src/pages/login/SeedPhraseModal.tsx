@@ -1,23 +1,12 @@
 import React, { useState } from 'react';
 import * as m from '../../paraglide/messages.js';
 import { TransP } from '../../i18n/TransP';
-import {
-    useModal,
-    useSQLiteStorage,
-    getRandomBaseColor,
-    currentUserStore,
-    setAuthToken,
-    walletStore,
-} from 'learn-card-base';
+import { useModal } from 'learn-card-base';
 import AlertTriangle from '../../components/svgs/AlertTriangle';
 import { useHistory } from 'react-router-dom';
-import useWallet from 'learn-card-base/hooks/useWallet';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
-
 import useTheme from '../../theme/hooks/useTheme';
-
-import { getLogger } from 'learn-card-base';
-const log = getLogger('seed-phrase-modal');
+import { useSeedLogin } from './useSeedLogin';
 
 const SeedPhraseModal: React.FC = () => {
     const { colors } = useTheme();
@@ -29,54 +18,22 @@ const SeedPhraseModal: React.FC = () => {
 
     const { closeModal } = useModal();
     const history = useHistory();
-    const { initWallet } = useWallet();
-    const { setCurrentUser } = useSQLiteStorage();
+    const { signInWithSeed, validate } = useSeedLogin();
 
-    const regex = /^[0-9a-fA-F]+$/;
     const handleLogin = async () => {
-        if (!regex.test(seed)) {
-            setErrorMessage(m['login.seedPhrase.error.invalidChars']());
-            return;
-        } else if (seed.length < 64) {
-            setErrorMessage(m['login.seedPhrase.error.tooShort']());
+        const validationError = validate(seed);
+        if (validationError) {
+            setErrorMessage(validationError);
             return;
         }
         setErrorMessage('');
 
         try {
-            const user = {
-                uid: '',
-                email: '',
-                name: '',
-                profileImage: '',
-                aggregateVerifier: '',
-                verifier: '',
-                verifierId: '',
-                typeOfLogin: '',
-                dappShare: '',
-                phoneNumber: '',
-                privateKey: seed,
-                baseColor: getRandomBaseColor(),
-            };
-
-            await setCurrentUser(user);
-
-            currentUserStore.set.currentUser(user);
-
-            const wallet = await initWallet(seed);
-            if (wallet) {
-                walletStore.set.wallet(wallet);
-            } else {
-                throw new Error('Error: Could not initialize wallet');
-            }
-
-            const currentUser = currentUserStore.get.currentUser();
-
+            await signInWithSeed(seed);
             closeModal();
             history.push('/wallet');
         } catch (e) {
             setErrorMessage(m['login.seedPhrase.error.generic']());
-            log.info('login error:', e);
         }
     };
 
