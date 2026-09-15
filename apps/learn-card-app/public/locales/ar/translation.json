@@ -3337,6 +3337,18 @@
             "select": "تحديد"
         },
         "credential": {
+            "category": {
+                "badge": "شارة",
+                "family": "عائلة",
+                "achievement": "إنجاز",
+                "course": "دورة",
+                "membership": "عضوية",
+                "skill": "مهارة",
+                "id": "هوية",
+                "experience": "خبرة",
+                "portfolio": "محفظة",
+                "assistance": "مساعدة"
+            },
             "lifecycle": {
                 "revoked": "ملغاة",
                 "suspended": "معلقة"

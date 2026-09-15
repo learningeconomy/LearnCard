@@ -1,9 +1,5 @@
 import React, { useMemo } from 'react';
 import { IonRow } from '@ionic/react';
-import moment from 'moment';
-import 'moment/locale/ar';
-import 'moment/locale/es';
-import 'moment/locale/fr';
 import useGetIssuerName from 'learn-card-base/hooks/useGetIssuerName';
 import ThreeDots from 'learn-card-base/svgs/ThreeDots';
 import CredentialVerificationDisplay, {
@@ -31,7 +27,47 @@ import { BoostMediaOptionsEnum } from './boost';
 import { newCredsStore } from 'learn-card-base/stores/newCredsStore';
 import DotIcon from '../../svgs/DotIcon';
 import { CredentialLifecycleStatus } from '../CredentialBadge/CredentialStatusSealIcon';
-import { getActiveLocale, useT } from 'learn-card-base/i18n';
+import { useI18nLocale, useT } from 'learn-card-base/i18n';
+
+const DISPLAY_TYPE_KEYS: Record<string, string> = {
+    Badge: 'badge',
+    Boost: 'badge',
+    Family: 'family',
+    Achievement: 'achievement',
+    Course: 'course',
+    Study: 'course',
+    Membership: 'membership',
+    Skill: 'skill',
+    ID: 'id',
+    Experience: 'experience',
+    'Work History': 'experience',
+    Portfolio: 'portfolio',
+    Accomplishment: 'portfolio',
+    Assistance: 'assistance',
+    Accommodation: 'assistance',
+};
+
+export const formatRelativeDate = (date: string, locale: string, now = Date.now()): string => {
+    const timestamp = new Date(date).getTime();
+    if (Number.isNaN(timestamp)) return '';
+
+    const seconds = Math.round((timestamp - now) / 1000);
+    const units: [Intl.RelativeTimeFormatUnit, number][] = [
+        ['year', 31_536_000],
+        ['month', 2_592_000],
+        ['week', 604_800],
+        ['day', 86_400],
+        ['hour', 3_600],
+        ['minute', 60],
+        ['second', 1],
+    ];
+    const [unit, divisor] = units.find(([, size]) => Math.abs(seconds) >= size) ?? units.at(-1)!;
+
+    return new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }).format(
+        Math.round(seconds / divisor),
+        unit
+    );
+};
 
 type BoostListItemProps = {
     title?: string;
@@ -79,7 +115,7 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
     trustedVerifierOnly = false,
 }) => {
     const t = useT();
-    const activeLocale = getActiveLocale();
+    const activeLocale = useI18nLocale();
     // Shared revoked/suspended treatment (kept in sync with the grid card).
     const {
         isInactive,
@@ -97,10 +133,14 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
         () => getAchievementTypeDisplayText(achievementType, categoryType),
         [achievementType, categoryType]
     );
+    const localizedBoostTypeDisplayName =
+        DISPLAY_TYPE_KEYS[boostTypeDisplayName] != null
+            ? t(`credential.category.${DISPLAY_TYPE_KEYS[boostTypeDisplayName]}`)
+            : boostTypeDisplayName;
 
     const issuanceDateDisplay = useMemo(() => {
         if (relativeDate) {
-            return moment(getIssuanceDate(credential)).locale(activeLocale).fromNow();
+            return formatRelativeDate(getIssuanceDate(credential), activeLocale);
         }
 
         const { createdAt } = getInfoFromCredential(credential, 'MMMM DD YYYY', {
@@ -333,10 +373,12 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                     {compact ? (
                         <>
                             {newItemIndicator}
-                            {boostTypeDisplayName && (
-                                <span className="truncate min-w-0">{boostTypeDisplayName}</span>
+                            {localizedBoostTypeDisplayName && (
+                                <span className="truncate min-w-0">
+                                    {localizedBoostTypeDisplayName}
+                                </span>
                             )}
-                            {boostTypeDisplayName && (
+                            {localizedBoostTypeDisplayName && (
                                 <span className="shrink-0 mx-1 text-grayscale-400">·</span>
                             )}
                             <span className="shrink-0 whitespace-nowrap">

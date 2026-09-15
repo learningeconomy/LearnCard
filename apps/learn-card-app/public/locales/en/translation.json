@@ -3346,6 +3346,18 @@
             "select": "Select"
         },
         "credential": {
+            "category": {
+                "badge": "Badge",
+                "family": "Family",
+                "achievement": "Achievement",
+                "course": "Course",
+                "membership": "Membership",
+                "skill": "Skill",
+                "id": "ID",
+                "experience": "Experience",
+                "portfolio": "Portfolio",
+                "assistance": "Assistance"
+            },
             "lifecycle": {
                 "revoked": "Revoked",
                 "suspended": "Suspended"

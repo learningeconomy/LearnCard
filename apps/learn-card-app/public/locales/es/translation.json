@@ -3340,6 +3340,18 @@
             "select": "Seleccionar"
         },
         "credential": {
+            "category": {
+                "badge": "Insignia",
+                "family": "Familia",
+                "achievement": "Logro",
+                "course": "Curso",
+                "membership": "Membresía",
+                "skill": "Habilidad",
+                "id": "Identificación",
+                "experience": "Experiencia",
+                "portfolio": "Portafolio",
+                "assistance": "Asistencia"
+            },
             "lifecycle": {
                 "revoked": "Revocada",
                 "suspended": "Suspendida"
