@@ -20,14 +20,12 @@ import useTheme from '../../theme/hooks/useTheme';
 import useLogout from '../../hooks/useLogout';
 import { useSeedLogin } from '../login/useSeedLogin';
 import { sanitizeNextPath } from './sanitizeNextPath';
+import { PENDING_SEED_STORAGE_KEY } from './pendingSeedStorage';
 import * as m from '../../paraglide/messages.js';
 
 const log = getLogger('developer-sign-in-page');
 
 const SEED_HASH_PREFIX = '#seed=';
-/** Namespaced sessionStorage key `handleSwitchAccount` uses to carry a seed across
- *  its logout redirect, instead of putting it in the URL. */
-const PENDING_SEED_STORAGE_KEY = 'lc:developer-sign-in:pending-seed';
 
 /** External entry point (e.g. the CLI's `--url-fragment`) still supported on read. */
 const readSeedFromHash = (): string | null => {

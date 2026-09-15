@@ -119,9 +119,13 @@ export const waitForAuthenticatedState = async (
     const seedUrl = '/developer/sign-in';
     await page.goto(seedUrl);
 
-    // Fill in the seed and submit
+    // Fill in the seed and submit. The page is state-aware: the primary button reads
+    // "Sign in" when logged out, or "Sign out and switch" when a session already
+    // exists (e.g. the demo user in tests/states/demoState.json). Either path
+    // ends on /wallet — the switch variant logs out, reloads, and auto-signs in
+    // with the seed it stashed.
     await page.getByRole('textbox').fill(options.seed);
-    await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+    await page.getByRole('button', { name: /^(Sign in|Sign out and switch)$/ }).click();
 
     await page.waitForURL(/\/wallet/, { timeout });
 
