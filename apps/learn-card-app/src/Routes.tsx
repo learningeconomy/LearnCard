@@ -11,6 +11,7 @@ import {
 
 import { usePathwaysEnabled } from './pages/pathways/hooks/usePathwaysEnabled';
 import { useDashboardAsHome } from './pages/dashboard/hooks/useDashboardAsHome';
+import { environment } from './config/environment';
 import * as Sentry from '@sentry/react';
 
 import GenericErrorBoundary from './components/generic/GenericErrorBoundary';
@@ -56,6 +57,7 @@ const PrivacySettingsPage = lazyWithRetry(
 const ResumeBuilderPage = lazyWithRetry(() => import('./pages/resume-builder/ResumeBuilderPage'));
 const VerifySharedResume = lazyWithRetry(() => import('./pages/resume-builder/VerifySharedResume'));
 const AiPathways = lazyWithRetry(() => import('./pages/ai-pathways/AiPathways'));
+const MyAssistantPage = lazyWithRetry(() => import('./pages/my-assistant/MyAssistantPage'));
 const PathwaysShell = lazyWithRetry(() => import('./pages/pathways/PathwaysShell'));
 const ViewCredsBundle = lazyWithRetry(() => import('./components/creds-bundle/ViewCredsBundle'));
 const ViewSharedBoost = lazyWithRetry(() => import('./components/creds-bundle/ViewSharedBoost'));
@@ -202,6 +204,7 @@ export const Routes: React.FC = () => {
     const isLoggedIn = useIsLoggedIn();
     const location = useLocation<{ background: any }>();
     const flags = useFlags();
+    const learnCardAssistantEnabled = environment.DEV || Boolean(flags.enableLearnCardAssistant);
     // Pathways v2 visibility — see `usePathwaysEnabled` for the
     // tenant + LaunchDarkly layering. Same hook is used by the side
     // menu so the route and the nav link can't drift.
@@ -292,6 +295,9 @@ export const Routes: React.FC = () => {
                         <PrivateRoute exact path="/families" component={FamilyPage} />
                         <PrivateRoute exact path="/skills" component={SkillsPage} />
                         <PrivateRoute exact path="/ai/insights" component={AiInsights} />
+                        {learnCardAssistantEnabled && (
+                            <PrivateRoute exact path="/ai/assistant" component={MyAssistantPage} />
+                        )}
                         <PrivateRoute
                             exact
                             path="/privacy-and-data"
@@ -467,7 +473,13 @@ export const Routes: React.FC = () => {
 };
 
 /** Paths gated behind the AI feature flag — only prefetch when enabled. */
-const AI_GATED_PATHS = new Set(['/ai/insights', '/ai/pathways', '/ai/topics', '/ai/sessions']);
+const AI_GATED_PATHS = new Set([
+    '/ai/assistant',
+    '/ai/insights',
+    '/ai/pathways',
+    '/ai/topics',
+    '/ai/sessions',
+]);
 
 /**
  * Path-keyed preload map for routes reachable from the wallet, side menu, and
@@ -498,6 +510,7 @@ export const ROUTE_PRELOAD: Record<string, () => Promise<void>> = {
     '/memberships': () => MembershipPage.preload(),
     '/currencies': () => CurrenciesPage.preload(),
     // AI routes — gated by the AI feature flag in prefetchRoutes.
+    '/ai/assistant': () => MyAssistantPage.preload(),
     '/ai/insights': () => AiInsights.preload(),
     '/ai/pathways': () => AiPathways.preload(),
     '/ai/topics': () => AiSessionTopicsContainer.preload(),
