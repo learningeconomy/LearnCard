@@ -16,7 +16,7 @@ const log = getLogger('resolve-tenant-config');
 import type { TenantConfig } from './tenantConfig';
 import {
     parseTenantConfig,
-    parsePartialTenantConfig,
+    parseTenantConfigOverlay,
     TenantConfigValidationError,
     TENANT_CONFIG_SCHEMA_VERSION,
 } from './tenantConfigSchema';
@@ -270,8 +270,9 @@ const fetchFreshConfig = async (
             );
         }
 
-        const partial = parsePartialTenantConfig(raw, `fetch ${url} (overlay)`);
+        const partial = parseTenantConfigOverlay(raw, `fetch ${url} (overlay shape)`);
         const overlay: Record<string, unknown> = { ...partial };
+        const overlayKeys = Object.keys(overlay);
 
         if (!mergeBase && (!partial.tenantId || !partial.domain)) {
             throw new TenantConfigResolutionError(
@@ -282,7 +283,12 @@ const fetchFreshConfig = async (
             ...(mergeBase ?? VALIDATED_DEFAULT_TENANT_CONFIG),
         };
         const merged = deepMerge(base, overlay);
-        const result = parseTenantConfig(merged, `fetch ${url} (merged overlay)`);
+        const result = parseTenantConfig(
+            merged,
+            `fetch ${url} (merged overlay; overlay keys: ${overlayKeys.join(', ') || 'none'} → ${
+                mergeBase ? `baked ${mergeBase.tenantId}` : 'defaults'
+            })`
+        );
 
         onEvent?.(
             'config:fetch_partial_merge',
@@ -292,7 +298,7 @@ const fetchFreshConfig = async (
             {
                 url,
                 durationMs,
-                overrideKeys: Object.keys(overlay),
+                overrideKeys: overlayKeys,
                 mergeBase: mergeBase ? `baked (${mergeBase.tenantId})` : 'defaults',
             }
         );

@@ -124,14 +124,16 @@ export async function finalizeInboxCredentialsForProfile(
                         ? getAppDidWeb(domain, listingSlug)
                         : undefined;
 
-                    finalCredential = (await issueCredentialWithSigningAuthority(
-                        { type: 'profile', profile: issuerProfile },
-                        unsignedCredential,
-                        signingAuthorityForUser,
-                        domain,
-                        false,
-                        ownerDidOverride
-                    )) as VC;
+                    finalCredential = (
+                        await issueCredentialWithSigningAuthority(
+                            { type: 'profile', profile: issuerProfile },
+                            unsignedCredential,
+                            signingAuthorityForUser,
+                            domain,
+                            false,
+                            ownerDidOverride
+                        )
+                    ).credential as VC;
                 } else {
                     finalCredential = JSON.parse(credentialPayload) as VC;
                 }

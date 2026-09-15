@@ -435,7 +435,8 @@ describe('Boost OBv3 Alignment Injection (via Signing Authority)', () => {
         const credentialUri = await b.invoke.claimBoostWithLink(boostUri, challenge);
         expect(credentialUri).toBeDefined();
 
-        const vc = unwrapBoostCredential(await a.invoke.resolveFromLCN(credentialUri));
+        const encrypted = await a.invoke.resolveFromLCN(credentialUri);
+        const vc = unwrapBoostCredential(await b.invoke.decryptDagJwe(encrypted));
         const subject = Array.isArray(vc.credentialSubject)
             ? vc.credentialSubject[0]
             : vc.credentialSubject;

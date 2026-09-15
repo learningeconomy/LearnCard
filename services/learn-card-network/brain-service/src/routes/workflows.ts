@@ -48,6 +48,7 @@ import { resolveRecipientLocale } from '@helpers/getRecipientLocale.helpers';
 import { logCredentialClaimed, logCredentialFailed } from '@helpers/activity.helpers';
 import { handleConnectionPromptsForCredentialClaim } from '@helpers/connectionPrompt.helpers';
 import { decryptInboxCredential } from '@helpers/inbox-encryption.helpers';
+import { getBitstringStatusListEntries } from '@learncard/helpers';
 import {
     EXHAUSTED,
     exhaustExchangeChallengeForToken,
@@ -405,13 +406,15 @@ async function handlePresentationForClaim(
         // Inject OBv3 skill alignments based on boost's framework/skills
         await injectObv3AlignmentsIntoCredentialForBoost(boostCredential, boost, domain);
 
-        const vc = (await issueCredentialWithSigningAuthority(
-            { type: 'profile', profile: saOwnerProfile },
-            boostCredential,
-            signingAuthorityForUser,
-            domain,
-            false
-        )) as VC;
+        const vc = (
+            await issueCredentialWithSigningAuthority(
+                { type: 'profile', profile: saOwnerProfile },
+                boostCredential,
+                signingAuthorityForUser,
+                domain,
+                false
+            )
+        ).credential as VC;
 
         // Mark the challenge as used
         await useClaimLinkForBoost(exchangeInfo.boostUri, exchangeInfo.challenge);
@@ -658,13 +661,15 @@ async function handleInboxClaimPresentation(
                 unsignedCredential.issuer = signingAuthorityForUser.relationship.did;
 
                 // Sign the credential
-                finalCredential = (await issueCredentialWithSigningAuthority(
-                    { type: 'profile', profile: issuerProfile },
-                    unsignedCredential,
-                    signingAuthorityForUser,
-                    ctx.domain,
-                    false // don't encrypt
-                )) as VC;
+                finalCredential = (
+                    await issueCredentialWithSigningAuthority(
+                        { type: 'profile', profile: issuerProfile },
+                        unsignedCredential,
+                        signingAuthorityForUser,
+                        ctx.domain,
+                        false // don't encrypt
+                    )
+                ).credential as VC;
             }
 
             // Avoid the seeded encryption wrapper, which adds the service as a recipient.
@@ -697,7 +702,11 @@ async function handleInboxClaimPresentation(
 
                     if (boost && issuerProfile) {
                         // Store the credential in the database
-                        const credentialInstance = await storeCredential(encryptedDelivery);
+                        const credentialInstance = await storeCredential({
+                            kind: 'issued-credential',
+                            credential: encryptedDelivery,
+                            statusEntries: getBitstringStatusListEntries(finalCredential),
+                        });
 
                         // Create the boost instance relationship
                         await createBoostInstanceOfRelationship(credentialInstance, boost);
