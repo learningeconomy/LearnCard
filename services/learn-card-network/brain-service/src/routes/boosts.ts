@@ -175,6 +175,7 @@ import {
 } from '@accesslayer/role/relationships/create';
 import { updateDefaultPermissionsForBoost } from '@accesslayer/role/relationships/update';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
+import type { IssuedCredential } from '../types/credential';
 import { removeConnectionsForBoost } from '@helpers/connection.helpers';
 import { issueToInbox } from '@helpers/inbox.helpers';
 import { findInboxServiceEndpoint } from '@helpers/federation.helpers';
@@ -742,7 +743,6 @@ export const boostsRouter = t.router({
                     let boost = null as BoostInstance | null;
                     let boostUri = '';
                     let boostCreated = false;
-                    let boostCreatedFromSignedCredential = false;
 
                     if (input.templateUri) {
                         const resolved = await traceDb('getBoostByUri', () =>
@@ -798,7 +798,6 @@ export const boostsRouter = t.router({
 
                         boostUri = getBoostUri(boost.id, domain);
                         boostCreated = true;
-                        boostCreatedFromSignedCredential = true;
                     }
 
                     if (!boost) {
@@ -1011,17 +1010,19 @@ export const boostsRouter = t.router({
                             signedVc = await traceInternal(
                                 'issueCredentialWithSigningAuthority:remoteInbox',
                                 async () =>
-                                    issueCredentialWithSigningAuthority(
-                                        { type: 'profile', profile },
-                                        await appendBitstringStatusListEntries(
-                                            unsignedVc,
-                                            profile.profileId,
-                                            domain
-                                        ),
-                                        signingAuthority,
-                                        domain,
-                                        false
-                                    )
+                                    (
+                                        await issueCredentialWithSigningAuthority(
+                                            { type: 'profile', profile },
+                                            await appendBitstringStatusListEntries(
+                                                unsignedVc,
+                                                profile.profileId,
+                                                domain
+                                            ),
+                                            signingAuthority,
+                                            domain,
+                                            false
+                                        )
+                                    ).credential
                             );
                         }
 
@@ -1217,17 +1218,19 @@ export const boostsRouter = t.router({
                         signedVc = await traceInternal(
                             'issueCredentialWithSigningAuthority',
                             async () =>
-                                issueCredentialWithSigningAuthority(
-                                    { type: 'profile', profile },
-                                    await appendBitstringStatusListEntries(
-                                        unsignedVc,
-                                        profile.profileId,
-                                        domain
-                                    ),
-                                    signingAuthority,
-                                    domain,
-                                    false
-                                )
+                                (
+                                    await issueCredentialWithSigningAuthority(
+                                        { type: 'profile', profile },
+                                        await appendBitstringStatusListEntries(
+                                            unsignedVc,
+                                            profile.profileId,
+                                            domain
+                                        ),
+                                        signingAuthority,
+                                        domain,
+                                        false
+                                    )
+                                ).credential
                         );
                     }
 
@@ -1255,7 +1258,6 @@ export const boostsRouter = t.router({
                             credential: signedVc,
                             domain,
                             skipNotification,
-                            skipCertification: boostCreatedFromSignedCredential,
                             contractTerms: contractTerms ?? undefined,
                             activityId,
                             integrationId: input.integrationId,
@@ -1453,8 +1455,7 @@ export const boostsRouter = t.router({
 
             const decodedUri = decodeURIComponent(uri);
             const { domain: uriDomain } = getUriParts(decodedUri, true);
-            // Match the bare domain verifyCredentialIsDerivedFromBoost uses, so
-            // injected alignment targetUrls equal the verifier's re-computed ones.
+            // Use the bare domain so alignment targetUrls match issuance-time injection.
             const alignmentsDomain = getDomainFromUri(decodedUri);
             const [boost, boostInstance] = await Promise.all([
                 getBoostByUriWithDefaultClaimPermissions(decodedUri),
@@ -3760,7 +3761,7 @@ export const boostsRouter = t.router({
                 });
             }
 
-            let credential: VC | JWE;
+            let credential: IssuedCredential;
             try {
                 credential = await issueCredentialWithSigningAuthority(
                     { type: 'profile', profile },
