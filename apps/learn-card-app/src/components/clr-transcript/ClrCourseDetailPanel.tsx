@@ -49,13 +49,10 @@ const ClrCourseDetailPanel: React.FC<{
 
     const primaryResult = course.results.find(r => r.value);
     const grade = primaryResult ? String(primaryResult.value.value) : undefined;
-    const descriptionCreditsMatch =
-        course.description?.value.match(/(\d+(?:\.\d+)?)\s*credit/i)?.[1];
-    const descriptionCredits = descriptionCreditsMatch
-        ? Number(descriptionCreditsMatch)
-        : undefined;
     const credits =
-        course.creditsEarned?.value ?? course.creditsAvailable?.value ?? descriptionCredits;
+        course.creditsEarned?.value ??
+        course.creditsAvailable?.value ??
+        course.creditsFromDescription?.value;
     const gradeLabel = primaryResult?.label?.value ?? 'Letter Grade';
 
     const id = course.sourceCredentialId;
@@ -151,7 +148,8 @@ const ClrCourseDetailPanel: React.FC<{
                                         {credits}
                                     </p>
                                     <p className="text-sm font-semibold text-grayscale-600 uppercase mt-1.5">
-                                        {course.creditsEarned !== undefined || descriptionCredits
+                                        {course.creditsEarned !== undefined ||
+                                        course.creditsFromDescription !== undefined
                                             ? 'Credits'
                                             : 'Available'}
                                     </p>

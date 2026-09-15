@@ -48,9 +48,9 @@ const ClrCourseTable: React.FC<{
                 const termCredits = gc.reduce<number>(
                     (s, c) =>
                         s +
-                        ((c.creditsEarned?.value ??
+                        (c.creditsEarned?.value ??
                             c.creditsAvailable?.value ??
-                            Number(c.description?.value.match(/(\d+(?:\.\d+)?)\s*credit/i)?.[1])) ||
+                            c.creditsFromDescription?.value ??
                             0),
                     0
                 );
@@ -107,17 +107,10 @@ const ClrCourseTable: React.FC<{
                                     const grade = primaryResult
                                         ? String(primaryResult.value.value)
                                         : undefined;
-                                    const descriptionCreditsMatch =
-                                        course.description?.value.match(
-                                            /(\d+(?:\.\d+)?)\s*credit/i
-                                        )?.[1];
-                                    const descriptionCredits = descriptionCreditsMatch
-                                        ? Number(descriptionCreditsMatch)
-                                        : undefined;
                                     const credits =
                                         course.creditsEarned?.value ??
                                         course.creditsAvailable?.value ??
-                                        descriptionCredits;
+                                        course.creditsFromDescription?.value;
                                     const competencyCount = getLinkedCompetencies(
                                         course.sourceCredentialId,
                                         competencies,
@@ -155,13 +148,13 @@ const ClrCourseTable: React.FC<{
                                             <div className="hidden sm:flex items-center justify-center gap-1.5">
                                                 {competencyCount > 0 ? (
                                                     <>
-                                                        <span className="text-sm text-grayscale-600">
+                                                        <span className="text-xs text-grayscale-600">
                                                             {competencyCount}
                                                         </span>
                                                         <SkillsIcon className="w-4 h-4 text-grayscale-500" />
                                                     </>
                                                 ) : (
-                                                    <span className="text-sm text-grayscale-300">
+                                                    <span className="text-xs text-grayscale-300">
                                                         —
                                                     </span>
                                                 )}
@@ -170,33 +163,33 @@ const ClrCourseTable: React.FC<{
                                             <div className="hidden sm:flex items-center justify-center gap-1.5">
                                                 {evidenceCount > 0 ? (
                                                     <>
-                                                        <span className="text-sm text-grayscale-600">
+                                                        <span className="text-xs text-grayscale-600">
                                                             {evidenceCount}
                                                         </span>
                                                         <Paperclip className="w-4 h-4 text-grayscale-500" />
                                                     </>
                                                 ) : (
-                                                    <span className="text-sm text-grayscale-300">
+                                                    <span className="text-xs text-grayscale-300">
                                                         —
                                                     </span>
                                                 )}
                                             </div>
                                             {/* Credits */}
-                                            <p className="text-sm text-grayscale-700 text-right">
+                                            <p className="text-xs text-grayscale-700 text-right">
                                                 {credits ?? '—'}
                                             </p>
                                             {/* Grade */}
                                             <div className="flex justify-end items-center">
                                                 {grade !== undefined ? (
                                                     <span
-                                                        className={`text-sm font-bold ${gradeColor(
+                                                        className={`text-xs font-bold ${gradeColor(
                                                             grade
                                                         )}`}
                                                     >
                                                         {grade}
                                                     </span>
                                                 ) : (
-                                                    <span className="text-sm text-grayscale-300">
+                                                    <span className="text-xs text-grayscale-300">
                                                         —
                                                     </span>
                                                 )}
