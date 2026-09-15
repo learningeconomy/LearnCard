@@ -512,6 +512,15 @@ export const SendOptionsValidator = z.object({
         .email()
         .optional()
         .describe('Guardian email that must approve before student can claim'),
+    expiresInDays: z
+        .number()
+        .int()
+        .min(1)
+        .max(720)
+        .optional()
+        .describe(
+            'How many days the credential stays claimable in the Universal Inbox (default 30). Does not change the credential validity period.'
+        ),
 });
 export type SendOptions = z.infer<typeof SendOptionsValidator>;
 

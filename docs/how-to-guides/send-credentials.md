@@ -153,6 +153,7 @@ options: {
     webhookUrl?: string;        // POSTed ISSUANCE_DELIVERED, then ISSUANCE_CLAIMED — see Know When a Credential Is Claimed
     suppressDelivery?: boolean; // Don't send the email/SMS. inbox.claimUrl is still returned; deliver it your way.
     guardianEmail?: string;     // A parent must approve before the recipient can claim. Must differ from recipient.
+    expiresInDays?: number;     // How long the credential stays claimable (1–720, default 30). Use a short window for sensitive records.
     branding?: {
         issuerName?: string;
         issuerLogoUrl?: string;
@@ -162,7 +163,7 @@ options: {
 }
 ```
 
-Email and phone sends are held for the recipient for **30 days**. Claims are single-use, and the network can't read the credential after it's claimed. To shorten the claim window for sensitive records such as transcripts or CLRs, use the lower-level [`/inbox/issue`](../sdks/learncard-network/universal-inbox-api.md) with `configuration.expiresInDays`. Details in [Universal Inbox](../core-concepts/network-and-interactions/universal-inbox.md#security-and-retention).
+Email and phone sends stay claimable for **30 days** by default. Claims are single-use, and the network can't read the credential after it's claimed. For transcripts, CLRs, or other sensitive learner data, set `expiresInDays` to the shortest practical window — it controls how long the payload can be claimed, not the credential's own validity dates. Details in [Universal Inbox](../core-concepts/network-and-interactions/universal-inbox.md#security-and-retention).
 
 ### Guardian approval
 
