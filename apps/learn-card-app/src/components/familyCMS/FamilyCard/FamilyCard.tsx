@@ -166,19 +166,19 @@ export const FamilyCard: React.FC<FamilyCardProps> = ({ showSkeleton, credential
                                 />
                             );
                         }}
-                        className="absolute top-2 right-2"
+                        className="absolute top-2 end-2"
                     >
                         <ThreeDots className="w-[20px] h-auto" />
                     </button>
-                    <div className="flex items-center justify-start font-poppins font-semibold text-[17px] xs:text-sm pl-3 pt-3">
-                        <VerifiedBadge className="mr-[6px] mb-[2px]" />
+                    <div className="flex w-full items-center justify-start pe-10 ps-3 pt-3 font-poppins font-semibold text-[17px] xs:text-sm">
+                        <VerifiedBadge className="me-[6px] mb-[2px] shrink-0" />
                         <p className="w-full line-clamp-1">{familyName}</p>
                     </div>
-                    <p className="font-poppins text-xs font-semibold mt-2 pl-3">
+                    <p className="font-poppins text-xs font-semibold mt-2 ps-3">
                         {m['arabicFixes.membersCount']({ count: totalMembersCount })}
                     </p>
 
-                    <div className="pl-3">
+                    <div className="ps-3">
                         <FamilyBoostMembersList showMinified credential={credential} />
                     </div>
 
@@ -188,16 +188,13 @@ export const FamilyCard: React.FC<FamilyCardProps> = ({ showSkeleton, credential
                                 e.stopPropagation();
                                 presentInviteModal();
                             }}
-                            className="bg-amber-400 text-sm xs:text-xs font-poppins font-semibold rounded-full w-[90%] flex items-center justify-center mt-2 px-2 py-2 text-white ml-1"
+                            className="bg-amber-400 text-sm xs:text-xs font-poppins font-semibold rounded-full w-[90%] flex items-center justify-center gap-2 mt-2 px-2 py-2 text-white ms-1"
                         >
                             {m['arabicFixes.newMember']()}{' '}
-                            <AddUser
-                                className="text-white ml-2 xs:h-auto xs:w-[20px]"
-                                fill="white"
-                            />
+                            <AddUser className="text-white xs:h-auto xs:w-[20px]" fill="white" />
                         </button>
                     ) : (
-                        <div className="bg-transparent w-[90%] mt-2 px-2 py-2 text-white ml-1 min-h-[40px] max-h-[40px]" />
+                        <div className="bg-transparent w-[90%] mt-2 px-2 py-2 text-white ms-1 min-h-[40px] max-h-[40px]" />
                     )}
                 </div>
             </div>
