@@ -147,9 +147,6 @@ services:
         extra_hosts:
             - 'localhost:host-gateway'
 
-        volumes:
-            - ../../services/learn-card-network/lca-api/src:/app/services/learn-card-network/lca-api/src
-
         environment:
             PORT: 5200
             IS_OFFLINE: true

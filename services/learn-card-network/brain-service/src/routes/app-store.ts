@@ -6,7 +6,7 @@ import {
     LCNNotificationTypeEnumValidator,
     SendNotificationEventValidator,
 } from '@learncard/types';
-import type { JWE, UnsignedVC, VC } from '@learncard/types';
+import type { UnsignedVC } from '@learncard/types';
 import { isVC2Format, checkAppInstallEligibility, calculateAgeFromDob } from '@learncard/helpers';
 import type { ProfileType } from 'types/profile';
 
@@ -107,6 +107,7 @@ import {
 import { createBoostForListing } from '@accesslayer/boost/create';
 import { setBoostAsParent } from '@accesslayer/boost/relationships/create';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
+import type { IssuedCredential } from '../types/credential';
 import {
     renderBoostTemplate,
     parseRenderedTemplate,
@@ -724,7 +725,7 @@ export const handleSendCredentialEvent = async (
     };
 
     // Issue via signing authority
-    let credential: VC | JWE;
+    let credential: IssuedCredential;
 
     try {
         const ownerDidOverride = listing.slug ? getAppDidWeb(ctx.domain, listing.slug) : undefined;
@@ -1122,8 +1123,8 @@ const handleGetTemplateRecipientsEvent = async (
                     sent.status === 'suspended'
                         ? ('suspended' as const)
                         : received
-                        ? ('claimed' as const)
-                        : ('pending' as const),
+                          ? ('claimed' as const)
+                          : ('pending' as const),
             };
         })
         .filter(
@@ -1159,10 +1160,10 @@ const handleGetTemplateRecipientsEvent = async (
                 record.status === 'revoked'
                     ? ('revoked' as const)
                     : record.status === 'suspended'
-                    ? ('suspended' as const)
-                    : record.received
-                    ? ('claimed' as const)
-                    : ('pending' as const),
+                      ? ('suspended' as const)
+                      : record.received
+                        ? ('claimed' as const)
+                        : ('pending' as const),
         })),
     ]
         .filter(record => Boolean(record.credentialUri))

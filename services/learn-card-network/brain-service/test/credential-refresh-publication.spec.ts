@@ -216,8 +216,11 @@ describe('Credential Refresh Publication', () => {
 
         addNotificationToQueueSpy.mockReset();
         signingAuthorityMocks.issueCredential.mockImplementation(
-            async (_issuer, credential: UnsignedVC) =>
-                issuer.learnCard.invoke.issueCredential(credential)
+            async (_issuer, credential: UnsignedVC) => ({
+                kind: 'issued-credential',
+                credential: await issuer.learnCard.invoke.issueCredential(credential),
+                statusEntries: [],
+            })
         );
     });
 
@@ -930,11 +933,14 @@ describe('Credential Refresh Publication', () => {
             await registerIssuerSigningAuthority();
 
             signingAuthorityMocks.issueCredential.mockImplementationOnce(
-                async (_issuer, credential: UnsignedVC) =>
-                    issuer.learnCard.invoke.issueCredential({
+                async (_issuer, credential: UnsignedVC) => ({
+                    kind: 'issued-credential',
+                    credential: await issuer.learnCard.invoke.issueCredential({
                         ...credential,
                         credentialSubject: { id: outsider.learnCard.id.did() },
-                    } as UnsignedVC)
+                    } as UnsignedVC),
+                    statusEntries: [],
+                })
             );
 
             await expect(

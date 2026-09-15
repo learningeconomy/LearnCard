@@ -23,6 +23,17 @@ export const getLearnCard = async (
         seed,
         didkit,
         network: 'http://localhost:4000/trpc',
+        // Local Boosts are not in the production registry. Trust only this test
+        // network explicitly, including for refresh's warning-free proof checks.
+        trustedBoostRegistry: `data:application/json,${encodeURIComponent(
+            JSON.stringify([
+                {
+                    id: 'LearnCard Test Network',
+                    url: 'http://localhost:4000',
+                    did: 'did:web:localhost%3A4000',
+                },
+            ])
+        )}`,
         cloud: { url: 'http://localhost:4100/trpc' },
         ...(managedDid && { didWeb: managedDid }),
         ...(debug && { debug: console.log }),
