@@ -89,8 +89,8 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
         knownDIDRegistry?.source === 'trusted'
             ? VERIFIER_STATES.trustedVerifier
             : knownDIDRegistry?.source === 'untrusted'
-            ? VERIFIER_STATES.untrustedVerifier
-            : VERIFIER_STATES.unknownVerifier;
+              ? VERIFIER_STATES.untrustedVerifier
+              : VERIFIER_STATES.unknownVerifier;
 
     if (
         ((managedBoost && credential?.issuer === issuerDid) ||

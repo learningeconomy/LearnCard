@@ -12,6 +12,7 @@ import {
     ClrTranscriptSurface,
     isStandaloneCourseCredential,
     normalizeClrTranscriptDisplayModel,
+    parseCreditsFromDescription,
     selectClrTranscriptView,
 } from './clrRenderer.helpers';
 import { getClrTranscriptKind } from '../components/clr-transcript/clrKind.helpers';
@@ -330,5 +331,159 @@ describe('normalizeClrTranscriptDisplayModel', () => {
                 },
             } as unknown as VC)
         ).toBe('degree');
+    });
+
+    describe('award classification', () => {
+        const makeClrWithNestedAchievement = (achievementType: string, name: string) => ({
+            id: 'urn:test:award-classification',
+            type: ['VerifiableCredential', 'ClrCredential'],
+            name: 'Test CLR',
+            validFrom: '2025-01-01T00:00:00Z',
+            issuer: { id: 'did:test:issuer', name: 'Issuer' },
+            credentialSubject: {
+                type: ['ClrSubject'],
+                identifier: [{ identityType: 'name', identityHash: 'Learner' }],
+                verifiableCredential: [
+                    {
+                        id: 'nested-1',
+                        credentialSubject: {
+                            achievement: { achievementType, name },
+                        },
+                    },
+                ],
+            },
+        });
+
+        it.each(['Award', 'Certificate', 'License', 'Certification', 'Badge', 'MicroCredential'])(
+            'classifies %s as an award',
+            achievementType => {
+                const model = normalizeClrTranscriptDisplayModel(
+                    makeClrWithNestedAchievement(achievementType, `Test ${achievementType}`)
+                );
+                expect(model.awards).toHaveLength(1);
+                expect(model.awards[0]?.achievementType.value).toBe(achievementType);
+                expect(model.summary.awardCount).toBe(1);
+            }
+        );
+
+        it('does NOT classify Endorsement as an award (it is an assertion about another credential)', () => {
+            const model = normalizeClrTranscriptDisplayModel(
+                makeClrWithNestedAchievement('Endorsement', 'Faculty Endorsement')
+            );
+            expect(model.awards).toHaveLength(0);
+            expect(model.summary.awardCount).toBe(0);
+            expect(model.otherRecords).toHaveLength(1);
+        });
+
+        it('does NOT classify generic Achievement as an award', () => {
+            const model = normalizeClrTranscriptDisplayModel(
+                makeClrWithNestedAchievement('Achievement', 'Generic Achievement')
+            );
+            expect(model.awards).toHaveLength(0);
+            expect(model.otherRecords).toHaveLength(1);
+        });
+    });
+
+    describe('parseCreditsFromDescription helper', () => {
+        it('extracts integer credits from "course, N credit(s)" format', () => {
+            expect(parseCreditsFromDescription('Mathematics course, 1 credit(s).')).toBe(1);
+            expect(parseCreditsFromDescription('This is a course, 3 credits.')).toBe(3);
+        });
+
+        it('extracts decimal credits', () => {
+            expect(parseCreditsFromDescription('Elective course, 1.5 credits.')).toBe(1.5);
+        });
+
+        it('returns undefined when description lacks "course, N credit" pattern', () => {
+            expect(
+                parseCreditsFromDescription('An introductory course with no credit info.')
+            ).toBeUndefined();
+            expect(parseCreditsFromDescription('Worth 3 credits.')).toBeUndefined();
+        });
+
+        it('returns undefined when description is undefined', () => {
+            expect(parseCreditsFromDescription(undefined)).toBeUndefined();
+        });
+
+        it('returns undefined when description is empty', () => {
+            expect(parseCreditsFromDescription('')).toBeUndefined();
+        });
+    });
+
+    describe('credits-from-description normalization', () => {
+        const makeClrWithCourse = (
+            description?: string,
+            creditsEarned?: number,
+            creditsAvailable?: number
+        ) => ({
+            id: 'urn:test:credits-parse',
+            type: ['VerifiableCredential', 'ClrCredential'],
+            name: 'Test CLR',
+            validFrom: '2025-01-01T00:00:00Z',
+            issuer: { id: 'did:test:issuer', name: 'Issuer' },
+            credentialSubject: {
+                type: ['ClrSubject'],
+                identifier: [{ identityType: 'name', identityHash: 'Learner' }],
+                verifiableCredential: [
+                    {
+                        id: 'nested-course',
+                        credentialSubject: {
+                            creditsEarned,
+                            achievement: {
+                                achievementType: 'Course',
+                                name: 'Test Course',
+                                description,
+                                creditsAvailable,
+                            },
+                        },
+                    },
+                ],
+            },
+        });
+
+        it('populates creditsFromDescription when structured fields are absent', () => {
+            const model = normalizeClrTranscriptDisplayModel(
+                makeClrWithCourse('Mathematics course, 3 credit(s).')
+            );
+            expect(model.courses[0]?.creditsFromDescription?.value).toBe(3);
+            expect(model.courses[0]?.creditsFromDescription?.sourcePath).toBe(
+                'achievement.description'
+            );
+        });
+
+        it('includes creditsFromDescription in totalCreditsAvailable', () => {
+            const model = normalizeClrTranscriptDisplayModel(
+                makeClrWithCourse('Elective course, 4 credits.')
+            );
+            expect(model.summary.totalCreditsAvailable).toBe(4);
+        });
+
+        it('does NOT populate creditsFromDescription when creditsEarned exists', () => {
+            const model = normalizeClrTranscriptDisplayModel(
+                makeClrWithCourse('Mathematics course, 3 credits.', 4, undefined)
+            );
+            expect(model.courses[0]?.creditsEarned?.value).toBe(4);
+            expect(model.courses[0]?.creditsFromDescription).toBeUndefined();
+        });
+
+        it('does NOT populate creditsFromDescription when creditsAvailable exists', () => {
+            const model = normalizeClrTranscriptDisplayModel(
+                makeClrWithCourse('Mathematics course, 3 credits.', undefined, 5)
+            );
+            expect(model.courses[0]?.creditsAvailable?.value).toBe(5);
+            expect(model.courses[0]?.creditsFromDescription).toBeUndefined();
+        });
+
+        it('leaves creditsFromDescription undefined when description has no credit pattern', () => {
+            const model = normalizeClrTranscriptDisplayModel(
+                makeClrWithCourse('An introductory course.')
+            );
+            expect(model.courses[0]?.creditsFromDescription).toBeUndefined();
+        });
+
+        it('leaves creditsFromDescription undefined when description is missing', () => {
+            const model = normalizeClrTranscriptDisplayModel(makeClrWithCourse(undefined));
+            expect(model.courses[0]?.creditsFromDescription).toBeUndefined();
+        });
     });
 });

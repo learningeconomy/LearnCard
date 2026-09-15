@@ -104,6 +104,7 @@ export type CourseDisplayModel = {
     fieldOfStudy?: SourceMappedField<string>;
     creditsAvailable?: SourceMappedField<number>;
     creditsEarned?: SourceMappedField<number>;
+    creditsFromDescription?: SourceMappedField<number>;
     term?: SourceMappedField<string>;
     description?: SourceMappedField<string>;
     earnedAt?: SourceMappedField<string>;
@@ -160,6 +161,23 @@ export type AssessmentDisplayModel = {
     evidence: EvidenceDisplayModel[];
     /** True when at least one result is rubric-based (`resultType: RubricCriterionLevel`). */
     isRubric: boolean;
+};
+
+/** Award record (achievementType: Award, Certificate, License, etc.). */
+export type AwardDisplayModel = {
+    name?: SourceMappedField<string>;
+    description?: SourceMappedField<string>;
+    achievementType: SourceMappedField<string>;
+    earnedAt?: SourceMappedField<string>;
+    validUntil?: SourceMappedField<string>;
+    sourceCredentialId: string;
+    results: ResultDisplayModel[];
+    /** Framework competency links declared on this achievement via `achievement.alignment`. */
+    alignments: AlignmentDisplayModel[];
+    /** Evidence/attachments scoped to this award credential. */
+    evidence: EvidenceDisplayModel[];
+    /** Criteria narrative describing how the award was earned. */
+    criteria?: SourceMappedField<string>;
 };
 
 /** Catch-all for transcript-adjacent records that do not meet strict transcript classifications. */
@@ -221,6 +239,7 @@ export type ClrTranscriptDisplayModel = {
         gpa?: SourceMappedField<string | number | boolean>;
         courseCount: number;
         assessmentCount: number;
+        awardCount: number;
         totalCreditsAvailable?: number;
         explicitCompetencyCount: number;
         evidenceCount: number;
@@ -229,6 +248,7 @@ export type ClrTranscriptDisplayModel = {
     programs: ProgramDisplayModel[];
     competencies: CompetencyDisplayModel[];
     assessments: AssessmentDisplayModel[];
+    awards: AwardDisplayModel[];
     otherRecords: OtherAcademicRecordModel[];
     evidence: EvidenceDisplayModel[];
     associations: AssociationDisplayModel[];
@@ -265,9 +285,27 @@ const PROGRAM_TYPES = new Set([
     'LearningProgram',
 ]);
 
+const AWARD_TYPES = new Set([
+    'Award',
+    'Certificate',
+    'License',
+    'Certification',
+    'Badge',
+    'MicroCredential',
+]);
+
 const LARGE_INLINE_EVIDENCE_THRESHOLD = 100_000;
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}(T[\d:.]+Z?)?$/;
+
+/** Extracts a credit value from a description string, e.g. "Mathematics course, 1 credit(s)" → 1 */
+export const parseCreditsFromDescription = (
+    description: string | undefined
+): number | undefined => {
+    if (!description) return undefined;
+    const match = description.match(/course,\s*(\d+(?:\.\d+)?)\s*credit/i);
+    return match ? Number(match[1]) : undefined;
+};
 
 /** Formats an ISO-8601 date string to a human-readable form (e.g. "Jan 15, 2025"). Passes non-date strings through unchanged. */
 export const formatClrDate = (value: string): string => {
@@ -725,6 +763,7 @@ const classifyRecord = (
     program?: ProgramDisplayModel;
     competency?: CompetencyDisplayModel;
     assessment?: AssessmentDisplayModel;
+    award?: AwardDisplayModel;
     other?: OtherAcademicRecordModel;
     gpa?: SourceMappedField<string | number | boolean>;
     evidence: EvidenceDisplayModel[];
@@ -849,6 +888,21 @@ const classifyRecord = (
             : undefined;
 
     if (achievementType === 'Course') {
+        // Parse credits from description as fallback when structured fields are absent.
+        const parsedCredits =
+            creditsEarned === undefined && creditsAvailable === undefined
+                ? parseCreditsFromDescription(achievementDescription?.value)
+                : undefined;
+        const creditsFromDescription =
+            parsedCredits !== undefined
+                ? asMapped(
+                      parsedCredits,
+                      'achievement.description',
+                      'achievement.description (parsed)',
+                      nestedId
+                  )
+                : undefined;
+
         return {
             course: {
                 name: achievementName,
@@ -856,6 +910,7 @@ const classifyRecord = (
                 fieldOfStudy,
                 creditsAvailable,
                 creditsEarned,
+                creditsFromDescription,
                 term,
                 description: achievementDescription,
                 earnedAt,
@@ -947,6 +1002,41 @@ const classifyRecord = (
         };
     }
 
+    if (achievementType && AWARD_TYPES.has(achievementType)) {
+        const criteria = (achievement.criteria ?? {}) as Record<string, unknown>;
+        const criteriaNarrative =
+            typeof criteria.narrative === 'string'
+                ? asMapped(
+                      criteria.narrative,
+                      'achievement.criteria.narrative',
+                      'achievement.criteria.narrative',
+                      nestedId
+                  )
+                : undefined;
+
+        return {
+            award: {
+                name: achievementName,
+                description: achievementDescription,
+                achievementType: asMapped(
+                    achievementType,
+                    'achievement.achievementType',
+                    'achievement.achievementType',
+                    nestedId
+                ),
+                earnedAt,
+                validUntil,
+                sourceCredentialId: nestedId,
+                results,
+                alignments,
+                evidence,
+                criteria: criteriaNarrative,
+            },
+            gpa: hasGpaResult?.value,
+            evidence,
+        };
+    }
+
     warnings.push({
         code: 'AMBIGUOUS_RECORD',
         message: 'Record could not be strictly classified from CLR/OB fields.',
@@ -996,6 +1086,7 @@ export const normalizeClrTranscriptDisplayModel = (
     const programs: ProgramDisplayModel[] = [];
     const competencies: CompetencyDisplayModel[] = [];
     const assessments: AssessmentDisplayModel[] = [];
+    const awards: AwardDisplayModel[] = [];
     const otherRecords: OtherAcademicRecordModel[] = [];
     const evidence: EvidenceDisplayModel[] = [];
 
@@ -1036,6 +1127,7 @@ export const normalizeClrTranscriptDisplayModel = (
         if (normalized.program) programs.push(normalized.program);
         if (normalized.competency) competencies.push(normalized.competency);
         if (normalized.assessment) assessments.push(normalized.assessment);
+        if (normalized.award) awards.push(normalized.award);
         if (normalized.other) otherRecords.push(normalized.other);
         if (!explicitGpa && normalized.gpa) explicitGpa = normalized.gpa;
         evidence.push(...normalized.evidence);
@@ -1127,7 +1219,10 @@ export const normalizeClrTranscriptDisplayModel = (
             : undefined;
 
     const totalCreditsAvailable = courses.reduce<number | undefined>((sum, course) => {
-        const credits = course.creditsEarned?.value ?? course.creditsAvailable?.value;
+        const credits =
+            course.creditsEarned?.value ??
+            course.creditsAvailable?.value ??
+            course.creditsFromDescription?.value;
         if (credits === undefined) return sum;
         return (sum ?? 0) + credits;
     }, undefined);
@@ -1138,7 +1233,12 @@ export const normalizeClrTranscriptDisplayModel = (
         qualityLevel = 'rich';
     } else if (programs.length > 0) {
         qualityLevel = 'usable';
-    } else if (evidence.length > 0 || assessments.length > 0 || otherRecords.length > 0) {
+    } else if (
+        evidence.length > 0 ||
+        assessments.length > 0 ||
+        awards.length > 0 ||
+        otherRecords.length > 0
+    ) {
         qualityLevel = 'sparse';
     }
 
@@ -1284,6 +1384,7 @@ export const normalizeClrTranscriptDisplayModel = (
             gpa: explicitGpa,
             courseCount: courses.length,
             assessmentCount: assessments.length,
+            awardCount: awards.length,
             totalCreditsAvailable,
             explicitCompetencyCount: competencies.length,
             evidenceCount: evidence.length,
@@ -1292,6 +1393,7 @@ export const normalizeClrTranscriptDisplayModel = (
         programs,
         competencies,
         assessments,
+        awards,
         otherRecords,
         evidence,
         associations,
@@ -1302,6 +1404,7 @@ export const normalizeClrTranscriptDisplayModel = (
                 `courses=${courses.length}`,
                 `programs=${programs.length}`,
                 `assessments=${assessments.length}`,
+                `awards=${awards.length}`,
                 `evidence=${evidence.length}`,
                 ...(partial ? ['partial=true'] : []),
             ],
@@ -1366,6 +1469,7 @@ export const selectClrTranscriptView = (
     if (
         model.evidence.length > 0 ||
         model.assessments.length > 0 ||
+        model.awards.length > 0 ||
         model.otherRecords.length > 0
     ) {
         return 'SparseAcademicRecordView';
