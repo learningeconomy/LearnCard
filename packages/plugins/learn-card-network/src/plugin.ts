@@ -3063,9 +3063,11 @@ export const getVerifyBoostPlugin = async (
                                 );
                             } else {
                                 verificationCheck.warnings.push(
-                                    `Boost Authenticity could not be verified. Issuer is outside of trust network: ${getIssuerDID(
-                                        credential?.issuer
-                                    )}`
+                                    boostCredential
+                                        ? `Boost Authenticity could not be verified. Issuer is outside of trust network: ${getIssuerDID(
+                                              credential?.issuer
+                                          )}`
+                                        : `Boost Authenticity could not be verified. Boost ID does not identify a trusted network: ${boostId}`
                                 );
                             }
                         }

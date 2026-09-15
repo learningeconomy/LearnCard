@@ -86,7 +86,9 @@ describe('VerifyBoost wrapper transition', () => {
                 type: ['BoostCredential'],
             } as unknown as VC);
             expect(verified.checks.some(check => check.includes('Boost is Authentic'))).toBe(false);
-            expect(verified.warnings).not.toEqual([]);
+            expect(verified.warnings).toEqual([
+                `Boost Authenticity could not be verified. Boost ID does not identify a trusted network: ${boostId}`,
+            ]);
         }
     );
 
@@ -144,5 +146,22 @@ describe('VerifyBoost wrapper transition', () => {
         expect(verifyCredential).toHaveBeenCalledTimes(2);
         expect(verified.errors).toEqual([]);
         expect(verified.checks).toContain('Boost is Authentic. Verified by LearnCard Network.');
+    });
+
+    it('identifies the issuer when a legacy wrapper is outside the trust network', async () => {
+        const card = {
+            invoke: { verifyCredential: vi.fn().mockImplementation(async () => result()) },
+        } as unknown as Parameters<typeof getVerifyBoostPlugin>[0];
+        const plugin = await getVerifyBoostPlugin(card);
+        const verified = await plugin.methods.verifyCredential(card, {
+            issuer: 'did:example:untrusted',
+            boostId,
+            type: ['CertifiedBoostCredential'],
+            boostCredential: { issuer: 'did:example:issuer', boostId, type: ['BoostCredential'] },
+        } as unknown as VC);
+        expect(verified.checks.some(check => check.includes('Boost is Authentic'))).toBe(false);
+        expect(verified.warnings).toEqual([
+            'Boost Authenticity could not be verified. Issuer is outside of trust network: did:example:untrusted',
+        ]);
     });
 });
