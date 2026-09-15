@@ -12,13 +12,14 @@ import { testVc, sendBoost, testVp, testUnsignedBoost } from './helpers/send';
 // Mock verifyAuthToken for authToken integration tests
 const mockVerifyAuthToken = vi.fn();
 vi.mock('@helpers/oidc-jwt.helpers', () => ({
-    verifyAuthToken: (...args: any[]) => mockVerifyAuthToken(...args),
+    verifyAuthToken: (...args: unknown[]) => mockVerifyAuthToken(...args),
 }));
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
 let userB: Awaited<ReturnType<typeof getUser>>;
 let userC: Awaited<ReturnType<typeof getUser>>;
+type OtherProfile = Awaited<ReturnType<typeof noAuthClient.profile.getOtherProfile>>;
 
 describe('Profiles', () => {
     beforeAll(async () => {
@@ -711,7 +712,7 @@ describe('Profiles', () => {
             await userA.clients.fullAuth.profile.acceptConnectionRequest({ profileId: 'userb' });
         };
 
-        const expectPublicTier = (profile: any) => {
+        const expectPublicTier = (profile: OtherProfile) => {
             expect(profile?.profileId).toEqual('usera');
             expect(profile?.displayName).toEqual('A');
             expect(profile?.shortBio).toEqual('Short A');
@@ -724,7 +725,7 @@ describe('Profiles', () => {
             expect(profile?.isPrivate).toBeUndefined();
         };
 
-        const expectAuthenticatedTier = (profile: any) => {
+        const expectAuthenticatedTier = (profile: OtherProfile) => {
             expect(profile?.profileId).toEqual('usera');
             expect(profile?.displayName).toEqual('A');
             expect(profile?.shortBio).toEqual('Short A');
@@ -738,13 +739,13 @@ describe('Profiles', () => {
             expect(profile?.isPrivate).toBeUndefined();
         };
 
-        const expectConnectionTier = (profile: any) => {
+        const expectConnectionTier = (profile: OtherProfile) => {
             expectAuthenticatedTier(profile);
             expect(profile?.email).toEqual('userA@test.com');
         };
 
         const expectSelfTier = (
-            profile: any,
+            profile: OtherProfile,
             visibility: (typeof ProfileVisibilityEnum.enum)[keyof typeof ProfileVisibilityEnum.enum]
         ) => {
             expect(profile?.profileId).toEqual('usera');
@@ -2728,6 +2729,24 @@ describe('Profiles', () => {
                     name: 'mysa',
                     did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
                 },
+            });
+        });
+
+        it('keeps a primary signing authority primary when it is re-registered', async () => {
+            const signingAuthority = {
+                endpoint: 'http://localhost:4000',
+                name: 'mysa',
+                did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
+            };
+
+            await userA.clients.fullAuth.profile.registerSigningAuthority(signingAuthority);
+            await userA.clients.fullAuth.profile.registerSigningAuthority(signingAuthority);
+
+            await expect(
+                userA.clients.fullAuth.profile.primarySigningAuthority()
+            ).resolves.toMatchObject({
+                signingAuthority: { endpoint: signingAuthority.endpoint },
+                relationship: { name: signingAuthority.name, did: signingAuthority.did },
             });
         });
 

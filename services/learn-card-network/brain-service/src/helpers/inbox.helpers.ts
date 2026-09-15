@@ -12,8 +12,9 @@ import {
 } from '@learncard/types';
 
 import { ProfileType, SigningAuthorityForUserType } from 'types/profile';
+import type { IssuedCredential } from 'types/credential';
+import { getBitstringStatusListEntries } from '@learncard/helpers';
 import { createInboxCredential } from '@accesslayer/inbox-credential/create';
-import { markInboxCredentialAsIssued } from '@accesslayer/inbox-credential/update';
 import { Context } from '@routes';
 import { getAppDidWeb } from '@helpers/did.helpers';
 import {
@@ -45,7 +46,7 @@ import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { getNotificationMessage } from '@helpers/notificationMessages';
 import { resolveRecipientLocale } from '@helpers/getRecipientLocale.helpers';
 import { logCredentialDelivered } from '@helpers/activity.helpers';
-import { getLearnCard } from '@helpers/learnCard.helpers';
+import { getLearnCard, getEmptyLearnCard } from '@helpers/learnCard.helpers';
 import { getPrimarySigningAuthorityForUser } from '@accesslayer/signing-authority/relationships/read';
 import { getRegistryService } from '@services/registry/registry.factory';
 
@@ -118,10 +119,30 @@ export const claimIntoInbox = async (
             ).credential as VC;
         }
 
-        // Create inbox record for tracking
-        const inboxCredential = await createInboxCredential({
+        // Use the explicit-recipient API; the seeded encryption plugin also adds the service DID.
+        const learnCard = await getEmptyLearnCard();
+        const encryptedDelivery = await learnCard.invoke.createDagJwe(finalCredential, [
+            existingProfile.did,
+            issuerProfile.did,
+        ]);
+        await sendCredential(
+            issuerProfile,
+            existingProfile,
+            {
+                kind: 'issued-credential',
+                credential: encryptedDelivery,
+                statusEntries: getBitstringStatusListEntries(finalCredential),
+            },
+            ctx.domain,
+            undefined,
+            activityId,
+            integrationId
+        );
+        // Record successful delivery without creating temporary service-readable escrow.
+        const finalizedInboxCredential = await createInboxCredential({
             credential: JSON.stringify(finalCredential),
             isSigned: true,
+            delivered: true,
             isAccepted: true,
             recipient,
             issuerProfile,
@@ -133,7 +154,7 @@ export const claimIntoInbox = async (
 
         return {
             status: LCNInboxStatusEnumValidator.enum.ISSUED,
-            inboxCredential,
+            inboxCredential: finalizedInboxCredential,
             recipientDid: existingProfile.did,
         };
     } else {
@@ -283,21 +304,19 @@ export const issueToInbox = async (
             ).credential as VC;
         }
 
-        // Create inbox record for tracking
-        const inboxCredential = await createInboxCredential({
-            credential: JSON.stringify(finalCredential),
-            isSigned,
-            recipient,
-            issuerProfile,
-            webhookUrl,
-            boostUri,
-            activityId,
-            integrationId,
-            expiresInDays,
-        });
-
         // Send credential using appropriate helper (sendBoost handles boost tracking)
         // Pass activityId and integrationId so they're stored on the relationship for CLAIMED chaining
+        const learnCard = await getEmptyLearnCard();
+        const encryptedDelivery = await learnCard.invoke.createDagJwe(finalCredential, [
+            existingProfile.did,
+            issuerProfile.did,
+        ]);
+        // Carry only public status coordinates alongside the newly encrypted payload.
+        const delivery: IssuedCredential = {
+            kind: 'issued-credential',
+            credential: encryptedDelivery,
+            statusEntries: getBitstringStatusListEntries(finalCredential),
+        };
         if (boostUri) {
             const boost = await getBoostByUri(boostUri);
             if (boost) {
@@ -305,7 +324,7 @@ export const issueToInbox = async (
                     from: { type: 'profile', profile: issuerProfile },
                     to: existingProfile,
                     boost,
-                    credential: finalCredential,
+                    credential: delivery,
                     domain: ctx.domain,
                     activityId,
                     integrationId,
@@ -315,7 +334,7 @@ export const issueToInbox = async (
                 await sendCredential(
                     issuerProfile,
                     existingProfile,
-                    finalCredential,
+                    delivery,
                     ctx.domain,
                     undefined,
                     activityId,
@@ -326,7 +345,7 @@ export const issueToInbox = async (
             await sendCredential(
                 issuerProfile,
                 existingProfile,
-                finalCredential,
+                delivery,
                 ctx.domain,
                 undefined,
                 activityId,
@@ -334,8 +353,19 @@ export const issueToInbox = async (
             );
         }
 
-        // Mark as issued and create relationship
-        await markInboxCredentialAsIssued(inboxCredential.id);
+        // Record successful delivery without creating temporary service-readable escrow.
+        const finalizedInboxCredential = await createInboxCredential({
+            credential: JSON.stringify(finalCredential),
+            isSigned: true,
+            delivered: true,
+            recipient,
+            issuerProfile,
+            webhookUrl,
+            boostUri,
+            activityId,
+            integrationId,
+            expiresInDays,
+        });
 
         // Log credential activity for auto-delivery
         if (activityId) {
@@ -346,7 +376,7 @@ export const issueToInbox = async (
                 recipientIdentifier: recipient.value,
                 recipientProfileId: existingProfile.profileId,
                 boostUri,
-                inboxCredentialId: inboxCredential.id,
+                inboxCredentialId: finalizedInboxCredential.id,
                 integrationId,
                 source: 'send',
             });
@@ -354,7 +384,7 @@ export const issueToInbox = async (
 
         await createDeliveredRelationship(
             issuerProfile.profileId,
-            inboxCredential.id,
+            finalizedInboxCredential.id,
             existingProfile.did,
             'auto-delivery'
         );
@@ -378,7 +408,7 @@ export const issueToInbox = async (
                 ),
                 data: {
                     inbox: {
-                        issuanceId: inboxCredential.id,
+                        issuanceId: finalizedInboxCredential.id,
                         status: LCNInboxStatusEnumValidator.enum.ISSUED,
                         recipient: {
                             contactMethod: recipient,
@@ -392,7 +422,7 @@ export const issueToInbox = async (
 
         return {
             status: LCNInboxStatusEnumValidator.enum.ISSUED,
-            inboxCredential,
+            inboxCredential: finalizedInboxCredential,
             recipientDid: existingProfile.did,
         };
     } else {

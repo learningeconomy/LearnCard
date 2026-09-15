@@ -6,11 +6,11 @@ import { useTheme } from '../../../theme/hooks/useTheme';
 import { getGreetingAndEmoji } from './launchPadHeader.helpers';
 import LaunchPadActionModal from './LaunchPadActionModal';
 import useLCNGatedAction from '../../../components/network-prompts/hooks/useLCNGatedAction';
-import CaretRightFilled from 'src/components/svgs/CaretRightFilled';
+import CaretRightFilled from '../../../components/svgs/CaretRightFilled';
 import { roleIcons } from '../../../components/onboarding/onboardingRoles/OnboardingRoleItem';
 import { LearnCardRolesEnum } from '../../../components/onboarding/onboarding.helpers';
 
-export const LaunchPadHeaderUserGreeting: React.FC<{}> = () => {
+export const LaunchPadHeaderUserGreeting: React.FC = () => {
     const currentUser = useCurrentUser();
     const currentHour = moment().hour(); // returns 0–23
     const { newModal } = useModal({
@@ -68,7 +68,10 @@ export const LaunchPadHeaderUserGreeting: React.FC<{}> = () => {
                                     className="h-[20px] w-[20px] object-contain mr-[5px]"
                                 />
                             )}
-                            <span className="font-poppins font-semibold text-[20px]" style={{ color: quickActionTextColor }}>
+                            <span
+                                className="font-poppins font-semibold text-[20px]"
+                                style={{ color: quickActionTextColor }}
+                            >
                                 What would you like to do?
                             </span>
                         </div>
