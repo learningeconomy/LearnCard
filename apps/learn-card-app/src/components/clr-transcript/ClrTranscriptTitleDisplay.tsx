@@ -11,7 +11,6 @@ import {
     type ClrTranscriptDisplayModel,
     type CourseDisplayModel,
 } from '../../helpers/clrRenderer.helpers';
-import { formatClrGpa } from './clr.helpers';
 import { inferClrKindWithTitleFallback, type InferredClrKind } from './clrKind.helpers';
 
 const getClrGrade = (course?: CourseDisplayModel): string | undefined => {
@@ -84,12 +83,10 @@ const ClrTranscriptTitleDisplay: React.FC<{ credential: VC; fallbackTitle: strin
     }
 
     if (inferredKind === 'transcript') {
-        const transcriptName = 'Transcript';
-
         return (
             <div className="flex w-full min-w-0 flex-col items-center justify-start mt-[0px] px-2">
                 <p className="mt-1 w-full max-w-full break-words text-center text-grayscale-900 text-[14px] font-notoSans font-semibold leading-[125%] line-clamp-2">
-                    {transcriptName}
+                    Transcript
                 </p>
                 <div className="mt-2 flex items-center justify-center gap-3 flex-wrap">
                     {model.summary.courseCount > 0 && (
