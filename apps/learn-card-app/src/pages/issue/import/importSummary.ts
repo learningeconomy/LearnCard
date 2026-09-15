@@ -18,10 +18,7 @@ const str = (v: unknown): string | undefined =>
 export const summarizeObv3 = (json: Record<string, unknown>): ImportSummary => {
     const subject = asRecord(json.credentialSubject);
     const achievement = asRecord(subject.achievement);
-    const types = Array.isArray(json.type) ? json.type : [];
-    const isClrCredential = types.includes('ClrCredential');
-
-    const name = isClrCredential
+    const name = isClrCredential(json as Parameters<typeof isClrCredential>[0])
         ? 'Transcript'
         : (str(achievement.name) ?? str(json.name) ?? 'Imported credential');
     const description = str(achievement.description) ?? str(json.description);
