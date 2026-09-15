@@ -1,6 +1,6 @@
 {
     "name": "scoutpass-app",
-    "version": "1.90.33",
+    "version": "1.90.34",
     "private": true,
     "engines": {
         "node": ">=24.12 <25"

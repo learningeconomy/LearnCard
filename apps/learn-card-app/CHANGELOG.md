@@ -1,5 +1,39 @@
 # Changelog
 
+## 1.98.8
+
+### Patch Changes
+
+- [#1265](https://github.com/learningeconomy/LearnCard/pull/1265) [`693be4fef7b2850ab0f79b5161f78557d9026012`](https://github.com/learningeconomy/LearnCard/commit/693be4fef7b2850ab0f79b5161f78557d9026012) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Deploy the AI Agent through the main Deploy workflow: affected main commits deploy staging, and Changesets releases deploy production using the existing environment approval and LaunchDarkly rollout controls.
+
+    Bind agent operations to verified request identity, expose only permitted wallet capabilities and anonymous public profile reads, recover assistant storage and schedules safely, and include retrospective work in run budgets. Fix assistant chat lifecycle, history limits, privacy gating, and local endpoint selection.
+
+    Pre-bundle browser dependencies imported by workspace source before serving the app, preventing dependency-optimizer reloads from interrupting sign-in and mocked E2E navigation.
+
+- [#1555](https://github.com/learningeconomy/LearnCard/pull/1555) [`6315fa3346cf75df2c6cbabe78962a9faa408781`](https://github.com/learningeconomy/LearnCard/commit/6315fa3346cf75df2c6cbabe78962a9faa408781) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-2154] - Harden universal inbox
+
+- [#1533](https://github.com/learningeconomy/LearnCard/pull/1533) [`80d2ebf54bb5a643808f8f7d908cf68758903dce`](https://github.com/learningeconomy/LearnCard/commit/80d2ebf54bb5a643808f8f7d908cf68758903dce) Thanks [@goblincore](https://github.com/goblincore)! - Managed credential refresh (LC-2117, LC-2135, LC-2136)
+
+    - Holder refresh through the W3C `refreshService` extension point: standard `1EdTechCredentialRefresh` signed JSON responses and a separate `LearnCardCredentialRefresh2026` encrypted, DID-authenticated managed protocol. Includes SSRF guards, proof/issuer/subject/ID/freshness validation, and typed failures. Compact VC-JWT support is deferred to LC-2195; full 1EdTech protocol conformance is not claimed. Previously issued managed QA credentials must be reissued with the new signed service type.
+    - Managed issuer refresh service in brain-service: allocate-before-signing, issuer-signed and signing-authority publication, immutable holder-encrypted (JWE-only) version chain, holder-authenticated `/refresh/:refreshId` endpoint with ETag/304, history, and revocation gating.
+    - In-place holder wallet replacement with encrypted previous-version history, foreground-only staleness scanning (24h default, configurable), and per-record concurrency safety.
+    - Privacy-safe `CREDENTIAL_REFRESHED` notifications with materiality detection, issuer overrides, and one collapsed record per configurable delivery window.
+    - App surfaces: refresh listener, Updated indicator, notification card, and previous-versions history UI; provisional-to-final CLR demo in the credential viewer.
+
+- [#1318](https://github.com/learningeconomy/LearnCard/pull/1318) [`267c4d57c1a75b4fda3af2a221f8f9a3f6e36517`](https://github.com/learningeconomy/LearnCard/commit/267c4d57c1a75b4fda3af2a221f8f9a3f6e36517) Thanks [@goblincore](https://github.com/goblincore)! - fix/chore: break analytics ↔ tenant-config circular chunk dependency (LCA)
+
+- [#1570](https://github.com/learningeconomy/LearnCard/pull/1570) [`3a9679416614d46b6bcc9f0db9077269cd4398aa`](https://github.com/learningeconomy/LearnCard/commit/3a9679416614d46b6bcc9f0db9077269cd4398aa) Thanks [@Custard7](https://github.com/Custard7)! - fix: surface versioned staging channels in native channel switcher
+
+- Updated dependencies [[`80d2ebf54bb5a643808f8f7d908cf68758903dce`](https://github.com/learningeconomy/LearnCard/commit/80d2ebf54bb5a643808f8f7d908cf68758903dce)]:
+    - @learncard/helpers@1.5.0
+    - @learncard/credential-library@2.0.2
+    - @learncard/lca-api-plugin@2.0.4
+    - @learncard/ler-rs-plugin@0.1.25
+    - @learncard/open-badge-v2-plugin@1.1.35
+    - @learncard/render-method-plugin@6.0.0
+    - @learncard/react@2.12.5
+    - @learncard/sss-key-manager@0.1.22
+
 ## 1.98.7
 
 ### Patch Changes
