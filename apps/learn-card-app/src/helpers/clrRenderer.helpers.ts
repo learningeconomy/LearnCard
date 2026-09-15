@@ -291,7 +291,6 @@ const AWARD_TYPES = new Set([
     'Certification',
     'Badge',
     'MicroCredential',
-    'Endorsement',
 ]);
 
 const LARGE_INLINE_EVIDENCE_THRESHOLD = 100_000;
