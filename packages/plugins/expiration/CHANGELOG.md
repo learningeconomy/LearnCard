@@ -1,5 +1,15 @@
 # learn-card-core
 
+## 1.2.34
+
+### Patch Changes
+
+- [#1528](https://github.com/learningeconomy/LearnCard/pull/1528) [`75d1816d5bbbd17772ef4c1c6b4932deacb9ccb5`](https://github.com/learningeconomy/LearnCard/commit/75d1816d5bbbd17772ef4c1c6b4932deacb9ccb5) Thanks [@Custard7](https://github.com/Custard7)! - Default verification checks to `proof` plus `credentialStatus` / `credentialSchema` when present. Verify-only LearnCards (no seed) previously skipped status checks and accepted revoked credentials.
+
+- Updated dependencies [[`80d2ebf54bb5a643808f8f7d908cf68758903dce`](https://github.com/learningeconomy/LearnCard/commit/80d2ebf54bb5a643808f8f7d908cf68758903dce)]:
+    - @learncard/vc-plugin@1.6.0
+    - @learncard/core@9.4.34
+
 ## 1.2.33
 
 ### Patch Changes

@@ -1,5 +1,18 @@
 # @learncard/network-brain-client
 
+## 2.5.55
+
+### Patch Changes
+
+- [#1265](https://github.com/learningeconomy/LearnCard/pull/1265) [`693be4fef7b2850ab0f79b5161f78557d9026012`](https://github.com/learningeconomy/LearnCard/commit/693be4fef7b2850ab0f79b5161f78557d9026012) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Deploy the AI Agent through the main Deploy workflow: affected main commits deploy staging, and Changesets releases deploy production using the existing environment approval and LaunchDarkly rollout controls.
+
+    Bind agent operations to verified request identity, expose only permitted wallet capabilities and anonymous public profile reads, recover assistant storage and schedules safely, and include retrospective work in run budgets. Fix assistant chat lifecycle, history limits, privacy gating, and local endpoint selection.
+
+    Pre-bundle browser dependencies imported by workspace source before serving the app, preventing dependency-optimizer reloads from interrupting sign-in and mocked E2E navigation.
+
+- Updated dependencies [[`766100377181a2767b1913b4146c5dd004a926ea`](https://github.com/learningeconomy/LearnCard/commit/766100377181a2767b1913b4146c5dd004a926ea), [`6315fa3346cf75df2c6cbabe78962a9faa408781`](https://github.com/learningeconomy/LearnCard/commit/6315fa3346cf75df2c6cbabe78962a9faa408781), [`80d2ebf54bb5a643808f8f7d908cf68758903dce`](https://github.com/learningeconomy/LearnCard/commit/80d2ebf54bb5a643808f8f7d908cf68758903dce), [`75d1816d5bbbd17772ef4c1c6b4932deacb9ccb5`](https://github.com/learningeconomy/LearnCard/commit/75d1816d5bbbd17772ef4c1c6b4932deacb9ccb5)]:
+    - @learncard/network-brain-service@3.17.0
+
 ## 2.5.54
 
 ### Patch Changes
