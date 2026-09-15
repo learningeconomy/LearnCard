@@ -40,7 +40,7 @@ export {
     tenantNativeConfigSchema,
     tenantEcosystemConfigSchema,
     parseTenantConfig,
-    parsePartialTenantConfig,
+    parseTenantConfigOverlay,
     TENANT_CONFIG_SCHEMA_VERSION,
 } from './tenantConfigSchema';
 
