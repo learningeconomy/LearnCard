@@ -259,7 +259,10 @@ export const consentToContract = async (
                         boostCredential,
                         contractOwnerSigningAuthority,
                         domain,
-                        false
+                        true,
+                        undefined,
+                        true,
+                        [getDidWeb(domain, contractOwner.profileId)]
                     );
 
                     const boostTransaction = {

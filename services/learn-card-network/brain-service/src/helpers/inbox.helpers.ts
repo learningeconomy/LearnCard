@@ -12,6 +12,8 @@ import {
 } from '@learncard/types';
 
 import { ProfileType, SigningAuthorityForUserType } from 'types/profile';
+import type { IssuedCredential } from 'types/credential';
+import { getBitstringStatusListEntries } from '@learncard/helpers';
 import { createInboxCredential } from '@accesslayer/inbox-credential/create';
 import { Context } from '@routes';
 import { getAppDidWeb } from '@helpers/did.helpers';
@@ -105,14 +107,16 @@ export const claimIntoInbox = async (
                 ? getAppDidWeb(ctx.domain, listingSlug)
                 : undefined;
 
-            finalCredential = (await issueCredentialWithSigningAuthority(
-                { type: 'profile', profile: issuerProfile },
-                credential as UnsignedVC,
-                signingAuthorityForUser,
-                ctx.domain,
-                false, // don't encrypt
-                ownerDidOverride
-            )) as VC;
+            finalCredential = (
+                await issueCredentialWithSigningAuthority(
+                    { type: 'profile', profile: issuerProfile },
+                    credential as UnsignedVC,
+                    signingAuthorityForUser,
+                    ctx.domain,
+                    false, // don't encrypt
+                    ownerDidOverride
+                )
+            ).credential as VC;
         }
 
         // Use the explicit-recipient API; the seeded encryption plugin also adds the service DID.
@@ -124,7 +128,11 @@ export const claimIntoInbox = async (
         await sendCredential(
             issuerProfile,
             existingProfile,
-            encryptedDelivery,
+            {
+                kind: 'issued-credential',
+                credential: encryptedDelivery,
+                statusEntries: getBitstringStatusListEntries(finalCredential),
+            },
             ctx.domain,
             undefined,
             activityId,
@@ -285,13 +293,15 @@ export const issueToInbox = async (
                 });
             }
 
-            finalCredential = (await issueCredentialWithSigningAuthority(
-                { type: 'profile', profile: issuerProfile },
-                credential as UnsignedVC,
-                signingAuthorityForUser,
-                ctx.domain,
-                false // don't encrypt
-            )) as VC;
+            finalCredential = (
+                await issueCredentialWithSigningAuthority(
+                    { type: 'profile', profile: issuerProfile },
+                    credential as UnsignedVC,
+                    signingAuthorityForUser,
+                    ctx.domain,
+                    false // don't encrypt
+                )
+            ).credential as VC;
         }
 
         // Send credential using appropriate helper (sendBoost handles boost tracking)
@@ -301,6 +311,12 @@ export const issueToInbox = async (
             existingProfile.did,
             issuerProfile.did,
         ]);
+        // Carry only public status coordinates alongside the newly encrypted payload.
+        const delivery: IssuedCredential = {
+            kind: 'issued-credential',
+            credential: encryptedDelivery,
+            statusEntries: getBitstringStatusListEntries(finalCredential),
+        };
         if (boostUri) {
             const boost = await getBoostByUri(boostUri);
             if (boost) {
@@ -308,9 +324,8 @@ export const issueToInbox = async (
                     from: { type: 'profile', profile: issuerProfile },
                     to: existingProfile,
                     boost,
-                    credential: encryptedDelivery,
+                    credential: delivery,
                     domain: ctx.domain,
-                    skipCertification: true,
                     activityId,
                     integrationId,
                 });
@@ -319,7 +334,7 @@ export const issueToInbox = async (
                 await sendCredential(
                     issuerProfile,
                     existingProfile,
-                    encryptedDelivery,
+                    delivery,
                     ctx.domain,
                     undefined,
                     activityId,
@@ -330,7 +345,7 @@ export const issueToInbox = async (
             await sendCredential(
                 issuerProfile,
                 existingProfile,
-                encryptedDelivery,
+                delivery,
                 ctx.domain,
                 undefined,
                 activityId,

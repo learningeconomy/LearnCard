@@ -4,6 +4,7 @@ import { fastifyTRPCOpenApiPlugin } from 'trpc-to-openapi';
 import { readFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import type { IssueInboxCredentialType, UnsignedVC, VC } from '@learncard/types';
+import { getBitstringStatusListEntries } from '@learncard/helpers';
 
 import { appRouter, createContext } from '../src/app';
 import { neogma } from '@instance';
@@ -32,6 +33,10 @@ import * as encryption from '@helpers/inbox-encryption.helpers';
 import * as notifications from '@helpers/notifications.helpers';
 import * as activity from '@helpers/activity.helpers';
 import * as credentialStorage from '@accesslayer/credential/create';
+import {
+    appendBitstringStatusListEntries,
+    setCredentialBitstringStatus,
+} from '@helpers/status-list.helpers';
 import { testUnsignedBoost } from './helpers/send';
 import { clrMinimal } from '../../../../packages/credential-library/src/fixtures/clr/minimal';
 
@@ -154,6 +159,43 @@ describe('Universal Inbox escrow (HTTP + isolated Neo4j/Redis)', () => {
         ]),
     });
 
+    const signedStatusCredential = async (): Promise<VC> =>
+        issuer.learnCard.invoke.issueCredential(
+            await appendBitstringStatusListEntries(
+                {
+                    '@context': [
+                        'https://www.w3.org/ns/credentials/v2',
+                        { privateNote: 'https://schema.org/description' },
+                    ],
+                    type: ['VerifiableCredential'],
+                    id: `urn:uuid:${randomUUID()}`,
+                    validFrom: new Date().toISOString(),
+                    issuer: issuer.learnCard.id.did(),
+                    credentialSubject: {
+                        id: recipient.learnCard.id.did(),
+                        privateNote: marker,
+                    },
+                },
+                'escrow-issuer',
+                'localhost%3A3000'
+            )
+        );
+
+    const expectStoredStatus = async (credential: VC): Promise<void> => {
+        const entries = getBitstringStatusListEntries(credential);
+        expect(entries).toHaveLength(2);
+        const stored = await neogma.queryRunner.run(
+            'MATCH (n:Credential) RETURN n.id AS id, n.statusEntries AS statusEntries'
+        );
+        expect(stored.records).toHaveLength(1);
+        expect(JSON.parse(stored.records[0]!.get('statusEntries'))).toEqual(entries);
+        for (const purpose of ['revocation', 'suspension'] as const) {
+            expect(
+                await setCredentialBitstringStatus(stored.records[0]!.get('id'), purpose, true)
+            ).toBe(true);
+        }
+    };
+
     const verifyRecipientContact = async (email: string): Promise<void> => {
         await recipient.clients.fullAuth.contactMethods.addContactMethod({
             type: 'email',
@@ -255,7 +297,7 @@ describe('Universal Inbox escrow (HTTP + isolated Neo4j/Redis)', () => {
                 name: 'Inbox concurrency test',
                 category: 'Achievement',
             });
-            const credential = await signedCredential();
+            const credential = await signedStatusCredential();
             const issued = await issue({
                 credential,
                 recipient: { type: 'email', value: 'boost-claim@example.test' },
@@ -296,6 +338,7 @@ describe('Universal Inbox escrow (HTTP + isolated Neo4j/Redis)', () => {
                 'MATCH (n:Credential) RETURN n.credential AS payload'
             );
             expect(stored.records).toHaveLength(outcome === 'success' ? 1 : 0);
+            if (outcome === 'success') await expectStoredStatus(credential);
             const audit = await neogma.queryRunner.run(
                 'MATCH ()-[r:CLAIMED_INBOX_CREDENTIAL]->(n:InboxCredential {id: $id}) RETURN count(r) AS count',
                 { id: issued.issuanceId }
@@ -612,7 +655,7 @@ describe('Universal Inbox escrow (HTTP + isolated Neo4j/Redis)', () => {
 
     it('encrypts ordinary credential storage on auto-delivery and wipes escrow', async () => {
         await verifyRecipientContact('existing@example.test');
-        const credential = await signedCredential();
+        const credential = await signedStatusCredential();
         const escrowEncrypt = vi.spyOn(encryption, 'encryptInboxCredential');
         const issued = await issue({
             credential,
@@ -632,6 +675,7 @@ describe('Universal Inbox escrow (HTTP + isolated Neo4j/Redis)', () => {
         const stored = JSON.parse(deliveries.records[0]!.get('payload'));
         expect(await recipient.learnCard.invoke.decryptDagJwe(stored)).toEqual(credential);
         expect(await issuer.learnCard.invoke.decryptDagJwe(stored)).toEqual(credential);
+        await expectStoredStatus(credential);
         await expectNoPlaintext();
     });
 
@@ -656,7 +700,7 @@ describe('Universal Inbox escrow (HTTP + isolated Neo4j/Redis)', () => {
             isVerified: true,
         });
         const client = getVerifiedContactMethodClient({ contactMethod });
-        const credential = await signedCredential();
+        const credential = await signedStatusCredential();
         const claimed = await client.inbox.claim({
             credential,
             configuration: { publishableKey: integration.publishableKey!, expiresInDays: 3 },
@@ -701,6 +745,7 @@ describe('Universal Inbox escrow (HTTP + isolated Neo4j/Redis)', () => {
                 JSON.parse(stored.records[0]!.get('payload'))
             )
         ).toEqual(credential);
+        await expectStoredStatus(credential);
         await expectNoPlaintext();
     });
 
