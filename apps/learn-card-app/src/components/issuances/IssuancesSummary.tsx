@@ -1,5 +1,5 @@
 import React from 'react';
-import { useIntegrationActivity } from 'src/pages/appStoreDeveloper/dashboards/hooks/useIntegrationActivity';
+import { useIntegrationActivity } from '../../pages/appStoreDeveloper/dashboards/hooks/useIntegrationActivity';
 
 interface IssuancesSummaryProps {
     boostUri: string;

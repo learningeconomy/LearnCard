@@ -5,7 +5,7 @@ import { m } from '../../paraglide/messages.js';
 import type { OccupationDetailsResponse } from 'learn-card-base';
 import { ModalTypes, useDeviceTypeByWidth, useModal } from 'learn-card-base';
 
-import CaretDown from 'src/components/svgs/CaretDown';
+import CaretDown from '../../components/svgs/CaretDown';
 import AiPathwayCareerPipeChart from '../ai-pathways/ai-pathway-careers/AiPathwayCareerPipeChart';
 import {
     formatAboutCount,

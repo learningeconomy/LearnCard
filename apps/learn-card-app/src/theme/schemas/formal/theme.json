@@ -44,7 +44,7 @@
             "secondaryButtonColor": "bg-blue-500 text-white border-blue-500",
             "indicatorColor": "text-emerald-500",
             "syncingColor": "!text-blue-500",
-            "completedColor": "!text-emerald-700",
+            "completedColor": "!text-emerald-900",
             "logoColor": "text-grayscale-900"
         },
 
@@ -52,7 +52,7 @@
             "activeColor": "text-grayscale-900",
             "inactiveColor": "text-grayscale-800",
             "syncingColor": "!text-blue-500",
-            "completedColor": "!text-emerald-700"
+            "completedColor": "!text-emerald-900"
         },
 
         "introSlides": {

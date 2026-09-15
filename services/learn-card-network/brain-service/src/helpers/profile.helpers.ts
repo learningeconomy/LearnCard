@@ -4,7 +4,7 @@ import { getProfileIdFromDid } from './did.helpers';
 import { ProfileType } from 'types/profile';
 
 export const transformProfileId = (rawInput: string): string =>
-    rawInput.toLowerCase().replace(':', '%3A');
+    rawInput.toLowerCase().replaceAll(':', '%3A');
 
 /**
  * Gets or creates a federated profile for cross-instance credential sending.

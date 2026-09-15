@@ -12,7 +12,7 @@ import AddSkillModal, { PreviousSkillInfo } from './AddSkillModal';
 import { SkillLevel, SKILL_LEVEL_META } from './skillTypes';
 import type { SelectedSkill } from './skillTypes';
 import { SkillFrameworkNode } from '../../components/boost/boost';
-import { convertApiSkillNodeToSkillTreeNode } from 'src/helpers/skillFramework.helpers';
+import { convertApiSkillNodeToSkillTreeNode } from '../../helpers/skillFramework.helpers';
 
 type SkillCardProps = {
     skillId: string;
