@@ -72,7 +72,7 @@ const ClrTranscriptSummaryHeader: React.FC<{
     };
 
     return (
-        <div className="bg-white rounded-[20px] border border-grayscale-200 p-6 space-y-5 relative overflow-hidden">
+        <div className="bg-white rounded-[20px] border border-grayscale-200 p-4 space-y-3 relative overflow-hidden">
             {model.meta.partial && (
                 <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
                     <p className="text-xs font-medium text-amber-800">
@@ -86,12 +86,12 @@ const ClrTranscriptSummaryHeader: React.FC<{
             <div className="relative flex flex-col gap-4 md:flex-row md:items-start">
                 <UserProfilePicture
                     user={{ displayName: model.header.learnerName?.value }}
-                    customContainerClass="w-16 h-16 shrink-0 text-2xl self-start"
-                    customImageClass="w-16 h-16"
+                    customContainerClass="w-12 h-12 shrink-0 text-lg self-start"
+                    customImageClass="w-12 h-12"
                 />
 
                 <div className="w-full min-w-0 md:flex-1 md:pt-1">
-                    <p className="text-[22px] text-grayscale-900 leading-tight truncate">
+                    <p className="mt-4 text-lg text-grayscale-900 leading-tight truncate">
                         {model.header.learnerName?.value ?? 'Unknown learner'}
                     </p>
                     <div className="border-t border-grayscale-200 my-2" />

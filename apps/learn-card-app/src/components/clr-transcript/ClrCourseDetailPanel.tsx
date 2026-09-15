@@ -49,7 +49,11 @@ const ClrCourseDetailPanel: React.FC<{
 
     const primaryResult = course.results.find(r => r.value);
     const grade = primaryResult ? String(primaryResult.value.value) : undefined;
-    const credits = course.creditsEarned?.value ?? course.creditsAvailable?.value;
+    const descriptionCredits = Number(
+        course.description?.value.match(/(\d+(?:\.\d+)?)\s*credit/i)?.[1]
+    );
+    const credits =
+        course.creditsEarned?.value ?? course.creditsAvailable?.value ?? descriptionCredits;
     const gradeLabel = primaryResult?.label?.value ?? 'Letter Grade';
 
     const id = course.sourceCredentialId;
@@ -83,7 +87,7 @@ const ClrCourseDetailPanel: React.FC<{
                 <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                         {course.humanCode?.value && (
-                            <p className="text-[17px] font-semibold text-grayscale-600 mb-0.5">
+                            <p className="text-base font-semibold text-grayscale-600 mb-0.5">
                                 {course.humanCode.value}
                             </p>
                         )}
@@ -128,24 +132,24 @@ const ClrCourseDetailPanel: React.FC<{
                             {grade !== undefined && (
                                 <div className="bg-grayscale-50 flex flex-col items-center border border-grayscale-200 rounded-2xl px-6 py-4 w-[50%]">
                                     <p
-                                        className={`text-3xl font-semibold leading-none ${gradeColor(
+                                        className={`text-2xl font-semibold leading-none ${gradeColor(
                                             grade
                                         )}`}
                                     >
                                         {grade}
                                     </p>
-                                    <p className="text-[13px] font-semibold text-grayscale-600 uppercase mt-1.5">
+                                    <p className="text-sm font-semibold text-grayscale-600 uppercase mt-1.5">
                                         {gradeLabel}
                                     </p>
                                 </div>
                             )}
                             {credits !== undefined && (
                                 <div className="bg-grayscale-50 flex flex-col items-center border border-grayscale-200 rounded-2xl px-6 py-4 w-[50%]">
-                                    <p className="text-3xl font-semibold text-grayscale-900 leading-none">
+                                    <p className="text-2xl font-semibold text-grayscale-900 leading-none">
                                         {credits}
                                     </p>
-                                    <p className="text-[13px] font-semibold text-grayscale-600 uppercase mt-1.5">
-                                        {course.creditsEarned !== undefined
+                                    <p className="text-sm font-semibold text-grayscale-600 uppercase mt-1.5">
+                                        {course.creditsEarned !== undefined || descriptionCredits
                                             ? 'Credits'
                                             : 'Available'}
                                     </p>
@@ -162,13 +166,13 @@ const ClrCourseDetailPanel: React.FC<{
                                     <h3 className="text-lg font-medium text-grayscale-900 mb-2">
                                         Description
                                     </h3>
-                                    <p className="text-sm text-grayscale-700">
+                                    <p className="text-base text-grayscale-700 leading-relaxed">
                                         {course.description.value}
                                     </p>
                                 </div>
                             )}
                             {course.earnedAt?.value && (
-                                <p className="text-sm text-grayscale-600">
+                                <p className="text-base text-grayscale-600">
                                     Earned on{' '}
                                     <span className="font-semibold text-grayscale-600">
                                         {formatClrDate(course.earnedAt.value)}
@@ -238,7 +242,7 @@ const ClrCourseDetailPanel: React.FC<{
                         <p className="text-xs font-semibold text-grayscale-500 uppercase tracking-wide mb-0.5">
                             Expires
                         </p>
-                        <p className="text-sm text-grayscale-900">
+                        <p className="text-base text-grayscale-900">
                             {formatClrDate(course.validUntil.value)}
                         </p>
                     </div>

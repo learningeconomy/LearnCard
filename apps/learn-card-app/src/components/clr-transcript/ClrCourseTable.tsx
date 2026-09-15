@@ -65,7 +65,7 @@ const ClrCourseTable: React.FC<{
                             className="w-full flex items-center justify-between px-5 py-2 bg-grayscale-50 transition-colors"
                             onClick={() => toggle(label)}
                         >
-                            <span className="text-[15px] font-semibold text-grayscale-900 ">
+                            <span className="text-xs font-semibold text-grayscale-900 ">
                                 {label}
                             </span>
                             <div className="flex items-center gap-2">
@@ -134,11 +134,11 @@ const ClrCourseTable: React.FC<{
                                             <div className="min-w-0 pr-2">
                                                 <div className="flex items-baseline gap-2">
                                                     {course.humanCode?.value && (
-                                                        <span className="text-sm font-semibold text-grayscale-600 shrink-0">
+                                                        <span className="text-xs font-semibold text-grayscale-600 shrink-0">
                                                             {course.humanCode.value}
                                                         </span>
                                                     )}
-                                                    <span className="text-sm font-medium text-grayscale-900 truncate leading-snug">
+                                                    <span className="text-xs font-medium text-grayscale-900 truncate leading-snug">
                                                         {course.name?.value ?? 'Course'}
                                                     </span>
                                                 </div>
