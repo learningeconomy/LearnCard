@@ -154,7 +154,7 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
                     className={`text-green-600 flex items-center gap-0.5 font-poppins font-[500] text-[12px] leading-tight ${badgeClassName}`}
                 >
                     <TrustedCertIcon className={`w-[22px] h-[22px] ${badgeIconClassName}`} />
-                    <span className="whitespace-nowrap uppercase tracking-wide text-[#026BFF]">
+                    <span className="whitespace-nowrap uppercase tracking-wide">
                         {unknownVerifierTitle ?? t('verification.trustedIssuer')}
                     </span>
                 </div>
