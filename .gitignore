@@ -69,3 +69,7 @@ services/learn-card-network/lca-api/.env.scouts
 # Local credential-refresh QA issuer keys and replay state
 /.credential-refresh-qa/
 e2e-artifacts/
+
+# CloudFormation deployment inputs
+**/*.parameters.json
+!**/*.parameters.example.json
