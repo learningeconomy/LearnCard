@@ -107,14 +107,17 @@ const ClrCourseTable: React.FC<{
                                     const grade = primaryResult
                                         ? String(primaryResult.value.value)
                                         : undefined;
+                                    const descriptionCreditsMatch =
+                                        course.description?.value.match(
+                                            /(\d+(?:\.\d+)?)\s*credit/i
+                                        )?.[1];
+                                    const descriptionCredits = descriptionCreditsMatch
+                                        ? Number(descriptionCreditsMatch)
+                                        : undefined;
                                     const credits =
                                         course.creditsEarned?.value ??
                                         course.creditsAvailable?.value ??
-                                        Number(
-                                            course.description?.value.match(
-                                                /(\d+(?:\.\d+)?)\s*credit/i
-                                            )?.[1]
-                                        );
+                                        descriptionCredits;
                                     const competencyCount = getLinkedCompetencies(
                                         course.sourceCredentialId,
                                         competencies,
