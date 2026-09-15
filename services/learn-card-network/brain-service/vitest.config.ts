@@ -26,6 +26,9 @@ export default createVitestConfig(brainServicePreset, {
             'src/routes/credential-refreshes.test.ts',
             'src/helpers/percentile.helpers.test.ts',
             'src/helpers/perf.test.ts',
+            'src/helpers/inbox-encryption.helpers.test.ts',
+            'src/helpers/send-inbox-config.helpers.test.ts',
+            'src/helpers/inbox-maintenance.helpers.test.ts',
         ],
     },
 });

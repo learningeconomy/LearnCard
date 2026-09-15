@@ -138,6 +138,8 @@ const indexQueries = [
     'CREATE INDEX profilemanager_id_idx IF NOT EXISTS FOR (p:ProfileManager) ON (p.id)',
     'CREATE INDEX profile_manager_created_idx IF NOT EXISTS FOR (p:ProfileManager) ON (p.created)',
     'CREATE INDEX role_id_idx IF NOT EXISTS FOR (r:Role) ON (r.id)',
+    'CREATE INDEX inbox_delivery_recipient_idx IF NOT EXISTS FOR (i:InboxCredential) ON (i.deliveryRecipientDid)',
+    'CREATE INDEX inbox_delivery_expires_idx IF NOT EXISTS FOR (i:InboxCredential) ON (i.deliveryExpiresAt)',
     'CREATE INDEX inbox_credential_status_idx IF NOT EXISTS FOR (i:InboxCredential) ON (i.currentStatus)',
     'CREATE INDEX inbox_credential_expires_idx IF NOT EXISTS FOR (i:InboxCredential) ON (i.expiresAt)',
     'CREATE INDEX inbox_credential_created_idx IF NOT EXISTS FOR (i:InboxCredential) ON (i.createdAt)',

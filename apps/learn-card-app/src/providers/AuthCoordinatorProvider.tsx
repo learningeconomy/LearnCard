@@ -137,6 +137,7 @@ import {
     type RecoverySetupType,
 } from '../components/recovery/RecoverySetupModal';
 import { DeviceLinkModal } from '../components/device-link/DeviceLinkModal';
+import { PENDING_SEED_STORAGE_KEY } from '../pages/developer/pendingSeedStorage';
 import ReAuthOverlay from '../components/auth/ReAuthOverlay';
 
 const log = getLogger('auth-coordinator');
@@ -1887,9 +1888,13 @@ export const AuthCoordinatorProvider: React.FC<AppAuthCoordinatorProviderProps> 
         // login regardless (see useSyncLocaleToProfile); this keeps the logged-out
         // UI in the user's language too.
         const preservedLocale = window.localStorage.getItem('i18n.language');
+        // The developer sign-in page stashes the next seed here before calling
+        // logout so it can sign in on the reload; wiping it strands the switch.
+        const pendingSeed = window.sessionStorage.getItem(PENDING_SEED_STORAGE_KEY);
         window.localStorage.clear();
         window.sessionStorage.clear();
         if (preservedLocale) window.localStorage.setItem('i18n.language', preservedLocale);
+        if (pendingSeed) window.sessionStorage.setItem(PENDING_SEED_STORAGE_KEY, pendingSeed);
 
         firstStartupStore.set.introSlidesCompleted(true);
         firstStartupStore.set.firstStart(false);
