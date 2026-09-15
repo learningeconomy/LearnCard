@@ -79,7 +79,7 @@ const ProfileVisibilityCard: React.FC<ProfileVisibilityCardProps> = ({
                         {m['settings.privacy.viewProfileHint']()}
                     </p>
                     <RadioGroup
-                        name="profile-visibility"
+                        aria-label={m['settings.privacy.profileVisibility']()}
                         value={visibility}
                         onChange={onChangeVisibility}
                         options={visibilityOptions}
@@ -119,7 +119,7 @@ const ProfileVisibilityCard: React.FC<ProfileVisibilityCardProps> = ({
                         {m['settings.privacy.connectionRequestsDesc']()}
                     </p>
                     <RadioGroup
-                        name="allow-connection-requests"
+                        aria-label={m['settings.privacy.connectionRequests']()}
                         value={allowConnectionRequests}
                         onChange={onChangeConnectionRequests}
                         options={connectionRequestOptions}

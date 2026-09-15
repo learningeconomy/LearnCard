@@ -25,6 +25,7 @@ import {
     UploadRes,
     useImageUpload,
     getLogger,
+    Toggle,
 } from 'learn-card-base';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import { getAuthToken } from 'learn-card-base/helpers/authHelpers';
@@ -50,7 +51,6 @@ import LocationIcon from '../../svgs/LocationIcon';
 import UnderageModalContent from '../onboardingNetworkForm/components/UnderageModalContent';
 import GuardianLinkedModal from '../GuardianLinkedModal';
 import { Confetti } from '../../../pages/issue/components/Confetti';
-import AccessibleToggle from '../../accessibility/AccessibleToggle';
 
 import useLogout from '../../../hooks/useLogout';
 import useAutoConsentLearnCardAi from '../../../hooks/useAutoConsentLearnCardAi';
@@ -648,7 +648,9 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
                 if (claimedChildren.length > 0) {
                     newModal(
-                        <GuardianLinkedModal children={claimedChildren} onDismiss={closeModal} />,
+                        <GuardianLinkedModal onDismiss={closeModal}>
+                            {claimedChildren}
+                        </GuardianLinkedModal>,
                         { sectionClassName: '!max-w-[400px]' },
                         { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
                     );
@@ -657,9 +659,16 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                 trackOnboardingStepCompleted('profile', 2);
                 setStep('celebrate');
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             if (signupLifecycle.terminate()) {
-                const errorCode = err?.code || err?.name;
+                const errorCode =
+                    typeof err === 'object' && err !== null
+                        ? 'code' in err
+                            ? err.code
+                            : 'name' in err
+                              ? err.name
+                              : undefined
+                        : undefined;
                 track(AnalyticsEvents.SIGNUP_FAILED, {
                     flow_id: signupFlowId,
                     method: signupMethod,
@@ -671,7 +680,9 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
             }
 
             log.error('createProfile::error', err);
-            setError(err?.message || m['onboarding.profile.error.createFailed']());
+            setError(
+                err instanceof Error ? err.message : m['onboarding.profile.error.createFailed']()
+            );
         } finally {
             setIsCreating(false);
         }
@@ -1161,8 +1172,8 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                                         brand: brandName,
                                                     })}
                                                 </span>
-                                                <AccessibleToggle
-                                                    ariaLabel={m['onboarding.v2.brandAi']({
+                                                <Toggle
+                                                    aria-label={m['onboarding.v2.brandAi']({
                                                         brand: brandName,
                                                     })}
                                                     checked={Boolean(
@@ -1191,8 +1202,8 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                                 <span className="text-sm font-medium text-grayscale-700">
                                                     {m['onboarding.v2.analytics']()}
                                                 </span>
-                                                <AccessibleToggle
-                                                    ariaLabel={m['onboarding.v2.analytics']()}
+                                                <Toggle
+                                                    aria-label={m['onboarding.v2.analytics']()}
                                                     checked={Boolean(
                                                         privacyPreferences?.analyticsEnabled
                                                     )}
@@ -1213,8 +1224,8 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                                 <span className="text-sm font-medium text-grayscale-700">
                                                     {m['onboarding.v2.bugReports']()}
                                                 </span>
-                                                <AccessibleToggle
-                                                    ariaLabel={m['onboarding.v2.bugReports']()}
+                                                <Toggle
+                                                    aria-label={m['onboarding.v2.bugReports']()}
                                                     checked={Boolean(
                                                         privacyPreferences?.bugReportsEnabled
                                                     )}

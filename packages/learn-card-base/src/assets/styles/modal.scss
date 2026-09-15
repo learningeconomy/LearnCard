@@ -1567,3 +1567,19 @@
 .country-select-modal > section {
     display: block !important;
 }
+
+@keyframes lc-overlay-opacity-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .lc-auth-overlay.animate-fade-in-up {
+        animation: lc-overlay-opacity-in 150ms ease-out both !important;
+    }
+}
