@@ -26,7 +26,8 @@ const ClrAwardsSection: React.FC<{
             </div>
 
             <div className="bg-white border border-grayscale-200 rounded-[20px] overflow-hidden">
-                {awards.map(award => {
+                {awards.map((award, index) => {
+                    const key = `${award.sourceCredentialId}-${index}`;
                     const rowContent = (
                         <>
                             <div className="shrink-0 w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
@@ -71,7 +72,7 @@ const ClrAwardsSection: React.FC<{
 
                     return onSelectAward ? (
                         <button
-                            key={award.sourceCredentialId}
+                            key={key}
                             type="button"
                             className={rowClassName}
                             onClick={() => onSelectAward(award)}
@@ -79,7 +80,7 @@ const ClrAwardsSection: React.FC<{
                             {rowContent}
                         </button>
                     ) : (
-                        <div key={award.sourceCredentialId} className={rowClassName}>
+                        <div key={key} className={rowClassName}>
                             {rowContent}
                         </div>
                     );
