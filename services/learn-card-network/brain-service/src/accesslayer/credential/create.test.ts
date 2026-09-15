@@ -27,7 +27,13 @@ const createVc = (): VC => ({
     issuer: 'did:example:issuer',
     issuanceDate: '2026-01-01T00:00:00Z',
     credentialSubject: { id: 'did:example:subject' },
-    proof: { type: 'Ed25519Signature2020', proofValue: 'existing-signature' },
+    proof: {
+        type: 'Ed25519Signature2020',
+        created: '2026-01-01T00:00:00Z',
+        proofPurpose: 'assertionMethod',
+        verificationMethod: 'did:example:issuer#key-1',
+        proofValue: 'existing-signature',
+    },
 });
 
 describe('credential status storage', () => {
