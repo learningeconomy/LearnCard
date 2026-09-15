@@ -28,6 +28,12 @@ vi.mock('@learncard/helpers', () => ({
     resolveStorageReadResult: (value: any) => value,
 }));
 vi.mock('@learncard/types', () => ({
+    VCValidator: {
+        parse: (value: any) => {
+            if (!value?.type) throw new Error('Invalid credential');
+            return value;
+        },
+    },
     UnsignedVCValidator: {
         spa: async (value: any) => ({
             success: true,
@@ -598,5 +604,38 @@ describe.skip('LearnCard Network Plugin', () => {
                     .errors.length
             ).toBeGreaterThan(0);
         });
+    });
+});
+
+it('recovers valid deliveries despite decryption and validation failures on the page', async () => {
+    const client = {
+        ...getMockClient(),
+        inbox: {
+            getMyInboxDeliveries: {
+                query: vi.fn().mockResolvedValue({
+                    records: [
+                        { id: 'bad-decrypt', credential: 'broken' },
+                        { id: 'bad-vc', credential: {} },
+                        { id: 'good', credential: { type: ['VerifiableCredential'] } },
+                    ],
+                    hasMore: true,
+                    cursor: 'good',
+                }),
+            },
+        },
+    };
+    vi.mocked(getBrainClient).mockResolvedValue(client as any);
+    const wallet = getMockLearnCard();
+    wallet.id.keypair = () => ({ publicKey: 'key' });
+    wallet.invoke.decryptDagJwe = vi.fn(async (credential: any) => {
+        if (credential === 'broken') throw new Error('Cannot decrypt');
+        return credential;
+    });
+    const plugin = await getLearnCardNetworkPlugin(wallet, 'https://network.example');
+    expect(await plugin.methods?.recoverInboxCredentials(wallet, {})).toEqual({
+        records: [{ id: 'good', credential: { type: ['VerifiableCredential'] } }],
+        failed: 2,
+        hasMore: true,
+        cursor: 'good',
     });
 });

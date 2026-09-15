@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import {
     getClaimInteractionBoostUri,
     getClaimInteractionDuplicateLookup,
+    isInboxClaimInteraction,
+    shouldCompleteInboxClaimLocally,
 } from './claimRequest.helpers';
 
 const exchangeId =
@@ -36,5 +38,46 @@ describe('getClaimInteractionBoostUri', () => {
             compareByContent: true,
         });
         expect(getClaimInteractionDuplicateLookup(undefined)).toBeUndefined();
+    });
+});
+
+describe('isInboxClaimInteraction', () => {
+    it('identifies Universal Inbox exchange URLs', () => {
+        expect(
+            isInboxClaimInteraction(
+                'http://localhost:4000/api/workflows/inbox-claim/exchanges/claim-token'
+            )
+        ).toBe(true);
+    });
+
+    it('does not treat other exchange workflows as Universal Inbox claims', () => {
+        expect(
+            isInboxClaimInteraction(
+                'http://localhost:4000/api/workflows/claim/exchanges/exchange-id'
+            )
+        ).toBe(false);
+    });
+});
+
+describe('shouldCompleteInboxClaimLocally', () => {
+    const inboxRequestUrl = 'http://localhost:4000/api/workflows/inbox-claim/exchanges/claim-token';
+
+    it('completes a saved Universal Inbox batch without making an empty follow-up request', () => {
+        expect(shouldCompleteInboxClaimLocally(inboxRequestUrl, 2, {})).toBe(true);
+    });
+
+    it('continues with the server when submitting a presentation or another workflow', () => {
+        expect(
+            shouldCompleteInboxClaimLocally(inboxRequestUrl, 2, {
+                verifiablePresentation: { holder: 'did:key:holder' },
+            })
+        ).toBe(false);
+        expect(
+            shouldCompleteInboxClaimLocally(
+                'http://localhost:4000/api/workflows/claim/exchanges/exchange-id',
+                1,
+                {}
+            )
+        ).toBe(false);
     });
 });

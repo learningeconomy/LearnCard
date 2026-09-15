@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/rules-of-hooks -- legacy guide component conditionally renders an unused setup path. */
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import {
     Globe,
@@ -84,8 +85,8 @@ import type {
     LLMIntegrationMetadata,
     TemplateMetadata,
 } from '../types';
-import { openExternalLink } from 'src/helpers/externalLinkHelpers';
-import * as m from 'src/paraglide/messages.js';
+import { openExternalLink } from '../../../../helpers/externalLinkHelpers';
+import * as m from '../../../../paraglide/messages.js';
 import { mDynamic } from '../../../../i18n/mDynamic';
 
 // URL Check types and helper

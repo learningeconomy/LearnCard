@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import * as m from '../../../paraglide/messages.js';
 import { TransP } from '../../../i18n/TransP';
 
-import X from 'src/components/svgs/X';
+import X from '../../../components/svgs/X';
 import Plus from 'learn-card-base/svgs/Plus';
 import {
     CredentialCategoryEnum,
@@ -215,7 +215,7 @@ const SkillProfileStep1: React.FC<SkillProfileStep1Props> = ({ handleNext }) => 
                 <p className="text-[16px] text-grayscale-700 font-poppins leading-[130%]">
                     <TransP
                         m={m['skillProfile.step1.subtitle']}
-                        components={[<strong className="font-bold" />]}
+                        components={[<strong key="emphasis" className="font-bold" />]}
                     />
                 </p>
             </div>
