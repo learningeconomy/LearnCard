@@ -25,6 +25,10 @@ services:
 
         extra_hosts:
             - 'localhost:host-gateway'
+            # cli-commands.spec.ts's webhook test needs the brain container to reach a
+            # listener on the host; host-gateway only auto-adds this on Docker
+            # Desktop, not native Linux Docker Engine (e.g. CI runners).
+            - 'host.docker.internal:host-gateway'
 
         volumes:
             - ../../services/learn-card-network/brain-service/src:/app/services/learn-card-network/brain-service/src
@@ -142,9 +146,6 @@ services:
 
         extra_hosts:
             - 'localhost:host-gateway'
-
-        volumes:
-            - ../../services/learn-card-network/lca-api/src:/app/services/learn-card-network/lca-api/src
 
         environment:
             PORT: 5200

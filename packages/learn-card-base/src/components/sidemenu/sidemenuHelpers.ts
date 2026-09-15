@@ -44,6 +44,7 @@ export enum SideMenuLinksEnum {
     launchPad = 'launchPad',
     contacts = 'contacts',
     alerts = 'alerts',
+    myAssistant = 'myAssistant',
     personalize = 'personalize',
     adminTools = 'adminTools',
 
@@ -117,7 +118,7 @@ export const getSideMenuLinkLabel = (
     const translationKey = getSideMenuTranslationKey(link.id == null ? undefined : String(link.id));
     const message = messages[`sidemenu.links.${translationKey}`];
 
-    return typeof message === 'function' ? (message as () => string)() : link.label ?? '';
+    return typeof message === 'function' ? (message as () => string)() : (link.label ?? '');
 };
 
 export type SideMenuLinks = {
@@ -153,13 +154,20 @@ export const sideMenuRootLinks: Record<BrandingEnum, SideMenuLinks[]> = {
         },
         {
             id: 4,
+            name: 'My Assistant',
+            IconComponent: AiWandIcon,
+            path: '/ai/assistant',
+            type: SideMenuLinksEnum.myAssistant,
+        },
+        {
+            id: 5,
             name: 'Personalize',
             IconComponent: UnicornIcon,
             path: '/personalize',
             type: SideMenuLinksEnum.personalize,
         },
         {
-            id: 5,
+            id: 6,
             name: 'Admin Tools',
             IconComponent: ThinnerShieldChevron,
             path: '/admin-tools',

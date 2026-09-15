@@ -1,105 +1,86 @@
 ---
-description: 'How-To Guide: Issue a credential with managed refresh, publish updates, and refresh it holder-side'
+description: Issue a credential you can update later, publish the update, and pick it up in the recipient's wallet.
 ---
 
 # Issue and Refresh a Managed Credential
 
-This guide shows how to issue a Verifiable Credential (VC) that can be **updated in place after issuance** — for example, a provisional CLR 2.0 transcript that later becomes final — and how a holder wallet picks up those updates. For the concepts and privacy model, see [Credential Refresh](../core-concepts/credential-refresh.md).
+Some credentials change after you issue them: a provisional transcript becomes final, a certification gains an endorsement, a license renews. Managed refresh lets you publish a new version of a credential you already sent, and lets the recipient's wallet replace its copy in place instead of receiving a duplicate.
 
----
-
-## Overview
+This page walks through the whole loop with three small scripts. For what's happening underneath, see [Credential Refresh](../core-concepts/credential-refresh.md).
 
 ```mermaid
 sequenceDiagram
-    participant I as Issuer (SDK)
-    participant B as LearnCard Network<br/>(brain-service)
-    participant H as Holder Wallet
+    participant I as You (issuer)
+    participant N as LearnCard Network
+    participant H as Recipient's wallet
 
-    I->>B: allocateCredentialRefresh(holder, credentialId)
-    B-->>I: refreshId + refreshService descriptor
-    I->>I: inject refreshService, sign credential
-    I->>B: sendRefreshableCredential(refreshId, signedVc)
-    B-->>H: credential offer (aggregate: awaiting_claim)
-    H->>B: claim / acceptCredential
-    B->>B: aggregate becomes active
-    I->>B: publishCredentialRefresh(final version)
-    B->>B: verify, encrypt to holder, advance head
-    B-->>H: CREDENTIAL_REFRESHED notification (if material)
-    H->>B: GET /refresh/{refreshId} (DID-auth challenge)
-    B-->>H: 401 + single-use challenge
-    H->>B: GET /refresh/{refreshId} (signed challenge)
-    B-->>H: holder-encrypted JWE + ETag
-    H->>H: verify proof, replace wallet record in place
+    I->>N: allocateCredentialRefresh
+    N-->>I: refreshId + refreshService
+    I->>I: put refreshService in the credential, sign it
+    I->>N: sendRefreshableCredential
+    N-->>H: credential offer
+    H->>N: claim
+    I->>N: publishCredentialRefresh (new version)
+    N-->>H: "credential updated" notification
+    H->>N: refreshCredential
+    N-->>H: new version, encrypted to the recipient
+    H->>H: replace the wallet record in place
 ```
-
-## Prerequisites
-
-- LearnCard SDK initialized with `network: true`
-- An issuer profile on the network (see [Send Credentials](send-credentials.md))
-- For signing-authority publication: a [signing authority](create-signing-authority.md) registered to the issuer
-- The managed refresh endpoint enabled on the network (`CREDENTIAL_REFRESH_ENABLED=true`)
-
-```typescript
-import { initLearnCard } from '@learncard/init';
-
-const issuer = await initLearnCard({ seed: process.env.ISSUER_SEED, network: true });
-const holder = await initLearnCard({ seed: process.env.HOLDER_SEED, network: true });
-```
-
----
-
-## Issuing a refreshable credential
-
-### Option A — Convenience API (recommended)
-
-Pass `enableRefresh: true` when sending a boost credential. The SDK allocates the refresh service, injects it into the credential **before signing**, and delivers through the managed path (holder-encrypted storage only):
-
-```typescript
-const credentialUri = await issuer.invoke.sendBoost(
-    'student-123', // recipient profileId
-    'urn:lc:boost:abc123', // boost template URI
-    { enableRefresh: true, encrypt: true, skipNotification: false }
-);
-```
-
-The recipient's wallet now holds a credential whose signed `refreshService` points at the network's managed endpoint.
 
 {% hint style="info" %}
-`enableRefresh` generates a stable `urn:uuid:` credential ID when the credential doesn't already have one. Every published version must keep that exact ID.
+Managed refresh is rolling out network by network. If any of these calls fails with `Credential refresh is not available`, it isn't enabled on the network you're connected to yet.
 {% endhint %}
 
-### Option B — Explicit allocation (raw/custom issuance)
+## Before you start
 
-If you construct and sign credentials yourself, allocate first, inject the returned service, then sign and send:
+- A seed and profile from the [Quickstart](../quick-start/your-first-integration.md), in `.env` as `SECURE_SEED` and `PROFILE_ID`
+- The recipient's profile ID (they need a LearnCard account; refresh delivers to a specific person)
 
-```typescript
-const holderDid = 'did:key:z6Mk…'; // resolve the recipient's DID first
+The scripts below use `node --env-file=.env`. Install `@learncard/init` in the folder where you run them.
 
-// 1. Allocate BEFORE signing — refreshService is part of the signed payload
-const allocation = await issuer.invoke.allocateCredentialRefresh({
-    holder: { did: holderDid }, // or { profileId: 'student-123', did: holderDid }
-    credentialId: 'urn:uuid:9f2c…', // stable ID shared by every version
+## 1. Issue a credential that can be refreshed
+
+The refresh service's URL is part of the signed credential, so you allocate it first, add it to the credential, then sign and send. The network stores the credential encrypted to the recipient only.
+
+<!-- snippet: refresh/issue-refreshable.mjs -->
+
+```javascript
+import { randomUUID } from 'node:crypto';
+import { writeFileSync } from 'node:fs';
+import { initLearnCard } from '@learncard/init';
+
+const { SECURE_SEED, PROFILE_ID, RECIPIENT_PROFILE_ID } = process.env;
+if (!SECURE_SEED || !PROFILE_ID || !RECIPIENT_PROFILE_ID) {
+    throw new Error('Set SECURE_SEED, PROFILE_ID, and RECIPIENT_PROFILE_ID');
+}
+
+const issuer = await initLearnCard({ seed: SECURE_SEED, network: true });
+if (!(await issuer.invoke.getProfile())) {
+    await issuer.invoke.createProfile({ profileId: PROFILE_ID, displayName: 'Example University' });
+}
+// Your network identity. Every version of the credential must be issued by this exact DID.
+const issuerDid = (await issuer.invoke.getProfile()).did;
+
+const recipient = await issuer.invoke.getProfile(RECIPIENT_PROFILE_ID);
+if (!recipient) throw new Error(`No profile named ${RECIPIENT_PROFILE_ID}`);
+
+// Every version of this credential must reuse this exact ID.
+const credentialId = `urn:uuid:${randomUUID()}`;
+
+// 1. Allocate the refresh service BEFORE signing. Its URL becomes part of the signed credential.
+const { refreshId, refreshService } = await issuer.invoke.allocateCredentialRefresh({
+    holder: { profileId: RECIPIENT_PROFILE_ID, did: recipient.did },
+    credentialId,
 });
 
-// allocation.refreshService:
-// {
-//     id: 'https://network.learncard.app/refresh/<unguessable-id>',
-//     type: 'LearnCardCredentialRefresh2026',
-//     authorization: { type: 'LearnCardDIDAuth' },
-// }
-
-// 2. Inject the service (and the required inline context) into the credential
-const credentialContexts = Array.isArray(credential['@context'])
-    ? credential['@context']
-    : [credential['@context']];
-
-const unsigned = {
-    ...credential,
+// 2. Add the service to the credential. The inline context defines the LearnCard refresh
+//    terms, which the standard Open Badges context does not include.
+const credential = await issuer.invoke.issueCredential({
     '@context': [
-        ...credentialContexts,
+        'https://www.w3.org/ns/credentials/v2',
+        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
         {
-            'LearnCardCredentialRefresh2026':
+            LearnCardCredentialRefresh2026:
                 'https://learncard.com/refresh#LearnCardCredentialRefresh2026',
             authorization: {
                 '@id': 'https://purl.imsglobal.org/spec/ob/v3p0#authorization',
@@ -109,254 +90,230 @@ const unsigned = {
             },
         },
     ],
-    refreshService: allocation.refreshService,
-};
-
-// 3. Sign
-const signed = await issuer.invoke.issueCredential(unsigned);
-
-// 4. Send through the managed path — brain-service persists ONLY a
-//    holder-encrypted JWE; plaintext storage is bypassed
-const uri = await issuer.invoke.sendRefreshableCredential(
-    allocation.refreshId,
-    signed,
-    'urn:lc:boost:…' // optional: keep the credential linked to its boost
-);
-```
-
-{% hint style="warning" %}
-The inline `@context` fragment above is **required** for signing. Neither VCDM 1.1/2.0 nor the live Open Badges 3.0 contexts define the terms `LearnCardCredentialRefresh2026`, `authorization`, or `LearnCardDIDAuth`, so DIDKit's data-loss detection will refuse to sign a credential that carries them without an inline mapping. The convenience API injects this fragment automatically.
-{% endhint %}
-
----
-
-## Publishing an update
-
-Once the credential is issued, publish new versions with `publishCredentialRefresh`. Every version must share the same credential ID and normalized issuer, and must not carry an _older_ effective date than the current head.
-
-### Issuer-signed mode
-
-You sign the updated credential yourself:
-
-```typescript
-const result = await issuer.invoke.publishCredentialRefresh({
-    mode: 'issuer-signed',
-    refreshId: allocation.refreshId,
-    signedCredential: finalTranscriptVc, // fully signed, same id + issuer
-    updateSummary: 'Final grades posted', // optional issuer/history audit metadata
-    notifyHolder: true, // optional: force (true) / suppress (false)
-    idempotencyKey: 'final-grades-2026-09', // optional: safe retries
+    id: credentialId,
+    type: ['VerifiableCredential', 'OpenBadgeCredential'],
+    issuer: issuerDid,
+    validFrom: new Date().toISOString(),
+    name: 'Provisional Transcript',
+    refreshService,
+    credentialSubject: {
+        id: recipient.did,
+        type: ['AchievementSubject'],
+        achievement: {
+            id: 'urn:uuid:5b2d6c4e-1f57-4b9a-9d0f-3a8c2e7f1b10',
+            type: ['Achievement'],
+            name: 'Introduction to Biology',
+            description: 'Grade pending final exam.',
+            criteria: { narrative: 'Complete all coursework and the final exam.' },
+        },
+    },
 });
 
-// result: { refreshId, version: 2, publishedAt, notification: 'queued' | 'suppressed' | 'not-applicable' }
+// 3. Send through the refresh path. The network stores it encrypted to the recipient only.
+const credentialUri = await issuer.invoke.sendRefreshableCredential(refreshId, credential);
+
+// Keep these with your own record of the credential: publishing an update needs all of them.
+const record = {
+    refreshId,
+    issuerDid,
+    refreshService,
+    credentialId,
+    credentialUri,
+    recipientDid: recipient.did,
+};
+writeFileSync('refresh.json', JSON.stringify(record, null, 2));
+console.log(JSON.stringify(record));
 ```
 
-### Signing-authority mode
+<!-- /snippet -->
 
-You supply updated unsigned claims; the network signs with your [signing authority](create-signing-authority.md):
+```bash
+RECIPIENT_PROFILE_ID=their-profile-id node --env-file=.env issue-refreshable.mjs
+```
+
+The script writes `refresh.json`. In a real integration, store `refreshId`, `refreshService`, and `issuerDid` alongside your own record of the credential (the student row, the license number). You need them to publish an update, and you can't recover them later: the network only holds the credential encrypted to the recipient.
+
+The issuer DID matters more than it looks. Your account has two: a local `did:key` and your network `did:web`. Every version must use the same one, so read it from `getProfile()` as the script does rather than from `id.did()`, which can return either depending on timing.
+
+The recipient sees **Provisional Transcript** in their LearnCard app once they claim it.
+
+{% hint style="warning" %}
+`sendBoost(recipient, templateUri, { enableRefresh: true })` also issues a refreshable credential, but it doesn't return the `refreshId`, so you can't publish updates to it. Use the explicit flow above until `send()` supports refresh directly.
+{% endhint %}
+
+## 2. Publish an update
+
+An update is a complete, signed credential with the same `id`, the same issuer, the same `refreshService`, and a `validFrom` no earlier than the current version.
+
+<!-- snippet: refresh/publish-update.mjs -->
+
+```javascript
+import { readFileSync } from 'node:fs';
+import { initLearnCard } from '@learncard/init';
+
+if (!process.env.SECURE_SEED) throw new Error('Set SECURE_SEED');
+
+// Written by issue-refreshable.mjs.
+const { refreshId, refreshService, credentialId, issuerDid, recipientDid } = JSON.parse(
+    readFileSync('refresh.json', 'utf8')
+);
+
+const issuer = await initLearnCard({ seed: process.env.SECURE_SEED, network: true });
+
+// The update is a complete credential: same id, issuer, and refreshService; newer validFrom.
+const updated = await issuer.invoke.issueCredential({
+    '@context': [
+        'https://www.w3.org/ns/credentials/v2',
+        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+        {
+            LearnCardCredentialRefresh2026:
+                'https://learncard.com/refresh#LearnCardCredentialRefresh2026',
+            authorization: {
+                '@id': 'https://purl.imsglobal.org/spec/ob/v3p0#authorization',
+                '@context': {
+                    LearnCardDIDAuth: 'https://docs.learncard.com/definitions#LearnCardDIDAuth',
+                },
+            },
+        },
+    ],
+    id: credentialId,
+    type: ['VerifiableCredential', 'OpenBadgeCredential'],
+    issuer: issuerDid,
+    validFrom: new Date().toISOString(),
+    name: 'Final Transcript',
+    refreshService,
+    credentialSubject: {
+        id: recipientDid,
+        type: ['AchievementSubject'],
+        achievement: {
+            id: 'urn:uuid:5b2d6c4e-1f57-4b9a-9d0f-3a8c2e7f1b10',
+            type: ['Achievement'],
+            name: 'Introduction to Biology',
+            description: 'Final grade: A.',
+            criteria: { narrative: 'Complete all coursework and the final exam.' },
+        },
+    },
+});
+
+const result = await issuer.invoke.publishCredentialRefresh({
+    mode: 'issuer-signed',
+    refreshId,
+    signedCredential: updated,
+    updateSummary: 'Final grades posted',
+    idempotencyKey: 'final-grades', // retrying with the same key returns the same version
+});
+
+console.log(JSON.stringify({ version: result.version, notification: result.notification }));
+```
+
+<!-- /snippet -->
+
+```bash
+node --env-file=.env publish-update.mjs
+```
+
+**What you should see**
+
+```json
+{ "version": 2, "notification": "queued" }
+```
+
+- `version` counts from 1 (the original). Run it again with the same `idempotencyKey` and you get `version: 2` back, not a third version.
+- `notification` is `queued` when the content changed in a way the recipient would notice, `suppressed` when it didn't (or you passed `notifyHolder: false`), and `not-applicable` when the recipient hasn't claimed yet.
+
+You can publish before the recipient claims. Nothing is served or announced until they do; on claim they get the newest version.
+
+### Let the network sign for you
+
+If a [signing authority](create-signing-authority.md) signs your credentials, send unsigned claims instead:
 
 ```typescript
-const result = await issuer.invoke.publishCredentialRefresh({
+await issuer.invoke.publishCredentialRefresh({
     mode: 'signing-authority',
-    refreshId: allocation.refreshId,
-    credential: updatedUnsignedClaims,
+    refreshId,
+    credential: updatedUnsignedCredential,
     signingAuthority: { type: 'http', endpoint: 'https://…', name: 'my-sa' },
 });
 ```
 
-Notes:
-
-- **Idempotency**: retrying with the same `refreshId` + `idempotencyKey` returns the original result instead of creating a duplicate version.
-- **Materiality**: when `notifyHolder` is unset, the network compares a canonical projection of user-visible content and notifies only on material change. The `notification` field in the result is the _decision_; delivery is fire-and-forget and never rolls back publication.
-- **Unclaimed credentials**: you can publish before the holder claims. Versions are stored but not served and not notified; on claim, the holder activates at the latest head with at most one notification.
-
-### Inspecting issuer history
+### See what you've published
 
 ```typescript
-const history = await issuer.invoke.getCredentialRefreshHistory({
-    refreshId: allocation.refreshId,
-    cursor: undefined,
-    limit: 25,
-});
-
-// history.records: [{ version, publishedAt, effectiveAt?, etag?, signingMode?, updateSummary? }]
+const { records } = await issuer.invoke.getCredentialRefreshHistory({ refreshId, limit: 25 });
+// records: [{ version, publishedAt, updateSummary, ... }]
 ```
 
-Issuer history is cursor-paginated and **metadata-only** — it never returns credential bodies or encrypted payloads.
+History is metadata only. It never includes credential content.
 
----
+## 3. Refresh from the recipient's side
 
-## Holder-side refresh
+The LearnCard app does this automatically: it checks refreshable credentials when it opens (at most once a day per credential) and immediately when the user taps a "credential updated" notification. The credential is replaced in place; the previous version stays viewable under **View Previous Versions**.
 
-### The generic primitive
+If you're building your own wallet, this is the whole primitive:
 
-Any wallet can refresh any credential that carries a supported `refreshService` — LearnCard-managed or a public 1EdTech service:
+<!-- snippet: refresh/refresh-held.mjs -->
 
-```typescript
-const result = await holder.invoke.refreshCredential(currentVc, {
-    etag: lastKnownEtag, // optional: sent as If-None-Match
-});
+```javascript
+import { initLearnCard } from '@learncard/init';
 
-switch (result.status) {
-    case 'updated':
-        // result.credential is verified (proof, same issuer/ID, not older)
-        // result.etag / result.managedVersion may be present
-        break;
-    case 'unchanged':
-        break; // held credential is current
-    case 'unsupported':
-        break; // no supported refreshService
-    case 'failed':
-        // result.code is a safe machine-readable code; result.retryable hints next steps
-        break;
+const { HOLDER_SEED, CREDENTIAL_URI } = process.env;
+if (!HOLDER_SEED || !CREDENTIAL_URI) throw new Error('Set HOLDER_SEED and CREDENTIAL_URI');
+
+const holder = await initLearnCard({ seed: HOLDER_SEED, network: true });
+
+// Claim it if it is still waiting. (The LearnCard app does this when the user taps Claim.)
+const incoming = await holder.invoke.getIncomingCredentials();
+if (incoming.some(offer => offer.uri === CREDENTIAL_URI)) {
+    await holder.invoke.acceptCredential(CREDENTIAL_URI);
+}
+
+const held = await holder.read.get(CREDENTIAL_URI);
+
+// Ask the credential's refreshService for a newer version. Works for LearnCard-managed
+// services and standard 1EdTech refresh services alike.
+const result = await holder.invoke.refreshCredential(held);
+
+if (result.status === 'updated') {
+    console.log(`Updated to version ${result.managedVersion}: ${result.credential.name}`);
+} else if (result.status === 'unchanged') {
+    console.log(`Up to date: ${held.name}`);
+} else if (result.status === 'unsupported') {
+    console.log('This credential has no refresh service.');
+} else {
+    console.log(`Refresh failed (${result.code}). Retry later: ${result.retryable}`);
 }
 ```
 
-The primitive:
+<!-- /snippet -->
 
-- verifies the **currently held** credential before contacting any endpoint
-- performs **one** refresh interaction (single object or first supported entry of an array)
-- answers a recognized `LearnCardDIDAuth` challenge by signing once and retrying
-- accepts plain VC or holder-encrypted JWE envelopes and decrypts with the holder's keys
-- never mutates storage — storage decisions belong to the wallet layer
+**What you should see**
 
-### Safety rails
+Before publishing: `Up to date: Provisional Transcript`. After: `Updated to version 2: Final Transcript`.
 
-The fetcher treats `refreshService.id` as untrusted input: HTTPS-only, at most `maxRedirects` (default 3) revalidated redirects, `timeoutMs` (default 10s), and a `maxResponseBytes` cap (default 1 MiB). In Node runtimes it also resolves and pins the destination address, rejecting private, loopback, link-local, and metadata ranges; browser JavaScript cannot inspect or pin DNS results, so browser requests reject unsafe IP literals and otherwise rely on browser networking and CORS. Endpoints violating the applicable checks fail with `UNSAFE_ENDPOINT`. Local development can explicitly opt into HTTP with `allowInsecureHttp: true` and private addresses with `allowPrivateAddresses: true`; never enable either exception for credentials from untrusted issuers.
+`refreshCredential` verifies the credential you hold, contacts the service once, verifies what comes back (valid proof, same issuer, same ID, not older than what you have), and returns it. It never writes to storage; where the new version goes is your wallet's decision. It also refuses to talk to non-HTTPS or private-network addresses unless you opt in for local development.
 
-### Failure codes
+## Troubleshooting
 
-| Code                  | Meaning                                             | Retryable |
-| --------------------- | --------------------------------------------------- | --------- |
-| `UNAVAILABLE`         | Endpoint unreachable / server error                 | yes       |
-| `TIMEOUT`             | Request timed out                                   | yes       |
-| `UNSUPPORTED_SERVICE` | Service type not recognized                         | no        |
-| `UNAUTHORIZED`        | DID-auth rejected                                   | no        |
-| `MALFORMED_RESPONSE`  | Response isn't a valid credential/envelope          | no        |
-| `INVALID_PROOF`       | Returned credential fails proof verification        | no        |
-| `ISSUER_MISMATCH`     | Returned credential has a different issuer          | no        |
-| `ID_MISMATCH`         | Returned credential has a different ID (or subject) | no        |
-| `ROLLBACK`            | Returned credential is older than the held one      | no        |
-| `REVOKED`             | The managed credential was revoked                  | no        |
-| `UNSAFE_ENDPOINT`     | URL/redirect/DNS failed SSRF checks                 | no        |
+| You see                                                      | Why                                                                                        | Fix                                                                                         |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
+| `Credential refresh is not available`                        | Refresh isn't enabled on this network                                                      | Check which network you're connected to; contact us if you need it enabled                  |
+| `Profile did not allocate this credential refresh`           | Publishing with a different seed than the one that allocated                               | Use the issuer seed that ran `issue-refreshable.mjs`                                        |
+| Signing fails mentioning `refreshService` or `authorization` | The inline context object is missing from `@context`                                       | Copy the third `@context` entry from the scripts above                                      |
+| `Credential issuer does not match the allocated refresh`     | The update was signed with a different DID than version 1 (usually `did:key` vs `did:web`) | Use `issuerDid` from `refresh.json`, not `id.did()`                                         |
+| `publishCredentialRefresh` rejects the update                | `id` or `refreshService` differs from the original, or `validFrom` is older                | Rebuild the update from `refresh.json`; set `validFrom` to now                              |
+| `notification: "not-applicable"`                             | The recipient hasn't claimed yet                                                           | Nothing to do; they'll receive the newest version when they claim                           |
+| `refreshCredential` returns `UNSAFE_ENDPOINT`                | The service URL isn't HTTPS or resolves to a private address                               | For local development only, pass `{ allowInsecureHttp: true, allowPrivateAddresses: true }` |
+| `refreshCredential` returns `REVOKED`                        | You revoked the credential                                                                 | Expected; the recipient keeps their local copy and history                                  |
+| `refreshCredential` returns `ROLLBACK`                       | The service returned something older than what the wallet holds                            | Publish a version with a newer `validFrom`                                                  |
 
-### What the LearnCard app does automatically
+## Limits to know about
 
-The app builds on the primitive so holders don't have to think about refresh:
+- Refresh has to be set up **before** the credential is signed. You can't add it to a credential that's already out.
+- The app checks in the foreground only (open, resume, notification tap). There's no background polling yet.
+- Revoking stops the network from serving any version. It doesn't reach into the recipient's wallet to delete what they already have.
 
-- **Foreground scanning**: on app launch/resume, stale refreshable records are checked (at most once per session and once per credential per **24 hours**, configurable via `CREDENTIAL_REFRESH_CHECK_INTERVAL_MS`). There is no background scheduler — all checks are foreground-only.
-- **In-place replacement**: an update replaces the wallet record's URI in one index write and appends the previous encrypted URI to holder-only history. A failure before that write leaves the current credential untouched; cross-device races converge on the next foreground check.
-- **Notification tap**: tapping a "credential updated" notification forces a targeted refresh (bypassing the 24-hour guard) and opens the detail view; on failure the existing credential opens with friendly retry copy.
-- **Updated state & history**: the detail view shows an `Updated` pill until viewed, and `View Previous Versions` opens the holder-only version history.
+## Next steps
 
----
-
-## Configuration & feature flags
-
-| Setting                                        | Where                    | Default      | Purpose                                                             |
-| ---------------------------------------------- | ------------------------ | ------------ | ------------------------------------------------------------------- |
-| `CREDENTIAL_REFRESH_ENABLED`                   | brain-service env        | off          | Registers the managed `/refresh/*` holder endpoints                 |
-| `CREDENTIAL_REFRESH_DIGEST_SECRET`             | brain-service env        | _(required)_ | Dedicated HMAC secret keying materiality digests; validated at boot |
-| `CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS` | brain-service env        | `24`         | Delivery window for collapsing repeat-update notifications          |
-| `credentialRefreshForegroundEnabled`           | LaunchDarkly (client)    | off          | Gates automatic foreground scanning in the app                      |
-| `CREDENTIAL_REFRESH_CHECK_INTERVAL_MS`         | learn-card-base constant | 24 hours     | Per-credential staleness interval for ordinary checks               |
-
-Issuer tRPC/OpenAPI routes (`/credential-refresh/allocate`, `/credential-refresh/send`, `/credential-refresh/publish`, `/credential-refresh/history`) require the `credentials:write` scope (`credentials:read` for history).
-
----
-
-## Local browser QA (no source edits)
-
-This flow uses the local app and Docker backend. It does not clear existing databases or run the destructive E2E harness.
-
-### 1. Configure the backend and app
-
-In `services/learn-card-network/brain-service/.env`, set:
-
-```dotenv
-CREDENTIAL_REFRESH_ENABLED=true
-CREDENTIAL_REFRESH_DIGEST_SECRET=<your-generated-secret>
-```
-
-Generate the secret **once** with `openssl rand -hex 32` and keep that value across restarts. It keys persisted materiality digests; changing it requires a rotation/backfill strategy. This belongs in the backend env file, never a `VITE_` variable. If using Infisical, the backend folder is `/LearnCard/brain-service` in your development environment; a later env pull can overwrite local additions.
-
-In `apps/learn-card-app/.env`, set:
-
-```dotenv
-VITE_CREDENTIAL_REFRESH_LOCAL_QA=true
-```
-
-The app opt-in works only under the Vite **dev server**, with both the app and configured brain-service URL on `localhost`, `127.0.0.1`, or `[::1]`. Only managed `/refresh/` URLs on that exact backend origin receive the SDK's HTTP/private-address exceptions, with **zero redirects**. Production/staging builds ignore this flag. Use only synthetic credentials from your local test issuer while it is enabled.
-
-In LaunchDarkly, create the boolean key `credentialRefreshForegroundEnabled`, make it available to **client-side SDKs**, and serve `true` in **Local Dev** (or the environment selected by your tenant's client ID). This controls foreground scanning; the backend env flag independently enables the APIs. Notification taps force a targeted check.
-
-### 2. Start the stack and sign in
-
-From the repository root:
-
-```bash
-bun install --frozen-lockfile
-bun run --cwd packages/learn-card-types build
-bun run --cwd packages/learn-card-helpers build
-bun run --cwd apps/learn-card-app dev
-```
-
-Open `http://localhost:3000`, sign in, and note your profile ID (for example, `billygates`, without the DID prefix). The default local services are brain `4000`, LearnCloud `4100`, and notification API `5100`. Ensure the Compose host ports are free; if host Redis already uses `6379`, remove that Redis port mapping with a local Compose override (the containers use their internal network).
-
-After backend env edits, recreate the container to reload `env_file`:
-
-```bash
-docker compose -f apps/learn-card-app/compose-local.yaml up -d --force-recreate brain
-```
-
-After app env edits, recreate the app container (or restart Vite if running it on the host):
-
-```bash
-docker compose -f apps/learn-card-app/compose-local.yaml up -d --force-recreate app
-```
-
-Include any local Compose override in these commands too.
-
-### 3. Send, claim, and publish
-
-In a second terminal at the repository root, replace `billygates` with your local profile ID:
-
-```bash
-bun --conditions=development tests/e2e/scripts/credential-refresh-qa.ts send billygates
-```
-
-In the app, open **Alerts → Claim**, then **Passport → Studies**. Confirm the provisional transcript has a valid proof and its BIO 150 result is in progress. Then publish:
-
-```bash
-bun --conditions=development tests/e2e/scripts/credential-refresh-qa.ts publish billygates
-bun --conditions=development tests/e2e/scripts/credential-refresh-qa.ts status billygates
-```
-
-The CLI creates a random local registrar and stores its key and signed retry state in the gitignored `.credential-refresh-qa/` directory. Run commands sequentially. Repeating `send` reuses the original delivery; repeating `publish` uses the same signed payload and idempotency key. `status` shows issuer version metadata, without printing the key. The CLI is intentionally fixed to localhost and does not publish to staging or production.
-
-### 4. Check the result
-
-- Tap the update notification. Expect **Final Official Transcript**, with BIO 150 **Completed / A**.
-- Confirm Studies still has one record, with an Updated indicator until viewed.
-- Open **View Previous Versions** from the earned credential menu and confirm the provisional transcript remains readable.
-- For foreground-only testing, reload the page to start a new session; ordinary checks have a 24-hour staleness interval. Repeated tab switching alone does not force a check. Notification taps bypass that interval.
-
-One initial `401` is expected: it supplies `WWW-Authenticate: LearnCardDIDAuth`; the SDK signs the challenge and retries. The route exposes `WWW-Authenticate` and `ETag` through CORS so browser JavaScript can read them. A lone `401` followed by `UNAUTHORIZED` is a failed handshake, not a successful update. A `UNSAFE_ENDPOINT` result usually means the local QA opt-in, app origin, or configured backend origin does not match.
-
-This CLI covers the provisional-to-final path. Notification-collapse and Boost-recipient revocation scenarios remain in `tests/e2e/tests/credential-refresh.spec.ts`; a raw CLR sent by this CLI has no Boost recipient to revoke. After testing, unset the app's local QA flag and restart it. Preserve the backend secret while retaining its database.
-
----
-
-## Limitations (Phase 1)
-
-- Managed refresh must be allocated **before signing** — it cannot be retrofitted onto already-signed credentials.
-- Refresh is **foreground-only**; manual pull-to-refresh is a planned follow-up.
-- The app replaces the wallet record in place, but exact cross-device compare-and-swap is out of scope; devices converge on their next foreground check.
-- Revocation stops the endpoint from serving versions; the holder's locally retained history is not remotely deleted.
-
-## See also
-
-- [Credential Refresh (Core Concepts)](../core-concepts/credential-refresh.md)
-- [Send Credentials](send-credentials.md)
-- [Create Signing Authority](create-signing-authority.md)
-- [1EdTech Credential Refresh Service 1.0](https://www.imsglobal.org/spec/vccr/v1p0/)
+- [Credential Refresh](../core-concepts/credential-refresh.md): how the pieces fit and what the network can and can't see
+- [Revoke or Update a Credential](revoke-or-update-a-credential.md): for changes that don't need in-place refresh
+- [Who Signs Your Credentials?](create-signing-authority.md): to publish updates in signing-authority mode

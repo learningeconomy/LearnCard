@@ -934,15 +934,17 @@ export const publishCredentialRefresh = async (
         // appendCredentialStatus: false — a refresh version must preserve the
         // issuer-supplied credentialStatus descriptor; no new status-list entry is
         // allocated for a version of an already-issued credential.
-        signedCredential = (await issueCredentialWithSigningAuthority(
-            { type: 'profile', profile: issuerProfile },
-            input.credential,
-            signingAuthority,
-            domain,
-            false,
-            undefined,
-            false
-        )) as VC;
+        signedCredential = (
+            await issueCredentialWithSigningAuthority(
+                { type: 'profile', profile: issuerProfile },
+                input.credential,
+                signingAuthority,
+                domain,
+                false,
+                undefined,
+                false
+            )
+        ).credential as VC;
         signingMode = 'signing-authority';
 
         assertRefreshVersionInvariants(signedCredential, aggregate, domain);

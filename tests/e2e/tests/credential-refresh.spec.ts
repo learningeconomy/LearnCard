@@ -440,6 +440,10 @@ describe('Credential Refresh (managed)', () => {
         const refreshService = (held as any).refreshService;
 
         expect(refreshService?.type).toBe('LearnCardCredentialRefresh2026');
+        const verification = await holder.invoke.verifyCredential(held);
+        expect(verification.errors).toEqual([]);
+        expect(verification.warnings).toEqual([]);
+        expect(verification.checks).toContain('proof');
 
         // Holder keeps a local encrypted copy.
         const recordId = 'e2e-managed-refresh-revoked';

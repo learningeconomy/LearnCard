@@ -2,6 +2,7 @@ import { TRPCError } from '@trpc/server';
 import { UnsignedVC, VC, JWE, LCNNotificationTypeEnumValidator } from '@learncard/types';
 
 import { storeCredential } from '@accesslayer/credential/create';
+import type { IssuedCredential } from 'types/credential';
 import {
     createReceivedCredentialRelationship,
     createSentCredentialRelationship,
@@ -36,7 +37,7 @@ export const getCredentialUri = (id: string, domain: string): string =>
 export const sendCredential = async (
     from: ProfileType,
     to: ProfileType,
-    credential: VC | UnsignedVC | JWE,
+    credential: VC | UnsignedVC | JWE | IssuedCredential,
     domain: string,
     metadata?: Record<string, unknown> | undefined,
     activityId?: string,

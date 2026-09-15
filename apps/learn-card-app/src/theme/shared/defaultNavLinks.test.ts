@@ -27,12 +27,13 @@ import {
 describe('defaultNavLinks (LC-1921)', () => {
     // Alerts (/notifications) is present in the config array but hidden on
     // desktop at render time (SideMenuRootLinks filters it on !isMobile).
-    it('root links are Dashboard, Passport, Apps, Alerts, Contacts, Admin Tools', () => {
+    it('root links are Dashboard, Passport, Apps, Alerts, My Assistant, Contacts, Admin Tools', () => {
         expect(DEFAULT_SIDE_MENU_ROOT_LINKS.map(l => l.path)).toEqual([
             '/dashboard',
             '/passport',
             '/launchpad',
             '/notifications',
+            '/ai/assistant',
             '/contacts',
             '/admin-tools',
         ]);
@@ -44,6 +45,7 @@ describe('defaultNavLinks (LC-1921)', () => {
             'Passport',
             'Apps',
             'Alerts',
+            'My Assistant',
             'Contacts',
             'Admin Tools',
         ]);

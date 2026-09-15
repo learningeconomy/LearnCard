@@ -155,6 +155,25 @@ describe('Unified Send API E2E Tests', () => {
             expect(result.inbox?.issuanceId).toBeDefined();
         });
 
+        it('should support expiresInDays option and shorten the claim window', async () => {
+            const boostUri = await a.invoke.createBoost(testUnsignedBoost);
+
+            const before = Date.now();
+            const result = await a.invoke.send({
+                type: 'boost',
+                recipient: 'expires-test@example.com',
+                templateUri: boostUri,
+                options: { expiresInDays: 7 },
+            });
+
+            expect(result.inbox?.issuanceId).toBeDefined();
+            const record = await a.invoke.getInboxCredential(result.inbox!.issuanceId);
+            const expiresInMs = new Date(record.expiresAt).getTime() - before;
+            const sevenDays = 7 * 24 * 60 * 60 * 1000;
+            expect(expiresInMs).toBeGreaterThan(sevenDays - 60_000);
+            expect(expiresInMs).toBeLessThanOrEqual(sevenDays + 60_000);
+        });
+
         it('should support branding options', async () => {
             const boostUri = await a.invoke.createBoost(testUnsignedBoost);
 
