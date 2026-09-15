@@ -185,6 +185,9 @@ provider:
             allowedOrigins: '*'
             allowedHeaders: '*'
             allowedMethods: '*'
+            exposedResponseHeaders:
+                - WWW-Authenticate
+                - ETag
 
 functions:
     inboxMaintenance:
