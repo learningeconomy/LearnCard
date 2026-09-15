@@ -42,14 +42,15 @@ import useLCNGatedAction from '../../../components/network-prompts/hooks/useLCNG
 
 import { LCNProfile } from '@learncard/types';
 
-const NameValidator = z.object({
-    name: z
-        .string()
-        .nonempty('Name is required.')
-        .min(3, 'Must contain at least 3 characters.')
-        .max(30, 'Must contain at most 30 characters.')
-        .regex(/^[A-Za-z0-9 ]+$/, 'Alpha numeric characters only'),
-});
+const getNameValidator = () =>
+    z.object({
+        name: z
+            .string()
+            .nonempty(m['arabicFixes.nameRequired']())
+            .min(3, 'Must contain at least 3 characters.')
+            .max(30, 'Must contain at most 30 characters.')
+            .regex(/^[A-Za-z0-9 ]+$/, 'Alpha numeric characters only'),
+    });
 
 const ProfileIDValidator = z.object({
     profileId: z
@@ -213,7 +214,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
     };
 
     const validateName = () => {
-        const result = NameValidator.safeParse({ name: orgName });
+        const result = getNameValidator().safeParse({ name: orgName });
         if (!result.success) {
             setNameError(result.error.issues[0]?.message || 'Invalid name');
             return false;

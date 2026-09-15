@@ -114,6 +114,7 @@ vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
     unwrapBoostCredential: (vc: unknown) => vc,
     isBoostCredential: () => true,
     getClrLinkedCredentials: () => [],
+    getIssuanceDate: (vc: { issuanceDate?: string }) => vc.issuanceDate,
 }));
 
 vi.mock('learn-card-base/components/CredentialBadge/CredentialVerificationDisplay', () => ({

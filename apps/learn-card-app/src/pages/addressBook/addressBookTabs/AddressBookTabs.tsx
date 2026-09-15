@@ -56,7 +56,7 @@ const AddressBookTabs: React.FC<{
                                     : 'text-grayscale-600'
                             }`}
                         >
-                            {connectionCount ?? 0} Contact{connectionCount !== 1 ? 's' : ''}
+                            {m['contacts.contactCountOther']({ count: connectionCount ?? 0 })}
                         </button>
                         <button
                             onClick={() => {
@@ -69,7 +69,7 @@ const AddressBookTabs: React.FC<{
                                     : 'text-grayscale-600'
                             }`}
                         >
-                            {requestCount ?? 0} Request{requestCount !== 1 ? 's' : ''}
+                            {m['contacts.requestCountOther']({ count: requestCount ?? 0 })}
                         </button>
                         {blockedCount > 0 && (
                             <button
@@ -82,7 +82,7 @@ const AddressBookTabs: React.FC<{
                                         : 'text-grayscale-600'
                                 }`}
                             >
-                                {blockedCount ?? 0} Blocked
+                                {blockedCount ?? 0} {m['contacts.blockedContacts']()}
                             </button>
                         )}
                     </IonCol>

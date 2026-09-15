@@ -8,6 +8,7 @@ import { IconSetEnum } from '../../../theme/icons/index';
 import type { OccupationDetailsResponse } from 'learn-card-base';
 
 import type { ApiSkillNode } from '../../../helpers/skillFramework.helpers';
+import * as m from '../../../paraglide/messages.js';
 import {
     useGlobalSemanticSearchSkills,
     useGlobalSkillFrameworks,
@@ -17,7 +18,11 @@ type SemanticSkillRecord = ApiSkillNode & { score?: number };
 
 type SuggestionItem =
     | { kind: 'role'; title: string; key: string }
-    | { kind: 'skill'; title: string; key: string };
+    | {
+          kind: 'skill';
+          title: string;
+          key: string;
+      };
 
 type PathwaySearchInputProps = {
     placeholder?: string;
@@ -28,7 +33,7 @@ type PathwaySearchInputProps = {
 };
 
 const PathwaySearchInput: React.FC<PathwaySearchInputProps> = ({
-    placeholder = 'Choose a skill, goal, or job...',
+    placeholder = m['ai.searchSkills'](),
     value,
     onValueChange,
     onSearchSubmit,
@@ -134,7 +139,7 @@ const PathwaySearchInput: React.FC<PathwaySearchInputProps> = ({
                     <PathwayDecoration className="absolute left-[10px] w-[35px] h-[35px] text-teal-100 pointer-events-none z-10 top-1/2 -translate-y-1/2" />
                     <IonInput
                         value={searchValue}
-                        onIonInput={(e: any) => {
+                        onIonInput={e => {
                             const nextValue = e.detail.value ?? '';
                             updateSearchValue(nextValue);
                             setShowSuggestions(Boolean(nextValue));
@@ -142,7 +147,7 @@ const PathwaySearchInput: React.FC<PathwaySearchInputProps> = ({
                         }}
                         onFocus={() => setShowSuggestions(true)}
                         onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-                        onKeyDown={(e: any) => {
+                        onKeyDown={e => {
                             if (e.key === 'Escape') setShowSuggestions(false);
                         }}
                         autocapitalize="off"
