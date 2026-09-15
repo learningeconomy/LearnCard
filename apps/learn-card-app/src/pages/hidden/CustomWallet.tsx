@@ -30,8 +30,9 @@ const CustomWallet: React.FC = () => {
                 onSubmit={e => e.preventDefault()}
             >
                 <fieldset className="flex flex-col gap-2">
-                    <span>Hello, please enter a seed lol</span>
+                    <label htmlFor="custom-wallet-seed">Hello, please enter a seed lol</label>
                     <input
+                        id="custom-wallet-seed"
                         className="bg-white border"
                         type="text"
                         value={seed}
@@ -41,7 +42,7 @@ const CustomWallet: React.FC = () => {
 
                 <button
                     onClick={createWallet}
-                    className="w-full py-2 rounded border border-solid border-emerald-700 text-emerald-800"
+                    className="w-full py-2 rounded-[20px] border border-solid border-grayscale-300 text-grayscale-900"
                     type="button"
                 >
                     Create Wallet
