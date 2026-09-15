@@ -1,282 +1,420 @@
-# Listen to Webhooks
+---
+description: 'Check whether a credential you sent was claimed — by asking, or by being told the moment it happens.'
+---
 
-**What are Webhooks in LearnCard?** Imagine you want your application to know _immediately_ when something interesting happens to a user's LearnCard profile on the network – like receiving a new credential or a connection request. Instead of your app constantly asking "Anything new? Anything new?", the LearnCloud Network can send your application a direct message (a "notification") as soon as that event occurs. This direct message is sent to a specific web address (URL) that you provide, and this mechanism is called a **webhook**.
+# Know When a Credential Is Claimed
 
-## **What you'll accomplish in this tutorial:**
+Sending a credential doesn't tell you what happened to it. There are two ways to find out. **Ask** — every send has an `activityId`, and you can look up its history any time. Or **be told** — give the send a webhook URL and LearnCard `POST`s to your server the moment it's delivered and again when it's claimed.
 
-1. Understand how LearnCloud notifications work at a high level.
-2. Configure a profile on LearnCard to send notifications to your webhook URL.
-3. Build a very simple web server (a "listener") to receive and process these notifications.
-4. See an example of handling a "Connection Request" notification.
+Start with asking. It needs nothing but the SDK. Move to webhooks when you're sending at volume or need to react within seconds.
 
-### **Why is this useful?**&#x20;
-
-Webhooks enable you to:
-
-* Build responsive applications that react to events in real-time.
-* Automate workflows based on LearnCloud Network activities.
-* Enhance user experience by providing timely updates.
-
-## **Prerequisites:**
-
-1. **LearnCard SDK Initialized:** An active `learnCard` instance connected to the network (we'll call it `yourLearnCardInstance`).
-2. **A Publicly Accessible URL:** Your application needs an endpoint (a URL) that the LearnCloud Network can reach over the internet to send `POST` requests.
-   * **For local development:** Tools like **ngrok** are perfect for this! Ngrok can create a secure, public URL that tunnels to your local machine. We'll cover this.
-   * **For production:** This would be a route on your deployed web server or a serverless function (e.g., AWS Lambda + API Gateway, Google Cloud Function).
-3. **Basic understanding of:**
-   * How webhooks work (HTTP `POST` requests).
-   * Node.js and a simple web framework like Express (for our example listener). You can adapt the principles to any backend technology.
-4. **Familiarity with LearnCard Profiles:** You'll be updating a profile to set its webhook URL.
-
-***
-
-## Part 1: How LearnCloud Notifications Work
-
-Before we build, let's look at the flow (as shown in ["Notifications & Webhook Reference"](../sdks/learncard-network/notifications.md)):
-
-```mermaid
-sequenceDiagram
-    participant App as "Client App"
-    participant Brain as "LearnCloud Network API"
-    participant SQS as "SQS Queue"
-    participant Worker as "Lambda Worker"
-    participant Webhook as "Your Webhook Listener"
-
-    App->>Brain: Perform action (e.g., send boost to a user)
-    Brain->>SQS: addNotificationToQueue()
-    SQS->>Worker: notificationsWorker()
-    Worker->>Worker: Parse notification
-    Worker->>Webhook: sendNotification() HTTP POST request
-    Note right of Webhook: Your app receives the data!
-    Webhook-->>Worker: Acknowledge notification (e.g., HTTP 200 OK)
-```
-
-When an event occurs (like `App` sending a boost to a user whose profile has a webhook configured), the LearnCloud Network API eventually triggers an HTTP `POST` request to the registered webhook URL. Your application needs to be listening at that URL.
-
-***
-
-## Part 2: Setting Your Webhook URL in LearnCard
-
-For a LearnCard profile to receive notifications via webhook, you need to tell LearnCard _where_ to send them.
-
-### **Step 2.1: Get Your Public Webhook URL**
-
-* **If deploying to a server:** You'll have a public URL like `https://yourapp.com/api/learncard-webhook`.
-* **For Local Development (using ngrok):**
-  1. Install ngrok: [https://ngrok.com/download](https://ngrok.com/download)
-  2. If your local listener will run on port 3000 (we'll set this up later), run: `ngrok http 3000`
-  3. Ngrok will give you a public "Forwarding" URL (e.g., `https://xxxx-yyy-zzz.ngrok.io`). **This is your temporary public webhook URL.** Use the `https` version.
-
-### **Step 2.2: Update Your LearnCard Profile**
-
-Use the LearnCard SDK to update the profile for which you want to receive notifications. Set its `notificationsWebhook` field to your public URL.
-
-```typescript
-// Ensure yourLearnCardInstance is initialized and authenticated
-// for the profile you want to configure.
-
-async function setWebhookUrl(webhookUrl: string) {
-    try {
-        const profileUpdateData = {
-            notificationsWebhook: webhookUrl,
-        };
-
-        const success = await yourLearnCardInstance.invoke.updateProfile(profileUpdateData);
-
-        if (success) {
-            console.log(`Successfully updated profile's webhook URL to: ${webhookUrl}`);
-        } else {
-            console.error('Failed to update profile with webhook URL.');
-        }
-    } catch (error) {
-        console.error('Error setting webhook URL:', error);
-    }
-}
-
-// Replace with your actual ngrok URL or deployed webhook URL
-const myPublicWebhookUrl = 'https://YOUR_NGROK_OR_DEPLOYED_URL.io/learncard-notifications'; 
-// setWebhookUrl(myPublicWebhookUrl); // Call this function once to set it up
-```
-
-{% hint style="success" %}
-**Action:** Run a script with this function call (or integrate it into your app's profile settings) to update the profile you want to receive notifications for.
+{% hint style="info" %}
+**~5 min to check · ~15 min for webhooks** · After the [Quickstart](../quick-start/your-first-integration.md).
 {% endhint %}
 
-***
-
-## Part 3: Building a Simple Webhook Listener
-
-Now, let's create a simple server that will listen for incoming notifications at the URL you just configured. We'll use Node.js and Express.
-
-### **Step 3.1: Project Setup**
+## Ask: check a credential's status
 
 ```bash
-mkdir learncard-webhook-listener
-cd learncard-webhook-listener
-npm init -y
-npm install express body-parser
-# If using TypeScript (optional, but recommended)
-# npm install typescript @types/express @types/node ts-node --save-dev
-# npx tsc --init 
+npx @learncard/cli status
 ```
 
-### **Step 3.2: Create Your Server (`listener.js` or `listener.ts`)**
+lists your recent sends with their current state. `npx @learncard/cli status <activityId>` shows one credential's full history. In code:
 
-```typescript
-// listener.ts (or listener.js if not using TypeScript)
-import express from 'express';
-import bodyParser from 'body-parser';
+<!-- snippet: cli/status.mjs -->
 
-const app = express();
-const port = 3000; // The port ngrok will forward to
+```javascript
+import { initLearnCard } from '@learncard/init';
 
-// Middleware to parse JSON request bodies
-app.use(bodyParser.json());
+const activityId = process.argv[2];
+if (!activityId) throw new Error('Usage: node --env-file=.env status.mjs <activityId>');
 
-// This is your webhook endpoint. 
-// Make sure the path matches what you set in myPublicWebhookUrl 
-// (e.g., if URL is https://.../learncard-notifications, path is /learncard-notifications)
-app.post('/learncard-notifications', (req, res) => {
-    console.log('Received a notification!');
-    
-    // The actual notification data is in req.body
-    const notificationPayload = req.body;
-    console.log('Payload:', JSON.stringify(notificationPayload, null, 2));
+const learnCard = await initLearnCard({ seed: process.env.SECURE_SEED, network: true });
 
-    // --- Process the notification based on its type ---
-    if (notificationPayload.type === 'CONNECTION_REQUEST') {
-        const fromProfile = notificationPayload.from; // This is an LCNProfile object
-        const message = notificationPayload.message;
-        console.log(`Received CONNECTION_REQUEST from: ${fromProfile?.displayName || fromProfile?.profileId || 'Unknown'}`);
-        console.log(`Message: ${message?.body}`);
-        
-        // Example action: Log it, send an internal alert, update your database, etc.
-        // For now, we just log it.
-    } else if (notificationPayload.type === 'CREDENTIAL_RECEIVED') {
-        const fromProfile = notificationPayload.from;
-        const credentialUris = notificationPayload.data?.vcUris;
-        console.log(`Received CREDENTIAL_RECEIVED from: ${fromProfile?.displayName || 'Unknown'}`);
-        console.log(`Credential URIs:`, credentialUris);
-        // You might want to fetch these credentials using learnCard.read.get(uri)
-    } else {
-        console.log(`Received unhandled notification type: ${notificationPayload.type}`);
+const chain = await learnCard.invoke.getActivityChain({ activityId });
+const latest = chain.at(-1);
+
+for (const event of chain) console.log(`${event.timestamp}  ${event.eventType}`);
+console.log(latest?.eventType === 'CLAIMED' ? 'Claimed.' : 'Not claimed yet.');
+```
+
+<!-- /snippet -->
+
+`send()` returns the `activityId`; store it next to your own record of the send. The events are `CREATED` → `DELIVERED` → `CLAIMED`, or `EXPIRED` / `FAILED`. For lists, filters, and claim-rate stats, see the [Credential Activity](../sdks/learncard-network/credential-activity.md) reference.
+
+Polling this every minute from a cron job is a perfectly good integration. The rest of this page is for when it isn't enough.
+
+---
+
+## Be told: webhooks
+
+### The one-line version
+
+```bash
+npx @learncard/cli webhook you@example.com --url https://<your-tunnel>
+```
+
+Starts a receiver on port 8787, sends a demo credential with `webhookUrl` set, and prints each event as it arrives. Expose the port first (`ngrok http 8787`) and pass the tunnel URL. It writes the receiver as `webhook.mjs` — the same code Step 1 below walks through.
+
+### Prerequisites
+
+- The [Quickstart](../quick-start/your-first-integration.md), **"Own your keys"** path — this tutorial extends `send.mjs` and reuses its `.env` (`SECURE_SEED`, `PROFILE_ID`)
+- [ngrok](https://ngrok.com/download) (or another tunnel) to expose your local server
+
+### Send with a webhook URL
+
+Pass `options.webhookUrl` when you send a credential to an email or phone number. LearnCard `POST`s a notification to that URL twice: once when the credential is delivered (`ISSUANCE_DELIVERED`), and again when the recipient claims it (`ISSUANCE_CLAIMED`).
+
+#### Step 1: Start a receiver
+
+Save this next to `send.mjs` as `webhook.mjs`. It verifies that each request really came from the LearnCard Network (a DID-signed bearer token), acknowledges fast, logs the fields you care about, and de-duplicates by `${type}:${issuanceId}` — LearnCard retries on failure, so you will occasionally see the same event twice.
+
+<!-- snippet: cli/webhook.mjs -->
+
+```javascript
+import { createServer } from 'node:http';
+import { pathToFileURL } from 'node:url';
+
+export const extractBearer = header =>
+    typeof header === 'string' ? /^Bearer\s+(\S+)$/i.exec(header)?.[1] : undefined;
+
+export const webhookDedupeKey = payload => {
+    const id = payload?.data?.inbox?.issuanceId;
+    return ['ISSUANCE_DELIVERED', 'ISSUANCE_CLAIMED', 'ISSUANCE_ERROR'].includes(payload?.type) &&
+        typeof id === 'string' &&
+        id.length > 0
+        ? `${payload.type}:${id}`
+        : undefined;
+};
+
+export const createWebhookReceiver = (verifier, expectedDid = process.env.EXPECTED_NETWORK_DID) => {
+    // Demo only: bounded, in-memory deduplication. Use durable storage in production.
+    const seen = new Set();
+    return createServer(async (req, res) => {
+        if (req.method !== 'POST') return void res.writeHead(404).end();
+        const token = extractBearer(req.headers.authorization);
+        try {
+            if (!token) return void res.writeHead(401).end();
+            const result = await verifier.invoke.verifyPresentation(token, { proofFormat: 'jwt' });
+            if (result.errors.length) return void res.writeHead(401).end();
+            const claims = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString());
+            if (expectedDid && claims.iss !== expectedDid) return void res.writeHead(403).end();
+        } catch {
+            return void res.writeHead(401).end();
+        }
+        try {
+            const chunks = [];
+            let size = 0;
+            for await (const chunk of req) {
+                size += chunk.length;
+                if (size > 65536) return void res.writeHead(413).end();
+                chunks.push(chunk);
+            }
+            const payload = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+            const key = webhookDedupeKey(payload);
+            if (!key) return void res.writeHead(400).end();
+            // Acknowledge before doing any application work; LearnCard waits six seconds.
+            res.writeHead(200).end();
+            if (seen.has(key)) return;
+            if (seen.size >= 10000) seen.delete(seen.values().next().value);
+            seen.add(key);
+            const inbox = payload.data.inbox;
+            const fields = [
+                payload.type,
+                inbox.status,
+                inbox.issuanceId,
+                inbox.recipient?.learnCardId,
+            ];
+            console.log(
+                fields
+                    .map(value =>
+                        typeof value === 'string'
+                            ? value.replace(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]/g, '?')
+                            : ''
+                    )
+                    .join(' ')
+                    .trim()
+            );
+        } catch {
+            if (!res.headersSent) res.writeHead(400).end();
+        }
+    });
+};
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+    const { initLearnCard } = await import('@learncard/init');
+    const port = Number(process.env.PORT || 8787);
+    if (!Number.isInteger(port) || port < 1 || port > 65535)
+        throw new Error('PORT must be 1–65535');
+    const verifier = await initLearnCard();
+    if (!process.env.EXPECTED_NETWORK_DID) {
+        console.log(
+            'Demo: signatures are verified, but any DID is accepted. Set EXPECTED_NETWORK_DID to your trusted network DID before production.'
+        );
     }
-
-    // --- IMPORTANT: Acknowledge receipt quickly! ---
-    // Send a 200 OK response to LearnCloud to let it know you received the notification.
-    // If LearnCloud doesn't get a quick 2xx response, it might retry sending,
-    // leading to duplicate processing.
-    res.status(200).send('Notification received');
-
-    // Any long-running tasks based on the notification should be done asynchronously
-    // AFTER sending this response (e.g., queue it for later processing).
-});
-
-app.listen(port, () => {
-    console.log(`Webhook listener started on http://localhost:${port}`);
-    console.log(`If using ngrok, ensure it's forwarding to this port.`);
-    console.log(`Your webhook endpoint is POST http://localhost:${port}/learncard-notifications`);
-});
+    const server = createWebhookReceiver(verifier);
+    server.requestTimeout = 5000;
+    server.listen(port, () => console.log(`Listening on http://localhost:${port}`));
+}
 ```
 
-### **Step 3.3: Running Your Listener**
+<!-- /snippet -->
 
-* If using JavaScript: `node listener.js`
-* If using TypeScript: `npx ts-node listener.ts`
-
-And if you're developing locally, make sure `ngrok http 3000` (or your chosen port) is running in another terminal.
-
-***
-
-## Part 4: Triggering and Testing Your Webhook
-
-Now, let's test it! We'll simulate an action that sends a `CONNECTION_REQUEST` notification to the profile whose webhook you configured.
-
-### **Step 4.1: Perform an Action**
-
-You'll need another LearnCard instance (let's call it `profileA_learnCard`) to act as the requester. The profile you configured with the webhook URL will be `profileB_learnCard` (represented by `yourLearnCardInstance` in Step 2.2).
-
-```typescript
-// In a separate script or part of your testing setup:
-// Assume profileA_learnCard is initialized for Profile A
-// Assume profileB_ProfileId is the profileId of the user/service you configured the webhook for in Part 2.
-
-// const profileB_ProfileId = 'the-profile-id-with-webhook-configured';
-
-// async function sendConnectionRequest() {
-//   try {
-//     console.log(`Profile A attempting to connect with ${profileB_ProfileId}`);
-//     const success = await profileA_learnCard.invoke.connectWith(profileB_ProfileId);
-//     if (success) {
-//       console.log('Connection request sent successfully by Profile A!');
-//     } else {
-//       console.error('Failed to send connection request from Profile A.');
-//     }
-//   } catch (error) {
-//     console.error('Error sending connection request:', error);
-//   }
-// }
-
-// sendConnectionRequest();
+```bash
+node webhook.mjs
 ```
 
-{% hint style="success" %}
-**Action:** Execute code similar to the `sendConnectionRequest` function above, where `profileA_learnCard` sends a connection request to the profile that has the webhook set up.
-{% endhint %}
+It listens on port 8787 (set `PORT` to change).
 
-### **Step 4.2: Check Your Listener's Logs**
+#### Step 2: Expose it with ngrok
 
-If everything is set up correctly:
+```bash
+ngrok http 8787
+```
 
-1. Profile A sends the connection request.
-2. LearnCloud Network processes this and identifies that the target profile (Profile B) has a webhook URL.
-3. LearnCloud Network sends a `POST` request to your ngrok URL (which forwards to `http://localhost:3000/learncard-notifications`).
-4. Your `listener.js` / `listener.ts` server will receive the request.
+Copy the `https://` forwarding URL ngrok prints. That's your `webhookUrl` for the next step.
 
-You should see output in your listener's console similar to:
+#### Step 3: Send with a webhook URL
+
+Save this next to `send.mjs` as `send-with-webhook.mjs`. It's the quickstart's script with one addition: `options.webhookUrl`.
+
+```javascript
+import { randomUUID } from 'node:crypto';
+import { initLearnCard } from '@learncard/init';
+
+const recipientEmail = process.argv[2];
+const webhookUrl = process.argv[3];
+if (!recipientEmail || !webhookUrl) {
+    throw new Error(
+        'Usage: node --env-file=.env send-with-webhook.mjs you@example.com https://xxxx.ngrok-free.app'
+    );
+}
+
+const learnCard = await initLearnCard({ seed: process.env.SECURE_SEED, network: true });
+
+if (!(await learnCard.invoke.getProfile())) {
+    await learnCard.invoke.createProfile({
+        profileId: process.env.PROFILE_ID,
+        displayName: 'My Organization',
+    });
+}
+
+const credential = await learnCard.invoke.issueCredential({
+    '@context': [
+        'https://www.w3.org/ns/credentials/v2',
+        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+    ],
+    type: ['VerifiableCredential', 'OpenBadgeCredential'],
+    issuer: learnCard.id.did(),
+    validFrom: new Date().toISOString(),
+    name: 'Quickstart Complete',
+    credentialSubject: {
+        type: ['AchievementSubject'],
+        achievement: {
+            id: `urn:uuid:${randomUUID()}`,
+            type: ['Achievement'],
+            name: 'Quickstart Complete',
+            description: 'Sent a verifiable credential with LearnCard.',
+            criteria: { narrative: 'Ran the LearnCard quickstart.' },
+        },
+    },
+});
+
+// The only difference from the quickstart's send.mjs: options.webhookUrl.
+const result = await learnCard.invoke.send({
+    type: 'boost',
+    recipient: recipientEmail,
+    signedCredential: credential,
+    options: { webhookUrl },
+});
+
+console.log(`Issuance ID: ${result.inbox?.issuanceId}`);
+console.log(
+    result.inbox?.status === 'PENDING'
+        ? `Sent. ${recipientEmail} will get a claim email. Watch your listener for ISSUANCE_DELIVERED.`
+        : `Delivered instantly — ${recipientEmail} already uses LearnCard, so there's no claim step (and no ISSUANCE_CLAIMED will follow).`
+);
+```
+
+Run it with a real email you can open and the ngrok URL from Step 2:
+
+```bash
+node --env-file=.env send-with-webhook.mjs you@example.com https://xxxx.ngrok-free.app
+```
+
+#### Step 4: Watch it arrive
+
+Your listener logs `ISSUANCE_DELIVERED` immediately. `status: 'PENDING'` means a claim email is on its way; `status: 'ISSUED'` means the recipient already had a LearnCard account and the credential was delivered straight to their wallet (in which case there's nothing left to claim — skip to [Troubleshooting](#troubleshooting)).
+
+#### Step 5: Claim it
+
+Open the claim email, tap **Claim**, and sign in or create an account — same as in the quickstart. Your listener logs `ISSUANCE_CLAIMED`, with `claimedBy` set to the DID of the account that just claimed it.
+
+---
+
+## What's in the Payload
+
+### `ISSUANCE_DELIVERED`
+
+Fired at send time. This example is the `PENDING` case (new recipient, claim email sent):
 
 ```json
-Webhook listener started on http://localhost:3000
-If using ngrok, ensure it's forwarding to this port.
-Your webhook endpoint is POST http://localhost:3000/learncard-notifications
-Received a notification!
-Payload: {
-  "type": "CONNECTION_REQUEST",
-  "to": { /* Profile B's details */ },
-  "from": { /* Profile A's details */ },
-  "message": {
-    "title": "New Connection Request",
-    "body": "Profile A DisplayName has sent you a connection request!"
-  }
+{
+    "type": "ISSUANCE_DELIVERED",
+    "to": {
+        "did": "did:web:network.learncard.com:users:acme-quickstart",
+        "profileId": "acme-quickstart",
+        "displayName": "My Organization"
+    },
+    "from": { "did": "did:web:network.learncard.com" },
+    "message": {
+        "title": "Credential Delivered to Inbox",
+        "body": "My Organization sent a credential to email's inbox at you@example.com!"
+    },
+    "data": {
+        "inbox": {
+            "issuanceId": "2f1a9c3e-6b8d-4e2f-9a71-58c6d1b4a9f0",
+            "status": "PENDING",
+            "recipient": {
+                "contactMethod": { "type": "email", "value": "you@example.com" }
+            },
+            "timestamp": "2026-09-09T18:04:12.000Z"
+        }
+    },
+    "sent": "2026-09-09T18:04:12.512Z"
 }
-Received CONNECTION_REQUEST from: Profile A DisplayName
-Message: Profile A DisplayName has sent you a connection request!
 ```
 
-***
+If the recipient already has a verified LearnCard account, `data.inbox.status` is `"ISSUED"` instead, and `data.inbox.recipient.learnCardId` is set to their DID — the credential landed directly in their wallet.
 
-## Important Considerations
+### `ISSUANCE_CLAIMED`
 
-* **Security:** Always use `https` for your webhook URLs in production. Ngrok provides this automatically.
-* **Asynchronous Processing:** As mentioned, respond with `200 OK` quickly. If you need to do significant processing (like database updates, sending other API calls), do it after sending the response, perhaps by adding the task to an internal queue.
-* **Error Handling & Retries:** Build robust error handling in your listener. Be aware that LearnCloud might retry sending a notification if it doesn't receive a timely success response. Design your processing to be **idempotent** (processing the same notification multiple times doesn't cause unintended side effects).
-* **Payload Reference:** This tutorial focused on `CONNECTION_REQUEST`. Refer to the [LearnCloud Network API Notifications Documentation](../sdks/learncard-network/notifications.md) for the structure of all other notification types (`CREDENTIAL_RECEIVED`, `CONSENT_FLOW_TRANSACTION`, etc.) and expand your listener to handle them as needed.
+Fired when a `PENDING` credential is claimed:
 
-***
+```json
+{
+    "type": "ISSUANCE_CLAIMED",
+    "to": { "did": "did:web:network.learncard.com:users:" },
+    "from": { "did": "did:web:network.learncard.com" },
+    "message": {
+        "title": "Credential Claimed from Inbox",
+        "body": "you@example.com claimed a credential from their inbox."
+    },
+    "data": {
+        "inbox": {
+            "issuanceId": "2f1a9c3e-6b8d-4e2f-9a71-58c6d1b4a9f0",
+            "status": "ISSUED",
+            "recipient": {
+                "contactMethod": { "type": "email", "value": "you@example.com" },
+                "learnCardId": "did:web:network.learncard.com:users:jane-doe"
+            },
+            "timestamp": "2026-09-09T18:11:47.000Z"
+        }
+    },
+    "sent": "2026-09-09T18:11:47.203Z"
+}
+```
 
-## Summary & Next Steps
+{% hint style="warning" %}
+`to.did` on this event isn't populated correctly today — it resolves to an empty profile segment instead of your issuer DID. Don't key off it. `from.did` is reliable (always the network's own DID), and `data.inbox.issuanceId` — the same value returned as `result.inbox.issuanceId` from your `send()` call — is what ties this back to the credential you sent.
+{% endhint %}
 
-You've now learned how to:
+A third event, `ISSUANCE_ERROR`, fires instead of `ISSUANCE_CLAIMED` if claiming fails on the network's side (for example, a signing authority that stopped responding). Same shape, with the failure reason in `message.body`.
 
-1. **Configure a webhook URL** for a LearnCard profile.
-2. **Build a basic webhook listener** using Node.js and Express.
-3. **Receive and parse** an example `CONNECTION_REQUEST` notification.
-4. **Trigger a test notification.**
+---
 
-From here, you can:
+## Verify the Request Is From LearnCard
 
-* Expand your listener to handle various other `type` values from the LearnCloud Network.
-* Integrate more complex business logic into your webhook handler.
-* Deploy your listener to a robust server or serverless environment for production use.
+Every webhook request carries `Authorization: Bearer <token>` — a DID-JWT proving the request came from the LearnCard Network's own DID. There's no separate signing secret and no `X-LearnCard-Signature` header; the bearer token **is** the proof.
 
-Happy listening!
+You don't need a seed to check it — a seedless instance can still verify signatures:
+
+```javascript
+import { initLearnCard } from '@learncard/init';
+
+const verifier = await initLearnCard();
+
+async function verifyLearnCardRequest(authHeader) {
+    const token = authHeader?.replace(/^Bearer\s+/i, '');
+    if (!token) return false;
+
+    const result = await verifier.invoke.verifyPresentation(token, { proofFormat: 'jwt' });
+    return result.errors.length === 0;
+}
+```
+
+Add the check at the top of your handler, before you trust the body:
+
+```javascript
+const authHeader = req.headers['authorization'];
+if (!(await verifyLearnCardRequest(authHeader))) {
+    res.writeHead(401).end();
+    return;
+}
+```
+
+That confirms the request is signed by _some_ DID — decode the token to see which one:
+
+```javascript
+function holderFromJwt(token) {
+    const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString('utf8'));
+    return payload.iss; // the DID that signed this request
+}
+```
+
+The production LearnCard Network signs as `did:web:network.learncard.com` — no `:users:` segment; that's reserved for profiles. If you're pointed at a different environment, pin the DID you see on the first delivery and compare against it on every request after that.
+
+---
+
+## Retries and Duplicates
+
+- LearnCard waits 6 seconds for your response. Slower than that counts as a failed delivery.
+- A 4xx response (other than 408, 425, or 429) is treated as a definitive rejection — it will not be retried.
+- Anything else that fails (5xx, timeout, network error) is retried through a queue, up to 3 attempts total, before it's dropped into a dead-letter queue.
+- Delivery is **at-least-once**, not exactly-once. You can receive the same notification more than once even when nothing went wrong on your end.
+
+There's no server-side de-duplication, so always key idempotency on `${type}:${issuanceId}` — the pattern `webhook.mjs` uses above. Responding quickly reduces duplicates; it doesn't eliminate them.
+
+---
+
+## Other events: profile webhooks
+
+Everything above is scoped to one `send()`. For events about your **profile** — connection requests, boosts accepted, consent-flow activity, guardian approvals — set a standing webhook with `updateProfile({ notificationsWebhook })`. It uses the same authentication and retries, but it **never** receives `ISSUANCE_DELIVERED`, `ISSUANCE_CLAIMED`, or `ISSUANCE_ERROR`; those only go to the per-send `options.webhookUrl`. Setup and every payload shape: [Notifications & Webhooks](../sdks/learncard-network/notifications.md#configuration).
+
+---
+
+## What You Should See
+
+Terminal running `send-with-webhook.mjs`:
+
+```
+Issuance ID: 2f1a9c3e-6b8d-4e2f-9a71-58c6d1b4a9f0
+Sent. you@example.com will get a claim email. Watch your listener for ISSUANCE_DELIVERED.
+```
+
+Terminal running `webhook.mjs`, immediately after:
+
+```
+ISSUANCE_DELIVERED { issuanceId: '2f1a9c3e-6b8d-4e2f-9a71-58c6d1b4a9f0', status: 'PENDING', claimedBy: undefined }
+```
+
+Open the claim email, tap **Claim**, and sign in or create an account. Back in the listener:
+
+```
+ISSUANCE_CLAIMED { issuanceId: '2f1a9c3e-6b8d-4e2f-9a71-58c6d1b4a9f0', status: 'ISSUED', claimedBy: 'did:web:network.learncard.com:users:jane-doe' }
+```
+
+## Troubleshooting
+
+| If…                                              | Then                                                                                                                                                                                          |
+| :----------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Webhook never arrives                            | Confirm the ngrok URL you passed as `options.webhookUrl` is still running — ngrok URLs change every restart on the free tier.                                                                 |
+| `Notification webhook transport failed with 404` | Your server is reachable, but nothing is listening on the path ngrok is forwarding to. Match `webhookUrl` to where `webhook.mjs` actually listens.                                            |
+| No `ISSUANCE_CLAIMED` after claiming             | The recipient already had a LearnCard account, so the credential was auto-delivered as `ISSUED` at send time — there's nothing left to claim. Check for that in `ISSUANCE_DELIVERED` instead. |
+| Duplicate webhooks                               | Expected — delivery is at-least-once, not a sign your server responded too slowly. De-duplicate on `${type}:${issuanceId}` as shown above.                                                    |
+| 401s in your own logs                            | `verifyLearnCardRequest` rejected the token. Check you're reading the `Authorization` header — there's no separate signature header to fall back to.                                          |
+
+## Next Steps
+
+- [Send & Issue Credentials](../how-to-guides/send-credentials.md) — the full `send()` reference, including `suppressDelivery` and `guardianEmail`.
+- [Notifications & Webhooks](../sdks/learncard-network/notifications.md) — profile-level webhooks and the payload for every notification type.
+- [Go to Production](../how-to-guides/go-to-production.md) — checklist before you rely on this for real traffic.

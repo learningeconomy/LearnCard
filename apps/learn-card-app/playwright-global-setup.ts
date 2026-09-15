@@ -109,10 +109,10 @@ export const globalSetup = async (config: FullConfig) => {
     await mockDidKitWasmForContext(context2);
 
     const page2 = await context2.newPage();
-    await page2.goto(new URL('/hidden/seed', appURL).href);
+    await page2.goto(new URL('/developer/sign-in', appURL).href);
     await page2.getByRole('textbox').fill('2'.repeat(64));
 
-    await page2.getByRole('button', { name: /sign in with seed/i }).click();
+    await page2.getByRole('button', { name: 'Sign in', exact: true }).click();
     await page2.waitForURL(/wallet/);
 
     try {

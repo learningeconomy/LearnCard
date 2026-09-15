@@ -105,7 +105,7 @@ const GuardianCredentialApprovalPage = lazyWithRetry(
 const GuardianAccountApprovalPage = lazyWithRetry(
     () => import('./pages/interactions/GuardianAccountApprovalPage')
 );
-const LoginWithSeed = lazyWithRetry(() => import('./pages/hidden/LoginWithSeed'));
+const DeveloperSignInPage = lazyWithRetry(() => import('./pages/developer/DeveloperSignInPage'));
 const FamilyPage = lazyWithRetry(() => import('./pages/familyPage/FamilyPage'));
 const AuthHandoff = lazyWithRetry(() => import('./pages/auth/AuthHandoff'));
 
@@ -137,7 +137,6 @@ const AppStoreAdminWithProvider: React.FC = () => (
 // import ExternalConsentFlowDoor from './pages/consentFlow/ExternalConsentFlowDoor';
 // import CustomWallet from './pages/hidden/CustomWallet';
 // import ClaimFromDashboard from './pages/claim-from-dashboard/ClaimFromDashboard';
-// import LoginWithSeed from './pages/hidden/LoginWithSeed';
 // import FamilyPage from './pages/familyPage/FamilyPage';
 const AdminToolsPage = lazyWithRetry(() => import('./pages/adminToolsPage/AdminToolsPage'));
 const ViewAllManagedBoostsPage = lazyWithRetry(
@@ -229,6 +228,11 @@ export const Routes: React.FC = () => {
                 <GenericErrorBoundary>
                     <Switch location={background || location}>
                         <SentryRoute exact path="/login" component={LoginPage} />
+                        <SentryRoute
+                            exact
+                            path="/developer/sign-in"
+                            component={DeveloperSignInPage}
+                        />
                         <SentryRoute exact path="/__/auth/action" component={LoginPage} />
                         <SentryRoute exact path="/legal/terms" component={TermsOfServicePage} />
                         <SentryRoute exact path="/legal/privacy" component={PrivacyPolicyPage} />
@@ -447,7 +451,7 @@ export const Routes: React.FC = () => {
 
                         <Route exact path="/hidden/custom-wallet" component={CustomWallet} />
 
-                        <Route exact path="/hidden/seed" component={LoginWithSeed} />
+                        <Redirect from="/hidden/seed" to="/developer/sign-in" />
 
                         <PrivateRoute exact path="/cli" component={DevCli} />
                         <SentryRoute

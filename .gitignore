@@ -43,6 +43,11 @@ docs/superpowers
 # Internal agent plans and audit records are published to Obsidian/Confluence instead.
 docs/plans/
 internal-docs/*
+!internal-docs/README.md
+!internal-docs/app-flows/
+!internal-docs/architecture/
+!internal-docs/implementation-notes/
+!internal-docs/plans/
 .github/copilot-instructions.md
 .worktrees/
 CLAUDE.local.md
