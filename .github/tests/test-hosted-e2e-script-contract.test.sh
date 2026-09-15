@@ -43,10 +43,16 @@ ruby -rjson -e '
   bake = JSON.parse(STDIN.read)
   required = %w[browser-base browser-app browser-brain browser-cloud browser-api browser-delete service-base]
   abort "Bake targets missing" unless (required - bake.fetch("target").keys).empty?
-  required.each do |name|
+  cached = %w[browser-base service-base browser-delete]
+  uncached = required - cached
+  cached.each do |name|
     target = bake.fetch("target").fetch(name)
     abort "#{name} missing GHA cache import" unless target.fetch("cache-from").any? { |cache| cache["type"] == "gha" }
     abort "#{name} missing GHA cache export" unless target.fetch("cache-to").any? { |cache| cache["type"] == "gha" && cache["mode"] == "max" }
+  end
+  uncached.each do |name|
+    target = bake.fetch("target").fetch(name)
+    abort "#{name} must not export a build cache: its layers rebuild from source every run, so the export only costs upload time" if target.key?("cache-to")
   end
   browser_scope = bake.fetch("target").fetch("browser-base").fetch("cache-to").fetch(0).fetch("scope")
   service_scope = bake.fetch("target").fetch("service-base").fetch("cache-to").fetch(0).fetch("scope")

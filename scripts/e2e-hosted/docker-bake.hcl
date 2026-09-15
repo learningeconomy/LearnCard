@@ -1,3 +1,6 @@
+# Only the shared base exports a build cache: its `bun install` layer is stable
+# across commits. Leaf targets rebuild from freshly copied source every run, so
+# exporting their layers (mode=max) costs minutes of upload and never hits.
 target "browser-base" {
   context    = "."
   dockerfile = "Dockerfile.monorepo"
@@ -12,8 +15,6 @@ target "browser-app" {
     learncard-monorepo-local = "target:browser-base"
   }
   tags       = ["learn-card-e2e-app"]
-  cache-from = ["type=gha,scope=e2e-browser-app"]
-  cache-to   = ["type=gha,scope=e2e-browser-app,mode=max"]
 }
 
 target "browser-brain" {
@@ -23,8 +24,6 @@ target "browser-brain" {
     learncard-monorepo-local = "target:browser-base"
   }
   tags       = ["welibrary/lcn-brain-service"]
-  cache-from = ["type=gha,scope=e2e-browser-brain"]
-  cache-to   = ["type=gha,scope=e2e-browser-brain,mode=max"]
 }
 
 target "browser-cloud" {
@@ -34,8 +33,6 @@ target "browser-cloud" {
     learncard-monorepo-local = "target:browser-base"
   }
   tags       = ["welibrary/lcn-cloud-service"]
-  cache-from = ["type=gha,scope=e2e-browser-cloud"]
-  cache-to   = ["type=gha,scope=e2e-browser-cloud,mode=max"]
 }
 
 target "browser-api" {
@@ -45,8 +42,6 @@ target "browser-api" {
     learncard-monorepo-local = "target:browser-base"
   }
   tags       = ["lca-api-service"]
-  cache-from = ["type=gha,scope=e2e-browser-api"]
-  cache-to   = ["type=gha,scope=e2e-browser-api,mode=max"]
 }
 
 target "browser-delete" {

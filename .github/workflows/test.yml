@@ -3,6 +3,8 @@ name: Test Runner
 on:
     pull_request:
         types: [opened, synchronize, reopened, ready_for_review]
+    merge_group:
+        types: [checks_requested]
     workflow_dispatch:
         inputs:
             branch:
@@ -18,7 +20,7 @@ jobs:
             - name: Checkout Repo
               uses: actions/checkout@v7
               with:
-                  ref: ${{ github.event.pull_request.head.sha || github.event.inputs.branch }}
+                  ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.event.inputs.branch }}
                   fetch-depth: 0
 
             - name: Fetch main for NX comparison
@@ -80,7 +82,7 @@ jobs:
         steps:
             - uses: actions/checkout@v7
               with:
-                  ref: ${{ github.event.pull_request.head.sha || github.event.inputs.branch }}
+                  ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.event.inputs.branch }}
                   fetch-depth: 0
             - uses: ./.github/actions/setup
             - name: Test inbox security with isolated Neo4j and Redis containers
