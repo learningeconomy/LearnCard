@@ -260,6 +260,7 @@ describe('resolveTenantConfig – full boot path', () => {
                 sss: {
                     ...DEFAULT_LEARNCARD_TENANT_CONFIG.auth.sss,
                     serverUrl: 'https://sss.baked.example.com',
+                    requireEmailForPhoneUsers: false,
                 },
             },
         });
@@ -271,7 +272,13 @@ describe('resolveTenantConfig – full boot path', () => {
 
             return {
                 ok: true,
-                json: async () => ({ auth: { enableEmailBackupShare: false } }),
+                json: async () => ({
+                    auth: {
+                        provider: 'custom-oidc',
+                        keyDerivation: 'sss',
+                        sss: { enableEmailBackupShare: false },
+                    },
+                }),
             };
         });
 
@@ -279,7 +286,8 @@ describe('resolveTenantConfig – full boot path', () => {
 
         expect(result.auth.provider).toBe('custom-oidc');
         expect(result.auth.sss?.serverUrl).toBe('https://sss.baked.example.com');
-        expect(result.auth.enableEmailBackupShare).toBe(false);
+        expect(result.auth.sss?.requireEmailForPhoneUsers).toBe(false);
+        expect(result.auth.sss?.enableEmailBackupShare).toBe(false);
     });
 
     it('still rejects a merged config whose overlay breaks cross-field requirements', async () => {
@@ -299,7 +307,7 @@ describe('resolveTenantConfig – full boot path', () => {
         });
 
         await expect(resolveTenantConfig()).rejects.toThrow(
-            /Required when auth.keyDerivation is web3auth/
+            /merged overlay; overlay keys: tenantId, domain, auth → defaults[\s\S]*Required when auth.keyDerivation is web3auth/
         );
     });
 
@@ -313,7 +321,7 @@ describe('resolveTenantConfig – full boot path', () => {
         });
 
         await expect(resolveTenantConfig()).rejects.toThrow(
-            /Invalid TenantConfig from fetch \/__tenant-config \(overlay\)/
+            /Invalid TenantConfig from fetch \/__tenant-config \(overlay shape\)/
         );
     });
 

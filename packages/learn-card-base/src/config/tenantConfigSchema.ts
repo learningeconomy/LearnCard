@@ -445,5 +445,5 @@ const tenantConfigOverlaySchema = z
 export type TenantConfigOverlay = z.infer<typeof tenantConfigOverlaySchema>;
 
 /** Shape-check a root-level tenant overlay. Non-object payloads throw. */
-export const parsePartialTenantConfig = (raw: unknown, source: string): TenantConfigOverlay =>
+export const parseTenantConfigOverlay = (raw: unknown, source: string): TenantConfigOverlay =>
     parseWithSource(tenantConfigOverlaySchema, raw, source);
