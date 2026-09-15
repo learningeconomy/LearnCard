@@ -37,11 +37,11 @@ class TestStorageResolve200ResponseAnyOf1(unittest.TestCase):
             return StorageResolve200ResponseAnyOf1(
                 read = openapi_client.models.storage_resolve_200_response_any_of_1_read.storage_resolve_200_response_anyOf_1_read(
                     anonymize = True, 
-                    credentials = openapi_client.models.storage_resolve_200_response_any_of_1_read_credentials.storage_resolve_200_response_anyOf_1_read_credentials(
+                    credentials = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner_terms_read_credentials.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner_terms_read_credentials(
                         share_all = True, 
                         sharing = True, 
                         categories = {
-                            'key' : openapi_client.models.storage_resolve_200_response_any_of_1_read_credentials_categories_value.storage_resolve_200_response_anyOf_1_read_credentials_categories_value(
+                            'key' : openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner_terms_read_credentials_categories_value.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner_terms_read_credentials_categories_value(
                                 sharing = True, 
                                 shared = [
                                     ''
@@ -68,11 +68,11 @@ class TestStorageResolve200ResponseAnyOf1(unittest.TestCase):
             return StorageResolve200ResponseAnyOf1(
                 read = openapi_client.models.storage_resolve_200_response_any_of_1_read.storage_resolve_200_response_anyOf_1_read(
                     anonymize = True, 
-                    credentials = openapi_client.models.storage_resolve_200_response_any_of_1_read_credentials.storage_resolve_200_response_anyOf_1_read_credentials(
+                    credentials = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner_terms_read_credentials.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner_terms_read_credentials(
                         share_all = True, 
                         sharing = True, 
                         categories = {
-                            'key' : openapi_client.models.storage_resolve_200_response_any_of_1_read_credentials_categories_value.storage_resolve_200_response_anyOf_1_read_credentials_categories_value(
+                            'key' : openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner_terms_read_credentials_categories_value.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner_terms_read_credentials_categories_value(
                                 sharing = True, 
                                 shared = [
                                     ''

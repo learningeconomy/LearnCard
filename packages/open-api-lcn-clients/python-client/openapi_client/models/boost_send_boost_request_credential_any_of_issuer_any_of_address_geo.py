@@ -22,18 +22,20 @@ from typing import Any, ClassVar, Dict, List, Optional, Union
 from openapi_client.models.boost_send_boost_request_credential_any_of_issuer_any_of_address_type import BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressType
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressGeo(BaseModel):
     """
     BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressGeo
     """ # noqa: E501
     type: BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressType
-    latitude: Union[StrictFloat, StrictInt]
+    latitude: Optional[Union[StrictFloat, StrictInt]]
     longitude: Optional[Union[StrictFloat, StrictInt]]
     __properties: ClassVar[List[str]] = ["type", "latitude", "longitude"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -45,8 +47,7 @@ class BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressGeo(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -74,6 +75,11 @@ class BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressGeo(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of type
         if self.type:
             _dict['type'] = self.type.to_dict()
+        # set to None if latitude (nullable) is None
+        # and model_fields_set contains the field
+        if self.latitude is None and "latitude" in self.model_fields_set:
+            _dict['latitude'] = None
+
         # set to None if longitude (nullable) is None
         # and model_fields_set contains the field
         if self.longitude is None and "longitude" in self.model_fields_set:

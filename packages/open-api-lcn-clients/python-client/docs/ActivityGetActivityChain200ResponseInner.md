@@ -9,7 +9,7 @@ Name | Type | Description | Notes
 **activity_id** | **str** |  | 
 **event_type** | **str** |  | 
 **timestamp** | **str** |  | 
-**actor_profile_id** | **str** |  | 
+**actor_profile_id** | **str** |  | [optional] 
 **recipient_type** | **str** |  | 
 **recipient_identifier** | **str** |  | 
 **boost_uri** | **str** |  | [optional] 
@@ -17,7 +17,8 @@ Name | Type | Description | Notes
 **inbox_credential_id** | **str** |  | [optional] 
 **integration_id** | **str** |  | [optional] 
 **source** | **str** |  | 
-**metadata** | **Dict[str, object]** |  | [optional] 
+**metadata** | **Dict[str, Optional[object]]** |  | [optional] 
+**status** | **str** |  | [optional] 
 **boost** | [**ActivityGetActivity200ResponseBoost**](ActivityGetActivity200ResponseBoost.md) |  | [optional] 
 **recipient_profile** | [**ActivityGetActivity200ResponseRecipientProfile**](ActivityGetActivity200ResponseRecipientProfile.md) |  | [optional] 
 

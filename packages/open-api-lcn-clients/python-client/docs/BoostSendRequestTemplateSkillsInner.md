@@ -7,6 +7,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **framework_id** | **str** |  | 
 **id** | **str** |  | 
+**proficiency_level** | **float** |  | [optional] 
 
 ## Example
 

@@ -21,6 +21,7 @@ from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class BoostSend200ResponseInbox(BaseModel):
     """
@@ -29,8 +30,9 @@ class BoostSend200ResponseInbox(BaseModel):
     issuance_id: Optional[StrictStr] = Field(alias="issuanceId")
     status: StrictStr
     claim_url: Optional[StrictStr] = Field(default=None, description="Present when suppressDelivery=true", alias="claimUrl")
+    guardian_status: Optional[StrictStr] = Field(default=None, description="Present when guardianEmail was specified", alias="guardianStatus")
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["issuanceId", "status", "claimUrl"]
+    __properties: ClassVar[List[str]] = ["issuanceId", "status", "claimUrl", "guardianStatus"]
 
     @field_validator('status')
     def status_validate_enum(cls, value):
@@ -39,8 +41,19 @@ class BoostSend200ResponseInbox(BaseModel):
             raise ValueError("must be one of enum values ('PENDING', 'ISSUED', 'EXPIRED', 'DELIVERED', 'CLAIMED')")
         return value
 
+    @field_validator('guardian_status')
+    def guardian_status_validate_enum(cls, value):
+        """Validates the enum"""
+        if value is None:
+            return value
+
+        if value not in set(['AWAITING_GUARDIAN', 'GUARDIAN_APPROVED', 'GUARDIAN_REJECTED']):
+            raise ValueError("must be one of enum values ('AWAITING_GUARDIAN', 'GUARDIAN_APPROVED', 'GUARDIAN_REJECTED')")
+        return value
+
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -52,8 +65,7 @@ class BoostSend200ResponseInbox(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -104,7 +116,8 @@ class BoostSend200ResponseInbox(BaseModel):
         _obj = cls.model_validate({
             "issuanceId": obj.get("issuanceId"),
             "status": obj.get("status"),
-            "claimUrl": obj.get("claimUrl")
+            "claimUrl": obj.get("claimUrl"),
+            "guardianStatus": obj.get("guardianStatus")
         })
         # store additional fields in additional_properties
         for _key in obj.keys():

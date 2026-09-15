@@ -8,6 +8,7 @@ Name | Type | Description | Notes
 **processed** | **float** |  | 
 **claimed** | **float** |  | 
 **errors** | **float** |  | 
+**guardian_pending** | **float** |  | 
 **verifiable_credentials** | [**List[StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOf1]**](StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOf1.md) |  | 
 
 ## Example

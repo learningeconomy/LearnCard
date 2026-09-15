@@ -9,6 +9,7 @@ Name | Type | Description | Notes
 **issuance_id** | **str** |  | 
 **status** | **str** |  | 
 **claim_url** | **str** | Present when suppressDelivery&#x3D;true | [optional] 
+**guardian_status** | **str** | Present when guardianEmail was specified | [optional] 
 
 ## Example
 
