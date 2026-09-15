@@ -104,6 +104,8 @@ export type CourseDisplayModel = {
     fieldOfStudy?: SourceMappedField<string>;
     creditsAvailable?: SourceMappedField<number>;
     creditsEarned?: SourceMappedField<number>;
+    /** Fallback credits parsed from the description text (e.g. "3 credit hour course"). */
+    creditsFromDescription?: SourceMappedField<number>;
     term?: SourceMappedField<string>;
     description?: SourceMappedField<string>;
     earnedAt?: SourceMappedField<string>;
@@ -296,6 +298,15 @@ const AWARD_TYPES = new Set([
 const LARGE_INLINE_EVIDENCE_THRESHOLD = 100_000;
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}(T[\d:.]+Z?)?$/;
+
+/** Extracts a credit value from a description string, e.g. "Mathematics course, 1 credit(s)" → 1 */
+export const parseCreditsFromDescription = (
+    description: string | undefined
+): number | undefined => {
+    if (!description) return undefined;
+    const match = description.match(/course,\s*(\d+(?:\.\d+)?)\s*credit/i);
+    return match ? Number(match[1]) : undefined;
+};
 
 /** Formats an ISO-8601 date string to a human-readable form (e.g. "Jan 15, 2025"). Passes non-date strings through unchanged. */
 export const formatClrDate = (value: string): string => {
@@ -878,6 +889,21 @@ const classifyRecord = (
             : undefined;
 
     if (achievementType === 'Course') {
+        // Parse credits from description as fallback when structured fields are absent.
+        const parsedCredits =
+            creditsEarned === undefined && creditsAvailable === undefined
+                ? parseCreditsFromDescription(achievementDescription?.value)
+                : undefined;
+        const creditsFromDescription =
+            parsedCredits !== undefined
+                ? asMapped(
+                      parsedCredits,
+                      'achievement.description',
+                      'achievement.description (parsed)',
+                      nestedId
+                  )
+                : undefined;
+
         return {
             course: {
                 name: achievementName,
@@ -885,6 +911,7 @@ const classifyRecord = (
                 fieldOfStudy,
                 creditsAvailable,
                 creditsEarned,
+                creditsFromDescription,
                 term,
                 description: achievementDescription,
                 earnedAt,
@@ -1193,7 +1220,10 @@ export const normalizeClrTranscriptDisplayModel = (
             : undefined;
 
     const totalCreditsAvailable = courses.reduce<number | undefined>((sum, course) => {
-        const credits = course.creditsEarned?.value ?? course.creditsAvailable?.value;
+        const credits =
+            course.creditsEarned?.value ??
+            course.creditsAvailable?.value ??
+            course.creditsFromDescription?.value;
         if (credits === undefined) return sum;
         return (sum ?? 0) + credits;
     }, undefined);
