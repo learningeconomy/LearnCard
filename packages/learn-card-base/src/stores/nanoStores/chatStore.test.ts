@@ -151,6 +151,7 @@ const {
     disconnectWebSocket,
     isLoading,
     lastAiError,
+    learningCommonsDebug,
     isTyping,
     messages,
     planReady,
@@ -484,6 +485,67 @@ describe('chat session startup', () => {
             skills: [],
             roadmap: [],
         });
+    });
+
+    it('captures the standard used to ground the current session plan', async () => {
+        const start = startTopic('Teach me fractions');
+        const socket = await openLatestSocket();
+        await start;
+        socket.receive({ event: 'session_start_accepted', requestId: 'request-grounding' });
+        socket.receive({
+            event: 'learning_commons_grounding',
+            requestId: 'request-grounding',
+            grounding: {
+                source: {
+                    provider: 'Learning Commons',
+                    searchScore: 0.86,
+                    targetUrl: 'https://api.learningcommons.org/standard',
+                    retrievedAt: '2026-08-12T00:00:00.000Z',
+                },
+                target: {
+                    statementCode: '3.NF.A.1',
+                    description: 'Understand unit fractions as equal parts of a whole.',
+                    caseIdentifierURI: 'https://example.com/case/3.NF.A.1',
+                    jurisdiction: 'Multi-State',
+                    academicSubject: 'Mathematics',
+                    gradeLevel: ['3'],
+                    author: 'Standards Author',
+                    license: 'https://creativecommons.org/licenses/by/4.0/',
+                    attributionStatement: 'Standards attribution.',
+                },
+            },
+        });
+
+        expect(learningCommonsDebug.get()).toEqual({
+            status: 'grounded',
+            grounding: {
+                source: {
+                    provider: 'Learning Commons',
+                    searchScore: 0.86,
+                    targetUrl: 'https://api.learningcommons.org/standard',
+                    retrievedAt: '2026-08-12T00:00:00.000Z',
+                },
+                target: {
+                    statementCode: '3.NF.A.1',
+                    description: 'Understand unit fractions as equal parts of a whole.',
+                    caseIdentifierURI: 'https://example.com/case/3.NF.A.1',
+                    jurisdiction: 'Multi-State',
+                    academicSubject: 'Mathematics',
+                    gradeLevel: ['3'],
+                    author: 'Standards Author',
+                    license: 'https://creativecommons.org/licenses/by/4.0/',
+                    attributionStatement: 'Standards attribution.',
+                },
+            },
+        });
+
+        socket.receive({
+            event: 'learning_commons_grounding',
+            requestId: 'request-grounding',
+            grounding: null,
+        });
+
+        expect(learningCommonsDebug.get()).toEqual({ status: 'unavailable' });
     });
 
     it('keeps ended threads read-only while preserving legacy threads with omitted state', async () => {
