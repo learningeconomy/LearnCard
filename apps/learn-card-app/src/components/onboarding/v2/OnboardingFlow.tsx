@@ -9,7 +9,7 @@ import { updateProfile } from 'firebase/auth';
 import { Check, Loader2, Edit2, ShieldCheck, User } from 'lucide-react';
 
 import * as m from '../../../paraglide/messages.js';
-import { getLocale } from '../../../paraglide/runtime.js';
+import { useLocale } from '../../../i18n';
 
 import {
     useModal,
@@ -89,7 +89,8 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
     const { refetch: refetchIsCurrentUserLCNUser } = useIsCurrentUserLCNUser();
     const queryClient = useQueryClient();
     const { isDesktop } = useDeviceTypeByWidth();
-    const countryNames = new Intl.DisplayNames([getLocale()], { type: 'region' });
+    const locale = useLocale();
+    const countryNames = new Intl.DisplayNames([locale], { type: 'region' });
     const { handleLogout } = useLogout();
     const { autoConsentLearnCardAi } = useAutoConsentLearnCardAi();
     const { updateCurrentUser } = useSQLiteStorage();
@@ -1349,7 +1350,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                             : 'bg-grayscale-100 border border-grayscale-200 text-grayscale-700 hover:bg-grayscale-200'
                                     }`}
                                 >
-                                    {getRoleTitle(r.type)}
+                                    {getRoleTitle(r.type, locale)}
                                 </button>
                             ))}
                         </div>
