@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import * as m from '../../../../paraglide/messages.js';
+import { getLocale } from '../../../../paraglide/runtime.js';
 import { Checkmark } from '@learncard/react';
 
 import countries from '../../../../constants/countries.json';
-import { useLocale } from '../../../../i18n';
 
 const COUNTRIES: Record<string, string> = countries as Record<string, string>;
 export type CountrySelectorModalProps = {
@@ -13,7 +13,7 @@ export type CountrySelectorModalProps = {
 
 const CountrySelectorModal: React.FC<CountrySelectorModalProps> = ({ selected, onSelect }) => {
     const [query, setQuery] = useState<string>('');
-    const locale = useLocale();
+    const locale = getLocale();
     const countryNames = new Intl.DisplayNames([locale], { type: 'region' });
     const countryEntries = Object.entries(COUNTRIES)
         .map(([code, fallback]) => [code, countryNames.of(code) ?? fallback] as const)

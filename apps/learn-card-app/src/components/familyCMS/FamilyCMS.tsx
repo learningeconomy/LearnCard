@@ -65,7 +65,7 @@ import * as m from '../../paraglide/messages.js';
 const getStateValidator = () =>
     z.object({
         name: z.string().min(1, m['arabicFixes.nameRequired']()),
-        description: z.string().min(1, 'Description is required!'),
+        description: z.string().min(1, m['arabicFixes.descriptionRequired']()),
     });
 
 type FamilyCMSProps = {

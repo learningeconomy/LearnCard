@@ -49,6 +49,7 @@ import { getClrTranscriptKind, getClrTranscriptIssuerInfo } from '../../clr-tran
 
 import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 import {
+    getIssuanceDate,
     unwrapBoostCredential,
     isBoostCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
@@ -416,9 +417,9 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
         uppercaseDate: false,
     });
 
-    const createdAtDate = new Date(createdAt);
+    const createdAtDate = new Date(getIssuanceDate(cred) ?? '');
     const issueDate = Number.isNaN(createdAtDate.getTime())
-        ? moment(createdAt).format('MMMM DD YYYY')
+        ? moment(createdAt).locale(getLocale()).format('MMMM DD YYYY')
         : new Intl.DateTimeFormat(getLocale(), {
               month: 'long',
               day: '2-digit',

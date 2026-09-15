@@ -9,6 +9,7 @@ import { updateProfile } from 'firebase/auth';
 import { Check, Loader2, Edit2, ShieldCheck, User } from 'lucide-react';
 
 import * as m from '../../../paraglide/messages.js';
+import { getLocale } from '../../../paraglide/runtime.js';
 
 import {
     useModal,
@@ -88,6 +89,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
     const { refetch: refetchIsCurrentUserLCNUser } = useIsCurrentUserLCNUser();
     const queryClient = useQueryClient();
     const { isDesktop } = useDeviceTypeByWidth();
+    const countryNames = new Intl.DisplayNames([getLocale()], { type: 'region' });
     const { handleLogout } = useLogout();
     const { autoConsentLearnCardAi } = useAutoConsentLearnCardAi();
     const { updateCurrentUser } = useSQLiteStorage();
@@ -649,7 +651,9 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
                 if (claimedChildren.length > 0) {
                     newModal(
-                        <GuardianLinkedModal children={claimedChildren} onDismiss={closeModal} />,
+                        <GuardianLinkedModal onDismiss={closeModal}>
+                            {claimedChildren}
+                        </GuardianLinkedModal>,
                         { sectionClassName: '!max-w-[400px]' },
                         { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
                     );
@@ -658,9 +662,11 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                 trackOnboardingStepCompleted('profile', 2);
                 setStep('celebrate');
             }
-        } catch (err: any) {
+        } catch (err) {
+            const errorDetails =
+                typeof err === 'object' && err !== null ? (err as Record<string, unknown>) : {};
             if (signupLifecycle.terminate()) {
-                const errorCode = err?.code || err?.name;
+                const errorCode = errorDetails.code || errorDetails.name;
                 track(AnalyticsEvents.SIGNUP_FAILED, {
                     flow_id: signupFlowId,
                     method: signupMethod,
@@ -672,7 +678,11 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
             }
 
             log.error('createProfile::error', err);
-            setError(err?.message || m['onboarding.profile.error.createFailed']());
+            setError(
+                typeof errorDetails.message === 'string'
+                    ? errorDetails.message
+                    : m['onboarding.profile.error.createFailed']()
+            );
         } finally {
             setIsCreating(false);
         }
@@ -810,12 +820,14 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                     >
                                         <span id="onboarding-country-value">
                                             {country
-                                                ? (COUNTRIES[country] ?? country)
+                                                ? (countryNames.of(country) ??
+                                                  COUNTRIES[country] ??
+                                                  country)
                                                 : m['onboarding.v2.selectCountry']()}
                                         </span>
                                         <LocationIcon
                                             aria-hidden="true"
-                                            className="w-5 h-5 text-grayscale-500"
+                                            className="w-6 h-6 text-grayscale-500"
                                         />
                                     </button>
                                 </div>

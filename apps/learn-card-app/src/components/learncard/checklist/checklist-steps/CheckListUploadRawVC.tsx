@@ -136,7 +136,7 @@ export const CheckListUploadRawVC: React.FC = () => {
             );
 
             const _rawVCs = rawVCsCredentials.map(
-                ({ recordId, fileName, fileSize, fileType, category, uri }: any) => ({
+                ({ recordId, fileName, fileSize, fileType, category, uri }) => ({
                     id: recordId,
                     fileName,
                     fileSize,
@@ -206,7 +206,7 @@ export const CheckListUploadRawVC: React.FC = () => {
                 log.error('Paste VC upload failed', result?.errors);
                 setRawTextErrors([FRIENDLY_PASTE_ERROR]);
             }
-        } catch (error: any) {
+        } catch (error) {
             log.error('Paste VC upload threw', error);
             setRawTextErrors([FRIENDLY_PASTE_ERROR]);
         } finally {
@@ -257,7 +257,7 @@ export const CheckListUploadRawVC: React.FC = () => {
                             if (results) {
                                 setRawVCs(prev => [
                                     ...prev,
-                                    ...results?.map((result: any) => ({
+                                    ...results.map(result => ({
                                         id: result?.id,
                                         fileName: result?.fileInfo?.name,
                                         fileSize: result?.fileInfo?.size,
@@ -371,8 +371,11 @@ export const CheckListUploadRawVC: React.FC = () => {
                 {rawVCs?.length !== 0 && (
                     <div className="w-full bg-white flex flex-col gap-[20px] justify-center shadow-bottom-2-4 p-[15px] mt-4 mb-12 rounded-[15px]">
                         <h4 className="text-[20px] text-grayscale-900 font-notoSans text-left">
-                            {isLoading ? '...' : (rawVCs?.length ?? 0)} Verifiable Credential
-                            {rawVCs?.length === 1 ? '' : 's'}
+                            {isLoading
+                                ? '...'
+                                : m['arabicFixes.verifiableCredentialCount']({
+                                      count: rawVCs?.length ?? 0,
+                                  })}
                         </h4>
 
                         {isLoading && <CheckListItemSkeleton />}

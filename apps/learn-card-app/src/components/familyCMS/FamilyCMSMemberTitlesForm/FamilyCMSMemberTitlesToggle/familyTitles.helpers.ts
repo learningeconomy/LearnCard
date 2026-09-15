@@ -1,3 +1,5 @@
+import * as m from '../../../../paraglide/messages.js';
+
 export enum FamilyTitleModesEnum {
     guardians = 'guardians',
     dependents = 'dependents',
@@ -91,4 +93,3 @@ export const getFamilyTitleLabel = (plural: string): string => {
             return plural;
     }
 };
-import * as m from '../../../../paraglide/messages.js';
