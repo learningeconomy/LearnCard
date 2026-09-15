@@ -11,6 +11,16 @@
         "skipped": "Ignoré",
         "claimedType": "Justificatif réclamé"
     },
+    "mainHeader": {
+        "pageTitles": {
+            "dashboard": "Mon tableau de bord",
+            "passport": "Mon passeport",
+            "apps": "Mes applications",
+            "contacts": "Mes contacts",
+            "alerts": "Mes alertes",
+            "settings": "Paramètres"
+        }
+    },
     "arabicFixes": {
         "newMember": "Nouveau membre",
         "issuedDate": "Date d'émission",

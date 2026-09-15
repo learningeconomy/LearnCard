@@ -11,6 +11,16 @@
         "skipped": "Skipped",
         "claimedType": "Credential claimed"
     },
+    "mainHeader": {
+        "pageTitles": {
+            "dashboard": "My Dashboard",
+            "passport": "My Passport",
+            "apps": "My Apps",
+            "contacts": "My Contacts",
+            "alerts": "My Alerts",
+            "settings": "Settings"
+        }
+    },
     "arabicFixes": {
         "newMember": "New Member",
         "issuedDate": "Issued (Date)",

@@ -11,6 +11,16 @@
         "skipped": "Omitido",
         "claimedType": "Credencial reclamada"
     },
+    "mainHeader": {
+        "pageTitles": {
+            "dashboard": "Mi panel",
+            "passport": "Mi pasaporte",
+            "apps": "Mis aplicaciones",
+            "contacts": "Mis contactos",
+            "alerts": "Mis alertas",
+            "settings": "Ajustes"
+        }
+    },
     "arabicFixes": {
         "newMember": "Nuevo miembro",
         "issuedDate": "Fecha de emisión",

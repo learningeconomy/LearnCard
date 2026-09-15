@@ -11,6 +11,16 @@
         "skipped": "تم التخطي",
         "claimedType": "تم استلام الاعتماد"
     },
+    "mainHeader": {
+        "pageTitles": {
+            "dashboard": "لوحة التحكم الخاصة بي",
+            "passport": "جواز سفري",
+            "apps": "تطبيقاتي",
+            "contacts": "جهات اتصالي",
+            "alerts": "تنبيهاتي",
+            "settings": "الإعدادات"
+        }
+    },
     "arabicFixes": {
         "newMember": "عضو جديد",
         "issuedDate": "تاريخ الإصدار",
