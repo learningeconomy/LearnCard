@@ -272,7 +272,9 @@ export const issueClaimLinkBoost = async (
     }
 
     // Embed the boostURI into the boost credential for verification purposes.
-    boostCredential.boostId = boostURI;
+    if (boostCredential.type.includes('BoostCredential')) {
+        boostCredential.boostId = boostURI;
+    }
 
     // Inject OBv3 skill alignments based on boost's framework/skills
     await injectObv3AlignmentsIntoCredentialForBoost(boostCredential, boost, domain);

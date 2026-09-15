@@ -184,29 +184,44 @@ describe('boost payload storage', () => {
         }
     );
 
-    it('assigns the claimant to every template subject without requiring a did field', async () => {
-        const issued = { kind: 'issued-credential', credential: jwe, statusEntries: [] };
-        mocks.signingAuthority.mockResolvedValue(issued);
-        const boost = {
-            ...options.boost,
-            dataValues: {
-                id: 'boost',
-                boost: JSON.stringify({
-                    ...vc,
-                    credentialSubject: [{ name: 'First' }, { name: 'Second' }],
-                }),
-            },
-        } as Parameters<typeof issueClaimLinkBoost>[0];
-        const authority = { relationship: { did: 'did:example:sa' } } as Parameters<
-            typeof issueClaimLinkBoost
-        >[4];
-        await issueClaimLinkBoost(boost, options.domain, options.from, options.to, authority);
-        expect(mocks.signingAuthority.mock.calls[0]![1].credentialSubject).toEqual([
-            { name: 'First', id: 'did:web:network.example:users:student' },
-            { name: 'Second', id: 'did:web:network.example:users:student' },
-        ]);
-        expect(mocks.store).toHaveBeenCalledWith(issued);
-    });
+    it.each([
+        ['Boost', ['VerifiableCredential', 'BoostCredential']],
+        ['OBv3', ['VerifiableCredential', 'OpenBadgeCredential']],
+        ['VC', ['VerifiableCredential']],
+    ])(
+        'issues a %s claim-link template with only supported Boost metadata',
+        async (_kind, type) => {
+            const issued = { kind: 'issued-credential', credential: jwe, statusEntries: [] };
+            mocks.signingAuthority.mockResolvedValue(issued);
+            const boost = {
+                ...options.boost,
+                dataValues: {
+                    id: 'boost',
+                    boost: JSON.stringify({
+                        ...vc,
+                        type,
+                        boostId: undefined,
+                        credentialSubject: [{ name: 'First' }, { name: 'Second' }],
+                    }),
+                },
+            } as Parameters<typeof issueClaimLinkBoost>[0];
+            const authority = { relationship: { did: 'did:example:sa' } } as Parameters<
+                typeof issueClaimLinkBoost
+            >[4];
+            await issueClaimLinkBoost(boost, options.domain, options.from, options.to, authority);
+            expect(mocks.signingAuthority.mock.calls[0]![1].credentialSubject).toEqual([
+                { name: 'First', id: 'did:web:network.example:users:student' },
+                { name: 'Second', id: 'did:web:network.example:users:student' },
+            ]);
+            const unsigned = mocks.signingAuthority.mock.calls[0]![1];
+            if (type.includes('BoostCredential')) {
+                expect(unsigned.boostId).toBe('lc:network:network.example/boost:boost');
+            } else {
+                expect(unsigned).not.toHaveProperty('boostId');
+            }
+            expect(mocks.store).toHaveBeenCalledWith(issued);
+        }
+    );
 
     it('preserves explicit notification and acceptance opt-outs', async () => {
         await sendBoost({
