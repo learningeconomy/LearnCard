@@ -1,5 +1,41 @@
 # learn-card-core
 
+## 2.14.0
+
+### Minor Changes
+
+- [#1533](https://github.com/learningeconomy/LearnCard/pull/1533) [`80d2ebf54bb5a643808f8f7d908cf68758903dce`](https://github.com/learningeconomy/LearnCard/commit/80d2ebf54bb5a643808f8f7d908cf68758903dce) Thanks [@goblincore](https://github.com/goblincore)! - Managed credential refresh (LC-2117, LC-2135, LC-2136)
+
+    - Holder refresh through the W3C `refreshService` extension point: standard `1EdTechCredentialRefresh` signed JSON responses and a separate `LearnCardCredentialRefresh2026` encrypted, DID-authenticated managed protocol. Includes SSRF guards, proof/issuer/subject/ID/freshness validation, and typed failures. Compact VC-JWT support is deferred to LC-2195; full 1EdTech protocol conformance is not claimed. Previously issued managed QA credentials must be reissued with the new signed service type.
+    - Managed issuer refresh service in brain-service: allocate-before-signing, issuer-signed and signing-authority publication, immutable holder-encrypted (JWE-only) version chain, holder-authenticated `/refresh/:refreshId` endpoint with ETag/304, history, and revocation gating.
+    - In-place holder wallet replacement with encrypted previous-version history, foreground-only staleness scanning (24h default, configurable), and per-record concurrency safety.
+    - Privacy-safe `CREDENTIAL_REFRESHED` notifications with materiality detection, issuer overrides, and one collapsed record per configurable delivery window.
+    - App surfaces: refresh listener, Updated indicator, notification card, and previous-versions history UI; provisional-to-final CLR demo in the credential viewer.
+
+### Patch Changes
+
+- Updated dependencies [[`693be4fef7b2850ab0f79b5161f78557d9026012`](https://github.com/learningeconomy/LearnCard/commit/693be4fef7b2850ab0f79b5161f78557d9026012), [`80d2ebf54bb5a643808f8f7d908cf68758903dce`](https://github.com/learningeconomy/LearnCard/commit/80d2ebf54bb5a643808f8f7d908cf68758903dce)]:
+    - @learncard/network-brain-client@2.5.55
+    - @learncard/helpers@1.5.0
+    - @learncard/core@9.4.34
+
+## 2.13.17
+
+### Patch Changes
+
+- [#1534](https://github.com/learningeconomy/LearnCard/pull/1534) [`50f8d26c271d1a16240c5024402d0ea75c475a3d`](https://github.com/learningeconomy/LearnCard/commit/50f8d26c271d1a16240c5024402d0ea75c475a3d) Thanks [@goblincore](https://github.com/goblincore)! - fix: [LC-2137] Surface the original request error when auth refresh fails instead of hanging; allow `deleteProfile` with API tokens that lack `profiles:read`; retry did:web signing on `Key mismatch` after refreshing the DID document.
+
+- [#1549](https://github.com/learningeconomy/LearnCard/pull/1549) [`9cc246bd0571b5b29c60b9dcff287c1b69e012cf`](https://github.com/learningeconomy/LearnCard/commit/9cc246bd0571b5b29c60b9dcff287c1b69e012cf) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-2175] & [LC-2176] Fixing CodeQL alerts
+
+    **Breaking change in @learncard/openid4vc-plugin**: `defaultMakeId` now throws if
+    `crypto.getRandomValues` is unavailable (no `Math.random()` fallback). This affects
+    legacy environments without Web Crypto API — modern browsers and Node.js are unaffected.
+
+- Updated dependencies [[`50f8d26c271d1a16240c5024402d0ea75c475a3d`](https://github.com/learningeconomy/LearnCard/commit/50f8d26c271d1a16240c5024402d0ea75c475a3d), [`9cc246bd0571b5b29c60b9dcff287c1b69e012cf`](https://github.com/learningeconomy/LearnCard/commit/9cc246bd0571b5b29c60b9dcff287c1b69e012cf)]:
+    - @learncard/network-brain-client@2.5.54
+    - @learncard/helpers@1.4.1
+    - @learncard/core@9.4.33
+
 ## 2.13.16
 
 ### Patch Changes

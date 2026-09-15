@@ -128,6 +128,46 @@ describe('resolveTenantConfig – full boot path', () => {
         expect(result.tenantId).toBe('baked');
     });
 
+    it('falls back to baked config when /__tenant-config returns HTTP 200 with non-JSON (native SPA fallback)', async () => {
+        const bakedConfig = buildFullConfig({ tenantId: 'baked' });
+
+        fetchMock.mockImplementation(async (url: string) => {
+            if (typeof url === 'string' && url.includes('tenant-config.json')) {
+                return { ok: true, json: async () => bakedConfig };
+            }
+
+            return {
+                ok: true,
+                status: 200,
+                json: async () => {
+                    throw new SyntaxError('Unexpected token <');
+                },
+            };
+        });
+
+        const result = await resolveTenantConfig();
+
+        expect(result.tenantId).toBe('baked');
+    });
+
+    it('rejects non-JSON /__tenant-config response when no baked config exists', async () => {
+        fetchMock.mockImplementation(async (url: string) => {
+            if (typeof url === 'string' && url.includes('tenant-config.json')) {
+                return { ok: false, status: 404 };
+            }
+
+            return {
+                ok: true,
+                status: 200,
+                json: async () => {
+                    throw new SyntaxError('Unexpected token <');
+                },
+            };
+        });
+
+        await expect(resolveTenantConfig()).rejects.toThrow(/returned invalid JSON/);
+    });
+
     it('prefers fresh edge-function config over baked config', async () => {
         const bakedConfig = buildFullConfig({ tenantId: 'baked' });
         const freshConfig = buildFullConfig({ tenantId: 'fresh-edge' });
@@ -177,6 +217,112 @@ describe('resolveTenantConfig – full boot path', () => {
         expect(result.auth.keyDerivation).toBe('sss');
         expect(result.storage.provider).toBe('filestack');
         expect(result.features.aiFeatures).toBe(true);
+    });
+
+    it('accepts a partial auth overlay whose cross-field requirements are satisfied by the base', async () => {
+        const vetpassLikeOverlay = {
+            tenantId: 'vetpass',
+            domain: 'vetpass.app',
+            auth: {
+                keyDerivation: 'web3auth',
+                web3Auth: {
+                    clientId: 'client-id',
+                    network: 'testnet',
+                    verifierId: 'learncardapp-firebase',
+                    rpcTarget: 'https://rpc.example.com',
+                },
+            },
+        };
+
+        fetchMock.mockImplementation(async (url: string) => {
+            if (typeof url === 'string' && url.includes('tenant-config.json')) {
+                return { ok: false, status: 404 };
+            }
+
+            return { ok: true, json: async () => vetpassLikeOverlay };
+        });
+
+        const result = await resolveTenantConfig();
+
+        expect(result.tenantId).toBe('vetpass');
+        expect(result.auth.keyDerivation).toBe('web3auth');
+        expect(result.auth.web3Auth?.clientId).toBe('client-id');
+        expect(result.auth.provider).toBe('firebase');
+        expect(result.auth.firebase).toEqual(DEFAULT_LEARNCARD_TENANT_CONFIG.auth.firebase);
+    });
+
+    it('does not let overlay parsing inject defaults that clobber the base config', async () => {
+        const bakedConfig = buildFullConfig({
+            tenantId: 'baked',
+            auth: {
+                ...DEFAULT_LEARNCARD_TENANT_CONFIG.auth,
+                provider: 'custom-oidc',
+                sss: {
+                    ...DEFAULT_LEARNCARD_TENANT_CONFIG.auth.sss,
+                    serverUrl: 'https://sss.baked.example.com',
+                    requireEmailForPhoneUsers: false,
+                },
+            },
+        });
+
+        fetchMock.mockImplementation(async (url: string) => {
+            if (typeof url === 'string' && url.includes('tenant-config.json')) {
+                return { ok: true, json: async () => bakedConfig };
+            }
+
+            return {
+                ok: true,
+                json: async () => ({
+                    auth: {
+                        provider: 'custom-oidc',
+                        keyDerivation: 'sss',
+                        sss: { enableEmailBackupShare: false },
+                    },
+                }),
+            };
+        });
+
+        const result = await resolveTenantConfig();
+
+        expect(result.auth.provider).toBe('custom-oidc');
+        expect(result.auth.sss?.serverUrl).toBe('https://sss.baked.example.com');
+        expect(result.auth.sss?.requireEmailForPhoneUsers).toBe(false);
+        expect(result.auth.sss?.enableEmailBackupShare).toBe(false);
+    });
+
+    it('still rejects a merged config whose overlay breaks cross-field requirements', async () => {
+        fetchMock.mockImplementation(async (url: string) => {
+            if (typeof url === 'string' && url.includes('tenant-config.json')) {
+                return { ok: false, status: 404 };
+            }
+
+            return {
+                ok: true,
+                json: async () => ({
+                    tenantId: 'broken',
+                    domain: 'broken.example.com',
+                    auth: { keyDerivation: 'web3auth' },
+                }),
+            };
+        });
+
+        await expect(resolveTenantConfig()).rejects.toThrow(
+            /merged overlay; overlay keys: tenantId, domain, auth → defaults[\s\S]*Required when auth.keyDerivation is web3auth/
+        );
+    });
+
+    it('rejects a non-object overlay payload', async () => {
+        fetchMock.mockImplementation(async (url: string) => {
+            if (typeof url === 'string' && url.includes('tenant-config.json')) {
+                return { ok: false, status: 404 };
+            }
+
+            return { ok: true, json: async () => 'not a config' };
+        });
+
+        await expect(resolveTenantConfig()).rejects.toThrow(
+            /Invalid TenantConfig from fetch \/__tenant-config \(overlay shape\)/
+        );
     });
 
     it('writes fresh config to localStorage cache', async () => {

@@ -85,7 +85,7 @@ vi.mock('../hooks/useBoostMenu', () => ({
     default: () => mocks.presentOptions,
     BoostMenuType: { earned: 'earned' },
 }));
-vi.mock('src/hooks/useCredentialStatus', () => ({ useCredentialStatus: () => undefined }));
+vi.mock('../../../hooks/useCredentialStatus', () => ({ useCredentialStatus: () => undefined }));
 vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
     unwrapBoostCredential: (credential: VC) => credential,
     isBoostCredential: mocks.isBoostCredential,
@@ -120,6 +120,14 @@ vi.mock('learn-card-base/components/boost/boostSkeletonLoaders/BoostSkeletons', 
 vi.mock('learn-card-base/components/id/IDDisplayCard', () => ({ default: () => null }));
 vi.mock('learn-card-base/components/CredentialBadge/CredentialBadgeNew', () => ({
     default: () => null,
+}));
+// The credential-history module imports the generated paraglide bundle (absent in tests);
+// the refresh indicator behavior is covered by CredentialHistoryModal.test.tsx.
+vi.mock('../../credentials/credential-history/CredentialUpdatedIndicator', () => ({
+    default: () => null,
+}));
+vi.mock('../../credentials/credential-history/useMarkCredentialUpdateRead', () => ({
+    useMarkCredentialUpdateRead: () => vi.fn(async () => false),
 }));
 
 import BoostEarnedCard from './BoostEarnedCard';
@@ -183,8 +191,7 @@ describe('BoostEarnedCard', () => {
 
             expect(mocks.newModal).toHaveBeenCalledOnce();
             const preview = mocks.newModal.mock.calls[0]?.[0] as
-                | React.ReactElement<PreviewProps>
-                | undefined;
+                React.ReactElement<PreviewProps> | undefined;
             expect(preview).toBeDefined();
             expect(preview!.type).toBe(expectedPreview);
             expect(typeof preview!.props.onDotsClick).toBe('function');
@@ -211,8 +218,7 @@ describe('BoostEarnedCard', () => {
 
         expect(mocks.newModal).toHaveBeenCalledOnce();
         const preview = mocks.newModal.mock.calls[0]?.[0] as
-            | React.ReactElement<PreviewProps>
-            | undefined;
+            React.ReactElement<PreviewProps> | undefined;
         expect(preview).toBeDefined();
         expect(preview!.props.onDotsClick).toBeUndefined();
         expect(mocks.presentOptions).not.toHaveBeenCalled();

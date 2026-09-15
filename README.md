@@ -49,13 +49,11 @@ Please make sure to update tests as appropriate.
 
 [![Stargazers repo roster for @learningeconomy/LearnCard](https://reporoster.com/stars/learningeconomy/LearnCard)](https://github.com/learningeconomy/LearnCard/stargazers)
 
-## Comments, Questions, or Palpitations of the Heart?
+## Get Help
 
-The best way to start engaging in the community is to participate in our Github Discussions:
-
--   [Post a Feature Request 💡](https://github.com/learningeconomy/LearnCard/discussions/categories/feature-requests)
--   [Ask for Help 💖](https://github.com/learningeconomy/LearnCard/discussions/categories/help)
--   [Show off your project to the community! 🙌](https://github.com/learningeconomy/LearnCard/discussions/categories/show-and-tell)
+- **Something broken?** [Open an issue](https://github.com/learningeconomy/LearnCard/issues/new/choose) — bugs and technical questions live here, next to the code.
+- **Want a feature, or curious what's coming?** [Request and vote on the roadmap](https://roadmap.learncard.com) · [Changelog](https://roadmap.learncard.com/changelog)
+- **Private or commercial question?** [sdk@learningeconomy.io](mailto:sdk@learningeconomy.io)
 
 ## Who is Learning Economy Foundation?
 

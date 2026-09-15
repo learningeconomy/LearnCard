@@ -182,7 +182,10 @@ export const reconsentTerms = async (
                         boostCredential,
                         contractOwnerSigningAuthority,
                         domain,
-                        false
+                        true,
+                        undefined,
+                        true,
+                        [getDidWeb(domain, relationship.contractOwner.profileId)]
                     );
 
                     // Create transaction to record the boost issuance
@@ -409,7 +412,10 @@ export const updateTerms = async (
                         boostCredential,
                         contractOwnerSigningAuthority,
                         domain,
-                        false
+                        true,
+                        undefined,
+                        true,
+                        [getDidWeb(domain, relationship.contractOwner.profileId)]
                     );
 
                     // Create transaction to record the boost issuance

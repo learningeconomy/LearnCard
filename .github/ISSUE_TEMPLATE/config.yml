@@ -1,0 +1,17 @@
+blank_issues_enabled: false
+contact_links:
+    - name: 💡 Feature request or idea
+      url: https://roadmap.learncard.com
+      about: Request a feature and vote on others' requests. Feature requests belong on the roadmap, not in Issues, so we can see what matters to the most people.
+    - name: 🗺️ Roadmap & changelog
+      url: https://roadmap.learncard.com/roadmap
+      about: See what's planned, in progress, and recently shipped.
+    - name: 📚 Documentation
+      url: https://docs.learncard.com
+      about: Start with "What Do You Want to Build?" or the Quickstart before opening a question.
+    - name: 🔒 Security vulnerability
+      url: mailto:security@learningeconomy.io
+      about: Please report security issues privately by email, not in a public issue.
+    - name: 💼 Private, commercial, or partnership question
+      url: mailto:sdk@learningeconomy.io
+      about: Email the team directly.

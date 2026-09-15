@@ -1,5 +1,23 @@
 # @learncard/sd-jwt-vc-plugin
 
+## 0.2.12
+
+### Patch Changes
+
+- Updated dependencies [[`80d2ebf54bb5a643808f8f7d908cf68758903dce`](https://github.com/learningeconomy/LearnCard/commit/80d2ebf54bb5a643808f8f7d908cf68758903dce)]:
+    - @learncard/vc-plugin@1.6.0
+    - @learncard/core@9.4.34
+    - @learncard/didkit-plugin@1.9.14
+
+## 0.2.11
+
+### Patch Changes
+
+- Updated dependencies [[`55284a9b1613d46491a03d2d527b192eb2db64c9`](https://github.com/learningeconomy/LearnCard/commit/55284a9b1613d46491a03d2d527b192eb2db64c9), [`55284a9b1613d46491a03d2d527b192eb2db64c9`](https://github.com/learningeconomy/LearnCard/commit/55284a9b1613d46491a03d2d527b192eb2db64c9)]:
+    - @learncard/didkit-plugin@1.9.13
+    - @learncard/core@9.4.33
+    - @learncard/vc-plugin@1.5.13
+
 ## 0.2.10
 
 ### Patch Changes

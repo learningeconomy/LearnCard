@@ -24,8 +24,6 @@ import {
     VCValidator,
     JWEValidator,
     UnsignedVC,
-    VC,
-    JWE,
     AutoBoostConfigValidator,
     LCNNotificationTypeEnumValidator,
     LCNProfileValidator,
@@ -90,6 +88,7 @@ import { getCredentialUri } from '@helpers/credential.helpers';
 import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
 import { getDidWeb } from '@helpers/did.helpers';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
+import type { IssuedCredential } from '../types/credential';
 import { getProfilesByProfileIds } from '@accesslayer/profile/read';
 import { getProfilesThatManageAProfile } from '@accesslayer/profile/relationships/read';
 import { resolveAndValidateDeniedWriters } from '@helpers/consentflow.helpers';
@@ -855,7 +854,7 @@ export const contractsRouter = t.router({
             }
 
             // Issue VC with signing authority
-            let credential: VC | JWE;
+            let credential: IssuedCredential;
             try {
                 credential = await issueCredentialWithSigningAuthority(
                     { type: 'profile', profile },

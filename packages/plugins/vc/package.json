@@ -1,6 +1,6 @@
 {
     "name": "@learncard/vc-plugin",
-    "version": "1.5.12",
+    "version": "1.6.0",
     "description": "",
     "type": "module",
     "main": "./dist/index.cjs",
@@ -49,6 +49,7 @@
     "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/didkit-plugin": "workspace:^",
+        "@learncard/helpers": "workspace:*",
         "@learncard/types": "workspace:*",
         "multiformats": "^11.0.1"
     },

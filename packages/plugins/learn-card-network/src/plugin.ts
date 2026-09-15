@@ -14,6 +14,7 @@ import {
     VC,
     BitstringCredentialStatusEntry,
     BitstringCredentialStatusPurpose,
+    ManagedCredentialRefreshService,
     StoredCredentialEnvelope,
     StoredCredentialEnvelopeValidator,
     isStoredCredentialEnvelope,
@@ -33,6 +34,135 @@ import {
     VerifyBoostPlugin,
     TrustedBoostRegistryEntry,
 } from './types';
+
+/**
+ * Trusted LearnCard domain suffixes for federation.
+ * Only dotted suffixes - the isLearnCardDomain check handles apex domains via
+ * `host === suffix.replace(/^\./, '')`. Bare entries would allow bypass
+ * (e.g., 'evillearncard.com'.endsWith('learncard.com') === true).
+ */
+const LEARNCARD_DOMAIN_SUFFIXES = ['.learncard.com', '.learncard.app', '.learncard.ai'];
+
+/**
+ * Configuration for federation URL validation.
+ */
+export interface FederationConfig {
+    /**
+     * Explicit list of trusted hosts. If not provided, federation is open (any HTTPS host allowed).
+     * This is safe for client-side code where SSRF doesn't apply.
+     * Server-side code should provide an explicit allowlist.
+     */
+    trustedFederationHosts?: string[];
+    /**
+     * Allow localhost/127.0.0.1 for development.
+     * Auto-detected: defaults to true when serviceUrl is localhost, false otherwise.
+     */
+    allowLocalhostFederation?: boolean;
+    /**
+     * The origin of this plugin's service URL. When set, endpoints matching this origin
+     * skip validation (they're self-generated, not from external DID documents).
+     */
+    serviceOrigin?: string;
+}
+
+/**
+ * Checks if a hostname matches any LearnCard domain suffix.
+ */
+const isLearnCardDomain = (host: string): boolean => {
+    return LEARNCARD_DOMAIN_SUFFIXES.some(
+        suffix => host === suffix.replace(/^\./, '') || host.endsWith(suffix)
+    );
+};
+
+/**
+ * Checks if a hostname is localhost or loopback.
+ */
+const isLocalhostHost = (host: string): boolean => {
+    const lower = host.toLowerCase();
+    return lower === 'localhost' || lower === '127.0.0.1';
+};
+
+/**
+ * Validates and normalizes a federation URL.
+ *
+ * This runs in the CLIENT plugin where SSRF risk is lower (the browser's same-origin
+ * policy provides protection). By default, federation is open to any HTTPS host.
+ * Server-side code should provide an explicit trustedFederationHosts list.
+ *
+ * Note: For local-service recipients, getInboxEndpointForDid returns a fixed
+ * `/api/inbox/receive` path. Only external DID doc serviceEndpoints preserve
+ * their original path.
+ *
+ * @param userProvidedUrl - The inbox endpoint URL (from DID doc or local service)
+ * @param config - Federation configuration with trusted hosts
+ * @returns The validated URL
+ * @throws Error if the URL is invalid or host is not trusted
+ */
+const validateFederationUrl = (userProvidedUrl: string, config: FederationConfig): string => {
+    let parsed: URL;
+    try {
+        parsed = new URL(userProvidedUrl);
+    } catch {
+        throw new Error(`Invalid federation endpoint URL: ${userProvidedUrl}`);
+    }
+
+    // If this endpoint matches our own service origin, skip validation entirely.
+    // These URLs are self-generated (e.g., from getInboxEndpointForDid when the recipient
+    // resolves to our local service), not from external DID documents.
+    if (config.serviceOrigin) {
+        const endpointOrigin = parsed.origin;
+        if (endpointOrigin === config.serviceOrigin) {
+            // Self-referential URL - return parsed.href so CodeQL sees URL sanitization
+            return parsed.href;
+        }
+    }
+
+    const host = parsed.hostname.toLowerCase();
+    const isLocalhost = isLocalhostHost(host);
+
+    // Handle localhost: check allowLocalhostFederation and convert https->http
+    if (isLocalhost) {
+        if (!config.allowLocalhostFederation) {
+            throw new Error(
+                `Localhost federation is disabled. Set allowLocalhostFederation: true for development.`
+            );
+        }
+        // Local dev typically doesn't have TLS - convert https to http
+        if (parsed.protocol === 'https:') {
+            parsed.protocol = 'http:';
+        }
+        // Return the validated/normalized URL
+        return parsed.href;
+    }
+
+    // Validate protocol - require HTTPS for non-localhost
+    if (parsed.protocol !== 'https:') {
+        throw new Error(`Federation requires HTTPS for non-localhost hosts: ${userProvidedUrl}`);
+    }
+
+    // If trustedFederationHosts is provided, use explicit allowlist mode
+    if (config.trustedFederationHosts !== undefined) {
+        const trustedHosts = new Set(config.trustedFederationHosts);
+        const allowAnyHost = trustedHosts.has('*');
+
+        // Check explicit list, LearnCard domains, or wildcard.
+        // Note: LearnCard domains are always trusted even with an explicit allowlist -
+        // this is intentional to ensure core federation always works.
+        if (!allowAnyHost && !isLearnCardDomain(host) && !trustedHosts.has(host)) {
+            throw new Error(
+                `Federation host '${host}' is not trusted. ` +
+                    `Add it to trustedFederationHosts or use '*' to allow any host.`
+            );
+        }
+    }
+    // If trustedFederationHosts is not provided, allow any HTTPS host (client-side default)
+    // This enables third-party did:web federation without requiring explicit opt-in
+
+    // Return the validated URL - CodeQL: at this point the URL has been validated
+    // as either matching our service origin, being localhost with permission, or
+    // being HTTPS with a trusted/allowed host
+    return parsed.href;
+};
 
 const uint8ArrayToBase64Url = (bytes: Uint8Array): string => {
     let binary = '';
@@ -312,6 +442,52 @@ const issueCredentialWithNetworkStatus = async (
     );
 };
 
+/**
+ * Inline JSON-LD context fragment required to sign credentials carrying a
+ * LearnCard-managed `LearnCardCredentialRefresh2026` refresh service.
+ *
+ * Neither VCDM 1.1 (which defines only `ManualRefreshService2018`), VCDM 2.0, nor the
+ * live OBv3 contexts define the term `LearnCardCredentialRefresh2026` (nor the LearnCard
+ * `authorization` / `LearnCardDIDAuth` extension terms), so DIDKit's data-loss
+ * detection refuses to sign unless issuers define these terms inline.
+ */
+const MANAGED_REFRESH_SERVICE_CONTEXT = {
+    'LearnCardCredentialRefresh2026':
+        'https://learncard.com/refresh#LearnCardCredentialRefresh2026',
+    authorization: {
+        '@id': 'https://purl.imsglobal.org/spec/ob/v3p0#authorization',
+        '@context': {
+            LearnCardDIDAuth: 'https://docs.learncard.com/definitions#LearnCardDIDAuth',
+        },
+    },
+};
+
+/**
+ * Injects an allocated managed refresh service into an unsigned credential so the
+ * service becomes part of the signed payload. Appends the inline context fragment
+ * unless an equivalent mapping is already present.
+ */
+const injectManagedRefreshService = (
+    credential: UnsignedVC,
+    refreshService: ManagedCredentialRefreshService
+): UnsignedVC => {
+    const existingContext = (credential as Record<string, unknown>)['@context'];
+    const contextList = Array.isArray(existingContext) ? existingContext : [existingContext];
+
+    const hasMapping = contextList.some(
+        entry =>
+            !!entry &&
+            typeof entry === 'object' &&
+            'LearnCardCredentialRefresh2026' in (entry as Record<string, unknown>)
+    );
+
+    return {
+        ...credential,
+        '@context': hasMapping ? contextList : [...contextList, MANAGED_REFRESH_SERVICE_CONTEXT],
+        refreshService,
+    } as UnsignedVC;
+};
+
 export * from './types';
 
 export type GuardianApprovalGetter = () => string | undefined | Promise<string | undefined>;
@@ -319,46 +495,52 @@ export type GuardianApprovalGetter = () => string | undefined | Promise<string |
 /**
  * @group Plugins
  */
+/** Options for the LearnCard Network Plugin */
+export interface LearnCardNetworkPluginOptions extends FederationConfig {
+    guardianApprovalGetter?: GuardianApprovalGetter;
+    extraHeaders?: Record<string, string>;
+}
+
 export async function getLearnCardNetworkPlugin(
     learnCard: LearnCard<any, 'id', LearnCardNetworkPluginDependentMethods>,
     url: string,
-    apiTokenOrOptions?: {
-        guardianApprovalGetter?: GuardianApprovalGetter;
-        extraHeaders?: Record<string, string>;
-    }
+    apiTokenOrOptions?: LearnCardNetworkPluginOptions
 ): Promise<LearnCardNetworkPlugin>;
 export async function getLearnCardNetworkPlugin(
     learnCard: LearnCard<any, any, LearnCardNetworkPluginDependentMethods>,
     url: string,
     apiToken: string,
-    options?: {
-        guardianApprovalGetter?: GuardianApprovalGetter;
-        extraHeaders?: Record<string, string>;
-    }
+    options?: LearnCardNetworkPluginOptions
 ): Promise<LearnCardNetworkPlugin>;
 export async function getLearnCardNetworkPlugin(
     learnCard: LearnCard<any, any, LearnCardNetworkPluginDependentMethods>,
     url: string,
-    apiTokenOrOptions?:
-        | string
-        | {
-              guardianApprovalGetter?: GuardianApprovalGetter;
-              extraHeaders?: Record<string, string>;
-          },
-    options?: {
-        guardianApprovalGetter?: GuardianApprovalGetter;
-        extraHeaders?: Record<string, string>;
-    }
+    apiTokenOrOptions?: string | LearnCardNetworkPluginOptions,
+    options?: LearnCardNetworkPluginOptions
 ): Promise<LearnCardNetworkPlugin> {
     const apiToken = typeof apiTokenOrOptions === 'string' ? apiTokenOrOptions : undefined;
-    const guardianApprovalGetter =
-        (typeof apiTokenOrOptions === 'object'
-            ? apiTokenOrOptions?.guardianApprovalGetter
-            : undefined) ?? options?.guardianApprovalGetter;
+    const resolvedOptions: LearnCardNetworkPluginOptions =
+        (typeof apiTokenOrOptions === 'object' ? apiTokenOrOptions : options) ?? {};
 
-    const extraHeaders =
-        (typeof apiTokenOrOptions === 'object' ? apiTokenOrOptions?.extraHeaders : undefined) ??
-        options?.extraHeaders;
+    const {
+        guardianApprovalGetter,
+        extraHeaders,
+        trustedFederationHosts,
+        allowLocalhostFederation,
+    } = resolvedOptions;
+
+    // Parse service URL to determine origin and auto-detect localhost
+    const serviceUrl = new URL(url);
+    const serviceIsLocalhost = isLocalhostHost(serviceUrl.hostname);
+
+    // Federation config for URL validation
+    // - serviceOrigin: skip validation for self-referential URLs
+    // - allowLocalhostFederation: auto-detect from service URL if not explicitly set
+    const federationConfig: FederationConfig = {
+        trustedFederationHosts,
+        allowLocalhostFederation: allowLocalhostFederation ?? serviceIsLocalhost,
+        serviceOrigin: serviceUrl.origin,
+    };
     // Initialize DID safely: in API-key mode there may be no local ID plane provider
     let did = '';
     try {
@@ -914,13 +1096,14 @@ export async function getLearnCardNetworkPlugin(
                         challenge: `inbox-federation-${crypto.randomUUID()}`,
                     });
 
-                    let receiveUrl = inboxEndpoint;
-
-                    if (receiveUrl.includes('localhost')) {
-                        receiveUrl = receiveUrl.replace('https://', 'http://');
-                    }
+                    // Validate the federation URL. For external DIDs, inboxEndpoint comes
+                    // from the DID doc's serviceEndpoint; for local-service DIDs, it's
+                    // a fixed /api/inbox/receive path from getInboxEndpointForDid.
+                    const receiveUrl = validateFederationUrl(inboxEndpoint, federationConfig);
 
                     const response = await fetch(receiveUrl, {
+                        // A redirect must not bypass endpoint validation or forward credentials.
+                        redirect: 'error',
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -1373,6 +1556,37 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.boost.allocateCredentialStatus.mutate(options);
             },
+            allocateCredentialRefresh: async (_learnCard, input) => {
+                await ensureUser();
+
+                return client.credentialRefresh.allocateCredentialRefresh.mutate(input);
+            },
+            sendRefreshableCredential: async (
+                _learnCard,
+                refreshId,
+                credential,
+                boostUri,
+                skipNotification
+            ) => {
+                await ensureUser();
+
+                return client.credentialRefresh.sendRefreshableCredential.mutate({
+                    refreshId,
+                    credential,
+                    boostUri,
+                    ...(skipNotification ? { skipNotification: true } : {}),
+                });
+            },
+            publishCredentialRefresh: async (_learnCard, input) => {
+                await ensureUser();
+
+                return client.credentialRefresh.publishCredentialRefresh.mutate(input);
+            },
+            getCredentialRefreshHistory: async (_learnCard, input) => {
+                await ensureUser();
+
+                return client.credentialRefresh.getCredentialRefreshHistory.query(input);
+            },
             revokeBoostRecipient: async (
                 _learnCard,
                 boostUri,
@@ -1487,6 +1701,27 @@ export async function getLearnCardNetworkPlugin(
                     boost = options.overideFn(boost);
                 }
 
+                const enableRefresh = typeof options === 'object' && options.enableRefresh === true;
+
+                let managedRefreshId: string | undefined;
+
+                if (enableRefresh) {
+                    // Generate a stable UUID credential ID when the template has none;
+                    // the allocation is permanently bound to this ID.
+                    if (!boost.id) boost.id = `urn:uuid:${crypto.randomUUID()}`;
+
+                    // Allocate BEFORE signing: the refresh service must be part of the
+                    // signed payload, so it is injected before proof creation.
+                    const allocation =
+                        await client.credentialRefresh.allocateCredentialRefresh.mutate({
+                            holder: { profileId, did: targetProfile.did },
+                            credentialId: boost.id,
+                        });
+
+                    managedRefreshId = allocation.refreshId;
+                    boost = injectManagedRefreshService(boost, allocation.refreshService);
+                }
+
                 const statusPurposes =
                     typeof options === 'object' ? options.statusPurposes : undefined;
                 const vc = await issueCredentialWithNetworkStatus(
@@ -1495,6 +1730,22 @@ export async function getLearnCardNetworkPlugin(
                     boost,
                     statusPurposes
                 );
+
+                if (managedRefreshId) {
+                    // Dedicated managed send: brain-service verifies the proof and
+                    // persists ONLY a holder-encrypted JWE. Legacy credential storage
+                    // (issuer/LCN-readable JWE or plaintext) is intentionally bypassed.
+                    // The boost URI is forwarded so the credential stays linked
+                    // INSTANCE_OF the boost for canonical recipient management.
+                    return client.credentialRefresh.sendRefreshableCredential.mutate({
+                        refreshId: managedRefreshId,
+                        credential: vc,
+                        boostUri,
+                        ...(typeof options === 'object' && options.skipNotification
+                            ? { skipNotification: true }
+                            : {}),
+                    });
+                }
 
                 // options is allowed to be a boolean to maintain backwards compatibility
                 if ((typeof options === 'object' && !options.encrypt) || !options) {
@@ -2157,6 +2408,23 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.inbox.finalize.mutate();
             },
+            recoverInboxCredentials: async (learnCard, options = {}) => {
+                const result = await client.inbox.getMyInboxDeliveries.query(options);
+                const results = await Promise.allSettled(
+                    result.records.map(async record => ({
+                        ...record,
+                        credential: VCValidator.parse(
+                            await learnCard.invoke.decryptDagJwe(record.credential, [
+                                learnCard.id.keypair(),
+                            ])
+                        ),
+                    }))
+                );
+                const records = results.flatMap(record =>
+                    record.status === 'fulfilled' ? [record.value] : []
+                );
+                return { ...result, records, failed: results.length - records.length };
+            },
             sendGuardianApprovalEmail: async (_learnCard, options) => {
                 await ensureUser();
 
@@ -2706,6 +2974,13 @@ export const getVerifyBoostPlugin = async (
         if (!issuerDID) return;
         return boostRegistry.find(o => o.did === issuerDID);
     };
+    const getTrustedBoostNetwork = (boostId: unknown): TrustedBoostRegistryEntry | undefined => {
+        if (typeof boostId !== 'string') return;
+        const match = /^lc:network:([^?#\s]+)\/(?:trpc:)?boost:([^/?#\s]+)$/.exec(boostId);
+        if (!match) return;
+        const networkDid = `did:web:${match[1]!.replace(/\//g, ':')}`;
+        return boostRegistry.find(entry => entry.did === networkDid);
+    };
     return {
         name: 'VerifyBoost',
         displayName: 'Verify Boost Extension',
@@ -2716,20 +2991,31 @@ export const getVerifyBoostPlugin = async (
                     credential,
                     options
                 );
+                const hasOuterVerificationErrors = Boolean(verificationCheck.errors?.length);
                 const boostCredential = credential?.boostCredential;
                 try {
-                    if (boostCredential) {
-                        const verifyBoostCredential =
-                            await learnCard.invoke.verifyCredential(boostCredential);
-                        const boostCredentialErrors = verifyBoostCredential.errors ?? [];
-                        if (verifyBoostCredential.status?.length) {
+                    // Legacy credentials contain a separately signed inner VC. New
+                    // credentials are the issuer-signed VC itself with boostId metadata.
+                    const boostId = boostCredential?.boostId ?? credential?.boostId;
+                    if (
+                        boostCredential ||
+                        credential?.boostId ||
+                        credential?.type?.includes('BoostCredential')
+                    ) {
+                        const verifyBoostCredential = boostCredential
+                            ? await learnCard.invoke.verifyCredential(boostCredential)
+                            : verificationCheck;
+                        const boostCredentialErrors = boostCredential
+                            ? (verifyBoostCredential.errors ?? [])
+                            : [];
+                        if (boostCredential && verifyBoostCredential.status?.length) {
                             verificationCheck.status = [
                                 ...(verificationCheck.status ?? []),
                                 ...verifyBoostCredential.status,
                             ];
                         }
 
-                        if (!boostCredential?.boostId && !credential?.boostId) {
+                        if (!boostId) {
                             verificationCheck.warnings.push(
                                 'Boost Authenticity could not be verified: Boost ID metadata is missing.'
                             );
@@ -2751,21 +3037,37 @@ export const getVerifyBoostPlugin = async (
                                 ...(verificationCheck.errors || []),
                                 'Boost Credential could not be verified.',
                             ];
-                        } else if (boostCredential?.boostId !== credential?.boostId) {
+                        } else if (hasOuterVerificationErrors) {
+                            verificationCheck.warnings.push(
+                                'Boost Authenticity could not be verified: Credential verification failed.'
+                            );
+                        } else if (!boostId) {
+                            // The missing metadata warning above explains why trust is unknown.
+                        } else if (
+                            boostCredential &&
+                            boostCredential.boostId !== credential.boostId
+                        ) {
                             verificationCheck.errors.push(
                                 'Boost Authenticity could not be verified: Boost ID metadata is mismatched.'
                             );
                         } else {
-                            const trustedBoostIssuer = getTrustedBoostVerifier(credential?.issuer);
+                            // A direct VC is signed by the issuing authority, not by the
+                            // network. Its signed boostId identifies the associated network.
+                            // Legacy wrappers still establish trust through the outer issuer.
+                            const trustedBoostIssuer = boostCredential
+                                ? getTrustedBoostVerifier(credential?.issuer)
+                                : getTrustedBoostNetwork(boostId);
                             if (trustedBoostIssuer) {
                                 verificationCheck.checks.push(
                                     `Boost is Authentic. Verified by ${trustedBoostIssuer.id}.`
                                 );
                             } else {
                                 verificationCheck.warnings.push(
-                                    `Boost Authenticity could not be verified. Issuer is outside of trust network: ${getIssuerDID(
-                                        credential?.issuer
-                                    )}`
+                                    boostCredential
+                                        ? `Boost Authenticity could not be verified. Issuer is outside of trust network: ${getIssuerDID(
+                                              credential?.issuer
+                                          )}`
+                                        : `Boost Authenticity could not be verified. Boost ID does not identify a trusted network: ${boostId}`
                                 );
                             }
                         }

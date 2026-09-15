@@ -107,6 +107,30 @@ describe('Signing Authorities', () => {
             ).resolves.not.toThrow();
         });
 
+        test('Should keep the primary signing authority primary when it is re-registered via SDK', async () => {
+            const learnCard = await getLearnCard(crypto.randomBytes(32).toString('hex'));
+            await learnCard.invoke.createServiceProfile({
+                profileId: `primary-reregister-${crypto.randomBytes(4).toString('hex')}`,
+                displayName: 'Primary Re-register Test User',
+                bio: '',
+                shortBio: '',
+            });
+
+            const sa = await learnCard.invoke.createSigningAuthority('test-sa-primary');
+            expect(sa).toBeDefined();
+            if (!sa) throw new Error('Could not create signing authority.');
+
+            await learnCard.invoke.registerSigningAuthority(sa.endpoint, sa.name, sa.did);
+            await learnCard.invoke.registerSigningAuthority(sa.endpoint, sa.name, sa.did);
+
+            await expect(
+                learnCard.invoke.getPrimaryRegisteredSigningAuthority()
+            ).resolves.toMatchObject({
+                signingAuthority: { endpoint: sa.endpoint },
+                relationship: { name: sa.name, did: sa.did },
+            });
+        });
+
         test('Should reject invalid signing authority names via HTTP route', async () => {
             const learnCard = await getLearnCard(crypto.randomBytes(32).toString('hex'));
             await learnCard.invoke.createServiceProfile({

@@ -1,5 +1,66 @@
 # @learncard/network-brain-service
 
+## 3.17.0
+
+### Minor Changes
+
+- [#1533](https://github.com/learningeconomy/LearnCard/pull/1533) [`80d2ebf54bb5a643808f8f7d908cf68758903dce`](https://github.com/learningeconomy/LearnCard/commit/80d2ebf54bb5a643808f8f7d908cf68758903dce) Thanks [@goblincore](https://github.com/goblincore)! - Managed credential refresh (LC-2117, LC-2135, LC-2136)
+
+    - Holder refresh through the W3C `refreshService` extension point: standard `1EdTechCredentialRefresh` signed JSON responses and a separate `LearnCardCredentialRefresh2026` encrypted, DID-authenticated managed protocol. Includes SSRF guards, proof/issuer/subject/ID/freshness validation, and typed failures. Compact VC-JWT support is deferred to LC-2195; full 1EdTech protocol conformance is not claimed. Previously issued managed QA credentials must be reissued with the new signed service type.
+    - Managed issuer refresh service in brain-service: allocate-before-signing, issuer-signed and signing-authority publication, immutable holder-encrypted (JWE-only) version chain, holder-authenticated `/refresh/:refreshId` endpoint with ETag/304, history, and revocation gating.
+    - In-place holder wallet replacement with encrypted previous-version history, foreground-only staleness scanning (24h default, configurable), and per-record concurrency safety.
+    - Privacy-safe `CREDENTIAL_REFRESHED` notifications with materiality detection, issuer overrides, and one collapsed record per configurable delivery window.
+    - App surfaces: refresh listener, Updated indicator, notification card, and previous-versions history UI; provisional-to-final CLR demo in the credential viewer.
+
+- [#1528](https://github.com/learningeconomy/LearnCard/pull/1528) [`75d1816d5bbbd17772ef4c1c6b4932deacb9ccb5`](https://github.com/learningeconomy/LearnCard/commit/75d1816d5bbbd17772ef4c1c6b4932deacb9ccb5) Thanks [@Custard7](https://github.com/Custard7)! - `send()` accepts `options.expiresInDays` (1–720, default 30) for email and phone recipients, matching `/inbox/issue`. It sets how long the credential stays claimable in the Universal Inbox; it does not change the credential's validity period.
+
+### Patch Changes
+
+- [#1573](https://github.com/learningeconomy/LearnCard/pull/1573) [`766100377181a2767b1913b4146c5dd004a926ea`](https://github.com/learningeconomy/LearnCard/commit/766100377181a2767b1913b4146c5dd004a926ea) Thanks [@goblincore](https://github.com/goblincore)! - fix: expose credential refresh challenge through API Gateway
+
+- [#1555](https://github.com/learningeconomy/LearnCard/pull/1555) [`6315fa3346cf75df2c6cbabe78962a9faa408781`](https://github.com/learningeconomy/LearnCard/commit/6315fa3346cf75df2c6cbabe78962a9faa408781) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-2154] - Harden universal inbox
+
+- Updated dependencies [[`75d1816d5bbbd17772ef4c1c6b4932deacb9ccb5`](https://github.com/learningeconomy/LearnCard/commit/75d1816d5bbbd17772ef4c1c6b4932deacb9ccb5), [`6315fa3346cf75df2c6cbabe78962a9faa408781`](https://github.com/learningeconomy/LearnCard/commit/6315fa3346cf75df2c6cbabe78962a9faa408781), [`80d2ebf54bb5a643808f8f7d908cf68758903dce`](https://github.com/learningeconomy/LearnCard/commit/80d2ebf54bb5a643808f8f7d908cf68758903dce), [`75d1816d5bbbd17772ef4c1c6b4932deacb9ccb5`](https://github.com/learningeconomy/LearnCard/commit/75d1816d5bbbd17772ef4c1c6b4932deacb9ccb5)]:
+    - @learncard/expiration-plugin@1.2.34
+    - @learncard/types@5.19.0
+    - @learncard/helpers@1.5.0
+    - @learncard/vc-plugin@1.6.0
+    - @learncard/core@9.4.34
+    - @learncard/did-web-plugin@1.1.34
+    - @learncard/didkey-plugin@1.1.34
+    - @learncard/didkit-plugin@1.9.14
+    - @learncard/didkit-plugin-node@0.2.32
+    - @learncard/encryption-plugin@1.1.34
+    - @learncard/learn-card-plugin@1.2.34
+    - @learncard/vc-templates-plugin@1.1.34
+    - @learncard/crypto-plugin@1.1.34
+    - @learncard/dynamic-loader-plugin@1.1.34
+
+## 3.16.17
+
+### Patch Changes
+
+- [#1549](https://github.com/learningeconomy/LearnCard/pull/1549) [`9cc246bd0571b5b29c60b9dcff287c1b69e012cf`](https://github.com/learningeconomy/LearnCard/commit/9cc246bd0571b5b29c60b9dcff287c1b69e012cf) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-2175] & [LC-2176] Fixing CodeQL alerts
+
+    **Breaking change in @learncard/openid4vc-plugin**: `defaultMakeId` now throws if
+    `crypto.getRandomValues` is unavailable (no `Math.random()` fallback). This affects
+    legacy environments without Web Crypto API — modern browsers and Node.js are unaffected.
+
+- Updated dependencies [[`55284a9b1613d46491a03d2d527b192eb2db64c9`](https://github.com/learningeconomy/LearnCard/commit/55284a9b1613d46491a03d2d527b192eb2db64c9), [`9cc246bd0571b5b29c60b9dcff287c1b69e012cf`](https://github.com/learningeconomy/LearnCard/commit/9cc246bd0571b5b29c60b9dcff287c1b69e012cf), [`55284a9b1613d46491a03d2d527b192eb2db64c9`](https://github.com/learningeconomy/LearnCard/commit/55284a9b1613d46491a03d2d527b192eb2db64c9)]:
+    - @learncard/didkit-plugin@1.9.13
+    - @learncard/didkit-plugin-node@0.2.31
+    - @learncard/helpers@1.4.1
+    - @learncard/core@9.4.33
+    - @learncard/crypto-plugin@1.1.33
+    - @learncard/did-web-plugin@1.1.33
+    - @learncard/didkey-plugin@1.1.33
+    - @learncard/dynamic-loader-plugin@1.1.33
+    - @learncard/encryption-plugin@1.1.33
+    - @learncard/expiration-plugin@1.2.33
+    - @learncard/learn-card-plugin@1.2.33
+    - @learncard/vc-plugin@1.5.13
+    - @learncard/vc-templates-plugin@1.1.33
+
 ## 3.16.16
 
 ### Patch Changes

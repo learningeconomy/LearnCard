@@ -16,7 +16,7 @@ const log = getLogger('resolve-tenant-config');
 import type { TenantConfig } from './tenantConfig';
 import {
     parseTenantConfig,
-    parsePartialTenantConfig,
+    parseTenantConfigOverlay,
     TenantConfigValidationError,
     TENANT_CONFIG_SCHEMA_VERSION,
 } from './tenantConfigSchema';
@@ -252,13 +252,27 @@ const fetchFreshConfig = async (
         try {
             raw = await response.json();
         } catch {
+            // A baked config exists (native builds), so a bad response from the
+            // overlay endpoint is non-fatal — e.g. the Capacitor asset server
+            // SPA-fallbacks unknown paths to index.html with HTTP 200.
+            if (mergeBase) {
+                const message = `TenantConfig endpoint ${url} returned invalid JSON`;
+
+                log.warn(`[TenantConfig] ${message} — using baked config`);
+                onEvent?.('config:fetch_error', message, { url, durationMs });
+                _onFetchFailure?.({ endpoint: url, error: message });
+
+                return null;
+            }
+
             throw new TenantConfigResolutionError(
                 `TenantConfig endpoint ${url} returned invalid JSON`
             );
         }
 
-        const partial = parsePartialTenantConfig(raw, `fetch ${url} (overlay)`);
+        const partial = parseTenantConfigOverlay(raw, `fetch ${url} (overlay shape)`);
         const overlay: Record<string, unknown> = { ...partial };
+        const overlayKeys = Object.keys(overlay);
 
         if (!mergeBase && (!partial.tenantId || !partial.domain)) {
             throw new TenantConfigResolutionError(
@@ -269,7 +283,12 @@ const fetchFreshConfig = async (
             ...(mergeBase ?? VALIDATED_DEFAULT_TENANT_CONFIG),
         };
         const merged = deepMerge(base, overlay);
-        const result = parseTenantConfig(merged, `fetch ${url} (merged overlay)`);
+        const result = parseTenantConfig(
+            merged,
+            `fetch ${url} (merged overlay; overlay keys: ${overlayKeys.join(', ') || 'none'} → ${
+                mergeBase ? `baked ${mergeBase.tenantId}` : 'defaults'
+            })`
+        );
 
         onEvent?.(
             'config:fetch_partial_merge',
@@ -279,7 +298,7 @@ const fetchFreshConfig = async (
             {
                 url,
                 durationMs,
-                overrideKeys: Object.keys(overlay),
+                overrideKeys: overlayKeys,
                 mergeBase: mergeBase ? `baked (${mergeBase.tenantId})` : 'defaults',
             }
         );

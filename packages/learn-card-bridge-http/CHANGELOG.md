@@ -1,5 +1,30 @@
 # @learncard/create-http-bridge
 
+## 1.1.255
+
+### Patch Changes
+
+- Updated dependencies [[`6315fa3346cf75df2c6cbabe78962a9faa408781`](https://github.com/learningeconomy/LearnCard/commit/6315fa3346cf75df2c6cbabe78962a9faa408781), [`80d2ebf54bb5a643808f8f7d908cf68758903dce`](https://github.com/learningeconomy/LearnCard/commit/80d2ebf54bb5a643808f8f7d908cf68758903dce), [`75d1816d5bbbd17772ef4c1c6b4932deacb9ccb5`](https://github.com/learningeconomy/LearnCard/commit/75d1816d5bbbd17772ef4c1c6b4932deacb9ccb5)]:
+    - @learncard/types@5.19.0
+    - @learncard/init@2.4.15
+
+## 1.1.254
+
+### Patch Changes
+
+- [#1540](https://github.com/learningeconomy/LearnCard/pull/1540) [`55284a9b1613d46491a03d2d527b192eb2db64c9`](https://github.com/learningeconomy/LearnCard/commit/55284a9b1613d46491a03d2d527b192eb2db64c9) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Rebuild DIDKit consumers from the LC-2160 Rust dependency remediation, removing vulnerable legacy dependency branches. Preserve seeded Ed25519 identities and JWE interoperability. Preserve DIDKit's independent workspace lock during WASM builds, and validate native prebuilds for SSI/DIDKit pin changes.
+
+    RSA Marvin (RUSTSEC-2023-0071) remains unresolved in rsa 0.9.10. Deployment requires separate authorized risk approval. Hosted WASM publication and its immutable default URL must be updated before this release ships.
+
+- [#1549](https://github.com/learningeconomy/LearnCard/pull/1549) [`9cc246bd0571b5b29c60b9dcff287c1b69e012cf`](https://github.com/learningeconomy/LearnCard/commit/9cc246bd0571b5b29c60b9dcff287c1b69e012cf) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-2175] & [LC-2176] Fixing CodeQL alerts
+
+    **Breaking change in @learncard/openid4vc-plugin**: `defaultMakeId` now throws if
+    `crypto.getRandomValues` is unavailable (no `Math.random()` fallback). This affects
+    legacy environments without Web Crypto API — modern browsers and Node.js are unaffected.
+
+- Updated dependencies []:
+    - @learncard/init@2.4.14
+
 ## 1.1.253
 
 ### Patch Changes
