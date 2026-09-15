@@ -1,12 +1,19 @@
 # .github/workflows/chromatic.yml
 # Publishes Storybook to Chromatic for visual regression testing.
 # Docs: https://www.chromatic.com/docs/github-actions/
+#
+# Snapshot budget: Chromatic bills per story snapshot, and the app's Storybook depends on
+# nearly the whole workspace, so gating on "is learn-card-app NX-affected" ran a full publish
+# on almost every PR. Instead, each job runs only when files that can change what Storybook
+# renders are touched: story files, Storybook config, and the component source that stories
+# import. Changes elsewhere in the monorepo skip Chromatic entirely.
 
 name: 'Chromatic'
 
 on:
-    # Keep a current baseline build for every main commit. Without this, Chromatic
-    # cannot compare a PR once its merge base advances past the last published build.
+    # Keep a current baseline build for every main commit that touches Storybook. Without
+    # this, Chromatic cannot compare a PR once its merge base advances past the last
+    # published build.
     push:
         branches: [main]
     pull_request:
@@ -24,8 +31,38 @@ env:
     NODE_OPTIONS: '--max_old_space_size=8192'
 
 jobs:
+    changes:
+        runs-on: ubuntu-latest
+        outputs:
+            react: ${{ steps.filter.outputs.react }}
+            learn-card-app: ${{ steps.filter.outputs.learn-card-app }}
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v7
+
+            # On pull_request this diffs against the PR base; on push it diffs against the
+            # previous commit on main.
+            - name: Detect Storybook-relevant changes
+              uses: dorny/paths-filter@v3
+              id: filter
+              with:
+                  filters: |
+                      react:
+                        - 'packages/react-learn-card/.storybook/**'
+                        - 'packages/react-learn-card/src/**'
+                        - 'packages/react-learn-card/package.json'
+                        - '.github/workflows/chromatic.yml'
+                      learn-card-app:
+                        - 'apps/learn-card-app/.storybook/**'
+                        - 'apps/learn-card-app/src/**/*.stories.ts'
+                        - 'apps/learn-card-app/src/**/*.stories.tsx'
+                        - 'packages/learn-card-base/src/components/**'
+                        - 'packages/react-learn-card/src/components/**'
+                        - '.github/workflows/chromatic.yml'
+
     chromatic-deployment:
-        if: github.event_name == 'pull_request'
+        needs: changes
+        if: github.event_name == 'pull_request' && needs.changes.outputs.react == 'true'
         runs-on: ubuntu-latest
         steps:
             - name: Checkout Repo
@@ -35,35 +72,26 @@ jobs:
                   # Chromatic needs full git history to compare against the baseline.
                   fetch-depth: 0
 
-            - name: Fetch main for NX comparison
-              run: git fetch --no-tags --prune origin main
-
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
 
-            - name: Get affected projects
-              id: affected
-              run: |
-                  {
-                      echo "AFFECTED<<EOF"
-                      bunx nx show projects --affected --base=origin/main --head=HEAD
-                      echo "EOF"
-                  } >> "$GITHUB_ENV"
-
             - name: Build @learncard/react
-              if: contains(env.AFFECTED, 'react')
               run: bunx nx build react
 
             - name: Publish to Chromatic
-              if: contains(env.AFFECTED, 'react')
               uses: chromaui/action@latest
               with:
                   projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
                   workingDir: packages/react-learn-card
+                  # TurboSnap: only snapshot stories whose files (or their dependencies) changed
+                  # since the baseline.
+                  onlyChanged: true
                   # Don't fail the build on visual changes — they're reviewed in Chromatic's UI.
                   exitZeroOnChanges: true
 
     chromatic-learn-card-app:
+        needs: changes
+        if: needs.changes.outputs.learn-card-app == 'true'
         runs-on: ubuntu-latest
         steps:
             - name: Checkout Repo
@@ -73,34 +101,20 @@ jobs:
                   # Chromatic needs full git history to compare against the baseline.
                   fetch-depth: 0
 
-            - name: Fetch main for NX comparison
-              run: git fetch --no-tags --prune origin main
-
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
-
-            - name: Get affected projects
-              id: affected
-              run: |
-                  {
-                      echo "AFFECTED<<EOF"
-                      bunx nx show projects --affected --base=origin/main --head=HEAD
-                      echo "EOF"
-                  } >> "$GITHUB_ENV"
 
             # The app's Storybook imports workspace packages from their built dist/ output, so the
             # app's entire transitive dependency closure must be compiled first. The closure is derived
             # from the nx graph at runtime (rather than hardcoded) so new dependencies are covered
             # automatically. run-many skips any project in the closure that has no build target.
             - name: Build workspace dependencies
-              if: github.event_name == 'push' || contains(env.AFFECTED, 'learn-card-app')
               run: |
                   bunx nx graph --focus=learn-card-app --file=dep-graph.json
                   PROJECTS=$(bun -e "const g=require('./dep-graph.json');const deps=g.graph.dependencies;const seen=new Set();const q=['learn-card-app'];while(q.length){const n=q.pop();for(const d of (deps[n]||[])){if(d.target.startsWith('npm:'))continue;if(!seen.has(d.target)){seen.add(d.target);q.push(d.target);}}}process.stdout.write([...seen].join(','));")
                   bunx nx run-many -t build --projects="$PROJECTS"
 
             - name: Publish to Chromatic
-              if: github.event_name == 'push' || contains(env.AFFECTED, 'learn-card-app')
               uses: chromaui/action@latest
               with:
                   projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN_LCA }}
