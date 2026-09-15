@@ -1,6 +1,6 @@
 import { BitstringStatusListEntryValidator, UnsignedVC, VC, JWE } from '@learncard/types';
 import { v4 as uuid } from 'uuid';
-import { isEncrypted } from '@learncard/helpers';
+import { getBitstringStatusListEntries, isEncrypted } from '@learncard/helpers';
 import { isIssuedCredential } from '@helpers/issuedCredentialStatus.helpers';
 import type { IssuedCredential } from 'types/credential';
 
@@ -13,14 +13,18 @@ export const storeCredential = async (
 
     const issued = isIssuedCredential(input);
     const credential = issued ? input.credential : input;
-    // Fail if an internal issuance result lost its metadata. Client-encrypted
-    // wire payloads remain supported, with an explicit revocation warning.
+    // Fail if an internal issuance result lost its metadata. Pre-signed wire
+    // payloads remain supported, with an explicit revocation warning.
     const statusEntries = issued
         ? BitstringStatusListEntryValidator.array().parse(input.statusEntries)
         : undefined;
-    if (isEncrypted(credential) && !statusEntries) {
+    const encrypted = isEncrypted(credential);
+    if (
+        !statusEntries?.length &&
+        (encrypted || !getBitstringStatusListEntries(credential).length)
+    ) {
         console.warn(
-            '[storeCredential] Encrypted credential has no status metadata; network revocation and suspension cannot update its signed status list.',
+            `[storeCredential] ${encrypted ? 'Encrypted' : 'Plaintext'} credential has no status metadata; network revocation and suspension cannot update its signed status list.`,
             { credentialId: id }
         );
     }

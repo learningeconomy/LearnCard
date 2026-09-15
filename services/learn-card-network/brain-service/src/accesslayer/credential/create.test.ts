@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { JWE } from '@learncard/types';
+import type { JWE, VC } from '@learncard/types';
 import type { IssuedCredential } from '../../types/credential';
 
 const mocks = vi.hoisted(() => ({ createOne: vi.fn(async input => input) }));
@@ -21,8 +21,16 @@ const createJwe = (): JWE => ({
     tag: 'tag',
     recipients: [],
 });
+const createVc = (): VC => ({
+    '@context': ['https://www.w3.org/2018/credentials/v1'],
+    type: ['VerifiableCredential'],
+    issuer: 'did:example:issuer',
+    issuanceDate: '2026-01-01T00:00:00Z',
+    credentialSubject: { id: 'did:example:subject' },
+    proof: { type: 'Ed25519Signature2020', proofValue: 'existing-signature' },
+});
 
-describe('encrypted credential status storage', () => {
+describe('credential status storage', () => {
     beforeEach(() => {
         vi.restoreAllMocks();
         vi.clearAllMocks();
@@ -64,6 +72,53 @@ describe('encrypted credential status storage', () => {
         await expect(storeCredential(issued)).rejects.toThrow();
         expect(mocks.createOne).not.toHaveBeenCalled();
     });
+
+    it.each([undefined, []])(
+        'warns for a pre-signed plaintext VC with missing or empty status (%j) and preserves its signature',
+        async credentialStatus => {
+            const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+            const credential = { ...createVc(), credentialStatus };
+            const stored = await storeCredential(credential);
+            expect(warn).toHaveBeenCalledExactlyOnceWith(
+                expect.stringContaining('Plaintext credential has no status metadata'),
+                { credentialId: stored.id }
+            );
+            expect(stored.credential).toBe(JSON.stringify(credential));
+            expect(stored.statusEntries).toBeUndefined();
+        }
+    );
+
+    it.each([statusEntry, [statusEntry]])(
+        'does not warn for a plaintext VC with embedded status entries (%j)',
+        async credentialStatus => {
+            const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+            const credential = { ...createVc(), credentialStatus };
+            const stored = await storeCredential(credential);
+            expect(warn).not.toHaveBeenCalled();
+            expect(stored.credential).toBe(JSON.stringify(credential));
+        }
+    );
+
+    it.each([
+        ['Encrypted', createJwe()],
+        ['Plaintext', createVc()],
+    ] as const)(
+        'warns for %s VC v1 issuance with empty status metadata',
+        async (kind, credential) => {
+            const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+            const stored = await storeCredential({
+                kind: 'issued-credential',
+                credential,
+                statusEntries: [],
+            });
+            expect(warn).toHaveBeenCalledExactlyOnceWith(
+                expect.stringContaining(`${kind} credential has no status metadata`),
+                { credentialId: stored.id }
+            );
+            expect(stored.credential).toBe(JSON.stringify(credential));
+            expect(stored.statusEntries).toBeUndefined();
+        }
+    );
 
     it('does not treat a wire JWE with extra envelope-like fields as trusted issuance metadata', async () => {
         vi.spyOn(console, 'warn').mockImplementation(() => {});
