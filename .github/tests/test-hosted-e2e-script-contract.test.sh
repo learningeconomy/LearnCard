@@ -36,6 +36,11 @@ grep -Fq 'docker compose up -d --no-build' "$SERVICE_SCRIPT"
     || { echo 'service runner must not bypass the GHA-backed Bake build' >&2; exit 1; }
 grep -Fq 'E2E_MANAGE_DOCKER=false' "$SERVICE_SCRIPT"
 grep -Fq 'nx run e2e:test:e2e' "$SERVICE_SCRIPT"
+grep -Fq 'E2E_VITEST_ARGS' "$SERVICE_SCRIPT"
+perl -0ne 'exit !/--shard=\$\{E2E_SHARD\}\/\$\{E2E_SHARD_TOTAL\}/s' "$SERVICE_SCRIPT" \
+    || { echo 'service runner must forward the vitest shard' >&2; exit 1; }
+grep -Fq 'vitest run $E2E_VITEST_ARGS' "$REPO_ROOT/tests/e2e/package.json" \
+    || { echo 'tests/e2e test:e2e script must accept injected vitest args' >&2; exit 1; }
 grep -Fq 'docker compose down --remove-orphans -v' "$SERVICE_SCRIPT"
 
 BAKE_JSON="$(docker buildx bake --file "$BAKE_FILE" --print browser service)"
