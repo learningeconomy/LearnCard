@@ -1,6 +1,6 @@
 # LC-2198 coordinator fixes and validation
 
-Date: 2026-09-16. Branch: `codex/lc-2198-review-fixes`, based on `892d79411` (completed Dispatch task chain). Independent follow-up review pending.
+Date: 2026-09-16. Branch: `codex/lc-2198-review-fixes`, based on `892d79411` (completed Dispatch task chain). Independent follow-up review **PASS**, recorded in [fixes-independent-review.md](./fixes-independent-review.md). Reviewed production commit: `487070bf547056da40bca469a10158470e4e87c8`; reviewer report commit: `32493ce67`.
 
 ## Corrections
 
@@ -34,3 +34,11 @@ The e2e brain and cloud were recreated from this worktree's compose file using t
 - Previous task 4/5 baseline comparison found 10 local email/inbox failures in `unified-send.spec.ts`. Those unrelated full-suite failures were not rerun in this fix pass; CI still needs that coverage. The managed E2E and ordinary compatibility coverage inside it pass.
 - DID-document cache invalidation on signing-authority registration remains separate work. The tests retain their explicit resolver refresh after SA setup.
 - No push, PR creation, deployment, merge to main, or Jira transition performed.
+
+## Final coordinator assessment
+
+The fresh GLM 5.3 Flash reviewer independently reproduced all package tests/typechecks, 36 server integrations and 17 real E2Es. No blocking findings remain for this fix pass. The reviewer report is preserved alongside this evidence. Local branch `codex/lc-2198-review-fixes` contains the complete original implementation, fixes and independent review.
+
+One low-severity follow-up is retained: manually signed credentials can embed boost A while delivery names issuer-owned boost B. Coordinator confirmed the same missing cross-check in baseline `6cc28b6f9`, before LC-2198. Clarification of Finding A's replay wording: replay validates the credential digest against the original credential and the graph anchor against the original graph anchor separately; it does **not** compare the embedded boost URI to the graph anchor, even on replay. The SDK's fixed local-signing flow uses the same URI in both places. A future validation change should reject a present mismatching embedded boost URI before persistence, with initial-send and replay regression tests; compare URI to URI, not the graph's bare boost ID. This is tracked separately from the completed fixes, along with SA DID-document cache invalidation.
+
+Suggested PR title: **Enable managed refresh through unified credential sends**. Use the original task-5 PR outline plus this correction: inline SDK sends prepare the boost before signing, explicit pre-signed inputs remain unchanged, and array reinjection is idempotent. Replace task-5's obsolete deferred-defect list with the current limits above.
