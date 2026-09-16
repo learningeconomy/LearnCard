@@ -99,6 +99,7 @@ describe('EndorsementForm', () => {
 
         expect(modalRoot).toHaveClass('overflow-hidden');
         expect(scrollingContent).toHaveClass('overflow-y-auto');
+        expect(scrollingContent?.firstElementChild).toHaveClass('pb-[200px]');
         expect(scrollingContent).not.toContainElement(footer);
     });
 

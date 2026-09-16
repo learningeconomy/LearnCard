@@ -141,7 +141,7 @@ export const convertAttachmentsToEvidence = (
         .map(att => {
             const evidence: EndorsementEvidence = {
                 id: att.url || undefined,
-                type: ['Evidence', 'EvidenceFile'] as [string, ...string[]],
+                type: ['Evidence'],
                 name: att.title || att.fileName || undefined,
                 genre: att.type || undefined,
 

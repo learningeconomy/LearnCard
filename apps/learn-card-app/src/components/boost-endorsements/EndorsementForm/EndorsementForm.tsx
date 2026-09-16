@@ -154,7 +154,7 @@ export const EndorsementForm: React.FC<{
                     categoryType={categoryType}
                     isRequest={isRequest}
                 />
-                <div className="w-full flex flex-col items-center justify-center px-4 pt-4 pb-[150px] bg-grayscale-100 h-full">
+                <div className="w-full flex flex-col items-center justify-center px-4 pt-4 pb-[200px] bg-grayscale-100 h-full">
                     <EndorsementFormBoostPreviewCard
                         credential={credential}
                         categoryType={categoryType}
