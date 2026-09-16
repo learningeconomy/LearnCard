@@ -19,12 +19,6 @@ vi.mock('@learncard/didkey-plugin', () => ({ getDidKeyPlugin: vi.fn() }));
 vi.mock('@learncard/vc-plugin', () => ({ getVCPlugin: vi.fn() }));
 vi.mock('@learncard/helpers', async importOriginal => ({
     ...(await importOriginal<typeof import('@learncard/helpers')>()),
-    isVC2Format: (credential: any) => {
-        const contexts = credential?.['@context'];
-        const list = Array.isArray(contexts) ? contexts : [contexts];
-
-        return list.includes('https://www.w3.org/ns/credentials/v2');
-    },
     getCredentialStatusArray: () => [],
     resolveStorageReadResult: (value: any) => value,
 }));
