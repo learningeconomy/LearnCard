@@ -4,7 +4,7 @@ const recipient = process.argv[2];
 if (!recipient)
     throw new Error('Usage: node --env-file=.env send-from-template.mjs you@example.com');
 if (!process.env.TEMPLATE_URI)
-    throw new Error('Run npx @learncard/cli send you@example.com --template first.');
+    throw new Error('Run npx @learncard/cli send --template first.');
 
 // The CLI saved a template and registered your primary signing authority once.
 const learnCard = await initLearnCard({ seed: process.env.SECURE_SEED, network: true });

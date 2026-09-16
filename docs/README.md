@@ -4,10 +4,10 @@
 
 LearnCard is an open-source wallet, SDK, and network built on [W3C Verifiable Credentials](core-concepts/credentials-and-data/verifiable-credentials-vcs.md) and [Decentralized Identifiers (DIDs)](core-concepts/identities-and-keys/decentralized-identifiers-dids.md). The [Glossary](introduction/glossary.md) defines these terms.
 
-Send a badge to your inbox:
+Send a badge to your inbox (it asks for your email):
 
 ```bash
-npx @learncard/cli send you@example.com
+npx @learncard/cli send
 ```
 
 The [Quickstart](quick-start/your-first-integration.md) has code and no-key options.

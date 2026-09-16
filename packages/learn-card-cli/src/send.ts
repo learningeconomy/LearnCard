@@ -122,18 +122,71 @@ export const personalizeSendFromTemplateMjs = (deliveryOptions?: SendDeliveryOpt
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE = /^\+?\d{10,15}$/;
+/** Domains reserved for documentation (RFC 2606 / RFC 6761). Mail to them goes nowhere. */
+const PLACEHOLDER_DOMAIN = /(^|\.)example\.(com|net|org)$|\.(example|test|invalid|localhost)$/i;
 
-export const runSend = async (recipientEmail: string, options: SendOptions): Promise<void> => {
-    if (!EMAIL.test(recipientEmail) && !PHONE.test(recipientEmail))
-        throw new Error(
-            `"${recipientEmail}" is not an email address or phone number. Example: npx @learncard/cli send you@example.com`
-        );
+export const RECIPIENT_PROMPT = 'Where should we send your first badge? (your email or phone)';
+
+export const isPlaceholderRecipient = (recipient: string): boolean => {
+    const at = recipient.lastIndexOf('@');
+    return at !== -1 && PLACEHOLDER_DOMAIN.test(recipient.slice(at + 1));
+};
+
+/**
+ * Returns a human-readable reason `recipient` cannot receive a badge, or `undefined` if it can.
+ * Placeholder addresses like you@example.com pass a naive email check but are undeliverable,
+ * so they are called out specifically — docs readers paste them verbatim.
+ */
+export const invalidRecipientReason = (recipient: string): string | undefined => {
+    if (isPlaceholderRecipient(recipient))
+        return `"${recipient}" is a placeholder address — nobody will receive the badge. Use a real email you can open.`;
+    if (!EMAIL.test(recipient) && !PHONE.test(recipient))
+        return `"${recipient}" is not an email address or phone number.`;
+    return undefined;
+};
+
+type Prompts = ReturnType<typeof createPrompts>;
+
+/**
+ * Settle on a deliverable recipient. When a human is at the terminal, bad or missing input
+ * re-prompts instead of failing; non-interactive runs throw a clear error.
+ */
+export const resolveRecipient = async (
+    recipient: string | undefined,
+    prompts: Prompts,
+    interactive: boolean
+): Promise<string> => {
+    let candidate = recipient?.trim();
+    if (!candidate) {
+        if (!interactive)
+            throw new Error(
+                'A recipient is required when running non-interactively. Example: npx @learncard/cli send you@yourdomain.com --yes'
+            );
+        candidate = await prompts.ask(RECIPIENT_PROMPT, '');
+    }
+    let reason = invalidRecipientReason(candidate);
+    while (reason) {
+        if (!interactive)
+            throw new Error(`${reason} Example: npx @learncard/cli send you@yourdomain.com`);
+        out.log(reason);
+        candidate = await prompts.ask(RECIPIENT_PROMPT, '');
+        reason = invalidRecipientReason(candidate);
+    }
+    return candidate;
+};
+
+export const runSend = async (
+    recipient: string | undefined,
+    options: SendOptions
+): Promise<void> => {
     const cwd = process.cwd();
     const project = await loadProject(cwd);
     const prompts = createPrompts(options.yes);
+    let recipientEmail: string;
     let displayName: string | undefined;
     let badge: Badge;
     try {
+        recipientEmail = await resolveRecipient(recipient, prompts, prompts.interactive);
         const needsName = !project.env.PROFILE_ID && !options.profileId && !options.name;
         displayName = needsName
             ? await prompts.ask('Display name for your issuer profile', 'My Organization')
