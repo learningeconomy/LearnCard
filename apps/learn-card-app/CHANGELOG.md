@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.98.9
+
+### Patch Changes
+
+- [#1536](https://github.com/learningeconomy/LearnCard/pull/1536) [`b4f94f5a5ffbd52bad6cd26dc3dd627df8d5e6fb`](https://github.com/learningeconomy/LearnCard/commit/b4f94f5a5ffbd52bad6cd26dc3dd627df8d5e6fb) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Return live, unexpired consent metadata for server-side AI authorization, preserving original adult grants and exposing current manager-backed guardian approval for child profiles. Record verified guardian approval with consent terms and audit transactions; require reapproval for legacy child grants or changed contracts. Bind client approval caching and request headers to the specific child, and prevent failed signing from authorizing a guarded action.
+
+    Require current app-owned consent when resolving learner context, including credential sharing exclusions and withdrawn or expired grants. The formatter client sends only selected storage URIs and personal-field names to the configured AI service, refreshes consented data for each request, and exposes the server's consent revision and cache metadata. Remove browser prompt caching and legacy DID-based AI authentication; invalidate sessions and WebSocket tickets across wallet or service changes, including in-flight negotiations.
+
+    Refresh guardian approval at final consent submission if it expired while editing. Issue standards-valid signed credentials in the learner-context benchmark so the formatter exercises real proof verification rather than accepting unverifiable fixtures.
+
+    Breaking partner-connect change (minor release while on 0.x): `LearnerContextCacheStatus` no longer includes `browser-hit` or `browser-miss`, and `LearnerContextTimingBreakdown` no longer exposes `cacheLookupMs` or `prewarmAgeMs`. Remove those browser-cache branches and timing reads. Use `backend-hit` / `backend-miss` for prompt responses and `structured` for structured-only responses; use `totalMs` / `sdkRoundTripMs` for end-to-end timing. Server cache hits still require current consent authorization; do not use cache status as permission to reuse a previous response.
+
+- [#1564](https://github.com/learningeconomy/LearnCard/pull/1564) [`8d4b8c3762d224ca12d2253147d6b053fd99ff3e`](https://github.com/learningeconomy/LearnCard/commit/8d4b8c3762d224ca12d2253147d6b053fd99ff3e) Thanks [@goblincore](https://github.com/goblincore)! - fix: [LC-2180] complete Arabic localization updates
+
+- Updated dependencies []:
+    - @learncard/credential-library@2.0.3
+    - @learncard/lca-api-plugin@2.0.5
+    - @learncard/helpers@1.5.1
+    - @learncard/ler-rs-plugin@0.1.26
+    - @learncard/open-badge-v2-plugin@1.1.36
+    - @learncard/render-method-plugin@7.0.0
+    - @learncard/react@2.12.6
+    - @learncard/sss-key-manager@0.1.23
+
 ## 1.98.8
 
 ### Patch Changes

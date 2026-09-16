@@ -1,5 +1,27 @@
 # learn-card-types
 
+## 5.20.0
+
+### Minor Changes
+
+- [#1541](https://github.com/learningeconomy/LearnCard/pull/1541) [`20b3844ddb7e649c9964308214ec4c395e9fc8db`](https://github.com/learningeconomy/LearnCard/commit/20b3844ddb7e649c9964308214ec4c395e9fc8db) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Support final-spec P-256 `ecdsa-rdfc-2019` verification in the rebuilt DIDKit engines and public proof options. Require authentication-purpose DIDAuth proofs in both VCALM exchange verification branches. Preserve existing EdDSA behavior and outgoing Ed25519 wallet suite negotiation; this does not add key-aware P-256 wallet production.
+
+    External VCALM responders must sign DIDAuth presentations with `proofPurpose: 'authentication'`, echo the requested `challenge` and `domain`, and use a verification method authorized for authentication by the holder's DID document. Presentations signed with `assertionMethod` (including the previous `issuePresentation` default) are now rejected by claim-link and inbox-claim exchanges. First-party LearnCard and ScoutPass responders already use authentication proofs.
+
+    Allow `created` to be omitted only on final `ecdsa-rdfc-2019` DataIntegrityProofs in shared VC/VP schemas, while preserving the timestamp requirement for other proof suites.
+
+    Inbox claims retain a holder-encrypted recovery copy and therefore also require a supported X25519 key-agreement method. A `did:web` holder can use P-256 for authentication and a separate X25519 key for delivery. Signing-only P-256 `did:key` holders remain supported by generic claim links, but cannot claim inbox deliveries. Failed delivery encryption now returns an error without consuming the pending credential or exchange challenge.
+
+### Patch Changes
+
+- [#1536](https://github.com/learningeconomy/LearnCard/pull/1536) [`b4f94f5a5ffbd52bad6cd26dc3dd627df8d5e6fb`](https://github.com/learningeconomy/LearnCard/commit/b4f94f5a5ffbd52bad6cd26dc3dd627df8d5e6fb) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Return live, unexpired consent metadata for server-side AI authorization, preserving original adult grants and exposing current manager-backed guardian approval for child profiles. Record verified guardian approval with consent terms and audit transactions; require reapproval for legacy child grants or changed contracts. Bind client approval caching and request headers to the specific child, and prevent failed signing from authorizing a guarded action.
+
+    Require current app-owned consent when resolving learner context, including credential sharing exclusions and withdrawn or expired grants. The formatter client sends only selected storage URIs and personal-field names to the configured AI service, refreshes consented data for each request, and exposes the server's consent revision and cache metadata. Remove browser prompt caching and legacy DID-based AI authentication; invalidate sessions and WebSocket tickets across wallet or service changes, including in-flight negotiations.
+
+    Refresh guardian approval at final consent submission if it expired while editing. Issue standards-valid signed credentials in the learner-context benchmark so the formatter exercises real proof verification rather than accepting unverifiable fixtures.
+
+    Breaking partner-connect change (minor release while on 0.x): `LearnerContextCacheStatus` no longer includes `browser-hit` or `browser-miss`, and `LearnerContextTimingBreakdown` no longer exposes `cacheLookupMs` or `prewarmAgeMs`. Remove those browser-cache branches and timing reads. Use `backend-hit` / `backend-miss` for prompt responses and `structured` for structured-only responses; use `totalMs` / `sdkRoundTripMs` for end-to-end timing. Server cache hits still require current consent authorization; do not use cache status as permission to reuse a previous response.
+
 ## 5.19.0
 
 ### Minor Changes

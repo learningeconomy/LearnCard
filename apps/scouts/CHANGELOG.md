@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.90.35
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/lca-api-plugin@2.0.5
+    - @learncard/helpers@1.5.1
+    - @learncard/react@2.12.6
+    - @learncard/sss-key-manager@0.1.23
+
 ## 1.90.34
 
 ### Patch Changes
