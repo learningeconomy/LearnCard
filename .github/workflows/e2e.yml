@@ -184,7 +184,7 @@ jobs:
         env:
             E2E_ARTIFACT_DIR: /tmp/learncard-e2e-artifacts/service
             E2E_SHARD: ${{ matrix.shard }}
-            E2E_SHARD_TOTAL: 3
+            E2E_SHARD_TOTAL: ${{ strategy.job-total }}
         steps:
             - name: Checkout tested revision
               id: checkout

@@ -61,7 +61,7 @@ abort 'service suite must stay sharded' unless service_matrix.length > 1
 abort 'a red shard must not cancel its siblings' unless service.fetch('strategy').fetch('fail-fast') == false
 service_env = service.fetch('env')
 abort 'shard index must reach the runner script' unless service_env.fetch('E2E_SHARD') == '${{ matrix.shard }}'
-abort 'shard total must match the matrix length' unless service_env.fetch('E2E_SHARD_TOTAL') == service_matrix.length
+abort 'shard total must derive from the matrix, not a hardcoded literal' unless service_env.fetch('E2E_SHARD_TOTAL') == '${{ strategy.job-total }}'
 abort 'shard artifacts must not collide' unless service.fetch('steps').any? { |step|
   step.dig('with', 'name').to_s.include?('matrix.shard')
 }
