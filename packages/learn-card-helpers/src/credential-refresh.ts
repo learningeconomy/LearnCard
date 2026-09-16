@@ -346,7 +346,7 @@ export const injectManagedRefreshService = <T>(
     }
 
     const nonManagedEntries = existingServices.filter(
-        entry => !existingManaged.includes(entry as ManagedCredentialRefreshService)
+        entry => !ManagedCredentialRefreshServiceValidator.safeParse(entry).success
     );
 
     const mergedRefreshService: unknown =

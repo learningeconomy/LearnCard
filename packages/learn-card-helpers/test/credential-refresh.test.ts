@@ -432,6 +432,21 @@ describe('injectManagedRefreshService', () => {
         expect(twice.refreshService).toEqual(managedService);
     });
 
+    it('is idempotent for arrays and preserves unrelated services even with the same id', () => {
+        const standardWithSameId = { ...standardService, id: managedService.id };
+        const original = {
+            ...baseCredential,
+            refreshService: [managedService, standardService, standardWithSameId],
+        };
+        const snapshot = structuredClone(original);
+        const once = injectManagedRefreshService(original, managedService);
+        const twice = injectManagedRefreshService(once, managedService);
+
+        expect(once.refreshService).toEqual(snapshot.refreshService);
+        expect(twice).toEqual(once);
+        expect(original).toEqual(snapshot);
+    });
+
     it('rejects injecting a second managed service with a different id', () => {
         const otherManaged = {
             ...managedService,

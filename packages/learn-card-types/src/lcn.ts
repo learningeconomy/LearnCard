@@ -467,7 +467,7 @@ export const AutoBoostConfigValidator = z.object({
 });
 export type AutoBoostConfig = z.infer<typeof AutoBoostConfigValidator>;
 
-const SendBoostTemplateValidator = BoostValidator.partial()
+export const SendBoostTemplateValidator = BoostValidator.partial()
     .omit({ uri: true, claimPermissions: true })
     .extend({
         credential: VCValidator.or(UnsignedVCValidator),

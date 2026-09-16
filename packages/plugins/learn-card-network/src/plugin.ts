@@ -1890,7 +1890,11 @@ export async function getLearnCardNetworkPlugin(
 
                     const canIssueLocally = 'issueCredential' in _learnCard.invoke;
 
-                    if (canIssueLocally && (input.templateUri || input.template)) {
+                    if (
+                        canIssueLocally &&
+                        !input.signedCredential &&
+                        (input.templateUri || input.template)
+                    ) {
                         // Local signing: prepare the unsigned credential from the
                         // template (both forms), allocate the managed refresh service,
                         // sign ONCE, then hand the signed credential to the server's
@@ -1917,6 +1921,7 @@ export async function getLearnCardNetworkPlugin(
                         }
 
                         let boost: UnsignedVC;
+                        let boostUri = input.templateUri;
 
                         if (input.templateUri) {
                             const result = await getBoostTemplateForIssuance(
@@ -1930,10 +1935,8 @@ export async function getLearnCardNetworkPlugin(
 
                             boost = data.data;
                         } else {
-                            // Inline template: the server creates the boost from this
-                            // same template, so exactly one boost exists (never a second
-                            // one from the signed credential). The boost URI is unknown
-                            // at signing time, so no boostId can be embedded yet.
+                            // Clone before preparation so template rendering never
+                            // mutates the caller's claims.
                             boost = JSON.parse(
                                 JSON.stringify(input.template!.credential)
                             ) as UnsignedVC;
@@ -1984,13 +1987,22 @@ export async function getLearnCardNetworkPlugin(
                             };
                         }
 
-                        if (boost.type?.includes('BoostCredential') && input.templateUri) {
-                            boost.boostId = input.templateUri;
-                        }
-
                         // A stable credential ID must exist before allocation: the
                         // refresh aggregate is permanently bound to it.
                         if (!boost.id) boost.id = `urn:uuid:${crypto.randomUUID()}`;
+
+                        if (!boostUri) {
+                            // The server applies the same managed-send guards before
+                            // creating the boost, its permissions, skills and contract
+                            // link. Signing can then bind the real boost URI.
+                            boostUri = await client.boost.prepareRefreshableSend.mutate({
+                                recipient: input.recipient,
+                                template: input.template!,
+                                contractUri: input.contractUri,
+                            });
+                        }
+
+                        if (boost.type?.includes('BoostCredential')) boost.boostId = boostUri;
 
                         // Allocate BEFORE signing: the refresh service must be part of
                         // the signed payload.
@@ -2016,6 +2028,8 @@ export async function getLearnCardNetworkPlugin(
                         // returns the canonical receipt alongside a real activityId.
                         return client.boost.send.mutate({
                             ...input,
+                            template: undefined,
+                            templateUri: boostUri,
                             signedCredential,
                             refresh: true,
                         });

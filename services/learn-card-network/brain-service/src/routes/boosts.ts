@@ -27,6 +27,7 @@ import {
     PaginatedBoostRecipientsWithChildrenValidator,
     SkillQueryValidator,
     SendBoostInputValidator,
+    SendBoostTemplateValidator,
     SendBoostResponseValidator,
     AllocateCredentialStatusInputValidator,
     AllocatedBitstringStatusListEntryValidator,
@@ -309,7 +310,140 @@ const resolveContractForSend = async (params: {
     return contractTerms;
 };
 
+/** Validate managed send support and recipient before creating any send state. */
+const validateRefreshSendRecipient = async ({
+    profile,
+    scope,
+    recipient,
+    domain,
+}: {
+    profile: ProfileType;
+    scope?: string;
+    recipient: string;
+    domain: string;
+}): Promise<ProfileType> => {
+    if (!getCredentialRefreshRuntimeEnvironment().CREDENTIAL_REFRESH_ENABLED) {
+        throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Credential refresh is not available',
+        });
+    }
+
+    await ensureCredentialRefreshConstraints();
+
+    // The route itself requires boosts:write; managed refresh additionally
+    // requires the same credentials:write scope as the dedicated
+    // /credential-refresh routes.
+    if (!userHasRequiredScopes(scope ?? AUTH_GRANT_NO_ACCESS_SCOPE, 'credentials:write')) {
+        throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: 'This operation requires credentials:write scope',
+        });
+    }
+
+    if (isInboxRecipient(recipient)) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message:
+                'Managed credential refresh requires a profile or DID recipient; email and phone recipients cannot request refresh.',
+        });
+    }
+
+    // Recipients must resolve to local profiles before anything is
+    // created; remote or unresolvable DIDs are rejected here instead of
+    // entering the federation/inbox flows.
+    const refreshRecipientProfileId = await traceInternal('getProfileIdFromString:refresh', () =>
+        getProfileIdFromString(recipient, domain)
+    );
+    const refreshTargetProfile = refreshRecipientProfileId
+        ? await traceDb('getProfileByProfileId:refresh', () =>
+              getProfileByProfileId(refreshRecipientProfileId)
+          )
+        : null;
+
+    if (!refreshTargetProfile) {
+        throw new TRPCError({
+            code: 'NOT_FOUND',
+            message:
+                'Managed credential refresh requires a recipient resolvable to a local profile. Remote or unresolvable DIDs are not supported.',
+        });
+    }
+
+    const refreshTarget = refreshTargetProfile;
+
+    if (
+        await traceDb('isRelationshipBlocked:refresh', () =>
+            isRelationshipBlocked(profile, refreshTarget)
+        )
+    ) {
+        throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Profile not found. Are you sure this person exists?',
+        });
+    }
+
+    return refreshTargetProfile;
+};
+
+/** Preserve the inline send template's metadata, skills and claim permissions. */
+const createInlineBoostForSend = async (
+    template: z.infer<typeof SendBoostTemplateValidator>,
+    profile: ProfileType,
+    domain: string
+): Promise<BoostInstance> => {
+    const { credential, claimPermissions, skills, ...metadata } = template;
+    const boost = await traceDb('createBoost', () =>
+        createBoost(credential, profile, metadata, domain)
+    );
+    if (Array.isArray(skills) && skills.length > 0) {
+        await traceDb('addAlignedSkillsToBoost', () => addAlignedSkillsToBoost(boost, skills));
+    }
+    if (claimPermissions) {
+        await traceDb('addClaimPermissionsForBoost', () =>
+            addClaimPermissionsForBoost(boost, { ...EMPTY_PERMISSIONS, ...claimPermissions })
+        );
+    }
+    return boost;
+};
+
 export const boostsRouter = t.router({
+    // SDK preparation only: creates an inline boost anchor, never signs or delivers.
+    // The final send rechecks all guards and derives its receipt from the signed VC.
+    prepareRefreshableSend: profileRoute
+        .meta({ requiredScope: 'boosts:write' })
+        .input(
+            z.object({
+                recipient: z.string(),
+                template: SendBoostTemplateValidator,
+                contractUri: z.string().optional(),
+            })
+        )
+        .output(z.string())
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const targetProfile = await validateRefreshSendRecipient({
+                profile,
+                scope: ctx.user.scope,
+                recipient: input.recipient,
+                domain: ctx.domain,
+            });
+            if (input.template.status === 'DRAFT') {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'Draft Boosts can not be sent. Only Published Boosts can be sent.',
+                });
+            }
+            const boost = await createInlineBoostForSend(input.template, profile, ctx.domain);
+            await resolveContractForSend({
+                profile,
+                targetProfile,
+                boost,
+                boostCreated: true,
+                contractUri: input.contractUri,
+            });
+            return getBoostUri(boost.id, ctx.domain);
+        }),
+
     getBoostAlignments: profileRoute
         .meta({
             openapi: {
@@ -810,37 +944,12 @@ export const boostsRouter = t.router({
                     let refreshTargetProfile: ProfileType | null = null;
 
                     if (refreshRequested) {
-                        if (!getCredentialRefreshRuntimeEnvironment().CREDENTIAL_REFRESH_ENABLED) {
-                            throw new TRPCError({
-                                code: 'NOT_FOUND',
-                                message: 'Credential refresh is not available',
-                            });
-                        }
-
-                        await ensureCredentialRefreshConstraints();
-
-                        // The route itself requires boosts:write; managed refresh additionally
-                        // requires the same credentials:write scope as the dedicated
-                        // /credential-refresh routes.
-                        if (
-                            !userHasRequiredScopes(
-                                ctx.user.scope ?? AUTH_GRANT_NO_ACCESS_SCOPE,
-                                'credentials:write'
-                            )
-                        ) {
-                            throw new TRPCError({
-                                code: 'UNAUTHORIZED',
-                                message: 'This operation requires credentials:write scope',
-                            });
-                        }
-
-                        if (isInboxRecipient(input.recipient)) {
-                            throw new TRPCError({
-                                code: 'BAD_REQUEST',
-                                message:
-                                    'Managed credential refresh requires a profile or DID recipient; email and phone recipients cannot request refresh.',
-                            });
-                        }
+                        refreshTargetProfile = await validateRefreshSendRecipient({
+                            profile,
+                            scope: ctx.user.scope,
+                            recipient: input.recipient,
+                            domain,
+                        });
 
                         if (input.signedCredential) {
                             // Reject signed credentials without a local managed allocation
@@ -858,40 +967,6 @@ export const boostsRouter = t.router({
                                         'A signed credential sent with refresh must already contain its allocated managed refresh service.',
                                 });
                             }
-                        }
-
-                        // Recipients must resolve to local profiles before anything is
-                        // created; remote or unresolvable DIDs are rejected here instead of
-                        // entering the federation/inbox flows.
-                        const refreshRecipientProfileId = await traceInternal(
-                            'getProfileIdFromString:refresh',
-                            () => getProfileIdFromString(input.recipient, domain)
-                        );
-                        refreshTargetProfile = refreshRecipientProfileId
-                            ? await traceDb('getProfileByProfileId:refresh', () =>
-                                  getProfileByProfileId(refreshRecipientProfileId)
-                              )
-                            : null;
-
-                        if (!refreshTargetProfile) {
-                            throw new TRPCError({
-                                code: 'NOT_FOUND',
-                                message:
-                                    'Managed credential refresh requires a recipient resolvable to a local profile. Remote or unresolvable DIDs are not supported.',
-                            });
-                        }
-
-                        const refreshTarget = refreshTargetProfile;
-
-                        if (
-                            await traceDb('isRelationshipBlocked:refresh', () =>
-                                isRelationshipBlocked(profile, refreshTarget)
-                            )
-                        ) {
-                            throw new TRPCError({
-                                code: 'NOT_FOUND',
-                                message: 'Profile not found. Are you sure this person exists?',
-                            });
                         }
                     }
 
@@ -916,27 +991,7 @@ export const boostsRouter = t.router({
                         boost = resolved;
                         boostUri = input.templateUri;
                     } else if (input.template) {
-                        const { credential, claimPermissions, skills, ...metadata } =
-                            input.template;
-
-                        boost = await traceDb('createBoost', () =>
-                            createBoost(credential, profile, metadata, domain)
-                        );
-
-                        if (Array.isArray(skills) && skills.length > 0) {
-                            await traceDb('addAlignedSkillsToBoost', () =>
-                                addAlignedSkillsToBoost(boost!, skills)
-                            );
-                        }
-
-                        if (claimPermissions) {
-                            await traceDb('addClaimPermissionsForBoost', () =>
-                                addClaimPermissionsForBoost(boost!, {
-                                    ...EMPTY_PERMISSIONS,
-                                    ...claimPermissions,
-                                })
-                            );
-                        }
+                        boost = await createInlineBoostForSend(input.template, profile, domain);
 
                         boostUri = getBoostUri(boost.id, domain);
                         boostCreated = true;

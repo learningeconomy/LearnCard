@@ -125,6 +125,8 @@ The script writes `refresh.json` — the issuance receipt:
 
 The receipt is metadata only — it never contains the credential's claims. Keep it alongside your own record of the credential (the student row, the license number): publishing an update needs it, and you can't read the credential back afterwards. The network stores it encrypted to the recipient only, so neither the network nor you can decrypt it once sent.
 
+If your template includes the `BoostCredential` type, also keep `result.uri` (the boost URI). `send()` embeds it as `boostId` before signing; include the same `boostId` when rebuilding each update so the recipient can verify the boost's authenticity. This is distinct from `result.credentialUri`, which identifies the issued credential.
+
 The recipient sees **Provisional Transcript** in their LearnCard app once they claim it.
 
 ### `sendBoost` also issues refreshable credentials

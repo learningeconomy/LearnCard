@@ -132,6 +132,9 @@ const getMockClient = (options: Record<string, any> = {}) => ({
         getProfile: { query: vi.fn().mockResolvedValue(PROFILE) },
     },
     boost: {
+        prepareRefreshableSend: {
+            mutate: vi.fn().mockResolvedValue('did:web:network.example:boost:prepared'),
+        },
         getBoost: { query: vi.fn().mockResolvedValue({ boost: getUnsignedBoostTemplate() }) },
         send: {
             mutate: vi
@@ -247,7 +250,7 @@ describe('unified send with refresh: true (managed branch)', () => {
         expect(learnCard.invoke.createDagJwe).not.toHaveBeenCalled();
     });
 
-    it('signs locally from an inline template and forwards the template so the server creates exactly one boost', async () => {
+    it('creates the inline boost before signing and reuses its URI for delivery', async () => {
         const client = getMockClient();
         const learnCard = getMockIssuingLearnCard();
         const plugin = await getPlugin(learnCard, client);
@@ -255,28 +258,62 @@ describe('unified send with refresh: true (managed branch)', () => {
         const template = {
             name: 'Inline Refreshable Badge',
             credential: getUnsignedBoostTemplate({ id: 'urn:uuid:inline-credential-id' }),
+            claimPermissions: { canView: true },
+            skills: [{ frameworkId: 'framework-1', id: 'skill-1' }],
         };
 
         await plugin.methods?.send(learnCard, {
             type: 'boost',
             recipient: 'userb',
             template,
+            contractUri: 'contract:1',
             refresh: true,
         });
 
         const forwarded = client.boost.send.mutate.mock.calls[0]?.[0] as any;
 
-        // The inline template stays in the handoff (the server creates the boost
-        // from it) AND the signed credential rides along — no second boost source.
-        expect(forwarded.template).toEqual(template);
+        expect(client.boost.prepareRefreshableSend.mutate).toHaveBeenCalledExactlyOnceWith({
+            recipient: 'userb',
+            template,
+            contractUri: 'contract:1',
+        });
+        expect(forwarded.template).toBeUndefined();
+        expect(forwarded.templateUri).toBe('did:web:network.example:boost:prepared');
+        expect(forwarded.contractUri).toBe('contract:1');
         expect(forwarded.signedCredential.id).toEqual('urn:uuid:inline-credential-id');
+        expect(forwarded.signedCredential.boostId).toBe(forwarded.templateUri);
         expect(forwarded.refresh).toBe(true);
-
-        // No boostId can be embedded: the boost does not exist at signing time.
-        expect(forwarded.signedCredential.boostId).toBeUndefined();
+        expect(learnCard.invoke.issueCredential).toHaveBeenCalledTimes(1);
+        expect(learnCard.invoke.issueCredential.mock.calls[0][0].boostId).toBe(
+            forwarded.templateUri
+        );
+        expect(template.credential).not.toHaveProperty('boostId');
+        expect(client.boost.prepareRefreshableSend.mutate.mock.invocationCallOrder[0]).toBeLessThan(
+            learnCard.invoke.issueCredential.mock.invocationCallOrder[0]
+        );
 
         expect(client.credentialRefresh.allocateCredentialRefresh.mutate).toHaveBeenCalledTimes(1);
         expect(client.credentialRefresh.sendRefreshableCredential.mutate).not.toHaveBeenCalled();
+    });
+
+    it('stops before allocation, signing or delivery if inline preparation is rejected', async () => {
+        const client = getMockClient();
+        client.boost.prepareRefreshableSend.mutate.mockRejectedValue(
+            new Error('Credential refresh is not available')
+        );
+        const learnCard = getMockIssuingLearnCard();
+        const plugin = await getPlugin(learnCard, client);
+        await expect(
+            plugin.methods?.send(learnCard, {
+                type: 'boost',
+                recipient: 'userb',
+                template: { credential: getUnsignedBoostTemplate() },
+                refresh: true,
+            })
+        ).rejects.toThrow('Credential refresh is not available');
+        expect(client.credentialRefresh.allocateCredentialRefresh.mutate).not.toHaveBeenCalled();
+        expect(learnCard.invoke.issueCredential).not.toHaveBeenCalled();
+        expect(client.boost.send.mutate).not.toHaveBeenCalled();
     });
 
     it('allocates with the recipient DID for DID recipients', async () => {
@@ -323,7 +360,11 @@ describe('unified send with refresh: true (managed branch)', () => {
         expect(learnCard.invoke.issueCredential).toBeUndefined();
     });
 
-    it('forwards caller-supplied signed credentials without mutating the proof', async () => {
+    it.each([
+        {},
+        { templateUri: 'did:web:network.example:boost:1' },
+        { template: { credential: getUnsignedBoostTemplate() } },
+    ])('forwards caller-supplied signed credentials unchanged with source %j', async source => {
         const client = getMockClient();
         const learnCard = getMockIssuingLearnCard();
         const plugin = await getPlugin(learnCard, client);
@@ -341,6 +382,7 @@ describe('unified send with refresh: true (managed branch)', () => {
             type: 'boost',
             recipient: 'userb',
             signedCredential: signedCredential as any,
+            ...source,
             refresh: true,
         });
 
@@ -348,6 +390,7 @@ describe('unified send with refresh: true (managed branch)', () => {
         expect(forwarded.signedCredential).toEqual(signedSnapshot);
         expect(forwarded.refresh).toBe(true);
 
+        expect(client.boost.prepareRefreshableSend.mutate).not.toHaveBeenCalled();
         // No local re-signing or second allocation for pre-signed credentials.
         expect(learnCard.invoke.issueCredential).not.toHaveBeenCalled();
         expect(client.credentialRefresh.allocateCredentialRefresh.mutate).not.toHaveBeenCalled();

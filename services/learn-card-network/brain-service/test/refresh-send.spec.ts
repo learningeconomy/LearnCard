@@ -41,10 +41,9 @@ import { getDidWeb } from '@helpers/did.helpers';
 import { getCredentialRefresh, getCredentialRefreshHead } from '@accesslayer/credential-refresh';
 import { testUnsignedBoost } from './helpers/send';
 
-// VC 2.0 template without OBv3 terms: the brain's native DIDKit stack cannot expand
-// VCDM 2.0 + OBv3 remote contexts together (pre-existing 'Protected term redefinition'
-// incompatibility, independent of managed refresh). VCDM 2.0 alone enables the
-// Bitstring status allocation that a refresh receipt must preserve.
+// Minimal VC 2.0 isolates the managed send/status behavior here. The real-signing
+// E2E matrix also covers VCDM 2.0 + OBv3 3.0.3: only older OB contexts (through
+// 3.0.1) conflict with VC2 protected terms, not OBv3 as a whole.
 const testUnsignedVcV2: UnsignedVC = {
     '@context': ['https://www.w3.org/ns/credentials/v2'],
     type: ['VerifiableCredential'],
@@ -197,6 +196,178 @@ describe('Unified send with managed refresh (LC-2198)', () => {
         });
 
         addNotificationToQueueSpy.mockReset();
+    });
+
+    describe('inline refresh preparation', () => {
+        it('preserves metadata, permissions, skills and contract linkage, then reuses one boost', async () => {
+            const contractUri = await issuer.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: {
+                    read: { anonymize: false },
+                    write: { credentials: { categories: { TestBoosts: { required: false } } } },
+                },
+                name: 'Prepared Refresh Contract',
+                writers: [ISSUER_PROFILE_ID],
+            });
+            await holder.clients.fullAuth.contracts.consentToContract({
+                contractUri,
+                terms: {
+                    read: { anonymize: false },
+                    write: { credentials: { categories: { TestBoosts: true } } },
+                },
+            });
+            const frameworkId = `refresh-prep-${crypto.randomUUID()}`;
+            await issuer.clients.fullAuth.skillFrameworks.createManaged({
+                id: frameworkId,
+                name: 'Refresh skills',
+            });
+            await issuer.clients.fullAuth.skills.create({
+                frameworkId,
+                skill: { id: 'skill-1', statement: 'Refresh skill' },
+            });
+            const baseline = await getMutationBaseline();
+            const uri = await issuer.clients.fullAuth.boost.prepareRefreshableSend({
+                recipient: HOLDER_PROFILE_ID,
+                contractUri,
+                template: {
+                    credential: testUnsignedBoost,
+                    name: 'Prepared Boost',
+                    category: 'TestBoosts',
+                    claimPermissions: { canView: true },
+                    skills: [{ frameworkId, id: 'skill-1', proficiencyLevel: 2 }],
+                },
+            });
+            const boost = await issuer.clients.fullAuth.boost.getBoost({ uri });
+            expect(boost).toMatchObject({
+                name: 'Prepared Boost',
+                category: 'TestBoosts',
+                claimPermissions: { canView: true },
+            });
+            expect(await issuer.clients.fullAuth.boost.getBoostSkills({ uri })).toEqual([
+                expect.objectContaining({ id: 'skill-1', proficiencyLevel: 2 }),
+            ]);
+            const links = await runQuery(
+                'MATCH (:ConsentFlowContract)-[:RELATED_TO]->(b:Boost {name: $name}) RETURN count(b) AS count',
+                { name: 'Prepared Boost' }
+            );
+            expect(toNum(links.records[0].get('count'))).toBe(1);
+            // Preparation creates only the anchor, not an allocation or delivery.
+            await expectsNoMutation({ ...baseline, boost: baseline.boost + 1 });
+            const allocation =
+                await issuer.clients.fullAuth.credentialRefresh.allocateCredentialRefresh({
+                    holder: { profileId: HOLDER_PROFILE_ID, did: holder.learnCard.id.did() },
+                    credentialId: 'urn:uuid:prepared-send',
+                });
+            const signedCredential = await issuer.learnCard.invoke.issueCredential(
+                injectManagedRefreshService(
+                    {
+                        ...testUnsignedBoost,
+                        id: 'urn:uuid:prepared-send',
+                        issuer: issuer.learnCard.id.did(),
+                        credentialSubject: {
+                            ...testUnsignedBoost.credentialSubject,
+                            id: holder.learnCard.id.did(),
+                        },
+                        boostId: uri,
+                    },
+                    allocation.refreshService
+                )
+            );
+            const result = await issuer.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: HOLDER_PROFILE_ID,
+                templateUri: uri,
+                signedCredential,
+                contractUri,
+                refresh: true,
+            });
+            expect(result.uri).toBe(uri);
+            expect(await countNodes('Boost')).toBe(baseline.boost + 1);
+            const rows = await runQuery(
+                `MATCH (root:Credential {refreshVersionKey: $key})-[:ISSUED_VIA_TRANSACTION]->(:ConsentFlowTransaction)-[:IS_FOR]->(:ConsentFlowTerms)
+                 RETURN count(*) AS count`,
+                { key: `${allocation.refreshId}:1` }
+            );
+            expect(toNum(rows.records[0].get('count'))).toBe(1);
+        });
+
+        it.each([
+            ['holder@example.com', 'BAD_REQUEST'],
+            ['+15551234567', 'BAD_REQUEST'],
+            ['did:web:example.com:users:remote-holder', 'NOT_FOUND'],
+            ['did:key:z6Mkunknown', 'NOT_FOUND'],
+            ['unknown-profile', 'NOT_FOUND'],
+        ])('rejects unsupported recipient %s before creating anything', async (recipient, code) => {
+            const baseline = await getMutationBaseline();
+            await expect(
+                issuer.clients.fullAuth.boost.prepareRefreshableSend({
+                    recipient,
+                    template: { credential: testUnsignedBoost },
+                })
+            ).rejects.toMatchObject({ code });
+            await expectsNoMutation(baseline);
+        });
+
+        it.each(['boosts:write', 'credentials:write'])(
+            'requires both scopes, not just %s',
+            async scope => {
+                const client = getClient({
+                    did: issuer.learnCard.id.did(),
+                    isChallengeValid: true,
+                    scope,
+                });
+                const baseline = await getMutationBaseline();
+                await expect(
+                    client.boost.prepareRefreshableSend({
+                        recipient: HOLDER_PROFILE_ID,
+                        template: { credential: testUnsignedBoost },
+                    })
+                ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+                await expectsNoMutation(baseline);
+            }
+        );
+
+        it('rejects disabled refresh before creating anything', async () => {
+            const baseline = await getMutationBaseline();
+            const previous = process.env.CREDENTIAL_REFRESH_ENABLED;
+            process.env.CREDENTIAL_REFRESH_ENABLED = 'false';
+            try {
+                await expect(
+                    issuer.clients.fullAuth.boost.prepareRefreshableSend({
+                        recipient: HOLDER_PROFILE_ID,
+                        template: { credential: testUnsignedBoost },
+                    })
+                ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+            } finally {
+                process.env.CREDENTIAL_REFRESH_ENABLED = previous;
+            }
+            await expectsNoMutation(baseline);
+        });
+
+        it('rejects blocked recipients before creating anything', async () => {
+            await blockProfile(
+                await issuer.clients.fullAuth.profile.getProfile(),
+                await holder.clients.fullAuth.profile.getProfile()
+            );
+            const baseline = await getMutationBaseline();
+            await expect(
+                issuer.clients.fullAuth.boost.prepareRefreshableSend({
+                    recipient: HOLDER_PROFILE_ID,
+                    template: { credential: testUnsignedBoost },
+                })
+            ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+            await expectsNoMutation(baseline);
+        });
+
+        it('rejects draft templates before creating anything', async () => {
+            const baseline = await getMutationBaseline();
+            await expect(
+                issuer.clients.fullAuth.boost.prepareRefreshableSend({
+                    recipient: HOLDER_PROFILE_ID,
+                    template: { credential: testUnsignedBoost, status: 'DRAFT' },
+                })
+            ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+            await expectsNoMutation(baseline);
+        });
     });
 
     describe('refresh sends produce a usable receipt', () => {

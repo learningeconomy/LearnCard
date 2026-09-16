@@ -343,9 +343,9 @@ describe('Refreshable Sends E2E (LC-2198)', () => {
     }, 180_000);
 
     test('SDK send with inline template: one boost created, full lifecycle', async () => {
-        // An ordinary (non-boost-typed) credential template, exactly like the guide
-        // snippet: send creates the boost and the receipt still enables updates.
-        const template = plainTemplate('Inline Refresh Boost', a.id.did());
+        // Boost authenticity must remain verifiable after inline issuance and refresh.
+        const template = ordinaryTemplate('Inline Refresh Boost', a.id.did());
+        const boostsBefore = await a.invoke.countBoosts();
 
         const result = await a.invoke.send({
             type: 'boost',
@@ -363,13 +363,22 @@ describe('Refreshable Sends E2E (LC-2198)', () => {
         // The boost was created from the same template — exactly one source of truth.
         const boost = await a.invoke.getBoost(result.uri);
         expect(boost.name).toBe('Inline Refresh Boost');
+        expect(await a.invoke.countBoosts()).toBe(boostsBefore + 1);
 
         await claimCredential(b, result.credentialUri);
 
         const held = (await b.read.get(result.credentialUri)) as VC;
         expect(managedContextFragments(held)).toHaveLength(1);
 
-        const update = rebuildFromReceipt(template, receipt, { name: 'Inline Refresh Boost — v2' });
+        expect((held as any).boostId).toBe(result.uri);
+        const verification = await b.invoke.verifyCredential(held);
+        expect(verification.warnings).toEqual([]);
+        expect(verification.errors).toEqual([]);
+
+        const update = rebuildFromReceipt(template, receipt, {
+            name: 'Inline Refresh Boost — v2',
+            boostId: result.uri,
+        });
         const publication = await a.invoke.publishCredentialRefresh({
             mode: 'issuer-signed',
             refreshId: receipt.refreshId,
@@ -485,9 +494,11 @@ describe('Refreshable Sends E2E (LC-2198)', () => {
         const first = await a.invoke.send({
             type: 'boost',
             recipient: USERS.b.profileId,
+            templateUri: boostUri,
             signedCredential: signed,
             refresh: true,
         } as any);
+        expect(first.uri).toBe(boostUri);
         // A pre-signed credential carries no network status allocation (only the
         // send/sendBoost signing paths allocate one), so the receipt has no status.
         const receipt = expectValidReceipt(first.refresh, { expectStatus: false });
@@ -499,6 +510,7 @@ describe('Refreshable Sends E2E (LC-2198)', () => {
             incomingBefore.filter((credential: any) => credential.uri === first.credentialUri)
         ).toHaveLength(1);
         await expect(b.invoke.acceptCredential(first.credentialUri)).resolves.toBe(true);
+        expect(await b.read.get(first.credentialUri)).toEqual(signed);
 
         // Decision 6, HTTP layer: the exact same pre-signed request is idempotent —
         // the server resumes the original delivery instead of duplicating it.
