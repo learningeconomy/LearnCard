@@ -172,8 +172,19 @@ jobs:
         if: ${{ needs.eligibility.outputs.run_e2e == 'true' }}
         runs-on: ${{ vars.E2E_HOSTED_RUNNER || 'ubuntu-latest' }}
         timeout-minutes: 60
+        # 45 spec files run strictly serially (serviceIntegrationPreset sets
+        # fileParallelism: false because they share one stack). Each file wipes every
+        # database in its beforeAll, so there is no cross-file ordering dependency and
+        # the files can be split across runners that each own a separate stack.
+        # fail-fast is off so one red shard still lets the others report.
+        strategy:
+            fail-fast: false
+            matrix:
+                shard: [1, 2, 3]
         env:
             E2E_ARTIFACT_DIR: /tmp/learncard-e2e-artifacts/service
+            E2E_SHARD: ${{ matrix.shard }}
+            E2E_SHARD_TOTAL: ${{ strategy.job-total }}
         steps:
             - name: Checkout tested revision
               id: checkout
@@ -244,6 +255,7 @@ jobs:
             - name: Publish service diagnostic summary
               if: always()
               run: |
+                  echo "## tests/e2e shard ${E2E_SHARD}/${E2E_SHARD_TOTAL}" >> "$GITHUB_STEP_SUMMARY"
                   if [[ -f "$E2E_ARTIFACT_DIR/summary.md" ]]; then
                     cat "$E2E_ARTIFACT_DIR/summary.md" >> "$GITHUB_STEP_SUMMARY"
                   else
@@ -254,7 +266,7 @@ jobs:
               if: always()
               uses: actions/upload-artifact@v4
               with:
-                  name: tests-e2e-${{ github.run_id }}
+                  name: tests-e2e-${{ github.run_id }}-shard${{ matrix.shard }}
                   path: ${{ env.E2E_ARTIFACT_DIR }}
                   if-no-files-found: error
                   retention-days: 30
