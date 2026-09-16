@@ -24,7 +24,13 @@ import {
     CredentialCategoryEnum,
     useModal,
     ModalTypes,
+    useToast,
+    ToastTypeEnum,
+    getLogger,
 } from 'learn-card-base';
+import * as m from '../../../paraglide/messages.js';
+
+const log = getLogger('endorsement-form');
 
 const endorsementSchema = zod.object({
     relationship: zod.object({
@@ -55,7 +61,11 @@ export const EndorsementForm: React.FC<{
         desktop: ModalTypes.FullScreen,
         mobile: ModalTypes.FullScreen,
     });
-    const { issueeProfile } = useGetVCInfo(credential, categoryType);
+    const { issueeProfile, loading: isCredentialInfoLoading } = useGetVCInfo(
+        credential,
+        categoryType
+    );
+    const { presentToast } = useToast();
 
     const [sendingEndorsement, setSendingEndorsement] = useState<boolean>(false);
     const [endorsement, setEdorsement] = useState<EndorsementState>(initialEndorsementState);
@@ -72,38 +82,43 @@ export const EndorsementForm: React.FC<{
     };
 
     const handleEndorsementSubmit = async () => {
-        if (!validateEndorsement()) {
-            return;
-        }
+        if (!validateEndorsement()) return;
 
         if (isLoggedIn) {
-            const wallet = await initWallet();
             setSendingEndorsement(true);
 
-            const evidence = convertAttachmentsToEvidence(endorsement.mediaAttachments);
+            try {
+                const recipientProfileId = issueeProfile?.profileId;
+                if (!recipientProfileId) {
+                    throw new Error('Unable to resolve the endorsement recipient profile');
+                }
 
-            const endorsementVC = await wallet.invoke.endorseCredential(credential, {
-                endorsementComment: endorsement.qualification,
-                name: `Endorsement of ${credential.id}`,
-                description: endorsement.description,
-                evidence,
-            });
+                const wallet = await initWallet();
+                const evidence = convertAttachmentsToEvidence(endorsement.mediaAttachments);
+                const endorsementVC = await wallet.invoke.endorseCredential(credential, {
+                    endorsementComment: endorsement.qualification,
+                    name: `Endorsement of ${credential.id}`,
+                    description: endorsement.description,
+                    evidence,
+                });
 
-            const sentCredential = await wallet.invoke.sendCredential(
-                issueeProfile?.profileId || '',
-                endorsementVC,
-                {
+                await wallet.invoke.sendCredential(recipientProfileId, endorsementVC, {
                     type: 'endorsement',
                     sharedUri: shareLinkInfo,
                     credentialId: credential.id,
                     relationship: endorsement.relationship,
-                }
-            );
+                });
+            } catch (error) {
+                log.error('endorsement.send.failed', error);
+                presentToast(m['toasts.boost.endorsementRequestFailed'](), {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                });
+                return;
+            } finally {
+                setSendingEndorsement(false);
+            }
 
-            setSendingEndorsement(false);
-
-            // onSuccess
-            // if logged in -> show success modal
             closeAllModals();
             setTimeout(() => {
                 newModal(
@@ -132,8 +147,8 @@ export const EndorsementForm: React.FC<{
     const description = endorsement.description;
 
     return (
-        <section className="relative h-full w-full flex items-start justify-center overflow-y-scroll pt-4">
-            <section className="bg-white max-w-[800px] w-full rounded-[20px]">
+        <section className="relative h-full w-full flex items-start justify-center overflow-hidden pt-4">
+            <section className="bg-white max-w-[800px] w-full h-full overflow-y-auto rounded-[20px]">
                 <EndorsementFormHeader
                     credential={credential}
                     categoryType={categoryType}
@@ -178,6 +193,7 @@ export const EndorsementForm: React.FC<{
                     relationship?.label.length === 0 ||
                     relationship?.type.length === 0 ||
                     description.length === 0 ||
+                    isCredentialInfoLoading ||
                     sendingEndorsement
                 }
             />

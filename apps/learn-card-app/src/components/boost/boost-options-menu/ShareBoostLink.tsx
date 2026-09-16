@@ -22,6 +22,7 @@ import {
     useShareBoostMutation,
     ToastTypeEnum,
     useToast,
+    useTenantBaseUrl,
 } from 'learn-card-base';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 
@@ -63,6 +64,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
     compact = false,
 }) => {
     const { presentToast } = useToast();
+    const tenantBaseUrl = useTenantBaseUrl();
     const [shareLink, setShareLink] = useState<string | undefined>('');
 
     const { track } = useAnalytics();
@@ -159,15 +161,17 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                         const url = new URL(data?.link);
                         const params = new URLSearchParams(url.search);
 
-                        const host = url.host;
                         const uri = params.get('uri');
                         const seed = params.get('seed');
                         const pin = params.get('pin');
-
-                        // generate endorsement request share link
-                        setShareLink(
-                            `https://${host}/?uri=${uri}&seed=${seed}&pin=${pin}&endorsementRequest=true`
-                        );
+                        const endorsementUrl = new URL('/', tenantBaseUrl);
+                        endorsementUrl.search = new URLSearchParams({
+                            uri: uri ?? '',
+                            seed: seed ?? '',
+                            pin: pin ?? '',
+                            endorsementRequest: 'true',
+                        }).toString();
+                        setShareLink(endorsementUrl.toString());
                     } else {
                         setShareLink(data?.link);
                     }

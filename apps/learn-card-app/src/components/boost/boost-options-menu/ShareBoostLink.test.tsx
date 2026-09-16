@@ -17,6 +17,7 @@ vi.mock('learn-card-base', () => {
         useShareBoostMutation: () => useMutation({ mutationFn: createLink, retry: false }),
         ToastTypeEnum: { Error: 'error' },
         useToast: () => ({ presentToast: vi.fn() }),
+        useTenantBaseUrl: () => 'http://localhost:3000',
     };
 });
 vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
@@ -121,4 +122,28 @@ describe('ShareBoostLink error recovery', () => {
             client.clear();
         }
     );
+    it('uses the environment-aware tenant origin for endorsement request links', async () => {
+        createLink.mockResolvedValue({
+            link: 'https://learncard.app/share-boost?uri=credential%3Atest&seed=seed&pin=1234',
+        });
+        const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
+
+        render(
+            <QueryClientProvider client={client}>
+                <ShareBoostLink
+                    boost={credential}
+                    boostUri="credential:test"
+                    categoryType={'Achievement' as never}
+                    isEndorsementRequest
+                />
+            </QueryClientProvider>
+        );
+
+        expect(
+            await screen.findByText(
+                'http://localhost:3000/?uri=credential%3Atest&seed=seed&pin=1234&endorsementRequest=true'
+            )
+        ).toBeInTheDocument();
+        client.clear();
+    });
 });

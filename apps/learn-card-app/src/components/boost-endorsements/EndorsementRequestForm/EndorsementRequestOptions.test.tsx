@@ -1,10 +1,15 @@
 import React from 'react';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { mutateMock, presentToastMock } = vi.hoisted(() => ({
+const { clipboardWriteMock, mutateMock, presentToastMock } = vi.hoisted(() => ({
+    clipboardWriteMock: vi.fn(),
     mutateMock: vi.fn(),
     presentToastMock: vi.fn(),
+}));
+
+vi.mock('@capacitor/clipboard', () => ({
+    Clipboard: { write: clipboardWriteMock },
 }));
 
 vi.mock('../../boost/boost-options-menu/ShareBoostLink', () => ({ default: () => null }));
@@ -30,6 +35,7 @@ vi.mock('learn-card-base', () => ({
     useShareBoostMutation: () => ({ mutate: mutateMock, isPending: false }),
     useToast: () => ({ presentToast: presentToastMock }),
     useWallet: () => ({ initWallet: vi.fn() }),
+    useTenantBaseUrl: () => 'http://localhost:3000',
 }));
 vi.mock('@analytics', () => ({
     AnalyticsEvents: { GENERATE_SHARE_LINK: 'generate-share-link' },
@@ -89,6 +95,34 @@ describe('EndorsementRequestOptions', () => {
 
         expect(screen.getByRole('button', { name: /copy link/i })).toBeEnabled();
         expect(qrButton).toBeEnabled();
+    });
+
+    it('copies an environment-aware local endorsement request URL', async () => {
+        render(
+            <EndorsementRequestOptions
+                credential={credential}
+                categoryType={'Achievement' as never}
+                endorsementRequest={{ email: '', text: '' }}
+                setEndorsementRequest={vi.fn()}
+            />
+        );
+
+        await waitFor(() => expect(mutateMock).toHaveBeenCalledOnce());
+        const callbacks = mutateMock.mock.calls[0][1];
+        act(() => {
+            callbacks.onSuccess({
+                link: 'https://learncard.app/share-boost?uri=credential%3Atest&seed=seed&pin=1234',
+            });
+            callbacks.onSettled();
+        });
+
+        fireEvent.click(screen.getByRole('button', { name: /copy link/i }));
+
+        await waitFor(() =>
+            expect(clipboardWriteMock).toHaveBeenCalledWith({
+                string: 'http://localhost:3000/?uri=credential%3Atest&seed=seed&pin=1234&endorsementRequest=true',
+            })
+        );
     });
 
     it('reports malformed generated links without enabling request actions', async () => {

@@ -18,7 +18,7 @@ import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayC
 import SharedBoostPageFooter from './SharedBoostPageFooter';
 import ClrTranscriptFullPage from '../clr-transcript/surfaces/ClrTranscriptFullPage';
 
-import { VC, VerificationItem, VP } from '@learncard/types';
+import { VC, VerificationCheck, VerificationItem, VP } from '@learncard/types';
 import {
     getDefaultCategoryForCredential,
     getEndorsementsFromPresentations,
@@ -31,6 +31,7 @@ import {
 } from '../../helpers/clrRenderer.helpers';
 import { BrandingEnum, useGetCredentialWithEdits, useIsLoggedIn } from 'learn-card-base';
 import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
+import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import {
     deriveLifecycleStatus,
     CredentialLifecycleStatus,
@@ -76,10 +77,10 @@ const ViewSharedBoost: React.FC<{
 
     const [boost, setBoost] = useState<VC[] | undefined>();
     const [category, setCategory] = useState<string>('');
-    const [wallet, setWallet] = useState<any>();
+    const [wallet, setWallet] = useState<BespokeLearnCard>();
 
-    const { credentialWithEdits } = useGetCredentialWithEdits(boost, uri);
-    let _boost = credentialWithEdits ?? boost;
+    const { credentialWithEdits } = useGetCredentialWithEdits(boost);
+    const _boost = credentialWithEdits ?? boost;
     const sharedCredential = Array.isArray(_boost) ? _boost[0] : _boost;
     const isSharedClrCredential = sharedCredential
         ? isClrCredential(sharedCredential as VC)
@@ -122,11 +123,14 @@ const ViewSharedBoost: React.FC<{
             // it. Fail-open to 'active' so a check error never renders a valid credential as
             // revoked.
             try {
-                const rawCheck = await (wallet?.invoke?.verifyCredential as any)?.(
-                    credentialToVerify,
-                    {},
-                    false
-                );
+                const verify = wallet?.invoke?.verifyCredential as
+                    | ((
+                          credential: VC,
+                          options: Record<string, unknown>,
+                          prettify: boolean
+                      ) => Promise<VerificationCheck>)
+                    | undefined;
+                const rawCheck = await verify?.(credentialToVerify, {}, false);
                 setLifecycleStatus(deriveLifecycleStatus(rawCheck));
             } catch {
                 setLifecycleStatus('active');

@@ -19,6 +19,7 @@ import {
     ModalTypes,
     useWallet,
     useGetCurrentLCNUser,
+    useTenantBaseUrl,
 } from 'learn-card-base';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 import { EndorsementRequestState } from './endorsement-request.helpers';
@@ -43,6 +44,7 @@ export const EndorsementRequestOptions: React.FC<{
         desktop: ModalTypes.FullScreen,
     });
     const { achievementType, title } = useGetVCInfo(credential, categoryType);
+    const tenantBaseUrl = useTenantBaseUrl();
     const { track } = useAnalytics();
 
     const { presentToast } = useToast();
@@ -79,7 +81,7 @@ export const EndorsementRequestOptions: React.FC<{
                             return;
                         }
 
-                        const endorsementUrl = new URL('/', url.origin);
+                        const endorsementUrl = new URL('/', tenantBaseUrl);
                         endorsementUrl.search = new URLSearchParams({
                             uri,
                             seed,
@@ -156,10 +158,10 @@ export const EndorsementRequestOptions: React.FC<{
 
         try {
             await wallet.invoke.sendEndorsementShareLink(
-                endorsementRequest?.email!,
+                result.data.email,
                 shareLink,
                 {
-                    name: currentLCNUser?.displayName!,
+                    name: currentLCNUser?.displayName ?? '',
                 },
                 {
                     name: title,
