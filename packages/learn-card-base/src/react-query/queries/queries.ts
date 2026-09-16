@@ -105,17 +105,15 @@ export const useGetBoosts = (category?: CredentialCategoryEnum) => {
 /**
  * Query: Get a specific boost by its URI.
  */
-export const useGetBoost = (uri?: string) => {
+export const useGetBoost = (uri: string) => {
     const { initWallet } = useWallet();
     return useQuery({
         queryKey: ['useGetBoost', uri],
         queryFn: async () => {
-            if (!uri?.startsWith('lc:network:')) throw new Error('A valid Boost URI is required.');
-
             const wallet = await initWallet();
             return wallet.invoke.getBoost(uri);
         },
-        enabled: uri?.startsWith('lc:network:') ?? false,
+        enabled: !!uri,
     });
 };
 
@@ -609,7 +607,7 @@ export const useGetPaginatedConnections = (
  * Query: Get a specific connection by profileId.
  */
 export const useGetConnection = (profileId: string) => {
-    const normalizedProfileId = profileId.toLowerCase();
+    const normalizedProfileId = profileId?.toLowerCase();
     const { initWallet } = useWallet();
     const switchedDid = switchedProfileStore.use.switchedDid();
     return useQuery<LCNVisibleProfile | undefined>({
