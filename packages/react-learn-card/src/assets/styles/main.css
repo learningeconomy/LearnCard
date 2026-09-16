@@ -11,9 +11,13 @@
     display: none;
 }
 
+/*
+ * Consumer apps apply high-specificity focus resets to native buttons.
+ * Keep this inset outline authoritative because the card wrapper clips outer rings.
+ */
 .boost-generic-card-button:focus-visible {
-    outline: 3px solid #008b66;
-    outline-offset: -3px;
+    outline: 3px solid #008b66 !important;
+    outline-offset: -3px !important;
 }
 
 .lds-ring {

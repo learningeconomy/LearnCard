@@ -1,5 +1,5 @@
 import React from 'react';
-import { Meta, Story } from '@storybook/react';
+import { Decorator, Meta, Story } from '@storybook/react';
 import { expect, userEvent, within } from '@storybook/test';
 import BoostGenericCard from './BoostGenericCard';
 import { BoostGenericCardProps, WalletCategoryTypes } from '../../types';
@@ -12,6 +12,22 @@ export default {
 } as Meta<typeof BoostGenericCard>;
 
 const Template: Story<BoostGenericCardProps> = args => <BoostGenericCard {...args} />;
+
+const withConsumerFocusReset: Decorator = StoryComponent => (
+    <>
+        <style>
+            {`
+                #app-router button:focus-visible {
+                    outline: none;
+                    outline-offset: 2px;
+                }
+            `}
+        </style>
+        <div id="app-router">
+            <StoryComponent />
+        </div>
+    </>
+);
 
 export const BoostGenericCardTest = Template.bind({});
 BoostGenericCardTest.args = {
@@ -27,6 +43,7 @@ BoostGenericCardTest.args = {
 
 export const KeyboardFocus = Template.bind({});
 KeyboardFocus.args = BoostGenericCardTest.args;
+KeyboardFocus.decorators = [withConsumerFocusReset];
 KeyboardFocus.play = async ({ canvasElement }) => {
     const canvas = within(canvasElement);
 
