@@ -1393,7 +1393,18 @@
             "guardianEmailed": "Enviamos un correo a tu tutor para que apruebe tu cuenta. Ya puedes empezar a explorar — algunas funciones se desbloquean cuando lo confirme.",
             "ready": "Tu {{brand}} está listo.",
             "whoAreYou": "¿Quién eres? (Opcional)",
-            "explore": "Explorar {{brand}}"
+            "explore": "Explorar {{brand}}",
+            "pin": {
+                "title": "Añadir un PIN de recuperación",
+                "body": "Si alguna vez pierdes este dispositivo, un PIN de 6 dígitos te permitirá volver a entrar en segundos.",
+                "confirmTitle": "Confirma tu PIN",
+                "confirmBody": "Introduce los mismos 6 dígitos de nuevo.",
+                "saving": "Guardando tu PIN…",
+                "success": "Estás protegido",
+                "skip": "Omitir por ahora",
+                "startOver": "Empezar de nuevo",
+                "hint": "Puedes cambiarlo o eliminarlo en cualquier momento en Configuración."
+            }
         }
     },
     "profile": {
@@ -1862,15 +1873,24 @@
             },
             "activation": {
                 "title": "Termina de proteger tu cuenta",
-                "body": "La actualización de tu cuenta no estará completa hasta que agregues una forma de volver a iniciar sesión."
+                "body": "Tu cuenta no estará completamente protegida hasta que agregues una forma de volver a iniciar sesión."
             },
             "success": {
                 "title": "Tu cuenta está protegida",
                 "body": "Puedes volver a iniciar sesión desde cualquier dispositivo."
             },
             "action": {
-                "passkey": "Usa Face ID o Touch ID",
-                "phrase": "Obtén una frase de recuperación"
+                "passkeyApple": "Usa Face ID o Touch ID",
+                "passkeyWindows": "Usa Windows Hello",
+                "passkeyAndroid": "Usa tu huella digital o desbloqueo facial",
+                "passkeyGeneric": "Usa una llave de acceso",
+                "phrase": "Guarda una frase de recuperación"
+            },
+            "pin": {
+                "title": "Añadir un PIN de recuperación",
+                "body": "Vuelve a entrar a tu cuenta en segundos si pierdes este dispositivo.",
+                "action": "Establecer un PIN de 6 dígitos",
+                "orAction": "O establece un PIN de recuperación de 6 dígitos"
             }
         },
         "protectAccount": "Protege tu cuenta",

@@ -1393,7 +1393,18 @@
             "guardianEmailed": "Nous avons envoyé un e-mail à votre tuteur pour approuver votre compte. Vous pouvez commencer à explorer dès maintenant — certaines fonctionnalités se débloquent une fois qu'il confirme.",
             "ready": "Votre {{brand}} est prêt.",
             "whoAreYou": "Qui êtes-vous ? (Facultatif)",
-            "explore": "Explorer {{brand}}"
+            "explore": "Explorer {{brand}}",
+            "pin": {
+                "title": "Ajouter un code PIN de récupération",
+                "body": "Si vous perdez cet appareil, un code PIN à 6 chiffres vous permettra de vous reconnecter en quelques secondes.",
+                "confirmTitle": "Confirmez votre code PIN",
+                "confirmBody": "Entrez à nouveau les 6 mêmes chiffres.",
+                "saving": "Enregistrement de votre code PIN…",
+                "success": "Vous êtes protégé",
+                "skip": "Ignorer pour le moment",
+                "startOver": "Recommencer",
+                "hint": "Vous pouvez le modifier ou le supprimer à tout moment dans les Paramètres."
+            }
         }
     },
     "profile": {
@@ -1862,15 +1873,24 @@
             },
             "activation": {
                 "title": "Terminez la sécurisation de votre compte",
-                "body": "La mise à niveau de votre compte ne sera terminée que lorsque vous aurez ajouté un moyen de vous reconnecter."
+                "body": "Votre compte n'est pas entièrement protégé tant que vous n'avez pas ajouté un moyen de vous reconnecter."
             },
             "success": {
                 "title": "Votre compte est protégé",
                 "body": "Vous pouvez vous reconnecter depuis n’importe quel appareil."
             },
             "action": {
-                "passkey": "Utiliser Face ID ou Touch ID",
-                "phrase": "Obtenir une phrase de récupération"
+                "passkeyApple": "Utiliser Face ID ou Touch ID",
+                "passkeyWindows": "Utiliser Windows Hello",
+                "passkeyAndroid": "Utiliser l'empreinte digitale ou la reconnaissance faciale",
+                "passkeyGeneric": "Utiliser une clé d'accès",
+                "phrase": "Enregistrer une phrase de récupération"
+            },
+            "pin": {
+                "title": "Ajouter un code PIN de récupération",
+                "body": "Retrouvez l'accès à votre compte en quelques secondes si vous perdez cet appareil.",
+                "action": "Définir un code PIN à 6 chiffres",
+                "orAction": "Ou définir un code PIN de récupération à 6 chiffres"
             }
         },
         "protectAccount": "Protégez votre compte",
