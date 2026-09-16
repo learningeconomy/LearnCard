@@ -19,6 +19,8 @@ import {
     useSyncConsentFlow,
     switchedProfileStore,
     UserProfilePicture,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 
 import useGetFamilyCredential from '../../hooks/useGetFamilyCredential';
@@ -52,6 +54,7 @@ const GuardianConsentLaunchModal: React.FC<GuardianConsentLaunchModalProps> = ({
     const currentUser = useCurrentUser();
     const { currentLCNUser } = useGetCurrentLCNUser();
     const { initWallet } = useWallet();
+    const { presentToast } = useToast();
 
     const isSwitchedProfile = switchedProfileStore.use.isSwitchedProfile();
     const { familyCredential } = useGetFamilyCredential();
@@ -124,15 +127,16 @@ const GuardianConsentLaunchModal: React.FC<GuardianConsentLaunchModalProps> = ({
     const handleConsentAndLaunch = async () => {
         if (!selectedUser) return;
 
-        await guardedAction(async () => {
-            setIsProcessing(true);
+        try {
+            await guardedAction(async () => {
+                setIsProcessing(true);
 
-            try {
                 // Consent to contract for selected user
                 await consentToContract({
                     terms,
                     expiresAt: '',
                     oneTime: false,
+                    beforeSubmit: () => guardedAction(() => {}),
                 });
 
                 // Sync credentials in background
@@ -140,11 +144,14 @@ const GuardianConsentLaunchModal: React.FC<GuardianConsentLaunchModalProps> = ({
 
                 // Launch with redirect
                 await launchWithCredentials(selectedUser.did);
-            } catch (error) {
-                log.error('Failed to consent:', error);
-                setIsProcessing(false);
-            }
-        });
+            });
+        } catch {
+            presentToast(m['error.generic'](), {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
+            setIsProcessing(false);
+        }
     };
 
     // Launch directly (for users who already have consent)
@@ -180,10 +187,11 @@ const GuardianConsentLaunchModal: React.FC<GuardianConsentLaunchModalProps> = ({
 
                 const unsignedDidAuthVp = await wallet.invoke.newPresentation(delegateCredential);
 
-                const vp = (await wallet.invoke.issuePresentation(unsignedDidAuthVp, {
+                const vp = await wallet.invoke.issuePresentation(unsignedDidAuthVp, {
                     proofPurpose: 'authentication',
                     proofFormat: 'jwt',
-                })) as any as string;
+                });
+                if (typeof vp !== 'string') throw new Error('Expected a signed JWT presentation');
 
                 urlObj.searchParams.set('vp', vp);
             }

@@ -9,7 +9,7 @@ import { ChatBotQuestionsEnum } from '../newAiSessionChatbot.helpers';
 import { Boost, VC } from '@learncard/types';
 import { getAiTopicTitle } from '../../newAiSession.helpers';
 import { useHistory } from 'react-router-dom';
-import { getAiPassportLaunchUrl, useGetCurrentLCNUser, useModal } from 'learn-card-base';
+import { useModal } from 'learn-card-base';
 
 export const ExistingAiTopicItem: React.FC<{
     topicVc?: VC;
@@ -33,7 +33,6 @@ export const ExistingAiTopicItem: React.FC<{
     contractUri,
 }) => {
     const history = useHistory();
-    const { currentLCNUser } = useGetCurrentLCNUser();
     const app = getAiPassportAppByContractUri(contractUri);
     const topicTitle = getAiTopicTitle(topicVc) ?? '';
     const { closeAllModals } = useModal();
@@ -50,10 +49,7 @@ export const ExistingAiTopicItem: React.FC<{
                             history.push(`/chats?topicUri=${encodeURIComponent(topicBoost.uri)}`);
                             closeAllModals();
                         } else if (app?.url) {
-                            window.location.href = getAiPassportLaunchUrl(
-                                `${app.url}/chats?topicUri=${encodeURIComponent(topicBoost.uri)}`,
-                                currentLCNUser?.did
-                            );
+                            window.location.href = `${app.url}/chats?topicUri=${encodeURIComponent(topicBoost.uri)}`;
                         } else {
                             history.push(`/chats?topicUri=${encodeURIComponent(topicBoost.uri)}`);
                             closeAllModals();
