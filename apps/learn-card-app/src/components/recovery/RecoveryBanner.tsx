@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { IonIcon } from '@ionic/react';
-import { checkmarkCircleOutline, closeOutline, shieldOutline } from 'ionicons/icons';
+import { checkmarkCircleOutline, closeOutline, shieldOutline, keypadOutline } from 'ionicons/icons';
 
 import { isPublicComputerMode, isWebAuthnSupported } from '@learncard/sss-key-manager';
 import firstStartupStore, {
@@ -19,11 +19,14 @@ const EXIT_DURATION_MS = 300;
 type RecoveryPromptWeight = 'calm' | 'urgent';
 type RecoveryPromptPhase = 'visible' | 'success' | 'exiting' | 'hidden';
 
-interface RecoveryBannerProps {
+export interface RecoveryBannerProps {
     recoverySupported: boolean;
     recoveryMethodCount: number | null;
     activationPending?: boolean;
     totalCredentialCount: number;
+    escrowEnrolled?: boolean;
+    pinEnabled?: boolean | null;
+    onSetupPin?: () => void;
     onSetup: (options: {
         initialMethod: RecoverySetupType;
         onCompleted: (method: RecoverySetupType) => void;
@@ -31,11 +34,29 @@ interface RecoveryBannerProps {
     }) => void;
 }
 
+type NavigatorWithUAData = Navigator & { userAgentData?: { platform?: string } };
+
+const getPasskeyActionLabel = (): string => {
+    const nav = navigator as NavigatorWithUAData;
+    const hints = [nav.userAgent, nav.platform, nav.userAgentData?.platform]
+        .filter((value): value is string => typeof value === 'string')
+        .join(' ');
+
+    if (/Android/i.test(hints)) return m['recovery.prompt.action.passkeyAndroid']();
+    if (/Mac|iPhone|iPad|iPod|iOS/i.test(hints)) return m['recovery.prompt.action.passkeyApple']();
+    if (/Win/i.test(hints)) return m['recovery.prompt.action.passkeyWindows']();
+
+    return m['recovery.prompt.action.passkeyGeneric']();
+};
+
 export const RecoveryBanner: React.FC<RecoveryBannerProps> = ({
     recoverySupported,
     recoveryMethodCount,
     activationPending = false,
     totalCredentialCount,
+    escrowEnrolled = false,
+    pinEnabled = null,
+    onSetupPin,
     onSetup,
 }) => {
     const { track } = useAnalytics();
@@ -58,12 +79,24 @@ export const RecoveryBanner: React.FC<RecoveryBannerProps> = ({
         []
     );
     const isSnoozed = !isPublic && snoozedUntil > currentTime;
-    const isEligible =
+
+    const isStandardEligible =
         recoverySupported &&
         recoveryMethodCount === 0 &&
         (isPublic || totalCredentialCount > 0) &&
         !isSnoozed;
+
+    const isPinEligible =
+        escrowEnrolled &&
+        pinEnabled === false &&
+        !!onSetupPin &&
+        recoveryMethodCount !== null &&
+        !isSnoozed;
+
+    const isEligible = isStandardEligible || isPinEligible;
     const isRendered = (!completed && isEligible) || phase === 'success' || phase === 'exiting';
+
+    const isPinOnly = isPinEligible && !isStandardEligible;
 
     useEffect(() => {
         if (!isEligible || shownRef.current) return;
@@ -71,9 +104,10 @@ export const RecoveryBanner: React.FC<RecoveryBannerProps> = ({
         shownRef.current = true;
         track(AnalyticsEvents.DASHBOARD_RECOVERY_PROMPT_INTERACTED, {
             action: 'shown',
-            weight,
+            weight: isPinOnly ? 'calm' : weight,
+            method: isPinOnly ? 'pin' : undefined,
         });
-    }, [isEligible, track, weight]);
+    }, [isEligible, track, weight, isPinOnly]);
 
     useEffect(() => {
         if (isPublic || snoozedUntil <= currentTime) return;
@@ -106,6 +140,16 @@ export const RecoveryBanner: React.FC<RecoveryBannerProps> = ({
 
     const handleSetup = (): void => {
         if (setupRequestedRef.current) return;
+
+        if (isPinOnly) {
+            track(AnalyticsEvents.DASHBOARD_RECOVERY_PROMPT_INTERACTED, {
+                action: 'clicked',
+                weight: 'calm',
+                method: 'pin',
+            });
+            onSetupPin?.();
+            return;
+        }
 
         setupRequestedRef.current = true;
         completionHandledRef.current = false;
@@ -144,7 +188,8 @@ export const RecoveryBanner: React.FC<RecoveryBannerProps> = ({
         }
     };
 
-    const handleSnooze = (): void => {
+    const handleSnooze = (e: React.MouseEvent): void => {
+        e.stopPropagation();
         const nextSnoozedUntil = Date.now() + RECOVERY_PROMPT_SNOOZE_MS;
         setCurrentTime(Date.now());
         firstStartupStore.set.recoveryPromptSnoozedUntil(nextSnoozedUntil);
@@ -152,8 +197,22 @@ export const RecoveryBanner: React.FC<RecoveryBannerProps> = ({
         track(AnalyticsEvents.DASHBOARD_RECOVERY_PROMPT_INTERACTED, {
             action: 'snoozed',
             weight: 'calm',
+            method: isPinOnly ? 'pin' : undefined,
         });
         setPhase('exiting');
+    };
+
+    const handleSetupPin = (e: React.MouseEvent): void => {
+        e.stopPropagation();
+        if (setupRequestedRef.current) return;
+
+        track(AnalyticsEvents.DASHBOARD_RECOVERY_PROMPT_INTERACTED, {
+            action: 'clicked',
+            weight,
+            method: 'pin',
+        });
+
+        onSetupPin?.();
     };
 
     const isSuccess = completed;
@@ -189,9 +248,11 @@ export const RecoveryBanner: React.FC<RecoveryBannerProps> = ({
                 ) : (
                     <div
                         className={`animate-fade-in-up w-full flex items-stretch rounded-[20px] border transition-colors ${
-                            isPublic
-                                ? 'bg-amber-50 border-amber-200'
-                                : 'bg-white border-grayscale-200'
+                            isPinOnly
+                                ? 'bg-emerald-50 border-emerald-200'
+                                : isPublic
+                                  ? 'bg-amber-50 border-amber-200'
+                                  : 'bg-white border-grayscale-200'
                         }`}
                     >
                         <button
@@ -203,46 +264,79 @@ export const RecoveryBanner: React.FC<RecoveryBannerProps> = ({
                         >
                             <span
                                 className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-colors ${
-                                    isPublic
-                                        ? 'bg-amber-100 group-hover:bg-amber-200'
-                                        : 'bg-amber-50 group-hover:bg-amber-100'
+                                    isPinOnly
+                                        ? 'bg-emerald-100 group-hover:bg-emerald-200'
+                                        : isPublic
+                                          ? 'bg-amber-100 group-hover:bg-amber-200'
+                                          : 'bg-amber-50 group-hover:bg-amber-100'
                                 }`}
                             >
-                                <IonIcon icon={shieldOutline} className="text-amber-600 text-lg" />
+                                <IonIcon
+                                    icon={isPinOnly ? keypadOutline : shieldOutline}
+                                    className={`text-lg ${isPinOnly ? 'text-emerald-600' : 'text-amber-600'}`}
+                                />
                             </span>
 
                             <span className="flex-1 min-w-0">
                                 <span
                                     className={`block text-sm font-semibold leading-tight ${
-                                        isPublic ? 'text-amber-900' : 'text-grayscale-900'
+                                        isPinOnly
+                                            ? 'text-emerald-900'
+                                            : isPublic
+                                              ? 'text-amber-900'
+                                              : 'text-grayscale-900'
                                     }`}
                                 >
-                                    {activationPending
-                                        ? m['recovery.prompt.activation.title']()
-                                        : isPublic
-                                          ? m['recovery.prompt.urgent.title']()
-                                          : m['recovery.prompt.calm.title']()}
+                                    {isPinOnly
+                                        ? m['recovery.prompt.pin.title']()
+                                        : activationPending
+                                          ? m['recovery.prompt.activation.title']()
+                                          : isPublic
+                                            ? m['recovery.prompt.urgent.title']()
+                                            : m['recovery.prompt.calm.title']()}
                                 </span>
                                 <span
                                     className={`block text-xs leading-snug mt-0.5 ${
-                                        isPublic ? 'text-amber-800' : 'text-grayscale-600'
+                                        isPinOnly
+                                            ? 'text-emerald-800'
+                                            : isPublic
+                                              ? 'text-amber-800'
+                                              : 'text-grayscale-600'
                                     }`}
                                 >
-                                    {activationPending
-                                        ? m['recovery.prompt.activation.body']()
-                                        : isPublic
-                                          ? m['recovery.prompt.urgent.body']()
-                                          : m['recovery.prompt.calm.body']()}
+                                    {isPinOnly
+                                        ? m['recovery.prompt.pin.body']()
+                                        : activationPending
+                                          ? m['recovery.prompt.activation.body']()
+                                          : isPublic
+                                            ? m['recovery.prompt.urgent.body']()
+                                            : m['recovery.prompt.calm.body']()}
                                 </span>
                                 <span
                                     className={`block text-xs font-semibold mt-1 ${
-                                        isPublic ? 'text-amber-900' : 'text-grayscale-800'
+                                        isPinOnly
+                                            ? 'text-emerald-900'
+                                            : isPublic
+                                              ? 'text-amber-900'
+                                              : 'text-grayscale-800'
                                     }`}
                                 >
-                                    {recommendedMethod === 'passkey'
-                                        ? m['recovery.prompt.action.passkey']()
-                                        : m['recovery.prompt.action.phrase']()}
+                                    {isPinOnly
+                                        ? m['recovery.prompt.pin.action']()
+                                        : recommendedMethod === 'passkey'
+                                          ? getPasskeyActionLabel()
+                                          : m['recovery.prompt.action.phrase']()}
                                 </span>
+                                {isStandardEligible && isPinEligible && (
+                                    <span
+                                        className={`block text-xs font-semibold mt-1 ${
+                                            isPublic ? 'text-amber-900' : 'text-grayscale-800'
+                                        } hover:underline`}
+                                        onClick={handleSetupPin}
+                                    >
+                                        {m['recovery.prompt.pin.orAction']()}
+                                    </span>
+                                )}
                             </span>
                         </button>
 

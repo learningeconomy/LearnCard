@@ -1246,7 +1246,7 @@ export interface AnalyticsEventPayloads {
     [AnalyticsEvents.DASHBOARD_RECOVERY_PROMPT_INTERACTED]: {
         action: 'shown' | 'clicked' | 'snoozed' | 'completed';
         weight: 'calm' | 'urgent';
-        method?: 'passkey' | 'phrase' | 'backup' | 'email';
+        method?: 'passkey' | 'phrase' | 'backup' | 'email' | 'pin';
     };
 
     [AnalyticsEvents.CONSENT_FLOW_DECLINED]: {
