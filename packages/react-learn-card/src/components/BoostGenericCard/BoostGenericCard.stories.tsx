@@ -17,7 +17,7 @@ const withConsumerFocusReset: Decorator = StoryComponent => (
     <>
         <style>
             {`
-                #app-router button:focus-visible {
+                :where(#app-router, #modal-mid-root) :where(button):focus-visible {
                     outline: none;
                     outline-offset: 2px;
                 }
@@ -50,12 +50,18 @@ KeyboardFocus.play = async ({ canvasElement }) => {
     await userEvent.tab();
 
     const card = canvas.getByRole('button', { name: /Title Title Title/ });
-    const focusedStyle = getComputedStyle(card);
+    const cardFrame = card.closest<HTMLElement>('.boost-generic-card-wrapper');
 
     await expect(card).toHaveFocus();
-    await expect(focusedStyle.outlineStyle).toBe('solid');
-    await expect(focusedStyle.outlineWidth).toBe('3px');
-    await expect(focusedStyle.outlineOffset).toBe('-3px');
+    await expect(cardFrame).not.toBeNull();
+
+    const focusedStyle = getComputedStyle(card);
+    const frameStyle = getComputedStyle(cardFrame!);
+
+    await expect(focusedStyle.outlineStyle).toBe('none');
+    await expect(focusedStyle.boxShadow).toBe('none');
+    await expect(frameStyle.boxShadow).toContain('rgb(255, 255, 255) 0px 0px 0px 2px');
+    await expect(frameStyle.boxShadow).toContain('rgb(64, 203, 166) 0px 0px 0px 4px');
 };
 
 export const InSkillsModal = Template.bind({});

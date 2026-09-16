@@ -63,7 +63,7 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
 
     return (
         <div
-            className={`flex bg-white flex-col shadow-bottom relative p-0 w-[160px] h-[285px] rounded-[20px] overflow-hidden ${className}`}
+            className={`boost-generic-card-wrapper flex bg-white flex-col shadow-bottom relative p-0 w-[160px] h-[285px] rounded-[20px] overflow-hidden ${className}`}
         >
             {isInactive && (
                 <span
