@@ -255,6 +255,16 @@ failed in `@learncard/init` while loading DidKit, so the native
 `@learncard/didkit-plugin-node` package is externalized from the Trigger bundle. The full-agent
 execution task uses `medium-1x`: Trigger.dev's default 0.5 GB worker exhausted its V8 heap while
 initializing the LearnCard runtime.
+Workspace `development` exports are enabled only inside esbuild, not in the worker's Node
+conditions: the published native package must resolve to compiled JavaScript at runtime.
+
+Before deploying Trigger tasks, `deploy.yml` waits for the checkout's exact native package
+version and Linux x64 binding to be installable from public npm, then verifies that
+`getDidKitPlugin()` loads in an isolated Node process. This prevents deployment from racing
+the separate native-package publishing workflow. The gate waits up to 15 minutes for
+unpublished packages; other install errors or a broken native addon fail immediately.
+Run `node scripts/wait-for-trigger-native-package.mjs` from the repository root on Linux
+x64 to check the same prerequisite without deploying or using credentials.
 
 For local development:
 
