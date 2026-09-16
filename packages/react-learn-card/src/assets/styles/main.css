@@ -11,6 +11,11 @@
     display: none;
 }
 
+.boost-generic-card-button:focus-visible {
+    outline: 3px solid #008b66;
+    outline-offset: -3px;
+}
+
 .lds-ring {
     display: inline-block;
     position: relative;

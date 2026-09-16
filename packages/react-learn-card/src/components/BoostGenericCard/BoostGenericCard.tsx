@@ -94,7 +94,7 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
 
             <button
                 type="button"
-                className="z-10 flex flex-col flex-grow"
+                className="boost-generic-card-button z-10 flex flex-col flex-grow rounded-[20px]"
                 onClick={handleInnerClick}
             >
                 {/* Thumbnail — filter on the wrapper so it desaturates a
