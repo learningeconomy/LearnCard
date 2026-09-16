@@ -32,6 +32,8 @@ A managed service looks like this inside the signed credential:
 
 Two things differ from the plain 1EdTech service. The URL is unguessable, and the endpoint requires the wallet to prove it controls the recipient's identity before it answers. That means a standard 1EdTech client can't read a managed service, and LearnCard wallets never send their identity proof to a standard service.
 
+The service also carries its own JSON-LD context terms. You never write them by hand: when a credential with a managed service is signed — through `send({ refresh: true })`, `sendBoost(…, { enableRefresh: true })`, or a plain `issueCredential` — the SDK injects the definitions automatically before the proof is created, and the network does the same when it signs or publishes on an issuer's behalf.
+
 ### What the network stores
 
 Every version of a managed credential is stored encrypted to the recipient. The network can't read it, and neither can the issuer once it's sent. During publication the network briefly sees the new version in memory to verify the signature and decide whether the change is worth a notification, but plaintext is never written to storage, logs, or error messages.
@@ -40,9 +42,9 @@ The endpoint gives nothing away to someone who doesn't hold the recipient's keys
 
 ### The lifecycle
 
-1. **Allocate.** Before signing, the issuer asks the network for a refresh service bound to a recipient and a credential ID. The service goes into the credential and gets signed along with everything else, which is why it can't be added afterwards.
+1. **Allocate.** Before signing, a refresh service must be bound to a recipient and a credential ID. `send({ refresh: true })` allocates, signs, and delivers in one step; the [lower-level path](../how-to-guides/issue-and-refresh-a-managed-credential.md#the-lower-level-path) exposes the same steps individually. Either way the service goes into the credential and gets signed along with everything else, which is why it can't be added afterwards. The send response includes a receipt — `refreshId`, `refreshService`, and the signed identity — which is what you keep to publish updates later.
 2. **Send and claim.** The credential is delivered like any other. The issuer may publish updates before the recipient claims, but nothing is served or announced until they do.
-3. **Publish.** The issuer publishes a complete new version, either signed by them or signed by the network with their [signing authority](identities-and-keys/signing-authorities.md). The network checks the signature, that the issuer and credential ID haven't changed, and that the version isn't dated earlier than the current one. Versions are never rewritten; a new one is appended and becomes current.
+3. **Publish.** The issuer publishes a complete new version rebuilt from their own claims plus the receipt — same ID, issuer, subject, refresh service, and status descriptor — either signed by them or signed by the network with their [signing authority](identities-and-keys/signing-authorities.md). The network checks the signature, that the issuer and credential ID haven't changed, and that the version isn't dated earlier than the current one. Versions are never rewritten; a new one is appended and becomes current.
 4. **Serve.** The wallet authenticates and receives the current version, or a `304 Not Modified` if it already has it.
 5. **Revoke.** Revocation stops the network from serving anything. The recipient keeps what's already in their wallet.
 
