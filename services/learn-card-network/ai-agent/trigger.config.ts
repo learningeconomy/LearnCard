@@ -13,8 +13,23 @@ export default defineConfig({
         },
     },
     build: {
-        conditions: ['development'],
         extensions: [
+            {
+                name: 'workspace-source-exports',
+                onBuildStart(context) {
+                    context.registerPlugin({
+                        name: 'workspace-source-exports',
+                        setup(build) {
+                            // Bundle workspace source, but let Node load compiled npm externals.
+                            // build.conditions would also enable raw TypeScript exports at runtime.
+                            build.initialOptions.conditions = [
+                                ...(build.initialOptions.conditions ?? []),
+                                'development',
+                            ];
+                        },
+                    });
+                },
+            },
             syncEnvVars(
                 () => [
                     {

@@ -1515,6 +1515,9 @@ jobs:
               working-directory: services/learn-card-network/ai-agent
               run: bunx trigger deploy --help
 
+            - name: Test Trigger native package readiness gate
+              run: node --test scripts/wait-for-trigger-native-package.test.mjs
+
             - name: Run AI Agent tests
               run: bun run --cwd services/learn-card-network/ai-agent test -- run
 
@@ -1578,6 +1581,13 @@ jobs:
                     echo "::error::AI_AGENT_TRIGGER_PROJECT_REF does not match $TARGET_ENVIRONMENT"
                     exit 1
                   fi
+
+            # The native prebuild workflow publishes independently of Deploy.
+            # Trigger installs this external package from npm, not the checkout.
+            - name: Wait for Trigger native package publication
+              timeout-minutes: 16
+              run: node scripts/wait-for-trigger-native-package.mjs
+
             - name: Configure AWS credentials
               uses: aws-actions/configure-aws-credentials@v5
               with:
