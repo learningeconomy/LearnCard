@@ -123,6 +123,7 @@ const ADMIN_TOOL_COPY: Partial<
     [AdminToolOptionsEnum.BULK_UPLOAD]: {
         label: m['adminTools.tools.importCredentials.label'],
         description: m['adminTools.tools.importCredentials.description'],
+        title: m['bulkImport.title'],
     },
     [AdminToolOptionsEnum.CONSENT_FLOW]: {
         label: m['adminTools.tools.consentFlow.label'],

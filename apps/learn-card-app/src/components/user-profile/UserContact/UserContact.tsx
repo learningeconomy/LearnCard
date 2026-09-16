@@ -3,6 +3,7 @@ import { useModal } from 'learn-card-base';
 
 import UserContactHeader from './UserContactHeader';
 import UserEmailContacts from './UserEmailContacts';
+import * as m from '../../../paraglide/messages.js';
 
 // i18n: no user-facing strings — composition-only component
 export const UserContact: React.FC = () => {
@@ -22,7 +23,7 @@ export const UserContact: React.FC = () => {
                         onClick={closeModal}
                         className="w-full bg-white text-grayscale-800 text-[17px] font-poppins font-medium py-3 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-grayscale-100 hover:bg-grayscale-50 transition-colors"
                     >
-                        Back
+                        {m['common.back']()}
                     </button>
                 </div>
             </div>
