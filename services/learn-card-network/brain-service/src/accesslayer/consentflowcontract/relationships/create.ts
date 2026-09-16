@@ -1,6 +1,7 @@
 import {
     ConsentFlowTerms as ConsentFlowTermsType,
     ConsentFlowTransaction,
+    ConsentFlowGuardianApproval,
     LCNNotificationTypeEnumValidator,
     LCNProfile,
     UnsignedVC,
@@ -76,11 +77,13 @@ export const consentToContract = async (
         terms: _terms,
         expiresAt,
         oneTime,
+        guardianApproval,
     }: {
         terms: ConsentFlowTermsType;
         expiresAt?: string;
         liveSyncing?: boolean;
         oneTime?: boolean;
+        guardianApproval?: ConsentFlowGuardianApproval;
     },
     domain: string
 ) => {
@@ -122,7 +125,7 @@ export const consentToContract = async (
     if (existing.length > 0) {
         return reconsentTerms(
             { terms: inflateObject(existing[0]!.terms), consenter, contract, contractOwner },
-            { terms, expiresAt, oneTime },
+            { terms, expiresAt, oneTime, guardianApproval },
             domain
         );
     }
@@ -137,7 +140,11 @@ export const consentToContract = async (
 
     const termsId = uuid();
 
-    const result = await new QueryBuilder(new BindParam({ params: flattenObject({ terms }) }))
+    const result = await new QueryBuilder(
+        new BindParam({
+            params: flattenObject({ terms, ...(guardianApproval ? { guardianApproval } : {}) }),
+        })
+    )
         .match({
             multiple: [
                 {
@@ -157,8 +164,8 @@ export const consentToContract = async (
                     properties: {
                         id: termsId,
                         status: oneTime ? 'stale' : 'live',
-                        createdAt: new Date().toISOString(),
-                        updatedAt: new Date().toISOString(),
+                        createdAt: transaction.date,
+                        updatedAt: transaction.date,
                         ...(expiresAt ? { expiresAt } : {}),
                         ...(oneTime ? { oneTime } : {}),
                     },

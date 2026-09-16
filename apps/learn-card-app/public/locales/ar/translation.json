@@ -1715,6 +1715,7 @@
         "previewCredentials": "معاينة {{count}} من بيانات الاعتماد"
     },
     "consentFlow": {
+        "guardianApprovalRequired": "اطلب من أحد مديري الحساب الحاليين الموافقة على هذا الاتصال، ثم حاول مرة أخرى.",
         "title": "الموافقة",
         "acceptAndSync": "قبول ومزامنة",
         "accepted": "مقبول",

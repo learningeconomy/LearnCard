@@ -18,6 +18,8 @@ import {
     useGetAppReviews,
     AppStoreAppMetadata,
     AppStoreAppReview,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 import redirectStore from 'learn-card-base/stores/redirectStore';
 import { ThreeDotVertical } from '@learncard/react';
@@ -76,6 +78,7 @@ const AppListingPage: React.FC = () => {
     const location = history.location;
     const isLoggedIn = useIsLoggedIn();
     const { newModal, closeModal, replaceModal } = useModal();
+    const { presentToast } = useToast();
     const confirm = useConfirmation();
 
     // Check if we have a preview listing from route state (for admin preview)
@@ -289,7 +292,7 @@ const AppListingPage: React.FC = () => {
         }
     };
 
-    const handleInstall = () => {
+    const handleInstall = async () => {
         if (!listing) return;
 
         if (!isLoggedIn) {
@@ -303,29 +306,36 @@ const AppListingPage: React.FC = () => {
         }
 
         // Guardian verification before showing permissions modal
-        guardedAction(() => {
-            const permissions: string[] = launchConfig?.permissions || [];
-            const contractUri: string | undefined = launchConfig?.contractUri;
+        try {
+            await guardedAction(() => {
+                const permissions: string[] = launchConfig?.permissions || [];
+                const contractUri: string | undefined = launchConfig?.contractUri;
 
-            newModal(
-                <AppInstallConsentModal
-                    appName={listing.display_name}
-                    appIcon={listing.icon_url}
-                    permissions={permissions}
-                    contractUri={contractUri}
-                    onAccept={() => {
-                        closeModal();
-                        doInstall();
-                    }}
-                    onReject={closeModal}
-                />,
-                {
-                    sectionClassName: '!max-w-[500px]',
-                    hideButton: true,
-                },
-                { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
-            );
-        });
+                newModal(
+                    <AppInstallConsentModal
+                        appName={listing.display_name}
+                        appIcon={listing.icon_url}
+                        permissions={permissions}
+                        contractUri={contractUri}
+                        onAccept={() => {
+                            closeModal();
+                            doInstall();
+                        }}
+                        onReject={closeModal}
+                    />,
+                    {
+                        sectionClassName: '!max-w-[500px]',
+                        hideButton: true,
+                    },
+                    { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
+                );
+            });
+        } catch {
+            presentToast(m['error.generic'](), {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
+        }
     };
 
     const handleUninstall = async () => {
@@ -470,10 +480,12 @@ const AppListingPage: React.FC = () => {
                     const unsignedDidAuthVp =
                         await wallet.invoke.newPresentation(delegateCredential);
 
-                    const vp = (await wallet.invoke.issuePresentation(unsignedDidAuthVp, {
+                    const vp = await wallet.invoke.issuePresentation(unsignedDidAuthVp, {
                         proofPurpose: 'authentication',
                         proofFormat: 'jwt',
-                    })) as any as string;
+                    });
+                    if (typeof vp !== 'string')
+                        throw new Error('Expected a signed JWT presentation');
 
                     urlObj.searchParams.set('vp', vp);
                 }
@@ -504,7 +516,7 @@ const AppListingPage: React.FC = () => {
             newModal(
                 <EmbedIframeModal
                     embedUrl={launchConfig.url}
-                    appId={(listing as any).slug || listing.listing_id}
+                    appId={listing.slug || listing.listing_id}
                     appName={listing.display_name}
                     launchConfig={launchConfig}
                     isInstalled={isInstalled}
