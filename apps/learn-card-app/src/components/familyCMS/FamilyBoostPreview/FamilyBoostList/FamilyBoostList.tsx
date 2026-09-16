@@ -7,6 +7,7 @@ import FamilyBoostListItem from './FamilyBoostListItem';
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import { VC } from '@learncard/types';
 import useBoostModal from '../../../boost/hooks/useBoostModal';
+import * as m from '../../../../paraglide/messages.js';
 
 export const FamilyBoostList: React.FC<{ credential: VC }> = ({ credential }) => {
     const { handlePresentBoostModal } = useBoostModal(
@@ -17,7 +18,7 @@ export const FamilyBoostList: React.FC<{ credential: VC }> = ({ credential }) =>
     const familyBoosts = [
         {
             id: 1,
-            title: 'Social Boosts',
+            title: m['arabicFixes.socialBoosts'](),
             icon: <SocialBadges />,
             boostType: BoostCategoryOptionsEnum.socialBadge,
             onClick: handlePresentBoostModal,

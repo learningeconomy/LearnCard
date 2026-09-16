@@ -14,6 +14,7 @@ import {
 import { clearGuardianVerification } from '../../hooks/useGuardianGate';
 
 import { LCNProfile } from '@learncard/types';
+import * as m from '../../paraglide/messages.js';
 
 type ParentSwitcherButtonProps = {
     isSwitching: boolean;
@@ -91,7 +92,9 @@ const ParentSwitcherButton: React.FC<ParentSwitcherButtonProps> = ({
                 >
                     {displayName}
                 </p>
-                <p className="text-xs capitalize text-grayscale-600 font-semibold">User</p>
+                <p className="text-xs capitalize text-grayscale-600 font-semibold">
+                    {m['arabicFixes.user']()}
+                </p>
                 <div className="h-[15px] w-[15px]">
                     {isSelected && <CircleCheckmark className="h-[15px] w-[15px]" />}
                     {!isSelected && !isServiceProfile && (
