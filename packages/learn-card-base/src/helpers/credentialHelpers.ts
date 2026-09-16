@@ -1287,10 +1287,24 @@ export const getCategoryDarkColor = (category = CredentialCategoryEnum.achieveme
     return `${getCategoryPrimaryColor(category)}-700`;
 };
 
+const getEndorsementIndexQuery = (
+    vc: VC
+): { originalCredentialId: string } | { endorsedId: string } | undefined => {
+    if (vc?.id) return { originalCredentialId: vc.id };
+
+    const endorsedId = getCredentialSubject(vc)?.id;
+    return typeof endorsedId === 'string' ? { endorsedId } : undefined;
+};
+
 // (Owner POV)
 export const getEndorsements = async (wallet = walletStore.get.wallet(), vc: VC) => {
-    if (!vc?.id) return [];
-    const idxEndorsements = await wallet?.index.LearnCloud.get({ credentialId: vc?.id });
+    const query = getEndorsementIndexQuery(vc);
+    if (!query) return [];
+
+    let idxEndorsements = await wallet?.index.LearnCloud.get(query);
+    if ((!idxEndorsements || idxEndorsements.length === 0) && vc?.id) {
+        idxEndorsements = await wallet?.index.LearnCloud.get({ credentialId: vc.id });
+    }
 
     if (!idxEndorsements || idxEndorsements.length === 0) return [];
 
@@ -1308,9 +1322,13 @@ export const getEndorsementsForVC = async (
     vc: VC,
     visibility: 'public' | 'private' = 'public'
 ): Promise<VC[]> => {
-    const idxEndorsements = await wallet?.index.LearnCloud.get({
-        credentialId: vc?.id,
-    });
+    const query = getEndorsementIndexQuery(vc);
+    if (!query) return [];
+
+    let idxEndorsements = await wallet?.index.LearnCloud.get(query);
+    if ((!idxEndorsements || idxEndorsements.length === 0) && vc?.id) {
+        idxEndorsements = await wallet?.index.LearnCloud.get({ credentialId: vc.id });
+    }
     if (!idxEndorsements || idxEndorsements.length === 0) return [];
 
     // TODO: handle this server side ^^ filtering is not working above

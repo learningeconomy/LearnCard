@@ -146,7 +146,7 @@ export const getLinkedClaimsPlugin = (
                     originalCredentialId: csObj?.id,
                     issuedOn: (endorsement as any).validFrom || (endorsement as any).issuanceDate,
                     category: 'Endorsement',
-                    credentialId: options?.credentialId, // original credential id
+                    credentialId: options?.credentialId ?? csObj?.id,
                     sharedUri: options?.sharedUri, // original credential shared uri
                     relationship: options?.relationship,
                     visibility: options?.visibility ?? 'public',
