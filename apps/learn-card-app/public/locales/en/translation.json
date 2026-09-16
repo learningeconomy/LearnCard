@@ -1388,7 +1388,18 @@
             "guardianEmailed": "We've emailed your guardian to approve your account. You can start exploring now — some features unlock once they confirm.",
             "ready": "Your {{brand}} is ready.",
             "whoAreYou": "Who are you? (Optional)",
-            "explore": "Explore {{brand}}"
+            "explore": "Explore {{brand}}",
+            "pin": {
+                "title": "Add a recovery PIN",
+                "body": "If you ever lose this device, a 6-digit PIN gets you back in within seconds.",
+                "confirmTitle": "Confirm your PIN",
+                "confirmBody": "Enter the same 6 digits again.",
+                "saving": "Saving your PIN…",
+                "success": "You're protected",
+                "skip": "Skip for now",
+                "startOver": "Start over",
+                "hint": "You can change or remove it anytime in Settings."
+            }
         }
     },
     "profile": {
@@ -1867,15 +1878,24 @@
             },
             "activation": {
                 "title": "Finish securing your account",
-                "body": "Your account upgrade isn't complete until you add a way to sign back in."
+                "body": "Your account isn't fully protected until you add a way to sign back in."
             },
             "success": {
                 "title": "You're covered",
                 "body": "You can sign back in from any device."
             },
             "action": {
-                "passkey": "Use Face ID or Touch ID",
-                "phrase": "Get a recovery phrase"
+                "passkeyApple": "Use Face ID or Touch ID",
+                "passkeyWindows": "Use Windows Hello",
+                "passkeyAndroid": "Use fingerprint or face unlock",
+                "passkeyGeneric": "Use a passkey",
+                "phrase": "Save a recovery phrase"
+            },
+            "pin": {
+                "title": "Add a recovery PIN",
+                "body": "Get back into your account in seconds if you lose this device.",
+                "action": "Set a 6-digit PIN",
+                "orAction": "Or set a 6-digit recovery PIN"
             }
         },
         "accountRecovery": "Account Recovery",
