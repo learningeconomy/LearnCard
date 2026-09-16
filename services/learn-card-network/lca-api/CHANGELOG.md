@@ -1,5 +1,44 @@
 # @welibraryos/lca-api-service
 
+## 1.3.1
+
+### Patch Changes
+
+- [#1566](https://github.com/learningeconomy/LearnCard/pull/1566) [`e46c302eaed8b98686d21e2f3b5d11b189567304`](https://github.com/learningeconomy/LearnCard/commit/e46c302eaed8b98686d21e2f3b5d11b189567304) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-2155] - Eliminate CertifiedBoostCredential wrapper
+
+    Direct credentials use their signed Boost network URI for the trusted-network check.
+    Plaintext sends reject mismatched Boost IDs. Encrypted signing-authority issuance
+    includes all subjects and, for delegated consent AutoBoosts, the contract owner.
+
+    Compatibility limitation: pre-signed `signedCredential` payloads (both plaintext and
+    client-encrypted) are stored unchanged, without a server-generated wrapper or status
+    entries. This includes plaintext credentials from older SDKs or third-party issuers
+    that omit `credentialStatus`. Without embedded status entries or server-retained status
+    coordinates, network revocation changes the recipient relationship only and is not
+    reflected by a holder's `verifyCredential` call. Such integrations must publish their
+    own signed status-list updates or use server-managed signing-authority issuance with
+    a VC v2 template. Storage now warns for both plaintext and encrypted credentials when
+    status metadata is missing or empty, including VC v1 issuance results.
+
+- [#1566](https://github.com/learningeconomy/LearnCard/pull/1566) [`e46c302eaed8b98686d21e2f3b5d11b189567304`](https://github.com/learningeconomy/LearnCard/commit/e46c302eaed8b98686d21e2f3b5d11b189567304) Thanks [@gerardopar](https://github.com/gerardopar)! - Encrypt signing-authority credentials using a single snapshot of each recipient's
+  X25519 keys. Keep DAG-JWE compatibility while eliminating repeated DID resolution
+  and post-encryption key-ID matching.
+
+    Carry status entries explicitly in serializable internal issuance results so copied
+    or cached credentials retain revocation metadata. Reject missing internal metadata,
+    and return false when persisted status JSON is malformed or fails validation.
+
+    Report an explicit Boost-authenticity warning when credential verification fails.
+
+- Updated dependencies [[`20b3844ddb7e649c9964308214ec4c395e9fc8db`](https://github.com/learningeconomy/LearnCard/commit/20b3844ddb7e649c9964308214ec4c395e9fc8db), [`b4f94f5a5ffbd52bad6cd26dc3dd627df8d5e6fb`](https://github.com/learningeconomy/LearnCard/commit/b4f94f5a5ffbd52bad6cd26dc3dd627df8d5e6fb), [`19bb79b1355dd9de7f71554fdb608f38b78ed6bb`](https://github.com/learningeconomy/LearnCard/commit/19bb79b1355dd9de7f71554fdb608f38b78ed6bb)]:
+    - @learncard/didkit-plugin@1.10.0
+    - @learncard/didkit-plugin-node@0.3.0
+    - @learncard/types@5.20.0
+    - @learncard/init@2.4.16
+    - @learncard/core@9.4.35
+    - @learncard/helpers@1.5.1
+    - @learncard/did-web-plugin@1.1.35
+
 ## 1.3.0
 
 ### Minor Changes

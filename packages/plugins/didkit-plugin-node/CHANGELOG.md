@@ -1,5 +1,24 @@
 # @learncard/didkit-plugin-node
 
+## 0.3.0
+
+### Minor Changes
+
+- [#1541](https://github.com/learningeconomy/LearnCard/pull/1541) [`20b3844ddb7e649c9964308214ec4c395e9fc8db`](https://github.com/learningeconomy/LearnCard/commit/20b3844ddb7e649c9964308214ec4c395e9fc8db) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Support final-spec P-256 `ecdsa-rdfc-2019` verification in the rebuilt DIDKit engines and public proof options. Require authentication-purpose DIDAuth proofs in both VCALM exchange verification branches. Preserve existing EdDSA behavior and outgoing Ed25519 wallet suite negotiation; this does not add key-aware P-256 wallet production.
+
+    External VCALM responders must sign DIDAuth presentations with `proofPurpose: 'authentication'`, echo the requested `challenge` and `domain`, and use a verification method authorized for authentication by the holder's DID document. Presentations signed with `assertionMethod` (including the previous `issuePresentation` default) are now rejected by claim-link and inbox-claim exchanges. First-party LearnCard and ScoutPass responders already use authentication proofs.
+
+    Allow `created` to be omitted only on final `ecdsa-rdfc-2019` DataIntegrityProofs in shared VC/VP schemas, while preserving the timestamp requirement for other proof suites.
+
+    Inbox claims retain a holder-encrypted recovery copy and therefore also require a supported X25519 key-agreement method. A `did:web` holder can use P-256 for authentication and a separate X25519 key for delivery. Signing-only P-256 `did:key` holders remain supported by generic claim links, but cannot claim inbox deliveries. Failed delivery encryption now returns an error without consuming the pending credential or exchange challenge.
+
+### Patch Changes
+
+- Updated dependencies [[`20b3844ddb7e649c9964308214ec4c395e9fc8db`](https://github.com/learningeconomy/LearnCard/commit/20b3844ddb7e649c9964308214ec4c395e9fc8db), [`b4f94f5a5ffbd52bad6cd26dc3dd627df8d5e6fb`](https://github.com/learningeconomy/LearnCard/commit/b4f94f5a5ffbd52bad6cd26dc3dd627df8d5e6fb), [`19bb79b1355dd9de7f71554fdb608f38b78ed6bb`](https://github.com/learningeconomy/LearnCard/commit/19bb79b1355dd9de7f71554fdb608f38b78ed6bb)]:
+    - @learncard/didkit-plugin@1.10.0
+    - @learncard/types@5.20.0
+    - @learncard/core@9.4.35
+
 ## 0.2.32
 
 ### Patch Changes
