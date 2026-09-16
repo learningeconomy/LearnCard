@@ -133,8 +133,18 @@ const SubmissionForm: React.FC = () => {
         setSubmitError(null);
     }, [initialFormData]);
 
-    const handleFormChange = (newData: Partial<AppStoreListingCreate>) =>
+    const handleFormChange = (newData: Partial<AppStoreListingCreate>) => {
         setFormData(prev => ({ ...prev, ...newData }));
+        // Errors belong to individual fields. Clear a field's old error as soon
+        // as it becomes non-empty rather than leaving stale validation behind.
+        setErrors(prev => {
+            const next = { ...prev };
+            for (const [key, value] of Object.entries(newData)) {
+                if (typeof value === 'string' && value.trim()) delete next[key];
+            }
+            return next;
+        });
+    };
 
     const hasMinimumDataForDraft = useCallback(
         () => !!formData.display_name?.trim(),
@@ -144,16 +154,27 @@ const SubmissionForm: React.FC = () => {
     const validateStep = (step: number): boolean => {
         const newErrors: Record<string, string> = {};
         if (step === 1) {
-            if (!formData.display_name?.trim()) newErrors.display_name = 'Display name is required';
-            if (!formData.tagline?.trim()) newErrors.tagline = 'Tagline is required';
+            if (!formData.display_name?.trim())
+                newErrors.display_name = m['arabicFixes.fieldRequired']({
+                    field: m['developerPortal.components.appDetailsStep.displayName'](),
+                });
+            if (!formData.tagline?.trim())
+                newErrors.tagline = m['arabicFixes.fieldRequired']({
+                    field: m['developerPortal.components.appDetailsStep.tagline'](),
+                });
             if (!formData.full_description?.trim())
-                newErrors.full_description = 'Description is required';
-            if (!formData.icon_url?.trim()) newErrors.icon_url = 'Icon URL is required';
+                newErrors.full_description = m['arabicFixes.fieldRequired']({
+                    field: m['developerPortal.components.appDetailsStep.fullDescription'](),
+                });
+            if (!formData.icon_url?.trim())
+                newErrors.icon_url = m['arabicFixes.fieldRequired']({
+                    field: m['developerPortal.components.appDetailsStep.appIcon'](),
+                });
             // Validate email format if provided (optional field)
             if (formData.contact_email?.trim()) {
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                 if (!emailRegex.test(formData.contact_email.trim())) {
-                    newErrors.contact_email = 'Please enter a valid email address';
+                    newErrors.contact_email = m['arabicFixes.validEmailRequired']();
                 }
             }
         }
@@ -168,15 +189,29 @@ const SubmissionForm: React.FC = () => {
                 ) &&
                 !config.url
             )
-                newErrors.url = 'URL is required';
+                newErrors.url = m['arabicFixes.fieldRequired']({
+                    field: m['developerPortal.components.launchConfigStep.appUrl'](),
+                });
             if (formData.launch_type === 'CONSENT_REDIRECT') {
-                if (!config.contractUri) newErrors.contractUri = 'Contract URI is required';
-                if (!config.redirectUri) newErrors.redirectUri = 'Redirect URI is required';
+                if (!config.contractUri)
+                    newErrors.contractUri = m['arabicFixes.fieldRequired']({
+                        field: m[
+                            'developerPortal.components.consentFlowContractSelector.contractUri'
+                        ](),
+                    });
+                if (!config.redirectUri)
+                    newErrors.redirectUri = m['arabicFixes.fieldRequired']({
+                        field: m['developerPortal.components.launchConfigStep.redirectUri'](),
+                    });
             }
             if (formData.launch_type === 'SERVER_HEADLESS' && !config.webhookUrl)
-                newErrors.webhookUrl = 'Webhook URL is required';
+                newErrors.webhookUrl = m['arabicFixes.fieldRequired']({
+                    field: m['arabicFixes.webhookUrl'](),
+                });
             if (formData.launch_type === 'AI_TUTOR' && !config.aiTutorUrl)
-                newErrors.aiTutorUrl = 'AI Tutor URL is required';
+                newErrors.aiTutorUrl = m['arabicFixes.fieldRequired']({
+                    field: m['developerPortal.components.launchConfigStep.aiTutorUrl'](),
+                });
         }
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -284,11 +319,11 @@ const SubmissionForm: React.FC = () => {
 
     const saveDraft = async (): Promise<boolean> => {
         if (!integrationId && !isEditMode) {
-            setSubmitError('Please select an integration first');
+            setSubmitError(m['arabicFixes.selectIntegrationFirst']());
             return false;
         }
         if (!hasMinimumDataForDraft()) {
-            setSubmitError('Please enter at least a display name');
+            setSubmitError(m['arabicFixes.enterDisplayName']());
             return false;
         }
         setIsSavingDraft(true);
@@ -353,7 +388,7 @@ const SubmissionForm: React.FC = () => {
 
     const handleSubmit = async () => {
         if (!integrationId && !isEditMode) {
-            setSubmitError('Please select an integration first');
+            setSubmitError(m['arabicFixes.selectIntegrationFirst']());
             return;
         }
         setIsSubmitting(true);
@@ -422,7 +457,9 @@ const SubmissionForm: React.FC = () => {
     if (isDraftSaved)
         return (
             <IonPage>
-                <AppStoreHeader title={isEditMode ? 'Edit App' : 'Create App'} />
+                <AppStoreHeader
+                    title={isEditMode ? m['arabicFixes.editApp']() : m['arabicFixes.createApp']()}
+                />
                 <IonContent className="ion-padding">
                     <div className="max-w-lg mx-auto text-center py-12">
                         <div
@@ -505,7 +542,9 @@ const SubmissionForm: React.FC = () => {
 
     return (
         <IonPage>
-            <AppStoreHeader title={isEditMode ? 'Edit App' : 'Create New App'} />
+            <AppStoreHeader
+                title={isEditMode ? m['arabicFixes.editApp']() : m['arabicFixes.createNewApp']()}
+            />
             <IonContent className="ion-padding">
                 <div className="max-w-2xl mx-auto pb-8">
                     <button
