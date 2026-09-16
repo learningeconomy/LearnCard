@@ -441,6 +441,21 @@ const runCommand = async (
     }
 };
 
+program
+    .command('demo')
+    .description('Guided demonstrations using real LearnCard credentials.')
+    .command('refresh')
+    .description('Send a demo badge, publish an update, and refresh the recipient’s copy.')
+    .option('-y, --yes', 'run all steps without pausing')
+    .option('--network <url>', 'network tRPC URL or staging', 'http://localhost:4000/trpc')
+    .option('--json', 'print a single JSON result on stdout (no pauses)')
+    .action(options =>
+        runCommand('demo refresh', options, async didkit => {
+            const { runRefreshDemo } = await import('./demo-refresh');
+            await runRefreshDemo({ ...options, didkit });
+        })
+    );
+
 commandOptions(
     program.command('consent-contract').description("Connect a user's LearnCard to your platform.")
 )

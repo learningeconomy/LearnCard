@@ -131,6 +131,15 @@ The recipient sees **Provisional Transcript** in their LearnCard app once they c
 
 ### `sendBoost` also issues refreshable credentials
 
+For a guided demonstration without writing SDK code, the CLI offers `learncard demo refresh`.
+It creates demo issuer and recipient accounts, sends a provisional certificate through
+`sendBoost`, publishes a final version, and refreshes the recipient's copy. Press Enter
+between steps to present the before and after. It defaults to the local network at
+`http://localhost:4000/trpc`; use `--network staging` for a staging network with managed
+refresh and LC-2198 deployed. Use a CLI build containing this command. The updated copy
+is displayed in the terminal, not saved to the app. Demo records remain on the selected
+network; account keys stay in memory for the session.
+
 If you already work boost-first — create the boost template, then send it to many people — `sendBoost` takes an opt-in flag instead. With literal `{ enableRefresh: true }` it returns the credential URI **and** the receipt; without it, the plain URI string, exactly as before:
 
 ```typescript

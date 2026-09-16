@@ -26,6 +26,37 @@ npx @learncard/cli send you@example.com
 
 Generates a seed into `.env`, creates your issuer profile, sends a "Quickstart Complete" badge to the address, and writes the code it ran to `./send.mjs`. Pass `--yes` to accept defaults; `--name "Acme"`, `--badge "Welcome to Acme"`, `--description`, and `--profile-id` set them explicitly. Walkthrough: https://docs.learncard.com/start-here/your-first-integration
 
+### Demonstrate credential refresh
+
+Run a guided, real-network demonstration without writing code:
+
+```bash
+learncard demo refresh
+```
+
+Press Enter between each step: send a **Provisional Course Certificate**, publish a
+**Final Course Certificate**, then refresh the recipient's copy. The CLI shows the
+before and after and verifies that the credential keeps its identity. It uses the
+existing `sendBoost` flow with `enableRefresh: true` and publishes using the receipt
+returned by that send. No second badge is sent.
+
+The default network is `http://localhost:4000/trpc`. A developer must first start
+the local services with managed refresh enabled. To present against staging once
+LC-2198's service and SDK changes are deployed, use `learncard demo refresh --network staging`.
+This command requires a CLI build containing this feature; it is not available in
+older published versions. From this branch's repository root, run:
+
+```bash
+bun --cwd packages/learn-card-cli start demo refresh
+```
+
+Each run creates two demo accounts and a badge on the selected network. Keys stay
+in memory, and those demo records remain on the network after the command exits.
+The demo does not use your `.env` identity or send email. The refreshed copy is
+shown in the CLI session; it is not saved to the LearnCard app.
+
+Use `--yes` to run without pauses, or `--json` for a machine-readable result.
+
 ### Interactive REPL
 
 ```bash
