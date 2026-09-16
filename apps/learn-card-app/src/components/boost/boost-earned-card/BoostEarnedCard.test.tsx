@@ -90,6 +90,7 @@ vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
     unwrapBoostCredential: (credential: VC) => credential,
     isBoostCredential: mocks.isBoostCredential,
     getClrLinkedCredentials: () => [],
+    getIssuanceDate: (credential?: VC) => credential?.issuanceDate,
 }));
 vi.mock('learn-card-base/components/CredentialBadge/CredentialVerificationDisplay', () => ({
     getInfoFromCredential: () => ({ createdAt: '2026-08-06' }),

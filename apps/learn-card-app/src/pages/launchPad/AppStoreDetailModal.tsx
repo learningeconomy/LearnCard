@@ -688,7 +688,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                     const vp = (await wallet.invoke.issuePresentation(unsignedDidAuthVp, {
                         proofPurpose: 'authentication',
                         proofFormat: 'jwt',
-                    })) as any as string;
+                    })) as unknown as string;
 
                     urlObj.searchParams.set('vp', vp);
                 }
@@ -717,7 +717,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
             replaceModal(
                 <EmbedIframeModal
                     embedUrl={launchConfig.url}
-                    appId={(listing as any).slug || listing.listing_id}
+                    appId={listing.slug || listing.listing_id}
                     appName={listing.display_name}
                     launchConfig={launchConfig}
                     isInstalled={isInstalled}
@@ -743,8 +743,8 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
             {/* Header */}
             <IonHeader mode="ios" className="ion-no-border">
                 <div className="ion-padding shadow-header bg-white">
-                    <div className="flex items-center justify-normal ion-padding mt-[var(--ion-safe-area-top,0px)]">
-                        <div className="h-[65px] w-[65px] mr-3">
+                    <div className="flex items-center gap-3 ion-padding mt-[var(--ion-safe-area-top,0px)]">
+                        <div className="h-[65px] w-[65px] shrink-0">
                             <img
                                 className="w-full h-full object-cover bg-white rounded-[16px] overflow-hidden border-[1px] border-solid border-grayscale-200"
                                 alt={`${listing.display_name} logo`}
@@ -756,17 +756,17 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                             />
                         </div>
 
-                        <div className="flex flex-col items-start justify-center flex-1 min-w-0">
-                            <p className="text-[22px] font-semibold text-grayscale-900 font-poppins leading-[1]">
+                        <div className="flex flex-col items-start justify-center flex-1 min-w-0 text-start">
+                            <p className="w-full break-words text-[22px] font-semibold text-grayscale-900 font-poppins leading-tight">
                                 {listing.display_name}
                             </p>
 
-                            <p className="text-sm text-grayscale-600 font-poppins mt-1">
+                            <p className="w-full break-words text-sm text-grayscale-600 font-poppins mt-1">
                                 {listing.tagline}
                             </p>
 
                             {!iosMetadata && (
-                                <div className="flex items-center gap-2 mt-2">
+                                <div className="flex flex-wrap items-center gap-2 mt-2">
                                     {listing.category && (
                                         <span className="inline-block px-2 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-medium rounded-full capitalize">
                                             {listing.category}
@@ -947,7 +947,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                                                 d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
                                             />
                                         </svg>
-                                        Privacy Policy
+                                        {m['launchpad.detail.privacyPolicy']()}
                                     </a>
                                 )}
 
@@ -971,7 +971,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                                                 d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
                                             />
                                         </svg>
-                                        Terms of Service
+                                        {m['launchpad.detail.termsOfService']()}
                                     </a>
                                 )}
                             </div>
