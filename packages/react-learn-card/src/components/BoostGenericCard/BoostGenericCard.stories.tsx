@@ -1,5 +1,6 @@
 import React from 'react';
-import { Story, Meta } from '@storybook/react';
+import { Meta, Story } from '@storybook/react';
+import { expect, userEvent, within } from '@storybook/test';
 import BoostGenericCard from './BoostGenericCard';
 import { BoostGenericCardProps, WalletCategoryTypes } from '../../types';
 import { AllFieldsCredential } from '../../helpers/test.helpers';
@@ -22,6 +23,22 @@ BoostGenericCardTest.args = {
     issuerName: 'Beau Bobby Bruce',
     innerOnClick: () => console.log('innerOnClick'),
     optionsTriggerOnClick: () => console.log('//options trigger click'),
+};
+
+export const KeyboardFocus = Template.bind({});
+KeyboardFocus.args = BoostGenericCardTest.args;
+KeyboardFocus.play = async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    await userEvent.tab();
+
+    const card = canvas.getByRole('button', { name: /Title Title Title/ });
+    const focusedStyle = getComputedStyle(card);
+
+    await expect(card).toHaveFocus();
+    await expect(focusedStyle.outlineStyle).toBe('solid');
+    await expect(focusedStyle.outlineWidth).toBe('3px');
+    await expect(focusedStyle.outlineOffset).toBe('-3px');
 };
 
 export const InSkillsModal = Template.bind({});
