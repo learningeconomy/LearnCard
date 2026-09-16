@@ -123,7 +123,7 @@ export const personalizeSendFromTemplateMjs = (deliveryOptions?: SendDeliveryOpt
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE = /^\+?\d{10,15}$/;
 /** Domains reserved for documentation (RFC 2606 / RFC 6761). Mail to them goes nowhere. */
-const PLACEHOLDER_DOMAIN = /(^|\.)example\.(com|net|org)$|\.(example|test|invalid|localhost)$/i;
+const PLACEHOLDER_DOMAIN = /(^|\.)example\.(com|net|org)$|(^|\.)(example|test|invalid|localhost)$/i;
 
 export const RECIPIENT_PROMPT = 'Where should we send your first badge? (your email or phone)';
 
@@ -138,6 +138,7 @@ export const isPlaceholderRecipient = (recipient: string): boolean => {
  * so they are called out specifically — docs readers paste them verbatim.
  */
 export const invalidRecipientReason = (recipient: string): string | undefined => {
+    if (!recipient) return 'Enter an email address or phone number.';
     if (isPlaceholderRecipient(recipient))
         return `"${recipient}" is a placeholder address — nobody will receive the badge. Use a real email you can open.`;
     if (!EMAIL.test(recipient) && !PHONE.test(recipient))
@@ -153,23 +154,20 @@ type Prompts = ReturnType<typeof createPrompts>;
  */
 export const resolveRecipient = async (
     recipient: string | undefined,
-    prompts: Prompts,
-    interactive: boolean
+    prompts: Prompts
 ): Promise<string> => {
-    let candidate = recipient?.trim();
-    if (!candidate) {
-        if (!interactive)
-            throw new Error(
-                'A recipient is required when running non-interactively. Example: npx @learncard/cli send you@yourdomain.com --yes'
-            );
-        candidate = await prompts.ask(RECIPIENT_PROMPT, '');
-    }
+    let candidate = recipient?.trim() ?? '';
+    if (!candidate && !prompts.interactive)
+        throw new Error(
+            'A recipient is required when running non-interactively. Example: npx @learncard/cli send you@yourdomain.com --yes'
+        );
+    if (!candidate) candidate = (await prompts.ask(RECIPIENT_PROMPT, '')).trim();
     let reason = invalidRecipientReason(candidate);
     while (reason) {
-        if (!interactive)
+        if (!prompts.interactive)
             throw new Error(`${reason} Example: npx @learncard/cli send you@yourdomain.com`);
         out.log(reason);
-        candidate = await prompts.ask(RECIPIENT_PROMPT, '');
+        candidate = (await prompts.ask(RECIPIENT_PROMPT, '')).trim();
         reason = invalidRecipientReason(candidate);
     }
     return candidate;
@@ -186,7 +184,7 @@ export const runSend = async (
     let displayName: string | undefined;
     let badge: Badge;
     try {
-        recipientEmail = await resolveRecipient(recipient, prompts, prompts.interactive);
+        recipientEmail = await resolveRecipient(recipient, prompts);
         const needsName = !project.env.PROFILE_ID && !options.profileId && !options.name;
         displayName = needsName
             ? await prompts.ask('Display name for your issuer profile', 'My Organization')
