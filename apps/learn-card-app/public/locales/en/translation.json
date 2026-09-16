@@ -1715,6 +1715,7 @@
         "previewCredentials": "Preview {{count}} Credentials"
     },
     "consentFlow": {
+        "guardianApprovalRequired": "Ask a current account manager to approve this connection, then try again.",
         "acceptAndSync": "Accept & Sync",
         "accepted": "Accepted",
         "acceptingContract": "Accepting Contract...",
