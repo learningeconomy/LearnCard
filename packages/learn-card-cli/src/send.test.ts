@@ -62,6 +62,9 @@ describe('recipient validation', () => {
         expect(isPlaceholderRecipient('a@foo.test')).toBe(true);
         expect(isPlaceholderRecipient('a@host.invalid')).toBe(true);
         expect(isPlaceholderRecipient('a@localhost')).toBe(true);
+        expect(isPlaceholderRecipient('a@test')).toBe(true);
+        expect(isPlaceholderRecipient('a@contest.com')).toBe(false);
+        expect(isPlaceholderRecipient('a@latest.io')).toBe(false);
         expect(isPlaceholderRecipient('a@test.com')).toBe(false);
         expect(isPlaceholderRecipient('a@myexample.com')).toBe(false);
         expect(isPlaceholderRecipient('a@example.co.uk')).toBe(false);
