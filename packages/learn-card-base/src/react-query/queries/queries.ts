@@ -105,20 +105,17 @@ export const useGetBoosts = (category?: CredentialCategoryEnum) => {
 /**
  * Query: Get a specific boost by its URI.
  */
-export const useGetBoost = (uri: string) => {
+export const useGetBoost = (uri?: string) => {
     const { initWallet } = useWallet();
     return useQuery({
         queryKey: ['useGetBoost', uri],
         queryFn: async () => {
-            try {
-                const wallet = await initWallet();
-                const boost = await wallet.invoke.getBoost(uri);
-                return boost;
-            } catch (error: any) {
-                throw error;
-            }
+            if (!uri?.startsWith('lc:network:')) throw new Error('A valid Boost URI is required.');
+
+            const wallet = await initWallet();
+            return wallet.invoke.getBoost(uri);
         },
-        enabled: !!uri,
+        enabled: uri?.startsWith('lc:network:') ?? false,
     });
 };
 
@@ -612,16 +609,16 @@ export const useGetPaginatedConnections = (
  * Query: Get a specific connection by profileId.
  */
 export const useGetConnection = (profileId: string) => {
-    profileId = profileId?.toLowerCase();
+    const normalizedProfileId = profileId.toLowerCase();
     const { initWallet } = useWallet();
     const switchedDid = switchedProfileStore.use.switchedDid();
     return useQuery<LCNVisibleProfile | undefined>({
-        queryKey: ['connection', switchedDid ?? '', profileId],
+        queryKey: ['connection', switchedDid ?? '', normalizedProfileId],
         queryFn: async () => {
             const wallet = await initWallet();
             const connections = await wallet.invoke.getPaginatedConnections({ limit: 1000 });
             return connections?.records.find(
-                connection => connection?.profileId?.toLowerCase() === profileId
+                connection => connection?.profileId?.toLowerCase() === normalizedProfileId
             );
         },
     });

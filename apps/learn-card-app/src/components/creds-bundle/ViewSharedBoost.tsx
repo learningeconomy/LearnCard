@@ -18,7 +18,7 @@ import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayC
 import SharedBoostPageFooter from './SharedBoostPageFooter';
 import ClrTranscriptFullPage from '../clr-transcript/surfaces/ClrTranscriptFullPage';
 
-import { VC, VerificationCheck, VerificationItem, VP } from '@learncard/types';
+import { VC, VerificationItem, VP } from '@learncard/types';
 import {
     getDefaultCategoryForCredential,
     getEndorsementsFromPresentations,
@@ -123,14 +123,7 @@ const ViewSharedBoost: React.FC<{
             // it. Fail-open to 'active' so a check error never renders a valid credential as
             // revoked.
             try {
-                const verify = wallet?.invoke?.verifyCredential as
-                    | ((
-                          credential: VC,
-                          options: Record<string, unknown>,
-                          prettify: boolean
-                      ) => Promise<VerificationCheck>)
-                    | undefined;
-                const rawCheck = await verify?.(credentialToVerify, {}, false);
+                const rawCheck = await wallet.invoke.verifyCredential(credentialToVerify, {});
                 setLifecycleStatus(deriveLifecycleStatus(rawCheck));
             } catch {
                 setLifecycleStatus('active');

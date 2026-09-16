@@ -103,7 +103,7 @@ describe('EndorsementForm', () => {
     });
 
     it('leaves the sending state and reports a failed endorsement send', async () => {
-        const { promise, reject } = Promise.withResolvers<never>();
+        const { promise, reject } = Promise.withResolvers<void>();
         mocks.sendCredential.mockReturnValue(promise);
 
         render(
