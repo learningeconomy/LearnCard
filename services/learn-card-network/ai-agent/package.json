@@ -1,6 +1,6 @@
 {
     "name": "@learncard/ai-agent-service",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "private": true,
     "description": "Production LearnCard AI agent service with DID-authenticated wallet, memory, and assistant APIs.",
     "main": "dist/index.js",

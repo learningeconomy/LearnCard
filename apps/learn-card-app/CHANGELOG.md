@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.98.9
+
+### Patch Changes
+
+- [#1564](https://github.com/learningeconomy/LearnCard/pull/1564) [`8d4b8c3762d224ca12d2253147d6b053fd99ff3e`](https://github.com/learningeconomy/LearnCard/commit/8d4b8c3762d224ca12d2253147d6b053fd99ff3e) Thanks [@goblincore](https://github.com/goblincore)! - fix: [LC-2180] complete Arabic localization updates
+
+- Updated dependencies []:
+    - @learncard/credential-library@2.0.2
+    - @learncard/lca-api-plugin@2.0.5
+    - @learncard/react@2.12.6
+
 ## 1.98.8
 
 ### Patch Changes

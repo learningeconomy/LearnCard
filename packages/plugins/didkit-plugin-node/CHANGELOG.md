@@ -1,5 +1,12 @@
 # @learncard/didkit-plugin-node
 
+## 0.2.33
+
+### Patch Changes
+
+- Updated dependencies [[`19bb79b1355dd9de7f71554fdb608f38b78ed6bb`](https://github.com/learningeconomy/LearnCard/commit/19bb79b1355dd9de7f71554fdb608f38b78ed6bb)]:
+    - @learncard/didkit-plugin@1.9.15
+
 ## 0.2.32
 
 ### Patch Changes

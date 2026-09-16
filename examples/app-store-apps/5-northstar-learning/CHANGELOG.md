@@ -1,5 +1,12 @@
 # @learncard/app-store-demo-northstar-learning
 
+## 0.0.21
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/init@2.4.16
+
 ## 0.0.20
 
 ### Patch Changes

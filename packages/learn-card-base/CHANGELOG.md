@@ -1,5 +1,14 @@
 # learn-card-base
 
+## 0.4.9
+
+### Patch Changes
+
+- [#1574](https://github.com/learningeconomy/LearnCard/pull/1574) [`6f4283ff8bc0f0e8939a6f65a390015c18cf0835`](https://github.com/learningeconomy/LearnCard/commit/6f4283ff8bc0f0e8939a6f65a390015c18cf0835) Thanks [@Custard7](https://github.com/Custard7)! - fix: tenant config overlays with a partial `auth` block no longer fail validation before merge
+
+- Updated dependencies []:
+    - @learncard/lca-api-plugin@2.0.5
+
 ## 0.4.8
 
 ### Patch Changes
