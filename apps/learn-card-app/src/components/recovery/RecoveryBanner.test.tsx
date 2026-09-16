@@ -36,15 +36,17 @@ import RecoveryBanner from './RecoveryBanner';
 
 const renderPrompt = (overrides: Partial<React.ComponentProps<typeof RecoveryBanner>> = {}) => {
     const onSetup = vi.fn();
+    const onSetupPin = vi.fn();
     const props: React.ComponentProps<typeof RecoveryBanner> = {
         recoverySupported: true,
         recoveryMethodCount: 0,
         totalCredentialCount: 1,
         onSetup,
+        onSetupPin,
         ...overrides,
     };
 
-    return { ...render(<RecoveryBanner {...props} />), onSetup, props };
+    return { ...render(<RecoveryBanner {...props} />), onSetup, onSetupPin, props };
 };
 
 describe('RecoveryBanner', () => {
@@ -58,6 +60,7 @@ describe('RecoveryBanner', () => {
 
     afterEach(() => {
         vi.useRealTimers();
+        vi.unstubAllGlobals();
     });
 
     it('does not render while unresolved, unsupported, protected, or empty in calm mode', () => {
@@ -96,6 +99,7 @@ describe('RecoveryBanner', () => {
     });
 
     it('renders separate accessible action and snooze buttons and tracks shown once', () => {
+        vi.stubGlobal('navigator', { userAgent: 'Macintosh' });
         const { rerender, props } = renderPrompt();
 
         const action = screen.getByRole('button', { name: 'Set up a way to sign back in' });
@@ -107,6 +111,30 @@ describe('RecoveryBanner', () => {
         expect(
             mocks.track.mock.calls.filter(([, payload]) => payload.action === 'shown')
         ).toHaveLength(1);
+    });
+
+    it('shows Windows Hello on Windows', () => {
+        vi.stubGlobal('navigator', { userAgent: 'Windows NT 10.0' });
+        renderPrompt();
+        expect(screen.getByText('Use Windows Hello')).toBeVisible();
+    });
+
+    it('shows Face ID or Touch ID on Mac', () => {
+        vi.stubGlobal('navigator', { userAgent: 'Macintosh' });
+        renderPrompt();
+        expect(screen.getByText('Use Face ID or Touch ID')).toBeVisible();
+    });
+
+    it('shows fingerprint or face unlock on Android', () => {
+        vi.stubGlobal('navigator', { userAgent: 'Android 13' });
+        renderPrompt();
+        expect(screen.getByText('Use fingerprint or face unlock')).toBeVisible();
+    });
+
+    it('shows generic passkey on Linux', () => {
+        vi.stubGlobal('navigator', { userAgent: 'Linux x86_64' });
+        renderPrompt();
+        expect(screen.getByText('Use a passkey')).toBeVisible();
     });
 
     it('snoozes the calm prompt for seven days', () => {
@@ -199,8 +227,57 @@ describe('RecoveryBanner', () => {
         mocks.webAuthnSupported = false;
         const { onSetup } = renderPrompt();
 
-        expect(screen.getByText('Get a recovery phrase')).toBeVisible();
+        expect(screen.getByText('Save a recovery phrase')).toBeVisible();
         fireEvent.click(screen.getByRole('button', { name: 'Set up a way to sign back in' }));
         expect(onSetup.mock.calls[0][0].initialMethod).toBe('phrase');
+    });
+
+    it('renders PIN variant when escrowEnrolled and pinEnabled is false', () => {
+        const { onSetupPin } = renderPrompt({
+            recoveryMethodCount: 1,
+            escrowEnrolled: true,
+            pinEnabled: false,
+        });
+
+        expect(screen.getByText('Add a recovery PIN')).toBeVisible();
+        expect(screen.getByText('Set a 6-digit PIN')).toBeVisible();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Set up a way to sign back in' }));
+        expect(onSetupPin).toHaveBeenCalledOnce();
+        expect(
+            mocks.track.mock.calls.filter(
+                ([, payload]) => payload.action === 'clicked' && payload.method === 'pin'
+            )
+        ).toHaveLength(1);
+    });
+
+    it('does not render PIN variant when pinEnabled is null', () => {
+        renderPrompt({
+            recoveryMethodCount: 1,
+            escrowEnrolled: true,
+            pinEnabled: null,
+        });
+
+        expect(screen.queryByTestId('dashboard-recovery-prompt')).not.toBeInTheDocument();
+    });
+
+    it('shows orAction when both standard and PIN variants are eligible', () => {
+        const { onSetupPin } = renderPrompt({
+            recoveryMethodCount: 0,
+            escrowEnrolled: true,
+            pinEnabled: false,
+        });
+
+        expect(screen.getByText('Add a way back in')).toBeVisible();
+        const orAction = screen.getByText('Or set a 6-digit recovery PIN');
+        expect(orAction).toBeVisible();
+
+        fireEvent.click(orAction);
+        expect(onSetupPin).toHaveBeenCalledOnce();
+        expect(
+            mocks.track.mock.calls.filter(
+                ([, payload]) => payload.action === 'clicked' && payload.method === 'pin'
+            )
+        ).toHaveLength(1);
     });
 });
