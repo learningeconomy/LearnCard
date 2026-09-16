@@ -380,6 +380,7 @@ export type GuardianApprovalToken = {
 
 // Match the existing guardian UI's five-minute approval window.
 const GUARDIAN_APPROVAL_MAX_TTL_SECONDS = 5 * 60;
+const GUARDIAN_APPROVAL_CLOCK_SKEW_SECONDS = 60;
 
 export const guardianGatedRoute = profileRoute.use(async ({ ctx, next }) => {
     const { profile } = ctx.user;
@@ -394,11 +395,9 @@ export const guardianGatedRoute = profileRoute.use(async ({ ctx, next }) => {
                 proofFormat: 'jwt',
             });
 
-            if (
-                result.errors.length === 0 &&
-                result.warnings.length === 0 &&
-                result.checks.includes('JWS')
-            ) {
+            // Verifier warnings are advisory; errors and a missing JWS check are fatal.
+            // Identity and current manager authorization are checked independently below.
+            if (result.errors.length === 0 && result.checks.includes('JWS')) {
                 const jwtHeader = jwtDecode<{ kid?: string }>(guardianApprovalToken, {
                     header: true,
                 });
@@ -415,7 +414,8 @@ export const guardianGatedRoute = profileRoute.use(async ({ ctx, next }) => {
                     typeof jwtHeader.kid === 'string' ? jwtHeader.kid.split('#')[0] : undefined;
 
                 // Verification proves the key's signature; bind every identity claim to that key.
-                // The current UI does not include iat in its challenge, so it remains optional.
+                // Older clients omit iat. Allow clock skew without extending the signed lifetime
+                // or accepting a token whose actual expiry has passed.
                 if (
                     claims &&
                     signerDid &&
@@ -425,11 +425,14 @@ export const guardianGatedRoute = profileRoute.use(async ({ ctx, next }) => {
                     typeof claims.exp === 'number' &&
                     Number.isFinite(claims.exp) &&
                     claims.exp > now &&
-                    claims.exp <= now + GUARDIAN_APPROVAL_MAX_TTL_SECONDS &&
+                    claims.exp <=
+                        now +
+                            GUARDIAN_APPROVAL_MAX_TTL_SECONDS +
+                            GUARDIAN_APPROVAL_CLOCK_SKEW_SECONDS &&
                     (claims.iat === undefined ||
                         (typeof claims.iat === 'number' &&
                             Number.isFinite(claims.iat) &&
-                            claims.iat <= now &&
+                            claims.iat <= now + GUARDIAN_APPROVAL_CLOCK_SKEW_SECONDS &&
                             claims.exp > claims.iat &&
                             claims.exp - claims.iat <= GUARDIAN_APPROVAL_MAX_TTL_SECONDS)) &&
                     claims.scope === 'guardian-approval' &&
@@ -443,11 +446,18 @@ export const guardianGatedRoute = profileRoute.use(async ({ ctx, next }) => {
                     );
                     if (guardian) {
                         guardianIdentity = { profileId: guardian.profileId, did: signerDid };
+                    } else {
+                        console.warn('guardian_approval: unauthorized_manager');
                     }
+                } else {
+                    console.warn('guardian_approval: invalid_claims');
                 }
+            } else {
+                console.warn('guardian_approval: verification_failed');
             }
         } catch {
             // Malformed or unverifiable presentations never authorize a guardian-only mutation.
+            console.warn('guardian_approval: malformed_or_unverifiable');
         }
     }
 

@@ -17,6 +17,9 @@ import {
 } from 'learn-card-base';
 import { UnsignedVP, VC, VP } from '@learncard/types';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
+import currentUserStore from 'learn-card-base/stores/currentUserStore';
+import { networkStore } from 'learn-card-base/stores/NetworkStore';
+import { switchedProfileStore, walletStore } from 'learn-card-base/stores/walletStore';
 
 import { ActionHandlers, AppEvent, VerifiablePresentationRequest } from './useLearnCardPostMessage';
 import { createActionHandlers } from './useLearnCardPostMessage.handlers';
@@ -31,6 +34,8 @@ import {
 } from '../../helpers/sendCredentialFlow.helpers';
 import {
     formatLearnerContext,
+    resolveLearnerContextCredentials,
+    useLearnerContextPrewarm,
     type LearnerContextRequestOptions,
     type LearnerContextSourceData,
 } from './learnerContext.helpers';
@@ -182,6 +187,11 @@ export function useLearnCardMessageHandlers({
     const { newModal, closeModal } = useModal();
     const { data: consentedContracts } = useConsentedContracts();
     const queryClient = useQueryClient();
+    const currentUser = currentUserStore.use.currentUser();
+    const switchedDid = switchedProfileStore.use.switchedDid();
+    const activeWallet = walletStore.use.wallet();
+    const aiServiceUrl = networkStore.use.aiServiceUrl();
+    const networkUrl = networkStore.use.networkUrl();
 
     // Debug logging helper
     const log = useCallback(
@@ -426,19 +436,6 @@ export function useLearnCardMessageHandlers({
         [appId]
     );
 
-    const resolveLearnerContextCredentials = useCallback(
-        async (learnCard: LearnCardWallet, credentialUris: string[]): Promise<unknown[]> =>
-            Promise.all(
-                credentialUris.map(async uri => {
-                    const credential = await learnCard.read.get(uri);
-                    if (!credential)
-                        throw new Error(`Failed to resolve authorized credential ${uri}`);
-                    return credential;
-                })
-            ),
-        []
-    );
-
     const generatePromptForLearnerContext = useCallback(
         async (
             learnCard: LearnCardWallet,
@@ -455,27 +452,30 @@ export function useLearnCardMessageHandlers({
         []
     );
 
-    const prewarmLearnerContext = useCallback(
-        async (inputOptions: LearnerContextRequestOptions): Promise<void> => {
+    const prewarmLearnerContext = useLearnerContextPrewarm(
+        JSON.stringify([
+            isLoggedIn,
+            currentUser?.uid,
+            switchedDid,
+            activeWallet?.id.did(),
+            appId,
+            embedOrigin,
+            aiServiceUrl,
+            networkUrl,
+            launchConfig?.contractUri,
+        ]),
+        async inputOptions => {
             try {
                 const learnCard = await initWallet();
                 if (!learnCard) return;
                 const options = normalizeLearnerContextOptions(inputOptions);
-                if (options.format === 'structured') return;
                 const source = await fetchLearnerContextSource(learnCard, options);
                 // Warm only the server cache: every SDK request rechecks both authorizations.
                 await generatePromptForLearnerContext(learnCard, source, options);
-            } catch (error) {
-                log('Learner context prewarm skipped', error);
+            } catch {
+                log('Learner context prewarm skipped');
             }
-        },
-        [
-            fetchLearnerContextSource,
-            generatePromptForLearnerContext,
-            initWallet,
-            log,
-            normalizeLearnerContextOptions,
-        ]
+        }
     );
 
     const handlers = useMemo(

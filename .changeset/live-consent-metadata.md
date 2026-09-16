@@ -1,7 +1,7 @@
 ---
 '@learncard/types': patch
 '@learncard/network-brain-service': patch
-'@learncard/partner-connect': patch
+'@learncard/partner-connect': minor
 'learn-card-base': patch
 'learn-card-app': patch
 ---
@@ -11,3 +11,5 @@ Return live, unexpired consent metadata for server-side AI authorization, preser
 Require current app-owned consent when resolving learner context, including credential sharing exclusions and withdrawn or expired grants. The formatter client sends only selected storage URIs and personal-field names to the configured AI service, refreshes consented data for each request, and exposes the server's consent revision and cache metadata. Remove browser prompt caching and legacy DID-based AI authentication; invalidate sessions and WebSocket tickets across wallet or service changes, including in-flight negotiations.
 
 Refresh guardian approval at final consent submission if it expired while editing. Issue standards-valid signed credentials in the learner-context benchmark so the formatter exercises real proof verification rather than accepting unverifiable fixtures.
+
+Breaking partner-connect change (minor release while on 0.x): `LearnerContextCacheStatus` no longer includes `browser-hit` or `browser-miss`, and `LearnerContextTimingBreakdown` no longer exposes `cacheLookupMs` or `prewarmAgeMs`. Remove those browser-cache branches and timing reads. Use `backend-hit` / `backend-miss` for prompt responses and `structured` for structured-only responses; use `totalMs` / `sdkRoundTripMs` for end-to-end timing. Server cache hits still require current consent authorization; do not use cache status as permission to reuse a previous response.

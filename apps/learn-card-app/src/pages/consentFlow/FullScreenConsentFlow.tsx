@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import queryString from 'query-string';
-import { getLogger } from 'learn-card-base';
-const log = getLogger('full-screen-consent-flow');
 
 import {
     useModal,
@@ -112,7 +110,7 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
     const [isPostConsentLocal, setIsPostConsentLocal] = useState(false);
 
     // Guardian gate for child profiles - replaces fragmented usePin logic
-    const { guardedAction, isChildProfile } = useGuardianGate({
+    const { guardedAction } = useGuardianGate({
         skip: isPreview || !!insightsProfile,
         onVerified: () => {
             // After guardian verification, proceed to confirmation
@@ -145,14 +143,15 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
             await handleSwitchAccount(_childInsightsProfile as LCNProfile);
         }
 
-        await guardedAction(async () => {
-            setStep(ConsentFlowStep.connecting);
+        try {
+            await guardedAction(async () => {
+                setStep(ConsentFlowStep.connecting);
 
-            try {
                 const { redirectUrl } = await consentToContract({
                     terms,
                     expiresAt: shareDuration.customDuration,
                     oneTime: shareDuration.oneTimeShare,
+                    beforeSubmit: () => guardedAction(() => {}),
                 });
 
                 // Sync any auto-boost credentials (if any). No need to wait.
@@ -218,49 +217,62 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
                         );
                     }, 301);
                 }
-            } catch (e) {
-                const message = e instanceof Error ? e.message : String(e);
-                const data = e && typeof e === 'object' && 'data' in e ? e.data : undefined;
-                const isAlreadyConsented =
-                    (data &&
-                        typeof data === 'object' &&
-                        'code' in data &&
-                        data.code === 'CONFLICT') ||
-                    message.includes('already consented');
+            });
+        } catch (e) {
+            const message = e instanceof Error ? e.message : String(e);
+            const data = e && typeof e === 'object' && 'data' in e ? e.data : undefined;
+            const isAlreadyConsented =
+                (data && typeof data === 'object' && 'code' in data && data.code === 'CONFLICT') ||
+                message.includes('already consented');
 
-                if (isAlreadyConsented) {
-                    successCallback?.();
+            if (isAlreadyConsented) {
+                successCallback?.();
 
-                    if (isInlineInsightsRequest) {
-                        setIsPostConsentLocal(true);
-                        setStep(ConsentFlowStep.confirmation);
-                    } else if (!successCallback || shouldDisableRedirect) {
-                        closeAllModals();
-                    }
-
-                    if (childInsightsProfile && isSwitchedProfile) {
-                        await handleSwitchBackToParentAccount();
-                    }
-
-                    return;
+                if (isInlineInsightsRequest) {
+                    setIsPostConsentLocal(true);
+                    setStep(ConsentFlowStep.confirmation);
+                } else if (!successCallback || shouldDisableRedirect) {
+                    closeAllModals();
                 }
 
-                log.error(e);
-                presentToast(`Failed to accept contract: ${message}`, {
-                    type: ToastTypeEnum.Error,
-                });
-                setStep(ConsentFlowStep.confirmation);
+                if (childInsightsProfile && isSwitchedProfile) {
+                    await handleSwitchBackToParentAccount();
+                }
+
+                return;
             }
-        });
+
+            const isGuardianApprovalRequired =
+                data &&
+                typeof data === 'object' &&
+                'code' in data &&
+                data.code === 'FORBIDDEN' &&
+                /guardian|manager/i.test(message);
+            presentToast(
+                isGuardianApprovalRequired
+                    ? m['consentFlow.guardianApprovalRequired']()
+                    : m['error.generic'](),
+                {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                }
+            );
+            setStep(ConsentFlowStep.confirmation);
+        }
     };
 
     const handleNextStep = async () => {
         if (step === ConsentFlowStep.getAnAdult) {
-            // Use unified guardian gate for verification
-            // The onVerified callback will handle the step transition
-            await guardedAction(async () => {
-                // Action is empty because step transition is handled in onVerified
-            });
+            try {
+                await guardedAction(async () => {
+                    // The onVerified callback advances only after a signed approval.
+                });
+            } catch {
+                presentToast(m['error.generic'](), {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                });
+            }
         }
     };
 

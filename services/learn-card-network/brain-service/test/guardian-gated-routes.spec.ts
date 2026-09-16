@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, beforeAll, afterAll } from 'vitest';
+import { vi, describe, it, expect, beforeEach, afterEach, beforeAll, afterAll } from 'vitest';
 import { Profile, ConsentFlowContract, ConsentFlowTerms, ConsentFlowTransaction } from '@models';
 import { ConsentFlowTermsValidator } from '@learncard/types';
 import {
@@ -7,6 +7,7 @@ import {
 } from '@accesslayer/consentflowcontract/relationships/read';
 import { getDidWeb } from '@helpers/did.helpers';
 import { getLearnCard, type SeedLearnCard } from '@helpers/learnCard.helpers';
+import * as learnCardHelpers from '@helpers/learnCard.helpers';
 import { AUTH_GRANT_FULL_ACCESS_SCOPE } from 'src/constants/auth-grant';
 import { getClient } from './helpers/getClient';
 import { minimalContract, minimalTerms, noTerms } from './helpers/contract';
@@ -17,8 +18,12 @@ let child: SeedLearnCard;
 let owner: SeedLearnCard;
 let contractUri: string;
 
-const approve = async (signer = guardian, expiresInSeconds = 300): Promise<string> => {
-    // The current UI signs these claims as a DID-auth challenge, without iat.
+const approve = async (
+    signer = guardian,
+    expiresInSeconds = 300,
+    claims: Record<string, unknown> = {}
+): Promise<string> => {
+    // Preserve coverage for older clients that omit iat.
     const token = await signer.invoke.getDidAuthVp({
         proofFormat: 'jwt',
         challenge: JSON.stringify({
@@ -26,6 +31,7 @@ const approve = async (signer = guardian, expiresInSeconds = 300): Promise<strin
             sub: getDidWeb(DOMAIN, 'child-user'),
             exp: Math.floor(Date.now() / 1000) + expiresInSeconds,
             scope: 'guardian-approval',
+            ...claims,
         }),
     });
     if (typeof token !== 'string') throw new Error('Expected a JWT presentation');
@@ -78,6 +84,126 @@ describe('Guardian-approved consent mutations', () => {
     });
 
     afterAll(clearConsentState);
+
+    afterEach(() => vi.restoreAllMocks());
+
+    it.each([
+        { name: 'clock sixty seconds ahead', iat: 60, exp: 360, approved: true },
+        { name: 'clock sixty seconds behind', iat: -60, exp: 240, approved: true },
+        { name: 'legacy token with positive skew', iat: undefined, exp: 360, approved: true },
+        { name: 'iat beyond allowed skew', iat: 61, exp: 300, approved: false },
+        { name: 'legacy expiry beyond allowed skew', iat: undefined, exp: 361, approved: false },
+        { name: 'signed lifetime exceeds five minutes', iat: 59, exp: 360, approved: false },
+        { name: 'expiry reached exactly', iat: -300, exp: 0, approved: false },
+        { name: 'expiry before issuance', iat: 60, exp: 59, approved: false },
+    ])('enforces approval timing for $name', async ({ iat, exp, approved }) => {
+        await manageChild();
+        const now = Math.floor(Date.now() / 1000);
+        vi.spyOn(Date, 'now').mockReturnValue(now * 1000);
+        const token = await approve(guardian, exp, {
+            ...(iat === undefined ? {} : { iat: now + iat }),
+        });
+        const consent = childCaller(token).contracts.consentToContract({
+            contractUri,
+            terms: minimalTerms,
+        });
+        if (approved) {
+            const { termsUri } = await consent;
+            expect((await getContractTermsByUri(termsUri))?.terms.guardianApproval).toMatchObject({
+                guardianProfileId: 'guardian-user',
+                guardianDid: guardian.id.did(),
+            });
+        } else {
+            await expect(consent).rejects.toMatchObject({ code: 'FORBIDDEN' });
+            expect(await ConsentFlowTerms.findMany({ where: {} })).toEqual([]);
+        }
+    });
+
+    it.each([
+        { exp: '2999999999' },
+        { exp: null },
+        { iat: '0' },
+        { iat: null },
+        { iss: 'did:example:unrelated-issuer' },
+        { sub: 'did:example:another-child' },
+        { scope: 'another-scope' },
+    ])('rejects malformed or mismatched signed claims %j', async claims => {
+        await manageChild();
+        await expect(
+            childCaller(await approve(guardian, 300, claims)).contracts.consentToContract({
+                contractUri,
+                terms: minimalTerms,
+            })
+        ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+        expect(await ConsentFlowTerms.findMany({ where: {} })).toEqual([]);
+    });
+
+    it.each(['exp', 'iat'] as const)('rejects non-finite signed %s', async claim => {
+        await manageChild();
+        const now = Math.floor(Date.now() / 1000);
+        // JSON numeric overflow is valid JSON, but parses to Infinity in JavaScript.
+        const challenge = `{
+            "iss": ${JSON.stringify(guardian.id.did())},
+            "sub": ${JSON.stringify(getDidWeb(DOMAIN, 'child-user'))},
+            "scope": "guardian-approval",
+            "exp": ${claim === 'exp' ? '1e400' : now + 300},
+            "iat": ${claim === 'iat' ? '1e400' : now}
+        }`;
+        const token = await guardian.invoke.getDidAuthVp({ proofFormat: 'jwt', challenge });
+        if (typeof token !== 'string') throw new Error('Expected a JWT presentation');
+        await expect(
+            childCaller(token).contracts.consentToContract({ contractUri, terms: minimalTerms })
+        ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+        expect(await ConsentFlowTerms.findMany({ where: {} })).toEqual([]);
+    });
+
+    it.each([
+        { name: 'advisory warnings', errors: [], checks: ['JWS'], approved: true },
+        {
+            name: 'verification errors',
+            errors: ['invalid signature'],
+            checks: ['JWS'],
+            approved: false,
+        },
+        { name: 'missing JWS verification', errors: [], checks: [], approved: false },
+    ])('handles $name without disclosing verifier output', async ({ errors, checks, approved }) => {
+        await manageChild();
+        const token = await approve();
+        const verifier = await learnCardHelpers.getEmptyLearnCard();
+        // Keep the cryptographic verification real, then exercise its advisory/error result contract.
+        const verified = await verifier.invoke.verifyPresentation(token, { proofFormat: 'jwt' });
+        expect(verified.errors).toEqual([]);
+        expect(verified.checks).toContain('JWS');
+        vi.spyOn(learnCardHelpers, 'getEmptyLearnCard').mockResolvedValue({
+            ...verifier,
+            invoke: {
+                ...verifier.invoke,
+                verifyPresentation: vi.fn().mockResolvedValue({
+                    ...verified,
+                    errors,
+                    checks,
+                    warnings: [`advisory containing private data ${guardian.id.did()} ${token}`],
+                }),
+            },
+        });
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        const consent = childCaller(token).contracts.consentToContract({
+            contractUri,
+            terms: minimalTerms,
+        });
+        if (approved) {
+            const { termsUri } = await consent;
+            expect((await getContractTermsByUri(termsUri))?.terms.guardianApproval).toMatchObject({
+                guardianProfileId: 'guardian-user',
+            });
+        } else {
+            await expect(consent).rejects.toMatchObject({ code: 'FORBIDDEN' });
+            expect(await ConsentFlowTerms.findMany({ where: {} })).toEqual([]);
+        }
+        expect(JSON.stringify(warn.mock.calls)).not.toContain(token);
+        expect(JSON.stringify(warn.mock.calls)).not.toContain(guardian.id.did());
+        expect(JSON.stringify(warn.mock.calls)).not.toContain('advisory containing private data');
+    });
 
     it('preserves adult consent without inventing guardian approval', async () => {
         const { termsUri } = await childCaller().contracts.consentToContract({
@@ -235,5 +361,19 @@ describe('Guardian-approved consent mutations', () => {
             childCaller().contracts.consentToContract({ contractUri, terms: noTerms })
         ).rejects.toMatchObject({ code: 'FORBIDDEN' });
         expect((await getContractTermsByUri(termsUri))?.terms.status).toBe('withdrawn');
+
+        // Withdrawal does not erase guardian history. Recovery needs current authority,
+        // not a reclassification as an adult based on the missing manager relationship.
+        await callerFor(guardian).profile.createProfile({ profileId: 'guardian-user' });
+        await manageChild();
+        const recovered = await childCaller(await approve()).contracts.consentToContract({
+            contractUri,
+            terms: minimalTerms,
+        });
+        expect(recovered.termsUri).toBe(termsUri);
+        expect((await getContractTermsByUri(termsUri))?.terms).toMatchObject({
+            status: 'live',
+            guardianApproval: { guardianProfileId: 'guardian-user' },
+        });
     });
 });

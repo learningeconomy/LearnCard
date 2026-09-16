@@ -5,7 +5,10 @@ import {
     VerifiablePresentationRequest,
     AppEvent,
 } from './useLearnCardPostMessage';
-import type { LearnerContextRequestOptions } from './learnerContext.helpers';
+import {
+    getLearnerContextPermissionCode,
+    type LearnerContextRequestOptions,
+} from './learnerContext.helpers';
 
 type LearnerContextResponseData = {
     prompt: string;
@@ -562,9 +565,12 @@ export const createRequestLearnerContextHandler = (dependencies: {
             return {
                 success: false,
                 error: {
-                    code: 'UNKNOWN_ERROR',
-                    message:
-                        error instanceof Error ? error.message : 'Failed to get learner context',
+                    code: getLearnerContextPermissionCode(error) ?? 'UNKNOWN_ERROR',
+                    message: getLearnerContextPermissionCode(error)
+                        ? 'Current learner context permission is required'
+                        : error instanceof Error
+                          ? error.message
+                          : 'Failed to get learner context',
                 },
             };
         }

@@ -1,3 +1,4 @@
+import { useCallback, useRef } from 'react';
 import { z } from 'zod';
 import {
     aiPassportFetch,
@@ -46,6 +47,66 @@ const LearnerContextFormatResponseValidator = z.object({
 });
 export type LearnerContextFormatResponse = z.infer<typeof LearnerContextFormatResponseValidator>;
 
+/** Coalesce only concurrent speculative warmups, never real SDK requests. */
+export const useLearnerContextPrewarm = (
+    scopeKey: string,
+    warm: (options: LearnerContextRequestOptions) => Promise<void>
+) => {
+    const warmRef = useRef(warm);
+    warmRef.current = warm;
+    const inFlight = useRef(new Map<string, Promise<void>>());
+
+    return useCallback(
+        (options: LearnerContextRequestOptions): Promise<void> => {
+            if (options.format === 'structured') return Promise.resolve();
+            const key = JSON.stringify([
+                scopeKey,
+                options.includeCredentials ?? true,
+                options.includePersonalData ?? false,
+                options.instructions ?? '',
+                options.detailLevel ?? 'compact',
+            ]);
+            const existing = inFlight.current.get(key);
+            if (existing) return existing;
+            const run = warmRef.current;
+            const pending = Promise.resolve()
+                .then(() => run(options))
+                .finally(() => inFlight.current.delete(key));
+            inFlight.current.set(key, pending);
+            return pending;
+        },
+        [scopeKey]
+    );
+};
+
+export const getLearnerContextPermissionCode = (
+    error: unknown
+): 'FORBIDDEN' | 'UNAUTHORIZED' | undefined => {
+    const parsed = z
+        .object({ data: z.object({ code: z.enum(['FORBIDDEN', 'UNAUTHORIZED']) }) })
+        .safeParse(error);
+    return parsed.success ? parsed.data.data.code : undefined;
+};
+
+/** Missing records do not erase available siblings from the authorized selection. */
+export const resolveLearnerContextCredentials = async (
+    wallet: BespokeLearnCard,
+    credentialUris: string[]
+): Promise<unknown[]> => {
+    const credentials = await Promise.all(
+        credentialUris.map(async uri => {
+            try {
+                return await wallet.read.get(uri);
+            } catch (error) {
+                if (getLearnerContextPermissionCode(error)) throw error;
+                // Individual storage/transport failures leave partial structured context.
+                return undefined;
+            }
+        })
+    );
+    return credentials.filter(credential => credential != null);
+};
+
 export const formatLearnerContext = async (
     wallet: BespokeLearnCard,
     selection: LearnerContextSelection
@@ -91,20 +152,27 @@ export const formatLearnerContext = async (
         },
         did
     );
-    const data: unknown = await response.json();
-    if (
-        getAiPassportAuthMode(did) !== 'session' ||
-        wallet.id.did() !== did ||
-        networkStore.get.aiServiceUrl().trim().replace(/\/+$/, '') !== serviceUrl
-    ) {
-        throw new Error('Learner context session identity or service changed');
-    }
+    const assertCurrentSession = () => {
+        if (
+            getAiPassportAuthMode(did) !== 'session' ||
+            wallet.id.did() !== did ||
+            networkStore.get.aiServiceUrl().trim().replace(/\/+$/, '') !== serviceUrl
+        ) {
+            throw new Error('Learner context session identity or service changed');
+        }
+    };
+    assertCurrentSession();
     if (!response.ok) {
-        const error = z.object({ error: z.string() }).safeParse(data);
-        throw new Error(
-            error.success ? error.data.error : `Learner context request failed (${response.status})`
-        );
+        const error = new Error(`Learner context request failed (HTTP ${response.status})`);
+        if (response.status === 401 || response.status === 403) {
+            Object.assign(error, {
+                data: { code: response.status === 403 ? 'FORBIDDEN' : 'UNAUTHORIZED' },
+            });
+        }
+        throw error;
     }
+    const data: unknown = await response.json();
+    assertCurrentSession();
     const parsed = LearnerContextFormatResponseValidator.safeParse(data);
     if (!parsed.success) {
         throw new Error('Learner context response is missing a prompt or current consent evidence');

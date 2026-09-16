@@ -977,6 +977,140 @@ describe('Consent Flow Contracts', () => {
             expect(withdrawnData.records).toEqual([]);
         });
 
+        it('returns one-time selected data while stale, but not after withdrawal', async () => {
+            const initial = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                did: userBDid,
+            });
+            const termsUri = initial.records[0]!.termsUri;
+            await userB.clients.fullAuth.contracts.withdrawConsent({ uri: termsUri });
+            const selectedTerms = structuredClone(normalFullTerms);
+            selectedTerms.read.credentials.shareAll = false;
+            selectedTerms.read.credentials.categories.Achievement!.shareAll = false;
+            selectedTerms.read.credentials.categories.Achievement!.shared = ['achievement2'];
+            selectedTerms.read.credentials.categories.ID!.shareUntil = '2000-01-01T00:00:00.000Z';
+            await userB.clients.fullAuth.contracts.consentToContract({
+                contractUri,
+                terms: selectedTerms,
+                oneTime: true,
+            });
+            expect((await getContractTermsByUri(termsUri))?.terms.status).toBe('stale');
+            const shared = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                did: userBDid,
+            });
+            expect(shared.records).toEqual([
+                expect.objectContaining({
+                    termsUri,
+                    status: 'stale',
+                    credentials: [{ category: 'Achievement', uri: 'achievement2' }],
+                    personal: selectedTerms.read.personal,
+                }),
+            ]);
+
+            await userB.clients.fullAuth.contracts.withdrawConsent({ uri: termsUri });
+            expect(
+                (await userA.clients.fullAuth.contracts.getConsentedDataForDid({ did: userBDid }))
+                    .records
+            ).toEqual([]);
+        });
+
+        it.each(['terms', 'contract'] as const)(
+            'omits one-time consent after %s expiry',
+            async target => {
+                const initial = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                    did: userBDid,
+                });
+                const termsUri = initial.records[0]!.termsUri;
+                await userB.clients.fullAuth.contracts.updateConsentedContractTerms({
+                    uri: termsUri,
+                    terms: normalFullTerms,
+                    oneTime: true,
+                });
+                const relationship = (await getContractTermsByUri(termsUri))!;
+                expect(
+                    (
+                        await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                            did: userBDid,
+                        })
+                    ).records[0]?.status
+                ).toBe('stale');
+                const model = target === 'terms' ? ConsentFlowTerms : ConsentFlowContract;
+                await new QueryBuilder()
+                    .match({ model, identifier: 'record', where: { id: relationship[target].id } })
+                    .set("record.expiresAt = '2000-01-01T00:00:00.000Z'")
+                    .run();
+                expect(
+                    (
+                        await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                            did: userBDid,
+                        })
+                    ).records
+                ).toEqual([]);
+            }
+        );
+
+        it('does not treat other stale terms as a one-time grant', async () => {
+            const initial = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                did: userBDid,
+            });
+            const relationship = (await getContractTermsByUri(initial.records[0]!.termsUri))!;
+            await ConsentFlowTerms.update(
+                { status: 'stale' },
+                { where: { id: relationship.terms.id } }
+            );
+            expect(
+                (await userA.clients.fullAuth.contracts.getConsentedDataForDid({ did: userBDid }))
+                    .records
+            ).toEqual([]);
+        });
+
+        it.each([
+            { target: 'terms', properties: { 'guardianApproval.guardianProfileId': 'userc' } },
+            { target: 'terms', properties: { 'terms.read.credentials.sharing': 'invalid' } },
+            { target: 'contract', properties: { name: 42 } },
+        ] as const)(
+            'omits malformed stored $target without hiding another valid owner grant',
+            async ({ target, properties }) => {
+                const initial = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                    did: userBDid,
+                });
+                const relationship = (await getContractTermsByUri(initial.records[0]!.termsUri))!;
+                const otherContract =
+                    await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                        contract: normalContract,
+                        name: 'Valid independent grant',
+                    });
+                const valid = await userB.clients.fullAuth.contracts.consentToContract({
+                    contractUri: otherContract,
+                    terms: normalAchievementOnlyTerms,
+                });
+                // Sort the malformed row before the valid one so omission must fill the page.
+                await ConsentFlowTerms.update(
+                    { updatedAt: '2999-01-01T00:00:00.000Z' },
+                    { where: { id: relationship.terms.id } }
+                );
+                const model = target === 'terms' ? ConsentFlowTerms : ConsentFlowContract;
+                await new QueryBuilder(new BindParam({ properties }))
+                    .match({ model, identifier: 'record', where: { id: relationship[target].id } })
+                    .set('record += $properties')
+                    .run();
+                const data = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                    did: userBDid,
+                    limit: 1,
+                });
+                expect(data.records).toEqual([
+                    expect.objectContaining({
+                        termsUri: valid.termsUri,
+                        terms: normalAchievementOnlyTerms,
+                        credentials: [
+                            { category: 'Achievement', uri: 'achievement1' },
+                            { category: 'Achievement', uri: 'achievement2' },
+                        ],
+                    }),
+                ]);
+                expect(data.hasMore).toBe(false);
+            }
+        );
+
         it('honors category grants without a root sharing flag and rejects malformed category expiry', async () => {
             const initial = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
                 did: userBDid,

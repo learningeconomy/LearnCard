@@ -85,9 +85,7 @@ describe('guardian-approved actions', () => {
         const action = vi.fn();
         const verified = vi.fn();
         const { result } = renderHook(() => useGuardianGate({ onVerified: verified }));
-        await expect(result.current.guardedAction(action)).rejects.toThrow(
-            'Could not create guardian approval'
-        );
+        await expect(result.current.guardedAction(action)).rejects.toBeInstanceOf(Error);
         expect(action).not.toHaveBeenCalled();
         expect(verified).not.toHaveBeenCalled();
         expect(getGuardianApprovalVP(state.childDid)).toBeUndefined();
@@ -112,9 +110,9 @@ describe('guardian-approved actions', () => {
     it('requires signing again at expiry and after explicit clearing', async () => {
         vi.useFakeTimers();
         const action = vi.fn();
-        const { result } = renderHook(() => useGuardianGate({ verificationTTL: 1000 }));
+        const { result } = renderHook(() => useGuardianGate());
         await act(() => result.current.guardedAction(action));
-        vi.advanceTimersByTime(1000);
+        vi.advanceTimersByTime(300_000);
         expect(getGuardianApprovalVP(state.childDid)).toBeUndefined();
         await act(() => result.current.guardedAction(action));
         act(() => result.current.clearVerification());
@@ -129,9 +127,7 @@ describe('guardian-approved actions', () => {
         });
         const action = vi.fn();
         const { result } = renderHook(() => useGuardianGate());
-        await expect(result.current.guardedAction(action)).rejects.toThrow(
-            'Could not create guardian approval'
-        );
+        await expect(result.current.guardedAction(action)).rejects.toBeInstanceOf(Error);
         expect(action).not.toHaveBeenCalled();
         expect(getGuardianApprovalVP('did:example:child-a')).toBeUndefined();
         expect(getGuardianApprovalVP(state.childDid)).toBeUndefined();
@@ -143,7 +139,7 @@ describe('guardian-approved actions', () => {
         const action = vi.fn();
         const { result } = renderHook(() => useGuardianGate());
         const pending = result.current.guardedAction(action);
-        const rejection = expect(pending).rejects.toThrow('Could not create guardian approval');
+        const rejection = expect(pending).rejects.toBeInstanceOf(Error);
         await waitFor(() => expect(state.newModal).toHaveBeenCalledOnce());
         expect(action).not.toHaveBeenCalled();
         await act(() => state.newModal.mock.calls[0][0].props.handleOnSubmit());
@@ -152,5 +148,53 @@ describe('guardian-approved actions', () => {
         expect(
             guardianApprovalStore.get.getApproval(state.parentDid, state.childDid)
         ).toBeUndefined();
+    });
+
+    it('stops reusing approval exactly sixty seconds before the signed whole-second expiry', async () => {
+        vi.useFakeTimers();
+        vi.setSystemTime(1_800_000_000_875);
+        const action = vi.fn();
+        const { result } = renderHook(() => useGuardianGate({ verificationTTL: 600_000 }));
+        await act(() => result.current.guardedAction(action));
+        const approval = getGuardianApprovalVP(state.childDid)!;
+        const claims = JSON.parse(approval.slice('signed:'.length));
+        expect(claims.exp).toBe(1_800_000_300);
+        vi.setSystemTime(claims.exp * 1000 - 60_001);
+        expect(getGuardianApprovalVP(state.childDid)).toBe(approval);
+        expect(guardianApprovalStore.get.getApproval(state.parentDid, state.childDid)).toBe(
+            approval
+        );
+        await act(() => result.current.guardedAction(action));
+        expect(state.sign).toHaveBeenCalledOnce();
+        vi.advanceTimersByTime(1);
+        expect(getGuardianApprovalVP(state.childDid)).toBeUndefined();
+        expect(
+            guardianApprovalStore.get.getApproval(state.parentDid, state.childDid)
+        ).toBeUndefined();
+        await act(() => result.current.guardedAction(action));
+        expect(state.sign).toHaveBeenCalledTimes(2);
+        expect(getGuardianApprovalVP(state.childDid)).not.toBe(approval);
+    });
+
+    it('does not execute an action with an approval that expired during signing', async () => {
+        vi.useFakeTimers();
+        state.sign.mockImplementationOnce(async ({ challenge }) => {
+            vi.advanceTimersByTime(300_000);
+            return `signed:${challenge}`;
+        });
+        const action = vi.fn();
+        const { result } = renderHook(() => useGuardianGate());
+        await expect(result.current.guardedAction(action)).rejects.toBeInstanceOf(Error);
+        expect(action).not.toHaveBeenCalled();
+        expect(getGuardianApprovalVP(state.childDid)).toBeUndefined();
+    });
+
+    it('rejects unavailable guardian identity instead of resolving an approval precondition', async () => {
+        state.parentDid = '';
+        const action = vi.fn();
+        const { result } = renderHook(() => useGuardianGate());
+        await expect(result.current.guardedAction(action)).rejects.toBeInstanceOf(Error);
+        expect(action).not.toHaveBeenCalled();
+        expect(state.sign).not.toHaveBeenCalled();
     });
 });

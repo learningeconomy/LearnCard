@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import type { FC } from 'react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('learner-context-prompt-test-page');
@@ -32,6 +32,8 @@ const LearnerContextPromptTestPage: FC = () => {
     const [availableByCategory, setAvailableByCategory] = useState<Record<string, string[]>>({});
     const [selectedByCategory, setSelectedByCategory] = useState<Record<string, string[]>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isLoadingSelection, setIsLoadingSelection] = useState(false);
+    const selectionLoadPending = useRef(false);
     const [response, setResponse] = useState<LearnerContextFormatResponse | null>(null);
     const [responseError, setResponseError] = useState<string | null>(null);
 
@@ -100,7 +102,10 @@ const LearnerContextPromptTestPage: FC = () => {
         };
     };
 
-    const handleSelectAllCategories = async () => {
+    const handleSelectAllCategories = async (): Promise<void> => {
+        if (selectionLoadPending.current) return;
+        selectionLoadPending.current = true;
+        setIsLoadingSelection(true);
         try {
             const selection = await loadConsentedSelection();
             setAvailableByCategory(selection.byCategory);
@@ -118,6 +123,9 @@ const LearnerContextPromptTestPage: FC = () => {
                 error instanceof Error ? error.message : 'Failed to load consented data.';
             setResponseError(message);
             presentToast(message);
+        } finally {
+            selectionLoadPending.current = false;
+            setIsLoadingSelection(false);
         }
     };
 
@@ -381,14 +389,23 @@ const LearnerContextPromptTestPage: FC = () => {
                                 <button
                                     type="button"
                                     onClick={handleSelectAllCategories}
-                                    className="rounded-full bg-emerald-700 text-white px-4 py-2 text-sm font-[600] font-notoSans"
+                                    disabled={isLoadingSelection || isSubmitting || isSeeding}
+                                    aria-busy={isLoadingSelection}
+                                    className="rounded-full bg-emerald-700 text-white px-4 py-2 text-sm font-[600] font-notoSans disabled:opacity-50 flex items-center gap-2"
                                 >
-                                    Load / Select All Consented
+                                    {isLoadingSelection && (
+                                        <IonSpinner name="crescent" className="w-4 h-4" />
+                                    )}
+                                    {isLoadingSelection
+                                        ? 'Loading Consented Selections...'
+                                        : 'Load / Select All Consented'}
                                 </button>
                                 <button
                                     type="button"
                                     onClick={handleClearAllCategories}
-                                    disabled={selectedCount === 0}
+                                    disabled={
+                                        selectedCount === 0 || isLoadingSelection || isSubmitting
+                                    }
                                     className="rounded-full border border-grayscale-200 bg-white px-4 py-2 text-sm font-[600] font-notoSans disabled:opacity-50"
                                 >
                                     Clear All
@@ -407,7 +424,7 @@ const LearnerContextPromptTestPage: FC = () => {
                                 key={count}
                                 type="button"
                                 onClick={() => handleSeedBenchmarkCredentials(count)}
-                                disabled={isSeeding}
+                                disabled={isSeeding || isLoadingSelection || isSubmitting}
                                 className="rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-[600] font-notoSans text-emerald-700 disabled:opacity-50"
                             >
                                 {isSeeding ? 'Seeding...' : `Seed ${count} Benchmark Credentials`}
@@ -462,7 +479,7 @@ const LearnerContextPromptTestPage: FC = () => {
                     <button
                         type="button"
                         onClick={handleSubmit}
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || isLoadingSelection || isSeeding}
                         className="min-w-[220px] rounded-full bg-emerald-700 text-white px-[24px] py-[14px] text-[16px] font-[600] font-notoSans disabled:opacity-50 flex items-center justify-center gap-[10px]"
                     >
                         {isSubmitting && (

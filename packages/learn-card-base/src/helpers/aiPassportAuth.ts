@@ -2,7 +2,7 @@ import type { UnsignedVP } from '@learncard/types';
 
 import type { BespokeLearnCard } from '../types/learn-card';
 import { networkStore } from '../stores/NetworkStore';
-import { walletStore } from '../stores/walletStore';
+import { switchedProfileStore, walletStore } from '../stores/walletStore';
 
 export type AiPassportAuthMode = 'session';
 
@@ -43,22 +43,27 @@ export const clearAiPassportAuth = (): void => {
 walletStore.store.subscribe((state, previous) => {
     if (state.wallet !== previous.wallet) clearAiPassportAuth();
 });
+switchedProfileStore.store.subscribe((state, previous) => {
+    if (state.switchedDid !== previous.switchedDid) clearAiPassportAuth();
+});
 networkStore.store.subscribe((state, previous) => {
     if (state.aiServiceUrl !== previous.aiServiceUrl) clearAiPassportAuth();
 });
 
-const guardCurrentIdentity = (did: string) => {
+const guardCurrentIdentity = (did: string): (() => void) => {
     const wallet = walletStore.get.wallet();
     if (!wallet) throw new Error('AI Passport authentication requires an initialized wallet');
     if (wallet.id.did() !== did) throw new Error('AI Passport wallet identity mismatch');
     const generation = authGeneration;
     const key = getAuthKey(did);
+    const switchedDid = switchedProfileStore.get.switchedDid();
 
-    return () => {
+    return (): void => {
         if (
             generation !== authGeneration ||
             getAuthKey(did) !== key ||
             walletStore.get.wallet() !== wallet ||
+            switchedProfileStore.get.switchedDid() !== switchedDid ||
             wallet.id.did() !== did
         ) {
             throw new Error('AI Passport session identity or service changed');
@@ -98,7 +103,7 @@ export const aiPassportFetch = async (
     if (!getAiPassportAuthMode(did)) await ensureAiPassportSession(wallet);
     assertCurrent();
 
-    const request = async () => {
+    const request = async (): Promise<Response> => {
         assertCurrent();
         if (getAiPassportAuthMode(did) !== 'session') {
             throw new Error('AI Passport session or service changed');
@@ -157,7 +162,7 @@ export const ensureAiPassportSession = async (
     }
     authModes.delete(key);
 
-    const authFetch = async (path: string, init: RequestInit = {}) => {
+    const authFetch = async (path: string, init: RequestInit = {}): Promise<Response> => {
         assertCurrent();
         const response = await fetch(getAiPassportFetchUrl(path), {
             ...init,

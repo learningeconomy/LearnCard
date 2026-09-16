@@ -6,6 +6,8 @@ export type GuardianApprovalData = {
     expiresAt: number;
 };
 
+const APPROVAL_EXPIRY_MARGIN_MS = 60_000;
+
 export const guardianApprovalStore = createStore('guardianApprovalStore')<{
     approvalsByParentDid: Record<string, GuardianApprovalData>;
 }>({
@@ -30,7 +32,11 @@ export const guardianApprovalStore = createStore('guardianApprovalStore')<{
     .extendSelectors((state, get) => ({
         getApproval: (parentDid: string, childDid: string): string | undefined => {
             const data = state.approvalsByParentDid[parentDid];
-            if (!data || data.childDid !== childDid || Date.now() >= data.expiresAt) {
+            if (
+                !data ||
+                data.childDid !== childDid ||
+                Date.now() >= data.expiresAt - APPROVAL_EXPIRY_MARGIN_MS
+            ) {
                 return undefined;
             }
             return data.vp;
@@ -43,7 +49,7 @@ export const getGuardianApprovalVP = (childDid: string | undefined): string | un
     const now = Date.now();
 
     for (const [_parentDid, data] of Object.entries(approvals)) {
-        if (data.childDid === childDid && data.expiresAt > now) {
+        if (data.childDid === childDid && data.expiresAt - APPROVAL_EXPIRY_MARGIN_MS > now) {
             return data.vp;
         }
     }

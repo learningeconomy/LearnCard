@@ -100,11 +100,13 @@ export const useGuardianGate = (options: UseGuardianGateOptions = {}): GuardianG
             }
 
             const parentWallet = await initWallet(parentPrivateKey, parentDid);
-            const expiresAt = Date.now() + Math.min(verificationTTL, DEFAULT_VERIFICATION_TTL);
+            const exp = Math.floor(
+                (Date.now() + Math.min(verificationTTL, DEFAULT_VERIFICATION_TTL)) / 1000
+            );
             const guardianClaims = JSON.stringify({
                 iss: parentDid,
                 sub: childDid,
-                exp: Math.floor(expiresAt / 1000),
+                exp,
                 scope: 'guardian-approval',
             });
             const vp = await parentWallet.invoke.getDidAuthVp({
@@ -117,7 +119,10 @@ export const useGuardianGate = (options: UseGuardianGateOptions = {}): GuardianG
             if (switchedProfileStore.get.switchedDid() !== childDid) {
                 throw new Error('Child profile changed during guardian approval');
             }
-            guardianApprovalStore.set.setApproval(parentDid, childDid, vp, expiresAt);
+            if (Date.now() >= exp * 1000) {
+                throw new Error('Guardian approval expired during signing');
+            }
+            guardianApprovalStore.set.setApproval(parentDid, childDid, vp, exp * 1000);
         } catch {
             onCancel?.();
             throw new Error('Could not create guardian approval. Please try again.');
@@ -159,7 +164,7 @@ export const useGuardianGate = (options: UseGuardianGateOptions = {}): GuardianG
             if (!parentDid) {
                 log.warn('useGuardianGate: No parent DID found for child profile');
                 onCancel?.();
-                return;
+                throw new Error('Guardian signing identity is unavailable');
             }
 
             // Check if PIN exists for the parent

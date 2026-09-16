@@ -8,8 +8,9 @@ import { showToast } from './toastStore';
 import { showErrorModal } from './ErrorModalStore';
 
 import { networkStore } from '../NetworkStore';
-import { walletStore } from '../walletStore';
+import { switchedProfileStore, walletStore } from '../walletStore';
 import { addActiveLocaleToPayload, addActiveLocaleToUrl } from '../../i18n';
+import type { BespokeLearnCard } from '../../types/learn-card';
 import type {
     ChatMessage,
     Thread,
@@ -24,6 +25,7 @@ import {
     getAiPassportAuthMode,
     getAiPassportWebSocketProtocols,
     getAiPassportUrl,
+    type AiPassportAuthMode,
 } from '../../helpers/aiPassportAuth';
 import { createDeferred } from '../../helpers/deferred';
 
@@ -116,7 +118,7 @@ export const planSections = atom({
 
 export const getBackendUrl = (): string => networkStore.get.aiServiceUrl();
 
-const ensureChatAiPassportAuth = async (did: string) => {
+const ensureChatAiPassportAuth = async (did: string): Promise<AiPassportAuthMode> => {
     const wallet = walletStore.get.wallet();
     if (!wallet) throw new Error('AI Passport authentication requires an initialized wallet');
     if (wallet.id.did() !== did) throw new Error('AI Passport wallet identity mismatch');
@@ -223,6 +225,20 @@ let shouldReconnect = true;
 let reconnectTimer: number | undefined;
 let socketConnection: Promise<WebSocket | null> | null = null;
 let connectionGeneration = 0;
+let connectionIdentity: {
+    wallet: BespokeLearnCard | null;
+    did: string | null;
+    serviceUrl: string;
+    switchedDid: string | undefined;
+} | null = null;
+
+const isCurrentConnectionIdentity = (): boolean =>
+    connectionIdentity !== null &&
+    connectionIdentity.wallet === walletStore.get.wallet() &&
+    connectionIdentity.did === auth.get().did &&
+    connectionIdentity.did === walletStore.get.wallet()?.id.did() &&
+    connectionIdentity.serviceUrl === getBackendUrl() &&
+    connectionIdentity.switchedDid === switchedProfileStore.get.switchedDid();
 
 const clearReconnectTimer = () => {
     if (reconnectTimer === undefined) return;
@@ -547,20 +563,23 @@ const reconnectWebSocket = async (): Promise<void> => {
     }
 
     reconnectAttempts += 1;
+    const generation = connectionGeneration;
 
     try {
         await ensureChatAiPassportAuth(did);
 
-        if (!shouldReconnect) return;
+        if (!shouldReconnect || generation !== connectionGeneration) return;
 
         await connectWebSocket();
     } catch (error) {
+        if (generation !== connectionGeneration) return;
         log.error('WebSocket reconnect failed:', error);
         scheduleReconnect();
     }
 };
 
 export function connectWebSocket(): Promise<WebSocket | null> {
+    if (connectionIdentity && !isCurrentConnectionIdentity()) invalidateChatIdentity();
     if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
         return Promise.resolve(ws);
     }
@@ -569,6 +588,12 @@ export function connectWebSocket(): Promise<WebSocket | null> {
 
     shouldReconnect = true;
     const generation = connectionGeneration;
+    connectionIdentity = {
+        wallet: walletStore.get.wallet(),
+        did: auth.get().did,
+        serviceUrl: getBackendUrl(),
+        switchedDid: switchedProfileStore.get.switchedDid(),
+    };
     const request = createWebSocket(generation);
 
     socketConnection = request;
@@ -599,6 +624,7 @@ const createWebSocket = async (generation: number): Promise<WebSocket | null> =>
     if (
         !shouldReconnect ||
         generation !== connectionGeneration ||
+        !isCurrentConnectionIdentity() ||
         auth.get().did !== did ||
         walletStore.get.wallet()?.id.did() !== did ||
         getBackendUrl() !== serviceUrl ||
@@ -608,9 +634,11 @@ const createWebSocket = async (generation: number): Promise<WebSocket | null> =>
 
     ws = new WebSocket(addActiveLocaleToUrl(wsUrl.toString()), protocols);
     const socket = ws;
+    const isCurrentSocket = (): boolean =>
+        ws === socket && generation === connectionGeneration && isCurrentConnectionIdentity();
 
     ws.onmessage = event => {
-        if (ws !== socket) return;
+        if (!isCurrentSocket()) return;
 
         try {
             const data = JSON.parse(event.data);
@@ -1100,7 +1128,7 @@ const createWebSocket = async (generation: number): Promise<WebSocket | null> =>
     };
 
     ws.onopen = () => {
-        if (ws !== socket) return;
+        if (!isCurrentSocket()) return;
         reconnectAttempts = 0;
         clearReconnectTimer();
         readyListeners.forEach(fn => fn());
@@ -1108,7 +1136,7 @@ const createWebSocket = async (generation: number): Promise<WebSocket | null> =>
     };
 
     ws.onclose = () => {
-        if (ws !== socket) return;
+        if (!isCurrentSocket()) return;
 
         preservePartialStreamingMessage();
 
@@ -1121,7 +1149,7 @@ const createWebSocket = async (generation: number): Promise<WebSocket | null> =>
     };
 
     ws.onerror = err => {
-        if (ws !== socket) return;
+        if (!isCurrentSocket()) return;
         log.error('WebSocket error:', err);
         const responsePending = isTyping.get() || isLoading.get() || !!streamingMessage.get();
         if (!responsePending) return;
@@ -1610,18 +1638,38 @@ export function disconnectWebSocket() {
     connectionGeneration += 1;
     clearReconnectTimer();
     socketConnection = null;
+    connectionIdentity = null;
     readyListeners = [];
 
-    if (ws) {
+    const socket = ws;
+    ws = null;
+    if (socket) {
         try {
-            ws.close();
+            socket.close();
         } catch (e) {
             log.error('WebSocket close error:', e);
         }
-
-        ws = null;
     }
 }
+
+const invalidateChatIdentity = (): void => {
+    disconnectWebSocket();
+    reconnectAttempts = 0;
+    resetChatStores();
+};
+
+walletStore.store.subscribe((state, previous) => {
+    if (state.wallet !== previous.wallet) invalidateChatIdentity();
+});
+switchedProfileStore.store.subscribe((state, previous) => {
+    if (state.switchedDid !== previous.switchedDid) invalidateChatIdentity();
+});
+networkStore.store.subscribe((state, previous) => {
+    if (state.aiServiceUrl !== previous.aiServiceUrl) invalidateChatIdentity();
+});
+auth.listen((state, previous) => {
+    if (state.did !== previous.did) invalidateChatIdentity();
+});
 
 // Send a payload as soon as the socket is open. Avoids polling setTimeout loops
 // for the "send right after connect" race that can otherwise add up to 100ms of

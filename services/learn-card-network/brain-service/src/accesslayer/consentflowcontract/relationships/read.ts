@@ -582,7 +582,7 @@ export const getConsentedDataBetweenProfiles = async (
             related: [
                 { model: Profile, where: { profileId: consenterProfileId } },
                 ConsentFlowTerms.getRelationshipByAlias('createdBy'),
-                { identifier: 'terms', model: ConsentFlowTerms, where: { status: 'live' } },
+                { identifier: 'terms', model: ConsentFlowTerms },
                 ConsentFlowTerms.getRelationshipByAlias('consentsTo'),
                 { model: ConsentFlowContract, identifier: 'contract' },
                 ConsentFlowContract.getRelationshipByAlias('createdBy'),
@@ -593,7 +593,8 @@ export const getConsentedDataBetweenProfiles = async (
             // If query key is false, ensure no resulting terms have that key
             // If query key is not present, return all terms whether they have it or not
         }).where(`
-all(key IN keys($params) WHERE 
+(terms.status = 'live' OR (terms.status = 'stale' AND terms.oneTime = true))
+AND all(key IN keys($params) WHERE
     CASE $params[key]
         WHEN true THEN terms[key] IS NOT NULL AND terms[key] <> []
         WHEN false THEN terms[key] IS NULL OR terms[key] = []
@@ -632,8 +633,15 @@ AND ${contractWhereClause}
         );
 
         for (const result of results) {
-            const term = DbTermsValidator.parse(inflateObject(result.terms));
-            const contract = DbContractValidator.parse(inflateObject(result.contract));
+            const parsedTerm = DbTermsValidator.safeParse(inflateObject(result.terms));
+            const parsedContract = DbContractValidator.safeParse(inflateObject(result.contract));
+            if (!parsedTerm.success || !parsedContract.success) {
+                // Never log stored consent data, identifiers, or raw validation errors.
+                console.warn('consented_data: invalid_stored_grant');
+                continue;
+            }
+            const term = parsedTerm.data;
+            const contract = parsedContract.data;
             if (
                 !isConsentExpiryActive(term.expiresAt, now) ||
                 !isConsentExpiryActive(contract.expiresAt, now)
