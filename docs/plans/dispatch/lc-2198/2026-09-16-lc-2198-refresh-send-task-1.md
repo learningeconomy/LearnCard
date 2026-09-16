@@ -2,7 +2,7 @@
 title: "LC-2198 - Task 1: Shared receipt and automatic managed context"
 status: queued
 project: /Users/donny/Work/LearnCard
-model: zai/glm-5.1
+model: zai/glm-5.3-flash
 harness: pi
 branch: codex/lc-2198-refresh-send-task-1
 base_branch: codex/lc-2198-planning
@@ -104,7 +104,7 @@ Tasks 2/3 depend on contracts and each other's runtime behavior; Task 4 verifies
 - Canonical task files: `docs/plans/dispatch/lc-2198/` in this worktree. Live copies: `/Users/donny/.claude/dispatch/plans/2026-09-16-lc-2198-refresh-send-task-N.md`.
 - Live files are initially **`queued` (held)**. Inspection of this Dispatch version confirmed only `pending` tasks auto-run. The skill's `pending` review-first example would start work immediately here, so it is intentionally not used.
 - Task 1 explicitly bases from `codex/lc-2198-planning`; each successor inherits its dependency branch. Branches are `codex/lc-2198-refresh-send-task-N`. Dispatch creates worktrees and merges dependencies; agents must not create nested worktrees.
-- Default executor from the dispatching-plans skill: `pi`, `zai/glm-5.1`. Planning budgets: 60m / 120m / 90m / 120m / 90m. These are ceilings, not estimates or reservations. They can be edited before release.
+- User-selected executor (2026-09-16): `pi`, `zai/glm-5.3-flash` (GLM 5.3 Flash). Planning budgets: 60m / 120m / 90m / 120m / 90m. These are ceilings, not estimates or reservations. They can be edited before release.
 - After plan review, release the chain by changing these five live statuses from `queued` to `pending` using the Dispatch plan/status editor or its `PUT /api/tasks/{name}` endpoint. Dependencies control ordering. Do not use **Run now** on successors: this version bypasses dependency checks.
 - Do not retry a completed task casually: Dispatch recreates that task's worktree/branch. Preserve its commits and report first; use a new follow-up task for fixes.
 - Live status/logs: [Dispatch UI](http://localhost:8090). Review report and final commit are the handoff; no auto-merge, push, deployment, or Jira transition is part of this plan.
