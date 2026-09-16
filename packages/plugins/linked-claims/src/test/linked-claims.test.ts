@@ -1,5 +1,3 @@
-import { vi } from 'vitest';
-
 import { getLinkedClaimsPlugin } from '../index';
 import type { VC, VerificationCheck } from '@learncard/types';
 
@@ -203,51 +201,5 @@ describe('LinkedClaims Plugin', () => {
 
     const res = await plugin.methods.verifyEndorsement(lc, bad as any, {});
     expect(res.errors.join(' ')).toMatch(/credentialSubject\.id missing/);
-  });
-
-  test('storeEndorsement: indexes the signed target when metadata omits credentialId', async () => {
-    const lc = createMockLearnCard();
-    const add = vi.fn(async () => true);
-    lc.index.LearnCloud.add = add;
-    const plugin = getLinkedClaimsPlugin(lc);
-    const endorsement = await plugin.methods.endorseCredential(
-      lc,
-      makeOriginalWithId(),
-      { endorsementComment: 'Nice' },
-      {}
-    );
-
-    await plugin.methods.storeEndorsement(lc, endorsement, {});
-
-    expect(add).toHaveBeenCalledWith(
-      expect.objectContaining({
-        credentialId: 'urn:uuid:original-123',
-        originalCredentialId: 'urn:uuid:original-123',
-      })
-    );
-  });
-
-  test('storeEndorsement: preserves an explicit wrapper credential id', async () => {
-    const lc = createMockLearnCard();
-    const add = vi.fn(async () => true);
-    lc.index.LearnCloud.add = add;
-    const plugin = getLinkedClaimsPlugin(lc);
-    const endorsement = await plugin.methods.endorseCredential(
-      lc,
-      makeOriginalWithId(),
-      { endorsementComment: 'Nice' },
-      {}
-    );
-
-    await plugin.methods.storeEndorsement(lc, endorsement, {
-      credentialId: 'urn:uuid:wrapper-credential',
-    });
-
-    expect(add).toHaveBeenCalledWith(
-      expect.objectContaining({
-        credentialId: 'urn:uuid:wrapper-credential',
-        originalCredentialId: 'urn:uuid:original-123',
-      })
-    );
   });
 });

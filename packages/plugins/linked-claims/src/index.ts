@@ -124,9 +124,10 @@ export const getLinkedClaimsPlugin = (
 
             const indexName = pickIndexProvider(learnCard, options?.indexName);
             let indexed = false;
+            // prettier-ignore
             let id =
                 (endorsement as any).id ||
-                `urn:uuid:${(globalThis as any).crypto?.randomUUID?.() ||
+                `urn:uuid:${globalThis.crypto?.randomUUID?.() ||
                 (() => {
                     throw new Error(
                         'Secure random UUID generation is not available. Please use an environment that supports crypto.randomUUID().'
