@@ -5,6 +5,7 @@ import base64url from 'base64url';
 import {
     VC,
     UnsignedVC,
+    JWE,
     VP,
     VPValidator,
     VCValidator,
@@ -348,6 +349,7 @@ async function handlePresentationForClaim(
     const verificationResult = await learnCard.invoke.verifyPresentation(verifiablePresentation, {
         challenge,
         domain,
+        proofPurpose: 'authentication',
     });
 
     if (verificationResult.errors.length > 0 || !verificationResult.checks.includes('proof')) {
@@ -546,6 +548,7 @@ async function handleInboxClaimPresentation(
     const verificationResult = await learnCard.invoke.verifyPresentation(verifiablePresentation, {
         challenge,
         domain: ctx.domain,
+        proofPurpose: 'authentication',
     });
 
     if (verificationResult.errors.length > 0 || !verificationResult.checks.includes('proof')) {
@@ -597,6 +600,7 @@ async function handleInboxClaimPresentation(
     }
 
     const claimedCredentials: VC[] = [];
+    let deliveryEncryptionFailed = false;
 
     // Process each pending credential in parallel
     const credentialProcessingPromises = pendingCredentials.map(async inboxCredential => {
@@ -674,9 +678,18 @@ async function handleInboxClaimPresentation(
 
             // Avoid the seeded encryption wrapper, which adds the service as a recipient.
             const deliveryLearnCard = await getEmptyLearnCard();
-            const encryptedDelivery = await deliveryLearnCard.invoke.createDagJwe(finalCredential, [
-                holderDid,
-            ]);
+            let encryptedDelivery: JWE;
+            try {
+                encryptedDelivery = await deliveryLearnCard.invoke.createDagJwe(finalCredential, [
+                    holderDid,
+                ]);
+                if (!encryptedDelivery.recipients?.length) {
+                    throw new Error('No supported delivery encryption recipients');
+                }
+            } catch (error) {
+                deliveryEncryptionFailed = true;
+                throw error;
+            }
             const finalized = await finalizeAndWipeInboxCredential(inboxCredential.id, {
                 recipientDid: holderDid,
                 credential: encryptedDelivery,
@@ -877,6 +890,14 @@ async function handleInboxClaimPresentation(
 
     const settledCredentials = await Promise.all(credentialProcessingPromises);
     const inboxDeliveries = settledCredentials.filter(c => c !== null);
+    if (inboxDeliveries.length === 0 && deliveryEncryptionFailed) {
+        // Preserve the pending credentials and challenge so a compatible holder can retry.
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message:
+                'Unable to encrypt inbox delivery. The holder DID must resolve to a supported X25519 key-agreement method.',
+        });
+    }
     claimedCredentials.push(...inboxDeliveries.map(delivery => delivery.credential));
 
     // Create response VP with all claimed credentials
