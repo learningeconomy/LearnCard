@@ -3,6 +3,11 @@ name: E2E
 on:
     pull_request:
         types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
+    # Merge queue: GitHub creates a temporary branch with the PR(s) merged onto
+    # current main and runs this once per batch. This is what lets PRs stay
+    # mergeable without every author re-running E2E after main moves.
+    merge_group:
+        types: [checks_requested]
     workflow_dispatch:
         inputs:
             ref:
@@ -18,8 +23,11 @@ permissions:
     contents: read
 
 concurrency:
-    group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+    group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.merge_group.head_ref || github.run_id }}
     cancel-in-progress: true
+
+env:
+    E2E_TESTED_REF: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.event.inputs.ref || github.sha }}
 
 jobs:
     eligibility:
@@ -29,22 +37,40 @@ jobs:
             run_e2e: ${{ steps.policy.outputs.run_e2e }}
             reason: ${{ steps.policy.outputs.reason }}
         steps:
+            - name: Checkout for change detection
+              if: ${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' }}
+              uses: actions/checkout@v7
+              with:
+                  ref: ${{ env.E2E_TESTED_REF }}
+                  fetch-depth: 0
+
             - name: Evaluate PR policy
               id: policy
               env:
                   EVENT_NAME: ${{ github.event_name }}
                   PR_DRAFT: ${{ github.event.pull_request.draft || false }}
+                  BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
               run: |
                   if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
                     echo 'run_e2e=true' >> "$GITHUB_OUTPUT"
                     echo 'reason=manual-dispatch' >> "$GITHUB_OUTPUT"
-                  elif [[ "$PR_DRAFT" == "false" ]]; then
-                    echo 'run_e2e=true' >> "$GITHUB_OUTPUT"
-                    echo 'reason=non-draft-pr' >> "$GITHUB_OUTPUT"
-                  else
+                    exit 0
+                  fi
+
+                  if [[ "$EVENT_NAME" == "pull_request" && "$PR_DRAFT" == "true" ]]; then
                     echo 'run_e2e=false' >> "$GITHUB_OUTPUT"
                     echo 'reason=draft-pr' >> "$GITHUB_OUTPUT"
+                    exit 0
                   fi
+
+                  if bash scripts/e2e-hosted/changes-are-docs-only.sh "$BASE_SHA" HEAD; then
+                    echo 'run_e2e=false' >> "$GITHUB_OUTPUT"
+                    echo 'reason=docs-only' >> "$GITHUB_OUTPUT"
+                    exit 0
+                  fi
+
+                  echo 'run_e2e=true' >> "$GITHUB_OUTPUT"
+                  echo "reason=$EVENT_NAME" >> "$GITHUB_OUTPUT"
 
     playwright_e2e:
         name: Playwright E2E
@@ -60,7 +86,7 @@ jobs:
               id: checkout
               uses: actions/checkout@v7
               with:
-                  ref: ${{ github.event.pull_request.head.sha || github.event.inputs.ref || github.sha }}
+                  ref: ${{ env.E2E_TESTED_REF }}
                   fetch-depth: 0
 
             - name: Capture runner preflight
@@ -69,7 +95,7 @@ jobs:
               env:
                   CHECKOUT_OUTCOME: ${{ steps.checkout.outcome }}
                   CHECKOUT_CONCLUSION: ${{ steps.checkout.conclusion }}
-                  TESTED_REF: ${{ github.event.pull_request.head.sha || github.event.inputs.ref || github.sha }}
+                  TESTED_REF: ${{ env.E2E_TESTED_REF }}
               run: |
                   mkdir -p "$E2E_ARTIFACT_DIR"
                   {
@@ -153,7 +179,7 @@ jobs:
               id: checkout
               uses: actions/checkout@v7
               with:
-                  ref: ${{ github.event.pull_request.head.sha || github.event.inputs.ref || github.sha }}
+                  ref: ${{ env.E2E_TESTED_REF }}
                   fetch-depth: 0
 
             - name: Capture runner preflight
@@ -162,7 +188,7 @@ jobs:
               env:
                   CHECKOUT_OUTCOME: ${{ steps.checkout.outcome }}
                   CHECKOUT_CONCLUSION: ${{ steps.checkout.conclusion }}
-                  TESTED_REF: ${{ github.event.pull_request.head.sha || github.event.inputs.ref || github.sha }}
+                  TESTED_REF: ${{ env.E2E_TESTED_REF }}
               run: |
                   mkdir -p "$E2E_ARTIFACT_DIR"
                   {
@@ -253,9 +279,11 @@ jobs:
                     exit 1
                   fi
 
-                  if [[ "$ELIGIBLE" == "false" && "$ELIGIBILITY_REASON" == "draft-pr" ]]; then
-                    echo 'E2E skipped: draft pull request.'
-                    exit 0
+                  if [[ "$ELIGIBLE" == "false" ]]; then
+                    case "$ELIGIBILITY_REASON" in
+                      draft-pr)  echo 'E2E skipped: draft pull request.'; exit 0 ;;
+                      docs-only) echo 'E2E skipped: only documentation files changed.'; exit 0 ;;
+                    esac
                   fi
 
                   if [[ "$ELIGIBLE" == "true" && "$BROWSER_RESULT" == "success" && "$SERVICE_RESULT" == "success" ]]; then
