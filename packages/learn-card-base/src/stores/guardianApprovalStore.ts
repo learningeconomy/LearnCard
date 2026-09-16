@@ -2,8 +2,11 @@ import { createStore } from '@udecode/zustood';
 
 export type GuardianApprovalData = {
     vp: string;
+    childDid: string;
     expiresAt: number;
 };
+
+const APPROVAL_EXPIRY_MARGIN_MS = 60_000;
 
 export const guardianApprovalStore = createStore('guardianApprovalStore')<{
     approvalsByParentDid: Record<string, GuardianApprovalData>;
@@ -11,10 +14,10 @@ export const guardianApprovalStore = createStore('guardianApprovalStore')<{
     approvalsByParentDid: {},
 })
     .extendActions((set, get) => ({
-        setApproval: (parentDid: string, vp: string, expiresAt: number) => {
+        setApproval: (parentDid: string, childDid: string, vp: string, expiresAt: number) => {
             set.approvalsByParentDid({
                 ...get.approvalsByParentDid(),
-                [parentDid]: { vp, expiresAt },
+                [parentDid]: { childDid, vp, expiresAt },
             });
         },
         clearApproval: (parentDid: string) => {
@@ -27,22 +30,26 @@ export const guardianApprovalStore = createStore('guardianApprovalStore')<{
         },
     }))
     .extendSelectors((state, get) => ({
-        getApproval: (parentDid: string): string | undefined => {
+        getApproval: (parentDid: string, childDid: string): string | undefined => {
             const data = state.approvalsByParentDid[parentDid];
-            if (!data) return undefined;
-            if (Date.now() > data.expiresAt) {
+            if (
+                !data ||
+                data.childDid !== childDid ||
+                Date.now() >= data.expiresAt - APPROVAL_EXPIRY_MARGIN_MS
+            ) {
                 return undefined;
             }
             return data.vp;
         },
     }));
 
-export const getGuardianApprovalVP = (): string | undefined => {
+export const getGuardianApprovalVP = (childDid: string | undefined): string | undefined => {
+    if (!childDid) return undefined;
     const approvals = guardianApprovalStore.get.approvalsByParentDid();
     const now = Date.now();
 
     for (const [_parentDid, data] of Object.entries(approvals)) {
-        if (data.expiresAt > now) {
+        if (data.childDid === childDid && data.expiresAt - APPROVAL_EXPIRY_MARGIN_MS > now) {
             return data.vp;
         }
     }

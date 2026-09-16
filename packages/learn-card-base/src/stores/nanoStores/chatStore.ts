@@ -8,8 +8,9 @@ import { showToast } from './toastStore';
 import { showErrorModal } from './ErrorModalStore';
 
 import { networkStore } from '../NetworkStore';
-import { walletStore } from '../walletStore';
+import { switchedProfileStore, walletStore } from '../walletStore';
 import { addActiveLocaleToPayload, addActiveLocaleToUrl } from '../../i18n';
+import type { BespokeLearnCard } from '../../types/learn-card';
 import type {
     ChatMessage,
     Thread,
@@ -24,8 +25,9 @@ import {
     getAiPassportAuthMode,
     getAiPassportWebSocketProtocols,
     getAiPassportUrl,
-    waitForAiPassportAuthMode,
+    type AiPassportAuthMode,
 } from '../../helpers/aiPassportAuth';
+import { createDeferred } from '../../helpers/deferred';
 
 export const messages = atom<ChatMessage[]>([]);
 export const streamingMessage = atom<ChatMessage | null>(null);
@@ -116,20 +118,12 @@ export const planSections = atom({
 
 export const getBackendUrl = (): string => networkStore.get.aiServiceUrl();
 
-const ensureChatAiPassportAuth = async (did: string, refreshLegacy = false) => {
-    const mode = getAiPassportAuthMode(did);
-
-    if (mode && (!refreshLegacy || mode === 'session')) return mode;
-
+const ensureChatAiPassportAuth = async (did: string): Promise<AiPassportAuthMode> => {
     const wallet = walletStore.get.wallet();
-
-    if (wallet) return ensureAiPassportSession(wallet);
-
-    const pendingMode = await waitForAiPassportAuthMode(did);
-
-    if (pendingMode) return pendingMode;
-
-    throw new Error('AI Passport authentication requires an initialized wallet');
+    if (!wallet) throw new Error('AI Passport authentication requires an initialized wallet');
+    if (wallet.id.did() !== did) throw new Error('AI Passport wallet identity mismatch');
+    if (getAiPassportAuthMode(did) === 'session') return 'session';
+    return ensureAiPassportSession(wallet);
 };
 
 /** @deprecated Use getBackendUrl() for dynamic tenant-aware URL */
@@ -231,6 +225,20 @@ let shouldReconnect = true;
 let reconnectTimer: number | undefined;
 let socketConnection: Promise<WebSocket | null> | null = null;
 let connectionGeneration = 0;
+let connectionIdentity: {
+    wallet: BespokeLearnCard | null;
+    did: string | null;
+    serviceUrl: string;
+    switchedDid: string | undefined;
+} | null = null;
+
+const isCurrentConnectionIdentity = (): boolean =>
+    connectionIdentity !== null &&
+    connectionIdentity.wallet === walletStore.get.wallet() &&
+    connectionIdentity.did === auth.get().did &&
+    connectionIdentity.did === walletStore.get.wallet()?.id.did() &&
+    connectionIdentity.serviceUrl === getBackendUrl() &&
+    connectionIdentity.switchedDid === switchedProfileStore.get.switchedDid();
 
 const clearReconnectTimer = () => {
     if (reconnectTimer === undefined) return;
@@ -555,20 +563,23 @@ const reconnectWebSocket = async (): Promise<void> => {
     }
 
     reconnectAttempts += 1;
+    const generation = connectionGeneration;
 
     try {
-        await ensureChatAiPassportAuth(did, true);
+        await ensureChatAiPassportAuth(did);
 
-        if (!shouldReconnect) return;
+        if (!shouldReconnect || generation !== connectionGeneration) return;
 
         await connectWebSocket();
     } catch (error) {
+        if (generation !== connectionGeneration) return;
         log.error('WebSocket reconnect failed:', error);
         scheduleReconnect();
     }
 };
 
 export function connectWebSocket(): Promise<WebSocket | null> {
+    if (connectionIdentity && !isCurrentConnectionIdentity()) invalidateChatIdentity();
     if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
         return Promise.resolve(ws);
     }
@@ -577,6 +588,12 @@ export function connectWebSocket(): Promise<WebSocket | null> {
 
     shouldReconnect = true;
     const generation = connectionGeneration;
+    connectionIdentity = {
+        wallet: walletStore.get.wallet(),
+        did: auth.get().did,
+        serviceUrl: getBackendUrl(),
+        switchedDid: switchedProfileStore.get.switchedDid(),
+    };
     const request = createWebSocket(generation);
 
     socketConnection = request;
@@ -595,23 +612,33 @@ export function connectWebSocket(): Promise<WebSocket | null> {
 const createWebSocket = async (generation: number): Promise<WebSocket | null> => {
     const { did } = auth.get();
     if (!did) throw new Error('Authentication required');
+    const serviceUrl = getBackendUrl();
 
-    const wsUrl = getAiPassportUrl('/', did);
+    const wsUrl = getAiPassportUrl('/');
 
     wsUrl.protocol = wsUrl.protocol === 'https:' ? 'wss:' : 'ws:';
     if (currentThreadId.get()) wsUrl.searchParams.set('threadId', currentThreadId.get() ?? '');
 
     const protocols = await getAiPassportWebSocketProtocols(did);
 
-    if (!shouldReconnect || generation !== connectionGeneration) return null;
+    if (
+        !shouldReconnect ||
+        generation !== connectionGeneration ||
+        !isCurrentConnectionIdentity() ||
+        auth.get().did !== did ||
+        walletStore.get.wallet()?.id.did() !== did ||
+        getBackendUrl() !== serviceUrl ||
+        getAiPassportAuthMode(did) !== 'session'
+    )
+        return null;
 
-    ws = protocols
-        ? new WebSocket(addActiveLocaleToUrl(wsUrl.toString()), protocols)
-        : new WebSocket(addActiveLocaleToUrl(wsUrl.toString()));
+    ws = new WebSocket(addActiveLocaleToUrl(wsUrl.toString()), protocols);
     const socket = ws;
+    const isCurrentSocket = (): boolean =>
+        ws === socket && generation === connectionGeneration && isCurrentConnectionIdentity();
 
     ws.onmessage = event => {
-        if (ws !== socket) return;
+        if (!isCurrentSocket()) return;
 
         try {
             const data = JSON.parse(event.data);
@@ -1101,7 +1128,7 @@ const createWebSocket = async (generation: number): Promise<WebSocket | null> =>
     };
 
     ws.onopen = () => {
-        if (ws !== socket) return;
+        if (!isCurrentSocket()) return;
         reconnectAttempts = 0;
         clearReconnectTimer();
         readyListeners.forEach(fn => fn());
@@ -1109,7 +1136,7 @@ const createWebSocket = async (generation: number): Promise<WebSocket | null> =>
     };
 
     ws.onclose = () => {
-        if (ws !== socket) return;
+        if (!isCurrentSocket()) return;
 
         preservePartialStreamingMessage();
 
@@ -1122,7 +1149,7 @@ const createWebSocket = async (generation: number): Promise<WebSocket | null> =>
     };
 
     ws.onerror = err => {
-        if (ws !== socket) return;
+        if (!isCurrentSocket()) return;
         log.error('WebSocket error:', err);
         const responsePending = isTyping.get() || isLoading.get() || !!streamingMessage.get();
         if (!responsePending) return;
@@ -1288,7 +1315,7 @@ export async function startTopicWithUri(topicUri: string) {
     // in-flight connection generation when negotiation completes.
     disconnectWebSocket();
     currentThreadId.set(null);
-    await ensureChatAiPassportAuth(did, true);
+    await ensureChatAiPassportAuth(did);
 
     // Ensure WebSocket connection is established
     if (!ws || ws.readyState !== WebSocket.OPEN) {
@@ -1329,7 +1356,7 @@ const waitForSocketConnection = (): Promise<void> => {
         return Promise.reject(new Error('WebSocket connection cancelled'));
     }
 
-    const { promise, reject, resolve } = Promise.withResolvers<void>();
+    const { promise, reject, resolve } = createDeferred<void>();
     let unsubscribe = () => {};
     const timeout = window.setTimeout(() => {
         unsubscribe();
@@ -1369,7 +1396,7 @@ export async function startLearningPathway(topicUri: string, pathwayUri: string)
     // Cancel the previous socket before auth negotiation begins.
     disconnectWebSocket();
     currentThreadId.set(null);
-    await ensureChatAiPassportAuth(did, true);
+    await ensureChatAiPassportAuth(did);
 
     // Ensure WebSocket connection is established
     if (!ws || ws.readyState !== WebSocket.OPEN) {
@@ -1416,7 +1443,7 @@ export async function startTopic(topic: string, mode: AiSessionMode = AiSessionM
     }
 
     disconnectWebSocket();
-    await ensureChatAiPassportAuth(did, true);
+    await ensureChatAiPassportAuth(did);
 
     if (!ws || ws.readyState !== WebSocket.OPEN) {
         try {
@@ -1470,7 +1497,7 @@ export async function startInsightsSession(topic: string, initialText?: string) 
     currentThreadId.set(null);
 
     try {
-        await ensureChatAiPassportAuth(did, true);
+        await ensureChatAiPassportAuth(did);
         await connectWebSocket();
         await waitForSocketConnection();
     } catch (error) {
@@ -1611,18 +1638,38 @@ export function disconnectWebSocket() {
     connectionGeneration += 1;
     clearReconnectTimer();
     socketConnection = null;
+    connectionIdentity = null;
     readyListeners = [];
 
-    if (ws) {
+    const socket = ws;
+    ws = null;
+    if (socket) {
         try {
-            ws.close();
+            socket.close();
         } catch (e) {
             log.error('WebSocket close error:', e);
         }
-
-        ws = null;
     }
 }
+
+const invalidateChatIdentity = (): void => {
+    disconnectWebSocket();
+    reconnectAttempts = 0;
+    resetChatStores();
+};
+
+walletStore.store.subscribe((state, previous) => {
+    if (state.wallet !== previous.wallet) invalidateChatIdentity();
+});
+switchedProfileStore.store.subscribe((state, previous) => {
+    if (state.switchedDid !== previous.switchedDid) invalidateChatIdentity();
+});
+networkStore.store.subscribe((state, previous) => {
+    if (state.aiServiceUrl !== previous.aiServiceUrl) invalidateChatIdentity();
+});
+auth.listen((state, previous) => {
+    if (state.did !== previous.did) invalidateChatIdentity();
+});
 
 // Send a payload as soon as the socket is open. Avoids polling setTimeout loops
 // for the "send right after connect" race that can otherwise add up to 100ms of

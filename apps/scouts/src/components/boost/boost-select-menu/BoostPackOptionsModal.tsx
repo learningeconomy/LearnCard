@@ -130,7 +130,7 @@ export const BoostPackOptionsModal: React.FC<{
                             const badgePackItemsCount =
                                 category === BoostCategoryOptionsEnum.meritBadge
                                     ? defaultBadgePacks[badgePackOption.type]?.length
-                                    : CATEGORY_TO_SUBCATEGORY_LIST[category]?.length ?? 0;
+                                    : (CATEGORY_TO_SUBCATEGORY_LIST[category]?.length ?? 0);
 
                             return (
                                 <BoostPackOptionItem

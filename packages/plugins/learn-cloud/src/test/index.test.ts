@@ -9,6 +9,7 @@ const makeMockClient = (learnCloudDid = 'did:key:z6MkLearnCloud') => ({
         getDid: { query: vi.fn().mockResolvedValue(learnCloudDid) },
     },
     customStorage: {
+        count: { query: vi.fn().mockResolvedValue(0) },
         create: { mutate: vi.fn().mockResolvedValue('lc:cloud:credential') },
     },
     storage: {
@@ -45,8 +46,8 @@ const makeLearnCard = (did = 'did:key:z6MkHolder') => ({
     invoke: {
         getDidAuthVp: vi.fn().mockResolvedValue('did-auth-jwt'),
         decryptDagJwe: vi.fn(async value => value),
-        createDagJwe: vi.fn(async (value, recipients) => ({ value, recipients })),
-        hash: vi.fn().mockResolvedValue('hashed-field'),
+        createDagJwe: vi.fn(async () => ({ ciphertext: 'encrypted' })),
+        hash: vi.fn(async value => `hash:${value}`),
     },
     debug: vi.fn(),
 });
@@ -57,36 +58,203 @@ describe('LearnCloud Plugin', () => {
         mockGetClient.mockResolvedValue(mockClient);
     });
 
-    it('exposes a function', () => {
-        expect(getLearnCloudPlugin).toBeDefined();
+    it('defers remote identity requests until a method needs them', async () => {
+        await getLearnCloudPlugin(makeLearnCard() as never, 'https://cloud.example');
+
+        expect(mockClient.user.getDids.query).not.toHaveBeenCalled();
+        expect(mockClient.utilities.getDid.query).not.toHaveBeenCalled();
     });
 
-    it('refreshes the LearnCloud DID after switching authenticated clients', async () => {
-        const initialClient = makeMockClient('did:web:cloud-one.example');
-        const switchedClient = makeMockClient('did:web:cloud-two.example');
-        mockGetClient.mockResolvedValueOnce(initialClient).mockResolvedValueOnce(switchedClient);
-
-        const initialLearnCard = makeLearnCard('did:key:holder-one');
-        const switchedLearnCard = makeLearnCard('did:key:holder-two');
+    it('does not load associated DIDs when automatic association is disabled', async () => {
+        const learnCard = makeLearnCard();
         const plugin = await getLearnCloudPlugin(
-            initialLearnCard as never,
+            learnCard as never,
             'https://cloud.example',
             [],
             [],
             false
         );
 
-        await plugin.methods.learnCloudCreate(initialLearnCard as never, { id: 'first' });
-        await plugin.methods.learnCloudCreate(switchedLearnCard as never, { id: 'second' });
+        await plugin.methods.learnCloudCount(
+            makeLearnCard('did:web:holder.example') as never,
+            undefined as never,
+            false
+        );
 
-        expect(initialClient.utilities.getDid.query).toHaveBeenCalledTimes(1);
-        expect(switchedClient.utilities.getDid.query).toHaveBeenCalledTimes(1);
-        expect(initialLearnCard.invoke.createDagJwe).toHaveBeenLastCalledWith(expect.any(Object), [
-            'did:web:cloud-one.example',
+        expect(mockClient.user.getDids.query).not.toHaveBeenCalled();
+        expect(mockClient.customStorage.count.query).toHaveBeenCalledWith({
+            includeAssociatedDids: false,
+        });
+    });
+
+    it('refreshes the LearnCloud recipient DID after the active wallet changes', async () => {
+        const firstClient = {
+            ...mockClient,
+            utilities: {
+                getDid: { query: vi.fn().mockResolvedValue('did:key:z6MkFirstLearnCloud') },
+            },
+            customStorage: {
+                ...mockClient.customStorage,
+                create: { mutate: vi.fn().mockResolvedValue('first-record') },
+            },
+        };
+        const secondClient = {
+            ...mockClient,
+            utilities: {
+                getDid: { query: vi.fn().mockResolvedValue('did:key:z6MkSecondLearnCloud') },
+            },
+            customStorage: {
+                ...mockClient.customStorage,
+                create: { mutate: vi.fn().mockResolvedValue('second-record') },
+            },
+        };
+        mockGetClient.mockResolvedValueOnce(firstClient).mockResolvedValueOnce(secondClient);
+
+        const firstLearnCard = makeLearnCard('did:key:z6MkFirstHolder');
+        const secondLearnCard = makeLearnCard('did:key:z6MkSecondHolder');
+        const plugin = await getLearnCloudPlugin(
+            firstLearnCard as never,
+            'https://cloud.example',
+            [],
+            [],
+            false
+        );
+
+        await plugin.methods.learnCloudCreate(firstLearnCard as never, { id: 'first' });
+        await plugin.methods.learnCloudCreate(secondLearnCard as never, { id: 'second' });
+
+        expect(firstClient.utilities.getDid.query).toHaveBeenCalledTimes(1);
+        expect(secondClient.utilities.getDid.query).toHaveBeenCalledTimes(1);
+        expect(firstLearnCard.invoke.createDagJwe).toHaveBeenLastCalledWith(expect.anything(), [
+            'did:key:z6MkFirstLearnCloud',
         ]);
-        expect(switchedLearnCard.invoke.createDagJwe).toHaveBeenLastCalledWith(expect.any(Object), [
-            'did:web:cloud-two.example',
+        expect(secondLearnCard.invoke.createDagJwe).toHaveBeenLastCalledWith(expect.anything(), [
+            'did:key:z6MkSecondLearnCloud',
         ]);
+    });
+
+    it('keeps an in-flight write bound to the wallet client that encrypted it', async () => {
+        const firstClient = {
+            ...mockClient,
+            utilities: {
+                getDid: { query: vi.fn().mockResolvedValue('did:key:z6MkFirstLearnCloud') },
+            },
+            customStorage: {
+                ...mockClient.customStorage,
+                create: { mutate: vi.fn().mockResolvedValue('first-record') },
+            },
+        };
+        const secondClient = {
+            ...mockClient,
+            utilities: {
+                getDid: { query: vi.fn().mockResolvedValue('did:key:z6MkSecondLearnCloud') },
+            },
+            customStorage: {
+                ...mockClient.customStorage,
+                create: { mutate: vi.fn().mockResolvedValue('second-record') },
+            },
+        };
+        mockGetClient.mockResolvedValueOnce(firstClient).mockResolvedValueOnce(secondClient);
+
+        const firstLearnCard = makeLearnCard('did:key:z6MkFirstHolder');
+        const secondLearnCard = makeLearnCard('did:key:z6MkSecondHolder');
+        let releaseFirstEncryption: (() => void) | undefined;
+        let markFirstEncryptionStarted: (() => void) | undefined;
+        const firstEncryptionStarted = new Promise<void>(resolve => {
+            markFirstEncryptionStarted = resolve;
+        });
+        const firstEncryptionReleased = new Promise<void>(resolve => {
+            releaseFirstEncryption = resolve;
+        });
+        let firstEncryptionCalls = 0;
+
+        firstLearnCard.invoke.createDagJwe.mockImplementation(async () => {
+            firstEncryptionCalls += 1;
+
+            if (firstEncryptionCalls === 2) {
+                markFirstEncryptionStarted?.();
+                await firstEncryptionReleased;
+            }
+
+            return { ciphertext: `first-${firstEncryptionCalls}` };
+        });
+
+        const plugin = await getLearnCloudPlugin(
+            firstLearnCard as never,
+            'https://cloud.example',
+            [],
+            [],
+            false
+        );
+        const firstWrite = plugin.methods.learnCloudCreate(firstLearnCard as never, {
+            id: 'first',
+        });
+
+        await firstEncryptionStarted;
+
+        const secondWrite = plugin.methods.learnCloudCreate(secondLearnCard as never, {
+            id: 'second',
+        });
+
+        await secondWrite;
+        releaseFirstEncryption?.();
+        await firstWrite;
+
+        expect(firstClient.customStorage.create.mutate).toHaveBeenCalledWith({
+            item: { ciphertext: 'first-2' },
+        });
+        expect(secondClient.customStorage.create.mutate).toHaveBeenCalledTimes(1);
+    });
+
+    it('keys cross-cloud clients by both URL and active wallet DID', async () => {
+        const otherAuthCallbacks: Array<(challenge: string) => Promise<string>> = [];
+        const crossCloudClient = {
+            ...mockClient,
+            storage: {
+                ...mockClient.storage,
+                resolve: { query: vi.fn().mockResolvedValue(makeW3cVc()) },
+            },
+        };
+
+        mockGetClient.mockImplementation(
+            async (clientUrl: string, authenticate: (challenge: string) => Promise<string>) => {
+                if (clientUrl === 'https://other.example') {
+                    otherAuthCallbacks.push(authenticate);
+
+                    return crossCloudClient;
+                }
+
+                return mockClient;
+            }
+        );
+
+        const firstLearnCard = makeLearnCard('did:key:z6MkFirstHolder');
+        const secondLearnCard = makeLearnCard('did:key:z6MkSecondHolder');
+        const plugin = await getLearnCloudPlugin(
+            firstLearnCard as never,
+            'https://cloud.example',
+            [],
+            [],
+            false
+        );
+        const uri = 'lc:cloud:other.example:credential:1';
+
+        await plugin.read.get(firstLearnCard as never, uri);
+        await plugin.read.get(secondLearnCard as never, uri);
+
+        expect(otherAuthCallbacks).toHaveLength(2);
+
+        await otherAuthCallbacks[0]!('first-challenge');
+        await otherAuthCallbacks[1]!('second-challenge');
+
+        expect(firstLearnCard.invoke.getDidAuthVp).toHaveBeenCalledWith({
+            proofFormat: 'jwt',
+            challenge: 'first-challenge',
+        });
+        expect(secondLearnCard.invoke.getDidAuthVp).toHaveBeenCalledWith({
+            proofFormat: 'jwt',
+            challenge: 'second-challenge',
+        });
     });
 
     it('projects envelope-backed credentials in learnCloudBatchResolve', async () => {

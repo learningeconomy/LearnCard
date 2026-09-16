@@ -751,12 +751,12 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                                 validationStatus === 'valid'
                                     ? 'bg-emerald-100 text-emerald-700'
                                     : validationStatus === 'invalid'
-                                    ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                                    : validationStatus === 'dirty'
-                                    ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
-                                    : validationStatus === 'validating'
-                                    ? 'bg-blue-100 text-blue-700'
-                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                      ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                                      : validationStatus === 'dirty'
+                                        ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                                        : validationStatus === 'validating'
+                                          ? 'bg-blue-100 text-blue-700'
+                                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                             }`}
                             title={
                                 validationStatus === 'valid'
@@ -764,27 +764,27 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                                           'developerPortal.credentialBuilder.validate.tooltip.valid'
                                       ]()
                                     : validationStatus === 'invalid' && analyzedError
-                                    ? m[
-                                          'developerPortal.credentialBuilder.validate.tooltip.invalidWithSuggestions'
-                                      ]({
-                                          summary: analyzedError.summary,
-                                          suggestions: analyzedError.suggestions.join('\n• '),
-                                      })
-                                    : validationStatus === 'invalid'
-                                    ? m[
-                                          'developerPortal.credentialBuilder.validate.tooltip.invalidGeneric'
-                                      ]({ error: validationError || '' })
-                                    : validationStatus === 'dirty'
-                                    ? m[
-                                          'developerPortal.credentialBuilder.validate.tooltip.dirty'
-                                      ]()
-                                    : validationStatus === 'validating'
-                                    ? m[
-                                          'developerPortal.credentialBuilder.validate.tooltip.validating'
-                                      ]()
-                                    : m[
-                                          'developerPortal.credentialBuilder.validate.tooltip.clickToValidate'
-                                      ]()
+                                      ? m[
+                                            'developerPortal.credentialBuilder.validate.tooltip.invalidWithSuggestions'
+                                        ]({
+                                            summary: analyzedError.summary,
+                                            suggestions: analyzedError.suggestions.join('\n• '),
+                                        })
+                                      : validationStatus === 'invalid'
+                                        ? m[
+                                              'developerPortal.credentialBuilder.validate.tooltip.invalidGeneric'
+                                          ]({ error: validationError || '' })
+                                        : validationStatus === 'dirty'
+                                          ? m[
+                                                'developerPortal.credentialBuilder.validate.tooltip.dirty'
+                                            ]()
+                                          : validationStatus === 'validating'
+                                            ? m[
+                                                  'developerPortal.credentialBuilder.validate.tooltip.validating'
+                                              ]()
+                                            : m[
+                                                  'developerPortal.credentialBuilder.validate.tooltip.clickToValidate'
+                                              ]()
                             }
                         >
                             {validationStatus === 'validating' ? (
@@ -802,12 +802,16 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                                 {validationStatus === 'validating'
                                     ? m['developerPortal.credentialBuilder.validate.validating']()
                                     : validationStatus === 'valid'
-                                    ? m['developerPortal.credentialBuilder.validate.valid']()
-                                    : validationStatus === 'invalid'
-                                    ? m['developerPortal.credentialBuilder.validate.invalid']()
-                                    : validationStatus === 'dirty'
-                                    ? m['developerPortal.credentialBuilder.validate.changed']()
-                                    : m['developerPortal.credentialBuilder.validate.validate']()}
+                                      ? m['developerPortal.credentialBuilder.validate.valid']()
+                                      : validationStatus === 'invalid'
+                                        ? m['developerPortal.credentialBuilder.validate.invalid']()
+                                        : validationStatus === 'dirty'
+                                          ? m[
+                                                'developerPortal.credentialBuilder.validate.changed'
+                                            ]()
+                                          : m[
+                                                'developerPortal.credentialBuilder.validate.validate'
+                                            ]()}
                             </span>
                         </button>
                     )}

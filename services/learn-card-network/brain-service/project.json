@@ -78,11 +78,30 @@
                 "script": "test"
             }
         },
-        "test:watch": {
-            "executor": "./tools/executors/workspace:run-command",
+        "typecheck": {
+            "executor": "nx:run-script",
+            "dependsOn": ["^build"],
             "options": {
-                "command": "bun run test:watch",
-                "cwd": "{root}/services/learn-card-network/brain-service"
+                "script": "typecheck"
+            }
+        },
+        "test:watch": {
+            "executor": "nx:run-script",
+            "options": {
+                "script": "test:watch"
+            }
+        },
+        "test:inbox:e2e": {
+            "executor": "nx:run-script",
+            "cache": false,
+            "inputs": [
+                "source",
+                "tests",
+                "{projectRoot}/vitest.inbox-e2e.config.ts",
+                "{projectRoot}/inbox-e2e-setup.ts"
+            ],
+            "options": {
+                "script": "test:inbox:e2e"
             }
         },
         "test:integration": {

@@ -1,6 +1,12 @@
 import { openAttachmentUrl as openSharedAttachmentUrl } from 'learn-card-base/helpers/openAttachmentUrl';
 
-import type { CourseDisplayModel, EvidenceDisplayModel } from '../../helpers/clrRenderer.helpers';
+import type {
+    AssessmentDisplayModel,
+    CourseDisplayModel,
+    EvidenceDisplayModel,
+    ResultDisplayModel,
+    RubricLevelDisplayModel,
+} from '../../helpers/clrRenderer.helpers';
 
 /** Keeps the evidence picker focused on items that can actually be downloaded. */
 export const getDownloadableEvidence = (evidence: EvidenceDisplayModel[]): EvidenceDisplayModel[] =>
@@ -8,14 +14,14 @@ export const getDownloadableEvidence = (evidence: EvidenceDisplayModel[]): Evide
 
 /** Builds a filesystem-safe filename while preserving a real extension when one is already present. */
 export const toSafeFileName = (name: string | undefined, mimeType: string | undefined): string => {
-    const base = (name || 'evidence').trim().replace(/[^\w.\-]/g, '_');
+    const base = (name || 'evidence').trim().replace(/[^\w.-]/g, '_');
     if (/\.\w{2,5}$/.test(base)) return base;
     const ext =
         mimeType === 'application/pdf'
             ? '.pdf'
             : mimeType?.startsWith('image/')
-            ? `.${mimeType.split('/')[1]}`
-            : '';
+              ? `.${mimeType.split('/')[1]}`
+              : '';
     return `${base}${ext}`;
 };
 
@@ -109,10 +115,75 @@ export const groupByTerm = (courses: CourseDisplayModel[]): TermGroup[] => {
         const label = course.term?.value
             ? course.term.value
             : course.earnedAt?.value
-            ? deriveDisplayTerm(course.earnedAt.value)
-            : 'Undated';
+              ? deriveDisplayTerm(course.earnedAt.value)
+              : 'Undated';
         if (!map.has(label)) map.set(label, []);
         map.get(label)!.push(course);
     }
     return Array.from(map.entries()).map(([label, c]) => ({ label, courses: c }));
+};
+
+export type AssessmentSummary = {
+    /** Big number / level shown in the row, e.g. `28` for a composite score or `Integrating`. */
+    headline: string;
+    /** Secondary line, e.g. `5 scores` or `10 criteria`. */
+    detail: string;
+    progress?: { levels: RubricLevelDisplayModel[]; achieved?: RubricLevelDisplayModel };
+};
+
+const pickPrimaryScore = (results: ResultDisplayModel[]): ResultDisplayModel | undefined =>
+    results.find(r => /composite|total|overall/i.test(r.label?.value ?? '')) ?? results[0];
+
+/**
+ * Rubric assessments summarise to the level the learner reached most often; when several
+ * levels tie, the highest one on the scale wins.
+ */
+const modalRubricLevel = (
+    results: ResultDisplayModel[]
+): { levels: RubricLevelDisplayModel[]; achieved?: RubricLevelDisplayModel } | undefined => {
+    const withRubric = results.filter(r => r.rubricLevels && r.rubricLevels.length > 0);
+    if (withRubric.length === 0) return undefined;
+
+    const levels = withRubric[0].rubricLevels!;
+    const counts = new Map<string, number>();
+    withRubric.forEach(r => {
+        const name = r.achievedLevel?.name;
+        if (name) counts.set(name, (counts.get(name) ?? 0) + 1);
+    });
+
+    let achieved: RubricLevelDisplayModel | undefined;
+    let best = 0;
+    levels.forEach(level => {
+        const count = counts.get(level.name) ?? 0;
+        if (count >= best && count > 0) {
+            best = count;
+            achieved = level;
+        }
+    });
+
+    return { levels, achieved };
+};
+
+export const summarizeAssessment = (assessment: AssessmentDisplayModel): AssessmentSummary => {
+    const { results } = assessment;
+
+    if (assessment.isRubric) {
+        const progress = modalRubricLevel(results);
+        const criteria = results.length;
+
+        return {
+            headline: progress?.achieved?.name ?? `${criteria} criteria`,
+            detail: `${criteria} criteri${criteria === 1 ? 'on' : 'a'}`,
+            progress,
+        };
+    }
+
+    const primary = pickPrimaryScore(results);
+    const headline = primary ? String(primary.value.value) : '—';
+    const scale = primary?.valueMax?.value !== undefined ? ` of ${primary.valueMax.value}` : '';
+
+    return {
+        headline: `${headline}${scale}`,
+        detail: `${results.length} score${results.length !== 1 ? 's' : ''}`,
+    };
 };

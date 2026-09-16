@@ -16,7 +16,6 @@ import { CredentialCategoryEnum } from 'learn-card-base';
 import GrowSkillsPathwaysHome from './GrowSkillsPathwaysHome';
 import { useSkillProfileCompletion } from './ai-pathways-skill-profile/SkillProfileProgressBar';
 import { useGrowSkillsContent } from './useGrowSkillsContent';
-import AiPathwayCareerItem from './ai-pathway-careers/AiPathwayCareerItem';
 import AiPathwayCareers from './ai-pathway-careers/AiPathwayCareers';
 
 const AiPathways: React.FC = () => {

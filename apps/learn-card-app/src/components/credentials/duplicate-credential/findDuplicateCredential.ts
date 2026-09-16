@@ -5,6 +5,7 @@ import { getCategoryForCredential } from 'learn-card-base/hooks/useWallet';
 import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { stringify } from 'learn-card-base/helpers/jsonHelpers';
 
+import { createDeferred } from 'learn-card-base/helpers/deferred';
 export type ExistingCredentialMatch = {
     credential: VC;
     record: LCR;
@@ -83,7 +84,7 @@ const runWithinDuplicateScanBudget = async <T>(
         throw createIncompleteScanError('timeout');
     }
 
-    const { promise: timeout, reject } = Promise.withResolvers<never>();
+    const { promise: timeout, reject } = createDeferred<never>();
     const timeoutId = setTimeout(() => {
         reject(createIncompleteScanError('timeout'));
     }, remainingMs);

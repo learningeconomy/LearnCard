@@ -23,7 +23,12 @@ export interface QrLoginRequesterProps {
     serverUrl: string;
 
     /** Called when Device A approves and the device share is decrypted */
-    onApproved: (deviceShare: string, approverDid: string, accountHint?: string, shareVersion?: number) => void;
+    onApproved: (
+        deviceShare: string,
+        approverDid: string,
+        accountHint?: string,
+        shareVersion?: number
+    ) => void;
 
     /** Called when the user cancels */
     onCancel: () => void;
@@ -53,9 +58,21 @@ const formatTime = (seconds: number): string => {
 const StatusBadge: React.FC<{ status: QrRequesterStatus }> = ({ status }) => {
     const config: Record<QrRequesterStatus, { label: string; bg: string; dot: string } | null> = {
         idle: null,
-        creating: { label: 'Creating session...', bg: 'bg-grayscale-100 text-grayscale-700', dot: 'bg-grayscale-400' },
-        waiting: { label: 'Waiting for approval', bg: 'bg-amber-50 text-amber-700', dot: 'bg-amber-400 animate-pulse' },
-        approved: { label: 'Approved!', bg: 'bg-emerald-50 text-emerald-700', dot: 'bg-emerald-500' },
+        creating: {
+            label: 'Creating session...',
+            bg: 'bg-grayscale-100 text-grayscale-700',
+            dot: 'bg-grayscale-400',
+        },
+        waiting: {
+            label: 'Waiting for approval',
+            bg: 'bg-amber-50 text-amber-700',
+            dot: 'bg-amber-400 animate-pulse',
+        },
+        approved: {
+            label: 'Approved!',
+            bg: 'bg-emerald-50 text-emerald-700',
+            dot: 'bg-emerald-500',
+        },
         expired: { label: 'Session expired', bg: 'bg-red-50 text-red-700', dot: 'bg-red-400' },
         error: { label: 'Connection error', bg: 'bg-red-50 text-red-700', dot: 'bg-red-400' },
     };
@@ -65,7 +82,9 @@ const StatusBadge: React.FC<{ status: QrRequesterStatus }> = ({ status }) => {
     if (!c) return null;
 
     return (
-        <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${c.bg}`}>
+        <div
+            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${c.bg}`}
+        >
             <span className={`w-2 h-2 rounded-full ${c.dot}`} />
             {c.label}
         </div>
@@ -106,7 +125,12 @@ export const QrLoginRequester: React.FC<QrLoginRequesterProps> = ({
     // Notify parent when approved
     useEffect(() => {
         if (status === 'approved' && deviceShare && approverDid) {
-            onApproved(deviceShare, approverDid, accountHint ?? undefined, shareVersion ?? undefined);
+            onApproved(
+                deviceShare,
+                approverDid,
+                accountHint ?? undefined,
+                shareVersion ?? undefined
+            );
         }
     }, [status, deviceShare, approverDid, accountHint, shareVersion, onApproved]);
 
@@ -119,10 +143,13 @@ export const QrLoginRequester: React.FC<QrLoginRequesterProps> = ({
         <div className="p-6 max-w-md mx-auto flex flex-col items-center font-poppins">
             {!hideHeader && (
                 <>
-                    <h2 className="text-xl font-semibold text-grayscale-900 mb-1 text-center">Sign In from Another Device</h2>
+                    <h2 className="text-xl font-semibold text-grayscale-900 mb-1 text-center">
+                        Sign In from Another Device
+                    </h2>
 
                     <p className="text-sm text-grayscale-600 mb-5 text-center leading-relaxed">
-                        Scan this QR code with a device that&apos;s already signed in, or enter the code manually.
+                        Scan this QR code with a device that&apos;s already signed in, or enter the
+                        code manually.
                     </p>
                 </>
             )}
@@ -143,7 +170,9 @@ export const QrLoginRequester: React.FC<QrLoginRequesterProps> = ({
             {/* Short code */}
             {status === 'waiting' && shortCode && (
                 <div className="mb-4 text-center">
-                    <p className="text-xs text-grayscale-500 mb-1">Or enter this code on your other device</p>
+                    <p className="text-xs text-grayscale-500 mb-1">
+                        Or enter this code on your other device
+                    </p>
 
                     <div className="font-mono text-3xl font-bold tracking-[0.3em] text-grayscale-900">
                         {shortCode}

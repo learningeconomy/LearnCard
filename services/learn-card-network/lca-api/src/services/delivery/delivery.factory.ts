@@ -13,25 +13,26 @@
  *   POSTMARK_FROM_EMAIL    — Email domain, e.g. "learncard.com" (required for Postmark)
  */
 
+import { environment } from '@environment';
 import { DeliveryService } from './delivery.service';
 import { LogAdapter } from './adapters/log.adapter';
 import { PostmarkAdapter } from './adapters/postmark.adapter';
 import { getFrom } from './from';
 
-const IS_TEST_ENVIRONMENT = process.env.NODE_ENV === 'test';
+const IS_TEST_ENVIRONMENT = environment.NODE_ENV === 'test';
 
 let cachedService: DeliveryService | null = null;
 
 export const getDeliveryService = (): DeliveryService => {
     if (cachedService) return cachedService;
 
-    if (IS_TEST_ENVIRONMENT || process.env.IS_CI || process.env.IS_E2E_TEST) {
+    if (IS_TEST_ENVIRONMENT || environment.IS_CI || environment.IS_E2E_TEST) {
         console.log('[delivery] Test environment detected. Using LogAdapter.');
         cachedService = new LogAdapter();
         return cachedService;
     }
 
-    const { POSTMARK_SERVER_TOKEN, POSTMARK_FROM_EMAIL } = process.env;
+    const { POSTMARK_SERVER_TOKEN, POSTMARK_FROM_EMAIL } = environment;
 
     if (POSTMARK_SERVER_TOKEN && POSTMARK_FROM_EMAIL) {
         console.log('[delivery] Postmark credentials found. Using PostmarkAdapter.');

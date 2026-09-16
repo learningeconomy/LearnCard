@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createDeferred } from './deferred';
 
 import type { BespokeLearnCard } from '../types/learn-card';
 
@@ -29,7 +30,7 @@ const response = () =>
         { status: 202 }
     );
 
-const wallet = (did: string) => ({ id: { did: () => did } } as unknown as BespokeLearnCard);
+const wallet = (did: string) => ({ id: { did: () => did } }) as unknown as BespokeLearnCard;
 
 describe('ensureCredentialIngestion', () => {
     beforeEach(() => {
@@ -63,25 +64,19 @@ describe('ensureCredentialIngestion', () => {
         );
     });
 
-    it('preserves the legacy ingestion identity only for a legacy backend', async () => {
-        const did = 'did:example:legacy-ingestion';
-
-        ensureAiPassportSessionMock.mockResolvedValueOnce('legacy');
-
-        await ensureCredentialIngestion(wallet(did), 'app_open');
-
-        expect(aiPassportFetchMock).toHaveBeenCalledWith(
-            '/credentials/ingestion',
-            expect.objectContaining({
-                body: JSON.stringify({ did, source: 'app_open' }),
-            }),
-            did
+    it('does not submit ingestion when session authentication fails', async () => {
+        ensureAiPassportSessionMock.mockRejectedValueOnce(
+            new Error('Session authentication failed')
         );
+        await expect(
+            ensureCredentialIngestion(wallet('did:example:auth-failure'), 'app_open')
+        ).rejects.toThrow('Session authentication failed');
+        expect(aiPassportFetchMock).not.toHaveBeenCalled();
     });
 
     it('keeps in-flight requests deduplicated beyond the success-cache window', async () => {
         const account = wallet('did:example:slow');
-        const pending = Promise.withResolvers<Response>();
+        const pending = createDeferred<Response>();
 
         aiPassportFetchMock.mockReturnValueOnce(pending.promise);
 

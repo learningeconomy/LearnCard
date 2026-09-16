@@ -1,4 +1,4 @@
-import dotenv from 'dotenv';
+import { environment } from '@environment';
 
 import { LCNNotification } from '@learncard/types';
 import { getMessaging, TokenMessage } from 'firebase-admin/messaging';
@@ -9,9 +9,7 @@ import { getTokensForDid } from '@accesslayer/pushtokens/read';
 import { FCMBulkSendResponse } from 'types/notifications';
 import { getUnreadNotificationsCountForDid } from './notifications.helpers';
 
-dotenv.config();
-
-const IS_TEST_ENVIRONMENT = process.env.NODE_ENV === 'test';
+const IS_TEST_ENVIRONMENT = environment.NODE_ENV === 'test';
 
 // Static value set by Firebase API: https://firebase.google.com/docs/cloud-messaging/send-message#send-a-batch-of-messages
 const FIREBASE_MAXIMUM_SEND_BATCH = 500;
@@ -62,10 +60,10 @@ const _constructMessage = (
     };
 
     // Add android icon to push notification
-    if (process.env.ANDROID_PUSH_ICON) {
+    if (environment.ANDROID_PUSH_ICON) {
         message.android = {
             notification: {
-                icon: process.env.ANDROID_PUSH_ICON,
+                icon: environment.ANDROID_PUSH_ICON,
             },
         };
     }

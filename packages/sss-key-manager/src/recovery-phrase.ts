@@ -27,7 +27,7 @@ function bytesToBits(bytes: Uint8Array): string {
         .join('');
 }
 
-function bitsToBytes(bits: string): Uint8Array {
+function bitsToBytes(bits: string): Uint8Array<ArrayBuffer> {
     const bytes = new Uint8Array(Math.ceil(bits.length / 8));
     for (let i = 0; i < bytes.length; i++) {
         bytes[i] = parseInt(bits.slice(i * 8, (i + 1) * 8).padEnd(8, '0'), 2);
@@ -35,7 +35,7 @@ function bitsToBytes(bits: string): Uint8Array {
     return bytes;
 }
 
-async function computeChecksum(data: Uint8Array): Promise<string> {
+async function computeChecksum(data: Uint8Array<ArrayBuffer>): Promise<string> {
     const hash = await crypto.subtle.digest('SHA-256', data);
     const hashBits = bytesToBits(new Uint8Array(hash));
     const checksumLength = Math.floor(data.length / 4);
@@ -98,7 +98,7 @@ export async function recoveryPhraseToShare(phrase: string): Promise<string> {
 
     const checksumLength = Math.floor(dataByteCount / 4);
     const dataBitCount = dataByteCount * 8;
-    
+
     const dataBits = bits.slice(0, dataBitCount);
     const checksumBits = bits.slice(dataBitCount, dataBitCount + checksumLength);
 
@@ -127,5 +127,8 @@ export async function validateRecoveryPhrase(phrase: string): Promise<boolean> {
 }
 
 export function countWords(phrase: string): number {
-    return phrase.trim().split(/\s+/).filter(w => w.length > 0).length;
+    return phrase
+        .trim()
+        .split(/\s+/)
+        .filter(w => w.length > 0).length;
 }

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createDeferred } from './deferred';
 
 const mocks = vi.hoisted(() => ({
     getLCAPlugin: vi.fn(async () => ({})),
@@ -65,7 +66,7 @@ describe('wallet promise caches', () => {
 
     it('shares one in-flight bespoke wallet build for the same cache key', async () => {
         const wallet = createWallet();
-        const build = Promise.withResolvers<typeof wallet>();
+        const build = createDeferred<typeof wallet>();
         mocks.initLearnCard.mockReturnValue(build.promise);
 
         const first = getBespokeLearnCard('seed');
@@ -83,7 +84,7 @@ describe('wallet promise caches', () => {
 
     it('evicts a rejected bespoke wallet build so the next call retries', async () => {
         const failure = new Error('wallet build failed');
-        const failedBuild = Promise.withResolvers<unknown>();
+        const failedBuild = createDeferred<unknown>();
         mocks.initLearnCard.mockReturnValueOnce(failedBuild.promise);
 
         const first = getBespokeLearnCard('seed');
@@ -100,7 +101,7 @@ describe('wallet promise caches', () => {
 
     it('shares one in-flight signing wallet build for the same seed', async () => {
         const wallet = createWallet();
-        const build = Promise.withResolvers<typeof wallet>();
+        const build = createDeferred<typeof wallet>();
         mocks.initLearnCard.mockReturnValue(build.promise);
 
         const first = getSigningLearnCard('seed');
@@ -117,7 +118,7 @@ describe('wallet promise caches', () => {
 
     it('evicts a rejected signing wallet build so the next call retries', async () => {
         const failure = new Error('signing wallet build failed');
-        const failedBuild = Promise.withResolvers<unknown>();
+        const failedBuild = createDeferred<unknown>();
         mocks.initLearnCard.mockReturnValueOnce(failedBuild.promise);
 
         const first = getSigningLearnCard('seed');

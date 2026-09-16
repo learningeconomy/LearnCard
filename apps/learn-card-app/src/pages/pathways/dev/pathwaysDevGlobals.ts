@@ -5,7 +5,7 @@ const log = getLogger('pathways-dev-globals');
  *
  * Rather than build a dedicated dev-panel UI (a whole component tree that
  * nobody will look at outside of a demo), we expose the three useful
- * commands on `window.__pathwaysDev` behind `import.meta.env.DEV`. The
+ * commands on `window.__pathwaysDev` behind the validated development-mode flag. The
  * install is idempotent; calling it twice does nothing on the second pass.
  *
  * Typical demo flow from a fresh clone:
@@ -24,7 +24,7 @@ const log = getLogger('pathways-dev-globals');
  * commit path fires end-to-end without needing a real issuer.
  *
  * Note: the console.info calls in this file are intentionally raw. This module
- * is gated by `import.meta.env.DEV` and the output is direct feedback for the
+ * is gated by the validated development-mode flag and the output is direct feedback for the
  * dev typing commands into the browser console — it is not application logging
  * and should not be routed through the Sentry transport.
  */
@@ -32,6 +32,7 @@ const log = getLogger('pathways-dev-globals');
 import { v4 as uuid } from 'uuid';
 
 import { pathwayStore, proposalStore } from '../../../stores/pathways';
+import { environment } from '../../../config/environment';
 import { bindCredentialToOutcomes } from '../agents/credentialBinder';
 import type { VcLike } from '../core/outcomeMatcher';
 import { pathwayProgressReactor } from '../events/pathwayProgressReactor';
@@ -631,7 +632,7 @@ let installed = false;
 
 export const installPathwaysDevGlobals = (): void => {
     if (installed) return;
-    if (!import.meta.env.DEV) return;
+    if (!environment.DEV) return;
     if (typeof window === 'undefined') return;
 
     installed = true;

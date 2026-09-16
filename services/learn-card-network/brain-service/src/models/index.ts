@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import { neogma } from '@instance';
 
 import { Boost } from './Boost';
@@ -11,11 +12,24 @@ import { Tag } from './Tag';
 import { AppStoreListing } from './AppStoreListing';
 import { Integration } from './Integration';
 import { CredentialActivity } from './CredentialActivity';
+import { CredentialRefresh } from './CredentialRefresh';
 import { StatusList } from './StatusList';
 import { ContactMethod } from './ContactMethod';
+import { ensureCredentialRefreshConstraints } from './credential-refresh-constraints';
 
 // Ensure CredentialActivity model is registered by referencing it
 void CredentialActivity;
+
+CredentialRefresh.addRelationships({
+    issuer: { model: Profile, direction: 'in', name: 'ISSUED_REFRESH' },
+    holder: { model: Profile, direction: 'in', name: 'HELD_REFRESH' },
+    root: { model: Credential, direction: 'out', name: 'ROOT' },
+    head: { model: Credential, direction: 'out', name: 'HEAD' },
+});
+
+// (Credential)-[:REFRESHED_TO]->(Credential) version-chain edges are created by the
+// credential-refresh access layer via raw Cypher so version nodes can carry refresh
+// metadata that is intentionally not part of the shared Credential schema.
 
 Credential.addRelationships({
     credentialReceived: {
@@ -110,8 +124,7 @@ ContactMethod.addRelationships({
 });
 
 const shouldCreateIndices =
-    process.env.NODE_ENV === 'production' ||
-    (process.env.NEO4J_SKIP_INDICES !== 'true' && process.env.NEO4J_SKIP_INDICES !== '1');
+    environment.NODE_ENV === 'production' || !environment.NEO4J_SKIP_INDICES;
 
 const indexQueries = [
     'CREATE INDEX profileId_idx IF NOT EXISTS FOR (p:Profile) ON (p.profileId)',
@@ -125,6 +138,8 @@ const indexQueries = [
     'CREATE INDEX profilemanager_id_idx IF NOT EXISTS FOR (p:ProfileManager) ON (p.id)',
     'CREATE INDEX profile_manager_created_idx IF NOT EXISTS FOR (p:ProfileManager) ON (p.created)',
     'CREATE INDEX role_id_idx IF NOT EXISTS FOR (r:Role) ON (r.id)',
+    'CREATE INDEX inbox_delivery_recipient_idx IF NOT EXISTS FOR (i:InboxCredential) ON (i.deliveryRecipientDid)',
+    'CREATE INDEX inbox_delivery_expires_idx IF NOT EXISTS FOR (i:InboxCredential) ON (i.deliveryExpiresAt)',
     'CREATE INDEX inbox_credential_status_idx IF NOT EXISTS FOR (i:InboxCredential) ON (i.currentStatus)',
     'CREATE INDEX inbox_credential_expires_idx IF NOT EXISTS FOR (i:InboxCredential) ON (i.expiresAt)',
     'CREATE INDEX inbox_credential_created_idx IF NOT EXISTS FOR (i:InboxCredential) ON (i.createdAt)',
@@ -170,6 +185,8 @@ const indexQueries = [
     'CREATE INDEX bitstring_status_list_url_idx IF NOT EXISTS FOR (s:BitstringStatusList) ON (s.statusListCredential)',
     'CREATE CONSTRAINT contact_method_type_value_unique IF NOT EXISTS FOR (c:ContactMethod) REQUIRE (c.type, c.value) IS UNIQUE',
     'CREATE INDEX contact_method_primary_idx IF NOT EXISTS FOR (c:ContactMethod) ON (c.isPrimary)',
+    'CREATE INDEX credential_refresh_credential_id_idx IF NOT EXISTS FOR (r:CredentialRefresh) ON (r.credentialId)',
+    'CREATE INDEX credential_refresh_version_refresh_id_idx IF NOT EXISTS FOR (c:Credential) ON (c.refreshId)',
 ];
 
 const wait = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
@@ -199,18 +216,23 @@ const runIndexQuery = async (query: string): Promise<void> => {
     }
 };
 
-if (shouldCreateIndices)
+if (shouldCreateIndices) {
+    void ensureCredentialRefreshConstraints().catch(err => {
+        console.error('Error creating credential refresh constraints:', err);
+    });
+
     (async function createIndices() {
         try {
             for (const query of indexQueries) {
                 await runIndexQuery(query);
             }
 
-            if (process.env.NODE_ENV !== 'test') console.log('Ensured indices!');
+            if (environment.NODE_ENV !== 'test') console.log('Ensured indices!');
         } catch (err) {
             console.error('Error creating indices:', err);
         }
     })();
+}
 
 export * from './AuthGrant';
 export * from './Role';
@@ -233,4 +255,5 @@ export * from './Tag';
 export * from './Integration';
 export * from './AppStoreListing';
 export * from './CredentialActivity';
+export * from './CredentialRefresh';
 export * from './StatusList';

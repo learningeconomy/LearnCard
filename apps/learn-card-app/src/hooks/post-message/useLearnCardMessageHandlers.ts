@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import React, { useMemo, useCallback, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useHistory } from 'react-router-dom';
@@ -6,7 +7,6 @@ import {
     useWallet,
     useModal,
     ModalTypes,
-    LEARNCARD_AI_URL,
     getOrFetchIntegrationForListing,
     pendingContractSyncStore,
     getCategoryForCredential,
@@ -17,9 +17,11 @@ import {
 } from 'learn-card-base';
 import { UnsignedVP, VC, VP } from '@learncard/types';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
+import currentUserStore from 'learn-card-base/stores/currentUserStore';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
+import { switchedProfileStore, walletStore } from 'learn-card-base/stores/walletStore';
 
-import { ActionHandlers, AppEvent } from './useLearnCardPostMessage';
+import { ActionHandlers, AppEvent, VerifiablePresentationRequest } from './useLearnCardPostMessage';
 import { createActionHandlers } from './useLearnCardPostMessage.handlers';
 import FullScreenConsentFlow from '../../pages/consentFlow/FullScreenConsentFlow';
 import sdkActivityStore from '../../stores/sdkActivityStore';
@@ -31,15 +33,12 @@ import {
     flushOnError as flushSendCredentialFlowOnError,
 } from '../../helpers/sendCredentialFlow.helpers';
 import {
-    clearLearnerContextCache,
-    LEARNER_CONTEXT_CACHE_TTL_MS,
-    getLearnerContextCacheKey,
-    readLearnerContextCache,
-    writeLearnerContextCache,
-    type LearnerContextCacheEntry,
+    formatLearnerContext,
+    resolveLearnerContextCredentials,
+    useLearnerContextPrewarm,
     type LearnerContextRequestOptions,
     type LearnerContextSourceData,
-} from './learnerContextCache.helpers';
+} from './learnerContext.helpers';
 
 interface LaunchConfig {
     url?: string;
@@ -66,41 +65,34 @@ interface UseLearnCardMessageHandlersOptions {
 import { getLogger } from 'learn-card-base';
 const moduleLog = getLogger('use-learn-card-message-handlers');
 
-type LearnerContextFillTimings = {
-    credentialReadMs?: number;
-    promptizerMs?: number;
-};
-
-const learnerContextCacheFills = new Map<
-    string,
-    { promise: Promise<LearnerContextCacheEntry>; timings: LearnerContextFillTimings }
->();
-const prewarmedCacheKeys = new Map<string, number>();
-
 type LearnerContextMetadata = {
-    cacheStatus?: 'browser-hit' | 'browser-miss' | 'backend-hit' | 'backend-miss' | 'structured';
+    consentRevision?: string;
+    cacheStatus?: 'backend-hit' | 'backend-miss' | 'structured';
     timings?: {
         totalMs: number;
         sdkRoundTripMs?: number;
         appEventMs?: number;
         credentialReadMs?: number;
         promptizerMs?: number;
-        cacheLookupMs?: number;
-        prewarmAgeMs?: number;
     };
     backendMetadata?: Record<string, unknown>;
 };
+const createDeferred = <T>(): {
+    promise: Promise<T>;
+    resolve: (value: T | PromiseLike<T>) => void;
+} => {
+    let resolve!: (value: T | PromiseLike<T>) => void;
+    const promise = new Promise<T>(deferredResolve => {
+        resolve = deferredResolve;
+    });
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-    Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-
-const getStringValue = (
-    record: Record<string, unknown> | undefined,
-    key: string
-): string | undefined => {
-    const value = record?.[key];
-    return typeof value === 'string' ? value : undefined;
+    return { promise, resolve };
 };
+
+const LearnerContextAppSourceValidator = z.object({
+    credentialUris: z.array(z.string().min(1)),
+    personalData: z.record(z.string(), z.string()).optional(),
+});
 
 const getPendingSyncStatus = (contractUri?: string) => {
     const allJobs = Object.values(pendingContractSyncStore.get.jobs());
@@ -167,7 +159,9 @@ const waitForPendingSync = async (contractUri?: string, timeoutMs = 25000) => {
     while (Date.now() - startedAt < timeoutMs) {
         const status = getPendingSyncStatus(contractUri);
         if (status.status !== 'syncing') return status;
-        await new Promise(resolve => setTimeout(resolve, 500));
+        const { promise, resolve } = createDeferred<void>();
+        setTimeout(resolve, 500);
+        await promise;
     }
 
     return getPendingSyncStatus(contractUri);
@@ -193,6 +187,11 @@ export function useLearnCardMessageHandlers({
     const { newModal, closeModal } = useModal();
     const { data: consentedContracts } = useConsentedContracts();
     const queryClient = useQueryClient();
+    const currentUser = currentUserStore.use.currentUser();
+    const switchedDid = switchedProfileStore.use.switchedDid();
+    const activeWallet = walletStore.use.wallet();
+    const aiServiceUrl = networkStore.use.aiServiceUrl();
+    const networkUrl = networkStore.use.networkUrl();
 
     // Debug logging helper
     const log = useCallback(
@@ -273,7 +272,8 @@ export function useLearnCardMessageHandlers({
         ): Promise<{ granted: boolean }> => {
             const { redirect = false } = options ?? {};
 
-            return new Promise(async resolve => {
+            const { promise, resolve } = createDeferred<{ granted: boolean }>();
+            void (async () => {
                 try {
                     const wallet = await initWallet();
                     if (!wallet) {
@@ -346,7 +346,8 @@ export function useLearnCardMessageHandlers({
                     sdkActivityStore.set.endActivity();
                     resolve({ granted: false });
                 }
-            });
+            })();
+            return promise;
         },
         [initWallet, newModal, closeModal, consentedContracts, log, logError, generateVpAndRedirect]
     );
@@ -417,213 +418,64 @@ export function useLearnCardMessageHandlers({
                 detailLevel: options.detailLevel,
             });
 
-            const rawCredentialUris = Array.isArray(result.credentialUris)
-                ? result.credentialUris
-                : [];
+            const authorized = LearnerContextAppSourceValidator.parse(result);
             const credentialUris =
                 options.includeCredentials === false
                     ? []
-                    : Array.from(
-                          new Set(
-                              rawCredentialUris.filter(
-                                  (uri): uri is string => typeof uri === 'string'
-                              )
-                          )
-                      ).sort();
-            const personalData =
-                options.includePersonalData && isRecord(result.personalData)
-                    ? result.personalData
-                    : undefined;
+                    : Array.from(new Set(authorized.credentialUris)).sort();
+            const personalData = options.includePersonalData ? authorized.personalData : undefined;
 
             return {
                 appId,
-                did: typeof result.did === 'string' ? result.did : await learnCard.id.did(),
+                did: learnCard.id.did(),
                 credentialUris,
                 personalData,
-                displayName:
-                    getStringValue(personalData, 'name') ??
-                    getStringValue(personalData, 'displayName'),
+                displayName: personalData?.name ?? personalData?.displayName,
             };
         },
         [appId]
     );
 
-    const resolveLearnerContextCredentials = useCallback(
-        async (learnCard: LearnCardWallet, credentialUris: string[]): Promise<unknown[]> => {
-            const credentials = await Promise.all(
-                credentialUris.map(async uri => {
-                    try {
-                        return learnCard.read.get(uri);
-                    } catch (error) {
-                        logError(`Failed to resolve credential ${uri}:`, error);
-                        return undefined;
-                    }
-                })
-            );
-
-            return credentials.filter(credential => credential !== undefined);
-        },
-        [logError]
-    );
-
     const generatePromptForLearnerContext = useCallback(
-        async (
-            credentials: unknown[],
-            personalData: Record<string, unknown> | undefined,
-            options: LearnerContextRequestOptions
-        ): Promise<{ prompt: string; backendMetadata?: Record<string, unknown> }> => {
-            const aiServiceUrl = (
-                import.meta.env.VITE_LEARNCARD_AI_URL ||
-                networkStore.get.aiServiceUrl() ||
-                LEARNCARD_AI_URL
-            ).replace(/\/+$/, '');
-
-            try {
-                // The formatter URL is tenant/deployment configuration, not partner input.
-                // End-user authorization happens before this point via login + ConsentFlow.
-                const promptizerResponse = await fetch(
-                    `${aiServiceUrl}/ai/learner-context/format`,
-                    {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            credentials,
-                            personalData,
-                            instructions: options.instructions,
-                            detailLevel: options.detailLevel,
-                            includeStructuredContext: false,
-                            maxCredentials: credentials.length,
-                        }),
-                    }
-                );
-
-                if (!promptizerResponse.ok) {
-                    return {
-                        prompt: `User has ${credentials.length} credentials.`,
-                        backendMetadata: { promptizerError: true },
-                    };
-                }
-
-                const promptizerData: unknown = await promptizerResponse.json();
-
-                return {
-                    prompt:
-                        isRecord(promptizerData) && typeof promptizerData.prompt === 'string'
-                            ? promptizerData.prompt
-                            : '',
-                    backendMetadata:
-                        isRecord(promptizerData) && isRecord(promptizerData.metadata)
-                            ? promptizerData.metadata
-                            : undefined,
-                };
-            } catch (error) {
-                logError('Failed to call promptizer:', error);
-
-                return {
-                    prompt: `User has ${credentials.length} credentials.`,
-                    backendMetadata: { promptizerError: true },
-                };
-            }
-        },
-        [logError]
-    );
-
-    const fillLearnerContextCache = useCallback(
         async (
             learnCard: LearnCardWallet,
             source: LearnerContextSourceData,
-            options: LearnerContextRequestOptions,
-            key: string,
-            timings?: LearnerContextMetadata['timings']
-        ): Promise<LearnerContextCacheEntry> => {
-            const existingFill = learnerContextCacheFills.get(key);
-            if (existingFill) {
-                const entry = await existingFill.promise;
-                if (timings) Object.assign(timings, existingFill.timings);
-                return entry;
-            }
-
-            const fillTimings: LearnerContextFillTimings = {};
-
-            const fillPromise = (async () => {
-                const credentialReadStartedAt = performance.now();
-                const credentials = await resolveLearnerContextCredentials(
-                    learnCard,
-                    source.credentialUris
-                );
-                fillTimings.credentialReadMs = performance.now() - credentialReadStartedAt;
-
-                const promptizerStartedAt = performance.now();
-                const { prompt, backendMetadata } = await generatePromptForLearnerContext(
-                    credentials,
-                    source.personalData,
-                    options
-                );
-                fillTimings.promptizerMs = performance.now() - promptizerStartedAt;
-
-                const entry: LearnerContextCacheEntry = {
-                    key,
-                    prompt,
-                    did: source.did,
-                    displayName: source.displayName,
-                    credentialUris: source.credentialUris,
-                    personalData: source.personalData,
-                    backendMetadata,
-                    createdAt: Date.now(),
-                };
-
-                writeLearnerContextCache(entry);
-
-                return entry;
-            })();
-
-            learnerContextCacheFills.set(key, { promise: fillPromise, timings: fillTimings });
-
-            try {
-                const entry = await fillPromise;
-                if (timings) Object.assign(timings, fillTimings);
-                return entry;
-            } finally {
-                learnerContextCacheFills.delete(key);
-            }
-        },
-        [generatePromptForLearnerContext, resolveLearnerContextCredentials]
+            options: LearnerContextRequestOptions
+        ) =>
+            formatLearnerContext(learnCard, {
+                credentialUris: source.credentialUris,
+                personalFields: Object.keys(source.personalData ?? {}),
+                instructions: options.instructions,
+                detailLevel: options.detailLevel ?? 'compact',
+                includeStructuredContext: false,
+            }),
+        []
     );
 
-    const prewarmLearnerContext = useCallback(
-        async (inputOptions: LearnerContextRequestOptions): Promise<void> => {
+    const prewarmLearnerContext = useLearnerContextPrewarm(
+        JSON.stringify([
+            isLoggedIn,
+            currentUser?.uid,
+            switchedDid,
+            activeWallet?.id.did(),
+            appId,
+            embedOrigin,
+            aiServiceUrl,
+            networkUrl,
+            launchConfig?.contractUri,
+        ]),
+        async inputOptions => {
             try {
                 const learnCard = await initWallet();
                 if (!learnCard) return;
-
                 const options = normalizeLearnerContextOptions(inputOptions);
                 const source = await fetchLearnerContextSource(learnCard, options);
-                const key = getLearnerContextCacheKey(source, options);
-
-                const now = Date.now();
-                const lastPrewarmAt = prewarmedCacheKeys.get(key);
-                if (
-                    lastPrewarmAt !== undefined &&
-                    now - lastPrewarmAt < LEARNER_CONTEXT_CACHE_TTL_MS
-                ) {
-                    return;
-                }
-
-                if (readLearnerContextCache(key, now)) return;
-
-                await fillLearnerContextCache(learnCard, source, options, key);
-                prewarmedCacheKeys.set(key, Date.now());
-            } catch (error) {
-                log('Learner context prewarm skipped', error);
+                // Warm only the server cache: every SDK request rechecks both authorizations.
+                await generatePromptForLearnerContext(learnCard, source, options);
+            } catch {
+                log('Learner context prewarm skipped');
             }
-        },
-        [
-            fetchLearnerContextSource,
-            fillLearnerContextCache,
-            initWallet,
-            log,
-            normalizeLearnerContextOptions,
-        ]
+        }
     );
 
     const handlers = useMemo(
@@ -649,7 +501,8 @@ export function useLearnCardMessageHandlers({
                     };
                 },
                 showLoginConsentModal: async (origin: string, appName?: string) => {
-                    return new Promise(async resolve => {
+                    const { promise, resolve } = createDeferred<boolean>();
+                    void (async () => {
                         try {
                             // Import trusted origins utilities
                             //const { isOriginTrusted, addTrustedOrigin } = await import('./trustedOrigins');
@@ -679,9 +532,8 @@ export function useLearnCardMessageHandlers({
                             log('Login consent requested for:', origin);
 
                             // Dynamically import LoginConsentModal
-                            const { default: LoginConsentModal } = await import(
-                                '../../components/credentials/LoginConsentModal'
-                            );
+                            const { default: LoginConsentModal } =
+                                await import('../../components/credentials/LoginConsentModal');
 
                             const handleAccept = () => {
                                 log('User accepted login consent');
@@ -722,7 +574,8 @@ export function useLearnCardMessageHandlers({
                             sdkActivityStore.set.endActivity();
                             resolve(false);
                         }
-                    });
+                    })();
+                    return promise;
                 },
                 mintDelegatedToken: async (challenge?: string) => {
                     const learnCard = await initWallet();
@@ -758,15 +611,16 @@ export function useLearnCardMessageHandlers({
                 prewarmLearnerContext,
 
                 // Credential handlers
-                showCredentialAcceptanceModal: async (credential: any) => {
-                    return new Promise(async resolve => {
+                showCredentialAcceptanceModal: async (credential: unknown) => {
+                    const vc = credential as VC;
+                    const { promise, resolve } = createDeferred<string | boolean>();
+                    void (async () => {
                         try {
                             log('Credential offered:', credential);
 
                             // Dynamically import CredentialAcceptanceModal
-                            const { default: CredentialAcceptanceModal } = await import(
-                                '../../components/credentials/CredentialAcceptanceModal'
-                            );
+                            const { default: CredentialAcceptanceModal } =
+                                await import('../../components/credentials/CredentialAcceptanceModal');
 
                             let accepting = false;
 
@@ -780,8 +634,8 @@ export function useLearnCardMessageHandlers({
                                 try {
                                     const credentialId = (
                                         await storeAndAddVCToWallet(
-                                            credential,
-                                            { title: credential.name || 'Credential' },
+                                            vc,
+                                            { title: vc.name || 'Credential' },
                                             'LearnCloud',
                                             true
                                         )
@@ -807,7 +661,7 @@ export function useLearnCardMessageHandlers({
                                                 kind: 'credential-ingested',
                                                 eventId: crypto.randomUUID(),
                                                 credentialUri: credentialId,
-                                                vc: credential,
+                                                vc,
                                                 ingestedAt: new Date().toISOString(),
                                                 source: 'partner-sdk',
                                             });
@@ -840,7 +694,7 @@ export function useLearnCardMessageHandlers({
                             // Open the credential acceptance modal
                             newModal(
                                 React.createElement(CredentialAcceptanceModal, {
-                                    credential,
+                                    credential: vc,
                                     onAccept: handleAccept,
                                     onDismiss: handleDismiss,
                                     accepting,
@@ -857,14 +711,16 @@ export function useLearnCardMessageHandlers({
                             sdkActivityStore.set.endActivity();
                             resolve(false);
                         }
-                    });
+                    })();
+                    return promise;
                 },
-                saveCredential: async (credential: any) => {
-                    log('Saving credential:', credential);
+                saveCredential: async (credential: unknown) => {
+                    const vc = credential as VC;
+                    log('Saving credential:', vc);
 
                     const stored = await storeAndAddVCToWallet(
-                        credential,
-                        { title: credential.name || 'Credential' },
+                        vc,
+                        { title: vc.name || 'Credential' },
                         'LearnCloud',
                         true
                     );
@@ -934,46 +790,16 @@ export function useLearnCardMessageHandlers({
                     sdkActivityStore.set.endActivity();
                     return credential;
                 },
-                searchCredentials: async (query: any) => {
-                    const learnCard = await initWallet();
-
-                    if (!learnCard) {
-                        sdkActivityStore.set.endActivity();
-                        throw new Error(
-                            'LearnCard wallet not initialized. Cannot search credentials.'
-                        );
-                    }
-
-                    if (!learnCard.index.LearnCloud.getPage) {
-                        sdkActivityStore.set.endActivity();
-                        throw new Error(
-                            'LearnCard wallet index not initialized. Cannot search credentials.'
-                        );
-                    }
-
-                    const indexedCredentials = await learnCard.index.LearnCloud.getPage(query);
-                    log('Indexed credentials:', indexedCredentials);
-
-                    const resolvedCredentials = await Promise.all(
-                        indexedCredentials.records.map(async credential => {
-                            const resolvedVC = await learnCard.read.get(credential.uri);
-                            return { ...resolvedVC, uri: credential?.uri };
-                        })
-                    );
-
-                    log('Resolved credentials:', resolvedCredentials);
-                    sdkActivityStore.set.endActivity();
-                    return resolvedCredentials;
-                },
-                showShareCredentialModal: async (credential: any) => {
-                    return new Promise(async resolve => {
+                showShareCredentialModal: async (credential: unknown) => {
+                    const vc = credential as VC;
+                    const { promise, resolve } = createDeferred<boolean>();
+                    void (async () => {
                         try {
                             log('Share credential?', credential);
 
                             // Dynamically import ShareCredentialModal
-                            const { default: ShareCredentialModal } = await import(
-                                '../../components/credentials/ShareCredentialModal'
-                            );
+                            const { default: ShareCredentialModal } =
+                                await import('../../components/credentials/ShareCredentialModal');
 
                             let sharing = false;
 
@@ -998,7 +824,7 @@ export function useLearnCardMessageHandlers({
                             // Open the share credential modal
                             newModal(
                                 React.createElement(ShareCredentialModal, {
-                                    credential,
+                                    credential: vc,
                                     onShare: handleShare,
                                     onCancel: handleCancel,
                                     sharing,
@@ -1015,21 +841,24 @@ export function useLearnCardMessageHandlers({
                             sdkActivityStore.set.endActivity();
                             resolve(false);
                         }
-                    });
+                    })();
+                    return promise;
                 },
-                showVprModal: async (verifiablePresentationRequest: any) => {
-                    return new Promise(async resolve => {
+                showVprModal: async (
+                    verifiablePresentationRequest: VerifiablePresentationRequest
+                ) => {
+                    const { promise, resolve } = createDeferred<unknown>();
+                    void (async () => {
                         try {
                             log('VPR request:', verifiablePresentationRequest);
 
                             // Dynamically import VprShareModal
-                            const { default: VprShareModal } = await import(
-                                '../../components/credentials/VprShareModal'
-                            );
+                            const { default: VprShareModal } =
+                                await import('../../components/credentials/VprShareModal');
 
                             let sharing = false;
 
-                            const handleShare = async (selectedCredentials: any[]) => {
+                            const handleShare = async (selectedCredentials: VC[]) => {
                                 if (sharing) return;
                                 sharing = true;
 
@@ -1109,17 +938,19 @@ export function useLearnCardMessageHandlers({
                             sdkActivityStore.set.endActivity();
                             resolve(null);
                         }
-                    });
+                    })();
+                    return promise;
                 },
-                signCredential: async (credential: any) => {
-                    return new Promise(async resolve => {
-                        try {
-                            log('Sign credential requested:', credential);
 
-                            // Dynamically import SignCredentialModal
-                            const { default: SignCredentialModal } = await import(
-                                '../../components/credentials/SignCredentialModal'
-                            );
+                signCredential: async (credential: unknown) => {
+                    const vc = credential as VC;
+                    const { promise, resolve } = createDeferred<unknown>();
+                    void (async () => {
+                        try {
+                            log('Sign credential requested:', vc);
+
+                            const { default: SignCredentialModal } =
+                                await import('../../components/credentials/SignCredentialModal');
 
                             let signing = false;
 
@@ -1139,9 +970,8 @@ export function useLearnCardMessageHandlers({
                                         return;
                                     }
 
-                                    const signedCredential = await learnCard.invoke.issueCredential(
-                                        credential
-                                    );
+                                    const signedCredential =
+                                        await learnCard.invoke.issueCredential(vc);
 
                                     log('Signed credential:', signedCredential);
                                     closeModal();
@@ -1159,13 +989,11 @@ export function useLearnCardMessageHandlers({
                                 resolve(null);
                             };
 
-                            // Hide activity indicator before showing modal
                             sdkActivityStore.set.endActivity();
 
-                            // Open the sign credential modal
                             newModal(
                                 React.createElement(SignCredentialModal, {
-                                    credential,
+                                    credential: vc,
                                     onSign: handleSign,
                                     onCancel: handleCancel,
                                     signing,
@@ -1182,10 +1010,11 @@ export function useLearnCardMessageHandlers({
                             sdkActivityStore.set.endActivity();
                             resolve(null);
                         }
-                    });
+                    })();
+                    return promise;
                 },
 
-                signPresentation: async (credential: any) => {
+                signPresentation: async (credential: unknown) => {
                     log('Signing presentation:', credential);
 
                     const learnCard = await initWallet();
@@ -1201,7 +1030,7 @@ export function useLearnCardMessageHandlers({
                         '@context': ['https://www.w3.org/ns/credentials/v2'],
                         type: ['VerifiablePresentation'],
                         holder: learnCard.id.did(),
-                        verifiableCredential: [credential],
+                        verifiableCredential: [credential as VC],
                     };
 
                     try {
@@ -1234,7 +1063,8 @@ export function useLearnCardMessageHandlers({
 
                 // Boost template issue handler
                 showBoostIssueModal: async (templateId: string, draftRecipients?: string[]) => {
-                    return new Promise(async resolve => {
+                    const { promise, resolve } = createDeferred<boolean>();
+                    void (async () => {
                         try {
                             const learnCard = await initWallet();
                             if (!learnCard) {
@@ -1265,9 +1095,8 @@ export function useLearnCardMessageHandlers({
                             const boostVC = boost.uri ? await learnCard.read.get(boost.uri) : null;
 
                             // Import ShortBoostUserOptions dynamically
-                            const { default: ShortBoostUserOptions } = await import(
-                                '../../components/boost/boost-options/boostUserOptions/ShortBoostUserOptions'
-                            );
+                            const { default: ShortBoostUserOptions } =
+                                await import('../../components/boost/boost-options/boostUserOptions/ShortBoostUserOptions');
 
                             const handleCloseModal = (completed: boolean) => {
                                 closeModal();
@@ -1324,7 +1153,8 @@ export function useLearnCardMessageHandlers({
                             sdkActivityStore.set.endActivity();
                             resolve(false);
                         }
-                    });
+                    })();
+                    return promise;
                 },
                 canUserIssueTemplate: async (templateId: string) => {
                     try {
@@ -1475,20 +1305,15 @@ export function useLearnCardMessageHandlers({
                           ) {
                               onAppNotification({
                                   title: (event as Record<string, unknown>).title as
-                                      | string
-                                      | undefined,
+                                      string | undefined,
                                   body: (event as Record<string, unknown>).body as
-                                      | string
-                                      | undefined,
+                                      string | undefined,
                                   actionPath: (event as Record<string, unknown>).actionPath as
-                                      | string
-                                      | undefined,
+                                      string | undefined,
                                   category: (event as Record<string, unknown>).category as
-                                      | string
-                                      | undefined,
+                                      string | undefined,
                                   priority: (event as Record<string, unknown>).priority as
-                                      | string
-                                      | undefined,
+                                      string | undefined,
                               });
                           }
 
@@ -1564,44 +1389,29 @@ export function useLearnCardMessageHandlers({
                               };
                           }
 
-                          const cacheLookupStartedAt = performance.now();
-                          const key = getLearnerContextCacheKey(source, options);
-                          const cached = readLearnerContextCache(key);
-                          timings.cacheLookupMs = performance.now() - cacheLookupStartedAt;
-
-                          if (cached) {
-                              timings.prewarmAgeMs = Date.now() - cached.createdAt;
-                              timings.totalMs = performance.now() - startedAt;
-
-                              return {
-                                  prompt: cached.prompt,
-                                  did: source.did,
-                                  displayName: cached.displayName ?? source.displayName,
-                                  metadata: {
-                                      cacheStatus: 'browser-hit',
-                                      timings,
-                                      backendMetadata: cached.backendMetadata,
-                                  },
-                              };
-                          }
-
-                          const entry = await fillLearnerContextCache(
+                          const promptizerStartedAt = performance.now();
+                          const result = await generatePromptForLearnerContext(
                               learnCard,
                               source,
-                              options,
-                              key,
-                              timings
+                              options
                           );
+                          timings.promptizerMs = performance.now() - promptizerStartedAt;
                           timings.totalMs = performance.now() - startedAt;
 
                           return {
-                              prompt: entry.prompt,
+                              prompt: result.prompt,
                               did: source.did,
-                              displayName: entry.displayName ?? source.displayName,
+                              displayName: source.displayName,
                               metadata: {
-                                  cacheStatus: 'browser-miss',
+                                  consentRevision: result.metadata.consentRevision,
+                                  cacheStatus:
+                                      result.metadata.promptCacheHit === undefined
+                                          ? undefined
+                                          : result.metadata.promptCacheHit
+                                            ? 'backend-hit'
+                                            : 'backend-miss',
                                   timings,
-                                  backendMetadata: entry.backendMetadata,
+                                  backendMetadata: result.metadata,
                               },
                           };
                       }
@@ -1628,20 +1438,12 @@ export function useLearnCardMessageHandlers({
             queryClient,
             getIntegrationForListing,
             fetchLearnerContextSource,
-            fillLearnerContextCache,
+            generatePromptForLearnerContext,
             normalizeLearnerContextOptions,
             prewarmLearnerContext,
             resolveLearnerContextCredentials,
         ]
     );
-
-    useEffect(() => {
-        if (isLoggedIn) return;
-
-        clearLearnerContextCache();
-        learnerContextCacheFills.clear();
-        prewarmedCacheKeys.clear();
-    }, [isLoggedIn]);
 
     useEffect(() => {
         if (!isLoggedIn || !appId || !embedOrigin) return;

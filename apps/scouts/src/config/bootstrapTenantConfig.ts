@@ -6,43 +6,17 @@ import {
     setImageUploadConfigFromTenant,
     getTenantBaseUrl,
     type TenantConfig,
-    SCOUTPASS_NETWORK_URL,
-    SCOUTPASS_NETWORK_API_URL,
-    SCOUTCLOUD_URL,
-    SCOUTPASS_API_ENDPOINT,
 } from 'learn-card-base';
+import { deepMerge } from 'learn-card-base/config/deepMerge';
 
 import { initializeFirebaseFromTenant } from '../firebase/firebase';
+import { environment } from './environment';
 
-// SENTRY_ENV is always defined in vite builds (vite.config.ts defaults it to
-// 'scouts-development'); the typeof guard only matters in non-vite contexts like tests.
-const SCOUTS_SENTRY_ENV = typeof SENTRY_ENV !== 'undefined' ? SENTRY_ENV : 'scouts-development';
-
-const IS_SCOUTS_PRODUCTION_ENV = SCOUTS_SENTRY_ENV === 'scouts-production';
-
-const SCOUTS_LAUNCH_DARKLY_CLIENT_ID = IS_SCOUTS_PRODUCTION_ENV
-    ? '64b59e8227d2d212ef8e8968'
-    : '64b5aeeb41628613abcf2af0';
-
-export const SCOUTS_TENANT_CONFIG: TenantConfig = {
+const SCOUTS_TENANT_BASE_CONFIG: TenantConfig = {
     ...DEFAULT_LEARNCARD_TENANT_CONFIG,
     tenantId: 'scoutpass',
     domain: 'pass.scout.org',
     devDomain: 'localhost:3000',
-    apis: {
-        ...DEFAULT_LEARNCARD_TENANT_CONFIG.apis,
-        brainService: SCOUTPASS_NETWORK_URL,
-        brainServiceApi: SCOUTPASS_NETWORK_API_URL,
-        cloudService: SCOUTCLOUD_URL,
-        lcaApi: SCOUTPASS_API_ENDPOINT,
-        // Must be set explicitly. If omitted, the `...DEFAULT_LEARNCARD_TENANT_CONFIG.apis`
-        // spread supplies the LearnCard notifications endpoint, which would win over the
-        // lcaApi-based derivation in initNetworkStoreFromTenant.
-        notificationsEndpoint: SCOUTPASS_API_ENDPOINT.replace(
-            /\/trpc\/?$/,
-            '/api/notifications/send'
-        ),
-    },
     auth: {
         ...DEFAULT_LEARNCARD_TENANT_CONFIG.auth,
         provider: 'firebase',
@@ -58,15 +32,16 @@ export const SCOUTS_TENANT_CONFIG: TenantConfig = {
             redirectDomain: 'pass.scout.org',
             dynamicLinkDomain: 'pass.scout.org',
         },
-        // keyDerivation is 'web3auth', so SSS is dormant — but keep serverUrl pointed at the
-        // ScoutPass LCA API (which tracks the API_URL build define, so staging builds hit
-        // staging.api.scoutnetwork.org). Inheriting the LearnCard default would silently send
-        // key-share traffic to api.learncard.app if SSS is ever enabled.
         sss: {
             ...DEFAULT_LEARNCARD_TENANT_CONFIG.auth.sss,
-            serverUrl: SCOUTPASS_API_ENDPOINT,
             enableEmailBackupShare: true,
             requireEmailForPhoneUsers: true,
+        },
+        web3Auth: {
+            clientId: environment.VITE_WEB3AUTH_CLIENT_ID,
+            network: 'cyan',
+            verifierId: 'scoutPass-firebase-cyan-mainnet',
+            rpcTarget: environment.VITE_WEB3AUTH_RPC_TARGET,
         },
     },
     branding: {
@@ -91,7 +66,7 @@ export const SCOUTS_TENANT_CONFIG: TenantConfig = {
     },
     features: {
         ...DEFAULT_LEARNCARD_TENANT_CONFIG.features,
-        analytics: IS_SCOUTS_PRODUCTION_ENV,
+        analytics: true,
         themeSwitching: false,
         introSlides: true,
         launchPadQuickActions: false,
@@ -102,7 +77,7 @@ export const SCOUTS_TENANT_CONFIG: TenantConfig = {
         ...DEFAULT_LEARNCARD_TENANT_CONFIG.observability,
         sentryDsn:
             'https://68210fb71359458b9746c55cf5f545b4@o246842.ingest.us.sentry.io/4505432118984704',
-        sentryEnv: SCOUTS_SENTRY_ENV,
+        sentryEnv: 'scouts-production',
         sentryTraceDomains: [
             'pass.scout.org',
             'api.scoutnetwork.org',
@@ -111,7 +86,8 @@ export const SCOUTS_TENANT_CONFIG: TenantConfig = {
             'staging.api.scoutnetwork.org',
             'staging.cloud.scoutnetwork.org',
         ],
-        launchDarklyClientId: SCOUTS_LAUNCH_DARKLY_CLIENT_ID,
+        launchDarklyClientId: '64b59e8227d2d212ef8e8968',
+        googleMapsApiKey: environment.GOOGLE_MAPS_API_KEY,
         userflowToken: '',
         analyticsProvider: 'firebase',
         posthogKey: undefined,
@@ -138,6 +114,24 @@ export const SCOUTS_TENANT_CONFIG: TenantConfig = {
         ],
     },
 };
+
+declare const __SCOUTS_TENANT_OVERRIDES__: Partial<TenantConfig>;
+
+const mergedScoutsTenantConfig = deepMerge(
+    SCOUTS_TENANT_BASE_CONFIG as unknown as Record<string, unknown>,
+    __SCOUTS_TENANT_OVERRIDES__ as unknown as Record<string, unknown>
+) as unknown as TenantConfig;
+
+mergedScoutsTenantConfig.apis.notificationsEndpoint = mergedScoutsTenantConfig.apis.lcaApi.replace(
+    /\/trpc\/?$/,
+    '/api/notifications/send'
+);
+mergedScoutsTenantConfig.auth.sss = {
+    ...mergedScoutsTenantConfig.auth.sss,
+    serverUrl: mergedScoutsTenantConfig.apis.lcaApi,
+};
+
+export const SCOUTS_TENANT_CONFIG = mergedScoutsTenantConfig;
 
 type BootstrapState = {
     resolvedConfig: TenantConfig | null;

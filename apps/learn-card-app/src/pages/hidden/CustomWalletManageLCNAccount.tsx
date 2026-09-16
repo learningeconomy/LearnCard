@@ -26,8 +26,8 @@ const CustomWalletManageLCNAccount: React.FC<CustomWalletManageLCNAccountProps> 
 
     const textHandler =
         (slice: keyof typeof profile) =>
-            (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-                updateSlice(slice, e.target.value);
+        (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+            updateSlice(slice, e.target.value);
 
     useEffect(() => {
         wallet.invoke.getProfile().then(userProfile => {
@@ -113,8 +113,8 @@ const CustomWalletManageLCNAccount: React.FC<CustomWalletManageLCNAccountProps> 
                         ? 'Updating...'
                         : 'Creating...'
                     : hasProfile
-                        ? 'Update'
-                        : 'Create'}
+                      ? 'Update'
+                      : 'Create'}
             </button>
         </form>
     );

@@ -55,7 +55,7 @@ export const LearnerInsightsPreview: React.FC<{
     const skillsMap = mapBoostsToSkills(allResolvedCreds, globalSkillFrameworkIds);
     const categorizedSkills: [
         string,
-        RawCategorizedEntry[] & { totalSkills: number; totalSubskills: number }
+        RawCategorizedEntry[] & { totalSkills: number; totalSubskills: number },
     ][] = Object.entries(skillsMap);
     const aggregatedSkills = aggregateCategorizedEntries(categorizedSkills);
     const topSkills = getTopSkills(aggregatedSkills, 3);

@@ -107,7 +107,12 @@ import {
 const WALLET_INIT_TIMEOUT_MS = 15000;
 
 import { auth } from '../firebase/firebase';
-import { mergeAuthUserIntoCurrentUser, shouldResetWalletOnStatus } from './authCoordinator.helpers';
+import {
+    countUserConfiguredRecoveryMethods,
+    mergeAuthUserIntoCurrentUser,
+    registerRecoveryMethodCompletion,
+    shouldResetWalletOnStatus,
+} from './authCoordinator.helpers';
 import {
     getAppBaseUrl,
     getFirebaseRedirectDomain,
@@ -127,11 +132,21 @@ import {
 import { Overlay, ErrorOverlay, StalledMigrationOverlay, EmailLinkOverlay } from 'learn-card-base';
 
 import { RecoveryFlowModal } from '../components/recovery/RecoveryFlowModal';
-import { RecoverySetupModal } from '../components/recovery/RecoverySetupModal';
+import {
+    RecoverySetupModal,
+    type RecoverySetupType,
+} from '../components/recovery/RecoverySetupModal';
 import { DeviceLinkModal } from '../components/device-link/DeviceLinkModal';
+import { PENDING_SEED_STORAGE_KEY } from '../pages/developer/pendingSeedStorage';
 import ReAuthOverlay from '../components/auth/ReAuthOverlay';
 
 const log = getLogger('auth-coordinator');
+
+export interface RecoverySetupOptions {
+    initialMethod?: RecoverySetupType;
+    onCompleted?: (method: RecoverySetupType) => void;
+    onClosed?: () => void;
+}
 
 // ---------------------------------------------------------------------------
 // DeviceLinkOverlay — fetches the device share then renders the approver modal
@@ -399,7 +414,7 @@ export interface AppAuthContextValue extends AuthCoordinatorContextValue {
     recoveryMethodCount: number | null;
 
     /** Open the recovery setup modal */
-    openRecoverySetup: () => void;
+    openRecoverySetup: (options?: RecoverySetupOptions) => void;
 
     /** Provider-agnostic auth provider for token/user operations (null if no session) */
     authProvider: AuthProvider | null;
@@ -511,13 +526,48 @@ const AuthSessionManager: React.FC<{
 
     // --- Recovery setup prompt (shown after first-time setup with no recovery methods) ---
     const [showRecoverySetup, setShowRecoverySetup] = useState(false);
+    const recoverySetupOptionsRef = useRef<RecoverySetupOptions>({});
+    const completedRecoveryMethodsRef = useRef<Set<RecoverySetupType>>(new Set());
     const wasNewUserRef = useRef(false);
+
+    // null = recovery method status has not been checked yet
+    const [recoveryMethodCount, setRecoveryMethodCount] = useState<number | null>(null);
+
+    const openRecoverySetup = useCallback((options: RecoverySetupOptions = {}) => {
+        recoverySetupOptionsRef.current = options;
+        completedRecoveryMethodsRef.current.clear();
+        setShowRecoverySetup(true);
+    }, []);
+
+    const closeRecoverySetup = useCallback(() => {
+        const onClosed = recoverySetupOptionsRef.current.onClosed;
+
+        recoverySetupOptionsRef.current = {};
+        completedRecoveryMethodsRef.current.clear();
+        setShowRecoverySetup(false);
+        onClosed?.();
+    }, []);
+
+    const completeRecoverySetup = useCallback((method: RecoverySetupType) => {
+        if (registerRecoveryMethodCompletion(completedRecoveryMethodsRef.current, method)) {
+            setRecoveryMethodCount(previousCount => (previousCount ?? 0) + 1);
+        }
+
+        const onCompleted = recoverySetupOptionsRef.current.onCompleted;
+
+        // Prompt-owned setup is a single-action flow, so return to the Dashboard.
+        // Existing callers keep the modal's prior behavior: only passkey setup
+        // closes immediately, while other methods stay open for adding another.
+        if (onCompleted || method === 'passkey') {
+            recoverySetupOptionsRef.current = {};
+            setShowRecoverySetup(false);
+        }
+
+        onCompleted?.(method);
+    }, []);
 
     // --- Proactive auth session check state (effect is below, after authProvider) ---
     const [recoverySessionValid, setRecoverySessionValid] = useState<boolean | null>(null);
-
-    // --- Recovery method count (null = not yet checked) ---
-    const [recoveryMethodCount, setRecoveryMethodCount] = useState<number | null>(null);
 
     // --- Phone→email upgrade gate ---
     // Phone-only users must link an email before proceeding, but only when:
@@ -1027,15 +1077,17 @@ const AuthSessionManager: React.FC<{
                                 providerType
                             );
 
-                            const userConfiguredCount = methods.filter(
-                                m => m.type !== 'email'
-                            ).length;
+                            const status = keyDerivation.fetchServerKeyStatus
+                                ? await keyDerivation
+                                      .fetchServerKeyStatus(token, providerType)
+                                      .catch(() => null)
+                                : null;
+                            const userConfiguredCount = countUserConfiguredRecoveryMethods(
+                                methods,
+                                status?.maskedRecoveryEmail
+                            );
 
                             setRecoveryMethodCount(userConfiguredCount);
-
-                            if (userConfiguredCount === 0 && isPublicComputerMode()) {
-                                setShowRecoverySetup(true);
-                            }
                         } catch {
                             // Non-critical — don't block the user
                         }
@@ -1115,8 +1167,16 @@ const AuthSessionManager: React.FC<{
                     providerType
                 );
 
+                const status = keyDerivation.fetchServerKeyStatus
+                    ? await keyDerivation
+                          .fetchServerKeyStatus(token, providerType)
+                          .catch(() => null)
+                    : null;
+
                 if (!cancelled) {
-                    setRecoveryMethodCount(methods.filter(m => m.type !== 'email').length);
+                    setRecoveryMethodCount(
+                        countUserConfiguredRecoveryMethods(methods, status?.maskedRecoveryEmail)
+                    );
                 }
             } catch {
                 // Non-critical — same best-effort semantics as the wallet-build tail
@@ -1263,7 +1323,7 @@ const AuthSessionManager: React.FC<{
 
             // Recovery
             recoveryMethodCount,
-            openRecoverySetup: () => setShowRecoverySetup(true),
+            openRecoverySetup,
 
             // Provider-agnostic auth provider (consumers should use this
             // instead of importing Firebase directly)
@@ -1281,6 +1341,7 @@ const AuthSessionManager: React.FC<{
             showDeviceLinkModal,
             deviceLinkVisible,
             recoveryMethodCount,
+            openRecoverySetup,
             authProvider,
         ]
     );
@@ -1548,7 +1609,7 @@ const AuthSessionManager: React.FC<{
                             <Overlay>
                                 <ReAuthOverlay
                                     onSuccess={() => setRecoverySessionValid(true)}
-                                    onCancel={() => setShowRecoverySetup(false)}
+                                    onCancel={closeRecoverySetup}
                                 />
                             </Overlay>
                         );
@@ -1620,15 +1681,14 @@ const AuthSessionManager: React.FC<{
                             <RecoverySetupModal
                                 existingMethods={[]}
                                 maskedRecoveryEmail={null}
+                                initialMethod={recoverySetupOptionsRef.current.initialMethod}
+                                onCompleted={completeRecoverySetup}
                                 onSetupPasskey={async () => {
                                     const authUser = await authProvider.getCurrentUser();
                                     const result = await setupMethod(
                                         { method: 'passkey' },
                                         authUser
                                     );
-
-                                    setRecoveryMethodCount(prev => (prev ?? 0) + 1);
-                                    setShowRecoverySetup(false);
                                     return result.method === 'passkey' ? result.credentialId : '';
                                 }}
                                 onGeneratePhrase={async () => {
@@ -1649,8 +1709,6 @@ const AuthSessionManager: React.FC<{
                                         { method: 'backup', password: backupPw, did },
                                         authUser
                                     );
-
-                                    setRecoveryMethodCount(prev => (prev ?? 0) + 1);
                                     return result.method === 'backup'
                                         ? JSON.stringify(result.backupFile, null, 2)
                                         : '';
@@ -1706,9 +1764,8 @@ const AuthSessionManager: React.FC<{
                                 onSetupEmailRecovery={async () => {
                                     const authUser = await authProvider.getCurrentUser();
                                     await setupMethod({ method: 'email' }, authUser);
-                                    setRecoveryMethodCount(prev => (prev ?? 0) + 1);
                                 }}
-                                onClose={() => setShowRecoverySetup(false)}
+                                onClose={closeRecoverySetup}
                             />
                         </Overlay>
                     );
@@ -1831,9 +1888,13 @@ export const AuthCoordinatorProvider: React.FC<AppAuthCoordinatorProviderProps> 
         // login regardless (see useSyncLocaleToProfile); this keeps the logged-out
         // UI in the user's language too.
         const preservedLocale = window.localStorage.getItem('i18n.language');
+        // The developer sign-in page stashes the next seed here before calling
+        // logout so it can sign in on the reload; wiping it strands the switch.
+        const pendingSeed = window.sessionStorage.getItem(PENDING_SEED_STORAGE_KEY);
         window.localStorage.clear();
         window.sessionStorage.clear();
         if (preservedLocale) window.localStorage.setItem('i18n.language', preservedLocale);
+        if (pendingSeed) window.sessionStorage.setItem(PENDING_SEED_STORAGE_KEY, pendingSeed);
 
         firstStartupStore.set.introSlidesCompleted(true);
         firstStartupStore.set.firstStart(false);

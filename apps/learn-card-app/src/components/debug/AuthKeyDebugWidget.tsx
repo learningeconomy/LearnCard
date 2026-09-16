@@ -33,6 +33,7 @@ import {
 const log = getLogger('auth-key-debug-widget');
 
 import { useAuthCoordinator } from '../../providers/AuthCoordinatorProvider';
+import { environment } from '../../config/environment';
 import { getSigningLearnCard, getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
 
 import { Capacitor } from '@capacitor/core';
@@ -172,8 +173,7 @@ const getMeta = (status: string): StatusMeta => STATUS_META[status] ?? STATUS_ME
 // Helpers
 // ---------------------------------------------------------------------------
 
-const WIDGET_ENABLED =
-    import.meta.env.VITE_ENABLE_AUTH_DEBUG_WIDGET === 'true' || import.meta.env.DEV;
+const WIDGET_ENABLED = environment.VITE_ENABLE_AUTH_DEBUG_WIDGET || environment.DEV;
 
 const truncate = (s: string, len: number): string => (s.length > len ? s.slice(0, len) + '...' : s);
 
@@ -234,8 +234,8 @@ const KVRow: React.FC<{
                 ? 'true'
                 : 'false'
             : value === null || value === undefined
-            ? '—'
-            : String(value);
+              ? '—'
+              : String(value);
 
     const color =
         typeof value === 'boolean'
@@ -243,8 +243,8 @@ const KVRow: React.FC<{
                 ? 'text-emerald-400'
                 : 'text-red-400'
             : display === '—'
-            ? 'text-gray-600'
-            : 'text-cyan-400';
+              ? 'text-gray-600'
+              : 'text-cyan-400';
 
     return (
         <div className="flex items-center justify-between text-[11px] py-[3px] border-t border-gray-700/40 group">
@@ -769,10 +769,10 @@ export const AuthKeyDebugWidget: React.FC = () => {
     const fabBg = isOpen
         ? 'bg-gray-700 hover:bg-gray-600'
         : isReady
-        ? 'bg-emerald-600 hover:bg-emerald-500'
-        : state.status === 'error'
-        ? 'bg-red-600 hover:bg-red-500'
-        : 'bg-sky-600 hover:bg-sky-500';
+          ? 'bg-emerald-600 hover:bg-emerald-500'
+          : state.status === 'error'
+            ? 'bg-red-600 hover:bg-red-500'
+            : 'bg-sky-600 hover:bg-sky-500';
 
     return (
         <React.Fragment>
@@ -813,8 +813,8 @@ export const AuthKeyDebugWidget: React.FC = () => {
                                             keyIntegrityResult === true
                                                 ? 'text-emerald-400'
                                                 : keyIntegrityResult === false
-                                                ? 'text-red-400'
-                                                : 'text-gray-500'
+                                                  ? 'text-red-400'
+                                                  : 'text-gray-500'
                                         }`}
                                     />
                                 </button>
@@ -948,8 +948,8 @@ export const AuthKeyDebugWidget: React.FC = () => {
                                     isNative
                                         ? 'SQLite (native)'
                                         : isPublicComputerMode()
-                                        ? 'sessionStorage (ephemeral)'
-                                        : 'IndexedDB (persistent)'
+                                          ? 'sessionStorage (ephemeral)'
+                                          : 'IndexedDB (persistent)'
                                 }
                                 mono={false}
                                 copied={copied}
@@ -1321,10 +1321,10 @@ export const AuthKeyDebugWidget: React.FC = () => {
                                                         rm.type === 'password'
                                                             ? 'bg-sky-500/20 text-sky-400'
                                                             : rm.type === 'passkey'
-                                                            ? 'bg-purple-500/20 text-purple-400'
-                                                            : rm.type === 'phrase'
-                                                            ? 'bg-amber-500/20 text-amber-400'
-                                                            : 'bg-gray-700 text-gray-400'
+                                                              ? 'bg-purple-500/20 text-purple-400'
+                                                              : rm.type === 'phrase'
+                                                                ? 'bg-amber-500/20 text-amber-400'
+                                                                : 'bg-gray-700 text-gray-400'
                                                     }`}
                                                 >
                                                     {rm.type}
@@ -1443,8 +1443,8 @@ export const AuthKeyDebugWidget: React.FC = () => {
                                     {isNative
                                         ? 'No device shares in SQLite'
                                         : isPublicComputerMode()
-                                        ? 'No device shares in sessionStorage (public mode)'
-                                        : 'No device shares in IndexedDB'}
+                                          ? 'No device shares in sessionStorage (public mode)'
+                                          : 'No device shares in IndexedDB'}
                                 </p>
                             ) : (
                                 <div className="mt-1.5 space-y-1">
@@ -1478,11 +1478,11 @@ export const AuthKeyDebugWidget: React.FC = () => {
                                                             {isLegacy
                                                                 ? '(legacy default)'
                                                                 : userSuffix
-                                                                ? `user: ${truncate(
-                                                                      userSuffix,
-                                                                      16
-                                                                  )}`
-                                                                : entry.id}
+                                                                  ? `user: ${truncate(
+                                                                        userSuffix,
+                                                                        16
+                                                                    )}`
+                                                                  : entry.id}
                                                         </span>
 
                                                         {isActive && (
@@ -1717,7 +1717,7 @@ export const AuthKeyDebugWidget: React.FC = () => {
                     {/* ── Footer ── */}
                     <div className="px-3 py-1.5 border-t border-gray-800 bg-gray-900/50 flex items-center justify-between">
                         <p className="text-[9px] text-gray-600">
-                            {import.meta.env.DEV ? 'dev mode' : 'debug widget'}
+                            {environment.DEV ? 'dev mode' : 'debug widget'}
                         </p>
 
                         <p className="text-[9px] text-gray-600 font-mono">{state.status}</p>

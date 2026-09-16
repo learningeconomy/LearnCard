@@ -11,7 +11,82 @@
         "skipped": "Ignoré",
         "claimedType": "Justificatif réclamé"
     },
+    "mainHeader": {
+        "pageTitles": {
+            "dashboard": "Mon tableau de bord",
+            "passport": "Mon passeport",
+            "apps": "Mes applications",
+            "contacts": "Mes contacts",
+            "alerts": "Mes alertes",
+            "settings": "Paramètres"
+        }
+    },
+    "arabicFixes": {
+        "newMember": "Nouveau membre",
+        "issuedDate": "Date d'émission",
+        "selectProfile": "Sélectionner un profil",
+        "pinMustMatch": "Les codes PIN doivent correspondre",
+        "nameRequired": "Le nom est requis.",
+        "descriptionRequired": "La description est obligatoire.",
+        "issuerStatus": "Statut de l'émetteur",
+        "trustedIssuerDescription": "Votre compte est reconnu comme un émetteur de confiance dans le réseau LearnCard.",
+        "unknownIssuerDescription": "Demandez à devenir un émetteur de confiance et activez l'émission de justificatifs vérifiés pour votre compte.",
+        "becomeTrustedIssuer": "Devenir un émetteur de confiance",
+        "fieldRequired": "{{field}} est requis",
+        "validEmailRequired": "Saisissez une adresse e-mail valide",
+        "shareOnce": "Partager une fois",
+        "thumbnail": "Miniature",
+        "shareProfileHelp": "Copiez l’URL de votre profil pour la partager avec d’autres personnes.",
+        "or": "ou",
+        "autoConnectHelp": "Autorisez d’autres personnes à se connecter automatiquement à votre profil.",
+        "selectExpiration": "Sélectionnez l’expiration",
+        "oneHour": "1 heure",
+        "hours": "{{count}} heures",
+        "days": "{{count}} jours",
+        "addCredentials": "Ajouter des justificatifs",
+        "verifiableCredentials": "Justificatifs vérifiables",
+        "verifiableCredentialCount": "{{count}} justificatifs vérifiables",
+        "uploadCredentialsHelp": "Importez ou collez des justificatifs JSON bruts pour les ajouter à votre compte.",
+        "required": "Obligatoire",
+        "liveSync": "Synchronisation en direct",
+        "liveSyncing": "Synchronisation en direct",
+        "liveSyncingAll": "Tout synchroniser en direct",
+        "loading": "Chargement...",
+        "loadingAccounts": "Chargement des comptes...",
+        "activeUser": "Utilisateur actif",
+        "membersCount": "{{count}} membres",
+        "socialBoosts": "Reconnaissances sociales",
+        "newChildOrOrganization": "Nouvel enfant ou nouvelle organisation",
+        "selectProfileType": "Sélectionnez un type de profil",
+        "organizationProfile": "Profil d’organisation",
+        "organization": "Organisation",
+        "child": "Enfant",
+        "user": "Utilisateur",
+        "addNewPlayer": "Ajouter un joueur",
+        "backToGame": "Retourner au jeu",
+        "childInFamily": "Enfant de {{family}}",
+        "editAppName": "Modifier {{appName}}",
+        "continuousShare": "Partagez en continu tous les éléments de {{items}}.",
+        "setExpirationDate": "Définir une date d’expiration ?",
+        "selectiveSharing": "Partage sélectif",
+        "selectiveSharingHelp": "Partagez uniquement les éléments de {{items}} sélectionnés.",
+        "notSharing": "Ne pas partager",
+        "notSharingHelp": "Ne partagez aucun élément de {{items}}.",
+        "sharingCount": "Partage de {{selected}}/{{total}}",
+        "switchSelectiveTitle": "Passer au partage sélectif ?",
+        "switchSelectiveHelp": "Désélectionner des données désactive la synchronisation en direct et active le partage sélectif, afin que vous contrôliez les justificatifs partagés. Vous pouvez réactiver la synchronisation en direct à tout moment.",
+        "allow": "Autoriser",
+        "deny": "Refuser",
+        "approve": "Approuver",
+        "editApp": "Modifier l’application",
+        "createApp": "Créer une application",
+        "createNewApp": "Créer une nouvelle application",
+        "selectIntegrationFirst": "Sélectionnez d’abord une intégration.",
+        "enterDisplayName": "Saisissez au moins un nom d’affichage.",
+        "webhookUrl": "URL du webhook"
+    },
     "common": {
+        "tryAgain": "Réessayer",
         "share": "Partager",
         "open": "Ouvrir",
         "accept": "Accepter",
@@ -106,6 +181,7 @@
             "alerts": "Alertes",
             "personalize": "Personnaliser",
             "adminTools": "Outils d'administration",
+            "myAssistant": "Mon assistant",
             "wallet": "Portefeuille",
             "passport": "Passeport",
             "aiTopics": "Sessions IA",
@@ -124,6 +200,12 @@
         },
         "settings": "Paramètres",
         "closeMenu": "Fermer le menu"
+    },
+    "myAssistant": {
+        "schedules": {
+            "autonomyUnavailableTitle": "Les tâches automatiques ne sont pas encore activées",
+            "autonomyUnavailableDescription": "Vous pouvez toujours discuter avec votre assistant. Les planifications récurrentes sont réservées à certains comptes de test."
+        }
     },
     "passport": {
         "buildMyLearnCard": {
@@ -992,9 +1074,31 @@
             "import": "Importer le passeport",
             "error": {
                 "invalidChars": "La phrase ne doit contenir que des chiffres et des lettres (a–f).",
-                "tooShort": "La phrase de récupération doit comporter 64 caractères.",
+                "wrongLength": "Le seed doit comporter exactement 64 caractères.",
                 "generic": "Une erreur est survenue. Veuillez réessayer."
             }
+        },
+        "developerSignIn": {
+            "title": "Connectez-vous avec votre seed de développeur",
+            "description": "Il s'agit du SECURE_SEED dans le fichier .env de votre projet. Il reste sur cet appareil : nous ne l'envoyons jamais nulle part.",
+            "pasteAction": "Coller depuis le presse-papiers",
+            "signingIn": "Connexion en cours...",
+            "switching": "Changement de compte...",
+            "or": "ou",
+            "seedLabel": "Seed (clé de développeur)",
+            "signInAction": "Se connecter",
+            "signOutAndSwitch": "Se déconnecter et changer",
+            "alreadySignedIn": "Vous êtes déjà connecté",
+            "alreadySignedInAs": "Vous êtes connecté en tant que {{name}}",
+            "alreadySignedInBody": "La connexion avec un seed vous déconnecte d'abord de votre compte actuel.",
+            "linkSwitchBody": "Ce lien contient le seed d'un autre compte. Changer de compte vous déconnectera de votre compte actuel.",
+            "switchAction": "Changer de compte",
+            "stayAction": "Rester connecté",
+            "continueAs": "Continuer en tant que {{name}}",
+            "notDeveloper": "Vous n'êtes pas développeur ? ",
+            "signInNormally": "Se connecter normalement",
+            "securityWarning": "Gardez votre seed privé. Quiconque le possède contrôle ce compte.",
+            "pasteHint": "Collez-le dans le champ ci-dessous."
         },
         "loader": {
             "messages": {
@@ -1591,7 +1695,27 @@
         },
         "loadError": "Impossible de charger vos contacts. Veuillez réessayer."
     },
+    "bulkImport": {
+        "title": "Importation groupée de justificatifs",
+        "step": "Étape {{number}}",
+        "prepareTitle": "Préparez et exportez votre fichier",
+        "fillSheetPrefix": "Remplissez cette",
+        "googleSheet": "feuille Google",
+        "fillSheetSuffix": "en utilisant :",
+        "fullImageUrls": "URL complètes des images (https://...) pour une utilisation directe",
+        "simpleFilenames": "OU des noms de fichiers simples (image.png) pour les images à téléverser dans un ZIP",
+        "exportCsv": "Exporter au format CSV :",
+        "downloadCsvPath": "Fichier → Télécharger → Valeurs séparées par des virgules (.csv)",
+        "uploadCsvTitle": "Téléversez votre fichier .csv",
+        "zipHelp": "Si vous avez utilisé des noms de fichiers plutôt que des URL, téléversez un fichier ZIP contenant ces images.",
+        "checkBeforeUploading": "Vérifiez avant de téléverser",
+        "checkBeforeUploadingDescription": "Vérifiez que toutes les images sont présentes et corrigez les erreurs avant de continuer.",
+        "uploading": "Téléversement...",
+        "uploadImagesZip": "Téléverser le ZIP d’images",
+        "previewCredentials": "Aperçu de {{count}} justificatifs"
+    },
     "consentFlow": {
+        "guardianApprovalRequired": "Demandez à un gestionnaire actuel du compte d’approuver cette connexion, puis réessayez.",
         "title": "Consentement",
         "acceptAndSync": "Accepter et synchroniser",
         "accepted": "Accepté",
@@ -1712,6 +1836,26 @@
         }
     },
     "recovery": {
+        "prompt": {
+            "openAria": "Configurer un moyen de se reconnecter",
+            "snoozeAria": "Me le rappeler dans 7 jours",
+            "calm": {
+                "title": "Ajoutez un moyen de vous reconnecter",
+                "body": "Si vous perdez cet appareil, vous pourrez ainsi vous reconnecter. Cela prend une minute."
+            },
+            "urgent": {
+                "title": "Cette session se termine lorsque vous fermez l’onglet",
+                "body": "Configurez un moyen de vous reconnecter, sinon vous perdrez l’accès à votre compte."
+            },
+            "success": {
+                "title": "Votre compte est protégé",
+                "body": "Vous pouvez vous reconnecter depuis n’importe quel appareil."
+            },
+            "action": {
+                "passkey": "Utiliser Face ID ou Touch ID",
+                "phrase": "Obtenir une phrase de récupération"
+            }
+        },
         "protectAccount": "Protégez votre compte",
         "accountRecovery": "Récupération de compte",
         "restoreAccess": "Restaurer l'accès",
@@ -1911,7 +2055,22 @@
         "loadingNotifications": "Chargement des notifications...",
         "refresh": "Actualiser",
         "restored": "Rétabli",
-        "unableToLoad": "Impossible de charger la notification"
+        "unableToLoad": "Impossible de charger la notification",
+        "credentialUpdated": "Titre mis à jour",
+        "updated": "Mis à jour",
+        "checkingForUpdate": "Recherche de mises à jour…",
+        "updateCheckFailed": "Problème de connexion. Vérifiez votre connexion internet et réessayez.",
+        "updatedCredentialUnavailable": "Ce titre n'est pas encore disponible. Veuillez réessayer plus tard."
+    },
+    "credentialHistory": {
+        "title": "Versions précédentes",
+        "empty": "Aucune version précédente n'est enregistrée sur cet appareil.",
+        "unavailable": "Cette version n'est pas disponible sur cet appareil.",
+        "view": "Voir",
+        "loadingVersion": "Chargement de la version…",
+        "done": "Terminé",
+        "updatedOn": "Mis à jour le {{date}}",
+        "versionFrom": "Version du {{date}}"
     },
     "share": {
         "addContact": "Ajouter un contact",
@@ -2338,7 +2497,8 @@
         },
         "menu": {
             "manageIssuances": "Gérer les émissions",
-            "viewData": "Voir les données"
+            "viewData": "Voir les données",
+            "viewPreviousVersions": "Voir les versions précédentes"
         },
         "shortBoost": {
             "selectRecipient": "Sélectionner le destinataire",
@@ -2577,6 +2737,7 @@
         "title": "Familles",
         "joinFamily": "Rejoindre la famille",
         "addFamilyMember": "Ajouter un membre de la famille",
+        "createNewFamily": "Créer une nouvelle famille",
         "familyAccount": "Compte familial",
         "switchProfile": "Changer de profil",
         "childProfile": "Profil enfant",
@@ -2607,7 +2768,9 @@
         },
         "actionMenu": {
             "editFamily": "Modifier la famille",
-            "shareFamily": "Partager la famille"
+            "shareFamily": "Partager la famille",
+            "viewProfile": "Voir le profil",
+            "boost": "Reconnaissance"
         },
         "childInvite": {
             "title": "Compte enfant",
@@ -2651,6 +2814,22 @@
         "none": "Aucun",
         "colorHexCode": "Code couleur hex",
         "confirmRemoveMember": "Voulez-vous vraiment retirer ce {{title}} ?",
+        "titleOptions": {
+            "guardian": "Tuteur",
+            "guardians": "Tuteurs",
+            "parent": "Parent",
+            "parents": "Parents",
+            "grandparent": "Grand-parent",
+            "grandparents": "Grands-parents",
+            "caretaker": "Responsable",
+            "caretakers": "Responsables",
+            "advocate": "Défenseur",
+            "advocates": "Défenseurs",
+            "child": "Enfant",
+            "children": "Enfants",
+            "kid": "Jeune",
+            "kids": "Jeunes"
+        },
         "titlesToggle": {
             "admins": "Administrateurs",
             "kids": "Enfants"
@@ -2682,7 +2861,9 @@
             "enterTitle": "Saisir le PIN",
             "enterSubtext": "Veuillez saisir votre PIN actuel pour continuer",
             "verifying": "Vérification...",
-            "forUser": "pour {{name}}"
+            "forUser": "pour {{name}}",
+            "requiresFiveDigits": "Le code PIN doit comporter 5 chiffres",
+            "invalidPin": "Code PIN incorrect. Veuillez réessayer"
         },
         "guardianInvite": {
             "shareTitle": "Invitation de tuteur",
@@ -2704,6 +2885,36 @@
         "nationalNetworkAdmin": "Administrateur réseau national"
     },
     "feedback": {
+        "reporting": {
+            "reportProblem": "Signaler un problème",
+            "shareIdea": "Partager une idée",
+            "whatHappened": "Que s’est-il passé ?",
+            "problemPlaceholder": "Dites-nous ce que vous attendiez et ce qui s’est passé.",
+            "ideaQuestion": "Qu’est-ce qui améliorerait LearnCard ?",
+            "ideaPlaceholder": "Décrivez votre idée.",
+            "addScreenshot": "Ajouter une capture d’écran",
+            "addingScreenshot": "Ajout de la capture d’écran…",
+            "screenshotError": "Impossible d’ajouter cette capture. Essayez-en une autre.",
+            "screenshotAttached": "Capture d’écran jointe",
+            "removeScreenshot": "Supprimer la capture",
+            "whatWeSend": "Ce que nous enverrons",
+            "bugDisclosure": "Votre message, une capture facultative, les informations sur l’application et l’appareil, les écrans récents et les journaux nettoyés.",
+            "ideaDisclosure": "Votre idée, une capture facultative, l’écran actuel, la version de l’application et l’organisation.",
+            "ideaDisclosureWithoutScreenshot": "Votre idée, l’écran actuel, la version de l’application et l’organisation.",
+            "cancel": "Annuler",
+            "sendReport": "Envoyer le rapport",
+            "sendingReport": "Envoi du rapport...",
+            "shareIdeaAction": "Partager l’idée",
+            "sharingIdea": "Partage de l’idée...",
+            "thanks": "Merci de nous aider à améliorer LearnCard.",
+            "error": "Nous n’avons pas pu envoyer votre commentaire. Réessayez.",
+            "tryAgain": "Réessayer",
+            "promptTitle": "Signaler un problème ?",
+            "promptScreenshotBody": "Nous avons capturé l’écran actuel pour aider à expliquer ce qui s’est passé.",
+            "promptShakeBody": "Ouvrez le formulaire de commentaires pour nous expliquer ce qui s’est passé.",
+            "promptAction": "Signaler",
+            "dismiss": "Fermer"
+        },
         "howWasThat": "Comment ça s'est passé ?",
         "thanks": "Merci pour votre retour !",
         "bad": "Pas bien",
@@ -2753,6 +2964,7 @@
             "deleteCredentialError": "Erreur lors de la suppression de l'accréditation : impossible de localiser l'ID d'enregistrement.",
             "shareLinkCopied": "Lien de partage copié dans le presse-papiers",
             "shareLinkCopyFailed": "Impossible de copier le lien de partage",
+            "shareLinkGenerationFailed": "Nous n’avons pas pu créer de lien de partage. Réessayez.",
             "templateIdCopied": "ID de modèle copié dans le presse-papiers",
             "templateIdCopyFailed": "Impossible de copier l'ID de modèle",
             "boostLinkCopied": "Lien du boost copié dans le presse-papiers",
@@ -2998,7 +3210,9 @@
         "filterResults": "Filtrer les résultats...",
         "courses": "Cours",
         "media": "Médias",
+        "explorePathways": "Explorer les parcours",
         "exploreRoles": "Explorer les rôles",
+        "findRoles": "Trouver des rôles",
         "jobStability": "Stabilité de l'emploi",
         "workLifeBalance": "Équilibre vie pro-vie perso",
         "iWantTo": "Je veux...",
@@ -3170,6 +3384,18 @@
             "select": "Sélectionner"
         },
         "credential": {
+            "category": {
+                "badge": "Badge",
+                "family": "Famille",
+                "achievement": "Réussite",
+                "course": "Cours",
+                "membership": "Adhésion",
+                "skill": "Compétence",
+                "id": "Identité",
+                "experience": "Expérience",
+                "portfolio": "Portfolio",
+                "assistance": "Assistance"
+            },
             "lifecycle": {
                 "revoked": "Révoqué",
                 "suspended": "Suspendu"
@@ -4273,35 +4499,6 @@
                 "developer": "Développeur",
                 "admin": "Administration",
                 "selectProject": "Sélectionner un Projet"
-            },
-            "betaGate": {
-                "betaAccessRequired": "Accès Beta Requis",
-                "betaAccessDesc": "Cette fonctionnalité est actuellement en version beta. Saisissez votre code d'accès pour continuer.",
-                "accessCode": "Code d'Accès",
-                "accessCodePlaceholder": "Entrez votre code d'accès beta",
-                "continue": "Continuer",
-                "noAccessCode": "Vous n'avez pas de code d'accès ?",
-                "contactUs": "Contactez-nous",
-                "backToDeveloperPortal": "← Retour au Portail Développeur",
-                "invalidAccessCode": "Code d'accès invalide. Vérifiez et réessayez.",
-                "welcomeToBeta": "Bienvenue dans la Beta !",
-                "welcomeDesc": "Vous prévisualisez de nouveaux outils développeur avant leur disponibilité publique.",
-                "betaPreviewNotice": "Avis d'Aperçu Beta",
-                "betaPreviewDesc": "Ceci est une fonctionnalité de pré-lancement. Les fonctionnalités peuvent changer et vous pouvez rencontrer des bugs. Vos commentaires sont précieux !",
-                "yourAccessIncludes": "Votre accès inclut :",
-                "integrationDashboard": "Tableau de bord d'intégration",
-                "apiTokenManagement": "Gestion des jetons API",
-                "allIntegrationGuides": "Tous les guides d'intégration",
-                "otherGuidesLocked": "Autres guides (verrouillés)",
-                "letsGo": "C'est Parti !",
-                "feedbackContact": "support@learncard.com",
-                "questionsFeedback": "Des questions ou des commentaires ?",
-                "guideLockedTitle": "{{name}}",
-                "guideLockedDesc": "Ce guide n'est pas disponible avec votre accès bêta actuel. Contactez-nous pour demander un accès étendu.",
-                "requestAccess": "Demander l'Accès",
-                "locked": "verrouillée",
-                "guideNotAvailable": "Ce guide n'est pas disponible avec votre accès beta actuel.",
-                "guideLabel": "guide"
             },
             "codeBlock": {
                 "copyCode": "Copier le code",
@@ -6570,8 +6767,6 @@
             },
             "hub": {
                 "comingSoon": "Prochainement",
-                "locked": "Verrouillé",
-                "requestAccess": "Demander l'Accès",
                 "inProgress": "En Cours",
                 "getStarted": "Commencer",
                 "createProject": {
@@ -7705,9 +7900,9 @@
             "changesSaved": "Modifications enregistrées !",
             "draftUpdated": "Brouillon mis à jour",
             "draftSaved": "Brouillon enregistré",
-            "appUpdated": "Votre application \"{appName}\" a été mise à jour.",
-            "appSavedAsDraft": "Votre application \"{appName}\" a été enregistrée comme brouillon.",
-            "appSubmittedForReview": "Votre application \"{appName}\" a été soumise pour examen.",
+            "appUpdated": "Votre application \"{{appName}}\" a été mise à jour.",
+            "appSavedAsDraft": "Votre application \"{{appName}}\" a été enregistrée comme brouillon.",
+            "appSubmittedForReview": "Votre application \"{{appName}}\" a été soumise pour examen.",
             "error": "Erreur",
             "back": "Retour",
             "savingDraft": "Enregistrement...",

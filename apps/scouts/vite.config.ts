@@ -10,9 +10,15 @@ import svgr from 'vite-plugin-svgr';
 import stdlibbrowser from 'node-stdlib-browser';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
+import type { Plugin as EsbuildPlugin } from 'esbuild';
 
 import { findDuplicateMessageImports } from './scripts/check-i18n-imports.mjs';
 import { paraglideMissingKeyOnWarn } from './paraglideOnWarn';
+import { parseScoutsEnvironment } from './src/config/buildEnvironment';
+import { deepMerge } from '../../packages/learn-card-base/src/config/deepMerge';
+import productionTenantConfig from './environments/scoutpass/config.json';
+import localTenantConfig from './environments/scoutpass/config.local.json';
+import stagingTenantConfig from './environments/scoutpass/config.staging.json';
 
 /**
  * Fail the build/dev start if any file imports paraglide/messages.js twice
@@ -34,6 +40,12 @@ const i18nImportGuard = () => ({
     },
 });
 
+// The polyfill package ships against a different esbuild type instance than Vite.
+const globalPolyfillPlugin = GlobalPolyfill({
+    process: true,
+    buffer: true,
+}) as unknown as EsbuildPlugin;
+
 // App version read directly from this app's package.json.
 // Deliberately NOT `process.env.npm_package_version` — that reflects the package.json
 // of the directory the build was invoked from, so CI builds run from the monorepo root
@@ -44,22 +56,30 @@ const packageVersion = (
     }
 ).version;
 
-export default defineConfig(({ mode }) => {
-    const env = loadEnv(mode, process.cwd(), [
-        'VITE_',
-        'LCN_URL',
-        'LCN_API_URL',
-        'CLOUD_URL',
-        'LEARN_CLOUD_XAPI_URL',
-        'API_URL',
-        'NODE_ENV',
-        'SENTRY_ENV',
-        'SENTRY_DSN',
-        'GOOGLE_MAPS_API_KEY',
-        'REACT_APP_KEY_DERIVATION_PROVIDER',
-        'REACT_APP_SSS_SERVER_URL',
-    ]);
-    const cacheDir = env.VITE_DOCKER_SOURCE === 'true' ? '.vite-docker' : '.vite-local';
+export default defineConfig(({ mode, command }) => {
+    const loadedEnvironment = loadEnv(mode, __dirname, '');
+    const environment = parseScoutsEnvironment(
+        {
+            ...loadedEnvironment,
+            ...process.env,
+            MODE: mode,
+            VITE_NODE_ENV:
+                process.env.VITE_NODE_ENV ??
+                loadedEnvironment.VITE_NODE_ENV ??
+                (mode === 'production' ? 'production' : 'development'),
+        },
+        `Vite ${command} (${mode})`
+    );
+    const cacheDir = environment.VITE_DOCKER_SOURCE ? '.vite-docker' : '.vite-local';
+    const stageTenantConfig = environment.VITE_NODE_ENV.startsWith('staging')
+        ? stagingTenantConfig
+        : environment.VITE_NODE_ENV.startsWith('development')
+          ? localTenantConfig
+          : {};
+    const tenantOverrides = deepMerge(
+        productionTenantConfig as Record<string, unknown>,
+        stageTenantConfig as Record<string, unknown>
+    );
 
     return {
         cacheDir,
@@ -88,37 +108,16 @@ export default defineConfig(({ mode }) => {
             esbuildOptions: {
                 target: 'esnext',
                 define: { global: 'globalThis' },
-                plugins: [GlobalPolyfill({ process: true, buffer: true }) as any],
+                plugins: [globalPolyfillPlugin],
             },
         },
         define: {
-            // Only define browser-safe values individually. Defining `process.env` would serialize
-            // the build runner's environment, including credentials, into the browser bundle.
-            LCN_URL: env.LCN_URL ? JSON.stringify(env.LCN_URL) : 'undefined',
-            LCN_API_URL: env.LCN_API_URL ? JSON.stringify(env.LCN_API_URL) : 'undefined',
-            CLOUD_URL: env.CLOUD_URL ? JSON.stringify(env.CLOUD_URL) : 'undefined',
-            LEARN_CLOUD_XAPI_URL: env.LEARN_CLOUD_XAPI_URL
-                ? JSON.stringify(env.LEARN_CLOUD_XAPI_URL)
-                : 'undefined',
-            API_URL: env.API_URL ? JSON.stringify(env.API_URL) : 'undefined',
             __PACKAGE_VERSION__: JSON.stringify(packageVersion),
             __APP_VERSION__: JSON.stringify(packageVersion),
+            __SCOUTS_BUILD_ENV__: JSON.stringify(environment),
+            __SCOUTS_TENANT_OVERRIDES__: JSON.stringify(tenantOverrides),
             'process.version': '"1.0.0"',
-            IS_PRODUCTION: env.NODE_ENV === 'production',
-            SENTRY_ENV: env.SENTRY_ENV ? JSON.stringify(env.SENTRY_ENV) : '"scouts-development"',
-            SENTRY_DSN: env.SENTRY_DSN
-                ? JSON.stringify(env.SENTRY_DSN)
-                : '"https://68210fb71359458b9746c55cf5f545b4@o246842.ingest.us.sentry.io/4505432118984704"',
-            GOOGLE_MAPS_API_KEY: env.GOOGLE_MAPS_API_KEY
-                ? JSON.stringify(env.GOOGLE_MAPS_API_KEY)
-                : 'undefined',
-            // SSS Key Manager configuration
-            'process.env.REACT_APP_KEY_DERIVATION_PROVIDER': env.REACT_APP_KEY_DERIVATION_PROVIDER
-                ? JSON.stringify(env.REACT_APP_KEY_DERIVATION_PROVIDER)
-                : 'undefined',
-            'process.env.REACT_APP_SSS_SERVER_URL': env.REACT_APP_SSS_SERVER_URL
-                ? JSON.stringify(env.REACT_APP_SSS_SERVER_URL)
-                : 'undefined',
+            IS_PRODUCTION: mode === 'production',
         },
         resolve: {
             // The self-host Docker build (docker-build script) sets VITE_DOCKER_SOURCE=true so
@@ -126,7 +125,7 @@ export default defineConfig(({ mode }) => {
             // the dev server. This lets the container bundle the app in one vite pass without
             // pre-building every workspace package's dist. Netlify's `build` leaves this unset and
             // keeps resolving the published dist outputs.
-            ...(process.env.VITE_DOCKER_SOURCE === 'true'
+            ...(environment.VITE_DOCKER_SOURCE
                 ? { conditions: ['development', 'module', 'browser', 'import', 'default'] }
                 : {}),
             alias: [
@@ -160,7 +159,7 @@ export default defineConfig(({ mode }) => {
                 '/lca-api': {
                     target: 'http://localhost:5100',
                     changeOrigin: true,
-                    rewrite: path => path.replace(/^\/lca-api/, '/api'),
+                    rewrite: requestPath => requestPath.replace(/^\/lca-api/, '/api'),
                 },
             },
         },

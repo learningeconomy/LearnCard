@@ -1,6 +1,8 @@
 import React from 'react';
 
 import ClrCourseSection from '../ClrCourseSection';
+import ClrAssessmentSection from '../ClrAssessmentSection';
+import ClrAssessmentDetailPanel from '../ClrAssessmentDetailPanel';
 import ClrProgramsSection from '../ClrProgramsSection';
 import ClrCourseDetailPanel from '../ClrCourseDetailPanel';
 import ClrProgramDetailPanel from '../ClrProgramDetailPanel';
@@ -14,6 +16,7 @@ import { ModalTypes, useModal } from 'learn-card-base';
 
 import type {
     ViewOptions,
+    AssessmentDisplayModel,
     CourseDisplayModel,
     ProgramDisplayModel,
     ClrTranscriptDisplayModel,
@@ -43,6 +46,18 @@ const ClrTranscriptFullPage: React.FC<{
                 adminMode={adminMode}
                 associations={model.associations}
                 competencies={model.competencies}
+                issuerName={model.header.issuerName?.value}
+                issuerLogo={issuerLogo}
+            />
+        );
+    };
+
+    const handleSelectAssessment = (assessment: AssessmentDisplayModel) => {
+        newModal(
+            <ClrAssessmentDetailPanel
+                assessment={assessment}
+                boost={boost}
+                adminMode={adminMode}
                 issuerName={model.header.issuerName?.value}
                 issuerLogo={issuerLogo}
             />
@@ -95,6 +110,17 @@ const ClrTranscriptFullPage: React.FC<{
                             <ClrCourseSection
                                 model={model}
                                 onSelectCourse={handleSelectCourse}
+                                adminMode={adminMode}
+                            />
+                        )}
+
+                    {/* Assessments (ACT, rubric-based skills assessments, ...) */}
+                    {(selectedView === 'StructuredTranscriptView' ||
+                        selectedView === 'VerifierInspectionView') &&
+                        model.assessments.length > 0 && (
+                            <ClrAssessmentSection
+                                assessments={model.assessments}
+                                onSelectAssessment={handleSelectAssessment}
                                 adminMode={adminMode}
                             />
                         )}

@@ -1,14 +1,21 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
+import { v4 as uuidv4 } from 'uuid';
+import { environment } from '@environment';
 
 import { t, didAndChallengeRoute, authorizedDidRoute } from '@routes';
 
+import cache from '@cache';
 import { createPushNotificationRegistration } from '@accesslayer/pushtokens/create';
 import { deletePushNotificationRegistration } from '@accesslayer/pushtokens/delete';
-import { LCNNotificationValidator } from '@learncard/types';
+import { LCNNotification, LCNNotificationValidator } from '@learncard/types';
 import { sendPushNotification } from '@helpers/pushNotifications.helpers';
 import { isDidOwnerOfNotification } from '@helpers/notifications.helpers';
-import { createNotification } from '@accesslayer/notifications/create';
+import {
+    createNotification,
+    isManagedCredentialRefreshNotification,
+    upsertCredentialRefreshNotification,
+} from '@accesslayer/notifications/create';
 import {
     getPaginatedNotificationsForDid,
     getNotificationById,
@@ -27,6 +34,39 @@ import {
     PaginatedNotificationsOptionsValidator,
     NotificationsSortEnumValidator,
 } from 'types/notifications';
+
+export const E2E_PUSH_ATTEMPT_CACHE_PREFIX = 'e2e:push-attempt:';
+
+/**
+ * E2E-only observability probe (LC-2117/LC-2136): records that the route decided to
+ * attempt a push for a notification. Mirrors the brain-service `e2e:notification-queue`
+ * pattern so cross-service tests can assert push throttling without real FCM delivery.
+ * No-op outside IS_E2E_TEST; never blocks or alters delivery behavior.
+ */
+const recordE2ePushAttempt = async (notification: LCNNotification): Promise<void> => {
+    if (!environment.IS_E2E_TEST) return;
+
+    try {
+        const toDid = typeof notification.to === 'string' ? notification.to : notification.to.did;
+        const metadata = notification.data?.metadata;
+
+        await cache.set(
+            `${E2E_PUSH_ATTEMPT_CACHE_PREFIX}${uuidv4()}`,
+            JSON.stringify({
+                type: notification.type,
+                toDid,
+                at: new Date().toISOString(),
+                refreshId: typeof metadata?.refreshId === 'string' ? metadata.refreshId : undefined,
+                routeKey: typeof metadata?.routeKey === 'string' ? metadata.routeKey : undefined,
+                deliveryKey:
+                    typeof metadata?.deliveryKey === 'string' ? metadata.deliveryKey : undefined,
+                version: typeof metadata?.version === 'number' ? metadata.version : undefined,
+            })
+        );
+    } catch (error) {
+        console.error('Failed to record E2E push attempt', error);
+    }
+};
 
 export const notificationsRouter = t.router({
     notifications: didAndChallengeRoute
@@ -274,11 +314,43 @@ export const notificationsRouter = t.router({
                 return true;
             }
 
+            let sendNotificationResponse: unknown;
+
+            // Managed credential refresh deliveries (LC-2117/LC-2136) collapse
+            // atomically per delivery window: persist first, push only when the
+            // upsert inserted a new window record. Other notification types keep
+            // the existing behavior to limit regression scope.
+            if (isManagedCredentialRefreshNotification(input)) {
+                const refreshResult = await upsertCredentialRefreshNotification(input);
+
+                if (!refreshResult) return false;
+
+                if (refreshResult.created) {
+                    await recordE2ePushAttempt(input);
+
+                    try {
+                        sendNotificationResponse = await sendPushNotification(input);
+                    } catch (error) {
+                        console.error(
+                            'Failed to send push notification after durable storage',
+                            error
+                        );
+                    }
+                }
+
+                if (ctx.debug)
+                    console.log(
+                        '✅ Send Notification Completed',
+                        sendNotificationResponse,
+                        refreshResult
+                    );
+                return true;
+            }
+
             const creationResult = await createNotification(input);
 
             if (!creationResult) return false;
 
-            let sendNotificationResponse: unknown;
             if (creationResult.created) {
                 try {
                     sendNotificationResponse = await sendPushNotification(input);

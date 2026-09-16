@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
@@ -23,8 +24,6 @@ import {
     VCValidator,
     JWEValidator,
     UnsignedVC,
-    VC,
-    JWE,
     AutoBoostConfigValidator,
     LCNNotificationTypeEnumValidator,
     LCNProfileValidator,
@@ -44,6 +43,7 @@ import {
     getContractTermsForProfile,
     getTransactionsForTerms,
     hasProfileConsentedToContract,
+    hasGuardianApprovalHistory,
     isProfileConsentFlowContractAdmin,
     getWritersForContract,
 } from '@accesslayer/consentflowcontract/relationships/read';
@@ -88,6 +88,7 @@ import { getCredentialUri } from '@helpers/credential.helpers';
 import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
 import { getDidWeb } from '@helpers/did.helpers';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
+import type { IssuedCredential } from '../types/credential';
 import { getProfilesByProfileIds } from '@accesslayer/profile/read';
 import { getProfilesThatManageAProfile } from '@accesslayer/profile/relationships/read';
 import { resolveAndValidateDeniedWriters } from '@helpers/consentflow.helpers';
@@ -853,7 +854,7 @@ export const contractsRouter = t.router({
             }
 
             // Issue VC with signing authority
-            let credential: VC | JWE;
+            let credential: IssuedCredential;
             try {
                 credential = await issueCredentialWithSigningAuthority(
                     { type: 'profile', profile },
@@ -906,7 +907,7 @@ export const contractsRouter = t.router({
         .output(z.object({ termsUri: z.string(), redirectUrl: z.string().optional() }))
         .mutation(async ({ input, ctx }) => {
             const { profile } = ctx.user;
-            const { isChildAccount, hasGuardianApproval } = ctx;
+            const { isChildAccount, hasGuardianApproval, guardianIdentity } = ctx;
 
             if (isChildAccount && !hasGuardianApproval) {
                 throw new TRPCError({
@@ -937,6 +938,19 @@ export const contractsRouter = t.router({
                 });
             }
 
+            if (!guardianIdentity) {
+                const previousTerms = await getContractTermsForProfile(
+                    profile,
+                    contractDetails.contract
+                );
+                if (previousTerms && (await hasGuardianApprovalHistory(previousTerms))) {
+                    throw new TRPCError({
+                        code: 'FORBIDDEN',
+                        message: 'This consent requires approval from a current guardian',
+                    });
+                }
+            }
+
             if (!areTermsValid(terms, contractDetails.contract.contract)) {
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid Terms for Contract' });
             }
@@ -952,7 +966,7 @@ export const contractsRouter = t.router({
             let redirectUrl: string | undefined;
             // SmartResume handling
             const isSmartResume =
-                contractUri === process.env.SMART_RESUME_CONTRACT_URI ||
+                contractUri === environment.SMART_RESUME_CONTRACT_URI ||
                 contractUri ===
                     'lc:network:network.learncard.com/trpc:contract:55b738f0-49f4-4b33-b6c1-afa99b605cd6'; // hardcode for quick fix purposes
             if (isSmartResume) {
@@ -960,13 +974,13 @@ export const contractsRouter = t.router({
                     throw new Error('Missing recipientToken for SmartResume');
                 }
 
-                const isProduction = !process.env.IS_OFFLINE;
+                const isProduction = !environment.IS_OFFLINE;
 
                 const srUrl = isProduction
                     ? 'https://my.smartresume.com/'
                     : 'https://mystage.smartresume.com/';
-                const clientId = process.env.SMART_RESUME_CLIENT_ID;
-                const accessKey = process.env.SMART_RESUME_ACCESS_KEY;
+                const clientId = environment.SMART_RESUME_CLIENT_ID;
+                const accessKey = environment.SMART_RESUME_ACCESS_KEY;
 
                 const accessTokenResponse = (await fetch(`${srUrl}api/v1/token`, {
                     method: 'POST',
@@ -1076,7 +1090,19 @@ export const contractsRouter = t.router({
             await consentToContract(
                 profile,
                 contractDetails,
-                { terms, expiresAt, oneTime },
+                {
+                    terms,
+                    expiresAt,
+                    oneTime,
+                    guardianApproval: guardianIdentity
+                        ? {
+                              guardianProfileId: guardianIdentity.profileId,
+                              guardianDid: guardianIdentity.did,
+                              approvedAt: new Date().toISOString(),
+                              contractUpdatedAt: contractDetails.contract.updatedAt,
+                          }
+                        : undefined,
+                },
                 ctx.domain
             );
 
@@ -1195,7 +1221,7 @@ export const contractsRouter = t.router({
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { isChildAccount, hasGuardianApproval } = ctx;
+            const { isChildAccount, hasGuardianApproval, guardianIdentity } = ctx;
 
             if (isChildAccount && !hasGuardianApproval) {
                 throw new TRPCError({
@@ -1224,6 +1250,13 @@ export const contractsRouter = t.router({
                 });
             }
 
+            if (!guardianIdentity && (await hasGuardianApprovalHistory(relationship.terms))) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'This consent requires approval from a current guardian',
+                });
+            }
+
             if (!areTermsValid(terms, relationship.contract.contract)) {
                 throw new TRPCError({
                     code: 'BAD_REQUEST',
@@ -1241,7 +1274,23 @@ export const contractsRouter = t.router({
             }
 
             await Promise.all([
-                updateTerms(relationship, { terms, expiresAt, oneTime }, ctx.domain),
+                updateTerms(
+                    relationship,
+                    {
+                        terms,
+                        expiresAt,
+                        oneTime,
+                        guardianApproval: guardianIdentity
+                            ? {
+                                  guardianProfileId: guardianIdentity.profileId,
+                                  guardianDid: guardianIdentity.did,
+                                  approvedAt: new Date().toISOString(),
+                                  contractUpdatedAt: relationship.contract.updatedAt,
+                              }
+                            : undefined,
+                    },
+                    ctx.domain
+                ),
                 deleteStorageForUri(uri),
             ]);
 
@@ -2070,8 +2119,8 @@ export const contractsRouter = t.router({
             const contract = contractUri
                 ? await getContractByUri(contractUri)
                 : contractId
-                ? await getContractById(contractId)
-                : null;
+                  ? await getContractById(contractId)
+                  : null;
 
             if (!contract)
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract not found' });
@@ -2361,9 +2410,8 @@ export const contractsRouter = t.router({
                 });
             }
 
-            const results = await getSharedInsightsRequestsForTargetProfile(
-                resolvedTargetProfileId
-            );
+            const results =
+                await getSharedInsightsRequestsForTargetProfile(resolvedTargetProfileId);
 
             return results.map(({ contractId, ...rest }) => ({
                 ...rest,

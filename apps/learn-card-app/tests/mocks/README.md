@@ -55,7 +55,7 @@ test.describe('My feature @mocked', () => {
 });
 ```
 
-Run it: `pnpm test:e2e:mock` (or `pnpm exec nx run learn-card-app:test-mock`). Stop docker
+Run it: `pnpm test-mock` (or `pnpm exec nx run learn-card-app:test-mock`). Stop docker
 first to prove it's truly offline.
 
 ## Adding coverage for NEW backend calls
@@ -82,13 +82,7 @@ the `har/.gitignore` blocks those).
 import type { BrainOutputs } from './mocks/trpc';
 
 const mock = await installNetwork(page);
-mock.on(
-    'boost.someNewProc',
-    () =>
-        ({
-            /* ... */
-        } satisfies BrainOutputs['boost']['someNewProc'])
-);
+mock.on('boost.someNewProc', () => ({/* ... */}) satisfies BrainOutputs['boost']['someNewProc']);
 // return ABORT from a handler to force the retry-able error path.
 ```
 

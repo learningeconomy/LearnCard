@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
@@ -59,7 +60,7 @@ import {
 import { createSkillTree } from './skill-inputs';
 
 const SEMANTIC_SEARCH_RATE_LIMIT_PER_MIN = Number(
-    process.env.SKILL_SEMANTIC_SEARCH_RATE_LIMIT_PER_MIN ?? 80
+    environment.SKILL_SEMANTIC_SEARCH_RATE_LIMIT_PER_MIN ?? 80
 );
 
 const stripParent = <T extends Record<string, any>>(skill: T): Omit<T, 'parentId'> => {

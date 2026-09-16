@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import { randomUUID } from 'crypto';
 import { z } from 'zod';
 
@@ -20,21 +21,21 @@ export interface SkillTreeInput {
 }
 
 const RawSkillTreeNodeInputValidator: z.ZodType<SkillTreeInput> = z.lazy(() =>
-    z
-        .object({
-            id: z.string().optional(),
-            statement: z.string(),
-            description: z.string().optional(),
-            code: z.string().optional(),
-            icon: z.string().optional(),
-            type: z.string().optional(),
-            status: SkillStatusEnum.optional(),
-            children: z.array(SkillTreeNodeInputValidator).optional()
-        }))
+    z.object({
+        id: z.string().optional(),
+        statement: z.string(),
+        description: z.string().optional(),
+        code: z.string().optional(),
+        icon: z.string().optional(),
+        type: z.string().optional(),
+        status: SkillStatusEnum.optional(),
+        children: z.array(SkillTreeNodeInputValidator).optional(),
+    })
+);
 
 // Annoying hack because the unit tests don't want to play nice with the zod-openapi plugin.
 export const SkillTreeNodeInputValidator =
-    process.env.NODE_ENV === 'test'
+    environment.NODE_ENV === 'test'
         ? RawSkillTreeNodeInputValidator
         : RawSkillTreeNodeInputValidator.meta({ id: 'SkillTreeNodeInputValidator' });
 

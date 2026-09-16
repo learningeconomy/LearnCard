@@ -95,8 +95,8 @@ const ShareBoostLink: React.FC<{
         issuerName = issuerProfile
             ? issuerProfile?.displayName
             : isIssuerLoading
-            ? m['common.loading']()
-            : m['common.unknown']();
+              ? m['common.loading']()
+              : m['common.unknown']();
     } else {
         issuerName = getIssuerNameNonBoost(cred);
     }
@@ -105,14 +105,14 @@ const ShareBoostLink: React.FC<{
         issueeName = issueeProfile
             ? issueeProfile?.displayName
             : isIssueeLoading
-            ? m['common.loading']()
-            : m['common.unknown']();
+              ? m['common.loading']()
+              : m['common.unknown']();
     } else {
         issueeName = myProfile
             ? myProfile?.displayName
             : myProfileLoading
-            ? m['common.loading']()
-            : m['common.unknown']();
+              ? m['common.loading']()
+              : m['common.unknown']();
     }
 
     if (issueeProfileId || issueeDid?.includes('did:web:scoutnetwork.org')) {

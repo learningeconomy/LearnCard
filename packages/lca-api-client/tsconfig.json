@@ -1,4 +1,5 @@
 {
+    "extends": "../../tsconfig.library.json",
     "compilerOptions": {
         "lib": ["es2022", "DOM"],
         "module": "esnext",

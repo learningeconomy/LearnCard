@@ -9,6 +9,18 @@ import { paraglideMissingKeyOnWarn } from '../paraglideOnWarn';
 import GlobalPolyfill from '@esbuild-plugins/node-globals-polyfill';
 import stdlibbrowser from 'node-stdlib-browser';
 import fs from 'fs';
+import type { LearnCardAppEnvironment } from '../src/config/buildEnvironment';
+
+const STORYBOOK_BUILD_ENVIRONMENT = {
+    MODE: 'development',
+    VITE_ENABLE_AUTH_DEBUG_WIDGET: false,
+    VITE_DOCKER_SOURCE: false,
+    ANALYZE: false,
+    CHOKIDAR_USEPOLLING: false,
+    CHOKIDAR_INTERVAL: 1000,
+    DEV: false,
+    PROD: true,
+} satisfies LearnCardAppEnvironment;
 
 /**
  * `@learncard/react`'s prebuilt `dist/**\/*.svg` files are JS modules that
@@ -75,6 +87,8 @@ const config: StorybookConfig = {
             },
             define: {
                 __PACKAGE_VERSION__: JSON.stringify('storybook'),
+                __APP_BUILD_ENV__: JSON.stringify(STORYBOOK_BUILD_ENVIRONMENT),
+                __APP_VERSION__: JSON.stringify('storybook'),
                 __BUILD_SHA__: JSON.stringify('storybook'),
                 __BUILD_DATE__: JSON.stringify(new Date().toISOString()),
                 IS_PRODUCTION: false,
@@ -116,7 +130,7 @@ const config: StorybookConfig = {
                     define: { global: 'globalThis' },
                     // Injects the Buffer/process globals into pre-bundled deps, matching
                     // the main app's vite.config.ts optimizeDeps setup.
-                    plugins: [GlobalPolyfill({ process: true, buffer: true }) as any],
+                    plugins: [GlobalPolyfill({ process: true, buffer: true })],
                 },
             },
         }),

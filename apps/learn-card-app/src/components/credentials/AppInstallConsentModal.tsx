@@ -192,7 +192,7 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
         );
     };
 
-    const doInstall = async () => {
+    const doInstall = async (beforeSubmit?: () => Promise<void>) => {
         const installStartedAt = Date.now();
 
         // If there's a contract, consent to it first
@@ -206,6 +206,7 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                     expiresAt: undefined,
                     oneTime: false,
                     skipSharedUriMaterialization: true,
+                    beforeSubmit,
                 });
 
                 try {
@@ -232,21 +233,27 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
 
                 // Sync any auto-boost credentials
                 fetchNewContractCredentials();
-            } catch (error: any) {
-                // If the user has already consented, ignore the error
+            } catch (error) {
+                const data =
+                    error && typeof error === 'object' && 'data' in error ? error.data : undefined;
+                const shape =
+                    error && typeof error === 'object' && 'shape' in error
+                        ? error.shape
+                        : undefined;
+                const dataCode =
+                    data && typeof data === 'object' && 'code' in data ? data.code : undefined;
+                const shapeCode =
+                    shape && typeof shape === 'object' && 'code' in shape ? shape.code : undefined;
+                const message = error instanceof Error ? error.message : '';
+                // If the user has already consented, ignore the error.
                 const isAlreadyConsented =
-                    error?.data?.code === 'CONFLICT' ||
-                    error?.shape?.code === 'CONFLICT' ||
-                    error?.message?.includes('already consented');
+                    dataCode === 'CONFLICT' ||
+                    shapeCode === 'CONFLICT' ||
+                    message.includes('already consented');
 
-                if (
-                    error?.data?.code === 'FORBIDDEN' &&
-                    error?.message?.includes('guardian approval')
-                ) {
-                    // Not 100% sure why we're being intentionally vague about error messages,
-                    //   but we should definitely show this particular one
+                if (dataCode === 'FORBIDDEN' && /guardian|manager/i.test(message)) {
                     setIsConsenting(false);
-                    presentToast(error?.message, {
+                    presentToast(m['consentFlow.guardianApprovalRequired'](), {
                         type: ToastTypeEnum.Error,
                         hasDismissButton: true,
                     });
@@ -283,7 +290,7 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
         onAccept();
     };
 
-    const handleInstall = () => {
+    const handleInstall = async () => {
         // If no age restriction data, proceed directly
         if (!ageRestriction) {
             doInstall();
@@ -318,10 +325,14 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                 return;
 
             case 'require_guardian_approval':
-                // Use guardedAction WITHOUT ignorePriorVerification
-                guardedAction(() => {
-                    doInstall();
-                });
+                try {
+                    await guardedAction(() => doInstall(() => guardedAction(() => {})));
+                } catch {
+                    presentToast(m['error.generic'](), {
+                        type: ToastTypeEnum.Error,
+                        hasDismissButton: true,
+                    });
+                }
                 return;
 
             case 'proceed':
@@ -381,7 +392,7 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                             <TransP
                                 m={m['appInstall.installApp']}
                                 values={{ name: appName }}
-                                components={[<span className="font-bold" />]}
+                                components={[<span key="app-name" className="font-bold" />]}
                             />
                         </p>
 
@@ -604,8 +615,8 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                     {isPreview
                         ? m['appInstall.previewOnly']()
                         : isConsenting
-                        ? m['appInstall.connecting']()
-                        : m['appInstall.install']()}
+                          ? m['appInstall.connecting']()
+                          : m['appInstall.install']()}
                 </button>
             </div>
         </div>

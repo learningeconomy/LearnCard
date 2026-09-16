@@ -82,9 +82,8 @@ export const SkillsHubPopOverButton: React.FC<SkillsHubPopOverButtonProps> = ({
             const frameworkResults = await Promise.all(
                 frameworkIds.map(async frameworkId => {
                     try {
-                        const frameworkAndSkills = await wallet.invoke.getSkillFrameworkById(
-                            frameworkId
-                        );
+                        const frameworkAndSkills =
+                            await wallet.invoke.getSkillFrameworkById(frameworkId);
 
                         return frameworkAndSkills.framework;
                     } catch (error) {

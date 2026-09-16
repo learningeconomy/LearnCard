@@ -27,6 +27,7 @@ import PresentVcModalListener from './components/modalListener/ModalListener';
 import QRCodeScannerListener from './components/qrcode-scanner-listener/QRCodeScannerListener';
 import NetworkListener from './components/network-listener/NetworkListener';
 import CredentialSyncListener from './components/credential-sync-listener/CredentialSyncListener';
+import CredentialRefreshListener from './components/credential-refresh-listener/CredentialRefreshListener';
 import NotificationToastListener from './components/notification-toast-listener/NotificationToastListener';
 import PathwayProgressReactorMount from './pages/pathways/events/PathwayProgressReactorMount';
 import { installPathwaysDevGlobals } from './pages/pathways/dev/pathwaysDevGlobals';
@@ -53,6 +54,7 @@ import SdkActivityIndicator from './components/sdk-activity/SdkActivityIndicator
 import ExternalAuthServiceProvider from './pages/sync-my-school/ExternalAuthServiceProvider';
 import DevDebugPanel from './components/debug/DevDebugPanel';
 import AuthCoordinatorProvider from './providers/AuthCoordinatorProvider';
+import { FeedbackProvider } from './feedback/reporting';
 import localforage from 'localforage';
 import { useInitializeTheme } from './theme/hooks/useTheme';
 
@@ -220,6 +222,10 @@ const FullApp: React.FC = () => {
                                         <PushNotificationListener />
                                         <PresentVcModalListener />
                                         <CredentialSyncListener />
+                                        {/* Foreground refresh of stale refreshable
+                                            credentials; gated by the LaunchDarkly
+                                            credentialRefreshForegroundEnabled flag. */}
+                                        <CredentialRefreshListener />
                                         <NotificationToastListener />
                                         <ConnectionPromptCoordinator
                                             copy={getConnectionPromptCopy()}
@@ -230,7 +236,9 @@ const FullApp: React.FC = () => {
                                             and session-end event — wherever it's
                                             published — flows through one reactor. */}
                                         <PathwayProgressReactorMount />
-                                        <AppRouter />
+                                        <FeedbackProvider>
+                                            <AppRouter />
+                                        </FeedbackProvider>
                                         <InAppMessageHost />
                                         <QRCodeScannerListener />
 

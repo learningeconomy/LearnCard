@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import { gzipSync, gunzipSync } from 'node:zlib';
 import { v4 as uuid } from 'uuid';
 import type {
@@ -7,7 +8,10 @@ import type {
     UnsignedVC,
     VC,
 } from '@learncard/types';
-import { DEFAULT_BITSTRING_STATUS_LIST_SIZE } from '@learncard/types';
+import {
+    BitstringStatusListEntryValidator,
+    DEFAULT_BITSTRING_STATUS_LIST_SIZE,
+} from '@learncard/types';
 import {
     getBitstringStatusListEntries,
     getCredentialStatusArray,
@@ -51,7 +55,7 @@ const nodeToStatusList = (node: unknown): StatusListType | null => {
 };
 
 export const getStatusListBaseUrl = (domain: string): string => {
-    const normalizedDomain = domain.replace('/trpc', '').replace(/%3A/g, ':');
+    const normalizedDomain = domain.replace('/trpc', '').replace(/%3A/gi, ':');
     const protocol = normalizedDomain.includes('localhost') ? 'http' : 'https';
 
     return `${protocol}://${normalizedDomain}`;
@@ -93,14 +97,14 @@ export const decodeBitstring = (encodedList: string, expectedBits: number): Buff
 };
 
 const getConfiguredStatusListSize = (requestedSize?: number): number => {
-    const configuredSize = requestedSize ?? Number(process.env.BITSTRING_STATUS_LIST_SIZE);
+    const configuredSize = requestedSize ?? Number(environment.BITSTRING_STATUS_LIST_SIZE);
     const parsedSize =
         Number.isFinite(configuredSize) && configuredSize > 0
             ? configuredSize
             : DEFAULT_BITSTRING_STATUS_LIST_SIZE;
     const roundedSize = Math.ceil(parsedSize);
     const allowSmallTestLists =
-        process.env.NODE_ENV === 'test' && process.env.BITSTRING_STATUS_LIST_ALLOW_SMALL === 'true';
+        environment.NODE_ENV === 'test' && environment.BITSTRING_STATUS_LIST_ALLOW_SMALL;
 
     return allowSmallTestLists
         ? roundedSize
@@ -131,9 +135,9 @@ let statusListIssuerDid = '';
 const getStatusListIssuerDid = (): string => {
     if (!statusListIssuerDid) {
         const domain =
-            process.env.DOMAIN_NAME ||
-            (process.env.IS_OFFLINE
-                ? `localhost%3A${process.env.PORT || 3000}`
+            environment.DOMAIN_NAME ||
+            (environment.IS_OFFLINE
+                ? `localhost%3A${environment.PORT || 3000}`
                 : 'localhost%3A3000');
         statusListIssuerDid = `did:web:${domain}`;
     }
@@ -145,7 +149,7 @@ const signStatusListCredential = async (
     list: Pick<StatusListType, 'statusListCredential' | 'statusPurpose' | 'encodedList'>
 ): Promise<VC> => {
     const learnCard =
-        process.env.NODE_ENV === 'test' ? await getLearnCard() : await getDidWebLearnCard();
+        environment.NODE_ENV === 'test' ? await getLearnCard() : await getDidWebLearnCard();
     const unsigned = {
         ...buildUnsignedStatusListCredential(list),
         issuer: learnCard.id.did(),
@@ -396,16 +400,36 @@ export const setCredentialBitstringStatus = async (
     const credential = await Credential.findOne({ where: { id: credentialId } });
     if (!credential) return false;
 
-    const parsedCredential = JSON.parse(credential.credential);
-    const entries = getBitstringStatusListEntries(parsedCredential).filter(
-        entry => entry.statusPurpose === statusPurpose
-    );
+    // Encrypted SA credentials retain only public status coordinates separately.
+    // Legacy plaintext/wrapped credentials continue using their embedded entries.
+    let statusEntries: BitstringStatusListEntry[];
+    try {
+        statusEntries = BitstringStatusListEntryValidator.array().parse(
+            credential.statusEntries
+                ? JSON.parse(credential.statusEntries)
+                : getBitstringStatusListEntries(JSON.parse(credential.credential))
+        );
+        if (
+            statusEntries.some(
+                entry =>
+                    !Number.isSafeInteger(Number(entry.statusListIndex)) ||
+                    Number(entry.statusListIndex) < 0
+            )
+        ) {
+            throw new Error('Invalid status list index');
+        }
+    } catch {
+        console.error('[setCredentialBitstringStatus] Invalid stored status entries', {
+            credentialId,
+        });
+        return false;
+    }
+    const entries = statusEntries.filter(entry => entry.statusPurpose === statusPurpose);
 
     if (entries.length === 0) return false;
 
-    await Promise.all(entries.map(entry => setStatusListEntryBit(entry, value)));
-
-    return true;
+    const updated = await Promise.all(entries.map(entry => setStatusListEntryBit(entry, value)));
+    return updated.every(Boolean);
 };
 
 export const getSignedStatusListCredential = async (id: string): Promise<VC | null> => {

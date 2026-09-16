@@ -90,8 +90,8 @@ export const InAppMessageBanner: React.FC<InAppMessageBannerProps> = ({ message,
             capgo.status === 'checking'
                 ? 'Checking...'
                 : capgo.status === 'downloading'
-                ? `Downloading... ${Math.round(capgo.progress)}%`
-                : 'Installing...';
+                  ? `Downloading... ${Math.round(capgo.progress)}%`
+                  : 'Installing...';
 
         return (
             <div className="mt-3 w-full py-2 px-3 rounded-[16px] bg-grayscale-900 text-white font-medium text-xs flex flex-col gap-1.5 overflow-hidden relative shadow-sm">
