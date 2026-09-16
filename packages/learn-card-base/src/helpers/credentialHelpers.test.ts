@@ -120,4 +120,36 @@ describe('getEndorsementsForVC', () => {
             credentialId: 'urn:uuid:wrapper-credential',
         });
     });
+
+    it('falls back when canonical endorsements do not match the requested visibility', async () => {
+        const { wallet, get, read } = createWallet();
+        const privateCanonicalRecord = {
+            id: 'record-private-canonical',
+            uri: 'lc:endorsement:private-canonical',
+            visibility: 'private',
+        };
+        const publicWrapperRecord = {
+            id: 'record-public-wrapper',
+            uri: 'lc:endorsement:public-wrapper',
+            credentialId: 'urn:uuid:wrapper-credential',
+            originalCredentialId: 'urn:uuid:inner-credential',
+            visibility: 'public',
+        };
+        const publicEndorsement = { id: 'urn:uuid:endorsement-public-wrapper' };
+        get.mockResolvedValueOnce([privateCanonicalRecord]).mockResolvedValueOnce([
+            publicWrapperRecord,
+        ]);
+        read.mockResolvedValue(publicEndorsement);
+
+        await expect(
+            getEndorsementsForVC(wallet, { id: 'urn:uuid:wrapper-credential' } as never)
+        ).resolves.toEqual([publicEndorsement]);
+        expect(get).toHaveBeenNthCalledWith(1, {
+            originalCredentialId: 'urn:uuid:wrapper-credential',
+        });
+        expect(get).toHaveBeenNthCalledWith(2, {
+            credentialId: 'urn:uuid:wrapper-credential',
+        });
+        expect(read).toHaveBeenCalledWith(publicWrapperRecord.uri);
+    });
 });

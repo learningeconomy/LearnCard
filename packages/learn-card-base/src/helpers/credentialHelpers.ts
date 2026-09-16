@@ -1326,13 +1326,14 @@ export const getEndorsementsForVC = async (
     if (!query) return [];
 
     let idxEndorsements = await wallet?.index.LearnCloud.get(query);
-    if ((!idxEndorsements || idxEndorsements.length === 0) && vc?.id) {
-        idxEndorsements = await wallet?.index.LearnCloud.get({ credentialId: vc.id });
-    }
-    if (!idxEndorsements || idxEndorsements.length === 0) return [];
 
     // TODO: handle this server side ^^ filtering is not working above
-    const filteredEndorsements = idxEndorsements.filter(r => r.visibility === visibility);
+    let filteredEndorsements = idxEndorsements?.filter(r => r.visibility === visibility) ?? [];
+    if (filteredEndorsements.length === 0 && vc?.id) {
+        idxEndorsements = await wallet?.index.LearnCloud.get({ credentialId: vc.id });
+        filteredEndorsements = idxEndorsements?.filter(r => r.visibility === visibility) ?? [];
+    }
+    if (filteredEndorsements.length === 0) return [];
 
     const endorsementPromises = filteredEndorsements.map(async endorsement => {
         return wallet?.read?.get(endorsement.uri);
