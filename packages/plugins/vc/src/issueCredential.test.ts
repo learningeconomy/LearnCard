@@ -3,6 +3,7 @@ vi.mock('multiformats/bases/base58', () => ({ base58btc: {} }));
 vi.mock('multiformats/bases/base64', () => ({ base64url: {} }));
 
 import { issueCredential } from './issueCredential';
+import { MANAGED_REFRESH_SERVICE_CONTEXT } from '@learncard/helpers';
 
 type Keypair = {
     kty: string;
@@ -17,6 +18,7 @@ type Credential = {
     issuer: string;
     validFrom: string;
     credentialSubject: { id: string };
+    refreshService?: unknown;
 };
 
 type ProofOptionsForTest = {
@@ -134,5 +136,126 @@ describe('issueCredential', () => {
         expect(options.type).toBeUndefined();
         expect(options.cryptosuite).toBeUndefined();
         expect(options.proofFormat).toBe('jwt');
+    });
+
+    test('passes an untouched credential through unchanged when no managed refresh service is present', async () => {
+        const { initLearnCard, issueCredentialMock, learnCard } = getLearnCard();
+
+        await issueCredential(initLearnCard as never)(learnCard as never, credential as never);
+
+        const payload = issueCredentialMock.mock.calls[0][0] as Credential;
+
+        expect(payload).toEqual(credential);
+        expect(payload['@context']).toEqual(credential['@context']);
+    });
+
+    test('injects the managed inline context when a managed refresh service is present', async () => {
+        const { initLearnCard, issueCredentialMock, learnCard } = getLearnCard();
+
+        const refreshableCredential = {
+            ...credential,
+            refreshService: {
+                id: 'https://network.learncard.test/api/credential-refreshes/refresh-1',
+                type: 'LearnCardCredentialRefresh2026',
+                authorization: { type: 'LearnCardDIDAuth' },
+            },
+        };
+
+        await issueCredential(initLearnCard as never)(
+            learnCard as never,
+            refreshableCredential as never
+        );
+
+        const payload = issueCredentialMock.mock.calls[0][0] as Credential;
+
+        expect(payload).not.toBe(refreshableCredential);
+        expect(payload['@context']).toEqual([
+            ...credential['@context'],
+            MANAGED_REFRESH_SERVICE_CONTEXT,
+        ]);
+        expect(payload.refreshService).toEqual(refreshableCredential.refreshService);
+
+        // Signing options are unaffected by context preparation
+        const options = issueCredentialMock.mock.calls[0][1] as ProofOptionsForTest;
+
+        expect(options.type).toBe('DataIntegrityProof');
+        expect(options.cryptosuite).toBe('eddsa-rdfc-2022');
+        expect(options.verificationMethod).toBe('did:example:issuer#key-1');
+    });
+
+    test('does not duplicate the inline context when an equivalent mapping already exists', async () => {
+        const { initLearnCard, issueCredentialMock, learnCard } = getLearnCard();
+
+        const refreshableCredential = {
+            ...credential,
+            '@context': [...credential['@context'], MANAGED_REFRESH_SERVICE_CONTEXT],
+            refreshService: {
+                id: 'https://network.learncard.test/api/credential-refreshes/refresh-1',
+                type: 'LearnCardCredentialRefresh2026',
+                authorization: { type: 'LearnCardDIDAuth' },
+            },
+        };
+
+        await issueCredential(initLearnCard as never)(
+            learnCard as never,
+            refreshableCredential as never
+        );
+
+        const payload = issueCredentialMock.mock.calls[0][0] as Credential;
+
+        expect(payload['@context']).toEqual(refreshableCredential['@context']);
+    });
+
+    test('rejects a credential with a conflicting managed term mapping', async () => {
+        const { initLearnCard, learnCard } = getLearnCard();
+
+        const conflictingCredential = {
+            ...credential,
+            '@context': [
+                ...credential['@context'],
+                {
+                    LearnCardCredentialRefresh2026:
+                        'https://evil.example/other#LearnCardCredentialRefresh2026',
+                },
+            ],
+            refreshService: {
+                id: 'https://network.learncard.test/api/credential-refreshes/refresh-1',
+                type: 'LearnCardCredentialRefresh2026',
+            },
+        };
+
+        await expect(
+            issueCredential(initLearnCard as never)(
+                learnCard as never,
+                conflictingCredential as never
+            )
+        ).rejects.toThrow(/LearnCardCredentialRefresh2026/);
+    });
+
+    test('preserves explicit signing options while preparing a refreshable credential', async () => {
+        const { initLearnCard, issueCredentialMock, learnCard } = getLearnCard();
+
+        const refreshableCredential = {
+            ...credential,
+            refreshService: {
+                id: 'https://network.learncard.test/api/credential-refreshes/refresh-1',
+                type: 'LearnCardCredentialRefresh2026',
+            },
+        };
+
+        await issueCredential(initLearnCard as never)(
+            learnCard as never,
+            refreshableCredential as never,
+            { type: 'Ed25519Signature2020' }
+        );
+
+        const options = issueCredentialMock.mock.calls[0][1] as ProofOptionsForTest;
+
+        expect(options.type).toBe('Ed25519Signature2020');
+        expect(options.cryptosuite).toBeUndefined();
+
+        const payload = issueCredentialMock.mock.calls[0][0] as Credential;
+
+        expect((payload['@context'] as unknown[]).at(-1)).toEqual(MANAGED_REFRESH_SERVICE_CONTEXT);
     });
 });

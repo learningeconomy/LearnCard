@@ -4,6 +4,7 @@ import { z } from 'zod/v4';
 import { PaginationResponseValidator } from './mongo';
 import { StringQuery } from './queries';
 import { UnsignedVCValidator, VCValidator, VPValidator } from './vc';
+import { ManagedCredentialRefreshReceiptValidator } from './credential-refresh';
 
 export const LCNProfileDisplayValidator = z.object({
     backgroundColor: z.string().optional(),
@@ -538,6 +539,12 @@ export const SendBoostInputValidator = z
         ),
         templateData: z.record(z.string(), z.unknown()).optional(),
         integrationId: z.string().optional().describe('Integration ID for activity tracking'),
+        refresh: z
+            .boolean()
+            .optional()
+            .describe(
+                'Request managed credential refresh for this send. Only supported for profile/DID recipients resolvable to local profiles; email/phone recipients are rejected.'
+            ),
     })
     .refine(data => data.templateUri || data.template || data.signedCredential, {
         message: 'Either templateUri, template, or signedCredential must be provided.',
@@ -575,6 +582,9 @@ export const SendBoostResponseValidator = z.object({
     activityId: z.string().describe('Links to the activity lifecycle for this issuance'),
     inbox: SendInboxResponseValidator.optional().describe(
         'Present when sent via email/phone (Universal Inbox)'
+    ),
+    refresh: ManagedCredentialRefreshReceiptValidator.optional().describe(
+        'Present when managed refresh was requested: issuance metadata the issuer keeps to publish future updates'
     ),
 });
 export type SendBoostResponse = z.infer<typeof SendBoostResponseValidator>;
