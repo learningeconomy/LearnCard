@@ -94,7 +94,11 @@ const ClrTranscriptSummaryHeader: React.FC<{
                 />
 
                 <div className="w-full min-w-0 md:flex-1 md:pt-1">
-                    <p className="mt-4 text-lg text-grayscale-900 leading-tight truncate">
+                    <p
+                        className={`text-lg text-grayscale-900 leading-tight truncate ${
+                            learner.displayName.length > 20 ? 'xs:mt-4' : ''
+                        }`}
+                    >
                         {learner.displayName}
                     </p>
                     <div className="border-t border-grayscale-200 my-2" />
