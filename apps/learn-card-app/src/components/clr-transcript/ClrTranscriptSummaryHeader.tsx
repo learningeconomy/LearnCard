@@ -199,6 +199,7 @@ const ClrTranscriptSummaryHeader: React.FC<{
                             iconClassName="!w-4 !h-4"
                             credential={boost}
                             showText
+                            spanClassName="text-[#026BFF]"
                         />
                     </div>
                     <ClrVerificationPills boost={boost} />
