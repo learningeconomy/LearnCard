@@ -1,5 +1,12 @@
 # @learncard/app-store-demo-basic-launchpad
 
+## 0.0.43
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/init@2.4.16
+
 ## 0.0.42
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
     "name": "@learncard/lca-api-service",
-    "version": "1.3.0",
+    "version": "1.3.1",
     "description": "",
     "engines": {
         "node": ">=24.12 <25"

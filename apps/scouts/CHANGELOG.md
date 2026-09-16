@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.90.35
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/lca-api-plugin@2.0.5
+    - @learncard/react@2.12.6
+
 ## 1.90.34
 
 ### Patch Changes

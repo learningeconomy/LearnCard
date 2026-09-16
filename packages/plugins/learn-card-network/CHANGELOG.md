@@ -1,5 +1,38 @@
 # learn-card-core
 
+## 2.14.1
+
+### Patch Changes
+
+- [#1566](https://github.com/learningeconomy/LearnCard/pull/1566) [`e46c302eaed8b98686d21e2f3b5d11b189567304`](https://github.com/learningeconomy/LearnCard/commit/e46c302eaed8b98686d21e2f3b5d11b189567304) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-2155] - Eliminate CertifiedBoostCredential wrapper
+
+    Direct credentials use their signed Boost network URI for the trusted-network check.
+    Plaintext sends reject mismatched Boost IDs. Encrypted signing-authority issuance
+    includes all subjects and, for delegated consent AutoBoosts, the contract owner.
+
+    Compatibility limitation: pre-signed `signedCredential` payloads (both plaintext and
+    client-encrypted) are stored unchanged, without a server-generated wrapper or status
+    entries. This includes plaintext credentials from older SDKs or third-party issuers
+    that omit `credentialStatus`. Without embedded status entries or server-retained status
+    coordinates, network revocation changes the recipient relationship only and is not
+    reflected by a holder's `verifyCredential` call. Such integrations must publish their
+    own signed status-list updates or use server-managed signing-authority issuance with
+    a VC v2 template. Storage now warns for both plaintext and encrypted credentials when
+    status metadata is missing or empty, including VC v1 issuance results.
+
+- [#1566](https://github.com/learningeconomy/LearnCard/pull/1566) [`e46c302eaed8b98686d21e2f3b5d11b189567304`](https://github.com/learningeconomy/LearnCard/commit/e46c302eaed8b98686d21e2f3b5d11b189567304) Thanks [@gerardopar](https://github.com/gerardopar)! - Encrypt signing-authority credentials using a single snapshot of each recipient's
+  X25519 keys. Keep DAG-JWE compatibility while eliminating repeated DID resolution
+  and post-encryption key-ID matching.
+
+    Carry status entries explicitly in serializable internal issuance results so copied
+    or cached credentials retain revocation metadata. Reject missing internal metadata,
+    and return false when persisted status JSON is malformed or fails validation.
+
+    Report an explicit Boost-authenticity warning when credential verification fails.
+
+- Updated dependencies []:
+    - @learncard/network-brain-client@2.5.56
+
 ## 2.14.0
 
 ### Minor Changes

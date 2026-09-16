@@ -1,5 +1,12 @@
 # @learncard/holder-continuity
 
+## 0.2.18
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/init@2.4.16
+
 ## 0.2.17
 
 ### Patch Changes

@@ -1,5 +1,14 @@
 # @learncard/credential-viewer
 
+## 0.0.27
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/credential-library@2.0.2
+    - @learncard/init@2.4.16
+    - @learncard/lca-api-plugin@2.0.5
+
 ## 0.0.26
 
 ### Patch Changes
