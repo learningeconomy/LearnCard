@@ -211,6 +211,12 @@ curl "https://learncard.app/interactions/inbox-claim/<token>?iuv=1" -H "Accept: 
 # }
 ```
 
+When responding to a LearnCard claim-link or inbox-claim exchange, sign the DID-auth presentation with `proofPurpose: 'authentication'` and the exact `challenge` and `domain` from its request. The holder's DID document must authorize the signing verification method for authentication.
+
+**Compatibility change:** presentations signed with `assertionMethod` are rejected. If your wallet uses `issuePresentation`, set `proofPurpose: 'authentication'` explicitly rather than relying on its default. LearnCard and ScoutPass already do this.
+
+Inbox claims also require a supported X25519 `keyAgreement` method so LearnCard can retain a recovery copy encrypted only for the holder. A `did:web` document can authorize P-256 for authentication and a separate X25519 key for delivery. Signing-only P-256 `did:key` holders work with generic claim links, but not inbox claims. If delivery encryption fails, the pending credential and exchange challenge remain available for retry with a compatible holder.
+
 ---
 
 ## Test it in five minutes
