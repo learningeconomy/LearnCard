@@ -2,8 +2,9 @@ import { describe, expect, it, vi } from 'vitest';
 import type { VC } from '@learncard/types';
 
 import { getLinkedClaimsPlugin } from '../index';
+import type { LinkedClaimsPlugin } from '../types';
 
-type LinkedClaimsLearnCard = Parameters<typeof getLinkedClaimsPlugin>[0];
+type LinkedClaimsLearnCard = Parameters<LinkedClaimsPlugin['methods']['storeEndorsement']>[0];
 
 const endorsement = {
     '@context': ['https://www.w3.org/2018/credentials/v1'],
