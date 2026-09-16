@@ -51,6 +51,20 @@ service = jobs.fetch('tests_e2e')
 aggregate = jobs.fetch('e2e')
 abort 'browser check name must be stable' unless browser.fetch('name') == 'Playwright E2E'
 abort 'service check name must match its suite' unless service.fetch('name') == 'tests/e2e'
+
+# The service suite is sharded across runners. Every spec file wipes the databases in
+# its beforeAll, so files carry no cross-file ordering dependency; each shard owns a
+# separate stack. The job `name` stays literally 'tests/e2e' -- GitHub appends the
+# matrix value to the rendered check name -- so the assertion above still holds.
+service_matrix = service.fetch('strategy').fetch('matrix').fetch('shard')
+abort 'service suite must stay sharded' unless service_matrix.length > 1
+abort 'a red shard must not cancel its siblings' unless service.fetch('strategy').fetch('fail-fast') == false
+service_env = service.fetch('env')
+abort 'shard index must reach the runner script' unless service_env.fetch('E2E_SHARD') == '${{ matrix.shard }}'
+abort 'shard total must derive from the matrix, not a hardcoded literal' unless service_env.fetch('E2E_SHARD_TOTAL') == '${{ strategy.job-total }}'
+abort 'shard artifacts must not collide' unless service.fetch('steps').any? { |step|
+  step.dig('with', 'name').to_s.include?('matrix.shard')
+}
 abort 'aggregate required-gate name must be stable' unless aggregate.fetch('name') == 'E2E'
 
 expected_browser_specs = 'consent-flow-race.spec.ts app-store.spec.ts wallet-credentials.spec.ts'
