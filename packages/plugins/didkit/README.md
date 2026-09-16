@@ -89,6 +89,12 @@ Low-level signing requires an explicit P-256 key and an appropriate document con
 An Ed25519 wallet does not gain P-256 key selection, and outgoing OpenID negotiation
 does not advertise this suite.
 
+Inbox claims additionally require a supported X25519 key-agreement method for encrypted
+delivery and recovery. Use separate authentication and encryption keys in a `did:web`
+document. Signing-only P-256 `did:key` holders can use generic claim links, but not inbox
+claims; an unsupported delivery key leaves the pending credential and challenge available
+for retry.
+
 ### Storing/Retrieving/Sending Credentials
 
 #### Ceramic/IDX

@@ -185,10 +185,10 @@ export const UnsignedVCValidator = z
     .catchall(z.any());
 export type UnsignedVC = z.infer<typeof UnsignedVCValidator>;
 
-const ProofFieldsValidator = z
+export const ProofValidator = z
     .object({
         type: z.string(),
-        created: z.string(),
+        created: z.string().optional(),
         challenge: z.string().optional(),
         domain: z.string().optional(),
         nonce: z.string().optional(),
@@ -196,15 +196,19 @@ const ProofFieldsValidator = z
         verificationMethod: z.string(),
         jws: z.string().optional(),
     })
-    .catchall(z.any());
-
-export const ProofValidator = ProofFieldsValidator.or(
-    ProofFieldsValidator.extend({
-        type: z.literal('DataIntegrityProof'),
-        cryptosuite: z.literal('ecdsa-rdfc-2019'),
-        created: z.string().optional(),
-    })
-);
+    .catchall(z.any())
+    .superRefine((proof, ctx) => {
+        if (
+            proof.created === undefined &&
+            (proof.type !== 'DataIntegrityProof' || proof.cryptosuite !== 'ecdsa-rdfc-2019')
+        ) {
+            ctx.addIssue({
+                code: 'custom',
+                path: ['created'],
+                message: 'created is required for this proof suite',
+            });
+        }
+    });
 export type Proof = z.infer<typeof ProofValidator>;
 
 export const VCValidator = UnsignedVCValidator.extend({

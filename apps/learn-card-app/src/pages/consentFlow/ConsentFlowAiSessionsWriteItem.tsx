@@ -68,7 +68,7 @@ const ConsentFlowAiSessionsWriteItem: React.FC<ConsentFlowAiSessionsWriteItemPro
                         <>
                             {allEnabled ? (
                                 <span className="text-emerald-700 font-notoSans text-[14px] font-[600]">
-                                    Allow
+                                    {m['arabicFixes.allow']()}
                                 </span>
                             ) : (
                                 <span className="text-grayscale-600 font-notoSans text-[14px] font-[600]">
@@ -79,7 +79,7 @@ const ConsentFlowAiSessionsWriteItem: React.FC<ConsentFlowAiSessionsWriteItemPro
                     )}
                     {!someEnabled && (
                         <span className="text-grayscale-500 font-notoSans text-[14px] font-[600]">
-                            Deny
+                            {m['arabicFixes.deny']()}
                         </span>
                     )}
 

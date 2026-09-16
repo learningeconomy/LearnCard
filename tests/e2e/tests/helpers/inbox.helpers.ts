@@ -4,7 +4,13 @@ import { createRequire } from 'node:module';
 import type { AddressInfo } from 'node:net';
 import { initLearnCard } from '@learncard/init';
 import type { ProofOptions } from '@learncard/didkit-plugin';
-import type { IssueInboxCredentialResponseType, JWKWithPrivateKey, VP } from '@learncard/types';
+import type {
+    IssueInboxCredentialResponseType,
+    JWKWithPrivateKey,
+    JWE,
+    VC,
+    VP,
+} from '@learncard/types';
 
 import type { LearnCard } from './learncard.helpers';
 
@@ -54,6 +60,7 @@ export type P256DidAuthFixture = {
     webHolder: DidAuthHolder;
     unauthorizedWebHolder: DidAuthHolder;
     removeAuthentication: () => void;
+    decryptDelivery: (delivery: JWE) => Promise<VC>;
     sign: (
         holder: DidAuthHolder,
         request: { challenge: string; domain: string },
@@ -70,17 +77,23 @@ export const startP256DidAuthFixture = async (): Promise<P256DidAuthFixture> => 
             require.resolve('@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm')
         ),
     });
+    // Public test key from lib/ssi/tests/secp256r1-2021-03-18.json; never use in production.
     const key: JWKWithPrivateKey = JSON.parse(
-        await readFile(
-            new URL('../../../../lib/ssi/tests/secp256r1-2021-03-18.json', import.meta.url),
-            'utf8'
-        )
+        await readFile(new URL('../fixtures/secp256r1-2021-03-18.json', import.meta.url), 'utf8')
     );
     const keyDid = signer.invoke.keyToDid('key', key);
     const keyHolder = {
         did: keyDid,
         verificationMethod: await signer.invoke.keyToVerificationMethod('key', key),
     };
+    // Authentication and delivery encryption use separate keys.
+    const deliveryKey = signer.invoke.generateEd25519KeyFromBytes(new Uint8Array(32).fill(42));
+    const deliveryDid = signer.invoke.keyToDid('key', deliveryKey);
+    const deliveryDocument = await signer.invoke.resolveDid(deliveryDid);
+    const keyAgreement = deliveryDocument.keyAgreement?.[0];
+    if (!keyAgreement || typeof keyAgreement === 'string') {
+        throw new Error('Missing X25519 key-agreement method in delivery fixture');
+    }
     const documents = new Map<
         string,
         {
@@ -94,6 +107,7 @@ export const startP256DidAuthFixture = async (): Promise<P256DidAuthFixture> => 
             }[];
             authentication?: string[];
             assertionMethod: string[];
+            keyAgreement: typeof deliveryDocument.keyAgreement;
         }
     >();
     const server = createServer((req, res) => {
@@ -106,11 +120,13 @@ export const startP256DidAuthFixture = async (): Promise<P256DidAuthFixture> => 
         res.end(JSON.stringify(document));
     });
 
-    // Compose maps localhost to host-gateway. An alternative localhost-prefixed alias must
-    // resolve to this host in both the runner and Brain container (SSI uses HTTP for localhost).
+    // Compose maps localhost to host-gateway. An alternative localhost-prefixed single-label
+    // alias must resolve to this host in both the runner and Brain container (SSI uses HTTP).
     const host = process.env.E2E_DID_WEB_HOST ?? 'localhost';
-    if (!/^localhost(?:[.-][a-z0-9.-]+)?$/i.test(host)) {
-        throw new Error('E2E_DID_WEB_HOST must be a local localhost-prefixed fixture hostname');
+    if (!/^localhost(?:-[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)?$/i.test(host)) {
+        throw new Error(
+            'E2E_DID_WEB_HOST must be localhost or a localhost-prefixed single-label alias (e.g. localhost-e2e)'
+        );
     }
     await new Promise<void>((resolve, reject) => {
         server.once('error', reject);
@@ -127,6 +143,7 @@ export const startP256DidAuthFixture = async (): Promise<P256DidAuthFixture> => 
         const verificationMethod = `${did}#key-1`;
         documents.set(path, {
             '@context': ['https://www.w3.org/ns/did/v1', 'https://w3id.org/security/multikey/v1'],
+            keyAgreement: [{ ...keyAgreement, id: `${did}#delivery`, controller: did }],
             id: did,
             verificationMethod: [
                 {
@@ -148,10 +165,17 @@ export const startP256DidAuthFixture = async (): Promise<P256DidAuthFixture> => 
         keyHolder,
         webHolder,
         unauthorizedWebHolder,
+        decryptDelivery: delivery => signer.invoke.decryptDagJwe<VC>(delivery, [deliveryKey]),
         // Sign first, then remove the relationship before this DID is ever seen by Brain.
         // Recovery uses a separate authorized DID, so resolver caches cannot mask the result.
         removeAuthentication: () => {
-            delete documents.get(unauthorizedWebHolder.path)!.authentication;
+            const document = documents.get(unauthorizedWebHolder.path);
+            if (!document) {
+                throw new Error(
+                    `Missing P-256 DID fixture document at ${unauthorizedWebHolder.path}; cannot remove authentication`
+                );
+            }
+            delete document.authentication;
         },
         sign: (
             holder: DidAuthHolder,

@@ -21,3 +21,15 @@ test('only final ecdsa-rdfc-2019 DataIntegrityProofs may omit created', () => {
     );
     expect(ProofValidator.safeParse({ ...proof, created: null }).success).toBe(false);
 });
+
+test('malformed final-suite proofs identify missing required fields rather than created', () => {
+    const result = ProofValidator.safeParse({
+        type: 'DataIntegrityProof',
+        cryptosuite: 'ecdsa-rdfc-2019',
+        proofPurpose: 'authentication',
+        proofValue: 'zSignature',
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error?.issues.map(issue => issue.path)).toEqual([['verificationMethod']]);
+});

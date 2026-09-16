@@ -1,4 +1,5 @@
-import { afterEach, describe, test, expect } from 'vitest';
+import { afterEach, beforeEach, describe, test, expect } from 'vitest';
+import neo4j from 'neo4j-driver';
 
 import { getLearnCardForUser, getLearnCard, LearnCard } from './helpers/learncard.helpers';
 import { sendCredentialsViaInbox, startP256DidAuthFixture } from './helpers/inbox.helpers';
@@ -10,6 +11,7 @@ type ExchangeResponse = {
     status: number;
     data: {
         verifiablePresentationRequest?: { challenge: string; domain: string };
+        inboxDeliveries?: { id: string; credential: VC }[];
         verifiablePresentation?: { verifiableCredential: VC[] };
     };
 };
@@ -55,6 +57,7 @@ describe('Inbox', () => {
 
     describe.each(['workflow', 'inbox-claim'] as const)('P-256 DIDAuth %s', branch => {
         let p256: P256DidAuthFixture | undefined;
+        let signingAuthorityId = 0;
 
         beforeEach(async () => {
             p256 = await startP256DidAuthFixture();
@@ -107,10 +110,10 @@ describe('Inbox', () => {
                 expect(interaction?.workflowId).toBe('inbox-claim');
                 if (!interaction) throw new Error('Missing inbox claim interaction');
                 const url = `http://localhost:4000/api/workflows/inbox-claim/exchanges/${interaction.interactionId}`;
-                return { url, expectedCredential: credential, freshUrl: async () => url };
+                return { url, expectedCredential: credential };
             }
 
-            const sa = await a.invoke.createSigningAuthority('p256-exchange');
+            const sa = await a.invoke.createSigningAuthority(`p256-${++signingAuthorityId}`);
             if (!sa) throw new Error('Failed to create exchange signing authority');
             await a.invoke.registerSigningAuthority(sa.endpoint!, sa.name, sa.did!);
             const boostUri = await a.invoke.createBoost(testUnsignedBoost, {
@@ -118,24 +121,19 @@ describe('Inbox', () => {
                 type: 'achievement',
                 category: 'Achievement',
             });
-            await a.invoke.updateBoost(boostUri, { defaultPermissions: { canView: true } });
-            const freshUrl = async () => {
-                // Generic claim links are intentionally reusable unless a usage limit is set.
-                const exchange = await a.invoke.generateClaimLink(
-                    boostUri,
-                    { endpoint: sa.endpoint!, name: sa.name },
-                    { totalUses: 1 }
-                );
-                const id = Buffer.from(JSON.stringify(exchange)).toString('base64url');
-                return `http://localhost:4000/api/workflows/claim/exchanges/${id}`;
-            };
+            // Generic claim links are intentionally reusable unless a usage limit is set.
+            const exchange = await a.invoke.generateClaimLink(
+                boostUri,
+                { endpoint: sa.endpoint!, name: sa.name },
+                { totalUses: 1 }
+            );
+            const id = Buffer.from(JSON.stringify(exchange)).toString('base64url');
             return {
-                url: await freshUrl(),
+                url: `http://localhost:4000/api/workflows/claim/exchanges/${id}`,
                 expectedCredential: {
                     name: testUnsignedBoost.name,
                     credentialSubject: { id: holderDid },
                 },
-                freshUrl,
             };
         };
 
@@ -153,41 +151,57 @@ describe('Inbox', () => {
             expect(response.data).not.toHaveProperty('verifiableCredential');
         };
 
-        test.each(['did:key', 'did:web'] as const)(
-            '%s completes issuance, denies replay, and accepts a fresh challenge',
-            async method => {
-                const fixture = p256!;
-                const holder = method === 'did:key' ? fixture.keyHolder : fixture.webHolder;
-                const exchange = await createExchange(holder.did);
-                const request = await initiate(exchange.url);
-                const presentation = await fixture.sign(holder, request);
-                expectIssued(
-                    await postExchange(exchange.url, presentation),
-                    exchange.expectedCredential
-                );
-                expectDenied(
-                    await postExchange(exchange.url, presentation),
-                    branch === 'workflow' ? 404 : 400
-                );
-
-                // Inbox restarts with {}; a consumed single-use generic link needs a newly
-                // generated claim link, not a reset of the exhausted link.
-                const freshUrl = await exchange.freshUrl();
-                const freshRequest = await initiate(freshUrl);
-                expect(freshRequest.challenge).not.toBe(request.challenge);
-                expectDenied(await postExchange(freshUrl, presentation));
-                expectIssued(
-                    await postExchange(freshUrl, await fixture.sign(holder, freshRequest)),
-                    exchange.expectedCredential
-                );
+        test.each(
+            branch === 'workflow' ? (['did:key', 'did:web'] as const) : (['did:web'] as const)
+        )('%s completes issuance, denies replay, and accepts a fresh challenge', async method => {
+            const fixture = p256!;
+            const holder = method === 'did:key' ? fixture.keyHolder : fixture.webHolder;
+            const exchange = await createExchange(holder.did);
+            const request = await initiate(exchange.url);
+            const presentation = await fixture.sign(holder, request);
+            const issued = await postExchange(exchange.url, presentation);
+            expectIssued(issued, exchange.expectedCredential);
+            if (branch === 'inbox-claim') {
+                // Check encrypted recovery, escrow removal, and decryption with the delivery key.
+                const driver = neo4j.driver('bolt://localhost:7687');
+                const session = driver.session();
+                try {
+                    const stored = await session.run(
+                        'MATCH (inbox:InboxCredential {id: $id}) RETURN inbox.credential AS escrow, inbox.deliveryCredential AS delivery',
+                        { id: issued.data.inboxDeliveries![0]!.id }
+                    );
+                    expect(stored.records[0]!.get('escrow')).toBeNull();
+                    const delivery = JSON.parse(stored.records[0]!.get('delivery'));
+                    expect(await fixture.decryptDelivery(delivery)).toEqual(
+                        exchange.expectedCredential
+                    );
+                    expect(await a.invoke.decryptDagJwe(delivery)).toBe('');
+                } finally {
+                    await session.close();
+                    await driver.close();
+                }
             }
-        );
+            expectDenied(
+                await postExchange(exchange.url, presentation),
+                branch === 'workflow' ? 404 : 400
+            );
+
+            // Finalized inbox escrow and single-use claim links cannot be restarted.
+            const freshExchange = await createExchange(holder.did);
+            const freshRequest = await initiate(freshExchange.url);
+            expect(freshRequest.challenge).not.toBe(request.challenge);
+            expectDenied(await postExchange(freshExchange.url, presentation));
+            expectIssued(
+                await postExchange(freshExchange.url, await fixture.sign(holder, freshRequest)),
+                freshExchange.expectedCredential
+            );
+        });
 
         test.each(['challenge', 'domain', 'purpose'] as const)(
             'rejects an incorrect %s without consuming the exchange',
             async invalid => {
                 const fixture = p256!;
-                const holder = fixture.keyHolder;
+                const holder = branch === 'workflow' ? fixture.keyHolder : fixture.webHolder;
                 const exchange = await createExchange(holder.did);
                 const request = await initiate(exchange.url);
                 const overrides =
@@ -219,6 +233,31 @@ describe('Inbox', () => {
                 exchange.expectedCredential
             );
         });
+
+        if (branch === 'inbox-claim') {
+            test('rejects a signing-only holder without consuming the encrypted delivery or challenge', async () => {
+                const fixture = p256!;
+                const exchange = await createExchange(fixture.keyHolder.did);
+                const request = await initiate(exchange.url);
+                const denied = await postExchange(
+                    exchange.url,
+                    await fixture.sign(fixture.keyHolder, request)
+                );
+                expectDenied(denied);
+                expect(denied.data).toMatchObject({
+                    message: expect.stringContaining('X25519'),
+                });
+
+                // No new challenge: the same pending delivery remains claimable.
+                expectIssued(
+                    await postExchange(
+                        exchange.url,
+                        await fixture.sign(fixture.webHolder, request)
+                    ),
+                    exchange.expectedCredential
+                );
+            });
+        }
     });
 
     describe('Issue Credential', () => {
@@ -1058,6 +1097,7 @@ describe('Inbox', () => {
                     body: JSON.stringify(payload),
                 }
             );
+            expect(challengeResponse.status).toBe(200);
 
             // Fetch the verification token from our new test endpoint
             const testResponse = await fetch('http://localhost:4000/api/test/last-delivery');
