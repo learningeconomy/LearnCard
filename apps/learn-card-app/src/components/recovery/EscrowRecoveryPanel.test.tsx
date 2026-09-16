@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { EscrowRecoveryPanel } from './EscrowRecoveryPanel';
+import { EscrowRecoveryPanel, formatTimeRemaining } from './EscrowRecoveryPanel';
 
 vi.mock('./escrowRecoveryStorage', () => ({
     isEscrowRecoveryStorageAvailable: () => true,
@@ -162,5 +162,35 @@ describe('EscrowRecoveryPanel', () => {
         fireEvent.click(screen.getByText("I don't have a PIN"));
 
         expect(screen.getByText('Start a 7-day recovery')).toBeInTheDocument();
+    });
+});
+
+describe('formatTimeRemaining', () => {
+    it('formats days and hours', () => {
+        expect(formatTimeRemaining(1000 * 60 * 60 * 24 * 6 + 1000 * 60 * 60 * 23)).toBe(
+            'Ready in 6 days 23 hr'
+        );
+        expect(formatTimeRemaining(1000 * 60 * 60 * 24 * 1 + 1000 * 60 * 60 * 2)).toBe(
+            'Ready in 1 day 2 hr'
+        );
+    });
+
+    it('formats hours and minutes', () => {
+        expect(formatTimeRemaining(1000 * 60 * 60 * 4 + 1000 * 60 * 12)).toBe(
+            'Ready in 4 hr 12 min'
+        );
+    });
+
+    it('formats minutes', () => {
+        expect(formatTimeRemaining(1000 * 60 * 3 + 1000 * 45)).toBe('Ready in 3 min');
+    });
+
+    it('formats seconds', () => {
+        expect(formatTimeRemaining(1000 * 45)).toBe('Ready in 45 sec');
+    });
+
+    it('formats ready', () => {
+        expect(formatTimeRemaining(0)).toBe('Ready');
+        expect(formatTimeRemaining(-1000)).toBe('Ready');
     });
 });
