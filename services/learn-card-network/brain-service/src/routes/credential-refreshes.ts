@@ -124,7 +124,7 @@ export const credentialRefreshesRouter = t.router({
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
 
-            return sendRefreshableCredential({
+            const { uri } = await sendRefreshableCredential({
                 issuerProfile: profile,
                 refreshId: input.refreshId,
                 credential: input.credential,
@@ -132,6 +132,8 @@ export const credentialRefreshesRouter = t.router({
                 skipNotification: input.skipNotification,
                 domain: ctx.domain,
             });
+
+            return uri;
         }),
 
     publishCredentialRefresh: credentialRefreshRoute

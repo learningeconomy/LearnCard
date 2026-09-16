@@ -6,11 +6,18 @@ import {
     VC,
     type AllocateCredentialRefreshResult,
     type CredentialRefreshSigningMode,
+    type ManagedCredentialRefreshReceipt,
+    type ManagedCredentialRefreshService,
     type PublishCredentialRefreshInput,
     type PublishCredentialRefreshNotification,
     type PublishCredentialRefreshResult,
 } from '@learncard/types';
-import { getCredentialEffectiveTime, getCredentialIssuerId } from '@learncard/helpers';
+import {
+    getCredentialEffectiveTime,
+    getCredentialIssuerId,
+    getManagedRefreshServices,
+    prepareManagedRefreshContext,
+} from '@learncard/helpers';
 
 import { neogma } from '@instance';
 
@@ -33,6 +40,10 @@ import type {
     CredentialRefreshRecord,
     CredentialRefreshVersionNode,
 } from 'types/credential-refresh';
+
+import { createCredentialIssuedViaContractRelationship } from '@accesslayer/credential/relationships/create';
+import type { CredentialInstance } from '@models';
+import type { DbTermsType } from 'types/consentflowcontract';
 
 import { createDagJweForRecipients, getLearnCard } from './learnCard.helpers';
 import { issueCredentialWithSigningAuthority } from './signingAuthority.helpers';
@@ -136,6 +147,141 @@ export const allocateCredentialRefresh = async (
     };
 };
 
+export type ManagedRefreshHandoff = {
+    refreshId: string;
+    refreshService: ManagedCredentialRefreshService;
+};
+
+/**
+ * Extracts and validates the local managed refresh service embedded in a signed
+ * credential (unified-send handoff, LC-2198 decision 6).
+ *
+ * Only THIS deployment's managed refresh endpoint origin/path is accepted: the
+ * service ID must be exactly the canonical URL for the refreshId it carries, and
+ * the refreshId is always derived from the service URL — never from caller-supplied
+ * receipt fields. Returns null when the credential carries no managed service;
+ * throws when it carries conflicting managed services or one pointing elsewhere
+ * (a third-party `1EdTechCredentialRefresh` service is not a handoff).
+ */
+export const extractManagedRefreshHandoff = (
+    credential: VC,
+    domain: string
+): ManagedRefreshHandoff | null => {
+    const services = getManagedRefreshServices(credential);
+
+    if (services.length === 0) return null;
+
+    const distinctIds = new Set(services.map(service => service.id));
+
+    if (distinctIds.size > 1) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message:
+                'Credential carries conflicting managed refresh services; a credential can only reference one managed refresh service.',
+        });
+    }
+
+    const service = services.find(entry => entry.id === services[0]?.id);
+
+    if (!service) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Credential carries an invalid managed refresh service.',
+        });
+    }
+    const prefix = `${getStatusListBaseUrl(domain)}/refresh/`;
+
+    if (!service.id.startsWith(prefix) || service.id.slice(prefix.length).length === 0) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message:
+                "Credential refreshService does not reference this deployment's managed refresh endpoint.",
+        });
+    }
+
+    const refreshId = service.id.slice(prefix.length);
+
+    if (service.id !== getCredentialRefreshServiceUrl(refreshId, domain)) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message:
+                "Credential refreshService does not reference this deployment's managed refresh endpoint.",
+        });
+    }
+
+    return { refreshId, refreshService: service };
+};
+
+export type ManagedRefreshInitialBindingInfo = {
+    /** True when the refresh already has a bound root matching this exact credential. */
+    bound: boolean;
+    activityId?: string;
+    integrationId?: string;
+};
+
+/**
+ * Reports whether the refresh already has a bound root for this exact credential so
+ * unified-send retries can reuse the original delivery activity instead of creating
+ * a duplicate. Throws CONFLICT when the refresh is bound to a DIFFERENT credential
+ * or boost — rejecting the retry before any write or activity logging.
+ */
+export const peekCredentialRefreshInitialBinding = async (params: {
+    refreshId: string;
+    credential: VC;
+    boostId?: string;
+}): Promise<ManagedRefreshInitialBindingInfo> => {
+    const { refreshId, credential, boostId } = params;
+
+    const root = await getInitialRefreshRoot(refreshId);
+
+    if (!root) return { bound: false };
+
+    assertInitialCredentialMatches(
+        root,
+        computeCredentialMaterialDigest(credential as unknown as Record<string, unknown>),
+        computeCredentialStatusDigest(
+            (credential as unknown as Record<string, unknown>).credentialStatus
+        ),
+        boostId
+    );
+
+    const result = await neogma.queryRunner.run(
+        `MATCH (:Profile)-[sent:CREDENTIAL_SENT]->(root:Credential {id: $rootId})
+         RETURN sent.activityId AS activityId, sent.integrationId AS integrationId
+         LIMIT 1`,
+        { rootId: root.rootId }
+    );
+    const row = result.records[0];
+
+    return {
+        bound: true,
+        activityId: row?.get('activityId') ?? undefined,
+        integrationId: row?.get('integrationId') ?? undefined,
+    };
+};
+
+/**
+ * Idempotently links a managed root credential to the approved consent-flow contract
+ * terms it was issued through, on both fresh binds and resume paths.
+ */
+const ensureCredentialIssuedViaContractRelationship = async (
+    credentialNodeId: string,
+    terms: DbTermsType
+): Promise<void> => {
+    const existing = await neogma.queryRunner.run(
+        `MATCH (root:Credential {id: $nodeId})-[:ISSUED_VIA_TRANSACTION]->()
+         RETURN 1 AS one LIMIT 1`,
+        { nodeId: credentialNodeId }
+    );
+
+    if (existing.records.length > 0) return;
+
+    await createCredentialIssuedViaContractRelationship(
+        { id: credentialNodeId } as unknown as CredentialInstance,
+        terms
+    );
+};
+
 /** Collects the subject identifiers of a credential (single object or array form). */
 const getCredentialSubjectIds = (credential: VC): string[] => {
     const subjects = Array.isArray(credential.credentialSubject)
@@ -177,7 +323,19 @@ export type SendRefreshableCredentialParams = {
     boostUri?: string;
     /** Suppress the initial CREDENTIAL_RECEIVED notification for this delivery. */
     skipNotification?: boolean;
+    /** Issuance activity to correlate (unified send, LC-2198). Stored on CREDENTIAL_SENT. */
+    activityId?: string;
+    /** Integration tracking for the unified send, stored on CREDENTIAL_SENT. */
+    integrationId?: string;
+    /** Approved consent-flow terms the credential was issued through (LC-2198). */
+    contractTerms?: DbTermsType;
     domain: string;
+};
+
+/** Metadata-only issuance receipt derived from the signed version 1 and the validated allocation. */
+export type SendRefreshableCredentialResult = {
+    uri: string;
+    receipt: ManagedCredentialRefreshReceipt;
 };
 
 type InitialRefreshRoot = {
@@ -242,8 +400,11 @@ const ensureInitialRefreshRelationships = async (params: {
     issuerProfileId: string;
     holderProfileId: string;
     boostId?: string;
+    activityId?: string;
+    integrationId?: string;
 }): Promise<string | undefined> => {
-    const { refreshId, issuerProfileId, holderProfileId, boostId } = params;
+    const { refreshId, issuerProfileId, holderProfileId, boostId, activityId, integrationId } =
+        params;
     const now = new Date().toISOString();
     const result = await neogma.queryRunner.run(
         `MATCH (refresh:CredentialRefresh {refreshId: $refreshId})-[:ROOT]->(root:Credential)
@@ -252,6 +413,8 @@ const ensureInitialRefreshRelationships = async (params: {
          OPTIONAL MATCH (boost:Boost {id: $boostId})
          MERGE (issuer)-[sent:CREDENTIAL_SENT {to: $holderProfileId}]->(root)
          ON CREATE SET sent.date = $now
+         SET sent.activityId = coalesce(sent.activityId, $activityId),
+             sent.integrationId = coalesce(sent.integrationId, $integrationId)
          FOREACH (_ IN CASE WHEN boost IS NULL THEN [] ELSE [1] END |
              MERGE (root)-[:INSTANCE_OF]->(boost)
          )
@@ -261,6 +424,8 @@ const ensureInitialRefreshRelationships = async (params: {
             issuerProfileId,
             holderProfileId,
             boostId: boostId ?? null,
+            activityId: activityId ?? null,
+            integrationId: integrationId ?? null,
             now,
         }
     );
@@ -311,13 +476,16 @@ const sendInitialCredentialNotificationOnce = async (params: {
  */
 export const sendRefreshableCredential = async (
     params: SendRefreshableCredentialParams
-): Promise<string> => {
+): Promise<SendRefreshableCredentialResult> => {
     const {
         issuerProfile,
         refreshId,
         credential,
         boostUri,
         skipNotification = false,
+        activityId,
+        integrationId,
+        contractTerms,
         domain,
     } = params;
 
@@ -372,6 +540,24 @@ export const sendRefreshableCredential = async (
             message: 'Credential does not contain the allocated refresh service',
         });
     }
+
+    // Metadata-only issuance receipt (LC-2198 decision 2): populated from the actual
+    // signed credential and the validated allocation. It deliberately excludes all
+    // credential claims, subject bodies, plaintext VC content, and JWE payloads.
+    const buildReceipt = (): ManagedCredentialRefreshReceipt => ({
+        refreshId,
+        refreshService: {
+            id: getCredentialRefreshServiceUrl(refreshId, domain),
+            type: 'LearnCardCredentialRefresh2026',
+            authorization: { type: 'LearnCardDIDAuth' },
+        },
+        credentialId: aggregate.credentialId,
+        issuerDid: credentialIssuerDid,
+        holderDid: aggregate.holderDid,
+        ...(credential.credentialStatus !== undefined && credential.credentialStatus !== null
+            ? { credentialStatus: credential.credentialStatus }
+            : {}),
+    });
 
     const holderProfile = aggregate.holderProfileId
         ? await getProfileByProfileId(aggregate.holderProfileId)
@@ -452,6 +638,8 @@ export const sendRefreshableCredential = async (
             issuerProfileId: issuerProfile.profileId,
             holderProfileId: holderProfile.profileId,
             boostId: boost?.id,
+            activityId,
+            integrationId,
         });
 
         if (!rootId) {
@@ -459,6 +647,10 @@ export const sendRefreshableCredential = async (
                 code: 'CONFLICT',
                 message: 'Credential refresh initial delivery could not be resumed',
             });
+        }
+
+        if (contractTerms) {
+            await ensureCredentialIssuedViaContractRelationship(rootId, contractTerms);
         }
 
         const uri = getManagedCredentialUri(rootId, domain);
@@ -474,11 +666,14 @@ export const sendRefreshableCredential = async (
             initialNotificationSuppressed,
         });
 
-        return uri;
+        return { uri, receipt: buildReceipt() };
     }
 
-    // Holder-only encryption: the brain DID must NOT be a recipient.
-    const jwe = await createDagJweForRecipients(credential, [aggregate.holderDid]);
+    // Holder-only encryption: the brain DID must NOT be a recipient. Encrypt to the
+    // holder profile's controller DID (did:key): it resolves locally for JWE key
+    // agreement, while a did:web holder identity would require a remote fetch at
+    // send time. Same key, same privacy property.
+    const jwe = await createDagJweForRecipients(credential, [holderProfile.did]);
 
     const credentialInstance = await storeCredential(jwe);
 
@@ -496,7 +691,7 @@ export const sendRefreshableCredential = async (
          OPTIONAL MATCH (boost:Boost {id: $boostId})
          CREATE (refresh)-[:ROOT]->(root)
          CREATE (refresh)-[:HEAD]->(root)
-         CREATE (issuer)-[:CREDENTIAL_SENT {to: $holderProfileId, date: $now}]->(root)
+         CREATE (issuer)-[:CREDENTIAL_SENT {to: $holderProfileId, date: $now, activityId: $activityId, integrationId: $integrationId}]->(root)
          FOREACH (_ IN CASE WHEN boost IS NULL THEN [] ELSE [1] END |
              CREATE (root)-[:INSTANCE_OF]->(boost)
          )
@@ -521,6 +716,8 @@ export const sendRefreshableCredential = async (
                 issuerProfileId: issuerProfile.profileId,
                 holderProfileId: holderProfile.profileId,
                 boostId: boost?.id ?? null,
+                activityId: activityId ?? null,
+                integrationId: integrationId ?? null,
                 versionKey: `${refreshId}:1`,
                 now,
                 credentialIssuerDid,
@@ -572,6 +769,8 @@ export const sendRefreshableCredential = async (
             issuerProfileId: issuerProfile.profileId,
             holderProfileId: holderProfile.profileId,
             boostId: boost?.id,
+            activityId,
+            integrationId,
         });
 
         if (!rootId) {
@@ -579,6 +778,10 @@ export const sendRefreshableCredential = async (
                 code: 'CONFLICT',
                 message: 'Credential refresh initial delivery could not be resumed',
             });
+        }
+
+        if (contractTerms) {
+            await ensureCredentialIssuedViaContractRelationship(rootId, contractTerms);
         }
 
         const uri = getManagedCredentialUri(rootId, domain);
@@ -594,7 +797,11 @@ export const sendRefreshableCredential = async (
             initialNotificationSuppressed,
         });
 
-        return uri;
+        return { uri, receipt: buildReceipt() };
+    }
+
+    if (contractTerms) {
+        await ensureCredentialIssuedViaContractRelationship(credentialInstance.id, contractTerms);
     }
 
     const uri = getManagedCredentialUri(credentialInstance.id, domain);
@@ -610,7 +817,7 @@ export const sendRefreshableCredential = async (
         initialNotificationSuppressed,
     });
 
-    return uri;
+    return { uri, receipt: buildReceipt() };
 };
 
 // --- Publication (LC-2135) -----------------------------------------------------
@@ -931,13 +1138,18 @@ export const publishCredentialRefresh = async (
         // body as supplied, so the completed credential is rechecked in full plus proof.
         assertRefreshVersionInvariants(input.credential as VC, aggregate, domain);
 
+        // Managed refresh services require their inline JSON-LD context terms to be
+        // defined or signing fails (LC-2198): prepare the context exactly as the SDK
+        // path does. Idempotent when the issuer already supplied the definitions.
+        const preparedCredential = prepareManagedRefreshContext(input.credential);
+
         // appendCredentialStatus: false — a refresh version must preserve the
         // issuer-supplied credentialStatus descriptor; no new status-list entry is
         // allocated for a version of an already-issued credential.
         signedCredential = (
             await issueCredentialWithSigningAuthority(
                 { type: 'profile', profile: issuerProfile },
-                input.credential,
+                preparedCredential,
                 signingAuthority,
                 domain,
                 false,
@@ -1000,8 +1212,15 @@ export const publishCredentialRefresh = async (
           })
         : undefined;
 
-    // Holder-only encryption: the brain DID must NOT be a recipient.
-    const jwe = await createDagJweForRecipients(signedCredential, [aggregate.holderDid]);
+    const holderProfileForEncryption = aggregate.holderProfileId
+        ? await getProfileByProfileId(aggregate.holderProfileId)
+        : null;
+
+    // Holder-only encryption to the holder profile's controller DID (did:key) — see
+    // the matching note in sendRefreshableCredential. Never the brain DID.
+    const jwe = await createDagJweForRecipients(signedCredential, [
+        holderProfileForEncryption?.did ?? aggregate.holderDid,
+    ]);
     const encryptedCredential = JSON.stringify(jwe);
     const etag = computeRefreshEtag(encryptedCredential);
 
