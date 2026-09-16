@@ -247,4 +247,13 @@ describe('RecoverySetupModal prompt integration', () => {
         await waitFor(() => expect(props.onConfirmEmailRecovery).toHaveBeenCalledWith('654321'));
         expect(onCompleted).toHaveBeenCalledWith('email');
     });
+
+    it('renders a close button that calls onClose even while activation is pending', () => {
+        const onClose = vi.fn();
+        renderModal('email', vi.fn(), { isActivationPending: true, onClose });
+
+        fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+
+        expect(onClose).toHaveBeenCalledOnce();
+    });
 });

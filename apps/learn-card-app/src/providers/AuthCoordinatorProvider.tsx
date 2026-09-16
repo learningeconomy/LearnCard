@@ -140,6 +140,10 @@ import { EscrowRecoveryHoldBanner } from '../components/recovery/EscrowRecoveryH
 import { RecoveryPinResetBanner } from '../components/recovery/RecoveryPinResetBanner';
 import { clearAllPendingEscrowRecovery } from '../components/recovery/escrowRecoveryStorage';
 import {
+    readRecoveryPinPromptFlag,
+    writeRecoveryPinPromptFlag,
+} from '../components/recovery/recoveryPinPromptFlag';
+import {
     RecoverySetupModal,
     type RecoverySetupType,
 } from '../components/recovery/RecoverySetupModal';
@@ -148,18 +152,6 @@ import { PENDING_SEED_STORAGE_KEY } from '../pages/developer/pendingSeedStorage'
 import ReAuthOverlay from '../components/auth/ReAuthOverlay';
 
 const log = getLogger('auth-coordinator');
-
-/**
- * Records whether the user has set or explicitly skipped a recovery PIN for a
- * given DID. Read by the post-setup "set a PIN" overlay (skip once, don't
- * re-nag) and by the "your PIN was reset" banner after a forced rotation.
- * Must be called from every code path that sets/clears/skips the PIN so the
- * flag stays in sync regardless of whether the change came from the
- * post-setup overlay or the recovery settings row.
- */
-const writeRecoveryPinPromptFlag = (did: string, value: 'set' | 'skipped'): void => {
-    localStorage.setItem(`lc:recovery-pin-prompt:${did}`, value);
-};
 
 export interface RecoverySetupOptions {
     initialMethod?: RecoverySetupType;
@@ -551,6 +543,9 @@ const AuthSessionManager: React.FC<{
     const recoverySetupOptionsRef = useRef<RecoverySetupOptions>({});
     const completedRecoveryMethodsRef = useRef<Set<RecoverySetupType>>(new Set());
     const wasNewUserRef = useRef(false);
+    // Set when a PIN-based recovery just succeeded, proving the user had a PIN
+    // even on a new/forgotten device where the local prompt flag is absent.
+    const recoveredWithPinRef = useRef(false);
 
     // null = recovery method status has not been checked yet
     const [recoveryMethodCount, setRecoveryMethodCount] = useState<number | null>(null);
@@ -669,14 +664,22 @@ const AuthSessionManager: React.FC<{
     useEffect(() => {
         if (coordinator.state.status === 'ready') {
             const did = coordinator.state.did;
-            const flag = localStorage.getItem(`lc:recovery-pin-prompt:${did}`);
+            const flag = readRecoveryPinPromptFlag(did);
 
             if (wasNewUserRef.current && !flag && readyEnrollment === 'enrolled') {
                 setShowRecoveryPinSetup(true);
             }
 
-            if (flag === 'set' && coordinator.state.escrowPin?.enabled === false) {
-                setShowRecoveryPinReset(true);
+            if (readyPinEnabled === true) {
+                recoveredWithPinRef.current = false;
+            } else if (readyPinEnabled === false) {
+                if (recoveredWithPinRef.current) {
+                    writeRecoveryPinPromptFlag(did, 'set');
+                    setShowRecoveryPinReset(true);
+                    recoveredWithPinRef.current = false;
+                } else if (flag === 'set') {
+                    setShowRecoveryPinReset(true);
+                }
             }
         }
     }, [coordinator.state.status, readyDid, readyPinEnabled, readyEnrollment]);
@@ -1170,6 +1173,7 @@ const AuthSessionManager: React.FC<{
             walletInitRef.current = false;
             walletModeRef.current = null;
             walletModeStore.set.mode(null);
+            recoveredWithPinRef.current = false;
         }
     }, [coordinator.state.status, wallet]);
 
@@ -1469,7 +1473,13 @@ const AuthSessionManager: React.FC<{
                             ]),
                             onStart: coordinator.startEscrowRecovery,
                             onStatus: coordinator.getEscrowRecoveryStatus,
-                            onRecover: coordinator.recover,
+                            onRecover: async input => {
+                                await coordinator.recover(input);
+
+                                if (input.method === 'escrow-pin') {
+                                    recoveredWithPinRef.current = true;
+                                }
+                            },
                             canResumeCompleted: () =>
                                 coordinator.keyDerivation.hasPendingIdentityRecovery?.() ?? false,
                         }}
@@ -1921,6 +1931,11 @@ const AuthSessionManager: React.FC<{
                     return (
                         <Overlay>
                             <RecoverySetupModal
+                                onGetEscrowEnrollmentState={coordinator.getEscrowEnrollmentState}
+                                onDisableEscrowRecovery={coordinator.disableEscrowRecovery}
+                                onEnableEscrowRecovery={coordinator.enableEscrowRecovery}
+                                onSetEscrowPin={setEscrowPin}
+                                onClearEscrowPin={clearEscrowPin}
                                 existingMethods={[]}
                                 maskedRecoveryEmail={null}
                                 initialMethod={recoverySetupOptionsRef.current.initialMethod}

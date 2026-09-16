@@ -9,6 +9,7 @@ import {
     copyOutline,
     checkmarkOutline,
     mailOutline,
+    closeOutline,
 } from 'ionicons/icons';
 
 import { Capacitor } from '@capacitor/core';
@@ -467,7 +468,16 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     return (
         <div className="p-6 max-w-md mx-auto bg-white min-h-full">
             {/* Dynamic Header */}
-            <div className="text-center mb-5">
+            <div className="relative text-center mb-5">
+                <button
+                    type="button"
+                    onClick={onClose}
+                    aria-label={m['common.close']()}
+                    className="absolute top-0 end-0 p-2 rounded-full text-grayscale-500 hover:text-grayscale-700 hover:bg-grayscale-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                >
+                    <IonIcon icon={closeOutline} className="text-lg" />
+                </button>
+
                 <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
                     {anyConfigured
                         ? m['recovery.accountRecovery']()
