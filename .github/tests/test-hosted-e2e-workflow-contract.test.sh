@@ -23,11 +23,13 @@ pull_request = triggers.fetch('pull_request')
 expected_types = %w[opened synchronize reopened ready_for_review converted_to_draft]
 abort 'hosted E2E PR activity types changed' unless pull_request.fetch('types') == expected_types
 abort 'manual dispatch missing' unless triggers.key?('workflow_dispatch')
+abort 'merge queue trigger missing' unless triggers.fetch('merge_group').fetch('types') == %w[checks_requested]
 
 concurrency = workflow.fetch('concurrency')
 group = concurrency.fetch('group')
 abort 'concurrency must be workflow-scoped' unless group.include?('github.workflow')
 abort 'concurrency must be PR-scoped' unless group.include?('github.event.pull_request.number')
+abort 'concurrency must not collapse distinct merge-queue batches' unless group.include?('github.event.merge_group.head_ref')
 abort 'manual concurrency fallback missing' unless group.include?('github.run_id')
 abort 'stale same-PR runs must cancel' unless concurrency.fetch('cancel-in-progress') == true
 
@@ -160,6 +162,12 @@ abort 'absent eligibility output must fail aggregate result' if aggregate_succee
   'ELIGIBLE' => '',
   'ELIGIBILITY_REASON' => ''
 ))
+abort 'docs-only skip must pass aggregate result' unless aggregate_succeeds?(aggregate_run, aggregate_defaults.merge(
+  'ELIGIBLE' => 'false',
+  'ELIGIBILITY_REASON' => 'docs-only',
+  'BROWSER_RESULT' => 'skipped',
+  'SERVICE_RESULT' => 'skipped'
+))
 abort 'malformed ineligible output must fail aggregate result' if aggregate_succeeds?(aggregate_run, aggregate_defaults.merge(
   'ELIGIBLE' => 'false',
   'ELIGIBILITY_REASON' => 'manual-dispatch'
@@ -214,8 +222,11 @@ abort 'legacy EC2 job must not run for PR events' unless legacy_e2e.fetch('if') 
       abort 'checkout status missing after failed checkout' unless File.read(File.join(artifacts, 'checkout-status.txt')).include?("checkout_outcome=#{checkout_outcome}")
     end
   end
-  abort 'requested ref must match checkout selection' unless preflight.fetch('env')['TESTED_REF'] ==
-    '${{ github.event.pull_request.head.sha || github.event.inputs.ref || github.sha }}'
+  abort 'requested ref must match checkout selection' unless preflight.fetch('env')['TESTED_REF'] == '${{ env.E2E_TESTED_REF }}'
+  tested_ref = workflow.fetch('env').fetch('E2E_TESTED_REF')
+  abort 'tested ref must prefer the PR head' unless tested_ref.include?('github.event.pull_request.head.sha')
+  abort 'tested ref must resolve merge-queue batches' unless tested_ref.include?('github.event.merge_group.head_sha')
+  abort 'tested ref must honour manual dispatch' unless tested_ref.include?('github.event.inputs.ref')
 end
 puts 'Browser job preserves event/run provenance with and without checkout'
 RUBY
