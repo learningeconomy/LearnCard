@@ -71,6 +71,9 @@ jobs:
               working-directory: services/learn-card-network/ai-agent
               run: bunx trigger deploy --help
 
+            - name: Test Trigger native package readiness gate
+              run: node --test scripts/wait-for-trigger-native-package.test.mjs
+
             - name: Run AI Agent tests
               run: bun run --cwd services/learn-card-network/ai-agent test -- run
 
