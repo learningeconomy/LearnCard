@@ -22,9 +22,19 @@ collect_service_artifacts() {
 }
 trap collect_service_artifacts EXIT
 
+# Vitest's --shard is CLI-only, and `nx:run-script` argument forwarding is fiddly,
+# so the shard is handed to the npm script through E2E_VITEST_ARGS instead. Every
+# spec file calls clearDatabases() in beforeAll, so files carry no cross-file
+# ordering dependency and can be split across runners with separate stacks.
 run_service_suite() {
     cd "$REPO_ROOT"
-    E2E_MANAGE_DOCKER=false NX_DAEMON=false bunx nx run e2e:test:e2e --verbose --skip-nx-cache \
+    local vitest_args=''
+    if [[ -n "${E2E_SHARD:-}" && -n "${E2E_SHARD_TOTAL:-}" ]]; then
+        vitest_args="--shard=${E2E_SHARD}/${E2E_SHARD_TOTAL}"
+        echo "Running vitest shard ${E2E_SHARD}/${E2E_SHARD_TOTAL}"
+    fi
+    E2E_VITEST_ARGS="$vitest_args" \
+        E2E_MANAGE_DOCKER=false NX_DAEMON=false bunx nx run e2e:test:e2e --verbose --skip-nx-cache \
         2>&1 | tee "$E2E_ARTIFACT_DIR/vitest.log"
 }
 

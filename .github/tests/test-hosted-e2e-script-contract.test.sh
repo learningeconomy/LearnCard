@@ -36,6 +36,11 @@ grep -Fq 'docker compose up -d --no-build' "$SERVICE_SCRIPT"
     || { echo 'service runner must not bypass the GHA-backed Bake build' >&2; exit 1; }
 grep -Fq 'E2E_MANAGE_DOCKER=false' "$SERVICE_SCRIPT"
 grep -Fq 'nx run e2e:test:e2e' "$SERVICE_SCRIPT"
+grep -Fq 'E2E_VITEST_ARGS' "$SERVICE_SCRIPT"
+perl -0ne 'exit !/--shard=\$\{E2E_SHARD\}\/\$\{E2E_SHARD_TOTAL\}/s' "$SERVICE_SCRIPT" \
+    || { echo 'service runner must forward the vitest shard' >&2; exit 1; }
+grep -Fq 'vitest run $E2E_VITEST_ARGS' "$REPO_ROOT/tests/e2e/package.json" \
+    || { echo 'tests/e2e test:e2e script must accept injected vitest args' >&2; exit 1; }
 grep -Fq 'docker compose down --remove-orphans -v' "$SERVICE_SCRIPT"
 
 BAKE_JSON="$(docker buildx bake --file "$BAKE_FILE" --print browser service)"
@@ -43,10 +48,16 @@ ruby -rjson -e '
   bake = JSON.parse(STDIN.read)
   required = %w[browser-base browser-app browser-brain browser-cloud browser-api browser-delete service-base]
   abort "Bake targets missing" unless (required - bake.fetch("target").keys).empty?
-  required.each do |name|
+  cached = %w[browser-base service-base browser-delete]
+  uncached = required - cached
+  cached.each do |name|
     target = bake.fetch("target").fetch(name)
     abort "#{name} missing GHA cache import" unless target.fetch("cache-from").any? { |cache| cache["type"] == "gha" }
     abort "#{name} missing GHA cache export" unless target.fetch("cache-to").any? { |cache| cache["type"] == "gha" && cache["mode"] == "max" }
+  end
+  uncached.each do |name|
+    target = bake.fetch("target").fetch(name)
+    abort "#{name} must not export a build cache: its layers rebuild from source every run, so the export only costs upload time" if target.key?("cache-to")
   end
   browser_scope = bake.fetch("target").fetch("browser-base").fetch("cache-to").fetch(0).fetch("scope")
   service_scope = bake.fetch("target").fetch("service-base").fetch("cache-to").fetch(0).fetch("scope")

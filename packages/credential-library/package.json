@@ -1,6 +1,6 @@
 {
     "name": "@learncard/credential-library",
-    "version": "2.0.2",
+    "version": "2.0.3",
     "description": "Comprehensive library of Verifiable Credential fixtures for testing, development, and regression prevention across the VC ecosystem",
     "main": "./dist/index.js",
     "module": "./dist/credential-library.esm.js",
@@ -33,7 +33,7 @@
         "jose": "^5.9.6",
         "shx": "^0.3.4",
         "typescript": "5.6.2",
-        "vitest": "4.1.10"
+        "vitest": "4.1.11"
     },
     "dependencies": {
         "@learncard/sd-jwt-vc-plugin": "workspace:*",

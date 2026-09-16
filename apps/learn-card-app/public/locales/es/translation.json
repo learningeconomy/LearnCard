@@ -1715,6 +1715,7 @@
         "previewCredentials": "Vista previa de {{count}} credenciales"
     },
     "consentFlow": {
+        "guardianApprovalRequired": "Pide a un administrador actual de la cuenta que apruebe esta conexión y vuelve a intentarlo.",
         "title": "Consentimiento",
         "acceptAndSync": "Aceptar y sincronizar",
         "accepted": "Aceptado",

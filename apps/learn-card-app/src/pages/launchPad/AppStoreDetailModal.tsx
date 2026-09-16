@@ -443,7 +443,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
         );
     };
 
-    const handleInstall = () => {
+    const handleInstall = async () => {
         const result = checkAppInstallEligibility({
             isChildProfile,
             userAge,
@@ -452,32 +452,39 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
             hasContract: Boolean(contractUri),
         });
 
-        switch (result.action) {
-            case 'hard_blocked':
-                showAgeBlockedModal();
-                return;
+        try {
+            switch (result.action) {
+                case 'hard_blocked':
+                    showAgeBlockedModal();
+                    return;
 
-            case 'require_dob':
-                guardedAction(
-                    () => {
-                        showDobEntryModal();
-                    },
-                    { ignorePriorVerification: true }
-                );
-                return;
+                case 'require_dob':
+                    await guardedAction(
+                        () => {
+                            showDobEntryModal();
+                        },
+                        { ignorePriorVerification: true }
+                    );
+                    return;
 
-            case 'require_guardian_approval':
-                guardedAction(
-                    () => {
-                        showInstallConsentModal();
-                    },
-                    { ignorePriorVerification: true }
-                );
-                return;
+                case 'require_guardian_approval':
+                    await guardedAction(
+                        () => {
+                            showInstallConsentModal();
+                        },
+                        { ignorePriorVerification: true }
+                    );
+                    return;
 
-            case 'proceed':
-                showInstallConsentModal();
-                return;
+                case 'proceed':
+                    showInstallConsentModal();
+                    return;
+            }
+        } catch {
+            presentToast(m['error.generic'](), {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
         }
     };
 

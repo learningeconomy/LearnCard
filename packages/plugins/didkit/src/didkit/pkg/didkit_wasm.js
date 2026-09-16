@@ -822,12 +822,12 @@ export function decryptDagJwe(jwe, jwks) {
     return ret;
 }
 
-function __wbg_adapter_12(arg0, arg1, arg2) {
-    wasm.closure4277_externref_shim(arg0, arg1, arg2);
+function __wbg_adapter_14(arg0, arg1) {
+    wasm.wasm_bindgen_d32f3dfee079a7d6___convert__closures_____invoke______(arg0, arg1);
 }
 
-function __wbg_adapter_19(arg0, arg1) {
-    wasm.wasm_bindgen_d32f3dfee079a7d6___convert__closures_____invoke______(arg0, arg1);
+function __wbg_adapter_21(arg0, arg1, arg2) {
+    wasm.closure4277_externref_shim(arg0, arg1, arg2);
 }
 
 function __wbg_adapter_165(arg0, arg1, arg2, arg3) {
@@ -1334,7 +1334,7 @@ function __wbg_get_imports() {
     };
     imports.wbg.__wbindgen_cast_71be6b9810665d03 = function(arg0, arg1) {
         // Cast intrinsic for `Closure(Closure { dtor_idx: 4276, function: Function { arguments: [Externref], shim_idx: 4277, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
-        const ret = makeMutClosure(arg0, arg1, 4276, __wbg_adapter_12);
+        const ret = makeMutClosure(arg0, arg1, 4276, __wbg_adapter_21);
         return ret;
     };
     imports.wbg.__wbindgen_cast_9ae0607507abb057 = function(arg0) {
@@ -1344,7 +1344,7 @@ function __wbg_get_imports() {
     };
     imports.wbg.__wbindgen_cast_c4ad6e01c6e9da76 = function(arg0, arg1) {
         // Cast intrinsic for `Closure(Closure { dtor_idx: 4242, function: Function { arguments: [], shim_idx: 4243, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
-        const ret = makeMutClosure(arg0, arg1, 4242, __wbg_adapter_19);
+        const ret = makeMutClosure(arg0, arg1, 4242, __wbg_adapter_14);
         return ret;
     };
     imports.wbg.__wbindgen_cast_cb9088102bce6b30 = function(arg0, arg1) {

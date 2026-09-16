@@ -34,14 +34,17 @@ export type ErrorCode =
     | 'INVALID_PAYLOAD'
     | 'CREDENTIAL_NOT_FOUND'
     | 'UNAUTHORIZED'
-    | 'UNKNOWN_ERROR';
+    | 'FORBIDDEN'
+    | 'UNKNOWN_ERROR'
+    // Match the SDK's extensible wire contract for application/tRPC errors.
+    | string;
 
 // Incoming message structure
 export interface LearnCardMessage {
     protocol: typeof LEARNCARD_PROTOCOL;
     action: LearnCardAction;
     requestId: string;
-    payload?: any;
+    payload?: unknown;
 }
 
 // Outgoing response structure
@@ -49,7 +52,7 @@ export interface LearnCardResponse {
     protocol: typeof LEARNCARD_PROTOCOL;
     requestId: string;
     type: ResponseType;
-    data?: any;
+    data?: unknown;
     error?: {
         code: ErrorCode;
         message: string;
@@ -71,7 +74,7 @@ export interface RequestConsentPayload {
 }
 
 export interface SendCredentialPayload {
-    credential: any;
+    credential: unknown;
 }
 
 export interface AskCredentialSpecificPayload {
@@ -86,7 +89,7 @@ export interface VerifiablePresentationRequest {
             example: {
                 '@context': string[];
                 type: string | string[];
-                [key: string]: any;
+                [key: string]: unknown;
             };
         };
     }>;
@@ -117,7 +120,7 @@ export interface RequestLearnerContextPayload {
     waitForSync?: boolean;
 }
 
-export interface GetSyncStatusPayload {}
+export type GetSyncStatusPayload = Record<string, never>;
 
 // AppEvent and SendCredentialEvent are imported from @learncard/types above
 
@@ -152,7 +155,8 @@ export interface ActionContext<T extends LearnCardAction = LearnCardAction> {
 export type ActionHandler<T extends LearnCardAction = LearnCardAction> = (
     context: ActionContext<T>
 ) => Promise<
-    { success: true; data?: any } | { success: false; error: { code: ErrorCode; message: string } }
+    | { success: true; data?: unknown }
+    | { success: false; error: { code: ErrorCode; message: string } }
 >;
 
 export interface ActionHandlers {
@@ -199,14 +203,14 @@ function sendResponse(
     targetOrigin: string,
     requestId: string,
     type: ResponseType,
-    data?: any,
+    data?: unknown,
     error?: { code: ErrorCode; message: string }
 ): void {
     const response: LearnCardResponse = {
         protocol: LEARNCARD_PROTOCOL,
         requestId,
         type,
-        ...(data && { data }),
+        ...(data ? { data } : {}),
         ...(error && { error }),
     };
 
@@ -308,10 +312,11 @@ export function useLearnCardPostMessage(config: UseLearnCardPostMessageConfig) {
             sdkActivityStore.set.startActivity();
 
             try {
-                const result = await handler({
+                // Each action handler validates its own payload before using it.
+                const result = await (handler as ActionHandler)({
                     origin: event.origin,
                     source: event.source!,
-                    payload,
+                    payload: payload as ActionPayloadMap[LearnCardAction],
                 });
 
                 if (result.success) {
