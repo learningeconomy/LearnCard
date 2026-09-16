@@ -96,12 +96,14 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
     const updateTerms = hasDirectUri
         ? async (
               terms: ConsentFlowTerms,
-              shareDuration: { oneTimeShare: boolean; customDuration: string }
+              shareDuration: { oneTimeShare: boolean; customDuration: string },
+              beforeSubmit?: () => Promise<void>
           ) => {
               await directUpdateTerms({
                   terms,
                   oneTime: shareDuration.oneTimeShare,
                   expiresAt: shareDuration.customDuration,
+                  beforeSubmit,
               });
           }
         : hookUpdateTerms;
@@ -556,16 +558,19 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                     if (isPostConsent && isUpdated) {
                         try {
                             await guardedAction(async () => {
-                                await updateTerms(terms, shareDuration);
+                                await updateTerms(terms, shareDuration, () =>
+                                    guardedAction(() => {})
+                                );
                             });
                             presentToast('Successfully updated!', {
                                 type: ToastTypeEnum.Success,
                             });
                             if (embedded) onSaved?.();
                             else closeModal();
-                        } catch (e) {
-                            presentToast(`Failed to update terms: ${e.message}`, {
+                        } catch {
+                            presentToast(m['error.generic'](), {
                                 type: ToastTypeEnum.Error,
+                                hasDismissButton: true,
                             });
                         }
                     }

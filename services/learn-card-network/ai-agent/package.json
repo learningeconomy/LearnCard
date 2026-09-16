@@ -1,6 +1,6 @@
 {
     "name": "@learncard/ai-agent-service",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "private": true,
     "description": "Production LearnCard AI agent service with DID-authenticated wallet, memory, and assistant APIs.",
     "main": "dist/index.js",
@@ -44,7 +44,7 @@
         "@types/express": "^4.17.15",
         "@types/node": "^18.0.0",
         "trigger.dev": "4.5.4",
-        "vitest": "^1.4.0"
+        "vitest": "^4.1.11"
     },
     "repository": {
         "type": "git",

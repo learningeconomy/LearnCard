@@ -79,7 +79,11 @@ export const FamilyCMSContentForm: React.FC<FamilyCMSContentFormProps> = ({
     const presentEmojiPicker = () => {
         newModal(
             <Suspense
-                fallback={<div className="flex items-center justify-center p-8">Loading…</div>}
+                fallback={
+                    <div className="flex items-center justify-center p-8">
+                        {m['arabicFixes.loading']()}
+                    </div>
+                }
             >
                 <FamilyEmojiPicker handleSetEmoji={handleSetEmoji} handleCloseModal={closeModal} />
             </Suspense>,

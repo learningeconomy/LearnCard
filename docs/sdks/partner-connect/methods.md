@@ -416,6 +416,29 @@ interface LearnerContextResponse {
 }
 ```
 
+**Live-consent and cache metadata migration (0.x minor release):**
+
+Every real request rechecks current app-owned consent. Withdrawn or expired grants
+return `FORBIDDEN`; a server cache hit does not bypass authorization.
+
+- `LearnerContextCacheStatus` removes `browser-hit` and `browser-miss`. Remove
+  browser-cache branches; prompt responses use `backend-hit` or `backend-miss`,
+  and structured-only responses use `structured`.
+- `LearnerContextTimingBreakdown` removes `cacheLookupMs` and `prewarmAgeMs`.
+  Remove those reads; use `totalMs` and optional `sdkRoundTripMs` for end-to-end
+  timing, and the remaining phase timings when supplied.
+- `metadata.consentRevision` identifies the server's consent revision for a
+  formatted prompt. It is absent for structured-only responses and is not a
+  reusable authorization token.
+
+The browser no longer caches formatted prompts. Keep requesting context through
+the SDK rather than reusing an old response after consent changes.
+
+Structured responses include the available credentials from the authorized
+selection. Missing or temporarily unavailable records are omitted; an empty
+selection returns an empty credentials array. Explicit authorization failures
+still reject the request rather than returning partial data.
+
 **Example - AI Tutor Integration:**
 
 ```typescript

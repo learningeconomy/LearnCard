@@ -10,6 +10,7 @@ import FamilyCMSInviteModal from '../FamilyCMSInviteModal/FamilyCMSInviteModal';
 import FamilyCMSMemberListItem from './FamilyCMSMemberListItem';
 
 import { FamilyChildAccount, FamilyCMSState, FamilyMember } from '../familyCMSState';
+import { getFamilyTitleLabel } from '../FamilyCMSMemberTitlesForm/FamilyCMSMemberTitlesToggle/familyTitles.helpers';
 
 export enum FamilyMembersListTabsEnum {
     all = 'all',
@@ -86,20 +87,22 @@ export const FamilyCMSMemberList: React.FC<FamilyCMSMemberListProps> = ({
         if (key === 'admins') {
             if (
                 await confirm({
-                    text: m['family.confirmRemoveMember']({ title: customGuardianName.singular }),
+                    text: m['family.confirmRemoveMember']({
+                        title: getFamilyTitleLabel(customGuardianName?.singular ?? 'Guardian'),
+                    }),
                     cancelButtonClassName:
                         'cancel-btn text-grayscale-900 bg-grayscale-200 py-2 rounded-[40px] font-bold px-2 w-[100px] ',
                     confirmButtonClassName:
                         'confirm-btn bg-grayscale-900 text-white py-2 rounded-[40px] font-bold px-2 w-[100px]',
                 })
             ) {
-                setAdmins?.(prevState => [
-                    ...prevState?.filter(user => user?.profileId !== profileId),
-                ]);
+                setAdmins?.(prevState =>
+                    (prevState ?? []).filter(user => user?.profileId !== profileId)
+                );
                 setState(prevState => {
                     return {
                         ...prevState,
-                        [key]: [...prevState?.[key]?.filter(user => user?.profileId !== profileId)],
+                        [key]: (prevState[key] ?? []).filter(user => user?.profileId !== profileId),
                     };
                 });
             }
@@ -108,20 +111,24 @@ export const FamilyCMSMemberList: React.FC<FamilyCMSMemberListProps> = ({
         if (key === 'issueTo') {
             if (
                 await confirm({
-                    text: m['family.confirmRemoveMember']({ title: customChildrenName.singular }),
+                    text: m['family.confirmRemoveMember']({
+                        title: getFamilyTitleLabel(customChildrenName?.singular ?? 'Child'),
+                    }),
                     cancelButtonClassName:
                         'cancel-btn text-grayscale-900 bg-grayscale-200 py-2 rounded-[40px] font-bold px-2 w-[100px] ',
                     confirmButtonClassName:
                         'confirm-btn bg-grayscale-900 text-white py-2 rounded-[40px] font-bold px-2 w-[100px]',
                 })
             ) {
-                setMembers?.(prevState => [...prevState?.filter(user => user?.name !== profileId)]);
+                setMembers?.(prevState =>
+                    (prevState ?? []).filter(user => user?.name !== profileId)
+                );
                 setState(prevState => {
                     return {
                         ...prevState,
-                        childAccounts: [
-                            ...prevState?.childAccounts?.filter(user => user?.name !== profileId),
-                        ],
+                        childAccounts: (prevState.childAccounts ?? []).filter(
+                            user => user?.name !== profileId
+                        ),
                     };
                 });
             }
@@ -129,21 +136,19 @@ export const FamilyCMSMemberList: React.FC<FamilyCMSMemberListProps> = ({
     };
 
     const handleUpdateChildAccount = (name: string, updatedUser: FamilyChildAccount) => {
-        setMembers?.(prevState => [
-            ...prevState?.map(user => {
+        setMembers?.(prevState =>
+            (prevState ?? []).map(user => {
                 if (user?.name === name) return updatedUser;
                 return user;
-            }),
-        ]);
+            })
+        );
         setState(prevState => {
             return {
                 ...prevState,
-                childAccounts: [
-                    ...prevState?.childAccounts.map(user => {
-                        if (user?.name === name) return updatedUser;
-                        return user;
-                    }),
-                ],
+                childAccounts: (prevState.childAccounts ?? []).map(user => {
+                    if (user?.name === name) return updatedUser;
+                    return user;
+                }),
             };
         });
     };
@@ -203,11 +208,13 @@ export const FamilyCMSMemberList: React.FC<FamilyCMSMemberListProps> = ({
                                     }`}
                                 >
                                     {childsListCount}{' '}
-                                    {childsListCount === 1
-                                        ? customChildrenName?.singular ||
-                                          m['family.members.child']()
-                                        : customChildrenName?.plural ||
-                                          m['family.members.children']()}
+                                    {getFamilyTitleLabel(
+                                        childsListCount === 1
+                                            ? customChildrenName?.singular ||
+                                                  m['family.members.child']()
+                                            : customChildrenName?.plural ||
+                                                  m['family.members.children']()
+                                    )}
                                 </button>
                             )}
 
@@ -221,11 +228,13 @@ export const FamilyCMSMemberList: React.FC<FamilyCMSMemberListProps> = ({
                                     }`}
                                 >
                                     {GuardiansListCount}{' '}
-                                    {GuardiansListCount === 1
-                                        ? customGuardianName?.singular ||
-                                          m['family.members.guardian']()
-                                        : customGuardianName?.plural ||
-                                          m['family.members.guardians']()}
+                                    {getFamilyTitleLabel(
+                                        GuardiansListCount === 1
+                                            ? customGuardianName?.singular ||
+                                                  m['family.members.guardian']()
+                                            : customGuardianName?.plural ||
+                                                  m['family.members.guardians']()
+                                    )}
                                 </button>
                             )}
                         </div>
@@ -261,7 +270,7 @@ export const FamilyCMSMemberList: React.FC<FamilyCMSMemberListProps> = ({
                             <TransP
                                 m={m['common.searchResults.noResultsFor']}
                                 values={{ query: search }}
-                                components={[<span className="text-black italic" />]}
+                                components={[<span key="query" className="text-black italic" />]}
                             />
                         </p>
                     </div>

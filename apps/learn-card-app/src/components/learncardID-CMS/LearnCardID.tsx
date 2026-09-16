@@ -7,6 +7,7 @@ import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { getIdBackgroundStyles } from './learncard-cms.helpers';
 import { FamilyChildAccount, FamilyCMSAppearance } from '../familyCMS/familyCMSState';
 import { UserProfilePicture } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
 
 const LearnCardID: React.FC<{
     user: FamilyChildAccount;
@@ -47,7 +48,9 @@ const LearnCardID: React.FC<{
                     )}
 
                     {showIssueDate && (
-                        <span className="font-notoSans font-[600] text-[12px]">Issued (Date)</span>
+                        <span className="font-notoSans font-[600] text-[12px]">
+                            {m['arabicFixes.issuedDate']()}
+                        </span>
                     )}
                 </div>
             </div>
@@ -65,7 +68,7 @@ const LearnCardID: React.FC<{
             </div>
 
             <div
-                className={`rounded-full overflow-hidden h-[54px] w-[54px] absolute right-[10px] bottom-[10px] flex items-center justify-center`}
+                className={`rounded-full overflow-hidden h-[54px] w-[54px] absolute end-[10px] bottom-[10px] flex items-center justify-center`}
                 style={{ backgroundColor: learnCardID?.accentColor }}
             >
                 <img
