@@ -10,6 +10,7 @@ import {
     isCredentialFixture,
     prepareFixture,
     buildFinalTranscriptVariant,
+    getBundle,
 } from '../index';
 
 import type { CredentialFixture } from '../types';
@@ -59,6 +60,26 @@ describe('Credential issuance', () => {
             15_000
         );
     });
+
+    it('issues and verifies every credential in the student bundle', async () => {
+        for (const entry of getBundle('student').entries) {
+            const prepared = prepareFixture(getFixture(entry.fixtureId), {
+                issuerDid,
+                subjectDid: 'did:example:student',
+            });
+            if (entry.name) prepared.name = entry.name;
+
+            const signed = await wallet.invoke.issueCredential(prepared);
+            const verification = await wallet.invoke.verifyCredential(signed, {}, true);
+
+            expect(verification).not.toEqual(
+                expect.arrayContaining([expect.objectContaining({ status: 'Failed' })])
+            );
+            expect(verification).toEqual(
+                expect.arrayContaining([expect.objectContaining({ status: 'Success' })])
+            );
+        }
+    }, 30_000);
 
     it('issues the full CLR fixture without remote contexts', async () => {
         const offlineWallet = await initLearnCard({

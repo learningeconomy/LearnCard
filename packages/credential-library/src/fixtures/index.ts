@@ -23,11 +23,17 @@ import { obv3CourseCompletion } from './obv3/course-completion';
 import { obv3StandaloneFullCourse } from './obv3/standalone-full-course';
 import { obv3K12Diploma } from './obv3/k12-diploma';
 import { obv3EndorsementCredential } from './obv3/endorsement';
+import {
+    obv3StudentCivicLeadership,
+    obv3StudentWebDevelopment,
+    obv3StudentCommunityImpact,
+} from './obv3/student-achievements';
 
 // CLR v2
 import { clrMinimal } from './clr/minimal';
 import { clrMultiAchievement } from './clr/multi-achievement';
 import { clrUniversityTranscript } from './clr/university-transcript';
+import { clrStudentTranscript } from './clr/student-transcript';
 
 // LearnCard Boosts
 import { boostBasic } from './boost/basic';
@@ -94,12 +100,16 @@ export const ALL_FIXTURES: LibraryFixture[] = [
     obv3StandaloneFullCourse,
     obv3K12Diploma,
     obv3EndorsementCredential,
+    obv3StudentCivicLeadership,
+    obv3StudentWebDevelopment,
+    obv3StudentCommunityImpact,
 
     // CLR v2
     clrMinimal,
     clrMultiAchievement,
     clrUniversityTranscript,
 
+    clrStudentTranscript,
     // Boosts
     boostBasic,
     boostId,
@@ -161,7 +171,11 @@ export {
     obv3StandaloneFullCourse,
     obv3K12Diploma,
     obv3EndorsementCredential,
+    obv3StudentCivicLeadership,
+    obv3StudentWebDevelopment,
+    obv3StudentCommunityImpact,
     clrUniversityTranscript,
+    clrStudentTranscript,
     boostCommunityAward,
     boostDelegate,
     vcV1AlumniCredential,
