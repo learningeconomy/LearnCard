@@ -170,6 +170,8 @@ sign-in link, then press Enter to send. In the app, open **Alerts → Claim → 
 Press Enter in the terminal to publish the update, then open the new update notification
 in the app. Press Enter once more to confirm the final certificate was saved. The CLI
 waits for the app to save each version; it does not claim or refresh on the app's behalf.
+Open the full certificate to compare **Provisional Results — Final grade: Pending** with
+**Final Results — Final grade: A** after the update. Both its title and description change.
 Keep the sign-in link private: it controls a disposable demo account. This mode is
 interactive and local-only; `--app-url` selects a different local app port.
 

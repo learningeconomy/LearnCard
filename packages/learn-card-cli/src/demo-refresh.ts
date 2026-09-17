@@ -105,9 +105,13 @@ export const runRefreshDemo = async (options: RefreshDemoOptions): Promise<void>
                 achievement: {
                     id: `urn:uuid:${randomUUID()}`,
                     type: ['Achievement'],
-                    name: 'Introduction to Biology',
-                    description: 'Completion of Introduction to Biology.',
-                    criteria: { narrative: 'Complete the course and final assessment.' },
+                    name: 'Introduction to Biology — Provisional Results',
+                    description:
+                        'Coursework submitted. Final grade: Pending. Results await review.',
+                    criteria: {
+                        narrative:
+                            'Final results require review of coursework and the final assessment.',
+                    },
                 },
             },
         };
@@ -151,6 +155,9 @@ export const runRefreshDemo = async (options: RefreshDemoOptions): Promise<void>
         if (ui) {
             out.log('\nIn the app: reload if needed, open Alerts, then Claim → Accept.');
             out.log('Find Provisional Course Certificate under Passport → Achievements.');
+            out.log(
+                'Open it: the full certificate shows Provisional Results and Final grade: Pending.'
+            );
             let claimed = false;
             do {
                 await pause('confirm the certificate is saved in the app and publish its update');
@@ -178,13 +185,22 @@ export const runRefreshDemo = async (options: RefreshDemoOptions): Promise<void>
             validFrom: new Date().toISOString(),
             refreshService: refresh.refreshService,
             ...(refresh.credentialStatus && { credentialStatus: refresh.credentialStatus }),
-            credentialSubject: { ...template.credentialSubject, id: refresh.holderDid },
+            credentialSubject: {
+                ...template.credentialSubject,
+                id: refresh.holderDid,
+                achievement: {
+                    ...template.credentialSubject.achievement,
+                    name: 'Introduction to Biology — Final Results',
+                    description:
+                        'Course completed. Final grade: A. Coursework and final assessment reviewed.',
+                },
+            },
         });
         const published = await issuer.invoke.publishCredentialRefresh({
             mode: 'issuer-signed',
             refreshId: refresh.refreshId,
             signedCredential: updated,
-            updateSummary: 'Final course certificate is ready.',
+            updateSummary: 'Final results are ready. Final grade: A.',
             idempotencyKey: `demo-final-${suffix}`,
         });
         if (published.version !== 2) throw new Error('Expected to publish version 2.');
@@ -200,6 +216,7 @@ export const runRefreshDemo = async (options: RefreshDemoOptions): Promise<void>
             out.log(
                 'The app should open Final Course Certificate. Its existing Passport entry is updated.'
             );
+            out.log('The full certificate now shows Final Results and Final grade: A.');
             let appUpdated = false;
             do {
                 await pause('confirm the final certificate is visible');

@@ -109,6 +109,17 @@ describe('interactive frontend refresh demonstration', () => {
         };
         mocks.init.mockResolvedValueOnce(issuer).mockResolvedValueOnce(holder);
         await runRefreshDemo({ ui: true });
+        // Full certificate views render the nested achievement, not the thumbnail title.
+        const sentAchievement =
+            issuer.invoke.createBoost.mock.calls[0][0].credentialSubject.achievement;
+        const updatedAchievement =
+            issuer.invoke.issueCredential.mock.calls[0][0].credentialSubject.achievement;
+        expect(sentAchievement.name).toContain('Provisional Results');
+        expect(sentAchievement.description).toContain('Final grade: Pending');
+        expect(sentAchievement.description).not.toContain('Course completed');
+        expect(updatedAchievement.name).toContain('Final Results');
+        expect(updatedAchievement.description).toContain('Final grade: A');
+        expect(updatedAchievement.id).toBe(sentAchievement.id);
         expect(holder.invoke.acceptCredential).not.toHaveBeenCalled();
         expect(holder.invoke.refreshCredential).not.toHaveBeenCalled();
         expect(holder.invoke.verifyCredential).toHaveBeenCalledWith(final);

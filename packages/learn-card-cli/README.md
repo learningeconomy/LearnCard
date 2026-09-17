@@ -73,11 +73,12 @@ bun --cwd packages/learn-card-cli start demo refresh --ui
 2. Press Enter in the terminal to send the certificate. In the app, open **Alerts →
    Claim → Accept**, skip the optional connection prompt, then view
    **Provisional Course Certificate** in **Passport → Achievements**.
+   Open it to see **Provisional Results** and **Final grade: Pending** on the full certificate.
 3. Press Enter in the terminal to publish the final certificate. The command checks that
    the app has saved the original first.
 4. Reload the app if needed and open **Alerts**. Select the notification that the school
    updated a credential. The app retrieves and verifies **Final Course Certificate**,
-   replacing the existing copy.
+   replacing the existing copy. Open it to see **Final Results** and **Final grade: A**.
 5. Press Enter in the terminal to confirm. The CLI checks that the updated credential
    was actually saved by the app and verifies it.
 
