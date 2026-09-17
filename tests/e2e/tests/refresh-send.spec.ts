@@ -446,6 +446,39 @@ describe('Refreshable Sends E2E (LC-2198)', () => {
         expect(held.credentialSubject as any).toMatchObject({ id: bProfile!.did });
     }, 120_000);
 
+    test.each([false, true])(
+        'did:key recipient refreshes through its profile identity (keyed=%s)',
+        async keyed => {
+            const template = ordinaryTemplate('Controller-addressed certificate', a.id.did());
+            const result = await a.invoke.send({
+                type: 'boost',
+                recipient: b.id.did('key'),
+                template: { credential: template as any },
+                refresh: true,
+                ...(keyed ? { idempotencyKey: `did-key-${randomUUID()}` } : {}),
+            });
+            const receipt = expectValidReceipt(result.refresh);
+            expect(receipt.holderDid).toBe(b.id.did());
+            await claimCredential(b, result.credentialUri);
+            const held = (await b.read.get(result.credentialUri)) as VC;
+            expect(held.credentialSubject).toMatchObject({ id: b.id.did() });
+            const update = rebuildFromReceipt(template, receipt, {
+                name: 'Final controller-addressed certificate',
+                boostId: result.uri,
+            });
+            await a.invoke.publishCredentialRefresh({
+                mode: 'issuer-signed',
+                refreshId: receipt.refreshId,
+                signedCredential: await a.invoke.issueCredential(update as any),
+            });
+            const refreshed = await b.invoke.refreshCredential(held, LOCAL_REFRESH_OPTIONS);
+            expect(refreshed.status).toBe('updated');
+            if (refreshed.status === 'updated')
+                expect(refreshed.credential.name).toBe('Final controller-addressed certificate');
+        },
+        180_000
+    );
+
     test('email, phone, and remote DID refresh requests fail clearly', async () => {
         const boostUri = await a.invoke.createBoost(
             ordinaryTemplate('Rejection Boost', a.id.did()) as any
@@ -554,15 +587,19 @@ describe('Refreshable Sends E2E (LC-2198)', () => {
         };
 
         const { token } = await createApiTokenForUser('a', 'boosts:write credentials:write');
-        const postHandoff = () =>
+        const postHandoff = (idempotencyKey?: string) =>
             fetch(`${BRAIN_BASE_URL}/api/send`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify(body),
+                body: JSON.stringify({ ...body, ...(idempotencyKey ? { idempotencyKey } : {}) }),
             });
+
+        const rejectedKey = await postHandoff(`direct-rest-${randomUUID()}`);
+        expect(rejectedKey.status).toBe(400);
+        expect(await rejectedKey.text()).toContain('omit idempotencyKey');
 
         const firstResponse = await postHandoff();
         expect(firstResponse.status).toBe(200);
@@ -671,78 +708,90 @@ describe('Refreshable Sends E2E (LC-2198)', () => {
         expect(await a.invoke.sendBoost(USERS.b.profileId, anotherBoost)).toBeTypeOf('string');
     }, 180_000);
 
-    test('authenticated HTTP /api/send: signing-authority lifecycle from receipt only', async () => {
-        const sa = await setupSigningAuthority(a, 'rs');
-        const { token } = await createApiTokenForUser('a', 'boosts:write credentials:write');
-        // SA registration adds its key to the issuer's did:web document. The module
-        // level DID resolver cache may still hold the pre-registration copy (earlier
-        // tests resolve the same document), which would make every SA-signed proof
-        // unverifiable ("No applicable proof"). Force one authoritative refresh.
-        await (b.invoke as any).resolveDid((await a.invoke.getProfile())!.did, { noCache: true });
-        const boostUri = await a.invoke.createBoost(
-            ordinaryTemplate('HTTP SA Refresh Boost', a.id.did()) as any
-        );
+    test.each(['profile', 'did-key', 'did-key-keyed'])(
+        'authenticated HTTP /api/send: signing-authority lifecycle (%s)',
+        async recipientMode => {
+            const sa = await setupSigningAuthority(a, 'rs');
+            const { token } = await createApiTokenForUser('a', 'boosts:write credentials:write');
+            // SA registration adds its key to the issuer's did:web document. The module
+            // level DID resolver cache may still hold the pre-registration copy (earlier
+            // tests resolve the same document), which would make every SA-signed proof
+            // unverifiable ("No applicable proof"). Force one authoritative refresh.
+            await (b.invoke as any).resolveDid((await a.invoke.getProfile())!.did, {
+                noCache: true,
+            });
+            const boostUri = await a.invoke.createBoost(
+                ordinaryTemplate('HTTP SA Refresh Boost', a.id.did()) as any
+            );
 
-        const response = await fetch(`${BRAIN_BASE_URL}/api/send`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body: JSON.stringify({
-                type: 'boost',
-                recipient: USERS.b.profileId,
-                templateUri: boostUri,
-                refresh: true,
-            }),
-        });
+            const response = await fetch(`${BRAIN_BASE_URL}/api/send`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({
+                    type: 'boost',
+                    recipient: recipientMode === 'profile' ? USERS.b.profileId : b.id.did('key'),
+                    ...(recipientMode === 'did-key-keyed'
+                        ? { idempotencyKey: `sa-did-key-${randomUUID()}` }
+                        : {}),
+                    templateUri: boostUri,
+                    refresh: true,
+                }),
+            });
 
-        expect(response.status).toBe(200);
-        const result = await response.json();
+            expect(response.status).toBe(200);
+            const result = await response.json();
 
-        expect(result.type).toBe('boost');
-        expect(result.uri).toBe(boostUri);
-        expect(result.credentialUri).toMatch(/^lc:network:/);
-        expect(result.activityId).toBeTruthy();
-        const receipt = expectValidReceipt(result.refresh);
-        // The signing authority signed as the issuer's delegate: the signed identity
-        // is the issuer profile's network DID.
-        expect(receipt.issuerDid).toBe((await a.invoke.getProfile())!.did);
+            expect(result.type).toBe('boost');
+            expect(result.uri).toBe(boostUri);
+            expect(result.credentialUri).toMatch(/^lc:network:/);
+            expect(result.activityId).toBeTruthy();
+            const receipt = expectValidReceipt(result.refresh);
+            expect(receipt.holderDid).toBe(b.id.did());
+            // The signing authority signed as the issuer's delegate: the signed identity
+            // is the issuer profile's network DID.
+            expect(receipt.issuerDid).toBe((await a.invoke.getProfile())!.did);
 
-        await claimCredential(b, result.credentialUri);
+            await claimCredential(b, result.credentialUri);
 
-        // The issuer cannot read the stored plaintext; the holder can.
-        expect(await a.read.get(result.credentialUri)).toBeUndefined();
-        const held = (await b.read.get(result.credentialUri)) as VC;
-        // Proof verification method is the issuer's network DID delegated to the SA.
-        expect(String((held.proof as any).verificationMethod)).toContain(receipt.issuerDid);
+            // The issuer cannot read the stored plaintext; the holder can.
+            expect(await a.read.get(result.credentialUri)).toBeUndefined();
+            const held = (await b.read.get(result.credentialUri)) as VC;
+            // Proof verification method is the issuer's network DID delegated to the SA.
+            expect(String((held.proof as any).verificationMethod)).toContain(receipt.issuerDid);
 
-        // Publish version 2 through the same signing authority: an UNSIGNED body —
-        // the network injects the managed context before the SA signs.
-        const update = rebuildFromReceipt(
-            ordinaryTemplate('HTTP SA Refresh Boost', a.id.did()),
-            receipt,
-            { name: 'HTTP SA Refresh Boost — v2', boostId: boostUri }
-        );
+            // Publish version 2 through the same signing authority: an UNSIGNED body —
+            // the network injects the managed context before the SA signs.
+            const update = rebuildFromReceipt(
+                ordinaryTemplate('HTTP SA Refresh Boost', a.id.did()),
+                receipt,
+                { name: 'HTTP SA Refresh Boost — v2', boostId: boostUri }
+            );
 
-        const publication = await a.invoke.publishCredentialRefresh({
-            mode: 'signing-authority',
-            refreshId: receipt.refreshId,
-            credential: update as any,
-            signingAuthority: { type: 'http', endpoint: sa.endpoint!, name: sa.name! },
-        });
+            const publication = await a.invoke.publishCredentialRefresh({
+                mode: 'signing-authority',
+                refreshId: receipt.refreshId,
+                credential: update as any,
+                signingAuthority: { type: 'http', endpoint: sa.endpoint!, name: sa.name! },
+            });
 
-        expect(publication.version).toBe(2);
+            expect(publication.version).toBe(2);
 
-        const refreshed = await b.invoke.refreshCredential(held, LOCAL_REFRESH_OPTIONS);
-        expect(refreshed.status, JSON.stringify(refreshed)).toBe('updated');
-        if (refreshed.status !== 'updated') throw new Error('expected updated');
+            const refreshed = await b.invoke.refreshCredential(held, LOCAL_REFRESH_OPTIONS);
+            expect(refreshed.status, JSON.stringify(refreshed)).toBe('updated');
+            if (refreshed.status !== 'updated') throw new Error('expected updated');
 
-        expect(refreshed.managedVersion).toBe(2);
-        expect((refreshed.credential as any).issuer).toBe(receipt.issuerDid);
-        expect((refreshed.credential as any).credentialStatus).toEqual(receipt.credentialStatus);
-        expect(managedContextFragments(refreshed.credential)).toHaveLength(1);
-        const v2Verification = await b.invoke.verifyCredential(refreshed.credential as VC);
-        expect(v2Verification.errors).toEqual([]);
-        expect(v2Verification.checks).toContain('proof');
-    }, 240_000);
+            expect(refreshed.managedVersion).toBe(2);
+            expect((refreshed.credential as any).issuer).toBe(receipt.issuerDid);
+            expect((refreshed.credential as any).credentialStatus).toEqual(
+                receipt.credentialStatus
+            );
+            expect(managedContextFragments(refreshed.credential)).toHaveLength(1);
+            const v2Verification = await b.invoke.verifyCredential(refreshed.credential as VC);
+            expect(v2Verification.errors).toEqual([]);
+            expect(v2Verification.checks).toContain('proof');
+        },
+        240_000
+    );
 
     test('HTTP /api/send: refresh requires credentials:write; email always rejected', async () => {
         await setupSigningAuthority(a, 'rss');

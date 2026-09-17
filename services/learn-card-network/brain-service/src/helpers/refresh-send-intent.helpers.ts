@@ -8,7 +8,7 @@ import { neogma } from '@instance';
 import { getInitialRefreshRoot, getManagedCredentialUri } from './credential-refresh.helpers';
 
 /** A preparation not touched for this long is considered abandoned and may be taken over. */
-export const REFRESH_SEND_INTENT_STALE_MS = 60_000;
+export const REFRESH_SEND_INTENT_STALE_MS = 5 * 60_000;
 
 export type RefreshSendIntentState = 'preparing' | 'prepared' | 'delivered';
 
@@ -47,6 +47,9 @@ export const computeRefreshSendRequestDigest = (request: {
     templateUri?: string;
     template?: unknown;
     contractUri?: string;
+    templateData?: Record<string, unknown>;
+    integrationId?: string;
+    credentialId?: string;
 }): string =>
     createHash('sha256')
         .update(
@@ -56,6 +59,9 @@ export const computeRefreshSendRequestDigest = (request: {
                 templateUri: request.templateUri ?? null,
                 template: request.template ?? null,
                 contractUri: request.contractUri ?? null,
+                templateData: request.templateData ?? {},
+                integrationId: request.integrationId ?? null,
+                credentialId: request.credentialId ?? null,
             })
         )
         .digest('base64url');
@@ -113,6 +119,7 @@ export const claimRefreshSendIntent = async (params: {
                        i.claimToken = $claimToken,
                        i.createdAt = $now,
                        i.updatedAt = $now
+         SET i.updatedAt = i.updatedAt
          WITH i
          CALL {
              WITH i
@@ -151,7 +158,18 @@ export const claimRefreshSendIntent = async (params: {
     });
 };
 
-/** Records progress on an intent owned by `claimToken` (boost first, then allocation). */
+const lostIntentClaim = (): TRPCError =>
+    new TRPCError({
+        code: 'CONFLICT',
+        message:
+            'This send preparation was taken over or completed. Retry with the same idempotencyKey.',
+    });
+
+/**
+ * Records progress on an intent owned by `claimToken` (boost first, then allocation).
+ * The self-dependent SET takes the node write lock before checking ownership, so
+ * a concurrent takeover cannot pass a stale check and overwrite the new owner.
+ */
 export const recordRefreshSendIntent = async (
     intent: RefreshSendIntent,
     fields: Partial<
@@ -160,10 +178,13 @@ export const recordRefreshSendIntent = async (
 ): Promise<RefreshSendIntent> => {
     const result = await neogma.queryRunner.run(
         `MATCH (i:RefreshSendIntent {intentKey: $intentKey})
+         SET i.updatedAt = i.updatedAt
+         WITH i WHERE i.claimToken = $claimToken AND i.state = 'preparing'
          SET i += $fields, i.updatedAt = $now
          RETURN i`,
         {
             intentKey: intent.intentKey,
+            claimToken: intent.claimToken,
             fields: Object.fromEntries(
                 Object.entries(fields).filter(([, value]) => value !== undefined)
             ),
@@ -171,6 +192,7 @@ export const recordRefreshSendIntent = async (
         }
     );
 
+    if (!result.records.length) throw lostIntentClaim();
     return parseIntent(result.records[0]!.get('i').properties);
 };
 
@@ -180,34 +202,44 @@ export const recordRefreshSendIntentPending = async (
     pendingReceipt: ManagedCredentialRefreshReceipt,
     pendingActivityId?: string
 ): Promise<void> => {
-    await neogma.queryRunner.run(
+    const updated = await neogma.queryRunner.run(
         `MATCH (i:RefreshSendIntent {intentKey: $intentKey})
-         WHERE i.state <> 'delivered'
+         SET i.updatedAt = i.updatedAt
+         WITH i WHERE i.claimToken = $claimToken AND i.state = 'prepared'
          SET i.pendingReceipt = $pendingReceipt,
              i.pendingActivityId = coalesce($pendingActivityId, i.pendingActivityId),
-             i.updatedAt = $now`,
+             i.updatedAt = $now
+         RETURN i`,
         {
             intentKey: intent.intentKey,
+            claimToken: intent.claimToken,
             pendingReceipt: JSON.stringify(pendingReceipt),
             pendingActivityId: pendingActivityId ?? null,
             now: new Date().toISOString(),
         }
     );
+    if (!updated.records.length) throw lostIntentClaim();
 };
 
 export const markRefreshSendIntentDelivered = async (
     intent: RefreshSendIntent,
     result: SendBoostResponse
 ): Promise<void> => {
-    await neogma.queryRunner.run(
+    const updated = await neogma.queryRunner.run(
         `MATCH (i:RefreshSendIntent {intentKey: $intentKey})
-         SET i.state = 'delivered', i.result = $result, i.updatedAt = $now`,
+         SET i.updatedAt = i.updatedAt
+         WITH i WHERE i.claimToken = $claimToken
+                      AND (i.state = 'prepared' OR (i.state = 'delivered' AND i.result = $result))
+         SET i.state = 'delivered', i.result = $result, i.updatedAt = $now
+         RETURN i`,
         {
             intentKey: intent.intentKey,
+            claimToken: intent.claimToken,
             result: JSON.stringify(result),
             now: new Date().toISOString(),
         }
     );
+    if (!updated.records.length) throw lostIntentClaim();
 };
 
 /**

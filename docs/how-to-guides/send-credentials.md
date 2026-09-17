@@ -29,7 +29,7 @@ const result = await learnCard.invoke.send({
 });
 ```
 
-You choose **who the recipient is** and **who signs**. Everything else — delivery, the claim email, auto-delivery to existing accounts — is the same call. Add `refresh: true` and the recipient can receive in-place updates later; see [Issue and Refresh a Managed Credential](issue-and-refresh-a-managed-credential.md). Add `idempotencyKey` to make a refreshable send safe to retry; see [Retrying a refreshable send safely](issue-and-refresh-a-managed-credential.md#retrying-a-refreshable-send-safely).
+You choose **who the recipient is** and **who signs**. Everything else — delivery, the claim email, auto-delivery to existing accounts — is the same call. Add `refresh: true` and the recipient can receive in-place updates later; see [Issue and Refresh a Managed Credential](issue-and-refresh-a-managed-credential.md). Add `idempotencyKey` to make an SDK-signed or server-signed refreshable send safe to retry (direct REST callers providing `signedCredential` omit the key and retry the same signed credential and `templateUri`); see [Retrying a refreshable send safely](issue-and-refresh-a-managed-credential.md#retrying-a-refreshable-send-safely).
 
 | Recipient looks like          | What happens                                                                                                                                                                                                   |
 | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

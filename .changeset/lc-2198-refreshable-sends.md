@@ -1,5 +1,5 @@
 ---
-'@learncard/network-plugin': minor
+'@learncard/network-plugin': major
 '@learncard/types': minor
 '@learncard/helpers': minor
 '@learncard/vc-plugin': patch
@@ -13,3 +13,5 @@ Managed refreshable sends through the standard send paths (LC-2198). `send({ typ
 `@learncard/types` adds the `ManagedCredentialRefreshReceipt` validator plus optional `refresh` on the unified send input/response validators; `@learncard/helpers` adds the shared managed context preparation helpers (`prepareManagedRefreshContext`, `injectManagedRefreshService`) now also used by SDK `issueCredential` signing.
 
 Refreshable `send` accepts an optional `idempotencyKey` so a whole call can be retried without duplicating the boost, refresh allocation or delivery.
+
+Signing a credential with a managed refresh service now rejects conflicting inline JSON-LD term definitions (including `authorization`) instead of producing a credential whose refresh terms are not correctly signed. Credentials without a managed service are unaffected.

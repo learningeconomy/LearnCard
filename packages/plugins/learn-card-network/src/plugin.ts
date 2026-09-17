@@ -1927,6 +1927,8 @@ export async function getLearnCardNetworkPlugin(
                                 ? { templateUri: input.templateUri }
                                 : { template: input.template! }),
                             ...(input.contractUri ? { contractUri: input.contractUri } : {}),
+                            ...(input.templateData ? { templateData: input.templateData } : {}),
+                            ...(input.integrationId ? { integrationId: input.integrationId } : {}),
                             ...(boost.id ? { credentialId: boost.id } : {}),
                             ...(input.idempotencyKey
                                 ? { idempotencyKey: input.idempotencyKey }

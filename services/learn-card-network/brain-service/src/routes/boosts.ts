@@ -447,14 +447,16 @@ const prepareManagedRefreshSend = async (params: {
     template?: z.infer<typeof SendBoostTemplateValidator>;
     contractUri?: string;
     credentialId?: string;
+    templateData?: Record<string, unknown>;
+    integrationId?: string;
     idempotencyKey?: string;
 }): Promise<PrepareRefreshableSendResult & { intent?: RefreshSendIntent }> => {
     const { profile, scope, domain, recipient, templateUri, template, contractUri } = params;
 
     const targetProfile = await validateRefreshSendRecipient({ profile, scope, recipient, domain });
-    const holderDid = recipient.startsWith('did:')
-        ? recipient
-        : getDidWeb(domain, targetProfile.profileId);
+    // Local recipients authenticate refresh requests as their network profile DID,
+    // including when the caller addressed them by their controller did:key.
+    const holderDid = getDidWeb(domain, targetProfile.profileId);
 
     let intent: RefreshSendIntent | undefined;
 
@@ -468,6 +470,9 @@ const prepareManagedRefreshSend = async (params: {
                 templateUri,
                 template,
                 contractUri,
+                templateData: params.templateData,
+                integrationId: params.integrationId,
+                credentialId: params.credentialId,
             }),
         });
 
@@ -1124,6 +1129,30 @@ export const boostsRouter = t.router({
                                         'A signed credential sent with refresh must already contain its allocated managed refresh service.',
                                 });
                             }
+
+                            if (input.idempotencyKey) {
+                                const intent = await getRefreshSendIntent(
+                                    profile.profileId,
+                                    input.idempotencyKey
+                                );
+                                if (!intent) {
+                                    throw new TRPCError({
+                                        code: 'BAD_REQUEST',
+                                        message:
+                                            'idempotencyKey with a pre-signed credential requires a prior boost.prepareRefreshableSend call (tRPC only). For a directly signed REST send, omit idempotencyKey and retry the same signed credential and templateUri.',
+                                    });
+                                }
+                                if (
+                                    intent.refreshId !== handoff.refreshId ||
+                                    (input.templateUri && intent.boostUri !== input.templateUri)
+                                ) {
+                                    throw new TRPCError({
+                                        code: 'CONFLICT',
+                                        message:
+                                            'This idempotencyKey does not match the prepared refresh send for this credential.',
+                                    });
+                                }
+                            }
                         }
                     }
 
@@ -1140,6 +1169,8 @@ export const boostsRouter = t.router({
                                   templateUri: input.templateUri,
                                   template: input.templateUri ? undefined : input.template,
                                   contractUri,
+                                  templateData: input.templateData,
+                                  integrationId: input.integrationId,
                                   idempotencyKey: input.idempotencyKey,
                               })
                             : undefined;

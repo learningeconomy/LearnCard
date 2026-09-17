@@ -143,7 +143,14 @@ const result = await learnCard.invoke.send({
 });
 ```
 
-Retries with the same key reuse the same boost and refresh allocation and return the original result once delivery has succeeded. Reusing a key for a different recipient or template is rejected with `CONFLICT`. Keys are scoped to your profile and only apply to `refresh: true` sends.
+Retries with the same key reuse the same boost and refresh allocation and return the original result once delivery has succeeded. Reusing a key for a different recipient, template, template data, integration, contract, or explicitly supplied credential ID is rejected with `CONFLICT`. Keys are scoped to your profile and only apply to `refresh: true` sends.
+
+For manually signed credentials, `idempotencyKey` requires an earlier `boost.prepareRefreshableSend`
+call with that key. That preparation procedure is tRPC-only; the SDK handles it automatically
+when signing locally. Direct REST callers supplying `signedCredential` should omit the key and
+retry the exact same signed credential with the same `templateUri`: the refresh allocation's
+binding already prevents duplicate delivery. A key without prior preparation is rejected with
+`BAD_REQUEST` before any send state is created.
 
 ### `sendBoost` also issues refreshable credentials
 

@@ -237,6 +237,7 @@ describe('unified send with refresh: true (managed branch)', () => {
         expect(client.boost.prepareRefreshableSend.mutate).toHaveBeenCalledExactlyOnceWith({
             recipient: 'userb',
             templateUri: 'did:web:network.example:boost:1',
+            templateData: { name: 'Refreshable Badge' },
         });
         expect(client.credentialRefresh.allocateCredentialRefresh.mutate).not.toHaveBeenCalled();
 
@@ -433,6 +434,28 @@ describe('unified send with refresh: true (managed branch)', () => {
 
         const forwarded = client.boost.send.mutate.mock.calls[0]?.[0] as any;
         expect(forwarded.signedCredential.credentialSubject.id).toEqual(defaultPrepared.holderDid);
+    });
+
+    it('includes claim data and integration in the keyed preparation fingerprint', async () => {
+        const client = getMockClient();
+        const learnCard = getMockIssuingLearnCard();
+        const plugin = await getPlugin(learnCard, client);
+        await plugin.methods?.send(learnCard, {
+            type: 'boost',
+            recipient: 'userb',
+            templateUri: 'did:web:network.example:boost:1',
+            refresh: true,
+            idempotencyKey: 'award-1',
+            templateData: { grade: 'A' },
+            integrationId: 'integration-1',
+        });
+        expect(client.boost.prepareRefreshableSend.mutate).toHaveBeenCalledWith(
+            expect.objectContaining({
+                templateData: { grade: 'A' },
+                integrationId: 'integration-1',
+                idempotencyKey: 'award-1',
+            })
+        );
     });
 
     it('delegates unchanged to the server signing-authority path when local signing is unavailable', async () => {

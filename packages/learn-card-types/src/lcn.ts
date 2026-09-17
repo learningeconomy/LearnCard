@@ -554,7 +554,7 @@ export const SendBoostInputValidator = z
             .max(200)
             .optional()
             .describe(
-                'Caller-chosen key that makes a managed refresh send (refresh: true) safe to retry as a whole: retries with the same key reuse the same boost, refresh allocation and result. Reusing a key for a different request is rejected.'
+                'Caller-chosen key that makes a managed refresh send (refresh: true) safe to retry as a whole: retries with the same key reuse the same boost, refresh allocation and result. Reusing a key for a different request is rejected. With signedCredential, requires prior tRPC prepareRefreshableSend; direct REST callers omit the key and retry the exact signed credential and templateUri.'
             ),
     })
     .refine(data => data.templateUri || data.template || data.signedCredential, {
@@ -610,6 +610,8 @@ export const PrepareRefreshableSendInputValidator = z
         templateUri: z.string().optional(),
         template: SendBoostTemplateValidator.optional(),
         contractUri: z.string().optional(),
+        templateData: z.record(z.string(), z.unknown()).optional(),
+        integrationId: z.string().optional(),
         /** Credential ID to allocate for; generated server-side when omitted. */
         credentialId: z.string().min(1).optional(),
         idempotencyKey: z.string().min(1).max(200).optional(),

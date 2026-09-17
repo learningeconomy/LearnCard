@@ -182,14 +182,7 @@ export const extractManagedRefreshHandoff = (
         });
     }
 
-    const service = services.find(entry => entry.id === services[0]?.id);
-
-    if (!service) {
-        throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Credential carries an invalid managed refresh service.',
-        });
-    }
+    const service = services[0]!;
     const prefix = `${getStatusListBaseUrl(domain)}/refresh/`;
 
     if (!service.id.startsWith(prefix) || service.id.slice(prefix.length).length === 0) {
@@ -202,7 +195,7 @@ export const extractManagedRefreshHandoff = (
 
     const refreshId = service.id.slice(prefix.length);
 
-    if (service.id !== getCredentialRefreshServiceUrl(refreshId, domain)) {
+    if (!/^[A-Za-z0-9_-]{43}$/.test(refreshId)) {
         throw new TRPCError({
             code: 'BAD_REQUEST',
             message:
@@ -485,6 +478,8 @@ const sendInitialCredentialNotificationOnce = async (params: {
  * so their managers are the only parties able to decrypt. All recipients are
  * did:keys, so encryption never needs a remote did:web fetch. Signing authorities
  * and the brain DID are deliberately excluded.
+ * Do not add the aggregate's holder did:web here: its keyAgreement document can
+ * also include registered signing-authority keys, outside the holder-only boundary.
  */
 const getHolderEncryptionRecipients = async (holderProfile: ProfileType): Promise<string[]> => {
     const managers = await getProfilesThatManageAProfile(holderProfile.profileId);

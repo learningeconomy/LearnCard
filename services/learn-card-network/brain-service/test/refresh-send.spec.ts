@@ -41,6 +41,14 @@ import { appendBitstringStatusListEntries } from '@helpers/status-list.helpers';
 import { getDidWeb } from '@helpers/did.helpers';
 import { getCredentialRefresh, getCredentialRefreshHead } from '@accesslayer/credential-refresh';
 import { testUnsignedBoost } from './helpers/send';
+import {
+    claimRefreshSendIntent,
+    getRefreshSendIntent,
+    recordRefreshSendIntent,
+    recordRefreshSendIntentPending,
+    markRefreshSendIntentDelivered,
+} from '@helpers/refresh-send-intent.helpers';
+import { extractManagedRefreshHandoff } from '@helpers/credential-refresh.helpers';
 
 // Minimal VC 2.0 isolates the managed send/status behavior here. The real-signing
 // E2E matrix also covers VCDM 2.0 + OBv3 3.0.3: only older OB contexts (through
@@ -539,6 +547,112 @@ describe('Unified send with managed refresh (LC-2198)', () => {
             expect(await countNodes('CredentialActivity')).toBe(1);
         });
 
+        it.each(['templateData', 'integrationId', 'credentialId'] as const)(
+            'rejects changing %s after preparation without allocating again',
+            async field => {
+                const input = {
+                    recipient: HOLDER_PROFILE_ID,
+                    template: inlineTemplate(),
+                    templateData: { grade: 'A' },
+                    integrationId: 'integration-a',
+                    credentialId: 'urn:uuid:fixed-award',
+                    idempotencyKey: 'bound-request',
+                };
+                await issuer.clients.fullAuth.boost.prepareRefreshableSend(input);
+                const changes = {
+                    templateData: { grade: 'F' },
+                    integrationId: 'integration-b',
+                    credentialId: 'urn:uuid:another-award',
+                };
+                const baseline = await getMutationBaseline();
+                await expect(
+                    issuer.clients.fullAuth.boost.prepareRefreshableSend({
+                        ...input,
+                        [field]: changes[field],
+                    })
+                ).rejects.toMatchObject({ code: 'CONFLICT' });
+                await expectsNoMutation(baseline);
+            }
+        );
+
+        it.each(['templateData', 'integrationId'] as const)(
+            'rejects changing %s after delivery instead of returning the old receipt',
+            async field => {
+                const input = {
+                    type: 'boost' as const,
+                    recipient: HOLDER_PROFILE_ID,
+                    template: inlineTemplate(),
+                    templateData: { grade: 'A' },
+                    integrationId: 'integration-a',
+                    refresh: true,
+                    idempotencyKey: 'delivered-request',
+                };
+                await issuer.clients.fullAuth.boost.send(input);
+                const changes = { templateData: { grade: 'F' }, integrationId: 'integration-b' };
+                const baseline = await getMutationBaseline();
+                await expect(
+                    issuer.clients.fullAuth.boost.send({ ...input, [field]: changes[field] })
+                ).rejects.toMatchObject({ code: 'CONFLICT' });
+                await expectsNoMutation(baseline);
+            }
+        );
+
+        it('fences every stale-owner write after another request takes over', async () => {
+            const request = {
+                issuerProfileId: ISSUER_PROFILE_ID,
+                idempotencyKey: 'stale-owner',
+                requestDigest: 'same-request',
+            };
+            const first = (await claimRefreshSendIntent(request)).intent;
+            await runQuery('MATCH (i:RefreshSendIntent {intentKey: $key}) SET i.updatedAt = $old', {
+                key: first.intentKey,
+                old: '2000-01-01T00:00:00.000Z',
+            });
+            const second = (await claimRefreshSendIntent(request)).intent;
+            expect(second.claimToken).not.toBe(first.claimToken);
+            await recordRefreshSendIntent(second, {
+                boostUri: 'boost:new-owner',
+                state: 'prepared',
+            });
+            const receipt = {
+                refreshId: 'r',
+                refreshService: {
+                    id: 'https://example.com/refresh/r',
+                    type: 'LearnCardCredentialRefresh2026' as const,
+                    authorization: { type: 'LearnCardDIDAuth' as const },
+                },
+                credentialId: 'urn:uuid:award',
+                issuerDid: issuer.learnCard.id.did(),
+                holderDid: holder.learnCard.id.did(),
+            };
+            const result = {
+                type: 'boost' as const,
+                uri: 'boost:new-owner',
+                credentialUri: 'credential:new-owner',
+                activityId: 'activity',
+            };
+            await expect(
+                recordRefreshSendIntent(first, { boostUri: 'boost:old-owner', state: 'prepared' })
+            ).rejects.toMatchObject({ code: 'CONFLICT' });
+            await expect(recordRefreshSendIntentPending(first, receipt)).rejects.toMatchObject({
+                code: 'CONFLICT',
+            });
+            await expect(markRefreshSendIntentDelivered(first, result)).rejects.toMatchObject({
+                code: 'CONFLICT',
+            });
+            await recordRefreshSendIntentPending(second, receipt);
+            await markRefreshSendIntentDelivered(second, result);
+            await expect(
+                recordRefreshSendIntent(second, { state: 'prepared' })
+            ).rejects.toMatchObject({ code: 'CONFLICT' });
+            const final = await getRefreshSendIntent(ISSUER_PROFILE_ID, request.idempotencyKey);
+            expect(final).toMatchObject({
+                boostUri: 'boost:new-owner',
+                state: 'delivered',
+                result,
+            });
+        });
+
         it('rejects idempotencyKey without refresh', async () => {
             const boostUri = await issuer.clients.fullAuth.boost.createBoost({
                 credential: testUnsignedBoost,
@@ -890,6 +1004,52 @@ describe('Unified send with managed refresh (LC-2198)', () => {
 
             return { boostUri, allocation, signed };
         };
+
+        it('rejects a directly signed keyed send before creating any send state', async () => {
+            const { signed } = await buildHandoff(false);
+            const baseline = await getMutationBaseline();
+            await expect(
+                issuer.clients.fullAuth.boost.send({
+                    type: 'boost',
+                    recipient: HOLDER_PROFILE_ID,
+                    signedCredential: signed,
+                    refresh: true,
+                    idempotencyKey: 'never-prepared',
+                })
+            ).rejects.toMatchObject({
+                code: 'BAD_REQUEST',
+                message: expect.stringContaining('omit idempotencyKey'),
+            });
+            await expectsNoMutation(baseline);
+        });
+
+        it.each([
+            '../..',
+            '?query',
+            '#fragment',
+            'a/b',
+            'a'.repeat(4096),
+            'a'.repeat(42),
+            'a'.repeat(44),
+        ])('rejects a noncanonical managed refresh route identifier (%s)', async invalidId => {
+            const { signed, allocation } = await buildHandoff(false);
+            const prefix = allocation.refreshService.id.slice(0, -allocation.refreshId.length);
+            expect(() =>
+                extractManagedRefreshHandoff(
+                    {
+                        ...signed,
+                        refreshService: {
+                            ...allocation.refreshService,
+                            id: `${prefix}${invalidId}`,
+                        },
+                    },
+                    DOMAIN
+                )
+            ).toThrow();
+            expect(extractManagedRefreshHandoff(signed, DOMAIN)?.refreshId).toBe(
+                allocation.refreshId
+            );
+        });
 
         it('binds an already-allocated signed credential and returns the receipt', async () => {
             const { boostUri, signed } = await buildHandoff(true);
