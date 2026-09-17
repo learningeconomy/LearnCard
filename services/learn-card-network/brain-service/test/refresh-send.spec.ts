@@ -28,6 +28,7 @@ import {
     CredentialRefresh,
     InboxCredential,
     Profile,
+    ProfileManager,
     SigningAuthority,
 } from '@models';
 
@@ -60,6 +61,7 @@ let outsider: Awaited<ReturnType<typeof getUser>>;
 const ISSUER_PROFILE_ID = 'refresh-send-issuer';
 const HOLDER_PROFILE_ID = 'refresh-send-holder';
 const OUTSIDER_PROFILE_ID = 'refresh-send-outsider';
+const MANAGED_PROFILE_ID = 'refresh-send-managed';
 const DOMAIN = 'localhost%3A3000';
 
 type SendResult = {
@@ -183,6 +185,7 @@ describe('Unified send with managed refresh (LC-2198)', () => {
         await InboxCredential.delete({ detach: true, where: {} });
         await ConsentFlowContract.delete({ detach: true, where: {} });
         await SigningAuthority.delete({ detach: true, where: {} });
+        await runQuery('MATCH (m:ProfileManager) DETACH DELETE m');
         await runQuery('MATCH (p:Profile) DETACH DELETE p');
 
         await issuer.clients.fullAuth.profile.createProfile({ profileId: ISSUER_PROFILE_ID });
@@ -367,6 +370,108 @@ describe('Unified send with managed refresh (LC-2198)', () => {
                 })
             ).rejects.toMatchObject({ code: 'FORBIDDEN' });
             await expectsNoMutation(baseline);
+        });
+    });
+
+    describe('managed-profile holders', () => {
+        const createManagedHolder = async (): Promise<void> => {
+            // `holder` administers a profile manager that manages MANAGED_PROFILE_ID.
+            // Mirrors test/credentials.spec.ts ("should clear did:web cache for managed profiles").
+            const managerDid = await holder.clients.fullAuth.profileManager.createProfileManager(
+                {}
+            );
+            const managerClient = getClient({ did: managerDid, isChallengeValid: true });
+
+            await managerClient.profileManager.createManagedProfile({
+                profileId: MANAGED_PROFILE_ID,
+            });
+        };
+
+        it('encrypts managed refresh storage so the managing profile can decrypt it', async () => {
+            await createManagedHolder();
+
+            const boostUri = await issuer.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedVcV2,
+            });
+
+            const result = (await issuer.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: MANAGED_PROFILE_ID,
+                templateUri: boostUri,
+                refresh: true,
+            })) as SendResult;
+
+            const stored = JSON.parse(await getRootCredentialBody(result.refresh!.refreshId));
+
+            // The manager's own key must be a recipient: the managed profile's did:key
+            // seed was discarded at creation, so without it nobody could decrypt.
+            const decrypted = (await holder.learnCard.invoke.decryptDagJwe(stored)) as VC;
+            expect(decrypted.name).toBe('Refreshable VC');
+
+            // Still holder-side only: the brain cannot recover the plaintext.
+            // (DIDKit resolves an empty string instead of throwing for non-recipients,
+            // so assert on the outcome rather than the error.)
+            const brainAttempt = await brain.invoke.decryptDagJwe(stored).catch(() => null);
+            expect(brainAttempt).not.toEqual(decrypted);
+        });
+
+        it('encrypts managed publication storage so the managing profile can decrypt it', async () => {
+            await createManagedHolder();
+
+            const boostUri = await issuer.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedVcV2,
+            });
+
+            const result = (await issuer.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: MANAGED_PROFILE_ID,
+                templateUri: boostUri,
+                refresh: true,
+            })) as SendResult;
+
+            const receipt = result.refresh!;
+            expect(receipt.credentialStatus).toBeDefined();
+
+            // Rebuild the updated body from the receipt metadata plus the issuer's own
+            // claims, mirroring the existing receipt-driven publication test.
+            const updatedBody = {
+                '@context': ['https://www.w3.org/ns/credentials/v2'],
+                id: receipt.credentialId,
+                type: ['VerifiableCredential'],
+                issuer: receipt.issuerDid,
+                name: 'Updated Refreshable VC',
+                credentialSubject: { id: receipt.holderDid },
+                refreshService: receipt.refreshService,
+                credentialStatus: receipt.credentialStatus,
+                validFrom: new Date().toISOString(),
+            };
+
+            const updated = await issuer.learnCard.invoke.issueCredential(
+                updatedBody as UnsignedVC
+            );
+
+            const publishResult =
+                await issuer.clients.fullAuth.credentialRefresh.publishCredentialRefresh({
+                    mode: 'issuer-signed',
+                    refreshId: receipt.refreshId,
+                    signedCredential: updated,
+                });
+
+            expect(publishResult.version).toBe(2);
+
+            const head = await runQuery(
+                `MATCH (:CredentialRefresh {refreshId: $refreshId})-[:HEAD]->(head:Credential)
+                 RETURN head.credential AS credential`,
+                { refreshId: receipt.refreshId }
+            );
+            const stored = JSON.parse(head.records[0]!.get('credential'));
+
+            const decrypted = (await holder.learnCard.invoke.decryptDagJwe(stored)) as VC;
+            expect(decrypted.name).toBe('Updated Refreshable VC');
+
+            // Same as the initial send: the brain cannot recover the plaintext.
+            const brainAttempt = await brain.invoke.decryptDagJwe(stored).catch(() => null);
+            expect(brainAttempt).not.toEqual(decrypted);
         });
     });
 
