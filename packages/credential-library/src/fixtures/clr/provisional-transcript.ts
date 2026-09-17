@@ -71,6 +71,8 @@ export const clrProvisionalTranscript: CredentialFixture = {
             name: 'Ridgeview Community College — Office of the Registrar',
         },
         validFrom: '2026-01-15T00:00:00Z',
+        validUntil: '2026-05-31T00:00:00Z',
+        partial: true,
         refreshService: PLACEHOLDER_REFRESH_SERVICE,
         credentialSubject: {
             id: 'did:example:student-ridgeview-042',
@@ -92,7 +94,8 @@ export const clrProvisionalTranscript: CredentialFixture = {
                             id: 'urn:uuid:7d2e9f41-3c58-4e21-9b6a-1f0c5d8e2a49',
                             type: ['ResultDescription'],
                             name: 'Course Status',
-                            resultType: 'RawScore',
+                            resultType: 'Status',
+                            allowedValue: ['InProgress', 'Provisional', 'Completed'],
                         },
                     ],
                 },
@@ -163,6 +166,8 @@ export const buildFinalTranscriptVariant = (
         'Final official transcript certified by the registrar. Supersedes the provisional record.';
 
     if (options.validFrom) final.validFrom = options.validFrom;
+    delete final.validUntil;
+    delete final.partial;
 
     const subject = final.credentialSubject;
 
@@ -180,7 +185,9 @@ export const buildFinalTranscriptVariant = (
                 next.credentialSubject = {
                     ...next.credentialSubject,
                     result: next.credentialSubject.result.map((result: unknown) =>
-                        isRecord(result) ? { ...result, status: 'Completed', value: 'A' } : result
+                        isRecord(result)
+                            ? { ...result, status: 'Completed', value: 'Completed' }
+                            : result
                     ),
                 };
             }
