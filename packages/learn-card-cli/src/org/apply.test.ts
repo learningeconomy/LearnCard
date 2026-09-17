@@ -118,7 +118,8 @@ describe('applyOrg', () => {
             expect(actions).toContain('profileManager:created');
             expect(actions).toContain('managedProfile:created');
             expect(actions).toContain('serviceAccount:created');
-            expect(actions).toContain('webhook:unchanged');
+            expect(actions).toContain('webhook:created');
+            expect(project.env.WEBHOOK_URL).toBe('https://clr.example.org/learncard/webhook');
 
             expect(result.outputs.issuerDid).toBe(issuerDid);
             expect(result.outputs.managerDid).toBe(managerDid);
@@ -169,6 +170,7 @@ describe('applyOrg', () => {
                 { id: 'grant-1', name: 'ea-clr-issuer', status: 'active', scope: 'inbox:write' },
             ]);
             project.env.ORG_PROFILE_MANAGER_DID = managerDid;
+            project.env.WEBHOOK_URL = 'https://clr.example.org/learncard/webhook';
             const log = vi.spyOn(console, 'log').mockImplementation(() => {});
 
             const result = await applyOrg(spec, card, project, {

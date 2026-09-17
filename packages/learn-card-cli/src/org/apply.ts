@@ -358,13 +358,44 @@ const applyServiceAccounts = async (
     }
 };
 
-const applyWebhooks = (spec: OrgSpec, changes: OrgChange[]): void => {
-    for (const webhook of spec.webhooks ?? []) {
+const applyWebhooks = async (
+    spec: OrgSpec,
+    project: Project,
+    dryRun: boolean,
+    changes: OrgChange[]
+): Promise<void> => {
+    const [primary, ...extra] = spec.webhooks ?? [];
+    if (!primary) return;
+
+    const current = project.env.WEBHOOK_URL;
+    if (current === primary.url) {
+        changes.push({ resource: 'webhook', name: primary.url, action: 'unchanged' });
+    } else {
+        const action = current ? 'updated' : 'created';
+        if (dryRun) {
+            changes.push({
+                resource: 'webhook',
+                name: primary.url,
+                action: current ? 'would-update' : 'would-create',
+                detail: 'WEBHOOK_URL in .env',
+            });
+        } else {
+            await saveProject(project, { WEBHOOK_URL: primary.url });
+            changes.push({
+                resource: 'webhook',
+                name: primary.url,
+                action,
+                detail: 'set WEBHOOK_URL in .env; pass it as configuration.webhookUrl on each inbox issue',
+            });
+        }
+    }
+
+    for (const webhook of extra) {
         changes.push({
             resource: 'webhook',
             name: webhook.url,
             action: 'unchanged',
-            detail: 'informational only; no network call',
+            detail: 'only the first webhook becomes WEBHOOK_URL; use this one per-issuance',
         });
     }
 };
@@ -397,7 +428,7 @@ export const applyOrg = async (
 
     await applyServiceAccounts(spec, learnCard, dryRun, opts.secretsOut, changes, serviceAccounts);
 
-    applyWebhooks(spec, changes);
+    await applyWebhooks(spec, project, opts.dryRun ?? false, changes);
 
     return { changes, outputs: { issuerDid, managerDid, managed, serviceAccounts } };
 };

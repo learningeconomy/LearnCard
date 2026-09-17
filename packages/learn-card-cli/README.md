@@ -78,7 +78,7 @@ See `@learncard/holder-continuity` `BUNDLE_SPEC.md` for the ZIP layout and manif
 npx @learncard/cli org apply ./org.yaml
 ```
 
-Reconciles a declarative YAML/JSON spec (issuer profile, signing authority, districts/managed profiles, service-account tokens) against the network. Idempotent — re-running with the same file makes no changes. Use `--dry-run` to preview, and `--secrets-out ./secrets.env` to save any newly created service-account tokens (required the first time a `serviceAccounts` entry is created; each is written as `NAME=token` with the account name upper-cased and hyphens replaced by underscores, e.g. `EA_CLR_ISSUER=…`). See `examples/example-pilot.network.yaml` for a full example.
+Reconciles a declarative YAML/JSON spec (issuer profile, signing authority, districts/managed profiles, service-account tokens) against the network. Idempotent — re-running with the same file makes no changes. Use `--dry-run` to preview, and `--secrets-out ./secrets.env` to save any newly created service-account tokens (required the first time a `serviceAccounts` entry is created; each is written as `NAME=token` with the account name upper-cased and hyphens replaced by underscores, e.g. `EA_CLR_ISSUER=…`). Webhooks are not registered on the network — LearnCard calls `configuration.webhookUrl` per issuance — so the first `webhooks[].url` is saved as `WEBHOOK_URL` in `.env` for `doctor` and your issuer code to default to. See `examples/example-pilot.network.yaml` for a full example.
 
 ```yaml
 issuer:
