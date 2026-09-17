@@ -2,10 +2,12 @@ import { createHash, randomBytes, randomUUID } from 'crypto';
 import { z } from 'zod';
 import type { Collection } from 'mongodb';
 import mongodb from '@mongo';
+import { environment } from '@environment';
 import { AuthProviderMappingValidator, type AuthProviderMapping } from './UserKey';
 
 export const ESCROW_HOLDS_COLLECTION = 'escrowholds';
 export const ESCROW_HOLD_STALE_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+export const ESCROW_HOLD_RESTART_MIN_AGE_MS = environment.ESCROW_HOLD_RESTART_MIN_AGE_MS;
 export const EscrowHoldValidator = z.object({
     _id: z.string().uuid(),
     authProvider: AuthProviderMappingValidator,

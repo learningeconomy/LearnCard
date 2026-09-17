@@ -501,7 +501,7 @@ export interface KeyDerivationStrategy<
         providerType?: AuthProviderType;
         recoverySessionToken?: string;
         tenantId?: string;
-        options?: { releasePolicy?: 'hold' | 'pin' };
+        options?: { releasePolicy?: 'hold' | 'pin'; restart?: boolean };
     }): Promise<{
         holdId: string;
         status: 'pending' | 'cancelled' | 'completed' | 'expired';

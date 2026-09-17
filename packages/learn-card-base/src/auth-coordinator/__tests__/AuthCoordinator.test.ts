@@ -674,21 +674,25 @@ describe('AuthCoordinator', () => {
             expect(getEscrowRecoveryStatus).toHaveBeenCalledTimes(1);
             expect(cancelEscrowRecovery).toHaveBeenCalledTimes(1);
         });
-        it('starts a hold from a recovering device with fresh provider credentials', async () => {
-            const startEscrowRecovery = vi.fn().mockResolvedValue({ holdId: 'hold' });
-            const { coordinator } = setup({
-                keyDerivation: {
-                    hasLocalKey: vi.fn().mockResolvedValue(false),
-                    startEscrowRecovery,
-                },
-            });
-            await coordinator.initialize();
-            await coordinator.startEscrowRecovery();
-            expect(startEscrowRecovery).toHaveBeenCalledWith({
-                token: 'mock-token',
-                providerType: 'firebase',
-            });
-        });
+        it.each([undefined, { restart: true }])(
+            'starts a hold with fresh credentials and options %j',
+            async options => {
+                const startEscrowRecovery = vi.fn().mockResolvedValue({ holdId: 'hold' });
+                const { coordinator } = setup({
+                    keyDerivation: {
+                        hasLocalKey: vi.fn().mockResolvedValue(false),
+                        startEscrowRecovery,
+                    },
+                });
+                await coordinator.initialize();
+                await coordinator.startEscrowRecovery(options);
+                expect(startEscrowRecovery).toHaveBeenCalledWith({
+                    token: 'mock-token',
+                    providerType: 'firebase',
+                    options,
+                });
+            }
+        );
     });
     describe('initial state', () => {
         it('starts in idle state', () => {

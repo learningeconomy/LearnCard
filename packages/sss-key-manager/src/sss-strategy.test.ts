@@ -748,6 +748,34 @@ describe('escrow strategy', () => {
         }
     );
 
+    it.each([true, false])('forwards only an enabled restart flag (%s)', async restart => {
+        await strategy.ensureEscrowEnrollment!(params);
+        await strategy.startEscrowRecovery!({ token, providerType, options: { restart } });
+        const call = vi.mocked(fetch).mock.calls.find(([url]) => String(url).endsWith('/recover'));
+        const body = JSON.parse(String(call?.[1]?.body));
+        if (restart) expect(body.restart).toBe(true);
+        else expect(body).not.toHaveProperty('restart');
+    });
+
+    it.each(['2026-09-17T00:00:00.000Z', undefined])(
+        'maps restart throttling with retry time %s',
+        async retryAfter => {
+            vi.mocked(fetch).mockResolvedValueOnce(
+                new Response(
+                    JSON.stringify({
+                        message: retryAfter
+                            ? `A recovery request was started recently. Try again after ${retryAfter}.`
+                            : 'Please wait.',
+                    }),
+                    { status: 429 }
+                )
+            );
+            await expect(
+                strategy.startEscrowRecovery!({ token, providerType, options: { restart: true } })
+            ).rejects.toMatchObject({ name: 'EscrowHoldRestartThrottledError', retryAfter });
+        }
+    );
+
     it('supersedes a pending hold for each PIN attempt and supports hold fallback', async () => {
         await strategy.setEscrowPin!({ ...params, pin: '135790' });
         const first = await strategy.startEscrowRecovery!({ token, providerType });

@@ -36,6 +36,7 @@ import {
     EscrowPinLockedError,
     EscrowPinMismatchError,
     EscrowPinThrottledError,
+    EscrowHoldRestartThrottledError,
     EscrowPinUnavailableError,
 } from './types';
 import {
@@ -768,6 +769,23 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         });
         // Never propagate response bodies or status text that could contain secrets.
         if (!response.ok) {
+            if (!pinAttempt && path === '/recover' && response.status === 429) {
+                const body: unknown = await response.json().catch(() => undefined);
+                const message =
+                    body &&
+                    typeof body === 'object' &&
+                    'message' in body &&
+                    typeof body.message === 'string'
+                        ? body.message
+                        : '';
+                const retryAfter =
+                    /Try again after (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)\./.exec(
+                        message
+                    )?.[1];
+                throw new EscrowHoldRestartThrottledError(
+                    retryAfter && Number.isFinite(Date.parse(retryAfter)) ? retryAfter : undefined
+                );
+            }
             if (pinAttempt && response.status === 429) {
                 const body: unknown = await response.json().catch(() => undefined);
                 if (
@@ -1479,7 +1497,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             }
         },
 
-        /** Start a hold without replacing any previously returned resume secrets. */
+        /** Start or explicitly restart a hold with fresh client-bound resume secrets. */
         async startEscrowRecovery(params): Promise<EscrowRecoveryStart> {
             const sessionProof = params.recoverySessionToken !== undefined;
             if (
@@ -1499,6 +1517,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     headers: buildHeaders('', undefined, params.tenantId ?? tenantId),
                     body: JSON.stringify({
                         clientEphemeralPublicKey: pair.publicKey,
+                        ...(params.options?.restart ? { restart: true } : {}),
                         ...(params.options?.releasePolicy
                             ? { releasePolicy: params.options.releasePolicy }
                             : {}),

@@ -378,9 +378,9 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
         coordinatorRef.current.beginIdentityRecovery();
     }, []);
 
-    const startEscrowRecovery = useCallback(async () => {
+    const startEscrowRecovery = useCallback(async (options?: { restart?: boolean }) => {
         if (!coordinatorRef.current) throw new Error('Coordinator not initialized');
-        return coordinatorRef.current.startEscrowRecovery();
+        return coordinatorRef.current.startEscrowRecovery(options);
     }, []);
     const getEscrowRecoveryStatus = useCallback(
         async (proof?: { holdId: string; resumeToken: string }) => {

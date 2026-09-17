@@ -115,6 +115,14 @@ export class EscrowPinThrottledError extends Error {
     }
 }
 
+/** A pending waiting-period request is too recent to restart. */
+export class EscrowHoldRestartThrottledError extends Error {
+    constructor(public readonly retryAfter?: string) {
+        super('A recovery request was started recently. Please wait before restarting.');
+        this.name = 'EscrowHoldRestartThrottledError';
+    }
+}
+
 /** PIN recovery is exhausted; delayed escrow recovery remains available. */
 export class EscrowPinLockedError extends Error {
     constructor() {
