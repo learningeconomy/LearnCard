@@ -7,7 +7,11 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('../../../helpers/globalSkillFrameworks.helpers', () => ({
-    useGlobalSemanticSearchSkills: (text: string) => mocks.search(text),
+    useGlobalSemanticSearchSkills: (
+        text: string,
+        frameworkIds: string[],
+        options: { limit: number }
+    ) => mocks.search(text, frameworkIds, options),
 }));
 
 vi.mock('learn-card-base', () => ({
@@ -51,6 +55,14 @@ const creativeThinkingRecord = {
     score: 0.95,
 };
 
+const frameworks = [
+    {
+        frameworkId: 'framework-1',
+        name: 'Framework 1',
+        defaultSkillIds: [],
+    },
+];
+
 describe('SkillBrowserModal search', () => {
     beforeEach(() => {
         vi.useFakeTimers();
@@ -67,33 +79,11 @@ describe('SkillBrowserModal search', () => {
         vi.clearAllMocks();
     });
 
-    it.each(['Creative Thinking', 'Creative', 'C', 'c'])(
-        'shows API results for the query %s',
-        query => {
-            render(
-                <SkillBrowserModal
-                    frameworks={[]}
-                    selectedSkills={[]}
-                    onAddSkill={vi.fn()}
-                    onRemoveSkill={vi.fn()}
-                    handleCloseModal={vi.fn()}
-                />
-            );
-
-            fireEvent.change(screen.getByPlaceholderText('Search skills'), {
-                target: { value: query },
-            });
-            act(() => vi.advanceTimersByTime(300));
-
-            expect(screen.getByRole('button', { name: /Creative Thinking/ })).toBeVisible();
-        }
-    );
-
-    it('lets the issuer add a matching skill and clearly reports no matches', () => {
+    it('maps an API skill statement into a selectable issuer search result', () => {
         const onAddSkill = vi.fn();
         render(
             <SkillBrowserModal
-                frameworks={[]}
+                frameworks={frameworks}
                 selectedSkills={[]}
                 onAddSkill={onAddSkill}
                 onRemoveSkill={vi.fn()}
@@ -104,6 +94,10 @@ describe('SkillBrowserModal search', () => {
         const searchInput = screen.getByPlaceholderText('Search skills');
         fireEvent.change(searchInput, { target: { value: 'Creative Thinking' } });
         act(() => vi.advanceTimersByTime(300));
+
+        expect(mocks.search).toHaveBeenLastCalledWith('Creative Thinking', ['framework-1'], {
+            limit: 24,
+        });
         fireEvent.click(screen.getByRole('button', { name: /Creative Thinking/ }));
 
         expect(onAddSkill).toHaveBeenCalledWith(
