@@ -28,14 +28,16 @@ export const dedupeByName = (nodes: SkillFrameworkNode[]): SkillFrameworkNode[] 
     return result;
 };
 
-export const semanticRecordToNode = (record: SemanticSearchSkillRecord): SkillFrameworkNode =>
-    ({
-        id: record.id,
-        frameworkId: record.frameworkId,
-        targetFramework: record.targetFramework ?? record.frameworkId,
-        targetName: record.targetName ?? '',
-        icon: record.icon,
-    } as SkillFrameworkNode);
+export const semanticRecordToNode = (record: SemanticSearchSkillRecord): SkillFrameworkNode => {
+    const node = convertApiSkillNodeToSkillTreeNode(record as ApiSkillNode);
+
+    return {
+        ...node,
+        frameworkId: record.frameworkId ?? node.targetFramework,
+        targetFramework: record.targetFramework ?? node.targetFramework,
+        targetName: record.targetName ?? node.targetName,
+    };
+};
 
 export const nodeFrameworkId = (node: SkillFrameworkNode): string =>
     node.frameworkId ?? node.targetFramework ?? '';
