@@ -4,6 +4,7 @@ import { IssueInboxCredentialBatchValidator } from '@learncard/types';
 import type { IssueInboxCredentialBatch } from '@learncard/types';
 import type { ProfileType } from 'types/profile';
 import type { Context } from '@routes';
+import { InboxIssuancePreflightError } from './inbox-issuance-error.helpers';
 
 const mocks = vi.hoisted(() => ({
     get: vi.fn(),
@@ -11,6 +12,7 @@ const mocks = vi.hoisted(() => ({
     setIfAbsent: vi.fn(),
     compareAndSet: vi.fn(),
     incr: vi.fn(),
+    consumeQuota: vi.fn(),
     issue: vi.fn(),
     resolve: vi.fn(),
 }));
@@ -19,14 +21,16 @@ vi.mock('@cache', () => ({
         get: mocks.get,
         set: mocks.set,
         incr: mocks.incr,
+        consumeQuota: mocks.consumeQuota,
         setIfAbsent: mocks.setIfAbsent,
         compareAndSet: mocks.compareAndSet,
     },
 }));
 vi.mock('@environment', () => ({
     getInboxBatchRuntimeEnvironment: () => ({
-        NODE_ENV: 'test',
-        AWS_LAMBDA_FUNCTION_NAME: undefined,
+        NODE_ENV: process.env.NODE_ENV,
+        AWS_LAMBDA_FUNCTION_NAME: process.env.AWS_LAMBDA_FUNCTION_NAME,
+        IS_OFFLINE: process.env.IS_OFFLINE === 'true',
         INBOX_BATCH_CONCURRENCY: process.env.INBOX_BATCH_CONCURRENCY,
         INBOX_BATCH_ITEMS_PER_HOUR: process.env.INBOX_BATCH_ITEMS_PER_HOUR,
     }),
@@ -63,6 +67,7 @@ describe('inbox batch orchestration', () => {
         mocks.setIfAbsent.mockResolvedValue('OK');
         mocks.compareAndSet.mockResolvedValue(true);
         mocks.incr.mockResolvedValue(1);
+        mocks.consumeQuota.mockResolvedValue(true);
         mocks.resolve.mockImplementation(async input => ({ credential: input.credential }));
         mocks.issue.mockImplementation(async (_profile, recipient) => ({
             inboxCredential: { id: recipient.value },
@@ -90,7 +95,7 @@ describe('inbox batch orchestration', () => {
         expect(batch.results.map(r => r.success && r.issuanceId)).toEqual(
             Array.from({ length: 5 }, (_, i) => `${i}@example.test`)
         );
-        expect(mocks.incr).toHaveBeenCalledWith('inbox-batch-rate:issuer', 3600, 5);
+        expect(mocks.consumeQuota).toHaveBeenCalledWith('inbox-batch-rate:issuer', 3600, 5, 10000);
     });
 
     it('isolates missing credentials, TRPC errors and unknown exceptions without leaking internals', async () => {
@@ -167,7 +172,12 @@ describe('inbox batch orchestration', () => {
         expect(JSON.parse(mocks.compareAndSet.mock.calls[0]![2])).toMatchObject(
             JSON.parse(JSON.stringify(batch.results[0]))
         );
-        mocks.get.mockResolvedValueOnce(JSON.stringify({ ...batch.results[0], index: 99 }));
+        mocks.get.mockResolvedValueOnce(
+            JSON.stringify({
+                ...JSON.parse(mocks.compareAndSet.mock.calls[0]![2]),
+                index: 99,
+            })
+        );
         mocks.issue.mockClear();
         const replay = await run({ items: [{ ...item(), idempotencyKey: 'key' }] });
         expect(replay.results[0]).toMatchObject({ success: true, index: 0, deduplicated: true });
@@ -214,12 +224,180 @@ describe('inbox batch orchestration', () => {
         expect(mocks.compareAndSet).not.toHaveBeenCalled();
     });
 
-    it('does not report durable success if saving the replay result fails', async () => {
-        mocks.compareAndSet.mockResolvedValueOnce(undefined);
-        const result = await run({ items: [{ ...item(), idempotencyKey: 'a' }] });
-        expect(result.results[0]).toMatchObject({ success: false, error: { code: 'CONFLICT' } });
+    it.each([undefined, false])(
+        'preserves issuance metadata when replay commit returns %s',
+        async saved => {
+            mocks.compareAndSet.mockResolvedValue(saved);
+            const result = await run({ items: [{ ...item(), idempotencyKey: 'a' }] });
+            expect(result.results[0]).toMatchObject({
+                success: false,
+                error: { code: 'CONFLICT', message: expect.stringContaining('Credential issued') },
+                issuanceId: 'a@example.test',
+                claimUrl: 'https://example.test/claim',
+            });
+            expect(mocks.compareAndSet).toHaveBeenCalledTimes(saved === undefined ? 2 : 1);
+            expect(mocks.issue).toHaveBeenCalledTimes(1);
+        }
+    );
+
+    it('retries a transient commit failure once without issuing again', async () => {
+        mocks.compareAndSet.mockResolvedValueOnce(undefined).mockResolvedValueOnce(true);
+        expect((await run({ items: [{ ...item(), idempotencyKey: 'a' }] })).summary.succeeded).toBe(
+            1
+        );
+        expect(mocks.compareAndSet).toHaveBeenCalledTimes(2);
         expect(mocks.issue).toHaveBeenCalledTimes(1);
     });
+
+    it('recognizes a committed result when the CAS reply was lost', async () => {
+        mocks.compareAndSet.mockImplementation(async (_key, _owner, value) => {
+            mocks.get.mockResolvedValue(value);
+            return undefined;
+        });
+        expect((await run({ items: [{ ...item(), idempotencyKey: 'a' }] })).summary.succeeded).toBe(
+            1
+        );
+        expect(mocks.issue).toHaveBeenCalledTimes(1);
+    });
+
+    it.each(['FORBIDDEN', 'BAD_REQUEST', 'NOT_FOUND'] as const)(
+        'releases an explicitly side-effect-free %s and allows the corrected item to retry',
+        async code => {
+            const items = [{ ...item(), idempotencyKey: 'preflight' }];
+            mocks.issue.mockRejectedValueOnce(
+                new InboxIssuancePreflightError({ code, message: 'Invalid preflight input' })
+            );
+            expect((await run({ items })).results[0]).toMatchObject({
+                success: false,
+                error: { code },
+            });
+            expect(mocks.compareAndSet).toHaveBeenCalledWith(
+                expect.any(String),
+                expect.any(String),
+                null,
+                86400
+            );
+            expect(
+                (
+                    await run({
+                        items: [{ ...items[0]!, configuration: { delivery: { suppress: true } } }],
+                    })
+                ).summary.succeeded
+            ).toBe(1);
+        }
+    );
+
+    it('retains reservations for ordinary 4xx failures that may follow a write', async () => {
+        mocks.issue.mockRejectedValueOnce(new TRPCError({ code: 'BAD_REQUEST' }));
+        expect(
+            (await run({ items: [{ ...item(), idempotencyKey: 'a' }] })).results[0]
+        ).toMatchObject({
+            success: false,
+            error: { code: 'CONFLICT' },
+        });
+        expect(mocks.compareAndSet).not.toHaveBeenCalled();
+    });
+
+    it.each([1, 10])(
+        'rejects later duplicate keys deterministically with concurrency %i',
+        async concurrency => {
+            vi.stubEnv('INBOX_BATCH_CONCURRENCY', String(concurrency));
+            const result = await run({
+                items: [
+                    { ...item(), idempotencyKey: 'same' },
+                    { ...item(), idempotencyKey: 'same' },
+                    { ...item('different'), idempotencyKey: 'same' },
+                ],
+            });
+            expect(result.results).toMatchObject([
+                { index: 0, success: true },
+                { index: 1, success: false, error: { code: 'CONFLICT' } },
+                { index: 2, success: false, error: { code: 'CONFLICT' } },
+            ]);
+            expect(mocks.issue).toHaveBeenCalledTimes(1);
+            expect(mocks.setIfAbsent).toHaveBeenCalledTimes(1);
+        }
+    );
+
+    it('does not attempt later duplicate keys even if the first item fails validation', async () => {
+        const result = await run({
+            items: [
+                { recipient: item().recipient, idempotencyKey: 'same' },
+                { ...item(), idempotencyKey: 'same' },
+            ],
+        });
+        expect(result.results).toMatchObject([
+            { success: false, error: { code: 'BAD_REQUEST' } },
+            { success: false, error: { code: 'CONFLICT' } },
+        ]);
+        expect(mocks.issue).not.toHaveBeenCalled();
+        expect(mocks.setIfAbsent).not.toHaveBeenCalled();
+    });
+
+    it('reports a retryable conflict if the reservation disappears after SET NX contention', async () => {
+        mocks.setIfAbsent.mockResolvedValueOnce(null);
+        const result = await run({ items: [{ ...item(), idempotencyKey: 'a' }] });
+        expect(result.results[0]).toMatchObject({
+            success: false,
+            error: { code: 'CONFLICT', message: expect.stringContaining('Retry this same key') },
+        });
+        expect(mocks.issue).not.toHaveBeenCalled();
+    });
+
+    it('rejects replay records missing the request fingerprint', async () => {
+        mocks.get.mockResolvedValueOnce(
+            JSON.stringify({
+                success: true,
+                index: 0,
+                issuanceId: 'old',
+                status: 'PENDING',
+                recipient: item().recipient,
+            })
+        );
+        expect((await run({ items: [{ ...item(), idempotencyKey: 'a' }] })).summary.failed).toBe(1);
+        expect(mocks.issue).not.toHaveBeenCalled();
+    });
+
+    it('validates guardian self-approval after merging item overrides', async () => {
+        const result = await run({
+            configuration: { guardianEmail: 'A@example.test' },
+            items: [
+                item(),
+                { ...item(), configuration: { guardianEmail: 'guardian@example.test' } },
+            ],
+        });
+        expect(result.results).toMatchObject([
+            {
+                success: false,
+                error: { code: 'BAD_REQUEST', message: expect.stringContaining('self-approval') },
+            },
+            { success: true },
+        ]);
+        expect(mocks.issue).toHaveBeenCalledTimes(1);
+    });
+
+    it.each([
+        ['production', '', 'false', true],
+        ['production', 'offline-lambda', 'true', true],
+        ['test', 'deployed-lambda', 'false', true],
+        ['test', 'offline-lambda', 'true', false],
+    ])(
+        'requires Redis for NODE_ENV=%s Lambda=%s offline=%s',
+        async (nodeEnv, lambda, offline, blocked) => {
+            vi.stubEnv('NODE_ENV', String(nodeEnv));
+            vi.stubEnv('AWS_LAMBDA_FUNCTION_NAME', String(lambda));
+            vi.stubEnv('IS_OFFLINE', String(offline));
+            if (blocked) {
+                await expect(run({ items: [item()] })).rejects.toMatchObject({
+                    code: 'INTERNAL_SERVER_ERROR',
+                });
+                expect(mocks.consumeQuota).not.toHaveBeenCalled();
+                expect(mocks.issue).not.toHaveBeenCalled();
+            } else {
+                expect((await run({ items: [item()] })).summary.succeeded).toBe(1);
+            }
+        }
+    );
 
     it('serializes overlapping keys across requests and rejects changed payloads', async () => {
         const values = new Map<string, string>();
@@ -258,7 +436,7 @@ describe('inbox batch orchestration', () => {
 
     it('enforces quotas before resolution or issuance and fails closed on cache outages', async () => {
         vi.stubEnv('INBOX_BATCH_ITEMS_PER_HOUR', '2');
-        mocks.incr.mockResolvedValueOnce(3).mockResolvedValueOnce(undefined);
+        mocks.consumeQuota.mockResolvedValueOnce(false).mockResolvedValueOnce(undefined);
         await expect(run({ items: [item(), item(), item()] })).rejects.toMatchObject({
             code: 'TOO_MANY_REQUESTS',
         });
@@ -277,11 +455,11 @@ describe('inbox batch orchestration', () => {
         expect(Buffer.byteLength(JSON.stringify(batch))).toBe(INBOX_BATCH_MAX_BYTES);
         expect((await run(batch)).summary.succeeded).toBe(1);
         mocks.issue.mockClear();
-        mocks.incr.mockClear();
+        mocks.consumeQuota.mockClear();
         batch.configuration.templateData.padding += 'x';
         await expect(run(batch)).rejects.toMatchObject({ code: 'PAYLOAD_TOO_LARGE' });
         expect(mocks.issue).not.toHaveBeenCalled();
-        expect(mocks.incr).not.toHaveBeenCalled();
+        expect(mocks.consumeQuota).not.toHaveBeenCalled();
     });
 
     it('applies the tested HTTP parser budget to batch routes only', async () => {

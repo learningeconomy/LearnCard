@@ -1,4 +1,5 @@
 import { TRPCError } from '@trpc/server';
+import { InboxIssuancePreflightError } from './inbox-issuance-error.helpers';
 import {
     VC,
     UnsignedVC,
@@ -217,7 +218,7 @@ export const issueToInbox = async (
     if (recipient.type === 'phone') {
         const isTrusted = await getRegistryService().isTrusted(issuerProfile.did);
         if (!isTrusted) {
-            throw new TRPCError({
+            throw new InboxIssuancePreflightError({
                 code: 'FORBIDDEN',
                 message:
                     'Sending credentials via phone is a feature reserved for members of the LearnCard Trusted Registry. Email delivery is available for all issuers. To verify your issuer, visit: https://docs.learncard.com/how-to-guides/verify-my-issuer',
@@ -245,14 +246,14 @@ export const issueToInbox = async (
              * By providing this parameter, the developer explicitly takes responsibility for the signing process. We trust them and proceed.
              **/
             if (!(await verifyCredentialCanBeSigned(credential as UnsignedVC))) {
-                throw new TRPCError({
+                throw new InboxIssuancePreflightError({
                     code: 'BAD_REQUEST',
                     message:
                         'Credential failed to pass a pre-flight issuance test. Please verify that the credential is well-formed and can be issued.',
                 });
             }
         } else {
-            throw new TRPCError({
+            throw new InboxIssuancePreflightError({
                 code: 'BAD_REQUEST',
                 message: 'Unsigned credentials require a signing authority',
             });
@@ -287,7 +288,7 @@ export const issueToInbox = async (
             );
 
             if (!signingAuthorityForUser) {
-                throw new TRPCError({
+                throw new InboxIssuancePreflightError({
                     code: 'NOT_FOUND',
                     message: 'Signing authority not found for issuer',
                 });

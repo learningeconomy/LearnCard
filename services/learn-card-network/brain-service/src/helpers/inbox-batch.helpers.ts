@@ -17,6 +17,7 @@ import cache from '@cache';
 import { INBOX_BATCH_MAX_BYTES } from './inbox-batch-http.helpers';
 import { enforceRateLimits } from './rateLimit.helpers';
 import { issueToInbox, resolveInboxCredentialInput } from './inbox.helpers';
+import { InboxIssuancePreflightError } from './inbox-issuance-error.helpers';
 
 export const INBOX_BATCH_CONCURRENCY = 10;
 export const INBOX_BATCH_ITEMS_PER_HOUR = 10_000;
@@ -54,9 +55,15 @@ const replayResult = (
     index: number
 ): IssueInboxCredentialBatchItemResult => {
     const decoded = JSON.parse(stored);
-    // Older successful records may not have a fingerprint. Continue replaying them for backwards
-    // compatibility, but every new reservation includes one and detects changed input.
-    if (decoded.requestHash && decoded.requestHash !== requestHash) {
+    // This namespace has always stored fingerprints. Missing hashes are corrupt records,
+    // not permission to replay a potentially unrelated issuance.
+    if (!decoded || typeof decoded.requestHash !== 'string') {
+        throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Corrupt inbox replay record',
+        });
+    }
+    if (decoded.requestHash !== requestHash) {
         throw new TRPCError({
             code: 'CONFLICT',
             message: 'This idempotency key was used for a different issuance.',
@@ -70,7 +77,12 @@ const replayResult = (
         });
     }
     const result = IssueInboxCredentialBatchItemResultValidator.parse(decoded);
-    if (!result.success) throw unavailable();
+    if (!result.success) {
+        throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Corrupt inbox replay record',
+        });
+    }
     return { ...result, index, deduplicated: true };
 };
 
@@ -94,7 +106,7 @@ export const issueInboxBatch = async (
     // is safer than issuing twice when independent Lambda instances receive the same retry.
     if (
         (runtimeEnvironment.NODE_ENV === 'production' ||
-            runtimeEnvironment.AWS_LAMBDA_FUNCTION_NAME) &&
+            (runtimeEnvironment.AWS_LAMBDA_FUNCTION_NAME && !runtimeEnvironment.IS_OFFLINE)) &&
         !cache.redis
     )
         throw unavailable();
@@ -114,6 +126,7 @@ export const issueInboxBatch = async (
             key: `inbox-batch-rate:${profile.profileId}`,
             limit,
             amount: batch.items.length,
+            consumeOnlyIfAllowed: true,
             windowSeconds: 3600,
             description: `${limit} inbox items per hour; retry after the current window expires (at most 3600 seconds)`,
         },
@@ -122,6 +135,14 @@ export const issueInboxBatch = async (
     // Workers claim indexes synchronously before their first await. Results are written by index,
     // so the response remains in caller order even when template work completes out of order.
     const results: IssueInboxCredentialBatchItemResult[] = new Array(batch.items.length);
+    // Choose the first occurrence synchronously, before worker scheduling. Later duplicates
+    // always conflict, even if the first item fails or completes before another worker starts.
+    const firstIndexByKey = new Map<string, number>();
+    batch.items.forEach((item, index) => {
+        if (item.idempotencyKey !== undefined && !firstIndexByKey.has(item.idempotencyKey)) {
+            firstIndexByKey.set(item.idempotencyKey, index);
+        }
+    });
     let nextIndex = 0;
     const worker = async (): Promise<void> => {
         while (nextIndex < batch.items.length) {
@@ -133,7 +154,18 @@ export const issueInboxBatch = async (
                     : `inbox-batch-idem:${profile.profileId}:${item.idempotencyKey}`;
             let reservation: string | undefined;
             let issuanceStarted = false;
+            let issued: Extract<IssueInboxCredentialBatchItemResult, { success: true }> | undefined;
             try {
+                if (
+                    item.idempotencyKey !== undefined &&
+                    firstIndexByKey.get(item.idempotencyKey) !== index
+                ) {
+                    throw new TRPCError({
+                        code: 'CONFLICT',
+                        message:
+                            'Duplicate idempotency key in this batch. Only its first occurrence is attempted.',
+                    });
+                }
                 const configuration = mergeWith(
                     {},
                     batch.configuration,
@@ -147,8 +179,7 @@ export const issueInboxBatch = async (
                 if (!parsed.success) {
                     throw new TRPCError({
                         code: 'BAD_REQUEST',
-                        message:
-                            'Invalid issuance input: provide a credential or templateUri and valid configuration.',
+                        message: parsed.error.issues.map(issue => issue.message).join('; '),
                     });
                 }
                 const input = parsed.data;
@@ -175,7 +206,15 @@ export const issueInboxBatch = async (
                     if (acquired === undefined) throw unavailable();
                     if (acquired === null) {
                         const current = await cache.get(key);
-                        if (!current) throw unavailable();
+                        if (current === undefined) throw unavailable();
+                        if (current === null) {
+                            // The owner may have released its marker after our failed SET NX.
+                            // No issuance happened here; a retry with this key can acquire it.
+                            throw new TRPCError({
+                                code: 'CONFLICT',
+                                message: 'Idempotency reservation changed. Retry this same key.',
+                            });
+                        }
                         results[index] = replayResult(current, requestHash, index);
                         continue;
                     }
@@ -192,7 +231,7 @@ export const issueInboxBatch = async (
                     input.configuration,
                     ctx
                 );
-                const success: IssueInboxCredentialBatchItemResult = {
+                const success: Extract<IssueInboxCredentialBatchItemResult, { success: true }> = {
                     success: true,
                     index,
                     issuanceId: result.inboxCredential.id,
@@ -202,15 +241,26 @@ export const issueInboxBatch = async (
                     recipientDid: result.recipientDid,
                     guardianStatus: result.guardianStatus,
                 };
+                issued = success;
                 if (key && reservation) {
-                    // Commit only if this worker still owns the marker. Reporting success without
-                    // a replay record would let a retry create a duplicate after a network fault.
-                    const saved = await cache.compareAndSet(
+                    const replay = JSON.stringify({ ...success, requestHash });
+                    // Retry a transient failure once, always using CAS so a lost owner cannot
+                    // overwrite another worker. A lost reply may mean the first commit succeeded.
+                    let saved = await cache.compareAndSet(
                         key,
                         reservation,
-                        JSON.stringify({ ...success, requestHash }),
+                        replay,
                         IDEMPOTENCY_TTL_SECONDS
                     );
+                    if (saved === undefined) {
+                        saved = await cache.compareAndSet(
+                            key,
+                            reservation,
+                            replay,
+                            IDEMPOTENCY_TTL_SECONDS
+                        );
+                    }
+                    if (!saved) saved = (await cache.get(key)) === replay;
                     if (!saved)
                         throw new TRPCError({
                             code: 'CONFLICT',
@@ -220,30 +270,34 @@ export const issueInboxBatch = async (
                 }
                 results[index] = success;
             } catch (error) {
-                // The shared issuance helper writes to several systems. Once entered, an error
-                // may follow a successful write/email. Preserve the reservation for reconciliation
-                // rather than turn an unknown outcome into duplicate delivery on a retry.
-                if (key && reservation && !issuanceStarted) {
-                    // Preparation has no delivery side effects, so freeing the owned marker makes
-                    // a corrected item retryable. Do not free it after issuance has begun.
+                // Only an explicitly marked preflight rejection proves the helper has not
+                // written anything. A generic 4xx after a write must retain the reservation.
+                const safeToRelease =
+                    !issuanceStarted || error instanceof InboxIssuancePreflightError;
+                if (key && reservation && safeToRelease) {
+                    // Preparation and explicit preflight failures have no delivery side effects,
+                    // so freeing the owned marker makes a corrected item retryable.
                     await cache.compareAndSet(key, reservation, null, IDEMPOTENCY_TTL_SECONDS);
+                }
+                let itemError = {
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: 'Failed to issue credential',
+                };
+                if (key && reservation && !safeToRelease) {
+                    itemError = {
+                        code: 'CONFLICT',
+                        message: issued
+                            ? 'Credential issued, but replay storage could not be confirmed. Reconcile using issuanceId; do not issue with a new key.'
+                            : 'Issuance outcome is unconfirmed. Retry this same key later; do not issue with a new key. Contact support if it remains unconfirmed.',
+                    };
+                } else if (error instanceof TRPCError && error.code !== 'INTERNAL_SERVER_ERROR') {
+                    itemError = { code: error.code, message: error.message };
                 }
                 results[index] = {
                     success: false,
                     index,
-                    error:
-                        key && reservation && issuanceStarted
-                            ? {
-                                  code: 'CONFLICT',
-                                  message:
-                                      'Issuance outcome is unconfirmed. Retry this same key later; do not issue with a new key. Contact support if it remains unconfirmed.',
-                              }
-                            : error instanceof TRPCError && error.code !== 'INTERNAL_SERVER_ERROR'
-                              ? { code: error.code, message: error.message }
-                              : {
-                                    code: 'INTERNAL_SERVER_ERROR',
-                                    message: 'Failed to issue credential',
-                                },
+                    error: itemError,
+                    ...(issued ? { issuanceId: issued.issuanceId, claimUrl: issued.claimUrl } : {}),
                 };
             }
         }

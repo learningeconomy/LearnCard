@@ -9,6 +9,7 @@ import { testUnsignedBoost } from './helpers/send';
 import { sendSpy, addNotificationToQueueSpy } from './helpers/spies';
 import { Profile, InboxCredential, ContactMethod, SigningAuthority, Boost } from '@models';
 import cache from '@cache';
+import { neogma } from '@instance';
 import { configureInboxBatchBodyLimit } from '@helpers/inbox-batch-http.helpers';
 import { setValidChallengeForDid } from '@cache/challenges';
 import { getInboxCredentialById } from '@accesslayer/inbox-credential/read';
@@ -21,6 +22,10 @@ import * as signing from '@helpers/signingAuthority.helpers';
 
 vi.mock('@services/delivery/delivery.factory', () => ({
     getDeliveryService: () => ({ send: sendSpy }),
+}));
+
+vi.mock('@services/registry/registry.factory', () => ({
+    getRegistryService: () => ({ isTrusted: async () => false }),
 }));
 
 describe('Universal Inbox batch issuance', () => {
@@ -38,13 +43,13 @@ describe('Universal Inbox batch issuance', () => {
         expect(record).toBeDefined();
         return record!;
     };
-    const post = async (body: unknown, authenticated = true) => {
+    const post = async (body: unknown, authenticated = true, path = '/api/inbox/issue-batch') => {
         const challenge = randomUUID();
         await setValidChallengeForDid(issuer.learnCard.id.did(), challenge);
         const token = await issuer.learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt', challenge });
         return server.inject({
             method: 'POST',
-            url: '/api/inbox/issue-batch',
+            url: path,
             payload: body as object,
             headers: authenticated
                 ? { authorization: `Bearer ${token}`, 'x-tenant-id': 'scoutpass' }
@@ -104,6 +109,8 @@ describe('Universal Inbox batch issuance', () => {
         vi.restoreAllMocks();
         vi.unstubAllEnvs();
         await server?.close();
+        await cache.redis?.quit();
+        await neogma.driver.close();
     });
 
     it('returns three pending results in input order and defers signing until claim', async () => {
@@ -349,7 +356,120 @@ describe('Universal Inbox batch issuance', () => {
         });
         expect(await InboxCredential.findMany({ where: {} })).toHaveLength(0);
         expect(sendSpy).not.toHaveBeenCalled();
-        expect(await cache.get('inbox-batch-rate:batch-issuer')).toBe('3');
+        expect(await cache.get('inbox-batch-rate:batch-issuer')).toBeNull();
+        expect((await issue({ items: items.slice(0, 2) })).summary.succeeded).toBe(2);
+        expect(await cache.get('inbox-batch-rate:batch-issuer')).toBe('2');
+    });
+
+    it('supports guardian approval on the single route and rejects self-approval before writes', async () => {
+        const credential = await signed();
+        const recipient = email('child@test.com');
+        const rejected = await post(
+            { recipient, credential, configuration: { guardianEmail: 'CHILD@test.com' } },
+            true,
+            '/api/inbox/issue'
+        );
+        expect(rejected.statusCode).toBe(400);
+        expect(await InboxCredential.findMany({ where: {} })).toHaveLength(0);
+        expect(sendSpy).not.toHaveBeenCalled();
+
+        const accepted = await post(
+            { recipient, credential, configuration: { guardianEmail: 'guardian@test.com' } },
+            true,
+            '/api/inbox/issue'
+        );
+        expect(accepted.statusCode, accepted.body).toBe(200);
+        expect(await stored(accepted.json().issuanceId)).toMatchObject({
+            guardianEmail: 'guardian@test.com',
+            guardianStatus: 'AWAITING_GUARDIAN',
+        });
+        expect(sendSpy).toHaveBeenCalledTimes(2);
+    });
+
+    it('releases keys after real preflight rejection and accepts a corrected issuance', async () => {
+        await SigningAuthority.delete({ detach: true, where: {} });
+        const entry = {
+            recipient: email('preflight@test.com'),
+            credential: await unsigned(),
+            idempotencyKey: 'preflight',
+        };
+        expect((await issue({ items: [entry] })).results[0]).toMatchObject({
+            success: false,
+            error: {
+                code: 'BAD_REQUEST',
+                message: 'Unsigned credentials require a signing authority',
+            },
+        });
+        expect(await cache.get('inbox-batch-idem:batch-issuer:preflight')).toBeNull();
+        expect(await InboxCredential.findMany({ where: {} })).toHaveLength(0);
+        expect(sendSpy).not.toHaveBeenCalled();
+        expect(
+            (await issue({ items: [{ ...entry, credential: await signed() }] })).summary.succeeded
+        ).toBe(1);
+    });
+
+    it.each(['untrusted-phone', 'invalid-preflight', 'missing-authority'] as const)(
+        'releases keys after %s preflight rejection before any delivery',
+        async scenario => {
+            const credential = await unsigned();
+            let recipient: IssueInboxCredentialBatch['items'][number]['recipient'] =
+                email('preflight@test.com');
+            let configuration: IssueInboxCredentialBatch['configuration'];
+            let code = 'BAD_REQUEST';
+            if (scenario === 'untrusted-phone') {
+                recipient = { type: 'phone', value: '+15555550100' };
+                code = 'FORBIDDEN';
+            } else if (scenario === 'invalid-preflight') {
+                // Unknown JSON-LD property fails the real preflight signer, as in inbox.spec.ts.
+                credential.context = 'banana';
+            } else {
+                const contact = await createContactMethod({ ...recipient, isVerified: true });
+                await createProfileContactMethodRelationship('batch-holder', contact.id);
+                configuration = {
+                    signingAuthority: { endpoint: 'https://missing.test', name: 'missing' },
+                };
+                code = 'NOT_FOUND';
+            }
+            const result = await issue({
+                items: [{ recipient, credential, configuration, idempotencyKey: scenario }],
+            });
+            expect(result.results[0]).toMatchObject({ success: false, error: { code } });
+            expect(await cache.get(`inbox-batch-idem:batch-issuer:${scenario}`)).toBeNull();
+            expect(await InboxCredential.findMany({ where: {} })).toHaveLength(0);
+            expect(sendSpy).not.toHaveBeenCalled();
+            expect(
+                (
+                    await issue({
+                        items: [
+                            {
+                                recipient: email('corrected@test.com'),
+                                credential: await signed(),
+                                idempotencyKey: scenario,
+                            },
+                        ],
+                    })
+                ).summary.succeeded
+            ).toBe(1);
+        }
+    );
+
+    it('issues only the first occurrence of a repeated key within one batch', async () => {
+        const credential = await signed();
+        const entry = {
+            recipient: email('duplicate@test.com'),
+            credential,
+            idempotencyKey: 'duplicate',
+        };
+        const batch = await issue({
+            items: [entry, entry, { ...entry, recipient: email('changed@test.com') }],
+        });
+        expect(batch.results).toMatchObject([
+            { success: true, index: 0 },
+            { success: false, index: 1, error: { code: 'CONFLICT' } },
+            { success: false, index: 2, error: { code: 'CONFLICT' } },
+        ]);
+        expect(await InboxCredential.findMany({ where: {} })).toHaveLength(1);
+        expect(sendSpy).toHaveBeenCalledTimes(1);
     });
 
     it('rejects empty and oversized batches, unauthenticated callers and read-only grants', async () => {

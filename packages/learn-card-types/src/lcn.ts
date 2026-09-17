@@ -1304,7 +1304,13 @@ export const IssueInboxCredentialValidator = z
         // HOW should this issuance be handled?
         configuration: z
             .object({
-                guardianEmail: z.string().email().optional(),
+                guardianEmail: z
+                    .string()
+                    .email()
+                    .optional()
+                    .describe(
+                        'Require approval from this guardian before the recipient can claim. Must differ from the recipient email.'
+                    ),
                 signingAuthority: IssueInboxSigningAuthorityValidator.optional().describe(
                     'The signing authority to use for the credential. If not provided, the users default signing authority will be used if the credential is not signed.'
                 ),
@@ -1414,7 +1420,17 @@ export const IssueInboxCredentialValidator = z
     .refine(data => data.credential || data.templateUri, {
         message: 'Either credential or templateUri must be provided.',
         path: ['credential'],
-    });
+    })
+    .refine(
+        data =>
+            !data.configuration?.guardianEmail ||
+            data.recipient.type !== 'email' ||
+            data.configuration.guardianEmail.toLowerCase() !== data.recipient.value.toLowerCase(),
+        {
+            message: 'guardianEmail must differ from recipient (self-approval not allowed)',
+            path: ['configuration', 'guardianEmail'],
+        }
+    );
 
 export type IssueInboxCredentialType = z.infer<typeof IssueInboxCredentialValidator>;
 
@@ -1437,11 +1453,15 @@ const InboxBatchConfigurationValidator = IssueInboxCredentialValidator.shape.con
             .optional(),
     });
 
-export const IssueInboxCredentialBatchItemValidator = z.object({
-    ...IssueInboxCredentialValidator.shape,
-    configuration: InboxBatchConfigurationValidator.optional(),
-    idempotencyKey: z.string().max(256).optional(),
-});
+export const IssueInboxCredentialBatchItemValidator = z
+    .object({
+        ...IssueInboxCredentialValidator.shape,
+        configuration: InboxBatchConfigurationValidator.optional(),
+        idempotencyKey: z.string().max(256).optional(),
+    })
+    .describe(
+        'One issuance: provide credential or templateUri. Configuration is validated after merging batch defaults; item errors are returned individually.'
+    );
 
 export const IssueInboxCredentialBatchValidator = z.object({
     items: z.array(IssueInboxCredentialBatchItemValidator).min(1).max(100),
@@ -1460,6 +1480,19 @@ export const IssueInboxCredentialBatchItemResultValidator = z.discriminatedUnion
         success: z.literal(false),
         index: z.number().int().nonnegative(),
         error: z.object({ code: z.string(), message: z.string() }),
+        issuanceId: z
+            .string()
+            .optional()
+            .describe(
+                'Present when issuance completed but replay storage could not be confirmed. Reconcile this issuance; do not issue again with a new key.'
+            ),
+        claimUrl: z
+            .string()
+            .url()
+            .optional()
+            .describe(
+                'Claim URL of the completed issuance, if available, when replay storage could not be confirmed.'
+            ),
     }),
 ]);
 export type IssueInboxCredentialBatchItemResult = z.infer<

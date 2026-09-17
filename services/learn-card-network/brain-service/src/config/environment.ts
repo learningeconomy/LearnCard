@@ -211,6 +211,7 @@ export const getCredentialRefreshRuntimeEnvironment = (): CredentialRefreshRunti
 
 const inboxBatchRuntimeEnvironmentSchema = z.object({
     NODE_ENV: brainServiceEnvironmentShape.NODE_ENV,
+    IS_OFFLINE: brainServiceEnvironmentShape.IS_OFFLINE,
     AWS_LAMBDA_FUNCTION_NAME: brainServiceEnvironmentShape.AWS_LAMBDA_FUNCTION_NAME,
     INBOX_BATCH_CONCURRENCY: brainServiceEnvironmentShape.INBOX_BATCH_CONCURRENCY,
     INBOX_BATCH_ITEMS_PER_HOUR: brainServiceEnvironmentShape.INBOX_BATCH_ITEMS_PER_HOUR,
