@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { describe, test, expect } from 'vitest';
 
 import {
@@ -10,9 +11,14 @@ import { testUnsignedBoost } from './helpers/credential.helpers';
 
 let a: LearnCard;
 let b: LearnCard;
+let profileIdSuffix: string;
 
 describe('Identity', () => {
     beforeEach(async () => {
+        // Reusing a profile ID gives a new key the same DID as an earlier test. Resolver caches
+        // can then expose the earlier test's keys/permissions. Keep each test's DIDs distinct.
+        // Leave room for the profile name within the 40-character profile ID limit.
+        profileIdSuffix = randomUUID().slice(0, 24);
         a = await getLearnCardForUser('a');
         b = await getLearnCardForUser('b');
     });
@@ -25,7 +31,7 @@ describe('Identity', () => {
         expect(managerLc.id.did()).toEqual(managerDid);
 
         const managedDid = await managerLc.invoke.createManagedProfile({
-            profileId: 'managed',
+            profileId: `managed-${profileIdSuffix}`,
             displayName: 'Managed Profile Test!',
             bio: '',
             shortBio: '',
@@ -46,7 +52,7 @@ describe('Identity', () => {
         const managerLc = await getManagedLearnCardForUser('a', managerDid);
 
         const managedDid = await managerLc.invoke.createManagedProfile({
-            profileId: 'managed',
+            profileId: `managed-${profileIdSuffix}`,
             displayName: 'Managed Profile Test!',
             bio: '',
             shortBio: '',
@@ -66,7 +72,7 @@ describe('Identity', () => {
         expect(managerLc.id.did()).toEqual(managerDid);
 
         const managedDid = await managerLc.invoke.createManagedProfile({
-            profileId: 'managed',
+            profileId: `managed-${profileIdSuffix}`,
             displayName: 'Managed Profile Test!',
             bio: '',
             shortBio: '',
@@ -95,7 +101,7 @@ describe('Identity', () => {
         expect(managerLc.id.did()).toEqual(managerDid);
 
         const managedDid = await managerLc.invoke.createManagedProfile({
-            profileId: 'managed',
+            profileId: `managed-${profileIdSuffix}`,
             displayName: 'Managed Profile Test!',
             bio: '',
             shortBio: '',
@@ -132,7 +138,7 @@ describe('Identity', () => {
         const managerLc = await getManagedLearnCardForUser('b', managerDid);
 
         const managedDid = await managerLc.invoke.createManagedProfile({
-            profileId: 'managed',
+            profileId: `managed-${profileIdSuffix}`,
             displayName: 'Managed Profile Test!',
             bio: '',
             shortBio: '',
@@ -181,7 +187,7 @@ describe('Identity', () => {
         expect(managerLc.id.did()).toEqual(managerDid);
 
         const managedDid = await managerLc.invoke.createManagedProfile({
-            profileId: 'managed',
+            profileId: `managed-${profileIdSuffix}`,
             displayName: 'Managed Profile Test!',
             bio: '',
             shortBio: '',
@@ -228,13 +234,13 @@ describe('Identity', () => {
         const managerLc = await getManagedLearnCardForUser('b', managerDid);
 
         const managedDid = await managerLc.invoke.createManagedProfile({
-            profileId: 'managed',
+            profileId: `managed-${profileIdSuffix}`,
             displayName: 'Managed Profile Test!',
             bio: '',
             shortBio: '',
         });
         await managerLc.invoke.createManagedProfile({
-            profileId: 'other',
+            profileId: `other-${profileIdSuffix}`,
             displayName: 'Other Managed Profile Test!',
             bio: '',
             shortBio: '',
@@ -264,13 +270,13 @@ describe('Identity', () => {
         const managerLc = await getManagedLearnCardForUser('b', managerDid);
 
         const managedDid = await managerLc.invoke.createManagedProfile({
-            profileId: 'managed',
+            profileId: `managed-${profileIdSuffix}`,
             displayName: 'Managed Profile Test!',
             bio: '',
             shortBio: '',
         });
         await managerLc.invoke.createManagedProfile({
-            profileId: 'other',
+            profileId: `other-${profileIdSuffix}`,
             displayName: 'Other Managed Profile Test!',
             bio: '',
             shortBio: '',
@@ -301,13 +307,13 @@ describe('Identity', () => {
         const manager1Lc = await getManagedLearnCardForUser('b', manager1Did);
 
         const managed1Did = await manager1Lc.invoke.createManagedProfile({
-            profileId: 'managed',
+            profileId: `managed-${profileIdSuffix}`,
             displayName: 'Managed Profile Test!',
             bio: '',
             shortBio: '',
         });
         const managed2Did = await manager1Lc.invoke.createManagedProfile({
-            profileId: 'other',
+            profileId: `other-${profileIdSuffix}`,
             displayName: 'Other Managed Profile Test!',
             bio: '',
             shortBio: '',
@@ -320,13 +326,13 @@ describe('Identity', () => {
         const manager2Lc = await getManagedLearnCardForUser('b', manager2Did);
 
         const managed3Did = await manager2Lc.invoke.createManagedProfile({
-            profileId: 'managed2',
+            profileId: `managed2-${profileIdSuffix}`,
             displayName: 'Managed Profile Test!',
             bio: '',
             shortBio: '',
         });
         const managed4Did = await manager2Lc.invoke.createManagedProfile({
-            profileId: 'other2',
+            profileId: `other2-${profileIdSuffix}`,
             displayName: 'Other Managed Profile Test!',
             bio: '',
             shortBio: '',
