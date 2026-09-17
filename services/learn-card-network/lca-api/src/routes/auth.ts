@@ -1,11 +1,11 @@
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { t, openRoute } from '@routes';
-import cache from '@cache';
 import { getDel } from '@cache/getDel';
 import { issueLoginTicket } from '@cache/login-tickets';
 import { getOrCreateAuthSubject } from '../models/AuthSubject';
 import { getSocialProviderConfig, verifySocialIdToken } from '@helpers/social-token.helpers';
+import { isRateLimited, recordFailure } from '@helpers/rate-limit.helpers';
 
 const resultSchema = z.object({
     success: z.boolean(),
@@ -28,18 +28,13 @@ const RATE_LIMIT_ERROR = 'Too many login attempts. Please try again later.';
 const rateKey = (scope: string, id: string): string => `${RATE_PREFIX}${scope}:${id}`;
 
 const assertUnderLimit = async (key: string, max: number): Promise<void> => {
-    const attempts = Number(await cache.get(key)) || 0;
-    if (attempts >= max) {
+    if (await isRateLimited(key, max)) {
         throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: RATE_LIMIT_ERROR });
     }
 };
 
 const recordFailedAttempt = async (...keys: string[]): Promise<void> => {
-    const redis = cache.redis ?? cache.node;
-    for (const key of keys) {
-        const attempts = await redis.incr(key);
-        if (attempts === 1) await redis.expire(key, ATTEMPT_TTL_SECONDS);
-    }
+    for (const key of keys) await recordFailure(key, ATTEMPT_TTL_SECONDS);
 };
 
 const isUnauthorized = (error: unknown): boolean =>

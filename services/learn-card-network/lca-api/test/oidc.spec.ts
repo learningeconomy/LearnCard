@@ -36,6 +36,20 @@ vi.mock('@cache', () => {
                     entries.delete(key);
                     return value;
                 },
+                incr: async (key: string): Promise<number> => {
+                    const count = (Number(await get(key)) || 0) + 1;
+                    entries.set(key, {
+                        value: String(count),
+                        expires: entries.get(key)?.expires ?? Number.MAX_SAFE_INTEGER,
+                    });
+                    return count;
+                },
+                expire: async (key: string, ttl: number): Promise<number> => {
+                    const entry = entries.get(key);
+                    if (!entry) return 0;
+                    entry.expires = Date.now() + ttl * 1000;
+                    return 1;
+                },
             },
         },
     };
@@ -43,7 +57,7 @@ vi.mock('@cache', () => {
 
 const redirectUri = 'https://kc.test/realms/test/broker/lca-api/endpoint';
 let privateJwk: string;
-const authorize = (overrides: Record<string, string> = {}) =>
+const authorize = (overrides: Record<string, string> = {}, headers: Record<string, string> = {}) =>
     app.inject({
         method: 'GET',
         url: `/oidc/authorize?${new URLSearchParams({
@@ -55,6 +69,7 @@ const authorize = (overrides: Record<string, string> = {}) =>
             nonce: 'nonce',
             ...overrides,
         })}`,
+        headers,
     });
 const ticket = () =>
     issueLoginTicket({
@@ -82,7 +97,8 @@ const basicHeader = (mode: Exclude<BasicMode, false>): string => {
 const exchange = (
     value: string,
     overrides: Record<string, string> = {},
-    basic: BasicMode = false
+    basic: BasicMode = false,
+    headers: Record<string, string> = {}
 ) =>
     app.inject({
         method: 'POST',
@@ -90,6 +106,7 @@ const exchange = (
         headers: {
             'content-type': 'application/x-www-form-urlencoded',
             ...(basic ? { authorization: basicHeader(basic) } : {}),
+            ...headers,
         },
         payload: new URLSearchParams({
             grant_type: 'authorization_code',
@@ -368,5 +385,98 @@ describe('OIDC provider', () => {
         const first = (await app.inject('/oidc/jwks')).json();
         expect(first.keys[0].kty).toBe('RSA');
         expect((await app.inject('/oidc/jwks')).json()).toEqual(first);
+    });
+
+    describe('per-IP failures-only rate limiting', () => {
+        const rateKeys = () => [...entries.keys()].filter(key => key.startsWith('oidc-rl:'));
+        const otherIp = { 'x-forwarded-for': '203.0.113.7, 10.0.0.1' };
+        const expectRateLimited = (response: {
+            statusCode: number;
+            headers: Record<string, unknown>;
+            json: () => unknown;
+        }) => {
+            expect(response.statusCode).toBe(429);
+            expect(response.headers['retry-after']).toBe('600');
+            expect(response.json()).toEqual({ error: 'temporarily_unavailable' });
+        };
+
+        it('never counts successful authorize/token round-trips', async () => {
+            for (let index = 0; index < 5; index++) {
+                expect((await exchange(await code())).statusCode).toBe(200);
+            }
+            expect(rateKeys()).toEqual([]);
+        });
+
+        it('does not count non-credential protocol errors at the token endpoint', async () => {
+            await exchange('x', { grant_type: 'password' });
+            await exchange('');
+            expect(rateKeys()).toEqual([]);
+        });
+
+        it('limits the token endpoint after 50 invalid_client / invalid_grant failures', async () => {
+            for (let index = 0; index < 25; index++) {
+                expect((await exchange(await code(), { client_secret: 'wrong' })).statusCode).toBe(
+                    401
+                );
+                expect((await exchange('unknown-code')).statusCode).toBe(400);
+            }
+            expect(entries.get('oidc-rl:token:127.0.0.1')?.value).toBe('50');
+
+            expectRateLimited(await exchange(await code()));
+            expectRateLimited(await exchange('x', { client_secret: 'wrong' }));
+
+            expect((await exchange(await code(), {}, false, otherIp)).statusCode).toBe(200);
+        });
+
+        it('limits authorize after 50 invalid tickets and redirects with temporarily_unavailable', async () => {
+            for (let index = 0; index < 50; index++) {
+                const response = await authorize({ login_hint: 'bogus' });
+                expect(new URL(response.headers.location!).searchParams.get('error')).toBe(
+                    'login_required'
+                );
+            }
+
+            const value = await ticket();
+            const limitedResponse = await authorize({ login_hint: value });
+            expect(limitedResponse.statusCode).toBe(302);
+            const url = new URL(limitedResponse.headers.location!);
+            expect(url.origin + url.pathname).toBe(redirectUri);
+            expect(url.searchParams.get('error')).toBe('temporarily_unavailable');
+            expect(url.searchParams.get('state')).toBe('a & b');
+            expect(await redeemLoginTicket(value)).not.toBeNull();
+
+            expectRateLimited(await authorize({ redirect_uri: 'https://evil.test/' }));
+            expect((await authorize({ login_hint: await ticket() }, otherIp)).statusCode).toBe(302);
+        });
+
+        it('limits authorize after 50 invalid_request failures with a 429, never a redirect', async () => {
+            for (let index = 0; index < 50; index++) {
+                expect((await authorize({ client_id: 'wrong' })).statusCode).toBe(400);
+            }
+            const response = await authorize({ client_id: 'wrong' });
+            expectRateLimited(response);
+            expect(response.headers.location).toBeUndefined();
+        });
+
+        it('keys the limit on the first x-forwarded-for hop', async () => {
+            const forwarded = { 'x-forwarded-for': '198.51.100.9, 10.0.0.2' };
+            for (let index = 0; index < 50; index++) {
+                await exchange('nope', {}, false, forwarded);
+            }
+            expect(entries.has('oidc-rl:token:198.51.100.9')).toBe(true);
+            expectRateLimited(await exchange(await code(), {}, false, forwarded));
+            expectRateLimited(
+                await exchange(await code(), {}, false, { 'x-forwarded-for': '198.51.100.9' })
+            );
+            expect((await exchange(await code())).statusCode).toBe(200);
+        });
+
+        it('sets the 10-minute window when the key is first created', async () => {
+            const before = Date.now();
+            await exchange('nope');
+            const entry = entries.get('oidc-rl:token:127.0.0.1')!;
+            expect(entry.expires).toBeGreaterThanOrEqual(before + 600_000);
+            expect(entry.expires).toBeLessThan(before + 601_000);
+        });
     });
 });

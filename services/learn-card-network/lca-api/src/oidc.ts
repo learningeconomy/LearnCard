@@ -16,7 +16,7 @@
  *  - GET  /oidc/userinfo — resolve an opaque `access_token` to verified claims.
  */
 
-import Fastify, { type FastifyPluginAsync } from 'fastify';
+import Fastify, { type FastifyPluginAsync, type FastifyReply, type FastifyRequest } from 'fastify';
 import formbody from '@fastify/formbody';
 import { environment } from '@environment';
 import { redeemLoginTicket } from '@cache/login-tickets';
@@ -40,6 +40,26 @@ import {
     type AuthorizationCodeData,
     type AccessTokenData,
 } from '@helpers/login-ticket.helpers';
+import {
+    DEFAULT_MAX_FAILED_ATTEMPTS,
+    DEFAULT_RATE_LIMIT_WINDOW_SECONDS,
+    getRequestClientIp,
+    isRateLimited,
+    recordFailure,
+} from '@helpers/rate-limit.helpers';
+
+const RATE_LIMIT_PREFIX = 'oidc-rl:';
+const RATE_LIMIT_MAX_FAILURES = DEFAULT_MAX_FAILED_ATTEMPTS;
+const RATE_LIMIT_WINDOW_SECONDS = DEFAULT_RATE_LIMIT_WINDOW_SECONDS;
+
+const rateLimitKey = (route: 'authorize' | 'token', request: FastifyRequest): string =>
+    `${RATE_LIMIT_PREFIX}${route}:${getRequestClientIp(request)}`;
+
+const sendRateLimited = (reply: FastifyReply): FastifyReply =>
+    reply
+        .header('Retry-After', String(RATE_LIMIT_WINDOW_SECONDS))
+        .status(429)
+        .send({ error: 'temporarily_unavailable' });
 
 const appendParams = (redirectUri: string, params: Record<string, string>): string => {
     const url = new URL(redirectUri);
@@ -130,12 +150,21 @@ export const oidcFastifyPlugin: FastifyPluginAsync = async fastify => {
         const loginHint = query.login_hint;
         const nonce = query.nonce;
 
+        const limitKey = rateLimitKey('authorize', request);
+        const limited = await isRateLimited(limitKey, RATE_LIMIT_MAX_FAILURES);
+
         if (clientId !== getOidcClientId() || !redirectUri || !isAllowedRedirectUri(redirectUri)) {
+            if (limited) return sendRateLimited(reply);
+            await recordFailure(limitKey, RATE_LIMIT_WINDOW_SECONDS);
             return reply.status(400).send({ error: 'invalid_request' });
         }
 
         const failRedirect = (error: string): string =>
             appendParams(redirectUri, state ? { error, state } : { error });
+
+        // The redirect URI is now trusted, so a limited client gets the OAuth
+        // error via redirect and its (possibly valid) ticket is left unconsumed.
+        if (limited) return reply.redirect(failRedirect('temporarily_unavailable'));
 
         if (responseType !== 'code') {
             return reply.redirect(failRedirect('unsupported_response_type'));
@@ -145,12 +174,9 @@ export const oidcFastifyPlugin: FastifyPluginAsync = async fastify => {
             return reply.redirect(failRedirect('invalid_scope'));
         }
 
-        if (!loginHint) {
-            return reply.redirect(failRedirect('login_required'));
-        }
-
-        const ticket = await redeemLoginTicket(loginHint);
+        const ticket = loginHint ? await redeemLoginTicket(loginHint) : null;
         if (!ticket) {
+            await recordFailure(limitKey, RATE_LIMIT_WINDOW_SECONDS);
             return reply.redirect(failRedirect('login_required'));
         }
 
@@ -177,6 +203,10 @@ export const oidcFastifyPlugin: FastifyPluginAsync = async fastify => {
     });
 
     fastify.post('/oidc/token', async (request, reply) => {
+        const limitKey = rateLimitKey('token', request);
+        if (await isRateLimited(limitKey, RATE_LIMIT_MAX_FAILURES)) {
+            return sendRateLimited(reply);
+        }
         if (!environment.OIDC_CLIENT_SECRET) {
             return reply.status(503).send({ error: 'server_error' });
         }
@@ -194,6 +224,7 @@ export const oidcFastifyPlugin: FastifyPluginAsync = async fastify => {
             verifyOidcClientCredentials(credentials.clientId, credentials.clientSecret)
         );
         if (!authenticated) {
+            await recordFailure(limitKey, RATE_LIMIT_WINDOW_SECONDS);
             return reply
                 .header('WWW-Authenticate', 'Basic realm="oidc"')
                 .status(401)
@@ -209,10 +240,12 @@ export const oidcFastifyPlugin: FastifyPluginAsync = async fastify => {
         }
 
         const codeData = await consumeAuthorizationCode(body.code);
-        if (!codeData || codeData.clientId !== clientId) {
-            return reply.status(400).send({ error: 'invalid_grant' });
-        }
-        if (!body.redirect_uri || body.redirect_uri !== codeData.redirectUri) {
+        if (
+            !codeData ||
+            codeData.clientId !== clientId ||
+            body.redirect_uri !== codeData.redirectUri
+        ) {
+            await recordFailure(limitKey, RATE_LIMIT_WINDOW_SECONDS);
             return reply.status(400).send({ error: 'invalid_grant' });
         }
 
