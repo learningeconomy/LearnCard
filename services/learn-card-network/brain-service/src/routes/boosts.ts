@@ -434,15 +434,15 @@ const managedRefreshServiceFor = (refreshId: string, domain: string) => ({
 
 /**
  * The single server preparation step for a managed refresh send (SDK and signing
- * authority paths): every managed-send guard, then create/reuse the boost and allocate
+ * authority paths): after recipient validation, create/reuse the boost and allocate
  * the refresh. With an idempotencyKey, progress is recorded on a RefreshSendIntent so a
  * retried call reuses the same boost/allocation, or returns the completed result.
  */
 const prepareManagedRefreshSend = async (params: {
     profile: ProfileType;
-    scope?: string;
+    /** Returned by validateRefreshSendRecipient in this request, before any mutation. */
+    targetProfile: ProfileType;
     domain: string;
-    recipient: string;
     templateUri?: string;
     template?: z.infer<typeof SendBoostTemplateValidator>;
     contractUri?: string;
@@ -451,9 +451,7 @@ const prepareManagedRefreshSend = async (params: {
     integrationId?: string;
     idempotencyKey?: string;
 }): Promise<PrepareRefreshableSendResult & { intent?: RefreshSendIntent }> => {
-    const { profile, scope, domain, recipient, templateUri, template, contractUri } = params;
-
-    const targetProfile = await validateRefreshSendRecipient({ profile, scope, recipient, domain });
+    const { profile, targetProfile, domain, templateUri, template, contractUri } = params;
     // Local recipients authenticate refresh requests as their network profile DID,
     // including when the caller addressed them by their controller did:key.
     const holderDid = getDidWeb(domain, targetProfile.profileId);
@@ -589,11 +587,17 @@ export const boostsRouter = t.router({
         .input(PrepareRefreshableSendInputValidator)
         .output(PrepareRefreshableSendResultValidator)
         .mutation(async ({ ctx, input }) => {
-            const { intent: _intent, ...prepared } = await prepareManagedRefreshSend({
+            const targetProfile = await validateRefreshSendRecipient({
                 profile: ctx.user.profile,
                 scope: ctx.user.scope,
+                recipient: input.recipient,
                 domain: ctx.domain,
+            });
+            const { intent: _intent, ...prepared } = await prepareManagedRefreshSend({
                 ...input,
+                profile: ctx.user.profile,
+                targetProfile,
+                domain: ctx.domain,
             });
 
             return prepared;
@@ -1163,9 +1167,8 @@ export const boostsRouter = t.router({
                         refreshRequested && input.idempotencyKey && !input.signedCredential
                             ? await prepareManagedRefreshSend({
                                   profile,
-                                  scope: ctx.user.scope,
+                                  targetProfile: refreshTargetProfile!,
                                   domain,
-                                  recipient: input.recipient,
                                   templateUri: input.templateUri,
                                   template: input.templateUri ? undefined : input.template,
                                   contractUri,

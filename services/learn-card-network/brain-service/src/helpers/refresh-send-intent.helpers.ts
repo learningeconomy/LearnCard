@@ -235,7 +235,8 @@ export const markRefreshSendIntentDelivered = async (
         {
             intentKey: intent.intentKey,
             claimToken: intent.claimToken,
-            result: JSON.stringify(result),
+            // The atomic replay comparison must ignore object property insertion order.
+            result: canonicalizeCredentialJson(result),
             now: new Date().toISOString(),
         }
     );

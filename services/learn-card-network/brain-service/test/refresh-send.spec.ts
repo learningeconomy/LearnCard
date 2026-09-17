@@ -597,6 +597,51 @@ describe('Unified send with managed refresh (LC-2198)', () => {
             }
         );
 
+        it('accepts reordered delivery results but rejects changed receipt metadata', async () => {
+            const input = {
+                type: 'boost' as const,
+                recipient: HOLDER_PROFILE_ID,
+                template: inlineTemplate(),
+                refresh: true,
+                idempotencyKey: 'reordered-result',
+            };
+            const first = await issuer.clients.fullAuth.boost.send(input);
+            const intent = await getRefreshSendIntent(ISSUER_PROFILE_ID, input.idempotencyKey);
+            const receipt = first.refresh!;
+            const reordered = {
+                refresh: {
+                    holderDid: receipt.holderDid,
+                    issuerDid: receipt.issuerDid,
+                    credentialId: receipt.credentialId,
+                    credentialStatus: receipt.credentialStatus,
+                    refreshService: {
+                        authorization: receipt.refreshService.authorization,
+                        type: receipt.refreshService.type,
+                        id: receipt.refreshService.id,
+                    },
+                    refreshId: receipt.refreshId,
+                },
+                activityId: first.activityId,
+                credentialUri: first.credentialUri,
+                uri: first.uri,
+                type: first.type,
+            };
+            expect(reordered).toEqual(first);
+            expect(JSON.stringify(reordered)).not.toBe(JSON.stringify(first));
+            await expect(
+                markRefreshSendIntentDelivered(intent!, reordered)
+            ).resolves.toBeUndefined();
+            await expect(
+                markRefreshSendIntentDelivered(intent!, {
+                    ...reordered,
+                    refresh: { ...reordered.refresh, holderDid: 'did:key:another-holder' },
+                })
+            ).rejects.toMatchObject({ code: 'CONFLICT' });
+            expect(
+                (await getRefreshSendIntent(ISSUER_PROFILE_ID, input.idempotencyKey))?.result
+            ).toEqual(first);
+        });
+
         it('fences every stale-owner write after another request takes over', async () => {
             const request = {
                 issuerProfileId: ISSUER_PROFILE_ID,

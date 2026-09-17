@@ -447,6 +447,33 @@ describe('injectManagedRefreshService', () => {
         expect(original).toEqual(snapshot);
     });
 
+    it('collapses existing same-id duplicates without changing unrelated services', () => {
+        const original = {
+            ...baseCredential,
+            refreshService: [managedService, standardService, structuredClone(managedService)],
+        };
+        const snapshot = structuredClone(original);
+        const injected = injectManagedRefreshService(original, managedService);
+        expect(injected.refreshService).toEqual([managedService, standardService]);
+        expect(injectManagedRefreshService(injected, managedService)).toEqual(injected);
+        expect(original).toEqual(snapshot);
+    });
+
+    it.each([false, true])(
+        'rejects a mixed managed-ID array (conflicting entry first: %s)',
+        first => {
+            const different = { ...managedService, id: 'https://example.org/refresh/different' };
+            const entries = [managedService, structuredClone(managedService), different];
+            if (first) entries.reverse();
+            expect(() =>
+                injectManagedRefreshService(
+                    { ...baseCredential, refreshService: entries },
+                    managedService
+                )
+            ).toThrow(/different managed refresh service/i);
+        }
+    );
+
     it('rejects injecting a second managed service with a different id', () => {
         const otherManaged = {
             ...managedService,
