@@ -5,6 +5,7 @@ import * as Sentry from '@sentry/serverless';
 
 import app from './src/openapi';
 import didWebApp from './src/dids';
+import { app as oidcApp } from './src/oidc';
 import { appRouter, createContext } from './src/app';
 import { getEmptyLearnCard } from './src/helpers/learnCard.helpers';
 import { createOpenApiAwsLambdaHandler } from './src/helpers/shim';
@@ -39,6 +40,7 @@ export const swaggerUiHandler = serverlessHttp(toServerlessApplication(app), {
     basePath: '/docs',
 });
 export const didWebHandler = serverlessHttp(toServerlessApplication(didWebApp));
+export const oidcHandler = serverlessHttp(toServerlessApplication(oidcApp));
 
 export const _openApiHandler = createOpenApiAwsLambdaHandler({
     router: appRouter,

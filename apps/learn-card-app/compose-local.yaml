@@ -217,6 +217,9 @@ services:
             KEYCLOAK_ISSUERS: http://localhost:8081/realms/learncard
             KEYCLOAK_AUDIENCES: learncard-app
             KEYCLOAK_JWKS_URL_OVERRIDES: http://localhost:8081/realms/learncard=http://keycloak:8080/realms/learncard/protocol/openid-connect/certs
+            OIDC_ISSUER: http://localhost:5100
+            OIDC_CLIENT_ID: keycloak-broker
+            OIDC_CLIENT_SECRET: dev-only-broker-secret # Public local-development placeholder
 
     ai-agent:
         image: learncard-monorepo-local
@@ -412,6 +415,8 @@ services:
             - '8081:8080'
         networks:
             - learn-card
+        extra_hosts:
+            - 'host.docker.internal:host-gateway'
         volumes:
             - ../../infra/keycloak/realms/learncard-dev-realm.json:/opt/keycloak/data/import/learncard-realm.json:ro
             - keycloak-data:/opt/keycloak/data/h2
