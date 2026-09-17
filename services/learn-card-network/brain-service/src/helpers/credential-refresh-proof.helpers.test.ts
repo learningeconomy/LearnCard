@@ -73,6 +73,22 @@ describe('managed refresh proof verification', () => {
         }
     );
 
+    it.each([false, true])('maps verifier exceptions consistently (retry: %s)', async retry => {
+        const verifier = makeVerifier();
+        const cause = new Error('DIDKit verification failed');
+        if (retry) verifier.verifyCredential.mockResolvedValueOnce(stale);
+        verifier.verifyCredential.mockRejectedValueOnce(cause);
+        await expect(verifyManagedRefreshProof(verifier, credential, issuer)).rejects.toMatchObject(
+            {
+                code: 'BAD_REQUEST',
+                message: 'Credential proof could not be verified',
+                cause,
+            }
+        );
+        expect(verifier.verifyCredential).toHaveBeenCalledTimes(retry ? 2 : 1);
+        expect(verifier.resolveDid).toHaveBeenCalledTimes(retry ? 1 : 0);
+    });
+
     it('fails closed when the authoritative document cannot be fetched', async () => {
         const verifier = makeVerifier();
         verifier.verifyCredential.mockResolvedValue(stale);

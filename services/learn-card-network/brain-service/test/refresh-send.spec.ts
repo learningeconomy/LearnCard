@@ -522,6 +522,73 @@ describe('Unified send with managed refresh (LC-2198)', () => {
             expect(again.completed).toEqual(result);
         });
 
+        it.each([false, true])(
+            'reconciles a keyed pre-signed delivery (material retry change: %s)',
+            async materialChange => {
+                const idempotencyKey = 'pre-signed-post-bind';
+                const prepared = await issuer.clients.fullAuth.boost.prepareRefreshableSend({
+                    recipient: HOLDER_PROFILE_ID,
+                    template: inlineTemplate(),
+                    idempotencyKey,
+                });
+                const unsigned = injectManagedRefreshService(
+                    {
+                        ...testUnsignedVcV2,
+                        id: prepared.credentialId,
+                        issuer: issuer.learnCard.id.did(),
+                        validFrom: '2026-01-01T00:00:00Z',
+                        credentialSubject: { id: prepared.holderDid },
+                    } as UnsignedVC,
+                    prepared.refreshService
+                );
+                const input = {
+                    type: 'boost' as const,
+                    recipient: HOLDER_PROFILE_ID,
+                    templateUri: prepared.boostUri,
+                    signedCredential: await issuer.learnCard.invoke.issueCredential(unsigned),
+                    refresh: true,
+                    idempotencyKey,
+                };
+                const first = await issuer.clients.fullAuth.boost.send(input);
+                // Model a crash after binding/delivery but before storing the intent result.
+                await runQuery(
+                    `MATCH (i:RefreshSendIntent {intentKey: $key})
+                 SET i.state = 'prepared' REMOVE i.result`,
+                    { key: `${ISSUER_PROFILE_ID}:${idempotencyKey}` }
+                );
+                const resigned = await issuer.learnCard.invoke.issueCredential({
+                    ...unsigned,
+                    validFrom: '2026-01-02T00:00:00Z',
+                    ...(materialChange ? { name: 'Rebuilt credential on retry' } : {}),
+                });
+                const baseline = await getMutationBaseline();
+                const deliveries = await countRelationships('CREDENTIAL_SENT');
+                const notifications = addNotificationToQueueSpy.mock.calls.length;
+                // No second prepare call: a direct client retries only the send leg.
+                const retry = await issuer.clients.fullAuth.boost.send({
+                    ...input,
+                    signedCredential: resigned,
+                });
+                expect(retry).toEqual(first);
+                expect((await getRefreshSendIntent(ISSUER_PROFILE_ID, idempotencyKey))?.state).toBe(
+                    'delivered'
+                );
+                await expectsNoMutation(baseline);
+                expect(await countRelationships('CREDENTIAL_SENT')).toBe(deliveries);
+                expect(addNotificationToQueueSpy.mock.calls.length).toBe(notifications);
+                // Without a key, material changes must still fail the exact-replay guard.
+                if (materialChange) {
+                    await expect(
+                        issuer.clients.fullAuth.boost.send({
+                            ...input,
+                            signedCredential: resigned,
+                            idempotencyKey: undefined,
+                        })
+                    ).rejects.toMatchObject({ code: 'CONFLICT' });
+                }
+            }
+        );
+
         it('reconciles a delivery that was bound but never recorded', async () => {
             const input = {
                 type: 'boost' as const,

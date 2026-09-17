@@ -70,6 +70,16 @@ describe('learnCard.invoke.sendBoost return-shape opt-in', () => {
         ).toEqualTypeOf<Promise<SendBoostRefreshResult>>();
     });
 
+    it('preserves the literal opt-in with status purposes and nested template data', () => {
+        expectTypeOf(
+            sendBoost('userb', 'did:web:example:boost:1', {
+                enableRefresh: true,
+                statusPurposes: ['revocation'],
+                templateData: { grade: 'A' },
+            })
+        ).toEqualTypeOf<Promise<SendBoostRefreshResult>>();
+    });
+
     it('degrades to the union for a dynamically typed enableRefresh boolean', () => {
         const dynamic: boolean = Math.random() > 0.5;
 

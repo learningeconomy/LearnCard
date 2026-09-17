@@ -1371,6 +1371,11 @@ export const boostsRouter = t.router({
                                     }
 
                                     intent = existing;
+                                    const reconciled = await reconcileBoundRefreshSendIntent(
+                                        existing,
+                                        domain
+                                    );
+                                    if (reconciled) return reconciled;
                                 }
 
                                 // Resume detection: reuse the original delivery activity
@@ -1533,7 +1538,9 @@ export const boostsRouter = t.router({
                                         issuerDid:
                                             getCredentialIssuerId(signedVc) ??
                                             getDidWeb(domain, profile.profileId),
-                                        holderDid: intent.holderDid ?? targetProfile.did,
+                                        holderDid:
+                                            intent.holderDid ??
+                                            getDidWeb(domain, targetProfile.profileId),
                                         ...(signedVc.credentialStatus
                                             ? { credentialStatus: signedVc.credentialStatus }
                                             : {}),

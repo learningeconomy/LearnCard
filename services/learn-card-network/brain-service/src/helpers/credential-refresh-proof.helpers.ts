@@ -18,22 +18,22 @@ export const verifyManagedRefreshProof = async (
     credential: VC,
     localIssuerDid: string
 ): Promise<void> => {
-    let result = await verifier.verifyCredential(credential, { checks: ['proof'] });
+    try {
+        let result = await verifier.verifyCredential(credential, { checks: ['proof'] });
 
-    if (proofVerified(result)) return;
+        if (proofVerified(result)) return;
 
-    if (getCredentialIssuerId(credential) === localIssuerDid) {
-        try {
+        if (getCredentialIssuerId(credential) === localIssuerDid) {
             await verifier.resolveDid(localIssuerDid, { noCache: true });
             result = await verifier.verifyCredential(credential, { checks: ['proof'] });
-        } catch (cause) {
-            throw new TRPCError({
-                code: 'BAD_REQUEST',
-                message: 'Credential proof could not be verified',
-                cause,
-            });
+            if (proofVerified(result)) return;
         }
-        if (proofVerified(result)) return;
+    } catch (cause) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Credential proof could not be verified',
+            cause,
+        });
     }
 
     throw new TRPCError({
