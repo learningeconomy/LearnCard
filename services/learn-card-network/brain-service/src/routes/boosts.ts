@@ -1199,10 +1199,31 @@ export const boostsRouter = t.router({
                                   getBoostById(boundBoostId)
                               )
                             : null;
+                        // A keyed handoff whose preparation already created/resolved a
+                        // boost (but never delivered) reuses that prepared boost.
+                        const preparedBoostUri =
+                            !boundBoost && refreshRequested && input.idempotencyKey
+                                ? (
+                                      await traceDb('getRefreshSendIntent:signedCredential', () =>
+                                          getRefreshSendIntent(
+                                              profile.profileId,
+                                              input.idempotencyKey!
+                                          )
+                                      )
+                                  )?.boostUri
+                                : undefined;
+                        const preparedBoost = preparedBoostUri
+                            ? await traceDb('getBoostByUri:preparedRefresh', () =>
+                                  getBoostByUri(preparedBoostUri)
+                              )
+                            : null;
 
                         if (boundBoost) {
                             boost = boundBoost;
                             boostUri = getBoostUri(boundBoost.id, domain);
+                        } else if (preparedBoost && preparedBoostUri) {
+                            boost = preparedBoost;
+                            boostUri = preparedBoostUri;
                         } else {
                             // Auto-create boost from the signed credential. A managed refresh
                             // service belongs to one holder's credential, never to a reusable
