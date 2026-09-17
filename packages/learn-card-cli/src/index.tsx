@@ -338,7 +338,7 @@ const startCliRepl = async (colorize: (input: string) => string): Promise<void> 
 program
     .command('send [recipient]')
     .description(
-        'Send a "Quickstart Complete" badge to an email address or phone number (prompts if omitted). Creates .env and send.mjs in the current folder.'
+        'Send a "Quickstart Complete" badge to an email, phone number, profile ID, or DID (prompts if omitted). Creates .env and send.mjs in the current folder.'
     )
     .option('-y, --yes', 'accept defaults without prompting')
     .option('--name <displayName>', 'display name for your issuer profile')
