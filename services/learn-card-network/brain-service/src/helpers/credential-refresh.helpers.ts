@@ -81,7 +81,7 @@ import { ProfileType } from 'types/profile';
 export const getCredentialRefreshServiceUrl = (refreshId: string, domain: string): string =>
     `${getStatusListBaseUrl(domain)}/refresh/${refreshId}`;
 
-const getManagedCredentialUri = (id: string, domain: string): string =>
+export const getManagedCredentialUri = (id: string, domain: string): string =>
     constructUri('credential', id, domain);
 
 export type AllocateCredentialRefreshParams = {
@@ -346,7 +346,9 @@ type InitialRefreshRoot = {
     boostId?: string;
 };
 
-const getInitialRefreshRoot = async (refreshId: string): Promise<InitialRefreshRoot | null> => {
+export const getInitialRefreshRoot = async (
+    refreshId: string
+): Promise<InitialRefreshRoot | null> => {
     const result = await neogma.queryRunner.run(
         `MATCH (refresh:CredentialRefresh {refreshId: $refreshId})-[:ROOT]->(root:Credential)
          OPTIONAL MATCH (root)-[:INSTANCE_OF]->(boost:Boost)
