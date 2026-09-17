@@ -18,14 +18,10 @@ import GoogleLoginHelpModal from '../components/auth/GoogleLoginHelpModal';
 const log = getLogger('use-firebase');
 const authError = (error: unknown): { code?: string | number; message?: string } => {
     if (!error || typeof error !== 'object') return {};
-    return {
-        code:
-            'code' in error && (typeof error.code === 'string' || typeof error.code === 'number')
-                ? error.code
-                : undefined,
-        message:
-            'message' in error && typeof error.message === 'string' ? error.message : undefined,
-    };
+    const { code, message } = error as { code?: unknown; message?: unknown };
+    const normalizedCode = typeof code === 'string' || typeof code === 'number' ? code : undefined;
+    const normalizedMessage = typeof message === 'string' ? message : undefined;
+    return { code: normalizedCode, message: normalizedMessage };
 };
 type SuccessCallback = () => void;
 type ErrorCallback = (error: string) => void;
