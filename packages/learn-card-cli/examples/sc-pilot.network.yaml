@@ -1,0 +1,20 @@
+issuer:
+    profileId: scde
+    displayName: South Carolina Department of Education
+    signingAuthority:
+        type: learncard-hosted
+        name: scde-clr
+
+profileManager:
+    displayName: SC Districts
+    managed:
+        - profileId: sc-greenville
+          displayName: Greenville County Schools
+
+serviceAccounts:
+    - name: ea-clr-issuer
+      scopes: [inbox:write, inbox:read, credentials:write, credentials:read]
+      expiresAt: 2027-06-30
+
+webhooks:
+    - url: https://clr.example.org/learncard/webhook
