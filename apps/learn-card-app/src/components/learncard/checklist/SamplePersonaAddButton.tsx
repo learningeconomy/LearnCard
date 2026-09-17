@@ -59,7 +59,10 @@ const SamplePersonaAddButton: React.FC<SamplePersonaAddButtonProps> = ({
             });
 
             setStatus('syncing');
-            await fetchNewContractCredentials();
+            const syncResult = await fetchNewContractCredentials();
+            if (syncResult.isError) {
+                throw syncResult.error ?? new Error('Sample credential sync failed');
+            }
             presentToast(m['passport.buildMyLearnCard.samplePersona.addSuccess'](), {
                 hasDismissButton: true,
             });

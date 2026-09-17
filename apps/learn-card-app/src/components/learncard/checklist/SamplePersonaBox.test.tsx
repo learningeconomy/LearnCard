@@ -155,7 +155,7 @@ describe('SamplePersonaBox', () => {
             removedSharedUris: [],
         });
         mocks.refetchQueries.mockResolvedValue(undefined);
-        mocks.fetchNewContractCredentials.mockResolvedValue(undefined);
+        mocks.fetchNewContractCredentials.mockResolvedValue({ isError: false });
         mocks.initWallet.mockResolvedValue({});
         mocks.queueAiInsightCredentialRefresh.mockResolvedValue(undefined);
     });
@@ -177,6 +177,28 @@ describe('SamplePersonaBox', () => {
         expect(mocks.presentToast).toHaveBeenCalledWith('Sample credentials added.', {
             hasDismissButton: true,
         });
+    });
+
+    it('reports an error when credential sync fails after consent', async () => {
+        mocks.fetchNewContractCredentials.mockResolvedValueOnce({
+            isError: true,
+            error: new Error('sync failed'),
+        });
+
+        render(<SamplePersonaBox />);
+        fireEvent.click(screen.getByRole('button', { name: 'See an example LearnCard' }));
+
+        await waitFor(() =>
+            expect(mocks.presentToast).toHaveBeenCalledWith('Add failed', {
+                type: 'error',
+                hasDismissButton: true,
+            })
+        );
+        expect(mocks.presentToast).not.toHaveBeenCalledWith(
+            'Sample credentials added.',
+            expect.anything()
+        );
+        expect(mocks.closeAllModals).not.toHaveBeenCalled();
     });
 
     it('removes credentials and consent from legacy and current config sources', async () => {
@@ -264,5 +286,18 @@ describe('SamplePersonaBox', () => {
             screen.getByRole('button', { name: 'Checking sample credentials...' })
         ).toBeDisabled();
         expect(mocks.confirm).not.toHaveBeenCalled();
+    });
+
+    it('shows the removable sample state while indexed credentials are still loading', () => {
+        mocks.useConsentedContracts.mockReturnValue({
+            data: [currentConsent],
+            isLoading: false,
+        });
+        mocks.useGetCredentialsFromContracts.mockReturnValue({ data: undefined, isLoading: true });
+
+        render(<SamplePersonaBox />);
+
+        expect(screen.getByRole('heading', { name: 'Sample LearnCard' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Disconnecting...' })).toBeDisabled();
     });
 });
