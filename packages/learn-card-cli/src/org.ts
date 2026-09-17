@@ -10,16 +10,19 @@ import { loadOrgSpec } from './org/load';
 import { applyOrg } from './org/apply';
 import { formatChanges, hasChanges } from './org/diff';
 import { out } from './out';
+import { generateRandomSeed } from './random';
 
 export type OrgApplyOptions = ProjectOptions & {
     dryRun?: boolean;
     secretsOut?: string;
     cwd?: string;
+    presetEnv?: Record<string, string>;
 };
 
 export const runOrgApply = async (file: string, options: OrgApplyOptions): Promise<void> => {
     const spec = await loadOrgSpec(file);
     const project = await loadProject(options.cwd ?? process.cwd());
+    if (options.presetEnv) Object.assign(project.env, options.presetEnv);
 
     if (options.profileId && options.profileId !== spec.issuer.profileId)
         throw new Error(
@@ -31,12 +34,26 @@ export const runOrgApply = async (file: string, options: OrgApplyOptions): Promi
             `This project's .env is already set up for profile "${project.env.PROFILE_ID}", but the spec declares "${spec.issuer.profileId}". Use a separate folder for a different issuer.`
         );
 
-    await ensureIdentity(project, {
+    if (options.dryRun) {
+        if (!project.env.SECURE_SEED) {
+            out.log(
+                'Dry run: no identity in this folder yet — using a throwaway seed, nothing written.'
+            );
+            project.env.SECURE_SEED = generateRandomSeed();
+        }
+        project.env.PROFILE_ID ??= spec.issuer.profileId;
+    } else {
+        await ensureIdentity(project, {
+            ...options,
+            profileId: spec.issuer.profileId,
+            name: spec.issuer.displayName,
+        });
+    }
+    const learnCard = await connect(project, {
         ...options,
-        profileId: spec.issuer.profileId,
-        name: spec.issuer.displayName,
+        lca: true,
+        readOnly: !!options.dryRun,
     });
-    const learnCard = await connect(project, { ...options, lca: true });
 
     const result = await applyOrg(spec, learnCard, project, {
         dryRun: options.dryRun,

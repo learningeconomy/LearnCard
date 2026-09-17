@@ -221,6 +221,9 @@ describe('applyOrg', () => {
             ] as const) {
                 expect(card.invoke[key]).not.toHaveBeenCalled();
             }
+            for (const key of ['getRegisteredSigningAuthorities', 'getAuthGrants'] as const) {
+                expect(card.invoke[key]).not.toHaveBeenCalled();
+            }
 
             const actions = result.changes.map(c => `${c.resource}:${c.action}`);
             expect(actions).toContain('issuer:would-create');

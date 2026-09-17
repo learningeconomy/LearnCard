@@ -9,19 +9,31 @@ describe('whoami command', () => {
         registerWhoamiCommand(program, async () => {});
         const cmd = program.commands.find(c => c.name() === 'whoami');
         expect(cmd).toBeDefined();
-        expect(cmd!.options.map(o => o.long).sort()).toEqual(['--json', '--network']);
+        expect(
+            program
+                .createHelp()
+                .visibleOptions(cmd!)
+                .map(o => o.long)
+                .filter(l => l !== '--help')
+                .sort()
+        ).toEqual(['--json', '--network']);
     });
 });
 
 describe('LEARNCARD_AS', () => {
     it('is the env fallback for --as on inbox list', async () => {
         const { registerInboxCommand } = await import('./inbox');
-        const program = new Command();
-        registerInboxCommand(program, async () => {});
-        const list = program.commands
-            .find(c => c.name() === 'inbox')!
-            .commands.find(c => c.name() === 'list')!;
-        const asOption = list.options.find(o => o.long === '--as')!;
-        expect(asOption.envVar).toBe('LEARNCARD_AS');
+        const program = new Command().exitOverride();
+        let seen: Record<string, unknown> | undefined;
+        registerInboxCommand(program, async (_cmd, options) => {
+            seen = options as Record<string, unknown>;
+        });
+        process.env.LEARNCARD_AS = 'cs-exampleville';
+        try {
+            await program.parseAsync(['node', 'learncard', 'inbox', 'list']);
+        } finally {
+            delete process.env.LEARNCARD_AS;
+        }
+        expect(seen?.as).toBe('cs-exampleville');
     });
 });
