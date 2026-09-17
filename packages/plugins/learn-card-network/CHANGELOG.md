@@ -1,5 +1,59 @@
 # learn-card-core
 
+## 2.14.1
+
+### Patch Changes
+
+- [#1566](https://github.com/learningeconomy/LearnCard/pull/1566) [`e46c302eaed8b98686d21e2f3b5d11b189567304`](https://github.com/learningeconomy/LearnCard/commit/e46c302eaed8b98686d21e2f3b5d11b189567304) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-2155] - Eliminate CertifiedBoostCredential wrapper
+
+    Direct credentials use their signed Boost network URI for the trusted-network check.
+    Plaintext sends reject mismatched Boost IDs. Encrypted signing-authority issuance
+    includes all subjects and, for delegated consent AutoBoosts, the contract owner.
+
+    Compatibility limitation: pre-signed `signedCredential` payloads (both plaintext and
+    client-encrypted) are stored unchanged, without a server-generated wrapper or status
+    entries. This includes plaintext credentials from older SDKs or third-party issuers
+    that omit `credentialStatus`. Without embedded status entries or server-retained status
+    coordinates, network revocation changes the recipient relationship only and is not
+    reflected by a holder's `verifyCredential` call. Such integrations must publish their
+    own signed status-list updates or use server-managed signing-authority issuance with
+    a VC v2 template. Storage now warns for both plaintext and encrypted credentials when
+    status metadata is missing or empty, including VC v1 issuance results.
+
+- [#1566](https://github.com/learningeconomy/LearnCard/pull/1566) [`e46c302eaed8b98686d21e2f3b5d11b189567304`](https://github.com/learningeconomy/LearnCard/commit/e46c302eaed8b98686d21e2f3b5d11b189567304) Thanks [@gerardopar](https://github.com/gerardopar)! - Encrypt signing-authority credentials using a single snapshot of each recipient's
+  X25519 keys. Keep DAG-JWE compatibility while eliminating repeated DID resolution
+  and post-encryption key-ID matching.
+
+    Carry status entries explicitly in serializable internal issuance results so copied
+    or cached credentials retain revocation metadata. Reject missing internal metadata,
+    and return false when persisted status JSON is malformed or fails validation.
+
+    Report an explicit Boost-authenticity warning when credential verification fails.
+
+- Updated dependencies []:
+    - @learncard/network-brain-client@2.5.56
+    - @learncard/core@9.4.35
+    - @learncard/helpers@1.5.1
+
+## 2.14.0
+
+### Minor Changes
+
+- [#1533](https://github.com/learningeconomy/LearnCard/pull/1533) [`80d2ebf54bb5a643808f8f7d908cf68758903dce`](https://github.com/learningeconomy/LearnCard/commit/80d2ebf54bb5a643808f8f7d908cf68758903dce) Thanks [@goblincore](https://github.com/goblincore)! - Managed credential refresh (LC-2117, LC-2135, LC-2136)
+
+    - Holder refresh through the W3C `refreshService` extension point: standard `1EdTechCredentialRefresh` signed JSON responses and a separate `LearnCardCredentialRefresh2026` encrypted, DID-authenticated managed protocol. Includes SSRF guards, proof/issuer/subject/ID/freshness validation, and typed failures. Compact VC-JWT support is deferred to LC-2195; full 1EdTech protocol conformance is not claimed. Previously issued managed QA credentials must be reissued with the new signed service type.
+    - Managed issuer refresh service in brain-service: allocate-before-signing, issuer-signed and signing-authority publication, immutable holder-encrypted (JWE-only) version chain, holder-authenticated `/refresh/:refreshId` endpoint with ETag/304, history, and revocation gating.
+    - In-place holder wallet replacement with encrypted previous-version history, foreground-only staleness scanning (24h default, configurable), and per-record concurrency safety.
+    - Privacy-safe `CREDENTIAL_REFRESHED` notifications with materiality detection, issuer overrides, and one collapsed record per configurable delivery window.
+    - App surfaces: refresh listener, Updated indicator, notification card, and previous-versions history UI; provisional-to-final CLR demo in the credential viewer.
+
+### Patch Changes
+
+- Updated dependencies [[`693be4fef7b2850ab0f79b5161f78557d9026012`](https://github.com/learningeconomy/LearnCard/commit/693be4fef7b2850ab0f79b5161f78557d9026012), [`80d2ebf54bb5a643808f8f7d908cf68758903dce`](https://github.com/learningeconomy/LearnCard/commit/80d2ebf54bb5a643808f8f7d908cf68758903dce)]:
+    - @learncard/network-brain-client@2.5.55
+    - @learncard/helpers@1.5.0
+    - @learncard/core@9.4.34
+
 ## 2.13.17
 
 ### Patch Changes

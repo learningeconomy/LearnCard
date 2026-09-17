@@ -1,6 +1,6 @@
 {
     "name": "@learncard/react",
-    "version": "2.12.4",
+    "version": "2.12.6",
     "description": "",
     "main": "dist/cjs",
     "module": "dist/esm",

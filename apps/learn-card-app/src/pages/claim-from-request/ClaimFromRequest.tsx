@@ -50,6 +50,14 @@ import { ROUTE_PRELOAD } from '../../Routes';
 import ExchangePresentationRequest from './ExchangePresentationRequest';
 import ExchangeRedirect from './ExchangeRedirect';
 import ExchangeAcceptCredentials from './ExchangeAcceptCredentials';
+import type {
+    ExchangeResponse,
+    ExchangePresentationRequestData,
+    NormalizedExchangeResponse,
+    VCAPIResponse,
+} from './exchange.types';
+export type { ExchangeResponse } from './exchange.types';
+import { getInboxDeliveryId, type InboxDelivery } from './inboxDelivery';
 import ExchangeInitiate from './ExchangeInitiate';
 import ExchangeDidAuth from './ExchangeDidAuth';
 import ExchangeLoading from './ExchangeLoading';
@@ -61,6 +69,7 @@ import * as m from '../../paraglide/messages.js';
 import {
     getClaimInteractionBoostUri,
     getClaimInteractionDuplicateLookup,
+    shouldCompleteInboxClaimLocally,
 } from './claimRequest.helpers';
 
 export type RequestMetadata = {
@@ -70,7 +79,8 @@ export type RequestMetadata = {
     issuedDate: string;
 };
 
-export enum ExchangeState { // For state machine
+export enum ExchangeState {
+    // For state machine
     Initiate,
     PresentationRequest,
     AcceptCredentials,
@@ -80,13 +90,6 @@ export enum ExchangeState { // For state machine
     Error,
     Finished,
 }
-
-export type ExchangeResponse = {
-    // For state machine
-    state: ExchangeState;
-    data?: any;
-    strategy?: VCAPIRequestStrategy;
-};
 
 export enum RequestResponseDataType {
     VerifiablePresentationRequest,
@@ -104,9 +107,7 @@ export enum VCAPIRequestStrategy {
  * As of VC-API 0.7, the requests and responses are wrapped in an object with a verifiablePresentationRequest, verifiablePresentation, or redirectUrl property.
  * Before VC-API 0.7, the requests and responses were not wrapped in an object, and must be implicitly determined by the shape of the object.
  */
-const normalizeRequestResponseData = (
-    data = {} as any
-): { type: RequestResponseDataType; data: any; strategy: VCAPIRequestStrategy } => {
+const normalizeRequestResponseData = (data: VCAPIResponse = {}): NormalizedExchangeResponse => {
     if (data?.verifiablePresentationRequest) {
         return {
             type: RequestResponseDataType.VerifiablePresentationRequest,
@@ -116,7 +117,7 @@ const normalizeRequestResponseData = (
     } else if (data?.query && data?.challenge) {
         return {
             type: RequestResponseDataType.VerifiablePresentationRequest,
-            data: data,
+            data: data as ExchangePresentationRequestData,
             strategy: VCAPIRequestStrategy.Unwrapped,
         };
     } else if (data?.verifiablePresentation) {
@@ -128,7 +129,7 @@ const normalizeRequestResponseData = (
     } else if (data?.hasOwnProperty('@context')) {
         return {
             type: RequestResponseDataType.VerifiablePresentation,
-            data: data,
+            data: data as VP,
             strategy: VCAPIRequestStrategy.Unwrapped,
         };
     } else if (data?.redirectUrl) {
@@ -150,7 +151,8 @@ const ClaimBoostBodyPreviewOverride: React.FC<{ boostVC: VC }> = ({ boostVC }) =
     const isLoggedIn = useIsLoggedIn();
     const currentUser = useCurrentUser();
 
-    const issuer = typeof boostVC.issuer === 'string' ? boostVC.issuer : boostVC?.issuer?.id ?? '';
+    const issuer =
+        typeof boostVC.issuer === 'string' ? boostVC.issuer : (boostVC?.issuer?.id ?? '');
 
     const isLCNetworkUrlIssuer = issuer?.includes('did:web');
 
@@ -323,14 +325,19 @@ const getFriendlyErrorInfo = (
 };
 
 const ExchangeErrorDisplay: React.FC<{
-    errorData: any;
+    errorData: unknown;
     onRetry: () => void;
     onCancel: () => void;
 }> = ({ errorData, onRetry, onCancel }) => {
     const rawErrorMessage =
         typeof errorData === 'string'
             ? errorData
-            : errorData?.message || 'An unexpected error occurred.';
+            : errorData &&
+                typeof errorData === 'object' &&
+                'message' in errorData &&
+                typeof errorData.message === 'string'
+              ? errorData.message
+              : 'An unexpected error occurred.';
 
     const friendlyError = getFriendlyErrorInfo(rawErrorMessage);
 
@@ -369,7 +376,7 @@ const ExchangeErrorDisplay: React.FC<{
                         </div>
 
                         {/* Technical details (collapsed by default feeling) */}
-                        {errorData && rawErrorMessage !== friendlyError.description && (
+                        {Boolean(errorData) && rawErrorMessage !== friendlyError.description && (
                             <details className="group">
                                 <summary className="text-xs text-grayscale-600 cursor-pointer hover:text-grayscale-900 transition-colors">
                                     Show technical details
@@ -458,6 +465,7 @@ const ClaimFromRequest: React.FC = () => {
     // The credential the user is claiming, captured so that after the exchange
     // completes we can drop them on that credential's wallet category page
     // (e.g. /achievements) instead of the generic passport (all categories).
+    const inboxDeliveriesRef = useRef<InboxDelivery[]>([]);
     const claimedCredentialRef = useRef<VC | undefined>(undefined);
 
     const { track } = useAnalytics();
@@ -604,7 +612,19 @@ const ClaimFromRequest: React.FC = () => {
         handleRedirectTo: handleRedirectTo,
     });
 
-    const handleRequest = async (body: any = {}, credentialClaimCount?: number) => {
+    const handleRequest = async (
+        body: Record<string, unknown> = {},
+        credentialClaimCount?: number
+    ) => {
+        // Inbox credentials are finalized before the returned VCs are shown to the learner.
+        // Once the learner saves that batch locally, there is no server-side completion request
+        // left to make: posting an empty body would be interpreted as a new claim initiation and
+        // incorrectly return "No pending credentials found".
+        if (shouldCompleteInboxClaimLocally(vc_request_url, credentialClaimCount, body)) {
+            void handleAfterCredentialClaim();
+            return;
+        }
+
         setExchangeState({ state: ExchangeState.Loading });
         try {
             if (!vc_request_url) {
@@ -623,7 +643,7 @@ const ClaimFromRequest: React.FC = () => {
             if (!response.ok) throw new Error(`${response.status}`);
 
             const responseText = await response.text();
-            let responseData: any = {};
+            let responseData: VCAPIResponse = {};
             if (responseText) {
                 try {
                     responseData = JSON.parse(responseText);
@@ -666,6 +686,7 @@ const ClaimFromRequest: React.FC = () => {
                 // Server sent a Verifiable Presentation, usually containing a verifiableCredential object
             } else if (type === RequestResponseDataType.VerifiablePresentation) {
                 // Remember the (first) credential being claimed for post-claim routing.
+                inboxDeliveriesRef.current = responseData?.inboxDeliveries ?? [];
                 const vpCreds = data?.verifiableCredential;
                 claimedCredentialRef.current = Array.isArray(vpCreds) ? vpCreds[0] : vpCreds;
                 // Warm the destination category chunk while the user reviews the
@@ -762,6 +783,7 @@ const ClaimFromRequest: React.FC = () => {
             // nodes flip.
             const storeResult = await storeAndAddVCToWallet(credential, {
                 title: name,
+                inboxDeliveryId: getInboxDeliveryId(credential, inboxDeliveriesRef.current),
                 allowDuplicate: duplicateResolution.isDuplicate,
                 boostUri: claimInteractionBoostUri,
             });
@@ -849,6 +871,7 @@ const ClaimFromRequest: React.FC = () => {
                 return (
                     <ExchangeAcceptCredentials
                         verifiablePresentation={exchangeState.data}
+                        inboxDeliveries={inboxDeliveriesRef.current}
                         onAccept={handleRequest}
                         strategy={exchangeState.strategy}
                         requestDuplicateResolution={requestDuplicateResolution}

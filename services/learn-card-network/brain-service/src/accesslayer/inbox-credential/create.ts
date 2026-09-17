@@ -8,9 +8,15 @@ import { getInboxCredentialById } from './read';
 import { getContactMethodByValue } from '@accesslayer/contact-method/read';
 import { createContactMethod } from '@accesslayer/contact-method/create';
 import { ProfileType } from 'types/profile';
+import { encryptInboxCredential } from '@helpers/inbox-encryption.helpers';
+import { parseCredentialMeta } from '@helpers/credential-meta.helpers';
+
+export const DEFAULT_INBOX_EXPIRY_DAYS = 30;
 
 export const createInboxCredential = async (input: {
     credential: string;
+    /** Only set after the normal delivery helper has durably stored the credential. */
+    delivered?: boolean;
     isSigned: boolean;
     isAccepted?: boolean;
     recipient: ContactMethodQueryType;
@@ -24,16 +30,31 @@ export const createInboxCredential = async (input: {
     guardianEmail?: string;
     guardianStatus?: 'AWAITING_GUARDIAN' | 'GUARDIAN_APPROVED' | 'GUARDIAN_REJECTED';
 }): Promise<InboxCredentialType> => {
+    if (
+        input.expiresInDays !== undefined &&
+        (!Number.isInteger(input.expiresInDays) ||
+            input.expiresInDays < 1 ||
+            input.expiresInDays > 720)
+    ) {
+        throw new Error('expiresInDays must be an integer between 1 and 720');
+    }
 
     const id = uuid();
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + (input.expiresInDays ?? 30));
+    expiresAt.setDate(expiresAt.getDate() + (input.expiresInDays ?? DEFAULT_INBOX_EXPIRY_DAYS));
+    // Encrypt before persisting so the credential itself is not stored in plaintext in the inbox.
+    const encryptedCredential = input.delivered
+        ? undefined
+        : await encryptInboxCredential(input.credential);
+    const credentialMeta = input.delivered ? {} : parseCredentialMeta(input.credential);
 
     const inboxCredentialData = {
         id,
-        credential: input.credential,
+        credential: encryptedCredential,
+        ...credentialMeta,
         isSigned: input.isSigned,
-        currentStatus: 'PENDING' as const,
+        currentStatus: input.delivered ? ('ISSUED' as const) : ('PENDING' as const),
+        ...(input.delivered ? { finalizedAt: new Date().toISOString() } : {}),
         isAccepted: input.isAccepted ?? false,
         expiresAt: expiresAt.toISOString(),
         createdAt: new Date().toISOString(),
@@ -42,11 +63,15 @@ export const createInboxCredential = async (input: {
         boostUri: input.boostUri,
         activityId: input.activityId,
         integrationId: input.integrationId,
-        ...(input.signingAuthority ? {
-            'signingAuthority.endpoint': input.signingAuthority.endpoint,
-            'signingAuthority.name': input.signingAuthority.name,
-            ...(input.signingAuthority.listingSlug ? { 'signingAuthority.listingSlug': input.signingAuthority.listingSlug } : {}),
-        } : {}),
+        ...(input.signingAuthority
+            ? {
+                  'signingAuthority.endpoint': input.signingAuthority.endpoint,
+                  'signingAuthority.name': input.signingAuthority.name,
+                  ...(input.signingAuthority.listingSlug
+                      ? { 'signingAuthority.listingSlug': input.signingAuthority.listingSlug }
+                      : {}),
+              }
+            : {}),
         ...(input.guardianEmail ? { guardianEmail: input.guardianEmail } : {}),
         ...(input.guardianStatus ? { guardianStatus: input.guardianStatus } : {}),
     };
@@ -62,22 +87,27 @@ export const createInboxCredential = async (input: {
         .set('inboxCredential += $params')
         .run();
 
-    const contactMethod = await getContactMethodByValue(input.recipient.type, input.recipient.value);
+    const contactMethod = await getContactMethodByValue(
+        input.recipient.type,
+        input.recipient.value
+    );
     if (!contactMethod) {
         await createContactMethod({
-                type: input.recipient.type,
-                value: input.recipient.value,
-                isVerified: false,
-                isPrimary: false,
-            });
-        }
+            type: input.recipient.type,
+            value: input.recipient.value,
+            isVerified: false,
+            isPrimary: false,
+        });
+    }
 
     // Create relationships SEQUENTIALLY to prevent deadlocks
     // (Parallel execution can cause deadlocks when multiple transactions
     // try to acquire locks on the same Profile node)
     const timestamp = new Date().toISOString();
 
-    await new QueryBuilder(new BindParam({ inboxId: id, profileId: input.issuerProfile.profileId, timestamp }))
+    await new QueryBuilder(
+        new BindParam({ inboxId: id, profileId: input.issuerProfile.profileId, timestamp })
+    )
         .match({ model: InboxCredential, identifier: 'ic' })
         .where('ic.id = $inboxId')
         .match('(profile:Profile)')
@@ -85,7 +115,14 @@ export const createInboxCredential = async (input: {
         .create('(profile)-[:CREATED_INBOX_CREDENTIAL { timestamp: $timestamp }]->(ic)')
         .run();
 
-    await new QueryBuilder(new BindParam({ inboxId: id, type: input.recipient.type, value: input.recipient.value, timestamp }))
+    await new QueryBuilder(
+        new BindParam({
+            inboxId: id,
+            type: input.recipient.type,
+            value: input.recipient.value,
+            timestamp,
+        })
+    )
         .match({ model: InboxCredential, identifier: 'ic' })
         .where('ic.id = $inboxId')
         .match('(contactMethod:ContactMethod)')

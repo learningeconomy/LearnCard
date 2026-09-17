@@ -1,6 +1,6 @@
 {
     "name": "@learncard/learn-cloud-service",
-    "version": "2.5.31",
+    "version": "2.5.33",
     "description": "",
     "engines": {
         "node": ">=24.12 <25"

@@ -57,24 +57,24 @@ import { useGetAiInsightsServicesContract } from '../../pages/ai-insights/learne
 import { Bell } from 'lucide-react';
 import GlassCard from '../../pages/privacy-settings/components/GlassCard';
 import { useTheme } from '../../theme/hooks/useTheme';
+import { useLocale } from '../../i18n';
 import * as m from '../../paraglide/messages.js';
 
-const StateValidator = z.object({
-    name: z
-        .string()
-        .nonempty(' Name is required.')
-        .min(3, ' Must contain at least 3 character(s).')
-        .max(30, ' Must contain at most 30 character(s).')
-        .regex(/^[A-Za-z0-9 ]+$/, ' Alpha numeric characters(s) only'),
-    dob: z
-        .string()
-        .nonempty(' Date of birth is required.')
-        .refine(dob => !Number.isNaN(calculateAge(dob)) && calculateAge(dob) >= 13, {
-            message: ' You must be at least 13 years old.',
-        }),
-});
-
-const DobValidator = StateValidator.pick({ dob: true });
+const getStateValidator = () =>
+    z.object({
+        name: z
+            .string()
+            .nonempty(m['arabicFixes.nameRequired']())
+            .min(3, ' Must contain at least 3 character(s).')
+            .max(30, ' Must contain at most 30 character(s).')
+            .regex(/^[A-Za-z0-9 ]+$/, ' Alpha numeric characters(s) only'),
+        dob: z
+            .string()
+            .nonempty(' Date of birth is required.')
+            .refine(dob => !Number.isNaN(calculateAge(dob)) && calculateAge(dob) >= 13, {
+                message: ' You must be at least 13 years old.',
+            }),
+    });
 
 const ChildDobValidator = z.object({
     dob: z.string().optional(),
@@ -118,7 +118,9 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
     const brandingConfig = useBrandingConfig();
     const { isDesktop } = useDeviceTypeByWidth();
     const { getColorSet } = useTheme();
+    const locale = useLocale();
     const primaryColor = getColorSet('defaults')?.primary || '#4f46e5';
+    const countryNames = new Intl.DisplayNames([locale], { type: 'region' });
 
     const [name, setName] = useState<string | null | undefined>(currentUser?.name ?? '');
     const [photo, setPhoto] = useState<string | null | undefined>(currentUser?.profileImage ?? '');
@@ -186,6 +188,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
     };
 
     const validate = () => {
+        const StateValidator = getStateValidator();
         let Schema;
         if (hasParentSwitchedProfile && lcNetworkProfile) {
             Schema = StateValidator.pick({ name: true }).merge(ChildDobValidator);
@@ -659,7 +662,10 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                                                         alt=""
                                                         className="w-[24px] h-[18px] object-cover rounded-sm shadow-sm"
                                                     />
-                                                    {(countries as Record<string, string>)[country]}
+                                                    {countryNames.of(country) ??
+                                                        (countries as Record<string, string>)[
+                                                            country
+                                                        ]}
                                                 </span>
                                             ) : (
                                                 <span

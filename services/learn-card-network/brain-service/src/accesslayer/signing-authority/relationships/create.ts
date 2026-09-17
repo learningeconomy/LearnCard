@@ -13,7 +13,7 @@ export const createUseSigningAuthorityRelationship = async (
         `MATCH (profile:Profile { profileId: $profileId })
          MATCH (signingAuthority:SigningAuthority { endpoint: $endpoint })
          MERGE (profile)-[rel:USES_SIGNING_AUTHORITY { name: $name, did: $did }]->(signingAuthority)
-         SET rel.isPrimary = $isPrimary`,
+         ON CREATE SET rel.isPrimary = $isPrimary`,
         { profileId: user.profileId, endpoint: signingAuthority.endpoint, name, did, isPrimary }
     );
 };

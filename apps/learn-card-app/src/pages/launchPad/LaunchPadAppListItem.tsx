@@ -84,7 +84,7 @@ const LaunchPadAppListItem: React.FC<LaunchPadAppListItemProps> = ({ app, filter
             className="w-full max-w-[600px] ion-no-border px-[12px] py-[12px] max-h-[76px] border-gray-200 border-b-2 last:border-b-0 flex  bg-white items-center justify-between notificaion-list-item overflow-visible rounded-[12px] mt-2 first:mt-4 shadow-sm"
         >
             <div className="flex items-center justify-start w-full bg-white-100">
-                <div className="rounded-lg w-[50px] h-[50px] mr-3 min-w-[50px] min-h-[50px]">
+                <div className="rounded-lg w-[50px] h-[50px] me-3 min-w-[50px] min-h-[50px]">
                     {safeImgUrl && (
                         <img
                             className="w-full h-full object-cover bg-white rounded-lg"
@@ -94,9 +94,11 @@ const LaunchPadAppListItem: React.FC<LaunchPadAppListItemProps> = ({ app, filter
                     )}
                 </div>
                 <div className="right-side flex justify-between w-full">
-                    <div className="flex flex-col items-start justify-center text-left">
-                        <p className="text-grayscale-900 font-medium line-clamp-1">{app?.name}</p>
-                        <p className="text-grayscale-600 font-medium text-[12px] line-clamp-2 pr-1">
+                    <div className="flex flex-1 min-w-0 flex-col items-start justify-center text-start">
+                        <p className="w-full text-grayscale-900 font-medium line-clamp-1">
+                            {app?.name}
+                        </p>
+                        <p className="w-full text-grayscale-600 font-medium text-[12px] line-clamp-2 pe-1">
                             {app?.description}
                         </p>
                     </div>

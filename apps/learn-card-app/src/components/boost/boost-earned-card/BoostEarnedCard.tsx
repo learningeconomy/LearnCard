@@ -1,6 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- legacy credential shapes and callback APIs are intentionally untyped. */
 import React from 'react';
 import moment from 'moment';
 import { ErrorBoundary } from 'react-error-boundary';
+import { getLocale } from '../../../paraglide/runtime.js';
 
 import { useLoadingLine } from '../../../stores/loadingStore';
 import useTheme from '../../../theme/hooks/useTheme';
@@ -47,6 +49,7 @@ import { getClrTranscriptKind, getClrTranscriptIssuerInfo } from '../../clr-tran
 
 import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 import {
+    getIssuanceDate,
     unwrapBoostCredential,
     isBoostCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
@@ -55,7 +58,7 @@ import { VC, VerificationItem } from '@learncard/types';
 import { LCR } from 'learn-card-base/types/credential-records';
 import { ID_CARD_DISPLAY_TYPES } from 'learn-card-base/helpers/credentials/ids';
 import { getDefaultDisplayType } from '../boostHelpers';
-import { useCredentialStatus } from 'src/hooks/useCredentialStatus';
+import { useCredentialStatus } from '../../../hooks/useCredentialStatus';
 import CredentialUpdatedIndicator from '../../credentials/credential-history/CredentialUpdatedIndicator';
 import { useMarkCredentialUpdateRead } from '../../credentials/credential-history/useMarkCredentialUpdateRead';
 
@@ -414,7 +417,14 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
         uppercaseDate: false,
     });
 
-    const issueDate = moment(createdAt).format('MMMM DD YYYY');
+    const createdAtDate = new Date(getIssuanceDate(cred) ?? '');
+    const issueDate = Number.isNaN(createdAtDate.getTime())
+        ? moment(createdAt).locale(getLocale()).format('MMMM DD YYYY')
+        : new Intl.DateTimeFormat(getLocale(), {
+              month: 'long',
+              day: '2-digit',
+              year: 'numeric',
+          }).format(createdAtDate);
 
     const isCardView = boostPageViewMode === BoostPageViewMode.Card;
 

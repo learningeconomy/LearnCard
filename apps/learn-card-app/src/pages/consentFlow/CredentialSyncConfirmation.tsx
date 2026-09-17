@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { useImmer } from 'use-immer';
 import { useHistory } from 'react-router-dom';
-import { getLogger } from 'learn-card-base';
-const log = getLogger('credential-sync-confirmation');
 
 import { useModal, useToast, ToastTypeEnum, useCurrentUser, ModalTypes } from 'learn-card-base';
 import { useGuardianGate } from '../../hooks/useGuardianGate';
@@ -43,7 +41,10 @@ const getSyncStateLabel = (state: SyncStateEnum): string => {
 
 export type CredentialSyncConfirmationProps = {
     contractDetails: ConsentFlowContractDetails;
-    handleAcceptContract: (terms?: ConsentFlowTerms) => Promise<void>;
+    handleAcceptContract: (
+        terms?: ConsentFlowTerms,
+        beforeSubmit?: () => Promise<void>
+    ) => Promise<void>;
 };
 
 const CredentialSyncConfirmation: React.FC<CredentialSyncConfirmationProps> = ({
@@ -54,7 +55,7 @@ const CredentialSyncConfirmation: React.FC<CredentialSyncConfirmationProps> = ({
     const { newModal, closeModal } = useModal();
     const { presentToast } = useToast();
 
-    const currentUser = useCurrentUser()!!!!!!!!!;
+    const currentUser = useCurrentUser()!;
 
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
@@ -71,23 +72,23 @@ const CredentialSyncConfirmation: React.FC<CredentialSyncConfirmationProps> = ({
     );
 
     const handleSync = async () => {
-        await guardedAction(async () => {
-            setSyncState(SyncStateEnum.syncing);
-            try {
-                await handleAcceptContract(terms);
+        try {
+            await guardedAction(async () => {
+                setSyncState(SyncStateEnum.syncing);
+                await handleAcceptContract(terms, () => guardedAction(() => {}));
                 setSyncState(SyncStateEnum.synced);
                 setTimeout(() => {
                     closeModal();
                     history.push('/wallet');
                 }, 500);
-            } catch (e) {
-                presentToast(`Something went wrong: ${e.message}`, {
-                    type: ToastTypeEnum.Error,
-                });
-                log.error(e);
-                setSyncState(SyncStateEnum.error);
-            }
-        });
+            });
+        } catch {
+            presentToast(m['error.generic'](), {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
+            setSyncState(SyncStateEnum.error);
+        }
     };
 
     const handleEditAccess = () => {
