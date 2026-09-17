@@ -35,6 +35,7 @@ import { QRCodeScannerStore } from 'learn-card-base';
 import Toast from 'learn-card-base/components/toast/Toast';
 import ModalAccessibilityManager from 'learn-card-base/components/modals/ModalAccessibilityManager';
 import { getConnectionPromptCopy } from './helpers/connectionPromptCopy';
+import SampleWalletPill from './components/learncard/checklist/SampleWalletPill';
 
 // Install `window.__pathwaysDev` at the app-root level rather than
 // waiting for the /pathways shell to mount. The dev-panel inspector
@@ -239,6 +240,7 @@ const FullApp: React.FC = () => {
                                         <FeedbackProvider>
                                             <AppRouter />
                                         </FeedbackProvider>
+                                        <SampleWalletPill />
                                         <InAppMessageHost />
                                         <QRCodeScannerListener />
 
