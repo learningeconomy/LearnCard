@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { getBundle, getFixture, isCredentialFixture, prepareFixture } from '../index';
+import { getBundle, getFixture, getFixtures, isCredentialFixture, prepareFixture } from '../index';
 
 const collectContexts = (value: unknown): string[] => {
     if (Array.isArray(value)) return value.flatMap(collectContexts);
@@ -63,7 +63,22 @@ describe('student credential bundle', () => {
                 false
             );
             expect(fixture.validator?.safeParse(credential).success ?? true).toBe(true);
+            if (credential.id?.startsWith('urn:uuid:')) {
+                expect(credential.id).toMatch(
+                    /^urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+                );
+            }
         }
+    });
+
+    it('advertises alignment only for fixtures that contain alignments', () => {
+        const alignedFixtureIds = getFixtures({ features: ['alignment'] }).map(
+            fixture => fixture.id
+        );
+
+        expect(alignedFixtureIds).toContain('obv3/student-civic-leadership');
+        expect(alignedFixtureIds).toContain('obv3/student-web-development');
+        expect(alignedFixtureIds).not.toContain('obv3/student-community-impact');
     });
 
     it('keeps the transcript linked to all three standalone achievements', () => {

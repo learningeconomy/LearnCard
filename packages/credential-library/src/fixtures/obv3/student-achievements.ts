@@ -8,6 +8,7 @@ const createStudentAchievementFixture = ({
     name,
     description,
     profile,
+    features,
     achievement,
     validFrom,
     credentialId,
@@ -16,6 +17,7 @@ const createStudentAchievementFixture = ({
     name: string;
     description: string;
     profile: CredentialFixture['profile'];
+    features: CredentialFixture['features'];
     achievement: (typeof STUDENT_ACHIEVEMENTS)[keyof typeof STUDENT_ACHIEVEMENTS];
     credentialId: string;
     validFrom: string;
@@ -25,7 +27,7 @@ const createStudentAchievementFixture = ({
     description,
     spec: 'obv3',
     profile,
-    features: ['image', 'alignment', 'skills', 'display'],
+    features,
     source: 'synthetic',
     signed: false,
     validity: 'valid',
@@ -55,6 +57,7 @@ export const obv3StudentCivicLeadership = createStudentAchievementFixture({
     name: 'Student Persona — Civic Leadership',
     description: 'A standards-pure OBv3 leadership badge for the Student sample persona.',
     profile: 'badge',
+    features: ['image', 'alignment', 'skills', 'display'],
     achievement: STUDENT_ACHIEVEMENTS.civicLeadership,
     credentialId: 'urn:uuid:10000000-0000-4000-8000-000000000001',
     validFrom: '2025-03-15T00:00:00Z',
@@ -65,6 +68,7 @@ export const obv3StudentWebDevelopment = createStudentAchievementFixture({
     name: 'Student Persona — Web Development Foundations',
     description: 'A standards-pure OBv3 course certificate for the Student sample persona.',
     profile: 'course',
+    features: ['image', 'alignment', 'skills', 'display'],
     achievement: STUDENT_ACHIEVEMENTS.webDevelopment,
     validFrom: '2025-05-28T00:00:00Z',
     credentialId: 'urn:uuid:10000000-0000-4000-8000-000000000002',
@@ -75,6 +79,7 @@ export const obv3StudentCommunityImpact = createStudentAchievementFixture({
     name: 'Student Persona — Community Impact Award',
     description: 'A standards-pure OBv3 community award for the Student sample persona.',
     profile: 'badge',
+    features: ['image', 'skills', 'display'],
     achievement: STUDENT_ACHIEVEMENTS.communityImpact,
     credentialId: 'urn:uuid:10000000-0000-4000-8000-000000000003',
     validFrom: '2025-06-10T00:00:00Z',
