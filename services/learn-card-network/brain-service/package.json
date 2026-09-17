@@ -17,6 +17,7 @@
         "test:integration:watch": "vitest --config vitest.integration.config.ts",
         "test:docker": "vitest run --config vitest.integration.config.ts",
         "seed:dev-app": "bun scripts/seed-dev-app.ts",
+        "seed:demo-persona": "bun scripts/seed-demo-persona.ts",
         "skill-frameworks": "bun scripts/skill-frameworks.ts",
         "build": "shx rm -rf dist && node bundle.mjs && tsc --p tsconfig.build.json && tsc --showConfig --p tsconfig.build.json > tsconfig.temp.json && tsc-alias --replacer ./tsc-alias-replacer.cjs -p tsconfig.temp.json && shx rm tsconfig.temp.json",
         "typecheck": "tsc --noEmit -p tsconfig.build.json && tsc --noEmit -p tsconfig.entrypoints.json",

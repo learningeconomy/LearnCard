@@ -29,6 +29,25 @@ Deploy this producer before an AI Passport consumer that requires the new guardi
 - **Default environment**: if you omit the stage, the command defaults to `local` and prints a note.
 - **Production safety**: the manual seed command still refuses to run in production unless `--force` is provided.
 
+## Sample persona seeding
+
+Sample personas are defined as ordered credential-library bundles. Publish one as an
+idempotent consent-flow contract from this service directory:
+
+```bash
+bun scripts/seed-demo-persona.ts student
+```
+
+When the active environment points at the local Docker databases, no extra arguments
+are needed. If an existing `.env` points elsewhere, override `NEO4J_URI`, the Neo4j
+credentials, `MONGO_URI`, `MONGO_DB_NAME`, and `DOMAIN_NAME` for the intended stack.
+For staging or production, also supply `DEMO_PERSONA_SA_SEED` and
+`DEMO_PERSONA_SIGNING_AUTHORITY_ENDPOINT`. The command updates the signed Demo School
+Boost templates and auto-boost relationships in place, then prints the stable contract
+URI to record in that tenant's `features.samplePersonas`. Running it again publishes
+credential-library content changes without duplicating profiles, Boosts, signing
+authorities, or contracts.
+
 ## Notes
 
 - The default fixture is idempotent by framework and skill ID, so running the seed command multiple times does not duplicate data.
