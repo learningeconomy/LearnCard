@@ -27,12 +27,25 @@ export const createAuthSubjectIndexes = async (): Promise<void> => {
     await collection.createIndex({ identityKey: 1 }, { unique: true });
 };
 
+let authSubjectIndexesReady: Promise<void> | undefined;
+
+/** Create the indexes once per process (startup in Docker, first login in Lambda). */
+export const ensureAuthSubjectIndexes = (): Promise<void> => {
+    if (!authSubjectIndexesReady) {
+        authSubjectIndexesReady = createAuthSubjectIndexes().catch(error => {
+            authSubjectIndexesReady = undefined;
+            console.error('Unable to create AuthSubject indexes:', error);
+        });
+    }
+    return authSubjectIndexesReady;
+};
+
 /** Persist a random, permanent subject independently of Firebase and UserKey. */
 export const getOrCreateAuthSubject = async (
     identityKey: string,
     attrs: AuthSubjectAttributes
 ): Promise<MongoAuthSubjectType> => {
-    await createAuthSubjectIndexes();
+    await ensureAuthSubjectIndexes();
     const now = new Date();
     const fields: Partial<MongoAuthSubjectType> = {
         lastLoginAt: now,

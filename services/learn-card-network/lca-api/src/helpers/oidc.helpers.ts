@@ -60,9 +60,15 @@ let cachedKey: OidcSigningKey | undefined;
 let cachedKeyMaterial: string | undefined;
 let ephemeralDevJwk: JWK | undefined;
 
-/** True when the service is running as a real production deployment. */
+/**
+ * True when the service is running as a real deployment. `serverless.yml` does
+ * not set `NODE_ENV`, but it always sets `LAMBDA_STAGE`, so either signal counts;
+ * an ephemeral per-container key would otherwise be minted on every cold start.
+ */
 const isProduction = (): boolean =>
-    environment.NODE_ENV === 'production' && !environment.IS_OFFLINE && !environment.IS_E2E_TEST;
+    (environment.NODE_ENV === 'production' || Boolean(environment.LAMBDA_STAGE)) &&
+    !environment.IS_OFFLINE &&
+    !environment.IS_E2E_TEST;
 
 /**
  * Resolve the RSA private JWK for the signing key.
@@ -190,7 +196,7 @@ export const getOidcRedirectUris = (): string[] => {
     const explicit = splitCsv(environment.OIDC_REDIRECT_URIS);
     if (explicit.length > 0) return explicit;
     return splitCsv(environment.KEYCLOAK_ISSUERS).map(
-        issuer => `${issuer}/broker/lca-api/endpoint`
+        issuer => `${issuer.replace(/\/+$/, '')}/broker/lca-api/endpoint`
     );
 };
 

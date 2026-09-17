@@ -6,6 +6,7 @@ import { issueLoginTicket, redeemLoginTicket } from '../src/cache/login-tickets'
 const { env, entries } = vi.hoisted(() => ({
     env: {
         NODE_ENV: 'test',
+        LAMBDA_STAGE: '',
         IS_OFFLINE: false,
         IS_E2E_TEST: false,
         OIDC_ISSUER: 'https://issuer.test',
@@ -70,17 +71,25 @@ const code = async (): Promise<string> => {
     const response = await authorize({ login_hint: await ticket() });
     return new URL(response.headers.location!).searchParams.get('code')!;
 };
-const exchange = (value: string, overrides: Record<string, string> = {}, basic = false) =>
+type BasicMode = false | 'encoded' | 'raw';
+const basicHeader = (mode: Exclude<BasicMode, false>): string => {
+    const pair =
+        mode === 'raw'
+            ? `${env.OIDC_CLIENT_ID}:${env.OIDC_CLIENT_SECRET}`
+            : `${encodeURIComponent(env.OIDC_CLIENT_ID)}:${encodeURIComponent(env.OIDC_CLIENT_SECRET)}`;
+    return `Basic ${Buffer.from(pair).toString('base64')}`;
+};
+const exchange = (
+    value: string,
+    overrides: Record<string, string> = {},
+    basic: BasicMode = false
+) =>
     app.inject({
         method: 'POST',
         url: '/oidc/token',
         headers: {
             'content-type': 'application/x-www-form-urlencoded',
-            ...(basic
-                ? {
-                      authorization: `Basic ${Buffer.from(`${encodeURIComponent(env.OIDC_CLIENT_ID)}:${encodeURIComponent(env.OIDC_CLIENT_SECRET)}`).toString('base64')}`,
-                  }
-                : {}),
+            ...(basic ? { authorization: basicHeader(basic) } : {}),
         },
         payload: new URLSearchParams({
             grant_type: 'authorization_code',
@@ -105,6 +114,7 @@ beforeEach(() => {
     entries.clear();
     Object.assign(env, {
         NODE_ENV: 'test',
+        LAMBDA_STAGE: '',
         IS_OFFLINE: false,
         IS_E2E_TEST: false,
         OIDC_ISSUER: 'https://issuer.test',
@@ -164,6 +174,11 @@ describe('OIDC provider', () => {
         expect((await authorize()).statusCode).toBe(400);
         expect((await authorize({ redirect_uri: env.OIDC_REDIRECT_URIS })).statusCode).toBe(302);
     });
+    it('tolerates trailing slashes on KEYCLOAK_ISSUERS when deriving the broker callback', async () => {
+        env.KEYCLOAK_ISSUERS = 'https://kc.test/realms/test//';
+        expect((await authorize()).statusCode).toBe(302);
+        expect((await authorize({ redirect_uri: `${redirectUri}/` })).statusCode).toBe(400);
+    });
     it.each(['', 'invalid-ticket'])(
         'returns login_required for missing/invalid ticket %s',
         async login_hint => {
@@ -199,7 +214,7 @@ describe('OIDC provider', () => {
         const response = await authorize(overrides);
         expect(new URL(response.headers.location!).searchParams.get('error')).toBe(error);
     });
-    it.each([true, false])(
+    it.each<BasicMode>(['encoded', 'raw', false])(
         'exchanges a code using Basic=%s and verifies RS256 through served JWKS',
         async basic => {
             const response = await exchange(await code(), {}, basic);
@@ -234,7 +249,35 @@ describe('OIDC provider', () => {
     );
     it('URL-decodes Basic client credentials', async () => {
         env.OIDC_CLIENT_SECRET = 'a+b:c %';
-        expect((await exchange(await code(), {}, true)).statusCode).toBe(200);
+        expect((await exchange(await code(), {}, 'encoded')).statusCode).toBe(200);
+    });
+    it('accepts raw (Keycloak-style) Basic credentials containing + and %', async () => {
+        env.OIDC_CLIENT_SECRET = 'a+b%zz:c%20d/=';
+        expect((await exchange(await code(), {}, 'raw')).statusCode).toBe(200);
+    });
+    it('matches an ambiguous Basic secret against both its raw and decoded forms', async () => {
+        const header = `Basic ${Buffer.from(`${env.OIDC_CLIENT_ID}:a%20b`).toString('base64')}`;
+        const exchangeWithHeader = async () =>
+            app.inject({
+                method: 'POST',
+                url: '/oidc/token',
+                headers: {
+                    'content-type': 'application/x-www-form-urlencoded',
+                    authorization: header,
+                },
+                payload: new URLSearchParams({
+                    grant_type: 'authorization_code',
+                    code: await code(),
+                    redirect_uri: redirectUri,
+                }).toString(),
+            });
+
+        env.OIDC_CLIENT_SECRET = 'a%20b';
+        expect((await exchangeWithHeader()).statusCode).toBe(200);
+        env.OIDC_CLIENT_SECRET = 'a b';
+        expect((await exchangeWithHeader()).statusCode).toBe(200);
+        env.OIDC_CLIENT_SECRET = 'other';
+        expect((await exchangeWithHeader()).statusCode).toBe(401);
     });
     it('rejects a wrong client secret', async () => {
         const response = await exchange(await code(), { client_secret: 'wrong' });
@@ -303,11 +346,18 @@ describe('OIDC provider', () => {
         expect(response.statusCode).toBe(503);
         expect(response.json()).toEqual({ error: 'server_error' });
     });
-    it('fails closed without a production signing key', async () => {
-        env.NODE_ENV = 'production';
-        env.OIDC_SIGNING_KEY_JWK = '';
+    it.each([
+        { NODE_ENV: 'production', LAMBDA_STAGE: '' },
+        { NODE_ENV: 'development', LAMBDA_STAGE: 'dev' },
+        { NODE_ENV: 'development', LAMBDA_STAGE: 'prod' },
+    ])('fails closed without a signing key when deployed (%j)', async overrides => {
+        Object.assign(env, overrides, { OIDC_SIGNING_KEY_JWK: '' });
         expect((await app.inject('/oidc/jwks')).statusCode).toBe(503);
         expect((await exchange('x')).statusCode).toBe(503);
+    });
+    it('still generates an ephemeral key under serverless-offline with LAMBDA_STAGE set', async () => {
+        Object.assign(env, { LAMBDA_STAGE: 'dev', IS_OFFLINE: true, OIDC_SIGNING_KEY_JWK: '' });
+        expect((await app.inject('/oidc/jwks')).statusCode).toBe(200);
     });
     it('fails closed without client secret', async () => {
         env.OIDC_CLIENT_SECRET = '';

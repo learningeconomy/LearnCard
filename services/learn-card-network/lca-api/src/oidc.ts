@@ -47,6 +47,53 @@ const appendParams = (redirectUri: string, params: Record<string, string>): stri
     return url.toString();
 };
 
+interface ClientCredentials {
+    clientId: string;
+    clientSecret: string;
+}
+
+const tryFormUrlDecode = (value: string): string | undefined => {
+    try {
+        return decodeURIComponent(value.replace(/\+/g, ' '));
+    } catch {
+        return undefined;
+    }
+};
+
+/**
+ * Candidate credentials from an HTTP Basic header, raw form first.
+ *
+ * RFC 6749 §2.3.1 says the client id/secret are form-url-encoded before being
+ * base64'd, but Keycloak's broker (`SimpleHttp.authBasic`) sends them raw. A
+ * secret containing `+` or `%` would otherwise be mangled by decoding, so the
+ * raw pair is tried first and the decoded pair only as a fallback.
+ */
+const parseBasicCredentials = (authorization: string): ClientCredentials[] => {
+    if (!/^Basic /i.test(authorization)) return [];
+
+    const decoded = Buffer.from(authorization.slice(6), 'base64').toString('utf8');
+    const separator = decoded.indexOf(':');
+    if (separator < 0) return [];
+
+    const raw: ClientCredentials = {
+        clientId: decoded.slice(0, separator),
+        clientSecret: decoded.slice(separator + 1),
+    };
+    const candidates = [raw];
+
+    const formClientId = tryFormUrlDecode(raw.clientId);
+    const formClientSecret = tryFormUrlDecode(raw.clientSecret);
+    if (
+        formClientId !== undefined &&
+        formClientSecret !== undefined &&
+        (formClientId !== raw.clientId || formClientSecret !== raw.clientSecret)
+    ) {
+        candidates.push({ clientId: formClientId, clientSecret: formClientSecret });
+    }
+
+    return candidates;
+};
+
 export const oidcFastifyPlugin: FastifyPluginAsync = async fastify => {
     await fastify.register(formbody);
     fastify.addHook('onRequest', async (_request, reply) => {
@@ -55,11 +102,13 @@ export const oidcFastifyPlugin: FastifyPluginAsync = async fastify => {
         try {
             getOidcIssuer();
             await getOidcJwks();
-        } catch {
+        } catch (error) {
+            console.error('OIDC provider is not configured:', error);
             return reply.status(503).send({ error: 'server_error' });
         }
     });
-    fastify.setErrorHandler((_error, _request, reply) => {
+    fastify.setErrorHandler((error, request, reply) => {
+        console.error(`OIDC request failed (${request.method} ${request.url}):`, error);
         return reply.status(500).send({ error: 'server_error' });
     });
 
@@ -133,42 +182,24 @@ export const oidcFastifyPlugin: FastifyPluginAsync = async fastify => {
         }
         const body = (request.body ?? {}) as Record<string, string | undefined>;
 
-        let clientId = body.client_id;
-        let clientSecret = body.client_secret;
-
         const authorization = request.headers.authorization;
+        let candidates: ClientCredentials[] = [];
         if (authorization) {
-            clientId = undefined;
-            clientSecret = undefined;
-            try {
-                if (/^Basic /i.test(authorization)) {
-                    const decoded = Buffer.from(authorization.slice(6), 'base64').toString('utf8');
-                    const separator = decoded.indexOf(':');
-                    if (separator >= 0) {
-                        clientId = decodeURIComponent(
-                            decoded.slice(0, separator).replace(/\+/g, ' ')
-                        );
-                        clientSecret = decodeURIComponent(
-                            decoded.slice(separator + 1).replace(/\+/g, ' ')
-                        );
-                    }
-                }
-            } catch {
-                clientId = undefined;
-                clientSecret = undefined;
-            }
+            candidates = parseBasicCredentials(authorization);
+        } else if (typeof body.client_id === 'string' && typeof body.client_secret === 'string') {
+            candidates = [{ clientId: body.client_id, clientSecret: body.client_secret }];
         }
 
-        if (
-            typeof clientId !== 'string' ||
-            typeof clientSecret !== 'string' ||
-            !verifyOidcClientCredentials(clientId, clientSecret)
-        ) {
+        const authenticated = candidates.find(credentials =>
+            verifyOidcClientCredentials(credentials.clientId, credentials.clientSecret)
+        );
+        if (!authenticated) {
             return reply
                 .header('WWW-Authenticate', 'Basic realm="oidc"')
                 .status(401)
                 .send({ error: 'invalid_client' });
         }
+        const clientId = authenticated.clientId;
 
         if (body.grant_type !== 'authorization_code') {
             return reply.status(400).send({ error: 'unsupported_grant_type' });

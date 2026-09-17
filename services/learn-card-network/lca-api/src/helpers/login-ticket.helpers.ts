@@ -21,6 +21,7 @@
 import crypto from 'node:crypto';
 
 import cache from '@cache';
+import { getDel } from '@cache/getDel';
 
 export const AUTH_CODE_PREFIX = 'oidc-code:';
 export const ACCESS_TOKEN_PREFIX = 'oidc:access:';
@@ -58,16 +59,6 @@ const accessKey = (accessToken: string): string => `${ACCESS_TOKEN_PREFIX}${acce
 export const generateAuthorizationCode = (): string => crypto.randomBytes(32).toString('base64url');
 export const generateAccessToken = (): string => crypto.randomBytes(32).toString('base64url');
 
-/**
- * Atomically read-and-delete a value so it can only ever be consumed once.
- * Redis `GETDEL` is a single atomic command, so concurrent redemptions can only
- * return the value to exactly one caller — closing the read-then-delete race.
- */
-const getDelete = async (key: string): Promise<string | null> => {
-    const redis = cache.redis ?? cache.node;
-    return redis.getdel(key);
-};
-
 export const storeAuthorizationCode = async (
     data: AuthorizationCodeData,
     ttl = AUTH_CODE_TTL_SECONDS
@@ -78,7 +69,7 @@ export const storeAuthorizationCode = async (
 export const consumeAuthorizationCode = async (
     code: string
 ): Promise<AuthorizationCodeData | null> => {
-    const raw = await getDelete(codeKey(code));
+    const raw = await getDel(codeKey(code));
     if (!raw) return null;
     return JSON.parse(raw) as AuthorizationCodeData;
 };
