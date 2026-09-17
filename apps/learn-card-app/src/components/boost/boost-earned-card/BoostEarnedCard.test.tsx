@@ -11,6 +11,8 @@ type CardWrapperProps = {
 
 type PreviewProps = {
     onDotsClick?: () => void;
+    credential?: VC;
+    boostUri?: string;
 };
 
 const mocks = vi.hoisted(() => ({
@@ -19,6 +21,7 @@ const mocks = vi.hoisted(() => ({
     isBoostCredential: vi.fn(),
     boostPreview: vi.fn(() => null),
     nonBoostPreview: vi.fn(() => null),
+    unwrapBoostCredential: vi.fn(),
     resetIonicModalBackground: vi.fn(),
 }));
 
@@ -87,7 +90,7 @@ vi.mock('../hooks/useBoostMenu', () => ({
 }));
 vi.mock('../../../hooks/useCredentialStatus', () => ({ useCredentialStatus: () => undefined }));
 vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
-    unwrapBoostCredential: (credential: VC) => credential,
+    unwrapBoostCredential: mocks.unwrapBoostCredential,
     isBoostCredential: mocks.isBoostCredential,
     getClrLinkedCredentials: () => [],
     getIssuanceDate: (credential?: VC) => credential?.issuanceDate,
@@ -153,6 +156,7 @@ describe('BoostEarnedCard', () => {
         mocks.boostPreview.mockClear();
         mocks.nonBoostPreview.mockClear();
         mocks.resetIonicModalBackground.mockClear();
+        mocks.unwrapBoostCredential.mockImplementation(value => value);
     });
 
     it('does not expose card options while the credential is loading', () => {
@@ -245,5 +249,35 @@ describe('BoostEarnedCard', () => {
         expect(mocks.newModal).toHaveBeenCalledOnce();
         const preview = mocks.newModal.mock.calls[0]?.[0] as React.ReactElement | undefined;
         expect(preview?.type).toBe(mocks.boostPreview);
+    });
+
+    it('keeps the resolved wrapper and record URI in the earned ID preview', () => {
+        const innerCredential = {
+            ...credential,
+            id: undefined,
+        } as unknown as VC;
+        const wrapperCredential = {
+            ...credential,
+            type: ['VerifiableCredential', 'CertifiedBoostCredential'],
+            boostCredential: innerCredential,
+        } as unknown as VC;
+        mocks.unwrapBoostCredential.mockReturnValue(innerCredential);
+
+        render(
+            <BoostEarnedCard
+                credential={wrapperCredential}
+                record={{ uri: 'urn:credential:id-record' }}
+                categoryType="ID"
+                useWrapper={false}
+            />
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Open credential' }));
+
+        const preview = mocks.newModal.mock.calls[0]?.[0] as
+            React.ReactElement<PreviewProps> | undefined;
+        expect(preview?.type).toBe(mocks.boostPreview);
+        expect(preview?.props.credential).toBe(wrapperCredential);
+        expect(preview?.props.boostUri).toBe('urn:credential:id-record');
     });
 });
