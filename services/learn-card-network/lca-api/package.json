@@ -50,6 +50,7 @@
     "dependencies": {
         "@fastify/cors": "^11.2.0",
         "@fastify/formbody": "^8.0.2",
+        "@fastify/rate-limit": "^10.2.0",
         "@fastify/static": "^10.1.1",
         "@learncard/core": "workspace:*",
         "@learncard/email-templates": "workspace:*",

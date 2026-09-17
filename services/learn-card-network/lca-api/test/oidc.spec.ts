@@ -1,6 +1,7 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import Fastify, { type FastifyInstance } from 'fastify';
 import { createLocalJWKSet, exportJWK, generateKeyPair, jwtVerify } from 'jose';
-import { app } from '../src/oidc';
+import { oidcFastifyPlugin } from '../src/oidc';
 import { issueLoginTicket, redeemLoginTicket } from '../src/cache/login-tickets';
 
 const { env, entries } = vi.hoisted(() => ({
@@ -57,6 +58,9 @@ vi.mock('@cache', () => {
 
 const redirectUri = 'https://kc.test/realms/test/broker/lca-api/endpoint';
 let privateJwk: string;
+// A fresh instance per test: @fastify/rate-limit keeps its in-memory counters
+// on the instance for the whole time window, which would otherwise leak across tests.
+let app: FastifyInstance;
 const authorize = (overrides: Record<string, string> = {}, headers: Record<string, string> = {}) =>
     app.inject({
         method: 'GET',
@@ -127,8 +131,11 @@ beforeAll(async () => {
         alg: 'RS256',
     });
 });
-beforeEach(() => {
+beforeEach(async () => {
     entries.clear();
+    app = Fastify();
+    await app.register(oidcFastifyPlugin);
+    await app.ready();
     Object.assign(env, {
         NODE_ENV: 'test',
         LAMBDA_STAGE: '',
@@ -142,7 +149,7 @@ beforeEach(() => {
         KEYCLOAK_ISSUERS: 'https://kc.test/realms/test',
     });
 });
-afterAll(async () => {
+afterEach(async () => {
     await app.close();
 });
 
@@ -477,6 +484,47 @@ describe('OIDC provider', () => {
             const entry = entries.get('oidc-rl:token:127.0.0.1')!;
             expect(entry.expires).toBeGreaterThanOrEqual(before + 600_000);
             expect(entry.expires).toBeLessThan(before + 601_000);
+        });
+    });
+
+    describe('@fastify/rate-limit request ceiling', () => {
+        it('caps /oidc/token at 60 requests per minute per IP regardless of outcome', async () => {
+            for (let index = 0; index < 60; index++) {
+                const response = await exchange('x', { grant_type: 'password' });
+                expect(response.statusCode).toBe(400);
+                expect(response.headers['x-ratelimit-limit']).toBe('60');
+            }
+            const limited = await exchange('x', { grant_type: 'password' });
+            expect(limited.statusCode).toBe(429);
+            expect(limited.json()).toEqual({ error: 'temporarily_unavailable' });
+            expect(Number(limited.headers['retry-after'])).toBeGreaterThan(0);
+            expect([...entries.keys()].filter(key => key.startsWith('oidc-rl:'))).toEqual([]);
+
+            expect(
+                (
+                    await exchange('x', { grant_type: 'password' }, false, {
+                        'x-forwarded-for': '203.0.113.7',
+                    })
+                ).statusCode
+            ).toBe(400);
+        });
+
+        it('caps /oidc/authorize at 60 requests per minute per IP', async () => {
+            for (let index = 0; index < 60; index++) {
+                expect((await authorize({ response_type: 'token' })).statusCode).toBe(302);
+            }
+            const limited = await authorize({ login_hint: await ticket() });
+            expect(limited.statusCode).toBe(429);
+            expect(limited.headers.location).toBeUndefined();
+        });
+
+        it('leaves discovery and JWKS on the generous global ceiling', async () => {
+            for (let index = 0; index < 61; index++) {
+                expect((await app.inject('/oidc/jwks')).statusCode).toBe(200);
+            }
+            const response = await app.inject('/.well-known/openid-configuration');
+            expect(response.statusCode).toBe(200);
+            expect(response.headers['x-ratelimit-limit']).toBe('300');
         });
     });
 });
