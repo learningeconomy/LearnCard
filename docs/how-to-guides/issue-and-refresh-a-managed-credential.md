@@ -351,6 +351,15 @@ Before publishing: `Up to date: Provisional Transcript`. After: `Updated to vers
 
 `refreshCredential` verifies the credential you hold, contacts the service once, verifies what comes back (valid proof, same issuer, same ID, not older than what you have), and returns it. It never writes to storage; where the new version goes is your wallet's decision. It also refuses to talk to non-HTTPS or private-network addresses unless you opt in for local development.
 
+The LearnCard app's development server handles local testing automatically when both the
+app and its configured Brain service use loopback addresses (`localhost`, `127.0.0.1`, or
+`[::1]`). It trusts that configured network for Boost verification and permits HTTP refresh
+requests only to that backend's origin, with redirects disabled. Signature, issuer, holder,
+and credential identity checks still run. No extra flag or custom Vite configuration is needed.
+Set `VITE_CREDENTIAL_REFRESH_LOCAL_QA=false` to opt out. These local exceptions are always
+disabled in production and staging builds, even if the flag is set to `true`; standalone SDK
+clients retain their existing explicit opt-in behavior.
+
 ## Troubleshooting
 
 | You see                                                  | Why                                                                         | Fix                                                                                         |
