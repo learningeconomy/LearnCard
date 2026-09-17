@@ -27,7 +27,7 @@ import {
     getFixture,
     prepareFixture,
     type CredentialBundleEntry,
-} from '../../../../packages/credential-library/src';
+} from '@learncard/credential-library/source';
 import type { UnsignedVC } from '@learncard/types';
 import { flattenObject } from '../src/helpers/objects.helpers';
 
@@ -217,6 +217,7 @@ const main = async (): Promise<void> => {
             const boost = toBoostTemplate(credential, issuerDid);
             boostIds.push(boostId);
             const boostProperties = flattenObject({
+                id: boostId,
                 boost,
                 name: entry.name ?? fixture.name,
                 type: fixture.profile,
@@ -227,7 +228,7 @@ const main = async (): Promise<void> => {
 
             await run(
                 `MERGE (b:Boost {id: $boostId})
-                 SET b += $properties
+                 SET b = $properties
                  WITH b
                  MATCH (p:Profile {profileId: $profileId})
                  MERGE (b)-[created:CREATED_BY]->(p)
@@ -274,8 +275,9 @@ const main = async (): Promise<void> => {
         await run(
             `MERGE (c:ConsentFlowContract {id: $contractId})
              ON CREATE SET c.createdAt = $createdAt
-             SET c += $properties,
-                 c.updatedAt = $updatedAt
+             WITH c, c.createdAt AS createdAt
+             SET c = $properties,
+                 c.createdAt = createdAt
              WITH c
              MATCH (p:Profile {profileId: $profileId})
              MERGE (c)-[:CREATED_BY]->(p)
@@ -283,7 +285,6 @@ const main = async (): Promise<void> => {
             {
                 contractId,
                 createdAt: now,
-                updatedAt: now,
                 profileId,
                 properties: contractProperties,
             }
