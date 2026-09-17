@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
     search: vi.fn(),
-    frameworkIds: ['framework-1', 'framework-2'],
+    frameworkIds: ['framework-1'],
 }));
 
 vi.mock('../../../helpers/globalSkillFrameworks.helpers', () => ({
@@ -65,9 +65,15 @@ const creativeThinkingRecord = {
 describe('SkillBrowserModal search', () => {
     beforeEach(() => {
         vi.useFakeTimers();
-        mocks.search.mockImplementation((text: string) => ({
+        mocks.frameworkIds = ['framework-1'];
+        mocks.search.mockImplementation((text: string, frameworkIds: string[]) => ({
             data: text.trim()
-                ? { records: text === 'missing' ? [] : [creativeThinkingRecord] }
+                ? {
+                      records:
+                          text !== 'missing' && frameworkIds.includes('framework-2')
+                              ? [creativeThinkingRecord]
+                              : [],
+                  }
                 : undefined,
             isLoading: false,
         }));
@@ -78,20 +84,37 @@ describe('SkillBrowserModal search', () => {
         vi.clearAllMocks();
     });
 
-    it('maps an API skill statement into a selectable issuer search result', () => {
+    it('updates an open browser when all global frameworks finish loading', () => {
         const onAddSkill = vi.fn();
-        render(
+        const onRemoveSkill = vi.fn();
+        const handleCloseModal = vi.fn();
+        const { rerender } = render(
             <SkillBrowserModal
                 selectedSkills={[]}
                 onAddSkill={onAddSkill}
-                onRemoveSkill={vi.fn()}
-                handleCloseModal={vi.fn()}
+                onRemoveSkill={onRemoveSkill}
+                handleCloseModal={handleCloseModal}
             />
         );
 
         const searchInput = screen.getByPlaceholderText('Search skills');
         fireEvent.change(searchInput, { target: { value: 'Creative Thinking' } });
         act(() => vi.advanceTimersByTime(300));
+
+        expect(mocks.search).toHaveBeenLastCalledWith('Creative Thinking', ['framework-1'], {
+            limit: 24,
+        });
+        expect(screen.queryByRole('button', { name: /Creative Thinking/ })).not.toBeInTheDocument();
+
+        mocks.frameworkIds = ['framework-1', 'framework-2'];
+        rerender(
+            <SkillBrowserModal
+                selectedSkills={[]}
+                onAddSkill={onAddSkill}
+                onRemoveSkill={onRemoveSkill}
+                handleCloseModal={handleCloseModal}
+            />
+        );
 
         expect(mocks.search).toHaveBeenLastCalledWith(
             'Creative Thinking',
