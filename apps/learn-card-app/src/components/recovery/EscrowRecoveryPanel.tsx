@@ -7,6 +7,10 @@ import {
     shieldCheckmarkOutline,
 } from 'ionicons/icons';
 import type { KeyDerivationStrategy } from '@learncard/types';
+import {
+    EscrowHoldRestartThrottledError,
+    type EscrowRecoveryStart,
+} from '@learncard/sss-key-manager';
 import { escrowPinMismatchMessage } from '@learncard/types';
 import {
     clearPendingEscrowRecovery,
@@ -36,7 +40,7 @@ export interface EscrowRecoveryPanelProps {
     available: boolean;
     pinAvailable?: boolean;
     canResumeCompleted?: () => boolean;
-    onStart: () => ReturnType<NonNullable<KeyDerivationStrategy['startEscrowRecovery']>>;
+    onStart: (options?: { restart?: boolean }) => Promise<EscrowRecoveryStart>;
     onStatus: (proof: {
         holdId: string;
         resumeToken: string;
@@ -59,6 +63,15 @@ export const EscrowRecoveryPanel = ({
 }: EscrowRecoveryPanelProps) => {
     const active = useRef(true);
     const [pending, setPending] = useState<PendingEscrowRecovery>();
+    const [existingHold, setExistingHold] = useState<{
+        holdId: string;
+        requestedAt: string;
+        releaseAfter: string;
+    } | null>(null);
+    const [restartError, setRestartError] = useState<{
+        message: string;
+        retryAfter?: string;
+    } | null>(null);
     const [loaded, setLoaded] = useState(false);
     const [loadAttempt, setLoadAttempt] = useState(0);
     const [saved, setSaved] = useState(true);
@@ -68,6 +81,33 @@ export const EscrowRecoveryPanel = ({
     const [notice, setNotice] = useState('');
     const [now, setNow] = useState(Date.now());
     const storageAvailable = isEscrowRecoveryStorageAvailable();
+
+    const handleStarted = async (result: EscrowRecoveryStart) => {
+        if (!result.resumeToken) {
+            if (!active.current) return;
+            setExistingHold({
+                holdId: result.holdId,
+                requestedAt: result.requestedAt,
+                releaseAfter: result.releaseAfter,
+            });
+            return;
+        }
+        const record = {
+            holdId: result.holdId,
+            resumeToken: result.resumeToken,
+            clientEphemeralPrivateKey: result.clientEphemeralPrivateKey,
+            releaseAfter: result.releaseAfter,
+            requestedAt: result.requestedAt,
+        };
+        if (active.current) {
+            setPending(record);
+            setSaved(false);
+            setExistingHold(null);
+        }
+        await savePendingEscrowRecovery(record, scope);
+        if (!active.current) return;
+        setSaved(true);
+    };
 
     const [showPinFlow, setShowPinFlow] = useState(pinAvailable);
     const [pinInput, setPinInput] = useState('');
@@ -214,6 +254,105 @@ export const EscrowRecoveryPanel = ({
                     {notice}
                 </p>
             )}
+
+            {existingHold && !pending && (
+                <div className="space-y-5 animate-fade-in-up">
+                    <div className="rounded-2xl border border-grayscale-200 bg-white p-5 space-y-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-amber-50 text-amber-600">
+                                <IonIcon icon={timeOutline} className="text-xl" />
+                            </div>
+                            <div>
+                                <h3 className="text-base font-semibold text-grayscale-900">
+                                    A recovery request is already waiting
+                                </h3>
+                                <p className="text-sm text-grayscale-600">
+                                    Started{' '}
+                                    {new Intl.DateTimeFormat(undefined, {
+                                        dateStyle: 'medium',
+                                        timeStyle: 'short',
+                                    }).format(new Date(existingHold.requestedAt))}{' '}
+                                    · ready{' '}
+                                    {new Intl.DateTimeFormat(undefined, {
+                                        dateStyle: 'medium',
+                                        timeStyle: 'short',
+                                    }).format(new Date(existingHold.releaseAfter))}
+                                </p>
+                            </div>
+                        </div>
+
+                        <p className="text-xs text-grayscale-500">
+                            To finish, return to the browser where you started it. If you're signed
+                            in elsewhere, you can cancel it there.
+                        </p>
+
+                        <hr className="border-grayscale-200" />
+
+                        <div className="space-y-1">
+                            <p className="text-sm font-medium text-grayscale-900">
+                                Lost that browser?
+                            </p>
+                            <p className="text-xs text-grayscale-600">
+                                You can start over. This restarts the 7-day wait and replaces the
+                                earlier request.
+                            </p>
+                        </div>
+
+                        {restartError && (
+                            <div className="p-3 bg-amber-50 border border-amber-100 rounded-2xl flex items-start gap-2.5">
+                                <IonIcon
+                                    icon={alertCircleOutline}
+                                    className="text-amber-500 text-lg mt-0.5 shrink-0"
+                                />
+                                <span className="text-sm text-amber-800 leading-relaxed">
+                                    {restartError.retryAfter
+                                        ? `A request was started recently. You can start over after ${new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(restartError.retryAfter))}.`
+                                        : 'A request was started recently. Please try again later.'}
+                                </span>
+                            </div>
+                        )}
+
+                        <button
+                            className="w-full py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                            disabled={loading}
+                            onClick={() => {
+                                void run(async () => {
+                                    setRestartError(null);
+                                    try {
+                                        const result = await onStart({ restart: true });
+                                        await handleStarted(result);
+                                    } catch (cause) {
+                                        if (cause instanceof EscrowHoldRestartThrottledError) {
+                                            setRestartError({
+                                                message: 'A request was started recently.',
+                                                retryAfter: cause.retryAfter,
+                                            });
+                                            return;
+                                        }
+                                        throw cause;
+                                    }
+                                });
+                            }}
+                        >
+                            {loading ? spinner('Starting over...') : 'Start over'}
+                        </button>
+                    </div>
+
+                    <div className="flex justify-center">
+                        <button
+                            className="text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors disabled:opacity-50"
+                            disabled={loading}
+                            onClick={() => {
+                                setExistingHold(null);
+                                setRestartError(null);
+                            }}
+                        >
+                            Back
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {!loaded && error && (
                 <button className={button} onClick={() => setLoadAttempt(attempt => attempt + 1)}>
                     Try Again
@@ -413,7 +552,8 @@ export const EscrowRecoveryPanel = ({
                           </div>
                       );
                   })()
-                : available && (
+                : available &&
+                  !existingHold && (
                       <>
                           {showPinFlow ? (
                               <div className="space-y-4">
@@ -483,28 +623,7 @@ export const EscrowRecoveryPanel = ({
                                       onClick={() =>
                                           void run(async () => {
                                               const result = await onStart();
-                                              if (!result.resumeToken) {
-                                                  if (!active.current) return;
-                                                  setNotice(
-                                                      'A recovery request is already waiting. Continue on the device where you started it, or cancel it from a signed-in device.'
-                                                  );
-                                                  return;
-                                              }
-                                              const record = {
-                                                  holdId: result.holdId,
-                                                  resumeToken: result.resumeToken,
-                                                  clientEphemeralPrivateKey:
-                                                      result.clientEphemeralPrivateKey,
-                                                  releaseAfter: result.releaseAfter,
-                                                  requestedAt: result.requestedAt,
-                                              };
-                                              if (active.current) {
-                                                  setPending(record);
-                                                  setSaved(false);
-                                              }
-                                              await savePendingEscrowRecovery(record, scope);
-                                              if (!active.current) return;
-                                              setSaved(true);
+                                              await handleStarted(result);
                                           })
                                       }
                                   >

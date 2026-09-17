@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { EscrowHoldRestartThrottledError } from '@learncard/sss-key-manager';
 import { EscrowRecoveryPanel, formatTimeRemaining } from './EscrowRecoveryPanel';
 
 vi.mock('./escrowRecoveryStorage', () => ({
@@ -145,6 +146,156 @@ describe('EscrowRecoveryPanel', () => {
                 screen.getByText('Too many attempts. You can still recover by waiting 7 days.')
             ).toBeInTheDocument();
             expect(screen.getByText('Start a 7-day recovery')).toBeInTheDocument();
+        });
+    });
+
+    it('shows existing request card when onStart returns null resumeToken', async () => {
+        const requestedAt = new Date().toISOString();
+        const releaseAfter = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+        mockOnStart.mockResolvedValueOnce({
+            holdId: 'hold-123',
+            resumeToken: null,
+            requestedAt,
+            releaseAfter,
+        });
+
+        render(
+            <EscrowRecoveryPanel
+                available
+                onStart={mockOnStart}
+                onStatus={mockOnStatus}
+                onRecover={mockOnRecover}
+            />
+        );
+
+        await waitFor(() => expect(screen.getByText('Start a 7-day recovery')).not.toBeDisabled());
+        fireEvent.click(screen.getByText('Start a 7-day recovery'));
+        expect(mockOnStart).toHaveBeenCalled();
+
+        await waitFor(() => {
+            expect(screen.getByText('A recovery request is already waiting')).toBeInTheDocument();
+        });
+
+        expect(screen.getByText(/Started .* · ready .*/)).toBeInTheDocument();
+        expect(screen.getByText('Lost that browser?')).toBeInTheDocument();
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument(); // No error banner
+    });
+
+    it('calls onStart with restart: true when clicking Start over', async () => {
+        const requestedAt = new Date().toISOString();
+        const releaseAfter = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+        mockOnStart.mockResolvedValueOnce({
+            holdId: 'hold-123',
+            resumeToken: null,
+            requestedAt,
+            releaseAfter,
+        });
+
+        render(
+            <EscrowRecoveryPanel
+                available
+                onStart={mockOnStart}
+                onStatus={mockOnStatus}
+                onRecover={mockOnRecover}
+            />
+        );
+
+        await waitFor(() => expect(screen.getByText('Start a 7-day recovery')).not.toBeDisabled());
+        fireEvent.click(screen.getByText('Start a 7-day recovery'));
+
+        await waitFor(() => {
+            expect(screen.getByText('Start over')).toBeInTheDocument();
+        });
+
+        mockOnStart.mockResolvedValueOnce({
+            holdId: 'hold-456',
+            resumeToken: 'token-456',
+            clientEphemeralPrivateKey: 'key-456',
+            requestedAt,
+            releaseAfter,
+        });
+
+        fireEvent.click(screen.getByText('Start over'));
+
+        await waitFor(() => {
+            expect(mockOnStart).toHaveBeenCalledWith({ restart: true });
+            expect(screen.getByText('Recovery in progress')).toBeInTheDocument();
+        });
+    });
+
+    it('shows amber callout on throttled error', async () => {
+        const requestedAt = new Date().toISOString();
+        const releaseAfter = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+        mockOnStart.mockResolvedValueOnce({
+            holdId: 'hold-123',
+            resumeToken: null,
+            requestedAt,
+            releaseAfter,
+        });
+
+        render(
+            <EscrowRecoveryPanel
+                available
+                onStart={mockOnStart}
+                onStatus={mockOnStatus}
+                onRecover={mockOnRecover}
+            />
+        );
+
+        await waitFor(() => expect(screen.getByText('Start a 7-day recovery')).not.toBeDisabled());
+        fireEvent.click(screen.getByText('Start a 7-day recovery'));
+
+        await waitFor(() => {
+            expect(screen.getByText('Start over')).toBeInTheDocument();
+        });
+
+        const error = new EscrowHoldRestartThrottledError(
+            new Date(Date.now() + 60 * 1000).toISOString()
+        );
+        mockOnStart.mockRejectedValueOnce(error);
+
+        fireEvent.click(screen.getByText('Start over'));
+
+        await waitFor(() => {
+            expect(
+                screen.getByText(/A request was started recently. You can start over after/)
+            ).toBeInTheDocument();
+        });
+    });
+
+    it('returns to start state when clicking Back', async () => {
+        const requestedAt = new Date().toISOString();
+        const releaseAfter = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+        mockOnStart.mockResolvedValueOnce({
+            holdId: 'hold-123',
+            resumeToken: null,
+            requestedAt,
+            releaseAfter,
+        });
+
+        render(
+            <EscrowRecoveryPanel
+                available
+                onStart={mockOnStart}
+                onStatus={mockOnStatus}
+                onRecover={mockOnRecover}
+            />
+        );
+
+        await waitFor(() => expect(screen.getByText('Start a 7-day recovery')).not.toBeDisabled());
+        fireEvent.click(screen.getByText('Start a 7-day recovery'));
+
+        await waitFor(() => {
+            expect(screen.getByText('Back')).toBeInTheDocument();
+        });
+
+        fireEvent.click(screen.getByText('Back'));
+
+        await waitFor(() => {
+            expect(screen.getByText('Start a 7-day recovery')).toBeInTheDocument();
+            expect(
+                screen.queryByText('A recovery request is already waiting')
+            ).not.toBeInTheDocument();
         });
     });
 
