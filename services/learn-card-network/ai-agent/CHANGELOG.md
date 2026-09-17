@@ -1,5 +1,11 @@
 # @learncard/ai-agent-service
 
+## 0.0.4
+
+### Patch Changes
+
+- [#1583](https://github.com/learningeconomy/LearnCard/pull/1583) [`3c3ae45d8f8bdb315d8f433f9040fdc72c9b491b`](https://github.com/learningeconomy/LearnCard/commit/3c3ae45d8f8bdb315d8f433f9040fdc72c9b491b) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Wait for the exact native DIDKit package and Linux binding to be published and loadable before deploying Trigger tasks, preventing production releases from racing the separate native-package publishing workflow. Keep workspace development exports scoped to bundling so the deployed Node worker loads compiled native-package JavaScript instead of raw TypeScript.
+
 ## 0.0.3
 
 ### Patch Changes
