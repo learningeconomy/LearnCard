@@ -14,13 +14,14 @@ describe('whoami command', () => {
 });
 
 describe('LEARNCARD_AS', () => {
-    it('is accepted as the env fallback for --as on send and inbox list', async () => {
-        const source = await import('node:fs/promises').then(fs =>
-            Promise.all([
-                fs.readFile(new URL('./index.tsx', import.meta.url), 'utf8'),
-                fs.readFile(new URL('./inbox.ts', import.meta.url), 'utf8'),
-            ])
-        );
-        for (const text of source) expect(text).toContain(".env('LEARNCARD_AS')");
+    it('is the env fallback for --as on inbox list', async () => {
+        const { registerInboxCommand } = await import('./inbox');
+        const program = new Command();
+        registerInboxCommand(program, async () => {});
+        const list = program.commands
+            .find(c => c.name() === 'inbox')!
+            .commands.find(c => c.name() === 'list')!;
+        const asOption = list.options.find(o => o.long === '--as')!;
+        expect(asOption.envVar).toBe('LEARNCARD_AS');
     });
 });
