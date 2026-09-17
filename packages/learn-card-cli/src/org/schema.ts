@@ -37,15 +37,59 @@ const signingAuthoritySchema = z.discriminatedUnion('type', [
     selfHostedSigningAuthoritySchema,
 ]);
 
+const hexColorSchema = z.string().regex(/^#[0-9a-fA-F]{6}$/, 'must be a hex color like #18224E');
+
+const imageUrlSchema = z.string().superRefine((value, ctx) => {
+    if (/^https:\/\//.test(value)) return;
+    ctx.addIssue({
+        code: 'custom',
+        message: /^(\.{1,2}\/|\/|[a-zA-Z]:\\)/.test(value)
+            ? 'local files are not uploaded yet — host the image and use its https:// URL'
+            : 'must be an https:// URL',
+    });
+});
+
+const displaySchema = z
+    .object({
+        backgroundColor: hexColorSchema.optional(),
+        backgroundImage: imageUrlSchema.optional(),
+        fadeBackgroundImage: z.boolean().optional(),
+        repeatBackgroundImage: z.boolean().optional(),
+        fontColor: hexColorSchema.optional(),
+        accentColor: hexColorSchema.optional(),
+        accentFontColor: hexColorSchema.optional(),
+        idBackgroundImage: imageUrlSchema.optional(),
+        fadeIdBackgroundImage: z.boolean().optional(),
+        idBackgroundColor: hexColorSchema.optional(),
+        repeatIdBackgroundImage: z.boolean().optional(),
+    })
+    .strict();
+
+export const brandingSchema = z
+    .object({
+        image: imageUrlSchema.optional(),
+        heroImage: imageUrlSchema.optional(),
+        shortBio: z.string().max(280, 'must be at most 280 characters').optional(),
+        bio: z.string().optional(),
+        websiteLink: z.string().url('must be a valid URL').optional(),
+        type: z.enum(['organization', 'service', 'person']).optional(),
+        display: displaySchema.optional(),
+    })
+    .strict();
+
+export type OrgBranding = z.infer<typeof brandingSchema>;
+
 const issuerSchema = z.object({
     profileId: profileIdSchema,
     displayName: displayNameSchema,
+    branding: brandingSchema.optional(),
     signingAuthority: signingAuthoritySchema,
 });
 
 const managedProfileSchema = z.object({
     profileId: profileIdSchema,
     displayName: displayNameSchema,
+    branding: brandingSchema.optional(),
 });
 
 const profileManagerSchema = z.object({

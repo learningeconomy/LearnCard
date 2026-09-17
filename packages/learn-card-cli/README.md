@@ -255,12 +255,17 @@ See `@learncard/holder-continuity` `BUNDLE_SPEC.md` for the ZIP layout and manif
 npx @learncard/cli org apply ./org.yaml
 ```
 
-Reconciles a declarative YAML/JSON spec (issuer profile, signing authority, districts/managed profiles, service-account tokens) against the network. Idempotent — re-running with the same file makes no changes. Use `--dry-run` to preview, and `--secrets-out ./secrets.env` to save any newly created service-account tokens (required the first time a `serviceAccounts` entry is created; each is written as `NAME=token` with the account name upper-cased and hyphens replaced by underscores, e.g. `EA_CLR_ISSUER=…`). Webhooks are not registered on the network — LearnCard calls `configuration.webhookUrl` per issuance — so the first `webhooks[].url` is saved as `WEBHOOK_URL` in `.env` for `doctor` and your issuer code to default to. See `examples/example-pilot.network.yaml` for a full example.
+Reconciles a declarative YAML/JSON spec (issuer profile, signing authority, districts/managed profiles, service-account tokens) against the network. Idempotent — re-running with the same file makes no changes. Use `--dry-run` to preview, and `--secrets-out ./secrets.env` to save any newly created service-account tokens (required the first time a `serviceAccounts` entry is created; each is written as `NAME=token` with the account name upper-cased and hyphens replaced by underscores, e.g. `EA_CLR_ISSUER=…`). `branding` (on the issuer and on each managed profile) sets the profile image, hero image, bios, website, type, and wallet display colours; it is diffed field-by-field, so re-running only sends what changed and `display` colours are merged, never wiped. Images must be https URLs for now — host them and paste the link. Webhooks are not registered on the network — LearnCard calls `configuration.webhookUrl` per issuance — so the first `webhooks[].url` is saved as `WEBHOOK_URL` in `.env` for `doctor` and your issuer code to default to. See `examples/example-pilot.network.yaml` for a full example.
 
 ```yaml
 issuer:
     profileId: scde
     displayName: South Carolina Department of Education
+    branding:
+        image: https://cdn.example.org/scde-logo.png
+        shortBio: State education agency.
+        websiteLink: https://ed.sc.gov
+        display: { backgroundColor: '#18224E', accentColor: '#2E7D32' }
     signingAuthority: { type: learncard-hosted, name: scde-clr }
 profileManager:
     displayName: SC Districts

@@ -1,6 +1,14 @@
 issuer:
     profileId: exde
     displayName: Example Department of Education
+    branding:
+        image: https://cdn.example.org/exde-logo.png
+        shortBio: State education agency for Example.
+        websiteLink: https://ed.example.gov
+        type: organization
+        display:
+            backgroundColor: '#18224E'
+            accentColor: '#2E7D32'
     signingAuthority:
         type: learncard-hosted
         name: exde-clr
@@ -10,6 +18,9 @@ profileManager:
     managed:
         - profileId: cs-exampleville
           displayName: Exampleville County Schools
+          branding:
+              websiteLink: https://exampleville.k12.example
+              display: { accentColor: '#B45309' }
 
 serviceAccounts:
     - name: ex-clr-issuer
