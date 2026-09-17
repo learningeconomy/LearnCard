@@ -156,7 +156,9 @@ const SamplePersonaBoxContent: React.FC<SamplePersonaBoxProps> = ({ variant = 'c
                     {isRemoving
                         ? removalStatus === 'deleting'
                             ? m['passport.buildMyLearnCard.samplePersona.deleting']()
-                            : m['passport.buildMyLearnCard.samplePersona.disconnecting']()
+                            : removalStatus === 'disconnecting'
+                              ? m['passport.buildMyLearnCard.samplePersona.disconnecting']()
+                              : m['passport.buildMyLearnCard.samplePersona.checking']()
                         : m['passport.buildMyLearnCard.samplePersona.removeAction']()}
                 </button>
             ) : personas.length === 1 ? (

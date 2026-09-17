@@ -298,6 +298,8 @@ describe('SamplePersonaBox', () => {
         render(<SamplePersonaBox />);
 
         expect(screen.getByRole('heading', { name: 'Sample LearnCard' })).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: 'Disconnecting...' })).toBeDisabled();
+        expect(
+            screen.getByRole('button', { name: 'Checking sample credentials...' })
+        ).toBeDisabled();
     });
 });
