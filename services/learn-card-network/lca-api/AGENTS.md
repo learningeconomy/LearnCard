@@ -65,9 +65,16 @@ The `keysRouter` implements the server side of Shamir Secret Sharing key managem
 `auth.requestLoginTicket` and `auth.requestSocialLoginTicket` prove ownership in-app and issue 60-second single-use tickets.
 `src/oidc.ts` serves discovery, JWKS, authorize, token and userinfo in Docker and Lambda; no CORS or duplicate tRPC endpoints.
 Subjects are random permanent UUIDs in `AuthSubject`, keyed by normalized email or Google/Apple subject (never auto-linked by email).
-Require `OIDC_ISSUER`, an exact redirect allowlist, and a token client secret; production additionally requires an RSA private `OIDC_SIGNING_KEY_JWK`.
+Require `OIDC_ISSUER`, an exact redirect allowlist, and a token client secret; any deployed stage (`NODE_ENV=production` or `LAMBDA_STAGE` set) additionally requires an RSA private `OIDC_SIGNING_KEY_JWK`.
+Login codes, tickets and authorization codes are consumed with `getDel` (`src/cache/getDel.ts`, Redis `GETDEL`, requires Redis >= 6.2).
+Rate limits count **failed** attempts only: 5 per email and a 50-per-IP backstop, both over 10 minutes.
 Unit coverage is in `test/oidc.spec.ts` and `test/auth-tickets.spec.ts`; broker import coverage is gated by `KEYCLOAK_INTEGRATION`.
 Phone OTP and the complete live broker round-trip remain deferred; see the migration plan AD-2/AD-10.
+
+### Keycloak broker gotchas
+
+- **Client secret encoding.** Keycloak's broker sends `client_secret_basic` credentials **raw** (not form-url-encoded, contrary to RFC 6749 §2.3.1). `/oidc/token` therefore compares the raw pair first and only falls back to the URL-decoded pair. Secrets containing `+` or `%` are fine.
+- **Phase 2 migration must create the federated identity link.** The realm uses the default `first broker login` flow with `trustEmail: true`. If the migration script pre-creates a Keycloak user by email **without** also creating the `lca-api` federated identity link (`sub` = the `AuthSubject.subject` UUID), the user's first silent hop stops on Keycloak's "Handle Existing Account" web page ("User with email X already exists. How do you want to continue?"), which breaks the no-web-form guarantee. Pre-seed `AuthSubject` and the Keycloak `federatedIdentities` entry together.
 
 ## Email Delivery & Tenant Branding
 

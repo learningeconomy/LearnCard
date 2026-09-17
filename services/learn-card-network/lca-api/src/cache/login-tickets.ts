@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import cache from '@cache';
+import { getDel } from '@cache/getDel';
 
 export interface LoginTicketPayload {
     subject: string;
@@ -19,7 +20,6 @@ export const issueLoginTicket = async (payload: LoginTicketPayload): Promise<str
 };
 
 export const redeemLoginTicket = async (ticket: string): Promise<LoginTicketPayload | null> => {
-    const redis = cache.redis ?? cache.node;
-    const raw = await redis.getdel(`login-ticket:${ticket}`);
+    const raw = await getDel(`login-ticket:${ticket}`);
     return raw ? (JSON.parse(raw) as LoginTicketPayload) : null;
 };

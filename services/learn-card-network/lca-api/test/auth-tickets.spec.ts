@@ -1,15 +1,15 @@
 import { resolveTenantFromRequest } from '@learncard/email-templates';
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT, type JWTPayload } from 'jose';
 import { authRouter } from '../src/routes/auth';
 import { setSocialJwksResolverForTests } from '../src/helpers/social-token.helpers';
 import type { MongoAuthSubjectType } from '../src/models/AuthSubject';
 
-const { env, store, subjects, rates } = vi.hoisted(() => ({
+const { env, store, subjects, mongo } = vi.hoisted(() => ({
     env: { GOOGLE_OAUTH_CLIENT_IDS: 'google-client', APPLE_OAUTH_CLIENT_IDS: 'apple-client' },
     store: new Map<string, string>(),
     subjects: new Map<string, MongoAuthSubjectType>(),
-    rates: new Map<string, number>(),
+    mongo: { failNextUpsert: false },
 }));
 vi.mock('@environment', () => ({ environment: env }));
 vi.mock('@routes', async () => {
@@ -29,6 +29,10 @@ vi.mock('@mongo', () => ({
                         $set: Partial<MongoAuthSubjectType>;
                     }
                 ) => {
+                    if (mongo.failNextUpsert) {
+                        mongo.failNextUpsert = false;
+                        throw new Error('mongo unavailable');
+                    }
                     const record = {
                         ...(subjects.get(filter.identityKey) ?? update.$setOnInsert),
                         ...update.$set,
@@ -50,9 +54,14 @@ vi.mock('@cache', () => ({
             keys.forEach(key => store.delete(key));
         },
         node: {
+            getdel: async (key: string) => {
+                const value = store.get(key) ?? null;
+                store.delete(key);
+                return value;
+            },
             incr: async (key: string) => {
-                const count = (rates.get(key) ?? 0) + 1;
-                rates.set(key, count);
+                const count = (Number(store.get(key)) || 0) + 1;
+                store.set(key, String(count));
                 return count;
             },
             expire: vi.fn(async () => 1),
@@ -95,9 +104,13 @@ beforeAll(async () => {
 beforeEach(() => {
     store.clear();
     subjects.clear();
-    rates.clear();
+    mongo.failNextUpsert = false;
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
     env.GOOGLE_OAUTH_CLIENT_IDS = 'google-client';
     env.APPLE_OAUTH_CLIENT_IDS = 'apple-client';
+});
+afterEach(() => {
+    vi.restoreAllMocks();
 });
 
 describe('auth login tickets', () => {
@@ -207,19 +220,91 @@ describe('auth login tickets', () => {
         );
         expect(first.subject).not.toBe(second.subject);
     });
-    it.each(['email', 'social'])('rate limits the %s endpoint per IP', async provider => {
-        for (let index = 0; index < 10; index++) {
-            if (provider === 'email') await emailLogin();
-            else
-                await caller().requestSocialLoginTicket({
-                    provider: 'google',
-                    idToken: await sign(),
-                });
-        }
-        const attempt =
-            provider === 'email'
-                ? emailLogin()
-                : caller().requestSocialLoginTicket({ provider: 'google', idToken: await sign() });
-        await expect(attempt).rejects.toMatchObject({ code: 'TOO_MANY_REQUESTS' });
+    it('returns a distinct server error and logs when ticket issuance fails after the code is consumed', async () => {
+        mongo.failNextUpsert = true;
+        const result = await emailLogin();
+        expect(result).toEqual({
+            success: false,
+            error: 'Something went wrong. Please request a new code.',
+        });
+        expect(store.has('login-code:test@example.com:123456')).toBe(false);
+        expect(console.error).toHaveBeenCalledWith(
+            'Error issuing login ticket after consuming code:',
+            expect.any(Error)
+        );
+        expect(store.get('oidc:rate:email:test@example.com')).toBeUndefined();
+    });
+    it('does not log expected user errors', async () => {
+        await caller().requestLoginTicket({ email: 'test@example.com', code: '000000' });
+        await caller().requestSocialLoginTicket({
+            provider: 'google',
+            idToken: await sign({ aud: 'wrong' }),
+        });
+        expect(console.error).not.toHaveBeenCalled();
+    });
+
+    describe('rate limiting', () => {
+        const failEmail = (email = 'test@example.com') =>
+            caller().requestLoginTicket({ email, code: '000000' });
+        const failSocial = async () =>
+            caller().requestSocialLoginTicket({
+                provider: 'google',
+                idToken: await sign({ aud: 'wrong' }),
+            });
+
+        it('does not count successful logins against the per-IP limit', async () => {
+            for (let index = 0; index < 60; index++) {
+                expect((await emailLogin(`user${index}@example.com`)).success).toBe(true);
+            }
+            expect(store.get('oidc:rate:email-login-ticket:test-ip')).toBeUndefined();
+        });
+        it('limits failed email attempts per email to 5 per window', async () => {
+            for (let index = 0; index < 5; index++) {
+                expect((await failEmail()).success).toBe(false);
+            }
+            await expect(emailLogin()).rejects.toMatchObject({ code: 'TOO_MANY_REQUESTS' });
+            expect(store.has('login-code:test@example.com:123456')).toBe(true);
+            expect((await emailLogin('other@example.com')).success).toBe(true);
+        });
+        it('keys the per-email limit on the normalized address', async () => {
+            for (let index = 0; index < 5; index++) await failEmail(' Test@Example.com ');
+            await expect(failEmail('test@example.com')).rejects.toMatchObject({
+                code: 'TOO_MANY_REQUESTS',
+            });
+        });
+        it('backstops failed email attempts per IP at 50 across distinct emails', async () => {
+            for (let index = 0; index < 50; index++) {
+                expect((await failEmail(`user${index}@example.com`)).success).toBe(false);
+            }
+            await expect(emailLogin('fresh@example.com')).rejects.toMatchObject({
+                code: 'TOO_MANY_REQUESTS',
+            });
+        });
+        it('backstops failed social attempts per IP at 50 and ignores successes', async () => {
+            for (let index = 0; index < 5; index++) {
+                expect(
+                    (
+                        await caller().requestSocialLoginTicket({
+                            provider: 'google',
+                            idToken: await sign(),
+                        })
+                    ).success
+                ).toBe(true);
+            }
+            for (let index = 0; index < 50; index++) {
+                expect((await failSocial()).success).toBe(false);
+            }
+            await expect(failSocial()).rejects.toMatchObject({ code: 'TOO_MANY_REQUESTS' });
+            expect(store.get('oidc:rate:social-login-ticket:test-ip')).toBe('50');
+        });
+        it('sets the window TTL on the first failure only', async () => {
+            const expire = (await import('@cache')).default.node.expire as ReturnType<typeof vi.fn>;
+            expire.mockClear();
+            await failEmail();
+            await failEmail();
+            expect(expire).toHaveBeenCalledTimes(2);
+            expect(expire).toHaveBeenCalledWith('oidc:rate:email-login-ticket:test-ip', 600);
+            expect(expire).toHaveBeenCalledWith('oidc:rate:email:test@example.com', 600);
+        });
     });
 });
