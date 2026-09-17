@@ -20,7 +20,8 @@ vi.mock('@capacitor/core', () => ({
     Capacitor: { isNativePlatform: () => false },
 }));
 
-vi.mock('@learncard/sss-key-manager', () => ({
+vi.mock('@learncard/sss-key-manager', async importOriginal => ({
+    ...(await importOriginal<typeof import('@learncard/sss-key-manager')>()),
     isWebAuthnSupported: () => true,
 }));
 
