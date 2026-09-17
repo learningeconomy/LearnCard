@@ -10,7 +10,7 @@ import {
     IssueInboxCredentialValidator,
     IssueInboxCredentialBatchItemResultValidator,
 } from '@learncard/types';
-import { environment } from '@environment';
+import { getInboxBatchRuntimeEnvironment } from '@environment';
 import type { Context } from '@routes';
 import type { ProfileType } from 'types/profile';
 import cache from '@cache';
@@ -89,10 +89,12 @@ export const issueInboxBatch = async (
     batch: IssueInboxCredentialBatch,
     ctx: Context
 ): Promise<IssueInboxCredentialBatchResponse> => {
+    const runtimeEnvironment = getInboxBatchRuntimeEnvironment();
     // A per-process fallback cannot enforce cross-instance quotas or idempotency. Failing closed
     // is safer than issuing twice when independent Lambda instances receive the same retry.
     if (
-        (environment.NODE_ENV === 'production' || environment.AWS_LAMBDA_FUNCTION_NAME) &&
+        (runtimeEnvironment.NODE_ENV === 'production' ||
+            runtimeEnvironment.AWS_LAMBDA_FUNCTION_NAME) &&
         !cache.redis
     )
         throw unavailable();
@@ -104,7 +106,7 @@ export const issueInboxBatch = async (
         });
     }
     const limit = positiveInteger(
-        environment.INBOX_BATCH_ITEMS_PER_HOUR,
+        runtimeEnvironment.INBOX_BATCH_ITEMS_PER_HOUR,
         INBOX_BATCH_ITEMS_PER_HOUR
     );
     await enforceRateLimits([
@@ -251,7 +253,10 @@ export const issueInboxBatch = async (
             {
                 length: Math.min(
                     batch.items.length,
-                    positiveInteger(environment.INBOX_BATCH_CONCURRENCY, INBOX_BATCH_CONCURRENCY)
+                    positiveInteger(
+                        runtimeEnvironment.INBOX_BATCH_CONCURRENCY,
+                        INBOX_BATCH_CONCURRENCY
+                    )
                 ),
             },
             worker

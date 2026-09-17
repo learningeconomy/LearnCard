@@ -23,7 +23,14 @@ vi.mock('@cache', () => ({
         compareAndSet: mocks.compareAndSet,
     },
 }));
-vi.mock('@environment', () => ({ environment: { NODE_ENV: 'test' } }));
+vi.mock('@environment', () => ({
+    getInboxBatchRuntimeEnvironment: () => ({
+        NODE_ENV: 'test',
+        AWS_LAMBDA_FUNCTION_NAME: undefined,
+        INBOX_BATCH_CONCURRENCY: process.env.INBOX_BATCH_CONCURRENCY,
+        INBOX_BATCH_ITEMS_PER_HOUR: process.env.INBOX_BATCH_ITEMS_PER_HOUR,
+    }),
+}));
 vi.mock('./inbox.helpers', () => ({
     issueToInbox: mocks.issue,
     resolveInboxCredentialInput: mocks.resolve,

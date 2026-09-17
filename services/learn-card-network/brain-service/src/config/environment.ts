@@ -209,6 +209,23 @@ export const getCredentialRefreshRuntimeEnvironment = (): CredentialRefreshRunti
         examplePath: 'services/learn-card-network/brain-service/.env.example',
     });
 
+const inboxBatchRuntimeEnvironmentSchema = z.object({
+    NODE_ENV: brainServiceEnvironmentShape.NODE_ENV,
+    AWS_LAMBDA_FUNCTION_NAME: brainServiceEnvironmentShape.AWS_LAMBDA_FUNCTION_NAME,
+    INBOX_BATCH_CONCURRENCY: brainServiceEnvironmentShape.INBOX_BATCH_CONCURRENCY,
+    INBOX_BATCH_ITEMS_PER_HOUR: brainServiceEnvironmentShape.INBOX_BATCH_ITEMS_PER_HOUR,
+});
+
+export type InboxBatchRuntimeEnvironment = z.output<typeof inboxBatchRuntimeEnvironmentSchema>;
+
+/** Reads batch settings at call time so local invocations and tests can override them safely. */
+export const getInboxBatchRuntimeEnvironment = (): InboxBatchRuntimeEnvironment =>
+    parseEnvironment(inboxBatchRuntimeEnvironmentSchema, process.env, {
+        project: 'brain-service inbox batch',
+        source: 'process environment',
+        examplePath: 'services/learn-card-network/brain-service/.env.example',
+    });
+
 export type BrainServiceEnvironment = z.output<typeof brainServiceEnvironmentSchema>;
 
 export const parseBrainServiceEnvironment = (
