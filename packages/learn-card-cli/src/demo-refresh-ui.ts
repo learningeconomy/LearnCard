@@ -1,4 +1,4 @@
-const requireLoopbackUrl = (value: unknown, label: string): URL => {
+export const requireLoopbackUrl = (value: unknown, label: string): URL => {
     try {
         if (typeof value !== 'string') throw new Error();
         const url = new URL(value);
@@ -23,7 +23,7 @@ const requireLoopbackUrl = (value: unknown, label: string): URL => {
 export const getRefreshDemoUiConfig = async (
     appUrl: string,
     network: string
-): Promise<{ appOrigin: string; cloud: string; notificationsWebhook: string }> => {
+): Promise<{ appOrigin: string; cloud: string; lcaApi: string; notificationsWebhook: string }> => {
     const app = requireLoopbackUrl(appUrl, '--app-url');
     const backend = requireLoopbackUrl(network, '--network');
     let config;
@@ -56,5 +56,10 @@ export const getRefreshDemoUiConfig = async (
             'The local app’s notification API and notifications endpoint must use the same origin.'
         );
     }
-    return { appOrigin: app.origin, cloud: cloud.href, notificationsWebhook: notifications.href };
+    return {
+        appOrigin: app.origin,
+        cloud: cloud.href,
+        lcaApi: api.href,
+        notificationsWebhook: notifications.href,
+    };
 };

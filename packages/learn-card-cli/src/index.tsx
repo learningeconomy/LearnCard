@@ -446,15 +446,20 @@ program
     .description('Guided demonstrations using real LearnCard credentials.')
     .command('refresh')
     .description('Send a demo badge, publish an update, and refresh the recipient’s copy.')
+    .option('--inbox', 'use Universal Inbox deferred issuance for an address with no account')
     .option('--ui', 'claim and refresh in the local LearnCard app (interactive only)')
     .option('--app-url <url>', 'local LearnCard app URL for --ui (default: http://localhost:3000)')
+    .option(
+        '--lca-url <url>',
+        'local LCA URL for --inbox terminal mode (default: http://localhost:5100/trpc)'
+    )
     .option('-y, --yes', 'run all steps without pausing')
     .option('--network <url>', 'network tRPC URL or staging', 'http://localhost:4000/trpc')
     .option('--json', 'print a single JSON result on stdout (no pauses)')
     .action(options =>
         runCommand('demo refresh', options, async didkit => {
-            const { runRefreshDemo } = await import('./demo-refresh');
-            await runRefreshDemo({ ...options, didkit });
+            const { runDemoRefreshCommand } = await import('./demo-refresh-command');
+            await runDemoRefreshCommand({ ...options, didkit });
         })
     );
 

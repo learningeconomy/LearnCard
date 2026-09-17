@@ -376,6 +376,8 @@ clients retain their existing explicit opt-in behavior.
 
 Use this path when you know an email address or phone number but the recipient does not yet have a LearnCard account. A registered signing authority is required: the credential remains unsigned until the verified recipient claims it. Phone delivery retains the existing trusted-issuer requirement.
 
+For a guided, no-code walkthrough of this path, run `learncard demo refresh --inbox` (or `bun --cwd packages/learn-card-cli start demo refresh --inbox`). It creates a fresh issuer-owned signing authority, issues to a random `@example.com` address with delivery suppressed, publishes a final version before anyone claims, then either claims with a real DIDAuth presentation (terminal) or hands the claim link to the local app (`--inbox --ui`) and waits for the human to claim and refresh there. The terminal demo defaults to the local LCA at `http://localhost:5100/trpc` and accepts `--lca-url` for another local stack; the UI demo reads the LCA service from the app's `tenant-config.json`. See the CLI README for the exact stages and what to look for.
+
 ```javascript
 const template = {
     '@context': ['https://www.w3.org/ns/credentials/v2'],

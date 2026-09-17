@@ -29,6 +29,7 @@ describe('UI demo preflight', () => {
         ).toEqual({
             appOrigin: 'http://localhost:3001',
             cloud: apis.cloudService,
+            lcaApi: apis.lcaApi,
             notificationsWebhook: apis.notificationsEndpoint,
         });
         expect(fetch.mock.calls[0][0].href).toBe('http://localhost:3001/tenant-config.json');

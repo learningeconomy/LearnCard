@@ -97,6 +97,68 @@ config's `apis.lcaApi` to `http://localhost:5200/trpc` and `apis.notificationsEn
 to `http://localhost:5200/api/notifications/send` before starting the demo. Do not run
 database-resetting E2E tests during a demonstration.
 
+#### Refresh for a recipient who has no account yet (Universal Inbox)
+
+The demo above sends to a profile that already exists. Add `--inbox` to exercise the
+deferred Universal Inbox path: the school issues a refreshable certificate to a random
+`@example.com` address with no LearnCard account, publishes a new version **before**
+anyone claims, and only then is a real holder bound and sent an update. Email delivery
+is suppressed, so the CLI shows the claim link instead of mailing it.
+
+```bash
+bun --cwd packages/learn-card-cli start demo refresh --inbox
+```
+
+Press Enter through four stages:
+
+1. **Issue provisional results.** Queues a **Provisional Course Certificate** for the
+   demo address. Nothing is emailed and there is no recipient to notify.
+2. **Publish final results before claim.** The school publishes **Final Results /
+   Final grade: A**. Because no holder exists yet, the publication reports
+   `notification: "not-applicable"`; nothing is announced.
+3. **Claim.** The CLI claims with a fresh local wallet using a real DIDAuth
+   presentation, exactly like the app. It receives the newest version (final results),
+   verifies the proof, and confirms the same credential identity.
+4. **Publish honors results.** Now that the claim has bound the holder DID, the school
+   publishes **Honors Results / Final grade: A+**. The holder refreshes and verifies
+   that the same credential now shows the honors version.
+
+`--yes` runs every stage without pausing; `--json` prints one machine-readable result
+with no seeds, tokens, or claim links. Terminal mode is local-only (it rejects a
+non-loopback `--network`) and needs the local LCA signing service. `--lca-url` defaults
+to `http://localhost:5100/trpc`; pass `--lca-url http://localhost:5200/trpc` when
+presenting against the E2E stack on port 5200.
+
+For the guided app experience, start the normal local app stack as above and run:
+
+```bash
+bun --cwd packages/learn-card-cli start demo refresh --inbox --ui
+```
+
+The CLI reads Brain, LearnCloud, LCA, and notification services from the app's
+`tenant-config.json` and requires them all to be loopback, just like the direct demo.
+
+1. Follow the printed **sign-in link** to enter a fresh **Inbox Demo Learner** account.
+   Keep it private: it controls a disposable demo account. The claim link for the same
+   app is printed too.
+2. The first delivery arrives as a **claim link, not an alert** — this recipient did
+   not exist when the credential was issued. Open the claim link, sign in, and claim
+   the certificate.
+3. Press Enter in the terminal. The CLI waits until the recipient's LearnCloud index
+   really contains that credential ID with final results, then publishes the honors
+   update to the now-bound holder.
+4. The app receives an update notification. Tap it, then press Enter in the terminal.
+   The CLI verifies the app replaced the same entry (not a duplicate) with the honors
+   certificate and that its proof is valid.
+
+In `--ui` mode the CLI never claims, accepts, refreshes, or saves on the app's behalf;
+a human performs every app action. Rerunning creates fresh accounts. This mode requires
+an interactive terminal and cannot be combined with `--yes`, `--json`, or `LC_YES=1`.
+
+The unknown email is simulated with suppressed delivery, but the claim link, signing
+authority, publication, claim binding, and refresh are all real. The direct
+`demo refresh` (without `--inbox`) is unchanged.
+
 ### Interactive REPL
 
 ```bash
