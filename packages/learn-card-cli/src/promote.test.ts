@@ -73,3 +73,42 @@ describe('assertSourceNetwork', () => {
         );
     });
 });
+
+describe('runPromote --dry-run', () => {
+    it('leaves the source .env byte-identical and creates no target folder', async () => {
+        const fs = await import('node:fs/promises');
+        const os = await import('node:os');
+        const { vi } = await import('vitest');
+        vi.spyOn(console, 'log').mockImplementation(() => {});
+
+        const cwd = await fs.mkdtemp(path.join(os.tmpdir(), 'lc-promote-'));
+        const before = `SECURE_SEED=${'a'.repeat(64)}\nPROFILE_ID=exde\nNETWORK_URL=http://localhost:4000/trpc\n`;
+        await fs.writeFile(path.join(cwd, '.env'), before);
+        await fs.writeFile(
+            path.join(cwd, 'org.yaml'),
+            'issuer:\n  profileId: exde\n  displayName: Ex\n  signingAuthority: { type: learncard-hosted, name: ex }\n'
+        );
+
+        vi.doMock('./org', () => ({ runOrgApply: vi.fn().mockResolvedValue(undefined) }));
+        vi.doMock('./doctor', () => ({ runDoctor: vi.fn() }));
+        const { runPromote } = await import('./promote');
+
+        const previousCwd = process.cwd();
+        process.chdir(cwd);
+        try {
+            await runPromote({
+                from: 'http://localhost:4000/trpc',
+                to: 'staging',
+                org: 'org.yaml',
+                dryRun: true,
+            });
+        } finally {
+            process.chdir(previousCwd);
+        }
+
+        expect(await fs.readFile(path.join(cwd, '.env'), 'utf8')).toBe(before);
+        expect(await fs.readdir(cwd)).toEqual(['.env', 'org.yaml']);
+        vi.doUnmock('./org');
+        vi.doUnmock('./doctor');
+    });
+});

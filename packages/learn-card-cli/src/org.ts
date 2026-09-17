@@ -4,6 +4,7 @@ import {
     connectAsDidWeb,
     ensureIdentity,
     loadProject,
+    type Project,
     type ProjectOptions,
 } from './project';
 import { loadOrgSpec } from './org/load';
@@ -16,13 +17,13 @@ export type OrgApplyOptions = ProjectOptions & {
     dryRun?: boolean;
     secretsOut?: string;
     cwd?: string;
-    presetEnv?: Record<string, string>;
+    /** Operate on this in-memory project instead of loading .env from cwd (dry-run previews). */
+    project?: Project;
 };
 
 export const runOrgApply = async (file: string, options: OrgApplyOptions): Promise<void> => {
     const spec = await loadOrgSpec(file);
-    const project = await loadProject(options.cwd ?? process.cwd());
-    if (options.presetEnv) Object.assign(project.env, options.presetEnv);
+    const project = options.project ?? (await loadProject(options.cwd ?? process.cwd()));
 
     if (options.profileId && options.profileId !== spec.issuer.profileId)
         throw new Error(
