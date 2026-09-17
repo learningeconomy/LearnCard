@@ -1,18 +1,25 @@
 import React, { useState } from 'react';
+import { IonIcon } from '@ionic/react';
+import { checkmarkCircleOutline } from 'ionicons/icons';
 import { Overlay, useAuthCoordinator } from 'learn-card-base';
 import { validatePin } from '@learncard/sss-key-manager';
 import { RecoveryPinInput } from './RecoveryPinInput';
 import { m } from '../../paraglide/messages.js';
 
+export type RecoveryPinSetupReason = 'first-time' | 'after-recovery';
+
 interface RecoveryPinSetupOverlayProps {
     onComplete: () => void;
     onSkip: () => void;
+    reason?: RecoveryPinSetupReason;
 }
 
 export const RecoveryPinSetupOverlay: React.FC<RecoveryPinSetupOverlayProps> = ({
     onComplete,
     onSkip,
+    reason = 'first-time',
 }) => {
+    const afterRecovery = reason === 'after-recovery';
     const coordinator = useAuthCoordinator();
     const [step, setStep] = useState<'enter' | 'confirm' | 'saving' | 'success'>('enter');
     const [pin, setPin] = useState('');
@@ -64,12 +71,29 @@ export const RecoveryPinSetupOverlay: React.FC<RecoveryPinSetupOverlayProps> = (
             <div className="p-8 text-center space-y-5">
                 {step === 'enter' && (
                     <>
+                        {afterRecovery && (
+                            <div className="mx-auto w-14 h-14 rounded-full bg-emerald-50 flex items-center justify-center">
+                                <IonIcon
+                                    icon={checkmarkCircleOutline}
+                                    className="text-emerald-600 text-3xl"
+                                />
+                            </div>
+                        )}
                         <h2 className="text-xl font-semibold text-grayscale-900">
-                            {m['recovery.pin.setPin']()}
+                            {afterRecovery
+                                ? m['recovery.pin.afterRecovery.title']()
+                                : m['recovery.pin.setPin']()}
                         </h2>
                         <p className="text-sm text-grayscale-600 leading-relaxed">
-                            {m['recovery.pin.setPinDesc']()}
+                            {afterRecovery
+                                ? m['recovery.pin.afterRecovery.body']()
+                                : m['recovery.pin.setPinDesc']()}
                         </p>
+                        {afterRecovery && (
+                            <p className="text-xs text-grayscale-500 leading-relaxed">
+                                {m['recovery.pin.afterRecovery.hint']()}
+                            </p>
+                        )}
                         <div className="flex justify-center py-4">
                             <RecoveryPinInput
                                 value={pin}

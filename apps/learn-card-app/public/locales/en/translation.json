@@ -2134,7 +2134,12 @@
             "title": "Recovery PIN",
             "instantRecoveryOn": "Instant recovery: On",
             "notSet": "Not set",
-            "change": "Change"
+            "change": "Change",
+            "afterRecovery": {
+                "title": "Set a new recovery PIN",
+                "body": "The PIN you just used has been retired — each PIN works once, so your account stays protected. Choose a new one to keep instant recovery ready.",
+                "hint": "Same rules as before: 6 digits, nothing obvious."
+            }
         },
         "addWayBackIn": "Add a way back in",
         "addAnotherMethod": "Add another method",

@@ -21,6 +21,27 @@ describe('RecoveryPinSetupOverlay', () => {
         } as unknown as ReturnType<typeof useAuthCoordinator>);
     });
 
+    it('explains why a new PIN is needed after a PIN recovery', () => {
+        render(
+            <RecoveryPinSetupOverlay
+                onComplete={mockOnComplete}
+                onSkip={mockOnSkip}
+                reason="after-recovery"
+            />
+        );
+
+        expect(screen.getByText('Set a new recovery PIN')).toBeInTheDocument();
+        expect(screen.getByText(/The PIN you just used has been retired/)).toBeInTheDocument();
+        expect(screen.queryByText('Set a recovery PIN')).not.toBeInTheDocument();
+    });
+
+    it('uses first-time copy by default', () => {
+        render(<RecoveryPinSetupOverlay onComplete={mockOnComplete} onSkip={mockOnSkip} />);
+
+        expect(screen.getByText('Set a recovery PIN')).toBeInTheDocument();
+        expect(screen.queryByText(/has been retired/)).not.toBeInTheDocument();
+    });
+
     it('rejects trivial PINs', () => {
         render(<RecoveryPinSetupOverlay onComplete={mockOnComplete} onSkip={mockOnSkip} />);
 

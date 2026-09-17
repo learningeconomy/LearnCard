@@ -1857,7 +1857,12 @@
             "title": "Recovery PIN",
             "instantRecoveryOn": "Instant recovery: On",
             "notSet": "Not set",
-            "change": "Change"
+            "change": "Change",
+            "afterRecovery": {
+                "title": "Configura un nuevo PIN de recuperación",
+                "body": "El PIN que acabas de usar ha sido retirado: cada PIN funciona una sola vez para mantener tu cuenta protegida. Elige uno nuevo para tener lista la recuperación instantánea.",
+                "hint": "Las mismas reglas: 6 dígitos, nada obvio."
+            }
         },
         "error.invalidPhrase": "Esas palabras no coinciden con tu frase de recuperación. Revísalas e inténtalo de nuevo.",
         "error.invalidPassword": "Contraseña incorrecta o no se pudo leer el archivo. Por favor, inténtalo de nuevo.",
