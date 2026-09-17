@@ -25,6 +25,7 @@ import { storeCredential } from '@accesslayer/credential/create';
 import { deleteCredential } from '@accesslayer/credential/delete';
 import { getBoostByUri } from '@accesslayer/boost/read';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
+import { getProfilesThatManageAProfile } from '@accesslayer/profile/relationships/read';
 import {
     advanceCredentialRefreshHead,
     generateRefreshId,
@@ -80,7 +81,7 @@ import { ProfileType } from 'types/profile';
 export const getCredentialRefreshServiceUrl = (refreshId: string, domain: string): string =>
     `${getStatusListBaseUrl(domain)}/refresh/${refreshId}`;
 
-const getManagedCredentialUri = (id: string, domain: string): string =>
+export const getManagedCredentialUri = (id: string, domain: string): string =>
     constructUri('credential', id, domain);
 
 export type AllocateCredentialRefreshParams = {
@@ -345,7 +346,9 @@ type InitialRefreshRoot = {
     boostId?: string;
 };
 
-const getInitialRefreshRoot = async (refreshId: string): Promise<InitialRefreshRoot | null> => {
+export const getInitialRefreshRoot = async (
+    refreshId: string
+): Promise<InitialRefreshRoot | null> => {
     const result = await neogma.queryRunner.run(
         `MATCH (refresh:CredentialRefresh {refreshId: $refreshId})-[:ROOT]->(root:Credential)
          OPTIONAL MATCH (root)-[:INSTANCE_OF]->(boost:Boost)
@@ -368,6 +371,13 @@ const getInitialRefreshRoot = async (refreshId: string): Promise<InitialRefreshR
         boostId: row.get('boostId') ?? undefined,
     };
 };
+
+/**
+ * Returns the boost a managed refresh's version 1 is already bound to, if any. Lets a
+ * replayed pre-signed send reuse its original boost instead of auto-creating another.
+ */
+export const getBoundRefreshBoostId = async (refreshId: string): Promise<string | undefined> =>
+    (await getInitialRefreshRoot(refreshId))?.boostId;
 
 const assertInitialCredentialMatches = (
     root: InitialRefreshRoot,
@@ -464,6 +474,22 @@ const sendInitialCredentialNotificationOnce = async (params: {
              refresh.updatedAt = $now`,
         { refreshId, now }
     );
+};
+
+/**
+ * Holder-side JWE recipients for managed refresh storage.
+ *
+ * Mirrors the human-controlled keyAgreement keys of the holder's did:web document
+ * (see src/dids.ts): the profile's own controller did:key plus every profile that
+ * manages it. Managed profiles are created with a did:key whose seed is discarded,
+ * so their managers are the only parties able to decrypt. All recipients are
+ * did:keys, so encryption never needs a remote did:web fetch. Signing authorities
+ * and the brain DID are deliberately excluded.
+ */
+const getHolderEncryptionRecipients = async (holderProfile: ProfileType): Promise<string[]> => {
+    const managers = await getProfilesThatManageAProfile(holderProfile.profileId);
+
+    return [...new Set([holderProfile.did, ...managers.map(manager => manager.did)])];
 };
 
 /**
@@ -669,11 +695,12 @@ export const sendRefreshableCredential = async (
         return { uri, receipt: buildReceipt() };
     }
 
-    // Holder-only encryption: the brain DID must NOT be a recipient. Encrypt to the
-    // holder profile's controller DID (did:key): it resolves locally for JWE key
-    // agreement, while a did:web holder identity would require a remote fetch at
-    // send time. Same key, same privacy property.
-    const jwe = await createDagJweForRecipients(credential, [holderProfile.did]);
+    // Holder-side encryption only (never the brain DID): the holder's did:key plus its
+    // managers' did:keys — see getHolderEncryptionRecipients.
+    const jwe = await createDagJweForRecipients(
+        credential,
+        await getHolderEncryptionRecipients(holderProfile)
+    );
 
     const credentialInstance = await storeCredential(jwe);
 
@@ -1216,11 +1243,13 @@ export const publishCredentialRefresh = async (
         ? await getProfileByProfileId(aggregate.holderProfileId)
         : null;
 
-    // Holder-only encryption to the holder profile's controller DID (did:key) — see
-    // the matching note in sendRefreshableCredential. Never the brain DID.
-    const jwe = await createDagJweForRecipients(signedCredential, [
-        holderProfileForEncryption?.did ?? aggregate.holderDid,
-    ]);
+    // Same holder-side recipients as the initial send — see getHolderEncryptionRecipients.
+    const jwe = await createDagJweForRecipients(
+        signedCredential,
+        holderProfileForEncryption
+            ? await getHolderEncryptionRecipients(holderProfileForEncryption)
+            : [aggregate.holderDid]
+    );
     const encryptedCredential = JSON.stringify(jwe);
     const etag = computeRefreshEtag(encryptedCredential);
 
