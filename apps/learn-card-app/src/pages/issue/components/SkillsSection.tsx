@@ -205,7 +205,7 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
                 handleCloseModal={closeModal}
             />,
             {},
-            { mobile: ModalTypes.BottomSheet, desktop: ModalTypes.FullScreen }
+            { mobile: ModalTypes.BottomSheet, desktop: ModalTypes.Center }
         );
     }, [newModal, closeModal, selectedSkills, handleAddSkill, handleRemoveSkill]);
 

@@ -5,6 +5,7 @@ import CompetencyIcon from '../../SkillFrameworks/CompetencyIcon';
 import {
     useGlobalSemanticSearchSkills,
     useGlobalSkillFrameworks,
+    type GlobalSkillFrameworkConfig,
 } from '../../../helpers/globalSkillFrameworks.helpers';
 import useDebounce from '../../../hooks/useDebounce';
 import type { SkillFrameworkNode } from '../../../components/boost/boost';
@@ -51,6 +52,51 @@ const SelectablePill: React.FC<{
     </button>
 );
 
+const FrameworkSearchResults: React.FC<{
+    framework: GlobalSkillFrameworkConfig;
+    query: string;
+    selectedKeys: Set<string>;
+    onToggle: (node: SkillFrameworkNode) => void;
+}> = ({ framework, query, selectedKeys, onToggle }) => {
+    const { data, isLoading } = useGlobalSemanticSearchSkills(query, [framework.frameworkId], {
+        limit: 24,
+    });
+    const results = useMemo(
+        () => dedupeByName((data?.records ?? []).map(semanticRecordToNode)),
+        [data]
+    );
+
+    return (
+        <section className="space-y-2">
+            <h3 className="text-xs font-medium text-grayscale-500">{framework.name}</h3>
+            {isLoading ? (
+                <div className="flex items-center gap-2 text-sm text-grayscale-500 py-1">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    {m['issueFlow.searching']()}
+                </div>
+            ) : results.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                    {results.map(node => {
+                        const frameworkId = nodeFrameworkId(node);
+                        return (
+                            <SelectablePill
+                                key={keyFor(frameworkId, node.id ?? '')}
+                                node={node}
+                                selected={selectedKeys.has(keyFor(frameworkId, node.id ?? ''))}
+                                onToggle={() => onToggle(node)}
+                            />
+                        );
+                    })}
+                </div>
+            ) : (
+                <p className="text-sm text-grayscale-500 py-1">
+                    {m['issueFlow.noMatchingSkills']()}
+                </p>
+            )}
+        </section>
+    );
+};
+
 export const SkillBrowserModal: React.FC<SkillBrowserModalProps> = ({
     selectedSkills,
     onAddSkill,
@@ -64,19 +110,11 @@ export const SkillBrowserModal: React.FC<SkillBrowserModalProps> = ({
         Record<string, SkillFrameworkNode[]>
     >({});
 
-    const frameworkIds = useMemo(() => frameworks.map(f => f.frameworkId), [frameworks]);
-
     const updateDebounced = useDebounce(() => setDebouncedQuery(query), SEARCH_DEBOUNCE_MS);
     useEffect(() => {
         updateDebounced();
         return () => updateDebounced.cancel?.();
     }, [query, updateDebounced]);
-
-    const { data: semanticData, isLoading } = useGlobalSemanticSearchSkills(
-        debouncedQuery,
-        frameworkIds,
-        { limit: 24 }
-    );
 
     const handleDefaultsLoaded = useCallback((frameworkId: string, nodes: SkillFrameworkNode[]) => {
         setDefaultsByFramework(prev =>
@@ -117,11 +155,6 @@ export const SkillBrowserModal: React.FC<SkillBrowserModalProps> = ({
     );
 
     const hasQuery = Boolean(debouncedQuery.trim());
-
-    const searchResults = useMemo(
-        () => dedupeByName((semanticData?.records ?? []).map(semanticRecordToNode)),
-        [semanticData]
-    );
 
     return (
         <div className="font-poppins w-full max-w-[560px] mx-auto bg-white rounded-[20px] flex flex-col max-h-[85vh] overflow-hidden">
@@ -176,53 +209,39 @@ export const SkillBrowserModal: React.FC<SkillBrowserModalProps> = ({
             </div>
 
             <div className="overflow-y-auto px-6 py-5 space-y-5">
-                {hasQuery ? (
-                    isLoading ? (
-                        <div className="flex items-center gap-2 text-sm text-grayscale-500 py-1">
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            {m['issueFlow.searching']()}
-                        </div>
-                    ) : searchResults.length > 0 ? (
-                        <div className="flex flex-wrap gap-2">
-                            {searchResults.map(node => (
-                                <SelectablePill
-                                    key={keyFor(nodeFrameworkId(node), node.id ?? '')}
-                                    node={node}
-                                    selected={isSelected(node)}
-                                    onToggle={() => toggle(node)}
-                                />
-                            ))}
-                        </div>
-                    ) : (
-                        <p className="text-sm text-grayscale-500 py-1">
-                            {m['issueFlow.noMatchingSkills']()}
-                        </p>
-                    )
-                ) : (
-                    frameworks.map(framework => {
-                        const nodes = dedupeByName(
-                            defaultsByFramework[framework.frameworkId] ?? []
-                        );
-                        if (nodes.length === 0) return null;
-                        return (
-                            <div key={framework.frameworkId} className="space-y-2">
-                                <p className="text-xs font-medium text-grayscale-500">
-                                    {framework.name}
-                                </p>
-                                <div className="flex flex-wrap gap-2">
-                                    {nodes.map(node => (
-                                        <SelectablePill
-                                            key={keyFor(nodeFrameworkId(node), node.id ?? '')}
-                                            node={node}
-                                            selected={isSelected(node)}
-                                            onToggle={() => toggle(node)}
-                                        />
-                                    ))}
-                                </div>
-                            </div>
-                        );
-                    })
-                )}
+                {hasQuery
+                    ? frameworks.map(framework => (
+                          <FrameworkSearchResults
+                              key={framework.frameworkId}
+                              framework={framework}
+                              query={debouncedQuery}
+                              selectedKeys={selectedKeys}
+                              onToggle={toggle}
+                          />
+                      ))
+                    : frameworks.map(framework => {
+                          const nodes = dedupeByName(
+                              defaultsByFramework[framework.frameworkId] ?? []
+                          );
+                          if (nodes.length === 0) return null;
+                          return (
+                              <div key={framework.frameworkId} className="space-y-2">
+                                  <p className="text-xs font-medium text-grayscale-500">
+                                      {framework.name}
+                                  </p>
+                                  <div className="flex flex-wrap gap-2">
+                                      {nodes.map(node => (
+                                          <SelectablePill
+                                              key={keyFor(nodeFrameworkId(node), node.id ?? '')}
+                                              node={node}
+                                              selected={isSelected(node)}
+                                              onToggle={() => toggle(node)}
+                                          />
+                                      ))}
+                                  </div>
+                              </div>
+                          );
+                      })}
             </div>
 
             <div className="sticky bottom-0 bg-white px-6 py-4 border-t border-grayscale-100">

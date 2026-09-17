@@ -1,9 +1,11 @@
 import React from 'react';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
     search: vi.fn(),
+    newModal: vi.fn(),
+    closeModal: vi.fn(),
     frameworkIds: ['framework-1'],
 }));
 
@@ -22,6 +24,14 @@ vi.mock('../../../helpers/globalSkillFrameworks.helpers', () => ({
 }));
 
 vi.mock('learn-card-base', () => ({
+    ModalTypes: {
+        BottomSheet: 'bottom-sheet',
+        Center: 'center',
+    },
+    useModal: () => ({
+        newModal: mocks.newModal,
+        closeModal: mocks.closeModal,
+    }),
     useSearchFrameworkSkills: () => ({ data: undefined }),
 }));
 
@@ -42,13 +52,18 @@ vi.mock('../../../paraglide/messages.js', () => ({
     'issueFlow.addSkills': () => 'Add Skills',
     'issueFlow.addSkillsSubtitle': () => 'Choose skills',
     'issueFlow.clearSearch': () => 'Clear search',
+    'issueFlow.browseAllFrameworks': () => 'Browse All Frameworks',
     'issueFlow.noMatchingSkills': () => 'No matching skills found',
     'issueFlow.searching': () => 'Searching',
+    'issueFlow.skillsSubtitle': () => 'Align this credential to skills',
+    'issueFlow.skillsTitle': () => 'Skills',
+    'issueFlow.suggested': () => 'Suggested',
     'issueFlow.selectedTapToToggle': ({ count }: { count: number }) => `${count} selected`,
     'skills.search.searchPlaceholder': () => 'Search skills',
 }));
 
 import { SkillBrowserModal } from './SkillBrowserModal';
+import { SkillsSection } from './SkillsSection';
 
 const creativeThinkingRecord = {
     id: 'creative-thinking',
@@ -62,7 +77,7 @@ const creativeThinkingRecord = {
     score: 0.95,
 };
 
-describe('SkillBrowserModal search', () => {
+describe('issuer skill browser', () => {
     beforeEach(() => {
         vi.useFakeTimers();
         mocks.frameworkIds = ['framework-1'];
@@ -101,11 +116,13 @@ describe('SkillBrowserModal search', () => {
         fireEvent.change(searchInput, { target: { value: 'Creative Thinking' } });
         act(() => vi.advanceTimersByTime(300));
 
-        expect(mocks.search).toHaveBeenLastCalledWith('Creative Thinking', ['framework-1'], {
+        expect(mocks.search).toHaveBeenCalledWith('Creative Thinking', ['framework-1'], {
             limit: 24,
         });
+        expect(screen.getByRole('heading', { name: 'framework-1' })).toBeVisible();
         expect(screen.queryByRole('button', { name: /Creative Thinking/ })).not.toBeInTheDocument();
 
+        mocks.search.mockClear();
         mocks.frameworkIds = ['framework-1', 'framework-2'];
         rerender(
             <SkillBrowserModal
@@ -116,12 +133,24 @@ describe('SkillBrowserModal search', () => {
             />
         );
 
-        expect(mocks.search).toHaveBeenLastCalledWith(
+        expect(mocks.search).toHaveBeenCalledWith('Creative Thinking', ['framework-1'], {
+            limit: 24,
+        });
+        expect(mocks.search).toHaveBeenCalledWith('Creative Thinking', ['framework-2'], {
+            limit: 24,
+        });
+        expect(mocks.search).not.toHaveBeenCalledWith(
             'Creative Thinking',
             ['framework-1', 'framework-2'],
             { limit: 24 }
         );
-        fireEvent.click(screen.getByRole('button', { name: /Creative Thinking/ }));
+        const framework2Section = screen
+            .getByRole('heading', { name: 'framework-2' })
+            .closest('section');
+        expect(framework2Section).not.toBeNull();
+        fireEvent.click(
+            within(framework2Section!).getByRole('button', { name: /Creative Thinking/ })
+        );
 
         expect(onAddSkill).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -134,6 +163,28 @@ describe('SkillBrowserModal search', () => {
         fireEvent.change(searchInput, { target: { value: 'missing' } });
         act(() => vi.advanceTimersByTime(300));
 
-        expect(screen.getByText('No matching skills found')).toBeVisible();
+        expect(screen.getAllByText('No matching skills found')).toHaveLength(2);
+    });
+
+    it('opens Browse All Frameworks in a centered desktop modal', () => {
+        render(
+            <SkillsSection
+                selectedSkills={[]}
+                resolvedSkills={[]}
+                onSelectedSkillsChange={vi.fn()}
+                onResolvedSkillsChange={vi.fn()}
+            />
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Browse All Frameworks' }));
+
+        expect(mocks.newModal).toHaveBeenCalledWith(
+            expect.anything(),
+            {},
+            {
+                mobile: 'bottom-sheet',
+                desktop: 'center',
+            }
+        );
     });
 });
