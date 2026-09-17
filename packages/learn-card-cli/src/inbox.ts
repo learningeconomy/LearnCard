@@ -41,8 +41,18 @@ export const parseStatus = (value: string | undefined): InboxStatus | undefined 
     if (value === undefined) return undefined;
     const upper = value.toUpperCase();
     if (!isInboxStatus(upper))
-        throw new Error(`Unknown --status "${value}". Use PENDING, ISSUED, or EXPIRED.`);
+        throw new Error(
+            `Unknown --status "${value}". Use PENDING, ISSUED, or EXPIRED (DELIVERED and CLAIMED are deprecated aliases).`
+        );
     return upper;
+};
+
+export const parseLimit = (value: string | undefined): number => {
+    if (value === undefined) return 50;
+    const limit = Number(value);
+    if (!Number.isInteger(limit) || limit < 1)
+        throw new Error(`Invalid --limit "${value}". Use a positive whole number.`);
+    return limit;
 };
 
 const DURATION_PATTERN = /^(\d+)\s*(d|h|m)$/i;
@@ -151,7 +161,7 @@ export const runInboxList = async (options: InboxListOptions): Promise<void> => 
     const learnCard = await connect(project, options);
 
     const currentStatus = parseStatus(options.status);
-    const limit = Number(options.limit ?? 50);
+    const limit = parseLimit(options.limit);
     const since = options.since ? parseSince(options.since) : undefined;
 
     const { records: fetched, hasMore } = await fetchSentInboxCredentials(learnCard.invoke, {

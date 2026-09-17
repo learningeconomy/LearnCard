@@ -76,6 +76,19 @@ export const assertSecretsOutForPromote = (
         throw new Error(`--secrets-out is required: promoting creates new API tokens on ${to}.`);
 };
 
+/** Pure: the source folder's `.env` must actually be on `--from`, or the wrong seed's org gets promoted. */
+export const assertSourceNetwork = (
+    sourceEnv: Record<string, string>,
+    from: string,
+    fromNetwork: string
+): void => {
+    const actual = resolveServices(sourceEnv, undefined, {}).network;
+    if (actual !== fromNetwork)
+        throw new Error(
+            `--from ${from} does not match this folder's network (${actual}). Run promote from the folder that is on ${from}.`
+        );
+};
+
 export type PromoteOptions = ProjectOptions & {
     from: string;
     to: string;
@@ -96,6 +109,7 @@ export const runPromote = async (options: PromoteOptions): Promise<void> => {
         throw new Error(
             `No SECURE_SEED in .env here. Run \`org apply\` against ${from} in this folder first.`
         );
+    assertSourceNetwork(sourceProject.env, from, fromNetwork);
 
     await fs.mkdir(targetDir, { recursive: true });
     const targetProject = await loadProject(targetDir);

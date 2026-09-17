@@ -25,6 +25,21 @@ const parseProfile = (value?: string): ClrValidationProfile | undefined => {
     throw new Error(`Unknown --profile "${value}". Use provisional or official.`);
 };
 
+/**
+ * The signing key is derived from `credential.issuer`, so a transcript that
+ * still carries a placeholder issuer would fail to sign for a reason unrelated
+ * to its content. The dry run signs as this project's wallet instead.
+ */
+export const withIssuer = (
+    credential: Record<string, unknown>,
+    did: string
+): Record<string, unknown> => {
+    const issuer = credential.issuer;
+    if (issuer && typeof issuer === 'object' && !Array.isArray(issuer))
+        return { ...credential, issuer: { ...(issuer as Record<string, unknown>), id: did } };
+    return { ...credential, issuer: did };
+};
+
 export const runClrValidate = async (file: string, options: ClrValidateOptions): Promise<void> => {
     const text = await fs.readFile(file, 'utf8');
     let json: unknown;
@@ -43,6 +58,7 @@ export const runClrValidate = async (file: string, options: ClrValidateOptions):
 
     const ok = errors.length === 0;
     if (!ok) process.exitCode = 1;
+    let signOk = true;
 
     if (options.dryRunSign) {
         if (!ok) {
@@ -56,17 +72,23 @@ export const runClrValidate = async (file: string, options: ClrValidateOptions):
                 );
             }
             const learnCard = await connect(project, options);
-            const signed = await learnCard.invoke.issueCredential(json as never);
+            const signed = await learnCard.invoke.issueCredential(
+                withIssuer(json as Record<string, unknown>, learnCard.id.did()) as never
+            );
             const verification = await learnCard.invoke.verifyCredential(signed);
             out.log('Signed: true (dry run only — nothing was sent or stored)');
             for (const check of verification.checks) out.log(`✓ ${check}`);
             for (const warning of verification.warnings) out.log(`! ${warning}`);
             for (const error of verification.errors) out.log(`✗ ${error}`);
+            if (verification.errors.length) {
+                signOk = false;
+                process.exitCode = 1;
+            }
             out.set({ signed: true, verification });
         }
     }
 
-    out.set({ ok, errors, warnings, summary });
+    out.set({ ok: ok && signOk, errors, warnings, summary });
 };
 
 export const registerClrCommand = (

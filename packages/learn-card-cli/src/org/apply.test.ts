@@ -45,8 +45,6 @@ const makeMockCard = (): OrgLearnCard & {
         createProfile: vi.fn().mockResolvedValue(issuerDid),
         updateProfile: vi.fn().mockResolvedValue(true),
         createProfileManager: vi.fn().mockResolvedValue(managerDid),
-        createManagedProfile: vi.fn().mockResolvedValue(managedDid),
-        getManagedProfiles: vi.fn().mockResolvedValue({ hasMore: false, records: [] }),
         getAuthGrants: vi.fn().mockResolvedValue([]),
         addAuthGrant: vi.fn().mockResolvedValue('grant-1'),
         getAPITokenForAuthGrant: vi.fn().mockResolvedValue('jwt-token-abc'),
@@ -55,6 +53,13 @@ const makeMockCard = (): OrgLearnCard & {
         setPrimaryRegisteredSigningAuthority: vi.fn().mockResolvedValue(true),
         getSigningAuthorities: vi.fn().mockResolvedValue([]),
         createSigningAuthority: vi.fn().mockResolvedValue(authorityRecord),
+    },
+});
+
+const makeMockManager = () => ({
+    invoke: {
+        createManagedProfile: vi.fn().mockResolvedValue(managedDid),
+        getManagedProfiles: vi.fn().mockResolvedValue({ hasMore: false, records: [] }),
     },
 });
 
@@ -74,10 +79,12 @@ describe('applyOrg', () => {
     it('creates every resource on a fresh project and writes the service-account token', async () => {
         await withTmpProject(async project => {
             const card = makeMockCard();
+            const manager = makeMockManager();
+            const connectAsManager = vi.fn().mockResolvedValue(manager);
             const secretsOut = path.join(path.dirname(project.envPath), 'secrets.env');
             const log = vi.spyOn(console, 'log').mockImplementation(() => {});
 
-            const result = await applyOrg(spec, card, project, { secretsOut });
+            const result = await applyOrg(spec, card, project, { secretsOut, connectAsManager });
 
             expect(card.invoke.createProfile).toHaveBeenCalledWith({
                 profileId: 'scde',
@@ -91,7 +98,8 @@ describe('applyOrg', () => {
             expect(card.invoke.createProfileManager).toHaveBeenCalledWith({
                 displayName: 'SC Districts',
             });
-            expect(card.invoke.createManagedProfile).toHaveBeenCalledWith({
+            expect(connectAsManager).toHaveBeenCalledWith(managerDid);
+            expect(manager.invoke.createManagedProfile).toHaveBeenCalledWith({
                 profileId: 'sc-greenville',
                 displayName: 'Greenville County Schools',
                 bio: '',
@@ -124,7 +132,7 @@ describe('applyOrg', () => {
             expect(project.env.ORG_PROFILE_MANAGER_DID).toBe(managerDid);
 
             const secrets = await fs.readFile(secretsOut, 'utf8');
-            expect(secrets).toBe('ea-clr-issuer=jwt-token-abc\n');
+            expect(secrets).toBe('EA_CLR_ISSUER=jwt-token-abc\n');
             const stat = await fs.stat(secretsOut);
             expect(stat.mode & 0o777).toBe(0o600);
 
@@ -146,7 +154,8 @@ describe('applyOrg', () => {
                     relationship: { name: 'scde-clr', did: authorityRecord.did, isPrimary: true },
                 },
             ]);
-            card.invoke.getManagedProfiles.mockResolvedValue({
+            const manager = makeMockManager();
+            manager.invoke.getManagedProfiles.mockResolvedValue({
                 hasMore: false,
                 records: [
                     {
@@ -162,7 +171,9 @@ describe('applyOrg', () => {
             project.env.ORG_PROFILE_MANAGER_DID = managerDid;
             const log = vi.spyOn(console, 'log').mockImplementation(() => {});
 
-            const result = await applyOrg(spec, card, project, {});
+            const result = await applyOrg(spec, card, project, {
+                connectAsManager: async () => manager,
+            });
 
             expect(card.invoke.createProfile).not.toHaveBeenCalled();
             expect(card.invoke.updateProfile).not.toHaveBeenCalled();
@@ -170,7 +181,7 @@ describe('applyOrg', () => {
             expect(card.invoke.registerSigningAuthority).not.toHaveBeenCalled();
             expect(card.invoke.setPrimaryRegisteredSigningAuthority).not.toHaveBeenCalled();
             expect(card.invoke.createProfileManager).not.toHaveBeenCalled();
-            expect(card.invoke.createManagedProfile).not.toHaveBeenCalled();
+            expect(manager.invoke.createManagedProfile).not.toHaveBeenCalled();
             expect(card.invoke.addAuthGrant).not.toHaveBeenCalled();
             expect(card.invoke.getAPITokenForAuthGrant).not.toHaveBeenCalled();
 
@@ -191,7 +202,10 @@ describe('applyOrg', () => {
             const card = makeMockCard();
             const log = vi.spyOn(console, 'log').mockImplementation(() => {});
 
-            const result = await applyOrg(spec, card, project, { dryRun: true });
+            const connectAsManager = vi.fn();
+
+            const result = await applyOrg(spec, card, project, { dryRun: true, connectAsManager });
+            expect(connectAsManager).not.toHaveBeenCalled();
 
             for (const key of [
                 'createProfile',
@@ -200,7 +214,6 @@ describe('applyOrg', () => {
                 'registerSigningAuthority',
                 'setPrimaryRegisteredSigningAuthority',
                 'createProfileManager',
-                'createManagedProfile',
                 'addAuthGrant',
                 'getAPITokenForAuthGrant',
             ] as const) {
@@ -229,7 +242,9 @@ describe('applyOrg', () => {
             const card = makeMockCard();
             const log = vi.spyOn(console, 'log').mockImplementation(() => {});
 
-            await expect(applyOrg(spec, card, project, {})).rejects.toThrow('--secrets-out');
+            await expect(
+                applyOrg(spec, card, project, { connectAsManager: async () => makeMockManager() })
+            ).rejects.toThrow('--secrets-out');
             expect(card.invoke.addAuthGrant).not.toHaveBeenCalled();
 
             log.mockRestore();
