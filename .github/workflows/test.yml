@@ -2,7 +2,9 @@ name: Test Runner
 
 on:
     pull_request:
-        types: [opened, synchronize]
+        types: [opened, synchronize, reopened, ready_for_review]
+    merge_group:
+        types: [checks_requested]
     workflow_dispatch:
         inputs:
             branch:
@@ -18,7 +20,7 @@ jobs:
             - name: Checkout Repo
               uses: actions/checkout@v7
               with:
-                  ref: ${{ github.event.pull_request.head.sha || github.event.inputs.branch }}
+                  ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.event.inputs.branch }}
                   fetch-depth: 0
 
             - name: Fetch main for NX comparison
@@ -37,6 +39,61 @@ jobs:
               env:
                   SEED: ${{ secrets.SEED || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
                   LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
+
+    ai-agent:
+        name: AI Agent CI
+        if: github.event_name == 'pull_request'
+        permissions:
+            contents: read
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        services:
+            mongo:
+                image: mongo:7
+                ports:
+                    - 27017:27017
+                options: >-
+                    --health-cmd "mongosh --quiet --eval 'db.adminCommand({ ping: 1 })'"
+                    --health-interval 5s
+                    --health-timeout 5s
+                    --health-retries 12
+        env:
+            CI: true
+            AI_AGENT_TEST_MONGO_URI: mongodb://127.0.0.1:27017
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v7
+
+            - name: Use composite setup action
+              uses: ./.github/actions/setup
+
+            - name: Verify Trigger.dev deployment CLI startup
+              working-directory: services/learn-card-network/ai-agent
+              run: bunx trigger deploy --help
+
+            - name: Test Trigger native package readiness gate
+              run: node --test scripts/wait-for-trigger-native-package.test.mjs
+
+            - name: Run AI Agent tests
+              run: bun run --cwd services/learn-card-network/ai-agent test -- run
+
+            - name: Build AI Agent
+              run: bun run --cwd services/learn-card-network/ai-agent build
+
+            - name: Lint CloudFormation template
+              run: pipx run cfn-lint services/learn-card-network/ai-agent/infra/aws/template.yml
+
+    inbox-security:
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - uses: actions/checkout@v7
+              with:
+                  ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.event.inputs.branch }}
+                  fetch-depth: 0
+            - uses: ./.github/actions/setup
+            - name: Test inbox security with isolated Neo4j and Redis containers
+              run: bunx nx run network-brain-service:test:inbox:e2e
 
     # Temporary manual fallback during the hosted-runner cutover.
     # Remove after one sprint of stable GitHub-hosted E2E operation.

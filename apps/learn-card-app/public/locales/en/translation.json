@@ -11,6 +11,80 @@
         "skipped": "Skipped",
         "claimedType": "Credential claimed"
     },
+    "mainHeader": {
+        "pageTitles": {
+            "dashboard": "My Dashboard",
+            "passport": "My Passport",
+            "apps": "My Apps",
+            "contacts": "My Contacts",
+            "alerts": "My Alerts",
+            "settings": "Settings"
+        }
+    },
+    "arabicFixes": {
+        "newMember": "New Member",
+        "issuedDate": "Issued (Date)",
+        "selectProfile": "Select Profile",
+        "pinMustMatch": "PINs must match",
+        "nameRequired": "Name is required.",
+        "descriptionRequired": "Description is required.",
+        "issuerStatus": "Issuer Status",
+        "trustedIssuerDescription": "Your account is recognized as a trusted issuer in the LearnCard network.",
+        "unknownIssuerDescription": "Apply to become a trusted issuer and unlock verified credential issuance for your account.",
+        "becomeTrustedIssuer": "Become a Trusted Issuer",
+        "fieldRequired": "{{field}} is required",
+        "validEmailRequired": "Enter a valid email address",
+        "shareOnce": "Share once",
+        "thumbnail": "Thumbnail",
+        "shareProfileHelp": "Copy your profile URL so you can share it with others.",
+        "or": "or",
+        "autoConnectHelp": "Allow others to automatically connect to your profile.",
+        "selectExpiration": "Select expiration",
+        "oneHour": "1 hour",
+        "hours": "{{count}} hours",
+        "days": "{{count}} days",
+        "addCredentials": "Add Credentials",
+        "verifiableCredentials": "Verifiable Credentials",
+        "verifiableCredentialCount": "{{count}} Verifiable Credentials",
+        "uploadCredentialsHelp": "Upload or paste raw JSON credentials to add them to your account.",
+        "required": "Required",
+        "liveSync": "Live Sync",
+        "liveSyncing": "Live Syncing",
+        "liveSyncingAll": "Live Syncing All",
+        "loading": "Loading...",
+        "loadingAccounts": "Loading accounts...",
+        "activeUser": "Active User",
+        "membersCount": "{{count}} members",
+        "socialBoosts": "Social Boosts",
+        "newChildOrOrganization": "New Child or Organization",
+        "selectProfileType": "Select a Profile Type",
+        "organizationProfile": "Organization Profile",
+        "organization": "Organization",
+        "child": "Child",
+        "user": "User",
+        "addNewPlayer": "Add New Player",
+        "backToGame": "Back to Game",
+        "childInFamily": "Child in {{family}}",
+        "editAppName": "Edit {{appName}}",
+        "continuousShare": "Continuously share all {{items}}.",
+        "setExpirationDate": "Set an expiration date?",
+        "selectiveSharing": "Selective Sharing",
+        "selectiveSharingHelp": "Only share selected {{items}}.",
+        "notSharing": "Not Sharing",
+        "notSharingHelp": "Don't share any {{items}}.",
+        "sharingCount": "Sharing {{selected}}/{{total}}",
+        "switchSelectiveTitle": "Switch to Selective Sharing?",
+        "switchSelectiveHelp": "Deselecting data switches off Live Syncing and activates Selective Sharing, giving you full control over which credentials you share. You can switch back to Live Syncing at any time.",
+        "allow": "Allow",
+        "deny": "Deny",
+        "approve": "Approve",
+        "editApp": "Edit App",
+        "createApp": "Create App",
+        "createNewApp": "Create New App",
+        "selectIntegrationFirst": "Please select an integration first.",
+        "enterDisplayName": "Please enter at least a display name.",
+        "webhookUrl": "Webhook URL"
+    },
     "common": {
         "tryAgain": "Try Again",
         "share": "Share",
@@ -106,6 +180,7 @@
             "alerts": "Alerts",
             "personalize": "Personalize",
             "adminTools": "Admin Tools",
+            "myAssistant": "My Assistant",
             "wallet": "Wallet",
             "passport": "Passport",
             "aiTopics": "AI Sessions",
@@ -125,6 +200,12 @@
         "newAiSession": "New AI Session",
         "settings": "Settings",
         "closeMenu": "Close menu"
+    },
+    "myAssistant": {
+        "schedules": {
+            "autonomyUnavailableTitle": "Automatic tasks aren't enabled yet",
+            "autonomyUnavailableDescription": "You can still chat with your assistant. Recurring schedules are only available to selected testing accounts."
+        }
     },
     "passport": {
         "buildMyLearnCard": {
@@ -985,9 +1066,31 @@
             "import": "Import Passport",
             "error": {
                 "invalidChars": "Seed must only contain numbers and letters (a–f).",
-                "tooShort": "Seed phrase needs to be 64 characters long.",
+                "wrongLength": "Seed must be exactly 64 characters long.",
                 "generic": "Something went wrong. Please try again."
             }
+        },
+        "developerSignIn": {
+            "title": "Sign in with your developer seed",
+            "description": "This is the SECURE_SEED in your project's .env. It stays on this device — we never send it anywhere.",
+            "pasteAction": "Paste from clipboard",
+            "signingIn": "Signing in...",
+            "switching": "Switching accounts...",
+            "or": "or",
+            "seedLabel": "Seed",
+            "signInAction": "Sign in",
+            "signOutAndSwitch": "Sign out and switch",
+            "alreadySignedIn": "You're already signed in",
+            "alreadySignedInAs": "You're signed in as {{name}}",
+            "alreadySignedInBody": "Signing in with a seed signs you out of your current account first.",
+            "linkSwitchBody": "This link includes a seed for another account. Switching signs you out of your current account.",
+            "switchAction": "Switch account",
+            "stayAction": "Stay signed in",
+            "continueAs": "Continue as {{name}}",
+            "notDeveloper": "Not a developer? ",
+            "signInNormally": "Sign in normally",
+            "securityWarning": "Keep your seed private. Anyone with it controls this account.",
+            "pasteHint": "Paste it into the field below."
         },
         "sharedComputer": "Shared or public computer",
         "signInFromAnotherDevice": "Sign in from another device",
@@ -1592,7 +1695,27 @@
         },
         "loadError": "We couldn't load your contacts. Please try again."
     },
+    "bulkImport": {
+        "title": "Bulk Import Credentials",
+        "step": "Step {{number}}",
+        "prepareTitle": "Prepare & Export Your File",
+        "fillSheetPrefix": "Fill out this",
+        "googleSheet": "Google Sheet",
+        "fillSheetSuffix": "using:",
+        "fullImageUrls": "Full image URLs (https://...) for direct use",
+        "simpleFilenames": "OR simple filenames (image.png) for images you'll upload in a ZIP",
+        "exportCsv": "Export to CSV:",
+        "downloadCsvPath": "File → Download → Comma Separated Values (.csv)",
+        "uploadCsvTitle": "Upload Your .csv File",
+        "zipHelp": "If you used filenames instead of URLs, upload a ZIP file containing those image files.",
+        "checkBeforeUploading": "Check Before Uploading",
+        "checkBeforeUploadingDescription": "Ensure all images are in place and any file errors are fixed before continuing.",
+        "uploading": "Uploading...",
+        "uploadImagesZip": "Upload Images ZIP",
+        "previewCredentials": "Preview {{count}} Credentials"
+    },
     "consentFlow": {
+        "guardianApprovalRequired": "Ask a current account manager to approve this connection, then try again.",
         "acceptAndSync": "Accept & Sync",
         "accepted": "Accepted",
         "acceptingContract": "Accepting Contract...",
@@ -2305,6 +2428,7 @@
     },
     "family": {
         "addFamilyMember": "Add Family Member",
+        "createNewFamily": "Create New Family",
         "childProfile": "Child Profile",
         "familyAccount": "Family Account",
         "joinFamily": "Join Family",
@@ -2337,7 +2461,9 @@
         },
         "actionMenu": {
             "editFamily": "Edit Family",
-            "shareFamily": "Share Family"
+            "shareFamily": "Share Family",
+            "viewProfile": "View Profile",
+            "boost": "Boost"
         },
         "childInvite": {
             "title": "Child Account",
@@ -2381,6 +2507,22 @@
         "none": "None",
         "colorHexCode": "Color Hex Code",
         "confirmRemoveMember": "Are you sure you want to remove this {{title}}?",
+        "titleOptions": {
+            "guardian": "Guardian",
+            "guardians": "Guardians",
+            "parent": "Parent",
+            "parents": "Parents",
+            "grandparent": "Grandparent",
+            "grandparents": "Grandparents",
+            "caretaker": "Caretaker",
+            "caretakers": "Caretakers",
+            "advocate": "Advocate",
+            "advocates": "Advocates",
+            "child": "Child",
+            "children": "Children",
+            "kid": "Kid",
+            "kids": "Kids"
+        },
         "titlesToggle": {
             "admins": "Admins",
             "kids": "Kids"
@@ -2412,7 +2554,9 @@
             "enterTitle": "Enter PIN",
             "enterSubtext": "Please enter your current PIN to proceed",
             "verifying": "Verifying...",
-            "forUser": "for {{name}}"
+            "forUser": "for {{name}}",
+            "requiresFiveDigits": "PIN requires 5 digits",
+            "invalidPin": "Invalid PIN. Please try again"
         },
         "guardianInvite": {
             "shareTitle": "Guardian Invite",
@@ -3072,7 +3216,9 @@
         "filterResults": "Filter results...",
         "courses": "Courses",
         "media": "Media",
+        "explorePathways": "Explore Pathways",
         "exploreRoles": "Explore Roles",
+        "findRoles": "Find Roles",
         "jobStability": "Job Stability",
         "workLifeBalance": "Work-Life Balance",
         "iWantTo": "I want to...",
@@ -3244,6 +3390,18 @@
             "select": "Select"
         },
         "credential": {
+            "category": {
+                "badge": "Badge",
+                "family": "Family",
+                "achievement": "Achievement",
+                "course": "Course",
+                "membership": "Membership",
+                "skill": "Skill",
+                "id": "ID",
+                "experience": "Experience",
+                "portfolio": "Portfolio",
+                "assistance": "Assistance"
+            },
             "lifecycle": {
                 "revoked": "Revoked",
                 "suspended": "Suspended"
@@ -4347,35 +4505,6 @@
                 "developer": "Developer",
                 "admin": "Admin",
                 "selectProject": "Select Project"
-            },
-            "betaGate": {
-                "betaAccessRequired": "Beta Access Required",
-                "betaAccessDesc": "This feature is currently in beta. Enter your access code to continue.",
-                "accessCode": "Access Code",
-                "accessCodePlaceholder": "Enter your beta access code",
-                "continue": "Continue",
-                "noAccessCode": "Don't have an access code?",
-                "contactUs": "Contact us",
-                "backToDeveloperPortal": "← Back to Developer Portal",
-                "invalidAccessCode": "Invalid access code. Please check and try again.",
-                "welcomeToBeta": "Welcome to the Beta!",
-                "welcomeDesc": "You're previewing new developer tools before they're publicly available.",
-                "betaPreviewNotice": "Beta Preview Notice",
-                "betaPreviewDesc": "This is pre-release functionality. Features may change, and you may encounter bugs. Your feedback is valuable!",
-                "yourAccessIncludes": "Your access includes:",
-                "integrationDashboard": "Integration dashboard",
-                "apiTokenManagement": "API token management",
-                "allIntegrationGuides": "All integration guides",
-                "otherGuidesLocked": "Other guides (locked)",
-                "letsGo": "Let's Go!",
-                "feedbackContact": "support@learncard.com",
-                "questionsFeedback": "Questions or feedback?",
-                "guideLockedTitle": "{{name}}",
-                "guideLockedDesc": "This guide is not available with your current beta access. Contact us to request expanded access.",
-                "requestAccess": "Request Access",
-                "locked": "locked",
-                "guideNotAvailable": "This guide is not available with your current beta access.",
-                "guideLabel": "guide"
             },
             "codeBlock": {
                 "copyCode": "Copy code",
@@ -6644,8 +6773,6 @@
             },
             "hub": {
                 "comingSoon": "Coming Soon",
-                "locked": "Locked",
-                "requestAccess": "Request Access",
                 "inProgress": "In Progress",
                 "getStarted": "Get Started",
                 "createProject": {
@@ -7779,9 +7906,9 @@
             "changesSaved": "Changes Saved!",
             "draftUpdated": "Draft Updated!",
             "draftSaved": "Draft Saved!",
-            "appUpdated": "Your app \"{appName}\" has been updated.",
-            "appSavedAsDraft": "Your app \"{appName}\" has been saved as a draft.",
-            "appSubmittedForReview": "Your app \"{appName}\" has been submitted for review.",
+            "appUpdated": "Your app \"{{appName}}\" has been updated.",
+            "appSavedAsDraft": "Your app \"{{appName}}\" has been saved as a draft.",
+            "appSubmittedForReview": "Your app \"{{appName}}\" has been submitted for review.",
             "error": "Error",
             "back": "Back",
             "savingDraft": "Saving...",

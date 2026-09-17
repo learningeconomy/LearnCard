@@ -10,19 +10,25 @@ The Embed SDK lets you add a credential claim button to any webpage with a singl
 
 {% tabs %}
 {% tab title="npm" %}
+
 ```bash
 npm install @learncard/embed-sdk
 ```
+
 {% endtab %}
 {% tab title="CDN (IIFE)" %}
+
 ```html
 <script src="https://cdn.jsdelivr.net/npm/@learncard/embed-sdk@latest/dist/learncard.js"></script>
 ```
+
 {% endtab %}
 {% tab title="ESM" %}
+
 ```js
 import { init } from '@learncard/embed-sdk';
 ```
+
 {% endtab %}
 {% endtabs %}
 
@@ -33,12 +39,12 @@ import { init } from '@learncard/embed-sdk';
 
 <script src="https://cdn.jsdelivr.net/npm/@learncard/embed-sdk@latest/dist/learncard.js"></script>
 <script>
-  LearnCard.init({
-    publishableKey: 'pk_your_key_here',
-    target: '#claim-here',
-    credential: { name: 'My Template Name' },
-    partnerName: 'Your Organization',
-  });
+    LearnCard.init({
+        publishableKey: 'pk_your_key_here',
+        target: '#claim-here',
+        credential: { name: 'My Template Name' },
+        partnerName: 'Your Organization',
+    });
 </script>
 ```
 
@@ -93,29 +99,29 @@ init(options: InitOptions): void
 
 ### `InitOptions`
 
-| Property | Type | Required | Description |
-|----------|------|----------|-------------|
-| `target` | `string \| HTMLElement` | ✅ | CSS selector or DOM element to render the button into |
-| `credential` | `CredentialConfig` | ✅ | Full VC object **or** `{ name: 'Template Name' }` for server-side resolution |
-| `publishableKey` | `string` | Recommended | Your integration's publishable key from the developer dashboard. Omit for stub/test mode. |
-| `partnerName` | `string` | — | Displayed in the modal header next to your logo |
-| `branding` | `BrandingTokens` | — | Color and logo customization (see below) |
-| `apiBaseUrl` | `string` | — | Defaults to `https://network.learncard.com/api` |
-| `requestBackgroundIssuance` | `boolean` | — | Issue credential without user interaction (no modal shown) |
-| `onSuccess` | `(details: ClaimSuccessDetails) => void` | — | Called when user accepts. SDK always opens the wallet URL AND calls this callback. To suppress wallet auto-open, set `branding.walletUrl: ''`. |
-| `onEmailSubmit` | `(email: string) => Promise<EmailSubmitResult>` | — | Override default email challenge logic |
-| `onOtpVerify` | `(email: string, code: string) => Promise<OtpVerifyResult>` | — | Override default OTP verification logic |
-| `theme` | `{ primaryColor?: string }` | — | Deprecated — use `branding.primaryColor` instead |
+| Property                    | Type                                                        | Required    | Description                                                                                                                                    |
+| --------------------------- | ----------------------------------------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `target`                    | `string \| HTMLElement`                                     | ✅          | CSS selector or DOM element to render the button into                                                                                          |
+| `credential`                | `CredentialConfig`                                          | ✅          | Full VC object **or** `{ name: 'Template Name' }` for server-side resolution                                                                   |
+| `publishableKey`            | `string`                                                    | Recommended | Your integration's publishable key from the developer dashboard. Omit for stub/test mode.                                                      |
+| `partnerName`               | `string`                                                    | —           | Displayed in the modal header next to your logo                                                                                                |
+| `branding`                  | `BrandingTokens`                                            | —           | Color and logo customization (see below)                                                                                                       |
+| `apiBaseUrl`                | `string`                                                    | —           | Defaults to `https://network.learncard.com/api`                                                                                                |
+| `requestBackgroundIssuance` | `boolean`                                                   | —           | Issue credential without user interaction (no modal shown)                                                                                     |
+| `onSuccess`                 | `(details: ClaimSuccessDetails) => void`                    | —           | Called when user accepts. SDK always opens the wallet URL AND calls this callback. To suppress wallet auto-open, set `branding.walletUrl: ''`. |
+| `onEmailSubmit`             | `(email: string) => Promise<EmailSubmitResult>`             | —           | Override default email challenge logic                                                                                                         |
+| `onOtpVerify`               | `(email: string, code: string) => Promise<OtpVerifyResult>` | —           | Override default OTP verification logic                                                                                                        |
+| `theme`                     | `{ primaryColor?: string }`                                 | —           | Deprecated — use `branding.primaryColor` instead                                                                                               |
 
 ### `BrandingTokens`
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `primaryColor` | `string` | Hex color for buttons, stepper, and card accent. Defaults to `#2EC4A5` (teal). |
-| `accentColor` | `string` | Darker accent for hover states. Defaults to `darken(primaryColor, 20%)`. |
-| `partnerLogoUrl` | `string` | URL for your organization's logo in the modal header |
-| `logoUrl` | `string` | Override the LearnCard brand logo |
-| `walletUrl` | `string` | URL to open on success. Defaults to `https://learncard.app`. Set to `''` to suppress auto-open entirely. |
+| Property         | Type     | Description                                                                                              |
+| ---------------- | -------- | -------------------------------------------------------------------------------------------------------- |
+| `primaryColor`   | `string` | Hex color for buttons, stepper, and card accent. Defaults to `#2EC4A5` (teal).                           |
+| `accentColor`    | `string` | Darker accent for hover states. Defaults to `darken(primaryColor, 20%)`.                                 |
+| `partnerLogoUrl` | `string` | URL for your organization's logo in the modal header                                                     |
+| `logoUrl`        | `string` | Override the LearnCard brand logo                                                                        |
+| `walletUrl`      | `string` | URL to open on success. Defaults to `https://learncard.app`. Set to `''` to suppress auto-open entirely. |
 
 ### `CredentialConfig`
 
@@ -137,9 +143,9 @@ Using `{ name: '...' }` is recommended for production — the generated embed sn
 
 ```ts
 type ClaimSuccessDetails = {
-  credentialId: string;   // Issued credential ID
-  consentGiven: boolean;  // Whether user gave consent
-  handoffUrl?: string;    // Deep link to the credential in the user's wallet
+    credentialId: string; // Issued credential ID
+    consentGiven: boolean; // Whether user gave consent
+    handoffUrl?: string; // Deep link to the credential in the user's wallet
 };
 ```
 
@@ -149,16 +155,16 @@ type ClaimSuccessDetails = {
 
 ```js
 init({
-  publishableKey: 'pk_...',
-  target: '#claim-target',
-  credential: { name: 'Course Completion' },
-  partnerName: 'Learning Economy Academy',
-  branding: {
-    primaryColor: '#e11d48',
-    accentColor: '#be123c',
-    partnerLogoUrl: 'https://your-org.com/logo.png',
-    walletUrl: 'https://app.learncard.com',
-  },
+    publishableKey: 'pk_...',
+    target: '#claim-target',
+    credential: { name: 'Course Completion' },
+    partnerName: 'Learning Economy Academy',
+    branding: {
+        primaryColor: '#e11d48',
+        accentColor: '#be123c',
+        partnerLogoUrl: 'https://your-org.com/logo.png',
+        walletUrl: 'https://app.learncard.com',
+    },
 });
 ```
 
@@ -166,13 +172,13 @@ init({
 
 ```js
 init({
-  publishableKey: 'pk_...',
-  target: '#claim-target',
-  credential: { name: 'Course Completion' },
-  onSuccess: ({ credentialId, handoffUrl }) => {
-    document.getElementById('success-banner').style.display = 'block';
-    // handoffUrl is available if you want to link to the wallet
-  },
+    publishableKey: 'pk_...',
+    target: '#claim-target',
+    credential: { name: 'Course Completion' },
+    onSuccess: ({ credentialId, handoffUrl }) => {
+        document.getElementById('success-banner').style.display = 'block';
+        // handoffUrl is available if you want to link to the wallet
+    },
 });
 ```
 
@@ -182,17 +188,17 @@ If you manage your own user sessions, you can bypass the default email/OTP flow:
 
 ```js
 init({
-  target: '#claim-target',
-  credential: { name: 'Course Completion' },
-  onEmailSubmit: async (email) => {
-    await myApi.sendOtp(email);
-    return { ok: true };
-  },
-  onOtpVerify: async (email, code) => {
-    const result = await myApi.verifyOtp(email, code);
-    if (!result.valid) return { ok: false, error: 'Invalid code' };
-    return { ok: true };
-  },
+    target: '#claim-target',
+    credential: { name: 'Course Completion' },
+    onEmailSubmit: async email => {
+        await myApi.sendOtp(email);
+        return { ok: true };
+    },
+    onOtpVerify: async (email, code) => {
+        const result = await myApi.verifyOtp(email, code);
+        if (!result.valid) return { ok: false, error: 'Invalid code' };
+        return { ok: true };
+    },
 });
 ```
 
@@ -202,10 +208,10 @@ Omit `publishableKey` to run the full UI flow without any network calls — usef
 
 ```js
 init({
-  target: '#claim-target',
-  credential: { name: 'Test Credential' },
-  partnerName: 'My Org',
-  // No publishableKey → stub mode, all steps succeed silently
+    target: '#claim-target',
+    credential: { name: 'Test Credential' },
+    partnerName: 'My Org',
+    // No publishableKey → stub mode, all steps succeed silently
 });
 ```
 
@@ -215,9 +221,9 @@ The SDK uses `srcdoc` iframe delivery and `postMessage`. Supported in all modern
 
 ## Bundle Size
 
-| Format | Raw | Gzipped |
-|--------|-----|---------|
-| IIFE (`learncard.js`) | ~37KB | **~10.5KB** |
+| Format                   | Raw   | Gzipped     |
+| ------------------------ | ----- | ----------- |
+| IIFE (`learncard.js`)    | ~37KB | **~10.5KB** |
 | ESM (`learncard.esm.js`) | ~37KB | **~10.5KB** |
 
 Zero runtime dependencies. The claim modal UI is bundled inline as a minified string.
@@ -225,5 +231,5 @@ Zero runtime dependencies. The claim modal UI is bundled inline as a minified st
 ## See Also
 
 - [How-To: Add an Embed Claim Button to Your Website](../how-to-guides/connect-systems/embed-a-claim-button.md)
-- [Developer Dashboard Guide](../how-to-guides/connect-systems/connect-a-website.md)
-- [Partner Connect SDK](partner-connect.md) — for apps embedded _inside_ LearnCard
+- [Connect a User's LearnCard to Your Platform](../tutorials/create-a-consentflow.md)
+- [Partner Connect SDK](partner-connect/README.md) — for apps embedded _inside_ LearnCard

@@ -190,7 +190,9 @@ const AddressBookContactOptions: React.FC<{
             <ModalLayout handleOnClick={handleCloseModal} allowScroll>
                 <div className="flex w-full flex-col items-center justify-center mb-4">
                     <div className="flex w-full items-center justify-center">
-                        <h1 className="font-poppins m-0 p-0 text-xl">Add Contact</h1>
+                        <h1 className="font-poppins m-0 p-0 text-xl">
+                            {m['contacts.addContact']()}
+                        </h1>
                     </div>
                 </div>
                 <ul className="w-full flex flex-col items-center justify-center ion-padding cursor-pointer">

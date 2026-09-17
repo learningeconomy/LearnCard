@@ -2408,6 +2408,23 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.inbox.finalize.mutate();
             },
+            recoverInboxCredentials: async (learnCard, options = {}) => {
+                const result = await client.inbox.getMyInboxDeliveries.query(options);
+                const results = await Promise.allSettled(
+                    result.records.map(async record => ({
+                        ...record,
+                        credential: VCValidator.parse(
+                            await learnCard.invoke.decryptDagJwe(record.credential, [
+                                learnCard.id.keypair(),
+                            ])
+                        ),
+                    }))
+                );
+                const records = results.flatMap(record =>
+                    record.status === 'fulfilled' ? [record.value] : []
+                );
+                return { ...result, records, failed: results.length - records.length };
+            },
             sendGuardianApprovalEmail: async (_learnCard, options) => {
                 await ensureUser();
 
@@ -2957,6 +2974,13 @@ export const getVerifyBoostPlugin = async (
         if (!issuerDID) return;
         return boostRegistry.find(o => o.did === issuerDID);
     };
+    const getTrustedBoostNetwork = (boostId: unknown): TrustedBoostRegistryEntry | undefined => {
+        if (typeof boostId !== 'string') return;
+        const match = /^lc:network:([^?#\s]+)\/(?:trpc:)?boost:([^/?#\s]+)$/.exec(boostId);
+        if (!match) return;
+        const networkDid = `did:web:${match[1]!.replace(/\//g, ':')}`;
+        return boostRegistry.find(entry => entry.did === networkDid);
+    };
     return {
         name: 'VerifyBoost',
         displayName: 'Verify Boost Extension',
@@ -2967,20 +2991,31 @@ export const getVerifyBoostPlugin = async (
                     credential,
                     options
                 );
+                const hasOuterVerificationErrors = Boolean(verificationCheck.errors?.length);
                 const boostCredential = credential?.boostCredential;
                 try {
-                    if (boostCredential) {
-                        const verifyBoostCredential =
-                            await learnCard.invoke.verifyCredential(boostCredential);
-                        const boostCredentialErrors = verifyBoostCredential.errors ?? [];
-                        if (verifyBoostCredential.status?.length) {
+                    // Legacy credentials contain a separately signed inner VC. New
+                    // credentials are the issuer-signed VC itself with boostId metadata.
+                    const boostId = boostCredential?.boostId ?? credential?.boostId;
+                    if (
+                        boostCredential ||
+                        credential?.boostId ||
+                        credential?.type?.includes('BoostCredential')
+                    ) {
+                        const verifyBoostCredential = boostCredential
+                            ? await learnCard.invoke.verifyCredential(boostCredential)
+                            : verificationCheck;
+                        const boostCredentialErrors = boostCredential
+                            ? (verifyBoostCredential.errors ?? [])
+                            : [];
+                        if (boostCredential && verifyBoostCredential.status?.length) {
                             verificationCheck.status = [
                                 ...(verificationCheck.status ?? []),
                                 ...verifyBoostCredential.status,
                             ];
                         }
 
-                        if (!boostCredential?.boostId && !credential?.boostId) {
+                        if (!boostId) {
                             verificationCheck.warnings.push(
                                 'Boost Authenticity could not be verified: Boost ID metadata is missing.'
                             );
@@ -3002,21 +3037,37 @@ export const getVerifyBoostPlugin = async (
                                 ...(verificationCheck.errors || []),
                                 'Boost Credential could not be verified.',
                             ];
-                        } else if (boostCredential?.boostId !== credential?.boostId) {
+                        } else if (hasOuterVerificationErrors) {
+                            verificationCheck.warnings.push(
+                                'Boost Authenticity could not be verified: Credential verification failed.'
+                            );
+                        } else if (!boostId) {
+                            // The missing metadata warning above explains why trust is unknown.
+                        } else if (
+                            boostCredential &&
+                            boostCredential.boostId !== credential.boostId
+                        ) {
                             verificationCheck.errors.push(
                                 'Boost Authenticity could not be verified: Boost ID metadata is mismatched.'
                             );
                         } else {
-                            const trustedBoostIssuer = getTrustedBoostVerifier(credential?.issuer);
+                            // A direct VC is signed by the issuing authority, not by the
+                            // network. Its signed boostId identifies the associated network.
+                            // Legacy wrappers still establish trust through the outer issuer.
+                            const trustedBoostIssuer = boostCredential
+                                ? getTrustedBoostVerifier(credential?.issuer)
+                                : getTrustedBoostNetwork(boostId);
                             if (trustedBoostIssuer) {
                                 verificationCheck.checks.push(
                                     `Boost is Authentic. Verified by ${trustedBoostIssuer.id}.`
                                 );
                             } else {
                                 verificationCheck.warnings.push(
-                                    `Boost Authenticity could not be verified. Issuer is outside of trust network: ${getIssuerDID(
-                                        credential?.issuer
-                                    )}`
+                                    boostCredential
+                                        ? `Boost Authenticity could not be verified. Issuer is outside of trust network: ${getIssuerDID(
+                                              credential?.issuer
+                                          )}`
+                                        : `Boost Authenticity could not be verified. Boost ID does not identify a trusted network: ${boostId}`
                                 );
                             }
                         }

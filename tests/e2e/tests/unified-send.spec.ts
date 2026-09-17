@@ -155,6 +155,25 @@ describe('Unified Send API E2E Tests', () => {
             expect(result.inbox?.issuanceId).toBeDefined();
         });
 
+        it('should support expiresInDays option and shorten the claim window', async () => {
+            const boostUri = await a.invoke.createBoost(testUnsignedBoost);
+
+            const before = Date.now();
+            const result = await a.invoke.send({
+                type: 'boost',
+                recipient: 'expires-test@example.com',
+                templateUri: boostUri,
+                options: { expiresInDays: 7 },
+            });
+
+            expect(result.inbox?.issuanceId).toBeDefined();
+            const record = await a.invoke.getInboxCredential(result.inbox!.issuanceId);
+            const expiresInMs = new Date(record.expiresAt).getTime() - before;
+            const sevenDays = 7 * 24 * 60 * 60 * 1000;
+            expect(expiresInMs).toBeGreaterThan(sevenDays - 60_000);
+            expect(expiresInMs).toBeLessThanOrEqual(sevenDays + 60_000);
+        });
+
         it('should support branding options', async () => {
             const boostUri = await a.invoke.createBoost(testUnsignedBoost);
 
@@ -296,7 +315,9 @@ describe('Unified Send API E2E Tests', () => {
 
             // Verify templateData was applied to the credential
             expect(vc.name).toBe('Certificate for Alice Johnson');
-            expect(vc.credentialSubject.achievement.name).toBe('Advanced TypeScript Completion Certificate');
+            expect(vc.credentialSubject.achievement.name).toBe(
+                'Advanced TypeScript Completion Certificate'
+            );
             expect(vc.credentialSubject.achievement.description).toContain('Alice Johnson');
             expect(vc.credentialSubject.achievement.description).toContain('Advanced TypeScript');
         });
@@ -449,7 +470,7 @@ describe('Unified Send API E2E Tests', () => {
         });
 
         it('should use signedCredential when provided for email recipient', async () => {
-            testUnsignedBoost.issuer = a.id.did('key')
+            testUnsignedBoost.issuer = a.id.did('key');
             const boostUri = await a.invoke.createBoost(testUnsignedBoost);
 
             // Sign credential client-side
@@ -876,9 +897,7 @@ describe('Unified Send API E2E Tests', () => {
 
             // The auto-delivered credential should be in incoming
             // We can verify by checking that there's an incoming credential from the sender
-            const autoDelivered = incoming.find(
-                (c: { uri: string }) => c.uri !== undefined
-            );
+            const autoDelivered = incoming.find((c: { uri: string }) => c.uri !== undefined);
             expect(autoDelivered).toBeDefined();
         });
 
@@ -1140,7 +1159,10 @@ describe('Unified Send API E2E Tests', () => {
 
             expect(result.inbox?.claimUrl).toBeDefined();
 
-            const { claimResponse, vcapiUrl, vp } = await performClaimFlow(result.inbox!.claimUrl!, b);
+            const { claimResponse, vcapiUrl, vp } = await performClaimFlow(
+                result.inbox!.claimUrl!,
+                b
+            );
             expect(claimResponse.status).toBe(200);
 
             // Try to claim again with the SAME VP - should fail
@@ -1152,7 +1174,7 @@ describe('Unified Send API E2E Tests', () => {
             expect(replayResponse.status).toBe(400);
         });
 
-        it('should allow restarting claim with new challenge after successful claim', async () => {
+        it('should reject restarting a completed claim and recover the original delivery', async () => {
             const boostUri = await a.invoke.createBoost(testUnsignedBoost, {
                 name: 'Restart Claim Test Boost',
             });
@@ -1172,29 +1194,26 @@ describe('Unified Send API E2E Tests', () => {
             const { claimResponse, vcapiUrl } = await performClaimFlow(result.inbox!.claimUrl!, b);
             expect(claimResponse.status).toBe(200);
 
-            // Start a new claim flow with fresh empty request
+            const claimData = await claimResponse.json();
+            const claimedCredentials = claimData.verifiablePresentation.verifiableCredential;
+            expect(claimedCredentials).toHaveLength(1);
+
+            // Finalization wipes escrow, so a fresh challenge cannot re-issue this credential.
             const newFlowResponse = await fetch(vcapiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({}),
             });
-            expect(newFlowResponse.status).toBe(200);
+            expect(newFlowResponse.status).toBe(404);
 
-            const newFlowData = await newFlowResponse.json();
-            expect(newFlowData.verifiablePresentationRequest).toBeDefined();
-
-            // Complete with new VP
-            const newVp = await b.invoke.getDidAuthVp({
-                challenge: newFlowData.verifiablePresentationRequest.challenge,
-                domain: newFlowData.verifiablePresentationRequest.domain,
+            // Response-loss recovery uses the authenticated holder-only copy instead.
+            const recovered = await b.invoke.recoverInboxCredentials();
+            expect(recovered.records).toHaveLength(1);
+            expect(recovered.records[0]).toMatchObject({
+                id: result.inbox!.issuanceId,
+                credential: claimedCredentials[0],
             });
-
-            const secondClaimResponse = await fetch(vcapiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ verifiablePresentation: newVp }),
-            });
-            expect(secondClaimResponse.status).toBe(200);
+            expect(await b.invoke.recoverInboxCredentials()).toEqual(recovered);
         });
 
         it('should verify email contact method after claim via email delivery', async () => {

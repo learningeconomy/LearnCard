@@ -79,6 +79,7 @@ export const brainServiceEnvironmentShape = {
     IS_OFFLINE: optionalEnvironmentBoolean.default(false),
     IS_CI: optionalEnvironmentBoolean.default(false),
     IS_E2E_TEST: optionalEnvironmentBoolean.default(false),
+    INBOX_DELETE_EXPIRED_RECORDS: optionalEnvironmentBoolean.default(false),
     ENABLE_BENCH_ROUTES: optionalEnvironmentBoolean.default(false),
     ENABLE_SEND_CREDENTIAL_TELEMETRY: optionalEnvironmentBoolean.default(false),
     LC_PERF_LOG: optionalEnvironmentBoolean.default(false),

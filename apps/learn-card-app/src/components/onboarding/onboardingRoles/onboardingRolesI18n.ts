@@ -13,6 +13,7 @@
  * SkillProficiencyBar.tsx, CheckListItem.tsx).
  */
 import * as m from '../../../paraglide/messages.js';
+import type { SupportedLanguage } from '../../../i18n';
 import { LearnCardRolesEnum } from '../onboarding.helpers';
 
 // Role enum → catalog key under `onboarding.role.*`. The enum values already
@@ -28,15 +29,22 @@ const ROLE_KEY: Record<LearnCardRolesEnum, string> = {
     [LearnCardRolesEnum.developer]: 'developer',
 };
 
-const tMsg = (key: string): string => {
+const tMsg = (key: string, locale?: SupportedLanguage): string => {
     const fn = (m as Record<string, unknown>)[key];
-    return typeof fn === 'function' ? (fn as () => string)() : '';
+    return typeof fn === 'function'
+        ? (
+              fn as (
+                  inputs?: Record<string, never>,
+                  options?: { locale?: SupportedLanguage }
+              ) => string
+          )({}, locale ? { locale } : undefined)
+        : '';
 };
 
 /** Translated display title for a role. */
-export const getRoleTitle = (role: LearnCardRolesEnum): string =>
-    tMsg(`onboarding.role.${ROLE_KEY[role]}.title`);
+export const getRoleTitle = (role: LearnCardRolesEnum, locale?: SupportedLanguage): string =>
+    tMsg(`onboarding.role.${ROLE_KEY[role]}.title`, locale);
 
 /** Translated description for a role. */
-export const getRoleDescription = (role: LearnCardRolesEnum): string =>
-    tMsg(`onboarding.role.${ROLE_KEY[role]}.description`);
+export const getRoleDescription = (role: LearnCardRolesEnum, locale?: SupportedLanguage): string =>
+    tMsg(`onboarding.role.${ROLE_KEY[role]}.description`, locale);

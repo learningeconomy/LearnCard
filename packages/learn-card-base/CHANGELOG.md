@@ -1,5 +1,49 @@
 # learn-card-base
 
+## 0.4.9
+
+### Patch Changes
+
+- [#1536](https://github.com/learningeconomy/LearnCard/pull/1536) [`b4f94f5a5ffbd52bad6cd26dc3dd627df8d5e6fb`](https://github.com/learningeconomy/LearnCard/commit/b4f94f5a5ffbd52bad6cd26dc3dd627df8d5e6fb) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Return live, unexpired consent metadata for server-side AI authorization, preserving original adult grants and exposing current manager-backed guardian approval for child profiles. Record verified guardian approval with consent terms and audit transactions; require reapproval for legacy child grants or changed contracts. Bind client approval caching and request headers to the specific child, and prevent failed signing from authorizing a guarded action.
+
+    Require current app-owned consent when resolving learner context, including credential sharing exclusions and withdrawn or expired grants. The formatter client sends only selected storage URIs and personal-field names to the configured AI service, refreshes consented data for each request, and exposes the server's consent revision and cache metadata. Remove browser prompt caching and legacy DID-based AI authentication; invalidate sessions and WebSocket tickets across wallet or service changes, including in-flight negotiations.
+
+    Refresh guardian approval at final consent submission if it expired while editing. Issue standards-valid signed credentials in the learner-context benchmark so the formatter exercises real proof verification rather than accepting unverifiable fixtures.
+
+    Breaking partner-connect change (minor release while on 0.x): `LearnerContextCacheStatus` no longer includes `browser-hit` or `browser-miss`, and `LearnerContextTimingBreakdown` no longer exposes `cacheLookupMs` or `prewarmAgeMs`. Remove those browser-cache branches and timing reads. Use `backend-hit` / `backend-miss` for prompt responses and `structured` for structured-only responses; use `totalMs` / `sdkRoundTripMs` for end-to-end timing. Server cache hits still require current consent authorization; do not use cache status as permission to reuse a previous response.
+
+- [#1574](https://github.com/learningeconomy/LearnCard/pull/1574) [`6f4283ff8bc0f0e8939a6f65a390015c18cf0835`](https://github.com/learningeconomy/LearnCard/commit/6f4283ff8bc0f0e8939a6f65a390015c18cf0835) Thanks [@Custard7](https://github.com/Custard7)! - fix: tenant config overlays with a partial `auth` block no longer fail validation before merge
+
+- Updated dependencies [[`20b3844ddb7e649c9964308214ec4c395e9fc8db`](https://github.com/learningeconomy/LearnCard/commit/20b3844ddb7e649c9964308214ec4c395e9fc8db), [`b4f94f5a5ffbd52bad6cd26dc3dd627df8d5e6fb`](https://github.com/learningeconomy/LearnCard/commit/b4f94f5a5ffbd52bad6cd26dc3dd627df8d5e6fb)]:
+    - @learncard/types@5.20.0
+    - @learncard/lca-api-plugin@2.0.5
+    - @learncard/helpers@1.5.1
+    - @learncard/learn-card-plugin@1.2.35
+    - @learncard/ler-rs-plugin@0.1.26
+    - @learncard/render-method-plugin@7.0.0
+    - @learncard/sss-key-manager@0.1.23
+
+## 0.4.8
+
+### Patch Changes
+
+- [#1533](https://github.com/learningeconomy/LearnCard/pull/1533) [`80d2ebf54bb5a643808f8f7d908cf68758903dce`](https://github.com/learningeconomy/LearnCard/commit/80d2ebf54bb5a643808f8f7d908cf68758903dce) Thanks [@goblincore](https://github.com/goblincore)! - Managed credential refresh (LC-2117, LC-2135, LC-2136)
+
+    - Holder refresh through the W3C `refreshService` extension point: standard `1EdTechCredentialRefresh` signed JSON responses and a separate `LearnCardCredentialRefresh2026` encrypted, DID-authenticated managed protocol. Includes SSRF guards, proof/issuer/subject/ID/freshness validation, and typed failures. Compact VC-JWT support is deferred to LC-2195; full 1EdTech protocol conformance is not claimed. Previously issued managed QA credentials must be reissued with the new signed service type.
+    - Managed issuer refresh service in brain-service: allocate-before-signing, issuer-signed and signing-authority publication, immutable holder-encrypted (JWE-only) version chain, holder-authenticated `/refresh/:refreshId` endpoint with ETag/304, history, and revocation gating.
+    - In-place holder wallet replacement with encrypted previous-version history, foreground-only staleness scanning (24h default, configurable), and per-record concurrency safety.
+    - Privacy-safe `CREDENTIAL_REFRESHED` notifications with materiality detection, issuer overrides, and one collapsed record per configurable delivery window.
+    - App surfaces: refresh listener, Updated indicator, notification card, and previous-versions history UI; provisional-to-final CLR demo in the credential viewer.
+
+- Updated dependencies [[`6315fa3346cf75df2c6cbabe78962a9faa408781`](https://github.com/learningeconomy/LearnCard/commit/6315fa3346cf75df2c6cbabe78962a9faa408781), [`80d2ebf54bb5a643808f8f7d908cf68758903dce`](https://github.com/learningeconomy/LearnCard/commit/80d2ebf54bb5a643808f8f7d908cf68758903dce), [`75d1816d5bbbd17772ef4c1c6b4932deacb9ccb5`](https://github.com/learningeconomy/LearnCard/commit/75d1816d5bbbd17772ef4c1c6b4932deacb9ccb5)]:
+    - @learncard/types@5.19.0
+    - @learncard/helpers@1.5.0
+    - @learncard/lca-api-plugin@2.0.4
+    - @learncard/learn-card-plugin@1.2.34
+    - @learncard/ler-rs-plugin@0.1.25
+    - @learncard/render-method-plugin@6.0.0
+    - @learncard/sss-key-manager@0.1.22
+
 ## 0.4.7
 
 ### Patch Changes

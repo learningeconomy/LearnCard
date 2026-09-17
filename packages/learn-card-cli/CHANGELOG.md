@@ -1,5 +1,43 @@
 # @learncard/cli
 
+## 3.5.1
+
+### Patch Changes
+
+- Updated dependencies [[`20b3844ddb7e649c9964308214ec4c395e9fc8db`](https://github.com/learningeconomy/LearnCard/commit/20b3844ddb7e649c9964308214ec4c395e9fc8db), [`b4f94f5a5ffbd52bad6cd26dc3dd627df8d5e6fb`](https://github.com/learningeconomy/LearnCard/commit/b4f94f5a5ffbd52bad6cd26dc3dd627df8d5e6fb), [`19bb79b1355dd9de7f71554fdb608f38b78ed6bb`](https://github.com/learningeconomy/LearnCard/commit/19bb79b1355dd9de7f71554fdb608f38b78ed6bb)]:
+    - @learncard/didkit-plugin@1.10.0
+    - @learncard/types@5.20.0
+    - @learncard/init@2.4.16
+    - @learncard/lca-api-plugin@2.0.5
+    - @learncard/learn-cloud-plugin@2.3.41
+    - @learncard/holder-continuity@0.2.18
+    - @learncard/core@9.4.35
+    - @learncard/ler-rs-plugin@0.1.26
+    - @learncard/linked-claims-plugin@0.2.35
+    - @learncard/open-badge-v2-plugin@1.1.36
+    - @learncard/render-method-plugin@7.0.0
+
+## 3.5.0
+
+### Minor Changes
+
+- [#1528](https://github.com/learningeconomy/LearnCard/pull/1528) [`75d1816d5bbbd17772ef4c1c6b4932deacb9ccb5`](https://github.com/learningeconomy/LearnCard/commit/75d1816d5bbbd17772ef4c1c6b4932deacb9ccb5) Thanks [@Custard7](https://github.com/Custard7)! - Add quickstart commands that mirror the docs: `send <email>` (writes a seed to `.env`, creates an issuer profile, sends an Open Badges 3.0 credential via the universal inbox, and writes a reusable `send.mjs`), plus `init`, `status`, `revoke`, `verify`, `token`, `setup-signing`, `webhook`, `embed`, `consent-contract`, `open`, and `repl`.
+
+### Patch Changes
+
+- Updated dependencies [[`6315fa3346cf75df2c6cbabe78962a9faa408781`](https://github.com/learningeconomy/LearnCard/commit/6315fa3346cf75df2c6cbabe78962a9faa408781), [`80d2ebf54bb5a643808f8f7d908cf68758903dce`](https://github.com/learningeconomy/LearnCard/commit/80d2ebf54bb5a643808f8f7d908cf68758903dce), [`75d1816d5bbbd17772ef4c1c6b4932deacb9ccb5`](https://github.com/learningeconomy/LearnCard/commit/75d1816d5bbbd17772ef4c1c6b4932deacb9ccb5)]:
+    - @learncard/types@5.19.0
+    - @learncard/init@2.4.15
+    - @learncard/holder-continuity@0.2.17
+    - @learncard/core@9.4.34
+    - @learncard/didkit-plugin@1.9.14
+    - @learncard/lca-api-plugin@2.0.4
+    - @learncard/learn-cloud-plugin@2.3.40
+    - @learncard/ler-rs-plugin@0.1.25
+    - @learncard/linked-claims-plugin@0.2.34
+    - @learncard/open-badge-v2-plugin@1.1.35
+    - @learncard/render-method-plugin@6.0.0
+
 ## 3.4.17
 
 ### Patch Changes

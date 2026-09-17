@@ -512,6 +512,15 @@ export const SendOptionsValidator = z.object({
         .email()
         .optional()
         .describe('Guardian email that must approve before student can claim'),
+    expiresInDays: z
+        .number()
+        .int()
+        .min(1)
+        .max(720)
+        .optional()
+        .describe(
+            'How many days the credential stays claimable in the Universal Inbox (default 30). Does not change the credential validity period.'
+        ),
 });
 export type SendOptions = z.infer<typeof SendOptionsValidator>;
 
@@ -698,21 +707,6 @@ export const PaginatedConsentFlowDataValidator = PaginationResponseValidator.ext
 });
 export type PaginatedConsentFlowData = z.infer<typeof PaginatedConsentFlowDataValidator>;
 
-export const ConsentFlowContractDataForDidValidator = z.object({
-    credentials: z.object({ category: z.string(), uri: z.string() }).array(),
-    personal: z.record(z.string(), z.string()).default({}),
-    date: z.string(),
-    contractUri: z.string(),
-});
-export type ConsentFlowContractDataForDid = z.infer<typeof ConsentFlowContractDataForDidValidator>;
-
-export const PaginatedConsentFlowDataForDidValidator = PaginationResponseValidator.extend({
-    records: ConsentFlowContractDataForDidValidator.array(),
-});
-export type PaginatedConsentFlowDataForDid = z.infer<
-    typeof PaginatedConsentFlowDataForDidValidator
->;
-
 export const ConsentFlowTermValidator = z.object({
     sharing: z.boolean().optional(),
     shared: z.string().array().optional(),
@@ -761,6 +755,42 @@ export const PaginatedConsentFlowTermsValidator = PaginationResponseValidator.ex
         .array(),
 });
 export type PaginatedConsentFlowTerms = z.infer<typeof PaginatedConsentFlowTermsValidator>;
+
+export const ConsentFlowGuardianApprovalValidator = z.object({
+    guardianProfileId: z.string(),
+    guardianDid: z.string(),
+    approvedAt: z.string().datetime(),
+    contractUpdatedAt: z.string(),
+});
+export type ConsentFlowGuardianApproval = z.infer<typeof ConsentFlowGuardianApprovalValidator>;
+
+export const ConsentFlowContractDataForDidValidator = z.object({
+    credentials: z.object({ category: z.string(), uri: z.string() }).array(),
+    personal: z.record(z.string(), z.string()).default({}),
+    date: z.string(),
+    createdAt: z.string().optional(),
+    contractUpdatedAt: z.string(),
+    contractExpiresAt: z.string().optional(),
+    reasonForAccessing: z.string().optional(),
+    guardian: z.object({
+        required: z.boolean(),
+        approved: z.boolean(),
+        approval: ConsentFlowGuardianApprovalValidator.optional(),
+    }),
+    contractUri: z.string(),
+    termsUri: z.string(),
+    status: ConsentFlowTermsStatusValidator,
+    expiresAt: z.string().optional(),
+    terms: ConsentFlowTermsValidator,
+});
+export type ConsentFlowContractDataForDid = z.infer<typeof ConsentFlowContractDataForDidValidator>;
+
+export const PaginatedConsentFlowDataForDidValidator = PaginationResponseValidator.extend({
+    records: ConsentFlowContractDataForDidValidator.array(),
+});
+export type PaginatedConsentFlowDataForDid = z.infer<
+    typeof PaginatedConsentFlowDataForDidValidator
+>;
 
 export const ConsentFlowContractQueryValidator = z.object({
     read: z
@@ -875,6 +905,7 @@ export const ConsentFlowTransactionValidator = z.object({
     expiresAt: z.string().optional(),
     oneTime: z.boolean().optional(),
     terms: ConsentFlowTermsValidator.optional(),
+    guardianApproval: ConsentFlowGuardianApprovalValidator.optional(),
     id: z.string(),
     action: ConsentFlowTransactionActionValidator,
     date: z.string(),
@@ -1187,12 +1218,16 @@ export type CreateContactMethodSessionResponseType = z.infer<
 // Inbox Credentials
 export const InboxCredentialValidator = z.object({
     id: z.string(),
-    credential: z.string(),
+    credential: z.string().optional(),
     isSigned: z.boolean(),
     currentStatus: LCNInboxStatusEnumValidator,
     isAccepted: z.boolean().optional(),
     expiresAt: z.string(),
     createdAt: z.string(),
+    finalizedAt: z.string().optional(),
+    expiredAt: z.string().optional(),
+    credentialName: z.string().optional(),
+    achievementType: z.string().optional(),
     issuerDid: z.string(),
     webhookUrl: z.string().optional(),
     boostUri: z.string().optional(),
@@ -1279,10 +1314,13 @@ export const IssueInboxCredentialValidator = z
                     .describe('The webhook URL to receive credential issuance events.'),
                 expiresInDays: z
                     .number()
+                    .int()
                     .min(1)
-                    .max(365)
+                    .max(720)
                     .optional()
-                    .describe('The number of days the credential will be valid for.'),
+                    .describe(
+                        'How many days the encrypted inbox payload remains claimable. This does not change the credential validity period.'
+                    ),
                 templateData: z
                     .record(z.string(), z.unknown())
                     .optional()
@@ -1402,6 +1440,15 @@ export const ClaimInboxCredentialValidator = z.object({
     configuration: z
         .object({
             publishableKey: z.string(),
+            expiresInDays: z
+                .number()
+                .int()
+                .min(1)
+                .max(720)
+                .optional()
+                .describe(
+                    'Inbox claim window in days. Defaults to 720; use a shorter window for sensitive records.'
+                ),
             signingAuthorityName: z.string().optional(),
             listingId: z.string().optional(),
             listingSlug: z.string().optional(),

@@ -1,5 +1,109 @@
 # @learncard/network-brain-service
 
+## 3.18.0
+
+### Minor Changes
+
+- [#1541](https://github.com/learningeconomy/LearnCard/pull/1541) [`20b3844ddb7e649c9964308214ec4c395e9fc8db`](https://github.com/learningeconomy/LearnCard/commit/20b3844ddb7e649c9964308214ec4c395e9fc8db) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Support final-spec P-256 `ecdsa-rdfc-2019` verification in the rebuilt DIDKit engines and public proof options. Require authentication-purpose DIDAuth proofs in both VCALM exchange verification branches. Preserve existing EdDSA behavior and outgoing Ed25519 wallet suite negotiation; this does not add key-aware P-256 wallet production.
+
+    External VCALM responders must sign DIDAuth presentations with `proofPurpose: 'authentication'`, echo the requested `challenge` and `domain`, and use a verification method authorized for authentication by the holder's DID document. Presentations signed with `assertionMethod` (including the previous `issuePresentation` default) are now rejected by claim-link and inbox-claim exchanges. First-party LearnCard and ScoutPass responders already use authentication proofs.
+
+    Allow `created` to be omitted only on final `ecdsa-rdfc-2019` DataIntegrityProofs in shared VC/VP schemas, while preserving the timestamp requirement for other proof suites.
+
+    Inbox claims retain a holder-encrypted recovery copy and therefore also require a supported X25519 key-agreement method. A `did:web` holder can use P-256 for authentication and a separate X25519 key for delivery. Signing-only P-256 `did:key` holders remain supported by generic claim links, but cannot claim inbox deliveries. Failed delivery encryption now returns an error without consuming the pending credential or exchange challenge.
+
+### Patch Changes
+
+- [#1566](https://github.com/learningeconomy/LearnCard/pull/1566) [`e46c302eaed8b98686d21e2f3b5d11b189567304`](https://github.com/learningeconomy/LearnCard/commit/e46c302eaed8b98686d21e2f3b5d11b189567304) Thanks [@gerardopar](https://github.com/gerardopar)! - Restore sending pre-signed and ordinary credentials without a `boostId` claim.
+  Preserve the signed payload unchanged and reject explicit conflicting Boost claims;
+  credentials without signed association metadata do not gain Boost authenticity.
+
+- [#1536](https://github.com/learningeconomy/LearnCard/pull/1536) [`b4f94f5a5ffbd52bad6cd26dc3dd627df8d5e6fb`](https://github.com/learningeconomy/LearnCard/commit/b4f94f5a5ffbd52bad6cd26dc3dd627df8d5e6fb) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Return live, unexpired consent metadata for server-side AI authorization, preserving original adult grants and exposing current manager-backed guardian approval for child profiles. Record verified guardian approval with consent terms and audit transactions; require reapproval for legacy child grants or changed contracts. Bind client approval caching and request headers to the specific child, and prevent failed signing from authorizing a guarded action.
+
+    Require current app-owned consent when resolving learner context, including credential sharing exclusions and withdrawn or expired grants. The formatter client sends only selected storage URIs and personal-field names to the configured AI service, refreshes consented data for each request, and exposes the server's consent revision and cache metadata. Remove browser prompt caching and legacy DID-based AI authentication; invalidate sessions and WebSocket tickets across wallet or service changes, including in-flight negotiations.
+
+    Refresh guardian approval at final consent submission if it expired while editing. Issue standards-valid signed credentials in the learner-context benchmark so the formatter exercises real proof verification rather than accepting unverifiable fixtures.
+
+    Breaking partner-connect change (minor release while on 0.x): `LearnerContextCacheStatus` no longer includes `browser-hit` or `browser-miss`, and `LearnerContextTimingBreakdown` no longer exposes `cacheLookupMs` or `prewarmAgeMs`. Remove those browser-cache branches and timing reads. Use `backend-hit` / `backend-miss` for prompt responses and `structured` for structured-only responses; use `totalMs` / `sdkRoundTripMs` for end-to-end timing. Server cache hits still require current consent authorization; do not use cache status as permission to reuse a previous response.
+
+- [#1566](https://github.com/learningeconomy/LearnCard/pull/1566) [`e46c302eaed8b98686d21e2f3b5d11b189567304`](https://github.com/learningeconomy/LearnCard/commit/e46c302eaed8b98686d21e2f3b5d11b189567304) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-2155] - Eliminate CertifiedBoostCredential wrapper
+
+    Direct credentials use their signed Boost network URI for the trusted-network check.
+    Plaintext sends reject mismatched Boost IDs. Encrypted signing-authority issuance
+    includes all subjects and, for delegated consent AutoBoosts, the contract owner.
+
+    Compatibility limitation: pre-signed `signedCredential` payloads (both plaintext and
+    client-encrypted) are stored unchanged, without a server-generated wrapper or status
+    entries. This includes plaintext credentials from older SDKs or third-party issuers
+    that omit `credentialStatus`. Without embedded status entries or server-retained status
+    coordinates, network revocation changes the recipient relationship only and is not
+    reflected by a holder's `verifyCredential` call. Such integrations must publish their
+    own signed status-list updates or use server-managed signing-authority issuance with
+    a VC v2 template. Storage now warns for both plaintext and encrypted credentials when
+    status metadata is missing or empty, including VC v1 issuance results.
+
+- [#1566](https://github.com/learningeconomy/LearnCard/pull/1566) [`e46c302eaed8b98686d21e2f3b5d11b189567304`](https://github.com/learningeconomy/LearnCard/commit/e46c302eaed8b98686d21e2f3b5d11b189567304) Thanks [@gerardopar](https://github.com/gerardopar)! - Encrypt signing-authority credentials using a single snapshot of each recipient's
+  X25519 keys. Keep DAG-JWE compatibility while eliminating repeated DID resolution
+  and post-encryption key-ID matching.
+
+    Carry status entries explicitly in serializable internal issuance results so copied
+    or cached credentials retain revocation metadata. Reject missing internal metadata,
+    and return false when persisted status JSON is malformed or fails validation.
+
+    Report an explicit Boost-authenticity warning when credential verification fails.
+
+- Updated dependencies [[`20b3844ddb7e649c9964308214ec4c395e9fc8db`](https://github.com/learningeconomy/LearnCard/commit/20b3844ddb7e649c9964308214ec4c395e9fc8db), [`b4f94f5a5ffbd52bad6cd26dc3dd627df8d5e6fb`](https://github.com/learningeconomy/LearnCard/commit/b4f94f5a5ffbd52bad6cd26dc3dd627df8d5e6fb), [`19bb79b1355dd9de7f71554fdb608f38b78ed6bb`](https://github.com/learningeconomy/LearnCard/commit/19bb79b1355dd9de7f71554fdb608f38b78ed6bb)]:
+    - @learncard/didkit-plugin@1.10.0
+    - @learncard/didkit-plugin-node@0.3.0
+    - @learncard/types@5.20.0
+    - @learncard/core@9.4.35
+    - @learncard/helpers@1.5.1
+    - @learncard/did-web-plugin@1.1.35
+    - @learncard/didkey-plugin@1.1.35
+    - @learncard/encryption-plugin@1.1.35
+    - @learncard/learn-card-plugin@1.2.35
+    - @learncard/vc-plugin@1.6.1
+    - @learncard/vc-templates-plugin@1.1.35
+    - @learncard/crypto-plugin@1.1.35
+    - @learncard/dynamic-loader-plugin@1.1.35
+    - @learncard/expiration-plugin@1.2.35
+
+## 3.17.0
+
+### Minor Changes
+
+- [#1533](https://github.com/learningeconomy/LearnCard/pull/1533) [`80d2ebf54bb5a643808f8f7d908cf68758903dce`](https://github.com/learningeconomy/LearnCard/commit/80d2ebf54bb5a643808f8f7d908cf68758903dce) Thanks [@goblincore](https://github.com/goblincore)! - Managed credential refresh (LC-2117, LC-2135, LC-2136)
+
+    - Holder refresh through the W3C `refreshService` extension point: standard `1EdTechCredentialRefresh` signed JSON responses and a separate `LearnCardCredentialRefresh2026` encrypted, DID-authenticated managed protocol. Includes SSRF guards, proof/issuer/subject/ID/freshness validation, and typed failures. Compact VC-JWT support is deferred to LC-2195; full 1EdTech protocol conformance is not claimed. Previously issued managed QA credentials must be reissued with the new signed service type.
+    - Managed issuer refresh service in brain-service: allocate-before-signing, issuer-signed and signing-authority publication, immutable holder-encrypted (JWE-only) version chain, holder-authenticated `/refresh/:refreshId` endpoint with ETag/304, history, and revocation gating.
+    - In-place holder wallet replacement with encrypted previous-version history, foreground-only staleness scanning (24h default, configurable), and per-record concurrency safety.
+    - Privacy-safe `CREDENTIAL_REFRESHED` notifications with materiality detection, issuer overrides, and one collapsed record per configurable delivery window.
+    - App surfaces: refresh listener, Updated indicator, notification card, and previous-versions history UI; provisional-to-final CLR demo in the credential viewer.
+
+- [#1528](https://github.com/learningeconomy/LearnCard/pull/1528) [`75d1816d5bbbd17772ef4c1c6b4932deacb9ccb5`](https://github.com/learningeconomy/LearnCard/commit/75d1816d5bbbd17772ef4c1c6b4932deacb9ccb5) Thanks [@Custard7](https://github.com/Custard7)! - `send()` accepts `options.expiresInDays` (1–720, default 30) for email and phone recipients, matching `/inbox/issue`. It sets how long the credential stays claimable in the Universal Inbox; it does not change the credential's validity period.
+
+### Patch Changes
+
+- [#1573](https://github.com/learningeconomy/LearnCard/pull/1573) [`766100377181a2767b1913b4146c5dd004a926ea`](https://github.com/learningeconomy/LearnCard/commit/766100377181a2767b1913b4146c5dd004a926ea) Thanks [@goblincore](https://github.com/goblincore)! - fix: expose credential refresh challenge through API Gateway
+
+- [#1555](https://github.com/learningeconomy/LearnCard/pull/1555) [`6315fa3346cf75df2c6cbabe78962a9faa408781`](https://github.com/learningeconomy/LearnCard/commit/6315fa3346cf75df2c6cbabe78962a9faa408781) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-2154] - Harden universal inbox
+
+- Updated dependencies [[`75d1816d5bbbd17772ef4c1c6b4932deacb9ccb5`](https://github.com/learningeconomy/LearnCard/commit/75d1816d5bbbd17772ef4c1c6b4932deacb9ccb5), [`6315fa3346cf75df2c6cbabe78962a9faa408781`](https://github.com/learningeconomy/LearnCard/commit/6315fa3346cf75df2c6cbabe78962a9faa408781), [`80d2ebf54bb5a643808f8f7d908cf68758903dce`](https://github.com/learningeconomy/LearnCard/commit/80d2ebf54bb5a643808f8f7d908cf68758903dce), [`75d1816d5bbbd17772ef4c1c6b4932deacb9ccb5`](https://github.com/learningeconomy/LearnCard/commit/75d1816d5bbbd17772ef4c1c6b4932deacb9ccb5)]:
+    - @learncard/expiration-plugin@1.2.34
+    - @learncard/types@5.19.0
+    - @learncard/helpers@1.5.0
+    - @learncard/vc-plugin@1.6.0
+    - @learncard/core@9.4.34
+    - @learncard/did-web-plugin@1.1.34
+    - @learncard/didkey-plugin@1.1.34
+    - @learncard/didkit-plugin@1.9.14
+    - @learncard/didkit-plugin-node@0.2.32
+    - @learncard/encryption-plugin@1.1.34
+    - @learncard/learn-card-plugin@1.2.34
+    - @learncard/vc-templates-plugin@1.1.34
+    - @learncard/crypto-plugin@1.1.34
+    - @learncard/dynamic-loader-plugin@1.1.34
+
 ## 3.16.17
 
 ### Patch Changes

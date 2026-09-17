@@ -1,12 +1,12 @@
 # ConsentFlow Overview
 
-The Consent Flow system allows organizations to create contracts that users can consent to, enabling controlled data sharing and credential issuance.
+ConsentFlow is how a user gives your platform standing permission: to read some of their data, to issue credentials into their account, or both. You publish a **contract** saying what you'd like; each user answers with **terms** saying what they'll allow; every change is logged as a **transaction**. Once a user has consented, you can read and write within those terms without asking again — until they change or withdraw them.
 
-ConsentFlow contracts can also read and share My Skill Profile verifiable data fields such as Goals, Professional Title, Role Experience, Work Experience, Pay Rate, Work Life Balance, Job Stability, and Self-Assigned Skills. See [Verifiable Data in ConsentFlow](verifiable-data-in-consentflow.md) for details.
+If you just want to send someone a badge, you don't need this; use [`send()`](../../how-to-guides/send-credentials.md). ConsentFlow is for an ongoing relationship — a tutor that issues after every lesson, a game that saves progress, a platform that reads a learner's [skills profile](verifiable-data-in-consentflow.md). The end-to-end build is in [Connect a User's LearnCard to Your Platform](../../tutorials/create-a-consentflow.md).
 
-## Architecture
+## The pieces
 
-The Consent Flow Contract system manages permissions and data sharing between profiles using a graph-based data model. It tracks what data can be shared, who has consented to share it, and maintains a transaction history of all consent-related activities.
+Contracts, terms, and transactions are records on the network, linked to the profiles that created them:
 
 ```mermaid
 classDiagram
@@ -62,18 +62,12 @@ classDiagram
     ConsentFlowContract "1" -- "*" Boost : can auto-issue
 ```
 
-The system consists of the following key components:
+- **Contract** — what you're asking for. One per integration, owned by your profile.
+- **Terms** — one user's answer. Lives as long as their consent does.
+- **Transaction** — an audit entry every time terms are created, changed, synced, withdrawn, or used to issue.
+- **Issue on consent** — credentials the network issues the moment someone consents. See [Issue on Consent](auto-boosts.md).
 
-1. **Profiles**: Users who create contracts or consent to contracts
-2. **Contracts**: Define data access requirements and permissions
-3. **Terms**: Record a profile's consent to a contract with specific sharing preferences
-4. **Transactions**: Record actions related to terms (consent, withdraw, update, sync, write)
-5. **Credentials**: Can be issued or synced through contract consent
-6. **Auto-Boosts**: Credentials automatically issued when a user consents to a contract
-
-## ConsentFlow Process
-
-When a profile consents to a contract, the following steps occur:
+## What happens when a user consents
 
 ```mermaid
 sequenceDiagram
@@ -81,84 +75,70 @@ sequenceDiagram
     participant Network as LearnCard Network API
     participant User
 
-    Organization->>Network: createConsentFlowContract(...)
+    Organization->>Network: createContract({ contract, name })
     Network-->>Organization: contractUri
 
     User->>Network: getContract(contractUri)
-    Network-->>User: contract details and terms
+    Network-->>User: contract details and requested permissions
 
-    User->>Network: consentToContract(contractUri, acceptedTerms)
-    Network->>Network: processAutoBoosts()
-    Network-->>User: consent confirmed, autoboosts issued
+    User->>Network: consentToContract(contractUri, { terms })
+    Network->>Network: Issue any configured credentials
+    Network-->>User: { termsUri, redirectUrl? }
 
-    Organization->>Network: getContractData(contractUri, query)
-    Network-->>Organization: data for consented profiles
+    Organization->>Network: verifyConsent(contractUri, profileId)
+    Network-->>Organization: active consent status
+    Organization->>Network: getConsentFlowDataForDid(did, options)
+    Network-->>Organization: records to filter by contractUri
 
-    Organization->>Network: writeToContract(contractUri, profileId, credential)
+    Organization->>Network: writeCredentialToContract(did, contractUri, credential, boostUri)
     Network->>User: credential issued to consented user
 ```
 
-The consent flow includes:
+On consent the network checks the terms satisfy the contract's required permissions, records them, logs a `consent` transaction, issues any credentials you configured to issue on consent, and notifies you. The user can set `expiresAt` on their consent, or `oneTime: true` to share once and immediately mark the terms stale.
 
-1. Verifying the terms are valid for the contract
-2. Creating a terms record with status (live/stale)
-3. Recording a consent transaction
-4. Processing any auto-boosts (if configured)
-5. Notifying the contract owner
+In practice the user does this in the LearnCard app: you send them to `https://learncard.app/consent-flow?uri=<contractUri>&returnTo=<yourUrl>`, they review and accept, and LearnCard redirects back to you with a signed proof of who consented. That redirect, and how to verify it, is the heart of the [tutorial](../../tutorials/create-a-consentflow.md).
 
-Options when consenting:
+## Contracts
 
--   **expiresAt**: Date when the consent expires
--   **oneTime**: If true, marks terms as "stale" after consent
+A contract describes the permissions an organization requests, not the permissions a user has already granted. Both `read` and `write` contain:
 
----
+- `personal`: a map of field names to `{ required: boolean, defaultEnabled?: boolean }`.
+- `credentials.categories`: a map of category names to the same permission shape.
 
-## App Store Integration Contracts
+For example, `read.personal.name: { required: false }` requests an optional name, while `write.credentials.categories.Achievement: { required: true }` requires permission to deliver achievements. Required permissions must be accepted for terms to be valid; optional permissions can be declined. `defaultEnabled` controls the initial selection, not consent itself. `read.anonymize` is optional.
 
-App Store listings can have a **configured consent contract** that simplifies the consent flow for embedded applications. Instead of managing contract URIs in your code, you configure the contract once in your App Store listing, and the SDK automatically resolves it at runtime.
+Methods, all via `learnCard.invoke`:
 
-### How It Works
+- `createContract({ contract, name, description?, image?, expiresAt?, redirectUrl?, reasonForAccessing?, needsGuardianConsent?, autoboosts?, writers? })` → contract URI
+- `getContract(contractUri)`, `getContracts(options?)`, `deleteContract(contractUri)`
 
-```
-┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│  Embedded App   │────▶│  LearnCard Host  │────▶│  App Listing    │
-│                 │     │                  │     │                 │
-│ requestConsent()│     │  Resolve contract│     │  Integration    │
-│  (no contractUri)│    │  from listing    │     │  Config         │
-└─────────────────┘     └──────────────────┘     └─────────────────┘
-                                                          │
-                                                          ▼
-                                                   ┌─────────────────┐
-                                                   │  ConsentFlow    │
-                                                   │  Contract       │
-                                                   └─────────────────┘
-```
+`redirectUrl` is where LearnCard sends the user after they consent (a `returnTo` query parameter overrides it per link). `reasonForAccessing` is shown to the user. `needsGuardianConsent: true` makes this a [GameFlow](gameflow-overview.md) contract: minors need a guardian's approval before they can consent.
 
-**The Resolution Flow:**
+## Terms: what the user actually agreed to
 
-1. **Embedded app** calls `requestConsent()` without a `contractUri`
-2. **LearnCard host** identifies the current app from the iframe context
-3. **Host looks up** the app's listing integration configuration
-4. **Configured contract** is retrieved and used for the consent request
-5. **User sees** the standard consent modal with the contract terms
+Terms are a user's concrete response to a contract. Their shape differs from the requested permissions:
 
-### Benefits
+- `read.personal` maps field names to shared **string values**.
+- `read.credentials` has optional `sharing` and `shareAll` flags and a `categories` map. Each category can contain optional `sharing`, `shared` (credential URI array), `shareAll`, and `shareUntil` fields.
+- `write.personal` and `write.credentials.categories` map names to **boolean permissions**.
+- `read.anonymize` and `deniedWriters` are optional controls.
 
--   **Simplified Code** - No need to hardcode or manage contract URIs
--   **Consistent Terms** - All users consent to the same contract
--   **Easy Updates** - Change the contract in your listing without code changes
--   **Environment Flexibility** - Different contracts for staging/production
+The consenting user manages this record:
 
-### Configuration
+- `consentToContract(contractUri, { terms, expiresAt?, oneTime? })` → `{ termsUri, redirectUrl? }`
+- `getConsentedContracts(options?)` — everything this user has consented to
+- `updateContractTerms(termsUri, { terms, expiresAt?, oneTime? })`
+- `withdrawConsent(termsUri)` — note: the **terms** URI, not the contract URI
 
-To configure a contract for your App Store listing:
+Terms are `live`, `stale`, or `withdrawn`. The one call **you** make before touching a user's data or issuing to them is `verifyConsent(contractUri, profileId)` — it returns `true` only while terms are live and neither the contract nor the terms have expired. Having a terms record on file is not the same as having permission now.
 
-1. Go to your app listing in the LearnCard Developer Portal
-2. Navigate to the **Integration** tab
-3. Select a **Consent Contract** from your existing contracts
-4. Save the configuration
+## Transactions: the audit trail
 
-Once configured, your embedded app can request consent without specifying the contract:
+Every change to a user's terms is logged: `consent`, `update`, `sync` (the user shared existing credentials), `withdraw`, and `write` (you issued a credential through the contract). The user can review this history with `getConsentFlowTransactions(termsUri, options?)`. It's their record of what you did with their permission — which is the point.
+
+## Apps inside LearnCard
+
+If your integration is an [app that runs inside LearnCard](../../how-to-guides/publish-your-app.md), you don't send the user anywhere. Attach a contract to your listing (Developer Portal → your app → **Integration** → **Consent Contract**) and call `requestConsent()` with no arguments; LearnCard shows the consent screen in place and resolves the contract from your listing. Staging and production listings can point at different contracts without a code change.
 
 ```typescript
 // The contract is automatically resolved from your listing
@@ -170,53 +150,4 @@ if (result.granted) {
 }
 ```
 
-### Comparison: With vs Without Configured Contract
-
-**Without Configured Contract (External Apps):**
-
-```typescript
-// You must manage the contract URI
-const CONTRACT_URI = 'lc:network:network.learncard.com/trpc:contract:abc123';
-
-async function requestDataAccess() {
-    const result = await learnCard.requestConsent(CONTRACT_URI);
-    return result.granted;
-}
-```
-
-**With Configured Contract (App Store Apps):**
-
-```typescript
-// Contract is resolved automatically from listing
-async function requestDataAccess() {
-    const result = await learnCard.requestConsent();
-    return result.granted;
-}
-```
-
-### Use Cases
-
-**AI Tutor Apps**
-
--   Configure a contract that grants access to credentials and learning history
--   Use `requestConsent()` followed by `requestLearnerContext()` for AI personalization
-
-**Data Visualization Apps**
-
--   Configure a contract for accessing credential data
--   Build dashboards without hardcoding contract references
-
-**Multi-Environment Workflows**
-
--   Different contracts for development, staging, and production
--   Same code works across all environments
-
-### Prerequisites
-
--   Your app must be published in the LearnCard App Store
--   You must have created a ConsentFlow contract
--   The contract must be linked in your listing's integration settings
-
-{% hint style="info" %}
-If your listing doesn't have a configured contract and you call `requestConsent()` without a `contractUri`, the request will fail with an error indicating no contract is configured.
-{% endhint %}
+Here `learnCard` is the Partner Connect client, not the network SDK. You can also pass a contract URI explicitly: `requestConsent(contractUri)`. Calling it with no argument and no contract on the listing fails with a "no contract configured" error.

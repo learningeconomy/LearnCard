@@ -76,7 +76,7 @@ async function checkSetup(config, expectedOrigin) {
         await setup(config);
         assert.deepEqual(
             navigations.map(url => new URL(url).href),
-            [expectedOrigin + '/', expectedOrigin + '/hidden/seed']
+            [expectedOrigin + '/', expectedOrigin + '/developer/sign-in']
         );
     } else {
         await assert.rejects(setup(config), /baseURL.*absolute HTTP\(S\) URL/);
