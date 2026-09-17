@@ -1853,7 +1853,11 @@
     },
     "recovery": {
         "pin": {
-            "throttled": "Trop de tentatives pour le moment. Attendez une minute et réessayez."
+            "throttled": "Trop de tentatives pour le moment. Attendez une minute et réessayez.",
+            "title": "Recovery PIN",
+            "instantRecoveryOn": "Instant recovery: On",
+            "notSet": "Not set",
+            "change": "Change"
         },
         "error.invalidPhrase": "Ces mots ne correspondent pas à votre phrase de récupération. Vérifiez-les et réessayez.",
         "error.invalidPassword": "Mot de passe incorrect ou le fichier n'a pas pu être lu. Veuillez réessayer.",
@@ -2093,7 +2097,14 @@
             "tooManyAttempts": "Trop de tentatives incorrectes. Réessayez plus tard.",
             "invalidCode": "Ce code est incorrect ou a expiré. Demandez un nouveau code et réessayez.",
             "invalidRecoveryMethod": "Cette méthode n’a pas permis de vérifier votre compte. Essayez-en une autre."
-        }
+        },
+        "automatic": {
+            "restoreWait": "Restore after a 7-day wait"
+        },
+        "addWayBackIn": "Add a way back in",
+        "addAnotherMethod": "Add another method",
+        "fullyProtected": "You're fully protected.",
+        "added": "Added"
     },
     "alerts": {
         "title": "Alertes",

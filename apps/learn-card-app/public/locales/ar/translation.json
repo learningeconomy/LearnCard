@@ -1853,7 +1853,11 @@
     },
     "recovery": {
         "pin": {
-            "throttled": "محاولات كثيرة الآن. انتظر دقيقة ثم حاول مرة أخرى."
+            "throttled": "محاولات كثيرة الآن. انتظر دقيقة ثم حاول مرة أخرى.",
+            "title": "Recovery PIN",
+            "instantRecoveryOn": "Instant recovery: On",
+            "notSet": "Not set",
+            "change": "Change"
         },
         "error.invalidPhrase": "هذه الكلمات لا تتطابق مع عبارة الاسترداد الخاصة بك. تحقق منها وحاول مرة أخرى.",
         "error.invalidPassword": "كلمة المرور غير صحيحة أو تعذرت قراءة الملف. يرجى المحاولة مرة أخرى.",
@@ -2093,7 +2097,14 @@
             "tooManyAttempts": "عدد كبير من المحاولات غير الصحيحة. حاول لاحقًا.",
             "invalidCode": "الرمز غير صحيح أو منتهي الصلاحية. اطلب رمزًا جديدًا وحاول مرة أخرى.",
             "invalidRecoveryMethod": "تعذر التحقق من حسابك بهذه الطريقة. جرّب طريقة أخرى."
-        }
+        },
+        "automatic": {
+            "restoreWait": "Restore after a 7-day wait"
+        },
+        "addWayBackIn": "Add a way back in",
+        "addAnotherMethod": "Add another method",
+        "fullyProtected": "You're fully protected.",
+        "added": "Added"
     },
     "alerts": {
         "title": "التنبيهات",
