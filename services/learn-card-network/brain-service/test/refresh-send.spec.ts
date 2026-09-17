@@ -848,6 +848,51 @@ describe('Unified send with managed refresh (LC-2198)', () => {
             const head = await getCredentialRefreshHead(first.refresh!.refreshId);
             expect(head).toMatchObject({ version: 1 });
         });
+
+        it('replays a signed handoff without templateUri without creating another boost', async () => {
+            const { signed } = await buildHandoff();
+
+            const send = async () =>
+                (await issuer.clients.fullAuth.boost.send({
+                    type: 'boost',
+                    recipient: HOLDER_PROFILE_ID,
+                    signedCredential: signed,
+                    refresh: true,
+                })) as SendResult;
+
+            const first = await send();
+            const boostsAfterFirst = await countNodes('Boost');
+
+            const second = await send();
+
+            expect(second.uri).toBe(first.uri);
+            expect(second.credentialUri).toBe(first.credentialUri);
+            expect(second.activityId).toBe(first.activityId);
+            expect(second.refresh!.refreshId).toBe(first.refresh!.refreshId);
+            expect(await countNodes('Boost')).toBe(boostsAfterFirst);
+            expect(await countNodes('CredentialActivity')).toBe(1);
+        });
+
+        it('does not store the refresh service in a boost auto-created from a signed handoff', async () => {
+            const { signed } = await buildHandoff();
+
+            const result = (await issuer.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: HOLDER_PROFILE_ID,
+                signedCredential: signed,
+                refresh: true,
+            })) as SendResult;
+
+            const boostId = result.uri.split(':').pop();
+            const boostRecord = await runQuery(
+                'MATCH (b:Boost {id: $boostId}) RETURN b.boost AS boost',
+                { boostId }
+            );
+            const storedTemplate = JSON.parse(boostRecord.records[0]!.get('boost'));
+
+            expect(result.refresh).toBeDefined();
+            expect(storedTemplate.refreshService).toBeUndefined();
+        });
     });
 
     describe('normal sends are unchanged', () => {

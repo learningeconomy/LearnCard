@@ -370,6 +370,13 @@ const getInitialRefreshRoot = async (refreshId: string): Promise<InitialRefreshR
     };
 };
 
+/**
+ * Returns the boost a managed refresh's version 1 is already bound to, if any. Lets a
+ * replayed pre-signed send reuse its original boost instead of auto-creating another.
+ */
+export const getBoundRefreshBoostId = async (refreshId: string): Promise<string | undefined> =>
+    (await getInitialRefreshRoot(refreshId))?.boostId;
+
 const assertInitialCredentialMatches = (
     root: InitialRefreshRoot,
     materialDigest: string,

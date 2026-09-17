@@ -48,6 +48,7 @@ import { t, profileRoute } from '@routes';
 
 import {
     getBoostByUri,
+    getBoostById,
     getBoostsForProfile,
     countBoostsForProfile,
     getBoostsByUri,
@@ -180,6 +181,7 @@ import type { IssuedCredential } from '../types/credential';
 import {
     allocateCredentialRefresh,
     extractManagedRefreshHandoff,
+    getBoundRefreshBoostId,
     peekCredentialRefreshInitialBinding,
     sendRefreshableCredential,
 } from '@helpers/credential-refresh.helpers';
@@ -996,22 +998,51 @@ export const boostsRouter = t.router({
                         boostUri = getBoostUri(boost.id, domain);
                         boostCreated = true;
                     } else if (input.signedCredential) {
-                        // Auto-create boost from the signed credential
-                        const credential = input.signedCredential as Record<string, unknown>;
-                        const name =
-                            typeof credential.name === 'string' ? credential.name : undefined;
+                        // A replayed managed handoff reuses the boost its refresh is already
+                        // bound to (the pre-mutation guard validated the handoff above).
+                        const boundBoostId = refreshRequested
+                            ? await traceDb('getBoundRefreshBoostId', () =>
+                                  getBoundRefreshBoostId(
+                                      extractManagedRefreshHandoff(input.signedCredential!, domain)!
+                                          .refreshId
+                                  )
+                              )
+                            : undefined;
+                        const boundBoost = boundBoostId
+                            ? await traceDb('getBoostById:boundRefresh', () =>
+                                  getBoostById(boundBoostId)
+                              )
+                            : null;
 
-                        boost = await traceDb('createBoost:fromSignedCredential', () =>
-                            createBoost(
-                                input.signedCredential!,
-                                profile,
-                                { ...(name ? { name } : {}) },
-                                domain
-                            )
-                        );
+                        if (boundBoost) {
+                            boost = boundBoost;
+                            boostUri = getBoostUri(boundBoost.id, domain);
+                        } else {
+                            // Auto-create boost from the signed credential. A managed refresh
+                            // service belongs to one holder's credential, never to a reusable
+                            // template, so it is not stored on the boost.
+                            const { refreshService: _refreshService, ...templateCredential } =
+                                input.signedCredential as Record<string, unknown>;
+                            const name =
+                                typeof templateCredential.name === 'string'
+                                    ? templateCredential.name
+                                    : undefined;
 
-                        boostUri = getBoostUri(boost.id, domain);
-                        boostCreated = true;
+                            boost = await traceDb('createBoost:fromSignedCredential', () =>
+                                createBoost(
+                                    (refreshRequested
+                                        ? templateCredential
+                                        : input.signedCredential!) as typeof input.signedCredential &
+                                        object,
+                                    profile,
+                                    { ...(name ? { name } : {}) },
+                                    domain
+                                )
+                            );
+
+                            boostUri = getBoostUri(boost.id, domain);
+                            boostCreated = true;
+                        }
                     }
 
                     if (!boost) {
