@@ -35,7 +35,7 @@ Sample personas are defined as ordered credential-library bundles. Publish one a
 idempotent consent-flow contract from this service directory:
 
 ```bash
-bun scripts/seed-demo-persona.ts student
+bun run seed:demo-persona student
 ```
 
 When the active environment points at the local Docker databases, no extra arguments

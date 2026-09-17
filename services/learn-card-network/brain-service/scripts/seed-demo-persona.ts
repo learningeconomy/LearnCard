@@ -3,7 +3,7 @@
  * Publish a credential-library persona as a ConsentFlow contract with auto-boosts.
  *
  * Usage (from services/learn-card-network/brain-service):
- *   bun scripts/seed-demo-persona.ts student
+ *   bun run seed:demo-persona student
  *
  * The script is idempotent: profile, signing authority, Boost, contract, and
  * AUTO_RECEIVE identifiers are stable. Re-running updates fixture content and
@@ -27,7 +27,7 @@ import {
     getFixture,
     prepareFixture,
     type CredentialBundleEntry,
-} from '@learncard/credential-library/source';
+} from '@learncard/credential-library';
 import type { UnsignedVC } from '@learncard/types';
 import { flattenObject } from '../src/helpers/objects.helpers';
 

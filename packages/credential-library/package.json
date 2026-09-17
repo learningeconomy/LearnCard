@@ -50,7 +50,6 @@
             "import": "./dist/credential-library.esm.js",
             "require": "./dist/index.js",
             "default": "./dist/credential-library.esm.js"
-        },
-        "./source": "./src/index.ts"
+        }
     }
 }
