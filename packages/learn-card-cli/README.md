@@ -24,7 +24,7 @@ https://docs.learncard.com
 npx @learncard/cli send
 ```
 
-Asks for your email (or pass it: `send you@yourdomain.com`), generates a seed into `.env`, creates your issuer profile, sends a "Quickstart Complete" badge to the address, and writes the code it ran to `./send.mjs`. Placeholder addresses like `you@example.com` are rejected — nobody would receive the badge. Pass `--yes` to accept defaults (the recipient must then be given as an argument); `--name "Acme"`, `--badge "Welcome to Acme"`, `--description`, and `--profile-id` set them explicitly. Walkthrough: https://docs.learncard.com/start-here/your-first-integration
+Prompts for a recipient if omitted (or pass it: `send you@yourdomain.com`), generates a seed into `.env`, creates your issuer profile, sends a "Quickstart Complete" badge, and writes the code it ran to `./send.mjs`. The recipient can be an email or phone number (delivered through the Universal Inbox with a claim link) or an existing profile ID or DID (delivered straight into their wallet). Placeholder addresses like `you@example.com` are rejected — nobody would receive the badge. Pass `--yes` to accept defaults (the recipient must then be given as an argument); `--name "Acme"`, `--badge "Welcome to Acme"`, `--description`, and `--profile-id` set them explicitly. Walkthrough: https://docs.learncard.com/start-here/your-first-integration
 
 ### Demonstrate credential refresh
 

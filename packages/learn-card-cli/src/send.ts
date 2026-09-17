@@ -124,10 +124,25 @@ export const personalizeSendFromTemplateMjs = (deliveryOptions?: SendDeliveryOpt
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE = /^\+?\d{10,15}$/;
+const DID = /^did:[a-z0-9]+:.+$/;
+const PROFILE_ID = /^[a-z0-9-]{3,40}$/;
+
+export type RecipientKind = 'email' | 'phone' | 'did' | 'profileId';
+
+export const classifyRecipient = (value: string): RecipientKind => {
+    if (EMAIL.test(value)) return 'email';
+    if (PHONE.test(value)) return 'phone';
+    if (DID.test(value)) return 'did';
+    if (PROFILE_ID.test(value)) return 'profileId';
+    throw new Error(
+        `"${value}" is not an email, phone number, profile ID, or DID. Example: npx @learncard/cli send you@yourdomain.com`
+    );
+};
+
 /** Domains reserved for documentation (RFC 2606 / RFC 6761). Mail to them goes nowhere. */
 const PLACEHOLDER_DOMAIN = /(^|\.)example\.(com|net|org)$|(^|\.)(example|test|invalid|localhost)$/i;
 
-export const RECIPIENT_PROMPT = 'Where should we send your first badge? (your email or phone)';
+export const RECIPIENT_PROMPT = 'Where should we send your first badge? (email, phone number, profile ID, or DID)';
 
 export const isPlaceholderRecipient = (recipient: string): boolean => {
     const at = recipient.lastIndexOf('@');
@@ -140,11 +155,11 @@ export const isPlaceholderRecipient = (recipient: string): boolean => {
  * so they are called out specifically — docs readers paste them verbatim.
  */
 export const invalidRecipientReason = (recipient: string): string | undefined => {
-    if (!recipient) return 'Enter an email address or phone number.';
-    if (isPlaceholderRecipient(recipient))
+    if (!recipient) return 'Enter an email, phone number, profile ID, or DID.';
+    if (EMAIL.test(recipient) && isPlaceholderRecipient(recipient))
         return `"${recipient}" is a placeholder address — nobody will receive the badge. Use a real email you can open.`;
-    if (!EMAIL.test(recipient) && !PHONE.test(recipient))
-        return `"${recipient}" is not an email address or phone number.`;
+    if (!EMAIL.test(recipient) && !PHONE.test(recipient) && !DID.test(recipient) && !PROFILE_ID.test(recipient))
+        return `"${recipient}" is not an email, phone number, profile ID, or DID.`;
     return undefined;
 };
 
@@ -182,11 +197,11 @@ export const runSend = async (
     const cwd = process.cwd();
     const project = await loadProject(cwd);
     const prompts = createPrompts(options.yes);
-    let recipientEmail: string;
+    let resolvedRecipient: string;
     let displayName: string | undefined;
     let badge: Badge;
     try {
-        recipientEmail = await resolveRecipient(recipient, prompts);
+        resolvedRecipient = await resolveRecipient(recipient, prompts);
         const needsName = !project.env.PROFILE_ID && !options.profileId && !options.name;
         displayName = needsName
             ? await prompts.ask('Display name for your issuer profile', 'My Organization')
@@ -198,6 +213,7 @@ export const runSend = async (
     } finally {
         prompts.close();
     }
+    const recipientKind = classifyRecipient(resolvedRecipient);
     const identity = await ensureIdentity(project, { ...options, name: displayName, yes: true });
     const asManaged = options.as ? await connectAsManaged(project, options, options.as) : undefined;
     const hostedSigning = !!project.env.SIGNING_AUTHORITY_NAME;
@@ -258,7 +274,7 @@ export const runSend = async (
         }
         result = await learnCard.invoke.send({
             type: 'boost',
-            recipient: recipientEmail,
+            recipient: resolvedRecipient,
             templateUri: options.templateUri ?? project.env.TEMPLATE_URI!,
             ...effectiveSendOptions,
         });
@@ -268,7 +284,7 @@ export const runSend = async (
         );
         result = await learnCard.invoke.send({
             type: 'boost',
-            recipient: recipientEmail,
+            recipient: resolvedRecipient,
             signedCredential: credential,
             ...effectiveSendOptions,
         });
@@ -276,12 +292,14 @@ export const runSend = async (
     out.log('');
     if (result.inbox?.status === 'PENDING') {
         out.log(
-            `Sent. ${recipientEmail} will get a claim email. You can also share this link directly:\n${result.inbox.claimUrl}`
+            `Sent. ${resolvedRecipient} will get a claim ${recipientKind === 'phone' ? 'text' : 'email'}. You can also share this link directly:\n${result.inbox.claimUrl}`
+        );
+    } else if (recipientKind === 'email' || recipientKind === 'phone') {
+        out.log(
+            `Delivered. ${resolvedRecipient} already uses LearnCard — the credential is in their wallet.`
         );
     } else {
-        out.log(
-            `Delivered. ${recipientEmail} already uses LearnCard — the credential is in their wallet.`
-        );
+        out.log(`Delivered directly to ${resolvedRecipient} — it is waiting in their LearnCard wallet.`);
     }
     out.log(`Reusable template for this badge: ${result.uri}`);
     const filename = useTemplate ? 'send-from-template.mjs' : 'send.mjs';
@@ -299,7 +317,7 @@ export const runSend = async (
         );
         wroteSendFile = true;
         out.log(
-            `\nThe code that just ran is in ./${filename} — run it yourself:\n  npm install @learncard/init\n  node --env-file=.env ${filename} ${recipientEmail}`
+            `\nThe code that just ran is in ./${filename} — run it yourself:\n  npm install @learncard/init\n  node --env-file=.env ${filename} ${resolvedRecipient}`
         );
     }
     out.log(`Check whether it was claimed: npx @learncard/cli status ${result.activityId}`);
@@ -308,7 +326,8 @@ export const runSend = async (
         profileId: options.as ?? identity.profileId,
         ...(options.as && { onBehalfOf: identity.profileId }),
         did: learnCard.id.did(),
-        recipient: recipientEmail,
+        recipient: resolvedRecipient,
+        recipientKind,
         status: result.inbox?.status === 'PENDING' ? 'PENDING' : 'ISSUED',
         ...(result.inbox?.claimUrl && { claimUrl: result.inbox.claimUrl }),
         templateUri: result.uri,

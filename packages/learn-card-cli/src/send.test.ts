@@ -73,10 +73,12 @@ describe('recipient validation', () => {
 
     it('explains why a recipient is unusable', () => {
         expect(invalidRecipientReason('you@example.com')).toMatch(/placeholder/);
-        expect(invalidRecipientReason('not-an-email')).toMatch(/not an email address/);
-        expect(invalidRecipientReason('')).toBe('Enter an email address or phone number.');
+        expect(invalidRecipientReason('Not A Recipient!')).toMatch(/not an email/);
+        expect(invalidRecipientReason('')).toBe('Enter an email, phone number, profile ID, or DID.');
         expect(invalidRecipientReason('me@acme.org')).toBeUndefined();
         expect(invalidRecipientReason('+15555550100')).toBeUndefined();
+        expect(invalidRecipientReason('cs-exampleville')).toBeUndefined();
+        expect(invalidRecipientReason('did:web:network.learncard.com:users:exde')).toBeUndefined();
     });
 
     it('accepts a valid recipient without prompting', async () => {
@@ -92,7 +94,7 @@ describe('recipient validation', () => {
     });
 
     it('re-prompts interactively until a placeholder is replaced', async () => {
-        const { prompts, asked } = fakePrompts(['nope', 'me@acme.org']);
+        const { prompts, asked } = fakePrompts(['not a recipient', 'me@acme.org']);
         expect(await resolveRecipient('you@example.com', prompts)).toBe('me@acme.org');
         expect(asked).toEqual([RECIPIENT_PROMPT, RECIPIENT_PROMPT]);
     });
@@ -129,5 +131,20 @@ describe('personalizeSendMjs', () => {
         expect(out).toContain('name: "Welcome to Acme"');
         expect(out).not.toContain('Quickstart Complete');
         expect(out).toContain('description: "You joined."');
+    });
+});
+
+describe('classifyRecipient', () => {
+    it('detects each recipient kind the network routes on', async () => {
+        const { classifyRecipient } = await import('./send');
+        expect(classifyRecipient('you@example.com')).toBe('email');
+        expect(classifyRecipient('+15555550123')).toBe('phone');
+        expect(classifyRecipient('did:web:network.learncard.com:users:exde')).toBe('did');
+        expect(classifyRecipient('cs-exampleville')).toBe('profileId');
+    });
+
+    it('rejects anything else with an example', async () => {
+        const { classifyRecipient } = await import('./send');
+        expect(() => classifyRecipient('Not A Recipient!')).toThrow(/profile ID, or DID/);
     });
 });
