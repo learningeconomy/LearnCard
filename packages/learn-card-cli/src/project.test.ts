@@ -138,7 +138,10 @@ describe('project context', () => {
             );
             await fs.writeFile(path.join(cwd, '.gitignore'), '.env\n');
             const project = await loadProject(cwd);
-            const identity = await ensureIdentity(project, { yes: true, profileId: 'ignored' });
+            await expect(
+                ensureIdentity(project, { yes: true, profileId: 'someone-else' })
+            ).rejects.toThrow(/--as someone-else/);
+            const identity = await ensureIdentity(project, { yes: true, profileId: 'issuer' });
             expect(identity.seed).toBe('existing');
             expect(identity.profileId).toBe('issuer');
             expect(console.log).not.toHaveBeenCalled();
@@ -202,6 +205,16 @@ describe('upsertEnv value quoting', () => {
     it('quotes values with spaces or shell-significant characters', () => {
         expect(upsertEnv('', { API_TOKEN_SCOPE: 'boosts:write inbox:read' })).toBe(
             'API_TOKEN_SCOPE="boosts:write inbox:read"\n'
+        );
+    });
+});
+
+describe('connectAsManaged', () => {
+    it('explains how to get a profile manager when .env has none', async () => {
+        const { connectAsManaged } = await import('./project');
+        const project = { env: { SECURE_SEED: 'seed' }, envPath: '/x/.env', existing: '' };
+        await expect(connectAsManaged(project, {}, 'cs-exampleville')).rejects.toThrow(
+            /profileManager section/
         );
     });
 });
