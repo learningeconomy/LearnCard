@@ -90,10 +90,10 @@ export const AutomaticRecoveryCard: React.FC<AutomaticRecoveryProps> = ({
         }
     };
 
-    const handleSetPin = async () => {
+    const handleSetPin = async (confirmation: string) => {
         if (!onSetEscrowPin) return;
-        if (pinInput !== pinConfirmInput) {
-            setError(m['recovery.passwordsDontMatch']());
+        if (pinInput !== confirmation) {
+            setError(m['recovery.pin.mismatch']());
             setPinConfirmInput('');
             setPinMode('confirm');
             return;
@@ -331,7 +331,7 @@ export const AutomaticRecoveryCard: React.FC<AutomaticRecoveryProps> = ({
                                     }}
                                     onComplete={val => {
                                         setPinConfirmInput(val);
-                                        handleSetPin();
+                                        void handleSetPin(val);
                                     }}
                                     disabled={loading !== null}
                                 />
