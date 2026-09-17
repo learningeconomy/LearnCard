@@ -6,6 +6,9 @@ export default createVitestConfig(nodePreset, {
             'src/**/*.test.ts',
             'test/keycloak-verify.spec.ts',
             'test/keycloak-verify.integration.spec.ts',
+            'test/oidc.spec.ts',
+            'test/auth-tickets.spec.ts',
+            'test/oidc.integration.spec.ts',
         ],
     },
 });

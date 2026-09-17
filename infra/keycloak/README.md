@@ -41,9 +41,24 @@ All three users have password `password`:
 | `dev-unverified` | Unverified `dev-unverified@example.com` (API must reject) |
 
 - `learncard-app`: public authorization-code client with S256 PKCE, no password grant.
-- `lca-api`: confidential service account, placeholder secret `dev-only-secret`.
+- `lca-api`: existing confidential service client, placeholder secret `dev-only-secret`.
 - `ci-tests`: confidential password-grant client, secret `ci-tests-dev-only-secret`.
   It lets CI obtain real signed tokens without a browser; **never create it in staging/prod**.
+
+## lca-api identity provider
+
+The hidden `lca-api` OIDC provider brokers email-code and native Google/Apple proofs
+using a single-use ticket forwarded as `login_hint`. It uses `keycloak-broker` /
+`dev-only-broker-secret`, independently of the existing `lca-api` service client.
+Browser redirects and `OIDC_ISSUER` use `http://localhost:5100`; backchannel token,
+JWKS and userinfo calls use `host.docker.internal` to reach the host from Docker.
+The compose/CI host-gateway entry makes that hostname work on Linux too.
+The gated integration test checks discovery and the real broker redirect/import,
+not the complete ticket-to-Keycloak-session round-trip (TODO: Redis/Mongo-backed CI).
+
+> **Phone login is deferred.** The current login-ticket flow covers email codes and
+> native Google/Apple only. The `dev-phone` user and the `phone_number*` attributes/mappers
+> are wired ahead of time so the phone path lands without a fixture change later.
 
 Keycloak 26's [declarative user profile](https://www.keycloak.org/docs/latest/server_admin/#user-profile)
 disables unmanaged attributes by default. Undeclared phone attributes can silently
