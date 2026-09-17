@@ -57,12 +57,12 @@ Direct deliveries to existing accounts don't go through this escrow; they are st
 ## Batch Issuance
 
 Use `POST /inbox/issue-batch` (tRPC `inbox.issueBatch`) or
-`learnCard.invoke.sendCredentialsViaInbox({ items, configuration })` to issue up to
+`learnCard.invoke.sendCredentialBatchViaInbox({ items, configuration })` to issue up to
 100 credentials per request. The same `inbox:write` permission and signing,
 claiming, guardian approval, webhook, and tenant email behavior apply as for single issuance.
 
 ```typescript
-const batch = await learnCard.invoke.sendCredentialsViaInbox({
+const batch = await learnCard.invoke.sendCredentialBatchViaInbox({
     configuration: {
         signingAuthority: { endpoint: 'https://issuer.example/sign', name: 'default' },
         webhookUrl: 'https://issuer.example/events',
@@ -95,7 +95,13 @@ issuance. Overlapping attempts return a per-item `CONFLICT`; once the first atte
 completes, a retry returns the cached success. Reusing a key with different input
 also returns `CONFLICT`.
 
-Validation and template-preparation failures release the key. If an error or process
+Within one batch, only the first occurrence of an idempotency key is attempted.
+Every later occurrence returns `CONFLICT`, regardless of worker timing or whether
+the first item succeeds. Send each intended issuance once per batch.
+
+Validation, template-preparation, and explicitly side-effect-free issuance preflight
+failures release the key and retain their original error code. Correct the input
+and retry with the same key. If an error or process
 termination occurs after issuance starts, the outcome may be uncertain: a credential
 or email may already exist. The reservation remains for up to 24 hours to prevent
 automatic duplicate issuance, and retries return `CONFLICT` until a successful
@@ -103,7 +109,17 @@ result is recorded. Check the issuer's sent inbox records and contact support to
 reconcile an unconfirmed outcome; do not retry with a new key or assume expiry means
 the original attempt failed. This is retry protection, not an exactly-once transaction
 across credential storage, email, and webhooks. Production requires shared Redis;
-batch issuance fails closed when it is not configured.
+batch issuance fails closed when it is not configured. Non-production serverless-offline
+runs may use the in-memory fallback; it does not coordinate independent processes.
+
+If issuance completed but the replay record could not be confirmed after a bounded
+retry, the item returns `CONFLICT` with `issuanceId` and, if available, `claimUrl`.
+Use that ID to inspect the issuance; the failed result does not mean nothing was issued.
+
+Both `/inbox/issue` and `/inbox/issue-batch` now accept `configuration.guardianEmail`
+to require guardian approval. This newly exposes the existing guardian flow to
+single-issue callers as well. The guardian email must differ from the recipient's
+email, ignoring case; batches enforce this after merging configuration.
 
 For 20,000 transcripts, send approximately 200 requests of 100 items, reducing the
 chunk size when needed to keep each serialized JSON request at or below **4 MiB
@@ -113,8 +129,20 @@ limit accounts for the Lambda deployment's
 20 MB batches are not supported by that deployment. Gateway envelope overhead can
 further reduce the usable size, so keep margin below the limit in clients.
 
+The Lambda deployment has a **29-second request timeout**. The 100-item maximum is
+an input limit, not a guarantee that 100 items finish in time: at concurrency 10,
+that requires ten waves of signing, storage and delivery. Measure latency with your
+credentials and signing authority, begin with small chunks, and keep substantial
+margin below the timeout. There is no background batch job or partial response on
+a gateway timeout. Some items may already have been issued; include a key on every
+item and reconcile uncertain outcomes before issuing again. A safe production
+chunk size requires measurements; this implementation does not establish one.
+
 The default quota is **10,000 submitted items per hour per issuer**, including
-replays and failed attempts. A 20,000-item run must therefore span at least two quota
+replays and failed items in admitted batches. A batch rejected for exceeding the
+quota spends no units and does not extend the window: at 9,950/10,000, a rejected
+100-item batch leaves room for 50 items. Admission is atomic across instances.
+A 20,000-item run must therefore span at least two quota
 windows. On HTTP 429, wait for the hourly window to expire (at most 3,600 seconds).
 Retry failed items with their original keys; after an uncertain transport failure,
 retry the original chunk with the same keys. Internal concurrency defaults to 10.

@@ -37,6 +37,60 @@ const learncardApiClient = {
 };
 ```
 
+### Issue a batch
+
+`POST /api/inbox/issue-batch` requires an `inbox:write` token. The SDK equivalent is
+`learnCard.invoke.sendCredentialBatchViaInbox(batch)`; the tRPC procedure is
+`inbox.issueBatch`.
+
+```javascript
+const batch = {
+    configuration: { delivery: { suppress: true } },
+    items: [
+        {
+            recipient: { type: 'email', value: 'student@example.com' },
+            templateUri: 'lc:network:network.learncard.com/trpc:boost:YOUR_BOOST_ID',
+            idempotencyKey: 'course-2026-student-001',
+        },
+    ],
+};
+const response = await learncardApiClient.post('/inbox/issue-batch', batch);
+// Or: await learnCard.invoke.sendCredentialBatchViaInbox(batch);
+for (const result of response.results) {
+    if (result.success) console.log(result.index, result.issuanceId, result.deduplicated);
+    else console.log(result.index, result.error.code, result.issuanceId);
+}
+```
+
+| Field                    | Contract                                                                                                                          |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| `items`                  | 1–100 items; each needs `recipient` and either `credential` or `templateUri`.                                                     |
+| `configuration`          | Shared defaults, deep-merged with each item's overrides; arrays replace defaults.                                                 |
+| `items[].idempotencyKey` | Optional string, up to 256 characters; scoped to the issuer for 24 hours.                                                         |
+| `results`                | One outcome per item, in input order, with `success` and zero-based `index`.                                                      |
+| Success result           | `issuanceId`, `status`, `recipient`, optional `claimUrl`, `recipientDid`, `guardianStatus`, and `deduplicated`.                   |
+| Failure result           | `error.code` and `error.message`; may also include `issuanceId` and `claimUrl` when issuance completed but replay storage failed. |
+| `summary`                | `total`, `succeeded`, `failed`, `deduplicated`.                                                                                   |
+
+Identical keyed retries replay the same issuance with `deduplicated: true`.
+Changed input under the same key returns `CONFLICT`. Within one batch, later
+occurrences of a key always conflict; only its first occurrence is attempted.
+Preflight failures with no side effects release the key. Once issuance has started,
+uncertain outcomes retain it: reconcile the returned issuance ID when available
+and never work around an uncertain outcome by issuing under a new key.
+
+Item errors return HTTP 200 with `success: false`. Request-wide input or auth
+errors fail the request. JSON bodies over 4 MiB return 413; quota exhaustion
+returns 429. The default quota is 10,000 admitted items per issuer per hour;
+rejected batches do not consume quota. Admitted replays and failed items do.
+The Lambda timeout is 29 seconds, so size chunks using measured latency as well
+as the 100-item and 4 MiB limits. See [batch issuance](../../core-concepts/network-and-interactions/universal-inbox.md#batch-issuance)
+for timeout and recovery guidance.
+
+Both single and batch issuance accept `configuration.guardianEmail`. It enables
+guardian approval before claiming and must differ from the recipient email,
+ignoring case. Batch validation uses the merged configuration.
+
 ### The Simplest Case: Fire and Forget
 
 Your goal is to send a single, verifiable record to a user. You want our system to handle all the complexity of signing the credential and notifying the user.

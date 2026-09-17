@@ -39,6 +39,9 @@ export const isInboxBatchRequest = (url: string): boolean => {
  * Gives adapter wildcard routes a 4 MiB parser ceiling, then enforces the real per-procedure
  * limit in preParsing. trpc-to-openapi and tRPC each register one catch-all Fastify route, so
  * setting a limit on `/api/inbox/issue-batch` would never run in the Docker server.
+ * Other procedures retain the server's default budget here. Future procedures needing a
+ * different budget must update this selector as well as the shared parser ceiling; a route
+ * bodyLimit alone cannot override this streaming guard.
  */
 export const configureInboxBatchBodyLimit = (server: FastifyInstance): void => {
     const defaultLimit = server.initialConfig.bodyLimit ?? 1024 * 1024;
@@ -105,6 +108,8 @@ export const withInboxBatchBodyLimit =
         if (isInboxBatchRequest(path) && bytes > INBOX_BATCH_MAX_BYTES) {
             // A tRPC batch expects one response entry per requested procedure, including this
             // transport-level failure, whereas REST returns its ordinary error object.
+            // REST matches trpc-to-openapi's { message, code } validation envelope, rather
+            // than the shim's { error: ... } fallback for unexpected adapter exceptions.
             const paths = requestPath(path)
                 .replace(/^\/trpc\//, '')
                 .split(',');
