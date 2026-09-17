@@ -21,15 +21,12 @@ import {
     redirectStore,
     useSignInAdapter,
 } from 'learn-card-base';
-import { SocialLoginTypes } from 'learn-card-base/hooks/useSocialLogins';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import * as m from '../../paraglide/messages.js';
 import { LOGIN_REDIRECTS } from 'learn-card-base/constants/redirects';
 import { openPP, openToS } from '../../helpers/externalLinkHelpers';
 import { useAuthCoordinator } from '../../providers/AuthCoordinatorProvider';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
-import { getLogger } from 'learn-card-base';
-const log = getLogger('external-consent-flow-door');
 
 enum Step {
     landing,
@@ -59,14 +56,6 @@ const ExternalConsentFlowDoor: React.FC = () => {
 
     // TODO duplicated from QRCodeUserCard, should turn into helper
     const handleLogout = async () => {
-        const typeOfLogin = authStore?.get?.typeOfLogin();
-        const nativeSocialLogins = [
-            SocialLoginTypes.apple,
-            SocialLoginTypes.sms,
-            SocialLoginTypes.passwordless,
-            SocialLoginTypes.google,
-        ];
-
         const redirectUrl =
             IS_PRODUCTION || Capacitor.getPlatform() === 'android'
                 ? LOGIN_REDIRECTS[BrandingEnum.learncard].redirectUrl

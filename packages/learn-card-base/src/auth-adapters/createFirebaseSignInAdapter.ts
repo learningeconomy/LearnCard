@@ -80,6 +80,8 @@ export const createFirebaseSignInAdapter = (config: FirebaseSignInAdapterConfig)
         return isSignInWithEmailLink(auth(), link);
     };
 
+    const nativePhoneAuth = isNative() ? config.getNativeAuth?.() : undefined;
+
     return {
         providerType: 'firebase',
         capabilities: Object.freeze({
@@ -87,10 +89,7 @@ export const createFirebaseSignInAdapter = (config: FirebaseSignInAdapterConfig)
             emailOtp: true, // Server OTP verification finishes via signInWithCustomToken.
             phoneOtp:
                 !isNative() ||
-                Boolean(
-                    config.getNativeAuth?.().signInWithPhoneNumber &&
-                    config.getNativeAuth?.().addListener
-                ),
+                Boolean(nativePhoneAuth?.signInWithPhoneNumber && nativePhoneAuth.addListener),
             google: Boolean(config.getNativeAuth),
             apple: !isNative() || Boolean(config.getNativeAuth),
             social: !isNative() || Boolean(config.getNativeAuth),
@@ -198,7 +197,7 @@ export const createFirebaseSignInAdapter = (config: FirebaseSignInAdapterConfig)
                         ? new Date(user.metadata.creationTime)
                         : undefined,
                 };
-                signedIn('google', mapped);
+                if (options?.intent !== 'reauthenticate') signedIn('google', mapped);
                 const googleIdToken = result.credential?.idToken;
                 if (isNative() && googleIdToken) {
                     try {

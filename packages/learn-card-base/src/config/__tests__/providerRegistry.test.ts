@@ -268,6 +268,20 @@ describe('providerRegistry', () => {
             expect(initializer).toHaveBeenCalledTimes(1);
         });
 
+        it('retries an initializer after it throws', async () => {
+            const initializer = vi
+                .fn()
+                .mockRejectedValueOnce(new Error('Bootstrap failed'))
+                .mockResolvedValue(undefined);
+            registerAuthProviderInitializer('test-init-retry', initializer);
+            const config = { ...baseConfig, authProvider: 'test-init-retry' as 'firebase' };
+
+            await expect(initializeAuthProvider(config)).rejects.toThrow('Bootstrap failed');
+            await initializeAuthProvider(config);
+
+            expect(initializer).toHaveBeenCalledTimes(2);
+        });
+
         it('is idempotent across concurrent calls issued before the first resolves', async () => {
             const initializer = vi.fn().mockResolvedValue(undefined);
 

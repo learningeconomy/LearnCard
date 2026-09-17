@@ -64,8 +64,7 @@ const getFirebaseSignInAdapter = (): ReturnType<typeof createFirebaseSignInAdapt
         isNativePlatform: () => Capacitor.isNativePlatform(),
         emailLinkSettings: {
             url:
-                (typeof IS_PRODUCTION !== 'undefined' && IS_PRODUCTION) ||
-                Capacitor.getPlatform() === 'android'
+                typeof IS_PRODUCTION !== 'undefined' && IS_PRODUCTION
                     ? `https://${FIREBASE_REDIRECT_URL}/login`
                     : 'http://localhost:3000/login',
         },

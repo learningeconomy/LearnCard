@@ -101,9 +101,20 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                 }
             );
         });
+        const unsubscribeFailed = adapter.onPhoneVerificationFailed(error => {
+            setIsLoading(false);
+            setIsResendCodeLoading(false);
+            setError(error instanceof Error ? error.message : '');
+            setCodeError('');
+            setCode('');
+            setAutoValidateCodeTriggered(false);
+            setCurrentStep(PhoneFormStepsEnum.phone);
+            setShowSocialLogins(true);
+        });
         return () => {
             unsubscribeSent();
             unsubscribeCompleted();
+            unsubscribeFailed();
             adapter.cleanup?.();
         };
     }, [adapter]);

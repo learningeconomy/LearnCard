@@ -62,7 +62,11 @@ const useLogout = () => {
 
                 // A cached-key session can have no coordinator auth provider but still
                 // have a native session. Always sign out the registered adapter too.
-                await adapter.signOut();
+                try {
+                    await adapter.signOut();
+                } catch (error) {
+                    log.debug('Adapter sign-out failed', error);
+                }
                 // Coordinator handles: authProvider.signOut, clearLocalKeys, onLogout callback
                 // (onLogout clears stores, queryClient, SQLite, localStorage, IndexedDB, etc.)
                 await coordinatorLogout();

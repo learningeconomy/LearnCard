@@ -220,7 +220,7 @@ const ScoutsDeviceLinkOverlay: React.FC<{
                         lensFacing: LensFacing.Back,
                     });
                 };
-                void setupScan();
+                void setupScan().catch(() => resolve(null));
             });
         } catch (e) {
             log.warn('QR scan failed', e);

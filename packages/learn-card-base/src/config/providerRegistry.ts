@@ -228,7 +228,12 @@ export const initializeAuthProvider = async (config: AuthConfig): Promise<void> 
     // (e.g. duplicate bootstrap invocations) can't re-enter the initializer.
     initializedAuthProviderNames.add(authProvider);
 
-    await initializer(config);
+    try {
+        await initializer(config);
+    } catch (error) {
+        initializedAuthProviderNames.delete(authProvider);
+        throw error;
+    }
 };
 
 export const getRegisteredAuthProviderInitializers = (): string[] => [

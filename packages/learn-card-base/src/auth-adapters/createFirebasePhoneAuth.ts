@@ -7,6 +7,7 @@ import { loadFirebaseAuth } from './firebaseAuthModule';
 import type { FirebasePhoneAuth, FirebaseSignInAdapterConfig, NativeListenerHandle } from './types';
 
 const log = getLogger('firebase-phone-auth');
+const VERIFICATION_ID_KEY = 'lcb:phone-verification-id';
 
 /** Owns the verification session; no confirmation object or ID is stored on window. */
 export const createFirebasePhoneAuth = (
@@ -36,6 +37,7 @@ export const createFirebasePhoneAuth = (
     const reset = (): void => {
         generation += 1;
         pending = undefined;
+        if (typeof localStorage !== 'undefined') localStorage.removeItem(VERIFICATION_ID_KEY);
         sending = false;
         rejectSend?.(new Error('Phone verification cancelled'));
         rejectSend = undefined;
@@ -56,7 +58,11 @@ export const createFirebasePhoneAuth = (
         handleOrCode: PhoneVerificationHandle | string | number,
         legacyCode?: string | number
     ): Promise<AuthUser> => {
-        const handle = typeof handleOrCode === 'object' ? handleOrCode : pending;
+        let handle = typeof handleOrCode === 'object' ? handleOrCode : pending;
+        if (!handle && config.isNativePlatform?.() && typeof localStorage !== 'undefined') {
+            const verificationId = localStorage.getItem(VERIFICATION_ID_KEY);
+            if (verificationId) handle = { verificationId };
+        }
         const code = typeof handleOrCode === 'object' ? legacyCode : handleOrCode;
         if (!handle || code === undefined)
             throw new Error('Request a phone code before confirming');
@@ -68,11 +74,18 @@ export const createFirebasePhoneAuth = (
             await result.user.getIdToken(true);
         } else {
             const { PhoneAuthProvider, signInWithCredential } = await loadFirebaseAuth();
-            result = await signInWithCredential(
-                config.getAuth() as Auth,
-                PhoneAuthProvider.credential(handle.verificationId, String(code))
-            );
-            await result.user.getIdToken();
+            try {
+                result = await signInWithCredential(
+                    config.getAuth() as Auth,
+                    PhoneAuthProvider.credential(handle.verificationId, String(code))
+                );
+                await result.user.getIdToken();
+            } catch (error) {
+                if (currentGeneration === generation && typeof localStorage !== 'undefined') {
+                    localStorage.removeItem(VERIFICATION_ID_KEY);
+                }
+                throw error;
+            }
         }
         const user = result.user;
         // A bad code leaves the session available for retry; only success consumes it.
@@ -137,6 +150,12 @@ export const createFirebasePhoneAuth = (
                                 native.addListener!('phoneCodeSent', event => {
                                     if (generation !== currentGeneration) return;
                                     pending = { verificationId: event.verificationId };
+                                    if (typeof localStorage !== 'undefined') {
+                                        localStorage.setItem(
+                                            VERIFICATION_ID_KEY,
+                                            event.verificationId
+                                        );
+                                    }
                                     sending = false;
                                     rejectSend = undefined;
                                     resolve(pending);

@@ -170,7 +170,6 @@ export * from './stores/authStore';
 export * from './stores/redirectStore';
 export * from './stores/confirmationStore';
 export * from './stores/chapiStore';
-export * from './stores/firebaseAuthStore';
 export * from './stores/authUserStore';
 export * from './stores/sqliteStore';
 export * from './stores/syncSchoolStore';

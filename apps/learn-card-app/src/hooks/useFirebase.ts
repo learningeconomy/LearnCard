@@ -513,7 +513,7 @@ export const useFirebase = () => {
                 const errorCode = getErrorCode(error);
 
                 emitAuthError('auth:login_error', `SMS send failed: ${errorCode}`, error);
-                errorCallback(errorCode);
+                errorCallback(errorCode ?? getAuthErrorDetails(error).message);
 
                 log.error(`firebase auth failed (${errorCode ?? 'unknown'})`, error);
             });
@@ -571,7 +571,7 @@ export const useFirebase = () => {
         } catch (error) {
             const errorCode = getErrorCode(error);
 
-            errorCallback(errorCode);
+            errorCallback(errorCode ?? getAuthErrorDetails(error).message);
 
             log.error(`firebase auth failed (${errorCode ?? 'unknown'})`, error);
 

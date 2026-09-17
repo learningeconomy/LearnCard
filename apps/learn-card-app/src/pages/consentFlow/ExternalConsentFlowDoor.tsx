@@ -1,9 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getLogger } from 'learn-card-base';
-const log = getLogger('external-consent-flow-door');
 
 import queryString from 'query-string';
-import { Capacitor } from '@capacitor/core';
 
 import { useHistory, useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
@@ -26,7 +23,6 @@ import {
     useToast,
     useModal,
 } from 'learn-card-base';
-import { SocialLoginTypes } from 'learn-card-base/hooks/useSocialLogins';
 import { useSignInAdapter } from 'learn-card-base';
 import { getLoginRedirectUrl } from '../../config/bootstrapTenantConfig';
 import { openPP, openToS } from '../../helpers/externalLinkHelpers';
@@ -203,14 +199,6 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
 
     // TODO duplicated from QRCodeUserCard, should turn into helper
     const handleLogout = async () => {
-        const typeOfLogin = authStore?.get?.typeOfLogin();
-        const nativeSocialLogins = [
-            SocialLoginTypes.apple,
-            SocialLoginTypes.sms,
-            SocialLoginTypes.passwordless,
-            SocialLoginTypes.google,
-        ];
-
         const redirectUrl = getLoginRedirectUrl();
 
         setTimeout(async () => {

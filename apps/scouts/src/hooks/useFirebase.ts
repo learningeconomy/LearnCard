@@ -129,8 +129,8 @@ export const useFirebase = () => {
             await adapter.sendPhoneOtp(phoneNumber);
             successCallback();
         } catch (error) {
-            const { code } = authError(error);
-            errorCallback(code === undefined ? '' : String(code));
+            const { code, message } = authError(error);
+            errorCallback(code === undefined ? (message ?? '') : String(code));
             log.error(`firebase auth failed (${code ?? 'unknown'})`, error);
         }
     };
@@ -165,8 +165,8 @@ export const useFirebase = () => {
             void logAnalyticsEvent('login', { method: SocialLoginTypes.sms });
             successCallback();
         } catch (error) {
-            const { code: errorCode } = authError(error);
-            errorCallback(errorCode === undefined ? '' : String(errorCode));
+            const { code: errorCode, message } = authError(error);
+            errorCallback(errorCode === undefined ? (message ?? '') : String(errorCode));
             log.error(`firebase auth failed (${errorCode ?? 'unknown'})`, error);
             if (errorCode === 5111) {
                 presentToast(m['login.refreshToFix'](), {

@@ -99,6 +99,7 @@ beforeEach(() => {
             },
         },
     });
+    vi.stubGlobal('localStorage', window.localStorage);
     user.getIdToken.mockResolvedValue('session-token');
     sdk.isSignInWithEmailLink.mockReturnValue(true);
     sdk.signInWithEmailLink.mockResolvedValue({ user });
@@ -286,6 +287,32 @@ describe('Firebase sign-in adapter', () => {
         }
     );
 
+    it('confirm after reload uses persisted id', async () => {
+        const adapter = create({ isNativePlatform: () => true });
+        const request = adapter.sendPhoneOtp('+15555550100');
+        await vi.waitFor(() => expect(native.signInWithPhoneNumber).toHaveBeenCalled());
+        codeSent?.({ verificationId: 'persisted-native-id' });
+        await request;
+        expect(localStorage.getItem('lcb:phone-verification-id')).toBe('persisted-native-id');
+
+        const reloaded = create({ isNativePlatform: () => true });
+        await reloaded.confirmPhoneOtp('123456');
+
+        expect(sdk.phoneCredential).toHaveBeenCalledWith('persisted-native-id', '123456');
+        expect(localStorage.getItem('lcb:phone-verification-id')).toBeNull();
+    });
+
+    it.each(['failure', 'cleanup'])('clears the persisted native id on %s', async action => {
+        const adapter = create({ isNativePlatform: () => true });
+        const request = adapter.sendPhoneOtp('+15555550100');
+        await vi.waitFor(() => expect(native.signInWithPhoneNumber).toHaveBeenCalled());
+        codeSent?.({ verificationId: 'native-id' });
+        await request;
+        if (action === 'failure') phoneFailed?.({ message: 'denied' });
+        else adapter.cleanup?.();
+        expect(localStorage.getItem('lcb:phone-verification-id')).toBeNull();
+    });
+
     it('rejects native failures and cleanup cancels pending requests and ignores late events', async () => {
         const adapter = create({ isNativePlatform: () => true });
         const request = adapter.sendPhoneOtp('+15555550100');
@@ -347,6 +374,14 @@ describe('Firebase sign-in adapter', () => {
         expect(native.getIdToken).toHaveBeenCalledOnce();
         expect(onSignedIn).toHaveBeenCalledWith('google', result);
         expect(onCredentialSyncError).toHaveBeenCalledOnce();
+    });
+
+    it('does not notify sign-in instrumentation for native Google reauthentication', async () => {
+        const onSignedIn = vi.fn();
+        await create({ isNativePlatform: () => true, onSignedIn }).signInWithGoogle({
+            intent: 'reauthenticate',
+        });
+        expect(onSignedIn).not.toHaveBeenCalled();
     });
 
     it('uses the plugin for normal web Google login but popup for reauthentication', async () => {
