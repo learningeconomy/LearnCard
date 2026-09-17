@@ -46,6 +46,7 @@ import ShareBoostLink from './ShareBoostLink';
 
 const credential = {
     '@context': ['https://www.w3.org/2018/credentials/v1'],
+    id: 'credential:test',
     type: ['VerifiableCredential'],
     issuer: 'did:example:school',
     credentialSubject: { id: 'did:example:learner' },
@@ -141,7 +142,7 @@ describe('ShareBoostLink error recovery', () => {
 
         expect(
             await screen.findByText(
-                'http://localhost:3000/?uri=credential%3Atest&seed=seed&pin=1234&endorsementRequest=true'
+                'http://localhost:3000/?uri=credential%3Atest&seed=seed&pin=1234&credentialId=credential%3Atest&endorsementRequest=true'
             )
         ).toBeInTheDocument();
         client.clear();

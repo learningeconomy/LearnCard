@@ -43,6 +43,7 @@ const endorsementSchema = zod.object({
 
 export const EndorsementForm: React.FC<{
     credential: VC;
+    targetCredential?: VC;
     categoryType: CredentialCategoryEnum;
     isRequest?: boolean;
     onSuccess?: (endorsement: EndorsementState) => void;
@@ -50,6 +51,7 @@ export const EndorsementForm: React.FC<{
     shareLinkInfo?: string;
 }> = ({
     credential,
+    targetCredential = credential,
     categoryType,
     isRequest,
     onSuccess,
@@ -96,8 +98,8 @@ export const EndorsementForm: React.FC<{
 
                 const wallet = await initWallet();
                 const evidence = convertAttachmentsToEvidence(endorsement.mediaAttachments);
-                const target = getEndorsementTarget(credential);
-                const endorsementVC = await wallet.invoke.endorseCredential(credential, {
+                const target = getEndorsementTarget(credential, targetCredential);
+                const endorsementVC = await wallet.invoke.endorseCredential(targetCredential, {
                     endorsementComment: endorsement.qualification,
                     name: `Endorsement of ${target.name}`,
                     description: endorsement.description,
@@ -127,6 +129,7 @@ export const EndorsementForm: React.FC<{
                     <EndorsementDraftRequestSuccess
                         closeModal={closeModal}
                         credential={credential}
+                        targetCredential={targetCredential}
                         categoryType={categoryType}
                         autoSend={false}
                         endorsementState={endorsement}

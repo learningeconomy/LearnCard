@@ -38,11 +38,19 @@ import { createEndorsementShareLinkInfo } from './endorsement-request.helpers';
 
 export const EndorsementDraftRequestSuccess: React.FC<{
     credential: VC;
+    targetCredential?: VC;
     closeModal: () => void;
     categoryType?: CredentialCategoryEnum;
     autoSend?: boolean;
     endorsementState?: BoostEndorsement;
-}> = ({ closeModal, credential, categoryType, autoSend = false, endorsementState }) => {
+}> = ({
+    closeModal,
+    credential,
+    targetCredential = credential,
+    categoryType,
+    autoSend = false,
+    endorsementState,
+}) => {
     const isLoggedIn = useIsLoggedIn();
     const { initWallet } = useWallet();
     const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
@@ -129,13 +137,12 @@ export const EndorsementDraftRequestSuccess: React.FC<{
 
                 if (!shareLinkInfo) throw new Error('Missing endorsement request identity');
                 const wallet = await initWallet();
-
                 const evidence = convertAttachmentsToEvidence(
                     draftEndorsementRequest.mediaAttachments
                 );
-                const target = getEndorsementTarget(credential);
+                const target = getEndorsementTarget(credential, targetCredential);
 
-                const endorsementVC = await wallet.invoke.endorseCredential(credential, {
+                const endorsementVC = await wallet.invoke.endorseCredential(targetCredential, {
                     endorsementComment: draftEndorsementRequest.qualification,
                     name: `Endorsement of ${target.name}`,
                     description: draftEndorsementRequest.description,
@@ -186,7 +193,7 @@ export const EndorsementDraftRequestSuccess: React.FC<{
         const hasValidDraft =
             draftEndorsementRequest?.relationship?.type && draftEndorsementRequest?.description;
 
-        if (credential?.id && autoSend && hasValidDraft && currentLCNUser && !sendFailed) {
+        if (targetCredential?.id && autoSend && hasValidDraft && currentLCNUser && !sendFailed) {
             setEndorsement({
                 ...draftEndorsementRequest,
                 user: {
@@ -196,7 +203,7 @@ export const EndorsementDraftRequestSuccess: React.FC<{
             });
             void handleEndorsementSubmit();
         }
-    }, [credential?.id, currentLCNUser, autoSend, sendFailed]);
+    }, [targetCredential?.id, currentLCNUser, autoSend, sendFailed]);
 
     let endorsementStatusEl = (
         <>

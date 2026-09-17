@@ -120,14 +120,17 @@ export const initialEndorsementState: EndorsementState = {
     mediaAttachments: [],
     relationship: null,
 };
-export const getEndorsementTarget = (credential: VC): { id: string; name: string } => {
-    if (!credential?.id) {
+export const getEndorsementTarget = (
+    credential: VC,
+    targetCredential: VC = credential
+): { id: string; name: string } => {
+    if (!targetCredential?.id) {
         throw new Error('The credential must have an id before it can be endorsed');
     }
 
     return {
-        id: credential.id,
-        name: getCredentialName(credential) || credential.id,
+        id: targetCredential.id,
+        name: getCredentialName(credential) || targetCredential.id,
     };
 };
 

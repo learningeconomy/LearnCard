@@ -179,4 +179,45 @@ describe('EndorsementDraftRequestSuccess', () => {
         expect(screen.getByText('Waiting for review')).toBeInTheDocument();
         expect(screen.queryByText('Endorsement Not Sent')).not.toBeInTheDocument();
     });
+
+    it('auto-sends an idless display credential against the trusted wrapper', async () => {
+        mocks.setCredentialInfo({
+            uri: 'credential:test',
+            seed: 'request-seed',
+            pin: '1234',
+        });
+        const displayCredential = {
+            credentialSubject: {
+                id: 'did:example:holder',
+                achievement: { name: 'Credential' },
+            },
+        };
+        const targetCredential = {
+            id: 'urn:uuid:credential:test',
+            boostCredential: displayCredential,
+        };
+
+        render(
+            <EndorsementDraftRequestSuccess
+                credential={displayCredential as never}
+                targetCredential={targetCredential as never}
+                closeModal={vi.fn()}
+                autoSend
+            />
+        );
+
+        await waitFor(() =>
+            expect(mocks.endorseCredential).toHaveBeenCalledWith(
+                targetCredential,
+                expect.anything()
+            )
+        );
+        expect(mocks.sendCredential).toHaveBeenCalledWith(
+            expect.anything(),
+            { id: 'endorsement:test' },
+            expect.objectContaining({
+                credentialId: 'urn:uuid:credential:test',
+            })
+        );
+    });
 });

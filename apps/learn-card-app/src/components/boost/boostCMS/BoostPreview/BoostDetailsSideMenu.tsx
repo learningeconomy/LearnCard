@@ -35,6 +35,7 @@ import moment from 'moment';
 type BoostDetailsSideMenuProps = {
     credential: VC;
     endorsementCredential?: VC;
+    shareCredentialUri?: string;
     categoryType?: CredentialCategoryEnum;
     customSkillsComponent?: React.ReactNode;
     verificationItems: VerificationItem[];
@@ -51,6 +52,7 @@ type BoostDetailsSideMenuProps = {
 const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
     credential,
     endorsementCredential: endorsementCredentialProp,
+    shareCredentialUri,
     categoryType,
     customSkillsComponent,
     verificationItems,
@@ -184,6 +186,7 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
                     {!hideEndorsementRequestCard && (
                         <EndorsementCard
                             credential={endorsementCredential}
+                            shareCredentialUri={shareCredentialUri}
                             categoryType={categoryType}
                             existingEndorsements={existingEndorsements}
                         />

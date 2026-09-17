@@ -3,12 +3,27 @@ import { render, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const storageUri = 'ceramic://encrypted-presentation';
-const credential = { id: 'urn:uuid:credential', boostId: 'urn:boost:test' };
+const displayCredential = {
+    type: ['VerifiableCredential', 'OpenBadgeCredential'],
+    credentialSubject: { id: 'did:example:holder', achievement: { name: 'First Aid' } },
+};
+const credential = {
+    id: 'urn:uuid:credential',
+    boostId: 'urn:boost:test',
+    boostCredential: displayCredential,
+};
 
 const mocks = vi.hoisted(() => ({
     readCredential: vi.fn(),
     useGetCredentialWithEdits: vi.fn(() => ({ credentialWithEdits: undefined })),
     verifyCredential: vi.fn(),
+    unwrapBoostCredential: vi.fn(),
+    presentAlert: vi.fn(),
+    logWarn: vi.fn(),
+    setCredentialInfo: vi.fn(),
+    credentialInfo: undefined as
+        { uri: string; seed: string; pin: string; credentialId?: string } | undefined,
+    requestModalProps: [] as Record<string, unknown>[],
 }));
 
 vi.mock('react-router-dom', () => ({
@@ -25,12 +40,12 @@ vi.mock('@ionic/react', () => ({
     IonHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     IonPage: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     IonToolbar: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    useIonAlert: () => [vi.fn()],
+    useIonAlert: () => [mocks.presentAlert],
     useIonModal: () => [vi.fn(), vi.fn()],
 }));
 vi.mock('learn-card-base', () => ({
     BrandingEnum: { learncard: 'learncard' },
-    getLogger: () => ({ info: vi.fn(), warn: vi.fn() }),
+    getLogger: () => ({ info: vi.fn(), warn: mocks.logWarn }),
     useGetCredentialWithEdits: mocks.useGetCredentialWithEdits,
     useIsLoggedIn: () => false,
 }));
@@ -38,7 +53,7 @@ vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
     getDefaultCategoryForCredential: () => 'Achievement',
     getEndorsementsFromPresentations: () => [],
     isClrCredential: () => false,
-    unwrapBoostCredential: (value: unknown) => value,
+    unwrapBoostCredential: mocks.unwrapBoostCredential,
 }));
 vi.mock('learn-card-base/helpers/walletHelpers', () => ({
     getBespokeLearnCard: async () => ({
@@ -58,7 +73,10 @@ vi.mock('learn-card-base/components/loaders/LoadingSpinner', () => ({
 }));
 vi.mock('../main-header/MainHeader', () => ({ default: () => null }));
 vi.mock('../boost-endorsements/EndorsementRequestModal/EndorsementRequestModal', () => ({
-    default: () => null,
+    default: (props: Record<string, unknown>) => {
+        mocks.requestModalProps.push(props);
+        return null;
+    },
 }));
 vi.mock('learn-card-base/components/headerBranding/HeaderBranding', () => ({
     default: () => null,
@@ -78,8 +96,11 @@ vi.mock('../../hooks/deriveLifecycleStatus', () => ({
 vi.mock('../../stores/endorsementsRequestStore', () => ({
     default: {
         useTracked: {
-            credentialInfo: () => undefined,
+            credentialInfo: () => mocks.credentialInfo,
             endorsementRequest: () => undefined,
+        },
+        set: {
+            credentialInfo: mocks.setCredentialInfo,
         },
     },
 }));
@@ -103,6 +124,18 @@ import ViewSharedBoost from './ViewSharedBoost';
 describe('ViewSharedBoost', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mocks.credentialInfo = {
+            uri: storageUri,
+            seed: 'seed',
+            pin: '1234',
+            credentialId: credential.id,
+        };
+        mocks.requestModalProps.length = 0;
+        mocks.unwrapBoostCredential.mockImplementation(value =>
+            (value as { boostCredential?: unknown }).boostCredential
+                ? (value as { boostCredential: unknown }).boostCredential
+                : value
+        );
         mocks.readCredential.mockResolvedValue({ verifiableCredential: credential });
         mocks.verifyCredential.mockResolvedValue([]);
     });
@@ -111,10 +144,52 @@ describe('ViewSharedBoost', () => {
         render(<ViewSharedBoost showEndorsementRequest />);
 
         await waitFor(() =>
-            expect(mocks.useGetCredentialWithEdits).toHaveBeenCalledWith(credential)
+            expect(mocks.useGetCredentialWithEdits).toHaveBeenCalledWith(displayCredential)
         );
         expect(
             mocks.useGetCredentialWithEdits.mock.calls.every(arguments_ => arguments_.length === 1)
         ).toBe(true);
+    });
+
+    it('passes the verified wrapper as the endorsement target', async () => {
+        render(<ViewSharedBoost showEndorsementRequest />);
+
+        await waitFor(() =>
+            expect(mocks.requestModalProps).toContainEqual(
+                expect.objectContaining({
+                    credential: displayCredential,
+                    targetCredential: credential,
+                })
+            )
+        );
+        expect(mocks.setCredentialInfo).toHaveBeenCalledWith({
+            uri: storageUri,
+            seed: 'seed',
+            pin: '1234',
+            credentialId: credential.id,
+        });
+    });
+
+    it('rejects a request credential id that does not match the shared wrapper', async () => {
+        mocks.credentialInfo = {
+            uri: storageUri,
+            seed: 'seed',
+            pin: '1234',
+            credentialId: 'urn:uuid:other',
+        };
+
+        render(<ViewSharedBoost showEndorsementRequest />);
+
+        await waitFor(() => expect(mocks.presentAlert).toHaveBeenCalledOnce());
+        expect(mocks.logWarn).toHaveBeenCalledWith(
+            'Unable to open shared credential',
+            expect.objectContaining({
+                message: 'The endorsement request does not match the shared credential',
+            })
+        );
+        expect(mocks.setCredentialInfo).not.toHaveBeenCalled();
+        expect(mocks.requestModalProps.some(props => props.targetCredential === credential)).toBe(
+            false
+        );
     });
 });

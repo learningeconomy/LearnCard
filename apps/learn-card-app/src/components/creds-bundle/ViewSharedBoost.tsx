@@ -65,6 +65,7 @@ const ViewSharedBoost: React.FC<{
     // endorsements data
     const [shareLinkInfo, setShareLinkInfo] = useState<string>('');
     const [existingEndorsements, setExistingEndorsements] = useState<VC[] | null>(null);
+    const [endorsementTargetCredential, setEndorsementTargetCredential] = useState<VC>();
 
     const draftEndorsementRequest = endorsementsRequestStore.useTracked.endorsementRequest();
     const draftEndorseRequestVC = endorsementsRequestStore.useTracked.credentialInfo();
@@ -72,6 +73,7 @@ const ViewSharedBoost: React.FC<{
     const uri = draftEndorseRequestVC?.uri || _uri;
     const seed = draftEndorseRequestVC?.seed || _seed;
     const pin = draftEndorseRequestVC?.pin || _pin;
+    const endorsementCredentialId = draftEndorseRequestVC?.credentialId;
 
     const [presentAlert] = useIonAlert();
 
@@ -136,6 +138,31 @@ const ViewSharedBoost: React.FC<{
                     ? resolvedVc?.verifiableCredential[0]
                     : resolvedVc?.verifiableCredential;
 
+                if (showEndorsementRequest || showDraftSuccess) {
+                    if (!credential.id) {
+                        throw new Error(
+                            'The shared credential does not have an endorsement target'
+                        );
+                    }
+
+                    if (endorsementCredentialId && endorsementCredentialId !== credential.id) {
+                        throw new Error(
+                            'The endorsement request does not match the shared credential'
+                        );
+                    }
+
+                    const credentialInfo = {
+                        uri: String(uri),
+                        seed: String(seed),
+                        pin: String(pin),
+                        credentialId: credential.id,
+                    };
+
+                    setEndorsementTargetCredential(credential);
+                    setShareLinkInfo(createEndorsementShareLinkInfo(credentialInfo));
+                    endorsementsRequestStore.set.credentialInfo(credentialInfo);
+                }
+
                 const endorsements = getEndorsementsFromPresentations(
                     resolvedVc?.verifiableCredential
                 );
@@ -183,16 +210,11 @@ const ViewSharedBoost: React.FC<{
             setBoost(undefined);
             setVC(undefined);
             setExistingEndorsements(null);
-            setShareLinkInfo(
-                createEndorsementShareLinkInfo({
-                    uri: String(uri),
-                    seed: String(seed),
-                    pin: String(pin),
-                })
-            );
+            setEndorsementTargetCredential(undefined);
+            setShareLinkInfo('');
             void fetchCredential((uri as string).replace('localhost:', 'localhost%3A'));
         }
-    }, [pin, seed, uri, tryRefetch]);
+    }, [pin, seed, uri, endorsementCredentialId, tryRefetch]);
 
     const [presentModal, dismissModal] = useIonModal(SharedBoostVerificationBlock, {
         handleCloseModal: () => dismissModal(),
@@ -237,6 +259,7 @@ const ViewSharedBoost: React.FC<{
             <EndorsementRequestModal
                 credential={_boost}
                 shareLinkInfo={shareLinkInfo}
+                targetCredential={endorsementTargetCredential}
                 existingEndorsements={existingEndorsements}
             />
         );
@@ -244,7 +267,12 @@ const ViewSharedBoost: React.FC<{
 
     if (showDraftSuccess) {
         return (
-            <EndorsementDraftRequestSuccess credential={_boost} categoryType={category} autoSend />
+            <EndorsementDraftRequestSuccess
+                credential={_boost}
+                targetCredential={endorsementTargetCredential}
+                categoryType={category}
+                autoSend
+            />
         );
     }
 

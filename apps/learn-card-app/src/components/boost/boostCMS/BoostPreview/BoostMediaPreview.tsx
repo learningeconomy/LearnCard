@@ -36,6 +36,7 @@ import * as m from '../../../../paraglide/messages.js';
 export const BoostMediaPreview: React.FC<{
     credential: VC;
     endorsementCredential?: VC;
+    shareCredentialUri?: string;
     openDetailsSideModal: () => void;
     handleShareBoost: () => void;
     onDotsClick: () => void;
@@ -44,6 +45,7 @@ export const BoostMediaPreview: React.FC<{
 }> = ({
     credential,
     endorsementCredential,
+    shareCredentialUri,
     openDetailsSideModal,
     handleShareBoost,
     onDotsClick,
@@ -328,6 +330,7 @@ export const BoostMediaPreview: React.FC<{
                             <BoostDetailsSideBar
                                 credential={credential}
                                 endorsementCredential={endorsementCredential}
+                                shareCredentialUri={shareCredentialUri}
                                 categoryType={BoostCategoryOptionsEnum.accomplishment}
                                 verificationItems={verifications}
                                 renderMethodCredential={credential}

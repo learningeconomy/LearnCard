@@ -1,4 +1,18 @@
-import { describe, expect, it } from 'vitest';
+import React from 'react';
+import { describe, expect, it, vi } from 'vitest';
+
+vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
+    getCredentialName: (credential: {
+        boostCredential?: { credentialSubject?: { achievement?: { name?: string } } };
+        credentialSubject?: { achievement?: { name?: string } };
+    }) =>
+        credential.boostCredential?.credentialSubject?.achievement?.name ??
+        credential.credentialSubject?.achievement?.name,
+}));
+vi.mock('learn-card-base/svgs/Camera', () => ({ default: () => React.createElement('span') }));
+vi.mock('learn-card-base/svgs/Document', () => ({ default: () => React.createElement('span') }));
+vi.mock('learn-card-base/svgs/Video', () => ({ default: () => React.createElement('span') }));
+vi.mock('learn-card-base/svgs/LinkChain', () => ({ default: () => React.createElement('span') }));
 
 import {
     convertAttachmentsToEvidence,
@@ -45,6 +59,22 @@ describe('getEndorsementTarget', () => {
         };
 
         expect(getEndorsementTarget(credential as never)).toEqual({
+            id: 'urn:uuid:credential-a',
+            name: 'First Aid',
+        });
+    });
+
+    it('uses the trusted wrapper when the display credential is unwrapped', () => {
+        const credential = {
+            type: ['VerifiableCredential', 'OpenBadgeCredential'],
+            credentialSubject: {
+                id: 'did:example:holder',
+                achievement: { name: 'First Aid' },
+            },
+        };
+        const targetCredential = { id: 'urn:uuid:credential-a' };
+
+        expect(getEndorsementTarget(credential as never, targetCredential as never)).toEqual({
             id: 'urn:uuid:credential-a',
             name: 'First Aid',
         });

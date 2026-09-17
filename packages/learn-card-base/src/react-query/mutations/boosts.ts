@@ -31,7 +31,7 @@ import {
     SELF_ASSIGNED_SKILLS_BOOST_NAME,
     getEndorsementsForVC,
 } from 'learn-card-base/helpers/credentialHelpers';
-import { insertItem } from './mutation.helpers';
+import { getSharedCredentialIndexQuery, insertItem } from './mutation.helpers';
 import { convertAttachmentsToEvidence } from '../../components/boost/boost';
 import { v4 as uuidv4 } from 'uuid';
 import { LCR } from 'learn-card-base/types/credential-records';
@@ -43,6 +43,8 @@ const log = getLogger('boosts');
 type SharedCredentialsIndex = {
     type: 'shared-credentials';
     sharedCredentialUri: string;
+    sharedCredentialKey?: string;
+    credentialId?: string;
     pin: string;
     randomSeed: string;
     uri: string;
@@ -72,9 +74,14 @@ export const useShareBoostMutation = () => {
 
             const pin = Math.floor(Math.random() * 9000 + 1000)?.toString();
 
-            let currentIndex = await myWallet.invoke.learnCloudRead<SharedCredentialsIndex>({
-                sharedCredentialUri: credentialUri,
-            });
+            const credentialId = credential.id;
+            const sharedCredentialIndexQuery = getSharedCredentialIndexQuery(
+                credentialUri,
+                credentialId
+            );
+            const currentIndex = await myWallet.invoke.learnCloudRead<SharedCredentialsIndex>(
+                sharedCredentialIndexQuery
+            );
 
             //Find if credential is already stored in index, if so return that instead
             const extantCredentialIndex = currentIndex?.length > 0 && currentIndex[0];
@@ -135,6 +142,8 @@ export const useShareBoostMutation = () => {
 
             await myWallet.invoke.learnCloudCreate<SharedCredentialsIndex>({
                 sharedCredentialUri: credentialUri,
+                ...(credentialId ? { credentialId } : {}),
+                ...sharedCredentialIndexQuery,
                 pin,
                 randomSeed: randomKey,
                 uri: publishedVpUri,

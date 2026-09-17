@@ -169,6 +169,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                             uri: uri ?? '',
                             seed: seed ?? '',
                             pin: pin ?? '',
+                            credentialId: boost.id ?? '',
                             endorsementRequest: 'true',
                         }).toString();
                         setShareLink(endorsementUrl.toString());

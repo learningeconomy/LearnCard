@@ -1,5 +1,13 @@
 import { LCNProfile } from '@learncard/types';
 import { QueryClient, InfiniteData } from '@tanstack/react-query';
+
+export const getSharedCredentialIndexQuery = (
+    sharedCredentialUri: string,
+    credentialId?: string
+): Record<string, string> =>
+    credentialId
+        ? { sharedCredentialKey: JSON.stringify([sharedCredentialUri, credentialId]) }
+        : { sharedCredentialUri };
 // Helper to insert an object and update the react infinite query cache
 export const insertItem = <GenericObject extends Record<string, any>>(
     queryClient: QueryClient,

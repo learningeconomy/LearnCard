@@ -70,7 +70,64 @@ describe('endorsement request identity', () => {
                 'credential:test?version=1&source=event',
                 'seed+with/slashes=',
                 '12&34',
+                null,
             ])
         );
+    });
+
+    it('separates credentials even when a legacy share link was reused', () => {
+        const reusedLinkEndorsements = [
+            {
+                uri: 'endorsement:first',
+                metadata: {
+                    type: 'endorsement',
+                    sharedUri:
+                        'uri=shared%3Apresentation&seed=reused-seed&pin=1234&credentialId=credential%3Afirst',
+                },
+            },
+            {
+                uri: 'endorsement:second',
+                metadata: {
+                    type: 'endorsement',
+                    sharedUri:
+                        'uri=shared%3Apresentation&seed=reused-seed&pin=1234&credentialId=credential%3Asecond',
+                },
+            },
+        ];
+
+        expect(
+            findEndorsementForRequest(
+                reusedLinkEndorsements,
+                'uri=shared%3Apresentation&seed=reused-seed&pin=1234&credentialId=credential%3Asecond'
+            )?.uri
+        ).toBe('endorsement:second');
+    });
+
+    it('uses stored credential metadata to disambiguate legacy links', () => {
+        const legacyEndorsements = [
+            {
+                uri: 'endorsement:first',
+                metadata: {
+                    type: 'endorsement',
+                    sharedUri: 'uri=shared%3Apresentation&seed=reused-seed&pin=1234',
+                    credentialId: 'credential:first',
+                },
+            },
+            {
+                uri: 'endorsement:second',
+                metadata: {
+                    type: 'endorsement',
+                    sharedUri: 'uri=shared%3Apresentation&seed=reused-seed&pin=1234',
+                    credentialId: 'credential:second',
+                },
+            },
+        ];
+
+        expect(
+            findEndorsementForRequest(
+                legacyEndorsements,
+                'uri=shared%3Apresentation&seed=reused-seed&pin=1234&credentialId=credential%3Asecond'
+            )?.uri
+        ).toBe('endorsement:second');
     });
 });

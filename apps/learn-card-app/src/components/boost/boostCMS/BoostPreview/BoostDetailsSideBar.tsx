@@ -39,6 +39,7 @@ import * as m from '../../../../paraglide/messages.js';
 type BoostDetailsSideBarProps = {
     credential: VC;
     endorsementCredential?: VC;
+    shareCredentialUri?: string;
     categoryType?: CredentialCategoryEnum;
     customSkillsComponent?: React.ReactNode;
     verificationItems: VerificationItem[];
@@ -55,6 +56,7 @@ type BoostDetailsSideBarProps = {
 const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
     credential,
     endorsementCredential: endorsementCredentialProp,
+    shareCredentialUri,
     categoryType,
     customSkillsComponent,
     verificationItems,
@@ -183,6 +185,7 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
                     {!hideEndorsementRequestCard && (
                         <EndorsementCard
                             credential={endorsementCredential}
+                            shareCredentialUri={shareCredentialUri}
                             categoryType={categoryType}
                             existingEndorsements={existingEndorsements}
                         />

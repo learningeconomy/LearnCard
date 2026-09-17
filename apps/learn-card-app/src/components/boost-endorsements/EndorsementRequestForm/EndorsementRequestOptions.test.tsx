@@ -68,6 +68,7 @@ describe('EndorsementRequestOptions', () => {
         render(
             <EndorsementRequestOptions
                 credential={credential}
+                shareCredentialUri="lc:credential:record-a"
                 categoryType={'Achievement' as never}
                 endorsementRequest={{ email: '', text: '' }}
                 setEndorsementRequest={vi.fn()}
@@ -101,6 +102,7 @@ describe('EndorsementRequestOptions', () => {
         render(
             <EndorsementRequestOptions
                 credential={credential}
+                shareCredentialUri="lc:credential:record-a"
                 categoryType={'Achievement' as never}
                 endorsementRequest={{ email: '', text: '' }}
                 setEndorsementRequest={vi.fn()}
@@ -120,7 +122,7 @@ describe('EndorsementRequestOptions', () => {
 
         await waitFor(() =>
             expect(clipboardWriteMock).toHaveBeenCalledWith({
-                string: 'http://localhost:3000/?uri=credential%3Atest&seed=seed&pin=1234&endorsementRequest=true',
+                string: 'http://localhost:3000/?uri=credential%3Atest&seed=seed&pin=1234&credentialId=credential%3Atest&endorsementRequest=true',
             })
         );
     });
@@ -129,6 +131,7 @@ describe('EndorsementRequestOptions', () => {
         render(
             <EndorsementRequestOptions
                 credential={credential}
+                shareCredentialUri="lc:credential:record-a"
                 categoryType={'Achievement' as never}
                 endorsementRequest={{ email: '', text: '' }}
                 setEndorsementRequest={vi.fn()}
@@ -149,5 +152,47 @@ describe('EndorsementRequestOptions', () => {
         });
         expect(screen.getByRole('button', { name: /copy link/i })).toBeDisabled();
         expect(screen.getByRole('button', { name: /get code/i })).toBeDisabled();
+    });
+
+    it('regenerates requests with each credential record URI', async () => {
+        const { rerender } = render(
+            <EndorsementRequestOptions
+                credential={{ id: 'credential:first' } as never}
+                shareCredentialUri="lc:credential:record-first"
+                categoryType={'Achievement' as never}
+                endorsementRequest={{ email: '', text: '' }}
+                setEndorsementRequest={vi.fn()}
+            />
+        );
+
+        await waitFor(() =>
+            expect(mutateMock).toHaveBeenCalledWith(
+                {
+                    credential: { id: 'credential:first' },
+                    credentialUri: 'lc:credential:record-first',
+                },
+                expect.anything()
+            )
+        );
+
+        rerender(
+            <EndorsementRequestOptions
+                credential={{ id: 'credential:second' } as never}
+                shareCredentialUri="lc:credential:record-second"
+                categoryType={'Achievement' as never}
+                endorsementRequest={{ email: '', text: '' }}
+                setEndorsementRequest={vi.fn()}
+            />
+        );
+
+        await waitFor(() =>
+            expect(mutateMock).toHaveBeenLastCalledWith(
+                {
+                    credential: { id: 'credential:second' },
+                    credentialUri: 'lc:credential:record-second',
+                },
+                expect.anything()
+            )
+        );
     });
 });

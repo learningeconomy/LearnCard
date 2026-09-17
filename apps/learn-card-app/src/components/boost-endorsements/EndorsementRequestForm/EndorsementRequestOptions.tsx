@@ -32,10 +32,18 @@ const schema = zod.object({
 
 export const EndorsementRequestOptions: React.FC<{
     credential: VC;
+    shareCredentialUri?: string;
     categoryType: CredentialCategoryEnum;
     endorsementRequest: EndorsementRequestState;
     setEndorsementRequest: React.Dispatch<React.SetStateAction<EndorsementRequestState>>;
-}> = ({ credential, categoryType, endorsementRequest, setEndorsementRequest }) => {
+}> = ({
+    credential,
+    shareCredentialUri,
+    categoryType,
+    endorsementRequest,
+    setEndorsementRequest,
+}) => {
+    const credentialUri = shareCredentialUri ?? credential.id;
     const { currentLCNUser } = useGetCurrentLCNUser();
 
     const { initWallet } = useWallet();
@@ -64,10 +72,15 @@ export const EndorsementRequestOptions: React.FC<{
     };
 
     const generateShareLink = () => {
+        if (!credential.id || !credentialUri) {
+            handleLinkGenerationError();
+            return;
+        }
+
         setShareLink(undefined);
         setIsGeneratingShareLink(true);
         shareEarnedBoost(
-            { credential, credentialUri: credential.id },
+            { credential, credentialUri },
             {
                 onSuccess(data) {
                     try {
@@ -86,6 +99,7 @@ export const EndorsementRequestOptions: React.FC<{
                             uri,
                             seed,
                             pin,
+                            credentialId: credential.id,
                             endorsementRequest: 'true',
                         }).toString();
                         setShareLink(endorsementUrl.toString());
@@ -116,13 +130,13 @@ export const EndorsementRequestOptions: React.FC<{
 
     useEffect(() => {
         generateShareLink();
-    }, [credential.id]);
+    }, [credential.id, credentialUri]);
 
     const presentShareBoostLink = () => {
         const shareBoostLinkModalProps = {
             handleClose: () => closeModal(),
             boost: credential,
-            boostUri: credential.id,
+            boostUri: credentialUri,
             categoryType,
             hideLinkedIn: true,
             isEndorsementRequest: true,
