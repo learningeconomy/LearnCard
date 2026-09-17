@@ -67,7 +67,7 @@ The `keysRouter` implements the server side of Shamir Secret Sharing key managem
 Subjects are random permanent UUIDs in `AuthSubject`, keyed by normalized email or Google/Apple subject (never auto-linked by email).
 Require `OIDC_ISSUER`, an exact redirect allowlist, and a token client secret; any deployed stage (`NODE_ENV=production` or `LAMBDA_STAGE` set) additionally requires an RSA private `OIDC_SIGNING_KEY_JWK`.
 Login codes, tickets and authorization codes are consumed with `getDel` (`src/cache/getDel.ts`, Redis `GETDEL`, requires Redis >= 6.2).
-Rate limits count **failed** attempts only: 5 per email and a 50-per-IP backstop, both over 10 minutes.
+Rate limits (`src/helpers/rate-limit.helpers.ts`) count **failed** attempts only, over 10 minutes: the ticket routes use 5 per email plus a 50-per-IP backstop; `/oidc/authorize` (bad client/redirect, invalid ticket) and `/oidc/token` (`invalid_client`, `invalid_grant`) each use 50 per IP and answer `429 temporarily_unavailable` + `Retry-After` (or an OAuth error redirect once the `redirect_uri` is validated). Client IP is the first `x-forwarded-for` hop, else the socket address.
 Unit coverage is in `test/oidc.spec.ts` and `test/auth-tickets.spec.ts`; broker import coverage is gated by `KEYCLOAK_INTEGRATION`.
 Phone OTP and the complete live broker round-trip remain deferred; see the migration plan AD-2/AD-10.
 
