@@ -56,6 +56,7 @@ describe('RecoveryBanner', () => {
         mocks.webAuthnSupported = true;
         mocks.track.mockClear();
         firstStartupStore.set.recoveryPromptSnoozedUntil(0);
+        firstStartupStore.set.recoveryBackupPromptSnoozeCount(0);
     });
 
     afterEach(() => {
@@ -232,52 +233,137 @@ describe('RecoveryBanner', () => {
         expect(onSetup.mock.calls[0][0].initialMethod).toBe('phrase');
     });
 
-    it('renders PIN variant when escrowEnrolled and pinEnabled is false', () => {
-        const { onSetupPin } = renderPrompt({
-            recoveryMethodCount: 1,
+    it('renders tier 1 (pin-first) with PIN CTA and secondary link', () => {
+        const { onSetupPin, onSetup } = renderPrompt({
             escrowEnrolled: true,
             pinEnabled: false,
+            recoveryMethodCount: 0,
         });
 
-        expect(screen.getByText('Add a recovery PIN')).toBeVisible();
+        expect(screen.getByText('Finish securing your account')).toBeVisible();
         expect(screen.getByText('Set a 6-digit PIN')).toBeVisible();
+        const secondary = screen.getByText('Or add a passkey or recovery phrase');
+        expect(secondary).toBeVisible();
 
+        // Primary click
         fireEvent.click(screen.getByRole('button', { name: 'Set up a way to sign back in' }));
         expect(onSetupPin).toHaveBeenCalledOnce();
         expect(
             mocks.track.mock.calls.filter(
-                ([, payload]) => payload.action === 'clicked' && payload.method === 'pin'
+                ([, payload]) =>
+                    payload.action === 'clicked' &&
+                    payload.method === 'pin' &&
+                    payload.tier === 'pin-first'
+            )
+        ).toHaveLength(1);
+
+        // Secondary click
+        fireEvent.click(secondary);
+        expect(onSetup).toHaveBeenCalledOnce();
+        expect(onSetup.mock.calls[0][0].initialMethod).toBe('passkey');
+    });
+
+    it('renders tier 2 (backup) calm with platform label', () => {
+        vi.stubGlobal('navigator', { userAgent: 'Macintosh' });
+        const { onSetup } = renderPrompt({
+            escrowEnrolled: true,
+            pinEnabled: true,
+            recoveryMethodCount: 0,
+        });
+
+        expect(screen.getByText('Add a backup way in')).toBeVisible();
+        expect(screen.getByText('Use Face ID or Touch ID')).toBeVisible();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Set up a way to sign back in' }));
+        expect(onSetup).toHaveBeenCalledOnce();
+        expect(
+            mocks.track.mock.calls.filter(
+                ([, payload]) =>
+                    payload.action === 'clicked' &&
+                    payload.method === 'passkey' &&
+                    payload.tier === 'backup'
             )
         ).toHaveLength(1);
     });
 
-    it('does not render PIN variant when pinEnabled is null', () => {
-        renderPrompt({
-            recoveryMethodCount: 1,
+    it('hides tier 2 (backup) after two snoozes', () => {
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date('2026-09-01T12:00:00Z'));
+
+        const { unmount } = renderPrompt({
             escrowEnrolled: true,
-            pinEnabled: null,
+            pinEnabled: true,
+            recoveryMethodCount: 0,
         });
 
+        expect(screen.getByText('Add a backup way in')).toBeVisible();
+
+        // First snooze
+        fireEvent.click(screen.getByRole('button', { name: 'Remind me in 7 days' }));
+        expect(firstStartupStore.get.recoveryBackupPromptSnoozeCount()).toBe(1);
+
+        unmount();
+
+        // Advance time past snooze
+        act(() => vi.advanceTimersByTime(RECOVERY_PROMPT_SNOOZE_MS + 1000));
+
+        const { unmount: unmount2 } = renderPrompt({
+            escrowEnrolled: true,
+            pinEnabled: true,
+            recoveryMethodCount: 0,
+        });
+
+        expect(screen.getByText('Add a backup way in')).toBeVisible();
+
+        // Second snooze
+        fireEvent.click(screen.getByRole('button', { name: 'Remind me in 7 days' }));
+        expect(firstStartupStore.get.recoveryBackupPromptSnoozeCount()).toBe(2);
+
+        unmount2();
+
+        // Advance time past snooze again
+        act(() => vi.advanceTimersByTime(RECOVERY_PROMPT_SNOOZE_MS + 1000));
+
+        renderPrompt({
+            escrowEnrolled: true,
+            pinEnabled: true,
+            recoveryMethodCount: 0,
+        });
+
+        // Should not render anymore
         expect(screen.queryByTestId('dashboard-recovery-prompt')).not.toBeInTheDocument();
     });
 
-    it('shows orAction when both standard and PIN variants are eligible', () => {
-        const { onSetupPin } = renderPrompt({
-            recoveryMethodCount: 0,
+    it('hides tier 3 (none) when recoveryMethodCount > 0, null, or pinEnabled undefined', () => {
+        const { rerender } = renderPrompt({
             escrowEnrolled: true,
             pinEnabled: false,
+            recoveryMethodCount: 1,
         });
+        expect(screen.queryByTestId('dashboard-recovery-prompt')).not.toBeInTheDocument();
 
-        expect(screen.getByText('Add a way back in')).toBeVisible();
-        const orAction = screen.getByText('Or set a 6-digit recovery PIN');
-        expect(orAction).toBeVisible();
+        rerender(
+            <RecoveryBanner
+                recoverySupported
+                recoveryMethodCount={null}
+                totalCredentialCount={1}
+                escrowEnrolled={true}
+                pinEnabled={false}
+                onSetup={vi.fn()}
+            />
+        );
+        expect(screen.queryByTestId('dashboard-recovery-prompt')).not.toBeInTheDocument();
 
-        fireEvent.click(orAction);
-        expect(onSetupPin).toHaveBeenCalledOnce();
-        expect(
-            mocks.track.mock.calls.filter(
-                ([, payload]) => payload.action === 'clicked' && payload.method === 'pin'
-            )
-        ).toHaveLength(1);
+        rerender(
+            <RecoveryBanner
+                recoverySupported
+                recoveryMethodCount={0}
+                totalCredentialCount={1}
+                escrowEnrolled={true}
+                pinEnabled={undefined}
+                onSetup={vi.fn()}
+            />
+        );
+        expect(screen.queryByTestId('dashboard-recovery-prompt')).not.toBeInTheDocument();
     });
 });

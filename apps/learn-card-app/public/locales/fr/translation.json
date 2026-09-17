@@ -1890,11 +1890,15 @@
                 "passkeyGeneric": "Utiliser une clé d'accès",
                 "phrase": "Enregistrer une phrase de récupération"
             },
-            "pin": {
-                "title": "Ajouter un code PIN de récupération",
-                "body": "Retrouvez l'accès à votre compte en quelques secondes si vous perdez cet appareil.",
+            "pinFirst": {
+                "title": "Terminez la sécurisation de votre compte",
+                "body": "Ajoutez un code PIN de récupération — il vous permet de vous reconnecter en quelques secondes si vous perdez cet appareil.",
                 "action": "Définir un code PIN à 6 chiffres",
-                "orAction": "Ou définir un code PIN de récupération à 6 chiffres"
+                "secondary": "Ou ajoutez une clé d'accès ou une phrase de récupération"
+            },
+            "backup": {
+                "title": "Ajoutez un moyen de secours pour vous connecter",
+                "body": "Votre code PIN fonctionne sur n'importe quel appareil. Une clé d'accès ou une phrase de récupération vous protège si vous l'oubliez."
             }
         },
         "protectAccount": "Protégez votre compte",

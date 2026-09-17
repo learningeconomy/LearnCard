@@ -1890,11 +1890,15 @@
                 "passkeyGeneric": "Usa una llave de acceso",
                 "phrase": "Guarda una frase de recuperación"
             },
-            "pin": {
-                "title": "Añadir un PIN de recuperación",
-                "body": "Vuelve a entrar a tu cuenta en segundos si pierdes este dispositivo.",
-                "action": "Establecer un PIN de 6 dígitos",
-                "orAction": "O establece un PIN de recuperación de 6 dígitos"
+            "pinFirst": {
+                "title": "Termina de proteger tu cuenta",
+                "body": "Añade un PIN de recuperación: te permite volver a entrar en segundos si pierdes este dispositivo.",
+                "action": "Configurar un PIN de 6 dígitos",
+                "secondary": "O añade una llave de acceso o frase de recuperación"
+            },
+            "backup": {
+                "title": "Añade una forma de respaldo para entrar",
+                "body": "Tu PIN funciona en cualquier dispositivo. Una llave de acceso o frase de recuperación te protege si lo olvidas."
             }
         },
         "protectAccount": "Protege tu cuenta",
