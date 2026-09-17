@@ -72,6 +72,44 @@ await exportLearnCardBundle({ out: './learncard-export.zip', password });
 
 See `@learncard/holder-continuity` `BUNDLE_SPEC.md` for the ZIP layout and manifest hashing rules.
 
+## Bootstrap an organization
+
+```bash
+npx @learncard/cli org apply ./org.yaml
+```
+
+Reconciles a declarative YAML/JSON spec (issuer profile, signing authority, districts/managed profiles, service-account tokens) against the network. Idempotent — re-running with the same file makes no changes. Use `--dry-run` to preview, and `--secrets-out ./secrets.env` to save any newly created service-account tokens (required the first time a `serviceAccounts` entry is created). See `examples/sc-pilot.network.yaml` for a full example.
+
+```yaml
+issuer:
+    profileId: scde
+    displayName: South Carolina Department of Education
+    signingAuthority: { type: learncard-hosted, name: scde-clr }
+profileManager:
+    displayName: SC Districts
+    managed:
+        - { profileId: sc-greenville, displayName: Greenville County Schools }
+serviceAccounts:
+    - name: ea-clr-issuer
+      scopes: [inbox:write, inbox:read, credentials:write, credentials:read]
+```
+
+## Preflight with doctor
+
+```bash
+npx @learncard/cli doctor
+```
+
+Checks this project's issuer setup against the network — identity, network reachability, API token scopes, signing authority (with a real test-sign + verify), did:web resolution, an optional `--webhook-url` ping, and whether managed credential refresh is enabled — printing one line per check with a remediation command for anything that fails. Nothing is sent, allocated, or written to the network. Pass `--strict` to also exit non-zero on warnings, or `--scopes "..."` to check different permissions than the default Universal Inbox set.
+
+## Promote staging → production
+
+```bash
+npx @learncard/cli promote --from staging --to production --org ./org.yaml --secrets-out ./secrets.env
+```
+
+Re-applies your org spec in its own `.learncard/production` folder (each network needs its own `.env`), rotates service-account tokens into `--secrets-out`, and runs `doctor` — then prints the per-network checklist (profile, tokens, signing authority, templates, ConsentFlow contracts, credentials) that doesn't carry over; only your seed's `did:key` does. Add `--dry-run` to preview or `--skip-doctor` to skip the preflight.
+
 ## Contributing
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.

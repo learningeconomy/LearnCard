@@ -32,6 +32,12 @@ import {
     createExportLearnCardBundleHelper,
     createRestoreLearnCardFromBundleHelper,
 } from './replHelpers';
+import { registerOrgCommand } from './org';
+import { registerDoctorCommand } from './doctor';
+import { registerClrCommand } from './clr';
+import { registerInboxCommand } from './inbox';
+import { registerRefreshCommand } from './refresh';
+import { registerPromoteCommand } from './promote';
 
 import packageJson from '../package.json';
 
@@ -601,6 +607,13 @@ commandOptions(
         })
     );
 
+registerOrgCommand(program, runCommand);
+registerDoctorCommand(program, runCommand);
+registerClrCommand(program, runCommand);
+registerInboxCommand(program, runCommand);
+registerRefreshCommand(program, runCommand);
+registerPromoteCommand(program, runCommand);
+
 const JOURNEY = [
     'send',
     'status',
@@ -612,6 +625,12 @@ const JOURNEY = [
     'verify',
     'revoke',
     'open',
+    'org',
+    'doctor',
+    'promote',
+    'clr',
+    'inbox',
+    'refresh',
     'init',
     'repl',
 ];
