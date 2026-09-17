@@ -1290,6 +1290,8 @@ export const getCategoryDarkColor = (category = CredentialCategoryEnum.achieveme
 };
 
 export const resolveSharedCredential = async (sharedUri?: string): Promise<VC | undefined> => {
+    if (!sharedUri) return undefined;
+
     const { seed, pin, uri } = parseShareLinkParams(sharedUri);
     if (!seed || !pin || !uri) return undefined;
 

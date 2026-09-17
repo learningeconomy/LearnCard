@@ -18,28 +18,36 @@ type PassportCredentialCardProps = {
     className?: string;
 };
 
-export const resolveEndorsementTitle = async (sharedUri?: string): Promise<string | undefined> => {
+export const resolveEndorsementTitle = async (sharedUri?: string): Promise<string | null> => {
+    if (!sharedUri) return null;
+
     const credential = await resolveSharedCredential(sharedUri);
     const name = credential && getCredentialName(credential);
-    return name ? `Endorsement of ${name}` : undefined;
+    return name ? `Endorsement of ${name}` : null;
 };
 
 const PassportCredentialCard: React.FC<PassportCredentialCardProps> = ({ record, className }) => {
     const category = resolveActivityCategory(record.category);
+    const isEndorsement = record.category === 'Endorsement';
     const storedTitle =
-        record.category === 'Endorsement' && !record.title?.includes('undefined')
-            ? record.title
-            : undefined;
-    const { data: resolvedTitle } = useQuery({
+        isEndorsement && !record.title?.includes('undefined') ? record.title : undefined;
+    const needsResolvedTitle = isEndorsement && !storedTitle;
+    const { data: resolvedTitle, isPending } = useQuery<string | null>({
         queryKey: ['endorsement-target-title', record.sharedUri],
-        enabled: record.category === 'Endorsement' && !storedTitle && Boolean(record.sharedUri),
+        enabled: needsResolvedTitle && Boolean(record.sharedUri),
         queryFn: () => resolveEndorsementTitle(record.sharedUri),
     });
+    const isResolvingTitle = needsResolvedTitle && Boolean(record.sharedUri) && isPending;
+    const titleOverride =
+        storedTitle ??
+        resolvedTitle ??
+        (needsResolvedTitle && !isResolvingTitle ? 'Endorsement' : undefined);
     return (
         <div className={className}>
             <BoostEarnedCard
                 record={record}
-                titleOverride={storedTitle ?? resolvedTitle}
+                titleOverride={titleOverride}
+                loading={isResolvingTitle}
                 categoryType={category}
                 defaultImg={categoryMetadata[category as CredentialCategoryEnum]?.defaultImageSrc}
                 useWrapper={false}

@@ -10,6 +10,7 @@ const endorsement = {
     '@context': ['https://www.w3.org/2018/credentials/v1'],
     type: ['VerifiableCredential', 'EndorsementCredential'],
     issuer: 'did:example:endorser',
+    name: 'Endorsement of First Aid',
     credentialSubject: {
         id: 'urn:uuid:original-123',
         type: ['EndorsementSubject'],
@@ -41,6 +42,7 @@ describe('storeEndorsement', () => {
             expect.objectContaining({
                 credentialId: 'urn:uuid:original-123',
                 originalCredentialId: 'urn:uuid:original-123',
+                title: 'Endorsement of First Aid',
             })
         );
     });
