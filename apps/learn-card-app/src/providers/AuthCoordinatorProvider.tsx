@@ -646,7 +646,8 @@ const AuthSessionManager: React.FC<{
         }
     }, [coordinator.state.status]);
 
-    const [showRecoveryPinSetup, setShowRecoveryPinSetup] = useState(false);
+    const [recoveryPinSetupReason, setRecoveryPinSetupReason] =
+        useState<RecoveryPinSetupReason | null>(null);
     const [showRecoveryPinReset, setShowRecoveryPinReset] = useState(false);
     const readyDid = coordinator.state.status === 'ready' ? coordinator.state.did : undefined;
     const readyPinEnabled =
@@ -667,7 +668,7 @@ const AuthSessionManager: React.FC<{
             const flag = readRecoveryPinPromptFlag(did);
 
             if (wasNewUserRef.current && !flag && readyEnrollment === 'enrolled') {
-                setShowRecoveryPinSetup(true);
+                setRecoveryPinSetupReason('first-time');
             }
 
             if (readyPinEnabled === true) {
@@ -675,7 +676,7 @@ const AuthSessionManager: React.FC<{
             } else if (readyPinEnabled === false) {
                 if (recoveredWithPinRef.current) {
                     writeRecoveryPinPromptFlag(did, 'set');
-                    setShowRecoveryPinSetup(true);
+                    setRecoveryPinSetupReason('after-recovery');
                     recoveredWithPinRef.current = false;
                 } else if (flag === 'set') {
                     setShowRecoveryPinReset(true);
@@ -1456,7 +1457,7 @@ const AuthSessionManager: React.FC<{
                         <RecoveryPinResetBanner
                             onSetAgain={() => {
                                 setShowRecoveryPinReset(false);
-                                setShowRecoveryPinSetup(true);
+                                setRecoveryPinSetupReason('after-recovery');
                             }}
                             onDismiss={() => {
                                 if (!readyDid) return;
@@ -1764,17 +1765,18 @@ const AuthSessionManager: React.FC<{
                 />
             )}
 
-            {showRecoveryPinSetup && coordinator.state.status === 'ready' && (
+            {recoveryPinSetupReason && coordinator.state.status === 'ready' && (
                 <RecoveryPinSetupOverlay
+                    reason={recoveryPinSetupReason}
                     onComplete={() => {
                         if (!readyDid) return;
                         writeRecoveryPinPromptFlag(readyDid, 'set');
-                        setShowRecoveryPinSetup(false);
+                        setRecoveryPinSetupReason(null);
                     }}
                     onSkip={() => {
                         if (!readyDid) return;
                         writeRecoveryPinPromptFlag(readyDid, 'skipped');
-                        setShowRecoveryPinSetup(false);
+                        setRecoveryPinSetupReason(null);
                     }}
                 />
             )}
@@ -2082,7 +2084,10 @@ const AuthSessionManager: React.FC<{
     );
 };
 
-import { RecoveryPinSetupOverlay } from '../components/recovery/RecoveryPinSetupOverlay';
+import {
+    RecoveryPinSetupOverlay,
+    type RecoveryPinSetupReason,
+} from '../components/recovery/RecoveryPinSetupOverlay';
 
 // --- Cached private key retrieval for private-key-first init ---
 // In public computer mode, skip the persistent cache so the coordinator
