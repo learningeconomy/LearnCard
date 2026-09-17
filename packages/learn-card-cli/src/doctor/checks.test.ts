@@ -4,6 +4,7 @@ import {
     didWebCheck,
     identityCheck,
     networkCheck,
+    signingServiceCheck,
     refreshEnabledCheck,
     signingAuthorityCheck,
     tokenScopesCheck,
@@ -73,7 +74,7 @@ describe('networkCheck', () => {
         const result = await networkCheck.run(createContext({ fetch }));
         expect(result.status).toBe('pass');
         expect(fetch).toHaveBeenCalledWith(
-            'https://network.learncard.com/health-check',
+            'https://network.learncard.com/api/health-check',
             expect.anything()
         );
     });
@@ -83,6 +84,42 @@ describe('networkCheck', () => {
         const result = await networkCheck.run(createContext({ fetch }));
         expect(result.status).toBe('fail');
         expect(result.detail).toContain('ECONNREFUSED');
+    });
+});
+
+describe('signingServiceCheck', () => {
+    it('skips when no LCA_API_URL is configured', async () => {
+        const fetch = vi.fn();
+        const result = await signingServiceCheck.run(createContext({ fetch }));
+        expect(result.status).toBe('skip');
+        expect(fetch).not.toHaveBeenCalled();
+    });
+
+    it('passes when the signing service health-check answers 2xx', async () => {
+        const fetch = vi.fn().mockResolvedValue(okResponse('Healthy'));
+        const result = await signingServiceCheck.run(
+            createContext({
+                fetch,
+                services: { ...services, lcaAPI: 'http://localhost:5100/trpc' },
+            })
+        );
+        expect(result.status).toBe('pass');
+        expect(fetch).toHaveBeenCalledWith(
+            'http://localhost:5100/api/health-check',
+            expect.anything()
+        );
+    });
+
+    it('fails with a container hint when the socket closes', async () => {
+        const fetch = vi.fn().mockRejectedValue(new Error('fetch failed'));
+        const result = await signingServiceCheck.run(
+            createContext({
+                fetch,
+                services: { ...services, lcaAPI: 'http://localhost:5100/trpc' },
+            })
+        );
+        expect(result.status).toBe('fail');
+        expect(result.fix).toContain('LCA_API_URL');
     });
 });
 

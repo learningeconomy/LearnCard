@@ -137,32 +137,58 @@ export const identityCheck: Check = {
     },
 };
 
+const healthCheck = async (
+    doFetch: typeof fetch,
+    trpcUrl: string,
+    label: string,
+    fix: string
+): Promise<CheckResult> => {
+    const url = `${networkBase(trpcUrl)}/api/health-check`;
+    try {
+        const res = await fetchWithTimeout(doFetch, url);
+        if (!res.ok) {
+            return { status: 'fail', detail: `${label} health-check returned ${res.status}.`, fix };
+        }
+        return { status: 'pass', detail: `Connected to ${label}.` };
+    } catch (error) {
+        return {
+            status: 'fail',
+            detail: `Could not reach ${label}: ${errorMessage(error)}`,
+            fix,
+        };
+    }
+};
+
 /** 2. The configured network's health-check answers within 5s. */
 export const networkCheck: Check = {
     id: 'network',
     title: 'Network',
+    run: ({ services, fetch: doFetch }): Promise<CheckResult> =>
+        healthCheck(
+            doFetch,
+            services.network,
+            describeNetwork(services.network),
+            'Check --network (or NETWORK_URL in .env) points at a real LearnCard Network deployment.'
+        ),
+};
+
+/** 2b. The hosted signing service (lca-api) answers, when one is configured. */
+export const signingServiceCheck: Check = {
+    id: 'signing-service',
+    title: 'Signing service',
     run: async ({ services, fetch: doFetch }): Promise<CheckResult> => {
-        const label = describeNetwork(services.network);
-        const url = `${networkBase(services.network)}/health-check`;
-        const fix =
-            'Check --network (or NETWORK_URL in .env) points at a real LearnCard Network deployment.';
-        try {
-            const res = await fetchWithTimeout(doFetch, url);
-            if (!res.ok) {
-                return {
-                    status: 'fail',
-                    detail: `${label} health-check returned ${res.status}.`,
-                    fix,
-                };
-            }
-            return { status: 'pass', detail: `Connected to ${label}.` };
-        } catch (error) {
+        if (!services.lcaAPI) {
             return {
-                status: 'fail',
-                detail: `Could not reach ${label}: ${errorMessage(error)}`,
-                fix,
+                status: 'skip',
+                detail: 'No LCA_API_URL configured; hosted signing (setup-signing, org apply) is unavailable on this network.',
             };
         }
+        return healthCheck(
+            doFetch,
+            services.lcaAPI,
+            `signing service ${services.lcaAPI}`,
+            'Check LCA_API_URL in .env. If it is a local container, `docker logs` it — a port that accepts and immediately closes connections usually means the service failed env validation on boot.'
+        );
     },
 };
 
@@ -423,6 +449,7 @@ export const trustedRegistryCheck: Check = {
 export const CHECKS: Check[] = [
     identityCheck,
     networkCheck,
+    signingServiceCheck,
     tokenScopesCheck,
     signingAuthorityCheck,
     didWebCheck,
