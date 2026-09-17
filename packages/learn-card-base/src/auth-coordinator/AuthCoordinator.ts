@@ -288,16 +288,16 @@ export class AuthCoordinator {
     }
 
     /** Start recovery using either a signed-in identity or a verified recovery session. */
-    async startEscrowRecovery() {
+    async startEscrowRecovery(options?: { restart?: boolean }) {
         const generation = this.recoveryGeneration;
         if (!this.keyDerivation.startEscrowRecovery) throw new Error('Recovery is not available');
         const start = this.keyDerivation.startEscrowRecovery.bind(this.keyDerivation);
         const result = await this.runEscrowOperation(async () => {
             if (this.state.status === 'identity_recovery' && this.state.recoverySessionToken) {
-                return start({ recoverySessionToken: this.state.recoverySessionToken });
+                return start({ recoverySessionToken: this.state.recoverySessionToken, options });
             }
             if (this.state.status !== 'needs_recovery') throw new Error('Recovery is not ready');
-            return start(await this.getAuthCredentials());
+            return start({ ...(await this.getAuthCredentials()), options });
         });
         if (generation !== this.recoveryGeneration)
             throw new Error('This recovery request was cancelled.');

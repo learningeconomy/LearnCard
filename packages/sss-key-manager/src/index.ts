@@ -83,6 +83,7 @@ export {
     EscrowPinMismatchError,
     EscrowPinLockedError,
     EscrowPinThrottledError,
+    EscrowHoldRestartThrottledError,
     EscrowPinUnavailableError,
 } from './types';
 export {

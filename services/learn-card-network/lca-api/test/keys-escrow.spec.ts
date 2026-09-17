@@ -115,6 +115,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
+    vi.useRealTimers();
     vi.restoreAllMocks();
     await getUserKeysCollection().deleteMany({ 'authProviders.id': authProvider.id });
     await getEscrowHoldsCollection().deleteMany({ 'authProvider.id': authProvider.id });
@@ -229,6 +230,67 @@ describe('A6 escrow recovery', () => {
             true
         );
         expect(stored?.identityProofType).toBe('auth-token');
+    });
+
+    it('throttles a restart within 24 hours without changing the pending hold', async () => {
+        await enroll();
+        const first = await start();
+        const before = await findEscrowHoldById(first.holdId);
+        await expect(
+            getClient().escrow.startRecovery({
+                ...auth,
+                clientEphemeralPublicKey: recipient.publicKey,
+                restart: true,
+            })
+        ).rejects.toMatchObject({
+            code: 'TOO_MANY_REQUESTS',
+            message: `A recovery request was started recently. Try again after ${new Date(Date.parse(first.requestedAt) + 86_400_000).toISOString()}.`,
+        });
+        expect(await findEscrowHoldById(first.holdId)).toEqual(before);
+    });
+
+    it('restarts after 24 hours with fresh secrets and a full waiting period', async () => {
+        await enroll();
+        const first = await start();
+        const another = await generateEscrowKeyPair();
+        const now = new Date(Date.parse(first.requestedAt) + 86_400_000);
+        vi.useFakeTimers({ toFake: ['Date'] });
+        vi.setSystemTime(now);
+        const second = await getClient().escrow.startRecovery({
+            ...auth,
+            clientEphemeralPublicKey: another.publicKey,
+            restart: true,
+        });
+        expect(second.holdId).not.toBe(first.holdId);
+        expect(second.resumeToken).toBeTruthy();
+        expect(second.resumeToken).not.toBe(first.resumeToken);
+        expect(second.requestedAt).toBe(now.toISOString());
+        expect(second.releaseAfter).toBe(new Date(now.getTime() + 60_000).toISOString());
+        expect(await findEscrowHoldById(first.holdId)).toMatchObject({
+            status: 'cancelled',
+            cancelReason: 'superseded',
+            cancelledBy: 'system',
+        });
+        expect(await findEscrowHoldById(second.holdId)).toMatchObject({
+            status: 'pending',
+            clientEphemeralPublicKey: another.publicKey,
+            resumeTokenHash: hashEscrowResumeToken(resume(second).resumeToken),
+        });
+    });
+
+    it('returns conflict rather than unusable resume secrets when a restart races', async () => {
+        await enroll();
+        vi.spyOn(models, 'createEscrowHold').mockRejectedValueOnce({ code: 11000 });
+        await expect(
+            getClient().escrow.startRecovery({
+                ...auth,
+                clientEphemeralPublicKey: recipient.publicKey,
+                restart: true,
+            })
+        ).rejects.toMatchObject({
+            code: 'CONFLICT',
+            message: 'Recovery state changed; please retry.',
+        });
     });
 
     it('4: handles simultaneous starts through the partial unique index', async () => {
@@ -788,6 +850,24 @@ describe('escrow PIN release', () => {
             cancelledBy: 'system',
         });
         expect((await record())?.escrowPin?.disabledAt).toBeInstanceOf(Date);
+    });
+
+    it('ignores the restart flag for PIN policy and supersedes immediately', async () => {
+        await enrollPin();
+        const first = await startPin();
+        const second = await getClient().escrow.startRecovery({
+            ...auth,
+            clientEphemeralPublicKey: recipient.publicKey,
+            releasePolicy: 'pin',
+            restart: true,
+        });
+        expect(second.holdId).not.toBe(first.holdId);
+        expect(second.resumeToken).toBeTruthy();
+        expect(second.releaseAfter).toBe(second.requestedAt);
+        expect(await findEscrowHoldById(first.holdId)).toMatchObject({
+            status: 'cancelled',
+            cancelReason: 'superseded',
+        });
     });
 
     it('preserves the waiting hold while superseding only pending PIN requests', async () => {

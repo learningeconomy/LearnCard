@@ -204,6 +204,13 @@ const {
 
 ---
 
+## Escrow hold restart
+
+If the original browser or resume secrets are lost, call `coordinator.startEscrowRecovery({ restart: true })`.
+Restart cancels the old hold as superseded and returns new resume secrets with a full waiting period.
+The pending hold must be at least 24 hours old (configurable with `ESCROW_HOLD_RESTART_MIN_AGE_MS`).
+Earlier attempts throw `EscrowHoldRestartThrottledError`, with `retryAfter` when available; ordinary starts still reuse the existing hold.
+
 ## Recovery PIN
 
 An **optional** fast path layered on top of escrow recovery. Escrow already seals a recovery

@@ -53,6 +53,7 @@ import {
 import {
     getEscrowEnclave,
     getEscrowHoldDurationMs,
+    getEscrowHoldRestartMinAgeMs,
     notifyEscrowHoldEvent,
     EscrowPolicyError,
     EscrowBlobError,
@@ -187,6 +188,7 @@ const startInput = z
     .object({
         clientEphemeralPublicKey: z.string().min(1).max(512),
         releasePolicy: z.enum(['hold', 'pin']).default('hold'),
+        restart: z.boolean().optional(),
         authToken: z.string().optional(),
         providerType: AuthProviderTypeValidator.optional(),
         recoverySessionToken: RecoverySessionTokenValidator.optional(),
@@ -425,12 +427,33 @@ export const escrowRouter = t.router({
                 input.releasePolicy === 'hold' &&
                 (pending.releasePolicy ?? 'hold') === 'hold' &&
                 pending.shareVersion === userKey.escrowBlob.shareVersion
-            )
-                return { ...serializeHold(pending), status: 'pending' as const, resumeToken: null };
+            ) {
+                if (!input.restart)
+                    return {
+                        ...serializeHold(pending),
+                        status: 'pending' as const,
+                        resumeToken: null,
+                    };
+                const minAge = getEscrowHoldRestartMinAgeMs();
+                if (now.getTime() - pending.requestedAt.getTime() < minAge) {
+                    const retryAfter = new Date(
+                        pending.requestedAt.getTime() + minAge
+                    ).toISOString();
+                    throw new TRPCError({
+                        code: 'TOO_MANY_REQUESTS',
+                        message: `A recovery request was started recently. Try again after ${retryAfter}.`,
+                    });
+                }
+            }
             if (pending) {
                 const cancelled = await cancelEscrowHold(pending._id, 'system', 'superseded');
                 if (cancelled)
-                    void notifyEscrowHoldEvent({ kind: 'cancelled', hold: cancelled, userKey });
+                    void notifyEscrowHoldEvent({
+                        kind: 'cancelled',
+                        hold: cancelled,
+                        userKey,
+                        reason: 'superseded',
+                    });
             }
             const resumeToken = generateEscrowResumeToken();
             let hold: EscrowHold;
@@ -466,6 +489,7 @@ export const escrowRouter = t.router({
                     );
                     if (
                         raced &&
+                        !input.restart &&
                         input.releasePolicy === 'hold' &&
                         (raced.releasePolicy ?? 'hold') === 'hold' &&
                         raced.shareVersion === userKey.escrowBlob.shareVersion
