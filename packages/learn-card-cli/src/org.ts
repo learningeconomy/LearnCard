@@ -1,5 +1,11 @@
 import type { Command } from 'commander';
-import { connect, ensureIdentity, loadProject, type ProjectOptions } from './project';
+import {
+    connect,
+    connectAsDidWeb,
+    ensureIdentity,
+    loadProject,
+    type ProjectOptions,
+} from './project';
 import { loadOrgSpec } from './org/load';
 import { applyOrg } from './org/apply';
 import { formatChanges, hasChanges } from './org/diff';
@@ -14,6 +20,11 @@ export type OrgApplyOptions = ProjectOptions & {
 export const runOrgApply = async (file: string, options: OrgApplyOptions): Promise<void> => {
     const spec = await loadOrgSpec(file);
     const project = await loadProject(options.cwd ?? process.cwd());
+
+    if (options.profileId && options.profileId !== spec.issuer.profileId)
+        throw new Error(
+            `--profile-id "${options.profileId}" does not match the spec's issuer.profileId "${spec.issuer.profileId}". Remove the flag or update the spec.`
+        );
 
     if (project.env.PROFILE_ID && project.env.PROFILE_ID !== spec.issuer.profileId)
         throw new Error(
@@ -30,6 +41,7 @@ export const runOrgApply = async (file: string, options: OrgApplyOptions): Promi
     const result = await applyOrg(spec, learnCard, project, {
         dryRun: options.dryRun,
         secretsOut: options.secretsOut,
+        connectAsManager: managerDid => connectAsDidWeb(project, options, managerDid),
     });
 
     if (options.dryRun) out.log('Dry run: no changes were made.');

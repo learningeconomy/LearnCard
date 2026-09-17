@@ -3,6 +3,7 @@ import {
     fetchSentInboxCredentials,
     filterRecipientType,
     filterSince,
+    parseLimit,
     parseSince,
     toJsonRecord,
     type SentInboxRecord,
@@ -16,6 +17,20 @@ const baseRecord = (overrides: Partial<SentInboxRecord> = {}): SentInboxRecord =
     createdAt: '2026-01-01T00:00:00.000Z',
     issuerDid: 'did:example:issuer',
     ...overrides,
+});
+
+describe('parseLimit', () => {
+    it('defaults to 50', () => {
+        expect(parseLimit(undefined)).toBe(50);
+    });
+
+    it('accepts positive integers', () => {
+        expect(parseLimit('10')).toBe(10);
+    });
+
+    it.each(['abc', '0', '-1', '1.5'])('rejects %s', value => {
+        expect(() => parseLimit(value)).toThrow('--limit');
+    });
 });
 
 describe('parseSince', () => {

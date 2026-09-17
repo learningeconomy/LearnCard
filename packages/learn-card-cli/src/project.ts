@@ -2,7 +2,11 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createInterface } from 'node:readline/promises';
 import { randomUUID } from 'node:crypto';
-import { initLearnCard, type NetworkLearnCardFromSeed } from '@learncard/init';
+import {
+    initLearnCard,
+    type DidWebNetworkLearnCardFromSeed,
+    type NetworkLearnCardFromSeed,
+} from '@learncard/init';
 import { initLCALearnCard, type LCALearnCard } from '@learncard/lca-api-plugin';
 import { generateRandomSeed } from './random';
 import { out } from './out';
@@ -38,6 +42,7 @@ export interface ProjectOptions {
 }
 
 export type NetworkCard = NetworkLearnCardFromSeed['returnValue'];
+export type DidWebCard = DidWebNetworkLearnCardFromSeed['returnValue'];
 
 export const parseEnv = (text: string): Record<string, string> => {
     const env: Record<string, string> = {};
@@ -372,6 +377,28 @@ export async function connect(
               network: services.network === PRODUCTION_NETWORK ? true : services.network,
           });
 }
+
+/**
+ * Open a second wallet on the same seed that authenticates as a `did:web` the
+ * network issued to this seed (e.g. a profile manager). Manager-only routes
+ * reject the seed's base did:key, so `connect()` alone cannot call them.
+ */
+export const connectAsDidWeb = async (
+    project: Project,
+    options: ProjectOptions,
+    didWeb: string
+): Promise<DidWebCard> => {
+    const seed = project.env.SECURE_SEED;
+    if (!seed) throw new Error('Create an identity before connecting.');
+    const services = resolveServices(project.env, options.network);
+    return initLearnCard({
+        seed,
+        network: services.network === PRODUCTION_NETWORK ? true : services.network,
+        didWeb,
+        ...(services.cloud && { cloud: { url: services.cloud } }),
+        ...(options.didkit && { didkit: options.didkit }),
+    });
+};
 
 export const ensureProfile = async (
     learnCard: { invoke: Pick<NetworkCard['invoke'], 'getProfile' | 'createProfile'> },

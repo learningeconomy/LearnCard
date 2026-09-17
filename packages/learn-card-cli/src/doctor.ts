@@ -70,7 +70,11 @@ export const runDoctor = async (options: DoctorOptions): Promise<void> => {
 
     const results: (CheckResult & { id: string; title: string })[] = [];
     for (const check of CHECKS) {
-        const result = await check.run(context);
+        const result = await check.run(context).catch((error: unknown): CheckResult => ({
+            status: 'fail',
+            detail: error instanceof Error ? error.message : String(error),
+            fix: 'Check network reachability and your .env, then rerun `doctor`.',
+        }));
         results.push({ id: check.id, title: check.title, ...result });
         printResult(check.title, result);
     }

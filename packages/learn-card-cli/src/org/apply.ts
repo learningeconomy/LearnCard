@@ -32,9 +32,20 @@ export interface OrgApplyResult {
     };
 }
 
+/**
+ * Managed-profile routes are manager-only on the network: the caller must
+ * authenticate as `did:web:<host>:manager:<id>`, not as the issuer. Callers
+ * supply this to open a second wallet bound to the manager DID.
+ */
+export type ManagerLearnCard = {
+    invoke: Pick<LCALearnCard['invoke'], 'createManagedProfile' | 'getManagedProfiles'>;
+};
+
 export interface ApplyOrgOptions {
     dryRun?: boolean;
     secretsOut?: string;
+    /** Required when the spec has `profileManager.managed` entries. */
+    connectAsManager?: (managerDid: string) => Promise<ManagerLearnCard>;
 }
 
 export type OrgLearnCard = {
@@ -45,8 +56,6 @@ export type OrgLearnCard = {
         | 'createProfile'
         | 'updateProfile'
         | 'createProfileManager'
-        | 'createManagedProfile'
-        | 'getManagedProfiles'
         | 'getAuthGrants'
         | 'addAuthGrant'
         | 'getAPITokenForAuthGrant'
@@ -67,9 +76,12 @@ const resolveIssuerDid = (learnCard: OrgLearnCard): string => {
     }
 };
 
+/** `ea-clr-issuer` -> `EA_CLR_ISSUER`, so the file can be sourced by a shell as well as parsed by dotenv. */
+export const toEnvKey = (name: string): string => name.replace(/-/g, '_').toUpperCase();
+
 /** Append a `NAME=token` line, creating the file with owner-only permissions if needed. */
 const writeSecret = async (secretsOut: string, name: string, token: string): Promise<void> => {
-    await fs.appendFile(secretsOut, `${name}=${token}\n`, { mode: 0o600 });
+    await fs.appendFile(secretsOut, `${toEnvKey(name)}=${token}\n`, { mode: 0o600 });
     await fs.chmod(secretsOut, 0o600);
 };
 
@@ -216,6 +228,7 @@ const applyProfileManager = async (
     learnCard: OrgLearnCard,
     project: Project,
     dryRun: boolean,
+    connectAsManager: ApplyOrgOptions['connectAsManager'],
     changes: OrgChange[],
     managed: Array<{ profileId: string; did: string }>
 ): Promise<string | undefined> => {
@@ -236,11 +249,26 @@ const applyProfileManager = async (
 
     if (!managedSpecs.length) return managerDid;
 
+    if (!managerDid) {
+        for (const managedSpec of managedSpecs) {
+            changes.push({
+                resource: 'managedProfile',
+                name: managedSpec.profileId,
+                action: 'would-create',
+            });
+        }
+        return managerDid;
+    }
+
+    if (!connectAsManager)
+        throw new Error('Managed profiles require a manager connection (connectAsManager).');
+    const managerCard = await connectAsManager(managerDid);
+
     const existingManaged = new Map<string, string>();
     let cursor: string | undefined;
     let hasMore = true;
     while (hasMore) {
-        const page = await learnCard.invoke.getManagedProfiles({ limit: 100, cursor });
+        const page = await managerCard.invoke.getManagedProfiles({ limit: 100, cursor });
         for (const profile of page.records) existingManaged.set(profile.profileId, profile.did);
         hasMore = page.hasMore;
         cursor = page.cursor;
@@ -266,7 +294,7 @@ const applyProfileManager = async (
             });
             continue;
         }
-        const newDid = await learnCard.invoke.createManagedProfile({
+        const newDid = await managerCard.invoke.createManagedProfile({
             profileId: managedSpec.profileId,
             displayName: managedSpec.displayName,
             bio: '',
@@ -362,6 +390,7 @@ export const applyOrg = async (
         learnCard,
         project,
         dryRun,
+        opts.connectAsManager,
         changes,
         managed
     );

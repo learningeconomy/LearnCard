@@ -1,7 +1,12 @@
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { PRODUCTION_NETWORK, STAGING_NETWORK } from './project';
-import { assertSecretsOutForPromote, planPromotion, PROMOTE_CHECKLIST } from './promote';
+import {
+    assertSecretsOutForPromote,
+    assertSourceNetwork,
+    planPromotion,
+    PROMOTE_CHECKLIST,
+} from './promote';
 
 describe('planPromotion', () => {
     it('resolves staging -> production and targets a project folder named after it', () => {
@@ -45,5 +50,26 @@ describe('assertSecretsOutForPromote', () => {
         expect(() =>
             assertSecretsOutForPromote(true, 'production', { secretsOut: './secrets.env' })
         ).not.toThrow();
+    });
+});
+
+describe('assertSourceNetwork', () => {
+    it('accepts a staging .env for --from staging (alias or full URL)', () => {
+        expect(() =>
+            assertSourceNetwork({ NETWORK_URL: 'staging' }, 'staging', STAGING_NETWORK)
+        ).not.toThrow();
+        expect(() =>
+            assertSourceNetwork({ NETWORK_URL: STAGING_NETWORK }, 'staging', STAGING_NETWORK)
+        ).not.toThrow();
+    });
+
+    it('accepts an .env with no NETWORK_URL for --from production', () => {
+        expect(() => assertSourceNetwork({}, 'production', PRODUCTION_NETWORK)).not.toThrow();
+    });
+
+    it('throws when the source folder is on a different network than --from', () => {
+        expect(() => assertSourceNetwork({}, 'staging', STAGING_NETWORK)).toThrow(
+            `--from staging does not match this folder's network (${PRODUCTION_NETWORK})`
+        );
     });
 });

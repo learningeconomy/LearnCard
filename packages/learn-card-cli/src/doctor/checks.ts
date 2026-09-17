@@ -369,7 +369,8 @@ export const webhookCheck: Check = {
  * 7. Managed credential refresh is a network-wide feature toggle. Probing a
  * syntactically valid but unknown refreshId distinguishes "feature is off" (NOT_FOUND
  * whose message says the feature is not available) from "feature is on, this id just
- * doesn't exist" (any other NOT_FOUND/validation error) without allocating anything.
+ * doesn't exist" (NOT_FOUND "Credential refresh not found") without allocating anything.
+ * Any other error (transport, auth) is inconclusive and reported as a warning.
  */
 export const refreshEnabledCheck: Check = {
     id: 'refresh-enabled',
@@ -390,7 +391,17 @@ export const refreshEnabledCheck: Check = {
                     fix: "Credential refresh isn't enabled on this network; use `--network staging` or contact LearnCard.",
                 };
             }
-            return { status: 'pass', detail: 'Credential refresh is enabled on this network.' };
+            if (/credential refresh not found/i.test(message)) {
+                return {
+                    status: 'pass',
+                    detail: 'Credential refresh is enabled on this network.',
+                };
+            }
+            return {
+                status: 'warn',
+                detail: `Could not determine whether credential refresh is enabled: ${message}`,
+                fix: 'Check network reachability and your API token, then rerun `doctor`.',
+            };
         }
     },
 };

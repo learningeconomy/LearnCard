@@ -245,6 +245,17 @@ describe('refreshEnabledCheck', () => {
         expect(result.status).toBe('fail');
         expect(result.fix).toContain('staging');
     });
+
+    it('warns instead of passing when the probe fails for an unrelated reason', async () => {
+        const ctx = createContext({
+            learnCard: createLearnCard({
+                getCredentialRefreshHistory: vi.fn().mockRejectedValue(new Error('fetch failed')),
+            }),
+        });
+        const result = await refreshEnabledCheck.run(ctx);
+        expect(result.status).toBe('warn');
+        expect(result.detail).toContain('fetch failed');
+    });
 });
 
 describe('trustedRegistryCheck', () => {

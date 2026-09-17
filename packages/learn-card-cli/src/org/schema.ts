@@ -71,8 +71,18 @@ const isoDateSchema = z.string().refine(value => !Number.isNaN(Date.parse(value)
     message: 'must be a valid ISO date',
 });
 
+// Becomes the key in `--secrets-out` (see `toEnvKey` in apply.ts), so keep it shell-safe.
+const SERVICE_ACCOUNT_NAME_PATTERN = /^[A-Za-z_][A-Za-z0-9_-]*$/;
+
+const serviceAccountNameSchema = z
+    .string()
+    .regex(
+        SERVICE_ACCOUNT_NAME_PATTERN,
+        'must start with a letter or underscore and contain only letters, numbers, hyphens, and underscores'
+    );
+
 const serviceAccountSchema = z.object({
-    name: displayNameSchema,
+    name: serviceAccountNameSchema,
     scopes: scopesSchema,
     expiresAt: isoDateSchema.optional(),
 });
