@@ -18,7 +18,9 @@
 
 import Fastify, { type FastifyPluginAsync, type FastifyReply, type FastifyRequest } from 'fastify';
 import formbody from '@fastify/formbody';
+import fastifyRateLimit from '@fastify/rate-limit';
 import { environment } from '@environment';
+import cache from '@cache';
 import { redeemLoginTicket } from '@cache/login-tickets';
 
 import {
@@ -51,6 +53,29 @@ import {
 const RATE_LIMIT_PREFIX = 'oidc-rl:';
 const RATE_LIMIT_MAX_FAILURES = DEFAULT_MAX_FAILED_ATTEMPTS;
 const RATE_LIMIT_WINDOW_SECONDS = DEFAULT_RATE_LIMIT_WINDOW_SECONDS;
+
+// Coarse all-requests ceilings enforced by @fastify/rate-limit (per IP, per
+// minute). Discovery/JWKS are polled by Keycloak, so the global default is
+// generous; authorize/token get a tighter per-route cap. The failures-only
+// counter above remains the fine-grained brute-force control.
+const GLOBAL_REQUESTS_PER_MINUTE = 300;
+const AUTH_ROUTE_REQUESTS_PER_MINUTE = 60;
+const AUTH_ROUTE_RATE_LIMIT = {
+    config: { rateLimit: { max: AUTH_ROUTE_REQUESTS_PER_MINUTE, timeWindow: '1 minute' } },
+};
+
+// @fastify/rate-limit throws whatever errorResponseBuilder returns; the plugin's
+// error handler must recognise it so the 429 is not flattened into a 500.
+interface RateLimitExceededError {
+    statusCode: 429;
+    error: 'temporarily_unavailable';
+}
+
+const isRateLimitExceeded = (error: unknown): error is RateLimitExceededError =>
+    typeof error === 'object' &&
+    error !== null &&
+    (error as { statusCode?: unknown }).statusCode === 429 &&
+    (error as { error?: unknown }).error === 'temporarily_unavailable';
 
 const rateLimitKey = (route: 'authorize' | 'token', request: FastifyRequest): string =>
     `${RATE_LIMIT_PREFIX}${route}:${getRequestClientIp(request)}`;
@@ -116,6 +141,16 @@ const parseBasicCredentials = (authorization: string): ClientCredentials[] => {
 
 export const oidcFastifyPlugin: FastifyPluginAsync = async fastify => {
     await fastify.register(formbody);
+    await fastify.register(fastifyRateLimit, {
+        max: GLOBAL_REQUESTS_PER_MINUTE,
+        timeWindow: '1 minute',
+        keyGenerator: request => getRequestClientIp(request),
+        ...(cache.redis ? { redis: cache.redis } : {}),
+        errorResponseBuilder: (): RateLimitExceededError => ({
+            statusCode: 429,
+            error: 'temporarily_unavailable',
+        }),
+    });
     fastify.addHook('onRequest', async (_request, reply) => {
         reply.header('Cache-Control', 'no-store');
         reply.header('Pragma', 'no-cache');
@@ -127,7 +162,10 @@ export const oidcFastifyPlugin: FastifyPluginAsync = async fastify => {
             return reply.status(503).send({ error: 'server_error' });
         }
     });
-    fastify.setErrorHandler((error, request, reply) => {
+    fastify.setErrorHandler((error: unknown, request, reply) => {
+        if (isRateLimitExceeded(error)) {
+            return reply.status(429).send({ error: error.error });
+        }
         console.error(`OIDC request failed (${request.method} ${request.url}):`, error);
         return reply.status(500).send({ error: 'server_error' });
     });
@@ -141,7 +179,7 @@ export const oidcFastifyPlugin: FastifyPluginAsync = async fastify => {
         return reply.send(await getOidcJwks());
     });
 
-    fastify.get('/oidc/authorize', async (request, reply) => {
+    fastify.get('/oidc/authorize', AUTH_ROUTE_RATE_LIMIT, async (request, reply) => {
         const query = request.query as Record<string, string | undefined>;
         const redirectUri = query.redirect_uri;
         const state = query.state;
@@ -202,7 +240,7 @@ export const oidcFastifyPlugin: FastifyPluginAsync = async fastify => {
         return reply.redirect(appendParams(redirectUri, state ? { code, state } : { code }));
     });
 
-    fastify.post('/oidc/token', async (request, reply) => {
+    fastify.post('/oidc/token', AUTH_ROUTE_RATE_LIMIT, async (request, reply) => {
         const limitKey = rateLimitKey('token', request);
         if (await isRateLimited(limitKey, RATE_LIMIT_MAX_FAILURES)) {
             return sendRateLimited(reply);
