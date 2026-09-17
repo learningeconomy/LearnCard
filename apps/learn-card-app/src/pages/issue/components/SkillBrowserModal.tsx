@@ -157,7 +157,7 @@ export const SkillBrowserModal: React.FC<SkillBrowserModalProps> = ({
     const hasQuery = Boolean(debouncedQuery.trim());
 
     return (
-        <div className="font-poppins w-full max-w-[560px] mx-auto bg-white rounded-[20px] flex flex-col max-h-[85vh] overflow-hidden">
+        <div className="font-poppins w-full max-w-[560px] mx-auto bg-white rounded-[20px] flex flex-col max-h-[85vh] desktop:h-full overflow-hidden">
             {!hasQuery &&
                 frameworks.map(framework => (
                     <FrameworkDefaultsLoader
@@ -167,7 +167,7 @@ export const SkillBrowserModal: React.FC<SkillBrowserModalProps> = ({
                     />
                 ))}
 
-            <div className="sticky top-0 bg-white px-6 pt-6 pb-4 border-b border-grayscale-100">
+            <div className="shrink-0 bg-white px-6 pt-6 pb-4 border-b border-grayscale-100">
                 <div className="flex items-center justify-between mb-1">
                     <h2 className="text-xl font-semibold text-grayscale-900">
                         {m['issueFlow.addSkills']()}
@@ -208,7 +208,7 @@ export const SkillBrowserModal: React.FC<SkillBrowserModalProps> = ({
                 </div>
             </div>
 
-            <div className="overflow-y-auto px-6 py-5 space-y-5">
+            <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5 space-y-5">
                 {hasQuery
                     ? frameworks.map(framework => (
                           <FrameworkSearchResults
@@ -244,7 +244,7 @@ export const SkillBrowserModal: React.FC<SkillBrowserModalProps> = ({
                       })}
             </div>
 
-            <div className="sticky bottom-0 bg-white px-6 py-4 border-t border-grayscale-100">
+            <div className="shrink-0 bg-white px-6 py-4 border-t border-grayscale-100">
                 <button
                     type="button"
                     onClick={handleCloseModal}

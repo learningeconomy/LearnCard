@@ -180,7 +180,10 @@ describe('issuer skill browser', () => {
 
         expect(mocks.newModal).toHaveBeenCalledWith(
             expect.anything(),
-            {},
+            {
+                sectionClassName:
+                    'desktop:!h-[85vh] desktop:!max-h-[85vh] desktop:!overflow-hidden',
+            },
             {
                 mobile: 'bottom-sheet',
                 desktop: 'center',

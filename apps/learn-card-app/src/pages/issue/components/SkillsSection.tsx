@@ -204,7 +204,10 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
                 onRemoveSkill={handleRemoveSkill}
                 handleCloseModal={closeModal}
             />,
-            {},
+            {
+                sectionClassName:
+                    'desktop:!h-[85vh] desktop:!max-h-[85vh] desktop:!overflow-hidden',
+            },
             { mobile: ModalTypes.BottomSheet, desktop: ModalTypes.Center }
         );
     }, [newModal, closeModal, selectedSkills, handleAddSkill, handleRemoveSkill]);
