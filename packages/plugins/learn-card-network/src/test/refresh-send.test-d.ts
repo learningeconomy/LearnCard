@@ -11,7 +11,11 @@ import { describe, expectTypeOf, it } from 'vitest';
 import type { LearnCard, Plugin } from '@learncard/core';
 import type { ManagedCredentialRefreshReceipt } from '@learncard/types';
 
-import type { LearnCardNetworkPlugin, SendBoostRefreshResult } from '../types';
+import type {
+    LearnCardNetworkPlugin,
+    SendBoostNetworkOptions,
+    SendBoostRefreshResult,
+} from '../types';
 
 /** Minimal host plugin so the network plugin is composed through the real machinery. */
 declare const basePlugin: Plugin<'Minimal'>;
@@ -72,6 +76,28 @@ describe('learnCard.invoke.sendBoost return-shape opt-in', () => {
         expectTypeOf(
             sendBoost('userb', 'did:web:example:boost:1', { enableRefresh: dynamic })
         ).toEqualTypeOf<Promise<string | SendBoostRefreshResult>>();
+    });
+
+    it('degrades to the union when options are typed with an optional enableRefresh', () => {
+        const options: SendBoostNetworkOptions = { enableRefresh: true };
+
+        expectTypeOf(sendBoost('userb', 'did:web:example:boost:1', options)).toEqualTypeOf<
+            Promise<string | SendBoostRefreshResult>
+        >();
+    });
+
+    it('degrades to the union for boolean-or-object option variables', () => {
+        const options = {} as boolean | SendBoostNetworkOptions;
+
+        expectTypeOf(sendBoost('userb', 'did:web:example:boost:1', options)).toEqualTypeOf<
+            Promise<string | SendBoostRefreshResult>
+        >();
+    });
+
+    it('keeps the string result for object options that omit enableRefresh', () => {
+        expectTypeOf(
+            sendBoost('userb', 'did:web:example:boost:1', { encrypt: true, skipNotification: true })
+        ).toEqualTypeOf<Promise<string>>();
     });
 
     it('returns a metadata-only receipt carrying the publication inputs', () => {

@@ -151,21 +151,29 @@ export type SendBoostRefreshResult = {
     refresh: ManagedCredentialRefreshReceipt;
 };
 
+/** The `enableRefresh` type carried by `sendBoost` options (`undefined` when absent). */
+type EnableRefreshOf<Options> = Options extends object
+    ? 'enableRefresh' extends keyof Options
+        ? Options extends { enableRefresh?: infer Enabled }
+            ? Enabled
+            : undefined
+        : undefined
+    : undefined;
+
 /**
  * Resolves the `sendBoost` return type from the (const-inferred) options type.
  *
  * - legacy `boolean` options, omitted options, and object options without
  *   `enableRefresh` keep the historical `string` result.
  * - literal `enableRefresh: true` returns the refreshable-issuance result.
- * - a dynamically typed boolean degrades to the union of both shapes.
+ * - anything that may be `true` at runtime (a `boolean`, an optional property, or a
+ *   union of option shapes) degrades to the union of both shapes.
  */
-export type SendBoostResultFor<Options> = Options extends { enableRefresh: infer Enabled }
-    ? [Enabled] extends [true]
-        ? SendBoostRefreshResult
-        : boolean extends Enabled
-          ? string | SendBoostRefreshResult
-          : string
-    : string;
+export type SendBoostResultFor<Options> = [EnableRefreshOf<Options>] extends [true]
+    ? SendBoostRefreshResult
+    : true extends EnableRefreshOf<Options>
+      ? string | SendBoostRefreshResult
+      : string;
 
 /** @group LearnCardNetwork Plugin */
 export type LearnCardNetworkPluginDependentMethods = {
@@ -524,8 +532,9 @@ export type LearnCardNetworkPluginMethods = {
      * `string`, exactly as before. Passing literal `{ enableRefresh: true }` opts into
      * managed refresh and returns `{ credentialUri, refresh }` instead, where `refresh`
      * is the issuance receipt needed to publish future versions (see
-     * `publishCredentialRefresh`). A dynamically typed `enableRefresh` boolean degrades
-     * the result to `string | { credentialUri, refresh }`.
+     * `publishCredentialRefresh`). Options whose `enableRefresh` may be `true` at runtime
+     * (a `boolean`, or a variable typed `SendBoostNetworkOptions`) degrade the result to
+     * `string | { credentialUri, refresh }`.
      */
     sendBoost: <const Options extends boolean | SendBoostNetworkOptions | undefined = undefined>(
         profileId: string,
