@@ -15,6 +15,8 @@ import cache from '@cache';
 export type RateLimitWindow = {
     /** Cache key for this window. Namespace it — keys share one Redis. */
     key: string;
+    /** Units to consume (defaults to one). */
+    amount?: number;
     /** Max permitted increments within the window. */
     limit: number;
     /** Window length in seconds. */
@@ -24,7 +26,7 @@ export type RateLimitWindow = {
 };
 
 /**
- * Consume one unit against each window, in order, and throw once any is
+ * Consume the requested units against each window, in order, and throw once any is
  * exhausted.
  *
  * Fails CLOSED: if the cache is unavailable, `cache.incr` returns `undefined`
@@ -37,8 +39,11 @@ export type RateLimitWindow = {
  * the cheapest/broadest window first.
  */
 export const enforceRateLimits = async (windows: RateLimitWindow[]): Promise<void> => {
-    for (const { key, limit, windowSeconds, description } of windows) {
-        const count = await cache.incr(key, windowSeconds);
+    for (const { key, limit, windowSeconds, description, amount } of windows) {
+        const count =
+            amount === undefined
+                ? await cache.incr(key, windowSeconds)
+                : await cache.incr(key, windowSeconds, amount);
 
         if (count === undefined) {
             throw new TRPCError({
@@ -48,11 +53,8 @@ export const enforceRateLimits = async (windows: RateLimitWindow[]): Promise<voi
         }
 
         if (count > limit) {
-            // tRPC has no native 429; the existing convention in this service is
-            // to cast to BAD_REQUEST while keeping the semantic code, so clients
-            // can still discriminate on it.
             throw new TRPCError({
-                code: 'TOO_MANY_REQUESTS' as 'BAD_REQUEST',
+                code: 'TOO_MANY_REQUESTS',
                 message: `Rate limit exceeded: ${description}`,
             });
         }

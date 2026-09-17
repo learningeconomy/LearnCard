@@ -32,7 +32,7 @@ import { doesProfileManageProfile } from '@accesslayer/profile-manager/relations
 import { getProfilesThatManageAProfile } from '@accesslayer/profile/relationships/read';
 import { getProfileForInboxCredential } from '@accesslayer/inbox-credential/read';
 import { sendCredential } from '@helpers/credential.helpers';
-import { sendBoost } from '@helpers/boost.helpers';
+import { prepareCredentialFromBoost, getBoostUri, sendBoost } from '@helpers/boost.helpers';
 import { getBoostByUri } from '@accesslayer/boost/read';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
@@ -826,4 +826,66 @@ export const issueToInbox = async (
             ...(guardianEmail ? { guardianStatus: 'AWAITING_GUARDIAN' as const } : {}),
         };
     }
+};
+
+/**
+ * Resolves an input into the credential that issueToInbox consumes. Keeping this outside either
+ * route makes direct credentials and Boost templates behave identically for single and batch
+ * issuance, including template rendering, Boost metadata, and standard client-facing errors.
+ */
+export const resolveInboxCredentialInput = async (
+    input: IssueInboxCredentialType,
+    ctx: Context
+): Promise<{ credential: VC | UnsignedVC | VP; resolvedBoostUri?: string }> => {
+    const { templateUri, configuration } = input;
+    // A direct credential wins when both fields are present, matching the existing single-route
+    // behavior. A template is only loaded when the caller supplied no credential.
+    let credential = input.credential;
+    let resolvedBoostUri: string | undefined;
+
+    if (templateUri && !credential) {
+        const boostInstance = await getBoostByUri(templateUri);
+
+        if (!boostInstance) {
+            throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: `Boost not found: ${templateUri}`,
+            });
+        }
+
+        if (!boostInstance.dataValues.boost) {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: `Boost does not contain a credential template: ${templateUri}`,
+            });
+        }
+
+        try {
+            // Use shared helper to prepare credential with templateData rendering,
+            // issuance date, boostId injection, and OBv3 alignments
+            resolvedBoostUri = getBoostUri(boostInstance.id, ctx.domain);
+
+            credential = await prepareCredentialFromBoost(
+                boostInstance,
+                resolvedBoostUri,
+                ctx.domain,
+                { templateData: configuration?.templateData as Record<string, unknown> }
+            );
+        } catch (e) {
+            console.error('Failed to prepare boost credential', e);
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: `Failed to prepare boost credential template: ${templateUri}`,
+            });
+        }
+    }
+
+    if (!credential) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Either credential or templateUri must be provided',
+        });
+    }
+
+    return { credential, resolvedBoostUri };
 };

@@ -42,6 +42,16 @@ export type Cache = {
     /** Real Redis instance. This is used if you have Redis set up! */
     redis?: Redis;
 
+    /** Atomic reservation; undefined means the cache operation failed. */
+    setIfAbsent: (key: string, value: string, ttl: number) => Promise<'OK' | null | undefined>;
+    /** Replace or delete only a reservation owned by this operation. */
+    compareAndSet: (
+        key: string,
+        expected: string,
+        value: string | null,
+        ttl: number
+    ) => Promise<boolean | undefined>;
+
     /**
      * Sets a key to a given value in the cache.
      * Optionally give it a time to live before being evicted (defaults to 1 hour)
@@ -85,11 +95,11 @@ export type Cache = {
     lrange: (key: RedisKey, start: number, stop: number) => Promise<string[] | undefined>;
 
     /**
-     * Atomically increments a key by 1 and returns the new value.
-     * If the key does not exist it is created with value 1.
-     * When ttl is provided and this is the first increment (result === 1), EXPIRE is set.
+     * Atomically increments a key by amount (default 1) and returns the new value.
+     * If the key does not exist it is created with value amount.
+     * When ttl is provided, increment and missing-expiry repair happen atomically.
      */
-    incr: (key: RedisKey, ttl?: number) => Promise<number | undefined>;
+    incr: (key: RedisKey, ttl?: number, amount?: number) => Promise<number | undefined>;
 };
 
 /** Evict all keys after one hour by default */
@@ -98,6 +108,39 @@ const DEFAULT_TTL_SECS = 60 * 60;
 export const getCache = (): Cache => {
     const cache: Cache = {
         node: new MemoryRedis(),
+        setIfAbsent: async (key, value, ttl) => {
+            try {
+                // SET NX makes reservation acquisition one Redis operation. A separate GET then
+                // SET would allow two Lambda instances to both begin the same issuance.
+                return await (cache.redis ?? cache.node).set(key, value, 'EX', ttl, 'NX');
+            } catch {
+                return undefined;
+            }
+        },
+        compareAndSet: async (key, expected, value, ttl) => {
+            try {
+                // The marker includes a random owner token. This script means a delayed worker
+                // cannot replace or release a reservation that has expired and been reacquired.
+                // `value === null` is the pre-issuance cleanup path; otherwise it commits replay data.
+                const result = await (cache.redis ?? cache.node).eval(
+                    `
+                    if redis.call('GET', KEYS[1]) ~= ARGV[1] then return 0 end
+                    if ARGV[2] == 'delete' then return redis.call('DEL', KEYS[1]) end
+                    redis.call('SET', KEYS[1], ARGV[3], 'EX', ARGV[4])
+                    return 1
+                `,
+                    1,
+                    key,
+                    expected,
+                    value === null ? 'delete' : 'set',
+                    value ?? '',
+                    ttl
+                );
+                return result === 1;
+            } catch {
+                return undefined;
+            }
+        },
         set: async (key, value, ttl = DEFAULT_TTL_SECS, keepTtl) => {
             if (keepTtl) {
                 try {
@@ -239,19 +282,31 @@ export const getCache = (): Cache => {
 
             return undefined;
         },
-        incr: async (key, ttl) => {
+        incr: async (key, ttl, amount = 1) => {
             try {
                 const redis = cache?.redis ?? cache?.node;
                 if (!redis) return undefined;
 
-                const newVal = await redis.incr(key);
-
-                // Set TTL on first increment so the window auto-expires
-                if (newVal === 1 && ttl) {
-                    await redis.expire(key, ttl);
-                }
-
-                return newVal;
+                if (!Number.isSafeInteger(amount) || amount <= 0) return undefined;
+                // Increment and expiry must be atomic: a crash between commands must not
+                // leave a permanent quota. Also repair counters created without an expiry.
+                if (ttl)
+                    return Number(
+                        await redis.eval(
+                            `
+                    local count = redis.call('INCRBY', KEYS[1], ARGV[1])
+                    if redis.call('TTL', KEYS[1]) < 0 then
+                        redis.call('EXPIRE', KEYS[1], ARGV[2])
+                    end
+                    return count
+                `,
+                            1,
+                            key,
+                            amount,
+                            ttl
+                        )
+                    );
+                return await redis.incrby(key, amount);
             } catch (e) {
                 console.error('Cache incr error', e);
             }
