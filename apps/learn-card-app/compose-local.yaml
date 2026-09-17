@@ -214,6 +214,9 @@ services:
             REDIS_HOST: redis3
             REDIS_PORT: 6379
             METABASE_SECRET_KEY: ${METABASE_SECRET_KEY:-notARealSecretKey}
+            KEYCLOAK_ISSUERS: http://localhost:8081/realms/learncard
+            KEYCLOAK_AUDIENCES: learncard-app
+            KEYCLOAK_JWKS_URL_OVERRIDES: http://localhost:8081/realms/learncard=http://keycloak:8080/realms/learncard/protocol/openid-connect/certs
 
     ai-agent:
         image: learncard-monorepo-local
@@ -395,6 +398,36 @@ services:
             # If Postgres is too slow to start, increase this
             LRSQL_POOL_INITIALIZATION_FAIL_TIMEOUT: 10000
             LRSQL_ALLOW_ALL_ORIGINS: true
+
+    keycloak:
+        image: quay.io/keycloak/keycloak:26.7.4
+        command: start-dev --import-realm
+        environment:
+            KC_BOOTSTRAP_ADMIN_USERNAME: admin
+            KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+            KC_HEALTH_ENABLED: 'true'
+            KC_HOSTNAME: http://localhost:8081
+            KC_HTTP_ENABLED: 'true'
+        ports:
+            - '8081:8080'
+        networks:
+            - learn-card
+        volumes:
+            - ../../infra/keycloak/realms/learncard-dev-realm.json:/opt/keycloak/data/import/learncard-realm.json:ro
+            - keycloak-data:/opt/keycloak/data/h2
+        healthcheck:
+            test:
+                [
+                    'CMD-SHELL',
+                    "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q '\"status\": *\"UP\"' <&3",
+                ]
+            interval: 5s
+            timeout: 5s
+            retries: 40
+            start_period: 20s
+
+volumes:
+    keycloak-data:
 
 networks:
     learn-card:

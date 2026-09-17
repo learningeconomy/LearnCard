@@ -187,6 +187,9 @@ services:
             REDIS_PORT: 6379
             METABASE_SECRET_KEY: ${METABASE_SECRET_KEY:-notARealSecretKey}
             POSTMARK_FROM_EMAIL: ${POSTMARK_FROM_EMAIL:-scoutnetwork.org}
+            KEYCLOAK_ISSUERS: http://localhost:8081/realms/learncard
+            KEYCLOAK_AUDIENCES: learncard-app
+            KEYCLOAK_JWKS_URL_OVERRIDES: http://localhost:8081/realms/learncard=http://keycloak:8080/realms/learncard/protocol/openid-connect/certs
 
     neo4j:
         image: neo4j:latest
@@ -285,6 +288,36 @@ services:
             - '9324:9324'
         networks:
             - learn-card
+
+    keycloak:
+        image: quay.io/keycloak/keycloak:26.7.4
+        command: start-dev --import-realm
+        environment:
+            KC_BOOTSTRAP_ADMIN_USERNAME: admin
+            KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+            KC_HEALTH_ENABLED: 'true'
+            KC_HOSTNAME: http://localhost:8081
+            KC_HTTP_ENABLED: 'true'
+        ports:
+            - '8081:8080'
+        networks:
+            - learn-card
+        volumes:
+            - ../../infra/keycloak/realms/learncard-dev-realm.json:/opt/keycloak/data/import/learncard-realm.json:ro
+            - keycloak-data:/opt/keycloak/data/h2
+        healthcheck:
+            test:
+                [
+                    'CMD-SHELL',
+                    "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q '\"status\": *\"UP\"' <&3",
+                ]
+            interval: 5s
+            timeout: 5s
+            retries: 40
+            start_period: 20s
+
+volumes:
+    keycloak-data:
 
 networks:
     learn-card:
