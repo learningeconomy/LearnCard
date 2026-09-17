@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { IonIcon } from '@ionic/react';
-import { alertCircleOutline } from 'ionicons/icons';
+import { alertCircleOutline, shieldCheckmarkOutline, keypadOutline } from 'ionicons/icons';
 import { Toggle } from 'learn-card-base';
 import type { KeyDerivationStrategy } from '@learncard/types';
 import * as m from '../../paraglide/messages.js';
@@ -142,34 +142,33 @@ export const AutomaticRecoveryCard: React.FC<AutomaticRecoveryProps> = ({
 
     const isPinLocked = escrowPin?.state === 'locked';
     const isPinEnabled = escrowPin?.state === 'enabled';
-    const pinStatusText = isPinLocked ? 'Locked' : isPinEnabled ? 'On' : 'Not set';
 
     if (enrollmentState === 'disabled' || (state === null && !error)) return null;
 
     return (
-        <section
-            aria-label={m['recovery.automatic.title']()}
-            className="mb-6 p-4 border border-grayscale-200 rounded-[20px] font-poppins bg-white space-y-4"
-        >
-            <h3 className="text-sm font-semibold text-grayscale-900">
-                {m['recovery.automatic.title']()}
-            </h3>
-            <p role="status" className="text-sm text-grayscale-600 leading-relaxed">
-                {loading === 'enabling'
-                    ? m['recovery.automatic.turningOn']()
-                    : loading === 'disabling'
-                      ? m['recovery.automatic.turningOff']()
-                      : enrollmentState === 'enrolled'
-                        ? m['recovery.automatic.on']()
-                        : enrollmentState === 'not-enrolled'
-                          ? m['recovery.automatic.notOn']()
-                          : enrollmentState === 'opted-out'
-                            ? m['recovery.automatic.off']()
-                            : null}
-            </p>
-            {state !== null && (
-                <label className="flex items-center justify-between gap-3 text-sm text-grayscale-900">
-                    <span>{m['recovery.automatic.title']()}</span>
+        <>
+            {/* Automatic Recovery Row */}
+            <div className="py-3 px-4 flex items-center gap-3">
+                <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+                        enrollmentState === 'enrolled'
+                            ? 'bg-emerald-50 text-emerald-600'
+                            : 'bg-grayscale-100 text-grayscale-500'
+                    }`}
+                >
+                    <IonIcon icon={shieldCheckmarkOutline} className="text-lg" />
+                </div>
+                <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-grayscale-900">
+                        {m['recovery.automatic.title']()}
+                    </div>
+                    <div className="text-xs text-grayscale-500 truncate">
+                        {enrollmentState === 'enrolled'
+                            ? m['recovery.automatic.restoreWait']()
+                            : m['recovery.automatic.off']()}
+                    </div>
+                </div>
+                <div className="shrink-0">
                     <Toggle
                         checked={enrollmentState === 'enrolled'}
                         disabled={loading !== null || confirmOff}
@@ -179,48 +178,115 @@ export const AutomaticRecoveryCard: React.FC<AutomaticRecoveryProps> = ({
                             else setConfirmOff(true);
                         }}
                     />
-                </label>
+                </div>
+            </div>
+
+            {/* Loading / Confirm Off / Error for Automatic Recovery */}
+            {loading && loading !== 'pin' && (
+                <div className="py-3 px-4 bg-grayscale-10/50">
+                    <span
+                        role="status"
+                        className="flex items-center gap-2 text-sm text-grayscale-600"
+                    >
+                        <span className="w-4 h-4 border-2 border-grayscale-200 border-t-grayscale-900 rounded-full animate-spin" />
+                        {loading === 'enabling'
+                            ? m['recovery.automatic.turningOn']()
+                            : m['recovery.automatic.turningOff']()}
+                    </span>
+                </div>
             )}
+
+            {confirmOff && (
+                <div className="py-3 px-4 bg-amber-50 space-y-3">
+                    <p className="text-sm text-grayscale-700 leading-relaxed">
+                        {m['recovery.automatic.warning']()}
+                    </p>
+                    <div className="flex gap-2">
+                        <button
+                            type="button"
+                            disabled={loading !== null}
+                            onClick={() => void update(false)}
+                            className="py-2 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                            {loading
+                                ? m['recovery.automatic.updating']()
+                                : m['recovery.automatic.turnOff']()}
+                        </button>
+                        <button
+                            type="button"
+                            disabled={loading !== null}
+                            onClick={() => setConfirmOff(false)}
+                            className="py-2 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors disabled:opacity-40"
+                        >
+                            {m['common.cancel']()}
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {error && (
+                <div role="alert" className="py-3 px-4 bg-red-50 flex items-start gap-2.5">
+                    <IonIcon
+                        icon={alertCircleOutline}
+                        className="text-red-400 text-lg mt-0.5 shrink-0"
+                    />
+                    <span className="text-sm text-red-700 leading-relaxed">
+                        {error === 'precondition'
+                            ? m['recovery.automatic.precondition']()
+                            : error === 'generic'
+                              ? m['recovery.somethingWrong']()
+                              : error}
+                    </span>
+                </div>
+            )}
+
+            {/* Recovery PIN Row */}
             {enrollmentState === 'enrolled' && (
-                <div className="pt-4 border-t border-grayscale-100 space-y-4">
-                    <div className="flex items-center justify-between gap-3 text-sm text-grayscale-900">
-                        <div>
-                            <span className="block">Recovery PIN</span>
-                            <span className="text-xs text-grayscale-500">
-                                Instant recovery with PIN: {pinStatusText}
-                            </span>
+                <>
+                    <div className="py-3 px-4 flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-grayscale-100 text-grayscale-500">
+                            <IonIcon icon={keypadOutline} className="text-lg" />
                         </div>
-                        {pinMode === 'none' && onSetEscrowPin && (
-                            <div className="flex gap-2">
-                                {isPinEnabled || isPinLocked ? (
-                                    <>
-                                        <button
-                                            onClick={() => setPinMode('set')}
-                                            className="text-xs font-medium text-grayscale-500 hover:text-grayscale-900 transition-colors"
-                                        >
-                                            Change
-                                        </button>
-                                        <button
-                                            onClick={() => setPinMode('remove')}
-                                            className="text-xs font-medium text-red-500 hover:text-red-700 transition-colors"
-                                        >
-                                            Remove
-                                        </button>
-                                    </>
-                                ) : (
+                        <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium text-grayscale-900">
+                                {m['recovery.pin.title']()}
+                            </div>
+                            <div className="text-xs text-grayscale-500 truncate">
+                                {isPinEnabled || isPinLocked
+                                    ? m['recovery.pin.instantRecoveryOn']()
+                                    : m['recovery.pin.notSet']()}
+                            </div>
+                        </div>
+                        <div className="shrink-0 flex items-center gap-3">
+                            {isPinEnabled || isPinLocked ? (
+                                <>
                                     <button
                                         onClick={() => setPinMode('set')}
                                         className="text-xs font-medium text-grayscale-500 hover:text-grayscale-900 transition-colors"
                                     >
-                                        Set
+                                        {m['recovery.pin.change']()}
                                     </button>
-                                )}
-                            </div>
-                        )}
+                                    <button
+                                        onClick={() => setPinMode('remove')}
+                                        className="text-xs font-medium text-red-600 hover:text-red-700 transition-colors"
+                                    >
+                                        {m['recovery.pin.remove']()}
+                                    </button>
+                                </>
+                            ) : (
+                                <button
+                                    onClick={() => setPinMode('set')}
+                                    className="py-1.5 px-3 rounded-full bg-grayscale-900 text-white text-xs font-medium hover:opacity-90 transition-opacity"
+                                >
+                                    {m['recovery.pin.setPin']()}
+                                </button>
+                            )}
+                        </div>
                     </div>
 
+                    {/* PIN UI */}
                     {pinMode === 'set' && (
-                        <div className="space-y-4">
+                        <div className="py-3 px-4 bg-grayscale-10/50 space-y-4">
                             <p className="text-sm text-grayscale-600">
                                 {m['recovery.pin.enterPin']()}
                             </p>
@@ -252,7 +318,7 @@ export const AutomaticRecoveryCard: React.FC<AutomaticRecoveryProps> = ({
                     )}
 
                     {pinMode === 'confirm' && (
-                        <div className="space-y-4">
+                        <div className="py-3 px-4 bg-grayscale-10/50 space-y-4">
                             <p className="text-sm text-grayscale-600">
                                 {m['recovery.pin.confirmPin']()}
                             </p>
@@ -284,7 +350,7 @@ export const AutomaticRecoveryCard: React.FC<AutomaticRecoveryProps> = ({
                     )}
 
                     {pinMode === 'remove' && (
-                        <div className="p-3 rounded-2xl bg-amber-50 border border-amber-100 space-y-4">
+                        <div className="py-3 px-4 bg-amber-50 space-y-3">
                             <p className="text-sm text-grayscale-700 leading-relaxed">
                                 {m['recovery.pin.removeConfirm']()}
                             </p>
@@ -293,7 +359,7 @@ export const AutomaticRecoveryCard: React.FC<AutomaticRecoveryProps> = ({
                                     type="button"
                                     disabled={loading !== null}
                                     onClick={handleRemovePin}
-                                    className="py-3 px-4 rounded-[20px] bg-red-600 text-white font-medium text-sm hover:bg-red-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                    className="py-2 px-4 rounded-[20px] bg-red-600 text-white font-medium text-sm hover:bg-red-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                                 >
                                     {loading === 'pin'
                                         ? m['recovery.pin.removing']()
@@ -303,75 +369,15 @@ export const AutomaticRecoveryCard: React.FC<AutomaticRecoveryProps> = ({
                                     type="button"
                                     disabled={loading !== null}
                                     onClick={() => setPinMode('none')}
-                                    className="py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors disabled:opacity-40"
+                                    className="py-2 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors disabled:opacity-40"
                                 >
                                     {m['common.cancel']()}
                                 </button>
                             </div>
                         </div>
                     )}
-                </div>
+                </>
             )}
-            {state === 'not-enrolled' && !loading && (
-                <button
-                    type="button"
-                    onClick={() => void update(true)}
-                    className="py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
-                >
-                    {m['recovery.automatic.turnOn']()}
-                </button>
-            )}
-            {loading && loading !== 'pin' && (
-                <span role="status" className="flex items-center gap-2 text-sm text-grayscale-600">
-                    <span className="w-4 h-4 border-2 border-grayscale-200 border-t-grayscale-900 rounded-full animate-spin" />
-                    {m['recovery.automatic.updating']()}
-                </span>
-            )}
-            {confirmOff && (
-                <div className="p-3 rounded-2xl bg-amber-50 border border-amber-100 space-y-4">
-                    <p className="text-sm text-grayscale-700 leading-relaxed">
-                        {m['recovery.automatic.warning']()}
-                    </p>
-                    <div className="flex gap-2">
-                        <button
-                            type="button"
-                            disabled={loading !== null}
-                            onClick={() => void update(false)}
-                            className="py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-                        >
-                            {loading
-                                ? m['recovery.automatic.updating']()
-                                : m['recovery.automatic.turnOff']()}
-                        </button>
-                        <button
-                            type="button"
-                            disabled={loading !== null}
-                            onClick={() => setConfirmOff(false)}
-                            className="py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors disabled:opacity-40"
-                        >
-                            {m['common.cancel']()}
-                        </button>
-                    </div>
-                </div>
-            )}
-            {error && (
-                <div
-                    role="alert"
-                    className="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5"
-                >
-                    <IonIcon
-                        icon={alertCircleOutline}
-                        className="text-red-400 text-lg mt-0.5 shrink-0"
-                    />
-                    <span className="text-sm text-red-700 leading-relaxed">
-                        {error === 'precondition'
-                            ? m['recovery.automatic.precondition']()
-                            : error === 'generic'
-                              ? m['recovery.somethingWrong']()
-                              : error}
-                    </span>
-                </div>
-            )}
-        </section>
+        </>
     );
 };

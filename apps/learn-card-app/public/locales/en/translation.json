@@ -1858,7 +1858,8 @@
             "turnOn": "Turn on",
             "turnOff": "Turn off",
             "warning": "Without automatic recovery, losing every device and every recovery method means losing your account.",
-            "precondition": "Set up another recovery method first."
+            "precondition": "Set up another recovery method first.",
+            "restoreWait": "Restore after a 7-day wait"
         },
         "error.invalidPhrase": "Those words don't match your recovery phrase. Check them and try again.",
         "error.invalidPassword": "Incorrect password or the file couldn't be read. Please try again.",
@@ -2120,8 +2121,16 @@
             "dontHave": "I don't have a PIN",
             "incorrect": "Incorrect PIN. {{attempts}} attempts left.",
             "locked": "Too many attempts. You can still recover by waiting 7 days.",
-            "throttled": "Too many tries right now. Wait a minute and try again."
-        }
+            "throttled": "Too many tries right now. Wait a minute and try again.",
+            "title": "Recovery PIN",
+            "instantRecoveryOn": "Instant recovery: On",
+            "notSet": "Not set",
+            "change": "Change"
+        },
+        "addWayBackIn": "Add a way back in",
+        "addAnotherMethod": "Add another method",
+        "fullyProtected": "You're fully protected.",
+        "added": "Added"
     },
     "alerts": {
         "accepted": "Accepted",
