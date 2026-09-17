@@ -4,13 +4,14 @@ import type { LCALearnCard } from '@learncard/lca-api-plugin';
 import { ensureGitignored, saveProject, type Project } from '../project';
 import { setupSigning } from '../setup-signing';
 import { out } from '../out';
-import type { OrgSpec } from './schema';
+import type { OrgBranding, OrgSpec } from './schema';
 
 export type OrgResource =
     | 'issuer'
     | 'signingAuthority'
     | 'profileManager'
     | 'managedProfile'
+    | 'branding'
     | 'serviceAccount'
     | 'webhook';
 
@@ -42,11 +43,17 @@ export type ManagerLearnCard = {
     invoke: Pick<LCALearnCard['invoke'], 'createManagedProfile' | 'getManagedProfiles'>;
 };
 
+export type ProfileCard = {
+    invoke: Pick<LCALearnCard['invoke'], 'getProfile' | 'updateProfile'>;
+};
+
 export interface ApplyOrgOptions {
     dryRun?: boolean;
     secretsOut?: string;
     /** Required when the spec has `profileManager.managed` entries. */
     connectAsManager?: (managerDid: string) => Promise<ManagerLearnCard>;
+    /** Required when a managed profile declares `branding`; opens a wallet bound to that profile's did:web. */
+    connectAsManaged?: (managedDid: string) => Promise<ProfileCard>;
 }
 
 export type OrgLearnCard = {
@@ -86,6 +93,74 @@ const writeSecret = async (secretsOut: string, name: string, token: string): Pro
     await fs.appendFile(secretsOut, `${toEnvKey(name)}=${token}\n`, { mode: 0o600 });
     await fs.chmod(secretsOut, 0o600);
     await ensureGitignored(path.dirname(secretsOut), path.basename(secretsOut));
+};
+
+type BrandingUpdate = Partial<OrgBranding> & { display?: Record<string, unknown> };
+
+/**
+ * Only fields the spec sets are compared; `display` is merged so a spec that
+ * names two colours never wipes a third one set elsewhere.
+ */
+export const brandingDiff = (
+    branding: OrgBranding,
+    existing: Record<string, unknown>
+): { update: BrandingUpdate; changed: string[] } => {
+    const update: BrandingUpdate = {};
+    const changed: string[] = [];
+    const { display, ...scalars } = branding;
+
+    for (const [key, value] of Object.entries(scalars)) {
+        if (value === undefined) continue;
+        if (existing[key] !== value) {
+            (update as Record<string, unknown>)[key] = value;
+            changed.push(key);
+        }
+    }
+
+    if (display) {
+        const current = (existing.display ?? {}) as Record<string, unknown>;
+        const merged = { ...current };
+        for (const [key, value] of Object.entries(display)) {
+            if (value === undefined) continue;
+            if (current[key] !== value) {
+                merged[key] = value;
+                changed.push(`display.${key}`);
+            }
+        }
+        if (changed.some(name => name.startsWith('display.'))) update.display = merged;
+    }
+
+    return { update, changed };
+};
+
+const applyBranding = async (
+    name: string,
+    branding: OrgBranding | undefined,
+    card: ProfileCard,
+    dryRun: boolean,
+    changes: OrgChange[]
+): Promise<void> => {
+    if (!branding) return;
+    const existing = (await card.invoke.getProfile()) as Record<string, unknown> | undefined;
+    if (!existing) return;
+    const { update, changed } = brandingDiff(branding, existing);
+    if (!changed.length) {
+        changes.push({ resource: 'branding', name, action: 'unchanged' });
+        return;
+    }
+    if (dryRun) {
+        changes.push({
+            resource: 'branding',
+            name,
+            action: 'would-update',
+            detail: changed.join(', '),
+        });
+        return;
+    }
+    await card.invoke.updateProfile(
+        update as Parameters<ProfileCard['invoke']['updateProfile']>[0]
+    );
+    changes.push({ resource: 'branding', name, action: 'updated', detail: changed.join(', ') });
 };
 
 const applyIssuerProfile = async (
@@ -233,6 +308,7 @@ const applyProfileManager = async (
     project: Project,
     dryRun: boolean,
     connectAsManager: ApplyOrgOptions['connectAsManager'],
+    connectAsManaged: ApplyOrgOptions['connectAsManaged'],
     changes: OrgChange[],
     managed: Array<{ profileId: string; did: string }>
 ): Promise<string | undefined> => {
@@ -288,6 +364,17 @@ const applyProfileManager = async (
                 name: managedSpec.profileId,
                 action: 'unchanged',
             });
+            if (managedSpec.branding) {
+                if (!connectAsManaged)
+                    throw new Error('Managed-profile branding requires connectAsManaged.');
+                await applyBranding(
+                    managedSpec.profileId,
+                    managedSpec.branding,
+                    await connectAsManaged(existingDid),
+                    dryRun,
+                    changes
+                );
+            }
             continue;
         }
         if (dryRun) {
@@ -298,11 +385,14 @@ const applyProfileManager = async (
             });
             continue;
         }
+        const { display, ...brandingScalars } = managedSpec.branding ?? {};
         const newDid = await managerCard.invoke.createManagedProfile({
             profileId: managedSpec.profileId,
             displayName: managedSpec.displayName,
             bio: '',
             shortBio: '',
+            ...brandingScalars,
+            ...(display && { display }),
         });
         managed.push({ profileId: managedSpec.profileId, did: newDid });
         changes.push({
@@ -412,6 +502,13 @@ const planFreshOrg = (spec: OrgSpec, project: Project, changes: OrgChange[]): vo
         action: 'would-create',
         detail: note,
     });
+    if (spec.issuer.branding)
+        changes.push({
+            resource: 'branding',
+            name: spec.issuer.profileId,
+            action: 'would-update',
+            detail: note,
+        });
     if (spec.profileManager) {
         changes.push({
             resource: 'profileManager',
@@ -468,6 +565,8 @@ export const applyOrg = async (
         };
     }
 
+    await applyBranding(spec.issuer.profileId, spec.issuer.branding, learnCard, dryRun, changes);
+
     await applySigningAuthority(spec, learnCard, project, dryRun, changes);
 
     const managerDid = await applyProfileManager(
@@ -476,6 +575,7 @@ export const applyOrg = async (
         project,
         dryRun,
         opts.connectAsManager,
+        opts.connectAsManaged,
         changes,
         managed
     );

@@ -60,6 +60,7 @@ export const runOrgApply = async (file: string, options: OrgApplyOptions): Promi
         dryRun: options.dryRun,
         secretsOut: options.secretsOut,
         connectAsManager: managerDid => connectAsDidWeb(project, options, managerDid),
+        connectAsManaged: managedDid => connectAsDidWeb(project, options, managedDid),
     });
 
     if (options.dryRun) out.log('Dry run: no changes were made.');
