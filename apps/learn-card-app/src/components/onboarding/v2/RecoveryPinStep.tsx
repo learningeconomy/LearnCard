@@ -69,7 +69,7 @@ export const RecoveryPinStep: React.FC<RecoveryPinStepProps> = ({ onComplete, on
 
     return (
         <div className="relative z-10 max-w-[600px] mx-auto pt-[calc(var(--ion-safe-area-top,0px)_+_2.5rem)] px-4 w-full h-full flex flex-col justify-center items-center animate-pop-in pb-[calc(var(--ion-safe-area-bottom,0px)_+_1.5rem)] font-poppins">
-            <div className="w-full max-w-[360px] bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl border border-white/50 p-8 flex flex-col items-center relative overflow-hidden">
+            <div className="w-full max-w-[360px] md:max-w-[440px] bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl border border-white/50 p-8 md:px-12 md:py-10 flex flex-col items-center relative overflow-hidden">
                 <div className="w-16 h-16 mx-auto mb-6 bg-emerald-50 rounded-full flex items-center justify-center shadow-sm border border-emerald-100/50">
                     {step === 'success' ? (
                         <CheckCircle2 className="w-8 h-8 text-emerald-600" strokeWidth={1.5} />
@@ -91,7 +91,7 @@ export const RecoveryPinStep: React.FC<RecoveryPinStepProps> = ({ onComplete, on
                     </p>
                 </div>
 
-                <div className="w-full flex flex-col items-center min-h-[120px]">
+                <div className="w-full flex flex-col items-center min-h-[120px] px-2 md:px-4">
                     {step === 'enter' && (
                         <RecoveryPinInput
                             value={pin}

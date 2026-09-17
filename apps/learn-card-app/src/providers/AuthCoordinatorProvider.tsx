@@ -675,7 +675,7 @@ const AuthSessionManager: React.FC<{
             } else if (readyPinEnabled === false) {
                 if (recoveredWithPinRef.current) {
                     writeRecoveryPinPromptFlag(did, 'set');
-                    setShowRecoveryPinReset(true);
+                    setShowRecoveryPinSetup(true);
                     recoveredWithPinRef.current = false;
                 } else if (flag === 'set') {
                     setShowRecoveryPinReset(true);
@@ -1445,6 +1445,10 @@ const AuthSessionManager: React.FC<{
                     )}
                     {showRecoveryPinReset && (
                         <RecoveryPinResetBanner
+                            onSetAgain={() => {
+                                setShowRecoveryPinReset(false);
+                                setShowRecoveryPinSetup(true);
+                            }}
                             onDismiss={() => {
                                 if (!readyDid) return;
                                 writeRecoveryPinPromptFlag(readyDid, 'skipped');
