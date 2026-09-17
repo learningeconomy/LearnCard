@@ -446,6 +446,8 @@ program
     .description('Guided demonstrations using real LearnCard credentials.')
     .command('refresh')
     .description('Send a demo badge, publish an update, and refresh the recipient’s copy.')
+    .option('--ui', 'claim and refresh in the local LearnCard app (interactive only)')
+    .option('--app-url <url>', 'local LearnCard app URL for --ui (default: http://localhost:3000)')
     .option('-y, --yes', 'run all steps without pausing')
     .option('--network <url>', 'network tRPC URL or staging', 'http://localhost:4000/trpc')
     .option('--json', 'print a single JSON result on stdout (no pauses)')

@@ -163,6 +163,16 @@ refresh and LC-2198 deployed. Use a CLI build containing this command. The updat
 is displayed in the terminal, not saved to the app. Demo records remain on the selected
 network; account keys stay in memory for the session.
 
+To demonstrate the recipient experience in the local LearnCard app, start its local
+development stack and run `learncard demo refresh --ui` (or, from this repository,
+`bun --cwd packages/learn-card-cli start demo refresh --ui`). Follow the printed demo
+sign-in link, then press Enter to send. In the app, open **Alerts → Claim → Accept**.
+Press Enter in the terminal to publish the update, then open the new update notification
+in the app. Press Enter once more to confirm the final certificate was saved. The CLI
+waits for the app to save each version; it does not claim or refresh on the app's behalf.
+Keep the sign-in link private: it controls a disposable demo account. This mode is
+interactive and local-only; `--app-url` selects a different local app port.
+
 If you already work boost-first — create the boost template, then send it to many people — `sendBoost` takes an opt-in flag instead. With literal `{ enableRefresh: true }` it returns the credential URI **and** the receipt; without it, the plain URI string, exactly as before:
 
 ```typescript

@@ -5,12 +5,15 @@ import { VCValidator, type UnsignedVC } from '@learncard/types';
 import { generateRandomSeed } from './random';
 import { out } from './out';
 import { resolveServices } from './project';
+import { getRefreshDemoUiConfig } from './demo-refresh-ui';
 
 export interface RefreshDemoOptions {
     network?: string;
     yes?: boolean;
     json?: boolean;
     didkit?: Promise<Buffer>;
+    ui?: boolean;
+    appUrl?: string;
 }
 
 const LOCAL_NETWORK = 'http://localhost:4000/trpc';
@@ -25,6 +28,15 @@ export const runRefreshDemo = async (options: RefreshDemoOptions): Promise<void>
     const local = ['localhost', '127.0.0.1', '[::1]'].includes(networkUrl.hostname);
     const interactive =
         !options.yes && !options.json && !!process.stdin.isTTY && process.env.LC_YES !== '1';
+    if (options.ui && !interactive) {
+        throw new Error(
+            '--ui requires an interactive terminal; omit --yes, --json, and LC_YES=1 so you can claim and refresh in the app.'
+        );
+    }
+    if (options.appUrl && !options.ui) throw new Error('--app-url requires --ui.');
+    const ui = options.ui
+        ? await getRefreshDemoUiConfig(options.appUrl ?? 'http://localhost:3000', network)
+        : undefined;
     const prompts = interactive
         ? createInterface({ input: process.stdin, output: process.stdout })
         : undefined;
@@ -37,13 +49,18 @@ export const runRefreshDemo = async (options: RefreshDemoOptions): Promise<void>
         out.log('\nLearnCard: watch a credential refresh\n');
         out.log(`Network: ${network}`);
         out.log('This creates two demo accounts and a badge on this network.');
-        out.log('Account keys stay in this session; rerunning creates a fresh demonstration.');
+        out.log(
+            ui
+                ? 'The recipient signs into the local app; keep this terminal open until the demo finishes.'
+                : 'Account keys stay in this session; rerunning creates a fresh demonstration.'
+        );
         await pause('start');
         out.log('\nSetting up the issuer and recipient...');
 
         // Trust the explicitly selected demo network for Boost verification.
         const config = {
             network,
+            ...(ui && { cloud: { url: ui.cloud } }),
             ...(options.didkit && { didkit: options.didkit }),
             trustedBoostRegistry: `data:application/json,${encodeURIComponent(
                 JSON.stringify([
@@ -56,7 +73,8 @@ export const runRefreshDemo = async (options: RefreshDemoOptions): Promise<void>
             )}`,
         };
         const issuer = await initLearnCard({ ...config, seed: generateRandomSeed(), network });
-        const holder = await initLearnCard({ ...config, seed: generateRandomSeed(), network });
+        const holderSeed = generateRandomSeed();
+        const holder = await initLearnCard({ ...config, seed: holderSeed, network });
         const suffix = randomUUID().slice(0, 8);
         const recipientProfileId = `refresh-learner-${suffix}`;
         await issuer.invoke.createProfile({
@@ -70,6 +88,7 @@ export const runRefreshDemo = async (options: RefreshDemoOptions): Promise<void>
             displayName: 'Refresh Demo Learner',
             bio: '',
             shortBio: '',
+            ...(ui && { notificationsWebhook: ui.notificationsWebhook, locale: 'en' }),
         });
 
         const template: UnsignedVC = {
@@ -93,23 +112,58 @@ export const runRefreshDemo = async (options: RefreshDemoOptions): Promise<void>
             },
         };
 
+        if (ui) {
+            const login = new URL('/developer/sign-in', ui.appOrigin);
+            login.searchParams.set('next', '/passport');
+            login.hash = `seed=${holderSeed}`;
+            out.log(`\nOpen this link to sign in as Refresh Demo Learner:\n${login.href}`);
+            out.log(
+                'This link controls a disposable demo account. Keep it private and use it only for test data.'
+            );
+            out.log('If already signed in, choose the demo account switch. Keep the app open.');
+            await pause('send the certificate after signing in');
+        }
+
         step = 'send the refreshable badge';
         out.log('\n1 / 3  SEND A BADGE');
         out.log('Sending through sendBoost with refresh enabled...');
-        const boostUri = await issuer.invoke.createBoost(template);
+        const boostUri = await issuer.invoke.createBoost(template, { category: 'Achievement' });
         const sent = await issuer.invoke.sendBoost(recipientProfileId, boostUri, {
             enableRefresh: true,
         });
         if (!sent?.refresh) throw new Error('The SDK did not return a refresh receipt.');
         const { credentialUri, refresh } = sent;
-        if (!(await holder.invoke.acceptCredential(credentialUri))) {
+        if (!ui && !(await holder.invoke.acceptCredential(credentialUri))) {
             throw new Error('The recipient could not accept the badge.');
         }
         const original = VCValidator.parse(await holder.read.get(credentialUri));
         if (original.name !== BEFORE) throw new Error('The delivered badge did not match.');
         out.log(`Recipient sees: "${original.name}"`);
 
-        await pause('publish the final certificate');
+        const readAppCredential = async () => {
+            const records = await holder.index.LearnCloud.get({});
+            for (const record of records ?? []) {
+                const parsed = VCValidator.safeParse(await holder.read.get(record.uri));
+                if (parsed.success && parsed.data.id === refresh.credentialId) return parsed.data;
+            }
+        };
+
+        if (ui) {
+            out.log('\nIn the app: reload if needed, open Alerts, then Claim → Accept.');
+            out.log('Find Provisional Course Certificate under Passport → Achievements.');
+            let claimed = false;
+            do {
+                await pause('confirm the certificate is saved in the app and publish its update');
+                claimed = Boolean(await readAppCredential());
+                if (!claimed) {
+                    out.log(
+                        'The certificate is not saved in the demo account yet. Finish Claim → Accept in the app first.'
+                    );
+                }
+            } while (!claimed);
+        }
+
+        if (!ui) await pause('publish the final certificate');
         step = 'publish the updated certificate';
         out.log('\n2 / 3  PUBLISH AN UPDATE');
         out.log('The school finalizes the certificate...');
@@ -136,6 +190,55 @@ export const runRefreshDemo = async (options: RefreshDemoOptions): Promise<void>
         if (published.version !== 2) throw new Error('Expected to publish version 2.');
         out.log('Version 2 is available. No second badge was sent.');
         out.log(`Recipient's existing copy still says: "${original.name}"`);
+
+        if (ui) {
+            step = 'confirm the app refreshed the certificate';
+            out.log('\n3 / 3  REFRESH IN THE APP');
+            out.log(
+                'Reload the app, open Alerts, and select “Refresh Demo School updated one of your credentials.”'
+            );
+            out.log(
+                'The app should open Final Course Certificate. Its existing Passport entry is updated.'
+            );
+            let appUpdated = false;
+            do {
+                await pause('confirm the final certificate is visible');
+                const current = await readAppCredential();
+                if (current?.name !== AFTER) {
+                    out.log(
+                        'The app still has the original copy. Tap the update notification and wait for the final certificate.'
+                    );
+                    continue;
+                }
+                const check = await holder.invoke.verifyCredential(current);
+                if (
+                    check.errors.length ||
+                    check.warnings.length ||
+                    !check.checks.includes('proof')
+                ) {
+                    throw new Error('The app’s updated certificate did not pass verification.');
+                }
+                appUpdated = true;
+            } while (!appUpdated);
+            out.log(
+                '\nVerified: the app saved the final certificate under the same credential identity. Sent once.'
+            );
+            out.log(
+                'You can close this terminal; the recipient stays signed in. Rerun --ui for a fresh demo.'
+            );
+            out.set({
+                network,
+                credentialUri,
+                refreshId: refresh.refreshId,
+                before: BEFORE,
+                after: AFTER,
+                version: published.version,
+                status: 'updated',
+                sameCredentialId: true,
+                ui: true,
+            });
+            return;
+        }
 
         await pause('refresh the recipient’s copy');
         step = 'refresh the recipient’s copy';
