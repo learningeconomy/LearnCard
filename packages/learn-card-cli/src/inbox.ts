@@ -1,4 +1,4 @@
-import type { Command } from 'commander';
+import { Option, type Command } from 'commander';
 import type {
     InboxCredentialQuery,
     InboxCredentialType,
@@ -210,7 +210,11 @@ export const registerInboxCommand = (
     inbox
         .command('list')
         .description('List credentials you sent through the inbox.')
-        .option('--as <profileId>', 'list credentials sent by a profile you manage')
+        .addOption(
+            new Option('--as <profileId>', 'list credentials sent by a profile you manage').env(
+                'LEARNCARD_AS'
+            )
+        )
         .option('--status <status>', 'PENDING, ISSUED, or EXPIRED')
         .option(
             '--since <duration|iso>',

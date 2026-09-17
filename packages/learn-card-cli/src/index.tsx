@@ -12,7 +12,7 @@ import * as types from '@learncard/types';
 import { getLinkedClaimsPlugin } from '@learncard/linked-claims-plugin';
 import gradient from 'gradient-string';
 import figlet from 'figlet';
-import { program } from 'commander';
+import { Option, program } from 'commander';
 import clipboard from 'clipboardy';
 
 import { getLerRsPlugin } from '@learncard/ler-rs-plugin';
@@ -37,6 +37,7 @@ import { registerDoctorCommand } from './doctor';
 import { registerClrCommand } from './clr';
 import { registerInboxCommand } from './inbox';
 import { registerRefreshCommand } from './refresh';
+import { registerWhoamiCommand } from './whoami';
 import { registerPromoteCommand } from './promote';
 
 import packageJson from '../package.json';
@@ -348,9 +349,11 @@ program
         'public handle for your profile (default: derived from the display name)'
     )
     .option('--network <url>', 'network tRPC URL (default: production)')
-    .option(
-        '--as <profileId>',
-        'send as a profile you manage (from `org apply`), signed with its did:web'
+    .addOption(
+        new Option(
+            '--as <profileId>',
+            'send as a profile you manage (from `org apply`), signed with its did:web'
+        ).env('LEARNCARD_AS')
     )
     .option(
         '--template',
@@ -646,11 +649,13 @@ registerDoctorCommand(program, runCommand);
 registerClrCommand(program, runCommand);
 registerInboxCommand(program, runCommand);
 registerRefreshCommand(program, runCommand);
+registerWhoamiCommand(program, runCommand);
 registerPromoteCommand(program, runCommand);
 
 const JOURNEY = [
     'send',
     'status',
+    'whoami',
     'setup-signing',
     'token',
     'webhook',
