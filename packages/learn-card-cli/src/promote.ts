@@ -8,6 +8,7 @@ import {
     resolveServices,
     PRODUCTION_NETWORK,
     STAGING_NETWORK,
+    type Project,
     type ProjectOptions,
 } from './project';
 import { loadOrgSpec } from './org/load';
@@ -127,10 +128,14 @@ export const runPromote = async (options: PromoteOptions): Promise<void> => {
         out.log(
             `Dry run: ${targetDir} is not created; previewing against ${to} with the carried-over seed.`
         );
+        const preview: Project = {
+            env: { ...carried },
+            envPath: path.join(targetDir, '.env'),
+            existing: '',
+        };
         await runOrgApply(org, {
             ...options,
-            cwd: process.cwd(),
-            presetEnv: carried,
+            project: preview,
             network: toNetwork,
             dryRun,
             secretsOut,
