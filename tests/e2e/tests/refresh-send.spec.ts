@@ -711,6 +711,16 @@ describe('Refreshable Sends E2E (LC-2198)', () => {
     test.each(['profile', 'did-key', 'did-key-keyed'])(
         'authenticated HTTP /api/send: signing-authority lifecycle (%s)',
         async recipientMode => {
+            // Populate brain's issuer resolver cache BEFORE adding a delegate. Without
+            // verifier cache recovery, the following SA proof can be rejected in CI.
+            await a.invoke.send({
+                type: 'boost',
+                recipient: USERS.b.profileId,
+                template: {
+                    credential: ordinaryTemplate('Warm issuer resolver', a.id.did()) as any,
+                },
+                refresh: true,
+            });
             const sa = await setupSigningAuthority(a, 'rs');
             const { token } = await createApiTokenForUser('a', 'boosts:write credentials:write');
             // SA registration adds its key to the issuer's did:web document. The module
@@ -738,8 +748,8 @@ describe('Refreshable Sends E2E (LC-2198)', () => {
                 }),
             });
 
-            expect(response.status).toBe(200);
             const result = await response.json();
+            expect(response.status, JSON.stringify(result)).toBe(200);
 
             expect(result.type).toBe('boost');
             expect(result.uri).toBe(boostUri);

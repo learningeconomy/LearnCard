@@ -47,6 +47,7 @@ import type { CredentialInstance } from '@models';
 import type { DbTermsType } from 'types/consentflowcontract';
 
 import { createDagJweForRecipients, getLearnCard } from './learnCard.helpers';
+import { verifyManagedRefreshProof } from './credential-refresh-proof.helpers';
 import { issueCredentialWithSigningAuthority } from './signingAuthority.helpers';
 import {
     computeCredentialMaterialDigest,
@@ -618,24 +619,7 @@ export const sendRefreshableCredential = async (
         }
     }
 
-    // Transient plaintext proof verification — the result is never persisted.
-    // Do not dereference credentialStatus here: the descriptor is fingerprinted below,
-    // while canonical lifecycle revocation is enforced by the graph relationships.
-    const learnCard = await getLearnCard();
-    const verification = await learnCard.invoke.verifyCredential(credential, {
-        checks: ['proof'],
-    });
-
-    if (
-        verification.errors.length > 0 ||
-        verification.warnings.length > 0 ||
-        !verification.checks.includes('proof')
-    ) {
-        throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Credential proof could not be verified',
-        });
-    }
+    await verifyManagedRefreshProof((await getLearnCard()).invoke, credential, publicIssuerDid);
 
     const rootMaterialDigest = computeCredentialMaterialDigest(
         credential as unknown as Record<string, unknown>
@@ -1017,30 +1001,6 @@ const assertRefreshVersionInvariants = (
     }
 };
 
-/**
- * Transient in-memory proof verification; the plaintext result is never persisted.
- * Only the proof check runs: the credentialStatus check would fetch remote status
- * list credentials at publish time (availability + SSRF hazard), and revocation
- * state moves through its own lifecycle rather than the refresh publication path.
- */
-const verifyRefreshVersionProof = async (credential: VC): Promise<void> => {
-    const learnCard = await getLearnCard();
-    const verification = await learnCard.invoke.verifyCredential(credential, {
-        checks: ['proof'],
-    });
-
-    if (
-        verification.errors.length > 0 ||
-        verification.warnings.length > 0 ||
-        !verification.checks.includes('proof')
-    ) {
-        throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Credential proof could not be verified',
-        });
-    }
-};
-
 export type PublishCredentialRefreshParams = {
     issuerProfile: ProfileType;
     input: PublishCredentialRefreshInput;
@@ -1131,7 +1091,11 @@ export const publishCredentialRefresh = async (
         signingMode = 'issuer-signed';
 
         assertRefreshVersionInvariants(signedCredential, aggregate, domain);
-        await verifyRefreshVersionProof(signedCredential);
+        await verifyManagedRefreshProof(
+            (await getLearnCard()).invoke,
+            signedCredential,
+            getDidWeb(domain, issuerProfile.profileId)
+        );
     } else {
         const reference = SigningAuthorityReferenceValidator.safeParse(input.signingAuthority);
 
@@ -1182,7 +1146,11 @@ export const publishCredentialRefresh = async (
         signingMode = 'signing-authority';
 
         assertRefreshVersionInvariants(signedCredential, aggregate, domain);
-        await verifyRefreshVersionProof(signedCredential);
+        await verifyManagedRefreshProof(
+            (await getLearnCard()).invoke,
+            signedCredential,
+            getDidWeb(domain, issuerProfile.profileId)
+        );
     }
 
     // Reject a strictly older effective/issuance timestamp. Equal or missing

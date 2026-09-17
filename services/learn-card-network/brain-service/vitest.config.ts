@@ -16,6 +16,7 @@ export default createVitestConfig(brainServicePreset, {
             'src/helpers/posthog.helpers.test.ts',
             'src/helpers/rateLimit.helpers.test.ts',
             'src/helpers/credential-refresh-auth.helpers.test.ts',
+            'src/helpers/credential-refresh-proof.helpers.test.ts',
             'src/helpers/credential-refresh-initial-binding.helpers.test.ts',
             'src/helpers/credential-refresh-materiality.helpers.test.ts',
             'src/helpers/credential-refresh-notification-policy.helpers.test.ts',
