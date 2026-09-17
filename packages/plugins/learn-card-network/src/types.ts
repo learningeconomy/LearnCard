@@ -53,6 +53,8 @@ import {
     AuthGrantType,
     AuthGrantQuery,
     IssueInboxCredentialType,
+    IssueInboxCredentialBatch,
+    IssueInboxCredentialBatchResponse,
     InboxCredentialType,
     PaginatedInboxCredentialsType,
     PaginatedSkillFrameworksType,
@@ -679,6 +681,10 @@ export type LearnCardNetworkPluginMethods = {
     revokeAuthGrant: (id: string) => Promise<boolean>;
     getAPITokenForAuthGrant: (id: string) => Promise<string>;
 
+    /** Issue up to 100 credentials with per-item results and optional idempotency keys. */
+    sendCredentialsViaInbox: (
+        batch: IssueInboxCredentialBatch
+    ) => Promise<IssueInboxCredentialBatchResponse>;
     sendCredentialViaInbox: (
         issueInboxCredential: IssueInboxCredentialType
     ) => Promise<IssueInboxCredentialResponseType>;

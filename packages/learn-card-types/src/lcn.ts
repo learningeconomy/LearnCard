@@ -1304,6 +1304,7 @@ export const IssueInboxCredentialValidator = z
         // HOW should this issuance be handled?
         configuration: z
             .object({
+                guardianEmail: z.string().email().optional(),
                 signingAuthority: IssueInboxSigningAuthorityValidator.optional().describe(
                     'The signing authority to use for the credential. If not provided, the users default signing authority will be used if the credential is not signed.'
                 ),
@@ -1424,6 +1425,59 @@ export const IssueInboxCredentialResponseValidator = z.object({
     claimUrl: z.string().url().optional(),
     recipientDid: z.string().optional(),
 });
+
+// Do not apply delivery defaults before merging: omitted per-item fields inherit batch defaults.
+const InboxBatchConfigurationValidator = IssueInboxCredentialValidator.shape.configuration
+    .unwrap()
+    .extend({
+        delivery: IssueInboxCredentialValidator.shape.configuration
+            .unwrap()
+            .shape.delivery.unwrap()
+            .extend({ suppress: z.boolean().optional() })
+            .optional(),
+    });
+
+export const IssueInboxCredentialBatchItemValidator = z.object({
+    ...IssueInboxCredentialValidator.shape,
+    configuration: InboxBatchConfigurationValidator.optional(),
+    idempotencyKey: z.string().max(256).optional(),
+});
+
+export const IssueInboxCredentialBatchValidator = z.object({
+    items: z.array(IssueInboxCredentialBatchItemValidator).min(1).max(100),
+    configuration: InboxBatchConfigurationValidator.optional(),
+});
+export type IssueInboxCredentialBatch = z.infer<typeof IssueInboxCredentialBatchValidator>;
+
+export const IssueInboxCredentialBatchItemResultValidator = z.discriminatedUnion('success', [
+    IssueInboxCredentialResponseValidator.extend({
+        success: z.literal(true),
+        index: z.number().int().nonnegative(),
+        deduplicated: z.boolean().optional(),
+        guardianStatus: GuardianStatusValidator.optional(),
+    }),
+    z.object({
+        success: z.literal(false),
+        index: z.number().int().nonnegative(),
+        error: z.object({ code: z.string(), message: z.string() }),
+    }),
+]);
+export type IssueInboxCredentialBatchItemResult = z.infer<
+    typeof IssueInboxCredentialBatchItemResultValidator
+>;
+
+export const IssueInboxCredentialBatchResponseValidator = z.object({
+    results: z.array(IssueInboxCredentialBatchItemResultValidator),
+    summary: z.object({
+        total: z.number(),
+        succeeded: z.number(),
+        failed: z.number(),
+        deduplicated: z.number(),
+    }),
+});
+export type IssueInboxCredentialBatchResponse = z.infer<
+    typeof IssueInboxCredentialBatchResponseValidator
+>;
 
 export type IssueInboxCredentialResponseType = z.infer<
     typeof IssueInboxCredentialResponseValidator
