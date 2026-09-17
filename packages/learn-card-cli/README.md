@@ -94,7 +94,7 @@ serviceAccounts:
       scopes: [inbox:write, inbox:read, credentials:write, credentials:read]
 ```
 
-Once the org exists, `send` picks up its pieces automatically: with a signing authority registered it signs through that authority by default (`--no-template` opts back out to the local key), and `--as <managedProfileId>` sends as one of the managed profiles — signed with that profile's own did:web, no separate seed or folder needed. `inbox list --as <managedProfileId>` shows what that profile has sent. A folder is one identity; passing a different `--profile-id` is an error that points you at `--as`.
+Once the org exists, `send` picks up its pieces automatically: with a signing authority registered it signs through that authority by default (`--no-template` opts back out to the local key), and `--as <managedProfileId>` sends as one of the managed profiles — signed with that profile's own did:web, no separate seed or folder needed. `inbox list --as <managedProfileId>` shows what that profile has sent. `LEARNCARD_AS=<profileId>` does the same for a whole shell session without persisting anything, and `whoami` shows the folder's identity plus every profile `--as` can target. A folder is one identity; passing a different `--profile-id` is an error that points you at `--as`.
 
 ## Preflight with doctor
 
