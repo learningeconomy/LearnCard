@@ -12,17 +12,26 @@ import {
  * immutable Credential nodes as holder-encrypted JWE JSON — never plaintext VC JSON.
  */
 
-export const CredentialRefreshStateValidator = z.enum(['awaiting_claim', 'active', 'revoked']);
+export const CredentialRefreshStateValidator = z.enum([
+    'pending_holder',
+    'awaiting_claim',
+    'active',
+    'revoked',
+]);
 export type CredentialRefreshState = z.infer<typeof CredentialRefreshStateValidator>;
 
 /** The managed refresh aggregate node (metadata only — no credential bodies) */
 export const CredentialRefreshRecordValidator = z.object({
+    /** Pending Universal Inbox delivery associated with this aggregate. */
+    inboxCredentialId: z.string().optional(),
+    /** Public status mechanism coordinates retained for the issuer allocation receipt. */
+    inboxCredentialStatus: z.string().optional(),
     /** Cryptographically random, unguessable public route identifier */
     refreshId: z.string().min(1),
     issuerProfileId: z.string().min(1),
     issuerDid: z.string().min(1),
     holderProfileId: z.string().min(1).optional(),
-    holderDid: z.string().min(1),
+    holderDid: z.string().min(1).optional(),
     /** Stable nonempty VC identifier shared by every version */
     credentialId: z.string().min(1),
     state: CredentialRefreshStateValidator,

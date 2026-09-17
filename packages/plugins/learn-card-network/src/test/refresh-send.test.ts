@@ -178,42 +178,26 @@ describe('unified send with refresh: true (managed branch)', () => {
         vi.clearAllMocks();
     });
 
-    it('rejects email recipients before any allocation, signing, or delivery', async () => {
-        const client = getMockClient();
-        const learnCard = getMockIssuingLearnCard();
-        const plugin = await getPlugin(learnCard, client);
-
-        await expect(
-            plugin.methods?.send(learnCard, {
-                type: 'boost',
-                recipient: 'holder@example.com',
+    it.each(['holder@example.com', '+15551234567'])(
+        'delegates refresh inbox issuance for %s without local signing',
+        async recipient => {
+            const client = getMockClient();
+            const learnCard = getMockIssuingLearnCard();
+            const plugin = await getPlugin(learnCard, client);
+            const input = {
+                type: 'boost' as const,
+                recipient,
                 templateUri: 'did:web:network.example:boost:1',
                 refresh: true,
-            })
-        ).rejects.toThrow(/email and phone recipients cannot request refresh/i);
-
-        expect(client.credentialRefresh.allocateCredentialRefresh.mutate).not.toHaveBeenCalled();
-        expect(learnCard.invoke.issueCredential).not.toHaveBeenCalled();
-        expect(client.boost.send.mutate).not.toHaveBeenCalled();
-    });
-
-    it('rejects phone recipients before any allocation, signing, or delivery', async () => {
-        const client = getMockClient();
-        const learnCard = getMockIssuingLearnCard();
-        const plugin = await getPlugin(learnCard, client);
-
-        await expect(
-            plugin.methods?.send(learnCard, {
-                type: 'boost',
-                recipient: '+1 555 000 1234',
-                templateUri: 'did:web:network.example:boost:1',
-                refresh: true,
-            })
-        ).rejects.toThrow(/email and phone recipients cannot request refresh/i);
-
-        expect(client.credentialRefresh.allocateCredentialRefresh.mutate).not.toHaveBeenCalled();
-        expect(client.boost.send.mutate).not.toHaveBeenCalled();
-    });
+            };
+            await plugin.methods?.send(learnCard, input);
+            expect(client.boost.send.mutate).toHaveBeenCalledWith(input);
+            expect(
+                client.credentialRefresh.allocateCredentialRefresh.mutate
+            ).not.toHaveBeenCalled();
+            expect(learnCard.invoke.issueCredential).not.toHaveBeenCalled();
+        }
+    );
 
     it('signs locally from a template URI after a single server prepare and hands the signed credential to the server unified send', async () => {
         const client = getMockClient();

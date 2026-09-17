@@ -36,15 +36,27 @@ The service also carries its own JSON-LD context terms. You never write them by 
 
 ### What the network stores
 
-Every version of a managed credential is stored encrypted to the recipient. The network can't read it, and neither can the issuer once it's sent. During publication the network briefly sees the new version in memory to verify the signature and decide whether the change is worth a notification, but plaintext is never written to storage, logs, or error messages.
+Every signed version of a managed credential is stored encrypted to the recipient. Universal Inbox has an earlier `pending_holder` state: its unsigned content remains in the existing encrypted, expiring inbox escrow so it can be signed for the verified claimant. At claim the latest pending content is signed, holder binding and delivery commit together, and inbox escrow is wiped. Once signed and delivered, the stored credential can be decrypted by the recipient (and authorized account managers), not the network or issuer. During publication the network briefly sees the new version in memory to verify the signature and decide whether the change is worth a notification, but plaintext is never written to storage, logs, or error messages.
 
 The endpoint gives nothing away to someone who doesn't hold the recipient's keys: the first response is the same authentication challenge whether or not the URL exists.
 
-### The lifecycle
+#For Universal Inbox, holder binding is deferred until verified claim:
 
-1. **Allocate.** Before signing, a refresh service must be bound to a recipient and a credential ID. `send({ refresh: true })` allocates, signs, and delivers in one step; the [lower-level path](../how-to-guides/issue-and-refresh-a-managed-credential.md#the-lower-level-path) exposes the same steps individually. Either way the service goes into the credential and gets signed along with everything else, which is why it can't be added afterwards. The send response includes a receipt — `refreshId`, `refreshService`, and the signed identity — which is what you keep to publish updates later.
+```mermaid
+stateDiagram-v2
+    [*] --> pending_holder: Issue to email or phone
+    pending_holder --> pending_holder: Publish newer unsigned content
+    pending_holder --> active: Verified claim signs latest and binds holder
+    pending_holder --> Expired: Inbox expires and escrow is erased
+    active --> active: Publish signed update
+    active --> revoked: Revoke
+```
+
+## The lifecycle
+
+1. **Allocate.** Before signing, a refresh service is allocated for a stable credential ID. Immediate sends also bind the intended recipient; Universal Inbox binds the holder at verified claim. `send({ refresh: true })` allocates, signs, and delivers in one step; the [lower-level path](../how-to-guides/issue-and-refresh-a-managed-credential.md#the-lower-level-path) exposes the same steps individually. Either way the service goes into the credential and gets signed along with everything else, which is why it can't be added afterwards. The send response includes a receipt — `refreshId`, `refreshService`, and the signed identity — which is what you keep to publish updates later.
 2. **Send and claim.** The credential is delivered like any other. The issuer may publish updates before the recipient claims, but nothing is served or announced until they do.
-3. **Publish.** The issuer publishes a complete new version rebuilt from their own claims plus the receipt — same ID, issuer, subject, refresh service, and status descriptor — either signed by them or signed by the network with their [signing authority](identities-and-keys/signing-authorities.md). The network checks the signature, that the issuer and credential ID haven't changed, and that the version isn't dated earlier than the current one. Versions are never rewritten; a new one is appended and becomes current.
+3. **Publish.** The issuer publishes a complete new version rebuilt from their own claims plus the receipt — same ID, issuer, subject, refresh service, and status descriptor — either signed by them or signed by the network with their [signing authority](identities-and-keys/signing-authorities.md). The network checks the signature, that the issuer and credential ID haven't changed, and that the version isn't dated earlier than the current one. Signed versions are never rewritten; a new one is appended and becomes current. Before Inbox claim, publication replaces unsigned escrow with the newest content and retains revision metadata; only the latest revision is signed at claim.
 4. **Serve.** The wallet authenticates and receives the current version, or a `304 Not Modified` if it already has it.
 5. **Revoke.** Revocation stops the network from serving anything. The recipient keeps what's already in their wallet.
 

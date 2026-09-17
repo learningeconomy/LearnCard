@@ -15,7 +15,7 @@ if (!(await issuer.invoke.getProfile())) {
 // `refresh: true` makes send() allocate the managed refresh service, add it (with its
 // JSON-LD context) before signing, and deliver the credential encrypted to the
 // recipient only. Recipients must be LearnCard profiles or DIDs on your network —
-// email and phone recipients cannot request refresh.
+// email and phone recipients use the separate deferred Inbox flow in the guide.
 const result = await issuer.invoke.send({
     type: 'boost',
     recipient: RECIPIENT_PROFILE_ID,

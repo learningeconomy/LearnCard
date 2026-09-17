@@ -41,7 +41,7 @@ The scripts below use `node --env-file=.env`. Install `@learncard/init` in the f
 
 ## 1. Issue a credential that can be refreshed
 
-One call does it. `send()` with `refresh: true` takes an ordinary credential template — no refresh fields, no hand-copied JSON-LD context — and handles the refresh setup, signing, and holder-only encrypted delivery. Recipients must be LearnCard profiles or DIDs on your network; email and phone recipients cannot request refresh.
+One call does it. `send()` with `refresh: true` takes an ordinary credential template — no refresh fields, no hand-copied JSON-LD context — and handles the refresh setup, signing, and holder-only encrypted delivery. Profile/DID recipients use immediate issuance. Email and phone recipients use deferred Universal Inbox signing; see [Refresh through Universal Inbox](#refresh-through-universal-inbox) below.
 
 <!-- snippet: refresh/issue-refreshable.mjs -->
 
@@ -63,7 +63,7 @@ if (!(await issuer.invoke.getProfile())) {
 // `refresh: true` makes send() allocate the managed refresh service, add it (with its
 // JSON-LD context) before signing, and deliver the credential encrypted to the
 // recipient only. Recipients must be LearnCard profiles or DIDs on your network —
-// email and phone recipients cannot request refresh.
+// Email/phone recipients use the deferred Inbox flow described below.
 const result = await issuer.invoke.send({
     type: 'boost',
     recipient: RECIPIENT_PROFILE_ID,
@@ -371,6 +371,104 @@ and credential identity checks still run. No extra flag or custom Vite configura
 Set `VITE_CREDENTIAL_REFRESH_LOCAL_QA=false` to opt out. These local exceptions are always
 disabled in production and staging builds, even if the flag is set to `true`; standalone SDK
 clients retain their existing explicit opt-in behavior.
+
+## Refresh through Universal Inbox
+
+Use this path when you know an email address or phone number but the recipient does not yet have a LearnCard account. A registered signing authority is required: the credential remains unsigned until the verified recipient claims it. Phone delivery retains the existing trusted-issuer requirement.
+
+```javascript
+const template = {
+    '@context': ['https://www.w3.org/ns/credentials/v2'],
+    type: ['VerifiableCredential'],
+    issuer: issuer.id.did(),
+    name: 'Provisional results',
+    credentialSubject: {},
+};
+const signingAuthority = { endpoint: 'https://your-authority.example/api', name: 'school' };
+
+const issued = await issuer.invoke.sendCredentialViaInbox({
+    recipient: { type: 'email', value: 'student@example.com' },
+    credential: template,
+    refresh: true,
+    idempotencyKey: 'student-123-biology',
+    configuration: {
+        signingAuthority,
+        delivery: { suppress: true }, // return a claim URL for your own delivery flow
+    },
+});
+const receipt = issued.refresh;
+// issued.claimUrl is used by the recipient to claim.
+// receipt.holderDid is absent until a holder has been bound.
+```
+
+The equivalent REST request is `POST /api/inbox/issue` with `refresh: true`. API tokens require both `inbox:write` and `credentials:write`. Reusing an issuance key with the same request reuses the inbox record and refresh allocation; using it for a different request conflicts. Each request without a key creates a separate issuance.
+
+To publish before claim, rebuild the unsigned content from your template and the allocation receipt. Keep the credential ID, issuer, refresh service, status descriptors, and subject identity fields unchanged. The inbox binds the subject ID when the recipient claims.
+
+```javascript
+import { injectManagedRefreshService } from '@learncard/helpers';
+
+const latest = injectManagedRefreshService(
+    {
+        ...template,
+        id: receipt.credentialId,
+        issuer: receipt.issuerDid,
+        name: 'Final grade A',
+        credentialStatus: receipt.credentialStatus,
+    },
+    receipt.refreshService
+);
+
+await issuer.invoke.publishCredentialRefresh({
+    refreshId: receipt.refreshId,
+    mode: 'signing-authority',
+    credential: latest,
+    signingAuthority: { type: 'http', ...signingAuthority },
+    idempotencyKey: 'student-123-biology-final',
+});
+```
+
+Publication replaces the pending encrypted content. No update notification is sent before a holder exists. Claim signs and delivers the newest content with the same credential ID and refresh URL. Earlier pending revisions retain metadata in issuer history; they are not signed, holder-downloadable credentials. Claim and publication use a version check, so an update racing with claim cannot silently deliver stale content. Expired or guardian-blocked inbox records cannot be claimed.
+
+The temporary unsigned content uses the existing encrypted, expiring inbox escrow, which the service can decrypt for signing. At successful claim, the escrow is erased and the signed version is stored encrypted for the holder (and their authorized managers). This differs from immediate managed sends, which never need inbox escrow.
+
+After claim, fetch the metadata-only receipt to learn the bound DID, then publish normally:
+
+```javascript
+const metadata = await issuer.invoke.getInboxCredential(issued.issuanceId);
+const bound = metadata.refresh;
+if (bound?.holderDid) {
+    await issuer.invoke.publishCredentialRefresh({
+        refreshId: bound.refreshId,
+        mode: 'signing-authority',
+        credential: {
+            ...latest,
+            name: 'Final grade A with honors',
+            credentialSubject: { ...latest.credentialSubject, id: bound.holderDid },
+        },
+        signingAuthority: { type: 'http', ...signingAuthority },
+        idempotencyKey: 'student-123-biology-honors',
+    });
+}
+```
+
+`getInboxCredential` requires `inbox:read`. Historical publication keys remain replayable after claim. If publication conflicts because claim just bound the holder, fetch this receipt and rebuild using its holder DID. A verified existing recipient is delivered the signed credential immediately and follows the normal acceptance/refresh lifecycle.
+
+The unified SDK send path also supports email/phone recipients:
+
+```javascript
+const sent = await issuer.invoke.send({
+    type: 'boost',
+    recipient: 'student@example.com',
+    templateUri: boostUri,
+    refresh: true,
+    idempotencyKey: 'student-123-boost',
+    options: { suppressDelivery: true },
+});
+const inboxReceipt = sent.inbox.refresh;
+```
+
+This uses the issuer's primary registered signing authority, including for seed-based SDK callers. The deferred allocation receipt is at `sent.inbox.refresh`; the existing `sent.refresh` signed-delivery receipt remains the profile/DID contract. Preserve `boostId: boostUri` when rebuilding boost content for publication. Pre-signed inbox credentials, multiple subjects, and pre-claim consent-contract linking are not supported with refresh. Remote-DID federation remains outside this path.
 
 ## Troubleshooting
 

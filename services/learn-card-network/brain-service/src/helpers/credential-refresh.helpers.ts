@@ -437,7 +437,7 @@ const ensureInitialRefreshRelationships = async (params: {
     return result.records[0]?.get('rootId') ?? undefined;
 };
 
-const sendInitialCredentialNotificationOnce = async (params: {
+export const sendInitialCredentialNotificationOnce = async (params: {
     refreshId: string;
     uri: string;
     issuerProfile: ProfileType;
@@ -524,6 +524,17 @@ export const sendRefreshableCredential = async (
         });
     }
 
+    if (
+        !aggregate.holderDid ||
+        aggregate.state === 'pending_holder' ||
+        aggregate.inboxCredentialId
+    ) {
+        throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'Inbox refresh must be bound through its verified claim flow',
+        });
+    }
+
     if (credential.id !== aggregate.credentialId) {
         throw new TRPCError({
             code: 'BAD_REQUEST',
@@ -549,7 +560,10 @@ export const sendRefreshableCredential = async (
         });
     }
 
-    if (!getCredentialSubjectIds(credential).includes(aggregate.holderDid)) {
+    if (
+        !aggregate.holderDid ||
+        !getCredentialSubjectIds(credential).includes(aggregate.holderDid)
+    ) {
         throw new TRPCError({
             code: 'BAD_REQUEST',
             message: 'Credential subject does not match the intended holder',
@@ -575,7 +589,7 @@ export const sendRefreshableCredential = async (
         },
         credentialId: aggregate.credentialId,
         issuerDid: credentialIssuerDid,
-        holderDid: aggregate.holderDid,
+        holderDid: aggregate.holderDid!,
         ...(credential.credentialStatus !== undefined && credential.credentialStatus !== null
             ? { credentialStatus: credential.credentialStatus }
             : {}),
@@ -962,7 +976,10 @@ const assertRefreshVersionInvariants = (
         });
     }
 
-    if (!getCredentialSubjectIds(credential).includes(aggregate.holderDid)) {
+    if (
+        !aggregate.holderDid ||
+        !getCredentialSubjectIds(credential).includes(aggregate.holderDid)
+    ) {
         throw new TRPCError({
             code: 'BAD_REQUEST',
             message: 'Credential subject does not match the intended holder',
@@ -1050,6 +1067,17 @@ export const publishCredentialRefresh = async (
             code: 'CONFLICT',
             message: 'Credential refresh has been revoked',
         });
+    }
+
+    if (aggregate.inboxCredentialId) {
+        const { getPendingInboxPublication } =
+            await import('@accesslayer/inbox-credential/refresh');
+        const replay = await getPendingInboxPublication(refreshId, idempotencyKey);
+        if (replay) return replay;
+        if (aggregate.state === 'pending_holder') {
+            const { publishPendingInboxRefresh } = await import('./inbox-refresh.helpers');
+            return publishPendingInboxRefresh(aggregate, issuerProfile, input, domain);
+        }
     }
 
     if (idempotencyKey) {
@@ -1211,7 +1239,7 @@ export const publishCredentialRefresh = async (
         signedCredential,
         holderProfileForEncryption
             ? await getHolderEncryptionRecipients(holderProfileForEncryption)
-            : [aggregate.holderDid]
+            : [aggregate.holderDid!]
     );
     const encryptedCredential = JSON.stringify(jwe);
     const etag = computeRefreshEtag(encryptedCredential);

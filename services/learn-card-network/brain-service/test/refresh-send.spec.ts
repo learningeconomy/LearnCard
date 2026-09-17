@@ -1406,41 +1406,26 @@ describe('Unified send with managed refresh (LC-2198)', () => {
     });
 
     describe('early rejection before any mutation', () => {
-        it('rejects email recipients with a clear error and creates nothing', async () => {
-            const baseline = await getMutationBaseline();
-
-            await expect(
-                issuer.clients.fullAuth.boost.send({
-                    type: 'boost',
-                    recipient: 'holder@example.com',
-                    template: { credential: testUnsignedBoost },
-                    refresh: true,
-                })
-            ).rejects.toMatchObject({
-                code: 'BAD_REQUEST',
-                message: expect.stringContaining('refresh'),
-            });
-
-            await expectsNoMutation(baseline);
-        });
-
-        it('rejects phone recipients with a clear error and creates nothing', async () => {
-            const baseline = await getMutationBaseline();
-
-            await expect(
-                issuer.clients.fullAuth.boost.send({
-                    type: 'boost',
-                    recipient: '+15551234567',
-                    template: { credential: testUnsignedBoost },
-                    refresh: true,
-                })
-            ).rejects.toMatchObject({
-                code: 'BAD_REQUEST',
-                message: expect.stringContaining('refresh'),
-            });
-
-            await expectsNoMutation(baseline);
-        });
+        it.each(['holder@example.com', '+15551234567'])(
+            'rejects inbox refresh for %s before mutation when disabled',
+            async recipient => {
+                const baseline = await getMutationBaseline();
+                process.env.CREDENTIAL_REFRESH_ENABLED = 'false';
+                try {
+                    await expect(
+                        issuer.clients.fullAuth.boost.send({
+                            type: 'boost',
+                            recipient,
+                            template: { credential: testUnsignedBoost },
+                            refresh: true,
+                        })
+                    ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+                    await expectsNoMutation(baseline);
+                } finally {
+                    process.env.CREDENTIAL_REFRESH_ENABLED = 'true';
+                }
+            }
+        );
 
         it('rejects remote/unresolvable DIDs before federation or delivery', async () => {
             const baseline = await getMutationBaseline();

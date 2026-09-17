@@ -1877,16 +1877,10 @@ export async function getLearnCardNetworkPlugin(
                     // LC-2198: dedicated managed-refresh branch — evaluated BEFORE the
                     // ordinary local-signing / remote-DID / federation shortcuts so a
                     // refresh request can never fall back to a non-refresh delivery.
-                    // Recipient category is validated first; email/phone always fail
-                    // here (the server enforces the same rule before any mutation).
+                    // Inbox credentials stay unsigned until a verified claimant binds their DID.
                     const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.recipient);
                     const isPhone = /^\+?[\d\s-]{10,}$/.test(input.recipient.replace(/[\s-]/g, ''));
-
-                    if (isEmail || isPhone) {
-                        throw new Error(
-                            'Managed credential refresh requires a profile or DID recipient; email and phone recipients cannot request refresh.'
-                        );
-                    }
+                    if (isEmail || isPhone) return client.boost.send.mutate(input);
 
                     const canIssueLocally = 'issueCredential' in _learnCard.invoke;
 

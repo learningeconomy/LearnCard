@@ -101,6 +101,12 @@ export type ManagedCredentialRefreshReceipt = z.infer<
     typeof ManagedCredentialRefreshReceiptValidator
 >;
 
+/** Allocation metadata for deferred Inbox issuance. No holder is invented before claim. */
+export const InboxCredentialRefreshReceiptValidator = ManagedCredentialRefreshReceiptValidator.omit(
+    { holderDid: true }
+).extend({ holderDid: z.string().min(1).optional() });
+export type InboxCredentialRefreshReceipt = z.infer<typeof InboxCredentialRefreshReceiptValidator>;
+
 // --- Publication ------------------------------------------------------------
 
 export const CredentialRefreshSigningModeValidator = z.enum(['issuer-signed', 'signing-authority']);

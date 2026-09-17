@@ -1,3 +1,10 @@
+import {
+    assertInboxRefreshEnabled,
+    inboxRefreshRequestDigest,
+    getInboxRefreshReplay,
+    getInboxRefreshReceipt,
+    resumeInboxRefreshDelivery,
+} from '@helpers/inbox-refresh.helpers';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { v4 as uuid } from 'uuid';
@@ -1099,10 +1106,67 @@ export const boostsRouter = t.router({
                     // LC-2198: managed refresh requests are validated in full BEFORE any
                     // mutation — an unsupported refresh send must not create a boost,
                     // allocation, inbox entry, activity, or delivery.
-                    const refreshRequested = input.refresh === true;
+                    const inboxRefreshRequested =
+                        input.refresh === true && !!isInboxRecipient(input.recipient);
+                    const refreshRequested = input.refresh === true && !inboxRefreshRequested;
+                    let inboxIntent: RefreshSendIntent | undefined;
+                    const inboxDigest = inboxRefreshRequested
+                        ? inboxRefreshRequestDigest(input)
+                        : undefined;
+                    const inboxKey = input.idempotencyKey
+                        ? `send:${input.idempotencyKey}`
+                        : undefined;
+                    if (inboxRefreshRequested) {
+                        await assertInboxRefreshEnabled(ctx.user.scope);
+                        if (input.signedCredential || input.contractUri)
+                            throw new TRPCError({
+                                code: 'BAD_REQUEST',
+                                message:
+                                    'Inbox refresh requires unsigned content and does not support a consent contract before holder binding.',
+                            });
+                        if (input.idempotencyKey) {
+                            const claim = await claimRefreshSendIntent({
+                                issuerProfileId: profile.profileId,
+                                idempotencyKey: input.idempotencyKey,
+                                requestDigest: inboxDigest!,
+                            });
+                            if (claim.kind === 'delivered' && claim.intent.result)
+                                return claim.intent.result;
+                            inboxIntent = claim.intent;
+                            const replay = await getInboxRefreshReplay(
+                                profile.profileId,
+                                inboxKey,
+                                inboxDigest!
+                            );
+                            if (
+                                replay &&
+                                (replay.claimUrl || replay.inbox.currentStatus !== 'PENDING')
+                            ) {
+                                await resumeInboxRefreshDelivery(replay.inbox.refreshId!, domain);
+                                const result = {
+                                    type: 'boost' as const,
+                                    uri: inboxIntent.boostUri!,
+                                    credentialUri: '',
+                                    activityId: replay.inbox.activityId ?? '',
+                                    inbox: {
+                                        issuanceId: replay.inbox.id,
+                                        status: replay.inbox.currentStatus,
+                                        claimUrl: replay.claimUrl,
+                                        guardianStatus: replay.inbox.guardianStatus,
+                                        refresh: await getInboxRefreshReceipt(
+                                            replay.inbox.refreshId!,
+                                            domain
+                                        ),
+                                    },
+                                };
+                                await markRefreshSendIntentDelivered(inboxIntent, result);
+                                return result;
+                            }
+                        }
+                    }
                     let refreshTargetProfile: ProfileType | null = null;
 
-                    if (input.idempotencyKey && !refreshRequested) {
+                    if (input.idempotencyKey && !input.refresh) {
                         throw new TRPCError({
                             code: 'BAD_REQUEST',
                             message: 'idempotencyKey is only supported with refresh: true.',
@@ -1188,7 +1252,10 @@ export const boostsRouter = t.router({
                     let boostUri = '';
                     let boostCreated = false;
 
-                    if (keyedPrepared) {
+                    if (inboxIntent?.boostUri) {
+                        boost = await getBoostByUri(inboxIntent.boostUri);
+                        boostUri = inboxIntent.boostUri;
+                    } else if (keyedPrepared) {
                         const resolved = await traceDb('getBoostByUri', () =>
                             getBoostByUri(keyedPrepared.boostUri)
                         );
@@ -1312,6 +1379,12 @@ export const boostsRouter = t.router({
                                 'Draft Boosts can not be sent. Only Published Boosts can be sent.',
                         });
                     }
+
+                    if (inboxIntent?.state === 'preparing')
+                        inboxIntent = await recordRefreshSendIntent(inboxIntent, {
+                            boostUri,
+                            state: 'prepared',
+                        });
 
                     // LC-2198: managed refresh delivery. The recipient was fully validated
                     // in the pre-mutation guard above (feature, scope, supported recipient,
@@ -1653,11 +1726,12 @@ export const boostsRouter = t.router({
                                 });
                             }
 
-                            credential = await appendBitstringStatusListEntries(
-                                credential,
-                                profile.profileId,
-                                domain
-                            );
+                            if (!inboxRefreshRequested)
+                                credential = await appendBitstringStatusListEntries(
+                                    credential,
+                                    profile.profileId,
+                                    domain
+                                );
                         }
 
                         // Build inbox configuration from SendOptions
@@ -1684,6 +1758,9 @@ export const boostsRouter = t.router({
                                     credential,
                                     {
                                         ...inboxConfig,
+                                        refresh: inboxRefreshRequested,
+                                        idempotencyKey: inboxKey,
+                                        refreshRequestDigest: inboxDigest,
                                         activityId,
                                         integrationId: input.integrationId,
                                     },
@@ -1691,12 +1768,15 @@ export const boostsRouter = t.router({
                                 )
                             );
 
-                            return {
+                            const result = {
                                 type: 'boost' as const,
                                 credentialUri: '',
                                 uri: boostUri,
-                                activityId,
+                                activityId: inboxResult.inboxCredential.activityId ?? activityId,
                                 inbox: {
+                                    ...(inboxResult.refresh
+                                        ? { refresh: inboxResult.refresh }
+                                        : {}),
                                     issuanceId: inboxResult.inboxCredential.id,
                                     status: inboxResult.status,
                                     claimUrl: inboxResult.claimUrl,
@@ -1705,6 +1785,9 @@ export const boostsRouter = t.router({
                                         : {}),
                                 },
                             };
+                            if (inboxIntent)
+                                await markRefreshSendIntentDelivered(inboxIntent, result);
+                            return result;
                         } catch (error) {
                             // Log FAILED activity when issueToInbox fails
                             await traceDb('logCredentialFailed:inbox', () =>

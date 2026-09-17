@@ -1,6 +1,9 @@
 import { neogma } from '@instance';
 
 const CREDENTIAL_REFRESH_CONSTRAINT_QUERIES = [
+    'CREATE CONSTRAINT inbox_refresh_issue_key_unique IF NOT EXISTS FOR (i:InboxCredential) REQUIRE (i.refreshIssueKey) IS UNIQUE',
+    'CREATE CONSTRAINT inbox_refresh_publication_key_unique IF NOT EXISTS FOR (p:InboxRefreshPublication) REQUIRE (p.refreshIdempotencyKey) IS UNIQUE',
+    'CREATE CONSTRAINT inbox_refresh_version_key_unique IF NOT EXISTS FOR (p:InboxRefreshPublication) REQUIRE (p.refreshVersionKey) IS UNIQUE',
     'CREATE CONSTRAINT credential_refresh_id_unique IF NOT EXISTS FOR (r:CredentialRefresh) REQUIRE (r.refreshId) IS UNIQUE',
     'CREATE CONSTRAINT credential_refresh_version_key_unique IF NOT EXISTS FOR (c:Credential) REQUIRE (c.refreshVersionKey) IS UNIQUE',
     'CREATE CONSTRAINT credential_refresh_idempotency_key_unique IF NOT EXISTS FOR (c:Credential) REQUIRE (c.refreshIdempotencyKey) IS UNIQUE',

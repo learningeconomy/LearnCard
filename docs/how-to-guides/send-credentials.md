@@ -25,7 +25,7 @@ const result = await learnCard.invoke.send({
     recipient: 'jane@example.com', // email, phone, profile ID, or DID — detected automatically
     signedCredential, //             ← you signed it       (or)
     templateUri, //                  ← LearnCard signs from a template you created
-    refresh: true, //                ← optional: issue it refreshable (profile/DID recipients only)
+    refresh: true, //                ← optional: issue it refreshable (email/phone uses deferred inbox signing)
 });
 ```
 
