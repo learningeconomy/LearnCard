@@ -33,7 +33,6 @@ const DEFAULT_LCA = 'http://localhost:5100/trpc';
 const BEFORE = 'Provisional Course Certificate';
 const AFTER = 'Final Course Certificate';
 const HONORS = 'Honors Course Certificate';
-const LOOPBACK_HOSTS = ['localhost', '127.0.0.1', '[::1]'];
 
 /** The generated claim link is served by the backend; the app serves the same path. */
 export const mapInboxClaimPath = (claimUrl: string): string => {
@@ -137,12 +136,7 @@ const buildVersion = (
  */
 export const runInboxRefreshDemo = async (options: InboxRefreshDemoOptions): Promise<void> => {
     const { network, lcaAPI: envLca } = resolveServices({}, options.network || LOCAL_NETWORK);
-    const networkUrl = new URL(network);
-    if (!LOOPBACK_HOSTS.includes(networkUrl.hostname)) {
-        throw new Error(
-            'The inbox demo is local-only. Use a loopback --network (for example http://localhost:4000/trpc).'
-        );
-    }
+    const networkUrl = requireLoopbackUrl(network, '--network (inbox demo is local-only)');
     const interactive =
         !options.yes && !options.json && !!process.stdin.isTTY && process.env.LC_YES !== '1';
     if (options.ui && !interactive) {
@@ -209,7 +203,7 @@ export const runInboxRefreshDemo = async (options: InboxRefreshDemoOptions): Pro
         });
 
         step = 'register a signing authority';
-        const authority = await issuer.invoke.createSigningAuthority(`inbox-demo-${suffix}`);
+        const authority = await issuer.invoke.createSigningAuthority(`inbox-${suffix}`);
         if (!authority || !authority.endpoint || !authority.did) {
             throw new Error('The LCA service did not return a signing authority.');
         }
@@ -259,6 +253,7 @@ export const runInboxRefreshDemo = async (options: InboxRefreshDemoOptions): Pro
             'Provisional results are queued for the demo address. The recipient has not joined.'
         );
 
+        await pause('publish final results before anyone claims');
         step = 'publish final results before claim';
         out.log('\n2 / 4  PUBLISH FINAL RESULTS (BEFORE ANY CLAIM)');
         out.log('The school finalizes the certificate while the recipient still has no account...');
@@ -284,6 +279,11 @@ export const runInboxRefreshDemo = async (options: InboxRefreshDemoOptions): Pro
             );
         out.log('Version 2 is queued. Claiming will deliver the newest content, not the original.');
 
+        await pause(
+            ui
+                ? 'create the recipient demo account and show the claim link'
+                : 'claim the final certificate'
+        );
         if (ui) {
             step = 'prepare the recipient app session';
             out.log('\n3 / 4  CLAIM IN THE APP');
@@ -330,6 +330,8 @@ export const runInboxRefreshDemo = async (options: InboxRefreshDemoOptions): Pro
             const verifySaved = async (credential: VC, expected: string): Promise<void> => {
                 if (credential.name !== expected)
                     throw new Error('The app saved a different version than expected.');
+                // The CLI shares a resolver with issuer setup, which can predate delegate registration.
+                await holder.invoke.resolveDid(receipt.issuerDid, { noCache: true });
                 const proof = await holder.invoke.verifyCredential(credential);
                 if (
                     proof.errors.length ||
@@ -372,6 +374,9 @@ export const runInboxRefreshDemo = async (options: InboxRefreshDemoOptions): Pro
             const holderDid = metadata?.refresh?.holderDid;
             if (!holderDid)
                 throw new Error('The claim did not bind a holder DID to the refresh receipt.');
+            if (holderDid !== holder.id.did())
+                throw new Error('The bound recipient did not match the demo account.');
+            await pause('publish the honors update to the claimed certificate');
             const honorsVersion = buildVersion(template, receipt, boostUri, {
                 name: HONORS,
                 achievementName: 'Introduction to Biology — Honors Results',
@@ -433,8 +438,8 @@ export const runInboxRefreshDemo = async (options: InboxRefreshDemoOptions): Pro
             return;
         }
 
-        step = 'claim the provisional certificate with DIDAuth';
-        out.log('\n3 / 4  CLAIM THE PROVISIONAL CERTIFICATE');
+        step = 'claim the final certificate with DIDAuth';
+        out.log('\n3 / 4  CLAIM THE FINAL CERTIFICATE');
         out.log('Claiming with a fresh local wallet, exactly as the app does...');
         const holder = await initLearnCard({ ...config, seed: generateRandomSeed(), network });
         const client = await getClient(
@@ -473,6 +478,7 @@ export const runInboxRefreshDemo = async (options: InboxRefreshDemoOptions): Pro
         }
         out.log('Claimed and verified: same credential ID, final grade A, valid proof.');
 
+        await pause('publish honors and refresh the claimed certificate');
         step = 'publish honors results to the bound holder';
         out.log('\n4 / 4  PUBLISH HONORS RESULTS');
         const metadata = await issuer.invoke.getInboxCredential(issued.issuanceId);
@@ -495,6 +501,8 @@ export const runInboxRefreshDemo = async (options: InboxRefreshDemoOptions): Pro
             signingAuthority: { type: 'http', ...signingAuthority },
             updateSummary: 'Honors results are ready. Final grade: A+.',
             idempotencyKey: `inbox-demo-honors-${suffix}`,
+            // Terminal-only recipients have no app profile/webhook; refresh directly below.
+            notifyHolder: false,
         });
         if (honorsPublication.version !== 3)
             throw new Error(`Expected version 3, received ${honorsPublication.version}.`);
@@ -517,7 +525,7 @@ export const runInboxRefreshDemo = async (options: InboxRefreshDemoOptions): Pro
             network,
             issuanceId: issued.issuanceId,
             refreshId: receipt.refreshId,
-            before: BEFORE,
+            before: AFTER,
             after: refreshed.credential.name,
             version: honorsPublication.version,
             notification: honorsPublication.notification,

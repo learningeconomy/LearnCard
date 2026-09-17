@@ -1,3 +1,4 @@
+import type { IssueInboxCredentialType } from '@learncard/types';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
@@ -92,7 +93,7 @@ const makeIssuer = (order: string[], published: Published[]) => {
         addPlugin: vi.fn(),
         invoke: {
             createProfile: vi.fn(async () => undefined),
-            createSigningAuthority: vi.fn(async () => ({
+            createSigningAuthority: vi.fn(async (_name: string) => ({
                 name: 'inbox-demo-sa',
                 endpoint: 'http://localhost:5100/api',
                 did: 'did:key:sa',
@@ -100,16 +101,18 @@ const makeIssuer = (order: string[], published: Published[]) => {
             registerSigningAuthority: vi.fn(async () => true),
             setPrimaryRegisteredSigningAuthority: vi.fn(async () => true),
             createBoost: vi.fn(async () => 'boost:demo'),
-            sendCredentialViaInbox: vi.fn(async (): Promise<TestIssue> => {
-                order.push('issue');
-                return {
-                    status: 'PENDING',
-                    issuanceId: 'issuance:demo',
-                    claimUrl: CLAIM_URL,
-                    recipient: { type: 'email', value: 'inbox-demo-deadbeef@example.com' },
-                    refresh: RECEIPT,
-                };
-            }),
+            sendCredentialViaInbox: vi.fn(
+                async (_input: IssueInboxCredentialType): Promise<TestIssue> => {
+                    order.push('issue');
+                    return {
+                        status: 'PENDING',
+                        issuanceId: 'issuance:demo',
+                        claimUrl: CLAIM_URL,
+                        recipient: { type: 'email', value: 'inbox-demo-deadbeef@example.com' },
+                        refresh: RECEIPT,
+                    };
+                }
+            ),
             publishCredentialRefresh: vi.fn(
                 async (input: Published): Promise<{ version: number; notification?: string }> => {
                     published.push(input);
@@ -135,7 +138,11 @@ const makeHolder = (order: string[], state: { indexCalls: number }) => {
             createProfile: vi.fn(async () => {
                 order.push('holderProfile');
             }),
-            verifyCredential: vi.fn(async () => ({ checks: ['proof'], errors: [], warnings: [] })),
+            verifyCredential: vi.fn(async () => ({
+                checks: ['proof'],
+                errors: [] as string[],
+                warnings: [] as string[],
+            })),
             acceptCredential: vi.fn(),
             refreshCredential: vi.fn(),
             getDidAuthVp: vi.fn(async () => 'did-auth'),
@@ -223,6 +230,13 @@ describe('Universal Inbox refresh demonstration', () => {
 
         await runInboxRefreshDemo({ ui: true });
 
+        expect(issuer.invoke.createSigningAuthority.mock.calls[0]?.[0]).toMatch(
+            /^[a-z0-9-]{1,15}$/
+        );
+        expect(mocks.question).toHaveBeenCalledWith(
+            expect.stringContaining('publish final results before anyone claims')
+        );
+
         // Pre-claim: nobody existed when the credential and its update were queued.
         expect(order.indexOf('issue')).toBeLessThan(order.indexOf('publish-2'));
         expect(order.indexOf('publish-2')).toBeLessThan(order.indexOf('holderProfile'));
@@ -248,7 +262,7 @@ describe('Universal Inbox refresh demonstration', () => {
         expect(issueInput.refresh).toBe(true);
         expect(issueInput.templateUri).toBe('boost:demo');
         expect(issueInput.idempotencyKey).toBeTruthy();
-        expect(issueInput.configuration.delivery.suppress).toBe(true);
+        expect(issueInput.configuration?.delivery?.suppress).toBe(true);
 
         // The CLI never claims, accepts, refreshes, or saves on the holder's behalf.
         expect(holder.invoke.acceptCredential).not.toHaveBeenCalled();
@@ -296,13 +310,14 @@ describe('Universal Inbox refresh demonstration', () => {
         expect(order).toEqual(['issue', 'publish-2', 'publish-3']);
         expect(published[1]!.credential.credentialSubject.id).toBe('did:key:holder');
         expect(published[1]!.credential.name).toBe('Honors Course Certificate');
+        expect(published[1]).toMatchObject({ notifyHolder: false });
         expect(holder.invoke.refreshCredential).toHaveBeenCalledWith(
             FINAL,
             expect.objectContaining({ allowInsecureHttp: true, allowPrivateAddresses: true })
         );
         expect(mocks.set).toHaveBeenCalledWith(
             expect.objectContaining({
-                before: 'Provisional Course Certificate',
+                before: 'Final Course Certificate',
                 after: 'Honors Course Certificate',
                 version: 3,
                 status: 'updated',

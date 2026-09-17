@@ -91,7 +91,7 @@ export const runRefreshDemo = async (options: RefreshDemoOptions): Promise<void>
             ...(ui && { notificationsWebhook: ui.notificationsWebhook, locale: 'en' }),
         });
 
-        const template: UnsignedVC = {
+        const template = {
             '@context': [
                 'https://www.w3.org/ns/credentials/v2',
                 'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
@@ -114,7 +114,7 @@ export const runRefreshDemo = async (options: RefreshDemoOptions): Promise<void>
                     },
                 },
             },
-        };
+        } satisfies UnsignedVC;
 
         if (ui) {
             const login = new URL('/developer/sign-in', ui.appOrigin);
@@ -150,6 +150,7 @@ export const runRefreshDemo = async (options: RefreshDemoOptions): Promise<void>
                 const parsed = VCValidator.safeParse(await holder.read.get(record.uri));
                 if (parsed.success && parsed.data.id === refresh.credentialId) return parsed.data;
             }
+            return undefined;
         };
 
         if (ui) {

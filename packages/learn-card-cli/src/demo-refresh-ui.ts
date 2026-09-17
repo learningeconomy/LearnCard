@@ -26,14 +26,14 @@ export const getRefreshDemoUiConfig = async (
 ): Promise<{ appOrigin: string; cloud: string; lcaApi: string; notificationsWebhook: string }> => {
     const app = requireLoopbackUrl(appUrl, '--app-url');
     const backend = requireLoopbackUrl(network, '--network');
-    let config;
+    let config: { apis?: Record<string, unknown> } | null;
     try {
         const response = await fetch(new URL('/tenant-config.json', app), {
             redirect: 'error',
             signal: AbortSignal.timeout(10_000),
         });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        config = await response.json();
+        config = (await response.json()) as { apis?: Record<string, unknown> } | null;
     } catch {
         throw new Error(
             'Could not read the local app configuration. Start the LearnCard app in local development mode and check --app-url.'

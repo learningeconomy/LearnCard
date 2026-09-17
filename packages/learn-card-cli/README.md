@@ -138,18 +138,21 @@ bun --cwd packages/learn-card-cli start demo refresh --inbox --ui
 The CLI reads Brain, LearnCloud, LCA, and notification services from the app's
 `tenant-config.json` and requires them all to be loopback, just like the direct demo.
 
-1. Follow the printed **sign-in link** to enter a fresh **Inbox Demo Learner** account.
-   Keep it private: it controls a disposable demo account. The claim link for the same
-   app is printed too.
-2. The first delivery arrives as a **claim link, not an alert** — this recipient did
-   not exist when the credential was issued. Open the claim link, sign in, and claim
-   the certificate.
-3. Press Enter in the terminal. The CLI waits until the recipient's LearnCloud index
-   really contains that credential ID with final results, then publishes the honors
-   update to the now-bound holder.
-4. The app receives an update notification. Tap it, then press Enter in the terminal.
-   The CLI verifies the app replaced the same entry (not a duplicate) with the honors
-   certificate and that its proof is valid.
+1. Press Enter to start, then follow the terminal prompts to issue provisional results
+   and publish **Final Results / Final grade: A** before the recipient account exists.
+2. Press Enter to create the demo recipient. Open the printed **sign-in link** and choose
+   **Switch account** if prompted. It takes you directly to the claim screen; the
+   separate claim link is also printed. Keep both links private.
+3. Click **Claim my credential → Accept**. The first certificate already shows final
+   results, not provisional results. Find it in **Passport → Achievements**.
+   This first delivery uses a claim link because there was no account to notify at issue time.
+4. Return to the terminal and press Enter to confirm the certificate is saved, then
+   Enter again to publish the honors update. Early confirmation keeps the demo waiting.
+5. Open **Alerts → “Inbox Demo School updated one of your credentials” → View Credential**.
+   Reload if the notification is not visible yet. The certificate now shows
+   **Honors Results / Final grade: A+**.
+6. Press Enter in the terminal to finish. The CLI verifies that the app replaced the
+   same entry (not a duplicate) and that the saved certificate has a valid signature.
 
 In `--ui` mode the CLI never claims, accepts, refreshes, or saves on the app's behalf;
 a human performs every app action. Rerunning creates fresh accounts. This mode requires

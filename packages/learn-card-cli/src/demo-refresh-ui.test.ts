@@ -32,8 +32,8 @@ describe('UI demo preflight', () => {
             lcaApi: apis.lcaApi,
             notificationsWebhook: apis.notificationsEndpoint,
         });
-        expect(fetch.mock.calls[0][0].href).toBe('http://localhost:3001/tenant-config.json');
-        expect(fetch.mock.calls[0][1].redirect).toBe('error');
+        expect(fetch.mock.calls[0]![0].href).toBe('http://localhost:3001/tenant-config.json');
+        expect(fetch.mock.calls[0]![1]!.redirect).toBe('error');
     });
     it.each([
         'https://learncard.app',
