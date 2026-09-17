@@ -1,414 +1,315 @@
+import type { Auth } from 'firebase/auth';
+import type { AuthUser, SignInAdapter } from '@learncard/types';
 import { getLogger } from '../logging/logger';
-const log = getLogger('create-firebase-sign-in-adapter');
-/**
- * Firebase Sign-In Adapter
- *
- * Implements the generic SignInAdapter interface for Firebase Authentication.
- * Encapsulates all Firebase SDK calls, platform branching (web vs Capacitor
- * native), RecaptchaVerifier management, and user-mapping logic.
- *
- * Apps create one instance at startup via `registerSignInAdapterFactory()`:
- *
- * ```ts
- * registerSignInAdapterFactory('firebase', (config) =>
- *     createFirebaseSignInAdapter({
- *         getAuth: () => auth(),
- *         getNativeAuth: () => FirebaseAuthentication,
- *         isNativePlatform: () => Capacitor.isNativePlatform(),
- *         emailLinkSettings: { url: 'https://app.example.com/login', ... },
- *     })
- * );
- * ```
- */
-
+import { createFirebasePhoneAuth } from './createFirebasePhoneAuth';
+import { loadFirebaseAuth } from './firebaseAuthModule';
 import type {
-    AuthUser,
-    AuthProviderType,
-    SignInAdapter,
-    PhoneVerificationHandle,
-} from '@learncard/types';
+    FirebaseAuthLike,
+    FirebaseSignInAdapterConfig,
+    FirebaseSignInOperation,
+} from './types';
 
-import { ensureRecaptcha, destroyRecaptcha } from '../helpers/recaptcha.helpers';
+// Preserve the original import locations as well as the barrel exports.
+export type {
+    FirebaseAuthLike,
+    NativeFirebaseAuthLike,
+    FirebaseSignInAdapterConfig,
+} from './types';
 
-// ---------------------------------------------------------------------------
-// Config
-// ---------------------------------------------------------------------------
+const log = getLogger('create-firebase-sign-in-adapter');
 
-/**
- * Minimal shape of the Firebase Auth instance we need.
- * Using a structural type instead of importing `Auth` keeps the adapter
- * decoupled from the exact Firebase SDK version.
- */
-export interface FirebaseAuthLike {
-    currentUser: {
-        uid: string;
-        email: string | null;
-        phoneNumber: string | null;
-        displayName: string | null;
-        photoURL: string | null;
-        getIdToken: (forceRefresh?: boolean) => Promise<string>;
-        metadata?: { creationTime?: string };
-    } | null;
-    signOut: () => Promise<void>;
-}
-
-/**
- * Minimal shape of the Capacitor FirebaseAuthentication plugin.
- * Uses permissive types (`any`) for return values so the structural type
- * is compatible with every version of the Capacitor plugin without
- * requiring consumers to cast.
- */
-export interface NativeFirebaseAuthLike {
-    signInWithGoogle: () => Promise<any>;
-    signInWithApple: (options?: any) => Promise<any>;
-    getCurrentUser: () => Promise<any>;
-    getIdToken: () => Promise<any>;
-    sendSignInLinkToEmail: (options: any) => Promise<any>;
-    isSignInWithEmailLink: (options: any) => Promise<any>;
-    signOut: () => Promise<any>;
-}
-
-export interface FirebaseSignInAdapterConfig {
-    /** Returns the Firebase Auth instance */
-    getAuth: () => FirebaseAuthLike;
-
-    /** Returns the Capacitor FirebaseAuthentication plugin (optional, native only) */
-    getNativeAuth?: () => NativeFirebaseAuthLike;
-
-    /** Whether the app is running on a native Capacitor platform */
-    isNativePlatform?: () => boolean;
-
-    /** Email link action code settings */
-    emailLinkSettings?: {
-        url: string;
-        iOS?: { bundleId: string };
-        android?: { packageName: string; installApp?: boolean; minimumVersion?: string };
-        dynamicLinkDomain?: string;
-    };
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-const mapFirebaseUser = (u: NonNullable<FirebaseAuthLike['currentUser']>): AuthUser => ({
-    id: u.uid,
-    email: u.email || undefined,
-    phone: u.phoneNumber || undefined,
-    displayName: u.displayName || undefined,
-    photoUrl: u.photoURL || undefined,
-    providerType: 'firebase' as AuthProviderType,
-    createdAt: u.metadata?.creationTime ? new Date(u.metadata.creationTime) : undefined,
+const mapFirebaseUser = (user: NonNullable<FirebaseAuthLike['currentUser']>): AuthUser => ({
+    id: user.uid,
+    email: user.email || undefined,
+    phone: user.phoneNumber || undefined,
+    displayName: user.displayName || undefined,
+    photoUrl: user.photoURL || undefined,
+    providerType: 'firebase',
+    createdAt: user.metadata?.creationTime ? new Date(user.metadata.creationTime) : undefined,
 });
 
-// ---------------------------------------------------------------------------
-// Factory
-// ---------------------------------------------------------------------------
-
-export function createFirebaseSignInAdapter(config: FirebaseSignInAdapterConfig): SignInAdapter {
-    const { getAuth, getNativeAuth, isNativePlatform } = config;
-
-    let cachedUser: AuthUser | null = null;
-
-    const isNative = () => isNativePlatform?.() ?? false;
-
-    const requireCurrentUser = (): AuthUser => {
-        const cu = getAuth().currentUser;
-
-        if (!cu) throw new Error('No authenticated user after sign-in');
-
-        const user = mapFirebaseUser(cu);
-        cachedUser = user;
+/** Firebase SDK boundary. UI, social-login locks and analytics remain app-owned. */
+export const createFirebaseSignInAdapter = (config: FirebaseSignInAdapterConfig): SignInAdapter => {
+    // Preload before a click so popup sign-in stays within the transient user-activation window.
+    void loadFirebaseAuth();
+    const isNative = (): boolean => config.isNativePlatform?.() ?? false;
+    const auth = (): Auth => config.getAuth() as Auth;
+    const notify = (callback: () => void): void => {
+        try {
+            callback();
+        } catch {
+            log.warn('Sign-in instrumentation callback failed');
+        }
+    };
+    const operation = async <T>(
+        name: FirebaseSignInOperation,
+        action: () => Promise<T>
+    ): Promise<T> => {
+        notify(() => config.onOperation?.(name, 'started'));
+        try {
+            const result = await action();
+            notify(() => config.onOperation?.(name, 'succeeded'));
+            return result;
+        } catch (error) {
+            notify(() => config.onOperation?.(name, 'failed', error));
+            // Keep code/message intact: the apps intentionally have different UI mappings.
+            throw error;
+        }
+    };
+    const signedIn = (
+        method: Parameters<NonNullable<FirebaseSignInAdapterConfig['onSignedIn']>>[0],
+        user: AuthUser
+    ): AuthUser => {
+        notify(() => config.onSignedIn?.(method, user));
         return user;
+    };
+    const finish = async (
+        user: NonNullable<FirebaseAuthLike['currentUser']>,
+        forceRefresh?: boolean
+    ): Promise<AuthUser> => {
+        await user.getIdToken(forceRefresh);
+        return mapFirebaseUser(user);
+    };
+    const phone = createFirebasePhoneAuth(config, user => signedIn('phoneOtp', user));
+    const validateEmailLink = async (link: string): Promise<boolean> => {
+        if (isNative() && config.getNativeAuth) {
+            return (await config.getNativeAuth().isSignInWithEmailLink({ emailLink: link }))
+                .isSignInWithEmailLink;
+        }
+        const { isSignInWithEmailLink } = await loadFirebaseAuth();
+        return isSignInWithEmailLink(auth(), link);
     };
 
     return {
         providerType: 'firebase',
-
-        // ── Auth state subscription ──────────────────────────────────────
-
-        subscribe(onUser: (user: AuthUser | null) => void) {
-            // Dynamically import onAuthStateChanged to avoid bundling issues
-            // when the adapter is created at module level.
-            let unsubscribe: (() => void) | null = null;
+        capabilities: Object.freeze({
+            emailLink: true,
+            emailOtp: true, // Server OTP verification finishes via signInWithCustomToken.
+            phoneOtp:
+                !isNative() ||
+                Boolean(
+                    config.getNativeAuth?.().signInWithPhoneNumber &&
+                    config.getNativeAuth?.().addListener
+                ),
+            google: Boolean(config.getNativeAuth),
+            apple: !isNative() || Boolean(config.getNativeAuth),
+            social: !isNative() || Boolean(config.getNativeAuth),
+            customToken: true,
+            deleteAccount: true,
+        }),
+        subscribe: (onUser): (() => void) => {
+            let unsubscribe: (() => void) | undefined;
             let cancelled = false;
-
-            (async () => {
-                const { onAuthStateChanged } = await import('firebase/auth');
-
-                if (cancelled) return;
-
-                unsubscribe = onAuthStateChanged(getAuth() as never, (fbUser: unknown) => {
-                    if (fbUser && typeof fbUser === 'object' && 'uid' in fbUser) {
-                        const typed = fbUser as NonNullable<FirebaseAuthLike['currentUser']>;
-                        cachedUser = mapFirebaseUser(typed);
-                        onUser(cachedUser);
-                    } else {
-                        cachedUser = null;
-                        onUser(null);
+            void loadFirebaseAuth()
+                .then(({ onAuthStateChanged }) => {
+                    if (!cancelled) {
+                        unsubscribe = onAuthStateChanged(auth(), user =>
+                            onUser(user ? mapFirebaseUser(user) : null)
+                        );
                     }
-                });
-            })();
-
-            return () => {
+                })
+                .catch(() => log.error('Unable to subscribe to Firebase auth state'));
+            return (): void => {
                 cancelled = true;
                 unsubscribe?.();
             };
         },
-
-        getCurrentUser(): AuthUser | null {
-            const cu = getAuth().currentUser;
-
-            if (cu) {
-                cachedUser = mapFirebaseUser(cu);
-                return cachedUser;
-            }
-
-            return cachedUser;
+        getCurrentUser: (): AuthUser | null => {
+            const user = config.getAuth().currentUser;
+            return user ? mapFirebaseUser(user) : null;
         },
-
-        // ── Email link ───────────────────────────────────────────────────
-
-        async sendEmailLink(email: string, redirectUrl?: string) {
-            const settings = config.emailLinkSettings;
-            const url = redirectUrl ?? settings?.url ?? window.location.origin + '/login';
-
-            if (isNative() && getNativeAuth?.()) {
-                await getNativeAuth!().sendSignInLinkToEmail({
-                    email,
-                    actionCodeSettings: {
-                        url,
-                        handleCodeInApp: true,
-                        ...(settings?.iOS ? { iOS: settings.iOS } : {}),
-                        ...(settings?.android ? { android: settings.android } : {}),
-                        ...(settings?.dynamicLinkDomain
-                            ? { dynamicLinkDomain: settings.dynamicLinkDomain }
-                            : {}),
-                    },
-                });
-            } else {
-                const { sendSignInLinkToEmail } = await import('firebase/auth');
-
-                await sendSignInLinkToEmail(getAuth() as never, email, {
-                    url,
-                    handleCodeInApp: true,
-                });
-            }
-
-            window.localStorage.setItem('emailForSignIn', email);
-        },
-
-        async verifyEmailLink(email: string, link: string): Promise<AuthUser> {
-            if (!email || !link) throw new Error('Email and link are required');
-
-            const firebaseAuth = getAuth();
-
-            if (isNative() && getNativeAuth?.()) {
-                const nativeAuth = getNativeAuth!();
-                const { isSignInWithEmailLink } = await nativeAuth.isSignInWithEmailLink({
-                    emailLink: link,
-                });
-                const storedEmail = window.localStorage.getItem('emailForSignIn') || email;
-
-                if (!isSignInWithEmailLink) throw new Error('Invalid email sign-in link');
-
-                const { EmailAuthProvider, signInWithCredential } = await import('firebase/auth');
-                const credential = EmailAuthProvider.credentialWithLink(storedEmail, link);
-                await signInWithCredential(firebaseAuth as never, credential);
-            } else {
-                const { isSignInWithEmailLink, signInWithEmailLink } = await import(
-                    'firebase/auth'
-                );
-
-                if (!isSignInWithEmailLink(firebaseAuth as never, link)) {
-                    throw new Error('Invalid email sign-in link');
+        sendEmailLink: (email, redirectUrl): Promise<void> =>
+            operation('sendEmailLink', async () => {
+                const settings =
+                    (isNative() ? config.nativeEmailLinkSettings : undefined) ??
+                    config.emailLinkSettings;
+                const url = redirectUrl ?? settings?.url ?? window.location.origin + '/login';
+                if (isNative() && config.getNativeAuth) {
+                    await config.getNativeAuth().sendSignInLinkToEmail({
+                        email,
+                        actionCodeSettings: { ...settings, url, handleCodeInApp: true },
+                    });
+                } else {
+                    const { sendSignInLinkToEmail } = await loadFirebaseAuth();
+                    await sendSignInLinkToEmail(auth(), email, { url, handleCodeInApp: true });
                 }
-
-                await signInWithEmailLink(firebaseAuth as never, email, link);
-            }
-
-            window.localStorage.removeItem('emailForSignIn');
-            return requireCurrentUser();
+                window.localStorage.setItem('emailForSignIn', email);
+            }),
+        verifyEmailLink: (email, link): Promise<AuthUser> =>
+            operation('verifyEmailLink', async () => {
+                if (!email || !link) throw new Error('Email and link are required');
+                if (!(await validateEmailLink(link))) throw new Error('Invalid email sign-in link');
+                let user: AuthUser;
+                if (isNative() && config.getNativeAuth) {
+                    const { EmailAuthProvider, signInWithCredential } = await loadFirebaseAuth();
+                    // Preserve the existing adapter's cross-device fallback to an explicitly entered email.
+                    const storedEmail = window.localStorage.getItem('emailForSignIn') || email;
+                    const result = await signInWithCredential(
+                        auth(),
+                        EmailAuthProvider.credentialWithLink(storedEmail, link)
+                    );
+                    user = await finish(result.user);
+                } else {
+                    const { signInWithEmailLink } = await loadFirebaseAuth();
+                    user = await finish(
+                        (await signInWithEmailLink(auth(), email, link)).user,
+                        true
+                    );
+                }
+                window.localStorage.removeItem('emailForSignIn');
+                return signedIn('emailLink', user);
+            }),
+        isEmailLink: (link): boolean => link.includes('oobCode=') && link.includes('mode=signIn'),
+        validateEmailLink,
+        sendPhoneOtp: (number): ReturnType<SignInAdapter['sendPhoneOtp']> =>
+            operation('sendPhoneOtp', () => phone.sendPhoneOtp(number)),
+        confirmPhoneOtp: (
+            handleOrCode: Parameters<SignInAdapter['confirmPhoneOtp']>[0],
+            code?: string | number
+        ): Promise<AuthUser> =>
+            operation('confirmPhoneOtp', () => phone.confirmPhoneOtp(handleOrCode, code)),
+        confirmNativePhoneOtp: (verificationId, code): Promise<AuthUser> =>
+            operation('confirmPhoneOtp', () => phone.confirmPhoneOtp({ verificationId }, code)),
+        onPhoneCodeSent: phone.onPhoneCodeSent,
+        onPhoneVerificationCompleted: phone.onPhoneVerificationCompleted,
+        onPhoneVerificationFailed: phone.onPhoneVerificationFailed,
+        signInWithGoogle: (options): Promise<AuthUser> =>
+            operation('google', async () => {
+                if (options?.intent === 'reauthenticate' && !isNative()) {
+                    const { GoogleAuthProvider, signInWithPopup } = await loadFirebaseAuth();
+                    return mapFirebaseUser(
+                        (await signInWithPopup(auth(), new GoogleAuthProvider())).user
+                    );
+                }
+                const native = config.getNativeAuth?.();
+                if (!native) throw new Error('Google sign-in requires the Firebase plugin');
+                const result = await native.signInWithGoogle();
+                const { user } = await native.getCurrentUser();
+                if (!result.user || !user) throw new Error('No authenticated user after sign-in');
+                if (options?.intent !== 'reauthenticate') await native.getIdToken();
+                const mapped: AuthUser = {
+                    id: user.uid,
+                    email: user.email || undefined,
+                    phone: user.phoneNumber || undefined,
+                    displayName: user.displayName || undefined,
+                    photoUrl: user.photoUrl || undefined,
+                    providerType: 'firebase',
+                    createdAt: user.metadata?.creationTime
+                        ? new Date(user.metadata.creationTime)
+                        : undefined,
+                };
+                signedIn('google', mapped);
+                if (isNative()) {
+                    try {
+                        const { GoogleAuthProvider, signInWithCredential } =
+                            await loadFirebaseAuth();
+                        await signInWithCredential(
+                            auth(),
+                            GoogleAuthProvider.credential(result.credential?.idToken)
+                        );
+                    } catch (error) {
+                        log.info('Google web-layer credential sign-in failed');
+                        notify(() => config.onCredentialSyncError?.(error));
+                    }
+                }
+                return mapped;
+            }),
+        signInWithApple: (options): Promise<AuthUser> =>
+            operation('apple', async () => {
+                const { OAuthProvider, signInWithCredential, signInWithPopup } =
+                    await loadFirebaseAuth();
+                const provider = new OAuthProvider('apple.com');
+                let user: NonNullable<FirebaseAuthLike['currentUser']>;
+                if (isNative()) {
+                    const native = config.getNativeAuth?.();
+                    if (!native) throw new Error('Apple sign-in requires the Firebase plugin');
+                    const result = await native.signInWithApple({ skipNativeAuth: true });
+                    await signInWithCredential(
+                        auth(),
+                        provider.credential({
+                            idToken: result.credential?.idToken,
+                            rawNonce: result.credential?.nonce,
+                        })
+                    );
+                    const currentUser = config.getAuth().currentUser;
+                    if (!currentUser) throw new Error('No authenticated user after sign-in');
+                    user = currentUser;
+                } else {
+                    const result = await signInWithPopup(auth(), provider);
+                    if (!result) throw new Error('Missing popup result');
+                    if (
+                        options?.intent !== 'reauthenticate' &&
+                        !OAuthProvider.credentialFromResult(result)
+                    ) {
+                        throw new Error('Missing OAuth credential');
+                    }
+                    user = result.user;
+                }
+                if (options?.intent === 'reauthenticate') return mapFirebaseUser(user);
+                return signedIn('apple', await finish(user, isNative() ? undefined : true));
+            }),
+        checkRedirectResult: (): Promise<AuthUser | null> =>
+            operation('redirect', async () => {
+                if (isNative()) return null;
+                const { getRedirectResult, OAuthProvider } = await loadFirebaseAuth();
+                const result = await getRedirectResult(auth());
+                if (!result || !OAuthProvider.credentialFromResult(result)) return null;
+                return signedIn('apple', await finish(result.user, true));
+            }),
+        signInWithCustomToken: (token): Promise<AuthUser> =>
+            operation('customToken', async () => {
+                const { signInWithCustomToken } = await loadFirebaseAuth();
+                return signedIn(
+                    'customToken',
+                    await finish((await signInWithCustomToken(auth(), token)).user)
+                );
+            }),
+        signInWithOidcCredential: (providerId, idToken): Promise<AuthUser> =>
+            operation('oidc', async () => {
+                const { OAuthProvider, signInWithCredential } = await loadFirebaseAuth();
+                const credential = new OAuthProvider(providerId).credential({ idToken });
+                return signedIn(
+                    'oidc',
+                    await finish((await signInWithCredential(auth(), credential)).user)
+                );
+            }),
+        deleteAccount: (): Promise<void> =>
+            operation('deleteAccount', async () => {
+                const user = auth().currentUser;
+                if (!user) throw new Error('No user to delete');
+                const { deleteUser } = await loadFirebaseAuth();
+                await deleteUser(user);
+                phone.cleanup();
+            }),
+        updateProfile: async (profile): Promise<void> => {
+            const user = auth().currentUser;
+            if (!user) throw new Error('No user to update');
+            const { updateProfile } = await loadFirebaseAuth();
+            await updateProfile(user, {
+                ...(profile.displayName !== undefined ? { displayName: profile.displayName } : {}),
+                ...(profile.photoUrl !== undefined ? { photoURL: profile.photoUrl } : {}),
+            });
         },
-
-        isEmailLink(link: string): boolean {
-            // Synchronous best-effort check — look for Firebase email link params
-            return link.includes('oobCode=') && link.includes('mode=signIn');
-        },
-
-        // ── Phone OTP ────────────────────────────────────────────────────
-
-        async sendPhoneOtp(phoneNumber: string): Promise<PhoneVerificationHandle> {
-            const firebaseAuth = getAuth();
-
-            destroyRecaptcha();
-            await ensureRecaptcha(firebaseAuth);
-
-            const { signInWithPhoneNumber } = await import('firebase/auth');
-
-            const confirmationResult = await signInWithPhoneNumber(
-                firebaseAuth as never,
-                phoneNumber,
-                window.recaptchaVerifier
+        setSessionPersistence: async (sessionOnly): Promise<void> => {
+            const { setPersistence, browserSessionPersistence, indexedDBLocalPersistence } =
+                await loadFirebaseAuth();
+            await setPersistence(
+                auth(),
+                sessionOnly ? browserSessionPersistence : indexedDBLocalPersistence
             );
-
-            // Store on window for backward compat with existing native flows
-            window.confirmationResult = confirmationResult;
-
-            return {
-                verificationId: confirmationResult.verificationId,
-                _internal: confirmationResult,
-            };
         },
-
-        async confirmPhoneOtp(
-            handle: PhoneVerificationHandle,
-            code: string | number
-        ): Promise<AuthUser> {
-            const confirmationResult = handle._internal as
-                | { confirm: (code: string | number) => Promise<{ user: unknown }> }
-                | undefined;
-
-            if (confirmationResult?.confirm) {
-                await confirmationResult.confirm(code);
-            } else {
-                // Fallback: use credential-based sign-in
-                const { PhoneAuthProvider, signInWithCredential } = await import('firebase/auth');
-                const credential = PhoneAuthProvider.credential(
-                    handle.verificationId,
-                    String(code)
-                );
-                await signInWithCredential(getAuth() as never, credential);
-            }
-
-            return requireCurrentUser();
-        },
-
-        async confirmNativePhoneOtp(
-            verificationId: string,
-            code: string | number
-        ): Promise<AuthUser> {
-            const { PhoneAuthProvider, signInWithCredential } = await import('firebase/auth');
-            const credential = PhoneAuthProvider.credential(verificationId, String(code));
-            await signInWithCredential(getAuth() as never, credential);
-            return requireCurrentUser();
-        },
-
-        // ── OAuth ────────────────────────────────────────────────────────
-
-        async signInWithGoogle(): Promise<AuthUser> {
-            const firebaseAuth = getAuth();
-            const nativeAuth = getNativeAuth?.();
-
-            if (!nativeAuth) throw new Error('Google sign-in requires the native Firebase plugin');
-
-            const signInResult = await nativeAuth.signInWithGoogle();
-
-            // Also sign in on the web layer for SDK consistency on native
-            if (isNative() && signInResult.credential?.idToken) {
-                try {
-                    const { GoogleAuthProvider, signInWithCredential } = await import(
-                        'firebase/auth'
-                    );
-                    const credential = GoogleAuthProvider.credential(
-                        signInResult.credential.idToken
-                    );
-                    await signInWithCredential(firebaseAuth as never, credential);
-                } catch (e) {
-                    log.warn('[FirebaseSignInAdapter] Web-layer Google credential failed:', e);
+        signOut: (): Promise<void> =>
+            operation('signOut', async () => {
+                await config.getAuth().signOut();
+                phone.cleanup();
+                if (isNative() && config.getNativeAuth) {
+                    try {
+                        await config.getNativeAuth().signOut();
+                    } catch {
+                        log.warn('Native signOut failed');
+                    }
                 }
-            }
-
-            return requireCurrentUser();
-        },
-
-        async signInWithApple(): Promise<AuthUser> {
-            const firebaseAuth = getAuth();
-
-            if (isNative()) {
-                const nativeAuth = getNativeAuth?.();
-
-                if (!nativeAuth)
-                    throw new Error('Apple sign-in on native requires the Firebase plugin');
-
-                const result = await nativeAuth.signInWithApple({ skipNativeAuth: true });
-
-                const { OAuthProvider, signInWithCredential } = await import('firebase/auth');
-                const provider = new OAuthProvider('apple.com');
-                const credential = provider.credential({
-                    idToken: result.credential?.idToken,
-                    rawNonce: result.credential?.nonce,
-                });
-
-                await signInWithCredential(firebaseAuth as never, credential);
-            } else {
-                const { OAuthProvider, signInWithPopup } = await import('firebase/auth');
-                const provider = new OAuthProvider('apple.com');
-
-                await signInWithPopup(firebaseAuth as never, provider);
-            }
-
-            return requireCurrentUser();
-        },
-
-        async checkRedirectResult(): Promise<AuthUser | null> {
-            if (isNative()) return null;
-
-            const { getRedirectResult, OAuthProvider } = await import('firebase/auth');
-            const result = await getRedirectResult(getAuth() as never);
-
-            if (!result) return null;
-
-            const credential = OAuthProvider.credentialFromResult(result);
-
-            if (!credential) return null;
-
-            return requireCurrentUser();
-        },
-
-        // ── Custom / SSO ─────────────────────────────────────────────────
-
-        async signInWithCustomToken(token: string): Promise<AuthUser> {
-            const { signInWithCustomToken } = await import('firebase/auth');
-            await signInWithCustomToken(getAuth() as never, token);
-            return requireCurrentUser();
-        },
-
-        async signInWithOidcCredential(providerId: string, idToken: string): Promise<AuthUser> {
-            const { OAuthProvider, signInWithCredential } = await import('firebase/auth');
-            const provider = new OAuthProvider(providerId);
-            const credential = provider.credential({ idToken });
-            await signInWithCredential(getAuth() as never, credential);
-            return requireCurrentUser();
-        },
-
-        // ── Account management ───────────────────────────────────────────
-
-        async deleteAccount(): Promise<void> {
-            const cu = getAuth().currentUser;
-
-            if (!cu) throw new Error('No user to delete');
-
-            const { deleteUser } = await import('firebase/auth');
-            await deleteUser(cu as never);
-        },
-
-        async signOut(): Promise<void> {
-            await getAuth().signOut();
-
-            if (isNative() && getNativeAuth?.()) {
-                try {
-                    await getNativeAuth!().signOut();
-                } catch (e) {
-                    log.warn('[FirebaseSignInAdapter] Native signOut failed:', e);
-                }
-            }
-        },
-
-        // ── Cleanup ──────────────────────────────────────────────────────
-
-        cleanup() {
-            destroyRecaptcha();
-        },
+            }),
+        cleanup: phone.cleanup,
     };
-}
+};

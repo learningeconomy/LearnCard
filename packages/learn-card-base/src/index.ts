@@ -113,6 +113,7 @@ export * from './config/brandingHelpers';
 export * from './storage/image-upload';
 export { SignInAdapterProvider, useSignInAdapter } from './providers/SignInAdapterProvider';
 export type { SignInAdapterProviderProps } from './providers/SignInAdapterProvider';
+export type { SignInCapabilities, SocialSignInOptions } from './auth-adapters';
 export * from './hooks/useSocialLogins';
 export * from './hooks/useSQLiteStorage';
 export { useCurrentUser } from './hooks/useGetCurrentUser';

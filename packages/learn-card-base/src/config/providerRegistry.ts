@@ -59,10 +59,7 @@ const signInAdapterFactories = new Map<string, SignInAdapterFactory>();
  * Register a factory that creates an AuthProvider for the given provider name.
  * Calling with the same name replaces any previously registered factory.
  */
-export const registerAuthProviderFactory = (
-    name: string,
-    factory: AuthProviderFactory
-): void => {
+export const registerAuthProviderFactory = (name: string, factory: AuthProviderFactory): void => {
     authProviderFactories.set(name, factory);
 };
 
@@ -70,10 +67,7 @@ export const registerAuthProviderFactory = (
  * Register a factory that creates a KeyDerivationStrategy for the given name.
  * Calling with the same name replaces any previously registered factory.
  */
-export const registerKeyDerivationFactory = (
-    name: string,
-    factory: KeyDerivationFactory
-): void => {
+export const registerKeyDerivationFactory = (name: string, factory: KeyDerivationFactory): void => {
     keyDerivationFactories.set(name, factory);
 };
 
@@ -94,8 +88,8 @@ export const resolveAuthProvider = (config: AuthConfig): AuthProvider | null => 
 
         throw new Error(
             `No auth provider factory registered for "${config.authProvider}". ` +
-            `Registered: ${registered}. ` +
-            `Set VITE_AUTH_PROVIDER or register a factory with registerAuthProviderFactory().`
+                `Registered: ${registered}. ` +
+                `Set VITE_AUTH_PROVIDER or register a factory with registerAuthProviderFactory().`
         );
     }
 
@@ -114,8 +108,8 @@ export const resolveKeyDerivation = (config: AuthConfig): KeyDerivationStrategy 
 
         throw new Error(
             `No key derivation factory registered for "${config.keyDerivation}". ` +
-            `Registered: ${registered}. ` +
-            `Set VITE_KEY_DERIVATION or register a factory with registerKeyDerivationFactory().`
+                `Registered: ${registered}. ` +
+                `Set VITE_KEY_DERIVATION or register a factory with registerKeyDerivationFactory().`
         );
     }
 
@@ -138,10 +132,7 @@ export const getRegisteredKeyDerivations = (): string[] => [...keyDerivationFact
  * Register a factory that creates a SignInAdapter for the given provider name.
  * Calling with the same name replaces any previously registered factory.
  */
-export const registerSignInAdapterFactory = (
-    name: string,
-    factory: SignInAdapterFactory
-): void => {
+export const registerSignInAdapterFactory = (name: string, factory: SignInAdapterFactory): void => {
     signInAdapterFactories.set(name, factory);
 };
 
@@ -161,8 +152,8 @@ export const resolveSignInAdapter = (config: AuthConfig): SignInAdapter => {
 
         throw new Error(
             `No sign-in adapter factory registered for "${config.authProvider}". ` +
-            `Registered: ${registered}. ` +
-            `Set VITE_AUTH_PROVIDER or register a factory with registerSignInAdapterFactory().`
+                `Registered: ${registered}. ` +
+                `Set VITE_AUTH_PROVIDER or register a factory with registerSignInAdapterFactory().`
         );
     }
 
@@ -170,3 +161,66 @@ export const resolveSignInAdapter = (config: AuthConfig): SignInAdapter => {
 };
 
 export const getRegisteredSignInAdapters = (): string[] => [...signInAdapterFactories.keys()];
+
+// ---------------------------------------------------------------------------
+// Auth Provider Initializer Registration & Execution
+// ---------------------------------------------------------------------------
+
+/**
+ * One-time SDK bootstrap for a given auth provider (e.g. Firebase's
+ * `initializeApp()` + analytics). Distinct from `AuthProviderFactory`: the
+ * factory builds the per-session `AuthProvider` instance (invoked possibly
+ * many times), while the initializer performs the provider's *global* SDK
+ * setup that must run at most once per session.
+ */
+export type AuthProviderInitializer = (config: AuthConfig) => void | Promise<void>;
+
+const authProviderInitializers = new Map<string, AuthProviderInitializer>();
+
+/** Provider names whose initializer has already run (or started running). */
+const initializedAuthProviderNames = new Set<string>();
+
+/**
+ * Register a one-time SDK bootstrap initializer for the given provider name.
+ * Calling with the same name replaces any previously registered initializer
+ * (the replacement only takes effect if that provider hasn't already been
+ * initialized in this session — see `initializeAuthProvider`).
+ */
+export const registerAuthProviderInitializer = (
+    name: string,
+    initializer: AuthProviderInitializer
+): void => {
+    authProviderInitializers.set(name, initializer);
+};
+
+/**
+ * Run the initializer registered for `config.authProvider`, and only that
+ * one — every other registered initializer is skipped. This is what keeps a
+ * tenant configured with e.g. `authProvider: 'keycloak'` from ever touching
+ * the Firebase SDK: Firebase's initializer simply never runs.
+ *
+ * Idempotent: a given provider name is initialized at most once per session,
+ * no matter how many times (or how early/often) this is called.
+ *
+ * No-ops (does not throw) when no initializer is registered for the
+ * configured provider — not every provider needs a global bootstrap step.
+ */
+export const initializeAuthProvider = async (config: AuthConfig): Promise<void> => {
+    const { authProvider } = config;
+
+    if (initializedAuthProviderNames.has(authProvider)) return;
+
+    const initializer = authProviderInitializers.get(authProvider);
+
+    if (!initializer) return;
+
+    // Mark before awaiting so a second call issued before this one settles
+    // (e.g. duplicate bootstrap invocations) can't re-enter the initializer.
+    initializedAuthProviderNames.add(authProvider);
+
+    await initializer(config);
+};
+
+export const getRegisteredAuthProviderInitializers = (): string[] => [
+    ...authProviderInitializers.keys(),
+];
