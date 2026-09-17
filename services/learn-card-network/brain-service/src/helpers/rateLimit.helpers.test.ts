@@ -32,7 +32,7 @@ describe('enforceRateLimits', () => {
         incr.mockResolvedValueOnce(1);
         await enforceRateLimits([window({ key: 'ip:1.2.3.4', windowSeconds: 60 })]);
 
-        expect(incr).toHaveBeenCalledWith('ip:1.2.3.4', 60);
+        expect(incr).toHaveBeenCalledWith('ip:1.2.3.4', 60, undefined);
     });
 
     // Fails closed: an unreachable cache must not silently become "unlimited".
@@ -68,7 +68,7 @@ describe('enforceRateLimits', () => {
         ).rejects.toMatchObject({ message: 'Rate limit exceeded: broad' });
 
         expect(incr).toHaveBeenCalledTimes(1);
-        expect(incr).toHaveBeenCalledWith('broad', 3600);
+        expect(incr).toHaveBeenCalledWith('broad', 3600, undefined);
     });
 
     it('consumes every window when all are under budget', async () => {
