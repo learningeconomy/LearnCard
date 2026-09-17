@@ -1,113 +1,67 @@
 import React from 'react';
 import { Capacitor } from '@capacitor/core';
-import {
-    sendSignInLinkToEmail,
-    signInWithEmailLink,
-    isSignInWithEmailLink,
-    signInWithPhoneNumber,
-    RecaptchaVerifier,
-    signInWithPopup,
-    OAuthProvider,
-    getRedirectResult,
-    signInWithCredential,
-    GoogleAuthProvider,
-    PhoneAuthProvider,
-    deleteUser,
-    EmailAuthProvider,
-    signInWithCustomToken,
-} from 'firebase/auth';
-import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
-import * as m from '../paraglide/messages.js';
-
-import useFirebaseAnalytics from './useFirebaseAnalytics';
 import { useIonAlert } from '@ionic/react';
 import {
     authStore,
     SocialLoginTypes,
-    firebaseAuthStore,
-    LOGIN_REDIRECTS,
+    useSignInAdapter,
     useModal,
     ModalTypes,
-    ensureRecaptcha,
-    destroyRecaptcha,
     useToast,
     ToastTypeEnum,
+    getLogger,
 } from 'learn-card-base';
-
-import { auth } from '../firebase/firebase';
-import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
+import * as m from '../paraglide/messages.js';
+import useFirebaseAnalytics from './useFirebaseAnalytics';
 import GoogleLoginHelpModal from '../components/auth/GoogleLoginHelpModal';
 
-import { FIREBASE_REDIRECT_URL } from '../constants/web3AuthConfig';
-import { getLogger } from 'learn-card-base';
 const log = getLogger('use-firebase');
+const authError = (error: unknown): { code?: string | number; message?: string } => {
+    if (!error || typeof error !== 'object') return {};
+    return {
+        code:
+            'code' in error && (typeof error.code === 'string' || typeof error.code === 'number')
+                ? error.code
+                : undefined,
+        message:
+            'message' in error && typeof error.message === 'string' ? error.message : undefined,
+    };
+};
+type SuccessCallback = () => void;
+type ErrorCallback = (error: string) => void;
 
 export const useFirebase = () => {
+    const adapter = useSignInAdapter();
     const { newModal } = useModal({ desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel });
     const { presentToast } = useToast();
     const [presentAlert] = useIonAlert();
     const { logAnalyticsEvent } = useFirebaseAnalytics();
 
-    const presentGoogleHelpModal = (message?: string) => {
+    const presentGoogleHelpModal = (message?: string): void => {
         newModal(React.createElement(GoogleLoginHelpModal, { message }), {
             sectionClassName: '!max-w-[420px]',
         });
     };
 
-    const deleteFirebaseUser = async () => {
-        const firebaseAuth = auth();
-
-        const currentUser = firebaseAuth.currentUser;
-
+    const deleteFirebaseUser = async (): Promise<{
+        success: boolean;
+        message: string | number | null | undefined;
+    }> => {
         try {
-            await deleteUser(currentUser);
-            return {
-                success: true,
-                message: null,
-            };
+            await adapter.deleteAccount();
+            return { success: true, message: null };
         } catch (error) {
-            return {
-                success: false,
-                message: error?.code,
-            };
+            return { success: false, message: authError(error).code };
         }
     };
 
-    const googleLogin = async () => {
-        const firebaseAuth = auth();
-
-        if (!firebaseAuth) return;
-
+    const googleLogin = async (): Promise<void> => {
         try {
-            const signInWithGoogleRes = await FirebaseAuthentication.signInWithGoogle();
-            const { user } = await FirebaseAuthentication.getCurrentUser();
-
-            if (signInWithGoogleRes.user && user) {
-                const { token } = await FirebaseAuthentication.getIdToken();
-
-                authStore.set.typeOfLogin(SocialLoginTypes.google);
-                firebaseAuthStore.set.firebaseAuth(FirebaseAuthentication);
-
-                logAnalyticsEvent('login', { method: SocialLoginTypes.google });
-
-                // sign in on web-layer
-                if (Capacitor.isNativePlatform()) {
-                    try {
-                        const credential = await GoogleAuthProvider.credential(
-                            signInWithGoogleRes.credential?.idToken
-                        );
-                        await signInWithCredential(firebaseAuth, credential);
-                    } catch (error) {
-                        log.debug('googleLogin::signInWithCredential::web::error', error);
-                    }
-                }
-
-                // AuthCoordinator auto-handles key derivation when firebaseUser changes
-            }
+            await adapter.signInWithGoogle();
+            authStore.set.typeOfLogin(SocialLoginTypes.google);
+            void logAnalyticsEvent('login', { method: SocialLoginTypes.google });
         } catch (error) {
-            const errorCode = error?.code;
-            const errorMessage = error?.message;
-
+            const { code: errorCode, message: errorMessage } = authError(error);
             if (
                 errorCode === 'auth/popup-closed-by-user' ||
                 errorCode === 'auth/network-request-failed' ||
@@ -120,7 +74,6 @@ export const useFirebase = () => {
                 );
                 return;
             }
-
             if (errorCode === 'auth/popup-blocked') {
                 log.warn(`googleLogin popup blocked (${errorCode ?? 'unknown'})`, error);
                 presentGoogleHelpModal(
@@ -128,7 +81,6 @@ export const useFirebase = () => {
                 );
             } else if (errorCode === 'auth/cancelled-popup-request') {
                 log.warn(`googleLogin cancelled (${errorCode ?? 'unknown'})`, error);
-                return;
             } else {
                 log.error(`googleLogin failed (${errorCode ?? 'unknown'})`, error);
                 if (errorMessage) presentGoogleHelpModal(errorMessage);
@@ -136,255 +88,90 @@ export const useFirebase = () => {
         }
     };
 
-    const sendSignInLink = async (email: string) => {
-        if (Capacitor.isNativePlatform()) {
-            FirebaseAuthentication.sendSignInLinkToEmail({
-                email,
-                actionCodeSettings: {
-                    // URL you want to redirect back to. The domain (www.example.com) for this
-                    // URL must be in the authorized domains list in the Firebase Console.
-                    url: `https://${FIREBASE_REDIRECT_URL}/login`,
-                    // This must be true.
-                    handleCodeInApp: true,
-                    iOS: {
-                        bundleId: 'org.scoutpass.app',
-                    },
-                    android: {
-                        packageName: 'org.scoutpass.app',
-                        installApp: true,
-                        minimumVersion: '12',
-                    },
-                    dynamicLinkDomain: 'pass.scout.org',
-                },
+    const sendSignInLink = async (email: string): Promise<void> => {
+        // Preserve the fire-and-forget form interaction and toast feedback.
+        void adapter
+            .sendEmailLink(email)
+            .then(() => {
+                presentToast(m['login.linkSent'](), {
+                    type: ToastTypeEnum.Success,
+                    hasDismissButton: true,
+                });
             })
-                .then(res => {
-                    // The link was successfully sent. Inform the user.
-                    // Save the email locally so you don't need to ask the user for it again
-                    // if they open the link on the same device.
-                    window.localStorage.setItem('emailForSignIn', email);
-                    presentToast(m['login.linkSent'](), {
-                        type: ToastTypeEnum.Success,
-                        hasDismissButton: true,
-                    });
-                })
-                .catch(error => {
-                    log.error('sendSignInLinkToEmail::error', error);
-                    presentToast(m['login.linkSendError'](), {
-                        type: ToastTypeEnum.Error,
-                        hasDismissButton: true,
-                    });
+            .catch(error => {
+                log.error('sendSignInLinkToEmail::error', error);
+                presentToast(m['login.linkSendError'](), {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
                 });
-        } else {
-            const actionCodeSettings = {
-                // URL you want to redirect back to. The domain (www.example.com) for this
-                // URL must be in the authorized domains list in the Firebase Console.
-                url:
-                    IS_PRODUCTION || Capacitor.getPlatform() === 'android'
-                        ? `https://${FIREBASE_REDIRECT_URL}/login`
-                        : 'http://localhost:3000/login',
-                // This must be true.
-                handleCodeInApp: true,
-            };
-            sendSignInLinkToEmail(auth(), email, actionCodeSettings)
-                .then(() => {
-                    window.localStorage.setItem('emailForSignIn', email);
-                    presentToast(m['login.linkSent'](), {
-                        type: ToastTypeEnum.Success,
-                        hasDismissButton: true,
-                    });
-                })
-                .catch(error => {
-                    log.error('sendSignInLinkToEmail::error', error);
-                    presentToast(m['login.linkSendError'](), {
-                        type: ToastTypeEnum.Error,
-                        hasDismissButton: true,
-                    });
-                });
-        }
+            });
     };
 
-    const verifySignInLinkAndLogin = async (email: string, authLink: string) => {
+    const verifySignInLinkAndLogin = async (email: string, authLink: string): Promise<void> => {
         if (!email || !authLink) return;
-
-        const firebaseAuth = auth();
-
-        if (!firebaseAuth) return;
-
-        if (Capacitor.isNativePlatform()) {
-            // Get the email if available. This should be available if the user completes
-            // the flow on the same device where they started it.
-            const emailLink = authLink;
-
-            try {
-                // Confirm the link is a sign-in with email link.
-                const { isSignInWithEmailLink } =
-                    await FirebaseAuthentication.isSignInWithEmailLink({
-                        emailLink,
-                    });
-                const email = window.localStorage.getItem('emailForSignIn');
-
-                if (isSignInWithEmailLink && email) {
-                    // Sign in on web layer
-                    const credential = EmailAuthProvider.credentialWithLink(email, emailLink);
-                    const { user } = await signInWithCredential(firebaseAuth, credential);
-
-                    if (user) {
-                        const token = await user.getIdToken();
-
-                        if (token) {
-                            // Clear email from storage.
-                            localStorage.removeItem('emailForSignIn');
-                            authStore.set.typeOfLogin(SocialLoginTypes.passwordless);
-                            logAnalyticsEvent('login', { method: SocialLoginTypes.passwordless });
-                            firebaseAuthStore.set.firebaseAuth(FirebaseAuthentication);
-
-                            // AuthCoordinator auto-handles key derivation when firebaseUser changes
-                        }
-                    }
-                }
-            } catch (error) {
-                const errorCode = error?.code;
-                const errorMessage = error?.message;
-
-                log.error(`firebase auth failed (${errorCode ?? 'unknown'})`, error);
-                if (errorMessage) presentAlert(errorMessage);
-            }
-        } else {
-            try {
-                const _isSigninWithEmailLink: boolean =
-                    isSignInWithEmailLink(firebaseAuth, window.location.href) && !!email;
-                if (_isSigninWithEmailLink) {
-                    const result = await signInWithEmailLink(
-                        firebaseAuth,
-                        email,
-                        window.location.href
-                    );
-                    const token = await result.user.getIdToken(true);
-                    const user = result?.user;
-                    logAnalyticsEvent('login', { method: SocialLoginTypes.passwordless });
-
-                    if (token) {
-                        // AuthCoordinator auto-handles key derivation when firebaseUser changes
-                        localStorage.removeItem('emailForSignIn');
-                    }
-                }
-            } catch (error) {
-                const errorCode = error?.code;
-                const errorMessage = error?.message;
-
-                log.error(`firebase auth failed (${errorCode ?? 'unknown'})`, error);
-                if (errorMessage) presentAlert(errorMessage);
-            }
+        const native = Capacitor.isNativePlatform();
+        const link = native ? authLink : window.location.href;
+        const loginEmail = native ? window.localStorage.getItem('emailForSignIn') : email;
+        try {
+            if (!loginEmail || !(await adapter.validateEmailLink(link))) return;
+            await adapter.verifyEmailLink(loginEmail, link);
+            if (native) authStore.set.typeOfLogin(SocialLoginTypes.passwordless);
+            void logAnalyticsEvent('login', { method: SocialLoginTypes.passwordless });
+        } catch (error) {
+            const { code, message } = authError(error);
+            log.error(`firebase auth failed (${code ?? 'unknown'})`, error);
+            if (message) void presentAlert(message);
         }
     };
 
     const sendSmsAuthCode = async (
         phoneNumber: string,
-        successCallback: any,
-        errorCallback: any
-    ) => {
-        const firebaseAuth = auth();
-
-        if (!firebaseAuth) return;
-
-        // ! https://firebase.google.com/docs/auth/web/phone-auth#integration-testing
-        // ! Only fictional phone numbers can be used when testing locally
-
-        destroyRecaptcha();
-        await ensureRecaptcha(firebaseAuth);
-
-        // send sms auth code
-        signInWithPhoneNumber(firebaseAuth, phoneNumber, window.recaptchaVerifier)
-            .then(confirmationResult => {
-                window.confirmationResult = confirmationResult;
-                successCallback();
-            })
-            .catch(error => {
-                destroyRecaptcha();
-                const errorCode = error?.code;
-                const errorMessage = error?.message;
-
-                errorCallback(errorCode);
-
-                log.error(`firebase auth failed (${errorCode ?? 'unknown'})`, error);
-            });
+        successCallback: SuccessCallback,
+        errorCallback: ErrorCallback
+    ): Promise<void> => {
+        try {
+            await adapter.sendPhoneOtp(phoneNumber);
+            successCallback();
+        } catch (error) {
+            const { code } = authError(error);
+            errorCallback(code === undefined ? '' : String(code));
+            log.error(`firebase auth failed (${code ?? 'unknown'})`, error);
+        }
     };
 
     const loginAfterAutoVerifiedSMS = async (
-        verificationCode: string,
-        successCallback: any,
-        errorCallback: any
-    ) => {
-        const firebaseAuth = auth();
-
-        if (!firebaseAuth) return;
-
-        // This has to happen before web3auth init because of a race condition when autoverifying the user,
-        // where it will try to login on native before we are able to login here, so this needs to happen first.
-        let user;
+        verificationCode: string | undefined,
+        successCallback: SuccessCallback,
+        errorCallback: ErrorCallback
+    ): Promise<void> => {
         try {
-            const verificationId = authStore.get.verificationId();
-
-            const credential = PhoneAuthProvider.credential(
-                verificationId || '', // verificationId stored in local storage
-                verificationCode || '' // verification code passed in from the phoneVerificationCompleted event
-            );
-
-            const res = await signInWithCredential(firebaseAuth, credential);
-            user = res?.user;
+            // Complete the web-layer session before the coordinator derives keys.
+            await adapter.confirmPhoneOtp(verificationCode || '');
         } catch (error) {
             log.debug('googleLogin::verifySmsAuthCodeOnNative::web::error', error);
-            errorCallback(error?.message);
-        }
-
-        if (!user) {
+            errorCallback(authError(error).message ?? '');
             errorCallback('Verification code could not be verified');
             return;
         }
-
-        try {
-            if (user) {
-                // get current firebase user idToken
-                const token = await user.getIdToken();
-                firebaseAuthStore.set.firebaseAuth(FirebaseAuthentication);
-
-                if (token) {
-                    successCallback();
-                    authStore.set.typeOfLogin(SocialLoginTypes.sms);
-                    logAnalyticsEvent('login', { method: SocialLoginTypes.sms });
-                    // AuthCoordinator auto-handles key derivation when authUser changes
-                }
-            }
-        } catch (error) {
-            log.debug('googleLogin::verifySmsAuthCodeOnNative::web::error', error);
-            errorCallback(error?.message);
-        }
+        successCallback();
+        authStore.set.typeOfLogin(SocialLoginTypes.sms);
+        void logAnalyticsEvent('login', { method: SocialLoginTypes.sms });
     };
 
     const verifySmsAuthCode = async (
         code: string | number,
-        successCallback: any,
-        errorCallback: any
-    ) => {
+        successCallback: SuccessCallback,
+        errorCallback: ErrorCallback
+    ): Promise<void> => {
         try {
-            const result = await window?.confirmationResult?.confirm(code);
-            const user = result?.user;
-            const token = await result?.user?.getIdToken(true);
+            await adapter.confirmPhoneOtp(code);
             authStore.set.typeOfLogin(SocialLoginTypes.sms);
-            logAnalyticsEvent('login', { method: SocialLoginTypes.sms });
-
-            if (token) {
-                successCallback();
-                // AuthCoordinator auto-handles key derivation when firebaseUser changes
-            }
+            void logAnalyticsEvent('login', { method: SocialLoginTypes.sms });
+            successCallback();
         } catch (error) {
-            const errorCode = error?.code;
-            const errorMessage = error?.message;
-
-            errorCallback(errorCode);
-
+            const { code: errorCode } = authError(error);
+            errorCallback(errorCode === undefined ? '' : String(errorCode));
             log.error(`firebase auth failed (${errorCode ?? 'unknown'})`, error);
-
             if (errorCode === 5111) {
                 presentToast(m['login.refreshToFix'](), {
                     type: ToastTypeEnum.Error,
@@ -395,223 +182,87 @@ export const useFirebase = () => {
     };
 
     const verifySmsAuthCodeOnNative = async (
-        verificationId: string | null,
         verificationCode: string | number,
-        successCallback: any,
-        errorCallback: any
-    ) => {
-        const firebaseAuth = auth();
-
-        if (!firebaseAuth) return;
-
+        successCallback: SuccessCallback,
+        errorCallback: ErrorCallback
+    ): Promise<void> => {
         try {
-            // sign in on web layer
-            const credential = PhoneAuthProvider.credential(
-                verificationId || '',
-                verificationCode || ''
-            );
-            const res = await signInWithCredential(firebaseAuth, credential);
-            const user = res?.user;
-            if (user) {
-                // get current firebase user idToken
-                const token = await res.user.getIdToken();
-                firebaseAuthStore.set.firebaseAuth(FirebaseAuthentication);
-                authStore.set.typeOfLogin(SocialLoginTypes.sms);
-                logAnalyticsEvent('login', { method: SocialLoginTypes.sms });
-
-                if (token) {
-                    successCallback();
-                    authStore.set.typeOfLogin(SocialLoginTypes.sms);
-                    // AuthCoordinator auto-handles key derivation when firebaseUser changes
-                }
-            }
+            await adapter.confirmPhoneOtp(verificationCode || '');
+            authStore.set.typeOfLogin(SocialLoginTypes.sms);
+            void logAnalyticsEvent('login', { method: SocialLoginTypes.sms });
+            successCallback();
         } catch (error) {
             log.debug('googleLogin::verifySmsAuthCodeOnNative::web::error', error);
-            errorCallback(error?.message);
+            errorCallback(authError(error).message ?? '');
         }
     };
 
-    const appleLogin = async () => {
-        const firebaseAuth = auth();
-
-        if (!firebaseAuth) return;
-
-        if (Capacitor.isNativePlatform()) {
-            try {
-                let signInWithAppleResult = await FirebaseAuthentication.signInWithApple({
-                    skipNativeAuth: true,
-                });
-
-                // sign in on web-layer
-                const provider = new OAuthProvider('apple.com');
-                const credential = provider.credential({
-                    idToken: signInWithAppleResult.credential?.idToken,
-                    rawNonce: signInWithAppleResult.credential?.nonce,
-                });
-                await signInWithCredential(firebaseAuth, credential);
-            } catch (error) {
-                const errorCode = error?.code;
-                const errorMessage = error?.message;
-
-                // user cancelled apple login
+    const appleLogin = async (): Promise<void> => {
+        try {
+            await adapter.signInWithApple();
+            authStore.set.typeOfLogin(SocialLoginTypes.apple);
+            if (!Capacitor.isNativePlatform())
+                void logAnalyticsEvent('login', { method: SocialLoginTypes.apple });
+        } catch (error) {
+            const { code: errorCode, message: errorMessage } = authError(error);
+            if (Capacitor.isNativePlatform()) {
                 if (errorMessage?.includes('1001')) {
                     log.warn(`appleLogin cancelled (${errorCode ?? 'unknown'})`, error);
                 } else {
                     log.error(`appleLogin failed (${errorCode ?? 'unknown'})`, error);
-                    if (errorMessage) presentAlert(errorMessage);
+                    if (errorMessage) void presentAlert(errorMessage);
                 }
-            }
-
-            // get current logged in user
-            const user = firebaseAuth.currentUser;
-
-            if (user) {
-                // get current firebase user idToken
-                authStore.set.typeOfLogin(SocialLoginTypes.apple);
-                firebaseAuthStore.set.firebaseAuth(FirebaseAuthentication);
-
-                const token = await user.getIdToken();
-
-                if (token) {
-                    // AuthCoordinator auto-handles key derivation when firebaseUser changes
-                }
-            }
-        } else {
-            try {
-                const provider = new OAuthProvider('apple.com');
-
-                const result = await signInWithPopup(firebaseAuth, provider);
-                if (!result) {
-                    return;
-                }
-
-                const credential = OAuthProvider.credentialFromResult(result);
-                const user = result?.user;
-
-                if (credential && user) {
-                    const token = await user.getIdToken(true);
-                    authStore.set.typeOfLogin(SocialLoginTypes.apple);
-                    logAnalyticsEvent('login', { method: SocialLoginTypes.apple });
-
-                    if (token) {
-                        // AuthCoordinator auto-handles key derivation when authUser changes
-                    }
-                }
-            } catch (error) {
-                // Handle Errors here.
-                const errorCode = error?.code;
-                const errorMessage = error?.message;
-
-                const credential = OAuthProvider.credentialFromError(error);
-
-                if (errorCode === 'auth/popup-blocked') {
-                    log.warn(`appleLogin popup blocked (${errorCode ?? 'unknown'})`, error);
-                    presentAlert(m['login.popupsBlocked']());
-                } else if (
-                    errorCode === 'auth/cancelled-popup-request' ||
-                    errorCode === 'auth/popup-closed-by-user'
-                ) {
-                    log.warn(`appleLogin cancelled (${errorCode ?? 'unknown'})`, error);
-                    return;
-                } else {
-                    log.error(`appleLogin failed (${errorCode ?? 'unknown'})`, error);
-                    if (errorMessage) presentAlert(errorMessage);
-                }
+                if (adapter.getCurrentUser()) authStore.set.typeOfLogin(SocialLoginTypes.apple);
+            } else if (errorCode === 'auth/popup-blocked') {
+                log.warn(`appleLogin popup blocked (${errorCode ?? 'unknown'})`, error);
+                void presentAlert(m['login.popupsBlocked']());
+            } else if (
+                errorCode === 'auth/cancelled-popup-request' ||
+                errorCode === 'auth/popup-closed-by-user'
+            ) {
+                log.warn(`appleLogin cancelled (${errorCode ?? 'unknown'})`, error);
+            } else {
+                log.error(`appleLogin failed (${errorCode ?? 'unknown'})`, error);
+                if (errorMessage) void presentAlert(errorMessage);
             }
         }
     };
 
-    const verifyAppleLogin = async () => {
-        const firebaseAuth = auth();
-
-        if (!firebaseAuth) return;
-
-        if (!Capacitor.isNativePlatform()) {
-            try {
-                const result = await getRedirectResult(firebaseAuth);
-                if (!result) {
-                    return;
-                }
-                const credential = OAuthProvider.credentialFromResult(result);
-                const user = result?.user;
-                if (credential) {
-                    const token = await result.user.getIdToken(true);
-                    authStore.set.typeOfLogin(SocialLoginTypes.apple);
-                    logAnalyticsEvent('login', { method: SocialLoginTypes.apple });
-
-                    if (token) {
-                        // AuthCoordinator auto-handles key derivation when authUser changes
-                    }
-                }
-            } catch (error) {
-                const errorCode = error?.code;
-                const errorMessage = error?.message;
-
-                log.error(`firebase auth failed (${errorCode ?? 'unknown'})`, error);
-
-                if (errorMessage) presentAlert(errorMessage);
-
-                // The credential that was used.
-                const credential = OAuthProvider.credentialFromError(error);
-            }
-        }
-    };
-
-    const signInWithCustomFirebaseToken = async (customToken: string) => {
-        const firebaseAuth = auth();
-
-        if (!firebaseAuth) return;
-
+    const verifyAppleLogin = async (): Promise<void> => {
+        if (Capacitor.isNativePlatform()) return;
         try {
-            const result = await signInWithCustomToken(auth(), customToken);
-            const token = await result?.user.getIdToken();
-            const user = result?.user;
-
-            if (token) {
-                authStore.set.typeOfLogin(SocialLoginTypes.scoutsSSO);
-                firebaseAuthStore.set.firebaseAuth(FirebaseAuthentication);
-
-                logAnalyticsEvent('login', { method: SocialLoginTypes.scoutsSSO });
-
-                // AuthCoordinator auto-handles key derivation when authUser changes
-            }
+            if (!(await adapter.checkRedirectResult?.())) return;
+            authStore.set.typeOfLogin(SocialLoginTypes.apple);
+            void logAnalyticsEvent('login', { method: SocialLoginTypes.apple });
         } catch (error) {
-            const errorCode = (error as any)?.code;
-            const errorMessage = (error as any)?.message;
-            log.error(`firebase auth failed (${errorCode ?? 'unknown'})`, error);
-
-            if (errorMessage) presentAlert(errorMessage as any);
+            const { code, message } = authError(error);
+            log.error(`firebase auth failed (${code ?? 'unknown'})`, error);
+            if (message) void presentAlert(message);
         }
     };
 
-    const signInWithCustomOAuthProvider = async (token: string) => {
-        const firebaseAuth = auth();
-
-        if (!firebaseAuth) return;
-
+    const signInWithCustomFirebaseToken = async (customToken: string): Promise<void> => {
         try {
-            const provider = new OAuthProvider('oidc.keycloak-world-scouts-sso');
-            const credential = provider.credential({ idToken: token });
-
-            const result = await signInWithCredential(auth(), credential);
-
-            const user = result?.user;
-            const idToken = await user?.getIdToken();
-
-            if (idToken) {
-                authStore.set.typeOfLogin(SocialLoginTypes.scoutsSSO);
-                firebaseAuthStore.set.firebaseAuth(FirebaseAuthentication);
-
-                logAnalyticsEvent('login', { method: SocialLoginTypes.scoutsSSO });
-
-                // AuthCoordinator auto-handles key derivation when authUser changes
-            }
+            await adapter.signInWithCustomToken(customToken);
+            authStore.set.typeOfLogin(SocialLoginTypes.scoutsSSO);
+            void logAnalyticsEvent('login', { method: SocialLoginTypes.scoutsSSO });
         } catch (error) {
-            const errorCode = (error as any)?.code;
-            const errorMessage = (error as any)?.message;
-            log.error(`firebase auth failed (${errorCode ?? 'unknown'})`, error);
+            const { code, message } = authError(error);
+            log.error(`firebase auth failed (${code ?? 'unknown'})`, error);
+            if (message) void presentAlert(message);
+        }
+    };
 
-            if (errorMessage) presentAlert(errorMessage as any);
+    const signInWithCustomOAuthProvider = async (token: string): Promise<void> => {
+        try {
+            if (!adapter.signInWithOidcCredential) throw new Error('SSO sign-in is not available');
+            await adapter.signInWithOidcCredential('oidc.keycloak-world-scouts-sso', token);
+            authStore.set.typeOfLogin(SocialLoginTypes.scoutsSSO);
+            void logAnalyticsEvent('login', { method: SocialLoginTypes.scoutsSSO });
+        } catch (error) {
+            const { code, message } = authError(error);
+            log.error(`firebase auth failed (${code ?? 'unknown'})`, error);
+            if (message) void presentAlert(message);
         }
     };
 

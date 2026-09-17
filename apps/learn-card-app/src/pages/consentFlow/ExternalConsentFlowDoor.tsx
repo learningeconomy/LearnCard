@@ -3,7 +3,6 @@ import { getLogger } from 'learn-card-base';
 const log = getLogger('external-consent-flow-door');
 
 import queryString from 'query-string';
-import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { Capacitor } from '@capacitor/core';
 
 import { useHistory, useLocation } from 'react-router-dom';
@@ -28,7 +27,7 @@ import {
     useModal,
 } from 'learn-card-base';
 import { SocialLoginTypes } from 'learn-card-base/hooks/useSocialLogins';
-import { auth } from '../../firebase/firebase';
+import { useSignInAdapter } from 'learn-card-base';
 import { getLoginRedirectUrl } from '../../config/bootstrapTenantConfig';
 import { openPP, openToS } from '../../helpers/externalLinkHelpers';
 import { m } from '../../paraglide/messages.js';
@@ -63,7 +62,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
 
     const history = useHistory();
     const location = useLocation();
-    const firebaseAuth = auth();
+    const adapter = useSignInAdapter();
     const queryClient = useQueryClient();
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
@@ -94,7 +93,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
         data: contractDetails,
         isPending,
         error,
-    } = useContract(Array.isArray(uri) ? uri[0] ?? '' : uri ?? '');
+    } = useContract(Array.isArray(uri) ? (uri[0] ?? '') : (uri ?? ''));
 
     useEffect(() => {
         const errorType = error?.shape?.data?.httpStatus;
@@ -220,14 +219,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                 await pushUtilities.revokePushToken(initWallet, deviceToken);
             }
 
-            await firebaseAuth.signOut(); // sign out of web layer
-            if (nativeSocialLogins.includes(typeOfLogin) && Capacitor.isNativePlatform()) {
-                try {
-                    await FirebaseAuthentication?.signOut?.();
-                } catch (e) {
-                    log.info('firebase::signout::error', e);
-                }
-            }
+            await adapter.signOut();
 
             resumeBuilderStore.set.resetStore();
             await coordinatorLogout();

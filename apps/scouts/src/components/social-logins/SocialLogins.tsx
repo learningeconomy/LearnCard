@@ -4,7 +4,7 @@ import { IonRow } from '@ionic/react';
 import useSocialLogins, { SocialLoginTypes } from 'learn-card-base/hooks/useSocialLogins';
 
 import { LoginTypesEnum } from 'learn-card-base/helpers/loginHelpers';
-import { BrandingEnum } from 'learn-card-base';
+import { BrandingEnum, useSignInAdapter } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
 
 export const SocialLogins: React.FC<{
@@ -25,8 +25,14 @@ export const SocialLogins: React.FC<{
     extraSocialLogins = [],
 }) => {
     const socialLogins = useSocialLogins(branding);
+    const adapter = useSignInAdapter();
 
-    const _socialLogins = [...socialLogins, ...extraSocialLogins];
+    const _socialLogins = [...socialLogins, ...extraSocialLogins].filter(login => {
+        if (login.type === SocialLoginTypes.google) return adapter.capabilities.google;
+        if (login.type === SocialLoginTypes.apple) return adapter.capabilities.apple;
+        return adapter.capabilities.social;
+    });
+    if (!adapter.capabilities.social || !_socialLogins.length) return null;
 
     return (
         <IonRow className="w-full max-w-[600px] px-6 flex items-center justify-center social-logins-container">

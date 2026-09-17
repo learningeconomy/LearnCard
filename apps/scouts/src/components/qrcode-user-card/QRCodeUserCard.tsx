@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
+import { RouteComponentProps } from 'react-router-dom';
 import * as m from '../../paraglide/messages.js';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { QRCodeSVG } from 'qrcode.react';
-import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 
-import { auth } from '../../firebase/firebase';
 import { Clipboard } from '@capacitor/clipboard';
 import {
     useWallet,
@@ -46,11 +45,10 @@ const log = getLogger('qr-code-user-card');
 const QrCodeUserCard: React.FC<{
     handleQRCodeCardModal: () => void;
     branding: BrandingEnum;
-    history: any;
+    history: RouteComponentProps['history'];
     qrOnly?: boolean;
 }> = ({ handleQRCodeCardModal, branding, history, qrOnly = false }) => {
     const { initWallet } = useWallet();
-    const firebaseAuth = auth();
     const currentUser = useCurrentUser();
     const { clearDB } = useSQLiteStorage();
     const { presentToast } = useToast();

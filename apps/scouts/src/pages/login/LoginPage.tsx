@@ -26,6 +26,7 @@ import { IonCol, IonContent, IonGrid, IonPage, IonRow } from '@ionic/react';
 import ScoutsSSOLogin from './ScoutsSSO/ScoutSSOLogin';
 import SocialLogins from '../../components/social-logins/SocialLogins';
 import EmailForm from './forms/EmailForm';
+import { useSignInAdapter } from 'learn-card-base';
 import PhoneForm from './forms/PhoneForm';
 import LoginFooter from './LoginFooter';
 import WorldScoutsIcon from '../../assets/images/world-scouts-icon.svg';
@@ -45,6 +46,7 @@ import { LanguagePickerCompact } from '../../components/sidemenu/LanguagePicker'
 const log = getLogger('login-page');
 
 const LoginPage: React.FC = () => {
+    const adapter = useSignInAdapter();
     const flags = useFlags();
     const { initWallet } = useWallet();
     const currentUser = useCurrentUser();
@@ -84,7 +86,7 @@ const LoginPage: React.FC = () => {
                             ...currentUser,
                             profileImage:
                                 currentUserLCProfile?.image ?? currentUser?.profileImage ?? '',
-                        } as any);
+                        });
                     }
 
                     history.push(redirect);
@@ -129,9 +131,12 @@ const LoginPage: React.FC = () => {
 
     let LoginTypeForm: React.ReactNode | null = null;
 
-    if (activeLoginType === LoginTypesEnum.email) {
+    if (
+        activeLoginType === LoginTypesEnum.email &&
+        (adapter.capabilities.emailOtp || adapter.capabilities.emailLink)
+    ) {
         LoginTypeForm = <EmailForm />;
-    } else if (activeLoginType === LoginTypesEnum.phone) {
+    } else if (activeLoginType === LoginTypesEnum.phone && adapter.capabilities.phoneOtp) {
         LoginTypeForm = <PhoneForm />;
     } else if (activeLoginType === LoginTypesEnum.scoutsSSO) {
         LoginTypeForm = <ScoutsSSOLogin />;
@@ -315,19 +320,26 @@ const LoginPage: React.FC = () => {
                                         </button>
                                     )}
 
-                                    <button
-                                        aria-label={m['login.accessibility.emailLogin']()}
-                                        className={`flex items-center justify-center border-solid border-2 p-2 bg-[#0094F6] rounded-full mr-2 h-[50px] w-[50px] max-w-[50px] max-h-[50px] z-[9999] ${
-                                            activeLoginType === LoginTypesEnum.email
-                                                ? activeLoginTypeStyles
-                                                : 'border-gray-100'
-                                        }`}
-                                        onClick={() => setActiveLoginType(LoginTypesEnum.email)}
-                                    >
-                                        <img src={EmailIcon} alt="" className="w-[30px] h-[30px]" />
-                                    </button>
+                                    {(adapter.capabilities.emailOtp ||
+                                        adapter.capabilities.emailLink) && (
+                                        <button
+                                            aria-label={m['login.accessibility.emailLogin']()}
+                                            className={`flex items-center justify-center border-solid border-2 p-2 bg-[#0094F6] rounded-full mr-2 h-[50px] w-[50px] max-w-[50px] max-h-[50px] z-[9999] ${
+                                                activeLoginType === LoginTypesEnum.email
+                                                    ? activeLoginTypeStyles
+                                                    : 'border-gray-100'
+                                            }`}
+                                            onClick={() => setActiveLoginType(LoginTypesEnum.email)}
+                                        >
+                                            <img
+                                                src={EmailIcon}
+                                                alt=""
+                                                className="w-[30px] h-[30px]"
+                                            />
+                                        </button>
+                                    )}
 
-                                    {enableSmsLogin && (
+                                    {enableSmsLogin && adapter.capabilities.phoneOtp && (
                                         <button
                                             aria-label={m['login.accessibility.phoneLogin']()}
                                             className={`flex items-center justify-center border-solid border-2 p-2 bg-[#0094F6] rounded-full mr-2 h-[50px] w-[50px] max-w-[50px] max-h-[50px] z-[9999] ${

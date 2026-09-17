@@ -1,10 +1,16 @@
 import React, { useState } from 'react';
-import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { Capacitor } from '@capacitor/core';
 import authStore from 'learn-card-base/stores/authStore';
 import { SocialLoginTypes } from 'learn-card-base/hooks/useSocialLogins';
 import { LOGIN_REDIRECTS } from 'learn-card-base/constants/redirects';
-import { BrandingEnum, useToast, ToastTypeEnum, useModal, ModalTypes } from 'learn-card-base';
+import {
+    BrandingEnum,
+    useToast,
+    ToastTypeEnum,
+    useModal,
+    ModalTypes,
+    useSignInAdapter,
+} from 'learn-card-base';
 import { pushUtilities } from 'learn-card-base';
 import { useWallet } from 'learn-card-base';
 import LoggingOutModal from '../components/auth/LoggingOutModal';
@@ -15,6 +21,7 @@ import { getLogger } from 'learn-card-base';
 const log = getLogger('use-logout');
 
 const useLogout = () => {
+    const adapter = useSignInAdapter();
     const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
     const { logout: coordinatorLogout } = useAuthCoordinator();
     const { initWallet } = useWallet();
@@ -37,14 +44,6 @@ const useLogout = () => {
             }
         );
 
-        const typeOfLogin = authStore?.get?.typeOfLogin();
-        const nativeSocialLogins = [
-            SocialLoginTypes.apple,
-            SocialLoginTypes.sms,
-            SocialLoginTypes.passwordless,
-            SocialLoginTypes.google,
-        ];
-
         const redirectUrl =
             IS_PRODUCTION || Capacitor.getPlatform() === 'android'
                 ? LOGIN_REDIRECTS[branding].redirectUrl
@@ -61,20 +60,9 @@ const useLogout = () => {
                     }
                 }
 
-                // Native Firebase sign-out for Capacitor social logins
-                // (web Firebase sign-out is handled by the coordinator via authProvider.signOut)
-                if (
-                    typeOfLogin &&
-                    nativeSocialLogins.includes(typeOfLogin) &&
-                    Capacitor.isNativePlatform()
-                ) {
-                    try {
-                        await FirebaseAuthentication?.signOut?.();
-                    } catch (e) {
-                        log.debug('firebase::signout::error', e);
-                    }
-                }
-
+                // A cached-key session can have no coordinator auth provider but still
+                // have a native session. Always sign out the registered adapter too.
+                await adapter.signOut();
                 // Coordinator handles: authProvider.signOut, clearLocalKeys, onLogout callback
                 // (onLogout clears stores, queryClient, SQLite, localStorage, IndexedDB, etc.)
                 await coordinatorLogout();
