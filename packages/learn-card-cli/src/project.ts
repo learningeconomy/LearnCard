@@ -194,6 +194,16 @@ export const createPrompts = (yes?: boolean) => {
 };
 
 export const ensureIdentity = async (project: Project, options: ProjectOptions) => {
+    if (
+        project.env.PROFILE_ID &&
+        options.profileId &&
+        options.profileId !== project.env.PROFILE_ID
+    ) {
+        throw new Error(
+            `This folder's .env is already the profile "${project.env.PROFILE_ID}"; --profile-id ${options.profileId} would not change that. ` +
+                `To act as a profile you manage from here, use --as ${options.profileId}. To create a separate identity, run from a new folder.`
+        );
+    }
     const existingProfileId = project.env.PROFILE_ID || options.profileId;
     let displayName = options.name ?? project.env.DISPLAY_NAME ?? '';
     if (!existingProfileId && !displayName) {
@@ -398,6 +408,30 @@ export const connectAsDidWeb = async (
         ...(services.cloud && { cloud: { url: services.cloud } }),
         ...(options.didkit && { didkit: options.didkit }),
     });
+};
+
+export const connectAsManaged = async (
+    project: Project,
+    options: ProjectOptions,
+    managedProfileId: string
+): Promise<DidWebCard> => {
+    const managerDid = project.env.ORG_PROFILE_MANAGER_DID;
+    if (!managerDid) {
+        throw new Error(
+            `--as ${managedProfileId} needs a profile manager in this folder. Run \`org apply\` with a profileManager section first.`
+        );
+    }
+    const manager = await connectAsDidWeb(project, options, managerDid);
+    let cursor: string | undefined;
+    do {
+        const page = await manager.invoke.getManagedProfiles({ limit: 100, cursor });
+        const match = page.records.find(record => record.profileId === managedProfileId);
+        if (match) return connectAsDidWeb(project, options, match.did);
+        cursor = page.hasMore ? (page.cursor ?? undefined) : undefined;
+    } while (cursor);
+    throw new Error(
+        `"${managedProfileId}" is not a profile managed from this folder. Add it under profileManager.managed in your org spec and run \`org apply\`.`
+    );
 };
 
 export const ensureProfile = async (

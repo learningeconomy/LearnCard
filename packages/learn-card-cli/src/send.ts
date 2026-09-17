@@ -3,6 +3,7 @@ import path from 'path';
 import { randomUUID } from 'node:crypto';
 import {
     connect,
+    connectAsManaged,
     createPrompts,
     ensureIdentity,
     ensureProfile,
@@ -54,6 +55,7 @@ export const templateCredential = (issuerDid: string, badge: Badge = DEFAULT_BAD
 };
 
 type SendOptions = ProjectOptions & {
+    as?: string;
     badge?: string;
     description?: string;
     template?: boolean;
@@ -197,11 +199,32 @@ export const runSend = async (
         prompts.close();
     }
     const identity = await ensureIdentity(project, { ...options, name: displayName, yes: true });
-    const useTemplate = options.template || !!options.templateUri;
-    const learnCard = useTemplate
-        ? await connect(project, { ...options, lca: true })
-        : await connect(project, options);
-    await ensureProfile(learnCard, identity, project);
+    const asManaged = options.as ? await connectAsManaged(project, options, options.as) : undefined;
+    const hostedSigning = !!project.env.SIGNING_AUTHORITY_NAME;
+    const explicitTemplate = options.templateUri ? true : options.template;
+    const useTemplate = !asManaged && (explicitTemplate ?? hostedSigning);
+    if (useTemplate && explicitTemplate === undefined) {
+        out.log(
+            `Signing through the registered signing authority "${project.env.SIGNING_AUTHORITY_NAME}" (pass --no-template to sign with the local key instead).`
+        );
+    }
+    if (asManaged && explicitTemplate) {
+        out.log("--as signs with the managed profile's key; --template is ignored.");
+    }
+    const learnCard = asManaged
+        ? asManaged
+        : useTemplate
+          ? await connect(project, { ...options, lca: true })
+          : await connect(project, options);
+    if (asManaged) {
+        const managed = await learnCard.invoke.getProfile();
+        if (!managed) throw new Error(`Could not sign in as managed profile "${options.as}".`);
+        out.log(
+            `Acting as "${managed.displayName}" (${managed.profileId}) — a profile you manage.`
+        );
+    } else {
+        await ensureProfile(learnCard, identity, project);
+    }
 
     const effectiveSendOptions = sendOptions(options);
     let result;
@@ -282,7 +305,8 @@ export const runSend = async (
     out.log(`Check whether it was claimed: npx @learncard/cli status ${result.activityId}`);
     out.log(`See it in the app: npx @learncard/cli open${options.template ? ' template' : ''}`);
     out.set({
-        profileId: identity.profileId,
+        profileId: options.as ?? identity.profileId,
+        ...(options.as && { onBehalfOf: identity.profileId }),
         did: learnCard.id.did(),
         recipient: recipientEmail,
         status: result.inbox?.status === 'PENDING' ? 'PENDING' : 'ISSUED',

@@ -348,7 +348,15 @@ program
         'public handle for your profile (default: derived from the display name)'
     )
     .option('--network <url>', 'network tRPC URL (default: production)')
-    .option('--template', 'send using a reusable template and hosted signing authority')
+    .option(
+        '--as <profileId>',
+        'send as a profile you manage (from `org apply`), signed with its did:web'
+    )
+    .option(
+        '--template',
+        'send using a reusable template and hosted signing authority (default once setup-signing or org apply has run)'
+    )
+    .option('--no-template', 'sign with the local key even if a signing authority is registered')
     .option('--template-uri <uri>', 'send from a specific template (implies --template)')
     .option('--webhook-url <url>', 'receive ISSUANCE_DELIVERED / ISSUANCE_CLAIMED at this URL')
     .option('--suppress-delivery', 'skip the claim email; you deliver inbox.claimUrl yourself')

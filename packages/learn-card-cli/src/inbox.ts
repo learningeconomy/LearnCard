@@ -5,7 +5,13 @@ import type {
     PaginationOptionsType,
 } from '@learncard/types';
 
-import { connect, loadProject, type NetworkCard, type ProjectOptions } from './project';
+import {
+    connect,
+    connectAsManaged,
+    loadProject,
+    type NetworkCard,
+    type ProjectOptions,
+} from './project';
 import { out } from './out';
 
 export interface InboxRecipient {
@@ -150,6 +156,7 @@ const formatRow = (record: SentInboxRecord): string => {
 };
 
 export type InboxListOptions = ProjectOptions & {
+    as?: string;
     status?: string;
     since?: string;
     recipientType?: string;
@@ -158,7 +165,9 @@ export type InboxListOptions = ProjectOptions & {
 
 export const runInboxList = async (options: InboxListOptions): Promise<void> => {
     const project = await loadProject(process.cwd());
-    const learnCard = await connect(project, options);
+    const learnCard = options.as
+        ? await connectAsManaged(project, options, options.as)
+        : await connect(project, options);
 
     const currentStatus = parseStatus(options.status);
     const limit = parseLimit(options.limit);
@@ -201,6 +210,7 @@ export const registerInboxCommand = (
     inbox
         .command('list')
         .description('List credentials you sent through the inbox.')
+        .option('--as <profileId>', 'list credentials sent by a profile you manage')
         .option('--status <status>', 'PENDING, ISSUED, or EXPIRED')
         .option(
             '--since <duration|iso>',
