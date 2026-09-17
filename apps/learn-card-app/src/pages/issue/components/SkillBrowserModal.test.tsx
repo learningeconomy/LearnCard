@@ -4,9 +4,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
     search: vi.fn(),
+    frameworkIds: ['framework-1', 'framework-2'],
 }));
 
 vi.mock('../../../helpers/globalSkillFrameworks.helpers', () => ({
+    useGlobalSkillFrameworks: () =>
+        mocks.frameworkIds.map(frameworkId => ({
+            frameworkId,
+            name: frameworkId,
+            defaultSkillIds: [],
+        })),
     useGlobalSemanticSearchSkills: (
         text: string,
         frameworkIds: string[],
@@ -51,17 +58,9 @@ const creativeThinkingRecord = {
     icon: 'lightbulb',
     type: 'competency',
     status: 'active',
-    frameworkId: 'framework-1',
+    frameworkId: 'framework-2',
     score: 0.95,
 };
-
-const frameworks = [
-    {
-        frameworkId: 'framework-1',
-        name: 'Framework 1',
-        defaultSkillIds: [],
-    },
-];
 
 describe('SkillBrowserModal search', () => {
     beforeEach(() => {
@@ -83,7 +82,6 @@ describe('SkillBrowserModal search', () => {
         const onAddSkill = vi.fn();
         render(
             <SkillBrowserModal
-                frameworks={frameworks}
                 selectedSkills={[]}
                 onAddSkill={onAddSkill}
                 onRemoveSkill={vi.fn()}
@@ -95,16 +93,18 @@ describe('SkillBrowserModal search', () => {
         fireEvent.change(searchInput, { target: { value: 'Creative Thinking' } });
         act(() => vi.advanceTimersByTime(300));
 
-        expect(mocks.search).toHaveBeenLastCalledWith('Creative Thinking', ['framework-1'], {
-            limit: 24,
-        });
+        expect(mocks.search).toHaveBeenLastCalledWith(
+            'Creative Thinking',
+            ['framework-1', 'framework-2'],
+            { limit: 24 }
+        );
         fireEvent.click(screen.getByRole('button', { name: /Creative Thinking/ }));
 
         expect(onAddSkill).toHaveBeenCalledWith(
             expect.objectContaining({
                 id: 'creative-thinking',
                 targetName: 'Creative Thinking',
-                frameworkId: 'framework-1',
+                frameworkId: 'framework-2',
             })
         );
 

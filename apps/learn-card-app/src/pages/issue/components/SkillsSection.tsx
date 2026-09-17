@@ -199,7 +199,6 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
     const openBrowser = useCallback(() => {
         newModal(
             <SkillBrowserModal
-                frameworks={frameworks}
                 selectedSkills={selectedSkills}
                 onAddSkill={handleAddSkill}
                 onRemoveSkill={handleRemoveSkill}
@@ -208,7 +207,7 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
             {},
             { mobile: ModalTypes.BottomSheet, desktop: ModalTypes.FullScreen }
         );
-    }, [newModal, closeModal, frameworks, selectedSkills, handleAddSkill, handleRemoveSkill]);
+    }, [newModal, closeModal, selectedSkills, handleAddSkill, handleRemoveSkill]);
 
     return (
         <section className={`${CARD_CLASS} space-y-4`}>

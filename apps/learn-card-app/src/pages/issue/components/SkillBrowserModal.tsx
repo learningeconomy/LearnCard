@@ -4,7 +4,7 @@ import { Search, X, Check, Plus, Loader2 } from 'lucide-react';
 import CompetencyIcon from '../../SkillFrameworks/CompetencyIcon';
 import {
     useGlobalSemanticSearchSkills,
-    type GlobalSkillFrameworkConfig,
+    useGlobalSkillFrameworks,
 } from '../../../helpers/globalSkillFrameworks.helpers';
 import useDebounce from '../../../hooks/useDebounce';
 import type { SkillFrameworkNode } from '../../../components/boost/boost';
@@ -21,7 +21,6 @@ import * as m from '../../../paraglide/messages.js';
 const SEARCH_DEBOUNCE_MS = 300;
 
 interface SkillBrowserModalProps {
-    frameworks: GlobalSkillFrameworkConfig[];
     selectedSkills: SelectedSkill[];
     onAddSkill: (skill: SkillFrameworkNode) => void;
     onRemoveSkill: (frameworkId: string, skillId: string) => void;
@@ -53,12 +52,12 @@ const SelectablePill: React.FC<{
 );
 
 export const SkillBrowserModal: React.FC<SkillBrowserModalProps> = ({
-    frameworks,
     selectedSkills,
     onAddSkill,
     onRemoveSkill,
     handleCloseModal,
 }) => {
+    const frameworks = useGlobalSkillFrameworks();
     const [query, setQuery] = useState('');
     const [debouncedQuery, setDebouncedQuery] = useState('');
     const [defaultsByFramework, setDefaultsByFramework] = useState<
