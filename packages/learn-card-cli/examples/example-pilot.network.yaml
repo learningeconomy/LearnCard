@@ -1,18 +1,18 @@
 issuer:
-    profileId: scde
-    displayName: South Carolina Department of Education
+    profileId: exde
+    displayName: Example Department of Education
     signingAuthority:
         type: learncard-hosted
-        name: scde-clr
+        name: exde-clr
 
 profileManager:
-    displayName: SC Districts
+    displayName: Example Districts
     managed:
-        - profileId: sc-greenville
-          displayName: Greenville County Schools
+        - profileId: cs-exampleville
+          displayName: Exampleville County Schools
 
 serviceAccounts:
-    - name: ea-clr-issuer
+    - name: ex-clr-issuer
       scopes: [inbox:write, inbox:read, credentials:write, credentials:read]
       expiresAt: 2027-06-30
 
