@@ -100,7 +100,7 @@ export const registerOrgCommand = (
         .option('--dry-run', 'preview changes without applying them')
         .option(
             '--secrets-out <path>',
-            'write created service-account tokens to this file (mode 0600)'
+            'write created service-account tokens to this file, e.g. ./secrets.env (mode 0600; keep it next to .env and out of git)'
         )
         .action(
             (

@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
+import path from 'node:path';
 import type { LCALearnCard } from '@learncard/lca-api-plugin';
-import { saveProject, type Project } from '../project';
+import { ensureGitignored, saveProject, type Project } from '../project';
 import { setupSigning } from '../setup-signing';
 import { out } from '../out';
 import type { OrgSpec } from './schema';
@@ -81,8 +82,10 @@ export const toEnvKey = (name: string): string => name.replace(/-/g, '_').toUppe
 
 /** Append a `NAME=token` line, creating the file with owner-only permissions if needed. */
 const writeSecret = async (secretsOut: string, name: string, token: string): Promise<void> => {
+    await fs.mkdir(path.dirname(secretsOut), { recursive: true });
     await fs.appendFile(secretsOut, `${toEnvKey(name)}=${token}\n`, { mode: 0o600 });
     await fs.chmod(secretsOut, 0o600);
+    await ensureGitignored(path.dirname(secretsOut), path.basename(secretsOut));
 };
 
 const applyIssuerProfile = async (
@@ -344,7 +347,7 @@ const applyServiceAccounts = async (
         }
         if (!secretsOut)
             throw new Error(
-                `Pass --secrets-out <path> to create service account "${account.name}" (its token can only be retrieved once).`
+                `Pass --secrets-out ./secrets.env (any path; keep it beside .env and out of git) to create service account "${account.name}" — its token can only be retrieved once.`
             );
         const grantId = await learnCard.invoke.addAuthGrant({
             name: account.name,

@@ -63,20 +63,6 @@ export const planPromotion = (
     return { fromNetwork, toNetwork, targetDir };
 };
 
-/**
- * Pure: on the target network the spec's service-account grants don't exist yet, so
- * `org apply` creating them (and writing fresh tokens to `--secrets-out`) IS the
- * rotation. Fail before any mutation rather than partially apply the spec.
- */
-export const assertSecretsOutForPromote = (
-    hasServiceAccounts: boolean,
-    to: string,
-    options: { secretsOut?: string; dryRun?: boolean }
-): void => {
-    if (hasServiceAccounts && !options.dryRun && !options.secretsOut)
-        throw new Error(`--secrets-out is required: promoting creates new API tokens on ${to}.`);
-};
-
 /** Pure: the source folder's `.env` must actually be on `--from`, or the wrong seed's org gets promoted. */
 export const assertSourceNetwork = (
     sourceEnv: Record<string, string>,
@@ -100,8 +86,9 @@ export type PromoteOptions = ProjectOptions & {
 };
 
 export const runPromote = async (options: PromoteOptions): Promise<void> => {
-    const { from, to, org, secretsOut, dryRun, skipDoctor } = options;
+    const { from, to, org, dryRun, skipDoctor } = options;
     const { fromNetwork, toNetwork, targetDir } = planPromotion(from, to);
+    const secretsOut = options.secretsOut ?? path.join(targetDir, 'secrets.env');
     out.log(`Promoting ${org} from ${from} to ${to}`);
     out.log(`Target: ${targetDir}`);
 
@@ -122,7 +109,8 @@ export const runPromote = async (options: PromoteOptions): Promise<void> => {
     };
 
     const spec = await loadOrgSpec(org);
-    assertSecretsOutForPromote(!!spec.serviceAccounts?.length, to, { secretsOut, dryRun });
+    if (spec.serviceAccounts?.length && !dryRun)
+        out.log(`Any new service-account tokens for ${to} go to ${secretsOut}`);
 
     if (dryRun) {
         out.log(
@@ -174,7 +162,7 @@ export const registerPromoteCommand = (program: Command, run: RunCommand): void 
         .requiredOption('--org <file>', 'org spec to re-apply on the target network')
         .option(
             '--secrets-out <path>',
-            'write newly created service-account tokens to this file (mode 0600)'
+            'where to write the new service-account tokens (default: <target>/secrets.env, mode 0600)'
         )
         .option('--dry-run', 'preview changes without applying them')
         .option('--skip-doctor', 'skip running doctor against the target network afterward')

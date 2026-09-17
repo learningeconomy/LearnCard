@@ -107,10 +107,10 @@ Checks this project's issuer setup against the network — identity, network rea
 ## Promote staging → production
 
 ```bash
-npx @learncard/cli promote --from staging --to production --org ./org.yaml --secrets-out ./secrets.env
+npx @learncard/cli promote --from staging --to production --org ./org.yaml
 ```
 
-Re-applies your org spec in its own `.learncard/production` folder (each network needs its own `.env`), rotates service-account tokens into `--secrets-out`, and runs `doctor` — then prints the per-network checklist (profile, tokens, signing authority, templates, ConsentFlow contracts, credentials) that doesn't carry over; only your seed's `did:key` does. Add `--dry-run` to preview or `--skip-doctor` to skip the preflight.
+Re-applies your org spec in its own `.learncard/production` folder (each network needs its own `.env`), writes fresh service-account tokens to `<target>/secrets.env` (or `--secrets-out`), and runs `doctor` — then prints the per-network checklist (profile, tokens, signing authority, templates, ConsentFlow contracts, credentials) that doesn't carry over; only your seed's `did:key` does. Add `--dry-run` to preview or `--skip-doctor` to skip the preflight.
 
 ## Contributing
 
