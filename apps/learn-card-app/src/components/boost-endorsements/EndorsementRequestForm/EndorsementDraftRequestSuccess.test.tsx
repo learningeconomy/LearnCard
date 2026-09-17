@@ -121,7 +121,7 @@ describe('EndorsementDraftRequestSuccess', () => {
     it('shows an error when auto-send has no request identity', async () => {
         render(
             <EndorsementDraftRequestSuccess
-                credential={{ id: 'credential:test' } as never}
+                credential={{ id: 'credential:test', name: 'Credential' } as never}
                 closeModal={vi.fn()}
                 autoSend
             />
@@ -152,7 +152,7 @@ describe('EndorsementDraftRequestSuccess', () => {
 
         render(
             <EndorsementDraftRequestSuccess
-                credential={{ id: 'credential:test' } as never}
+                credential={{ id: 'credential:test', name: 'Credential' } as never}
                 closeModal={vi.fn()}
                 autoSend
             />
@@ -160,6 +160,13 @@ describe('EndorsementDraftRequestSuccess', () => {
 
         await screen.findByText('Endorsement Not Sent');
         expect(mocks.sendCredential).toHaveBeenCalledOnce();
+        expect(mocks.sendCredential).toHaveBeenCalledWith(
+            expect.anything(),
+            { id: 'endorsement:test' },
+            expect.objectContaining({
+                credentialId: 'credential:test',
+            })
+        );
         fireEvent.click(screen.getByRole('button', { name: 'Close' }));
         expect(mocks.closeModal).toHaveBeenCalledOnce();
         expect(mocks.setEndorsementRequest).not.toHaveBeenCalled();

@@ -16,6 +16,7 @@ import {
     EndorsementState,
     EndorsementFormModeEnum,
     convertAttachmentsToEvidence,
+    getEndorsementTarget,
 } from './endorsement-state.helpers';
 import {
     useGetVCInfo,
@@ -95,9 +96,10 @@ export const EndorsementForm: React.FC<{
 
                 const wallet = await initWallet();
                 const evidence = convertAttachmentsToEvidence(endorsement.mediaAttachments);
+                const target = getEndorsementTarget(credential);
                 const endorsementVC = await wallet.invoke.endorseCredential(credential, {
                     endorsementComment: endorsement.qualification,
-                    name: `Endorsement of ${credential.id}`,
+                    name: `Endorsement of ${target.name}`,
                     description: endorsement.description,
                     evidence,
                 });
@@ -105,7 +107,7 @@ export const EndorsementForm: React.FC<{
                 await wallet.invoke.sendCredential(recipientProfileId, endorsementVC, {
                     type: 'endorsement',
                     sharedUri: shareLinkInfo,
-                    credentialId: credential.id,
+                    credentialId: target.id,
                     relationship: endorsement.relationship,
                 });
             } catch (error) {

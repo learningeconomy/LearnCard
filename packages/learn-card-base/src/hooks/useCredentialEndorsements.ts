@@ -2,21 +2,23 @@ import { useEffect, useRef, useState } from 'react';
 
 import type { UnsignedAchievementCredential, UnsignedVC } from '@learncard/types';
 import { useWallet } from 'learn-card-base';
-import { getCredentialSubject, getEndorsements } from 'learn-card-base/helpers/credentialHelpers';
+import {
+    getEndorsements,
+    type CredentialEndorsement,
+} from 'learn-card-base/helpers/credentialHelpers';
 
 type Credential = UnsignedVC | UnsignedAchievementCredential;
-type CredentialEndorsements = Awaited<ReturnType<typeof getEndorsements>>;
-const EMPTY_ENDORSEMENTS: CredentialEndorsements = [];
+const EMPTY_ENDORSEMENTS: CredentialEndorsement[] = [];
 
 type EndorsementState = {
     credentialKey: string;
-    endorsements: CredentialEndorsements;
+    endorsements: CredentialEndorsement[];
 };
 
 /** Loads endorsements without exposing results from a previously displayed credential. */
-export const useCredentialEndorsements = (credential: Credential): CredentialEndorsements => {
+export const useCredentialEndorsements = (credential: Credential): CredentialEndorsement[] => {
     const { initWallet } = useWallet();
-    const credentialKey = credential?.id ?? getCredentialSubject(credential)?.id ?? '';
+    const credentialKey = credential?.id ?? '';
     const credentialRef = useRef(credential);
     const initWalletRef = useRef(initWallet);
     const [state, setState] = useState<EndorsementState>({
@@ -30,6 +32,8 @@ export const useCredentialEndorsements = (credential: Credential): CredentialEnd
     }, [credential, initWallet]);
 
     useEffect(() => {
+        if (!credentialKey) return;
+
         let cancelled = false;
 
         const fetchEndorsements = async (): Promise<void> => {

@@ -14,6 +14,12 @@ vi.hoisted(() => {
     });
 });
 
+const mocks = vi.hoisted(() => ({ sharedRead: vi.fn() }));
+
+vi.mock('./walletHelpers', () => ({
+    getBespokeLearnCard: async () => ({ read: { get: mocks.sharedRead } }),
+}));
+
 import { getEndorsements, getEndorsementsForVC } from './credentialHelpers';
 
 const createWallet = () => {
@@ -67,6 +73,55 @@ describe('getEndorsements', () => {
         expect(get).toHaveBeenNthCalledWith(2, {
             credentialId: 'urn:uuid:wrapper-credential',
         });
+    });
+
+    it('uses the shared credential to isolate legacy subject-indexed endorsements', async () => {
+        const { wallet, get, read } = createWallet();
+        const record = {
+            id: 'record-legacy',
+            uri: 'lc:endorsement:legacy',
+            sharedUri: 'uri=lc%3Ashared&seed=seed&pin=1234',
+        };
+        const endorsement = { id: 'urn:uuid:endorsement-legacy' };
+        const credential = {
+            id: 'urn:uuid:credential-a',
+            type: ['VerifiableCredential', 'CertifiedBoostCredential'],
+            boostCredential: {
+                type: ['VerifiableCredential'],
+                credentialSubject: { id: 'did:example:holder' },
+            },
+        };
+        get.mockResolvedValueOnce([]).mockResolvedValueOnce([]).mockResolvedValueOnce([record]);
+        mocks.sharedRead.mockResolvedValue({
+            verifiableCredential: [{ id: 'urn:uuid:credential-a' }],
+        });
+        read.mockResolvedValue(endorsement);
+
+        await expect(getEndorsements(wallet, credential as never)).resolves.toEqual([
+            { endorsement, metadata: record },
+        ]);
+        expect(get).toHaveBeenNthCalledWith(3, { endorsedId: 'did:example:holder' });
+
+        get.mockReset();
+        get.mockResolvedValueOnce([]).mockResolvedValueOnce([]).mockResolvedValueOnce([record]);
+
+        await expect(
+            getEndorsements(wallet, {
+                ...credential,
+                id: 'urn:uuid:credential-b',
+            } as never)
+        ).resolves.toEqual([]);
+    });
+
+    it('does not query endorsements for credentials without ids', async () => {
+        const { wallet, get } = createWallet();
+
+        await expect(
+            getEndorsements(wallet, {
+                credentialSubject: { id: 'did:example:holder' },
+            } as never)
+        ).resolves.toEqual([]);
+        expect(get).not.toHaveBeenCalled();
     });
 });
 

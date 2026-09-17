@@ -66,6 +66,7 @@ type BoostEarnedCardProps = {
     credential?: VC;
     record?: Partial<LCR>;
     defaultImg?: string;
+    titleOverride?: string;
     onCheckMarkClick?: () => void;
     selectAll?: boolean;
     initialCheckmarkState?: boolean;
@@ -99,6 +100,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     credential: _credential,
     record,
     defaultImg,
+    titleOverride,
     categoryType,
     sizeLg = 4,
     sizeSm = 4,
@@ -167,7 +169,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
         mappedInputs,
 
         // VC metadata
-        title,
+        title: credentialTitle,
         achievementType,
         formattedAchievementType,
         badgeThumbnail,
@@ -188,6 +190,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
 
         loading: vcInfoLoading,
     } = useGetVCInfo(cred, categoryType);
+    const title = titleOverride ?? credentialTitle;
 
     const isCertificate = displayType === DisplayTypeEnum.Certificate;
     const isID = displayType === DisplayTypeEnum.ID || categoryType === 'ID';

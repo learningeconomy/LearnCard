@@ -38,6 +38,7 @@ import * as m from '../../../../paraglide/messages.js';
 
 type BoostDetailsSideBarProps = {
     credential: VC;
+    endorsementCredential?: VC;
     categoryType?: CredentialCategoryEnum;
     customSkillsComponent?: React.ReactNode;
     verificationItems: VerificationItem[];
@@ -53,6 +54,7 @@ type BoostDetailsSideBarProps = {
 };
 const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
     credential,
+    endorsementCredential: endorsementCredentialProp,
     categoryType,
     customSkillsComponent,
     verificationItems,
@@ -66,6 +68,7 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
     issuancesSummaryComponent,
     isPreview = false,
 }) => {
+    const endorsementCredential = endorsementCredentialProp ?? credential;
     const selectedTab = boostPreviewStore.useTracked.selectedTab();
 
     const { closeModal } = useModal();
@@ -112,7 +115,7 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
         </div>
     );
 
-    let activeTabDetails = null;
+    let activeTabDetails: React.ReactNode;
     switch (selectedTab) {
         case BoostPreviewTabsEnum.Details:
             activeTabDetails = (
@@ -179,14 +182,14 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
 
                     {!hideEndorsementRequestCard && (
                         <EndorsementCard
-                            credential={credential}
+                            credential={endorsementCredential}
                             categoryType={categoryType}
                             existingEndorsements={existingEndorsements}
                         />
                     )}
 
                     <EndorsementsList
-                        credential={credential}
+                        credential={endorsementCredential}
                         categoryType={categoryType}
                         existingEndorsements={existingEndorsements}
                     />
@@ -230,7 +233,7 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
         case BoostPreviewTabsEnum.Endorsements:
             activeTabDetails = (
                 <BoostEndorsementDetails
-                    credential={credential}
+                    credential={endorsementCredential}
                     categoryType={categoryType}
                     existingEndorsements={existingEndorsements}
                 />

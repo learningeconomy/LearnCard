@@ -12,8 +12,6 @@ vi.mock('learn-card-base', () => ({
     useWallet: () => ({ initWallet: mocks.initWallet }),
 }));
 vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
-    getCredentialSubject: (credential: { credentialSubject?: { id?: string } }) =>
-        credential.credentialSubject,
     getEndorsements: mocks.getEndorsements,
 }));
 
@@ -69,5 +67,24 @@ describe('useCredentialEndorsements', () => {
 
         await act(async () => requestB.resolve([endorsementB]));
         await waitFor(() => expect(result.current).toEqual([endorsementB]));
+    });
+
+    it('does not query or share results for credentials without ids', () => {
+        const { result, rerender } = renderHook(
+            ({ credential }) => useCredentialEndorsements(credential as never),
+            {
+                initialProps: {
+                    credential: { credentialSubject: { id: 'did:example:subject' } },
+                },
+            }
+        );
+
+        rerender({
+            credential: { credentialSubject: { id: 'did:example:subject' }, name: 'Second' },
+        });
+
+        expect(result.current).toEqual([]);
+        expect(mocks.initWallet).not.toHaveBeenCalled();
+        expect(mocks.getEndorsements).not.toHaveBeenCalled();
     });
 });

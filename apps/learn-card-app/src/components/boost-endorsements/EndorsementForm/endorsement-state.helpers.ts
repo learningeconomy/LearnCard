@@ -2,6 +2,8 @@ import Camera from 'learn-card-base/svgs/Camera';
 import Document from 'learn-card-base/svgs/Document';
 import Video from 'learn-card-base/svgs/Video';
 import LinkChain from 'learn-card-base/svgs/LinkChain';
+import type { VC } from '@learncard/types';
+import { getCredentialName } from 'learn-card-base/helpers/credentialHelpers';
 
 export enum EndorsementFormModeEnum {
     create = 'create',
@@ -117,6 +119,16 @@ export const initialEndorsementState: EndorsementState = {
     qualification: '',
     mediaAttachments: [],
     relationship: null,
+};
+export const getEndorsementTarget = (credential: VC): { id: string; name: string } => {
+    if (!credential?.id) {
+        throw new Error('The credential must have an id before it can be endorsed');
+    }
+
+    return {
+        id: credential.id,
+        name: getCredentialName(credential) || credential.id,
+    };
 };
 
 export type EndorsementEvidence = {

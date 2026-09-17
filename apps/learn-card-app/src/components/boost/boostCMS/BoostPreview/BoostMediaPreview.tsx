@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation } from 'swiper/modules';
+import type { Swiper as SwiperInstance } from 'swiper';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('boost-media-preview');
 
@@ -20,7 +21,7 @@ import {
     BoostCategoryOptionsEnum,
     DisplayTypeEnum,
 } from 'learn-card-base';
-import { VC } from '@learncard/types';
+import { VC, VerificationItem } from '@learncard/types';
 import { VideoMetadata } from 'learn-card-base';
 import { canEmbedVideoIframe, ExternalVideoFallback, getExternalVideoUrl } from '@learncard/react';
 import {
@@ -34,13 +35,15 @@ import * as m from '../../../../paraglide/messages.js';
 
 export const BoostMediaPreview: React.FC<{
     credential: VC;
+    endorsementCredential?: VC;
     openDetailsSideModal: () => void;
     handleShareBoost: () => void;
     onDotsClick: () => void;
-    verifications: any;
+    verifications: VerificationItem[];
     handleCloseModal?: () => void;
 }> = ({
     credential,
+    endorsementCredential,
     openDetailsSideModal,
     handleShareBoost,
     onDotsClick,
@@ -49,7 +52,7 @@ export const BoostMediaPreview: React.FC<{
 }) => {
     const { closeModal } = useModal();
     const { isMobile } = useDeviceTypeByWidth();
-    const swiperRef = useRef<any>(null);
+    const swiperRef = useRef<SwiperInstance | null>(null);
     const [currentSlide, setCurrentSlide] = useState(0);
 
     const [videoMetaData, setVideoMetaData] = useState<VideoMetadata | null>(null);
@@ -324,6 +327,7 @@ export const BoostMediaPreview: React.FC<{
                         {!isFullScreen && (
                             <BoostDetailsSideBar
                                 credential={credential}
+                                endorsementCredential={endorsementCredential}
                                 categoryType={BoostCategoryOptionsEnum.accomplishment}
                                 verificationItems={verifications}
                                 renderMethodCredential={credential}

@@ -40,6 +40,10 @@ vi.mock('learn-card-base', () => ({
 
 vi.mock('./endorsement-state.helpers', () => ({
     convertAttachmentsToEvidence: () => [],
+    getEndorsementTarget: (credential: { id: string }) => ({
+        id: credential.id,
+        name: 'Credential',
+    }),
     EndorsementFormModeEnum: { create: 'create' },
     initialEndorsementState: {
         relationship: { label: 'Colleague', type: 'colleague' },
@@ -116,6 +120,13 @@ describe('EndorsementForm', () => {
 
         fireEvent.click(screen.getByRole('button', { name: 'Endorse' }));
         expect(await screen.findByRole('button', { name: 'Sending...' })).toBeDisabled();
+        expect(mocks.sendCredential).toHaveBeenCalledWith(
+            'recipient-profile',
+            { id: 'urn:uuid:endorsement' },
+            expect.objectContaining({
+                credentialId: 'urn:uuid:credential',
+            })
+        );
 
         await act(async () => reject(new Error('Send failed')));
 

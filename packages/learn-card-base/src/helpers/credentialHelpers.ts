@@ -18,6 +18,7 @@ import {
     CredentialCategory,
     IndexMetadata,
 } from 'learn-card-base/types/credentials';
+import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { getSeason } from './dateHelpers';
 import {
     getAchievementTypeFromCustomType,
@@ -40,6 +41,7 @@ import { getVideoMetadata } from './video.helpers';
 import { getFileMetadata } from './attachment.helpers';
 import { getLogger } from '../logging/logger';
 import { parseLcTags } from './displayTags.helpers';
+import { getBespokeLearnCard } from './walletHelpers';
 const log = getLogger('credential-helpers');
 
 type CredentialType =
@@ -1287,26 +1289,75 @@ export const getCategoryDarkColor = (category = CredentialCategoryEnum.achieveme
     return `${getCategoryPrimaryColor(category)}-700`;
 };
 
-const getEndorsementIndexQuery = (
-    vc: VC
-): { originalCredentialId: string } | { endorsedId: string } | undefined => {
-    if (vc?.id) return { originalCredentialId: vc.id };
+export const resolveSharedCredential = async (sharedUri?: string): Promise<VC | undefined> => {
+    const { seed, pin, uri } = parseShareLinkParams(sharedUri);
+    if (!seed || !pin || !uri) return undefined;
 
-    const endorsedId = getCredentialSubject(vc)?.id;
-    return typeof endorsedId === 'string' ? { endorsedId } : undefined;
+    try {
+        const sharedWallet = await getBespokeLearnCard(`${seed}${pin}`);
+        const presentation = await sharedWallet.read.get(uri);
+        const credentials = presentation?.verifiableCredential;
+
+        return Array.isArray(credentials) ? credentials[0] : credentials;
+    } catch (error) {
+        log.warn('Unable to resolve shared credential', error);
+        return undefined;
+    }
+};
+
+const getMatchingEndorsementRecords = async (
+    wallet: BespokeLearnCard | null,
+    vc: VC,
+    visibility?: 'public' | 'private'
+) => {
+    if (!vc.id) return [];
+
+    const [canonicalRecords = [], credentialRecords = []] = await Promise.all([
+        wallet?.index.LearnCloud.get({ originalCredentialId: vc.id }),
+        wallet?.index.LearnCloud.get({ credentialId: vc.id }),
+    ]);
+
+    const subjectId = getCredentialSubject(vc)?.id;
+    const legacyRecords = subjectId
+        ? await wallet?.index.LearnCloud.get({ endorsedId: subjectId })
+        : [];
+    const verifiedLegacyRecords = await Promise.all(
+        (legacyRecords ?? []).map(async record => {
+            const sharedCredential = await resolveSharedCredential(record.sharedUri);
+            return sharedCredential?.id === vc.id ? record : undefined;
+        })
+    );
+
+    const seen = new Set<string>();
+    return [...canonicalRecords, ...credentialRecords, ...verifiedLegacyRecords]
+        .filter(record => record !== undefined)
+        .filter(record => !visibility || record.visibility === visibility)
+        .filter(record => {
+            const key = record.id ?? record.uri;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+};
+
+export type CredentialEndorsement = {
+    endorsement: VC | undefined;
+    metadata: {
+        id?: string;
+        uri: string;
+        sharedUri?: string;
+        visibility?: 'public' | 'private';
+        [key: string]: unknown;
+    };
 };
 
 // (Owner POV)
-export const getEndorsements = async (wallet = walletStore.get.wallet(), vc: VC) => {
-    const query = getEndorsementIndexQuery(vc);
-    if (!query) return [];
-
-    let idxEndorsements = await wallet?.index.LearnCloud.get(query);
-    if ((!idxEndorsements || idxEndorsements.length === 0) && vc?.id) {
-        idxEndorsements = await wallet?.index.LearnCloud.get({ credentialId: vc.id });
-    }
-
-    if (!idxEndorsements || idxEndorsements.length === 0) return [];
+export const getEndorsements = async (
+    wallet = walletStore.get.wallet(),
+    vc: VC
+): Promise<CredentialEndorsement[]> => {
+    const idxEndorsements = await getMatchingEndorsementRecords(wallet, vc);
+    if (idxEndorsements.length === 0) return [];
 
     const endorsementPromises = idxEndorsements.map(async endorsement => {
         const resolvedEndorsement = await wallet?.read?.get(endorsement.uri);
@@ -1322,17 +1373,7 @@ export const getEndorsementsForVC = async (
     vc: VC,
     visibility: 'public' | 'private' = 'public'
 ): Promise<VC[]> => {
-    const query = getEndorsementIndexQuery(vc);
-    if (!query) return [];
-
-    let idxEndorsements = await wallet?.index.LearnCloud.get(query);
-
-    // TODO: handle this server side ^^ filtering is not working above
-    let filteredEndorsements = idxEndorsements?.filter(r => r.visibility === visibility) ?? [];
-    if (filteredEndorsements.length === 0 && vc?.id) {
-        idxEndorsements = await wallet?.index.LearnCloud.get({ credentialId: vc.id });
-        filteredEndorsements = idxEndorsements?.filter(r => r.visibility === visibility) ?? [];
-    }
+    const filteredEndorsements = await getMatchingEndorsementRecords(wallet, vc, visibility);
     if (filteredEndorsements.length === 0) return [];
 
     const endorsementPromises = filteredEndorsements.map(async endorsement => {

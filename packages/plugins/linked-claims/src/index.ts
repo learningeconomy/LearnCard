@@ -6,12 +6,6 @@ export * from './types';
 
 const ENDORSEMENT_CONTEXT = 'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json';
 
-const getSubjectIds = (credential: VC): string[] => {
-    const subject = credential.credentialSubject as any;
-    if (Array.isArray(subject)) return subject.map(s => s?.id).filter(Boolean);
-    return subject?.id ? [subject.id] : [];
-};
-
 const pickIndexProvider = (learnCard: any, preferred?: string): string | undefined => {
     const providers = Object.keys(learnCard.index || {}).filter(
         k => !['providers', 'all'].includes(k)
@@ -42,11 +36,8 @@ export const getLinkedClaimsPlugin = (
         endorseCredential: async (_learnCard, original, details, opts) => {
             const issuer = learnCard.id.did();
 
-            const originalId: string | undefined = (original as any).id;
-            const subjectIds = getSubjectIds(original);
-            const targetId = originalId || subjectIds[0];
-            if (!targetId)
-                throw new Error('Original credential must have either id or credentialSubject.id');
+            const targetId = original.id;
+            if (!targetId) throw new Error('Original credential must have an id');
 
             const context: (string | Record<string, any>)[] = [
                 'https://www.w3.org/ns/credentials/v2',
@@ -147,6 +138,7 @@ export const getLinkedClaimsPlugin = (
                     originalCredentialId: csObj?.id,
                     issuedOn: (endorsement as any).validFrom || (endorsement as any).issuanceDate,
                     category: 'Endorsement',
+                    title: endorsement.name,
                     credentialId: options?.credentialId ?? csObj?.id,
                     sharedUri: options?.sharedUri, // original credential shared uri
                     relationship: options?.relationship,
@@ -162,12 +154,9 @@ export const getLinkedClaimsPlugin = (
             const indexName = pickIndexProvider(learnCard, options?.indexName);
             if (!indexName) return [];
 
-            const subjectIds = getSubjectIds(original);
-            const originalId = (original as any).id;
+            if (!original.id) return [];
 
-            const query = originalId
-                ? { originalCredentialId: originalId }
-                : { endorsedId: subjectIds[0] };
+            const query = { originalCredentialId: original.id };
             const records = await (learnCard.index as any)[indexName].get(query);
 
             const results: VC[] = [];

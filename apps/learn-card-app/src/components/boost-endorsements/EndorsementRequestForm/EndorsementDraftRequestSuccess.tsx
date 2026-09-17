@@ -29,7 +29,10 @@ import {
     BoostEndorsementStatusEnum,
     EndorsementModeEnum,
 } from '../boost-endorsement.helpers';
-import { convertAttachmentsToEvidence } from '../EndorsementForm/endorsement-state.helpers';
+import {
+    convertAttachmentsToEvidence,
+    getEndorsementTarget,
+} from '../EndorsementForm/endorsement-state.helpers';
 import * as m from '../../../paraglide/messages.js';
 import { createEndorsementShareLinkInfo } from './endorsement-request.helpers';
 
@@ -130,10 +133,11 @@ export const EndorsementDraftRequestSuccess: React.FC<{
                 const evidence = convertAttachmentsToEvidence(
                     draftEndorsementRequest.mediaAttachments
                 );
+                const target = getEndorsementTarget(credential);
 
                 const endorsementVC = await wallet.invoke.endorseCredential(credential, {
                     endorsementComment: draftEndorsementRequest.qualification,
-                    name: `Endorsement of ${credential.id}`,
+                    name: `Endorsement of ${target.name}`,
                     description: draftEndorsementRequest.description,
                     evidence,
                 });
@@ -144,7 +148,7 @@ export const EndorsementDraftRequestSuccess: React.FC<{
                     {
                         type: 'endorsement',
                         sharedUri: createEndorsementShareLinkInfo(shareLinkInfo),
-                        credentialId: credential.id,
+                        credentialId: target.id,
                         relationship: draftEndorsementRequest.relationship,
                     }
                 );

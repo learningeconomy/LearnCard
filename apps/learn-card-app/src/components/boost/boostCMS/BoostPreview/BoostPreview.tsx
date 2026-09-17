@@ -275,6 +275,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
         newModal(
             <BoostDetailsSideMenu
                 credential={selectedCredential}
+                endorsementCredential={_credential}
                 categoryType={categoryType}
                 verificationItems={detailVerificationItems}
                 customLinkedCredentialsComponent={customLinkedCredentialsComponent}
@@ -310,6 +311,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
         return (
             <BoostMediaPreview
                 credential={credential}
+                endorsementCredential={_credential}
                 openDetailsSideModal={openDetailsSideModal}
                 handleShareBoost={handleShareBoost}
                 onDotsClick={onDotsClick}
@@ -408,6 +410,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                     {!isMobile && (
                         <BoostDetailsSideBar
                             credential={selectedCredential}
+                            endorsementCredential={_credential}
                             categoryType={categoryType}
                             verificationItems={detailVerificationItems}
                             customLinkedCredentialsComponent={customLinkedCredentialsComponent}
