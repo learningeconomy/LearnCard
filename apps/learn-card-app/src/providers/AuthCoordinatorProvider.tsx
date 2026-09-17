@@ -1370,6 +1370,15 @@ const AuthSessionManager: React.FC<{
             if (coordinator.state.status === 'ready') {
                 writeRecoveryPinPromptFlag(coordinator.state.did, 'set');
             }
+            // A PIN is a deliberately chosen recovery secret, so it completes
+            // activation the same way a passkey or phrase does.
+            if (coordinator.needsActivation) {
+                try {
+                    await coordinator.activate();
+                } catch (error) {
+                    log.warn('escrow.pin.activate.failed', error);
+                }
+            }
         },
         [coordinator]
     );

@@ -1892,11 +1892,15 @@
                 "passkeyGeneric": "Use a passkey",
                 "phrase": "Save a recovery phrase"
             },
-            "pin": {
-                "title": "Add a recovery PIN",
-                "body": "Get back into your account in seconds if you lose this device.",
+            "pinFirst": {
+                "title": "Finish securing your account",
+                "body": "Add a recovery PIN — it gets you back in within seconds if you lose this device.",
                 "action": "Set a 6-digit PIN",
-                "orAction": "Or set a 6-digit recovery PIN"
+                "secondary": "Or add a passkey or recovery phrase"
+            },
+            "backup": {
+                "title": "Add a backup way in",
+                "body": "Your PIN works on any device. A passkey or recovery phrase covers you if you forget it."
             }
         },
         "accountRecovery": "Account Recovery",

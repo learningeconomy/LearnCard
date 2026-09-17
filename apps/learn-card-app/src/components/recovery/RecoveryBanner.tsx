@@ -1,7 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { IonIcon } from '@ionic/react';
-import { checkmarkCircleOutline, closeOutline, shieldOutline, keypadOutline } from 'ionicons/icons';
+import {
+    checkmarkCircleOutline,
+    closeOutline,
+    shieldOutline,
+    keypadOutline,
+    shieldCheckmarkOutline,
+} from 'ionicons/icons';
 
 import { isPublicComputerMode, isWebAuthnSupported } from '@learncard/sss-key-manager';
 import firstStartupStore, {
@@ -16,7 +22,7 @@ import type { RecoverySetupType } from './RecoverySetupModal';
 const SUCCESS_DURATION_MS = 4000;
 const EXIT_DURATION_MS = 300;
 
-type RecoveryPromptWeight = 'calm' | 'urgent';
+type RecoveryPromptWeight = 'calm' | 'urgent' | 'amber-lite';
 type RecoveryPromptPhase = 'visible' | 'success' | 'exiting' | 'hidden';
 
 export interface RecoveryBannerProps {
@@ -60,11 +66,9 @@ export const RecoveryBanner: React.FC<RecoveryBannerProps> = ({
     onSetup,
 }) => {
     const { track } = useAnalytics();
-    // Public sessions lose access when the tab closes; provisional migrations
-    // are not activated until a method is confirmed. Both are urgent and
-    // cannot be snoozed.
     const isPublic = isPublicComputerMode() || activationPending;
     const snoozedUntil = firstStartupStore.useTracked.recoveryPromptSnoozedUntil();
+    const backupSnoozeCount = firstStartupStore.useTracked.recoveryBackupPromptSnoozeCount();
     const [phase, setPhase] = useState<RecoveryPromptPhase>('visible');
     const [completed, setCompleted] = useState(false);
     const [setupRequested, setSetupRequested] = useState(false);
@@ -73,41 +77,59 @@ export const RecoveryBanner: React.FC<RecoveryBannerProps> = ({
     const setupRequestedRef = useRef(false);
     const completionHandledRef = useRef(false);
 
-    const weight: RecoveryPromptWeight = isPublic ? 'urgent' : 'calm';
     const recommendedMethod = useMemo<RecoverySetupType>(
         () => (!Capacitor.isNativePlatform() && isWebAuthnSupported() ? 'passkey' : 'phrase'),
         []
     );
     const isSnoozed = !isPublic && snoozedUntil > currentTime;
 
-    const isStandardEligible =
-        recoverySupported &&
-        recoveryMethodCount === 0 &&
-        (isPublic || totalCredentialCount > 0) &&
-        !isSnoozed;
+    let activeTier: 'urgent' | 'standard' | 'pin-first' | 'backup' | 'none' = 'none';
 
-    const isPinEligible =
-        escrowEnrolled &&
-        pinEnabled === false &&
-        !!onSetupPin &&
-        recoveryMethodCount !== null &&
-        !isSnoozed;
+    if (recoveryMethodCount === 0 && recoverySupported) {
+        if (isPublic) {
+            activeTier = 'urgent';
+        } else if (escrowEnrolled) {
+            if (pinEnabled === false && !isSnoozed) {
+                activeTier = 'pin-first';
+            } else if (pinEnabled === true && !isSnoozed && backupSnoozeCount < 2) {
+                activeTier = 'backup';
+            }
+        } else if (totalCredentialCount > 0 && !isSnoozed) {
+            activeTier = 'standard';
+        }
+    }
 
-    const isEligible = isStandardEligible || isPinEligible;
-    const isRendered = (!completed && isEligible) || phase === 'success' || phase === 'exiting';
-
-    const isPinOnly = isPinEligible && !isStandardEligible;
+    const isRendered =
+        (!completed && activeTier !== 'none') || phase === 'success' || phase === 'exiting';
 
     useEffect(() => {
-        if (!isEligible || shownRef.current) return;
+        if (activeTier === 'none' || shownRef.current) return;
 
         shownRef.current = true;
+
+        let weight: RecoveryPromptWeight = 'calm';
+        let method: 'pin' | RecoverySetupType | undefined = undefined;
+        let tier: 'pin-first' | 'backup' | undefined = undefined;
+
+        if (activeTier === 'urgent') {
+            weight = 'urgent';
+        } else if (activeTier === 'pin-first') {
+            weight = 'amber-lite';
+            method = 'pin';
+            tier = 'pin-first';
+        } else if (activeTier === 'backup') {
+            weight = 'calm';
+            method = recommendedMethod;
+            tier = 'backup';
+        }
+
         track(AnalyticsEvents.DASHBOARD_RECOVERY_PROMPT_INTERACTED, {
             action: 'shown',
-            weight: isPinOnly ? 'calm' : weight,
-            method: isPinOnly ? 'pin' : undefined,
+            weight,
+            method,
+            tier,
         });
-    }, [isEligible, track, weight, isPinOnly]);
+    }, [activeTier, track, recommendedMethod]);
 
     useEffect(() => {
         if (isPublic || snoozedUntil <= currentTime) return;
@@ -141,11 +163,12 @@ export const RecoveryBanner: React.FC<RecoveryBannerProps> = ({
     const handleSetup = (): void => {
         if (setupRequestedRef.current) return;
 
-        if (isPinOnly) {
+        if (activeTier === 'pin-first') {
             track(AnalyticsEvents.DASHBOARD_RECOVERY_PROMPT_INTERACTED, {
                 action: 'clicked',
-                weight: 'calm',
+                weight: 'amber-lite',
                 method: 'pin',
+                tier: 'pin-first',
             });
             onSetupPin?.();
             return;
@@ -155,10 +178,14 @@ export const RecoveryBanner: React.FC<RecoveryBannerProps> = ({
         completionHandledRef.current = false;
         setSetupRequested(true);
 
+        const weight = activeTier === 'urgent' ? 'urgent' : 'calm';
+        const tier = activeTier === 'backup' ? 'backup' : undefined;
+
         track(AnalyticsEvents.DASHBOARD_RECOVERY_PROMPT_INTERACTED, {
             action: 'clicked',
             weight,
             method: recommendedMethod,
+            tier,
         });
 
         try {
@@ -172,6 +199,7 @@ export const RecoveryBanner: React.FC<RecoveryBannerProps> = ({
                         action: 'completed',
                         weight,
                         method,
+                        tier,
                     });
                     setCompleted(true);
                     setPhase('success');
@@ -193,30 +221,137 @@ export const RecoveryBanner: React.FC<RecoveryBannerProps> = ({
         const nextSnoozedUntil = Date.now() + RECOVERY_PROMPT_SNOOZE_MS;
         setCurrentTime(Date.now());
         firstStartupStore.set.recoveryPromptSnoozedUntil(nextSnoozedUntil);
+
+        if (activeTier === 'backup') {
+            firstStartupStore.set.recoveryBackupPromptSnoozeCount(backupSnoozeCount + 1);
+        }
+
         shownRef.current = false;
+
+        let weight: RecoveryPromptWeight = 'calm';
+        let method: 'pin' | RecoverySetupType | undefined = undefined;
+        let tier: 'pin-first' | 'backup' | undefined = undefined;
+
+        if (activeTier === 'pin-first') {
+            weight = 'amber-lite';
+            method = 'pin';
+            tier = 'pin-first';
+        } else if (activeTier === 'backup') {
+            weight = 'calm';
+            method = recommendedMethod;
+            tier = 'backup';
+        }
+
         track(AnalyticsEvents.DASHBOARD_RECOVERY_PROMPT_INTERACTED, {
             action: 'snoozed',
-            weight: 'calm',
-            method: isPinOnly ? 'pin' : undefined,
+            weight,
+            method,
+            tier,
         });
         setPhase('exiting');
     };
 
-    const handleSetupPin = (e: React.MouseEvent): void => {
-        e.stopPropagation();
+    const handleSetupSecondary = (): void => {
         if (setupRequestedRef.current) return;
+
+        setupRequestedRef.current = true;
+        completionHandledRef.current = false;
+        setSetupRequested(true);
 
         track(AnalyticsEvents.DASHBOARD_RECOVERY_PROMPT_INTERACTED, {
             action: 'clicked',
-            weight,
-            method: 'pin',
+            weight: 'amber-lite',
+            method: recommendedMethod,
+            tier: 'pin-first',
         });
 
-        onSetupPin?.();
+        try {
+            onSetup({
+                initialMethod: recommendedMethod,
+                onCompleted: method => {
+                    if (completionHandledRef.current) return;
+
+                    completionHandledRef.current = true;
+                    track(AnalyticsEvents.DASHBOARD_RECOVERY_PROMPT_INTERACTED, {
+                        action: 'completed',
+                        weight: 'amber-lite',
+                        method,
+                        tier: 'pin-first',
+                    });
+                    setCompleted(true);
+                    setPhase('success');
+                },
+                onClosed: () => {
+                    setupRequestedRef.current = false;
+                    setSetupRequested(false);
+                },
+            });
+        } catch (error) {
+            setupRequestedRef.current = false;
+            setSetupRequested(false);
+            throw error;
+        }
     };
 
     const isSuccess = completed;
     const isExiting = phase === 'exiting';
+
+    const getStyles = () => {
+        switch (activeTier) {
+            case 'urgent':
+                return {
+                    container: 'bg-amber-50 border-amber-200',
+                    iconContainer: 'bg-amber-100 group-hover:bg-amber-200',
+                    icon: shieldOutline,
+                    iconColor: 'text-amber-600',
+                    titleColor: 'text-amber-900',
+                    bodyColor: 'text-amber-800',
+                    actionColor: 'text-amber-900',
+                };
+            case 'standard':
+                return {
+                    container: 'bg-white border-grayscale-200',
+                    iconContainer: 'bg-amber-50 group-hover:bg-amber-100',
+                    icon: shieldOutline,
+                    iconColor: 'text-amber-600',
+                    titleColor: 'text-grayscale-900',
+                    bodyColor: 'text-grayscale-600',
+                    actionColor: 'text-grayscale-800',
+                };
+            case 'pin-first':
+                return {
+                    container: 'bg-white border-grayscale-200',
+                    iconContainer: 'bg-amber-50 group-hover:bg-amber-100',
+                    icon: keypadOutline,
+                    iconColor: 'text-amber-600',
+                    titleColor: 'text-grayscale-900',
+                    bodyColor: 'text-grayscale-600',
+                    actionColor: 'text-grayscale-800',
+                };
+            case 'backup':
+                return {
+                    container: 'bg-white border-grayscale-200',
+                    iconContainer: 'bg-emerald-50 group-hover:bg-emerald-100',
+                    icon: shieldCheckmarkOutline,
+                    iconColor: 'text-emerald-600',
+                    titleColor: 'text-grayscale-900',
+                    bodyColor: 'text-grayscale-600',
+                    actionColor: 'text-grayscale-800',
+                };
+            default:
+                return {
+                    container: '',
+                    iconContainer: '',
+                    icon: shieldOutline,
+                    iconColor: '',
+                    titleColor: '',
+                    bodyColor: '',
+                    actionColor: '',
+                };
+        }
+    };
+
+    const styles = getStyles();
 
     return (
         <div
@@ -247,98 +382,77 @@ export const RecoveryBanner: React.FC<RecoveryBannerProps> = ({
                     </div>
                 ) : (
                     <div
-                        className={`animate-fade-in-up w-full flex items-stretch rounded-[20px] border transition-colors ${
-                            isPinOnly
-                                ? 'bg-emerald-50 border-emerald-200'
-                                : isPublic
-                                  ? 'bg-amber-50 border-amber-200'
-                                  : 'bg-white border-grayscale-200'
-                        }`}
+                        className={`animate-fade-in-up w-full flex items-stretch rounded-[20px] border transition-colors ${styles.container}`}
                     >
-                        <button
-                            type="button"
-                            onClick={handleSetup}
-                            disabled={setupRequested}
-                            aria-label={m['recovery.prompt.openAria']()}
-                            className="group flex-1 min-w-0 flex items-center gap-3 p-4 text-start rounded-[20px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:cursor-wait"
-                        >
-                            <span
-                                className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-colors ${
-                                    isPinOnly
-                                        ? 'bg-emerald-100 group-hover:bg-emerald-200'
-                                        : isPublic
-                                          ? 'bg-amber-100 group-hover:bg-amber-200'
-                                          : 'bg-amber-50 group-hover:bg-amber-100'
+                        <div className="flex-1 min-w-0 flex flex-col">
+                            <button
+                                type="button"
+                                onClick={handleSetup}
+                                disabled={setupRequested}
+                                aria-label={m['recovery.prompt.openAria']()}
+                                className={`group flex-1 min-w-0 flex items-center gap-3 p-4 text-start rounded-[20px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:cursor-wait ${
+                                    activeTier === 'pin-first' ? 'pb-1' : ''
                                 }`}
                             >
-                                <IonIcon
-                                    icon={isPinOnly ? keypadOutline : shieldOutline}
-                                    className={`text-lg ${isPinOnly ? 'text-emerald-600' : 'text-amber-600'}`}
-                                />
-                            </span>
+                                <span
+                                    className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-colors ${styles.iconContainer}`}
+                                >
+                                    <IonIcon
+                                        icon={styles.icon}
+                                        className={`text-lg ${styles.iconColor}`}
+                                    />
+                                </span>
 
-                            <span className="flex-1 min-w-0">
-                                <span
-                                    className={`block text-sm font-semibold leading-tight ${
-                                        isPinOnly
-                                            ? 'text-emerald-900'
-                                            : isPublic
-                                              ? 'text-amber-900'
-                                              : 'text-grayscale-900'
-                                    }`}
-                                >
-                                    {isPinOnly
-                                        ? m['recovery.prompt.pin.title']()
-                                        : activationPending
-                                          ? m['recovery.prompt.activation.title']()
-                                          : isPublic
-                                            ? m['recovery.prompt.urgent.title']()
-                                            : m['recovery.prompt.calm.title']()}
-                                </span>
-                                <span
-                                    className={`block text-xs leading-snug mt-0.5 ${
-                                        isPinOnly
-                                            ? 'text-emerald-800'
-                                            : isPublic
-                                              ? 'text-amber-800'
-                                              : 'text-grayscale-600'
-                                    }`}
-                                >
-                                    {isPinOnly
-                                        ? m['recovery.prompt.pin.body']()
-                                        : activationPending
-                                          ? m['recovery.prompt.activation.body']()
-                                          : isPublic
-                                            ? m['recovery.prompt.urgent.body']()
-                                            : m['recovery.prompt.calm.body']()}
-                                </span>
-                                <span
-                                    className={`block text-xs font-semibold mt-1 ${
-                                        isPinOnly
-                                            ? 'text-emerald-900'
-                                            : isPublic
-                                              ? 'text-amber-900'
-                                              : 'text-grayscale-800'
-                                    }`}
-                                >
-                                    {isPinOnly
-                                        ? m['recovery.prompt.pin.action']()
-                                        : recommendedMethod === 'passkey'
-                                          ? getPasskeyActionLabel()
-                                          : m['recovery.prompt.action.phrase']()}
-                                </span>
-                                {isStandardEligible && isPinEligible && (
+                                <span className="flex-1 min-w-0">
                                     <span
-                                        className={`block text-xs font-semibold mt-1 ${
-                                            isPublic ? 'text-amber-900' : 'text-grayscale-800'
-                                        } hover:underline`}
-                                        onClick={handleSetupPin}
+                                        className={`block text-sm font-semibold leading-tight ${styles.titleColor}`}
                                     >
-                                        {m['recovery.prompt.pin.orAction']()}
+                                        {activeTier === 'pin-first'
+                                            ? m['recovery.prompt.pinFirst.title']()
+                                            : activeTier === 'backup'
+                                              ? m['recovery.prompt.backup.title']()
+                                              : activationPending
+                                                ? m['recovery.prompt.activation.title']()
+                                                : isPublic
+                                                  ? m['recovery.prompt.urgent.title']()
+                                                  : m['recovery.prompt.calm.title']()}
                                     </span>
-                                )}
-                            </span>
-                        </button>
+                                    <span
+                                        className={`block text-xs leading-snug mt-0.5 ${styles.bodyColor}`}
+                                    >
+                                        {activeTier === 'pin-first'
+                                            ? m['recovery.prompt.pinFirst.body']()
+                                            : activeTier === 'backup'
+                                              ? m['recovery.prompt.backup.body']()
+                                              : activationPending
+                                                ? m['recovery.prompt.activation.body']()
+                                                : isPublic
+                                                  ? m['recovery.prompt.urgent.body']()
+                                                  : m['recovery.prompt.calm.body']()}
+                                    </span>
+                                    <span
+                                        className={`block text-xs font-semibold mt-1 ${styles.actionColor}`}
+                                    >
+                                        {activeTier === 'pin-first'
+                                            ? m['recovery.prompt.pinFirst.action']()
+                                            : recommendedMethod === 'passkey'
+                                              ? getPasskeyActionLabel()
+                                              : m['recovery.prompt.action.phrase']()}
+                                    </span>
+                                </span>
+                            </button>
+
+                            {activeTier === 'pin-first' && (
+                                <button
+                                    type="button"
+                                    onClick={handleSetupSecondary}
+                                    disabled={setupRequested}
+                                    className="self-start ms-[4rem] mb-3 text-xs font-medium text-grayscale-600 hover:text-grayscale-900 hover:underline transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded"
+                                >
+                                    {m['recovery.prompt.pinFirst.secondary']()}
+                                </button>
+                            )}
+                        </div>
 
                         {!isPublic && (
                             <button
