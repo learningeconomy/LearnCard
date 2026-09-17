@@ -25,6 +25,7 @@ import {
 import { environment } from './src/config/environment';
 import { toServerlessApplication } from './src/helpers/serverlessApplication';
 import { runInboxMaintenance } from './src/helpers/inbox-maintenance.helpers';
+import { withInboxBatchBodyLimit } from './src/helpers/inbox-batch-http.helpers';
 
 Sentry.AWSLambda.init({
     dsn: environment.SENTRY_DSN,
@@ -74,21 +75,24 @@ export const _openApiHandler = createOpenApiAwsLambdaHandler({
     onError: handleTrpcError,
 });
 
-export const _trpcHandler = awsLambdaRequestHandler({
-    allowMethodOverride: true,
-    router: appRouter,
-    createContext,
-    onError: handleTrpcError,
-    responseMeta: () => {
-        return {
-            headers: {
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': '*',
-                'Access-Control-Allow-Headers': 'authorization',
-            },
-        };
-    },
-});
+export const _trpcHandler = withInboxBatchBodyLimit(
+    awsLambdaRequestHandler({
+        allowMethodOverride: true,
+        router: appRouter,
+        createContext,
+        onError: handleTrpcError,
+        responseMeta: () => {
+            return {
+                headers: {
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Methods': '*',
+                    'Access-Control-Allow-Headers': 'authorization',
+                },
+            };
+        },
+    }),
+    'trpc'
+);
 
 export const openApiHandler = Sentry.AWSLambda.wrapHandler(
     async (event: APIGatewayProxyEventV2, context: Context): Promise<APIGatewayProxyResultV2> => {

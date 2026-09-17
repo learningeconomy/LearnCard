@@ -1,3 +1,4 @@
+import { configureInboxBatchBodyLimit } from '@helpers/inbox-batch-http.helpers';
 import { environment } from '@environment';
 import Fastify from 'fastify';
 import fastifyCors from '@fastify/cors';
@@ -24,6 +25,11 @@ import { startSkillEmbeddingBackfill } from '@helpers/skill-embedding.helpers';
 import { maybeAutoSeedSkillFrameworks } from './seed/seedSkillFrameworks';
 
 const server = Fastify({ routerOptions: { maxParamLength: 5000 } });
+
+// Register before either OpenAPI or tRPC registers its wildcard route. The hook raises the
+// parser ceiling for those shared routes, then narrows it back to 4 MiB only for batch issuance.
+// Registering this later would leave the already-created adapter routes at Fastify's 1 MiB limit.
+configureInboxBatchBodyLimit(server);
 
 server.addHook('onRequest', (request, _reply, done) => {
     type RawWithEmitter = typeof request.raw & {
