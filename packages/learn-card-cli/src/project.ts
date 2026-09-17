@@ -236,18 +236,22 @@ export const ensureIdentity = async (project: Project, options: ProjectOptions) 
         PROFILE_ID: profileId,
         ...(existingProfileId ? {} : { DISPLAY_NAME: displayName }),
     });
-    const gitignorePath = path.join(path.dirname(project.envPath), '.gitignore');
+    await ensureGitignored(path.dirname(project.envPath), '.env');
+    return { seed, profileId, displayName };
+};
+
+export const ensureGitignored = async (dir: string, entry: string): Promise<void> => {
+    const gitignorePath = path.join(dir, '.gitignore');
     const gitignore = await readOptional(gitignorePath);
     if (await fs.stat(gitignorePath).catch(() => null)) {
-        if (!gitignore.split('\n').some(line => line.trim() === '.env')) {
-            await fs.writeFile(gitignorePath, `${gitignore.replace(/\n?$/, '\n')}.env\n`);
-            out.log('Added .env to .gitignore');
+        if (!gitignore.split('\n').some(line => line.trim() === entry)) {
+            await fs.writeFile(gitignorePath, `${gitignore.replace(/\n?$/, '\n')}${entry}\n`);
+            out.log(`Added ${entry} to .gitignore`);
         }
     } else {
-        await fs.writeFile(gitignorePath, '.env\n');
-        out.log('Created .gitignore with .env');
+        await fs.writeFile(gitignorePath, `${entry}\n`);
+        out.log(`Created .gitignore with ${entry}`);
     }
-    return { seed, profileId, displayName };
 };
 
 export const PRODUCTION_NETWORK = 'https://network.learncard.com/trpc';
