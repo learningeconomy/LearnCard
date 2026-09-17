@@ -140,10 +140,26 @@ describe('tokenScopesCheck', () => {
         expect(result.status).toBe('pass');
     });
 
-    it('warns when no API_TOKEN is configured', async () => {
+    it('warns when no API_TOKEN is configured and no grant covers the scopes', async () => {
         const result = await tokenScopesCheck.run(createContext());
         expect(result.status).toBe('warn');
         expect(result.fix).toContain('token --scope');
+    });
+
+    it('passes without API_TOKEN when an active grant covers the scopes (token kept outside .env)', async () => {
+        const scope = DEFAULT_REQUIRED_SCOPES.join(' ');
+        const ctx = createContext({
+            learnCard: createLearnCard({
+                getAuthGrants: vi
+                    .fn()
+                    .mockResolvedValue([
+                        { id: 'g1', name: 'ex-clr-issuer', status: 'active', scope },
+                    ]),
+            }),
+        });
+        const result = await tokenScopesCheck.run(ctx);
+        expect(result.status).toBe('pass');
+        expect(result.detail).toContain('ex-clr-issuer');
     });
 
     it('fails when the matching grant has expired', async () => {
@@ -189,6 +205,31 @@ describe('signingAuthorityCheck', () => {
         });
         const result = await signingAuthorityCheck.run(ctx);
         expect(result.status).toBe('pass');
+    });
+
+    const primaryAt = (endpoint: string) =>
+        createLearnCard({
+            getRegisteredSigningAuthorities: vi.fn().mockResolvedValue([
+                {
+                    signingAuthority: { endpoint },
+                    relationship: { name: 'x', did: 'did:key:sa', isPrimary: true },
+                },
+            ]),
+        });
+
+    it('accepts a plain-http signer on localhost', async () => {
+        const result = await signingAuthorityCheck.run(
+            createContext({ learnCard: primaryAt('http://localhost:5100/api') })
+        );
+        expect(result.status).toBe('pass');
+    });
+
+    it('fails a plain-http signer on a non-loopback host', async () => {
+        const result = await signingAuthorityCheck.run(
+            createContext({ learnCard: primaryAt('http://sign.example/api') })
+        );
+        expect(result.status).toBe('fail');
+        expect(result.detail).toContain('not https');
     });
 
     it('fails when there is no primary signing authority', async () => {

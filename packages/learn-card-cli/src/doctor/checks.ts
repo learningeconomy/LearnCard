@@ -101,6 +101,16 @@ const scopeCovers = (grantScope: string, required: string): boolean => {
     });
 };
 
+const isLoopback = (url: string): boolean => {
+    try {
+        return ['localhost', '127.0.0.1', '[::1]', 'host.docker.internal'].includes(
+            new URL(url).hostname
+        );
+    } catch {
+        return false;
+    }
+};
+
 const buildDoctorTestVc = (issuerDid: string): UnsignedVC => ({
     '@context': ['https://www.w3.org/ns/credentials/v2'],
     type: ['VerifiableCredential'],
@@ -198,11 +208,27 @@ export const tokenScopesCheck: Check = {
     title: 'Token scopes',
     run: async ({ project, learnCard, requiredScopes }): Promise<CheckResult> => {
         const fix = `Run \`npx @learncard/cli token --scope '${requiredScopes.join(' ')}'\``;
-        const token = project.env.API_TOKEN;
-        if (!token) return { status: 'warn', detail: 'No API_TOKEN in .env.', fix };
-
         const grants = (await learnCard.invoke.getAuthGrants()) ?? [];
         const active = grants.filter(grant => grant.status === 'active');
+
+        const token = project.env.API_TOKEN;
+        if (!token) {
+            const covering = active.find(candidate =>
+                requiredScopes.every(required => scopeCovers(candidate.scope ?? '', required))
+            );
+            if (covering) {
+                return {
+                    status: 'pass',
+                    detail: `Active grant "${covering.name ?? covering.id}" covers ${requiredScopes.join(' ')} (its token is stored outside .env, e.g. your --secrets-out file).`,
+                };
+            }
+            return {
+                status: 'warn',
+                detail: 'No API_TOKEN in .env and no active grant covers the required scopes.',
+                fix,
+            };
+        }
+
         const grantId = project.env.API_TOKEN_GRANT_ID;
         const grant = grantId
             ? active.find(candidate => candidate.id === grantId)
@@ -254,11 +280,12 @@ export const signingAuthorityCheck: Check = {
         if (!primary) {
             return { status: 'fail', detail: 'No primary signing authority registered.', fix };
         }
-        if (!/^https:\/\//.test(primary.signingAuthority.endpoint)) {
+        const endpoint = primary.signingAuthority.endpoint;
+        if (!/^https:\/\//.test(endpoint) && !isLoopback(endpoint)) {
             return {
                 status: 'fail',
-                detail: `Signing authority endpoint "${primary.signingAuthority.endpoint}" is not https.`,
-                fix,
+                detail: `Signing authority endpoint "${endpoint}" is not https.`,
+                fix: 'Re-register the signing authority with an https endpoint (plain http is only accepted for localhost).',
             };
         }
         try {
