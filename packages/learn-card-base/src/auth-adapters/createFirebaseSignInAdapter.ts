@@ -199,13 +199,14 @@ export const createFirebaseSignInAdapter = (config: FirebaseSignInAdapterConfig)
                         : undefined,
                 };
                 signedIn('google', mapped);
-                if (isNative()) {
+                const googleIdToken = result.credential?.idToken;
+                if (isNative() && googleIdToken) {
                     try {
                         const { GoogleAuthProvider, signInWithCredential } =
                             await loadFirebaseAuth();
                         await signInWithCredential(
                             auth(),
-                            GoogleAuthProvider.credential(result.credential?.idToken)
+                            GoogleAuthProvider.credential(googleIdToken)
                         );
                     } catch (error) {
                         log.info('Google web-layer credential sign-in failed');

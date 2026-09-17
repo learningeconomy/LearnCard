@@ -55,9 +55,13 @@ const initializeTenantSubsystems = async (config: TenantConfig): Promise<void> =
     // runs, so a non-Firebase tenant never touches the Firebase SDK.
     await initializeAuthProvider(getAuthConfig());
     emitConfigDebugEvent(
-        'bootstrap:firebase_init',
-        `Firebase initialized (project: ${config.auth.firebase?.projectId ?? 'default'})`,
-        { data: { projectId: config.auth.firebase?.projectId } }
+        'bootstrap:auth_provider_init',
+        `Auth provider initialized (provider: ${config.auth.provider}${
+            config.auth.provider === 'firebase'
+                ? `, project: ${config.auth.firebase?.projectId ?? 'default'}`
+                : ''
+        })`,
+        { data: { provider: config.auth.provider, projectId: config.auth.firebase?.projectId } }
     );
 
     setImageUploadConfigFromTenant(config);

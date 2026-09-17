@@ -145,8 +145,19 @@ export const createFirebasePhoneAuth = (
                             ),
                             register(
                                 native.addListener!('phoneVerificationCompleted', event => {
-                                    if (generation === currentGeneration)
+                                    if (generation !== currentGeneration) return;
+                                    if (pending) {
                                         emit(completed, event.verificationCode);
+                                        return;
+                                    }
+                                    // Android instant verification fires this without
+                                    // `phoneCodeSent`; settle the send so a retry isn't blocked.
+                                    const error = new Error(
+                                        'Phone verification completed before a code was sent. Please try again.'
+                                    );
+                                    reject(error);
+                                    reset();
+                                    emit(failed, error);
                                 })
                             ),
                             register(
@@ -178,11 +189,7 @@ export const createFirebasePhoneAuth = (
         onPhoneCodeSent: (callback): (() => void) => subscribe(sent, callback),
         onPhoneVerificationCompleted: (callback): (() => void) => subscribe(completed, callback),
         onPhoneVerificationFailed: (callback): (() => void) => subscribe(failed, callback),
-        cleanup: (): void => {
-            reset();
-            sent.clear();
-            completed.clear();
-            failed.clear();
-        },
+        // Subscribers own their unsubscribe functions; cleanup only tears down the session.
+        cleanup: reset,
     };
 };

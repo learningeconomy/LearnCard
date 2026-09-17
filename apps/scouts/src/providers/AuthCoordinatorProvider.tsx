@@ -1463,7 +1463,6 @@ export const AuthCoordinatorProvider: React.FC<ScoutsAuthCoordinatorProviderProp
         web3AuthStore.set.provider(null);
         redirectStore.set.lcnRedirect(null);
         authUserStore.set.setUser(null);
-        authUserStore.set.setUser(null);
         authStore.set.typeOfLogin(null);
         chapiStore.set.isChapiInteraction(null);
 

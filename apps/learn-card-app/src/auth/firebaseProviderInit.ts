@@ -19,11 +19,9 @@ import {
     registerAuthProviderFactory,
     registerAuthProviderInitializer,
     registerSignInAdapterFactory,
-    resolveSignInAdapter,
     authStore,
     authUserStore,
     SocialLoginTypes,
-    getAuthConfig,
     type AuthConfig,
     type TenantFirebaseConfig,
 } from 'learn-card-base';
@@ -54,17 +52,18 @@ registerAuthProviderFactory('firebase', () =>
               }
             : undefined,
         onReauthenticate: async (token: string) => {
-            await resolveSignInAdapter(getAuthConfig()).signInWithCustomToken(token);
+            await getFirebaseSignInAdapter().signInWithCustomToken(token);
         },
         onSignOut: async () => {
-            await resolveSignInAdapter(getAuthConfig()).signOut();
+            await getFirebaseSignInAdapter().signOut();
             authUserStore.set.setUser(null);
         },
     })
 );
 
-registerSignInAdapterFactory('firebase', () =>
-    createFirebaseSignInAdapter({
+let firebaseSignInAdapter: ReturnType<typeof createFirebaseSignInAdapter> | undefined;
+const getFirebaseSignInAdapter = (): ReturnType<typeof createFirebaseSignInAdapter> =>
+    (firebaseSignInAdapter ??= createFirebaseSignInAdapter({
         getAuth: () => auth(),
         getNativeAuth: () => FirebaseAuthentication,
         isNativePlatform: () => Capacitor.isNativePlatform(),
@@ -83,8 +82,9 @@ registerSignInAdapterFactory('firebase', () =>
             android: { packageName: getNativeBundleId(), installApp: true, minimumVersion: '12' },
             dynamicLinkDomain: getFirebaseDynamicLinkDomain(),
         },
-    })
-);
+    }));
+
+registerSignInAdapterFactory('firebase', getFirebaseSignInAdapter);
 
 registerAuthProviderInitializer('firebase', (config: AuthConfig) => {
     initializeFirebaseFromTenant(

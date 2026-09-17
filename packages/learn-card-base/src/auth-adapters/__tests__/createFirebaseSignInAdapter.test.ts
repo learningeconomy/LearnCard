@@ -303,6 +303,37 @@ describe('Firebase sign-in adapter', () => {
         await expect(adapter.confirmPhoneOtp('123456')).rejects.toThrow('Request a phone code');
     });
 
+    it('settles the send when instant verification completes before a code is sent', async () => {
+        const adapter = create({ isNativePlatform: () => true });
+        const failed = vi.fn();
+        const completedCb = vi.fn();
+        adapter.onPhoneVerificationFailed(failed);
+        adapter.onPhoneVerificationCompleted(completedCb);
+        const request = adapter.sendPhoneOtp('+15555550100');
+        const rejected = expect(request).rejects.toThrow('before a code was sent');
+        await vi.waitFor(() => expect(native.signInWithPhoneNumber).toHaveBeenCalled());
+        autoVerified?.({});
+        await rejected;
+        expect(failed).toHaveBeenCalledOnce();
+        expect(completedCb).not.toHaveBeenCalled();
+        const retry = adapter.sendPhoneOtp('+15555550100');
+        await vi.waitFor(() => expect(native.signInWithPhoneNumber).toHaveBeenCalledTimes(2));
+        codeSent?.({ verificationId: 'retry-id' });
+        await expect(retry).resolves.toEqual({ verificationId: 'retry-id' });
+    });
+
+    it('cleanup resets the session but keeps subscribers attached', async () => {
+        const adapter = create({ isNativePlatform: () => true });
+        const sent = vi.fn();
+        adapter.onPhoneCodeSent(sent);
+        adapter.cleanup?.();
+        const request = adapter.sendPhoneOtp('+15555550100');
+        await vi.waitFor(() => expect(native.signInWithPhoneNumber).toHaveBeenCalled());
+        codeSent?.({ verificationId: 'id' });
+        await request;
+        expect(sent).toHaveBeenCalledOnce();
+    });
+
     it('checks native Google user/token and tolerates a failed secondary credential sync', async () => {
         sdk.signInWithCredential.mockRejectedValueOnce(new Error('sync failed'));
         const onSignedIn = vi.fn();

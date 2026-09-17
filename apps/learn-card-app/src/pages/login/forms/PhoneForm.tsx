@@ -104,10 +104,12 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
         return () => {
             unsubscribeSent();
             unsubscribeCompleted();
+            adapter.cleanup?.();
         };
     }, [adapter]);
 
     const resetForm = () => {
+        adapter.cleanup?.();
         setCurrentStep(PhoneFormStepsEnum.phone);
         setPhone('');
         setCode('');

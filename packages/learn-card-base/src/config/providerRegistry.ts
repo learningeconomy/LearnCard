@@ -30,6 +30,9 @@
 
 import type { AuthProvider, KeyDerivationStrategy, SignInAdapter } from '../auth-coordinator/types';
 import type { AuthConfig } from './authConfig';
+import { getLogger } from '../logging/logger';
+
+const log = getLogger('provider-registry');
 
 // ---------------------------------------------------------------------------
 // Types
@@ -202,8 +205,9 @@ export const registerAuthProviderInitializer = (
  * Idempotent: a given provider name is initialized at most once per session,
  * no matter how many times (or how early/often) this is called.
  *
- * No-ops (does not throw) when no initializer is registered for the
- * configured provider — not every provider needs a global bootstrap step.
+ * Logs a warning (does not throw) when no initializer is registered for the
+ * configured provider, since that usually means the provider's init module
+ * wasn't imported before bootstrap.
  */
 export const initializeAuthProvider = async (config: AuthConfig): Promise<void> => {
     const { authProvider } = config;
@@ -212,7 +216,13 @@ export const initializeAuthProvider = async (config: AuthConfig): Promise<void> 
 
     const initializer = authProviderInitializers.get(authProvider);
 
-    if (!initializer) return;
+    if (!initializer) {
+        log.warn('No auth provider initializer registered; skipping SDK bootstrap', {
+            authProvider,
+            registered: [...authProviderInitializers.keys()],
+        });
+        return;
+    }
 
     // Mark before awaiting so a second call issued before this one settles
     // (e.g. duplicate bootstrap invocations) can't re-enter the initializer.
