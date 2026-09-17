@@ -255,7 +255,7 @@ See `@learncard/holder-continuity` `BUNDLE_SPEC.md` for the ZIP layout and manif
 npx @learncard/cli org apply ./org.yaml
 ```
 
-Reconciles a declarative YAML/JSON spec (issuer profile, signing authority, districts/managed profiles, service-account tokens) against the network. Idempotent — re-running with the same file makes no changes. Use `--dry-run` to preview, and `--secrets-out ./secrets.env` to save any newly created service-account tokens (required the first time a `serviceAccounts` entry is created). See `examples/sc-pilot.network.yaml` for a full example.
+Reconciles a declarative YAML/JSON spec (issuer profile, signing authority, districts/managed profiles, service-account tokens) against the network. Idempotent — re-running with the same file makes no changes. Use `--dry-run` to preview, and `--secrets-out ./secrets.env` to save any newly created service-account tokens (required the first time a `serviceAccounts` entry is created). See `examples/example-pilot.network.yaml` for a full example.
 
 ```yaml
 issuer:
