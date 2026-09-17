@@ -1895,33 +1895,12 @@ export async function getLearnCardNetworkPlugin(
                         !input.signedCredential &&
                         (input.templateUri || input.template)
                     ) {
-                        // Local signing: prepare the unsigned credential from the
-                        // template (both forms), allocate the managed refresh service,
-                        // sign ONCE, then hand the signed credential to the server's
-                        // unified send so activity/contract behavior and the canonical
-                        // receipt come from the managed branch (decision 6 handoff).
-                        let targetDid: string;
-                        let holder: { profileId?: string; did: string };
-
-                        if (input.recipient.startsWith('did:')) {
-                            targetDid = input.recipient;
-                            holder = { did: input.recipient };
-                        } else {
-                            const targetProfile = await _learnCard.invoke.getProfile(
-                                input.recipient
-                            );
-
-                            // Unresolvable profile: delegate to the server so the
-                            // authoritative refresh guards decide — never a local
-                            // non-refresh fallback.
-                            if (!hasDid(targetProfile)) return client.boost.send.mutate(input);
-
-                            targetDid = targetProfile.did;
-                            holder = { profileId: input.recipient, did: targetProfile.did };
-                        }
-
+                        // Local signing. Load the template first (read-only) so a template-
+                        // supplied credential ID is honored, then let the server run every
+                        // managed-send guard, create/reuse the boost and allocate the refresh
+                        // in ONE step. With an idempotencyKey that step also makes the whole
+                        // call retryable; `completed` means this key already delivered.
                         let boost: UnsignedVC;
-                        let boostUri = input.templateUri;
 
                         if (input.templateUri) {
                             const result = await getBoostTemplateForIssuance(
@@ -1941,6 +1920,20 @@ export async function getLearnCardNetworkPlugin(
                                 JSON.stringify(input.template!.credential)
                             ) as UnsignedVC;
                         }
+
+                        const prepared = await client.boost.prepareRefreshableSend.mutate({
+                            recipient: input.recipient,
+                            ...(input.templateUri
+                                ? { templateUri: input.templateUri }
+                                : { template: input.template! }),
+                            ...(input.contractUri ? { contractUri: input.contractUri } : {}),
+                            ...(boost.id ? { credentialId: boost.id } : {}),
+                            ...(input.idempotencyKey
+                                ? { idempotencyKey: input.idempotencyKey }
+                                : {}),
+                        });
+
+                        if (prepared.completed) return prepared.completed;
 
                         const boostString = JSON.stringify(boost);
                         const allowAutoAppendEvidence = !hasDynamicEvidenceTemplate(boostString);
@@ -1978,58 +1971,39 @@ export async function getLearnCardNetworkPlugin(
                         if (Array.isArray(boost.credentialSubject)) {
                             boost.credentialSubject = boost.credentialSubject.map(subject => ({
                                 ...subject,
-                                id: targetDid,
+                                id: prepared.holderDid,
                             }));
                         } else {
                             boost.credentialSubject = {
                                 ...boost.credentialSubject,
-                                id: targetDid,
+                                id: prepared.holderDid,
                             };
                         }
 
-                        // A stable credential ID must exist before allocation: the
-                        // refresh aggregate is permanently bound to it.
-                        if (!boost.id) boost.id = `urn:uuid:${crypto.randomUUID()}`;
+                        // The refresh aggregate is permanently bound to this ID.
+                        boost.id = prepared.credentialId;
 
-                        if (!boostUri) {
-                            // The server applies the same managed-send guards before
-                            // creating the boost, its permissions, skills and contract
-                            // link. Signing can then bind the real boost URI.
-                            boostUri = await client.boost.prepareRefreshableSend.mutate({
-                                recipient: input.recipient,
-                                template: input.template!,
-                                contractUri: input.contractUri,
-                            });
-                        }
+                        if (boost.type?.includes('BoostCredential'))
+                            boost.boostId = prepared.boostUri;
 
-                        if (boost.type?.includes('BoostCredential')) boost.boostId = boostUri;
+                        boost = injectManagedRefreshService(boost, prepared.refreshService);
 
-                        // Allocate BEFORE signing: the refresh service must be part of
-                        // the signed payload.
-                        const allocation =
-                            await client.credentialRefresh.allocateCredentialRefresh.mutate({
-                                holder,
-                                credentialId: boost.id,
-                            });
-
-                        boost = injectManagedRefreshService(boost, allocation.refreshService);
-
-                        // Signing goes through the vc-plugin boundary, which prepares
-                        // the managed inline JSON-LD context (Task 1) — the service and
-                        // its terms are signed in one proof, never mutated afterwards.
+                        // Signing goes through the vc-plugin boundary, which prepares the
+                        // managed inline JSON-LD context — the service and its terms are
+                        // signed in one proof, never mutated afterwards.
                         const signedCredential = await issueCredentialWithNetworkStatus(
                             _learnCard,
                             client,
                             boost
                         );
 
-                        // Validated handoff: the server re-derives the refresh ID from
-                        // the signed service, re-validates ownership/holder/proof, and
-                        // returns the canonical receipt alongside a real activityId.
+                        // Validated handoff: the server re-derives the refresh ID from the
+                        // signed service, re-validates ownership/holder/proof, records the
+                        // idempotency intent, and returns the canonical receipt.
                         return client.boost.send.mutate({
                             ...input,
                             template: undefined,
-                            templateUri: boostUri,
+                            templateUri: prepared.boostUri,
                             signedCredential,
                             refresh: true,
                         });

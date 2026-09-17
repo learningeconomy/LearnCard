@@ -129,6 +129,22 @@ If your template includes the `BoostCredential` type, also keep `result.uri` (th
 
 The recipient sees **Provisional Transcript** in their LearnCard app once they claim it.
 
+### Retrying a refreshable send safely
+
+Issuing a refreshable credential takes several network steps (prepare, sign, deliver). Pass an `idempotencyKey` that is stable for the logical send — for example your own enrollment or award ID — and retry the **same** call after any failure:
+
+```js
+const result = await learnCard.invoke.send({
+    type: 'boost',
+    recipient: 'student-profile-id',
+    templateUri,
+    refresh: true,
+    idempotencyKey: `course-cert:${enrollmentId}`,
+});
+```
+
+Retries with the same key reuse the same boost and refresh allocation and return the original result once delivery has succeeded. Reusing a key for a different recipient or template is rejected with `CONFLICT`. Keys are scoped to your profile and only apply to `refresh: true` sends.
+
 ### `sendBoost` also issues refreshable credentials
 
 For a guided demonstration without writing SDK code, the CLI offers `learncard demo refresh`.

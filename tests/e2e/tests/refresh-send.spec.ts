@@ -394,6 +394,36 @@ describe('Refreshable Sends E2E (LC-2198)', () => {
         }
     }, 180_000);
 
+    test('SDK send with idempotencyKey: whole-call retry returns the same delivery', async () => {
+        const idempotencyKey = `e2e-${randomUUID()}`;
+        const boostsBefore = await a.invoke.countBoosts();
+        const input = {
+            type: 'boost',
+            recipient: USERS.b.profileId,
+            template: {
+                credential: ordinaryTemplate('Idempotent Refresh Boost', a.id.did()),
+                name: 'Idempotent Refresh Boost',
+            },
+            refresh: true,
+            idempotencyKey,
+        } as any;
+
+        const first = await a.invoke.send(input);
+        const second = await a.invoke.send(input);
+
+        expectValidReceipt(first.refresh);
+        expect(second).toEqual(first);
+
+        // The retry reuses the prepared boost and allocation: exactly one new boost
+        // and one delivery for the logical send.
+        expect(await a.invoke.countBoosts()).toBe(boostsBefore + 1);
+
+        const incoming = await b.invoke.getIncomingCredentials();
+        expect(
+            incoming.filter((credential: any) => credential.uri === first.credentialUri)
+        ).toHaveLength(1);
+    }, 240_000);
+
     test('SDK send to a local DID recipient: receipt holder is the recipient DID', async () => {
         const bProfile = await b.invoke.getProfile();
         const boostUri = await a.invoke.createBoost(
