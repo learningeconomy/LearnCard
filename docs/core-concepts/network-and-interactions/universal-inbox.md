@@ -53,3 +53,70 @@ Direct deliveries to existing accounts don't go through this escrow; they are st
 - [Send & Issue Credentials](../../how-to-guides/send-credentials.md) — the `send()` call and its response
 - [Know When a Credential Is Claimed](../../tutorials/listen-to-webhooks.md) — the webhooks
 - [Universal Inbox API](../../sdks/learncard-network/universal-inbox-api.md) — the lower-level REST surface
+
+## Batch Issuance
+
+Use `POST /inbox/issue-batch` (tRPC `inbox.issueBatch`) or
+`learnCard.invoke.sendCredentialsViaInbox({ items, configuration })` to issue up to
+100 credentials per request. The same `inbox:write` permission and signing,
+claiming, guardian approval, webhook, and tenant email behavior apply as for single issuance.
+
+```typescript
+const batch = await learnCard.invoke.sendCredentialsViaInbox({
+    configuration: {
+        signingAuthority: { endpoint: 'https://issuer.example/sign', name: 'default' },
+        webhookUrl: 'https://issuer.example/events',
+    },
+    items: [
+        {
+            recipient: { type: 'email', value: 'student@example.com' },
+            credential: transcript,
+            idempotencyKey: 'semester-2026-student-001',
+        },
+    ],
+});
+
+const failedItems = batch.results.filter(result => !result.success);
+```
+
+Batch configuration supplies defaults. Per-item configuration overrides it with a
+deep merge; arrays in template data replace the corresponding default array.
+Results preserve input order and include an `index`, a `success` flag, and either
+issuance details or an error code and message. The summary counts total, successful,
+failed, and deduplicated items. Individual failures still return HTTP 200. Invalid
+batch input, authentication failure, an exceeded quota, or an oversized request
+fail the whole request before issuance.
+
+An optional `idempotencyKey` (up to 256 characters) caches a successful result for
+24 hours per issuer. Reusing it returns `deduplicated: true` without another
+credential, email, or webhook. Use a unique key for each intended issuance and reuse
+it when retrying that issuance. The server atomically reserves each key before
+issuance. Overlapping attempts return a per-item `CONFLICT`; once the first attempt
+completes, a retry returns the cached success. Reusing a key with different input
+also returns `CONFLICT`.
+
+Validation and template-preparation failures release the key. If an error or process
+termination occurs after issuance starts, the outcome may be uncertain: a credential
+or email may already exist. The reservation remains for up to 24 hours to prevent
+automatic duplicate issuance, and retries return `CONFLICT` until a successful
+result is recorded. Check the issuer's sent inbox records and contact support to
+reconcile an unconfirmed outcome; do not retry with a new key or assume expiry means
+the original attempt failed. This is retry protection, not an exactly-once transaction
+across credential storage, email, and webhooks. Production requires shared Redis;
+batch issuance fails closed when it is not configured.
+
+For 20,000 transcripts, send approximately 200 requests of 100 items, reducing the
+chunk size when needed to keep each serialized JSON request at or below **4 MiB
+(4,194,304 bytes)**. Oversized requests return HTTP 413. This conservative application
+limit accounts for the Lambda deployment's
+[6 MB synchronous invocation limit](https://docs.aws.amazon.com/lambda/latest/api/API_Invoke.html);
+20 MB batches are not supported by that deployment. Gateway envelope overhead can
+further reduce the usable size, so keep margin below the limit in clients.
+
+The default quota is **10,000 submitted items per hour per issuer**, including
+replays and failed attempts. A 20,000-item run must therefore span at least two quota
+windows. On HTTP 429, wait for the hourly window to expire (at most 3,600 seconds).
+Retry failed items with their original keys; after an uncertain transport failure,
+retry the original chunk with the same keys. Internal concurrency defaults to 10.
+Operators can set `INBOX_BATCH_ITEMS_PER_HOUR` and `INBOX_BATCH_CONCURRENCY` to
+positive integers. Rate limiting the single-issue endpoint remains a separate follow-up.
