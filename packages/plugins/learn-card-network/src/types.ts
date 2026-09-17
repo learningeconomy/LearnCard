@@ -682,7 +682,7 @@ export type LearnCardNetworkPluginMethods = {
     getAPITokenForAuthGrant: (id: string) => Promise<string>;
 
     /** Issue up to 100 credentials with per-item results and optional idempotency keys. */
-    sendCredentialsViaInbox: (
+    sendCredentialBatchViaInbox: (
         batch: IssueInboxCredentialBatch
     ) => Promise<IssueInboxCredentialBatchResponse>;
     sendCredentialViaInbox: (

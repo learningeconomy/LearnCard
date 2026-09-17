@@ -184,6 +184,55 @@ const getLearnCard = async (seed = 'a'.repeat(64)) => {
     };
 };
 
+describe('inbox batch method', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it('forwards configuration, keys and items to issueBatch and preserves per-item results', async () => {
+        const response = {
+            results: [
+                {
+                    success: false,
+                    index: 0,
+                    error: { code: 'CONFLICT', message: 'Already in progress' },
+                },
+            ],
+            summary: { total: 1, succeeded: 0, failed: 1, deduplicated: 0 },
+        };
+        const mutate = vi.fn().mockResolvedValue(response);
+        const client = { ...getMockClient(), inbox: { issueBatch: { mutate } } };
+        vi.mocked(getBrainClient).mockResolvedValue(client as never);
+        const learnCard = getMockLearnCard();
+        const plugin = await getLearnCardNetworkPlugin(learnCard, 'https://network.example/trpc');
+        const batch = {
+            configuration: { delivery: { suppress: true } },
+            items: [
+                {
+                    recipient: { type: 'email' as const, value: 'student@example.test' },
+                    templateUri: 'test-template',
+                    idempotencyKey: 'test-key',
+                },
+            ],
+        };
+        await expect(
+            plugin.methods?.sendCredentialBatchViaInbox(learnCard, batch)
+        ).resolves.toEqual(response);
+        expect(mutate).toHaveBeenCalledExactlyOnceWith(batch);
+        expect(client.profile.getProfile.query).toHaveBeenCalled();
+    });
+
+    it('does not submit a batch when the issuer profile is missing', async () => {
+        const mutate = vi.fn();
+        const client = { ...getMockClient(null), inbox: { issueBatch: { mutate } } };
+        vi.mocked(getBrainClient).mockResolvedValue(client as never);
+        const learnCard = getMockLearnCard();
+        const plugin = await getLearnCardNetworkPlugin(learnCard, 'https://network.example/trpc');
+        await expect(
+            plugin.methods?.sendCredentialBatchViaInbox(learnCard, { items: [] })
+        ).rejects.toThrow();
+        expect(mutate).not.toHaveBeenCalled();
+    });
+});
+
 describe('connection prompt methods', () => {
     beforeEach(() => {
         vi.clearAllMocks();
