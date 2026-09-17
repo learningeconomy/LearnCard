@@ -53,6 +53,7 @@ vi.mock('../../../paraglide/messages.js', () => ({
     'issueFlow.addSkillsSubtitle': () => 'Choose skills',
     'issueFlow.clearSearch': () => 'Clear search',
     'issueFlow.browseAllFrameworks': () => 'Browse All Frameworks',
+    'issueFlow.removeSkill': ({ name }: { name: string }) => `Remove ${name}`,
     'issueFlow.noMatchingSkills': () => 'No matching skills found',
     'issueFlow.searching': () => 'Searching',
     'issueFlow.skillsSubtitle': () => 'Align this credential to skills',
@@ -62,8 +63,10 @@ vi.mock('../../../paraglide/messages.js', () => ({
     'skills.search.searchPlaceholder': () => 'Search skills',
 }));
 
+import type { SemanticSearchSkillRecord } from '../../../helpers/globalSkillFrameworks.helpers';
 import { SkillBrowserModal } from './SkillBrowserModal';
 import { SkillsSection } from './SkillsSection';
+import { semanticRecordToNode } from './skillBrowserShared';
 
 const creativeThinkingRecord = {
     id: 'creative-thinking',
@@ -73,9 +76,10 @@ const creativeThinkingRecord = {
     icon: 'lightbulb',
     type: 'competency',
     status: 'active',
+    targetName: '',
     frameworkId: 'framework-2',
     score: 0.95,
-};
+} satisfies SemanticSearchSkillRecord;
 
 describe('issuer skill browser', () => {
     beforeEach(() => {
@@ -97,6 +101,23 @@ describe('issuer skill browser', () => {
     afterEach(() => {
         vi.useRealTimers();
         vi.clearAllMocks();
+    });
+
+    it('maps semantic API records to complete skill nodes', () => {
+        expect(semanticRecordToNode(creativeThinkingRecord)).toEqual(
+            expect.objectContaining({
+                id: 'creative-thinking',
+                frameworkId: 'framework-2',
+                targetFramework: 'framework-2',
+                targetName: 'Creative Thinking',
+                targetDescription: 'Generate useful new ideas.',
+                targetCode: 'CT',
+                icon: 'lightbulb',
+                role: 'competency',
+                subskills: [],
+                type: 'Alignment',
+            })
+        );
     });
 
     it('updates an open browser when all global frameworks finish loading', () => {

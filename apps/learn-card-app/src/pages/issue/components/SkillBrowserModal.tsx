@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Search, X, Check, Plus, Loader2 } from 'lucide-react';
 
 import CompetencyIcon from '../../SkillFrameworks/CompetencyIcon';
@@ -61,10 +61,7 @@ const FrameworkSearchResults: React.FC<{
     const { data, isLoading } = useGlobalSemanticSearchSkills(query, [framework.frameworkId], {
         limit: 24,
     });
-    const results = useMemo(
-        () => dedupeByName((data?.records ?? []).map(semanticRecordToNode)),
-        [data]
-    );
+    const results = dedupeByName((data?.records ?? []).map(semanticRecordToNode));
 
     return (
         <section className="space-y-2">
