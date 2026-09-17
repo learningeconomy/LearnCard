@@ -111,23 +111,42 @@ export const runPromote = async (options: PromoteOptions): Promise<void> => {
         );
     assertSourceNetwork(sourceProject.env, from, fromNetwork);
 
-    await fs.mkdir(targetDir, { recursive: true });
-    const targetProject = await loadProject(targetDir);
-    if (!targetProject.env.SECURE_SEED) {
-        // Only the seed (and, if present, the matching profile ID) carries over — every
-        // other resource (tokens, signing authority, templates, contracts) is per-network
-        // and must be recreated by `org apply` against the target network below.
-        await saveProject(targetProject, {
-            SECURE_SEED: sourceProject.env.SECURE_SEED,
-            ...(sourceProject.env.PROFILE_ID ? { PROFILE_ID: sourceProject.env.PROFILE_ID } : {}),
-            NETWORK_URL: toNetwork,
-        });
-    }
+    // Only the seed (and, if present, the matching profile ID) carries over — every
+    // other resource (tokens, signing authority, templates, contracts) is per-network
+    // and must be recreated by `org apply` against the target network below.
+    const carried = {
+        SECURE_SEED: sourceProject.env.SECURE_SEED,
+        ...(sourceProject.env.PROFILE_ID ? { PROFILE_ID: sourceProject.env.PROFILE_ID } : {}),
+        NETWORK_URL: toNetwork,
+    };
 
     const spec = await loadOrgSpec(org);
     assertSecretsOutForPromote(!!spec.serviceAccounts?.length, to, { secretsOut, dryRun });
 
-    await runOrgApply(org, { ...options, cwd: targetDir, network: toNetwork, dryRun, secretsOut });
+    if (dryRun) {
+        out.log(
+            `Dry run: ${targetDir} is not created; previewing against ${to} with the carried-over seed.`
+        );
+        await runOrgApply(org, {
+            ...options,
+            cwd: process.cwd(),
+            presetEnv: carried,
+            network: toNetwork,
+            dryRun,
+            secretsOut,
+        });
+    } else {
+        await fs.mkdir(targetDir, { recursive: true });
+        const targetProject = await loadProject(targetDir);
+        if (!targetProject.env.SECURE_SEED) await saveProject(targetProject, carried);
+        await runOrgApply(org, {
+            ...options,
+            cwd: targetDir,
+            network: toNetwork,
+            dryRun,
+            secretsOut,
+        });
+    }
 
     if (!skipDoctor && !dryRun) {
         await runDoctor({ ...options, cwd: targetDir, network: toNetwork });

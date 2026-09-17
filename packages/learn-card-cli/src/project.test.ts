@@ -218,3 +218,15 @@ describe('connectAsManaged', () => {
         );
     });
 });
+
+describe('connect readOnly', () => {
+    it('does not write NETWORK_URL to .env when readOnly is set', async () => {
+        const { connect } = await import('./project');
+        const cwd = await fs.mkdtemp(path.join(os.tmpdir(), 'lc-readonly-'));
+        vi.spyOn(console, 'log').mockImplementation(() => {});
+        const project = await loadProject(cwd);
+        project.env.SECURE_SEED = 'a'.repeat(64);
+        await connect(project, { network: 'staging', readOnly: true }).catch(() => undefined);
+        expect(await fs.readdir(cwd)).toEqual([]);
+    });
+});

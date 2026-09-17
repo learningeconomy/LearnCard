@@ -39,6 +39,7 @@ export interface ProjectOptions {
     network?: string;
     didkit?: Promise<Buffer>;
     json?: boolean;
+    readOnly?: boolean;
 }
 
 export type NetworkCard = NetworkLearnCardFromSeed['returnValue'];
@@ -365,7 +366,7 @@ export async function connect(
     if (!seed) throw new Error('Create an identity before connecting.');
     const services = resolveServices(project.env, options.network);
     assertProjectNetwork(project, services.network);
-    if (services.network !== PRODUCTION_NETWORK || project.env.NETWORK_URL) {
+    if (!options.readOnly && (services.network !== PRODUCTION_NETWORK || project.env.NETWORK_URL)) {
         await saveProject(project, {
             NETWORK_URL: services.network === PRODUCTION_NETWORK ? '' : services.network,
         });

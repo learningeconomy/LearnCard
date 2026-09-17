@@ -90,17 +90,17 @@ const applyIssuerProfile = async (
     learnCard: OrgLearnCard,
     dryRun: boolean,
     changes: OrgChange[]
-): Promise<void> => {
+): Promise<boolean> => {
     const { profileId, displayName } = spec.issuer;
     const existing = await learnCard.invoke.getProfile();
     if (!existing) {
         if (dryRun) {
             changes.push({ resource: 'issuer', name: profileId, action: 'would-create' });
-            return;
+            return false;
         }
         await learnCard.invoke.createProfile({ profileId, displayName, bio: '', shortBio: '' });
         changes.push({ resource: 'issuer', name: profileId, action: 'created' });
-        return;
+        return true;
     }
     if (existing.displayName !== displayName) {
         if (dryRun) {
@@ -110,7 +110,7 @@ const applyIssuerProfile = async (
                 action: 'would-update',
                 detail: 'displayName',
             });
-            return;
+            return true;
         }
         await learnCard.invoke.updateProfile({ displayName });
         changes.push({
@@ -119,9 +119,10 @@ const applyIssuerProfile = async (
             action: 'updated',
             detail: 'displayName',
         });
-        return;
+        return true;
     }
     changes.push({ resource: 'issuer', name: profileId, action: 'unchanged' });
+    return true;
 };
 
 const applySigningAuthority = async (
@@ -400,6 +401,48 @@ const applyWebhooks = async (
     }
 };
 
+const planFreshOrg = (spec: OrgSpec, project: Project, changes: OrgChange[]): void => {
+    const note = 'after the issuer profile is created';
+    changes.push({
+        resource: 'signingAuthority',
+        name: spec.issuer.signingAuthority.name,
+        action: 'would-create',
+        detail: note,
+    });
+    if (spec.profileManager) {
+        changes.push({
+            resource: 'profileManager',
+            name: spec.profileManager.displayName,
+            action: 'would-create',
+            detail: note,
+        });
+        for (const entry of spec.profileManager.managed ?? [])
+            changes.push({
+                resource: 'managedProfile',
+                name: entry.profileId,
+                action: 'would-create',
+                detail: note,
+            });
+    }
+    for (const account of spec.serviceAccounts ?? [])
+        changes.push({
+            resource: 'serviceAccount',
+            name: account.name,
+            action: 'would-create',
+            detail: note,
+        });
+    const [primary, ...extra] = spec.webhooks ?? [];
+    if (primary)
+        changes.push({
+            resource: 'webhook',
+            name: primary.url,
+            action: project.env.WEBHOOK_URL === primary.url ? 'unchanged' : 'would-create',
+            detail: 'WEBHOOK_URL in .env',
+        });
+    for (const webhook of extra)
+        changes.push({ resource: 'webhook', name: webhook.url, action: 'unchanged' });
+};
+
 export const applyOrg = async (
     spec: OrgSpec,
     learnCard: OrgLearnCard,
@@ -411,8 +454,16 @@ export const applyOrg = async (
     const managed: Array<{ profileId: string; did: string }> = [];
     const serviceAccounts: Array<{ name: string; grantId: string; created: boolean }> = [];
 
-    await applyIssuerProfile(spec, learnCard, dryRun, changes);
+    const issuerExists = await applyIssuerProfile(spec, learnCard, dryRun, changes);
     const issuerDid = resolveIssuerDid(learnCard);
+
+    if (!issuerExists) {
+        planFreshOrg(spec, project, changes);
+        return {
+            changes,
+            outputs: { issuerDid, managerDid: undefined, managed: [], serviceAccounts: [] },
+        };
+    }
 
     await applySigningAuthority(spec, learnCard, project, dryRun, changes);
 
