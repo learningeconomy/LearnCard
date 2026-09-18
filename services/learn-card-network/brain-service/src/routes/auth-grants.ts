@@ -142,6 +142,7 @@ export const authGrantsRouter = t.router({
                 updates: AuthGrantValidator.partial().omit({
                     id: true,
                     scope: true,
+                    actAs: true,
                     status: true,
                     createdAt: true,
                     expiresAt: true,
@@ -159,12 +160,20 @@ export const authGrantsRouter = t.router({
             }
 
             // Extra check to reject sensitive, invalid updates
-            const invalidUpdates = ['id', 'scope', 'status', 'createdAt', 'expiresAt', 'challenge'];
+            const invalidUpdates = [
+                'id',
+                'scope',
+                'actAs',
+                'status',
+                'createdAt',
+                'expiresAt',
+                'challenge',
+            ];
             if (invalidUpdates.some(key => input.updates.hasOwnProperty(key))) {
                 throw new TRPCError({
                     code: 'BAD_REQUEST',
                     message:
-                        'Cannot update id, scope, status, createdAt, expiresAt, or challenge of an AuthGrant',
+                        'Cannot update id, scope, actAs, status, createdAt, expiresAt, or challenge of an AuthGrant',
                 });
             }
 
