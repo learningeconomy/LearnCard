@@ -49,6 +49,8 @@ const learncardApiClient = {
 `POST /api/inbox/issue-batch` requires `inbox:write` and returns HTTP **202** with
 `{ batchId, status: 'QUEUED', createdAt }`. The SDK equivalent is
 `learnCard.invoke.sendCredentialBatchViaInbox(batch)`; tRPC uses `inbox.issueBatch`.
+An identical `requestId` retry returns the original batch ID and its current state,
+which may already be `PROCESSING`, `COMPLETED`, or `NEEDS_RECONCILIATION`.
 
 ```javascript
 const receipt = await learncardApiClient.post('/inbox/issue-batch', {
@@ -84,12 +86,15 @@ profile. Use `learnCard.invoke.getInboxCredentialBatch(batchId)` or tRPC
 | `summary`                | `total`, `succeeded`, `failed`, `deduplicated`, `completed`, `pending`, `unconfirmed`.                                                               |
 
 Polling returns HTTP 200 even with item failures. Results remain available for
-30 days after completion; unresolved jobs and reservations remain until reconciled.
+30 days after all items reach a terminal state, including `NEEDS_RECONCILIATION`.
+The original payload is removed when no items remain queued or processing.
+Unresolved replay reservations remain blocked even after the job and results expire.
 `NEEDS_RECONCILIATION` can coexist with unfinished items, so inspect `summary.pending`.
 
 Identical keyed item retries replay the same issuance with `deduplicated: true`.
 Changed payloads conflict. Later occurrences of a key within a batch always conflict.
-Side-effect-free failures release the key; uncertain issuance outcomes retain it.
+Side-effect-free failures release the key; transient preparation and signing errors
+retry up to five worker attempts before delivery. Uncertain delivery outcomes retain the key.
 Never bypass an uncertain result by issuing with a new key.
 
 Bodies over 4 MiB return 413; quota exhaustion returns 429. The default quota is

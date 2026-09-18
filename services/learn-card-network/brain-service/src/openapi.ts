@@ -25,6 +25,7 @@ export const openApiDocument = generateOpenApiDocument(appRouter, {
     ],
 });
 
+// Keep this path/status aligned with inboxBatchResponseMeta in helpers/inbox-batch-http.helpers.ts.
 // The adapter's responseMeta returns 202 for durable batch acceptance.
 const batchResponses = openApiDocument.paths?.['/inbox/issue-batch']?.post?.responses;
 if (batchResponses?.['200']) {

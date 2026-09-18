@@ -87,11 +87,13 @@ const failedItems = batch.items.filter(item => item.result?.success === false);
 ```
 
 Submission returns HTTP **202** with `batchId`, `status: 'QUEUED'`, and `createdAt`.
+Replaying a `requestId` returns the original batch ID with its current processing state.
 Poll `GET /inbox/batches/{batchId}` for ordered `items`, each with an `index`,
 processing `state`, and a `result` when available. Results retain their `success`
 flag and issuance details or error. The summary reports `total`, `succeeded`,
 `failed`, `deduplicated`, `completed`, `pending`, and `unconfirmed`.
-Completed results remain available for 30 days.
+Results remain available for 30 days after all items finish processing, including
+items marked `NEEDS_RECONCILIATION`.
 
 Batch states are `QUEUED`, `PROCESSING`, `COMPLETED`, and `NEEDS_RECONCILIATION`.
 The last state can coexist with unfinished items; use `summary.pending` to check
@@ -118,9 +120,11 @@ first occurrence of a key is attempted; later occurrences always conflict.
 
 Validation, preparation, and explicitly side-effect-free preflight failures release
 the key. Correct the input and resubmit that item under the same item key, using a
-new batch request ID. Worker retries do not consume additional quota.
+new batch request ID. Transient preparation and signing failures retry up to five
+worker attempts before delivery begins. Signing retries can leave unused credential-status
+allocations, but do not repeat delivery. Worker retries do not consume additional quota.
 
-If a worker fails after issuance may have started, it does not automatically issue
+If a worker fails after delivery or inbox persistence may have started, it does not automatically issue
 again. The item is flagged for reconciliation and its reservation remains blocked
 until resolved, beyond the normal 24-hour replay window. If known, `issuanceId`
 and `claimUrl` accompany the failure. Check the issuer's sent inbox records and
@@ -128,8 +132,11 @@ contact support; do not work around uncertainty with a new key. This is not an
 exactly-once transaction across credential storage, email, and webhooks.
 
 Jobs, quotas, results, replay reservations, and dispatch records live in Neo4j.
-Payloads and results are encrypted at rest. Unresolved jobs are retained until
-reconciliation. Redis is still used by other inbox features, but is not the batch
+Payloads and results are encrypted at rest. Once no items remain queued or processing,
+the original batch payload is removed. Job metadata and results are pruned after
+30 days, even when an outcome is unconfirmed; unresolved replay reservations remain
+blocked until reconciliation. Save any returned reconciliation IDs before results expire.
+Redis is still used by other inbox features, but is not the batch
 job store.
 
 ### Limits and background processing
