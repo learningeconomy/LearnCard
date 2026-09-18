@@ -14,9 +14,12 @@ type PreviewProps = {
     credential?: VC;
     boostUri?: string;
     issueeOverride?: string;
+    handleCloseModal?: () => void;
 };
 
 const mocks = vi.hoisted(() => ({
+    closeModal: vi.fn(),
+    issuerName: 'Example University' as string | undefined,
     newModal: vi.fn(),
     presentOptions: vi.fn(),
     isBoostCredential: vi.fn(),
@@ -29,12 +32,12 @@ const mocks = vi.hoisted(() => ({
 vi.mock('learn-card-base', () => ({
     useModal: () => ({
         newModal: mocks.newModal,
-        closeModal: vi.fn(),
+        closeModal: mocks.closeModal,
         closeAllModals: vi.fn(),
     }),
     CredentialSubjectDisplay: () => null,
     useGetVCInfo: () => ({
-        issuerName: 'Example University',
+        issuerName: mocks.issuerName,
         issuerDid: 'did:example:issuer',
         issueeName: 'Ada Learner',
         title: 'Example Achievement',
@@ -153,6 +156,8 @@ const credential = {
 describe('BoostEarnedCard', () => {
     beforeEach(() => {
         mocks.newModal.mockClear();
+        mocks.closeModal.mockClear();
+        mocks.issuerName = 'Example University';
         mocks.presentOptions.mockClear();
         mocks.isBoostCredential.mockReturnValue(true);
         mocks.boostPreview.mockClear();
@@ -231,7 +236,7 @@ describe('BoostEarnedCard', () => {
         expect(mocks.presentOptions).not.toHaveBeenCalled();
     });
 
-    it('displays the signed issuer DID instead of the endorsement target ID', () => {
+    it('uses the resolved issuer and keeps the endorsement preview close action', () => {
         mocks.isBoostCredential.mockReturnValue(false);
 
         render(
@@ -248,8 +253,33 @@ describe('BoostEarnedCard', () => {
 
         const preview = mocks.newModal.mock.calls[0]?.[0] as
             React.ReactElement<PreviewProps> | undefined;
-        expect(preview?.props.issueeOverride).toBe('did:example:issuer');
+        expect(preview?.props.issueeOverride).toBe('Example University');
         expect(preview?.props.issueeOverride).not.toBe('Ada Learner');
+        expect(preview?.props.handleCloseModal).toBeTypeOf('function');
+
+        preview?.props.handleCloseModal?.();
+        expect(mocks.closeModal).toHaveBeenCalledOnce();
+    });
+
+    it('falls back to the signed issuer DID when the issuer has no resolved name', () => {
+        mocks.isBoostCredential.mockReturnValue(false);
+        mocks.issuerName = undefined;
+
+        render(
+            <BoostEarnedCard
+                credential={credential}
+                record={{ uri: 'urn:credential:endorsement' }}
+                categoryType="Social Badge"
+                useWrapper={false}
+                displayIssuerAsSubject
+            />
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Open credential' }));
+
+        const preview = mocks.newModal.mock.calls[0]?.[0] as
+            React.ReactElement<PreviewProps> | undefined;
+        expect(preview?.props.issueeOverride).toBe('did:example:issuer');
     });
 
     it('uses the earned preview flow from a custom trigger', () => {

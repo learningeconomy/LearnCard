@@ -10,7 +10,11 @@ type MenuProps = {
 };
 
 type FooterLayoutProps = React.PropsWithChildren<{
-    footerProps?: { handleDotMenu?: () => void; handleDetails?: () => void };
+    footerProps?: {
+        handleClose?: () => void;
+        handleDotMenu?: () => void;
+        handleDetails?: () => void;
+    };
 }>;
 const mocks = vi.hoisted(() => ({
     newModal: vi.fn(),
@@ -78,6 +82,11 @@ vi.mock('../../../accessibility/AccessibleBoostFooterLayout', () => ({
     default: ({ children, footerProps }: FooterLayoutProps) => (
         <div>
             {children}
+            {footerProps?.handleClose && (
+                <button type="button" onClick={footerProps.handleClose}>
+                    Footer close
+                </button>
+            )}
             {footerProps?.handleDotMenu && <button type="button">Footer options</button>}
             {footerProps?.handleDetails && (
                 <button type="button" onClick={footerProps.handleDetails}>
@@ -172,6 +181,7 @@ const courseCredential = {
 
 describe('NonBoostPreview', () => {
     it('only exposes credential options through the preview footer', () => {
+        const handleCloseModal = vi.fn();
         render(
             <NonBoostPreview
                 credential={credential}
@@ -181,7 +191,7 @@ describe('NonBoostPreview', () => {
                 customBodyCardComponent={null}
                 customFooterComponent={null}
                 customIssueHistoryComponent={null}
-                handleCloseModal={vi.fn()}
+                handleCloseModal={handleCloseModal}
                 handleShareBoost={vi.fn()}
                 onDotsClick={vi.fn()}
                 displayType={DisplayTypeEnum.Certificate}
@@ -191,6 +201,8 @@ describe('NonBoostPreview', () => {
 
         expect(screen.getByRole('button', { name: 'Footer options' })).toBeTruthy();
         expect(screen.queryByRole('button', { name: 'Embedded options' })).toBeNull();
+        fireEvent.click(screen.getByRole('button', { name: 'Footer close' }));
+        expect(handleCloseModal).toHaveBeenCalledOnce();
     });
 
     it('passes the credential record URI to earned credential options', () => {

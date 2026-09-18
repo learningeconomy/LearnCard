@@ -197,7 +197,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     const displaySubjectImage = displayIssuerAsSubject
         ? issuerProfileImageElement
         : subjectProfileImageElement;
-    const displaySubjectName = displayIssuerAsSubject ? issuerDid || issuerName : issueeName;
+    const displaySubjectName = displayIssuerAsSubject ? issuerName || issuerDid : issueeName;
     const title = titleOverride ?? credentialTitle;
 
     const isCertificate = displayType === DisplayTypeEnum.Certificate;
@@ -364,6 +364,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             verificationItems,
             lifecycleStatus,
             handleShareBoost: () => presentShareBoostLink(),
+            handleCloseModal: () => closeModal(),
             subjectImageComponent: displaySubjectImage,
             issuerImageComponent: issuerProfileImageElement,
             onDotsClick: hideOptionsMenu ? undefined : handleOptionsMenu,
