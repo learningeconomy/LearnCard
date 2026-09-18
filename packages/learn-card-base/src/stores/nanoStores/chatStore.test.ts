@@ -2,62 +2,76 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createDeferred } from '../../helpers/deferred';
+import type { BespokeLearnCard } from '../../types/learn-card';
+import { networkStore } from '../NetworkStore';
+import { switchedProfileStore, walletStore } from '../walletStore';
+import { auth } from './authStore';
 
 const mocks = vi.hoisted(() => ({
-    authMode: 'session' as 'legacy' | 'session' | undefined,
+    authMode: 'session' as 'session' | undefined,
     ensureCalls: 0,
     ensureError: null as Error | null,
-    ensureMode: 'session' as 'legacy' | 'session',
     ensureGate: null as Promise<void> | null,
     fetch: vi.fn(),
     showErrorModal: vi.fn(),
     ticketCount: 0,
+    ticketGate: null as Promise<void> | null,
+    ticketStarted: null as (() => void) | null,
 }));
 
-vi.mock('./authStore', () => ({
-    auth: { get: () => ({ did: 'did:example:learner' }) },
-}));
+// Mock factories run before static imports initialize, so load their store primitives here.
+vi.mock('./authStore', async () => {
+    const { atom } = await import('nanostores');
+    return { auth: atom<{ did: string | null }>({ did: 'did:example:learner' }) };
+});
 vi.mock('./artifactsStore', () => ({ resetArtifactsStore: vi.fn() }));
 vi.mock('./toastStore', () => ({ showToast: { set: vi.fn() } }));
 vi.mock('./ErrorModalStore', () => ({ showErrorModal: mocks.showErrorModal }));
-vi.mock('../NetworkStore', () => ({
-    networkStore: { get: { aiServiceUrl: () => 'http://localhost:3001' } },
-}));
-vi.mock('../walletStore', () => ({
-    walletStore: {
-        get: { wallet: () => ({ id: { did: () => 'did:example:learner' } }) },
-    },
-}));
-vi.mock('../../helpers/aiPassportAuth', () => {
-    const getUrl = (path: string, did?: string) => {
-        const url = new URL(path, 'http://localhost:3001');
-
-        if (mocks.authMode === 'legacy' && did) url.searchParams.set('did', did);
-
-        return url;
+vi.mock('../NetworkStore', async () => {
+    // This hoisted mock needs its dependency before the test module's imports initialize.
+    const { createStore } = await import('@udecode/zustood');
+    return {
+        networkStore: createStore('chatTestNetwork')({ aiServiceUrl: 'http://localhost:3001' }),
     };
+});
+vi.mock('../walletStore', async () => {
+    // This hoisted mock needs its dependency before the test module's imports initialize.
+    const { createStore } = await import('@udecode/zustood');
+    return {
+        walletStore: createStore('chatTestWallet')<{ wallet: BespokeLearnCard | null }>({
+            wallet: null,
+        }),
+        switchedProfileStore: createStore('chatTestProfile')<{
+            switchedDid: string | undefined;
+        }>({ switchedDid: undefined }),
+    };
+});
+vi.mock('../../helpers/aiPassportAuth', async () => {
+    // Resolve the mocked store within the hoisted factory, not the test module's binding.
+    const { networkStore } = await import('../NetworkStore');
+    const getUrl = (path: string): URL => new URL(path, networkStore.get.aiServiceUrl());
 
     return {
-        aiPassportFetch: (path: string, init: RequestInit = {}, did?: string) =>
-            mocks.fetch(getUrl(path, did), { ...init, credentials: 'include' }),
+        aiPassportFetch: (path: string, init: RequestInit = {}) =>
+            mocks.fetch(getUrl(path), { ...init, credentials: 'include' }),
         ensureAiPassportSession: async () => {
             mocks.ensureCalls += 1;
             if (mocks.ensureError) throw mocks.ensureError;
             if (mocks.ensureGate) await mocks.ensureGate;
 
-            mocks.authMode = mocks.ensureMode;
+            mocks.authMode = 'session';
             return mocks.authMode;
         },
         getAiPassportAuthMode: () => mocks.authMode,
-        getAiPassportWebSocketProtocols: async () =>
-            mocks.authMode === 'session'
-                ? [
-                      'ai-passport',
-                      `ai-passport-ticket.ticket-${String(++mocks.ticketCount).padStart(32, '0')}`,
-                  ]
-                : undefined,
+        getAiPassportWebSocketProtocols: async (): Promise<string[]> => {
+            mocks.ticketStarted?.();
+            if (mocks.ticketGate) await mocks.ticketGate;
+            return [
+                'ai-passport',
+                `ai-passport-ticket.ticket-${String(++mocks.ticketCount).padStart(32, '0')}`,
+            ];
+        },
         getAiPassportUrl: getUrl,
-        waitForAiPassportAuthMode: async () => mocks.authMode,
     };
 });
 vi.mock('../../logging/logger', () => ({
@@ -149,6 +163,8 @@ const {
     getActiveSessionStatus,
     finishSession,
     disconnectWebSocket,
+    getWebSocket,
+    onReady,
     isLoading,
     lastAiError,
     isTyping,
@@ -188,8 +204,15 @@ describe('chat session startup', () => {
         mocks.ensureCalls = 0;
         mocks.ensureError = null;
         mocks.ensureGate = null;
-        mocks.ensureMode = 'session';
         mocks.ticketCount = 0;
+        mocks.ticketGate = null;
+        mocks.ticketStarted = null;
+        networkStore.set.aiServiceUrl('http://localhost:3001');
+        switchedProfileStore.set.switchedDid(undefined);
+        walletStore.set.wallet({
+            id: { did: () => 'did:example:learner' },
+        } as unknown as BespokeLearnCard);
+        auth.set({ did: 'did:example:learner' });
         // getActiveLocale reads this key; clear it so cases that don't set a
         // language get the 'en' default rather than a previous test's value.
         localStorage.removeItem('i18n.language');
@@ -232,8 +255,7 @@ describe('chat session startup', () => {
 
         await firstStart;
 
-        mocks.authMode = 'legacy';
-        mocks.ensureMode = 'session';
+        mocks.authMode = undefined;
         const { promise, resolve } = Promise.withResolvers<void>();
 
         mocks.ensureGate = promise;
@@ -253,25 +275,8 @@ describe('chat session startup', () => {
         expect(secondSocket).not.toBe(firstSocket);
     });
 
-    it('uses the legacy DID query only for a legacy backend', async () => {
-        mocks.authMode = 'legacy';
-        mocks.ensureMode = 'legacy';
-
-        const start = startTopic('Legacy Algebra');
-        await Promise.resolve();
-        await Promise.resolve();
-        const socket = await openLatestSocket();
-
-        await start;
-
-        expect(new URL(socket.url).searchParams.get('did')).toBe('did:example:learner');
-        expect(socket.protocols).toBeUndefined();
-        expect(JSON.parse(socket.sent[0]!)).not.toHaveProperty('did');
-    });
-
     it('actively negotiates before the cold active-session preflight', async () => {
         mocks.authMode = undefined;
-        mocks.ensureMode = 'legacy';
         mocks.fetch.mockResolvedValueOnce(Response.json({ isActive: false, activeThreadId: null }));
 
         await expect(getActiveSessionStatus()).resolves.toEqual({
@@ -282,7 +287,7 @@ describe('chat session startup', () => {
         const requestUrl = new URL(mocks.fetch.mock.calls[0]![0] as URL);
 
         expect(requestUrl.pathname).toBe('/api/chat/active-session-status');
-        expect(requestUrl.searchParams.get('did')).toBe('did:example:learner');
+        expect(requestUrl.searchParams.has('did')).toBe(false);
     });
 
     it('finalizes session JSON without caller DID transport in session mode', async () => {
@@ -304,51 +309,6 @@ describe('chat session startup', () => {
         expect(headers.get('Content-Type')).toBe('application/json');
         expect(body).toEqual({ threadId: 'thread-session' });
         expect(options.body).not.toContain('did:example:learner');
-    });
-
-    it('limits legacy session finalization DID transport to the compatibility query', async () => {
-        mocks.authMode = 'legacy';
-        mocks.ensureMode = 'legacy';
-        currentThreadId.set('thread-legacy');
-        mocks.fetch.mockResolvedValueOnce(
-            Response.json({ event: 'no_conversation_summary', threadId: 'thread-legacy' })
-        );
-
-        await finishSession();
-
-        const [request, options] = mocks.fetch.mock.calls[0]!;
-        const url = new URL(request as URL);
-        const headers = new Headers(options.headers);
-
-        expect(url.searchParams.get('did')).toBe('did:example:learner');
-        expect(headers.get('Content-Type')).toBe('application/json');
-        expect(JSON.parse(options.body as string)).toEqual({ threadId: 'thread-legacy' });
-        expect(options.body).not.toContain('did:example:learner');
-    });
-
-    it('renegotiates before reconnecting a legacy socket after backend rollout', async () => {
-        mocks.authMode = 'legacy';
-        mocks.ensureMode = 'legacy';
-
-        const start = startTopic('Long-running legacy session');
-        await Promise.resolve();
-        await Promise.resolve();
-        const legacySocket = await openLatestSocket();
-
-        await start;
-        expect(new URL(legacySocket.url).searchParams.get('did')).toBe('did:example:learner');
-
-        mocks.ensureMode = 'session';
-        legacySocket.close();
-        await Promise.resolve();
-        await vi.advanceTimersByTimeAsync(1000);
-        await Promise.resolve();
-        await Promise.resolve();
-
-        const sessionSocket = FakeWebSocket.instances.at(-1);
-
-        expect(sessionSocket).not.toBe(legacySocket);
-        expect(new URL(sessionSocket!.url).searchParams.has('did')).toBe(false);
     });
 
     it('uses a fresh one-time ticket for every authenticated reconnect', async () => {
@@ -381,7 +341,7 @@ describe('chat session startup', () => {
         await start;
         isTyping.set(true);
         isLoading.set(true);
-        mocks.authMode = 'legacy';
+        mocks.authMode = undefined;
         mocks.ensureError = new Error('authentication unavailable');
         socket.close();
         await Promise.resolve();
@@ -404,8 +364,7 @@ describe('chat session startup', () => {
         const firstSocket = await openLatestSocket();
 
         await start;
-        mocks.authMode = 'legacy';
-        mocks.ensureMode = 'session';
+        mocks.authMode = undefined;
         firstSocket.close();
         await Promise.resolve();
         await vi.advanceTimersByTimeAsync(1000);
@@ -413,7 +372,7 @@ describe('chat session startup', () => {
         const secondSocket = FakeWebSocket.instances.at(-1)!;
 
         secondSocket.open();
-        mocks.authMode = 'legacy';
+        mocks.authMode = undefined;
         mocks.ensureError = new Error('authentication unavailable');
         secondSocket.close();
         await Promise.resolve();
@@ -439,6 +398,135 @@ describe('chat session startup', () => {
 
         expect(FakeWebSocket.instances).toHaveLength(1);
         expect(mocks.ensureCalls).toBe(0);
+    });
+
+    it.each([
+        ['wallet', false],
+        ['wallet', true],
+        ['profile', false],
+        ['profile', true],
+        ['auth', false],
+        ['auth', true],
+        ['service', false],
+        ['service', true],
+    ] as const)('invalidates a %s switch while open=%s', async (kind, open) => {
+        await connectWebSocket();
+        const oldSocket = FakeWebSocket.instances.at(-1)!;
+        if (open) oldSocket.open();
+        currentThreadId.set('private-old-thread');
+        messages.set([{ role: 'user', content: 'Private old message' }]);
+        const oldReady = vi.fn();
+        if (!open) onReady(oldReady);
+
+        if (kind === 'wallet') {
+            walletStore.set.wallet({
+                id: { did: () => 'did:example:next' },
+            } as unknown as BespokeLearnCard);
+        } else if (kind === 'profile') {
+            switchedProfileStore.set.switchedDid('did:example:next');
+        } else if (kind === 'auth') {
+            auth.set({ did: 'did:example:next' });
+        } else {
+            networkStore.set.aiServiceUrl('https://next.example.test');
+        }
+
+        expect(oldSocket.readyState).toBe(FakeWebSocket.CLOSED);
+        expect(getWebSocket()).toBeNull();
+        expect(messages.get()).toEqual([]);
+        expect(currentThreadId.get()).toBeNull();
+
+        if (kind !== 'service') {
+            walletStore.set.wallet({
+                id: { did: () => 'did:example:next' },
+            } as unknown as BespokeLearnCard);
+            auth.set({ did: 'did:example:next' });
+        }
+        await connectWebSocket();
+        const newSocket = FakeWebSocket.instances.at(-1)!;
+        expect(newSocket).not.toBe(oldSocket);
+        expect(new URL(newSocket.url).host).toBe(
+            kind === 'service' ? 'next.example.test' : 'localhost:3001'
+        );
+        expect(new URL(newSocket.url).searchParams.has('threadId')).toBe(false);
+        const newReady = vi.fn();
+        onReady(newReady);
+        isTyping.set(true);
+        oldSocket.open();
+        oldSocket.receive({ event: 'no_conversation_summary' });
+        oldSocket.onerror?.();
+        oldSocket.onclose?.();
+        expect(isTyping.get()).toBe(true);
+        expect(sessionEnded.get()).toBe(false);
+        expect(lastAiError.get()).toBeNull();
+        expect(newReady).not.toHaveBeenCalled();
+        newSocket.open();
+        expect(newReady).toHaveBeenCalledOnce();
+        expect(oldReady).not.toHaveBeenCalled();
+        expect(getWebSocket()).toBe(newSocket);
+        newSocket.receive({ event: 'no_conversation_summary' });
+        expect(sessionEnded.get()).toBe(true);
+        await vi.advanceTimersByTimeAsync(5000);
+        expect(FakeWebSocket.instances).toHaveLength(2);
+    });
+
+    it.each(['wallet', 'profile', 'auth', 'service'] as const)(
+        'discards pending tickets even after switching %s away and back',
+        async kind => {
+            const ticket = createDeferred<void>();
+            const started = createDeferred<void>();
+            mocks.ticketGate = ticket.promise;
+            mocks.ticketStarted = () => started.resolve();
+            const pending = connectWebSocket();
+            await started.promise;
+            const originalWallet = walletStore.get.wallet();
+            if (kind === 'wallet') {
+                walletStore.set.wallet(null);
+                walletStore.set.wallet(originalWallet);
+            } else if (kind === 'profile') {
+                switchedProfileStore.set.switchedDid('did:example:child');
+                switchedProfileStore.set.switchedDid(undefined);
+            } else if (kind === 'auth') {
+                auth.set({ did: null });
+                auth.set({ did: 'did:example:learner' });
+            } else {
+                networkStore.set.aiServiceUrl('https://next.example.test');
+                networkStore.set.aiServiceUrl('http://localhost:3001');
+            }
+            mocks.ticketGate = null;
+            const fresh = await connectWebSocket();
+            ticket.resolve();
+            await expect(pending).resolves.toBeNull();
+            expect(FakeWebSocket.instances).toHaveLength(1);
+            expect(getWebSocket()).toBe(fresh);
+            await expect(connectWebSocket()).resolves.toBe(fresh);
+        }
+    );
+
+    it('does not resume an old reconnect negotiation after switching identity', async () => {
+        await connectWebSocket();
+        const oldSocket = await openLatestSocket();
+        mocks.authMode = undefined;
+        const negotiation = createDeferred<void>();
+        mocks.ensureGate = negotiation.promise;
+        oldSocket.close();
+        await vi.advanceTimersByTimeAsync(1000);
+        expect(mocks.ensureCalls).toBe(1);
+        walletStore.set.wallet({
+            id: { did: () => 'did:example:next' },
+        } as unknown as BespokeLearnCard);
+        auth.set({ did: 'did:example:next' });
+        mocks.authMode = 'session';
+        mocks.ensureGate = null;
+        await connectWebSocket();
+        const fresh = FakeWebSocket.instances.at(-1)!;
+        fresh.close();
+        await Promise.resolve();
+        negotiation.resolve();
+        await vi.advanceTimersByTimeAsync(0);
+        expect(getWebSocket()).toBeNull();
+        expect(FakeWebSocket.instances).toHaveLength(2);
+        await vi.advanceTimersByTimeAsync(1000);
+        expect(FakeWebSocket.instances).toHaveLength(3);
     });
     // LC-1901: the locale rides on both the socket URL (read at connect time)
     // and every payload (read per message), so assert both actually track the

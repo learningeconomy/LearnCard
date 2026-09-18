@@ -2,6 +2,7 @@ import { TRPCError } from '@trpc/server';
 import { UnsignedVC, VC, JWE, LCNNotificationTypeEnumValidator } from '@learncard/types';
 
 import { storeCredential } from '@accesslayer/credential/create';
+import type { IssuedCredential } from 'types/credential';
 import {
     createReceivedCredentialRelationship,
     createSentCredentialRelationship,
@@ -23,6 +24,8 @@ import { AppStoreListingType } from 'types/app-store-listing';
 import { processClaimHooks } from './claim-hooks.helpers';
 import { ensureConnectionsForCredentialAcceptance } from './connection.helpers';
 import { handleConnectionPromptsForCredentialClaim } from './connectionPrompt.helpers';
+import { activateCredentialRefreshForAcceptedCredential } from '@accesslayer/credential-refresh';
+import { deliverPendingCredentialRefreshNotificationForAcceptedCredential } from './credential-refresh.helpers';
 
 const isProfileType = (source: ProfileType | AppStoreListingType): source is ProfileType => {
     return 'profileId' in source;
@@ -34,7 +37,7 @@ export const getCredentialUri = (id: string, domain: string): string =>
 export const sendCredential = async (
     from: ProfileType,
     to: ProfileType,
-    credential: VC | UnsignedVC | JWE,
+    credential: VC | UnsignedVC | JWE | IssuedCredential,
     domain: string,
     metadata?: Record<string, unknown> | undefined,
     activityId?: string,
@@ -127,6 +130,22 @@ export const acceptCredential = async (
         await setDefaultClaimedRole(profile, pendingVc.target);
     }
 
+    // Managed credential refresh coupling (LC-2117/LC-2135): acceptance activates a
+    // matching `awaiting_claim` aggregate. Idempotent and best-effort — a failed write
+    // must not break acceptance (dual-write safety); the holder refresh endpoint
+    // lazily reconciles from the canonical CREDENTIAL_RECEIVED relationship.
+    try {
+        await activateCredentialRefreshForAcceptedCredential(
+            pendingVc.target.id,
+            profile.profileId
+        );
+    } catch (error) {
+        console.error(
+            'Credential Helpers - Failed to activate credential refresh on acceptance:',
+            error
+        );
+    }
+
     // Automatic connection batches can partially commit because every target pair owns an
     // independent transaction. Re-run this idempotent reconciliation even after the credential is
     // already received, while retaining an error until new-acceptance-only side effects finish.
@@ -148,6 +167,19 @@ export const acceptCredential = async (
             code: 'INTERNAL_SERVER_ERROR',
             message: 'Could not determine credential issuer',
         });
+    }
+
+    try {
+        await deliverPendingCredentialRefreshNotificationForAcceptedCredential({
+            credentialNodeId: pendingVc.target.id,
+            issuerProfile: sourceProfile,
+            holderProfile: profile,
+        });
+    } catch (error) {
+        console.error(
+            'Credential Helpers - Failed to deliver pending credential refresh notification:',
+            error
+        );
     }
 
     if (!alreadyReceived) {

@@ -589,6 +589,18 @@
     }
 }
 
+// In RTL, flex-end places the "right" modal on the physical left. Mirror its
+// motion as well so it enters from and exits toward the edge it is attached to.
+html[dir='rtl'] #right-modal {
+    &.closed > section {
+        transform: translateX(-100vw);
+    }
+
+    & > section {
+        animation-name: right-modal-intro-rtl;
+    }
+}
+
 #center-modal {
     z-index: 100000;
     display: flex;
@@ -1256,6 +1268,16 @@
 @keyframes right-modal-intro {
     0% {
         transform: translateX(100vw);
+    }
+
+    100% {
+        transform: translateX(0%);
+    }
+}
+
+@keyframes right-modal-intro-rtl {
+    0% {
+        transform: translateX(-100vw);
     }
 
     100% {

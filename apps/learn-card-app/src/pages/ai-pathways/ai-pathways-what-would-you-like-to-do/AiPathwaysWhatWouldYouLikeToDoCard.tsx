@@ -9,6 +9,7 @@ import { AiPathwaysIconWithShape } from 'learn-card-base/svgs/wallet/AiPathwaysI
 import PathwaySearchInput from './PathwaySearchInput';
 import ExplorePathwaysModal from '../ExplorePathwaysModal';
 import { AiPathwaysWhatWouldYouLikeToDoCardOptions } from './AiPathwaysWhatWouldYouLikeToDoCard.types';
+import * as m from '../../../paraglide/messages.js';
 
 const AiPathwaysWhatWouldYouLikeToDoCard: React.FC = () => {
     const { newModal } = useModal();
@@ -44,7 +45,7 @@ const AiPathwaysWhatWouldYouLikeToDoCard: React.FC = () => {
             <div className="w-full bg-white rounded-lg p-4 shadow-bottom-4-4 flex flex-col gap-4">
                 <div className="w-full gap-2 flex flex-col">
                     <IonLabel className="text-grayscale-900 font-poppins text-xl">
-                        What would you like to do?
+                        {m['launchpad.modal.whatWouldYouLikeToDo']()}
                     </IonLabel>
                     <PathwaySearchInput
                         variant="simple"
@@ -58,7 +59,7 @@ const AiPathwaysWhatWouldYouLikeToDoCard: React.FC = () => {
                     onClick={() => openExplorePathwaysModal({ query: searchQuery })}
                     className="p-[11px] bg-teal-500 font-semibold rounded-full text-white flex-1 font-poppins text-[17px]"
                 >
-                    Explore Pathways
+                    {m['aiPathways.explorePathways']()}
                 </button>
 
                 <div className="flex gap-2">
@@ -72,7 +73,7 @@ const AiPathwaysWhatWouldYouLikeToDoCard: React.FC = () => {
                         className="p-4 flex items-center justify-center flex-col bg-grayscale-50 rounded-[16px] text-grayscale-800 font-semibold border-grayscale-300 border-[1px] border-solid flex-1 font-poppins text-[17px]"
                     >
                         <ResolvedSkillsIcon className="w-[50px] h-[50px]" />
-                        Grow Skills
+                        {m['growSkills.title']()}
                     </button>
 
                     <button
@@ -85,7 +86,7 @@ const AiPathwaysWhatWouldYouLikeToDoCard: React.FC = () => {
                         className="p-4 flex items-center justify-center flex-col bg-grayscale-50 rounded-[16px] text-grayscale-800 font-semibold border-grayscale-300 border-[1px] border-solid flex-1 font-poppins text-[17px]"
                     >
                         <ResolvedPathwaysIcon className="w-[50px] h-[50px]" />
-                        Find Roles
+                        {m['aiPathways.findRoles']()}
                     </button>
                 </div>
             </div>

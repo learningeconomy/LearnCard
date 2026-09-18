@@ -1,6 +1,6 @@
 {
     "name": "@learncard/network-brain-service",
-    "version": "3.16.15",
+    "version": "3.18.0",
     "description": "",
     "engines": {
         "node": ">=24.12 <25"
@@ -13,6 +13,7 @@
         "test:watch": "vitest --config vitest.config.ts",
         "test:coverage": "vitest run --coverage --config vitest.config.ts",
         "test:integration": "vitest run --config vitest.integration.config.ts",
+        "test:inbox:e2e": "vitest run --config vitest.inbox-e2e.config.ts",
         "test:integration:watch": "vitest --config vitest.integration.config.ts",
         "test:docker": "vitest run --config vitest.integration.config.ts",
         "seed:dev-app": "bun scripts/seed-dev-app.ts",

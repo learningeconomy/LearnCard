@@ -5,8 +5,8 @@ import { Capacitor } from '@capacitor/core';
 
 import * as m from '../../../paraglide/messages.js';
 import { ProfilePicture } from 'learn-card-base';
-import X from 'src/components/svgs/X';
-import Pencil from 'src/components/svgs/Pencil';
+import X from '../../../components/svgs/X';
+import Pencil from '../../../components/svgs/Pencil';
 import SkillProfileProgressBar, { useSkillProfileCompletion } from './SkillProfileProgressBar';
 import SkillProfileStep1 from './SkillProfileStep1';
 import SkillProfileStep2 from './SkillProfileStep2';
@@ -29,6 +29,7 @@ const MySkillProfile: React.FC<MySkillProfileProps> = ({ className = '' }) => {
     const [currentStep, setCurrentStep] = useState(1);
 
     const hasAutoExpanded = useRef(false);
+    const formScrollerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (!isNativePlatform || hasAutoExpanded.current) return;
@@ -37,6 +38,10 @@ const MySkillProfile: React.FC<MySkillProfileProps> = ({ className = '' }) => {
             setIsExpanded(true);
         }
     }, [isFetched, percentage]);
+
+    useEffect(() => {
+        formScrollerRef.current?.scrollTo({ top: 0 });
+    }, [currentStep]);
 
     const formattedEditDate = lastEditedDate
         ? formatLocaleDate(new Date(lastEditedDate), {
@@ -145,7 +150,11 @@ const MySkillProfile: React.FC<MySkillProfileProps> = ({ className = '' }) => {
                         }`}
                     >
                         <div className="overflow-hidden min-h-0 flex flex-col">
-                            <div className="pt-[20px] border-t border-grayscale-200 w-full mt-[10px] flex flex-col flex-1 min-h-0">
+                            <div
+                                ref={formScrollerRef}
+                                data-testid="skill-profile-form-scroller"
+                                className="pt-[20px] border-t border-grayscale-200 w-full mt-[10px] flex flex-col flex-1 min-h-0 overflow-y-auto overscroll-contain"
+                            >
                                 {steps[currentStep] ?? null}
                             </div>
                         </div>

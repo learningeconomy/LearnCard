@@ -1,7 +1,10 @@
 import React from 'react';
 
 import ClrCourseSection from '../ClrCourseSection';
+import ClrAssessmentSection from '../ClrAssessmentSection';
+import ClrAssessmentDetailPanel from '../ClrAssessmentDetailPanel';
 import ClrProgramsSection from '../ClrProgramsSection';
+import ClrAwardsSection from '../ClrAwardsSection';
 import ClrCourseDetailPanel from '../ClrCourseDetailPanel';
 import ClrProgramDetailPanel from '../ClrProgramDetailPanel';
 import CredentialSummaryView from '../views/CredentialSummaryView';
@@ -14,6 +17,7 @@ import { ModalTypes, useModal } from 'learn-card-base';
 
 import type {
     ViewOptions,
+    AssessmentDisplayModel,
     CourseDisplayModel,
     ProgramDisplayModel,
     ClrTranscriptDisplayModel,
@@ -49,6 +53,18 @@ const ClrTranscriptFullPage: React.FC<{
         );
     };
 
+    const handleSelectAssessment = (assessment: AssessmentDisplayModel) => {
+        newModal(
+            <ClrAssessmentDetailPanel
+                assessment={assessment}
+                boost={boost}
+                adminMode={adminMode}
+                issuerName={model.header.issuerName?.value}
+                issuerLogo={issuerLogo}
+            />
+        );
+    };
+
     const handleSelectCourse = (course: CourseDisplayModel) => {
         newModal(
             <ClrCourseDetailPanel
@@ -66,7 +82,7 @@ const ClrTranscriptFullPage: React.FC<{
     return (
         <div className="flex flex-col w-full min-h-full pt-[var(--ion-safe-area-top,0px)]">
             <div className="py-0 sm:pb-10 px-0 sm:px-4 flex justify-center sm:rounded-xl">
-                <div className="max-w-[800px] w-full bg-white shadow-[0_4px_24px_rgba(0,0,0,0.10)] rounded-xl sm:rounded-xl p-2 sm:p-10 space-y-4">
+                <div className="max-w-[800px] w-full bg-white shadow-[0_4px_24px_rgba(0,0,0,0.10)] rounded-xl sm:rounded-xl p-2 sm:p-10 space-y-3">
                     {/* Warnings — admin only */}
                     {adminMode && model.warnings.length > 0 && (
                         <ClrTranscriptWarningsPanel warnings={model.warnings} />
@@ -98,6 +114,22 @@ const ClrTranscriptFullPage: React.FC<{
                                 adminMode={adminMode}
                             />
                         )}
+
+                    {/* Assessments (ACT, rubric-based skills assessments, ...) */}
+                    {(selectedView === 'StructuredTranscriptView' ||
+                        selectedView === 'VerifierInspectionView') &&
+                        model.assessments.length > 0 && (
+                            <ClrAssessmentSection
+                                assessments={model.assessments}
+                                onSelectAssessment={handleSelectAssessment}
+                                adminMode={adminMode}
+                            />
+                        )}
+
+                    {/* Awards & Recognitions */}
+                    {(selectedView === 'StructuredTranscriptView' ||
+                        selectedView === 'VerifierInspectionView') &&
+                        model.awards.length > 0 && <ClrAwardsSection awards={model.awards} />}
 
                     {/* Sparse / summary views */}
                     {selectedView === 'SparseAcademicRecordView' && (

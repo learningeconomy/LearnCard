@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
 import { IonRow } from '@ionic/react';
-import moment from 'moment';
 import useGetIssuerName from 'learn-card-base/hooks/useGetIssuerName';
 import ThreeDots from 'learn-card-base/svgs/ThreeDots';
 import CredentialVerificationDisplay, {
@@ -28,7 +27,47 @@ import { BoostMediaOptionsEnum } from './boost';
 import { newCredsStore } from 'learn-card-base/stores/newCredsStore';
 import DotIcon from '../../svgs/DotIcon';
 import { CredentialLifecycleStatus } from '../CredentialBadge/CredentialStatusSealIcon';
-import { useT } from 'learn-card-base/i18n';
+import { useI18nLocale, useT } from 'learn-card-base/i18n';
+
+const DISPLAY_TYPE_KEYS: Record<string, string> = {
+    Badge: 'badge',
+    Boost: 'badge',
+    Family: 'family',
+    Achievement: 'achievement',
+    Course: 'course',
+    Study: 'course',
+    Membership: 'membership',
+    Skill: 'skill',
+    ID: 'id',
+    Experience: 'experience',
+    'Work History': 'experience',
+    Portfolio: 'portfolio',
+    Accomplishment: 'portfolio',
+    Assistance: 'assistance',
+    Accommodation: 'assistance',
+};
+
+export const formatRelativeDate = (date: string, locale: string, now = Date.now()): string => {
+    const timestamp = new Date(date).getTime();
+    if (Number.isNaN(timestamp)) return '';
+
+    const seconds = Math.round((timestamp - now) / 1000);
+    const units: [Intl.RelativeTimeFormatUnit, number][] = [
+        ['year', 31_536_000],
+        ['month', 2_592_000],
+        ['week', 604_800],
+        ['day', 86_400],
+        ['hour', 3_600],
+        ['minute', 60],
+        ['second', 1],
+    ];
+    const [unit, divisor] = units.find(([, size]) => Math.abs(seconds) >= size) ?? units.at(-1)!;
+
+    return new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }).format(
+        Math.round(seconds / divisor),
+        unit
+    );
+};
 
 type BoostListItemProps = {
     title?: string;
@@ -76,6 +115,7 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
     trustedVerifierOnly = false,
 }) => {
     const t = useT();
+    const activeLocale = useI18nLocale();
     // Shared revoked/suspended treatment (kept in sync with the grid card).
     const {
         isInactive,
@@ -93,15 +133,21 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
         () => getAchievementTypeDisplayText(achievementType, categoryType),
         [achievementType, categoryType]
     );
+    const localizedBoostTypeDisplayName =
+        DISPLAY_TYPE_KEYS[boostTypeDisplayName] != null
+            ? t(`credential.category.${DISPLAY_TYPE_KEYS[boostTypeDisplayName]}`)
+            : boostTypeDisplayName;
 
     const issuanceDateDisplay = useMemo(() => {
-        if (relativeDate) return moment(getIssuanceDate(credential)).fromNow();
+        if (relativeDate) {
+            return formatRelativeDate(getIssuanceDate(credential), activeLocale);
+        }
 
         const { createdAt } = getInfoFromCredential(credential, 'MMMM DD YYYY', {
             uppercaseDate: false,
         });
         return createdAt;
-    }, [credential, relativeDate]);
+    }, [activeLocale, credential, relativeDate]);
 
     const { subColor } = categoryMetadata[categoryType];
 
@@ -327,10 +373,12 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                     {compact ? (
                         <>
                             {newItemIndicator}
-                            {boostTypeDisplayName && (
-                                <span className="truncate min-w-0">{boostTypeDisplayName}</span>
+                            {localizedBoostTypeDisplayName && (
+                                <span className="truncate min-w-0">
+                                    {localizedBoostTypeDisplayName}
+                                </span>
                             )}
-                            {boostTypeDisplayName && (
+                            {localizedBoostTypeDisplayName && (
                                 <span className="shrink-0 mx-1 text-grayscale-400">·</span>
                             )}
                             <span className="shrink-0 whitespace-nowrap">
@@ -375,6 +423,8 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                 <div
                     className={`flex-1 absolute right-0 bottom-0 w-[66px] h-[35px] flex items-center justify-center z-[3] rounded-tl-[10px]  ${linkedCredentialsClassName}`}
                 >
+                    {/* Dynamic display-type icon selected from the established icon registry. */}
+                    {/* eslint-disable-next-line react-hooks/static-components */}
                     <DisplayIcon className="w-[20px] h-[20px]" />
                     <span className="text-white font-semibold text-[14px] ml-1">
                         +{linkedCredentialsCount}

@@ -7,11 +7,17 @@ import { ChevronDown, ChevronUp, Paperclip } from 'lucide-react';
 import { SkillsIcon } from 'learn-card-base/svgs/wallet/SkillsIcon';
 
 import type { VC } from '@learncard/types';
-import type { CourseDisplayModel } from '../../helpers/clrRenderer.helpers';
+import type { AssessmentDisplayModel, CourseDisplayModel } from '../../helpers/clrRenderer.helpers';
 import { formatClrDate } from '../../helpers/clrRenderer.helpers';
 
+type CollapsibleRecord = Pick<
+    CourseDisplayModel,
+    'name' | 'achievementType' | 'earnedAt' | 'evidence'
+> &
+    Partial<Pick<CourseDisplayModel, 'fieldOfStudy'>>;
+
 const ClrCourseCredentialCollapsible: React.FC<{
-    course: CourseDisplayModel;
+    course: CollapsibleRecord | AssessmentDisplayModel;
     issuerName?: string;
     issuerLogo?: string;
     skillCount?: number;
@@ -30,7 +36,7 @@ const ClrCourseCredentialCollapsible: React.FC<{
                 onClick={() => setOpen(o => !o)}
                 className="w-full flex items-center justify-between px-4 py-3.5"
             >
-                <p className="text-sm font-semibold text-grayscale-900">1 Credential</p>
+                <p className="text-base font-semibold text-grayscale-900">1 Credential</p>
                 <span className="text-grayscale-600 text-xs">
                     {open ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
                 </span>
@@ -49,16 +55,17 @@ const ClrCourseCredentialCollapsible: React.FC<{
                         </div>
                         <div className="min-w-0 flex-1">
                             <div className="">
-                                <p className="text-sm font-semibold text-grayscale-900 truncate">
+                                <p className="text-base font-semibold text-grayscale-900 truncate">
                                     {course.name?.value ?? 'Course'}
                                 </p>
-                                <p className="text-xs font-semibold text-grayscale-500 uppercase tracking-wide truncate">
+                                <p className="text-sm font-semibold text-grayscale-500 uppercase tracking-wide truncate">
                                     {course.achievementType.value}
-                                    {course.fieldOfStudy?.value &&
+                                    {'fieldOfStudy' in course &&
+                                        course.fieldOfStudy?.value &&
                                         ` • ${course.fieldOfStudy.value}`}
                                 </p>
                                 {issuerName && (
-                                    <p className="text-sm text-grayscale-800 truncate">
+                                    <p className="text-base text-grayscale-800 truncate">
                                         By <span className="font-semibold">{issuerName}</span>
                                     </p>
                                 )}
@@ -67,7 +74,7 @@ const ClrCourseCredentialCollapsible: React.FC<{
                             {hasFooter && (
                                 <div className="mt-2 pt-1 border-t border-grayscale-200 flex flex-wrap items-center justify-between gap-3">
                                     {(credential || course.earnedAt?.value) && (
-                                        <p className="flex items-center gap-1.5 text-sm font-semibold text-grayscale-600 min-w-0">
+                                        <p className="flex items-center gap-1.5 text-base font-semibold text-grayscale-600 min-w-0">
                                             {credential && (
                                                 <CredentialVerificationDisplay
                                                     credential={credential}
@@ -84,7 +91,7 @@ const ClrCourseCredentialCollapsible: React.FC<{
 
                                     <div className="ml-auto flex items-center gap-4">
                                         {skillCount > 0 && (
-                                            <span className="flex items-center gap-1.5 text-sm font-semibold text-grayscale-600">
+                                            <span className="flex items-center gap-1.5 text-base font-semibold text-grayscale-600">
                                                 <FlatIcon>
                                                     <SkillsIcon className="w-5 h-5 text-grayscale-500" />
                                                 </FlatIcon>
@@ -92,7 +99,7 @@ const ClrCourseCredentialCollapsible: React.FC<{
                                             </span>
                                         )}
                                         {evidenceCount > 0 && (
-                                            <span className="flex items-center gap-1.5 text-sm font-semibold text-grayscale-600">
+                                            <span className="flex items-center gap-1.5 text-base font-semibold text-grayscale-600">
                                                 <Paperclip
                                                     size={19}
                                                     className="text-grayscale-500"

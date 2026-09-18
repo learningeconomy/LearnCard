@@ -18,6 +18,16 @@ https://docs.learncard.com
 
 ## Usage
 
+### Send your first credential
+
+```bash
+npx @learncard/cli send
+```
+
+Asks for your email (or pass it: `send you@yourdomain.com`), generates a seed into `.env`, creates your issuer profile, sends a "Quickstart Complete" badge to the address, and writes the code it ran to `./send.mjs`. Placeholder addresses like `you@example.com` are rejected — nobody would receive the badge. Pass `--yes` to accept defaults (the recipient must then be given as an argument); `--name "Acme"`, `--badge "Welcome to Acme"`, `--description`, and `--profile-id` set them explicitly. Walkthrough: https://docs.learncard.com/start-here/your-first-integration
+
+### Interactive REPL
+
 ```bash
 npx @learncard/cli
 

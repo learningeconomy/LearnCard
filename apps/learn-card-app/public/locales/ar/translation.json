@@ -11,7 +11,82 @@
         "skipped": "تم التخطي",
         "claimedType": "تم استلام الاعتماد"
     },
+    "mainHeader": {
+        "pageTitles": {
+            "dashboard": "لوحة التحكم الخاصة بي",
+            "passport": "جواز سفري",
+            "apps": "تطبيقاتي",
+            "contacts": "جهات اتصالي",
+            "alerts": "تنبيهاتي",
+            "settings": "الإعدادات"
+        }
+    },
+    "arabicFixes": {
+        "newMember": "عضو جديد",
+        "issuedDate": "تاريخ الإصدار",
+        "selectProfile": "اختر الملف الشخصي",
+        "pinMustMatch": "يجب أن تتطابق أرقام التعريف الشخصية",
+        "nameRequired": "الاسم مطلوب.",
+        "descriptionRequired": "الوصف مطلوب.",
+        "issuerStatus": "حالة جهة الإصدار",
+        "trustedIssuerDescription": "حسابك معترف به كجهة إصدار موثوقة في شبكة LearnCard.",
+        "unknownIssuerDescription": "تقدّم لتصبح جهة إصدار موثوقة وتمكّن من إصدار بيانات اعتماد موثّقة لحسابك.",
+        "becomeTrustedIssuer": "كن جهة إصدار موثوقة",
+        "fieldRequired": "حقل {{field}} مطلوب",
+        "validEmailRequired": "أدخل عنوان بريد إلكتروني صالحًا",
+        "shareOnce": "مشاركة مرة واحدة",
+        "thumbnail": "الصورة المصغّرة",
+        "shareProfileHelp": "انسخ رابط ملفك الشخصي لمشاركته مع الآخرين.",
+        "or": "أو",
+        "autoConnectHelp": "اسمح للآخرين بالاتصال بملفك الشخصي تلقائيًا.",
+        "selectExpiration": "اختر مدة الصلاحية",
+        "oneHour": "ساعة واحدة",
+        "hours": "{{count}} ساعة",
+        "days": "{{count}} أيام",
+        "addCredentials": "إضافة بيانات اعتماد",
+        "verifiableCredentials": "بيانات اعتماد قابلة للتحقق",
+        "verifiableCredentialCount": "{{count}} بيانات اعتماد قابلة للتحقق",
+        "uploadCredentialsHelp": "حمّل بيانات اعتماد JSON الأولية أو الصقها لإضافتها إلى حسابك.",
+        "required": "مطلوب",
+        "liveSync": "مزامنة مباشرة",
+        "liveSyncing": "مزامنة مباشرة",
+        "liveSyncingAll": "مزامنة الكل مباشرة",
+        "loading": "جارٍ التحميل...",
+        "loadingAccounts": "جارٍ تحميل الحسابات...",
+        "activeUser": "المستخدم النشط",
+        "membersCount": "{{count}} أعضاء",
+        "socialBoosts": "تعزيزات اجتماعية",
+        "newChildOrOrganization": "طفل أو مؤسسة جديدة",
+        "selectProfileType": "اختر نوع الملف الشخصي",
+        "organizationProfile": "ملف مؤسسة",
+        "organization": "مؤسسة",
+        "child": "طفل",
+        "user": "مستخدم",
+        "addNewPlayer": "إضافة لاعب جديد",
+        "backToGame": "العودة إلى اللعبة",
+        "childInFamily": "طفل في {{family}}",
+        "editAppName": "تعديل {{appName}}",
+        "continuousShare": "مشاركة جميع {{items}} باستمرار.",
+        "setExpirationDate": "تعيين تاريخ انتهاء؟",
+        "selectiveSharing": "مشاركة انتقائية",
+        "selectiveSharingHelp": "مشاركة {{items}} المحددة فقط.",
+        "notSharing": "عدم المشاركة",
+        "notSharingHelp": "عدم مشاركة أي من {{items}}.",
+        "sharingCount": "مشاركة {{selected}} من {{total}}",
+        "switchSelectiveTitle": "التبديل إلى المشاركة الانتقائية؟",
+        "switchSelectiveHelp": "يؤدي إلغاء تحديد البيانات إلى إيقاف المزامنة المباشرة وتفعيل المشاركة الانتقائية، مما يمنحك تحكمًا كاملاً في بيانات الاعتماد التي تشاركها. يمكنك العودة إلى المزامنة المباشرة في أي وقت.",
+        "allow": "سماح",
+        "deny": "رفض",
+        "approve": "موافقة",
+        "editApp": "تعديل التطبيق",
+        "createApp": "إنشاء تطبيق",
+        "createNewApp": "إنشاء تطبيق جديد",
+        "selectIntegrationFirst": "يرجى اختيار تكامل أولاً.",
+        "enterDisplayName": "يرجى إدخال اسم عرض على الأقل.",
+        "webhookUrl": "رابط خطاف الويب"
+    },
     "common": {
+        "tryAgain": "حاول مجددًا",
         "share": "مشاركة",
         "open": "فتح",
         "accept": "قبول",
@@ -106,6 +181,7 @@
             "alerts": "التنبيهات",
             "personalize": "تخصيص",
             "adminTools": "أدوات الإدارة",
+            "myAssistant": "مساعدي",
             "wallet": "المحفظة",
             "passport": "جواز السفر",
             "aiTopics": "جلسات الذكاء الاصطناعي",
@@ -124,6 +200,12 @@
         },
         "settings": "الإعدادات",
         "closeMenu": "إغلاق القائمة"
+    },
+    "myAssistant": {
+        "schedules": {
+            "autonomyUnavailableTitle": "المهام التلقائية غير مفعّلة بعد",
+            "autonomyUnavailableDescription": "لا يزال بإمكانك الدردشة مع مساعدك. الجداول المتكررة متاحة فقط لحسابات اختبار محددة."
+        }
     },
     "passport": {
         "buildMyLearnCard": {
@@ -992,9 +1074,31 @@
             "import": "استيراد جواز السفر",
             "error": {
                 "invalidChars": "يجب أن تحتوي العبارة فقط على أرقام وحروف (a–f).",
-                "tooShort": "يجب أن تتكون عبارة الاسترداد من 64 حرفاً.",
+                "wrongLength": "يجب أن تتكون البذرة من 64 حرفًا بالضبط.",
                 "generic": "حدث خطأ ما. يرجى المحاولة مرة أخرى."
             }
+        },
+        "developerSignIn": {
+            "title": "سجّل الدخول باستخدام بذرة المطوّر",
+            "description": "هذه هي قيمة SECURE_SEED في ملف .env الخاص بمشروعك. تبقى على هذا الجهاز ولا نرسلها إلى أي مكان.",
+            "pasteAction": "لصق من الحافظة",
+            "signingIn": "جارٍ تسجيل الدخول...",
+            "switching": "جارٍ تبديل الحساب...",
+            "or": "أو",
+            "seedLabel": "البذرة",
+            "signInAction": "تسجيل الدخول",
+            "signOutAndSwitch": "تسجيل الخروج والتبديل",
+            "alreadySignedIn": "أنت مسجّل الدخول بالفعل",
+            "alreadySignedInAs": "أنت مسجّل الدخول باسم {{name}}",
+            "alreadySignedInBody": "تسجيل الدخول ببذرة يؤدي أولًا إلى تسجيل خروجك من حسابك الحالي.",
+            "linkSwitchBody": "يتضمن هذا الرابط بذرة لحساب آخر. التبديل سيؤدي إلى تسجيل خروجك من حسابك الحالي.",
+            "switchAction": "تبديل الحساب",
+            "stayAction": "البقاء مسجّل الدخول",
+            "continueAs": "المتابعة باسم {{name}}",
+            "notDeveloper": "لست مطوّرًا؟ ",
+            "signInNormally": "تسجيل الدخول بالطريقة العادية",
+            "securityWarning": "احتفظ ببذرتك سرّية. أي شخص يمتلكها يتحكم في هذا الحساب.",
+            "pasteHint": "الصقها في الحقل أدناه."
         },
         "loader": {
             "messages": {
@@ -1591,7 +1695,27 @@
         },
         "loadError": "تعذّر تحميل جهات الاتصال. يرجى المحاولة مرة أخرى."
     },
+    "bulkImport": {
+        "title": "استيراد بيانات الاعتماد بالجملة",
+        "step": "الخطوة {{number}}",
+        "prepareTitle": "إعداد ملفك وتصديره",
+        "fillSheetPrefix": "املأ",
+        "googleSheet": "جدول بيانات Google",
+        "fillSheetSuffix": "باستخدام:",
+        "fullImageUrls": "روابط الصور الكاملة (https://...) للاستخدام المباشر",
+        "simpleFilenames": "أو أسماء ملفات بسيطة (image.png) للصور التي ستحمّلها في ملف ZIP",
+        "exportCsv": "التصدير إلى CSV:",
+        "downloadCsvPath": "ملف ← تنزيل ← قيم مفصولة بفواصل (.csv)",
+        "uploadCsvTitle": "حمّل ملف ‎.csv‎",
+        "zipHelp": "إذا استخدمت أسماء ملفات بدلاً من الروابط، فحمّل ملف ZIP يحتوي على ملفات الصور تلك.",
+        "checkBeforeUploading": "تحقق قبل التحميل",
+        "checkBeforeUploadingDescription": "تأكد من وجود جميع الصور ومن إصلاح أي أخطاء في الملفات قبل المتابعة.",
+        "uploading": "جارٍ التحميل...",
+        "uploadImagesZip": "تحميل ملف ZIP للصور",
+        "previewCredentials": "معاينة {{count}} من بيانات الاعتماد"
+    },
     "consentFlow": {
+        "guardianApprovalRequired": "اطلب من أحد مديري الحساب الحاليين الموافقة على هذا الاتصال، ثم حاول مرة أخرى.",
         "title": "الموافقة",
         "acceptAndSync": "قبول ومزامنة",
         "accepted": "مقبول",
@@ -1931,7 +2055,22 @@
         "loadingNotifications": "جاري تحميل الإشعارات...",
         "refresh": "تحديث",
         "restored": "تمت الاستعادة",
-        "unableToLoad": "تعذر تحميل الإشعار"
+        "unableToLoad": "تعذر تحميل الإشعار",
+        "credentialUpdated": "تم تحديث الشهادة",
+        "updated": "تم التحديث",
+        "checkingForUpdate": "جارٍ البحث عن تحديثات…",
+        "updateCheckFailed": "مشكلة في الاتصال. يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى.",
+        "updatedCredentialUnavailable": "هذه الشهادة غير متوفرة بعد. يرجى المحاولة مرة أخرى لاحقًا."
+    },
+    "credentialHistory": {
+        "title": "الإصدارات السابقة",
+        "empty": "لا توجد إصدارات سابقة محفوظة على هذا الجهاز.",
+        "unavailable": "هذا الإصدار غير متوفر على هذا الجهاز.",
+        "view": "عرض",
+        "loadingVersion": "جارٍ تحميل الإصدار…",
+        "done": "تم",
+        "updatedOn": "تم التحديث في {{date}}",
+        "versionFrom": "إصدار من {{date}}"
     },
     "share": {
         "addContact": "إضافة جهة اتصال",
@@ -2358,7 +2497,8 @@
         },
         "menu": {
             "manageIssuances": "إدارة الإصدارات",
-            "viewData": "عرض البيانات"
+            "viewData": "عرض البيانات",
+            "viewPreviousVersions": "عرض الإصدارات السابقة"
         },
         "shortBoost": {
             "selectRecipient": "اختيار المستلم",
@@ -2597,6 +2737,7 @@
         "title": "العائلات",
         "joinFamily": "الانضمام إلى العائلة",
         "addFamilyMember": "إضافة فرد من العائلة",
+        "createNewFamily": "إنشاء عائلة جديدة",
         "familyAccount": "حساب العائلة",
         "switchProfile": "تبديل الملف الشخصي",
         "childProfile": "ملف الطفل",
@@ -2627,7 +2768,9 @@
         },
         "actionMenu": {
             "editFamily": "تعديل العائلة",
-            "shareFamily": "مشاركة العائلة"
+            "shareFamily": "مشاركة العائلة",
+            "viewProfile": "عرض الملف الشخصي",
+            "boost": "منح تعزيز"
         },
         "childInvite": {
             "title": "حساب طفل",
@@ -2671,6 +2814,22 @@
         "none": "بدون",
         "colorHexCode": "رمز اللون السداسي",
         "confirmRemoveMember": "هل أنت متأكد أنك تريد إزالة هذا {{title}}؟",
+        "titleOptions": {
+            "guardian": "ولي أمر",
+            "guardians": "أولياء الأمور",
+            "parent": "أحد الوالدين",
+            "parents": "الآباء والأمهات",
+            "grandparent": "أحد الأجداد",
+            "grandparents": "الأجداد",
+            "caretaker": "مقدم رعاية",
+            "caretakers": "مقدمو الرعاية",
+            "advocate": "مناصر",
+            "advocates": "المناصرون",
+            "child": "طفل",
+            "children": "الأطفال",
+            "kid": "صغير",
+            "kids": "الصغار"
+        },
         "titlesToggle": {
             "admins": "المسؤولون",
             "kids": "الأطفال"
@@ -2702,7 +2861,9 @@
             "enterTitle": "إدخال رقم التعريف",
             "enterSubtext": "يرجى إدخال رقم التعريف الحالي للمتابعة",
             "verifying": "جارٍ التحقق...",
-            "forUser": "لـ {{name}}"
+            "forUser": "لـ {{name}}",
+            "requiresFiveDigits": "يجب أن يتكون رقم التعريف من 5 أرقام",
+            "invalidPin": "رقم التعريف غير صحيح. يرجى المحاولة مرة أخرى"
         },
         "guardianInvite": {
             "shareTitle": "دعوة ولي أمر",
@@ -2803,6 +2964,7 @@
             "deleteCredentialError": "خطأ في حذف بيانات الاعتماد: تعذر تحديد موقع معرف السجل.",
             "shareLinkCopied": "تم نسخ رابط المشاركة إلى الحافظة",
             "shareLinkCopyFailed": "تعذر نسخ رابط المشاركة",
+            "shareLinkGenerationFailed": "تعذر إنشاء رابط للمشاركة. حاول مجددًا.",
             "templateIdCopied": "تم نسخ معرف القالب إلى الحافظة",
             "templateIdCopyFailed": "تعذر نسخ معرف القالب",
             "boostLinkCopied": "تم نسخ رابط Boost إلى الحافظة",
@@ -3045,7 +3207,9 @@
         "filterResults": "...تصفية النتائج",
         "courses": "الدورات",
         "media": "الوسائط",
+        "explorePathways": "استكشاف المسارات",
         "exploreRoles": "استكشاف الأدوار",
+        "findRoles": "العثور على الأدوار",
         "jobStability": "استقرار الوظيفة",
         "workLifeBalance": "التوازن بين العمل والحياة",
         "iWantTo": "...أريد",
@@ -3217,6 +3381,18 @@
             "select": "تحديد"
         },
         "credential": {
+            "category": {
+                "badge": "شارة",
+                "family": "عائلة",
+                "achievement": "إنجاز",
+                "course": "دورة",
+                "membership": "عضوية",
+                "skill": "مهارة",
+                "id": "هوية",
+                "experience": "خبرة",
+                "portfolio": "محفظة",
+                "assistance": "مساعدة"
+            },
             "lifecycle": {
                 "revoked": "ملغاة",
                 "suspended": "معلقة"
@@ -4326,35 +4502,6 @@
                 "developer": "مطور",
                 "admin": "مدير",
                 "selectProject": "اختيار مشروع"
-            },
-            "betaGate": {
-                "betaAccessRequired": "مطلوب وصول تجريبي",
-                "betaAccessDesc": "هذه الميزة حالياً في مرحلة تجريبية. أدخل رمز الوصول للمتابعة.",
-                "accessCode": "رمز الوصول",
-                "accessCodePlaceholder": "أدخل رمز الوصول التجريبي",
-                "continue": "متابعة",
-                "noAccessCode": "ليس لديك رمز وصول؟",
-                "contactUs": "اتصل بنا",
-                "backToDeveloperPortal": "← العودة إلى بوابة المطورين",
-                "invalidAccessCode": "رمز وصول غير صالح. تحقق وحاول مرة أخرى.",
-                "welcomeToBeta": "مرحباً بك في النسخة التجريبية!",
-                "welcomeDesc": "أنت تتصفح أدوات مطور جديدة قبل أن تصبح متاحة للجمهور.",
-                "betaPreviewNotice": "إشعار المعاينة التجريبية",
-                "betaPreviewDesc": "هذه وظيفة ما قبل الإصدار. قد تتغير الميزات وقد تواجه أخطاء. ملاحظاتك قيمة!",
-                "yourAccessIncludes": "وصولك يشمل:",
-                "integrationDashboard": "لوحة تحكم التكامل",
-                "apiTokenManagement": "إدارة رموز API",
-                "allIntegrationGuides": "جميع أدلة التكامل",
-                "otherGuidesLocked": "أدلة أخرى (مقفلة)",
-                "letsGo": "هيا بنا!",
-                "feedbackContact": "support@learncard.com",
-                "questionsFeedback": "أسئلة أو ملاحظات؟",
-                "guideLockedTitle": "{{name}}",
-                "guideLockedDesc": "هذا الدليل مقفل. أكمل الخطوات السابقة أولاً.",
-                "requestAccess": "طلب وصول",
-                "locked": "مقفل",
-                "guideNotAvailable": "هذا الدليل غير متاح مع وصولك التجريبي الحالي.",
-                "guideLabel": "دليل"
             },
             "codeBlock": {
                 "copyCode": "نسخ الكود",
@@ -6646,8 +6793,6 @@
             },
             "hub": {
                 "comingSoon": "قريباً",
-                "locked": "مقفل",
-                "requestAccess": "طلب الوصول",
                 "inProgress": "قيد التنفيذ",
                 "getStarted": "ابدأ",
                 "createProject": {
@@ -7781,9 +7926,9 @@
             "changesSaved": "!تم حفظ التغييرات",
             "draftUpdated": "تم تحديث المسودة",
             "draftSaved": "تم حفظ المسودة",
-            "appUpdated": "تم تحديث تطبيقك \"{appName}\".",
-            "appSavedAsDraft": "تم حفظ تطبيقك \"{appName}\" كمسودة.",
-            "appSubmittedForReview": "تم إرسال تطبيقك \"{appName}\" للمراجعة.",
+            "appUpdated": "تم تحديث تطبيقك \"{{appName}}\".",
+            "appSavedAsDraft": "تم حفظ تطبيقك \"{{appName}}\" كمسودة.",
+            "appSubmittedForReview": "تم إرسال تطبيقك \"{{appName}}\" للمراجعة.",
             "error": "خطأ",
             "back": "رجوع",
             "savingDraft": "جاري الحفظ...",

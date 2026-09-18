@@ -578,10 +578,10 @@ describe('Boosts', () => {
                     id === USERS.b.profileId
                         ? b
                         : id === USERS.c.profileId
-                        ? c
-                        : id === USERS.d.profileId
-                        ? d
-                        : e;
+                          ? c
+                          : id === USERS.d.profileId
+                            ? d
+                            : e;
                 await lc.invoke.acceptConnectionRequest(USERS.a.profileId);
             }
 
@@ -733,80 +733,80 @@ describe('Boosts', () => {
         const incomingCredentials = await b.invoke.getIncomingCredentials();
 
         expect(incomingCredentials.some(cred => cred.uri === sentBoostUri)).toBe(true);
+    });
 
-        describe('Connected Boost Recipient Count E2E', () => {
-            async function e2eSendBoost({
-                sender,
-                recipientProfileId,
-                recipientLc,
-                boostUri,
-                autoAccept = true,
-            }: {
-                sender: LearnCard;
-                recipientProfileId: string;
-                recipientLc: LearnCard;
-                boostUri: string;
-                autoAccept?: boolean;
-            }) {
-                const credentialUri = await sender.invoke.sendBoost(recipientProfileId, boostUri);
-                if (autoAccept) {
-                    await recipientLc.invoke.acceptCredential(credentialUri);
-                }
-                return credentialUri;
+    describe('Connected Boost Recipient Count E2E', () => {
+        async function e2eSendBoost({
+            sender,
+            recipientProfileId,
+            recipientLc,
+            boostUri,
+            autoAccept = true,
+        }: {
+            sender: LearnCard;
+            recipientProfileId: string;
+            recipientLc: LearnCard;
+            boostUri: string;
+            autoAccept?: boolean;
+        }) {
+            const credentialUri = await sender.invoke.sendBoost(recipientProfileId, boostUri);
+            if (autoAccept) {
+                await recipientLc.invoke.acceptCredential(credentialUri);
             }
+            return credentialUri;
+        }
 
-            test('should correctly count connected boost recipients', async () => {
-                const uri = await a.invoke.createBoost(testUnsignedBoost);
-                expect(await a.invoke.countConnectedBoostRecipients(uri)).toEqual(0);
+        test('should correctly count connected boost recipients', async () => {
+            const uri = await a.invoke.createBoost(testUnsignedBoost);
+            expect(await a.invoke.countConnectedBoostRecipients(uri)).toEqual(0);
 
-                await e2eSendBoost({
-                    sender: a,
-                    recipientProfileId: USERS.b.profileId,
-                    recipientLc: b,
-                    boostUri: uri,
-                });
-                await e2eSendBoost({
-                    sender: a,
-                    recipientProfileId: USERS.c.profileId,
-                    recipientLc: c,
-                    boostUri: uri,
-                });
-
-                await a.invoke.connectWith(USERS.b.profileId);
-                await b.invoke.acceptConnectionRequest(USERS.a.profileId);
-                expect(await a.invoke.countConnectedBoostRecipients(uri)).toEqual(1);
-
-                await a.invoke.connectWith(USERS.c.profileId);
-                await c.invoke.acceptConnectionRequest(USERS.a.profileId);
-                expect(await a.invoke.countConnectedBoostRecipients(uri)).toEqual(2);
+            await e2eSendBoost({
+                sender: a,
+                recipientProfileId: USERS.b.profileId,
+                recipientLc: b,
+                boostUri: uri,
+            });
+            await e2eSendBoost({
+                sender: a,
+                recipientProfileId: USERS.c.profileId,
+                recipientLc: c,
+                boostUri: uri,
             });
 
-            test("should handle 'includeUnacceptedBoosts' option correctly for count", async () => {
-                const uri = await a.invoke.createBoost(testUnsignedBoost);
+            await a.invoke.connectWith(USERS.b.profileId);
+            await b.invoke.acceptConnectionRequest(USERS.a.profileId);
+            expect(await a.invoke.countConnectedBoostRecipients(uri)).toEqual(1);
 
-                await e2eSendBoost({
-                    sender: a,
-                    recipientProfileId: USERS.b.profileId,
-                    recipientLc: b,
-                    boostUri: uri,
-                    autoAccept: true,
-                });
-                await e2eSendBoost({
-                    sender: a,
-                    recipientProfileId: USERS.c.profileId,
-                    recipientLc: c,
-                    boostUri: uri,
-                    autoAccept: false,
-                });
+            await a.invoke.connectWith(USERS.c.profileId);
+            await c.invoke.acceptConnectionRequest(USERS.a.profileId);
+            expect(await a.invoke.countConnectedBoostRecipients(uri)).toEqual(2);
+        });
 
-                await a.invoke.connectWith(USERS.b.profileId);
-                await b.invoke.acceptConnectionRequest(USERS.a.profileId);
-                await a.invoke.connectWith(USERS.c.profileId);
-                await c.invoke.acceptConnectionRequest(USERS.a.profileId);
+        test("should handle 'includeUnacceptedBoosts' option correctly for count", async () => {
+            const uri = await a.invoke.createBoost(testUnsignedBoost);
 
-                expect(await a.invoke.countConnectedBoostRecipients(uri)).toEqual(2);
-                expect(await a.invoke.countConnectedBoostRecipients(uri, false)).toEqual(1);
+            await e2eSendBoost({
+                sender: a,
+                recipientProfileId: USERS.b.profileId,
+                recipientLc: b,
+                boostUri: uri,
+                autoAccept: true,
             });
+            await e2eSendBoost({
+                sender: a,
+                recipientProfileId: USERS.c.profileId,
+                recipientLc: c,
+                boostUri: uri,
+                autoAccept: false,
+            });
+
+            await a.invoke.connectWith(USERS.b.profileId);
+            await b.invoke.acceptConnectionRequest(USERS.a.profileId);
+            await a.invoke.connectWith(USERS.c.profileId);
+            await c.invoke.acceptConnectionRequest(USERS.a.profileId);
+
+            expect(await a.invoke.countConnectedBoostRecipients(uri)).toEqual(2);
+            expect(await a.invoke.countConnectedBoostRecipients(uri, false)).toEqual(1);
         });
     });
 

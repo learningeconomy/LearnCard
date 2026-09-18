@@ -11,7 +11,82 @@
         "skipped": "Omitido",
         "claimedType": "Credencial reclamada"
     },
+    "mainHeader": {
+        "pageTitles": {
+            "dashboard": "Mi panel",
+            "passport": "Mi pasaporte",
+            "apps": "Mis aplicaciones",
+            "contacts": "Mis contactos",
+            "alerts": "Mis alertas",
+            "settings": "Ajustes"
+        }
+    },
+    "arabicFixes": {
+        "newMember": "Nuevo miembro",
+        "issuedDate": "Fecha de emisión",
+        "selectProfile": "Seleccionar perfil",
+        "pinMustMatch": "Los PIN deben coincidir",
+        "nameRequired": "El nombre es obligatorio.",
+        "descriptionRequired": "La descripción es obligatoria.",
+        "issuerStatus": "Estado del emisor",
+        "trustedIssuerDescription": "Tu cuenta está reconocida como emisor de confianza en la red LearnCard.",
+        "unknownIssuerDescription": "Solicita ser emisor de confianza y habilita la emisión de credenciales verificadas para tu cuenta.",
+        "becomeTrustedIssuer": "Convertirse en emisor de confianza",
+        "fieldRequired": "{{field}} es obligatorio",
+        "validEmailRequired": "Introduce una dirección de correo electrónico válida",
+        "shareOnce": "Compartir una vez",
+        "thumbnail": "Miniatura",
+        "shareProfileHelp": "Copia la URL de tu perfil para compartirla con otras personas.",
+        "or": "o",
+        "autoConnectHelp": "Permite que otras personas se conecten automáticamente a tu perfil.",
+        "selectExpiration": "Selecciona la caducidad",
+        "oneHour": "1 hora",
+        "hours": "{{count}} horas",
+        "days": "{{count}} días",
+        "addCredentials": "Añadir credenciales",
+        "verifiableCredentials": "Credenciales verificables",
+        "verifiableCredentialCount": "{{count}} credenciales verificables",
+        "uploadCredentialsHelp": "Sube o pega credenciales JSON sin procesar para añadirlas a tu cuenta.",
+        "required": "Obligatorio",
+        "liveSync": "Sincronización en vivo",
+        "liveSyncing": "Sincronizando en vivo",
+        "liveSyncingAll": "Sincronizando todo en vivo",
+        "loading": "Cargando...",
+        "loadingAccounts": "Cargando cuentas...",
+        "activeUser": "Usuario activo",
+        "membersCount": "{{count}} miembros",
+        "socialBoosts": "Reconocimientos sociales",
+        "newChildOrOrganization": "Nuevo menor u organización",
+        "selectProfileType": "Selecciona un tipo de perfil",
+        "organizationProfile": "Perfil de organización",
+        "organization": "Organización",
+        "child": "Menor",
+        "user": "Usuario",
+        "addNewPlayer": "Añadir nuevo jugador",
+        "backToGame": "Volver al juego",
+        "childInFamily": "Menor de {{family}}",
+        "editAppName": "Editar {{appName}}",
+        "continuousShare": "Comparte continuamente todos los elementos de {{items}}.",
+        "setExpirationDate": "¿Establecer una fecha de caducidad?",
+        "selectiveSharing": "Uso compartido selectivo",
+        "selectiveSharingHelp": "Comparte solo los elementos de {{items}} seleccionados.",
+        "notSharing": "No compartir",
+        "notSharingHelp": "No compartas ningún elemento de {{items}}.",
+        "sharingCount": "Compartiendo {{selected}}/{{total}}",
+        "switchSelectiveTitle": "¿Cambiar al uso compartido selectivo?",
+        "switchSelectiveHelp": "Al desmarcar datos se desactiva la sincronización en vivo y se activa el uso compartido selectivo, para que controles qué credenciales compartes. Puedes volver a la sincronización en vivo en cualquier momento.",
+        "allow": "Permitir",
+        "deny": "Denegar",
+        "approve": "Aprobar",
+        "editApp": "Editar aplicación",
+        "createApp": "Crear aplicación",
+        "createNewApp": "Crear una aplicación nueva",
+        "selectIntegrationFirst": "Selecciona primero una integración.",
+        "enterDisplayName": "Introduce al menos un nombre visible.",
+        "webhookUrl": "URL del webhook"
+    },
     "common": {
+        "tryAgain": "Reintentar",
         "share": "Compartir",
         "open": "Abrir",
         "accept": "Aceptar",
@@ -106,6 +181,7 @@
             "alerts": "Alertas",
             "personalize": "Personalizar",
             "adminTools": "Herramientas de administración",
+            "myAssistant": "Mi asistente",
             "wallet": "Billetera",
             "passport": "Pasaporte",
             "aiTopics": "Sesiones de IA",
@@ -124,6 +200,12 @@
         },
         "settings": "Ajustes",
         "closeMenu": "Cerrar menú"
+    },
+    "myAssistant": {
+        "schedules": {
+            "autonomyUnavailableTitle": "Las tareas automáticas aún no están habilitadas",
+            "autonomyUnavailableDescription": "Aún puedes chatear con tu asistente. Los horarios recurrentes solo están disponibles para algunas cuentas de prueba."
+        }
     },
     "passport": {
         "buildMyLearnCard": {
@@ -992,9 +1074,31 @@
             "import": "Importar pasaporte",
             "error": {
                 "invalidChars": "La semilla solo debe contener números y letras (a–f).",
-                "tooShort": "La frase semilla debe tener 64 caracteres.",
+                "wrongLength": "La semilla debe tener exactamente 64 caracteres.",
                 "generic": "Algo salió mal. Intenta de nuevo."
             }
+        },
+        "developerSignIn": {
+            "title": "Inicia sesión con tu semilla de desarrollador",
+            "description": "Es el SECURE_SEED del archivo .env de tu proyecto. Se queda en este dispositivo: nunca lo enviamos a ningún lado.",
+            "pasteAction": "Pegar desde el portapapeles",
+            "signingIn": "Iniciando sesión...",
+            "switching": "Cambiando de cuenta...",
+            "or": "o",
+            "seedLabel": "Semilla",
+            "signInAction": "Iniciar sesión",
+            "signOutAndSwitch": "Cerrar sesión y cambiar",
+            "alreadySignedIn": "Ya has iniciado sesión",
+            "alreadySignedInAs": "Has iniciado sesión como {{name}}",
+            "alreadySignedInBody": "Iniciar sesión con una semilla cierra primero la sesión de tu cuenta actual.",
+            "linkSwitchBody": "Este enlace incluye una semilla de otra cuenta. Al cambiar se cerrará la sesión de tu cuenta actual.",
+            "switchAction": "Cambiar de cuenta",
+            "stayAction": "Seguir con la sesión actual",
+            "continueAs": "Continuar como {{name}}",
+            "notDeveloper": "¿No eres desarrollador? ",
+            "signInNormally": "Iniciar sesión normalmente",
+            "securityWarning": "Mantén tu semilla en privado. Cualquiera que la tenga controla esta cuenta.",
+            "pasteHint": "Pégala en el campo de abajo."
         },
         "loader": {
             "messages": {
@@ -1591,7 +1695,27 @@
         },
         "loadError": "No pudimos cargar tus contactos. Inténtalo de nuevo."
     },
+    "bulkImport": {
+        "title": "Importación masiva de credenciales",
+        "step": "Paso {{number}}",
+        "prepareTitle": "Prepara y exporta tu archivo",
+        "fillSheetPrefix": "Completa esta",
+        "googleSheet": "hoja de Google",
+        "fillSheetSuffix": "usando:",
+        "fullImageUrls": "URL completas de imágenes (https://...) para uso directo",
+        "simpleFilenames": "O nombres de archivo simples (imagen.png) para las imágenes que subirás en un ZIP",
+        "exportCsv": "Exportar a CSV:",
+        "downloadCsvPath": "Archivo → Descargar → Valores separados por comas (.csv)",
+        "uploadCsvTitle": "Sube tu archivo .csv",
+        "zipHelp": "Si usaste nombres de archivo en lugar de URL, sube un archivo ZIP que contenga esas imágenes.",
+        "checkBeforeUploading": "Comprueba antes de subir",
+        "checkBeforeUploadingDescription": "Asegúrate de que todas las imágenes estén incluidas y corrige cualquier error antes de continuar.",
+        "uploading": "Subiendo...",
+        "uploadImagesZip": "Subir ZIP de imágenes",
+        "previewCredentials": "Vista previa de {{count}} credenciales"
+    },
     "consentFlow": {
+        "guardianApprovalRequired": "Pide a un administrador actual de la cuenta que apruebe esta conexión y vuelve a intentarlo.",
         "title": "Consentimiento",
         "acceptAndSync": "Aceptar y sincronizar",
         "accepted": "Aceptado",
@@ -1931,7 +2055,22 @@
         "loadingNotifications": "Cargando notificaciones...",
         "refresh": "Actualizar",
         "restored": "Restaurada",
-        "unableToLoad": "No se pudo cargar la notificación"
+        "unableToLoad": "No se pudo cargar la notificación",
+        "credentialUpdated": "Credencial actualizada",
+        "updated": "Actualizada",
+        "checkingForUpdate": "Buscando actualizaciones…",
+        "updateCheckFailed": "Problema de conexión. Comprueba tu conexión a internet e inténtalo de nuevo.",
+        "updatedCredentialUnavailable": "Esta credencial aún no está disponible. Inténtalo de nuevo más tarde."
+    },
+    "credentialHistory": {
+        "title": "Versiones anteriores",
+        "empty": "No hay versiones anteriores almacenadas en este dispositivo.",
+        "unavailable": "Esta versión no está disponible en este dispositivo.",
+        "view": "Ver",
+        "loadingVersion": "Cargando versión…",
+        "done": "Listo",
+        "updatedOn": "Actualizada el {{date}}",
+        "versionFrom": "Versión del {{date}}"
     },
     "share": {
         "addContact": "Agregar contacto",
@@ -2358,7 +2497,8 @@
         },
         "menu": {
             "manageIssuances": "Gestionar emisiones",
-            "viewData": "Ver datos"
+            "viewData": "Ver datos",
+            "viewPreviousVersions": "Ver versiones anteriores"
         },
         "shortBoost": {
             "selectRecipient": "Seleccionar destinatario",
@@ -2597,6 +2737,7 @@
         "title": "Familias",
         "joinFamily": "Unirse a la familia",
         "addFamilyMember": "Agregar miembro de la familia",
+        "createNewFamily": "Crear una nueva familia",
         "familyAccount": "Cuenta familiar",
         "switchProfile": "Cambiar perfil",
         "childProfile": "Perfil del niño",
@@ -2627,7 +2768,9 @@
         },
         "actionMenu": {
             "editFamily": "Editar familia",
-            "shareFamily": "Compartir familia"
+            "shareFamily": "Compartir familia",
+            "viewProfile": "Ver perfil",
+            "boost": "Reconocimiento"
         },
         "childInvite": {
             "title": "Cuenta de niño",
@@ -2671,6 +2814,22 @@
         "none": "Ninguno",
         "colorHexCode": "Código de color hex",
         "confirmRemoveMember": "¿Seguro que quieres eliminar a este {{title}}?",
+        "titleOptions": {
+            "guardian": "Tutor",
+            "guardians": "Tutores",
+            "parent": "Padre o madre",
+            "parents": "Padres",
+            "grandparent": "Abuelo o abuela",
+            "grandparents": "Abuelos",
+            "caretaker": "Cuidador",
+            "caretakers": "Cuidadores",
+            "advocate": "Defensor",
+            "advocates": "Defensores",
+            "child": "Niño",
+            "children": "Niños",
+            "kid": "Pequeño",
+            "kids": "Pequeños"
+        },
         "titlesToggle": {
             "admins": "Administradores",
             "kids": "Niños"
@@ -2702,7 +2861,9 @@
             "enterTitle": "Ingresar PIN",
             "enterSubtext": "Ingresa tu PIN actual para continuar",
             "verifying": "Verificando...",
-            "forUser": "para {{name}}"
+            "forUser": "para {{name}}",
+            "requiresFiveDigits": "El PIN debe tener 5 dígitos",
+            "invalidPin": "PIN no válido. Inténtalo de nuevo"
         },
         "guardianInvite": {
             "shareTitle": "Invitación de tutor",
@@ -2803,6 +2964,7 @@
             "deleteCredentialError": "Error al eliminar credencial: no se pudo ubicar el ID del registro.",
             "shareLinkCopied": "Enlace para compartir copiado al portapapeles",
             "shareLinkCopyFailed": "No se pudo copiar el enlace para compartir",
+            "shareLinkGenerationFailed": "No pudimos crear un enlace para compartir. Inténtalo de nuevo.",
             "templateIdCopied": "ID de plantilla copiado al portapapeles",
             "templateIdCopyFailed": "No se pudo copiar el ID de plantilla",
             "boostLinkCopied": "Enlace del boost copiado al portapapeles",
@@ -3048,7 +3210,9 @@
         "filterResults": "Filtrar resultados...",
         "courses": "Cursos",
         "media": "Multimedia",
+        "explorePathways": "Explorar rutas",
         "exploreRoles": "Explorar roles",
+        "findRoles": "Encontrar roles",
         "jobStability": "Estabilidad laboral",
         "workLifeBalance": "Equilibrio trabajo-vida",
         "iWantTo": "Quiero...",
@@ -3220,6 +3384,18 @@
             "select": "Seleccionar"
         },
         "credential": {
+            "category": {
+                "badge": "Insignia",
+                "family": "Familia",
+                "achievement": "Logro",
+                "course": "Curso",
+                "membership": "Membresía",
+                "skill": "Habilidad",
+                "id": "Identificación",
+                "experience": "Experiencia",
+                "portfolio": "Portafolio",
+                "assistance": "Asistencia"
+            },
             "lifecycle": {
                 "revoked": "Revocada",
                 "suspended": "Suspendida"
@@ -4323,35 +4499,6 @@
                 "developer": "Desarrollador",
                 "admin": "Admin",
                 "selectProject": "Seleccionar Proyecto"
-            },
-            "betaGate": {
-                "betaAccessRequired": "Acceso Beta Requerido",
-                "betaAccessDesc": "Esta función está actualmente en beta. Introduce tu código de acceso para continuar.",
-                "accessCode": "Código de Acceso",
-                "accessCodePlaceholder": "Introduce tu código de acceso beta",
-                "continue": "Continuar",
-                "noAccessCode": "¿No tienes un código de acceso?",
-                "contactUs": "Contáctanos",
-                "backToDeveloperPortal": "← Volver al Portal de Desarrolladores",
-                "invalidAccessCode": "Código de acceso inválido. Verifica e inténtalo de nuevo.",
-                "welcomeToBeta": "¡Bienvenido a la Beta!",
-                "welcomeDesc": "Estás viendo en vista previa nuevas herramientas para desarrolladores antes de que estén disponibles públicamente.",
-                "betaPreviewNotice": "Aviso de Vista Previa Beta",
-                "betaPreviewDesc": "Esta es una funcionalidad de prelanzamiento. Las funciones pueden cambiar y puedes encontrar errores. ¡Tus comentarios son valiosos!",
-                "yourAccessIncludes": "Tu acceso incluye:",
-                "integrationDashboard": "Panel de integración",
-                "apiTokenManagement": "Gestión de tokens API",
-                "allIntegrationGuides": "Todas las guías de integración",
-                "otherGuidesLocked": "Otras guías (bloqueadas)",
-                "letsGo": "¡Vamos!",
-                "feedbackContact": "support@learncard.com",
-                "questionsFeedback": "¿Preguntas o comentarios?",
-                "guideLockedTitle": "{{name}}",
-                "guideLockedDesc": "Esta guía no está disponible con tu acceso beta actual. Contáctanos para solicitar acceso ampliado.",
-                "requestAccess": "Solicitar Acceso",
-                "locked": "bloqueada",
-                "guideNotAvailable": "Esta guía no está disponible con tu acceso beta actual.",
-                "guideLabel": "guía"
             },
             "codeBlock": {
                 "copyCode": "Copiar código",
@@ -6620,8 +6767,6 @@
             },
             "hub": {
                 "comingSoon": "Próximamente",
-                "locked": "Bloqueado",
-                "requestAccess": "Solicitar Acceso",
                 "inProgress": "En Progreso",
                 "getStarted": "Comenzar",
                 "createProject": {
@@ -7755,9 +7900,9 @@
             "changesSaved": "¡Cambios guardados!",
             "draftUpdated": "Borrador actualizado",
             "draftSaved": "Borrador guardado",
-            "appUpdated": "Su aplicación \"{appName}\" ha sido actualizada.",
-            "appSavedAsDraft": "Su aplicación \"{appName}\" ha sido guardada como borrador.",
-            "appSubmittedForReview": "Su aplicación \"{appName}\" ha sido enviada para revisión.",
+            "appUpdated": "Su aplicación \"{{appName}}\" ha sido actualizada.",
+            "appSavedAsDraft": "Su aplicación \"{{appName}}\" ha sido guardada como borrador.",
+            "appSubmittedForReview": "Su aplicación \"{{appName}}\" ha sido enviada para revisión.",
             "error": "Error",
             "back": "Atrás",
             "savingDraft": "Guardando...",
