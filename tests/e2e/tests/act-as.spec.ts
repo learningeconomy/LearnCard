@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, test } from 'vitest';
+import { beforeEach, describe, expect, test } from 'vitest';
 import { randomBytes } from 'node:crypto';
 import { initLearnCard, type NetworkLearnCardFromSeed } from '@learncard/init';
 import { getLearnCardForUser, USERS } from './helpers/learncard.helpers';
@@ -25,7 +25,8 @@ describe('Act as a managed profile', () => {
     const strangerId = `act-as-stranger-${suffix}`;
     let parent: NetworkLearnCardFromSeed['returnValue'];
 
-    beforeAll(async () => {
+    // The shared harness clears every database after each test, so rebuild the org per test.
+    beforeEach(async () => {
         parent = await initLearnCard({ seed, network: NETWORK });
         await parent.invoke.createProfile({
             profileId: parentId,
@@ -161,7 +162,7 @@ describe('Act as a managed profile', () => {
             const lc = await cardWith(await tokenFor('*'), districtId);
             await rejectsWith(
                 lc.invoke.addAuthGrant({ name: 'escalate', scope: '*:*' }),
-                'FORBIDDEN'
+                'UNAUTHORIZED'
             );
         });
 
