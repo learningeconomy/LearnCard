@@ -3463,7 +3463,6 @@ export const boostsRouter = t.router({
             // Log DELIVERED activity first to get activityId for chaining (outside try for catch access)
             const activityId = await logCredentialSent({
                 actorProfileId: saOwnerProfile.profileId,
-                onBehalfOf: ctx.user.onBehalfOf,
                 recipientType: 'profile',
                 recipientIdentifier: profile.profileId,
                 recipientProfileId: profile.profileId,
@@ -3484,7 +3483,6 @@ export const boostsRouter = t.router({
                 await logCredentialClaimed({
                     activityId,
                     actorProfileId: saOwnerProfile.profileId,
-                    onBehalfOf: ctx.user.onBehalfOf,
                     recipientType: 'profile',
                     recipientIdentifier: profile.profileId,
                     recipientProfileId: profile.profileId,
@@ -3508,7 +3506,6 @@ export const boostsRouter = t.router({
                     await logCredentialFailed({
                         activityId,
                         actorProfileId: saOwnerProfile.profileId,
-                        onBehalfOf: ctx.user.onBehalfOf,
                         recipientType: 'profile',
                         recipientIdentifier: profile.profileId,
                         recipientProfileId: profile.profileId,

@@ -4,7 +4,7 @@ import type { LCALearnCard } from '@learncard/lca-api-plugin';
 import { ensureGitignored, saveProject, type Project } from '../project';
 import { setupSigning } from '../setup-signing';
 import { out } from '../out';
-import { getGrantActAs, type AuthGrantWithActAs } from '../auth-grant';
+import { describeActAs, getGrantActAs, type AuthGrantWithActAs } from '../auth-grant';
 import type { OrgBranding, OrgServiceAccountSpec, OrgSpec } from './schema';
 
 export type OrgResource =
@@ -67,7 +67,6 @@ export type OrgLearnCard = {
         | 'createProfileManager'
         | 'getAuthGrants'
         | 'addAuthGrant'
-        | 'updateAuthGrant'
         | 'getAPITokenForAuthGrant'
         | 'getRegisteredSigningAuthorities'
         | 'registerSigningAuthority'
@@ -431,26 +430,13 @@ const applyServiceAccounts = async (
                 grantId: existing.id ?? '',
                 created: false,
             });
-            if (getGrantActAs(existing) !== actAs) {
-                // `updateAuthGrant` exists on the network plugin, so reconcile for real.
-                if (dryRun) {
-                    changes.push({
-                        resource: 'serviceAccount',
-                        name: account.name,
-                        action: 'would-update',
-                        detail: 'actAs',
-                    });
-                    continue;
-                }
-                const update: AuthGrantWithActAs = { actAs };
-                await learnCard.invoke.updateAuthGrant(existing.id ?? '', update);
-                changes.push({
-                    resource: 'serviceAccount',
-                    name: account.name,
-                    action: 'updated',
-                    detail: 'actAs',
-                });
-                continue;
+            const existingActAs = getGrantActAs(existing);
+            if (existingActAs !== actAs) {
+                // Like `scope`, `actAs` is fixed when the token is minted — the network
+                // rejects it on update. The only way to change it is a new token.
+                throw new Error(
+                    `Service account "${account.name}" exists with actAs ${describeActAs(existingActAs)} but the spec says ${describeActAs(actAs)}. actAs cannot be changed on an existing token — revoke it (npx @learncard/cli token --revoke ${existing.id ?? '<grantId>'}) and re-run org apply with --secrets-out to mint a replacement.`
+                );
             }
             changes.push({ resource: 'serviceAccount', name: account.name, action: 'unchanged' });
             continue;

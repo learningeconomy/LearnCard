@@ -208,5 +208,47 @@ describe('actAs', () => {
                 }
             );
         });
+
+        it.each(['FORBIDDEN', 'NOT_FOUND'])(
+            'rethrows a %s act-as denial instead of returning a broken instance',
+            async code => {
+                const denial = Object.assign(new Error(`act-as ${code}`), { data: { code } });
+                const actingClient = {
+                    profile: { getProfile: { query: vi.fn().mockRejectedValue(denial) } },
+                };
+                vi.mocked(getApiTokenClient)
+                    .mockResolvedValueOnce(getMockClient() as never)
+                    .mockResolvedValueOnce(actingClient as never);
+
+                const learnCard = getMockLearnCard();
+                const plugin = await getLearnCardNetworkPlugin(learnCard, URL, 'api-token-value');
+
+                await expect(plugin.methods.actAs(learnCard, 'not-mine')).rejects.toBe(denial);
+                expect(learnCard.addPlugin).not.toHaveBeenCalled();
+            }
+        );
+
+        it('still returns an instance when the profile fetch fails for an unrelated reason', async () => {
+            const actingClient = {
+                profile: {
+                    getProfile: {
+                        query: vi.fn().mockRejectedValue(
+                            Object.assign(new Error('no scope'), {
+                                data: { code: 'UNAUTHORIZED' },
+                            })
+                        ),
+                    },
+                },
+            };
+            vi.mocked(getApiTokenClient)
+                .mockResolvedValueOnce(getMockClient() as never)
+                .mockResolvedValueOnce(actingClient as never);
+
+            const learnCard = getMockLearnCard();
+            const plugin = await getLearnCardNetworkPlugin(learnCard, URL, 'api-token-value');
+
+            await expect(plugin.methods.actAs(learnCard, 'managed-child')).resolves.toBeDefined();
+            expect(learnCard.addPlugin).toHaveBeenCalledTimes(1);
+        });
     });
 });

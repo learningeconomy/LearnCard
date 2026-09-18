@@ -38,7 +38,9 @@ const managerDid = 'did:web:network.learncard.com:manager:m1';
 const managedDid = 'did:web:network.learncard.com:users:sc-greenville';
 
 const makeMockCard = (): OrgLearnCard & {
-    invoke: { [K in keyof OrgLearnCard['invoke']]: ReturnType<typeof vi.fn> };
+    invoke: { [K in keyof OrgLearnCard['invoke']]: ReturnType<typeof vi.fn> } & {
+        updateAuthGrant: ReturnType<typeof vi.fn>;
+    };
 } => ({
     id: { did: vi.fn((method?: string) => (method === 'web' ? issuerDid : 'did:key:z6Mk...')) },
     invoke: {
@@ -312,9 +314,20 @@ describe('applyOrg', () => {
         });
     });
 
-    it('updates an existing grant and reports it when actAs differs from the spec', async () => {
+    it('fails with a revoke + re-create hint when actAs differs from the existing grant', async () => {
         await withTmpProject(async project => {
             const card = makeMockCard();
+            card.invoke.getProfile.mockResolvedValue({
+                profileId: 'scde',
+                displayName: 'South Carolina Department of Education',
+                did: issuerDid,
+            });
+            card.invoke.getRegisteredSigningAuthorities.mockResolvedValue([
+                {
+                    signingAuthority: { endpoint: authorityRecord.endpoint },
+                    relationship: { name: 'scde-clr', did: authorityRecord.did, isPrimary: true },
+                },
+            ]);
             const existingGrant: AuthGrantWithActAs = {
                 id: 'grant-1',
                 name: 'ea-clr-issuer',
@@ -330,17 +343,43 @@ describe('applyOrg', () => {
                 serviceAccounts: [{ ...spec.serviceAccounts![0]!, actAs: '*' }],
             };
 
-            const result = await applyOrg(specWithActAs, card, project, {
-                connectAsManager: async () => makeMockManager(),
-            });
+            for (const dryRun of [true, false]) {
+                await expect(
+                    applyOrg(specWithActAs, card, project, {
+                        dryRun,
+                        connectAsManager: async () => makeMockManager(),
+                    })
+                ).rejects.toThrow(
+                    'Service account "ea-clr-issuer" exists with actAs sc-greenville but the spec says any managed profile. actAs cannot be changed on an existing token — revoke it (npx @learncard/cli token --revoke grant-1)'
+                );
+            }
 
-            expect(card.invoke.updateAuthGrant).toHaveBeenCalledWith('grant-1', { actAs: '*' });
+            expect(card.invoke.updateAuthGrant).not.toHaveBeenCalled();
             expect(card.invoke.addAuthGrant).not.toHaveBeenCalled();
-            expect(
-                result.changes.find(
-                    c => c.resource === 'serviceAccount' && c.name === 'ea-clr-issuer'
-                )
-            ).toMatchObject({ action: 'updated', detail: 'actAs' });
+
+            log.mockRestore();
+        });
+    });
+
+    it('fails when the spec drops actAs from a grant that has it', async () => {
+        await withTmpProject(async project => {
+            const card = makeMockCard();
+            const existingGrant: AuthGrantWithActAs = {
+                id: 'grant-1',
+                name: 'ea-clr-issuer',
+                status: 'active',
+                scope: 'inbox:write',
+                actAs: '*',
+            };
+            card.invoke.getAuthGrants.mockResolvedValue([existingGrant]);
+            const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+            await expect(
+                applyOrg(spec, card, project, { connectAsManager: async () => makeMockManager() })
+            ).rejects.toThrow(
+                'exists with actAs any managed profile but the spec says no delegation'
+            );
+            expect(card.invoke.updateAuthGrant).not.toHaveBeenCalled();
 
             log.mockRestore();
         });
