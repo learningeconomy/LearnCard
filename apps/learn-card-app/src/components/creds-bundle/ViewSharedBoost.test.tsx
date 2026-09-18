@@ -170,6 +170,46 @@ describe('ViewSharedBoost', () => {
         });
     });
 
+    it('derives and stores a verified target id for an idless shared credential', async () => {
+        const idlessCredential = {
+            '@context': ['https://www.w3.org/2018/credentials/v1'],
+            type: ['VerifiableCredential'],
+            issuer: 'did:example:issuer',
+            credentialSubject: { id: 'did:example:holder' },
+            proof: { type: 'Ed25519Signature2020', proofValue: 'zExample' },
+        };
+        mocks.credentialInfo = {
+            uri: storageUri,
+            seed: 'seed',
+            pin: '1234',
+        };
+        mocks.readCredential.mockResolvedValue({ verifiableCredential: idlessCredential });
+
+        render(<ViewSharedBoost showEndorsementRequest />);
+
+        await waitFor(() =>
+            expect(mocks.requestModalProps).toContainEqual(
+                expect.objectContaining({
+                    credential: idlessCredential,
+                    targetCredential: expect.objectContaining({
+                        ...idlessCredential,
+                        id: expect.stringMatching(/^urn:sha256:[0-9a-f]{64}$/),
+                    }),
+                })
+            )
+        );
+
+        const targetCredential = mocks.requestModalProps.find(props =>
+            (props.targetCredential as { id?: string })?.id?.startsWith('urn:sha256:')
+        )?.targetCredential as { id: string };
+        expect(mocks.setCredentialInfo).toHaveBeenCalledWith({
+            uri: storageUri,
+            seed: 'seed',
+            pin: '1234',
+            credentialId: targetCredential.id,
+        });
+    });
+
     it('rejects a request credential id that does not match the shared wrapper', async () => {
         mocks.credentialInfo = {
             uri: storageUri,

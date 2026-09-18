@@ -147,4 +147,44 @@ describe('ShareBoostLink error recovery', () => {
         ).toBeInTheDocument();
         client.clear();
     });
+    it('uses an explicit identity for an idless endorsement credential', async () => {
+        const idlessCredential = {
+            ...credential,
+            id: undefined,
+        };
+        const credentialId = `urn:sha256:${'a'.repeat(64)}`;
+        createLink.mockResolvedValue({
+            link: 'https://learncard.app/share-boost?uri=encrypted%3Apresentation&seed=seed&pin=1234',
+        });
+        const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
+
+        render(
+            <QueryClientProvider client={client}>
+                <ShareBoostLink
+                    boost={idlessCredential}
+                    boostUri="lc:credential:idless-record"
+                    credentialId={credentialId}
+                    categoryType={'Achievement' as never}
+                    isEndorsementRequest
+                />
+            </QueryClientProvider>
+        );
+
+        expect(
+            await screen.findByText(
+                `http://localhost:3000/?uri=encrypted%3Apresentation&seed=seed&pin=1234&credentialId=${encodeURIComponent(
+                    credentialId
+                )}&endorsementRequest=true`
+            )
+        ).toBeInTheDocument();
+        expect(createLink).toHaveBeenCalledWith(
+            {
+                credential: idlessCredential,
+                credentialUri: 'lc:credential:idless-record',
+                credentialId,
+            },
+            expect.anything()
+        );
+        client.clear();
+    });
 });

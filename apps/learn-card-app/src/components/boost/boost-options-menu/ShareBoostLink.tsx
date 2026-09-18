@@ -44,6 +44,7 @@ type ShareBoostLinkProps = {
     handleClose?: () => void;
     boost: VC | UnsignedVC;
     boostUri?: string;
+    credentialId?: string;
     customClassName?: string;
     categoryType: BoostCategoryOptionsEnum | CredentialCategoryEnum;
     onBackButtonClick?: () => void;
@@ -55,6 +56,7 @@ type ShareBoostLinkProps = {
 const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
     boost,
     boostUri,
+    credentialId,
     customClassName,
     handleClose,
     categoryType,
@@ -63,6 +65,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
     isEndorsementRequest = false,
     compact = false,
 }) => {
+    const sharedCredentialId = credentialId ?? boost.id;
     const { presentToast } = useToast();
     const tenantBaseUrl = useTenantBaseUrl();
     const [shareLink, setShareLink] = useState<string | undefined>('');
@@ -154,7 +157,11 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
 
     const generateShareLink = () => {
         shareEarnedBoost(
-            { credential: boost, credentialUri: boostUri as string },
+            {
+                credential: boost,
+                credentialUri: boostUri as string,
+                credentialId: sharedCredentialId,
+            },
             {
                 async onSuccess(data) {
                     if (isEndorsementRequest) {
@@ -169,7 +176,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                             uri: uri ?? '',
                             seed: seed ?? '',
                             pin: pin ?? '',
-                            credentialId: boost.id ?? '',
+                            credentialId: sharedCredentialId ?? '',
                             endorsementRequest: 'true',
                         }).toString();
                         setShareLink(endorsementUrl.toString());

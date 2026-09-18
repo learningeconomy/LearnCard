@@ -59,11 +59,13 @@ export const useShareBoostMutation = () => {
     return useMutation({
         mutationFn: async ({
             credential,
+            credentialId: requestedCredentialId,
             credentialUri,
             shareRouteName = baseBoostShareRouteName,
         }: {
             credential: VC | UnsignedVC;
             credentialUri: string;
+            credentialId?: string;
             shareRouteName?: string;
         }) => {
             const baseUrl = getBaseUrl();
@@ -74,7 +76,7 @@ export const useShareBoostMutation = () => {
 
             const pin = Math.floor(Math.random() * 9000 + 1000)?.toString();
 
-            const credentialId = credential.id;
+            const credentialId = requestedCredentialId ?? credential.id;
             const sharedCredentialIndexQuery = getSharedCredentialIndexQuery(
                 credentialUri,
                 credentialId

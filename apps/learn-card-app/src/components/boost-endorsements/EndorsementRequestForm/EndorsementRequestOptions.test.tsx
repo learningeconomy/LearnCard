@@ -181,6 +181,37 @@ describe('EndorsementRequestOptions', () => {
         });
     });
 
+    it('generates a request for an idless credential using a content identity', async () => {
+        const idlessCredential = {
+            '@context': ['https://www.w3.org/2018/credentials/v1'],
+            type: ['VerifiableCredential'],
+            issuer: 'did:example:issuer',
+            credentialSubject: { id: 'did:example:holder' },
+            proof: { type: 'Ed25519Signature2020', proofValue: 'zExample' },
+        } as never;
+
+        render(
+            <EndorsementRequestOptions
+                credential={idlessCredential}
+                shareCredentialUri="lc:credential:idless-record"
+                categoryType={'Achievement' as never}
+                endorsementRequest={{ email: '', text: '' }}
+                setEndorsementRequest={vi.fn()}
+            />
+        );
+
+        await waitFor(() => expect(mutateMock).toHaveBeenCalledOnce());
+
+        const mutationInput = mutateMock.mock.calls[0][0];
+        expect(mutationInput).toEqual({
+            credential: idlessCredential,
+            credentialUri: 'lc:credential:idless-record',
+            credentialId: expect.stringMatching(/^urn:sha256:[0-9a-f]{64}$/),
+        });
+        expect(logWarnMock).not.toHaveBeenCalled();
+        expect(presentToastMock).not.toHaveBeenCalled();
+    });
+
     it('regenerates requests with each credential record URI', async () => {
         const { rerender } = render(
             <EndorsementRequestOptions
@@ -197,6 +228,7 @@ describe('EndorsementRequestOptions', () => {
                 {
                     credential: { id: 'credential:first' },
                     credentialUri: 'lc:credential:record-first',
+                    credentialId: 'credential:first',
                 },
                 expect.anything()
             )
@@ -217,6 +249,7 @@ describe('EndorsementRequestOptions', () => {
                 {
                     credential: { id: 'credential:second' },
                     credentialUri: 'lc:credential:record-second',
+                    credentialId: 'credential:second',
                 },
                 expect.anything()
             )
