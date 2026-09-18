@@ -1,3 +1,5 @@
+import { environment } from '@environment';
+import { generateClaimUrl } from './contact-method.helpers';
 import type { BoostInstance } from '@models';
 import { getBoostById } from '@accesslayer/boost/read';
 import { getContactMethodsForProfile } from '@accesslayer/contact-method/read';
@@ -126,7 +128,14 @@ export const deliverCredentialRefreshEmailNotification = async (params: {
 
         if (target.status === 'skipped') return 'skipped-no-recipient';
 
-        const windowKey = computeCredentialRefreshDeliveryKey(refreshId);
+        // Replay the publication's original window, even if the caller retries
+        // tomorrow. Recomputing from the current clock would send duplicate mail.
+        const windowKey =
+            version.notificationDeliveryKey ??
+            computeCredentialRefreshDeliveryKey(
+                refreshId,
+                new Date(version.notificationCreatedAt ?? version.publishedAt)
+            );
 
         // The email-delivery unique constraint is created on demand: the accept
         // path can reach this helper without passing through the publish route
@@ -150,7 +159,9 @@ export const deliverCredentialRefreshEmailNotification = async (params: {
                     issuerDisplayName: issuerProfile.displayName,
                     credentialTitle,
                 }),
-                branding,
+                branding: environment.IS_OFFLINE
+                    ? { ...branding, appUrl: new URL(generateClaimUrl('')).origin }
+                    : branding,
                 locale: target.locale ?? resolveRecipientLocale(holderProfile),
                 messageStream: 'universal-inbox',
             });

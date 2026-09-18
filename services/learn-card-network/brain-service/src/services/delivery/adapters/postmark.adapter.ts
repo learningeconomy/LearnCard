@@ -86,6 +86,8 @@ export class PostmarkAdapter implements DeliveryService {
                     `[PostmarkAdapter] Local render failed for "${notification.templateId}":`,
                     renderError
                 );
+                // This template is owned locally; there is no legacy provider alias.
+                if (notification.templateId === 'credential-updated') throw renderError;
             }
 
             if (rendered) {
@@ -105,6 +107,9 @@ export class PostmarkAdapter implements DeliveryService {
                         `[PostmarkAdapter] sendEmail API failed for "${notification.templateId}":`,
                         sendError
                     );
+                    // A lost provider acknowledgement may already have sent the email.
+                    // Do not bypass the refresh delivery claim with a second attempt.
+                    if (notification.templateId === 'credential-updated') throw sendError;
                 }
             }
         }

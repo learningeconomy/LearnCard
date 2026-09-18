@@ -870,6 +870,7 @@ const deliverCredentialRefreshNotification = async (params: {
     const { version, issuerProfile, holderProfile, branding } = params;
 
     let inAppOutcome: PublishCredentialRefreshNotification = 'queued';
+    let deliveryWindowKey = version.notificationDeliveryKey;
 
     if (!version.notificationDeliveredAt) {
         const event = buildCredentialRefreshedNotification({
@@ -881,6 +882,7 @@ const deliverCredentialRefreshNotification = async (params: {
             deliveryKey: version.notificationDeliveryKey,
             notifiedAt: version.notificationCreatedAt,
         });
+        deliveryWindowKey = event.deliveryKey;
 
         try {
             await addNotificationToQueue(event.notification);
@@ -906,7 +908,7 @@ const deliverCredentialRefreshNotification = async (params: {
     // to change the publication result or duplicate the push notification.
     try {
         await deliverCredentialRefreshEmailNotification({
-            version,
+            version: { ...version, notificationDeliveryKey: deliveryWindowKey },
             issuerProfile,
             holderProfile,
             branding,

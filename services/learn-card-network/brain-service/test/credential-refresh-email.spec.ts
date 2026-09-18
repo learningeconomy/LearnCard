@@ -1,4 +1,6 @@
 import { vi } from 'vitest';
+import { environment } from '@environment';
+import { deliverCredentialRefreshEmailNotification } from '@helpers/credential-refresh-email.helpers';
 import { VC, UnsignedVC, LCNNotification } from '@learncard/types';
 
 import { neogma } from '@instance';
@@ -388,6 +390,63 @@ describe('credential refresh update emails', () => {
         });
 
         expect(emailDeliveries()).toHaveLength(1);
+    });
+
+    it('does not resend a persisted publication in a later delivery window', async () => {
+        await addEmail(HOLDER_PROFILE_ID, HOLDER_VERIFIED_EMAIL);
+        const { allocation } = await sendOriginal();
+        await activate(allocation.refreshId);
+        await publishIssuerSigned(allocation.refreshId, await updatedCredential(allocation));
+        const version = (await getCredentialRefreshHead(allocation.refreshId))!;
+        const issuerProfile = (await getProfileByProfileId(ISSUER_PROFILE_ID))!;
+        const holderProfile = (await getProfileByProfileId(HOLDER_PROFILE_ID))!;
+        expect(emailDeliveries()).toHaveLength(1);
+        vi.useFakeTimers({ toFake: ['Date'] });
+        try {
+            vi.setSystemTime(new Date(Date.now() + 3 * 24 * 60 * 60 * 1000));
+            expect(
+                await deliverCredentialRefreshEmailNotification({
+                    version,
+                    issuerProfile,
+                    holderProfile,
+                })
+            ).toBe('duplicate-window');
+            expect(emailDeliveries()).toHaveLength(1);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('uses the local frontend in update email branding when running offline', async () => {
+        // Publish without an email first so we can test delivery without changing
+        // proof verification or the rest of the application's environment.
+        const { allocation } = await sendOriginal();
+        await activate(allocation.refreshId);
+        await publishIssuerSigned(allocation.refreshId, await updatedCredential(allocation));
+        await addEmail(HOLDER_PROFILE_ID, HOLDER_VERIFIED_EMAIL);
+        const version = (await getCredentialRefreshHead(allocation.refreshId))!;
+        const previous = {
+            offline: environment.IS_OFFLINE,
+            domain: environment.CLIENT_APP_DOMAIN_NAME,
+        };
+        environment.IS_OFFLINE = true;
+        environment.CLIENT_APP_DOMAIN_NAME = 'localhost:3000';
+        try {
+            await deliverCredentialRefreshEmailNotification({
+                version,
+                issuerProfile: (await getProfileByProfileId(ISSUER_PROFILE_ID))!,
+                holderProfile: (await getProfileByProfileId(HOLDER_PROFILE_ID))!,
+                branding: { appUrl: 'https://production.example', brandName: 'Example School' },
+            });
+            expect(emailDeliveries()).toHaveLength(1);
+            expect(emailDeliveries()[0]?.branding).toMatchObject({
+                appUrl: 'http://localhost:3000',
+                brandName: 'Example School',
+            });
+        } finally {
+            environment.IS_OFFLINE = previous.offline;
+            environment.CLIENT_APP_DOMAIN_NAME = previous.domain;
+        }
     });
 
     it('claims the window exactly once when concurrent publications race', async () => {
