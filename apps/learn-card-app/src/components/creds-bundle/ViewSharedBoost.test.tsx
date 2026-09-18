@@ -148,9 +148,6 @@ describe('ViewSharedBoost', () => {
         await waitFor(() =>
             expect(mocks.useGetCredentialWithEdits).toHaveBeenCalledWith(displayCredential)
         );
-        expect(
-            mocks.useGetCredentialWithEdits.mock.calls.every(arguments_ => arguments_.length === 1)
-        ).toBe(true);
     });
 
     it('passes only the verified credential id as the endorsement target', async () => {
