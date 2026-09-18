@@ -5,6 +5,7 @@ import { initLearnCard, type NetworkLearnCardFromSeed } from '@learncard/init';
 import { getLCAPlugin, type LCAPlugin } from '@learncard/lca-api-plugin';
 import { getClient } from '@learncard/network-brain-client';
 import {
+    ContactMethodQueryValidator,
     VCValidator,
     type InboxCredentialRefreshReceipt,
     type UnsignedVC,
@@ -24,6 +25,12 @@ export interface InboxRefreshDemoOptions {
     ui?: boolean;
     appUrl?: string;
     lcaUrl?: string;
+    /**
+     * Opt-in real-email mode. A string is the address to use; `true` means the address
+     * was requested without a value and must be prompted for. Requires `--inbox --ui`
+     * and an interactive terminal.
+     */
+    email?: string | boolean;
 }
 
 type InboxIssuer = AddPlugin<NetworkLearnCardFromSeed['returnValue'], LCAPlugin>;
@@ -126,15 +133,35 @@ const buildVersion = (
     };
 };
 
-/**
- * Guided Universal Inbox refresh demonstration (LC-2198).
- *
- * Stage 1 issues a refreshable credential to an email address that has no account.
- * Stage 2 publishes a new version before anyone claims. UI mode then has a human claim
- * in the real app and publish an update to the now-bound holder; terminal mode makes the
- * same claim with DIDAuth and refreshes the local wallet itself.
- */
-export const runInboxRefreshDemo = async (options: InboxRefreshDemoOptions): Promise<void> => {
+/** Build the LearnCard config shared by the issuer and disposable holder wallets. */
+const buildInboxDemoConfig = (network: string, networkUrl: URL, didkit?: Promise<Buffer>) => ({
+    network,
+    ...(didkit && { didkit }),
+    trustedBoostRegistry: `data:application/json,${encodeURIComponent(
+        JSON.stringify([
+            {
+                id: 'Inbox demo network',
+                url: networkUrl.origin,
+                did: `did:web:${encodeURIComponent(networkUrl.host)}`,
+            },
+        ])
+    )}`,
+});
+
+interface InboxDemoEnvironment {
+    network: string;
+    networkUrl: URL;
+    ui?: Awaited<ReturnType<typeof getRefreshDemoUiConfig>>;
+    lca: URL;
+    interactive: boolean;
+    prompts?: ReturnType<typeof createInterface>;
+    pause: (next: string) => Promise<void>;
+}
+
+/** Validate local-only options and open the app/LCA services before any account is created. */
+const prepareInboxDemoEnvironment = async (
+    options: InboxRefreshDemoOptions
+): Promise<InboxDemoEnvironment> => {
     const { network, lcaAPI: envLca } = resolveServices({}, options.network || LOCAL_NETWORK);
     const networkUrl = requireLoopbackUrl(network, '--network (inbox demo is local-only)');
     const interactive =
@@ -161,6 +188,268 @@ export const runInboxRefreshDemo = async (options: InboxRefreshDemoOptions): Pro
     const pause = async (next: string): Promise<void> => {
         if (prompts) await prompts.question(`\nPress Enter to ${next}... `);
     };
+    return { network, networkUrl, ui, lca, interactive, prompts, pause };
+};
+
+interface InboxIssuerSetup {
+    issuer: InboxIssuer;
+    signingAuthority: { endpoint: string; name: string };
+    template: UnsignedVC;
+    boostUri: string;
+    suffix: string;
+}
+
+/** Create the throwaway demo school and register a real signing authority on the local network. */
+const setupInboxIssuer = async (
+    config: ReturnType<typeof buildInboxDemoConfig>,
+    lcaHref: string
+): Promise<InboxIssuerSetup> => {
+    const issuerBase = await initLearnCard({ ...config, seed: generateRandomSeed() });
+    const issuer = (await issuerBase.addPlugin(
+        await getLCAPlugin(issuerBase as unknown as Parameters<typeof getLCAPlugin>[0], lcaHref)
+    )) as unknown as InboxIssuer;
+    const suffix = randomUUID().slice(0, 8);
+    await issuer.invoke.createProfile({
+        profileId: `inbox-issuer-${suffix}`,
+        displayName: 'Inbox Demo School',
+        bio: '',
+        shortBio: '',
+    });
+
+    const authority = await issuer.invoke.createSigningAuthority(`inbox-${suffix}`);
+    if (!authority || !authority.endpoint || !authority.did) {
+        throw new Error('The LCA service did not return a signing authority.');
+    }
+    if (
+        !(await issuer.invoke.registerSigningAuthority(
+            authority.endpoint,
+            authority.name,
+            authority.did
+        ))
+    ) {
+        throw new Error('Could not register the signing authority.');
+    }
+    if (
+        !(await issuer.invoke.setPrimaryRegisteredSigningAuthority(
+            authority.endpoint,
+            authority.name
+        ))
+    ) {
+        throw new Error('Could not select the signing authority.');
+    }
+    const signingAuthority = { endpoint: authority.endpoint, name: authority.name };
+    const template = baseTemplate(issuer.id.did());
+    const boostUri = await issuer.invoke.createBoost(template, { category: 'Achievement' });
+    return { issuer, signingAuthority, template, boostUri, suffix };
+};
+
+/** Mask the local part of an address before writing it to machine-readable output. */
+const maskEmail = (email: string): string => {
+    const [local, domain] = email.split('@');
+    if (!local || !domain) return '***';
+    const visible = local.slice(0, 1);
+    return `${visible}${'*'.repeat(Math.max(local.length - 1, 1))}@${domain}`;
+};
+
+/**
+ * Real-email Universal Inbox walkthrough (LC-2198 opt-in).
+ *
+ * Unlike {@link runInboxRefreshDemo}, this never creates or reads a recipient wallet. The
+ * operator's delivery service is asked to email a provisional claim link to an address the
+ * presenter owns; after a human claims it, the school publishes exactly one visible update
+ * (version 2, final grade A) to the holder DID the issuer reports. The CLI confirms only
+ * what the issuer reports, never the recipient's wallet contents or email delivery.
+ */
+export const runEmailInboxRefreshDemo = async (options: InboxRefreshDemoOptions): Promise<void> => {
+    const provided = typeof options.email === 'string' ? options.email.trim() : '';
+    if (provided) {
+        const parsed = ContactMethodQueryValidator.safeParse({ type: 'email', value: provided });
+        if (!parsed.success) throw new Error('Enter a valid email address you own.');
+    }
+
+    const env = await prepareInboxDemoEnvironment(options);
+    let step = 'start the real-email walkthrough';
+
+    try {
+        if (!env.ui) {
+            throw new Error(
+                '--email requires --ui so you can sign in with the address that receives the claim.'
+            );
+        }
+        const prompts = env.prompts;
+        if (!prompts) {
+            throw new Error(
+                '--email requires an interactive terminal; omit --yes, --json, and LC_YES=1 so you can claim in the app.'
+            );
+        }
+        const pause = env.pause;
+
+        let email = provided;
+        if (!email) {
+            out.log('\nEnter an email address you own and can open right now.');
+            email = (await prompts.question('Email address: ')).trim();
+        }
+        const parsed = ContactMethodQueryValidator.safeParse({ type: 'email', value: email });
+        if (!parsed.success) throw new Error('Enter a valid email address you own.');
+        email = parsed.data.value;
+
+        out.log('\nLearnCard: receive a Universal Inbox credential by email\n');
+        out.log(`Network: ${env.network}`);
+        out.log(`Inbox claim service: ${env.lca.href}`);
+        out.log(`Real email requested for: ${email}`);
+        out.log(
+            'This CLI asks the locally configured delivery service to email a claim link. It cannot confirm that any email was sent or delivered.'
+        );
+        out.log(
+            'Flow: open the mailbox link, sign in or create an account using that same address, and claim the PROVISIONAL certificate.'
+        );
+        out.log(
+            'Then return here and press Enter. The school publishes FINAL grade-A results as version 2, requesting an in-app notification and a generic update email prompting you to log in and view notifications.'
+        );
+        await pause('start');
+
+        out.log('\nSetting up the issuer and signing authority...');
+        step = 'register a signing authority';
+        const config = buildInboxDemoConfig(env.network, env.networkUrl, options.didkit);
+        const { issuer, signingAuthority, template, boostUri, suffix } = await setupInboxIssuer(
+            config,
+            env.lca.href
+        );
+
+        step = 'request provisional delivery';
+        out.log('\n1 / 3  ISSUE PROVISIONAL RESULTS');
+        out.log(`Requesting delivery of a provisional claim link for ${email}.`);
+        const issued = await issuer.invoke.sendCredentialViaInbox({
+            recipient: { type: 'email', value: email },
+            templateUri: boostUri,
+            refresh: true,
+            idempotencyKey: `inbox-email-issue-${suffix}`,
+            configuration: {
+                signingAuthority,
+                // Real-email mode never suppresses; the operator's adapter decides delivery.
+                delivery: { suppress: false },
+            },
+        });
+        const receipt = issued.refresh;
+        if (!receipt) throw new Error('The SDK did not return an inbox refresh receipt.');
+        if (!['PENDING', 'ISSUED', 'DELIVERED'].includes(issued.status)) {
+            throw new Error(
+                `Expected a pending or delivered inbox credential, received ${issued.status}.`
+            );
+        }
+        const alreadyKnown = !!receipt.holderDid;
+        if (alreadyKnown) {
+            out.log(
+                'That address already has a LearnCard account; the provisional credential is routed to its in-app inbox.'
+            );
+        } else {
+            out.log(
+                'The provisional credential is waiting for an account with that address. This CLI has requested an email but cannot confirm it was sent.'
+            );
+            if (issued.claimUrl) {
+                out.log(
+                    `If the email does not arrive, the local inbox service reported this claim link:\n${issued.claimUrl}`
+                );
+            }
+        }
+
+        await pause(
+            alreadyKnown
+                ? 'claim the provisional credential in the app with that address'
+                : 'open the mailbox link, sign in or create an account with that address, and claim the provisional credential'
+        );
+
+        step = 'detect the claim';
+        out.log('\n2 / 3  CLAIM THE PROVISIONAL RESULTS');
+        let holderDid = receipt.holderDid;
+        let status: string = issued.status;
+        do {
+            const metadata = await issuer.invoke.getInboxCredential(issued.issuanceId);
+            holderDid = metadata?.refresh?.holderDid ?? holderDid;
+            status = metadata?.currentStatus ?? status;
+            if (!holderDid) {
+                out.log(
+                    'The claim is not bound yet. Finish claiming with that address, then press Enter.'
+                );
+                await pause('check the inbox credential again');
+            }
+        } while (!holderDid);
+        out.log(
+            `The issuer reports the claim as bound (${status}). This CLI did not read the recipient wallet.`
+        );
+
+        step = 'publish final results';
+        out.log('\n3 / 3  PUBLISH FINAL RESULTS');
+        out.log('Publishing grade-A final results as the single visible update (version 2)...');
+        const finalVersion = buildVersion(template, receipt, boostUri, {
+            name: AFTER,
+            achievementName: 'Introduction to Biology — Final Results',
+            achievementDescription:
+                'Course completed. Final grade: A. Coursework and final assessment reviewed.',
+            holderDid,
+        });
+        const publication = await issuer.invoke.publishCredentialRefresh({
+            refreshId: receipt.refreshId,
+            mode: 'signing-authority',
+            credential: finalVersion,
+            signingAuthority: { type: 'http', ...signingAuthority },
+            updateSummary: 'Final results are ready. Final grade: A.',
+            idempotencyKey: `inbox-email-final-${suffix}`,
+        });
+        if (publication.version !== 2) {
+            throw new Error(`Expected version 2, received ${publication.version}.`);
+        }
+        if (publication.notification === 'not-applicable') {
+            throw new Error('The claim bound a holder but the update had no notification target.');
+        }
+        out.log(
+            `Update published as version 2. The school requested an in-app notification (${publication.notification}) and the configured service sends a generic update email.`
+        );
+        out.log(
+            'Neither delivery is confirmed by this CLI. Open app notifications to view Final Results / Final grade: A.'
+        );
+        out.set({
+            network: env.network,
+            issuanceId: issued.issuanceId,
+            refreshId: receipt.refreshId,
+            recipient: maskEmail(email),
+            before: BEFORE,
+            after: AFTER,
+            version: publication.version,
+            status,
+            notification: publication.notification,
+            realEmail: true,
+            deliveryRequested: true,
+        });
+    } catch (error) {
+        const detail = error instanceof Error ? error.message.split('\n')[0] : 'Please try again.';
+        throw Object.assign(
+            new Error(
+                `Could not ${step}: ${detail} Use a running local network with managed refresh and LC-2198 deployed.`
+            ),
+            { cause: error }
+        );
+    } finally {
+        env.prompts?.close();
+    }
+};
+
+/**
+ * Guided Universal Inbox refresh demonstration (LC-2198).
+ *
+ * Stage 1 issues a refreshable credential to an email address that has no account.
+ * Stage 2 publishes a new version before anyone claims. UI mode then has a human claim
+ * in the real app and publish an update to the now-bound holder; terminal mode makes the
+ * same claim with DIDAuth and refreshes the local wallet itself.
+ *
+ * Pass `--email` to opt into {@link runEmailInboxRefreshDemo} instead.
+ */
+export const runInboxRefreshDemo = async (options: InboxRefreshDemoOptions): Promise<void> => {
+    if (options.email !== undefined) {
+        return runEmailInboxRefreshDemo(options);
+    }
+    const { network, networkUrl, ui, lca, prompts, pause } =
+        await prepareInboxDemoEnvironment(options);
     let step = 'connect to the demo network';
 
     try {
@@ -174,59 +463,12 @@ export const runInboxRefreshDemo = async (options: InboxRefreshDemoOptions): Pro
         await pause('start');
         out.log('\nSetting up the issuer and signing authority...');
 
-        const config = {
-            network,
-            ...(options.didkit && { didkit: options.didkit }),
-            trustedBoostRegistry: `data:application/json,${encodeURIComponent(
-                JSON.stringify([
-                    {
-                        id: 'Inbox demo network',
-                        url: networkUrl.origin,
-                        did: `did:web:${encodeURIComponent(networkUrl.host)}`,
-                    },
-                ])
-            )}`,
-        };
-        const issuerBase = await initLearnCard({ ...config, seed: generateRandomSeed(), network });
-        const issuer = (await issuerBase.addPlugin(
-            await getLCAPlugin(
-                issuerBase as unknown as Parameters<typeof getLCAPlugin>[0],
-                lca.href
-            )
-        )) as unknown as InboxIssuer;
-        const suffix = randomUUID().slice(0, 8);
-        await issuer.invoke.createProfile({
-            profileId: `inbox-issuer-${suffix}`,
-            displayName: 'Inbox Demo School',
-            bio: '',
-            shortBio: '',
-        });
-
         step = 'register a signing authority';
-        const authority = await issuer.invoke.createSigningAuthority(`inbox-${suffix}`);
-        if (!authority || !authority.endpoint || !authority.did) {
-            throw new Error('The LCA service did not return a signing authority.');
-        }
-        if (
-            !(await issuer.invoke.registerSigningAuthority(
-                authority.endpoint,
-                authority.name,
-                authority.did
-            ))
-        ) {
-            throw new Error('Could not register the signing authority.');
-        }
-        if (
-            !(await issuer.invoke.setPrimaryRegisteredSigningAuthority(
-                authority.endpoint,
-                authority.name
-            ))
-        ) {
-            throw new Error('Could not select the signing authority.');
-        }
-        const signingAuthority = { endpoint: authority.endpoint, name: authority.name };
-        const template = baseTemplate(issuer.id.did());
-        const boostUri = await issuer.invoke.createBoost(template, { category: 'Achievement' });
+        const config = buildInboxDemoConfig(network, networkUrl, options.didkit);
+        const { issuer, signingAuthority, template, boostUri, suffix } = await setupInboxIssuer(
+            config,
+            lca.href
+        );
 
         const demoEmail = `inbox-demo-${suffix}@example.com`;
         step = 'issue the provisional certificate into the inbox';

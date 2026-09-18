@@ -97,9 +97,50 @@ config's `apis.lcaApi` to `http://localhost:5200/trpc` and `apis.notificationsEn
 to `http://localhost:5200/api/notifications/send` before starting the demo. Do not run
 database-resetting E2E tests during a demonstration.
 
-#### Refresh for a recipient who has no account yet (Universal Inbox)
+#### Receive the claim at your own email (opt-in real email)
 
-The demo above sends to a profile that already exists. Add `--inbox` to exercise the
+Use `--email` to run the Universal Inbox lifecycle against an address you own. The CLI asks
+the locally configured delivery service to email a **provisional** claim link, you claim it
+in the app, then the school publishes a single visible **final** update.
+
+```bash
+bun --cwd packages/learn-card-cli start demo refresh --inbox --ui --email you@example.com
+```
+
+`--email` without a value prompts for the address. It requires `--inbox`, `--ui`, and an
+interactive terminal, and the address is validated before any account is created. The
+walkthrough is:
+
+1. **Issue provisional results.** The CLI asks the delivery service to email a claim link
+   for a **Provisional Course Certificate** to your address. It reports only that delivery
+   was requested; it never claims the email was sent or received.
+2. **Claim in the app.** Open the mailbox link, sign in or create an account **using that
+   same address**, and claim the provisional certificate. Keep the app open.
+3. **Publish final results.** Return to the terminal and press Enter. The CLI reads the
+   issuer's inbox-credential record for the bound holder DID, then publishes
+   **Final Certificate / Final grade: A** as the single visible update (version 2). That
+   publication requests an in-app notification and a generic update email prompting you to
+   log in and view notifications.
+4. **View the update.** Open the app notifications to see the final certificate. The CLI
+   never creates, signs in as, or reads the recipient wallet, so it does not verify the
+   wallet contents and cannot confirm that any email or notification was delivered.
+
+Real email mode is local-only like the rest of the inbox demo. It never suppresses
+delivery, and it never publishes a hidden pre-claim version: version 2 is the only update.
+
+> **Operator setup.** `--email` only requests delivery. The operator must enable and
+> configure the local email adapter/delivery service first; otherwise no email is sent. In
+> the local test mode the adapter logs the message instead of sending it, so open the link
+> on the same computer that runs the app. The CLI cannot verify that an address is
+> deliverable, and it masks the address in `--json` output.
+
+#### Advanced: refresh for a recipient who has no account yet (disposable preclaim path)
+
+This path exercises the deferred Universal Inbox mechanics — including publishing an update
+_before_ any holder exists — with a fake `@example.com` address and suppressed delivery. It
+is not the recommended mail walkthrough; use `--email` above for that.
+
+The direct demo sends to a profile that already exists. Add `--inbox` to exercise the
 deferred Universal Inbox path: the school issues a refreshable certificate to a random
 `@example.com` address with no LearnCard account, publishes a new version **before**
 anyone claims, and only then is a real holder bound and sent an update. Email delivery

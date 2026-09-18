@@ -453,6 +453,10 @@ program
         '--lca-url <url>',
         'local LCA URL for --inbox terminal mode (default: http://localhost:5100/trpc)'
     )
+    .option(
+        '--email [address]',
+        'real-email mode: request a provisional claim email to your own address (requires --inbox --ui; prompts when omitted)'
+    )
     .option('-y, --yes', 'run all steps without pausing')
     .option('--network <url>', 'network tRPC URL or staging', 'http://localhost:4000/trpc')
     .option('--json', 'print a single JSON result on stdout (no pauses)')

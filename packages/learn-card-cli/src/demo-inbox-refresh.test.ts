@@ -10,12 +10,14 @@ const mocks = vi.hoisted(() => ({
     log: vi.fn(),
     set: vi.fn(),
     preflight: vi.fn(),
+    validateEmail: vi.fn(),
 }));
 
 vi.mock('@learncard/init', () => ({ initLearnCard: mocks.init }));
 vi.mock('@learncard/lca-api-plugin', () => ({ getLCAPlugin: mocks.lca }));
 vi.mock('@learncard/network-brain-client', () => ({ getClient: mocks.getClient }));
 vi.mock('@learncard/types', () => ({
+    ContactMethodQueryValidator: { safeParse: mocks.validateEmail },
     VCValidator: {
         parse: (v: unknown) => v,
         safeParse: (v: unknown) => ({ success: true, data: v }),
@@ -50,6 +52,7 @@ vi.mock('./demo-refresh-ui', () => ({
 }));
 
 import { buildInboxAppLinks, mapInboxClaimPath, runInboxRefreshDemo } from './demo-inbox-refresh';
+import type { InboxRefreshDemoOptions } from './demo-inbox-refresh';
 
 const RECEIPT = {
     refreshId: 'refresh:demo',
@@ -72,7 +75,7 @@ type TestReceipt = typeof RECEIPT & { holderDid?: string };
 type TestIssue = {
     status: string;
     issuanceId: string;
-    claimUrl: string;
+    claimUrl?: string;
     recipient: { type: string; value: string };
     refresh: TestReceipt;
 };
@@ -122,9 +125,14 @@ const makeIssuer = (order: string[], published: Published[]) => {
                         : { version: 3, notification: 'queued' };
                 }
             ),
-            getInboxCredential: vi.fn(async () => ({
-                refresh: { holderDid: 'did:key:holder' },
-            })),
+            getInboxCredential: vi.fn(
+                async (): Promise<{
+                    refresh?: { holderDid?: string };
+                    currentStatus?: string;
+                }> => ({
+                    refresh: { holderDid: 'did:key:holder' },
+                })
+            ),
         },
     };
     issuer.addPlugin.mockImplementation(async () => issuer);
@@ -175,6 +183,12 @@ beforeEach(() => {
     delete process.env.LC_YES;
     mocks.question.mockResolvedValue('');
     mocks.lca.mockResolvedValue({});
+    // Stand-in for the real ContactMethodQueryValidator email branch.
+    mocks.validateEmail.mockImplementation((input: { value?: string }) =>
+        /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input?.value ?? '')
+            ? { success: true, data: { type: 'email', value: input.value } }
+            : { success: false, error: { message: 'invalid email' } }
+    );
 });
 
 afterEach(() => {
@@ -442,6 +456,210 @@ describe('Universal Inbox refresh demonstration', () => {
         await expect(runInboxRefreshDemo({ yes: true })).rejects.toThrow(
             'different credential identity'
         );
+    });
+});
+
+describe('real-email inbox refresh (opt-in)', () => {
+    const EMAIL = 'owner@example.com';
+    const UI_CONFIG = {
+        appOrigin: 'http://localhost:3000',
+        cloud: 'http://localhost:4100/trpc',
+        lcaApi: 'http://localhost:5200/trpc',
+        notificationsWebhook: 'http://localhost:5200/api/notifications/send',
+    };
+
+    const makeEmailIssuer = (
+        order: string[],
+        published: Published[],
+        options: { status: 'PENDING' | 'DELIVERED'; holderDid?: string }
+    ): FakeIssuer => {
+        const issuer = makeIssuer(order, published);
+        issuer.invoke.sendCredentialViaInbox.mockImplementation(
+            async (input: IssueInboxCredentialType): Promise<TestIssue> => {
+                order.push('issue');
+                return {
+                    status: options.status,
+                    issuanceId: 'issuance:email',
+                    ...(options.holderDid ? {} : { claimUrl: CLAIM_URL }),
+                    recipient: input.recipient,
+                    refresh: {
+                        ...RECEIPT,
+                        ...(options.holderDid && { holderDid: options.holderDid }),
+                    },
+                };
+            }
+        );
+        issuer.invoke.publishCredentialRefresh.mockImplementation(
+            async (input: Published): Promise<{ version: number; notification?: string }> => {
+                published.push(input);
+                order.push('publish-2');
+                return { version: 2, notification: 'queued' };
+            }
+        );
+        return issuer;
+    };
+
+    const runEmail = async (
+        issuer: FakeIssuer,
+        overrides: Partial<InboxRefreshDemoOptions> = {}
+    ): Promise<void> => {
+        mocks.init.mockResolvedValueOnce(issuer);
+        mocks.preflight.mockResolvedValue(UI_CONFIG);
+        await runInboxRefreshDemo({ ui: true, email: EMAIL, ...overrides });
+    };
+
+    it('emails the presenter, waits for the claim, then publishes one version 2 update', async () => {
+        const order: string[] = [];
+        const published: Published[] = [];
+        const issuer = makeEmailIssuer(order, published, { status: 'PENDING' });
+        issuer.invoke.getInboxCredential
+            .mockResolvedValueOnce({ refresh: {}, currentStatus: 'PENDING' })
+            .mockResolvedValueOnce({
+                refresh: { holderDid: 'did:key:owner' },
+                currentStatus: 'ISSUED',
+            });
+
+        await runEmail(issuer);
+
+        // No recipient wallet is created: the human does the claiming.
+        expect(mocks.init).toHaveBeenCalledTimes(1);
+        expect(mocks.validateEmail).toHaveBeenCalledWith({ type: 'email', value: EMAIL });
+        expect(mocks.validateEmail.mock.invocationCallOrder[0]).toBeLessThan(
+            issuer.invoke.createProfile.mock.invocationCallOrder[0]!
+        );
+
+        // Delivery is requested through the operator's adapter, never suppressed.
+        const issueInput = issuer.invoke.sendCredentialViaInbox.mock.calls[0]![0];
+        expect(issueInput.recipient).toEqual({ type: 'email', value: EMAIL });
+        expect(issueInput.refresh).toBe(true);
+        expect(issueInput.configuration?.delivery?.suppress).toBe(false);
+
+        // Exactly one visible update, version 2, addressed to the reported holder.
+        expect(published).toHaveLength(1);
+        expect(published[0]!.credential.name).toBe('Final Course Certificate');
+        expect(published[0]!.credential.credentialSubject.id).toBe('did:key:owner');
+        expect(issuer.invoke.publishCredentialRefresh).toHaveBeenCalledTimes(1);
+        expect(issuer.invoke.getInboxCredential).toHaveBeenCalledTimes(2);
+
+        expect(mocks.set).toHaveBeenCalledWith(
+            expect.objectContaining({
+                realEmail: true,
+                deliveryRequested: true,
+                version: 2,
+                status: 'ISSUED',
+                notification: 'queued',
+                before: 'Provisional Course Certificate',
+                after: 'Final Course Certificate',
+            })
+        );
+        // Raw addresses stay out of machine-readable output.
+        expect(JSON.stringify(mocks.set.mock.calls)).not.toContain(EMAIL);
+        expect(JSON.stringify(mocks.set.mock.calls)).toContain('o****@example.com');
+
+        const logs = mocks.log.mock.calls.flat().join('\n');
+        expect(logs).toContain('cannot confirm');
+        expect(logs).toContain('did not read the recipient wallet');
+        expect(mocks.close).toHaveBeenCalled();
+    });
+
+    it('publishes version 2 to an already-known recipient without a mailbox step', async () => {
+        const order: string[] = [];
+        const published: Published[] = [];
+        const issuer = makeEmailIssuer(order, published, {
+            status: 'DELIVERED',
+            holderDid: 'did:key:known',
+        });
+        issuer.invoke.getInboxCredential.mockResolvedValue({
+            refresh: { holderDid: 'did:key:known' },
+            currentStatus: 'ISSUED',
+        });
+
+        await runEmail(issuer);
+
+        expect(mocks.init).toHaveBeenCalledTimes(1);
+        expect(
+            issuer.invoke.sendCredentialViaInbox.mock.calls[0]![0].configuration?.delivery?.suppress
+        ).toBe(false);
+        expect(issuer.invoke.getInboxCredential).toHaveBeenCalledTimes(1);
+        expect(published).toHaveLength(1);
+        expect(published[0]!.credential.name).toBe('Final Course Certificate');
+        expect(published[0]!.credential.credentialSubject.id).toBe('did:key:known');
+
+        const logs = mocks.log.mock.calls.flat().join('\n');
+        expect(logs).toContain('already has a LearnCard account');
+        expect(mocks.question).toHaveBeenCalledWith(
+            expect.stringContaining('claim the provisional credential in the app')
+        );
+    });
+
+    it('prompts for the address when --email is passed without a value', async () => {
+        const order: string[] = [];
+        const published: Published[] = [];
+        const issuer = makeEmailIssuer(order, published, { status: 'PENDING' });
+        issuer.invoke.getInboxCredential.mockResolvedValue({
+            refresh: { holderDid: 'did:key:owner' },
+            currentStatus: 'ISSUED',
+        });
+        mocks.question.mockResolvedValueOnce('typed@example.com');
+
+        await runEmail(issuer, { email: true });
+
+        expect(mocks.validateEmail).toHaveBeenCalledWith({
+            type: 'email',
+            value: 'typed@example.com',
+        });
+        expect(issuer.invoke.sendCredentialViaInbox.mock.calls[0]![0].recipient).toEqual({
+            type: 'email',
+            value: 'typed@example.com',
+        });
+    });
+
+    it.each([
+        ['invalid --email value', { ui: true, email: 'not-an-email' }, undefined],
+        ['invalid typed address', { ui: true, email: true }, 'still-not-an-email'],
+    ] as const)('rejects an %s before creating anything', async (_label, options, prompt) => {
+        if (prompt) mocks.question.mockResolvedValueOnce(prompt);
+        mocks.preflight.mockResolvedValue(UI_CONFIG);
+        await expect(runInboxRefreshDemo(options)).rejects.toThrow('valid email address');
+        expect(mocks.validateEmail).toHaveBeenCalled();
+        expect(mocks.init).not.toHaveBeenCalled();
+    });
+
+    it('requires --ui, an interactive terminal, and no --lca-url', async () => {
+        await expect(runInboxRefreshDemo({ email: EMAIL })).rejects.toThrow(
+            '--email requires --ui'
+        );
+        expect(mocks.init).not.toHaveBeenCalled();
+
+        await expect(runInboxRefreshDemo({ ui: true, yes: true, email: EMAIL })).rejects.toThrow(
+            'interactive terminal'
+        );
+        expect(mocks.init).not.toHaveBeenCalled();
+
+        await expect(
+            runInboxRefreshDemo({ ui: true, email: EMAIL, lcaUrl: 'http://localhost:5200/trpc' })
+        ).rejects.toThrow('--lca-url is for terminal mode');
+        expect(mocks.init).not.toHaveBeenCalled();
+        expect(mocks.preflight).not.toHaveBeenCalled();
+    });
+
+    it('refuses a holder-bound publication that reports no notification target', async () => {
+        const order: string[] = [];
+        const published: Published[] = [];
+        const issuer = makeEmailIssuer(order, published, {
+            status: 'DELIVERED',
+            holderDid: 'did:key:known',
+        });
+        issuer.invoke.publishCredentialRefresh.mockResolvedValue({
+            version: 2,
+            notification: 'not-applicable',
+        });
+        issuer.invoke.getInboxCredential.mockResolvedValue({
+            refresh: { holderDid: 'did:key:known' },
+            currentStatus: 'ISSUED',
+        });
+
+        await expect(runEmail(issuer)).rejects.toThrow('no notification target');
     });
 });
 
