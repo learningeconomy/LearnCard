@@ -288,6 +288,7 @@ export const runEmailInboxRefreshDemo = async (options: InboxRefreshDemoOptions)
         out.log('2. Open the email, sign in or create an account with that address, and claim it.');
         out.log('3. Return here to publish final results. See the update in the app and by email.');
         out.log('Open email links on this computer, where the local app is running.');
+        out.log('If the app is signed in to a disposable demo account, sign out first.');
 
         let email = provided;
         if (!email) {

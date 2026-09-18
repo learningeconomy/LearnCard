@@ -8,7 +8,8 @@ The walkthrough is visible from end to end:
 
 1. Enter your email in the CLI. The demo school sends a provisional certificate.
 2. Open the email and choose **Claim Your Record**. Sign in or create an account
-   with that same email, then claim the provisional certificate.
+   with that same email, then claim the provisional certificate. Sign out of any
+   disposable demo account before opening the email link.
 3. Return to the CLI and press Enter to let the school publish final results.
 4. View the update notification in the app. An update email also links back to
    your notifications; sign in again if necessary.
