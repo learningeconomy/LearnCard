@@ -92,7 +92,7 @@ jobs:
                   ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.event.inputs.branch }}
                   fetch-depth: 0
             - uses: ./.github/actions/setup
-            - name: Test inbox security and batch issuance with isolated Neo4j and real Redis
+            - name: Test inbox security and queued issuance with Neo4j, Redis, and SQS
               run: bunx nx run network-brain-service:test:inbox:e2e
 
     # Temporary manual fallback during the hosted-runner cutover.

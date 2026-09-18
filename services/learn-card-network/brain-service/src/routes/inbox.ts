@@ -1,5 +1,5 @@
 import { trace } from '@tracing';
-import { issueInboxBatch } from '@helpers/inbox-batch.helpers';
+import { submitInboxBatch, getInboxBatch } from '@helpers/inbox-queue.helpers';
 import { getDidWeb } from '@helpers/did.helpers';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
@@ -9,7 +9,8 @@ import {
     PaginationOptionsValidator,
     IssueInboxCredentialValidator,
     IssueInboxCredentialBatchValidator,
-    IssueInboxCredentialBatchResponseValidator,
+    InboxBatchReceiptValidator,
+    InboxBatchStatusValidator,
     IssueInboxCredentialResponseValidator,
     InboxCredentialValidator,
     PaginatedInboxCredentialsValidator,
@@ -502,17 +503,32 @@ export const inboxRouter = t.router({
                 tags: ['Universal Inbox'],
                 summary: 'Issue Credentials to Universal Inbox (Batch)',
                 description:
-                    'Issue 1–100 credentials with ordered per-item results and partial success. Idempotency keys are scoped to the issuer for 24 hours. Locally tested HTTP JSON payload limit: 4 MiB (4,194,304 bytes); larger requests fail with 413. Lambda deployments cannot accept 20 MiB requests. Split large CLR batches by serialized payload size as well as item count.',
+                    'Queue 1–100 credentials for background issuance. Returns a durable batch ID; poll GET /inbox/batches/{batchId} for ordered results. Request and item idempotency keys are issuer-scoped for 24 hours. Maximum JSON payload: 4 MiB.',
             },
             requiredScope: 'inbox:write',
         })
         .input(IssueInboxCredentialBatchValidator)
-        .output(IssueInboxCredentialBatchResponseValidator)
+        .output(InboxBatchReceiptValidator)
         .mutation(({ ctx, input }) =>
-            trace('route', 'issueBatch', () => issueInboxBatch(ctx.user.profile, input, ctx), {
+            trace('route', 'issueBatch', () => submitInboxBatch(ctx.user.profile, input, ctx), {
                 itemCount: input.items.length,
             })
         ),
+
+    getBatch: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/inbox/batches/{batchId}',
+                tags: ['Universal Inbox'],
+                summary: 'Get Inbox Batch Progress',
+            },
+            requiredScope: 'inbox:read',
+        })
+        .input(z.object({ batchId: z.string() }))
+        .output(InboxBatchStatusValidator)
+        .query(({ ctx, input }) => getInboxBatch(ctx.user.profile.profileId, input.batchId)),
 
     claim: verifiedContactRoute
         .meta({

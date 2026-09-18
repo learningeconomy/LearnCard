@@ -54,7 +54,8 @@ import {
     AuthGrantQuery,
     IssueInboxCredentialType,
     IssueInboxCredentialBatch,
-    IssueInboxCredentialBatchResponse,
+    InboxBatchReceipt,
+    InboxBatchStatus,
     InboxCredentialType,
     PaginatedInboxCredentialsType,
     PaginatedSkillFrameworksType,
@@ -681,10 +682,9 @@ export type LearnCardNetworkPluginMethods = {
     revokeAuthGrant: (id: string) => Promise<boolean>;
     getAPITokenForAuthGrant: (id: string) => Promise<string>;
 
-    /** Issue up to 100 credentials with per-item results and optional idempotency keys. */
-    sendCredentialBatchViaInbox: (
-        batch: IssueInboxCredentialBatch
-    ) => Promise<IssueInboxCredentialBatchResponse>;
+    /** Queue up to 100 credentials. Poll getInboxCredentialBatch for ordered results. */
+    sendCredentialBatchViaInbox: (batch: IssueInboxCredentialBatch) => Promise<InboxBatchReceipt>;
+    getInboxCredentialBatch: (batchId: string) => Promise<InboxBatchStatus>;
     sendCredentialViaInbox: (
         issueInboxCredential: IssueInboxCredentialType
     ) => Promise<IssueInboxCredentialResponseType>;

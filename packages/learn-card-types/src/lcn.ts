@@ -1464,6 +1464,7 @@ export const IssueInboxCredentialBatchItemValidator = z
     );
 
 export const IssueInboxCredentialBatchValidator = z.object({
+    requestId: z.string().min(1).max(256).optional(),
     items: z.array(IssueInboxCredentialBatchItemValidator).min(1).max(100),
     configuration: InboxBatchConfigurationValidator.optional(),
 });
@@ -1511,6 +1512,33 @@ export const IssueInboxCredentialBatchResponseValidator = z.object({
 export type IssueInboxCredentialBatchResponse = z.infer<
     typeof IssueInboxCredentialBatchResponseValidator
 >;
+
+/** Submission acknowledges durable storage, not completed credential delivery. */
+export const InboxBatchReceiptValidator = z.object({
+    batchId: z.string(),
+    status: z.literal('QUEUED'),
+    createdAt: z.string(),
+});
+export type InboxBatchReceipt = z.infer<typeof InboxBatchReceiptValidator>;
+
+export const InboxBatchStatusValidator = z.object({
+    batchId: z.string(),
+    createdAt: z.string(),
+    status: z.enum(['QUEUED', 'PROCESSING', 'COMPLETED', 'NEEDS_RECONCILIATION']),
+    items: z.array(
+        z.object({
+            index: z.number().int().nonnegative(),
+            state: z.enum(['QUEUED', 'PROCESSING', 'COMPLETED', 'NEEDS_RECONCILIATION']),
+            result: IssueInboxCredentialBatchItemResultValidator.optional(),
+        })
+    ),
+    summary: IssueInboxCredentialBatchResponseValidator.shape.summary.extend({
+        completed: z.number(),
+        pending: z.number(),
+        unconfirmed: z.number(),
+    }),
+});
+export type InboxBatchStatus = z.infer<typeof InboxBatchStatusValidator>;
 
 export type IssueInboxCredentialResponseType = z.infer<
     typeof IssueInboxCredentialResponseValidator

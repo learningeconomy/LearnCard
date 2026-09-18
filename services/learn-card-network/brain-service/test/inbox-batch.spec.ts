@@ -10,7 +10,10 @@ import { sendSpy, addNotificationToQueueSpy } from './helpers/spies';
 import { Profile, InboxCredential, ContactMethod, SigningAuthority, Boost } from '@models';
 import cache from '@cache';
 import { neogma } from '@instance';
-import { configureInboxBatchBodyLimit } from '@helpers/inbox-batch-http.helpers';
+import {
+    configureInboxBatchBodyLimit,
+    inboxBatchResponseMeta,
+} from '@helpers/inbox-batch-http.helpers';
 import { setValidChallengeForDid } from '@cache/challenges';
 import { getInboxCredentialById } from '@accesslayer/inbox-credential/read';
 import { createContactMethod } from '@accesslayer/contact-method/create';
@@ -19,6 +22,15 @@ import { decryptInboxCredential } from '@helpers/inbox-encryption.helpers';
 import * as notifications from '@helpers/notifications.helpers';
 import { clrWestbridgeFull } from '../../../../packages/credential-library/src/fixtures/clr/westbridge-full';
 import * as signing from '@helpers/signingAuthority.helpers';
+import {
+    dispatchInboxJobs,
+    consumeInboxQueueOnce,
+    consumeInboxDeadLettersOnce,
+} from '@helpers/inbox-queue.helpers';
+import { fingerprint } from '@helpers/inbox-batch.helpers';
+import * as jobStore from '@accesslayer/inbox-batch/store';
+import * as issuance from '@helpers/inbox.helpers';
+import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
 
 vi.mock('@services/delivery/delivery.factory', () => ({
     getDeliveryService: () => ({ send: sendSpy }),
@@ -36,8 +48,35 @@ describe('Universal Inbox batch issuance', () => {
     const email = (value: string) => ({ type: 'email' as const, value });
     const unsigned = async () => issuer.learnCard.invoke.getTestVc();
     const signed = async () => issuer.learnCard.invoke.issueCredential(await unsigned());
-    const issue = (batch: IssueInboxCredentialBatch) =>
-        issuer.clients.fullAuth.inbox.issueBatch(batch);
+    const poll = async (batchId: string) => {
+        const deadline = Date.now() + 60_000;
+        while (Date.now() < deadline) {
+            // Exercise real SQS publication/consumption, not a direct issuance shortcut.
+            await dispatchInboxJobs();
+            await consumeInboxQueueOnce(0);
+            const status = await issuer.clients.fullAuth.inbox.getBatch({ batchId });
+            if (status.summary.pending === 0) {
+                const { total, succeeded, failed, deduplicated } = status.summary;
+                return {
+                    results: status.items.map(item => item.result!),
+                    summary: { total, succeeded, failed, deduplicated },
+                };
+            }
+            await new Promise(resolve => setTimeout(resolve, 20));
+        }
+        throw new Error(`Timed out polling inbox batch ${batchId}`);
+    };
+    const issue = async (batch: IssueInboxCredentialBatch) => {
+        const response = await post(batch);
+        expect(response.statusCode, response.body).toBe(202);
+        return poll(response.json().batchId);
+    };
+    const replay = async (key: string) => {
+        const rows = await neogma.queryRunner.run('MATCH (r:InboxBatchReplay {id: $id}) RETURN r', {
+            id: `client:${fingerprint(['batch-issuer', key])}`,
+        });
+        return rows.records[0]?.get('r').properties;
+    };
     const stored = async (id: string) => {
         const record = await getInboxCredentialById(id);
         expect(record).toBeDefined();
@@ -80,6 +119,7 @@ describe('Universal Inbox batch issuance', () => {
         server = Fastify({ routerOptions: { maxParamLength: 5000 } });
         configureInboxBatchBodyLimit(server);
         await server.register(fastifyTRPCOpenApiPlugin, {
+            responseMeta: inboxBatchResponseMeta,
             basePath: '/api',
             router: appRouter,
             createContext,
@@ -96,6 +136,9 @@ describe('Universal Inbox batch issuance', () => {
         for (const model of [Profile, InboxCredential, ContactMethod, SigningAuthority, Boost]) {
             await model.delete({ detach: true, where: {} });
         }
+        await neogma.queryRunner.run(
+            'MATCH (n) WHERE n:InboxBatch OR n:InboxBatchItem OR n:InboxBatchIssuer OR n:InboxBatchReplay DETACH DELETE n'
+        );
         const keys = await cache.keys('inbox-batch-*');
         if (keys?.length) await cache.delete(keys);
         await issuer.clients.fullAuth.profile.createProfile({ profileId: 'batch-issuer' });
@@ -113,6 +156,287 @@ describe('Universal Inbox batch issuance', () => {
         await neogma.driver.close();
     });
 
+    const submit = async (batch: IssueInboxCredentialBatch) => {
+        const response = await post(batch);
+        expect(response.statusCode, response.body).toBe(202);
+        return response.json() as { batchId: string; status: 'QUEUED'; createdAt: string };
+    };
+    const statusOf = (batchId: string) => issuer.clients.fullAuth.inbox.getBatch({ batchId });
+    const expireLease = (batchId: string) =>
+        neogma.queryRunner.run(
+            'MATCH (i:InboxBatchItem {batchId: $batchId}) SET i.leaseUntil = 0',
+            { batchId }
+        );
+
+    it('accepts a one-item batch without waiting for a slow worker and restricts polling to its issuer', async () => {
+        const receipt = await submit({
+            items: [{ recipient: email('slow@test.com'), credential: await signed() }],
+        });
+        expect(sendSpy).not.toHaveBeenCalled();
+        const challenge = randomUUID();
+        await setValidChallengeForDid(issuer.learnCard.id.did(), challenge);
+        const token = await issuer.learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt', challenge });
+        const httpProgress = await server.inject({
+            method: 'GET',
+            url: `/api/inbox/batches/${receipt.batchId}`,
+            headers: { authorization: `Bearer ${token}` },
+        });
+        expect(httpProgress.statusCode, httpProgress.body).toBe(200);
+        expect(httpProgress.json()).toMatchObject({ batchId: receipt.batchId, status: 'QUEUED' });
+        expect(await statusOf(receipt.batchId)).toMatchObject({
+            status: 'QUEUED',
+            summary: { pending: 1 },
+        });
+        await expect(
+            holder.clients.fullAuth.inbox.getBatch({ batchId: receipt.batchId })
+        ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+        await expect(
+            getClient({
+                did: issuer.learnCard.id.did(),
+                isChallengeValid: true,
+                scope: 'inbox:write',
+            }).inbox.getBatch({ batchId: receipt.batchId })
+        ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        let release!: () => void;
+        let started!: () => void;
+        const blocked = new Promise<void>(resolve => {
+            release = resolve;
+        });
+        const entered = new Promise<void>(resolve => {
+            started = resolve;
+        });
+        const original = issuance.resolveInboxCredentialInput;
+        vi.spyOn(issuance, 'resolveInboxCredentialInput').mockImplementationOnce(
+            async (...args) => {
+                started();
+                await blocked;
+                return original(...args);
+            }
+        );
+        await dispatchInboxJobs();
+        const worker = consumeInboxQueueOnce(0);
+        try {
+            await entered;
+            expect(await statusOf(receipt.batchId)).toMatchObject({
+                status: 'PROCESSING',
+                summary: { pending: 1 },
+            });
+            expect(sendSpy).not.toHaveBeenCalled();
+        } finally {
+            release();
+            await worker;
+        }
+        expect(await statusOf(receipt.batchId)).toMatchObject({
+            status: 'COMPLETED',
+            summary: { succeeded: 1 },
+        });
+    });
+
+    it('atomically replays concurrent request IDs without a second quota charge', async () => {
+        const batch = {
+            requestId: randomUUID(),
+            items: [{ recipient: email('request@test.com'), credential: await signed() }],
+        };
+        const receipts = await Promise.all(Array.from({ length: 5 }, () => submit(batch)));
+        expect(new Set(receipts.map(r => r.batchId)).size).toBe(1);
+        const quota = await neogma.queryRunner.run(
+            'MATCH (q:InboxBatchIssuer {id: "batch-issuer"}) RETURN q.used AS used'
+        );
+        expect(Number(quota.records[0]!.get('used'))).toBe(1);
+        const conflict = await post({
+            ...batch,
+            items: [{ ...batch.items[0], recipient: email('changed@test.com') }],
+        });
+        expect(conflict.statusCode).toBe(409);
+        expect((await poll(receipts[0]!.batchId)).summary.succeeded).toBe(1);
+    });
+
+    it('tolerates duplicate SQS deliveries and concurrent consumers without duplicating unkeyed issuance', async () => {
+        const receipt = await submit({
+            items: [{ recipient: email('duplicate@test.com'), credential: await signed() }],
+        });
+        const client = new SQSClient({
+            endpoint: process.env.INBOX_QUEUE_ENDPOINT,
+            region: 'us-east-1',
+            credentials: { accessKeyId: 'local', secretAccessKey: 'local' },
+        });
+        try {
+            await Promise.all(
+                Array.from({ length: 3 }, () =>
+                    client.send(
+                        new SendMessageCommand({
+                            QueueUrl: process.env.INBOX_QUEUE_URL,
+                            MessageBody: JSON.stringify({ itemId: `${receipt.batchId}:0` }),
+                        })
+                    )
+                )
+            );
+            await dispatchInboxJobs();
+            await Promise.all([consumeInboxQueueOnce(0), consumeInboxQueueOnce(0)]);
+            expect((await poll(receipt.batchId)).summary.succeeded).toBe(1);
+            expect(sendSpy).toHaveBeenCalledTimes(1);
+            expect(await InboxCredential.findMany({ where: {} })).toHaveLength(1);
+        } finally {
+            client.destroy();
+        }
+    });
+
+    it('keeps an accepted batch durable when publication fails, then dispatches it after recovery', async () => {
+        const receipt = await submit({
+            items: [{ recipient: email('outbox@test.com'), credential: await signed() }],
+        });
+        const send = vi
+            .spyOn(SQSClient.prototype, 'send')
+            .mockRejectedValueOnce(new Error('SQS unavailable'));
+        await expect(dispatchInboxJobs()).rejects.toThrow('SQS unavailable');
+        send.mockRestore();
+        expect(await statusOf(receipt.batchId)).toMatchObject({ status: 'QUEUED' });
+        await neogma.queryRunner.run(
+            'MATCH (i:InboxBatchItem {batchId: $id}) SET i.dispatchAt = 0',
+            { id: receipt.batchId }
+        );
+        expect((await poll(receipt.batchId)).summary.succeeded).toBe(1);
+    });
+
+    it('recovers an expired preparation lease and rejects the old owner before issuance', async () => {
+        const receipt = await submit({
+            items: [
+                {
+                    recipient: email('restart@test.com'),
+                    credential: await signed(),
+                    idempotencyKey: 'restart',
+                },
+            ],
+        });
+        const id = `${receipt.batchId}:0`;
+        const claimed = await jobStore.claimBatchItem(id, 'old-worker');
+        const replayStore = jobStore.batchReplayStore(id, 'old-worker', claimed!.item.replayKey);
+        expect(
+            await replayStore.setIfAbsent(
+                '',
+                JSON.stringify({ state: 'processing', requestHash: 'old' }),
+                86400
+            )
+        ).toBe('OK');
+        await expireLease(receipt.batchId);
+        await jobStore.recoverInboxJobs();
+        await expect(jobStore.markBatchIssuanceStarted(id, 'old-worker')).rejects.toThrow(
+            'lease lost'
+        );
+        expect((await poll(receipt.batchId)).summary.succeeded).toBe(1);
+        expect(sendSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('marks an interrupted issuance unconfirmed and retains its key beyond the replay window', async () => {
+        const entry = {
+            recipient: email('uncertain@test.com'),
+            credential: await signed(),
+            idempotencyKey: 'uncertain',
+        };
+        const receipt = await submit({ items: [entry] });
+        const id = `${receipt.batchId}:0`;
+        const claimed = await jobStore.claimBatchItem(id, 'lost-worker');
+        await jobStore
+            .batchReplayStore(id, 'lost-worker', claimed!.item.replayKey)
+            .setIfAbsent(
+                '',
+                JSON.stringify({ state: 'processing', requestHash: 'uncertain' }),
+                86400
+            );
+        await jobStore.markBatchIssuanceStarted(id, 'lost-worker');
+        await expireLease(receipt.batchId);
+        await jobStore.recoverInboxJobs();
+        expect(await statusOf(receipt.batchId)).toMatchObject({
+            status: 'NEEDS_RECONCILIATION',
+            summary: { unconfirmed: 1 },
+        });
+        expect((await replay('uncertain')).expiresAt).toBeUndefined();
+        expect((await issue({ items: [entry] })).results[0]).toMatchObject({
+            success: false,
+            error: { code: 'CONFLICT' },
+        });
+        expect(sendSpy).not.toHaveBeenCalled();
+    });
+
+    it('recovers a durable success after the worker loses its completion write', async () => {
+        const receipt = await submit({
+            items: [{ recipient: email('commit@test.com'), credential: await signed() }],
+        });
+        vi.spyOn(jobStore, 'finishBatchItem').mockRejectedValueOnce(
+            new Error('Lost completion write')
+        );
+        await dispatchInboxJobs();
+        await expect(consumeInboxQueueOnce(0)).rejects.toThrow('Lost completion write');
+        await expireLease(receipt.batchId);
+        await jobStore.recoverInboxJobs();
+        expect(await statusOf(receipt.batchId)).toMatchObject({
+            status: 'COMPLETED',
+            summary: { succeeded: 1 },
+        });
+        expect(sendSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('exposes dead-letter exhaustion and cleans up completed jobs after 30 days', async () => {
+        const receipt = await submit({
+            items: [{ recipient: email('dead@test.com'), credential: await signed() }],
+        });
+        const client = new SQSClient({
+            endpoint: process.env.INBOX_QUEUE_ENDPOINT,
+            region: 'us-east-1',
+            credentials: { accessKeyId: 'local', secretAccessKey: 'local' },
+        });
+        try {
+            await client.send(
+                new SendMessageCommand({
+                    QueueUrl: process.env.INBOX_DEAD_LETTER_QUEUE_URL,
+                    MessageBody: JSON.stringify({ itemId: `${receipt.batchId}:0` }),
+                })
+            );
+            await consumeInboxDeadLettersOnce();
+        } finally {
+            client.destroy();
+        }
+        expect(await statusOf(receipt.batchId)).toMatchObject({
+            status: 'COMPLETED',
+            summary: { failed: 1 },
+        });
+        await jobStore.recoverInboxJobs();
+        await neogma.queryRunner.run('MATCH (b:InboxBatch {id: $id}) SET b.completedAt = $old', {
+            id: receipt.batchId,
+            old: Date.now() - 31 * jobStore.DAY,
+        });
+        await jobStore.recoverInboxJobs();
+        await expect(statusOf(receipt.batchId)).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    });
+
+    it('fails closed without queue configuration and leaves no accepted job', async () => {
+        vi.stubEnv('INBOX_QUEUE_URL', '');
+        const response = await post({
+            items: [{ recipient: email('offline@test.com'), credential: await signed() }],
+        });
+        expect(response.statusCode).toBe(500);
+        const rows = await neogma.queryRunner.run('MATCH (b:InboxBatch) RETURN count(b) AS count');
+        expect(Number(rows.records[0]!.get('count'))).toBe(0);
+        expect(sendSpy).not.toHaveBeenCalled();
+    });
+
+    it('atomically admits concurrent batches without overspending the hourly quota', async () => {
+        vi.stubEnv('INBOX_BATCH_ITEMS_PER_HOUR', '2');
+        const credential = await signed();
+        const responses = await Promise.all(
+            Array.from({ length: 5 }, (_, i) =>
+                post({ items: [{ recipient: email(`quota-${i}@test.com`), credential }] })
+            )
+        );
+        expect(responses.filter(response => response.statusCode === 202)).toHaveLength(2);
+        expect(responses.filter(response => response.statusCode === 429)).toHaveLength(3);
+        const quota = await neogma.queryRunner.run(
+            'MATCH (q:InboxBatchIssuer {id: "batch-issuer"}) RETURN q.used AS used'
+        );
+        expect(Number(quota.records[0]!.get('used'))).toBe(2);
+        expect(sendSpy).not.toHaveBeenCalled();
+    });
+
     it('returns three pending results in input order and defers signing until claim', async () => {
         // Use an unsigned credential and a configured signing authority to exercise the normal
         // inbox flow: unknown recipients receive an unsigned credential in escrow, and it is
@@ -121,9 +445,9 @@ describe('Universal Inbox batch issuance', () => {
         const credential = await unsigned();
         const recipients = ['one@test.com', 'two@test.com', 'three@test.com'].map(email);
 
-        // This is the batch API's core shape: shared configuration is supplied once, while each
-        // item supplies its recipient and credential. The helper runs these concurrently, but the
-        // contract requires results to retain this input order.
+        // Submit shared configuration once. The issue test helper asserts HTTP 202, sends real
+        // SQS messages through the worker, and polls until each item has a durable result.
+        // Processing can finish out of order; polling must retain the original item order.
         const batch = await issue({
             configuration: { signingAuthority },
             items: recipients.map(recipient => ({ recipient, credential })),
@@ -228,15 +552,16 @@ describe('Universal Inbox batch issuance', () => {
         expect(names).toEqual(['Ada', 'Grace']);
     });
 
-    it('returns HTTP 200 for partial success and passes tenant branding to delivery', async () => {
+    it('returns HTTP 202 then exposes partial success and passes tenant branding to delivery', async () => {
         const response = await post({
             items: [
                 { recipient: email('good@test.com'), credential: await signed() },
                 { recipient: email('bad@test.com') },
             ],
         });
-        expect(response.statusCode, response.body).toBe(200);
-        expect(response.json()).toMatchObject({
+        expect(response.statusCode, response.body).toBe(202);
+        expect(sendSpy).not.toHaveBeenCalled();
+        expect(await poll(response.json().batchId)).toMatchObject({
             summary: { total: 2, succeeded: 1, failed: 1 },
             results: [
                 { success: true, index: 0 },
@@ -269,7 +594,7 @@ describe('Universal Inbox batch issuance', () => {
         expect(await InboxCredential.findMany({ where: {} })).toHaveLength(records.length);
         expect(sendSpy).toHaveBeenCalledTimes(emails);
         expect(addNotificationToQueueSpy).toHaveBeenCalledTimes(webhooks);
-        const ttl = await cache.ttl('inbox-batch-idem:batch-issuer:replay-0');
+        const ttl = (Number((await replay('replay-0')).expiresAt) - Date.now()) / 1000;
         expect(ttl).toBeGreaterThan(86300);
         expect(ttl).toBeLessThanOrEqual(86400);
     });
@@ -277,7 +602,7 @@ describe('Universal Inbox batch issuance', () => {
     it('does not consume an idempotency key on failure', async () => {
         const item = { recipient: email('retry@test.com'), idempotencyKey: 'retry' };
         expect((await issue({ items: [item] })).results[0]).toMatchObject({ success: false });
-        expect(await cache.get('inbox-batch-idem:batch-issuer:retry')).toBeNull();
+        expect(await replay('retry')).toBeUndefined();
         const result = (await issue({ items: [{ ...item, credential: await signed() }] }))
             .results[0];
         expect(result).toMatchObject({ success: true });
@@ -350,15 +675,21 @@ describe('Universal Inbox batch issuance', () => {
         vi.stubEnv('INBOX_BATCH_ITEMS_PER_HOUR', '2');
         const credential = await signed();
         const items = [0, 1, 2].map(i => ({ recipient: email(`rate${i}@test.com`), credential }));
-        await expect(issue({ items })).rejects.toMatchObject({
+        await expect(issuer.clients.fullAuth.inbox.issueBatch({ items })).rejects.toMatchObject({
             code: 'TOO_MANY_REQUESTS',
             message: expect.stringContaining('3600 seconds'),
         });
         expect(await InboxCredential.findMany({ where: {} })).toHaveLength(0);
         expect(sendSpy).not.toHaveBeenCalled();
-        expect(await cache.get('inbox-batch-rate:batch-issuer')).toBeNull();
+        const quota = async () =>
+            (
+                await neogma.queryRunner.run(
+                    'MATCH (q:InboxBatchIssuer {id: "batch-issuer"}) RETURN q.used AS used'
+                )
+            ).records[0]?.get('used');
+        expect(await quota()).toBeUndefined();
         expect((await issue({ items: items.slice(0, 2) })).summary.succeeded).toBe(2);
-        expect(await cache.get('inbox-batch-rate:batch-issuer')).toBe('2');
+        expect(Number(await quota())).toBe(2);
     });
 
     it('supports guardian approval on the single route and rejects self-approval before writes', async () => {
@@ -400,7 +731,7 @@ describe('Universal Inbox batch issuance', () => {
                 message: 'Unsigned credentials require a signing authority',
             },
         });
-        expect(await cache.get('inbox-batch-idem:batch-issuer:preflight')).toBeNull();
+        expect(await replay('preflight')).toBeUndefined();
         expect(await InboxCredential.findMany({ where: {} })).toHaveLength(0);
         expect(sendSpy).not.toHaveBeenCalled();
         expect(
@@ -434,7 +765,7 @@ describe('Universal Inbox batch issuance', () => {
                 items: [{ recipient, credential, configuration, idempotencyKey: scenario }],
             });
             expect(result.results[0]).toMatchObject({ success: false, error: { code } });
-            expect(await cache.get(`inbox-batch-idem:batch-issuer:${scenario}`)).toBeNull();
+            expect(await replay(scenario)).toBeUndefined();
             expect(await InboxCredential.findMany({ where: {} })).toHaveLength(0);
             expect(sendSpy).not.toHaveBeenCalled();
             expect(
@@ -473,9 +804,13 @@ describe('Universal Inbox batch issuance', () => {
     });
 
     it('rejects empty and oversized batches, unauthenticated callers and read-only grants', async () => {
-        await expect(issue({ items: [] })).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        await expect(issuer.clients.fullAuth.inbox.issueBatch({ items: [] })).rejects.toMatchObject(
+            { code: 'BAD_REQUEST' }
+        );
         const item = { recipient: email('validation@test.com'), credential: await signed() };
-        await expect(issue({ items: Array(101).fill(item) })).rejects.toMatchObject({
+        await expect(
+            issuer.clients.fullAuth.inbox.issueBatch({ items: Array(101).fill(item) })
+        ).rejects.toMatchObject({
             code: 'BAD_REQUEST',
         });
         expect((await post({ items: [item] }, false)).statusCode).toBe(401);
@@ -510,9 +845,10 @@ describe('Universal Inbox batch issuance', () => {
             maxBytes - Buffer.byteLength(JSON.stringify(payload))
         );
         const response = await post(payload);
-        expect(response.statusCode, response.body).toBe(200);
-        expect(response.json().results).toHaveLength(75);
-        expect(response.json().summary).toEqual({
+        expect(response.statusCode, response.body).toBe(202);
+        const completed = await poll(response.json().batchId);
+        expect(completed.results).toHaveLength(75);
+        expect(completed.summary).toEqual({
             total: 75,
             succeeded: 75,
             failed: 0,
@@ -523,6 +859,19 @@ describe('Universal Inbox batch issuance', () => {
         const tooLarge = await post(payload);
         expect(tooLarge.statusCode).toBe(413);
         expect(await InboxCredential.findMany({ where: {} })).toHaveLength(before.length);
+    });
+
+    it('accepts a single unkeyed item at exactly 4 MiB even after the worker adds its internal key', async () => {
+        const batch = {
+            items: [{ recipient: email('exact@test.com'), credential: await signed() }],
+            configuration: { templateData: { padding: '' } },
+        };
+        batch.configuration.templateData.padding = 'x'.repeat(
+            4 * 1024 * 1024 - Buffer.byteLength(JSON.stringify(batch))
+        );
+        expect((await issue(batch)).summary.succeeded).toBe(1);
+        batch.configuration.templateData.padding += 'x';
+        expect((await post(batch)).statusCode).toBe(413);
     });
 
     it('gates only the item configured with a guardian email', async () => {

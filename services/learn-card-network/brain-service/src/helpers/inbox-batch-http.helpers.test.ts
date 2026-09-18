@@ -13,6 +13,7 @@ import {
     withInboxBatchBodyLimit,
 } from './inbox-batch-http.helpers';
 import { createOpenApiAwsLambdaHandler } from './shim';
+import { inboxBatchResponseMeta } from './inbox-batch-http.helpers';
 
 const t = initTRPC.meta<OpenApiMeta>().create();
 const calls = vi.fn(() => true);
@@ -89,7 +90,11 @@ describe('batch production transports', () => {
         const server = Fastify();
         configureInboxBatchBodyLimit(server);
         await server.register(fastifyTRPCPlugin, { prefix: '/trpc', trpcOptions: { router } });
-        await server.register(fastifyTRPCOpenApiPlugin, { basePath: '/api', router });
+        await server.register(fastifyTRPCOpenApiPlugin, {
+            basePath: '/api',
+            router,
+            responseMeta: inboxBatchResponseMeta,
+        });
         try {
             const payload = bodyOfSize(INBOX_BATCH_MAX_BYTES);
             expect(Buffer.byteLength(payload)).toBe(INBOX_BATCH_MAX_BYTES);
@@ -100,7 +105,9 @@ describe('batch production transports', () => {
                     headers: { 'content-type': 'application/json' },
                     payload,
                 });
-                expect(response.statusCode, response.body).toBe(200);
+                expect(response.statusCode, response.body).toBe(
+                    url.startsWith('/api/') ? 202 : 200
+                );
                 const tooLarge = await server.inject({
                     method: 'POST',
                     url,
@@ -130,7 +137,11 @@ describe('batch production transports', () => {
         'checks decoded Lambda bytes before context creation (base64=%s)',
         async base64 => {
             const createContext = vi.fn(() => ({}));
-            const rest = createOpenApiAwsLambdaHandler({ router, createContext });
+            const rest = createOpenApiAwsLambdaHandler({
+                router,
+                createContext,
+                responseMeta: inboxBatchResponseMeta,
+            });
             const trpc = withInboxBatchBodyLimit(
                 awsLambdaRequestHandler({ router, createContext }),
                 'trpc'
@@ -146,7 +157,7 @@ describe('batch production transports', () => {
                     event(path, bodyOfSize(INBOX_BATCH_MAX_BYTES), base64),
                     context
                 );
-                expect(valid.statusCode, valid.body).toBe(200);
+                expect(valid.statusCode, valid.body).toBe(path.startsWith('/api/') ? 202 : 200);
                 expect(calls).toHaveBeenCalledTimes(1);
                 createContext.mockClear();
                 const response = await handler(

@@ -13,14 +13,11 @@ import {
 import { getInboxBatchRuntimeEnvironment } from '@environment';
 import type { Context } from '@routes';
 import type { ProfileType } from 'types/profile';
-import cache from '@cache';
-import { INBOX_BATCH_MAX_BYTES } from './inbox-batch-http.helpers';
-import { enforceRateLimits } from './rateLimit.helpers';
+import type { BatchReplayStore } from 'types/inbox-batch';
 import { issueToInbox, resolveInboxCredentialInput } from './inbox.helpers';
 import { InboxIssuancePreflightError } from './inbox-issuance-error.helpers';
 
 export const INBOX_BATCH_CONCURRENCY = 10;
-export const INBOX_BATCH_ITEMS_PER_HOUR = 10_000;
 const IDEMPOTENCY_TTL_SECONDS = 24 * 60 * 60;
 
 const unavailable = (): TRPCError =>
@@ -34,7 +31,7 @@ const unavailable = (): TRPCError =>
  * replacer traversal so equivalent objects with different property insertion order replay, while
  * a reused idempotency key with changed recipient, credential, or configuration is rejected.
  */
-const fingerprint = (input: unknown): string =>
+export const fingerprint = (input: unknown): string =>
     createHash('sha256')
         .update(
             JSON.stringify(input, (_key, value) =>
@@ -92,45 +89,25 @@ const positiveInteger = (value: string | undefined, fallback: number): number =>
 };
 
 /**
- * Coordinates a bounded-concurrency batch without duplicating issuance behavior. Each item still
+ * Internal processing only: HTTP callers must use submitInboxBatch. Queue workers supply durable
+ * replay storage and an ownership checkpoint; quota was already charged at admission. Each item
  * uses resolveInboxCredentialInput and issueToInbox, which preserves the single route's signing,
  * claim, guardian, webhook, email, and tenant-branding behavior.
  */
 export const issueInboxBatch = async (
     profile: ProfileType,
     batch: IssueInboxCredentialBatch,
-    ctx: Context
+    ctx: Context,
+    execution: {
+        /** Queue admission already charged quota; replay records live in durable storage. */
+        cache: BatchReplayStore;
+        beforeIssue: () => Promise<void>;
+    }
 ): Promise<IssueInboxCredentialBatchResponse> => {
     const runtimeEnvironment = getInboxBatchRuntimeEnvironment();
-    // A per-process fallback cannot enforce cross-instance quotas or idempotency. Failing closed
-    // is safer than issuing twice when independent Lambda instances receive the same retry.
-    if (
-        (runtimeEnvironment.NODE_ENV === 'production' ||
-            (runtimeEnvironment.AWS_LAMBDA_FUNCTION_NAME && !runtimeEnvironment.IS_OFFLINE)) &&
-        !cache.redis
-    )
-        throw unavailable();
-    // Leave room for API Gateway's JSON envelope below Lambda's 6 MB invocation limit.
-    if (Buffer.byteLength(JSON.stringify(batch), 'utf8') > INBOX_BATCH_MAX_BYTES) {
-        throw new TRPCError({
-            code: 'PAYLOAD_TOO_LARGE',
-            message: 'Inbox batch exceeds the 4 MiB JSON payload limit',
-        });
-    }
-    const limit = positiveInteger(
-        runtimeEnvironment.INBOX_BATCH_ITEMS_PER_HOUR,
-        INBOX_BATCH_ITEMS_PER_HOUR
-    );
-    await enforceRateLimits([
-        {
-            key: `inbox-batch-rate:${profile.profileId}`,
-            limit,
-            amount: batch.items.length,
-            consumeOnlyIfAllowed: true,
-            windowSeconds: 3600,
-            description: `${limit} inbox items per hour; retry after the current window expires (at most 3600 seconds)`,
-        },
-    ]);
+    // Payload size and quota are enforced at admission. Internal queue metadata must not make
+    // a previously accepted request fail the HTTP byte limit during background processing.
+    const replayCache = execution.cache;
 
     // Workers claim indexes synchronously before their first await. Results are written by index,
     // so the response remains in caller order even when template work completes out of order.
@@ -189,7 +166,7 @@ export const issueInboxBatch = async (
                 }
                 const requestHash = key ? fingerprint(input) : '';
                 if (key) {
-                    const stored = await cache.get(key);
+                    const stored = await replayCache.get(key);
                     if (stored === undefined) throw unavailable();
                     if (stored) {
                         results[index] = replayResult(stored, requestHash, index);
@@ -202,10 +179,14 @@ export const issueInboxBatch = async (
                     });
                     // Reserve before template resolution: it can be slow and two concurrent
                     // retries must not both reach issueToInbox. The marker is also the CAS owner.
-                    const acquired = await cache.setIfAbsent(key, marker, IDEMPOTENCY_TTL_SECONDS);
+                    const acquired = await replayCache.setIfAbsent(
+                        key,
+                        marker,
+                        IDEMPOTENCY_TTL_SECONDS
+                    );
                     if (acquired === undefined) throw unavailable();
                     if (acquired === null) {
-                        const current = await cache.get(key);
+                        const current = await replayCache.get(key);
                         if (current === undefined) throw unavailable();
                         if (current === null) {
                             // The owner may have released its marker after our failed SET NX.
@@ -221,6 +202,7 @@ export const issueInboxBatch = async (
                     reservation = marker;
                 }
                 const { credential } = await resolveInboxCredentialInput(input, ctx);
+                await execution.beforeIssue();
                 // From this point, issueToInbox may persist records or send an email before an
                 // error is observed. Keep the reservation on failure to prevent a blind retry.
                 issuanceStarted = true;
@@ -246,21 +228,21 @@ export const issueInboxBatch = async (
                     const replay = JSON.stringify({ ...success, requestHash });
                     // Retry a transient failure once, always using CAS so a lost owner cannot
                     // overwrite another worker. A lost reply may mean the first commit succeeded.
-                    let saved = await cache.compareAndSet(
+                    let saved = await replayCache.compareAndSet(
                         key,
                         reservation,
                         replay,
                         IDEMPOTENCY_TTL_SECONDS
                     );
                     if (saved === undefined) {
-                        saved = await cache.compareAndSet(
+                        saved = await replayCache.compareAndSet(
                             key,
                             reservation,
                             replay,
                             IDEMPOTENCY_TTL_SECONDS
                         );
                     }
-                    if (!saved) saved = (await cache.get(key)) === replay;
+                    if (!saved) saved = (await replayCache.get(key)) === replay;
                     if (!saved)
                         throw new TRPCError({
                             code: 'CONFLICT',
@@ -277,7 +259,12 @@ export const issueInboxBatch = async (
                 if (key && reservation && safeToRelease) {
                     // Preparation and explicit preflight failures have no delivery side effects,
                     // so freeing the owned marker makes a corrected item retryable.
-                    await cache.compareAndSet(key, reservation, null, IDEMPOTENCY_TTL_SECONDS);
+                    await replayCache.compareAndSet(
+                        key,
+                        reservation,
+                        null,
+                        IDEMPOTENCY_TTL_SECONDS
+                    );
                 }
                 let itemError = {
                     code: 'INTERNAL_SERVER_ERROR',

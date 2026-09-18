@@ -2397,6 +2397,10 @@ export async function getLearnCardNetworkPlugin(
                 await ensureUser();
                 return client.inbox.issueBatch.mutate(batch);
             },
+            getInboxCredentialBatch: async (_learnCard, batchId) => {
+                await ensureUser();
+                return client.inbox.getBatch.query({ batchId });
+            },
             getMySentInboxCredentials: async (_learnCard, options) => {
                 await ensureUser();
 

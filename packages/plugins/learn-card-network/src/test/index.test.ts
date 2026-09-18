@@ -187,16 +187,11 @@ const getLearnCard = async (seed = 'a'.repeat(64)) => {
 describe('inbox batch method', () => {
     beforeEach(() => vi.clearAllMocks());
 
-    it('forwards configuration, keys and items to issueBatch and preserves per-item results', async () => {
+    it('forwards configuration, keys and items to issueBatch and returns an acceptance receipt', async () => {
         const response = {
-            results: [
-                {
-                    success: false,
-                    index: 0,
-                    error: { code: 'CONFLICT', message: 'Already in progress' },
-                },
-            ],
-            summary: { total: 1, succeeded: 0, failed: 1, deduplicated: 0 },
+            batchId: 'batch-1',
+            status: 'QUEUED',
+            createdAt: '2026-09-17T00:00:00.000Z',
         };
         const mutate = vi.fn().mockResolvedValue(response);
         const client = { ...getMockClient(), inbox: { issueBatch: { mutate } } };
@@ -218,6 +213,23 @@ describe('inbox batch method', () => {
         ).resolves.toEqual(response);
         expect(mutate).toHaveBeenCalledExactlyOnceWith(batch);
         expect(client.profile.getProfile.query).toHaveBeenCalled();
+    });
+
+    it('polls the batch endpoint and preserves progress and item results', async () => {
+        const response = { batchId: 'batch-1', status: 'PROCESSING', items: [] };
+        const query = vi.fn().mockResolvedValue(response);
+        const client = { ...getMockClient(), inbox: { getBatch: { query } } };
+        vi.mocked(getBrainClient).mockResolvedValue(client as never);
+        const learnCard = getMockLearnCard();
+        const plugin = await getLearnCardNetworkPlugin(learnCard, 'https://network.example/trpc');
+        await expect(
+            plugin.methods?.getInboxCredentialBatch(learnCard, 'batch-1')
+        ).resolves.toEqual(response);
+        expect(query).toHaveBeenCalledExactlyOnceWith({ batchId: 'batch-1' });
+        query.mockRejectedValueOnce(new Error('Not found'));
+        await expect(plugin.methods?.getInboxCredentialBatch(learnCard, 'missing')).rejects.toThrow(
+            'Not found'
+        );
     });
 
     it('does not submit a batch when the issuer profile is missing', async () => {

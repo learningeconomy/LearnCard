@@ -77,6 +77,16 @@ export const configureInboxBatchBodyLimit = (server: FastifyInstance): void => {
     });
 };
 
+/** REST adapters write directly to the Node response, bypassing Fastify onSend hooks. */
+export const inboxBatchResponseMeta = ({
+    paths,
+    errors,
+}: {
+    paths?: readonly string[];
+    errors: readonly unknown[];
+}): { status?: number } =>
+    !errors.length && paths?.includes('inbox.issueBatch') ? { status: 202 } : {};
+
 type GatewayEvent = APIGatewayProxyEvent | APIGatewayProxyEventV2;
 
 /**

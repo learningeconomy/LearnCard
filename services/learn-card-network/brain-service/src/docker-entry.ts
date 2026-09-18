@@ -16,6 +16,7 @@ import {
 import { neogma } from '@instance';
 import { appRouter, type AppRouter, createContext } from './app';
 import { openApiDocument } from './openapi';
+import { inboxBatchResponseMeta } from './helpers/inbox-batch-http.helpers';
 import { didFastifyPlugin } from './dids';
 import { skillsViewerFastifyPlugin } from './skills-viewer';
 import { statusListsFastifyPlugin } from './status-lists';
@@ -85,6 +86,7 @@ server.register(fastifyTRPCPlugin, {
 });
 
 server.register(fastifyTRPCOpenApiPlugin, {
+    responseMeta: inboxBatchResponseMeta,
     basePath: '/api',
     router: appRouter,
     createContext,

@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
     compareAndSet: vi.fn(),
     incr: vi.fn(),
     consumeQuota: vi.fn(),
+    beforeIssue: vi.fn(),
     issue: vi.fn(),
     resolve: vi.fn(),
 }));
@@ -57,9 +58,12 @@ const item = (id = 'a') => ({
     credential,
 });
 const run = (batch: IssueInboxCredentialBatch) =>
-    issueInboxBatch(profile, IssueInboxCredentialBatchValidator.parse(batch), ctx);
+    issueInboxBatch(profile, IssueInboxCredentialBatchValidator.parse(batch), ctx, {
+        cache: mocks,
+        beforeIssue: mocks.beforeIssue,
+    });
 
-describe('inbox batch orchestration', () => {
+describe('inbox batch worker processing', () => {
     beforeEach(() => {
         vi.resetAllMocks();
         mocks.get.mockResolvedValue(null);
@@ -95,7 +99,8 @@ describe('inbox batch orchestration', () => {
         expect(batch.results.map(r => r.success && r.issuanceId)).toEqual(
             Array.from({ length: 5 }, (_, i) => `${i}@example.test`)
         );
-        expect(mocks.consumeQuota).toHaveBeenCalledWith('inbox-batch-rate:issuer', 3600, 5, 10000);
+        // Admission already consumed quota; background work must not charge again.
+        expect(mocks.consumeQuota).not.toHaveBeenCalled();
     });
 
     it('isolates missing credentials, TRPC errors and unknown exceptions without leaking internals', async () => {
@@ -376,28 +381,20 @@ describe('inbox batch orchestration', () => {
         expect(mocks.issue).toHaveBeenCalledTimes(1);
     });
 
-    it.each([
-        ['production', '', 'false', true],
-        ['production', 'offline-lambda', 'true', true],
-        ['test', 'deployed-lambda', 'false', true],
-        ['test', 'offline-lambda', 'true', false],
-    ])(
-        'requires Redis for NODE_ENV=%s Lambda=%s offline=%s',
-        async (nodeEnv, lambda, offline, blocked) => {
-            vi.stubEnv('NODE_ENV', String(nodeEnv));
-            vi.stubEnv('AWS_LAMBDA_FUNCTION_NAME', String(lambda));
-            vi.stubEnv('IS_OFFLINE', String(offline));
-            if (blocked) {
-                await expect(run({ items: [item()] })).rejects.toMatchObject({
-                    code: 'INTERNAL_SERVER_ERROR',
-                });
-                expect(mocks.consumeQuota).not.toHaveBeenCalled();
-                expect(mocks.issue).not.toHaveBeenCalled();
-            } else {
-                expect((await run({ items: [item()] })).summary.succeeded).toBe(1);
-            }
-        }
-    );
+    it('checks the durable worker lease before entering issuance', async () => {
+        mocks.beforeIssue.mockRejectedValueOnce(new Error('Lease lost'));
+        expect(
+            (await run({ items: [{ ...item(), idempotencyKey: 'lease' }] })).results[0]
+        ).toMatchObject({ success: false });
+        expect(mocks.resolve).toHaveBeenCalledTimes(1);
+        expect(mocks.issue).not.toHaveBeenCalled();
+        expect(mocks.compareAndSet).toHaveBeenCalledWith(
+            expect.any(String),
+            expect.any(String),
+            null,
+            86400
+        );
+    });
 
     it('serializes overlapping keys across requests and rejects changed payloads', async () => {
         const values = new Map<string, string>();
@@ -432,34 +429,6 @@ describe('inbox batch orchestration', () => {
         expect((await run({ items: [item()] })).results[0]).toMatchObject({
             error: { code: 'INTERNAL_SERVER_ERROR', message: 'Failed to issue credential' },
         });
-    });
-
-    it('enforces quotas before resolution or issuance and fails closed on cache outages', async () => {
-        vi.stubEnv('INBOX_BATCH_ITEMS_PER_HOUR', '2');
-        mocks.consumeQuota.mockResolvedValueOnce(false).mockResolvedValueOnce(undefined);
-        await expect(run({ items: [item(), item(), item()] })).rejects.toMatchObject({
-            code: 'TOO_MANY_REQUESTS',
-        });
-        await expect(run({ items: [item()] })).rejects.toMatchObject({
-            code: 'INTERNAL_SERVER_ERROR',
-        });
-        expect(mocks.resolve).not.toHaveBeenCalled();
-        expect(mocks.issue).not.toHaveBeenCalled();
-    });
-
-    it('accepts exactly 4 MiB of serialized JSON and rejects one byte more before processing', async () => {
-        const batch = { items: [item()], configuration: { templateData: { padding: '' } } };
-        batch.configuration.templateData.padding = 'x'.repeat(
-            INBOX_BATCH_MAX_BYTES - Buffer.byteLength(JSON.stringify(batch))
-        );
-        expect(Buffer.byteLength(JSON.stringify(batch))).toBe(INBOX_BATCH_MAX_BYTES);
-        expect((await run(batch)).summary.succeeded).toBe(1);
-        mocks.issue.mockClear();
-        mocks.consumeQuota.mockClear();
-        batch.configuration.templateData.padding += 'x';
-        await expect(run(batch)).rejects.toMatchObject({ code: 'PAYLOAD_TOO_LARGE' });
-        expect(mocks.issue).not.toHaveBeenCalled();
-        expect(mocks.consumeQuota).not.toHaveBeenCalled();
     });
 
     it('applies the tested HTTP parser budget to batch routes only', async () => {

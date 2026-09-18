@@ -36,6 +36,9 @@ export const brainServiceEnvironmentShape = {
     OIDC_EXPECTED_AUDIENCE: optionalEnvironmentString,
     AWS_REGION: optionalEnvironmentString,
     NOTIFICATIONS_QUEUE_URL: optionalEnvironmentUrl,
+    INBOX_QUEUE_URL: optionalEnvironmentUrl,
+    INBOX_DEAD_LETTER_QUEUE_URL: optionalEnvironmentUrl,
+    INBOX_QUEUE_ENDPOINT: optionalEnvironmentUrl,
     NOTIFICATIONS_QUEUE_POLL_URL: optionalEnvironmentUrl,
     NOTIFICATIONS_SERVICE_WEBHOOK_URL: optionalEnvironmentUrl.or(z.literal('false')),
     NOTIFICATIONS_SERVICE_PORT: optionalEnvironmentPort,
@@ -210,6 +213,10 @@ export const getCredentialRefreshRuntimeEnvironment = (): CredentialRefreshRunti
     });
 
 const inboxBatchRuntimeEnvironmentSchema = z.object({
+    INBOX_QUEUE_URL: brainServiceEnvironmentShape.INBOX_QUEUE_URL,
+    INBOX_DEAD_LETTER_QUEUE_URL: brainServiceEnvironmentShape.INBOX_DEAD_LETTER_QUEUE_URL,
+    INBOX_QUEUE_ENDPOINT: brainServiceEnvironmentShape.INBOX_QUEUE_ENDPOINT,
+    AWS_REGION: brainServiceEnvironmentShape.AWS_REGION,
     NODE_ENV: brainServiceEnvironmentShape.NODE_ENV,
     IS_OFFLINE: brainServiceEnvironmentShape.IS_OFFLINE,
     AWS_LAMBDA_FUNCTION_NAME: brainServiceEnvironmentShape.AWS_LAMBDA_FUNCTION_NAME,

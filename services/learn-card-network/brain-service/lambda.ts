@@ -25,6 +25,7 @@ import {
 import { environment } from './src/config/environment';
 import { toServerlessApplication } from './src/helpers/serverlessApplication';
 import { runInboxMaintenance } from './src/helpers/inbox-maintenance.helpers';
+import { inboxBatchResponseMeta } from './src/helpers/inbox-batch-http.helpers';
 import { withInboxBatchBodyLimit } from './src/helpers/inbox-batch-http.helpers';
 
 Sentry.AWSLambda.init({
@@ -62,8 +63,9 @@ export const credentialRefreshHandler: typeof credentialRefreshProxy = async (ev
 
 export const _openApiHandler = createOpenApiAwsLambdaHandler({
     router: appRouter,
-    responseMeta: () => {
+    responseMeta: meta => {
         return {
+            ...inboxBatchResponseMeta(meta),
             headers: {
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
@@ -127,6 +129,39 @@ export const trpcHandler = Sentry.AWSLambda.wrapHandler(
         return _trpcHandler(event, context);
     }
 );
+
+export const inboxQueueWorker: SQSHandler = Sentry.AWSLambda.wrapHandler(async event => {
+    const { processInboxQueueMessage } = await import('./src/helpers/inbox-queue.helpers');
+    const batchItemFailures = [];
+    for (const record of event.Records) {
+        try {
+            await processInboxQueueMessage(record.body);
+        } catch {
+            console.error('Inbox worker message failed', { messageId: record.messageId });
+            batchItemFailures.push({ itemIdentifier: record.messageId });
+        }
+    }
+    return { batchItemFailures } satisfies SQSBatchResponse;
+});
+
+export const inboxQueueDispatcher = Sentry.AWSLambda.wrapHandler(async (): Promise<void> => {
+    const { dispatchInboxJobs } = await import('./src/helpers/inbox-queue.helpers');
+    await dispatchInboxJobs();
+});
+
+export const inboxDeadLetterWorker: SQSHandler = Sentry.AWSLambda.wrapHandler(async event => {
+    const { processInboxDeadLetter } = await import('./src/helpers/inbox-queue.helpers');
+    const batchItemFailures = [];
+    for (const record of event.Records) {
+        try {
+            await processInboxDeadLetter(record.body);
+        } catch {
+            console.error('Inbox dead-letter processing failed', { messageId: record.messageId });
+            batchItemFailures.push({ itemIdentifier: record.messageId });
+        }
+    }
+    return { batchItemFailures } satisfies SQSBatchResponse;
+});
 
 export const notificationsWorker: SQSHandler = Sentry.AWSLambda.wrapHandler(async event => {
     const batchItemFailures = await Promise.all(
