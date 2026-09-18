@@ -277,6 +277,135 @@ describe('Universal Inbox batch issuance', () => {
         });
     });
 
+    it('does not let a late publication ack postpone a worker retry', async () => {
+        const receipt = await submit({
+            items: [{ recipient: email('ack@test.com'), credential: await signed() }],
+        });
+        const leases = await jobStore.takeInboxDispatches();
+        const id = `${receipt.batchId}:0`;
+        await jobStore.claimBatchItem(id, 'fast-worker');
+        await jobStore.finishBatchItem(id, 'fast-worker', {
+            success: false,
+            index: 0,
+            error: { code: 'INTERNAL_SERVER_ERROR', message: 'retry' },
+        });
+        await jobStore.acknowledgeInboxDispatches(leases);
+        expect((await jobStore.takeInboxDispatches()).map(lease => lease.id)).toContain(id);
+    });
+
+    it('keeps overlapping item keys queued and then replays the first success', async () => {
+        const entry = {
+            recipient: email('overlap@test.com'),
+            credential: await signed(),
+            idempotencyKey: 'overlap',
+        };
+        const first = await submit({ items: [entry] });
+        const second = await submit({ items: [entry] });
+        let release!: () => void;
+        let started!: () => void;
+        const blocked = new Promise<void>(resolve => {
+            release = resolve;
+        });
+        const entered = new Promise<void>(resolve => {
+            started = resolve;
+        });
+        const original = issuance.resolveInboxCredentialInput;
+        vi.spyOn(issuance, 'resolveInboxCredentialInput').mockImplementationOnce(
+            async (...args) => {
+                started();
+                await blocked;
+                return original(...args);
+            }
+        );
+        const { processInboxQueueMessage } = await import('@helpers/inbox-queue.helpers');
+        const worker = processInboxQueueMessage(JSON.stringify({ itemId: `${first.batchId}:0` }));
+        try {
+            await entered;
+            await processInboxQueueMessage(JSON.stringify({ itemId: `${second.batchId}:0` }));
+            expect(await statusOf(second.batchId)).toMatchObject({
+                done: false,
+                summary: { pending: 1, failed: 0 },
+            });
+        } finally {
+            release();
+            await worker;
+        }
+        await processInboxQueueMessage(JSON.stringify({ itemId: `${second.batchId}:0` }));
+        expect(await statusOf(second.batchId)).toMatchObject({
+            done: true,
+            summary: { succeeded: 1, deduplicated: 1 },
+        });
+        expect(await InboxCredential.findMany({ where: {} })).toHaveLength(1);
+    });
+
+    it('counts unconfirmed outcomes once and retains correlation after payload cleanup', async () => {
+        const receipt = await submit({
+            items: [
+                {
+                    recipient: email('uncertain@test.com'),
+                    credential: await signed(),
+                    idempotencyKey: 'uncertain',
+                },
+                {
+                    recipient: email('pending@test.com'),
+                    credential: await signed(),
+                    idempotencyKey: 'pending',
+                },
+            ],
+        });
+        await jobStore.claimBatchItem(`${receipt.batchId}:0`, 'worker');
+        await jobStore.markBatchIssuanceStarted(`${receipt.batchId}:0`, 'worker');
+        await expireLease(receipt.batchId);
+        await jobStore.recoverInboxJobs();
+        expect(await statusOf(receipt.batchId)).toMatchObject({
+            done: false,
+            summary: { total: 2, completed: 1, pending: 1, unconfirmed: 1, failed: 0 },
+        });
+        await poll(receipt.batchId);
+        const status = await statusOf(receipt.batchId);
+        expect(status).toMatchObject({
+            done: true,
+            summary: {
+                total: 2,
+                completed: 2,
+                pending: 0,
+                unconfirmed: 1,
+                succeeded: 1,
+                failed: 0,
+            },
+            items: [
+                {
+                    result: {
+                        idempotencyKey: 'uncertain',
+                        recipient: email('uncertain@test.com'),
+                        error: { reason: 'UNCONFIRMED' },
+                    },
+                },
+                { result: { idempotencyKey: 'pending', recipient: email('pending@test.com') } },
+            ],
+        });
+        expect(
+            (await jobStore.readBatchJob(receipt.batchId, 'batch-issuer')).job.payload
+        ).toBeUndefined();
+    });
+
+    it('rejects invalid input at admission without charging quota', async () => {
+        const response = await post({
+            items: [
+                { recipient: email('missing@test.com') },
+                {
+                    recipient: email('self@test.com'),
+                    credential: await signed(),
+                    configuration: { guardianEmail: 'SELF@test.com' },
+                },
+            ],
+        });
+        expect(response.statusCode).toBe(400);
+        expect(await InboxCredential.findMany({ where: {} })).toHaveLength(0);
+        const jobs = await neogma.queryRunner.run('MATCH (b:InboxBatch) RETURN b');
+        expect(jobs.records).toHaveLength(0);
+    });
+
     it('continues dispatching later chunks after a partial SQS failure', async () => {
         const credential = await signed();
         const receipt = await submit({
@@ -455,6 +584,7 @@ describe('Universal Inbox batch issuance', () => {
             status: 'COMPLETED',
             summary: { succeeded: 1 },
         });
+        expect((await statusOf(receipt.batchId)).items[0]?.result?.idempotencyKey).toBeUndefined();
         expect(sendSpy).toHaveBeenCalledTimes(1);
     });
 
@@ -857,7 +987,7 @@ describe('Universal Inbox batch issuance', () => {
         const response = await post({
             items: [
                 { recipient: email('good@test.com'), credential: await signed() },
-                { recipient: email('bad@test.com') },
+                { recipient: email('bad@test.com'), templateUri: 'invalid-template' },
             ],
         });
         expect(response.statusCode, response.body).toBe(202);
@@ -902,7 +1032,7 @@ describe('Universal Inbox batch issuance', () => {
 
     it('does not consume an idempotency key on failure', async () => {
         const item = { recipient: email('retry@test.com'), idempotencyKey: 'retry' };
-        expect((await issue({ items: [item] })).results[0]).toMatchObject({ success: false });
+        expect((await post({ items: [item] })).statusCode).toBe(400);
         expect(await replay('retry')).toBeUndefined();
         const result = (await issue({ items: [{ ...item, credential: await signed() }] }))
             .results[0];

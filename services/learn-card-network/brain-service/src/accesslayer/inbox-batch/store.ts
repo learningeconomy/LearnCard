@@ -4,7 +4,7 @@ import type { ManagedTransaction } from 'neo4j-driver';
 import type { InboxBatchReceipt, IssueInboxCredentialBatchItemResult } from '@learncard/types';
 import { neogma } from '@instance';
 import { encryptInboxCredential, decryptInboxCredential } from '@helpers/inbox-encryption.helpers';
-import type { BatchItem, BatchJob, BatchReplayStore } from 'types/inbox-batch';
+import type { BatchItem, BatchJob, BatchReplayStore, InboxDispatchLease } from 'types/inbox-batch';
 import { getInboxBatchState } from '@helpers/inbox-batch-status.helpers';
 
 export const DAY = 86_400_000;
@@ -66,7 +66,7 @@ export const createBatchJob = async (input: {
     requestId?: string;
     requestHash: string;
     payload: string;
-    items: { replayKey: string; duplicate: boolean }[];
+    items: { replayKey: string; duplicate: boolean; correlation?: string }[];
     limit: number;
 }): Promise<InboxBatchReceipt> => {
     const now = Date.now();
@@ -118,6 +118,7 @@ export const createBatchJob = async (input: {
             WITH b UNWIND $items AS item
             CREATE (b)-[:HAS_ITEM]->(:InboxBatchItem {id: item.id, batchId: $id,
                 index: item.index, replayKey: item.replayKey, duplicate: item.duplicate,
+                correlation: item.correlation,
                 state: 'QUEUED', attempts: 0, dispatchAt: 0})`,
             {
                 issuer: input.issuer,
@@ -293,7 +294,8 @@ export const finishBatchItem = async (
         const unconfirmed = !result.success && item.phase === 'ISSUING';
         const retry =
             !result.success &&
-            result.error.code === 'INTERNAL_SERVER_ERROR' &&
+            (result.error.code === 'INTERNAL_SERVER_ERROR' ||
+                result.error.reason === 'IN_PROGRESS') &&
             !unconfirmed &&
             Number(item.attempts) < 5;
         if (retry)
@@ -303,11 +305,15 @@ export const finishBatchItem = async (
             );
         await tx.run(
             `MATCH (i:InboxBatchItem {id: $id}) SET i.state = $state, i.result = $result,
-            i.owner = null, i.leaseUntil = null, i.dispatchAt = 0`,
+            i.owner = null, i.leaseUntil = null, i.dispatchAt = $dispatchAt`,
             {
                 id,
                 state: retry ? 'QUEUED' : unconfirmed ? 'NEEDS_RECONCILIATION' : 'COMPLETED',
                 result: retry ? null : encrypted,
+                dispatchAt:
+                    retry && !result.success && result.error.reason === 'IN_PROGRESS'
+                        ? Date.now() + Math.min(60_000, 2_000 * 2 ** (Number(item.attempts) - 1))
+                        : 0,
             }
         );
         await finalizeSettledBatch(tx, item.batchId);
@@ -315,23 +321,28 @@ export const finishBatchItem = async (
 };
 
 /** Claim dispatch leases before publishing. A lost publish acknowledgement causes a safe duplicate. */
-export const takeInboxDispatches = async (): Promise<string[]> =>
+export const takeInboxDispatches = async (): Promise<InboxDispatchLease[]> =>
     transaction(async tx => {
         const result = await tx.run(
             `MATCH (i:InboxBatchItem) WHERE i.state = 'QUEUED' AND i.dispatchAt < $now
         WITH i LIMIT 1000 SET i.lock = coalesce(i.lock, 0) + 1
         WITH i WHERE i.state = 'QUEUED' AND i.dispatchAt < $now
-        SET i.dispatchAt = $next RETURN i.id AS id`,
+        SET i.dispatchAt = $next RETURN i.id AS id, i.dispatchAt AS dispatchAt`,
             { now: Date.now(), next: Date.now() + 60_000 }
         );
-        return result.records.map(r => r.get('id'));
+        return result.records.map(r => ({
+            id: r.get('id'),
+            dispatchAt: Number(r.get('dispatchAt')),
+        }));
     });
 
-export const acknowledgeInboxDispatches = async (ids: string[]): Promise<void> => {
+export const acknowledgeInboxDispatches = async (leases: InboxDispatchLease[]): Promise<void> => {
     await neogma.queryRunner.run(
-        `MATCH (i:InboxBatchItem) WHERE i.id IN $ids AND i.state = 'QUEUED'
+        `UNWIND $leases AS lease MATCH (i:InboxBatchItem {id: lease.id})
+        SET i.lock = coalesce(i.lock, 0) + 1
+        WITH i, lease WHERE i.state = 'QUEUED' AND i.dispatchAt = lease.dispatchAt
         SET i.dispatchAt = $next`,
-        { ids, next: Date.now() + 1_800_000 }
+        { leases, next: Date.now() + 1_800_000 }
     );
 };
 

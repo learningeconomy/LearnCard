@@ -2,6 +2,7 @@ import { TRPCError } from '@trpc/server';
 import { mergeWith } from 'lodash';
 import { createHash, randomUUID } from 'node:crypto';
 import type {
+    InboxBatchErrorReason,
     IssueInboxCredentialBatch,
     IssueInboxCredentialBatchItemResult,
     IssueInboxCredentialBatchResponse,
@@ -48,6 +49,15 @@ export const fingerprint = (input: unknown): string =>
         )
         .digest('hex');
 
+class InboxBatchConflict extends TRPCError {
+    constructor(
+        readonly reason: InboxBatchErrorReason,
+        message: string
+    ) {
+        super({ code: 'CONFLICT', message });
+    }
+}
+
 const replayResult = (
     stored: string,
     requestHash: string,
@@ -63,17 +73,16 @@ const replayResult = (
         });
     }
     if (decoded.requestHash !== requestHash) {
-        throw new TRPCError({
-            code: 'CONFLICT',
-            message: 'This idempotency key was used for a different issuance.',
-        });
+        throw new InboxBatchConflict(
+            'IDEMPOTENCY_MISMATCH',
+            'This idempotency key was used for a different issuance.'
+        );
     }
     if (decoded.state === 'processing') {
-        throw new TRPCError({
-            code: 'CONFLICT',
-            message:
-                'Issuance is in progress or its outcome is unconfirmed. Retry this same key later; do not issue with a new key. Contact support if it remains unconfirmed.',
-        });
+        throw new InboxBatchConflict(
+            'IN_PROGRESS',
+            'Issuance is in progress or its outcome is unconfirmed. Retry this same key later; do not issue with a new key. Contact support if it remains unconfirmed.'
+        );
     }
     const result = IssueInboxCredentialBatchItemResultValidator.parse(decoded);
     if (!result.success) {
@@ -135,11 +144,10 @@ export const issueInboxBatch = async (
                     item.idempotencyKey !== undefined &&
                     firstIndexByKey.get(item.idempotencyKey) !== index
                 ) {
-                    throw new TRPCError({
-                        code: 'CONFLICT',
-                        message:
-                            'Duplicate idempotency key in this batch. Only its first occurrence is attempted.',
-                    });
+                    throw new InboxBatchConflict(
+                        'DUPLICATE_KEY',
+                        'Duplicate idempotency key in this batch. Only its first occurrence is attempted.'
+                    );
                 }
                 const configuration = mergeWith(
                     {},
@@ -189,10 +197,10 @@ export const issueInboxBatch = async (
                         if (current === null) {
                             // The owner may have released its marker after our failed SET NX.
                             // No issuance happened here; a retry with this key can acquire it.
-                            throw new TRPCError({
-                                code: 'CONFLICT',
-                                message: 'Idempotency reservation changed. Retry this same key.',
-                            });
+                            throw new InboxBatchConflict(
+                                'IN_PROGRESS',
+                                'Idempotency reservation changed. Retry this same key.'
+                            );
                         }
                         results[index] = replayResult(current, requestHash, index);
                         continue;
@@ -219,6 +227,7 @@ export const issueInboxBatch = async (
                     issuanceId: result.inboxCredential.id,
                     status: result.status,
                     recipient: input.recipient,
+                    idempotencyKey: item.idempotencyKey,
                     claimUrl: result.claimUrl,
                     recipientDid: result.recipientDid,
                     guardianStatus: result.guardianStatus,
@@ -282,24 +291,34 @@ export const issueInboxBatch = async (
                         // Recovery owns cleanup when this worker can no longer release its marker.
                     }
                 }
-                let itemError = {
+                let itemError: Extract<
+                    IssueInboxCredentialBatchItemResult,
+                    { success: false }
+                >['error'] = {
                     code: 'INTERNAL_SERVER_ERROR',
                     message: 'Failed to issue credential',
                 };
                 if (key && reservation && !safeToRelease) {
                     itemError = {
                         code: 'CONFLICT',
+                        reason: 'UNCONFIRMED',
                         message: issued
                             ? 'Credential issued, but replay storage could not be confirmed. Reconcile using issuanceId; do not issue with a new key.'
                             : 'Issuance outcome is unconfirmed. Retry this same key later; do not issue with a new key. Contact support if it remains unconfirmed.',
                     };
                 } else if (error instanceof TRPCError && error.code !== 'INTERNAL_SERVER_ERROR') {
-                    itemError = { code: error.code, message: error.message };
+                    itemError = {
+                        code: error.code,
+                        message: error.message,
+                        ...(error instanceof InboxBatchConflict ? { reason: error.reason } : {}),
+                    };
                 }
                 results[index] = {
                     success: false,
                     index,
                     error: itemError,
+                    idempotencyKey: item.idempotencyKey,
+                    recipient: item.recipient,
                     ...(issued ? { issuanceId: issued.issuanceId, claimUrl: issued.claimUrl } : {}),
                 };
             }

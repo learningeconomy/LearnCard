@@ -13,7 +13,11 @@ export type BatchItem = {
     result?: string;
     replayKey: string;
     duplicate: boolean;
+    /** Encrypted client correlation fields retained after the batch payload is removed. */
+    correlation?: string;
 };
+
+export type InboxDispatchLease = { id: string; dispatchAt: number };
 
 export type BatchJob = {
     id: string;

@@ -71,22 +71,30 @@ export const submitInboxBatch = async (
             message: 'Inbox queue is not configured.',
         });
     const seen = new Set<string>();
-    const items = batch.items.map(item => {
-        const duplicate = item.idempotencyKey !== undefined && seen.has(item.idempotencyKey);
-        if (item.idempotencyKey !== undefined) seen.add(item.idempotencyKey);
-        return {
-            duplicate,
-            replayKey:
-                item.idempotencyKey === undefined
-                    ? `internal:${randomUUID()}`
-                    : `client:${fingerprint([profile.profileId, item.idempotencyKey])}`,
-        };
-    });
+    const items = await Promise.all(
+        batch.items.map(async item => {
+            const duplicate = item.idempotencyKey !== undefined && seen.has(item.idempotencyKey);
+            if (item.idempotencyKey !== undefined) seen.add(item.idempotencyKey);
+            return {
+                duplicate,
+                correlation: await encryptInboxCredential(
+                    JSON.stringify({
+                        idempotencyKey: item.idempotencyKey,
+                        recipient: item.recipient,
+                    })
+                ),
+                replayKey:
+                    item.idempotencyKey === undefined
+                        ? `internal:${randomUUID()}`
+                        : `client:${fingerprint([profile.profileId, item.idempotencyKey])}`,
+            };
+        })
+    );
     const configuredLimit = Number(getInboxBatchRuntimeEnvironment().INBOX_BATCH_ITEMS_PER_HOUR);
     return createBatchJob({
         issuer: profile.profileId,
         requestId: batch.requestId,
-        requestHash: fingerprint({ batch, domain: ctx.domain, tenant: ctx.tenant }),
+        requestHash: fingerprint({ batch, domain: ctx.domain, tenant: ctx.tenant?.id }),
         payload: await encryptInboxCredential(
             JSON.stringify({
                 batch,
@@ -117,30 +125,46 @@ export const getInboxBatch = async (issuer: string, batchId: string): Promise<In
                     error: {
                         code:
                             state === 'NEEDS_RECONCILIATION' ? 'CONFLICT' : 'INTERNAL_SERVER_ERROR',
+                        ...(state === 'NEEDS_RECONCILIATION'
+                            ? { reason: 'UNCONFIRMED' as const }
+                            : {}),
                         message:
                             state === 'NEEDS_RECONCILIATION'
                                 ? 'Issuance outcome is unconfirmed. Keep this key and contact support for reconciliation.'
                                 : 'Processing could not be completed after worker failures or queue delivery exhaustion.',
                     },
                 };
+            if (result && item.correlation) {
+                const correlation = JSON.parse(await decryptInboxCredential(item.correlation));
+                result = {
+                    ...result,
+                    recipient: correlation.recipient,
+                    // Recovery may read a replay containing an internal key for an unkeyed item.
+                    idempotencyKey: correlation.idempotencyKey,
+                };
+            }
             return { index: Number(item.index), state, ...(result ? { result } : {}) };
         })
     );
-    const completed = entries.filter(i => i.state === 'COMPLETED').length;
+    const completed = entries.filter(
+        i => i.state === 'COMPLETED' || i.state === 'NEEDS_RECONCILIATION'
+    ).length;
     const unconfirmed = entries.filter(i => i.state === 'NEEDS_RECONCILIATION').length;
     const succeeded = entries.filter(i => i.result?.success).length;
     return {
         batchId,
         createdAt: new Date(Number(job.createdAt)).toISOString(),
         status: getInboxBatchState(entries.map(item => item.state)),
+        done: completed === entries.length,
         items: entries,
         summary: {
             total: entries.length,
             succeeded,
-            failed: entries.filter(i => i.result && !i.result.success).length,
+            failed: entries.filter(i => i.state === 'COMPLETED' && i.result && !i.result.success)
+                .length,
             deduplicated: entries.filter(i => i.result?.success && i.result.deduplicated).length,
             completed,
-            pending: entries.length - completed - unconfirmed,
+            pending: entries.length - completed,
             unconfirmed,
         },
     };
@@ -163,7 +187,11 @@ export const processInboxQueueMessage = async (body: string): Promise<void> => {
     const fail = (code: string, text: string): IssueInboxCredentialBatchItemResult => ({
         success: false,
         index: Number(item.index),
-        error: { code, message: text },
+        error: {
+            code,
+            message: text,
+            ...(item.duplicate ? { reason: 'DUPLICATE_KEY' as const } : {}),
+        },
     });
     if (item.duplicate) {
         await finishBatchItem(
@@ -200,7 +228,11 @@ export const processInboxQueueMessage = async (body: string): Promise<void> => {
             beforeIssue: () => markBatchIssuanceStarted(item.id, owner),
         }
     );
-    await finishBatchItem(item.id, owner, { ...result.results[0]!, index: Number(item.index) });
+    await finishBatchItem(item.id, owner, {
+        ...result.results[0]!,
+        index: Number(item.index),
+        idempotencyKey: input.idempotencyKey,
+    });
     console.info('Inbox item processed', {
         batchId: job.id,
         index: Number(item.index),
@@ -238,21 +270,21 @@ export const dispatchInboxJobs = async (
         // Publish before maintenance: an unavailable recovery path must not stall new work.
         // Recovered items become dispatchable here but wait for the next one-minute invocation,
         // because this run has already claimed its publication set.
-        const ids = await takeInboxDispatches();
+        const leases = await takeInboxDispatches();
         const failures: unknown[] = [];
-        for (let offset = 0; offset < ids.length; offset += 10) {
+        for (let offset = 0; offset < leases.length; offset += 10) {
             try {
                 const response = await client.send(
                     new SendMessageBatchCommand({
                         QueueUrl: url,
-                        Entries: ids.slice(offset, offset + 10).map((itemId, index) => ({
+                        Entries: leases.slice(offset, offset + 10).map(({ id: itemId }, index) => ({
                             Id: String(index),
                             MessageBody: JSON.stringify({ itemId }),
                         })),
                     })
                 );
                 await acknowledgeInboxDispatches(
-                    (response.Successful ?? []).map(entry => ids[offset + Number(entry.Id)]!)
+                    (response.Successful ?? []).map(entry => leases[offset + Number(entry.Id)]!)
                 );
                 if (response.Failed?.length) {
                     console.error('Inbox dispatch entries failed', {
@@ -267,7 +299,7 @@ export const dispatchInboxJobs = async (
                 failures.push(error);
             }
         }
-        if (ids.length) console.info('Inbox dispatch attempted', { count: ids.length });
+        if (leases.length) console.info('Inbox dispatch attempted', { count: leases.length });
         try {
             await recoverInboxJobs(maintenanceDeadline);
         } catch (error) {

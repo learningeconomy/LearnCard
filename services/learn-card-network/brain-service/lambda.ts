@@ -25,8 +25,10 @@ import {
 import { environment } from './src/config/environment';
 import { toServerlessApplication } from './src/helpers/serverlessApplication';
 import { runInboxMaintenance } from './src/helpers/inbox-maintenance.helpers';
-import { inboxBatchResponseMeta } from './src/helpers/inbox-batch-http.helpers';
-import { withInboxBatchBodyLimit } from './src/helpers/inbox-batch-http.helpers';
+import {
+    inboxBatchResponseMeta,
+    withInboxBatchBodyLimit,
+} from './src/helpers/inbox-batch-http.helpers';
 
 Sentry.AWSLambda.init({
     dsn: environment.SENTRY_DSN,

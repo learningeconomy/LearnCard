@@ -54,7 +54,7 @@ const item = (id = 'a') => ({
     credential,
 });
 const run = (batch: IssueInboxCredentialBatch) =>
-    issueInboxBatch(profile, IssueInboxCredentialBatchValidator.parse(batch), ctx, {
+    issueInboxBatch(profile, batch, ctx, {
         cache: mocks,
         beforeIssue: mocks.beforeIssue,
     });
@@ -522,5 +522,24 @@ describe('inbox batch worker processing', () => {
                 items: [{ ...item(), idempotencyKey: 'x'.repeat(257) }],
             }).success
         ).toBe(false);
+    });
+});
+
+describe('batch admission validation', () => {
+    it('reports every invalid item index before processing and honors guardian overrides', () => {
+        const result = IssueInboxCredentialBatchValidator.safeParse({
+            configuration: { guardianEmail: 'A@example.test' },
+            items: [
+                { recipient: item('b').recipient },
+                item(),
+                { ...item(), configuration: { guardianEmail: 'guardian@example.test' } },
+            ],
+        });
+        expect(result.success).toBe(false);
+        if (!result.success)
+            expect(result.error.issues.map(issue => issue.path)).toEqual([
+                ['items', 0, 'credential'],
+                ['items', 1, 'configuration', 'guardianEmail'],
+            ]);
     });
 });
