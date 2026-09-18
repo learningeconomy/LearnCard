@@ -1,3 +1,4 @@
+import { acceptCredential } from '@helpers/credential.helpers';
 import { vi } from 'vitest';
 import { environment } from '@environment';
 import { deliverCredentialRefreshEmailNotification } from '@helpers/credential-refresh-email.helpers';
@@ -344,7 +345,16 @@ describe('credential refresh update emails', () => {
         await publishIssuerSigned(allocation.refreshId, await updatedCredential(allocation));
         expect(emailDeliveries()).toHaveLength(0);
 
-        await holder.clients.fullAuth.credential.acceptCredential({ uri });
+        await acceptCredential(
+            (await getProfileByProfileId(HOLDER_PROFILE_ID))!,
+            uri,
+            {},
+            { appUrl: 'https://tenant.example', brandName: 'Tenant School' }
+        );
+        expect(emailDeliveries()[0]?.branding).toMatchObject({
+            appUrl: 'https://tenant.example',
+            brandName: 'Tenant School',
+        });
 
         expect(emailDeliveries()).toHaveLength(1);
         expect(emailDeliveries()[0]!.templateModel).toMatchObject({
