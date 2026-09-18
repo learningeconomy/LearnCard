@@ -68,8 +68,7 @@ describe('Docs: Bootstrap an Issuer Organization', () => {
         expect(output).toMatch(/lc:network:.*:credential:/);
 
         const recipient = await getLearnCardForUser('b');
-        const received = await recipient.invoke.getReceivedCredentials();
-        const fromDistrict = received.find(record => record.from === `org-docs-north-${suffix}`);
-        expect(fromDistrict).toBeTruthy();
+        const incoming = await recipient.invoke.getIncomingCredentials(`org-docs-north-${suffix}`);
+        expect(incoming.length).toBeGreaterThan(0);
     });
 });

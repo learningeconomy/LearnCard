@@ -138,6 +138,8 @@ const patchSubject = (subject: unknown, subjectDid: string): unknown => {
  * await wallet.store.LearnCloud.uploadEncrypted(signed);
  * ```
  */
+const FIXTURE_VALIDITY_MS = 180 * 24 * 60 * 60 * 1000;
+
 export const prepareFixture = (fixture: LibraryFixture, options: PrepareOptions): UnsignedVC => {
     if (isSdJwtVcFixture(fixture)) {
         throw new Error(
@@ -191,6 +193,21 @@ export const prepareFixture = (fixture: LibraryFixture, options: PrepareOptions)
             credential.expirationDate = validUntil;
         } else {
             credential.validUntil = validUntil;
+        }
+    } else {
+        // A fixture's hard-coded expiry goes stale; keep provisional records valid
+        // relative to when they are prepared so verification does not fail on age.
+        const from = new Date((credential.validFrom ?? credential.issuanceDate) as string);
+        if (typeof credential.validUntil === 'string' && new Date(credential.validUntil) <= from) {
+            credential.validUntil = new Date(from.getTime() + FIXTURE_VALIDITY_MS).toISOString();
+        }
+        if (
+            typeof credential.expirationDate === 'string' &&
+            new Date(credential.expirationDate) <= from
+        ) {
+            credential.expirationDate = new Date(
+                from.getTime() + FIXTURE_VALIDITY_MS
+            ).toISOString();
         }
     }
 
