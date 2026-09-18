@@ -376,7 +376,7 @@ clients retain their existing explicit opt-in behavior.
 
 Use this path when you know an email address or phone number but the recipient does not yet have a LearnCard account. A registered signing authority is required: the credential remains unsigned until the verified recipient claims it. Phone delivery retains the existing trusted-issuer requirement.
 
-For the easiest visual walkthrough, enable the [local email demo configuration](../../tests/e2e/email-demo/README.md), then run:
+For the easiest visual walkthrough, enable the [local email demo configuration](https://github.com/learningeconomy/LearnCard/blob/9cc5b605659db41f2381ff34bcbc63004b6cc87e/tests/e2e/email-demo/README.md), then run:
 
 ```bash
 bun --cwd packages/learn-card-cli start demo refresh --inbox --ui --email
