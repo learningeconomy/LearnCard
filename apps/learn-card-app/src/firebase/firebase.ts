@@ -1,4 +1,5 @@
 import { Capacitor } from '@capacitor/core';
+import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getAnalytics } from 'firebase/analytics';
 import { getAuth, deleteUser, initializeAuth, indexedDBLocalPersistence } from 'firebase/auth';
@@ -89,3 +90,22 @@ const auth = () => {
 };
 
 export { auth, deleteUser };
+export { FirebaseAuthentication };
+
+/** Firebase provider token bridge; only Google establishes a native session. */
+export const getFirebaseIdToken = async (
+    mayHaveNativeUser: boolean,
+    forceRefresh = false
+): Promise<string> => {
+    if (mayHaveNativeUser && Capacitor.isNativePlatform()) {
+        try {
+            const { user } = await FirebaseAuthentication.getCurrentUser();
+            if (user) return (await FirebaseAuthentication.getIdToken({ forceRefresh })).token;
+        } catch (error) {
+            log.debug('Native token unavailable; using web session', error);
+        }
+    }
+    const user = auth().currentUser;
+    if (!user) throw new Error('No Firebase user available');
+    return user.getIdToken(forceRefresh);
+};

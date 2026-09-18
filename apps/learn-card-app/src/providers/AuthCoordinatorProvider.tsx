@@ -27,7 +27,6 @@ import React, {
     useRef,
 } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { Web3Auth } from '@web3auth/single-factor-auth';
 import { CHAIN_NAMESPACES } from '@web3auth/base';
 import { EthereumPrivateKeyProvider } from '@web3auth/ethereum-provider';
@@ -38,16 +37,12 @@ import {
     AuthCoordinatorProvider as BaseAuthCoordinatorProvider,
     useAuthCoordinator as useBaseAuthCoordinator,
     useAuthCoordinatorAutoSetup,
-    createFirebaseAuthProvider,
-    createFirebaseSignInAdapter,
     createWeb3AuthStrategy,
     registerKeyDerivationFactory,
-    registerAuthProviderFactory,
-    registerSignInAdapterFactory,
     resolveKeyDerivation,
     resolveAuthProvider,
     SignInAdapterProvider,
-    firebaseAuthStore,
+    useSignInAdapter,
     authUserStore,
     authStore,
     SocialLoginTypes,
@@ -106,21 +101,17 @@ import {
 
 const WALLET_INIT_TIMEOUT_MS = 15000;
 
-import { auth } from '../firebase/firebase';
+// Firebase-specific auth provider / sign-in adapter registration lives in
+// this seam so provider-agnostic code (this file) never imports the Firebase
+// SDK directly. See `../auth/firebaseProviderInit` for what it registers.
+import '../auth/firebaseProviderInit';
 import {
     countUserConfiguredRecoveryMethods,
     mergeAuthUserIntoCurrentUser,
     registerRecoveryMethodCompletion,
     shouldResetWalletOnStatus,
 } from './authCoordinator.helpers';
-import {
-    getAppBaseUrl,
-    getFirebaseRedirectDomain,
-    getFirebaseDynamicLinkDomain,
-    getNativeBundleId,
-    getTenantHeaders,
-    getResolvedTenantConfig,
-} from '../config/bootstrapTenantConfig';
+import { getTenantHeaders, getResolvedTenantConfig } from '../config/bootstrapTenantConfig';
 
 import {
     emitAuthDebugEvent,
@@ -256,6 +247,11 @@ const DeviceLinkOverlay: React.FC<{
 // To swap providers at deploy-time, set environment variables:
 //   VITE_AUTH_PROVIDER=firebase          (default)
 //   VITE_KEY_DERIVATION=sss             (default)
+//
+// Firebase's auth provider factory, sign-in adapter factory, and SDK
+// initializer are registered by the `../auth/firebaseProviderInit`
+// side-effect import above, so this provider-agnostic file never imports the
+// Firebase SDK directly.
 // ---------------------------------------------------------------------------
 
 registerKeyDerivationFactory('sss', () => {
@@ -296,81 +292,6 @@ registerKeyDerivationFactory('web3auth', () => {
         chainConfig: w3a.rpcTarget ? { rpcTarget: w3a.rpcTarget as string } : undefined,
     });
 });
-
-registerAuthProviderFactory('firebase', () =>
-    createFirebaseAuthProvider({
-        getAuth: () => auth(),
-        nativeGetIdToken: Capacitor.isNativePlatform()
-            ? async (forceRefresh?: boolean) => {
-                  // Only Google login signs in on the native Firebase layer.
-                  // Apple uses skipNativeAuth:true, and email/phone sign in
-                  // via the web SDK only.  For those methods the native plugin
-                  // will never have a user, so skip the bridge call entirely
-                  // to avoid a flood of unnecessary native round-trips.
-                  const loginType = authStore.get.typeOfLogin();
-                  const mayHaveNativeUser = loginType === SocialLoginTypes.google;
-
-                  if (mayHaveNativeUser) {
-                      try {
-                          const { user } = await FirebaseAuthentication.getCurrentUser();
-
-                          if (user) {
-                              log.debug('[Auth] Native Firebase user found — using NATIVE token');
-                              const result = await FirebaseAuthentication.getIdToken({
-                                  forceRefresh: forceRefresh ?? false,
-                              });
-                              return result.token;
-                          }
-                      } catch {
-                          // getCurrentUser can fail if the plugin isn't ready yet
-                      }
-                  }
-
-                  // Web SDK token — used for Apple, email, phone, and as
-                  // fallback when native user isn't available yet for Google.
-                  const cu = auth().currentUser;
-
-                  if (!cu) throw new Error('No Firebase user available');
-
-                  return cu.getIdToken(forceRefresh);
-              }
-            : undefined,
-        onReauthenticate: async (token: string) => {
-            const { signInWithCustomToken } = await import('firebase/auth');
-
-            await signInWithCustomToken(auth(), token);
-        },
-        onSignOut: async () => {
-            const firebaseAuth = auth();
-            await firebaseAuth.signOut();
-
-            if (Capacitor.isNativePlatform()) {
-                try {
-                    await FirebaseAuthentication.signOut();
-                } catch (e) {
-                    log.warn('Native FirebaseAuthentication.signOut failed', e);
-                }
-            }
-
-            firebaseAuthStore.set.firebaseAuth(null);
-            authUserStore.set.setUser(null);
-        },
-    })
-);
-
-registerSignInAdapterFactory('firebase', () =>
-    createFirebaseSignInAdapter({
-        getAuth: () => auth(),
-        getNativeAuth: () => FirebaseAuthentication,
-        isNativePlatform: () => Capacitor.isNativePlatform(),
-        emailLinkSettings: {
-            url: `${getAppBaseUrl()}/login`,
-            iOS: { bundleId: getNativeBundleId() },
-            android: { packageName: getNativeBundleId(), installApp: true, minimumVersion: '12' },
-            dynamicLinkDomain: getFirebaseDynamicLinkDomain(),
-        },
-    })
-);
 
 // ---------------------------------------------------------------------------
 // Enriched App Auth Context
@@ -476,6 +397,7 @@ const AuthSessionManager: React.FC<{
     authProvider: AuthProvider | null;
 }> = ({ children, authProvider }) => {
     const coordinator = useBaseAuthCoordinator();
+    const signInAdapter = useSignInAdapter();
     const authConfig = getAuthConfig();
 
     // --- Enriched state ---
@@ -1203,11 +1125,8 @@ const AuthSessionManager: React.FC<{
 
         const timer = setTimeout(() => {
             // Confirm the Firebase SDK truly has no active session
-            const firebaseAuth = auth();
-
-            if (!firebaseAuth.currentUser) {
-                firebaseAuthStore.set.firebaseAuth(null);
-                firebaseAuthStore.set.setFirebaseCurrentUser(null);
+            if (!signInAdapter.getCurrentUser()) {
+                authUserStore.set.setUser(null);
                 authStore.set.typeOfLogin(null);
                 currentUserStore.set.currentUser(null);
                 currentUserStore.set.currentUserPK(null);
@@ -1475,17 +1394,8 @@ const AuthSessionManager: React.FC<{
                             emailUpgradeCustomTokenRef.current = null;
                         }
 
-                        // Update both the legacy Firebase store and the
-                        // generic authUserStore with the refreshed user.
+                        // Update the generic store with the refreshed user.
                         if (freshUser) {
-                            firebaseAuthStore.set.setFirebaseCurrentUser({
-                                uid: freshUser.id,
-                                email: freshUser.email ?? null,
-                                phoneNumber: freshUser.phone ?? null,
-                                displayName: freshUser.displayName ?? null,
-                                photoUrl: freshUser.photoUrl ?? null,
-                            });
-
                             authUserStore.set.setUser(freshUser);
                         }
 
@@ -1860,7 +1770,6 @@ export const AuthCoordinatorProvider: React.FC<AppAuthCoordinatorProviderProps> 
         web3AuthStore.set.web3Auth(null);
         web3AuthStore.set.provider(null);
         redirectStore.set.lcnRedirect(null);
-        firebaseAuthStore.set.firebaseAuth(null);
         authUserStore.set.setUser(null);
         authStore.set.typeOfLogin(null);
         chapiStore.set.isChapiInteraction(null);

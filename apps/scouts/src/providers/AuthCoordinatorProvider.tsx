@@ -19,7 +19,6 @@ import React, {
     useRef,
 } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { BarcodeScanner, BarcodeFormat, LensFacing } from '@capacitor-mlkit/barcode-scanning';
 import { Web3Auth } from '@web3auth/single-factor-auth';
 import { CHAIN_NAMESPACES } from '@web3auth/base';
@@ -31,12 +30,8 @@ import {
     AuthCoordinatorProvider as BaseAuthCoordinatorProvider,
     useAuthCoordinator as useBaseAuthCoordinator,
     useAuthCoordinatorAutoSetup,
-    createFirebaseAuthProvider,
-    createFirebaseSignInAdapter,
     createWeb3AuthStrategy,
     registerKeyDerivationFactory,
-    registerAuthProviderFactory,
-    registerSignInAdapterFactory,
     resolveKeyDerivation,
     resolveAuthProvider,
     SignInAdapterProvider,
@@ -45,7 +40,7 @@ import {
     StalledMigrationOverlay,
     EmailLinkOverlay,
     QrLoginApprover,
-    firebaseAuthStore,
+    useSignInAdapter,
     authUserStore,
     authStore,
     SocialLoginTypes,
@@ -91,8 +86,10 @@ import { createNativeSSSStorage } from 'learn-card-base/security/nativeSSSStorag
 
 import { getBespokeLearnCard, getSigningLearnCard } from 'learn-card-base/helpers/walletHelpers';
 
-import { auth } from '../firebase/firebase';
-import { FIREBASE_REDIRECT_URL } from '../constants/web3AuthConfig';
+// Firebase-specific auth provider / sign-in adapter registration lives in
+// this seam so provider-agnostic code (this file) never imports the Firebase
+// SDK directly. See `../auth/firebaseProviderInit` for what it registers.
+import '../auth/firebaseProviderInit';
 
 import {
     emitAuthDebugEvent,
@@ -209,20 +206,21 @@ const ScoutsDeviceLinkOverlay: React.FC<{
                 }
             }
 
-            return new Promise(async resolve => {
-                const listener = await BarcodeScanner.addListener(
-                    'barcodeScanned',
-                    async result => {
-                        await listener.remove();
+            return new Promise<string | null>(resolve => {
+                let listener: { remove: () => Promise<void> } | undefined;
+                const setupScan = async (): Promise<void> => {
+                    listener = await BarcodeScanner.addListener('barcodeScanned', async result => {
+                        await listener?.remove();
                         await BarcodeScanner.stopScan();
                         resolve(result.barcode?.rawValue ?? null);
-                    }
-                );
+                    });
 
-                await BarcodeScanner.startScan({
-                    formats: [BarcodeFormat.QrCode],
-                    lensFacing: LensFacing.Back,
-                });
+                    await BarcodeScanner.startScan({
+                        formats: [BarcodeFormat.QrCode],
+                        lensFacing: LensFacing.Back,
+                    });
+                };
+                void setupScan().catch(() => resolve(null));
             });
         } catch (e) {
             log.warn('QR scan failed', e);
@@ -250,6 +248,10 @@ const ScoutsDeviceLinkOverlay: React.FC<{
 
 // ---------------------------------------------------------------------------
 // Provider factory registrations (module-level, runs once on import)
+//
+// Firebase's auth provider factory and sign-in adapter factory are
+// registered by the `../auth/firebaseProviderInit` side-effect import above,
+// so this provider-agnostic file never imports the Firebase SDK directly.
 // ---------------------------------------------------------------------------
 
 registerKeyDerivationFactory('sss', () => {
@@ -285,77 +287,6 @@ registerKeyDerivationFactory('web3auth', () => {
         chainConfig: w3a.rpcTarget ? { rpcTarget: w3a.rpcTarget as string } : undefined,
     });
 });
-
-registerAuthProviderFactory('firebase', () =>
-    createFirebaseAuthProvider({
-        getAuth: () => auth(),
-        nativeGetIdToken: Capacitor.isNativePlatform()
-            ? async (forceRefresh?: boolean) => {
-                  const loginType = authStore.get.typeOfLogin();
-                  const mayHaveNativeUser = loginType === SocialLoginTypes.google;
-
-                  if (mayHaveNativeUser) {
-                      try {
-                          const { user } = await FirebaseAuthentication.getCurrentUser();
-
-                          if (user) {
-                              log.debug('[Auth] Native Firebase user found — using NATIVE token');
-                              const result = await FirebaseAuthentication.getIdToken({
-                                  forceRefresh: forceRefresh ?? false,
-                              });
-                              return result.token;
-                          }
-                      } catch {
-                          // getCurrentUser can fail if the plugin isn't ready yet
-                      }
-                  }
-
-                  const cu = auth().currentUser;
-
-                  if (!cu) throw new Error('No Firebase user available');
-
-                  return cu.getIdToken(forceRefresh);
-              }
-            : undefined,
-        onReauthenticate: async (token: string) => {
-            const { signInWithCustomToken } = await import('firebase/auth');
-
-            await signInWithCustomToken(auth(), token);
-        },
-        onSignOut: async () => {
-            const firebaseAuth = auth();
-            await firebaseAuth.signOut();
-
-            if (Capacitor.isNativePlatform()) {
-                try {
-                    await FirebaseAuthentication.signOut();
-                } catch (e) {
-                    log.warn('Native FirebaseAuthentication.signOut failed', e);
-                }
-            }
-
-            firebaseAuthStore.set.firebaseAuth(null);
-            authUserStore.set.setUser(null);
-        },
-    })
-);
-
-registerSignInAdapterFactory('firebase', () =>
-    createFirebaseSignInAdapter({
-        getAuth: () => auth(),
-        getNativeAuth: () => FirebaseAuthentication,
-        isNativePlatform: () => Capacitor.isNativePlatform(),
-        emailLinkSettings: {
-            url:
-                typeof IS_PRODUCTION !== 'undefined' && IS_PRODUCTION
-                    ? `https://${FIREBASE_REDIRECT_URL}/login`
-                    : 'http://localhost:3000/login',
-            iOS: { bundleId: 'org.scoutpass.app' },
-            android: { packageName: 'org.scoutpass.app', installApp: true, minimumVersion: '12' },
-            dynamicLinkDomain: 'pass.scout.org',
-        },
-    })
-);
 
 // ---------------------------------------------------------------------------
 // Enriched App Auth Context
@@ -412,6 +343,7 @@ const AuthSessionManager: React.FC<{
     authProvider: AuthProvider | null;
 }> = ({ children, authProvider }) => {
     const coordinator = useBaseAuthCoordinator();
+    const signInAdapter = useSignInAdapter();
     const authConfig = getAuthConfig();
     const locale = useLocale();
 
@@ -435,7 +367,7 @@ const AuthSessionManager: React.FC<{
         const timer = setTimeout(() => setMigrationStallVisible(true), 8000);
 
         return () => clearTimeout(timer);
-    }, [coordinator.state.status]);
+    }, [coordinator.state.status, signInAdapter]);
 
     // --- Public computer mode: warn before tab close ---
     useEffect(() => {
@@ -684,8 +616,7 @@ const AuthSessionManager: React.FC<{
                 await web3auth.init();
                 emitAuthDebugEvent('web3auth:migration_key', 'Web3Auth SFA: init() complete');
 
-                const firebaseAuth = auth();
-                const liveUser = firebaseAuth.currentUser;
+                const liveUser = await authProvider?.getCurrentUser();
 
                 if (!liveUser) {
                     emitAuthError(
@@ -695,7 +626,7 @@ const AuthSessionManager: React.FC<{
                     return;
                 }
 
-                const token = await liveUser.getIdToken(false);
+                const token = await authProvider?.getIdToken(false);
 
                 if (!token) {
                     emitAuthError(
@@ -708,13 +639,13 @@ const AuthSessionManager: React.FC<{
                 emitAuthDebugEvent('web3auth:migration_key', 'Web3Auth SFA: calling connect()...', {
                     data: {
                         verifier: w3aVerifierId,
-                        verifierId: liveUser.uid,
+                        verifierId: liveUser.id,
                         tokenLength: token.length,
                     },
                 });
                 await web3auth.connect({
                     verifier: w3aVerifierId,
-                    verifierId: liveUser.uid,
+                    verifierId: liveUser.id,
                     idToken: token,
                 });
                 emitAuthDebugEvent('web3auth:migration_key', 'Web3Auth SFA: connect() complete');
@@ -910,11 +841,8 @@ const AuthSessionManager: React.FC<{
         if (!authUser?.id) return;
 
         const timer = setTimeout(() => {
-            const firebaseAuth = auth();
-
-            if (!firebaseAuth.currentUser) {
-                firebaseAuthStore.set.firebaseAuth(null);
-                firebaseAuthStore.set.setFirebaseCurrentUser(null);
+            if (!signInAdapter.getCurrentUser()) {
+                authUserStore.set.setUser(null);
                 authStore.set.typeOfLogin(null);
                 currentUserStore.set.currentUser(null);
                 currentUserStore.set.currentUserPK(null);
@@ -1157,17 +1085,8 @@ const AuthSessionManager: React.FC<{
                             emailUpgradeCustomTokenRef.current = null;
                         }
 
-                        // Update both the legacy Firebase store and the
-                        // generic authUserStore with the refreshed user.
+                        // Update the generic auth store with the refreshed user.
                         if (freshUser) {
-                            firebaseAuthStore.set.setFirebaseCurrentUser({
-                                uid: freshUser.id,
-                                email: freshUser.email ?? null,
-                                phoneNumber: freshUser.phone ?? null,
-                                displayName: freshUser.displayName ?? null,
-                                photoUrl: freshUser.photoUrl ?? null,
-                            });
-
                             authUserStore.set.setUser(freshUser);
                         }
 
@@ -1543,7 +1462,6 @@ export const AuthCoordinatorProvider: React.FC<ScoutsAuthCoordinatorProviderProp
         web3AuthStore.set.web3Auth(null);
         web3AuthStore.set.provider(null);
         redirectStore.set.lcnRedirect(null);
-        firebaseAuthStore.set.firebaseAuth(null);
         authUserStore.set.setUser(null);
         authStore.set.typeOfLogin(null);
         chapiStore.set.isChapiInteraction(null);

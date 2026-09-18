@@ -5,7 +5,7 @@ import ReactCodeInput from 'react-code-input';
 import Countdown from 'react-countdown';
 import { z } from 'zod';
 
-import { IonCheckbox, IonCol, IonToggle, IonRouterLink } from '@ionic/react';
+import { IonCheckbox, IonCol, IonInput, IonToggle, IonRouterLink } from '@ionic/react';
 
 import { useFirebase } from '../../../hooks/useFirebase';
 
@@ -39,7 +39,10 @@ const CodeValidator = z.object({
     code: z.string().min(6, 'Invalid code'),
 });
 
+import { useSignInAdapter } from 'learn-card-base';
+
 const EmailForm: React.FC = () => {
+    const adapter = useSignInAdapter();
     const flags = useFlags();
     const query = usePathQuery();
     const history = useHistory();
@@ -48,7 +51,9 @@ const EmailForm: React.FC = () => {
     const { sendSignInLink, signInWithCustomFirebaseToken } = useFirebase();
     const locale = useLocale();
 
-    const enableMagicLinkLogin = flags?.enableMagicLinkLogin ?? false;
+    const enableMagicLinkLogin =
+        adapter.capabilities.emailLink &&
+        ((flags?.enableMagicLinkLogin ?? false) || !adapter.capabilities.emailOtp);
 
     const verificationEmail = redirectStore.get.email();
     const shouldVerifyCode = Boolean(query.get('verifyCode') || verificationEmail);
