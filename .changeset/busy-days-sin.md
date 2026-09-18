@@ -1,6 +1,5 @@
 ---
 "learn-card-app": patch
-"@workspace/e2e-tests": patch
 "@learncard/lca-api-service": patch
 ---
 
