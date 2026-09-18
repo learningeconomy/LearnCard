@@ -116,6 +116,8 @@ services:
             DOMAIN_NAME: 'localhost%3A4000'
             CREDENTIAL_REFRESH_ENABLED: 'true'
             CREDENTIAL_REFRESH_DIGEST_SECRET: ${CREDENTIAL_REFRESH_DIGEST_SECRET:-local-only-credential-refresh-digest-secret}
+            # Trust proof-of-login presentations signed by this stack's LCA API.
+            LOGIN_PROVIDER_DID: did:web:localhost%3A5100
             SKIP_DIDKIT_NAPI: '1'
             # Enable polling for file watching in Docker
             CHOKIDAR_USEPOLLING: 'true'
