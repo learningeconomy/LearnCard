@@ -7,9 +7,11 @@ import {
     type CredentialEndorsement,
 } from 'learn-card-base/helpers/credentialHelpers';
 import { stringify } from 'learn-card-base/helpers/jsonHelpers';
+import { getLogger } from '../logging/logger';
 
 type Credential = UnsignedVC | UnsignedAchievementCredential;
 const EMPTY_ENDORSEMENTS: CredentialEndorsement[] = [];
+const log = getLogger('credential-endorsements');
 
 type EndorsementState = {
     credentialKey: string;
@@ -37,14 +39,19 @@ export const useCredentialEndorsements = (credential: Credential): CredentialEnd
 
         let cancelled = false;
 
+        const currentCredential = credentialRef.current;
         const fetchEndorsements = async (): Promise<void> => {
             const wallet = await initWalletRef.current();
-            const endorsements = await getEndorsements(wallet, credentialRef.current);
+            const endorsements = await getEndorsements(wallet, currentCredential);
 
             if (!cancelled) setState({ credentialKey, endorsements });
         };
 
-        void fetchEndorsements();
+        void fetchEndorsements().catch(error => {
+            log.warn('credential.endorsements.load.failed', error, {
+                hasCredentialId: Boolean(currentCredential?.id),
+            });
+        });
 
         return () => {
             cancelled = true;

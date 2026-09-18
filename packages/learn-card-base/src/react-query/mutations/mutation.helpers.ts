@@ -1,13 +1,51 @@
+import {
+    getEndorsementTargetId,
+    resolveSharedCredential,
+} from 'learn-card-base/helpers/credentialHelpers';
 import { LCNProfile } from '@learncard/types';
 import { QueryClient, InfiniteData } from '@tanstack/react-query';
 
-export const getSharedCredentialIndexQuery = (
+export const getSharedCredentialIndexQueries = (
     sharedCredentialUri: string,
     credentialId?: string
-): Record<string, string> =>
-    credentialId
-        ? { sharedCredentialKey: JSON.stringify([sharedCredentialUri, credentialId]) }
-        : { sharedCredentialUri };
+): Record<string, string>[] => {
+    const legacyQuery = { sharedCredentialUri };
+
+    return credentialId
+        ? [
+              { sharedCredentialKey: JSON.stringify([sharedCredentialUri, credentialId]) },
+              legacyQuery,
+          ]
+        : [legacyQuery];
+};
+
+type SharedCredentialIndexReference = {
+    credentialId?: string;
+    uri: string;
+    randomSeed: string;
+    pin: string;
+};
+
+export const sharedCredentialIndexMatchesCredential = async (
+    record: SharedCredentialIndexReference,
+    credentialId?: string
+): Promise<boolean> => {
+    if (!credentialId) return true;
+    if (record.credentialId) return record.credentialId === credentialId;
+
+    const sharedCredential = await resolveSharedCredential(
+        new URLSearchParams({
+            uri: record.uri,
+            seed: record.randomSeed,
+            pin: record.pin,
+        }).toString()
+    );
+
+    return sharedCredential
+        ? (await getEndorsementTargetId(sharedCredential)) === credentialId
+        : false;
+};
+
 // Helper to insert an object and update the react infinite query cache
 export const insertItem = <GenericObject extends Record<string, any>>(
     queryClient: QueryClient,

@@ -113,6 +113,44 @@ describe('getEndorsements', () => {
         ).resolves.toEqual([]);
     });
 
+    it('merges current and verified legacy endorsements for the same credential', async () => {
+        const { wallet, get, read } = createWallet();
+        const currentRecord = {
+            id: 'record-current',
+            uri: 'lc:endorsement:current',
+            originalCredentialId: 'urn:uuid:credential-a',
+        };
+        const legacyRecord = {
+            id: 'record-legacy',
+            uri: 'lc:endorsement:legacy',
+            sharedUri: 'uri=lc%3Ashared&seed=seed&pin=1234',
+        };
+        const currentEndorsement = { id: 'urn:uuid:endorsement-current' };
+        const legacyEndorsement = { id: 'urn:uuid:endorsement-legacy' };
+        const credential = {
+            id: 'urn:uuid:credential-a',
+            type: ['VerifiableCredential', 'CertifiedBoostCredential'],
+            boostCredential: {
+                type: ['VerifiableCredential'],
+                credentialSubject: { id: 'did:example:holder' },
+            },
+        };
+        get.mockResolvedValueOnce([currentRecord])
+            .mockResolvedValueOnce([])
+            .mockResolvedValueOnce([legacyRecord]);
+        mocks.sharedRead.mockResolvedValue({
+            verifiableCredential: [{ id: 'urn:uuid:credential-a' }],
+        });
+        read.mockImplementation(async uri =>
+            uri === currentRecord.uri ? currentEndorsement : legacyEndorsement
+        );
+
+        await expect(getEndorsements(wallet, credential as never)).resolves.toEqual([
+            { endorsement: currentEndorsement, metadata: currentRecord },
+            { endorsement: legacyEndorsement, metadata: legacyRecord },
+        ]);
+    });
+
     it('loads endorsements for an idless credential through its content identity', async () => {
         const { wallet, get, read } = createWallet();
         const idlessCredential = {

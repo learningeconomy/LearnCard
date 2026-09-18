@@ -1345,7 +1345,7 @@ const getMatchingEndorsementRecords = async (
 
     const subjectId = getCredentialSubject(vc)?.id;
     const legacyRecords = subjectId
-        ? await wallet?.index.LearnCloud.get({ endorsedId: subjectId })
+        ? await wallet.index.LearnCloud.get({ endorsedId: subjectId })
         : [];
     const verifiedLegacyRecords = await Promise.all(
         (legacyRecords ?? []).map(async record => {

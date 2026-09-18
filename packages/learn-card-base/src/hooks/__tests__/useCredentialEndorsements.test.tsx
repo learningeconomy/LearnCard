@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
     getEndorsements: vi.fn(),
     initWallet: vi.fn(),
+    logWarn: vi.fn(),
 }));
 
 vi.mock('learn-card-base', () => ({
@@ -13,6 +14,9 @@ vi.mock('learn-card-base', () => ({
 }));
 vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
     getEndorsements: mocks.getEndorsements,
+}));
+vi.mock('../../logging/logger', () => ({
+    getLogger: () => ({ warn: mocks.logWarn }),
 }));
 
 import { useCredentialEndorsements } from '../useCredentialEndorsements';
@@ -104,5 +108,21 @@ describe('useCredentialEndorsements', () => {
 
         await act(async () => requestB.resolve([endorsementB]));
         await waitFor(() => expect(result.current).toEqual([endorsementB]));
+    });
+
+    it('contains wallet and endorsement lookup failures', async () => {
+        const error = new Error('wallet unavailable');
+        mocks.initWallet.mockRejectedValueOnce(error);
+
+        const { result } = renderHook(() => useCredentialEndorsements(credentialA as never));
+
+        await waitFor(() =>
+            expect(mocks.logWarn).toHaveBeenCalledWith(
+                'credential.endorsements.load.failed',
+                error,
+                { hasCredentialId: true }
+            )
+        );
+        expect(result.current).toEqual([]);
     });
 });
