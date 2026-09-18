@@ -134,8 +134,9 @@ exactly-once transaction across credential storage, email, and webhooks.
 Jobs, quotas, results, replay reservations, and dispatch records live in Neo4j.
 Payloads and results are encrypted at rest. Once no items remain queued or processing,
 the original batch payload is removed. Job metadata and results are pruned after
-30 days, even when an outcome is unconfirmed; unresolved replay reservations remain
-blocked until reconciliation. Save any returned reconciliation IDs before results expire.
+30 days, even when an outcome is unconfirmed; unresolved client-keyed replay reservations
+remain blocked until reconciliation. Internal reservations for unkeyed items are collected
+after their batch items are pruned. Save any returned reconciliation IDs before results expire.
 Redis is still used by other inbox features, but is not the batch
 job store.
 

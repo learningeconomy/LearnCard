@@ -9,6 +9,7 @@ import { getInboxBatchState } from '@helpers/inbox-batch-status.helpers';
 
 export const DAY = 86_400_000;
 export const LEASE_MS = 360_000;
+const CLEANUP_MARGIN_MS = 5_000;
 
 let readiness: Promise<void> | undefined;
 export const ensureInboxBatchConstraints = (): Promise<void> => {
@@ -199,7 +200,8 @@ export const markBatchIssuanceStarted = async (id: string, owner: string): Promi
     });
 
 /** Adapter retains the existing request fingerprint/CAS protocol with durable, encrypted records.
- * Processing markers never expire. Only confirmed successes get the 24-hour replay expiry.
+ * Processing markers have no expiry. Orphaned internal markers are removed after job retention;
+ * client-keyed markers remain blocked. Only confirmed successes get the 24-hour replay expiry.
  */
 export const batchReplayStore = (
     itemId: string,
@@ -267,7 +269,7 @@ export const batchReplayStore = (
 });
 
 /** Terminal items no longer need the original credential payload, including uncertain outcomes.
- * Replay reservations are separate nodes and survive the 30-day job retention period.
+ * Client-keyed replay reservations are separate nodes and survive the 30-day job retention period.
  */
 const finalizeSettledBatch = async (tx: ManagedTransaction, id: string): Promise<void> => {
     await tx.run(
@@ -425,7 +427,9 @@ export const recoverInboxJobs = async (deadline = Date.now() + 20_000): Promise<
         }
     }
 
-    if (Date.now() < deadline)
+    // Leave room for each transaction to finish; checking only for a future deadline can
+    // start a large delete immediately before Lambda shutdown. Recheck between steps.
+    if (deadline - Date.now() > CLEANUP_MARGIN_MS)
         await transaction(async tx => {
             await tx.run(
                 `MATCH (b:InboxBatch) WHERE b.completedAt < $cutoff WITH b LIMIT 25
@@ -433,11 +437,22 @@ export const recoverInboxJobs = async (deadline = Date.now() + 20_000): Promise<
                 { cutoff: Date.now() - 30 * DAY }
             );
         });
-    if (Date.now() < deadline)
+    if (deadline - Date.now() > CLEANUP_MARGIN_MS)
         await transaction(async tx => {
             await tx.run(
                 `MATCH (r:InboxBatchReplay) WHERE r.expiresAt < $now WITH r LIMIT 1000 DELETE r`,
                 { now: Date.now() }
+            );
+        });
+    if (deadline - Date.now() > CLEANUP_MARGIN_MS)
+        await transaction(async tx => {
+            // Internal keys cannot be supplied by clients, and messages cannot claim a deleted
+            // item. Client-keyed reservations must continue blocking uncertain reissuance.
+            await tx.run(
+                `MATCH (r:InboxBatchReplay)
+                WHERE r.id STARTS WITH 'internal:' AND r.expiresAt IS NULL
+                AND NOT EXISTS { MATCH (i:InboxBatchItem) WHERE i.id = r.itemId }
+                WITH r LIMIT 1000 DELETE r`
             );
         });
 };

@@ -667,7 +667,29 @@ describe('Universal Inbox batch issuance', () => {
                 idempotencyKey: 'retention',
             };
             const receipt = await submit({
-                items: [entry, { ...entry, idempotencyKey: 'retention-second' }],
+                items: [
+                    entry,
+                    { ...entry, idempotencyKey: 'retention-second' },
+                    {
+                        recipient: email('unkeyed-retention@test.com'),
+                        credential: entry.credential,
+                    },
+                ],
+            });
+            const internalId = `${receipt.batchId}:2`;
+            const internal = await jobStore.claimBatchItem(internalId, 'worker');
+            await jobStore
+                .batchReplayStore(internalId, 'worker', internal!.item.replayKey)
+                .setIfAbsent(
+                    '',
+                    JSON.stringify({ state: 'processing', requestHash: 'internal' }),
+                    86400
+                );
+            await jobStore.markBatchIssuanceStarted(internalId, 'worker');
+            await jobStore.finishBatchItem(internalId, 'worker', {
+                success: false,
+                index: 2,
+                error: { code: 'CONFLICT', message: 'Delivery uncertain' },
             });
             const id = `${receipt.batchId}:0`;
             const claimed = await jobStore.claimBatchItem(id, 'worker');
@@ -700,14 +722,21 @@ describe('Universal Inbox batch issuance', () => {
             expect(job.completedAt).toBeDefined();
             expect(await statusOf(receipt.batchId)).toMatchObject({
                 status: 'NEEDS_RECONCILIATION',
-                summary: { pending: 0, unconfirmed: 1 },
+                summary: { pending: 0, unconfirmed: 2 },
             });
+            const internalReplay = async () =>
+                neogma.queryRunner.run('MATCH (r:InboxBatchReplay {id: $id}) RETURN r', {
+                    id: internal!.item.replayKey,
+                });
+            await jobStore.recoverInboxJobs();
+            expect((await internalReplay()).records).toHaveLength(1);
             await neogma.queryRunner.run(
                 'MATCH (b:InboxBatch {id: $id}) SET b.completedAt = $old',
                 { id: receipt.batchId, old: Date.now() - 31 * jobStore.DAY }
             );
             await jobStore.recoverInboxJobs();
             await expect(statusOf(receipt.batchId)).rejects.toMatchObject({ code: 'NOT_FOUND' });
+            expect((await internalReplay()).records).toHaveLength(0);
             expect((await replay('retention')).expiresAt).toBeUndefined();
             expect((await issue({ items: [entry] })).results[0]).toMatchObject({
                 success: false,
@@ -716,6 +745,62 @@ describe('Universal Inbox batch issuance', () => {
             expect(sendSpy).not.toHaveBeenCalled();
         }
     );
+
+    it('bounds orphaned internal replay cleanup and preserves client reservations', async () => {
+        await neogma.queryRunner.run(
+            `UNWIND range(0, 1000) AS index
+            CREATE (:InboxBatchReplay {id: 'internal:orphan-' + toString(index), itemId: 'missing'})`
+        );
+        await neogma.queryRunner.run(
+            `CREATE (:InboxBatchReplay {id: 'client:orphan', itemId: 'missing'})`
+        );
+        const remaining = async () => {
+            const rows = await neogma.queryRunner.run(
+                'MATCH (r:InboxBatchReplay) RETURN r.id AS id'
+            );
+            return rows.records.map(row => row.get('id') as string);
+        };
+        await jobStore.recoverInboxJobs();
+        const ids = await remaining();
+        expect(ids.filter(id => id.startsWith('internal:'))).toHaveLength(1);
+        expect(ids).toContain('client:orphan');
+        await jobStore.recoverInboxJobs();
+        expect(await remaining()).toEqual(['client:orphan']);
+    });
+
+    it('defers all cleanup with five seconds remaining and resumes with more budget', async () => {
+        const receipt = await submit({
+            items: [{ recipient: email('cleanup-budget@test.com'), credential: await signed() }],
+        });
+        await jobStore.deadLetterBatchItem(`${receipt.batchId}:0`);
+        const now = Date.now();
+        await neogma.queryRunner.run('MATCH (b:InboxBatch {id: $id}) SET b.completedAt = $old', {
+            id: receipt.batchId,
+            old: now - 31 * jobStore.DAY,
+        });
+        await neogma.queryRunner.run(
+            `CREATE (:InboxBatchReplay {id: 'client:expired', expiresAt: $expired}),
+                (:InboxBatchReplay {id: 'internal:orphan-budget', itemId: 'missing'})`,
+            { expired: now - 1 }
+        );
+        const replayCount = async () => {
+            const rows = await neogma.queryRunner.run(
+                'MATCH (r:InboxBatchReplay) RETURN count(r) AS count'
+            );
+            return Number(rows.records[0]!.get('count'));
+        };
+        const clock = vi.spyOn(Date, 'now').mockReturnValue(now);
+        try {
+            await jobStore.recoverInboxJobs(now + 5_000);
+            expect(await statusOf(receipt.batchId)).toMatchObject({ status: 'COMPLETED' });
+            expect(await replayCount()).toBe(2);
+            await jobStore.recoverInboxJobs(now + 5_001);
+            await expect(statusOf(receipt.batchId)).rejects.toMatchObject({ code: 'NOT_FOUND' });
+            expect(await replayCount()).toBe(0);
+        } finally {
+            clock.mockRestore();
+        }
+    });
 
     it('signs and auto-delivers only the verified known recipient', async () => {
         const contact = await createContactMethod({ ...email('known@test.com'), isVerified: true });

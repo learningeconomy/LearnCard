@@ -90,7 +90,8 @@ profile. Use `learnCard.invoke.getInboxCredentialBatch(batchId)` or tRPC
 Polling returns HTTP 200 even with item failures. Results remain available for
 30 days after all items reach a terminal state, including `NEEDS_RECONCILIATION`.
 The original payload is removed when no items remain queued or processing.
-Unresolved replay reservations remain blocked even after the job and results expire.
+Unresolved client-keyed replay reservations remain blocked even after the job and results expire.
+Internal reservations for unkeyed items are collected after their batch items are pruned.
 `NEEDS_RECONCILIATION` can coexist with unfinished items, so inspect `summary.pending`.
 
 Identical keyed item retries replay the same issuance with `deduplicated: true`.

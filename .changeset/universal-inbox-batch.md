@@ -20,7 +20,8 @@ results are stored in Neo4j; a dedicated SQS queue processes items independently
 notifications. Submission retries report the current batch state. Transient preparation
 and signing failures retry before delivery. Terminal batches release their original
 payload and remain available for 30 days, including uncertain outcomes; unresolved
-replay reservations stay blocked for reconciliation after job expiry.
+client-keyed replay reservations stay blocked for reconciliation after job expiry.
+Orphaned internal reservations for unkeyed items are collected after job pruning.
 Container-backed tests exercise Neo4j, Redis, and an SQS emulator, including worker
 recovery, duplicate delivery, polling authorization, and submission replay.
 
