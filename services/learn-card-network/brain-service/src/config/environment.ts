@@ -83,7 +83,6 @@ export const brainServiceEnvironmentShape = {
     IS_CI: optionalEnvironmentBoolean.default(false),
     IS_E2E_TEST: optionalEnvironmentBoolean.default(false),
     INBOX_DELETE_EXPIRED_RECORDS: optionalEnvironmentBoolean.default(false),
-    INBOX_BATCH_CONCURRENCY: optionalEnvironmentString,
     INBOX_BATCH_ITEMS_PER_HOUR: optionalEnvironmentString,
     AWS_LAMBDA_FUNCTION_NAME: optionalEnvironmentString,
     ENABLE_BENCH_ROUTES: optionalEnvironmentBoolean.default(false),
@@ -220,7 +219,6 @@ const inboxBatchRuntimeEnvironmentSchema = z.object({
     NODE_ENV: brainServiceEnvironmentShape.NODE_ENV,
     IS_OFFLINE: brainServiceEnvironmentShape.IS_OFFLINE,
     AWS_LAMBDA_FUNCTION_NAME: brainServiceEnvironmentShape.AWS_LAMBDA_FUNCTION_NAME,
-    INBOX_BATCH_CONCURRENCY: brainServiceEnvironmentShape.INBOX_BATCH_CONCURRENCY,
     INBOX_BATCH_ITEMS_PER_HOUR: brainServiceEnvironmentShape.INBOX_BATCH_ITEMS_PER_HOUR,
 });
 

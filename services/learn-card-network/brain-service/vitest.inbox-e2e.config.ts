@@ -11,7 +11,7 @@ export default createVitestConfig(serviceIntegrationPreset, {
         include: [
             'test/inbox-security.e2e.ts',
             'test/inbox-batch.spec.ts',
-            'test/inbox-batch-cache.e2e.ts',
+            'test/atomic-counter.e2e.ts',
         ],
         alias: { '@instance': require.resolve('./test/helpers/mock-instance.ts') },
         env: {

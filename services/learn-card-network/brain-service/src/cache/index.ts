@@ -42,16 +42,6 @@ export type Cache = {
     /** Real Redis instance. This is used if you have Redis set up! */
     redis?: Redis;
 
-    /** Atomic reservation; undefined means the cache operation failed. */
-    setIfAbsent: (key: string, value: string, ttl: number) => Promise<'OK' | null | undefined>;
-    /** Replace or delete only a reservation owned by this operation. */
-    compareAndSet: (
-        key: string,
-        expected: string,
-        value: string | null,
-        ttl: number
-    ) => Promise<boolean | undefined>;
-
     /**
      * Sets a key to a given value in the cache.
      * Optionally give it a time to live before being evicted (defaults to 1 hour)
@@ -100,13 +90,6 @@ export type Cache = {
      * When ttl is provided, increment and missing-expiry repair happen atomically.
      */
     incr: (key: RedisKey, ttl?: number, amount?: number) => Promise<number | undefined>;
-    /** Atomically admits all units or none. Rejection leaves the counter and its expiry unchanged. */
-    consumeQuota: (
-        key: string,
-        ttl: number,
-        amount: number,
-        limit: number
-    ) => Promise<boolean | undefined>;
 };
 
 /** Evict all keys after one hour by default */
@@ -115,62 +98,6 @@ const DEFAULT_TTL_SECS = 60 * 60;
 export const getCache = (): Cache => {
     const cache: Cache = {
         node: new MemoryRedis(),
-        consumeQuota: async (key, ttl, amount, limit) => {
-            try {
-                const result = await (cache.redis ?? cache.node).eval(
-                    `
-                    local count = tonumber(redis.call('GET', KEYS[1]) or '0')
-                    if count + tonumber(ARGV[1]) > tonumber(ARGV[2]) then return 0 end
-                    redis.call('INCRBY', KEYS[1], ARGV[1])
-                    if redis.call('TTL', KEYS[1]) < 0 then
-                        redis.call('EXPIRE', KEYS[1], ARGV[3])
-                    end
-                    return 1
-                    `,
-                    1,
-                    key,
-                    amount,
-                    limit,
-                    ttl
-                );
-                return result === 1;
-            } catch {
-                return undefined;
-            }
-        },
-        setIfAbsent: async (key, value, ttl) => {
-            try {
-                // SET NX makes reservation acquisition one Redis operation. A separate GET then
-                // SET would allow two Lambda instances to both begin the same issuance.
-                return await (cache.redis ?? cache.node).set(key, value, 'EX', ttl, 'NX');
-            } catch {
-                return undefined;
-            }
-        },
-        compareAndSet: async (key, expected, value, ttl) => {
-            try {
-                // The marker includes a random owner token. This script means a delayed worker
-                // cannot replace or release a reservation that has expired and been reacquired.
-                // `value === null` is the pre-issuance cleanup path; otherwise it commits replay data.
-                const result = await (cache.redis ?? cache.node).eval(
-                    `
-                    if redis.call('GET', KEYS[1]) ~= ARGV[1] then return 0 end
-                    if ARGV[2] == 'delete' then return redis.call('DEL', KEYS[1]) end
-                    redis.call('SET', KEYS[1], ARGV[3], 'EX', ARGV[4])
-                    return 1
-                `,
-                    1,
-                    key,
-                    expected,
-                    value === null ? 'delete' : 'set',
-                    value ?? '',
-                    ttl
-                );
-                return result === 1;
-            } catch {
-                return undefined;
-            }
-        },
         set: async (key, value, ttl = DEFAULT_TTL_SECS, keepTtl) => {
             if (keepTtl) {
                 try {

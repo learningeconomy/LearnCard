@@ -1,12 +1,12 @@
 import { afterAll, expect, it } from 'vitest';
 import cache from '@cache';
-import { testInboxBatchCache } from '../src/cache/inbox-batch-cache.test-helpers';
+import { testAtomicCacheCounter } from '../src/cache/atomic-counter.test-helpers';
 
 // Fail if the isolated Redis container is missing; never silently test the mock in CI.
-it('uses real Redis for the batch cache contract', () => {
+it('uses real Redis for the atomic counter contract', () => {
     expect(cache.redis).toBeDefined();
 });
-testInboxBatchCache(cache);
+testAtomicCacheCounter(cache);
 afterAll(async () => {
     await cache.redis?.quit();
 });

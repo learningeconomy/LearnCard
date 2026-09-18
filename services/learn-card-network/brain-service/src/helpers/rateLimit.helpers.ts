@@ -15,10 +15,6 @@ import cache from '@cache';
 export type RateLimitWindow = {
     /** Cache key for this window. Namespace it — keys share one Redis. */
     key: string;
-    /** Units to consume (defaults to one). */
-    amount?: number;
-    /** Reject without spending quota when all requested units do not fit. */
-    consumeOnlyIfAllowed?: boolean;
     /** Max permitted increments within the window. */
     limit: number;
     /** Window length in seconds. */
@@ -41,17 +37,8 @@ export type RateLimitWindow = {
  * the cheapest/broadest window first.
  */
 export const enforceRateLimits = async (windows: RateLimitWindow[]): Promise<void> => {
-    for (const {
-        key,
-        limit,
-        windowSeconds,
-        description,
-        amount,
-        consumeOnlyIfAllowed,
-    } of windows) {
-        const count = consumeOnlyIfAllowed
-            ? await cache.consumeQuota(key, windowSeconds, amount ?? 1, limit)
-            : await cache.incr(key, windowSeconds, amount);
+    for (const { key, limit, windowSeconds, description } of windows) {
+        const count = await cache.incr(key, windowSeconds);
 
         if (count === undefined) {
             throw new TRPCError({
@@ -60,7 +47,7 @@ export const enforceRateLimits = async (windows: RateLimitWindow[]): Promise<voi
             });
         }
 
-        if (count === false || (typeof count === 'number' && count > limit)) {
+        if (count > limit) {
             throw new TRPCError({
                 code: 'TOO_MANY_REQUESTS',
                 message: `Rate limit exceeded: ${description}`,
