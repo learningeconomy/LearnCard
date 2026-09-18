@@ -168,13 +168,15 @@ const EmailForm: React.FC<EmailFormProps> = ({
                     email: verificationEmail as string,
                     code: code,
                 });
-                if (response?.token) {
+                if (response?.success && response?.token) {
                     redirectStore.set.email(null);
                     await signInWithCustomFirebaseToken(response?.token);
                 }
+                // Error handling is done via the mutation's onSuccess alert popup
                 setIsLoading(false);
             } catch (e) {
                 setIsLoading(false);
+                // Network/exception errors still show inline
                 setCodeError(m['login.email.verification.error']());
             }
         }
@@ -285,6 +287,8 @@ const EmailForm: React.FC<EmailFormProps> = ({
 
     const handleResendCode = async () => {
         setIsResendCodeLoading(true);
+        setCodeError(''); // Clear any previous error message
+        setCode(''); // Clear the code input for fresh entry
         try {
             await sendLoginVerificationCode({ email: verificationEmail as string, locale });
             setIsResendCodeLoading(false);
@@ -328,8 +332,8 @@ const EmailForm: React.FC<EmailFormProps> = ({
                     ? 'border-red-300'
                     : 'border-grayscale-200'
                 : emailError
-                ? 'login-input-email-error'
-                : '';
+                  ? 'login-input-email-error'
+                  : '';
 
         activeStep = (
             <div
