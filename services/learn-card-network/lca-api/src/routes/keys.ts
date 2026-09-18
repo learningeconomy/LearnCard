@@ -45,6 +45,8 @@ import {
     deleteUserKeyByAuthProvider,
     completeIdentityRebind,
     ServerEncryptedShareValidator,
+    EscrowPinStatusValidator,
+    getEscrowPinStatus,
     EncryptedShareValidator,
     UserKeyVersionConflictError,
     type ContactMethod,
@@ -341,6 +343,7 @@ export const keysRouter = t.router({
             z.object({
                 recoverySessionToken: RecoverySessionTokenValidator,
                 recoveryMethods: z.array(RecoveryMethodResponseValidator),
+                escrowPin: EscrowPinStatusValidator,
             })
         )
         .mutation(async ({ input }) => {
@@ -395,7 +398,11 @@ export const keysRouter = t.router({
                 authProvider: verification.record.authProvider,
             });
 
-            return { recoverySessionToken, recoveryMethods };
+            return {
+                recoverySessionToken,
+                recoveryMethods,
+                escrowPin: getEscrowPinStatus(userKey),
+            };
         }),
 
     useRecoverySession: openRoute
@@ -624,6 +631,7 @@ export const keysRouter = t.router({
                     shareVersion: z.number(),
                     maskedRecoveryEmail: z.string().nullable(),
                     escrowOptedOut: z.boolean(),
+                    escrowPin: EscrowPinStatusValidator,
                     sssActivationState: z.enum(['provisional', 'active']),
                 })
                 .nullable()
@@ -696,6 +704,7 @@ export const keysRouter = t.router({
                     : null,
                 sssActivationState: getSssActivationState(userKey),
                 escrowOptedOut: Boolean(userKey.escrowOptedOutAt),
+                escrowPin: getEscrowPinStatus(userKey),
             };
         }),
 
@@ -1060,7 +1069,10 @@ export const keysRouter = t.router({
 
             assertDidOwner(userKey, ctx.user.did);
 
+            // Legacy accounts with no prior record are created by storeAuthShare as a
+            // provisional 'sss' key; treat markMigrated as an idempotent no-op for them.
             if (userKey.keyProvider !== 'web3auth') {
+                if (userKey.sssActivationState === 'provisional') return { success: true };
                 throw new TRPCError({
                     code: 'BAD_REQUEST',
                     message: 'This key record is not eligible for migration.',

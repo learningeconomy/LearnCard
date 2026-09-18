@@ -89,8 +89,13 @@ import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
 const DashboardPage: React.FC = () => {
     const history = useHistory();
     const { track } = useAnalytics();
-    const { capabilities, recoveryMethodCount, recoveryActivationPending, openRecoverySetup } =
-        useAppAuth();
+    const {
+        state,
+        capabilities,
+        recoveryMethodCount,
+        recoveryActivationPending,
+        openRecoverySetup,
+    } = useAppAuth();
     const { getIconSet, getColorSet } = useTheme();
     const brandingConfig = useBrandingConfig();
     const sideMenuIcons = getIconSet(IconSetEnum.sideMenu);
@@ -540,6 +545,10 @@ const DashboardPage: React.FC = () => {
             recoveryMethodCount,
             activationPending: recoveryActivationPending,
             totalCredentialCount,
+            escrowEnrolled:
+                state.status === 'ready' ? state.escrowEnrollment === 'enrolled' : false,
+            pinEnabled: state.status === 'ready' ? (state.escrowPin?.enabled ?? null) : null,
+            onSetupPin: () => openRecoverySetup({}),
             onSetup: openRecoverySetup,
         },
         dataTrust,

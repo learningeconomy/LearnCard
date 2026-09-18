@@ -40,6 +40,9 @@ export const lcaApiEnvironmentShape = {
     ESCROW_HOLD_DURATION_MS: optionalEnvironmentString
         .transform(value => (value === undefined ? 604_800_000 : Number(value)))
         .pipe(z.number().int().positive().max(Number.MAX_SAFE_INTEGER)),
+    ESCROW_HOLD_RESTART_MIN_AGE_MS: optionalEnvironmentString
+        .transform(value => (value === undefined ? 86_400_000 : Number(value)))
+        .pipe(z.number().int().positive().max(Number.MAX_SAFE_INTEGER)),
     ANDROID_PUSH_ICON: optionalEnvironmentString,
     REDIS_HOST: optionalEnvironmentString,
     REDIS_PORT: optionalEnvironmentPort,

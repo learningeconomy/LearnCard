@@ -134,6 +134,9 @@ export type DashboardRecoveryPromptViewModel = {
     recoveryMethodCount: number | null;
     activationPending: boolean;
     totalCredentialCount: number;
+    escrowEnrolled?: boolean;
+    pinEnabled?: boolean | null;
+    onSetupPin?: () => void;
     onSetup: (options: {
         initialMethod: RecoverySetupType;
         onCompleted: (method: RecoverySetupType) => void;

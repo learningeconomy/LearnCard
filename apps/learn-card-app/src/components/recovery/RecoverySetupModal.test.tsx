@@ -64,6 +64,46 @@ const renderModal = (
 };
 
 describe('RecoverySetupModal prompt integration', () => {
+    it('shows Set PIN pill when enrolled without a PIN and opens PIN entry', async () => {
+        const onSetEscrowPin = vi.fn().mockResolvedValue(undefined);
+        renderModal('email', vi.fn(), {
+            onGetEscrowEnrollmentState: vi.fn().mockResolvedValue({ state: 'enrolled' }),
+            onDisableEscrowRecovery: vi.fn(),
+            onEnableEscrowRecovery: vi.fn(),
+            onSetEscrowPin,
+        });
+
+        const setPinButton = await screen.findByRole('button', { name: 'Set a recovery PIN' });
+        expect(setPinButton).toBeInTheDocument();
+
+        fireEvent.click(setPinButton);
+        expect(screen.getByText('Enter a 6-digit PIN')).toBeInTheDocument();
+    });
+
+    it('shows Change and Remove buttons when PIN is set', async () => {
+        const onClearEscrowPin = vi.fn().mockResolvedValue(undefined);
+        renderModal('email', vi.fn(), {
+            onGetEscrowEnrollmentState: vi
+                .fn()
+                .mockResolvedValue({ state: 'enrolled', escrowPin: { state: 'enabled' } }),
+            onDisableEscrowRecovery: vi.fn(),
+            onEnableEscrowRecovery: vi.fn(),
+            onSetEscrowPin: vi.fn(),
+            onClearEscrowPin,
+        });
+
+        const changeButton = await screen.findByRole('button', { name: 'Change' });
+        const removeButton = await screen.findByRole('button', { name: 'Remove PIN' });
+
+        expect(changeButton).toBeInTheDocument();
+        expect(removeButton).toBeInTheDocument();
+
+        fireEvent.click(removeButton);
+        expect(
+            screen.getByText(/Are you sure you want to remove your recovery PIN/)
+        ).toBeInTheDocument();
+    });
+
     it.each(['enrolled', 'opted-out'] as const)('renders automatic recovery %s', async state => {
         renderModal('email', vi.fn(), {
             onGetEscrowEnrollmentState: vi.fn().mockResolvedValue(state),
@@ -75,11 +115,7 @@ describe('RecoverySetupModal prompt integration', () => {
             String(state === 'enrolled')
         );
         expect(
-            screen.getByText(
-                state === 'enrolled'
-                    ? 'On — your account can be restored after a 7-day waiting period.'
-                    : 'Off'
-            )
+            screen.getByText(state === 'enrolled' ? 'Restore after a 7-day wait' : 'Off')
         ).toBeInTheDocument();
     });
 
@@ -138,9 +174,7 @@ describe('RecoverySetupModal prompt integration', () => {
                 onEnableEscrowRecovery,
             });
             const toggle = await screen.findByRole('switch');
-            fireEvent.click(
-                state === 'not-enrolled' ? screen.getByRole('button', { name: 'Turn on' }) : toggle
-            );
+            fireEvent.click(toggle);
             await waitFor(() => expect(toggle).toHaveAttribute('aria-checked', 'true'));
             expect(onEnableEscrowRecovery).toHaveBeenCalledOnce();
         }
@@ -246,5 +280,14 @@ describe('RecoverySetupModal prompt integration', () => {
 
         await waitFor(() => expect(props.onConfirmEmailRecovery).toHaveBeenCalledWith('654321'));
         expect(onCompleted).toHaveBeenCalledWith('email');
+    });
+
+    it('renders a close button that calls onClose even while activation is pending', () => {
+        const onClose = vi.fn();
+        renderModal('email', vi.fn(), { isActivationPending: true, onClose });
+
+        fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+
+        expect(onClose).toHaveBeenCalledOnce();
     });
 });

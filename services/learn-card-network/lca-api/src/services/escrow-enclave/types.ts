@@ -11,20 +11,28 @@ export interface EnclaveAttestation {
 }
 export type EscrowHoldForEnclave = Pick<
     EscrowHold,
-    '_id' | 'status' | 'releaseAfter' | 'primaryDid' | 'shareVersion' | 'clientEphemeralPublicKey'
+    | '_id'
+    | 'status'
+    | 'releaseAfter'
+    | 'releasePolicy'
+    | 'primaryDid'
+    | 'shareVersion'
+    | 'clientEphemeralPublicKey'
 >;
 export interface VerifyEscrowBlobInput {
     envelope: EscrowEnvelope;
     expectedDid: string;
     expectedShareVersion: number;
 }
-export type VerifyEscrowBlobResult = { ok: true } | { ok: false; reason: string };
+export type VerifyEscrowBlobResult =
+    { ok: true; hasPin: boolean } | { ok: false; hasPin: boolean; reason: string };
 export interface ReleaseRequest {
     envelope: EscrowEnvelope;
     hold: EscrowHoldForEnclave;
     clientEphemeralPublicKey: string;
     expectedDid: string;
     now?: Date;
+    pinProof?: string;
 }
 export interface ReleaseResult {
     sealed: EscrowEnvelope;
@@ -38,6 +46,12 @@ export class EscrowPolicyError extends Error {
     constructor() {
         super('Escrow recovery is not permitted.');
         this.name = 'EscrowPolicyError';
+    }
+}
+export class EscrowPinMismatchError extends Error {
+    constructor() {
+        super('Incorrect PIN.');
+        this.name = 'EscrowPinMismatchError';
     }
 }
 export class EscrowBlobError extends Error {

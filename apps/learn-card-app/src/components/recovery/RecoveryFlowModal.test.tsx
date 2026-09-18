@@ -20,7 +20,8 @@ vi.mock('@capacitor/core', () => ({
     Capacitor: { isNativePlatform: () => false },
 }));
 
-vi.mock('@learncard/sss-key-manager', () => ({
+vi.mock('@learncard/sss-key-manager', async importOriginal => ({
+    ...(await importOriginal<typeof import('@learncard/sss-key-manager')>()),
     isWebAuthnSupported: () => true,
 }));
 
@@ -53,6 +54,7 @@ describe('RecoveryFlowModal', () => {
         resumeToken: 'resume',
         clientEphemeralPrivateKey: 'ephemeral',
         releaseAfter: '2099-09-01T12:00:00Z',
+        requestedAt: '2026-09-01',
     };
     const escrowRecovery = {
         onStart: vi
@@ -70,6 +72,7 @@ describe('RecoveryFlowModal', () => {
                 escrowRecovery={escrowRecovery}
             />
         );
+        expect(screen.queryByLabelText('PIN digit 1')).not.toBeInTheDocument();
         expect(
             await screen.findByRole('button', { name: 'Start a 7-day recovery' })
         ).toBeDisabled();
@@ -90,7 +93,7 @@ describe('RecoveryFlowModal', () => {
                 }}
             />
         );
-        fireEvent.click(await screen.findByRole('button', { name: 'Check request status' }));
+        fireEvent.click(await screen.findByRole('button', { name: 'Check status' }));
         expect(await screen.findByText('This recovery request was cancelled.')).toBeInTheDocument();
         expect(screen.getByRole('button', { name: 'Start a 7-day recovery' })).toBeEnabled();
     });
@@ -109,7 +112,7 @@ describe('RecoveryFlowModal', () => {
                 }}
             />
         );
-        fireEvent.click(await screen.findByRole('button', { name: 'Finish recovery' }));
+        fireEvent.click(await screen.findByRole('button', { name: 'Restore my account' }));
         expect(
             await screen.findByText('This recovery request has already finished. Start a new one.')
         ).toBeInTheDocument();
@@ -121,12 +124,12 @@ describe('RecoveryFlowModal', () => {
         render(<RecoveryFlowModal {...defaultProps} escrowRecovery={escrowRecovery} />);
         fireEvent.click(await screen.findByRole('button', { name: 'Cancel request' }));
         expect(
-            screen.getByText(
+            screen.getAllByText(
                 'Open your account on a signed-in device and choose Cancel recovery request.'
-            )
+            )[0]
         ).toBeInTheDocument();
         expect(clearPendingEscrowRecovery).not.toHaveBeenCalled();
-        expect(screen.getByText('Recovery requested')).toBeInTheDocument();
+        expect(screen.getByText('Recovery in progress')).toBeInTheDocument();
     });
 
     it('does not replace a request when storage cannot be read', async () => {
@@ -165,12 +168,12 @@ describe('RecoveryFlowModal', () => {
                 }}
             />
         );
-        fireEvent.click(await screen.findByRole('button', { name: 'Finish recovery' }));
+        fireEvent.click(await screen.findByRole('button', { name: 'Restore my account' }));
         expect(
             await screen.findByText('Something went wrong. Please try again.')
         ).toBeInTheDocument();
         expect(clearPendingEscrowRecovery).not.toHaveBeenCalled();
-        expect(screen.getByRole('button', { name: 'Finish recovery' })).toBeEnabled();
+        expect(screen.getByRole('button', { name: 'Restore my account' })).toBeEnabled();
     });
 
     it('starts and persists a seven-day request and displays its release time', async () => {
@@ -184,12 +187,15 @@ describe('RecoveryFlowModal', () => {
         const button = screen.getByRole('button', { name: 'Start a 7-day recovery' });
         await waitFor(() => expect(button).toBeEnabled());
         fireEvent.click(button);
-        expect(await screen.findByText('Recovery requested')).toBeInTheDocument();
+        expect(await screen.findByText('Recovery in progress')).toBeInTheDocument();
         expect(escrowRecovery.onStart).toHaveBeenCalledTimes(1);
         expect(savePendingEscrowRecovery).toHaveBeenCalledWith(record, 'default');
         expect(
             screen.getByText(
-                `You can restore your account after ${new Date(record.releaseAfter).toLocaleString()}.`
+                new Intl.DateTimeFormat(undefined, {
+                    dateStyle: 'medium',
+                    timeStyle: 'short',
+                }).format(new Date(record.releaseAfter))
             )
         ).toBeInTheDocument();
     });
@@ -197,7 +203,7 @@ describe('RecoveryFlowModal', () => {
         const pending = { ...record, releaseAfter: '2020-01-01T00:00:00Z' };
         vi.mocked(loadPendingEscrowRecovery).mockResolvedValue(pending);
         render(<RecoveryFlowModal {...defaultProps} escrowRecovery={escrowRecovery} />);
-        fireEvent.click(await screen.findByRole('button', { name: 'Finish recovery' }));
+        fireEvent.click(await screen.findByRole('button', { name: 'Restore my account' }));
         await waitFor(() =>
             expect(escrowRecovery.onRecover).toHaveBeenCalledWith({
                 method: 'escrow',
@@ -230,7 +236,7 @@ describe('RecoveryFlowModal', () => {
                     escrowRecovery={{ ...escrowRecovery, onStatus }}
                 />
             );
-            fireEvent.click(await screen.findByRole('button', { name: 'Finish recovery' }));
+            fireEvent.click(await screen.findByRole('button', { name: 'Restore my account' }));
             expect(
                 await screen.findByText(
                     status === 'cancelled'

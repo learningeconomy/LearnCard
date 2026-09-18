@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'crypto';
 import {
     decryptEscrowBlob,
     sealEscrowRelease,
@@ -7,6 +8,7 @@ import {
 import {
     EscrowBlobError,
     EscrowPolicyError,
+    EscrowPinMismatchError,
     EscrowUnavailableError,
     type EscrowEnclave,
     type EnclaveAttestation,
@@ -85,9 +87,13 @@ export class SoftwareEnclave implements EscrowEnclave {
     async verifyEscrowBlob(input: VerifyEscrowBlobInput): Promise<VerifyEscrowBlobResult> {
         const blob = await this.decrypt(input.envelope);
         if (blob.did !== input.expectedDid || blob.shareVersion !== input.expectedShareVersion) {
-            return { ok: false, reason: 'Escrow recovery is not permitted.' };
+            return {
+                ok: false,
+                hasPin: !!blob.pinVerifier,
+                reason: 'Escrow recovery is not permitted.',
+            };
         }
-        return { ok: true };
+        return { ok: true, hasPin: !!blob.pinVerifier };
     }
 
     async releaseEscrow(input: ReleaseRequest): Promise<ReleaseResult> {
@@ -106,10 +112,26 @@ export class SoftwareEnclave implements EscrowEnclave {
             blob.shareVersion !== hold.shareVersion
         )
             throw new EscrowPolicyError();
+        if (hold.releasePolicy === 'pin') {
+            if (!blob.pinVerifier || !input.pinProof) throw new EscrowPolicyError();
+            const expected = Buffer.from(blob.pinVerifier, 'hex');
+            const actual = Buffer.from(input.pinProof, 'hex');
+            if (
+                !/^[0-9a-f]{64}$/i.test(input.pinProof) ||
+                actual.length !== expected.length ||
+                !timingSafeEqual(actual, expected)
+            )
+                throw new EscrowPinMismatchError();
+        }
         try {
             return {
                 sealed: await sealEscrowRelease(
-                    { ...blob, holdId: hold._id },
+                    {
+                        recoveryShare: blob.recoveryShare,
+                        did: blob.did,
+                        shareVersion: blob.shareVersion,
+                        holdId: hold._id,
+                    },
                     input.clientEphemeralPublicKey
                 ),
             };
