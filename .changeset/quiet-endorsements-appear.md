@@ -1,5 +1,7 @@
 ---
 '@learncard/linked-claims-plugin': patch
+'learn-card-app': patch
+'learn-card-base': patch
 ---
 
-Keep accepted endorsements discoverable from their original credential.
+fix: [LC-2085] Display accepted endorsements on their original credentials.
