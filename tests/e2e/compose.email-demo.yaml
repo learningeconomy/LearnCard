@@ -1,0 +1,26 @@
+# Opt-in ONLY: real inbox, login, and update emails for manual testing.
+# See email-demo/README.md. Never include this override in automated E2E runs.
+services:
+    brain:
+        environment:
+            IS_E2E_TEST: 'false'
+            CLIENT_APP_DOMAIN_NAME: localhost:3000
+            CLIENT_APP_PORT: 3000
+            POSTMARK_API_KEY: ${POSTMARK_API_KEY:?Configure the inbox email key in email-demo/.env.local}
+            POSTMARK_FROM_EMAIL: ${BRAIN_POSTMARK_FROM_EMAIL:-support@learningeconomy.io}
+        volumes:
+            - ../../packages/email-templates/src:/app/packages/email-templates/src
+
+    lca-api:
+        environment:
+            IS_E2E_TEST: 'false'
+            NETWORK_BRAIN_SERVICE_URL: http://localhost:4000/trpc
+            POSTMARK_SERVER_TOKEN: ${POSTMARK_SERVER_TOKEN:?Configure the login email key in email-demo/.env.local}
+            POSTMARK_FROM_EMAIL: ${POSTMARK_FROM_EMAIL:?Configure the verified login sender domain}
+            POSTMARK_BRAND_NAME: ${POSTMARK_BRAND_NAME:-LearnCard}
+            GOOGLE_APPLICATION_CREDENTIAL: ${GOOGLE_APPLICATION_CREDENTIAL:?Configure the matching local app Firebase service account}
+        volumes:
+            - ../../services/learn-card-network/lca-api/src:/app/services/learn-card-network/lca-api/src
+            - ../../packages/learn-card-types/src:/app/packages/learn-card-types/src
+            - ../../packages/learn-card-helpers/src:/app/packages/learn-card-helpers/src
+            - ../../packages/email-templates/src:/app/packages/email-templates/src
