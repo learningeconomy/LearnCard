@@ -24,7 +24,13 @@ vi.mock('./inbox.helpers', () => ({
         const result = await mocks.issue(...args);
         if (mocks.skipCheckpoint) {
             const { InboxDeliveryCheckpointError } = await import('./inbox-issuance-error.helpers');
-            throw new InboxDeliveryCheckpointError();
+            throw new InboxDeliveryCheckpointError({
+                issuanceId: result.inboxCredential.id,
+                status: result.status,
+                claimUrl: result.claimUrl,
+                recipientDid: result.recipientDid,
+                guardianStatus: result.guardianStatus,
+            });
         }
         return result;
     },
@@ -387,17 +393,28 @@ describe('inbox batch worker processing', () => {
         );
     });
 
-    it('retains the reservation when delivery returns without its ownership checkpoint', async () => {
-        mocks.skipCheckpoint = true;
-        const result = await run({ items: [{ ...item(), idempotencyKey: 'missing-checkpoint' }] });
+    it.each([false, true])(
+        'preserves checkpoint reconciliation details when phase persistence fails: %s',
+        async fails => {
+            mocks.skipCheckpoint = true;
+            if (fails) mocks.beforeIssue.mockRejectedValueOnce(new Error('Storage unavailable'));
+            const result = await run({
+                items: [{ ...item(), idempotencyKey: 'missing-checkpoint' }],
+            });
 
-        expect(result.results[0]).toMatchObject({
-            success: false,
-            error: { code: 'CONFLICT', message: expect.stringContaining('unconfirmed') },
-        });
-        expect(mocks.beforeIssue).toHaveBeenCalledTimes(1);
-        expect(mocks.compareAndSet).not.toHaveBeenCalled();
-    });
+            expect(result.results[0]).toMatchObject({
+                success: false,
+                error: {
+                    code: 'CONFLICT',
+                    message: expect.stringContaining('Reconcile using issuanceId'),
+                },
+                issuanceId: 'a@example.test',
+                claimUrl: 'https://example.test/claim',
+            });
+            expect(mocks.beforeIssue).toHaveBeenCalledTimes(1);
+            expect(mocks.compareAndSet).not.toHaveBeenCalled();
+        }
+    );
 
     it('preserves preparation errors when releasing a reservation throws', async () => {
         mocks.resolve.mockRejectedValueOnce(

@@ -224,8 +224,8 @@ export const issueToInbox = async (
         await beforeDelivery?.();
         deliveryCheckpointReached = true;
     };
-    const assertDeliveryCheckpoint = (): void => {
-        if (!deliveryCheckpointReached) throw new InboxDeliveryCheckpointError();
+    const assertDeliveryCheckpoint = (result: InboxDeliveryCheckpointError['result']): void => {
+        if (!deliveryCheckpointReached) throw new InboxDeliveryCheckpointError(result);
     };
 
     if (recipient.type === 'phone') {
@@ -423,7 +423,11 @@ export const issueToInbox = async (
             });
         }
 
-        assertDeliveryCheckpoint();
+        assertDeliveryCheckpoint({
+            issuanceId: finalizedInboxCredential.id,
+            status: LCNInboxStatusEnumValidator.enum.ISSUED,
+            recipientDid: existingProfile.did,
+        });
         return {
             status: LCNInboxStatusEnumValidator.enum.ISSUED,
             inboxCredential: finalizedInboxCredential,
@@ -824,7 +828,12 @@ export const issueToInbox = async (
         );
         const claimUrl = generateClaimUrl(claimToken);
 
-        assertDeliveryCheckpoint();
+        assertDeliveryCheckpoint({
+            issuanceId: inboxCredential.id,
+            status: LCNInboxStatusEnumValidator.enum.PENDING,
+            claimUrl,
+            ...(guardianEmail ? { guardianStatus: 'AWAITING_GUARDIAN' as const } : {}),
+        });
         return {
             status: LCNInboxStatusEnumValidator.enum.PENDING,
             inboxCredential,

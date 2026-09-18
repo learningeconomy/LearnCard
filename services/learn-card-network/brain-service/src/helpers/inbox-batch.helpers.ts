@@ -253,6 +253,7 @@ export const issueInboxBatch = async (
                 results[index] = success;
             } catch (error) {
                 if (error instanceof InboxDeliveryCheckpointError) {
+                    issued = { ...error.result, success: true, index, recipient: item.recipient };
                     // A write may already have happened. Persist the uncertain phase when possible,
                     // and always retain the replay reservation to prevent automatic reissuance.
                     issuanceStarted = true;
