@@ -14,7 +14,7 @@ import {
     FirebaseCustomAuthResponseSchema,
 } from '@helpers/firebase.helpers';
 import cache from '@cache';
-import { checkRateLimit, clearRateLimit } from '@helpers/rateLimit.helpers';
+import { checkRateLimit, clearRateLimit, getRateLimitCount } from '@helpers/rateLimit.helpers';
 import { TRPCError } from '@trpc/server';
 import { getDeliveryService, getFrom } from '../services/delivery';
 import { resolveLocaleByEmail } from '../helpers/locale.helpers';
@@ -264,18 +264,14 @@ export const firebaseRouter = t.router({
 
                 await cache.set(attemptKey, attemptCount + 1, ATTEMPT_TTL_SECONDS);
 
-                // clear existing codes for this email (enforce 1 active code at a time)
-                const existingCodeKeys = await cache.keys(`login-code:${email}:*`);
-                if (existingCodeKeys?.length) {
-                    await cache.delete(existingCodeKeys);
-                }
-
                 // generate secure random 6-digit code
                 const code = crypto.randomInt(100000, 999999).toString();
-                const redisKey = `login-code:${email}:${code}`;
 
-                // store code in Redis with 5-min TTL
-                await cache.set(redisKey, '1', CODE_TTL_SECONDS);
+                // Store code in Redis with 5-min TTL
+                // Key structure: login-code:${email} → code value
+                // This replaces any existing code (enforces 1 active code at a time)
+                const loginCodeKey = `login-code:${email}`;
+                await cache.set(loginCodeKey, code, CODE_TTL_SECONDS);
 
                 // Clear the verification attempt counter so user can try the new code
                 await clearRateLimit(`login-verify-attempts:${email}`);
@@ -341,53 +337,60 @@ export const firebaseRouter = t.router({
             const ipAttemptKey = `login-verify-ip:${clientIp}`;
 
             try {
-                // Check IP-based rate limit (30 attempts per 10 minutes across all emails)
-                const ipAllowed = await checkRateLimit(
-                    ipAttemptKey,
-                    LOGIN_VERIFY_MAX_ATTEMPTS_PER_IP,
-                    LOGIN_VERIFY_IP_WINDOW_SECONDS
-                );
-
-                if (!ipAllowed) {
+                // Check rate limits BEFORE incrementing (only increment on failures)
+                const ipCount = await getRateLimitCount(ipAttemptKey);
+                if (ipCount >= LOGIN_VERIFY_MAX_ATTEMPTS_PER_IP) {
                     return {
                         success: false,
                         error: 'Too many attempts. Please request a new code.',
                     };
                 }
 
-                // Check per-email rate limit (5 failed attempts per code lifetime)
-                const emailAllowed = await checkRateLimit(
-                    emailAttemptKey,
-                    LOGIN_VERIFY_MAX_ATTEMPTS_PER_EMAIL,
-                    CODE_TTL_SECONDS
-                );
+                const emailCount = await getRateLimitCount(emailAttemptKey);
+                if (emailCount >= LOGIN_VERIFY_MAX_ATTEMPTS_PER_EMAIL) {
+                    // Already at limit, invalidate the code and reject
+                    const loginCodeKey = `login-code:${email}`;
+                    await cache.delete([loginCodeKey]);
+                    return {
+                        success: false,
+                        error: 'Too many attempts. Please request a new code.',
+                    };
+                }
 
-                if (!emailAllowed) {
-                    // On 6th failure, invalidate any active codes for this email
-                    const existingCodeKeys = await cache.keys(`login-code:${email}:*`);
-                    if (existingCodeKeys?.length) {
-                        await cache.delete(existingCodeKeys);
+                // Check if code exists and matches
+                // Key structure: login-code:${email} → code value (no wildcard needed)
+                const loginCodeKey = `login-code:${email}`;
+                const storedCode = await cache.get(loginCodeKey);
+
+                if (!storedCode || storedCode !== code) {
+                    // Invalid code — increment rate limit counters on failure only
+                    await checkRateLimit(
+                        emailAttemptKey,
+                        LOGIN_VERIFY_MAX_ATTEMPTS_PER_EMAIL,
+                        CODE_TTL_SECONDS
+                    );
+                    await checkRateLimit(
+                        ipAttemptKey,
+                        LOGIN_VERIFY_MAX_ATTEMPTS_PER_IP,
+                        LOGIN_VERIFY_IP_WINDOW_SECONDS
+                    );
+
+                    // If this failure hit the limit, invalidate the code
+                    // The NEXT request will be blocked by the pre-check
+                    const newEmailCount = await getRateLimitCount(emailAttemptKey);
+                    if (newEmailCount >= LOGIN_VERIFY_MAX_ATTEMPTS_PER_EMAIL) {
+                        await cache.delete([loginCodeKey]);
                     }
-                    return {
-                        success: false,
-                        error: 'Too many attempts. Please request a new code.',
-                    };
-                }
 
-                // Check if code exists
-                const redisKey = `login-code:${email}:${code}`;
-                const cached = await cache.get(redisKey);
-
-                if (!cached) {
-                    // Invalid code — this counts as a failed attempt (already incremented above)
                     return { success: false, error: 'Invalid or expired code.' };
                 }
 
                 // Valid code — delete it to prevent reuse
-                await cache.delete([redisKey]);
+                await cache.delete([loginCodeKey]);
 
-                // Clear the per-email attempt counter on success
+                // Clear rate limit counters on success
                 await clearRateLimit(emailAttemptKey);
+                await clearRateLimit(ipAttemptKey);
 
                 // Get or create the Firebase user
                 let user;
