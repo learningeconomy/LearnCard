@@ -22,6 +22,13 @@ The REST examples below use a tiny helper so each recipe stays short. It's plain
 const API_BASE = 'https://network.learncard.com/api';
 
 const learncardApiClient = {
+    get: async path => {
+        const res = await fetch(`${API_BASE}${path}`, {
+            headers: { Authorization: `Bearer ${process.env.LEARNCARD_API_TOKEN}` },
+        });
+        if (!res.ok) throw new Error(`${path} failed: ${res.status} ${await res.text()}`);
+        return res.json();
+    },
     post: async (path, body) => {
         const res = await fetch(`${API_BASE}${path}`, {
             method: 'POST',
@@ -39,12 +46,13 @@ const learncardApiClient = {
 
 ### Issue a batch
 
-`POST /api/inbox/issue-batch` requires an `inbox:write` token. The SDK equivalent is
-`learnCard.invoke.sendCredentialBatchViaInbox(batch)`; the tRPC procedure is
-`inbox.issueBatch`.
+`POST /api/inbox/issue-batch` requires `inbox:write` and returns HTTP **202** with
+`{ batchId, status: 'QUEUED', createdAt }`. The SDK equivalent is
+`learnCard.invoke.sendCredentialBatchViaInbox(batch)`; tRPC uses `inbox.issueBatch`.
 
 ```javascript
-const batch = {
+const receipt = await learncardApiClient.post('/inbox/issue-batch', {
+    requestId: 'course-2026-chunk-001',
     configuration: { delivery: { suppress: true } },
     items: [
         {
@@ -53,43 +61,45 @@ const batch = {
             idempotencyKey: 'course-2026-student-001',
         },
     ],
-};
-const response = await learncardApiClient.post('/inbox/issue-batch', batch);
-// Or: await learnCard.invoke.sendCredentialBatchViaInbox(batch);
-for (const result of response.results) {
-    if (result.success) console.log(result.index, result.issuanceId, result.deduplicated);
-    else console.log(result.index, result.error.code, result.issuanceId);
-}
+});
+// Poll with a bounded deadline and backoff until summary.pending is zero.
+const progress = await learncardApiClient.get('/inbox/batches/' + receipt.batchId);
+for (const item of progress.items) console.log(item.index, item.state, item.result);
 ```
 
-| Field                    | Contract                                                                                                                          |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
-| `items`                  | 1–100 items; each needs `recipient` and either `credential` or `templateUri`.                                                     |
-| `configuration`          | Shared defaults, deep-merged with each item's overrides; arrays replace defaults.                                                 |
-| `items[].idempotencyKey` | Optional string, up to 256 characters; scoped to the issuer for 24 hours.                                                         |
-| `results`                | One outcome per item, in input order, with `success` and zero-based `index`.                                                      |
-| Success result           | `issuanceId`, `status`, `recipient`, optional `claimUrl`, `recipientDid`, `guardianStatus`, and `deduplicated`.                   |
-| Failure result           | `error.code` and `error.message`; may also include `issuanceId` and `claimUrl` when issuance completed but replay storage failed. |
-| `summary`                | `total`, `succeeded`, `failed`, `deduplicated`.                                                                                   |
+`GET /api/inbox/batches/{batchId}` requires `inbox:read` and the submitting issuer
+profile. Use `learnCard.invoke.getInboxCredentialBatch(batchId)` or tRPC
+`inbox.getBatch({ batchId })`. Missing or inaccessible jobs return 404.
 
-Identical keyed retries replay the same issuance with `deduplicated: true`.
-Changed input under the same key returns `CONFLICT`. Within one batch, later
-occurrences of a key always conflict; only its first occurrence is attempted.
-Preflight failures with no side effects release the key. Once issuance has started,
-uncertain outcomes retain it: reconcile the returned issuance ID when available
-and never work around an uncertain outcome by issuing under a new key.
+| Field                    | Contract                                                                                                                                             |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Submission `items`       | 1–100 items, each with a recipient and either credential or template URI.                                                                            |
+| `configuration`          | Shared defaults deep-merged with item overrides; arrays replace defaults.                                                                            |
+| `requestId`              | Optional 1–256 character submission ID. Identical retries return the same batch for 24 hours without charging again; changed input conflicts.        |
+| `items[].idempotencyKey` | Optional item key, up to 256 characters; successful replay window is 24 hours per issuer.                                                            |
+| Polling `status`         | `QUEUED`, `PROCESSING`, `COMPLETED`, or `NEEDS_RECONCILIATION`.                                                                                      |
+| Polling `items`          | Ordered entries with original `index`, processing `state`, and optional `result`.                                                                    |
+| Success result           | `success: true`, `index`, `issuanceId`, credential `status`, `recipient`, optional `claimUrl`, `recipientDid`, `guardianStatus`, and `deduplicated`. |
+| Failure result           | `success: false`, `index`, `error.code`, `error.message`; known issuance ID and claim URL may accompany uncertain outcomes.                          |
+| `summary`                | `total`, `succeeded`, `failed`, `deduplicated`, `completed`, `pending`, `unconfirmed`.                                                               |
 
-Item errors return HTTP 200 with `success: false`. Request-wide input or auth
-errors fail the request. JSON bodies over 4 MiB return 413; quota exhaustion
-returns 429. The default quota is 10,000 admitted items per issuer per hour;
-rejected batches do not consume quota. Admitted replays and failed items do.
-The Lambda timeout is 29 seconds, so size chunks using measured latency as well
-as the 100-item and 4 MiB limits. See [batch issuance](../../core-concepts/network-and-interactions/universal-inbox.md#batch-issuance)
-for timeout and recovery guidance.
+Polling returns HTTP 200 even with item failures. Results remain available for
+30 days after completion; unresolved jobs and reservations remain until reconciled.
+`NEEDS_RECONCILIATION` can coexist with unfinished items, so inspect `summary.pending`.
 
-Both single and batch issuance accept `configuration.guardianEmail`. It enables
-guardian approval before claiming and must differ from the recipient email,
-ignoring case. Batch validation uses the merged configuration.
+Identical keyed item retries replay the same issuance with `deduplicated: true`.
+Changed payloads conflict. Later occurrences of a key within a batch always conflict.
+Side-effect-free failures release the key; uncertain issuance outcomes retain it.
+Never bypass an uncertain result by issuing with a new key.
+
+Bodies over 4 MiB return 413; quota exhaustion returns 429. The default quota is
+10,000 admitted items per issuer per hour. Rejected submissions and internal worker
+retries do not consume quota; admitted item replays and failures do.
+
+Issuance runs in a dedicated background queue. Single issuance remains synchronous.
+Both routes accept `configuration.guardianEmail`; it must differ from the recipient's
+email, ignoring case. See [batch issuance](../../core-concepts/network-and-interactions/universal-inbox.md#batch-issuance)
+for polling, worker timeouts, and recovery guidance.
 
 ### The Simplest Case: Fire and Forget
 

@@ -57,15 +57,15 @@ Direct deliveries to existing accounts don't go through this escrow; they are st
 ## Batch Issuance
 
 Use `POST /inbox/issue-batch` (tRPC `inbox.issueBatch`) or
-`learnCard.invoke.sendCredentialBatchViaInbox({ items, configuration })` to issue up to
-100 credentials per request. The same `inbox:write` permission and signing,
-claiming, guardian approval, webhook, and tenant email behavior apply as for single issuance.
+`learnCard.invoke.sendCredentialBatchViaInbox(batch)` to queue 1–100 credentials.
+Submission requires `inbox:write`; polling requires `inbox:read` and the submitting
+issuer profile. Single issuance stays synchronous.
 
 ```typescript
-const batch = await learnCard.invoke.sendCredentialBatchViaInbox({
+const receipt = await learnCard.invoke.sendCredentialBatchViaInbox({
+    requestId: 'semester-2026-chunk-001',
     configuration: {
         signingAuthority: { endpoint: 'https://issuer.example/sign', name: 'default' },
-        webhookUrl: 'https://issuer.example/events',
     },
     items: [
         {
@@ -76,75 +76,97 @@ const batch = await learnCard.invoke.sendCredentialBatchViaInbox({
     ],
 });
 
-const failedItems = batch.results.filter(result => !result.success);
+const deadline = Date.now() + 10 * 60 * 1000;
+let batch = await learnCard.invoke.getInboxCredentialBatch(receipt.batchId);
+while (batch.summary.pending > 0 && Date.now() < deadline) {
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    batch = await learnCard.invoke.getInboxCredentialBatch(receipt.batchId);
+}
+// A polling timeout does not cancel work. Keep batchId to check again later.
+const failedItems = batch.items.filter(item => item.result?.success === false);
 ```
 
-Batch configuration supplies defaults. Per-item configuration overrides it with a
-deep merge; arrays in template data replace the corresponding default array.
-Results preserve input order and include an `index`, a `success` flag, and either
-issuance details or an error code and message. The summary counts total, successful,
-failed, and deduplicated items. Individual failures still return HTTP 200. Invalid
-batch input, authentication failure, an exceeded quota, or an oversized request
-fail the whole request before issuance.
+Submission returns HTTP **202** with `batchId`, `status: 'QUEUED'`, and `createdAt`.
+Poll `GET /inbox/batches/{batchId}` for ordered `items`, each with an `index`,
+processing `state`, and a `result` when available. Results retain their `success`
+flag and issuance details or error. The summary reports `total`, `succeeded`,
+`failed`, `deduplicated`, `completed`, `pending`, and `unconfirmed`.
+Completed results remain available for 30 days.
 
-An optional `idempotencyKey` (up to 256 characters) caches a successful result for
-24 hours per issuer. Reusing it returns `deduplicated: true` without another
-credential, email, or webhook. Use a unique key for each intended issuance and reuse
-it when retrying that issuance. The server atomically reserves each key before
-issuance. Overlapping attempts return a per-item `CONFLICT`; once the first attempt
-completes, a retry returns the cached success. Reusing a key with different input
-also returns `CONFLICT`.
+Batch states are `QUEUED`, `PROCESSING`, `COMPLETED`, and `NEEDS_RECONCILIATION`.
+The last state can coexist with unfinished items; use `summary.pending` to check
+for work remaining. Credential status `PENDING` means waiting for a claim, which is
+separate from queue processing.
 
-Within one batch, only the first occurrence of an idempotency key is attempted.
-Every later occurrence returns `CONFLICT`, regardless of worker timing or whether
-the first item succeeds. Send each intended issuance once per batch.
+Batch configuration supplies defaults. Item configuration overrides it with a
+deep merge; arrays replace defaults. The existing signing, claiming, webhook,
+guardian, and tenant-branding behavior applies. Both single and batch issuance
+accept `configuration.guardianEmail`; it must differ from the recipient email,
+ignoring case. Batches validate this after configuration merging.
 
-Validation, template-preparation, and explicitly side-effect-free issuance preflight
-failures release the key and retain their original error code. Correct the input
-and retry with the same key. If an error or process
-termination occurs after issuance starts, the outcome may be uncertain: a credential
-or email may already exist. The reservation remains for up to 24 hours to prevent
-automatic duplicate issuance, and retries return `CONFLICT` until a successful
-result is recorded. Check the issuer's sent inbox records and contact support to
-reconcile an unconfirmed outcome; do not retry with a new key or assume expiry means
-the original attempt failed. This is retry protection, not an exactly-once transaction
-across credential storage, email, and webhooks. Production requires shared Redis;
-batch issuance fails closed when it is not configured. Non-production serverless-offline
-runs may use the in-memory fallback; it does not coordinate independent processes.
+### Retries and recovery
 
-If issuance completed but the replay record could not be confirmed after a bounded
-retry, the item returns `CONFLICT` with `issuanceId` and, if available, `claimUrl`.
-Use that ID to inspect the issuance; the failed result does not mean nothing was issued.
+An optional `requestId` (1–256 characters) makes submission retries safe for 24 hours.
+The same issuer, payload, and tenant context return the original receipt without
+another quota charge. Reusing it with changed input returns HTTP 409.
 
-Both `/inbox/issue` and `/inbox/issue-batch` now accept `configuration.guardianEmail`
-to require guardian approval. This newly exposes the existing guardian flow to
-single-issue callers as well. The guardian email must differ from the recipient's
-email, ignoring case; batches enforce this after merging configuration.
+An optional item `idempotencyKey` (up to 256 characters) durably stores a successful
+result for 24 hours per issuer. Reusing it returns the same issuance with
+`deduplicated: true`, without another credential, email, or webhook. Changed input
+or an overlapping attempt returns a per-item `CONFLICT`. Within a batch, only the
+first occurrence of a key is attempted; later occurrences always conflict.
 
-For 20,000 transcripts, send approximately 200 requests of 100 items, reducing the
-chunk size when needed to keep each serialized JSON request at or below **4 MiB
-(4,194,304 bytes)**. Oversized requests return HTTP 413. This conservative application
-limit accounts for the Lambda deployment's
-[6 MB synchronous invocation limit](https://docs.aws.amazon.com/lambda/latest/api/API_Invoke.html);
-20 MB batches are not supported by that deployment. Gateway envelope overhead can
-further reduce the usable size, so keep margin below the limit in clients.
+Validation, preparation, and explicitly side-effect-free preflight failures release
+the key. Correct the input and resubmit that item under the same item key, using a
+new batch request ID. Worker retries do not consume additional quota.
 
-The Lambda deployment has a **29-second request timeout**. The 100-item maximum is
-an input limit, not a guarantee that 100 items finish in time: at concurrency 10,
-that requires ten waves of signing, storage and delivery. Measure latency with your
-credentials and signing authority, begin with small chunks, and keep substantial
-margin below the timeout. There is no background batch job or partial response on
-a gateway timeout. Some items may already have been issued; include a key on every
-item and reconcile uncertain outcomes before issuing again. A safe production
-chunk size requires measurements; this implementation does not establish one.
+If a worker fails after issuance may have started, it does not automatically issue
+again. The item is flagged for reconciliation and its reservation remains blocked
+until resolved, beyond the normal 24-hour replay window. If known, `issuanceId`
+and `claimUrl` accompany the failure. Check the issuer's sent inbox records and
+contact support; do not work around uncertainty with a new key. This is not an
+exactly-once transaction across credential storage, email, and webhooks.
 
-The default quota is **10,000 submitted items per hour per issuer**, including
-replays and failed items in admitted batches. A batch rejected for exceeding the
-quota spends no units and does not extend the window: at 9,950/10,000, a rejected
-100-item batch leaves room for 50 items. Admission is atomic across instances.
-A 20,000-item run must therefore span at least two quota
-windows. On HTTP 429, wait for the hourly window to expire (at most 3,600 seconds).
-Retry failed items with their original keys; after an uncertain transport failure,
-retry the original chunk with the same keys. Internal concurrency defaults to 10.
-Operators can set `INBOX_BATCH_ITEMS_PER_HOUR` and `INBOX_BATCH_CONCURRENCY` to
-positive integers. Rate limiting the single-issue endpoint remains a separate follow-up.
+Jobs, quotas, results, replay reservations, and dispatch records live in Neo4j.
+Payloads and results are encrypted at rest. Unresolved jobs are retained until
+reconciliation. Redis is still used by other inbox features, but is not the batch
+job store.
+
+### Limits and background processing
+
+Each request supports at most **100 items** and **4 MiB (4,194,304 bytes)** of JSON.
+Oversized requests return 413. Keep margin for the Lambda invocation envelope and
+split large CLR batches by bytes as well as item count.
+
+The default quota is **10,000 admitted items per hour per issuer**, including
+item replays and failures. Rejected batches consume no units: at 9,950/10,000, a
+rejected 100-item batch still leaves room for 50 items. Admission is atomic.
+Operators can set `INBOX_BATCH_ITEMS_PER_HOUR`; on HTTP 429, wait for the current
+window to expire (at most 3,600 seconds).
+
+The HTTP request persists admission without waiting for signing or delivery.
+A dedicated SQS queue runs up to ten inbox workers independently of notifications.
+The dispatcher normally publishes work within one minute and retries publication
+failures using durable dispatch records. Each worker has a five-minute timeout.
+Interrupted preparation can retry; interrupted issuance may require reconciliation.
+Queue redelivery does not repeat a completed item.
+
+### Local development and operations
+
+From `services/learn-card-network/brain-service`, run
+`docker compose -f compose.inbox.yml up -d`. Set:
+
+```bash
+INBOX_QUEUE_ENDPOINT=http://localhost:9324
+INBOX_QUEUE_URL=http://localhost:9324/000000000000/inbox
+INBOX_DEAD_LETTER_QUEUE_URL=http://localhost:9324/000000000000/inbox-dlq
+```
+
+Run `bun run inbox:worker` alongside the existing backend and its usual dependencies.
+There is no inline fallback when queue configuration is missing. Restarting the
+worker leaves accepted jobs intact.
+
+Run `bun run test:inbox:e2e` for isolated Neo4j, Redis, and SQS emulator tests.
+Monitor queue age, dead-letter depth, dispatcher failures, and unconfirmed items.
+Worker concurrency is configured on the dedicated queue in Serverless. The queues
+are isolated, but inbox workers still share database and signing-service capacity.
