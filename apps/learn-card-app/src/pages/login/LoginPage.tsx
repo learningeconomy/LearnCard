@@ -284,7 +284,9 @@ export const LoginContent: React.FC = () => {
                 void handleGeneratePinUpdateToken();
                 if (canRepromptOnboarding) void handlePromptOnboarding();
             } else {
-                history.push('/dashboard');
+                // Preserve the demo shortcut's existing landing page after the
+                // profile/onboarding gates above have completed.
+                history.push(currentUser?.uid === 'demo' ? '/wallet' : '/dashboard');
                 void handleGeneratePinUpdateToken();
                 if (canRepromptOnboarding) void handlePromptOnboarding();
             }
