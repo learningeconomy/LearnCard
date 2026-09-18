@@ -376,7 +376,17 @@ clients retain their existing explicit opt-in behavior.
 
 Use this path when you know an email address or phone number but the recipient does not yet have a LearnCard account. A registered signing authority is required: the credential remains unsigned until the verified recipient claims it. Phone delivery retains the existing trusted-issuer requirement.
 
-For a guided, no-code walkthrough of this path, run `learncard demo refresh --inbox` (or `bun --cwd packages/learn-card-cli start demo refresh --inbox`). It creates a fresh issuer-owned signing authority, issues to a random `@example.com` address with delivery suppressed, publishes a final version before anyone claims, then either claims with a real DIDAuth presentation (terminal) or hands the claim link to the local app (`--inbox --ui`) and waits for the human to claim and refresh there. The terminal demo defaults to the local LCA at `http://localhost:5100/trpc` and accepts `--lca-url` for another local stack; the UI demo reads the LCA service from the app's `tenant-config.json`. See the CLI README for the exact stages and what to look for.
+For the easiest visual walkthrough, enable the [local email demo configuration](../../tests/e2e/email-demo/README.md), then run:
+
+```bash
+bun --cwd packages/learn-card-cli start demo refresh --inbox --ui --email
+```
+
+Enter an address you can access. The demo school emails a provisional certificate; open the email on the computer running the app, sign in or create an account with that address, and claim it. Return to the terminal to publish final results. View the updated certificate through the in-app notification or the update email's **View Updates** link. The email includes the issuer and credential title when available; grades and credential contents stay in the app. The CLI checks the issuer's bound receipt without accessing your account keys or personal saved records.
+
+This walkthrough deliberately publishes only after claim, so you can see the change. Publishing before the recipient creates an account also works; the recipient gets the latest pending version at claim, as described below.
+
+For an optional disposable-account demonstration with no actual email, run `learncard demo refresh --inbox --ui`. It demonstrates the pre-claim update separately. Omit `--ui` for terminal-only testing (add `--lca-url http://localhost:5200/trpc` for the E2E stack). The UI mode reads service URLs from the running app's tenant configuration.
 
 ```javascript
 const template = {

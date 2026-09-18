@@ -283,6 +283,11 @@ export const runEmailInboxRefreshDemo = async (options: InboxRefreshDemoOptions)
             );
         }
         const pause = env.pause;
+        out.log('\nLearnCard: receive and update a certificate by email\n');
+        out.log('1. Enter your email. The demo school sends a provisional certificate.');
+        out.log('2. Open the email, sign in or create an account with that address, and claim it.');
+        out.log('3. Return here to publish final results. See the update in the app and by email.');
+        out.log('Open email links on this computer, where the local app is running.');
 
         let email = provided;
         if (!email) {
@@ -293,19 +298,10 @@ export const runEmailInboxRefreshDemo = async (options: InboxRefreshDemoOptions)
         if (!parsed.success) throw new Error('Enter a valid email address you own.');
         email = parsed.data.value;
 
-        out.log('\nLearnCard: receive a Universal Inbox credential by email\n');
         out.log(`Network: ${env.network}`);
         out.log(`Inbox claim service: ${env.lca.href}`);
         out.log(`Real email requested for: ${email}`);
-        out.log(
-            'This CLI asks the locally configured delivery service to email a claim link. It cannot confirm that any email was sent or delivered.'
-        );
-        out.log(
-            'Flow: open the mailbox link, sign in or create an account using that same address, and claim the PROVISIONAL certificate.'
-        );
-        out.log(
-            'Then return here and press Enter. The school publishes FINAL grade-A results as version 2, requesting an in-app notification and a generic update email prompting you to log in and view notifications.'
-        );
+        out.log('Email delivery uses your local Postmark configuration; check your mailbox.');
         await pause('start');
 
         out.log('\nSetting up the issuer and signing authority...');
@@ -340,11 +336,11 @@ export const runEmailInboxRefreshDemo = async (options: InboxRefreshDemoOptions)
         const alreadyKnown = !!receipt.holderDid;
         if (alreadyKnown) {
             out.log(
-                'That address already has a LearnCard account; the provisional credential is routed to its in-app inbox.'
+                'That address already has a LearnCard account. Open the email, sign in, then claim the provisional certificate in Alerts.'
             );
         } else {
             out.log(
-                'The provisional credential is waiting for an account with that address. This CLI has requested an email but cannot confirm it was sent.'
+                'The provisional certificate is ready. Open the claim email to sign in or create your account.'
             );
             if (issued.claimUrl) {
                 out.log(
@@ -355,7 +351,7 @@ export const runEmailInboxRefreshDemo = async (options: InboxRefreshDemoOptions)
 
         await pause(
             alreadyKnown
-                ? 'claim the provisional credential in the app with that address'
+                ? 'open the email, sign in with that address, and claim the provisional certificate'
                 : 'open the mailbox link, sign in or create an account with that address, and claim the provisional credential'
         );
 
@@ -402,11 +398,9 @@ export const runEmailInboxRefreshDemo = async (options: InboxRefreshDemoOptions)
         if (publication.notification === 'not-applicable') {
             throw new Error('The claim bound a holder but the update had no notification target.');
         }
+        out.log(`Final results published. In-app notification: ${publication.notification}.`);
         out.log(
-            `Update published as version 2. The school requested an in-app notification (${publication.notification}) and the configured service sends a generic update email.`
-        );
-        out.log(
-            'Neither delivery is confirmed by this CLI. Open app notifications to view Final Results / Final grade: A.'
+            'Check your email for the school and certificate name. Choose View Updates to open Notifications, then view Final Results / Final grade: A.'
         );
         out.set({
             network: env.network,

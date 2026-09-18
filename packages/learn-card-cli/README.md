@@ -119,7 +119,7 @@ walkthrough is:
 3. **Publish final results.** Return to the terminal and press Enter. The CLI reads the
    issuer's inbox-credential record for the bound holder DID, then publishes
    **Final Certificate / Final grade: A** as the single visible update (version 2). That
-   publication requests an in-app notification and a generic update email prompting you to
+   publication requests an in-app notification and a update email with the issuer and certificate name prompting you to
    log in and view notifications.
 4. **View the update.** Open the app notifications to see the final certificate. The CLI
    never creates, signs in as, or reads the recipient wallet, so it does not verify the

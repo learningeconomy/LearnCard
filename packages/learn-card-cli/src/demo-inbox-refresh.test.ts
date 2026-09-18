@@ -557,12 +557,12 @@ describe('real-email inbox refresh (opt-in)', () => {
         expect(JSON.stringify(mocks.set.mock.calls)).toContain('o****@example.com');
 
         const logs = mocks.log.mock.calls.flat().join('\n');
-        expect(logs).toContain('cannot confirm');
+        expect(logs).toContain('Email delivery uses your local Postmark configuration');
         expect(logs).toContain('did not read the recipient wallet');
         expect(mocks.close).toHaveBeenCalled();
     });
 
-    it('publishes version 2 to an already-known recipient without a mailbox step', async () => {
+    it('publishes version 2 after the existing recipient confirms claiming', async () => {
         const order: string[] = [];
         const published: Published[] = [];
         const issuer = makeEmailIssuer(order, published, {
@@ -588,7 +588,7 @@ describe('real-email inbox refresh (opt-in)', () => {
         const logs = mocks.log.mock.calls.flat().join('\n');
         expect(logs).toContain('already has a LearnCard account');
         expect(mocks.question).toHaveBeenCalledWith(
-            expect.stringContaining('claim the provisional credential in the app')
+            expect.stringContaining('open the email, sign in with that address, and claim')
         );
     });
 
