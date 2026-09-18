@@ -39,6 +39,8 @@ Managed refresh is rolling out network by network. If any of these calls fails w
 
 The scripts below use `node --env-file=.env`. Install `@learncard/init` in the folder where you run them.
 
+For an existing boost template, refresh uses the same issuance permissions as an ordinary send, including delegated issue roles. The issuing profile owns the refresh record and controls subsequent updates; creating the template alone does not grant access to another issuer’s refresh records.
+
 ## 1. Issue a credential that can be refreshed
 
 One call does it. `send()` with `refresh: true` takes an ordinary credential template — no refresh fields, no hand-copied JSON-LD context — and handles the refresh setup, signing, and holder-only encrypted delivery. Profile/DID recipients use immediate issuance. Email and phone recipients use deferred Universal Inbox signing; see [Refresh through Universal Inbox](#refresh-through-universal-inbox) below.

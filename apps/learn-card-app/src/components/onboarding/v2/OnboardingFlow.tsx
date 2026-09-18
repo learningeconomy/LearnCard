@@ -184,14 +184,6 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
         'age-country': false,
         profile: false,
     });
-    // Captured once at mount — a claim link (or other post-login destination)
-    // that must survive signup and be resumed only after profile creation.
-    const pendingRedirectRef = useRef<string | null>(null);
-
-    useEffect(() => {
-        pendingRedirectRef.current = resolvePostOnboardingRedirect(redirectStore.get.lcnRedirect());
-    }, []);
-
     const getStepMetadata = useCallback((currentStep: Step) => {
         switch (currentStep) {
             case 'age-country':
@@ -709,11 +701,8 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
         // Resume a preserved claim/destination only after the profile was
         // successfully created (this runs from the celebrate step). Clearing
         // it here — never earlier — keeps it safe across signup and retries.
-        const pendingRedirect =
-            pendingRedirectRef.current ??
-            resolvePostOnboardingRedirect(redirectStore.get.lcnRedirect());
+        const pendingRedirect = resolvePostOnboardingRedirect(redirectStore.get.lcnRedirect());
         if (pendingRedirect) {
-            pendingRedirectRef.current = null;
             redirectStore.set.lcnRedirect(null);
             history.push(pendingRedirect);
             return;

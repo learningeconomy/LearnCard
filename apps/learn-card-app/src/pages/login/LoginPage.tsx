@@ -272,6 +272,7 @@ export const LoginContent: React.FC = () => {
                 authStatus.tag === 'ready' && authStatus.profile.tag === 'present';
 
             if (redirectTo) {
+                redirectStore.set.lcnRedirect(null);
                 redirectStore.set.authRedirect(null);
                 chapiStore.set.isChapiInteraction(null);
                 history.push(redirectTo);

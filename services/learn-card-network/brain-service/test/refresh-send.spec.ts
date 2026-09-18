@@ -1601,6 +1601,59 @@ describe('Unified send with managed refresh (LC-2198)', () => {
     });
 
     describe('receipt-driven publication', () => {
+        it("allows a delegated issuer to send and publish refreshes on another profile's boost", async () => {
+            const boostUri = await outsider.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedVcV2,
+            });
+            const baseline = await getMutationBaseline();
+            await expect(
+                issuer.clients.fullAuth.boost.send({
+                    type: 'boost',
+                    recipient: HOLDER_PROFILE_ID,
+                    templateUri: boostUri,
+                    refresh: true,
+                })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+            await expectsNoMutation(baseline);
+            expect(signingAuthorityMocks.issueCredential).not.toHaveBeenCalled();
+
+            await outsider.clients.fullAuth.boost.addBoostAdmin({
+                uri: boostUri,
+                profileId: ISSUER_PROFILE_ID,
+            });
+            const result = await issuer.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: HOLDER_PROFILE_ID,
+                templateUri: boostUri,
+                refresh: true,
+            });
+            const receipt = result.refresh!;
+            const signedCredential = await issuer.learnCard.invoke.issueCredential({
+                ...testUnsignedVcV2,
+                id: receipt.credentialId,
+                issuer: receipt.issuerDid,
+                credentialSubject: { id: receipt.holderDid },
+                name: 'Updated by delegated issuer',
+                refreshService: receipt.refreshService,
+                credentialStatus: receipt.credentialStatus,
+            } as UnsignedVC);
+            const published =
+                await issuer.clients.fullAuth.credentialRefresh.publishCredentialRefresh({
+                    mode: 'issuer-signed',
+                    refreshId: receipt.refreshId,
+                    signedCredential,
+                });
+            expect(published.version).toBe(2);
+            // Template ownership does not grant access to the delegate's aggregate.
+            await expect(
+                outsider.clients.fullAuth.credentialRefresh.publishCredentialRefresh({
+                    mode: 'issuer-signed',
+                    refreshId: receipt.refreshId,
+                    signedCredential,
+                })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        });
+
         it('publishes version 2 from the retained receipt without a new status allocation', async () => {
             const boostUri = await issuer.clients.fullAuth.boost.createBoost({
                 credential: testUnsignedVcV2,

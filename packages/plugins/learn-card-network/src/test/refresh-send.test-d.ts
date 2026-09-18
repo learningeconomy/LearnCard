@@ -3,9 +3,8 @@
  * and the unified `send` refresh contract, exercised through the REAL plugin type
  * system (`LearnCard<...>['invoke']` composition).
  *
- * These assertions are checked by the TypeScript compiler via `vitest --typecheck`
- * (see the task report for the exact command) — they are compiler-verified, not a
- * runtime substitute.
+ * The package Vitest config enables typechecking, so `bun run test` checks
+ * these assertions with the TypeScript compiler alongside the runtime tests.
  */
 import { describe, expectTypeOf, it } from 'vitest';
 import type { LearnCard, Plugin } from '@learncard/core';

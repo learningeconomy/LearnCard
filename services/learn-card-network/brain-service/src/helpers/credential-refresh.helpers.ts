@@ -24,6 +24,7 @@ import { neogma } from '@instance';
 import { storeCredential } from '@accesslayer/credential/create';
 import { deleteCredential } from '@accesslayer/credential/delete';
 import { getBoostByUri } from '@accesslayer/boost/read';
+import { canProfileIssueBoost } from '@accesslayer/boost/relationships/read';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import { getProfilesThatManageAProfile } from '@accesslayer/profile/relationships/read';
 import {
@@ -620,20 +621,13 @@ export const sendRefreshableCredential = async (
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found' });
     }
 
-    if (boost) {
-        const ownership = await neogma.queryRunner.run(
-            `MATCH (boost:Boost {id: $boostId})-[:CREATED_BY]->
-                   (:Profile {profileId: $issuerProfileId})
-             RETURN boost LIMIT 1`,
-            { boostId: boost.id, issuerProfileId: issuerProfile.profileId }
-        );
-
-        if (ownership.records.length === 0) {
-            throw new TRPCError({
-                code: 'UNAUTHORIZED',
-                message: 'Profile does not own this boost',
-            });
-        }
+    // Match ordinary send authorization: a delegated issuer owns its refresh
+    // aggregate even when another profile created the reusable boost template.
+    if (boost && !(await canProfileIssueBoost(issuerProfile, boost))) {
+        throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: 'Profile does not have permissions to issue boost',
+        });
     }
 
     await verifyManagedRefreshProof((await getLearnCard()).invoke, credential, publicIssuerDid);
