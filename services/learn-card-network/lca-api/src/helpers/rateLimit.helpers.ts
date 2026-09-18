@@ -11,11 +11,25 @@ import cache from '@cache';
 const DEFAULT_RATE_PREFIX = 'rate-limit:';
 
 /**
+ * Lua script for atomic increment with TTL.
+ * Ensures the key always has an expiry, even if the process crashes
+ * between INCR and EXPIRE in a non-atomic implementation.
+ */
+const ATOMIC_INCR_SCRIPT = `
+local current = redis.call('INCR', KEYS[1])
+if current == 1 then
+    redis.call('EXPIRE', KEYS[1], ARGV[1])
+end
+return current
+`;
+
+/**
  * Check and increment a rate-limit counter in Redis.
  * Returns true if the request is allowed, false if rate-limited.
  *
- * Uses atomic INCR + EXPIRE to avoid TOCTOU races where two concurrent
- * requests could both read the same counter value and both pass.
+ * Uses an atomic Lua script to increment and set TTL in a single operation,
+ * preventing the race condition where a crash between INCR and EXPIRE
+ * could leave a key with no expiry, permanently blocking users.
  *
  * @param key - Unique key identifying the resource being rate-limited (e.g., `login-verify:user@example.com`)
  * @param maxAttempts - Maximum number of attempts allowed within the window
@@ -32,14 +46,13 @@ export const checkRateLimit = async (
     const fullKey = `${prefix}${key}`;
     const redis = cache.redis ?? cache.node;
 
-    // INCR is atomic — returns the new value after incrementing.
-    // If the key doesn't exist, Redis creates it with value 1.
-    const current = await redis.incr(fullKey);
-
-    // First request for this window — set the TTL
-    if (current === 1) {
-        await redis.expire(fullKey, windowSeconds);
-    }
+    // Use Lua script for atomic INCR + EXPIRE
+    const current = (await redis.eval(
+        ATOMIC_INCR_SCRIPT,
+        1,
+        fullKey,
+        windowSeconds.toString()
+    )) as number;
 
     if (current > maxAttempts) return false;
 
