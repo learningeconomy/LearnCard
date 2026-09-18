@@ -24,13 +24,17 @@ describe('Docs: Bootstrap an Issuer Organization', () => {
     const suffix = randomBytes(3).toString('hex');
     let managedDid = '';
 
+    let apiToken = '';
+
     beforeAll(async () => {
-        const source = readFileSync(join(SNIPPETS, 'send-as-managed.mjs'), 'utf8');
-        expect(source).toContain('network: true');
-        writeFileSync(
-            join(RUN_DIR, 'send-as-managed.mjs'),
-            source.replaceAll('network: true', `network: '${NETWORK}'`)
-        );
+        for (const name of ['send-as-managed.mjs', 'send-as-managed-token.mjs']) {
+            const source = readFileSync(join(SNIPPETS, name), 'utf8');
+            expect(source).toContain('network: true');
+            writeFileSync(
+                join(RUN_DIR, name),
+                source.replaceAll('network: true', `network: '${NETWORK}'`)
+            );
+        }
 
         // What `org apply` would have done: a parent profile, a manager, one managed profile.
         const parent = await initLearnCard({ seed, network: NETWORK });
@@ -53,6 +57,13 @@ describe('Docs: Bootstrap an Issuer Organization', () => {
             shortBio: '',
         });
 
+        const grantId = await parent.invoke.addAuthGrant({
+            name: 'org-docs-token',
+            scope: 'boosts:write boosts:read profiles:read',
+            actAs: `org-docs-north-${suffix}`,
+        });
+        apiToken = await parent.invoke.getAPITokenForAuthGrant(grantId);
+
         await getLearnCardForUser('b');
     });
 
@@ -70,5 +81,15 @@ describe('Docs: Bootstrap an Issuer Organization', () => {
         const recipient = await getLearnCardForUser('b');
         const incoming = await recipient.invoke.getIncomingCredentials(`org-docs-north-${suffix}`);
         expect(incoming.length).toBeGreaterThan(0);
+    });
+
+    test('an org token acts as a managed profile via invoke.actAs', async () => {
+        const output = run('send-as-managed-token.mjs', {
+            API_TOKEN: apiToken,
+            DISTRICT_PROFILE_ID: `org-docs-north-${suffix}`,
+            RECIPIENT: USERS.b.profileId,
+        });
+        expect(output).toContain(`Acting as North District (org-docs-north-${suffix})`);
+        expect(output).toMatch(/lc:network:.*:credential:/);
     });
 });

@@ -5,7 +5,8 @@ import type { LCALearnCard } from '@learncard/lca-api-plugin';
 import { ensureGitignored, parseEnv, upsertEnv, saveProject, type Project } from '../project';
 import { setupSigning } from '../setup-signing';
 import { out } from '../out';
-import { toEnvKey, type OrgBranding, type OrgSpec } from './schema';
+import { getGrantActAs, type AuthGrantWithActAs } from '../auth-grant';
+import { toEnvKey, type OrgBranding, type OrgServiceAccountSpec, type OrgSpec } from './schema';
 export { toEnvKey } from './schema';
 
 export type OrgResource =
@@ -75,6 +76,7 @@ export type OrgLearnCard = {
         | 'createProfileManager'
         | 'getAuthGrants'
         | 'addAuthGrant'
+        | 'updateAuthGrant'
         | 'getAPITokenForAuthGrant'
         | 'getRegisteredSigningAuthorities'
         | 'registerSigningAuthority'
@@ -591,6 +593,10 @@ const applyProfileManager = async (
     return managerDid;
 };
 
+/** `'*'` stays `'*'`; a profileId list joins with `,` to match the grant's flat `actAs` string. */
+const actAsValue = (actAs: OrgServiceAccountSpec['actAs']): string | undefined =>
+    actAs === undefined ? undefined : actAs === '*' ? '*' : actAs.join(',');
+
 const applyServiceAccounts = async (
     spec: OrgSpec,
     learnCard: OrgLearnCard,
@@ -603,6 +609,7 @@ const applyServiceAccounts = async (
 
     await withSecretsLock(dryRun ? undefined : secretsOut, async () => {
         for (const account of spec.serviceAccounts ?? []) {
+            const actAs = actAsValue(account.actAs);
             const existing = await findActiveGrant(learnCard, account.name);
             if (existing) {
                 if (!existing.id)
@@ -614,11 +621,14 @@ const applyServiceAccounts = async (
                     grantId: existing.id,
                     created: false,
                 });
+                // scope, expiresAt and actAs are all fixed when the token is minted — the only
+                // way to change them is to revoke and mint a replacement.
                 const drift = [
                     normalizeScope(existing.scope) !== normalizeScope(account.scopes.join(' ')) &&
                         'scope',
                     expiryInstant(existing.expiresAt) !== expiryInstant(account.expiresAt) &&
                         'expiresAt',
+                    getGrantActAs(existing) !== actAs && 'actAs',
                 ].filter(Boolean);
                 if (drift.length) {
                     const detail = `Service account "${account.name}" grant has drifted (${drift.join(', ')}). Run npx @learncard/cli token --revoke ${existing.id} then re-run org apply.`;
@@ -661,13 +671,15 @@ const applyServiceAccounts = async (
                 throw new Error(
                     `Pass --secrets-out ./secrets.env (any path; keep it beside .env and out of git) to create service account "${account.name}" — the token is written to this file and not stored elsewhere by the CLI.`
                 );
-            const grantId = await learnCard.invoke.addAuthGrant({
+            const payload: AuthGrantWithActAs = {
                 name: account.name,
                 scope: account.scopes.join(' '),
                 ...(account.expiresAt
                     ? { expiresAt: new Date(account.expiresAt).toISOString() }
                     : {}),
-            });
+                ...(actAs !== undefined ? { actAs } : {}),
+            };
+            const grantId = await learnCard.invoke.addAuthGrant(payload);
             const token = await learnCard.invoke.getAPITokenForAuthGrant(grantId);
             await writeSecret(secretsOut, account.name, token);
             out.log(`Token for "${account.name}" written to ${secretsOut}`);

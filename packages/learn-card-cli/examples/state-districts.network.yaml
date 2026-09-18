@@ -28,6 +28,8 @@ serviceAccounts:
     - name: ex-clr-issuer
       scopes: [inbox:write, inbox:read, credentials:write, credentials:read]
       expiresAt: 2027-06-30
+      # '*' lets this token act as any profile under profileManager.managed (e.g. cs-exampleville).
+      actAs: '*'
 
 webhooks:
     - url: https://clr.example.org/learncard/webhook
