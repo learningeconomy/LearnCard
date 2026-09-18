@@ -72,6 +72,19 @@ Template variables changed from numeric IDs to string aliases:
 Update your deployment configuration accordingly.
 {% endhint %}
 
+### Automatic Escrow Recovery (Optional)
+
+Keep disabled in production until notification delivery and the attested enclave backend are deployed. Software mode is for development and CI only; its clock is host-controlled and notifications currently only log event kinds.
+
+These settings configure the running API process. The current Serverless deployment does not forward them into Lambda; setting them in the deployment shell alone does not enable the deployed backend.
+
+| Variable                                    | Description                                                                                                         | Example                        |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| `ESCROW_ENCLAVE_MODE`                       | Unset disables all escrow routes. `software` enables the development backend; `remote` is reserved and unavailable. | `software`                     |
+| `ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON` | Secret JSON map of key IDs to PKCS#8 base64 P-256 private keys; required in software mode.                          | `{"dev-key":"<PKCS8_BASE64>"}` |
+| `ESCROW_ENCLAVE_ACTIVE_KEY_ID`              | Active enrollment key ID, required in the software key map.                                                         | `dev-key`                      |
+| `ESCROW_HOLD_DURATION_MS`                   | Positive integer waiting period in milliseconds; defaults to seven days. Shorten only for tests.                    | `604800000`                    |
+
 ### Monitoring (Optional)
 
 | Variable     | Description                                                  | Example                     |

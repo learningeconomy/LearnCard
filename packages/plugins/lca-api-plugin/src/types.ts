@@ -210,7 +210,13 @@ export const EncryptedShareValidator = z.object({
 });
 export type EncryptedShare = z.infer<typeof EncryptedShareValidator>;
 
-export const RecoveryMethodTypeValidator = z.enum(['passkey', 'backup', 'phrase', 'email']);
+export const RecoveryMethodTypeValidator = z.enum([
+    'passkey',
+    'backup',
+    'phrase',
+    'email',
+    'escrow',
+]);
 export type RecoveryMethodType = z.infer<typeof RecoveryMethodTypeValidator>;
 
 export const SecurityLevelValidator = z.enum(['basic', 'enhanced', 'advanced']);
