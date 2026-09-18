@@ -123,6 +123,46 @@ describe('ShareBoostLink error recovery', () => {
             client.clear();
         }
     );
+
+    it('falls back to the credential id when no record URI is available', async () => {
+        createLink.mockResolvedValue({ link: 'https://learncard.app/share-boost?uri=credential' });
+        const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
+
+        render(
+            <QueryClientProvider client={client}>
+                <ShareBoostLink boost={credential} categoryType={'Achievement' as never} />
+            </QueryClientProvider>
+        );
+
+        await waitFor(() =>
+            expect(createLink).toHaveBeenCalledWith(
+                {
+                    credential,
+                    credentialUri: credential.id,
+                    credentialId: credential.id,
+                },
+                expect.anything()
+            )
+        );
+        client.clear();
+    });
+
+    it('does not create an index record without a credential URI', async () => {
+        const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
+
+        render(
+            <QueryClientProvider client={client}>
+                <ShareBoostLink
+                    boost={{ ...credential, id: undefined }}
+                    categoryType={'Achievement' as never}
+                />
+            </QueryClientProvider>
+        );
+
+        expect(await screen.findByRole('alert')).toBeInTheDocument();
+        expect(createLink).not.toHaveBeenCalled();
+        client.clear();
+    });
     it('uses the environment-aware tenant origin for endorsement request links', async () => {
         createLink.mockResolvedValue({
             link: 'https://learncard.app/share-boost?uri=credential%3Atest&seed=seed&pin=1234',

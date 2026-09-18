@@ -71,10 +71,12 @@ const ViewSharedBoost: React.FC<{
     const draftEndorsementRequest = endorsementsRequestStore.useTracked.endorsementRequest();
     const draftEndorseRequestVC = endorsementsRequestStore.useTracked.credentialInfo();
 
-    const uri = draftEndorseRequestVC?.uri || _uri;
-    const seed = draftEndorseRequestVC?.seed || _seed;
-    const pin = draftEndorseRequestVC?.pin || _pin;
-    const endorsementCredentialId = draftEndorseRequestVC?.credentialId;
+    const credentialInfo =
+        showEndorsementRequest || showDraftSuccess ? draftEndorseRequestVC : undefined;
+    const uri = credentialInfo?.uri || _uri;
+    const seed = credentialInfo?.seed || _seed;
+    const pin = credentialInfo?.pin || _pin;
+    const endorsementCredentialId = credentialInfo?.credentialId;
 
     const [presentAlert] = useIonAlert();
 

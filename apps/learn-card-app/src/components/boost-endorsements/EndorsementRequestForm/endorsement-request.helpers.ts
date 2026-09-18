@@ -1,3 +1,5 @@
+import { Capacitor } from '@capacitor/core';
+
 export type EndorsementRequestState = {
     text?: string;
     email?: string;
@@ -21,8 +23,10 @@ export type EndorsementRequestCredentialInfo = {
 
 export const getEndorsementRequestBaseUrl = (
     tenantBaseUrl: string,
-    browserOrigin = globalThis.location?.origin
+    browserOrigin = globalThis.location?.origin,
+    isNativePlatform = Capacitor.isNativePlatform()
 ): string => {
+    if (isNativePlatform) return tenantBaseUrl;
     if (!browserOrigin) return tenantBaseUrl;
 
     try {

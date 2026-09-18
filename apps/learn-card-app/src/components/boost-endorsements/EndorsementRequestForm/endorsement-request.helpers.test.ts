@@ -76,13 +76,20 @@ describe('endorsement request identity', () => {
         );
     });
 
-    it('uses the current web origin and falls back for native origins', () => {
+    it('uses the current web origin and the public tenant origin on native', () => {
         expect(
-            getEndorsementRequestBaseUrl('https://learncard.app', 'https://preview.example.com')
+            getEndorsementRequestBaseUrl(
+                'https://learncard.app',
+                'https://preview.example.com',
+                false
+            )
         ).toBe('https://preview.example.com');
-        expect(getEndorsementRequestBaseUrl('https://learncard.app', 'capacitor://localhost')).toBe(
-            'https://learncard.app'
-        );
+        expect(
+            getEndorsementRequestBaseUrl('https://learncard.app', 'capacitor://localhost', true)
+        ).toBe('https://learncard.app');
+        expect(
+            getEndorsementRequestBaseUrl('https://learncard.app', 'https://localhost', true)
+        ).toBe('https://learncard.app');
     });
 
     it('separates credentials even when a legacy share link was reused', () => {

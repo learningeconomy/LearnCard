@@ -162,12 +162,20 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
     );
 
     const generateShareLink = () => {
+        const credentialUri = boostUri ?? sharedCredentialId;
+
         setHasLinkGenerationError(false);
         setShareLink(undefined);
+
+        if (!credentialUri) {
+            setHasLinkGenerationError(true);
+            return;
+        }
+
         shareEarnedBoost(
             {
                 credential: boost,
-                credentialUri: boostUri as string,
+                credentialUri,
                 credentialId: sharedCredentialId,
             },
             {

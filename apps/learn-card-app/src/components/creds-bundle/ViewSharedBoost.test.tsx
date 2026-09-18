@@ -231,4 +231,20 @@ describe('ViewSharedBoost', () => {
         expect(mocks.setCredentialInfo).not.toHaveBeenCalled();
         expect(mocks.requestModalProps.some(props => Boolean(props.targetCredential))).toBe(false);
     });
+
+    it('ignores stale endorsement state on the normal share route', async () => {
+        mocks.credentialInfo = {
+            uri: 'ceramic://stale-endorsement-presentation',
+            seed: 'stale-seed',
+            pin: '0000',
+            credentialId: 'urn:uuid:stale',
+        };
+
+        render(<ViewSharedBoost />);
+
+        await waitFor(() => expect(mocks.readCredential).toHaveBeenCalledWith(storageUri));
+        expect(mocks.readCredential).not.toHaveBeenCalledWith(
+            'ceramic://stale-endorsement-presentation'
+        );
+    });
 });
