@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import { recordInboxRefreshClaimUrl } from '@accesslayer/inbox-credential/refresh';
 import { randomUUID } from 'node:crypto';
 import {
@@ -560,6 +561,31 @@ export const issueToInbox = async (
                         },
                     },
                 });
+            // Existing accounts receive the signed credential in their app inbox.
+            // Send the email there too, without a claim token for an already-bound delivery.
+            if (recipient.type === 'email' && !delivery?.suppress) {
+                try {
+                    const appUrl = environment.IS_OFFLINE
+                        ? generateClaimUrl('')
+                        : ctx.tenant?.emailBranding?.appUrl || generateClaimUrl('');
+                    await getDeliveryService(recipient).send({
+                        contactMethod: recipient,
+                        templateId: 'universal-inbox-claim',
+                        templateModel: {
+                            claimUrl: new URL('/notifications', appUrl).href,
+                            issuer: { name: issuerProfile.displayName },
+                            credential: { name: credential.name },
+                        },
+                        branding: ctx.tenant?.emailBranding,
+                        locale: resolveRecipientLocale(existingProfile),
+                        messageStream: 'universal-inbox',
+                    });
+                } catch {
+                    // The credential and in-app notification are already durable. An
+                    // email transport failure must not turn that delivery into an error.
+                    console.warn('Inbox refresh: initial email failed after auto-delivery.');
+                }
+            }
             return {
                 status: 'ISSUED',
                 inboxCredential: {

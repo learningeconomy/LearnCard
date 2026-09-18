@@ -1,6 +1,6 @@
 import { vi, describe, it, expect, beforeAll, beforeEach } from 'vitest';
 import type { UnsignedVC, VP } from '@learncard/types';
-const mocks = vi.hoisted(() => ({ sign: vi.fn(), verify: vi.fn() }));
+const mocks = vi.hoisted(() => ({ sign: vi.fn(), verify: vi.fn(), sendEmail: vi.fn() }));
 vi.mock('@helpers/signingAuthority.helpers', async original => ({
     ...(await original<Record<string, unknown>>()),
     issueCredentialWithSigningAuthority: mocks.sign,
@@ -10,7 +10,7 @@ vi.mock('@helpers/credential-refresh-proof.helpers', () => ({
     verifyManagedRefreshProof: mocks.verify,
 }));
 vi.mock('@services/delivery/delivery.factory', () => ({
-    getDeliveryService: () => ({ send: vi.fn() }),
+    getDeliveryService: () => ({ send: mocks.sendEmail }),
 }));
 vi.mock('@services/registry/registry.factory', () => ({
     getRegistryService: () => ({ isTrusted: async () => true }),
@@ -89,6 +89,7 @@ beforeAll(async () => {
     vi.spyOn(notifications, 'addNotificationToQueue').mockResolvedValue();
 });
 beforeEach(async () => {
+    mocks.sendEmail.mockReset().mockResolvedValue(undefined);
     // @instance is the isolated Testcontainers database, never the user's local demo stack.
     await neogma.queryRunner.run('MATCH (n) DETACH DELETE n');
     await issuer.clients.fullAuth.profile.createProfile({ profileId: 'inbox-refresh-issuer' });
@@ -291,6 +292,7 @@ describe('managed Universal Inbox refresh', () => {
         await verifyContactMethod(
             (await getContactMethodByValue('email', 'known@example.com'))!.id
         );
+        mocks.sendEmail.mockClear(); // Ignore contact-method verification delivery above.
         const issued = await issue({ recipient: { type: 'email', value: 'known@example.com' } });
         expect(issued).toMatchObject({
             status: 'ISSUED',
@@ -301,6 +303,38 @@ describe('managed Universal Inbox refresh', () => {
         expect((await getCredentialRefresh(issued.refresh!.refreshId))?.state).toBe(
             'awaiting_claim'
         );
+        expect(mocks.sendEmail).not.toHaveBeenCalled();
+    });
+
+    it('emails existing recipients once with an app link and preserves delivery if email fails', async () => {
+        await holder.clients.fullAuth.contactMethods.addContactMethod({
+            type: 'email',
+            value: 'known@example.com',
+        });
+        await verifyContactMethod(
+            (await getContactMethodByValue('email', 'known@example.com'))!.id
+        );
+        mocks.sendEmail.mockClear(); // Ignore contact-method verification delivery above.
+        mocks.sendEmail.mockRejectedValueOnce(new Error('Email provider unavailable'));
+        const input = {
+            recipient: { type: 'email' as const, value: 'known@example.com' },
+            idempotencyKey: 'known-email',
+            configuration: { signingAuthority: SA, delivery: { suppress: false } },
+        };
+        const issued = await issue(input);
+        expect(issued.status).toBe('ISSUED');
+        expect(mocks.sendEmail).toHaveBeenCalledTimes(1);
+        expect(mocks.sendEmail).toHaveBeenCalledWith(
+            expect.objectContaining({
+                contactMethod: input.recipient,
+                templateId: 'universal-inbox-claim',
+                templateModel: expect.objectContaining({
+                    claimUrl: expect.stringMatching(/\/notifications$/),
+                }),
+            })
+        );
+        expect((await issue(input)).issuanceId).toBe(issued.issuanceId);
+        expect(mocks.sendEmail).toHaveBeenCalledTimes(1);
     });
 
     it('routes unified send to the same inbox lifecycle and reuses its boost on retry', async () => {
