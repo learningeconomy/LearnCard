@@ -128,7 +128,7 @@ const ClrAssessmentDetailPanel: React.FC<{
                             <p className="text-2xl font-semibold text-emerald-700 leading-none text-center">
                                 {summary.headline}
                             </p>
-                            <p className="text-[13px] font-semibold text-grayscale-600 uppercase mt-1.5">
+                            <p className="text-sm font-semibold text-grayscale-600 uppercase mt-1.5">
                                 {assessment.isRubric ? 'Typical level' : 'Score'}
                             </p>
                         </div>
@@ -136,7 +136,7 @@ const ClrAssessmentDetailPanel: React.FC<{
                             <p className="text-2xl font-semibold text-grayscale-900 leading-none">
                                 {assessment.results.length}
                             </p>
-                            <p className="text-[13px] font-semibold text-grayscale-600 uppercase mt-1.5">
+                            <p className="text-sm font-semibold text-grayscale-600 uppercase mt-1.5">
                                 {assessment.isRubric ? 'Criteria' : 'Scores'}
                             </p>
                         </div>
@@ -147,14 +147,14 @@ const ClrAssessmentDetailPanel: React.FC<{
                             <h3 className="text-lg font-medium text-grayscale-900 mb-2">
                                 Description
                             </h3>
-                            <p className="text-sm text-grayscale-700">
+                            <p className="text-base text-grayscale-700 leading-relaxed">
                                 {assessment.description.value}
                             </p>
                         </div>
                     )}
 
                     {assessment.earnedAt?.value && (
-                        <p className="text-sm text-grayscale-600">
+                        <p className="text-base text-grayscale-600">
                             Completed on{' '}
                             <span className="font-semibold text-grayscale-600">
                                 {formatClrDate(assessment.earnedAt.value)}

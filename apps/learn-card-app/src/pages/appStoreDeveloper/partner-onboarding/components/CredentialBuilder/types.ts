@@ -49,13 +49,25 @@ export interface ResultTemplate {
     achievedLevel?: TemplateFieldValue; // Reference to RubricCriterionLevel
 }
 
+// OBv3 rubric level declared by a ResultDescription
+export interface RubricCriterionLevelTemplate {
+    id: string;
+    name: TemplateFieldValue;
+    level: TemplateFieldValue;
+    points: TemplateFieldValue;
+}
+
 // OBv3 ResultDescription structure (defines possible results for an achievement)
 export interface ResultDescriptionTemplate {
     id: string; // Internal ID and also used as reference
     name: TemplateFieldValue; // e.g., "Final Grade"
     resultType?: TemplateFieldValue; // e.g., "LetterGrade", "GradePointAverage", "Percent"
+    alignment?: AlignmentTemplate[];
     allowedValue?: string[]; // e.g., ["A", "B", "C", "D", "F"]
     requiredValue?: TemplateFieldValue; // Minimum passing value
+    rubricCriterionLevel?: RubricCriterionLevelTemplate[];
+    valueMin?: TemplateFieldValue;
+    valueMax?: TemplateFieldValue;
 }
 
 // OBv3 IdentifierEntry structure (for otherIdentifier arrays)

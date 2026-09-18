@@ -18,16 +18,17 @@ Choose one option.
 You need **Node.js 20 or newer**. In an empty folder, run:
 
 ```bash
-npx @learncard/cli send you@example.com
+npx @learncard/cli send
 ```
 
-Use **a real email address you can open**. The command:
+The command:
 
-1. Ask for your issuer name and a badge name (Enter accepts the defaults)
-2. Generate a secret seed and write it to `.env` (and add `.env` to `.gitignore`)
-3. Create your profile on the LearnCard Network
-4. Sign a "Quickstart Complete" badge and send it
-5. Write the generated code to `./send.mjs`
+1. Ask where to send the badge — use **a real email address you can open** (or pass it directly: `npx @learncard/cli send you@yourdomain.com`)
+2. Ask for your issuer name and a badge name (Enter accepts the defaults)
+3. Generate a secret seed and write it to `.env` (and add `.env` to `.gitignore`)
+4. Create your profile on the LearnCard Network
+5. Sign a "Quickstart Complete" badge and send it
+6. Write the generated code to `./send.mjs`
 
 Then skip to [What you should see](#what-you-should-see).
 

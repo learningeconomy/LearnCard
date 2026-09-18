@@ -11,11 +11,11 @@ description: 'One call sends a credential to an email, phone, or LearnCard profi
 ## The one-line version
 
 ```bash
-npx @learncard/cli send you@example.com            # you sign; writes send.mjs
-npx @learncard/cli send you@example.com --template # LearnCard signs from a reusable template; writes send-from-template.mjs
+npx @learncard/cli send                    # you sign; writes send.mjs
+npx @learncard/cli send --template         # LearnCard signs from a reusable template; writes send-from-template.mjs
 ```
 
-Both reuse the `.env` the Quickstart created. Everything below is what those scripts do, and the options `send()` takes beyond them.
+Both prompt for the recipient (or take it as an argument: `send you@yourdomain.com`) and reuse the `.env` the Quickstart created. Everything below is what those scripts do, and the options `send()` takes beyond them.
 
 ## `send()` in one picture
 

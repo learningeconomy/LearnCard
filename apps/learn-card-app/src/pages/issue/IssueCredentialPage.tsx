@@ -46,6 +46,7 @@ import { attachmentsToEvidence } from './components/mediaEvidence';
 import type { SimpleMediaAttachment } from './components/MediaAttachments';
 import { useCredentialIdentity } from './components/useCredentialIdentity';
 import { mergeSkillAlignments, type ResolvedSkill } from './components/skillAlignment';
+import { getResultValidationError } from './components/resultField';
 import type { SelectedSkill } from '../skills/skillTypes';
 import { IssueCredentialView } from './IssueCredentialView';
 import {
@@ -123,8 +124,8 @@ const hasAchievementImage = (subject: unknown): boolean => {
         typeof imageValue === 'string' ||
         Boolean(
             imageValue &&
-                typeof imageValue === 'object' &&
-                (imageValue as Record<string, unknown>).id
+            typeof imageValue === 'object' &&
+            (imageValue as Record<string, unknown>).id
         )
     );
 };
@@ -195,7 +196,6 @@ const IssueCredentialPage: React.FC = () => {
     // gate below rather than a literal value.
     const nameIsDynamic = Boolean(ach?.name?.isDynamic && ach?.name?.variableName);
     const nameValid = nameIsDynamic || Boolean(ach?.name?.value?.trim());
-    const detailsValid = nameValid;
     const recipientValid =
         recipientMode === 'self' ||
         recipientMode === 'link' ||
@@ -232,6 +232,19 @@ const IssueCredentialPage: React.FC = () => {
             return recipientValues[recipientKey(recipients[0])] ?? {};
         return variableValues;
     }, [usePerRecipient, recipients, recipientValues, variableValues]);
+    const resultValidationError = useMemo(() => {
+        if (!template || jsonOnly) return null;
+        const valueSets =
+            usePerRecipient && recipients.length > 0
+                ? recipients.map(recipient => recipientValues[recipientKey(recipient)] ?? {})
+                : [variableValues];
+        return (
+            valueSets
+                .map(values => getResultValidationError(template, values))
+                .find((message): message is string => Boolean(message)) ??
+            getResultValidationError(template)
+        );
+    }, [template, jsonOnly, usePerRecipient, recipients, recipientValues, variableValues]);
 
     const hasRecipientEvidence = recipients.some(
         r => (recipientEvidence[recipientKey(r)]?.length ?? 0) > 0
@@ -248,7 +261,7 @@ const IssueCredentialPage: React.FC = () => {
         const out: Record<string, Record<string, unknown>> = {};
         for (const recipient of recipients) {
             const key = recipientKey(recipient);
-            const values = usePerRecipient ? recipientValues[key] ?? {} : variableValues;
+            const values = usePerRecipient ? (recipientValues[key] ?? {}) : variableValues;
             const evidence = attachmentsToEvidence(recipientEvidence[key] ?? []);
             const data: Record<string, unknown> = { ...values };
             if (evidence.length > 0) {
@@ -286,7 +299,8 @@ const IssueCredentialPage: React.FC = () => {
         !isSubmitting &&
         !jsonError &&
         allVariablesFilled &&
-        (jsonOnly ? identity.status === 'valid' : detailsValid);
+        !resultValidationError &&
+        (jsonOnly ? identity.status === 'valid' : nameValid);
 
     const issuerName = currentLCNUser?.displayName?.trim() || 'You';
     const issuerImage = currentLCNUser?.image || undefined;
@@ -294,24 +308,26 @@ const IssueCredentialPage: React.FC = () => {
     const provenanceLabel = !provenance
         ? null
         : provenance.source === 'credential-engine'
-        ? 'Credential Engine'
-        : provenance.source === 'reuse'
-        ? 'your library'
-        : provenance.label || 'an external source';
+          ? 'Credential Engine'
+          : provenance.source === 'reuse'
+            ? 'your library'
+            : provenance.label || 'an external source';
 
     const missingHint = !template
         ? m['issueFlow.gate.pickType']()
         : jsonError
-        ? m['issueFlow.gate.fixJson']()
-        : viewingJson && identity.status === 'invalid'
-        ? identity.reason
-        : !jsonOnly && !nameValid
-        ? m['issueFlow.gate.addName']()
-        : !allVariablesFilled
-        ? `Fill in ${unfilledCount} detail${unfilledCount === 1 ? '' : 's'} to continue`
-        : !recipientValid
-        ? m['issueFlow.gate.addRecip']()
-        : null;
+          ? m['issueFlow.gate.fixJson']()
+          : viewingJson && identity.status === 'invalid'
+            ? identity.reason
+            : !jsonOnly && !nameValid
+              ? m['issueFlow.gate.addName']()
+              : !allVariablesFilled
+                ? `Fill in ${unfilledCount} detail${unfilledCount === 1 ? '' : 's'} to continue`
+                : resultValidationError
+                  ? resultValidationError
+                  : !recipientValid
+                    ? m['issueFlow.gate.addRecip']()
+                    : null;
 
     const handleSelectType = useCallback((entry: CredentialTypeEntry) => {
         log.info('issue.type_selected', { obv3Type: entry.obv3Type });
