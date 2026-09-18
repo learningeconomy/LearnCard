@@ -5,7 +5,7 @@ import type { LCALearnCard } from '@learncard/lca-api-plugin';
 import { ensureGitignored, parseEnv, upsertEnv, saveProject, type Project } from '../project';
 import { setupSigning } from '../setup-signing';
 import { out } from '../out';
-import { getGrantActAs, type AuthGrantWithActAs } from '../auth-grant';
+import { describeActAs, getGrantActAs, type AuthGrantWithActAs } from '../auth-grant';
 import { toEnvKey, type OrgBranding, type OrgServiceAccountSpec, type OrgSpec } from './schema';
 export { toEnvKey } from './schema';
 
@@ -76,7 +76,6 @@ export type OrgLearnCard = {
         | 'createProfileManager'
         | 'getAuthGrants'
         | 'addAuthGrant'
-        | 'updateAuthGrant'
         | 'getAPITokenForAuthGrant'
         | 'getRegisteredSigningAuthorities'
         | 'registerSigningAuthority'
@@ -628,10 +627,11 @@ const applyServiceAccounts = async (
                         'scope',
                     expiryInstant(existing.expiresAt) !== expiryInstant(account.expiresAt) &&
                         'expiresAt',
-                    getGrantActAs(existing) !== actAs && 'actAs',
+                    getGrantActAs(existing) !== actAs &&
+                        `actAs ${describeActAs(getGrantActAs(existing))} -> ${describeActAs(actAs)}`,
                 ].filter(Boolean);
                 if (drift.length) {
-                    const detail = `Service account "${account.name}" grant has drifted (${drift.join(', ')}). Run npx @learncard/cli token --revoke ${existing.id} then re-run org apply.`;
+                    const detail = `Service account "${account.name}" grant has drifted (${drift.join(', ')}). These are fixed when the token is minted — revoke it (npx @learncard/cli token --revoke ${existing.id}) and re-run org apply with --secrets-out to mint a replacement.`;
                     if (!dryRun) throw new Error(detail);
                     changes.push({
                         resource: 'serviceAccount',

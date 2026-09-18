@@ -38,7 +38,9 @@ const managerDid = 'did:web:network.learncard.com:manager:m1';
 const managedDid = 'did:web:network.learncard.com:users:sc-greenville';
 
 const makeMockCard = (): OrgLearnCard & {
-    invoke: { [K in keyof OrgLearnCard['invoke']]: ReturnType<typeof vi.fn> };
+    invoke: { [K in keyof OrgLearnCard['invoke']]: ReturnType<typeof vi.fn> } & {
+        updateAuthGrant: ReturnType<typeof vi.fn>;
+    };
 } => ({
     id: { did: vi.fn((method?: string) => (method === 'web' ? issuerDid : 'did:key:z6Mk...')) },
     invoke: {
@@ -137,7 +139,7 @@ describe('service-account reconciliation', () => {
                 'grant has drifted'
             );
             await expect(applyOrg(accountSpec, card, project)).rejects.toThrow(
-                'npx @learncard/cli token --revoke grant-1 then re-run org apply'
+                'revoke it (npx @learncard/cli token --revoke grant-1) and re-run org apply with --secrets-out'
             );
             expect(card.invoke.addAuthGrant).not.toHaveBeenCalled();
             expect(card.invoke.getAPITokenForAuthGrant).not.toHaveBeenCalled();
@@ -608,14 +610,26 @@ describe('applyOrg', () => {
         });
     });
 
-    it('updates an existing grant and reports it when actAs differs from the spec', async () => {
+    it('fails with a revoke + re-create hint when actAs differs from the existing grant', async () => {
         await withTmpProject(async project => {
             const card = makeMockCard();
+            card.invoke.getProfile.mockResolvedValue({
+                profileId: 'scde',
+                displayName: 'South Carolina Department of Education',
+                did: issuerDid,
+            });
+            card.invoke.getRegisteredSigningAuthorities.mockResolvedValue([
+                {
+                    signingAuthority: { endpoint: authorityRecord.endpoint },
+                    relationship: { name: 'scde-clr', did: authorityRecord.did, isPrimary: true },
+                },
+            ]);
             const existingGrant: AuthGrantWithActAs = {
                 id: 'grant-1',
                 name: 'ea-clr-issuer',
                 status: 'active',
-                scope: 'inbox:write',
+                scope: matchingGrant.scope,
+                expiresAt: matchingGrant.expiresAt,
                 actAs: 'sc-greenville',
             };
             card.invoke.getAuthGrants.mockResolvedValue([existingGrant]);
@@ -626,17 +640,50 @@ describe('applyOrg', () => {
                 serviceAccounts: [{ ...spec.serviceAccounts![0]!, actAs: '*' }],
             };
 
-            const result = await applyOrg(specWithActAs, card, project, {
+            const message =
+                'Service account "ea-clr-issuer" grant has drifted (actAs sc-greenville -> any managed profile). These are fixed when the token is minted — revoke it (npx @learncard/cli token --revoke grant-1)';
+
+            const preview = await applyOrg(specWithActAs, card, project, {
+                dryRun: true,
                 connectAsManager: async () => makeMockManager(),
             });
-
-            expect(card.invoke.updateAuthGrant).toHaveBeenCalledWith('grant-1', { actAs: '*' });
-            expect(card.invoke.addAuthGrant).not.toHaveBeenCalled();
             expect(
-                result.changes.find(
+                preview.changes.find(
                     c => c.resource === 'serviceAccount' && c.name === 'ea-clr-issuer'
                 )
-            ).toMatchObject({ action: 'updated', detail: 'actAs' });
+            ).toMatchObject({ action: 'drifted', detail: expect.stringContaining(message) });
+
+            await expect(
+                applyOrg(specWithActAs, card, project, {
+                    connectAsManager: async () => makeMockManager(),
+                })
+            ).rejects.toThrow(message);
+
+            expect(card.invoke.updateAuthGrant).not.toHaveBeenCalled();
+            expect(card.invoke.addAuthGrant).not.toHaveBeenCalled();
+
+            log.mockRestore();
+        });
+    });
+
+    it('fails when the spec drops actAs from a grant that has it', async () => {
+        await withTmpProject(async project => {
+            const card = makeMockCard();
+            const existingGrant: AuthGrantWithActAs = {
+                id: 'grant-1',
+                name: 'ea-clr-issuer',
+                status: 'active',
+                scope: matchingGrant.scope,
+                expiresAt: matchingGrant.expiresAt,
+                actAs: '*',
+            };
+            card.invoke.getAuthGrants.mockResolvedValue([existingGrant]);
+            const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+            await expect(
+                applyOrg(spec, card, project, { connectAsManager: async () => makeMockManager() })
+            ).rejects.toThrow('grant has drifted (actAs any managed profile -> no delegation)');
+            expect(card.invoke.updateAuthGrant).not.toHaveBeenCalled();
 
             log.mockRestore();
         });
@@ -649,7 +696,8 @@ describe('applyOrg', () => {
                 id: 'grant-1',
                 name: 'ea-clr-issuer',
                 status: 'active',
-                scope: 'inbox:write',
+                scope: matchingGrant.scope,
+                expiresAt: matchingGrant.expiresAt,
                 actAs: 'sc-greenville,sc-north',
             };
             card.invoke.getAuthGrants.mockResolvedValue([existingGrant]);

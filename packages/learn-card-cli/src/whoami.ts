@@ -85,7 +85,7 @@ export const runWhoami = async (options: ProjectOptions): Promise<void> => {
         }
     }
 
-    const grants = (await learnCard.invoke.getAuthGrants()) ?? [];
+    const grants = profile ? ((await learnCard.invoke.getAuthGrants()) ?? []) : [];
     const serviceAccounts = summarizeServiceAccounts(grants);
     if (serviceAccounts.length) {
         out.log('Service accounts:');

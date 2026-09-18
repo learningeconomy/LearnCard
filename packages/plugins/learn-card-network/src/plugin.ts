@@ -21,6 +21,7 @@ import {
     StoredCredentialEnvelope,
     StoredCredentialEnvelopeValidator,
     isStoredCredentialEnvelope,
+    ACT_AS_HEADER,
 } from '@learncard/types';
 import { LearnCard } from '@learncard/core';
 import { VerifyExtension } from '@learncard/vc-plugin';
@@ -520,10 +521,12 @@ export * from './types';
 
 export type GuardianApprovalGetter = () => string | undefined | Promise<string | undefined>;
 
-// TODO: swap to `import { ACT_AS_HEADER } from '@learncard/types'` once that package
-// exports it (server-side work is landing in parallel on this branch).
-/** HTTP header used to ask the network service to act as a managed profile for this request. */
-export const ACT_AS_HEADER = 'X-LearnCard-Act-As';
+export { ACT_AS_HEADER };
+
+const isActAsDenial = (error: unknown): boolean => {
+    const code = (error as { data?: { code?: string } } | undefined)?.data?.code;
+    return code === 'FORBIDDEN' || code === 'NOT_FOUND';
+};
 
 /**
  * @group Plugins
@@ -913,6 +916,15 @@ export async function getLearnCardNetworkPlugin(
                 const actingPlugin = apiToken
                     ? await getLearnCardNetworkPlugin(_learnCard, url, apiToken, actingOptions)
                     : await getLearnCardNetworkPlugin(_learnCard, url, actingOptions);
+
+                // The plugin's own initial getProfile is non-fatal by design, so an act-as
+                // denial would otherwise only surface later as "Please make an account first!".
+                try {
+                    await actingPlugin.methods.getLCNClient(_learnCard).profile.getProfile.query();
+                } catch (error) {
+                    if (isActAsDenial(error)) throw error;
+                    _learnCard.debug?.('LCN actAs: getProfile failed (non-fatal)', error);
+                }
 
                 return _learnCard.addPlugin(actingPlugin);
             },
