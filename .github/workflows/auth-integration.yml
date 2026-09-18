@@ -1,0 +1,47 @@
+name: Auth Integration (Keycloak)
+
+on:
+    pull_request:
+        paths:
+            - 'services/learn-card-network/lca-api/**'
+            - 'infra/keycloak/**'
+            - '.github/workflows/auth-integration.yml'
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+jobs:
+    keycloak-verifier-tests:
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v7
+            - name: Use Composite Setup Action
+              uses: ./.github/actions/setup
+            - name: Start Keycloak
+              run: |
+                  docker run -d --name keycloak -p 8081:8080 -p 9000:9000 \
+                    -e KC_BOOTSTRAP_ADMIN_USERNAME=admin -e KC_BOOTSTRAP_ADMIN_PASSWORD=admin \
+                    -e KC_HEALTH_ENABLED=true -e KC_HOSTNAME=http://localhost:8081 \
+                    -e KC_HTTP_ENABLED=true \
+                    -v "$GITHUB_WORKSPACE/infra/keycloak/realms/learncard-dev-realm.json:/opt/keycloak/data/import/learncard-realm.json:ro" \
+                    quay.io/keycloak/keycloak:26.7.4 start-dev --import-realm
+            - name: Wait for Keycloak readiness
+              run: |
+                  curl --fail --silent --show-error --retry 40 --retry-delay 3 \
+                    --retry-all-errors --retry-max-time 120 --max-time 3 \
+                    http://localhost:9000/health/ready || { docker logs keycloak; exit 1; }
+            - name: Install dependencies
+              run: bun install --frozen-lockfile
+            - name: Verify real Keycloak tokens
+              working-directory: services/learn-card-network/lca-api
+              run: bunx vitest run test/keycloak-verify.integration.spec.ts
+              env:
+                  KEYCLOAK_ISSUERS: http://localhost:8081/realms/learncard
+                  KEYCLOAK_AUDIENCES: learncard-app,ci-tests
+                  KEYCLOAK_INTEGRATION: 'true'
+            - name: Keycloak logs on failure
+              if: ${{ always() && failure() }}
+              run: docker logs keycloak

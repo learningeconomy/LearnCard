@@ -1,0 +1,18 @@
+# BLOCKED: resolve jdbc-ping transport networking before production rollout.
+aws_region                          = "us-east-1"
+environment                         = "production"
+vpc_id                              = "vpc-xxxxxxxx"
+private_subnet_ids                  = ["subnet-private-a", "subnet-private-b"]
+public_subnet_ids                   = ["subnet-public-a", "subnet-public-b"]
+acm_certificate_arn                  = "arn:aws:acm:us-east-1:000000000000:certificate/REPLACE_ME"
+route53_zone_id                      = "Z_REPLACE_ME"
+hostname                            = "auth.example.com"
+admin_hostname                      = "auth-admin.example.com"
+keycloak_image                      = "000000000000.dkr.ecr.us-east-1.amazonaws.com/keycloak:26.7.4-build-1"
+db_password_secret_arn              = "arn:aws:secretsmanager:us-east-1:000000000000:secret:keycloak-production-db-REPLACE"
+bootstrap_admin_password_secret_arn = "arn:aws:secretsmanager:us-east-1:000000000000:secret:keycloak-production-admin-REPLACE"
+desired_count                       = 2
+db_min_capacity                     = 0.5
+db_max_capacity                     = 8
+db_deletion_protection              = true
+admin_allowed_cidrs                 = ["192.0.2.0/24"] # Replace with operator/VPN egress CIDRs.
