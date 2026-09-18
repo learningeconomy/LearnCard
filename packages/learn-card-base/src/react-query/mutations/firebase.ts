@@ -146,7 +146,7 @@ export const useVerifyLoginVerificationCode = () => {
     const [presentAlert] = useIonAlert();
 
     return useMutation<
-        { success: boolean; token?: string; message?: string },
+        { success: boolean; token?: string; error?: string },
         Error,
         { email: string; code: string }
     >({
@@ -165,7 +165,7 @@ export const useVerifyLoginVerificationCode = () => {
                 log.error(data);
                 presentAlert({
                     header: 'Error',
-                    message: data?.message || 'Failed to verify login verification code',
+                    message: data?.error || 'Failed to verify login verification code',
                     buttons: [
                         {
                             text: 'Dismiss',
