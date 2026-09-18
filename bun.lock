@@ -1603,6 +1603,8 @@
       "version": "1.3.1",
       "dependencies": {
         "@fastify/cors": "^11.2.0",
+        "@fastify/formbody": "^8.0.2",
+        "@fastify/rate-limit": "^10.2.0",
         "@fastify/static": "^10.1.1",
         "@learncard/core": "workspace:*",
         "@learncard/did-web-plugin": "workspace:*",
@@ -2854,6 +2856,8 @@
     "@fastify/error": ["@fastify/error@4.2.0", "", {}, "sha512-RSo3sVDXfHskiBZKBPRgnQTtIqpi/7zhJOEmAxCiBcM7d0uwdGdxLlsCaLzGs8v8NnxIRlfG0N51p5yFaOentQ=="],
 
     "@fastify/fast-json-stringify-compiler": ["@fastify/fast-json-stringify-compiler@5.1.0", "", { "dependencies": { "fast-json-stringify": "^7.0.0" } }, "sha512-PxcYtKLbQ8Z+yApiqjK8FwxIwvEj38k2OiLc17u8dkJSlmfi2wHHPaSnaoqBPQqtvF8YVsDgDpP2snDCfFrpfw=="],
+
+    "@fastify/formbody": ["@fastify/formbody@8.0.2", "", { "dependencies": { "fast-querystring": "^1.1.2", "fastify-plugin": "^5.0.0" } }, "sha512-84v5J2KrkXzjgBpYnaNRPqwgMsmY7ZDjuj0YVuMR3NXCJRCgKEZy/taSP1wUYGn0onfxJpLyRGDLa+NMaDJtnA=="],
 
     "@fastify/forwarded": ["@fastify/forwarded@3.0.2", "", {}, "sha512-NE8HgKLgYejV9lDpqkEFaDKMLYelJBVfHekhB0UKvX0ghagXRJqg68feg8er1NPXxG4N9i6vPxzt8E+3wHfcmA=="],
 
