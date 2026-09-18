@@ -88,7 +88,7 @@ describe('PassportCredentialCard', () => {
             category: 'Endorsement',
             title: 'Endorsement of undefined',
             sharedUri: 'uri=lc%3Ashared&seed=seed&pin=1234',
-        };
+        } as ActivityIndexRecord;
         mocks.resolveSharedCredential.mockResolvedValue({ name: 'First Aid' });
         const { rerender } = renderCard(record);
 
