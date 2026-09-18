@@ -2393,7 +2393,7 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.inbox.issue.mutate(issueInboxCredential);
             },
-            sendCredentialBatchViaInbox: async (_learnCard, batch) => {
+            sendCredentialsViaInbox: async (_learnCard, batch) => {
                 await ensureUser();
                 return client.inbox.issueBatch.mutate(batch);
             },

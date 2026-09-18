@@ -48,9 +48,11 @@ const learncardApiClient = {
 
 `POST /api/inbox/issue-batch` requires `inbox:write` and returns HTTP **202** with
 `{ batchId, status: 'QUEUED', createdAt }`. The SDK equivalent is
-`learnCard.invoke.sendCredentialBatchViaInbox(batch)`; tRPC uses `inbox.issueBatch`.
+`learnCard.invoke.sendCredentialsViaInbox(batch)`; tRPC uses `inbox.issueBatch`.
 An identical `requestId` retry returns the original batch ID and its current state,
 which may already be `PROCESSING`, `COMPLETED`, or `NEEDS_RECONCILIATION`.
+Receipt status is an advisory snapshot. Always poll the batch endpoint and use
+`summary.pending` to determine whether work remains.
 
 ```javascript
 const receipt = await learncardApiClient.post('/inbox/issue-batch', {

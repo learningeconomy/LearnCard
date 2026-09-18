@@ -208,9 +208,9 @@ describe('inbox batch method', () => {
                 },
             ],
         };
-        await expect(
-            plugin.methods?.sendCredentialBatchViaInbox(learnCard, batch)
-        ).resolves.toEqual(response);
+        await expect(plugin.methods?.sendCredentialsViaInbox(learnCard, batch)).resolves.toEqual(
+            response
+        );
         expect(mutate).toHaveBeenCalledExactlyOnceWith(batch);
         expect(client.profile.getProfile.query).toHaveBeenCalled();
     });
@@ -239,7 +239,7 @@ describe('inbox batch method', () => {
         const learnCard = getMockLearnCard();
         const plugin = await getLearnCardNetworkPlugin(learnCard, 'https://network.example/trpc');
         await expect(
-            plugin.methods?.sendCredentialBatchViaInbox(learnCard, { items: [] })
+            plugin.methods?.sendCredentialsViaInbox(learnCard, { items: [] })
         ).rejects.toThrow();
         expect(mutate).not.toHaveBeenCalled();
     });

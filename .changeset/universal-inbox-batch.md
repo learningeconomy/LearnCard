@@ -4,7 +4,7 @@
 '@learncard/network-brain-service': minor
 ---
 
-Add Universal Inbox batch issuance through `sendCredentialBatchViaInbox`, tRPC
+Add Universal Inbox batch issuance through `sendCredentialsViaInbox`, tRPC
 `inbox.issueBatch`, and `POST /inbox/issue-batch`, with public batch input and result
 validators/types, shared configuration defaults, ordered per-item outcomes, and
 24-hour issuer-scoped idempotency keys. Later duplicate keys in one batch conflict

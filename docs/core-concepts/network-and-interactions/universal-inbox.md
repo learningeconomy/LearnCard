@@ -57,12 +57,12 @@ Direct deliveries to existing accounts don't go through this escrow; they are st
 ## Batch Issuance
 
 Use `POST /inbox/issue-batch` (tRPC `inbox.issueBatch`) or
-`learnCard.invoke.sendCredentialBatchViaInbox(batch)` to queue 1–100 credentials.
+`learnCard.invoke.sendCredentialsViaInbox(batch)` to queue 1–100 credentials.
 Submission requires `inbox:write`; polling requires `inbox:read` and the submitting
 issuer profile. Single issuance stays synchronous.
 
 ```typescript
-const receipt = await learnCard.invoke.sendCredentialBatchViaInbox({
+const receipt = await learnCard.invoke.sendCredentialsViaInbox({
     requestId: 'semester-2026-chunk-001',
     configuration: {
         signingAuthority: { endpoint: 'https://issuer.example/sign', name: 'default' },
@@ -154,7 +154,9 @@ window to expire (at most 3,600 seconds).
 The HTTP request persists admission without waiting for signing or delivery.
 A dedicated SQS queue runs up to ten inbox workers independently of notifications.
 The dispatcher normally publishes work within one minute and retries publication
-failures using durable dispatch records. Each worker has a five-minute timeout.
+failures using durable dispatch records. After SQS accepts a message, the durable
+outbox schedules a 30-minute fallback publication in case delivery never occurs.
+Each worker has a five-minute timeout.
 Interrupted preparation can retry; interrupted issuance may require reconciliation.
 Queue redelivery does not repeat a completed item.
 

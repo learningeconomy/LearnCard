@@ -682,8 +682,8 @@ export type LearnCardNetworkPluginMethods = {
     revokeAuthGrant: (id: string) => Promise<boolean>;
     getAPITokenForAuthGrant: (id: string) => Promise<string>;
 
-    /** Queue up to 100 credentials. Poll getInboxCredentialBatch for ordered results. */
-    sendCredentialBatchViaInbox: (batch: IssueInboxCredentialBatch) => Promise<InboxBatchReceipt>;
+    /** Queue up to 100 credentials. Receipt status is a snapshot; poll for ordered results. */
+    sendCredentialsViaInbox: (batch: IssueInboxCredentialBatch) => Promise<InboxBatchReceipt>;
     getInboxCredentialBatch: (batchId: string) => Promise<InboxBatchStatus>;
     sendCredentialViaInbox: (
         issueInboxCredential: IssueInboxCredentialType
