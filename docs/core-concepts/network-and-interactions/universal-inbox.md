@@ -76,12 +76,10 @@ const receipt = await learnCard.invoke.sendCredentialsViaInbox({
     ],
 });
 
-const deadline = Date.now() + 10 * 60 * 1000;
-let batch = await learnCard.invoke.getInboxCredentialBatch(receipt.batchId);
-while (batch.summary.pending > 0 && Date.now() < deadline) {
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    batch = await learnCard.invoke.getInboxCredentialBatch(receipt.batchId);
-}
+const batch = await learnCard.invoke.waitForInboxCredentialBatch(receipt.batchId, {
+    timeoutMs: 10 * 60_000,
+    intervalMs: 2_000,
+});
 // A polling timeout does not cancel work. Keep batchId to check again later.
 const failedItems = batch.items.filter(item => item.result?.success === false);
 ```
@@ -92,30 +90,35 @@ Poll `GET /inbox/batches/{batchId}` for ordered `items`, each with an `index`,
 processing `state`, and a `result` when available. Results retain their `success`
 flag and issuance details or error. The summary reports `total`, `succeeded`,
 `failed`, `deduplicated`, `completed`, `pending`, and `unconfirmed`.
+`completed` counts all terminal items regardless of outcome. `failed` excludes
+`unconfirmed`; these counts plus `succeeded` and `pending` sum to `total`.
 Results remain available for 30 days after all items finish processing, including
 items marked `NEEDS_RECONCILIATION`.
 
 Batch states are `QUEUED`, `PROCESSING`, `COMPLETED`, and `NEEDS_RECONCILIATION`.
-The last state can coexist with unfinished items; use `summary.pending` to check
-for work remaining. Credential status `PENDING` means waiting for a claim, which is
+The last state can coexist with unfinished items; use `done` to check
+whether processing has finished, including unconfirmed outcomes. Credential status `PENDING` means waiting for a claim, which is
 separate from queue processing.
 
 Batch configuration supplies defaults. Item configuration overrides it with a
 deep merge; arrays replace defaults. The existing signing, claiming, webhook,
 guardian, and tenant-branding behavior applies. Both single and batch issuance
 accept `configuration.guardianEmail`; it must differ from the recipient email,
-ignoring case. Batches validate this after configuration merging.
+ignoring case. Batches validate this at submission after applying item overrides.
+Defaults are additive; undefined inherits them and null cannot clear them.
 
 ### Retries and recovery
 
 An optional `requestId` (1–256 characters) makes submission retries safe for 24 hours.
-The same issuer, payload, and tenant context return the original receipt without
+The same issuer, payload, domain, and tenant ID return the original receipt without
 another quota charge. Reusing it with changed input returns HTTP 409.
 
 An optional item `idempotencyKey` (up to 256 characters) durably stores a successful
 result for 24 hours per issuer. Reusing it returns the same issuance with
 `deduplicated: true`, without another credential, email, or webhook. Changed input
-or an overlapping attempt returns a per-item `CONFLICT`. Within a batch, only the
+returns a per-item `CONFLICT` with `IDEMPOTENCY_MISMATCH`. Overlapping attempts
+retry with backoff for up to five total attempts, then return `CONFLICT` with `IN_PROGRESS`
+if the original attempt is still processing or unconfirmed. Within a batch, only the
 first occurrence of a key is attempted; later occurrences always conflict.
 
 Validation, preparation, and explicitly side-effect-free preflight failures release
