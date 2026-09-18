@@ -21,6 +21,7 @@ import { resolveLocaleByEmail } from '../helpers/locale.helpers';
 import jwtDecode from 'jwt-decode';
 import { getDidWebLearnCard, getEmptyLearnCard } from '@helpers/learnCard.helpers';
 import { isAuthorizedDID } from '@helpers/dids.helpers';
+import { verifyFirebaseToken, getContactMethodFromUser } from '@helpers/auth.helpers';
 
 const LOGIN_VERIFICATION_CODE_TEMPLATE_ALIAS =
     environment.POSTMARK_LOGIN_CODE_TEMPLATE_ALIAS || 'login-verification-code';
@@ -534,16 +535,16 @@ export const firebaseRouter = t.router({
             const { token } = input;
 
             try {
-                const decodedToken = await app?.auth().verifyIdToken(token);
+                // Match sign-in's local/e2e token handling while retaining Firebase
+                // verification outside those environments.
+                const user = await verifyFirebaseToken(token);
+                const contactMethod = getContactMethodFromUser(user);
+                if (!contactMethod) {
+                    throw new Error('Login token does not contain an email or phone number');
+                }
 
                 const learnCard = await getDidWebLearnCard();
-
-                let proofOfLoginChallenge = 'proof-of-login:';
-                if (decodedToken?.email) {
-                    proofOfLoginChallenge += 'email:' + decodedToken?.email;
-                } else if (decodedToken?.phoneNumber) {
-                    proofOfLoginChallenge += 'phone:' + decodedToken?.phoneNumber;
-                }
+                const proofOfLoginChallenge = `proof-of-login:${contactMethod.type}:${contactMethod.value}`;
 
                 const result = await learnCard.invoke.getDidAuthVp({
                     proofFormat: 'jwt',

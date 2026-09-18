@@ -77,6 +77,8 @@ services:
             PORT: 4000
             SEED: a
             DOMAIN_NAME: 'localhost%3A4000'
+            # Trust proof-of-login presentations signed by this stack's LCA API.
+            LOGIN_PROVIDER_DID: did:web:localhost%3A5100
             NEO4J_URI: ${NEO4J_URI:-bolt://neo4j:7687}
             NEO4J_USERNAME: ${NEO4J_USERNAME:-neo4j}
             NEO4J_PASSWORD: ${NEO4J_PASSWORD:-this-is-the-password}
