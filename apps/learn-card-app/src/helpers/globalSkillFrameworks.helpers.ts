@@ -1,9 +1,11 @@
 import { useMemo } from 'react';
+import type { SkillSemanticSearchResultItem } from '@learncard/types';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useQueries } from '@tanstack/react-query';
 import { useQuery } from '@tanstack/react-query';
 
 import { useWallet, useIsLoggedIn, useTenantConfig } from 'learn-card-base';
+import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 
 export type GlobalSkillFrameworkConfig = {
     frameworkId: string;
@@ -21,13 +23,7 @@ type GlobalSkillFrameworkFlags = {
     };
 };
 
-export type SemanticSearchSkillRecord = {
-    id: string;
-    score?: number;
-    type?: string;
-    frameworkId?: string;
-    statement?: string;
-    icon?: string;
+export type SemanticSearchSkillRecord = SkillSemanticSearchResultItem & {
     targetName?: string;
     targetFramework?: string;
 };
@@ -84,13 +80,7 @@ const WEF_GLOBAL_SKILLS_FALLBACK: GlobalSkillFrameworkConfig = {
         SEEDED_GLOBAL_SKILL_FRAMEWORK_DEFAULT_SKILL_IDS[WEF_GLOBAL_SKILLS_FRAMEWORK_ID],
 };
 
-const fetchAllAvailableFrameworks = async (
-    wallet: Awaited<ReturnType<typeof useWallet>>['initWallet'] extends (
-        ...args: any[]
-    ) => Promise<infer T>
-        ? T
-        : never
-) => {
+const fetchAllAvailableFrameworks = async (wallet: BespokeLearnCard) => {
     const records: Array<{
         id: string;
         name: string;
@@ -125,11 +115,7 @@ const fetchAllAvailableFrameworks = async (
 };
 
 const fetchSeededGlobalSkillFrameworks = async (
-    wallet: Awaited<ReturnType<typeof useWallet>>['initWallet'] extends (
-        ...args: any[]
-    ) => Promise<infer T>
-        ? T
-        : never
+    wallet: BespokeLearnCard
 ): Promise<GlobalSkillFrameworkConfig[]> => {
     const availableFrameworks = await fetchAllAvailableFrameworks(wallet);
     const seededFrameworks = availableFrameworks.filter(
@@ -265,7 +251,7 @@ export const useGlobalSemanticSearchSkills = (
 
         queryResults.forEach((queryResult, index) => {
             const frameworkId = frameworkIds[index];
-            const records = (queryResult.data?.records ?? []) as SemanticSearchSkillRecord[];
+            const records: SemanticSearchSkillRecord[] = queryResult.data?.records ?? [];
 
             records.forEach(record => {
                 if (shouldExcludeTiers && record.type === 'container') {
