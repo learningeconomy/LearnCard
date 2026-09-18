@@ -375,6 +375,21 @@ export const runEmailInboxRefreshDemo = async (options: InboxRefreshDemoOptions)
             `The issuer reports the claim as bound (${status}). This CLI did not read the recipient wallet.`
         );
 
+        step = 'check recipient account setup';
+        let holderProfile;
+        try {
+            holderProfile = await issuer.invoke.getProfile(holderDid);
+        } catch (error) {
+            // A missing account is different from an unavailable network: only
+            // NOT_FOUND means setup is missing; transport errors remain errors.
+            if ((error as { data?: { code?: string } })?.data?.code !== 'NOT_FOUND') throw error;
+        }
+        if (!holderProfile) {
+            throw new Error(
+                'The certificate was claimed before account setup finished. Complete account setup in the app, then start a fresh email demo so notifications can reach your account. No update was published.'
+            );
+        }
+
         step = 'publish final results';
         out.log('\n3 / 3  PUBLISH FINAL RESULTS');
         out.log('Publishing grade-A final results as the single visible update (version 2)...');
@@ -400,9 +415,15 @@ export const runEmailInboxRefreshDemo = async (options: InboxRefreshDemoOptions)
             throw new Error('The claim bound a holder but the update had no notification target.');
         }
         out.log(`Final results published. In-app notification: ${publication.notification}.`);
-        out.log(
-            'Check your email for the school and certificate name. Choose View Updates to open Notifications, then view Final Results / Final grade: A.'
-        );
+        if (publication.notification === 'queued') {
+            out.log(
+                'Check your email for the school and certificate name. Choose View Updates to open Notifications, then view Final Results / Final grade: A.'
+            );
+        } else {
+            out.log(
+                'The certificate was updated, but an update notification could not be queued. Check account setup and the local notification service before expecting an email.'
+            );
+        }
         out.set({
             network: env.network,
             issuanceId: issued.issuanceId,

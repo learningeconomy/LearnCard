@@ -8,7 +8,8 @@ The walkthrough is visible from end to end:
 
 1. Enter your email in the CLI. The demo school sends a provisional certificate.
 2. Open the email and choose **Claim Your Record**. Sign in or create an account
-   with that same email, then claim the provisional certificate. Sign out of any
+   with that same email. Finish account setup before claiming the provisional
+   certificate; the app returns you to the claim afterward. Sign out of any
    disposable demo account before opening the email link.
 3. Return to the CLI and press Enter to let the school publish final results.
 4. View the update notification in the app. An update email also links back to
@@ -72,3 +73,7 @@ docker compose -p e2e -f tests/e2e/compose.yaml up -d --no-deps brain lca-api
 If no email arrives, check Postmark activity and the brain/LCA logs for a rejected
 sender or missing message stream. A successful issuance means the credential was
 created; it does not prove the message reached your mailbox.
+
+If an earlier demo let you claim before completing account setup, finish setup and
+start a fresh email demo. The old delivery was bound without a notification profile;
+creating the account afterward does not retroactively send its missing notifications.

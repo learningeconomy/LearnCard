@@ -96,6 +96,12 @@ const makeIssuer = (order: string[], published: Published[]) => {
         addPlugin: vi.fn(),
         invoke: {
             createProfile: vi.fn(async () => undefined),
+            getProfile: vi.fn(
+                async (_did: string): Promise<{ profileId: string; did: string } | undefined> => ({
+                    profileId: 'email-owner',
+                    did: 'did:key:owner',
+                })
+            ),
             createSigningAuthority: vi.fn(async (_name: string) => ({
                 name: 'inbox-demo-sa',
                 endpoint: 'http://localhost:5100/api',
@@ -590,6 +596,49 @@ describe('real-email inbox refresh (opt-in)', () => {
         expect(mocks.question).toHaveBeenCalledWith(
             expect.stringContaining('open the email, sign in with that address, and claim')
         );
+    });
+
+    it('does not publish when the certificate was claimed without creating an account', async () => {
+        const published: Published[] = [];
+        const issuer = makeEmailIssuer([], published, {
+            status: 'DELIVERED',
+            holderDid: 'did:key:owner',
+        });
+        issuer.invoke.getInboxCredential.mockResolvedValue({
+            refresh: { holderDid: 'did:key:owner' },
+        });
+        issuer.invoke.getProfile.mockResolvedValueOnce(undefined);
+        await expect(runEmail(issuer)).rejects.toThrow('claimed before account setup finished');
+        expect(issuer.invoke.getProfile).toHaveBeenCalledWith('did:key:owner');
+        expect(published).toHaveLength(0);
+    });
+
+    it('explains a missing recipient account when the network returns NOT_FOUND', async () => {
+        const published: Published[] = [];
+        const issuer = makeEmailIssuer([], published, {
+            status: 'DELIVERED',
+            holderDid: 'did:key:owner',
+        });
+        issuer.invoke.getInboxCredential.mockResolvedValue({
+            refresh: { holderDid: 'did:key:owner' },
+        });
+        issuer.invoke.getProfile.mockRejectedValueOnce({ data: { code: 'NOT_FOUND' } });
+        await expect(runEmail(issuer)).rejects.toThrow('No update was published');
+        expect(published).toHaveLength(0);
+    });
+
+    it('does not mistake profile lookup failures for an account that needs setup', async () => {
+        const published: Published[] = [];
+        const issuer = makeEmailIssuer([], published, {
+            status: 'DELIVERED',
+            holderDid: 'did:key:owner',
+        });
+        issuer.invoke.getInboxCredential.mockResolvedValue({
+            refresh: { holderDid: 'did:key:owner' },
+        });
+        issuer.invoke.getProfile.mockRejectedValueOnce(new Error('Network unavailable'));
+        await expect(runEmail(issuer)).rejects.toThrow('Network unavailable');
+        expect(published).toHaveLength(0);
     });
 
     it('prompts for the address when --email is passed without a value', async () => {
