@@ -8,6 +8,7 @@ vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
 }));
 
 import {
+    findMatchingSharedCredentialIndex,
     getSharedCredentialIndexQueries,
     sharedCredentialIndexMatchesCredential,
 } from '../mutation.helpers';
@@ -65,6 +66,29 @@ describe('shared credential cache identity', () => {
         await expect(
             sharedCredentialIndexMatchesCredential(legacyRecord, 'urn:uuid:credential-a')
         ).resolves.toBe(true);
+    });
+
+    it('checks every legacy candidate before creating a new presentation', async () => {
+        const credentialARecord = {
+            credentialId: 'urn:uuid:credential-a',
+            uri: 'presentation:a',
+            randomSeed: 'seed-a',
+            pin: '1111',
+        };
+        const credentialBRecord = {
+            credentialId: 'urn:uuid:credential-b',
+            uri: 'presentation:b',
+            randomSeed: 'seed-b',
+            pin: '2222',
+        };
+
+        await expect(
+            findMatchingSharedCredentialIndex(
+                [credentialARecord, credentialBRecord],
+                'urn:uuid:credential-b',
+                true
+            )
+        ).resolves.toBe(credentialBRecord);
     });
 
     it('keeps the legacy record-only identity for unsigned credentials', () => {

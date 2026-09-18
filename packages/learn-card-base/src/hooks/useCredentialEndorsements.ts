@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { UnsignedAchievementCredential, UnsignedVC } from '@learncard/types';
 import { useWallet } from 'learn-card-base';
@@ -21,7 +21,10 @@ type EndorsementState = {
 /** Loads endorsements without exposing results from a previously displayed credential. */
 export const useCredentialEndorsements = (credential: Credential): CredentialEndorsement[] => {
     const { initWallet } = useWallet();
-    const credentialKey = credential?.id ?? (credential ? stringify(credential) : '');
+    const credentialKey = useMemo(
+        () => credential?.id ?? (credential ? stringify(credential) : ''),
+        [credential]
+    );
     const credentialRef = useRef(credential);
     const initWalletRef = useRef(initWallet);
     const [state, setState] = useState<EndorsementState>({

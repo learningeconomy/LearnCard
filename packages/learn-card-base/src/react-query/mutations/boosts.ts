@@ -32,9 +32,9 @@ import {
     getEndorsementsForVC,
 } from 'learn-card-base/helpers/credentialHelpers';
 import {
+    findMatchingSharedCredentialIndex,
     getSharedCredentialIndexQueries,
     insertItem,
-    sharedCredentialIndexMatchesCredential,
 } from './mutation.helpers';
 import { convertAttachmentsToEvidence } from '../../components/boost/boost';
 import { v4 as uuidv4 } from 'uuid';
@@ -88,15 +88,16 @@ export const useShareBoostMutation = () => {
             let extantCredentialIndex: SharedCredentialsIndex | undefined;
 
             for (const [index, query] of sharedCredentialIndexQueries.entries()) {
-                const [candidate] =
+                const candidates =
                     (await myWallet.invoke.learnCloudRead<SharedCredentialsIndex>(query)) ?? [];
                 const isLegacyFallback = Boolean(credentialId) && index > 0;
+                const candidate = await findMatchingSharedCredentialIndex(
+                    candidates,
+                    credentialId,
+                    isLegacyFallback
+                );
 
-                if (
-                    candidate &&
-                    (!isLegacyFallback ||
-                        (await sharedCredentialIndexMatchesCredential(candidate, credentialId)))
-                ) {
+                if (candidate) {
                     extantCredentialIndex = candidate;
                     break;
                 }

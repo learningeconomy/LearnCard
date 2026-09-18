@@ -1312,9 +1312,9 @@ export const getEndorsementTargetId = async (credential: VC): Promise<string> =>
     return `urn:sha256:${await sha256(stringify(sharedCredential))}`;
 };
 
-export const resolveSharedCredential = async (sharedUri?: string): Promise<VC | undefined> => {
-    if (!sharedUri) return undefined;
+const sharedCredentialRequests = new Map<string, Promise<VC | undefined>>();
 
+const loadSharedCredential = async (sharedUri: string): Promise<VC | undefined> => {
     const { seed, pin, uri } = parseShareLinkParams(sharedUri);
     if (!seed || !pin || !uri) return undefined;
 
@@ -1330,6 +1330,23 @@ export const resolveSharedCredential = async (sharedUri?: string): Promise<VC | 
     }
 };
 
+export const resolveSharedCredential = (sharedUri?: string): Promise<VC | undefined> => {
+    if (!sharedUri) return Promise.resolve(undefined);
+
+    const pendingRequest = sharedCredentialRequests.get(sharedUri);
+    if (pendingRequest) return pendingRequest;
+
+    const request = loadSharedCredential(sharedUri);
+    sharedCredentialRequests.set(sharedUri, request);
+    void request.finally(() => {
+        if (sharedCredentialRequests.get(sharedUri) === request) {
+            sharedCredentialRequests.delete(sharedUri);
+        }
+    });
+
+    return request;
+};
+
 const getMatchingEndorsementRecords = async (
     wallet: BespokeLearnCard | null,
     vc: VC,
@@ -1343,12 +1360,17 @@ const getMatchingEndorsementRecords = async (
         wallet.index.LearnCloud.get({ credentialId }),
     ]);
 
+    const currentRecords = [...canonicalRecords, ...credentialRecords];
+    const currentRecordKeys = new Set(currentRecords.map(record => record.id ?? record.uri));
     const subjectId = getCredentialSubject(vc)?.id;
     const legacyRecords = subjectId
         ? await wallet.index.LearnCloud.get({ endorsedId: subjectId })
         : [];
+    const unresolvedLegacyRecords = (legacyRecords ?? []).filter(
+        record => !currentRecordKeys.has(record.id ?? record.uri)
+    );
     const verifiedLegacyRecords = await Promise.all(
-        (legacyRecords ?? []).map(async record => {
+        unresolvedLegacyRecords.map(async record => {
             const sharedCredential = await resolveSharedCredential(record.sharedUri);
             if (!sharedCredential) return undefined;
 
@@ -1358,7 +1380,7 @@ const getMatchingEndorsementRecords = async (
     );
 
     const seen = new Set<string>();
-    return [...canonicalRecords, ...credentialRecords, ...verifiedLegacyRecords]
+    return [...currentRecords, ...verifiedLegacyRecords]
         .filter(record => record !== undefined)
         .filter(record => !visibility || record.visibility === visibility)
         .filter(record => {

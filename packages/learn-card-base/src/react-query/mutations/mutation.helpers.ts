@@ -46,6 +46,25 @@ export const sharedCredentialIndexMatchesCredential = async (
         : false;
 };
 
+export const findMatchingSharedCredentialIndex = async <
+    RecordType extends SharedCredentialIndexReference,
+>(
+    records: RecordType[],
+    credentialId?: string,
+    verifyCredential = false
+): Promise<RecordType | undefined> => {
+    for (const record of records) {
+        if (
+            !verifyCredential ||
+            (await sharedCredentialIndexMatchesCredential(record, credentialId))
+        ) {
+            return record;
+        }
+    }
+
+    return undefined;
+};
+
 // Helper to insert an object and update the react infinite query cache
 export const insertItem = <GenericObject extends Record<string, any>>(
     queryClient: QueryClient,

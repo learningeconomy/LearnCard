@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.hoisted(() => {
     Object.defineProperty(globalThis, 'window', {
@@ -20,7 +20,12 @@ vi.mock('./walletHelpers', () => ({
     getBespokeLearnCard: async () => ({ read: { get: mocks.sharedRead } }),
 }));
 
-import { getEndorsements, getEndorsementsForVC, getEndorsementTargetId } from './credentialHelpers';
+import {
+    getEndorsements,
+    getEndorsementsForVC,
+    getEndorsementTargetId,
+    resolveSharedCredential,
+} from './credentialHelpers';
 
 const createWallet = () => {
     const get = vi.fn();
@@ -31,10 +36,14 @@ const createWallet = () => {
             index: { LearnCloud: { get } },
             read: { get: read },
         } as never,
+
         get,
         read,
     };
 };
+beforeEach(() => {
+    vi.clearAllMocks();
+});
 
 describe('getEndorsements', () => {
     it('loads an existing endorsement from its canonical original credential link', async () => {
@@ -151,6 +160,30 @@ describe('getEndorsements', () => {
         ]);
     });
 
+    it('does not resolve a legacy record already returned by a current index', async () => {
+        const { wallet, get, read } = createWallet();
+        const duplicateRecord = {
+            id: 'record-current',
+            uri: 'lc:endorsement:current',
+            originalCredentialId: 'urn:uuid:credential-a',
+            sharedUri: 'uri=lc%3Ashared&seed=seed&pin=1234',
+        };
+        const endorsement = { id: 'urn:uuid:endorsement-current' };
+        const credential = {
+            id: 'urn:uuid:credential-a',
+            credentialSubject: { id: 'did:example:holder' },
+        };
+        get.mockResolvedValueOnce([duplicateRecord])
+            .mockResolvedValueOnce([])
+            .mockResolvedValueOnce([duplicateRecord]);
+        read.mockResolvedValue(endorsement);
+
+        await expect(getEndorsements(wallet, credential as never)).resolves.toEqual([
+            { endorsement, metadata: duplicateRecord },
+        ]);
+        expect(mocks.sharedRead).not.toHaveBeenCalled();
+    });
+
     it('loads endorsements for an idless credential through its content identity', async () => {
         const { wallet, get, read } = createWallet();
         const idlessCredential = {
@@ -198,6 +231,27 @@ describe('getEndorsementTargetId', () => {
             } as never)
         ).resolves.toBe(contentId);
         expect(contentId).toMatch(/^urn:sha256:[0-9a-f]{64}$/);
+    });
+});
+
+describe('resolveSharedCredential', () => {
+    it('shares an in-flight read for the same presentation', async () => {
+        const request = Promise.withResolvers<{
+            verifiableCredential: { id: string };
+        }>();
+        const sharedUri = 'uri=lc%3Ashared&seed=seed&pin=1234';
+        mocks.sharedRead.mockReturnValue(request.promise);
+
+        const first = resolveSharedCredential(sharedUri);
+        const second = resolveSharedCredential(sharedUri);
+
+        await vi.waitFor(() => expect(mocks.sharedRead).toHaveBeenCalledOnce());
+        request.resolve({ verifiableCredential: { id: 'urn:uuid:credential-a' } });
+
+        await expect(Promise.all([first, second])).resolves.toEqual([
+            { id: 'urn:uuid:credential-a' },
+            { id: 'urn:uuid:credential-a' },
+        ]);
     });
 });
 
