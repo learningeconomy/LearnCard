@@ -479,13 +479,13 @@ describe('Refreshable Sends E2E (LC-2198)', () => {
         180_000
     );
 
-    test('email, phone, and remote DID refresh requests fail clearly', async () => {
+    test('inbox prerequisites and remote DID refresh restrictions fail clearly', async () => {
         const boostUri = await a.invoke.createBoost(
             ordinaryTemplate('Rejection Boost', a.id.did()) as any
         );
         const sentBefore = (await a.invoke.getSentCredentials()).length;
 
-        // Email and phone are rejected client-side before any request is made.
+        // Deferred email issuance requires a registered signing authority.
         await expect(
             a.invoke.send({
                 type: 'boost',
@@ -493,7 +493,7 @@ describe('Refreshable Sends E2E (LC-2198)', () => {
                 templateUri: boostUri,
                 refresh: true,
             } as any)
-        ).rejects.toThrow(/refresh/i);
+        ).rejects.toThrow(/signing authority/i);
 
         await expect(
             a.invoke.send({
@@ -502,7 +502,7 @@ describe('Refreshable Sends E2E (LC-2198)', () => {
                 templateUri: boostUri,
                 refresh: true,
             } as any)
-        ).rejects.toThrow(/refresh/i);
+        ).rejects.toThrow(/trusted registry/i);
 
         // A remote DID is rejected by the server's authoritative guard.
         await expect(
@@ -803,7 +803,7 @@ describe('Refreshable Sends E2E (LC-2198)', () => {
         240_000
     );
 
-    test('HTTP /api/send: refresh requires credentials:write; email always rejected', async () => {
+    test('HTTP /api/send: refresh requires credentials:write and supports deferred email delivery', async () => {
         await setupSigningAuthority(a, 'rss');
         const boostUri = await a.invoke.createBoost(
             ordinaryTemplate('HTTP Scope Boost', a.id.did()) as any
@@ -844,7 +844,7 @@ describe('Refreshable Sends E2E (LC-2198)', () => {
         const ordinaryResult = await ordinary.json();
         expect(ordinaryResult.refresh).toBeUndefined();
 
-        // Email recipients are rejected at the REST boundary before anything is created.
+        // Authorized email sends allocate deferred refresh through Universal Inbox.
         const { token: scopedToken } = await createApiTokenForUser(
             'a',
             'boosts:write credentials:write'
@@ -857,13 +857,16 @@ describe('Refreshable Sends E2E (LC-2198)', () => {
             },
             body: JSON.stringify({
                 type: 'boost',
-                recipient: 'refresh-http-reject@example.com',
+                recipient: 'refresh-http-pending@example.com',
                 templateUri: boostUri,
                 refresh: true,
             }),
         });
-        expect(email.status).toBe(400);
-        expect(await email.text()).toMatch(/refresh/i);
+        const emailResult = await email.json();
+        expect(email.status, JSON.stringify(emailResult)).toBe(200);
+        expect(emailResult.inbox.status).toBe('PENDING');
+        expect(emailResult.inbox.refresh.refreshId).toEqual(expect.any(String));
+        expect(emailResult.inbox.refresh.holderDid).toBeUndefined();
     }, 180_000);
 
     test.each(CONTEXT_SHAPES)(

@@ -12,6 +12,7 @@ import type { CoordinatorStatus } from './authStatus';
 const mockUseOptionalAuthCoordinator = vi.fn();
 const mockUseWallet = vi.fn();
 const mockUseIsLoggedIn = vi.fn();
+const mockUseCurrentUser = vi.fn();
 const mockUseConnectivityStatus = vi.fn();
 const mockUseWalletMode = vi.fn();
 
@@ -33,6 +34,7 @@ vi.mock('../stores/walletModeStore', () => ({
 
 vi.mock('../stores/currentUserStore', () => ({
     useIsLoggedIn: () => mockUseIsLoggedIn(),
+    currentUserStore: { use: { currentUser: () => mockUseCurrentUser() } },
 }));
 
 import { shouldPromptProfileOnboarding, hasNetworkProfile, isAuthResolving } from './authStatus';
@@ -57,6 +59,61 @@ const setSources = (opts: {
 describe('useAuthGateState — resume race', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mockUseCurrentUser.mockReturnValue(null);
+    });
+
+    it.each(['demo', ''])(
+        'recognizes direct key sign-in (%s) while the coordinator is idle',
+        uid => {
+            setSources({ coordinatorStatus: 'idle', walletReady: true, isLoggedIn: true });
+            mockUseCurrentUser.mockReturnValue({
+                uid,
+                privateKey: 'in-memory-key',
+                typeOfLogin: '',
+            });
+            const { result } = renderHook(() => useAuthGateState('success', false));
+            expect(shouldPromptProfileOnboarding(result.current)).toBe(true);
+        }
+    );
+
+    it('does not authorize onboarding for a direct sign-in before its wallet exists', () => {
+        setSources({ coordinatorStatus: 'idle', walletReady: false, isLoggedIn: true });
+        mockUseCurrentUser.mockReturnValue({
+            uid: 'demo',
+            privateKey: 'in-memory-key',
+            typeOfLogin: '',
+        });
+        const { result } = renderHook(() => useAuthGateState('success', false));
+        expect(shouldPromptProfileOnboarding(result.current)).toBe(false);
+    });
+
+    it('does not infer a normal identity-provider session from leftover wallet state', () => {
+        setSources({ coordinatorStatus: 'idle', walletReady: true, isLoggedIn: true });
+        mockUseCurrentUser.mockReturnValue({
+            uid: 'firebase-user',
+            privateKey: 'in-memory-key',
+            typeOfLogin: 'google',
+        });
+        const { result } = renderHook(() => useAuthGateState('success', false));
+        expect(result.current.tag).toBe('unauthenticated');
+    });
+
+    it('does not treat persisted demo metadata as a direct key session', () => {
+        setSources({ coordinatorStatus: 'idle', walletReady: true, isLoggedIn: true });
+        mockUseCurrentUser.mockReturnValue({ uid: 'demo', typeOfLogin: '' });
+        const { result } = renderHook(() => useAuthGateState('success', false));
+        expect(result.current.tag).toBe('unauthenticated');
+    });
+
+    it('does not bypass recovery even when a direct key remains in memory', () => {
+        setSources({ coordinatorStatus: 'needs_recovery', walletReady: true, isLoggedIn: true });
+        mockUseCurrentUser.mockReturnValue({
+            uid: 'demo',
+            privateKey: 'in-memory-key',
+            typeOfLogin: '',
+        });
+        const { result } = renderHook(() => useAuthGateState('success', false));
+        expect(result.current.tag).toBe('recovering');
     });
 
     it('does NOT authorize onboarding during the resume window (persisted login, key not yet rebuilt)', () => {

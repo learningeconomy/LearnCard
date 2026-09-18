@@ -585,6 +585,7 @@ export const LoginContent: React.FC = () => {
                             <GenericErrorBoundary hideGoHome>
                                 {activeLoginType === LoginTypesEnum.email && (
                                     <EmailForm
+                                        suppressRedirect
                                         setShowSocialLogins={setShowSocialLogins}
                                         showSocialLogins={showSocialLogins}
                                     />
