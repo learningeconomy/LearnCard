@@ -16,8 +16,14 @@ import type { CredentialFixture } from '../../types';
  * otherwise refuses to sign.
  */
 
-/** Inline JSON-LD context fragment defining the refresh-service terms inline. */
+/**
+ * Inline JSON-LD context fragment for terms the published contexts leave undefined.
+ * `partial` is in the CLR v2 spec (https://www.imsglobal.org/spec/clr/v2p0/#clrcredential)
+ * but the live purl.imsglobal.org CLR context only maps five type names, so without this
+ * the signer's data-loss check drops it.
+ */
 export const REFRESH_SERVICE_INLINE_CONTEXT = {
+    partial: 'https://purl.imsglobal.org/spec/clr/v2p0#partial',
     'LearnCardCredentialRefresh2026':
         'https://learncard.com/refresh#LearnCardCredentialRefresh2026',
     authorization: {
