@@ -105,8 +105,9 @@ const parseArgs = (args: unknown[]): Parsed => {
     for (const arg of args) {
         if (arg === undefined) continue;
         if (arg instanceof Error) {
-            if (!err) err = arg;
-            else values.push(arg);
+            const safeError = redactErrorMessage(arg);
+            if (!err) err = safeError;
+            else values.push(safeError);
         } else if (typeof arg === 'string') {
             if (!message) message = arg;
             else values.push(arg);
@@ -122,57 +123,119 @@ const parseArgs = (args: unknown[]): Parsed => {
 
     if (!message && err) message = err.message;
 
-    return { message, err, extra: scrub(metaRaw, allowPii), values };
+    return {
+        message: redactSecretShapes(message),
+        err,
+        extra: scrub(metaRaw, allowPii),
+        values: values.map(value => redactPositionalValue(value, 0, new Set())),
+    };
 };
 
 // ---------------------------------------------------------------------------
-// PII scrubbing
+// PII and secret scrubbing
 // ---------------------------------------------------------------------------
 
-// Keys are checked case-insensitively as substrings, catching common variants:
-//   email → userEmail, emailAddress   phone → phoneNumber, mobilePhone
-//   name  → firstName, lastName       token → accessToken, bearerToken, authToken
-const PII_SUBSTRINGS = [
-    'email',
-    'phone',
-    'name',
+// PII may be exposed by explicitly setting allowPii for internal tooling.
+const PII_SUBSTRINGS = ['email', 'phone', 'name'];
+// 'did' is too short for safe substring matching (would match "additional", "edited"), so exact only.
+const PII_EXACT_LC = new Set(['did']);
+
+// Secrets are never exposed, including when allowPii is true. Some entries are
+// intentionally redundant with `token` / `share` to keep the policy explicit.
+const SECRET_SUBSTRINGS = [
     'seed',
     'password',
     'privatekey',
     'accesstoken',
     'idtoken',
     'token',
+    'share',
+    'authshare',
+    'deviceshare',
+    'recoveryshare',
+    'encryptedshare',
+    'recoverykey',
+    'mnemonic',
+    'phrase',
 ];
-// 'did' is too short for safe substring matching (would match "additional", "edited"), so exact only.
-const PII_EXACT_LC = new Set(['did']);
-const BEARER_RE = /^bearer /i;
+const SCRUBBED = '[scrubbed]';
+const REDACTED = '[REDACTED]';
+const BEARER_RE = /^bearer\s/i;
+const BEARER_VALUE_RE = /bearer\s+\S+/gi;
+const JWT_RE = /eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g;
+const LONG_HEX_RE = /(^|[^A-Za-z0-9_-])([A-Fa-f0-9]{32,})(?=$|[^A-Za-z0-9_-])/g;
+const LONG_BASE64URL_RE = /(^|[^A-Za-z0-9_-])([A-Za-z0-9_-]{40,})(?=$|[^A-Za-z0-9_-])/g;
 
 const isPiiKey = (key: string): boolean => {
     const lc = key.toLowerCase();
     return PII_EXACT_LC.has(lc) || PII_SUBSTRINGS.some(sub => lc.includes(sub));
 };
 
-// Recursively replaces PII values with '[scrubbed]'. Three triggers:
-//   1. Key name matches a PII pattern (isPiiKey)
-//   2. String value starts with "Bearer " (leaked auth header)
-//   3. Nested object/array contains either of the above
+const isSecretKey = (key: string): boolean => {
+    const lc = key.toLowerCase();
+    return SECRET_SUBSTRINGS.some(sub => lc.includes(sub));
+};
+
+const redactSecretShapes = (value: string): string =>
+    value
+        .replace(BEARER_VALUE_RE, REDACTED)
+        .replace(JWT_RE, REDACTED)
+        .replace(LONG_HEX_RE, `$1${REDACTED}`)
+        .replace(LONG_BASE64URL_RE, `$1${REDACTED}`);
+
+const redactErrorMessage = (error: Error): Error => {
+    const safeMessage = redactSecretShapes(error.message);
+    const safeStack = error.stack ? redactSecretShapes(error.stack) : undefined;
+
+    if (safeMessage === error.message && safeStack === error.stack) return error;
+
+    const safeError = new Error(safeMessage);
+    safeError.name = error.name;
+    safeError.stack = safeStack;
+    return safeError;
+};
+
+const redactPositionalValue = (value: unknown, depth: number, seen: Set<object>): unknown => {
+    if (typeof value === 'string') return redactSecretShapes(value);
+    if (value instanceof Error) return redactErrorMessage(value);
+    if (depth > 10 || !Array.isArray(value)) return value;
+    if (seen.has(value)) return '[circular]';
+    seen.add(value);
+    return value.map(item => redactPositionalValue(item, depth + 1, seen));
+};
+
+// Recursively replaces protected values. Three triggers:
+//   1. Secret key name matches (never bypassable)
+//   2. PII key name matches and allowPii is false
+//   3. String value contains an obvious secret shape
 // Uses a seen-set to guard against circular references and a depth cap of 10.
-// Pass allowPii: true in meta to skip scrubbing for internal debug calls.
-const scrubValue = (value: unknown, depth: number, seen: Set<object>): unknown => {
+const scrubValue = (
+    value: unknown,
+    depth: number,
+    seen: Set<object>,
+    allowPii: boolean
+): unknown => {
     if (depth > 10) return value;
+    if (typeof value === 'string') return redactSecretShapes(value);
+    if (value instanceof Error) return redactErrorMessage(value);
     if (Array.isArray(value)) {
         if (seen.has(value)) return '[circular]';
         seen.add(value);
-        return value.map(item => scrubValue(item, depth + 1, seen));
+        return value.map(item => scrubValue(item, depth + 1, seen, allowPii));
     }
-    if (typeof value === 'object' && value !== null && !(value instanceof Error)) {
+    if (typeof value === 'object' && value !== null) {
         if (seen.has(value)) return '[circular]';
         seen.add(value);
         return Object.fromEntries(
             Object.entries(value as Record<string, unknown>).map(([k, v]) => {
-                if (isPiiKey(k) || (typeof v === 'string' && BEARER_RE.test(v)))
-                    return [k, '[scrubbed]'];
-                return [k, scrubValue(v, depth + 1, seen)];
+                if (
+                    isSecretKey(k) ||
+                    (!allowPii && isPiiKey(k)) ||
+                    (typeof v === 'string' && BEARER_RE.test(v))
+                ) {
+                    return [k, SCRUBBED];
+                }
+                return [k, scrubValue(v, depth + 1, seen, allowPii)];
             })
         );
     }
@@ -180,8 +243,7 @@ const scrubValue = (value: unknown, depth: number, seen: Set<object>): unknown =
 };
 
 const scrub = (meta: Record<string, unknown>, allowPii = false): Record<string, unknown> => {
-    if (allowPii) return meta;
-    return scrubValue(meta, 0, new Set()) as Record<string, unknown>;
+    return scrubValue(meta, 0, new Set(), allowPii) as Record<string, unknown>;
 };
 
 // ---------------------------------------------------------------------------
@@ -394,7 +456,7 @@ export const logger = createLogger();
  * log.error(error);                          // uses error.message as the title
  * log.info('flag::', false);                 // primitives forwarded as-is
  *
- * PII fields are automatically scrubbed from meta objects.
- * Pass { allowPii: true } in meta to opt out for internal debug calls (never in prod paths).
+ * PII fields are automatically scrubbed from meta objects. Pass { allowPii: true }
+ * to expose PII in internal tooling; secrets are always redacted and cannot be bypassed.
  */
 export const getLogger = (scope?: string): Logger => createLogger(scope);

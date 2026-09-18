@@ -1,6 +1,6 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 
 // Stub URL methods that don't exist in happy-dom/jsdom
 beforeAll(() => {
@@ -40,11 +40,17 @@ const renderModal = (
         existingMethods: [],
         maskedRecoveryEmail: null,
         onSetupPasskey: vi.fn().mockResolvedValue('credential-id'),
-        onGeneratePhrase: vi.fn().mockResolvedValue('one two three'),
+        onGeneratePhrase: vi.fn().mockResolvedValue({
+            phrase: 'one two three',
+            challengeWordIndices: [0, 2],
+        }),
+        onConfirmPhrase: vi.fn().mockResolvedValue(undefined),
         onSetupBackup: vi.fn().mockResolvedValue('{}'),
+        onConfirmBackup: vi.fn().mockResolvedValue(undefined),
         onAddRecoveryEmail: vi.fn().mockResolvedValue(undefined),
         onVerifyRecoveryEmail: vi.fn().mockResolvedValue({ maskedEmail: 'r***@example.com' }),
         onSetupEmailRecovery: vi.fn().mockResolvedValue(undefined),
+        onConfirmEmailRecovery: vi.fn().mockResolvedValue(undefined),
         onClose: vi.fn(),
     };
 
@@ -53,11 +59,6 @@ const renderModal = (
 };
 
 describe('RecoverySetupModal prompt integration', () => {
-    afterEach(() => {
-        vi.unstubAllGlobals();
-        vi.restoreAllMocks();
-    });
-
     it('opens on the requested passkey method and reports terminal completion', async () => {
         const { onCompleted, props } = renderModal('passkey');
 
@@ -75,19 +76,32 @@ describe('RecoverySetupModal prompt integration', () => {
         expect(onCompleted).not.toHaveBeenCalled();
 
         fireEvent.click(screen.getByRole('button', { name: "I've Saved It Somewhere Safe" }));
+        expect(onCompleted).not.toHaveBeenCalled();
+
+        const challengeInputs = screen.getAllByRole('textbox');
+        expect(challengeInputs).toHaveLength(2);
+
+        fireEvent.click(screen.getByRole('button', { name: 'Passkey' }));
+        expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Phrase' }));
+
+        const phraseInputs = screen.getAllByRole('textbox');
+        fireEvent.change(phraseInputs[0], { target: { value: 'one' } });
+        fireEvent.change(phraseInputs[1], { target: { value: 'three' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Confirm Recovery Phrase' }));
+
+        await waitFor(() => expect(props.onConfirmPhrase).toHaveBeenCalledWith(['one', 'three']));
         expect(onCompleted).toHaveBeenCalledWith('phrase');
     });
 
     it('waits for backup download confirmation before reporting completion', async () => {
-        // jsdom does not implement blob URL creation or revocation.
-        vi.stubGlobal(
-            'URL',
-            class extends URL {
-                static createObjectURL = vi.fn(() => 'blob:backup');
-                static revokeObjectURL = vi.fn();
-            }
-        );
-        vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+        const createObjectURL = vi.fn().mockReturnValue('blob:backup');
+        const revokeObjectURL = vi.fn();
+        vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
+        const anchorClick = vi
+            .spyOn(HTMLAnchorElement.prototype, 'click')
+            .mockImplementation(() => {});
         const { onCompleted, props } = renderModal('backup');
 
         fireEvent.change(screen.getByPlaceholderText('At least 8 characters'), {
@@ -102,9 +116,18 @@ describe('RecoverySetupModal prompt integration', () => {
         expect(onCompleted).not.toHaveBeenCalled();
 
         fireEvent.click(screen.getByRole('button', { name: 'Download Backup File' }));
-        fireEvent.click(screen.getByRole('button', { name: "I've Saved It Somewhere Safe" }));
+        fireEvent.change(screen.getByPlaceholderText('Type it again'), {
+            target: { value: 'secure-password' },
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'Verify Backup File' }));
 
+        expect(onCompleted).not.toHaveBeenCalled();
+        await waitFor(() =>
+            expect(props.onConfirmBackup).toHaveBeenCalledWith('{}', 'secure-password')
+        );
         expect(onCompleted).toHaveBeenCalledWith('backup');
+        vi.unstubAllGlobals();
+        anchorClick.mockRestore();
     });
 
     it('reports email completion only after the recovery key is sent', async () => {
@@ -128,6 +151,14 @@ describe('RecoverySetupModal prompt integration', () => {
 
         fireEvent.click(screen.getByRole('button', { name: 'Send Recovery Key' }));
         await waitFor(() => expect(props.onSetupEmailRecovery).toHaveBeenCalledOnce());
+        expect(onCompleted).not.toHaveBeenCalled();
+
+        fireEvent.change(screen.getByPlaceholderText('123456'), {
+            target: { value: '654321' },
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'Confirm Recovery Key' }));
+
+        await waitFor(() => expect(props.onConfirmEmailRecovery).toHaveBeenCalledWith('654321'));
         expect(onCompleted).toHaveBeenCalledWith('email');
     });
 });
