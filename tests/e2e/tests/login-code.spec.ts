@@ -119,7 +119,7 @@ describe('Login Code Verification Rate Limiting', () => {
             expect(secondData.error).toContain('Invalid or expired');
         });
 
-        test('5 wrong codes then correct code → still rejected (code invalidated)', async () => {
+        test('login code: 5 wrong attempts invalidates code, correct code still rejected', async () => {
             const email = `login-brute-${uniqueId}@example.com`;
             const correctCode = '654321';
 
@@ -280,7 +280,7 @@ describe('Login Code Verification Rate Limiting', () => {
             expect(storeRes.status).toEqual(200);
         });
 
-        test('5 wrong codes then correct code → still rejected (code invalidated)', async () => {
+        test('recovery email: 5 wrong attempts invalidates code, correct code still rejected', async () => {
             const correctCode = '543210';
 
             // Seed a recovery email code
