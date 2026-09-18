@@ -132,6 +132,19 @@ const getSocialLoginCancellationReason = (
     return null;
 };
 
+const MAX_DEBUG_ERROR_MESSAGE_LENGTH = 200;
+
+const getSocialLoginErrorDebugData = (
+    error: unknown
+): { errorCode?: string; errorMessage?: string } => {
+    const { code, message } = getAuthErrorDetails(error);
+
+    return {
+        errorCode: code,
+        errorMessage: message?.slice(0, MAX_DEBUG_ERROR_MESSAGE_LENGTH),
+    };
+};
+
 const getSocialLoginFailureReason = (error: unknown): SocialLoginFailureReason => {
     const { code, message } = getAuthErrorDetails(error);
 
@@ -375,6 +388,7 @@ export const useFirebase = () => {
                     provider: attempt.provider,
                     flowId: attempt.lifecycle.id,
                     failureReason,
+                    ...getSocialLoginErrorDebugData(error),
                 },
             });
 
@@ -671,6 +685,7 @@ export const useFirebase = () => {
                     provider: attempt.provider,
                     flowId: attempt.lifecycle.id,
                     failureReason,
+                    ...getSocialLoginErrorDebugData(error),
                 },
             });
 
@@ -678,7 +693,10 @@ export const useFirebase = () => {
                 log.warn('Apple login popup blocked');
                 presentAlert(m['login.social.popupBlocked']());
             } else {
-                log.error('Apple login failed', { failureReason });
+                log.error('Apple login failed', {
+                    failureReason,
+                    errorCode: getAuthErrorDetails(error).code,
+                });
                 presentAlert(m['login.social.genericError']());
             }
 
