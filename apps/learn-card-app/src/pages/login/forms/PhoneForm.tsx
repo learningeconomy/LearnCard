@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import * as m from '../../../paraglide/messages.js';
 import { TransP } from '../../../i18n/TransP';
 import Countdown from 'react-countdown';
@@ -78,6 +78,11 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [isResendCodeLoading, setIsResendCodeLoading] = useState<boolean>(false);
 
+    // The adapter subscriptions below are set up once per adapter; keep the latest
+    // hook function reachable so the auto-verify callback never runs a stale closure.
+    const loginAfterAutoVerifiedSMSRef = useRef(loginAfterAutoVerifiedSMS);
+    loginAfterAutoVerifiedSMSRef.current = loginAfterAutoVerifiedSMS;
+
     useEffect(() => {
         const unsubscribeSent = adapter.onPhoneCodeSent(() => {
             if (Capacitor.isNativePlatform()) {
@@ -90,7 +95,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
         });
 
         const unsubscribeCompleted = adapter.onPhoneVerificationCompleted(code => {
-            loginAfterAutoVerifiedSMS(
+            loginAfterAutoVerifiedSMSRef.current(
                 code ?? '',
                 () => {
                     setIsLoading(false);

@@ -145,8 +145,7 @@ export const useFirebase = () => {
             await adapter.confirmPhoneOtp(verificationCode || '');
         } catch (error) {
             log.debug('googleLogin::verifySmsAuthCodeOnNative::web::error', error);
-            errorCallback(authError(error).message ?? '');
-            errorCallback('Verification code could not be verified');
+            errorCallback(authError(error).message || 'Verification code could not be verified');
             return;
         }
         successCallback();

@@ -50,6 +50,11 @@ const PhoneForm: React.FC = () => {
     const [phoneSession, setPhoneSession] = useState(0);
     const sessionGeneration = useRef(0);
 
+    // The adapter subscriptions below are set up once per session; keep the latest
+    // hook function reachable so the auto-verify callback never runs a stale closure.
+    const loginAfterAutoVerifiedSMSRef = useRef(loginAfterAutoVerifiedSMS);
+    loginAfterAutoVerifiedSMSRef.current = loginAfterAutoVerifiedSMS;
+
     useEffect(() => {
         const generation = sessionGeneration.current;
         const removeCodeSent = adapter.onPhoneCodeSent(() => {
@@ -62,7 +67,7 @@ const PhoneForm: React.FC = () => {
         });
 
         const removeCompleted = adapter.onPhoneVerificationCompleted(verificationCode => {
-            loginAfterAutoVerifiedSMS(
+            loginAfterAutoVerifiedSMSRef.current(
                 verificationCode,
                 () => {
                     if (generation !== sessionGeneration.current) return;
