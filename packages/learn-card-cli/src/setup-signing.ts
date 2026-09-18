@@ -180,6 +180,6 @@ export const runSetupSigning = async (options: SetupSigningOptions): Promise<voi
         alreadyConfigured: authority.alreadyConfigured,
     });
     out.log(
-        'Send from a template: npx @learncard/cli send you@example.com --template\nSee it in the app: npx @learncard/cli open'
+        'Send from a template: npx @learncard/cli send --template\nSee it in the app: npx @learncard/cli open'
     );
 };
