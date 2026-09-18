@@ -1,11 +1,11 @@
 /** Runs the issuer-org how-to's verbatim snippet, changing only the network to localhost. */
-import { afterAll, beforeAll, describe, expect, test } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'vitest';
 import { execFileSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { initLearnCard } from '@learncard/init';
-import { getLearnCardForUser, USERS } from './helpers/learncard.helpers';
+import { getLearnCard, getLearnCardForUser, USERS } from './helpers/learncard.helpers';
 
 const NETWORK = 'http://localhost:4000/trpc';
 const SNIPPETS = resolve(__dirname, '../../../docs/snippets/cli/org');
@@ -35,7 +35,10 @@ describe('Docs: Bootstrap an Issuer Organization', () => {
                 source.replaceAll('network: true', `network: '${NETWORK}'`)
             );
         }
+    });
 
+    // The shared harness clears every database after each test, so rebuild the org per test.
+    beforeEach(async () => {
         // What `org apply` would have done: a parent profile, a manager, one managed profile.
         const parent = await initLearnCard({ seed, network: NETWORK });
         await parent.invoke.createProfile({
@@ -56,6 +59,13 @@ describe('Docs: Bootstrap an Issuer Organization', () => {
             bio: '',
             shortBio: '',
         });
+
+        // The token snippet sends with `template`, which needs a hosted signing
+        // authority on the district (what `org apply` sets up for real orgs).
+        const districtWithLca = await getLearnCard(seed, managedDid);
+        const sa = await districtWithLca.invoke.createSigningAuthority('docs-org');
+        if (!sa) throw new Error('Could not create a signing authority for the district');
+        await districtWithLca.invoke.registerSigningAuthority(sa.endpoint, sa.name, sa.did);
 
         const grantId = await parent.invoke.addAuthGrant({
             name: 'org-docs-token',

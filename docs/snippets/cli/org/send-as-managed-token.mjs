@@ -13,6 +13,9 @@ const district = await org.invoke.actAs(DISTRICT_PROFILE_ID);
 const me = await district.invoke.getProfile();
 console.log(`Acting as ${me.displayName} (${me.profileId})`);
 
+// A token has no signing key, so LearnCard signs for the district through the hosted
+// signing authority that `org apply` registered on it. Passing `template` (not a
+// pre-signed credential) is what asks the network to sign.
 const result = await district.invoke.send({
     type: 'boost',
     recipient: RECIPIENT,
