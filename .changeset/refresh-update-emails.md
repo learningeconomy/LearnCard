@@ -8,3 +8,5 @@ Send managed credential update emails to a bound holder's verified email (or a v
 Email delivery is best effort: a failed or ambiguous provider attempt is recorded and not retried within that window. A later material update in a new window can send another email. There is no background email retry worker.
 
 Existing verified Universal Inbox recipients also receive an initial email pointing to their app notifications when delivery is not suppressed. Local claim and update links use the frontend address.
+
+Preserve recipient profile identities when local webhook delivery normalizes notification DIDs, so the subsequent update-email lookup can still find verified contacts.

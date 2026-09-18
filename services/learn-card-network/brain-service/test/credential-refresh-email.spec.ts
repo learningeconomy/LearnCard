@@ -226,6 +226,31 @@ describe('credential refresh update emails', () => {
         emailSendSpy.mockRestore();
     });
 
+    it('keeps the email recipient identity after local webhook delivery normalizes notification DIDs', async () => {
+        await addEmail(HOLDER_PROFILE_ID, HOLDER_VERIFIED_EMAIL, { primary: true });
+        const { allocation } = await sendOriginal();
+        await activate(allocation.refreshId);
+
+        // The offline webhook path rewrites notification profiles to public DIDs.
+        // Those objects must not alias the profiles used for email contact lookup.
+        addNotificationToQueueSpy.mockImplementation(async (notification: LCNNotification) => {
+            if (typeof notification.to !== 'string') {
+                notification.to.did = `did:web:localhost%3A3000:users:${HOLDER_PROFILE_ID}`;
+            }
+            if (typeof notification.from !== 'string') {
+                notification.from.did = `did:web:localhost%3A3000:users:${ISSUER_PROFILE_ID}`;
+            }
+        });
+
+        const result = await publishIssuerSigned(
+            allocation.refreshId,
+            await updatedCredential(allocation)
+        );
+        expect(result.notification).toBe('queued');
+        expect(emailDeliveries()).toHaveLength(1);
+        expect(emailDeliveries()[0].contactMethod.value).toBe(HOLDER_VERIFIED_EMAIL);
+    });
+
     it('emails the holder verified email with only issuer name and title', async () => {
         await addEmail(HOLDER_PROFILE_ID, HOLDER_VERIFIED_EMAIL, { primary: true });
         await addEmail(HOLDER_PROFILE_ID, HOLDER_UNVERIFIED_EMAIL, { verified: false });
