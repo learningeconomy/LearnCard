@@ -13,6 +13,7 @@ import {
     type DoctorCard,
     type DoctorContext,
 } from './checks';
+import type { AuthGrantWithActAs } from '../auth-grant';
 
 const services = {
     network: 'https://network.learncard.com/trpc',
@@ -160,6 +161,55 @@ describe('tokenScopesCheck', () => {
         const result = await tokenScopesCheck.run(ctx);
         expect(result.status).toBe('pass');
         expect(result.detail).toContain('ex-clr-issuer');
+    });
+
+    it('includes a comma-separated actAs list in the pass detail', async () => {
+        const scope = DEFAULT_REQUIRED_SCOPES.join(' ');
+        const grant: AuthGrantWithActAs = {
+            id: 'g1',
+            name: 'ex-clr-issuer',
+            status: 'active',
+            scope,
+            actAs: 'sc-greenville,sc-north',
+        };
+        const ctx = createContext({
+            learnCard: createLearnCard({ getAuthGrants: vi.fn().mockResolvedValue([grant]) }),
+        });
+        const result = await tokenScopesCheck.run(ctx);
+        expect(result.status).toBe('pass');
+        expect(result.detail).toContain('may act as: sc-greenville, sc-north');
+    });
+
+    it('reports "any managed profile" in the pass detail when actAs is "*"', async () => {
+        const scope = DEFAULT_REQUIRED_SCOPES.join(' ');
+        const grant: AuthGrantWithActAs = {
+            id: 'g1',
+            name: 'star-issuer',
+            status: 'active',
+            scope,
+            actAs: '*',
+        };
+        const ctx = createContext({
+            learnCard: createLearnCard({ getAuthGrants: vi.fn().mockResolvedValue([grant]) }),
+        });
+        const result = await tokenScopesCheck.run(ctx);
+        expect(result.detail).toContain('may act as: any managed profile');
+    });
+
+    it('reports "no delegation" in the pass detail when actAs is absent', async () => {
+        const scope = DEFAULT_REQUIRED_SCOPES.join(' ');
+        const ctx = createContext({
+            project: {
+                env: { API_TOKEN: 'secret', API_TOKEN_SCOPE: scope },
+                envPath: '/x',
+                existing: '',
+            },
+            learnCard: createLearnCard({
+                getAuthGrants: vi.fn().mockResolvedValue([{ id: 'g1', status: 'active', scope }]),
+            }),
+        });
+        const result = await tokenScopesCheck.run(ctx);
+        expect(result.detail).toContain('may act as: no delegation');
     });
 
     it('fails when the matching grant has expired', async () => {

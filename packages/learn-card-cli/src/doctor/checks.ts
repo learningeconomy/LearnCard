@@ -6,6 +6,7 @@ import {
     type NetworkCard,
     type Project,
 } from '../project';
+import { describeActAs, getGrantActAs } from '../auth-grant';
 
 export type CheckStatus = 'pass' | 'warn' | 'fail' | 'skip';
 
@@ -219,7 +220,7 @@ export const tokenScopesCheck: Check = {
             if (covering) {
                 return {
                     status: 'pass',
-                    detail: `Active grant "${covering.name ?? covering.id}" covers ${requiredScopes.join(' ')} (its token is stored outside .env, e.g. your --secrets-out file).`,
+                    detail: `Active grant "${covering.name ?? covering.id}" covers ${requiredScopes.join(' ')} (its token is stored outside .env, e.g. your --secrets-out file); may act as: ${describeActAs(getGrantActAs(covering))}.`,
                 };
             }
             return {
@@ -258,7 +259,7 @@ export const tokenScopesCheck: Check = {
         }
         return {
             status: 'pass',
-            detail: `Token scope "${scope}" covers ${requiredScopes.join(' ')}.`,
+            detail: `Token scope "${scope}" covers ${requiredScopes.join(' ')}; may act as: ${describeActAs(getGrantActAs(grant))}.`,
         };
     },
 };

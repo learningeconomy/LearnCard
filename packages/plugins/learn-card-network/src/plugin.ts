@@ -492,6 +492,11 @@ export * from './types';
 
 export type GuardianApprovalGetter = () => string | undefined | Promise<string | undefined>;
 
+// TODO: swap to `import { ACT_AS_HEADER } from '@learncard/types'` once that package
+// exports it (server-side work is landing in parallel on this branch).
+/** HTTP header used to ask the network service to act as a managed profile for this request. */
+export const ACT_AS_HEADER = 'X-LearnCard-Act-As';
+
 /**
  * @group Plugins
  */
@@ -499,6 +504,15 @@ export type GuardianApprovalGetter = () => string | undefined | Promise<string |
 export interface LearnCardNetworkPluginOptions extends FederationConfig {
     guardianApprovalGetter?: GuardianApprovalGetter;
     extraHeaders?: Record<string, string>;
+    /**
+     * Profile ID (or managed `did:web`) to act as for every request made by this plugin
+     * instance. Sent as the `X-LearnCard-Act-As` header ({@link ACT_AS_HEADER}). The server
+     * swaps the acting profile for the duration of the request without changing token scope;
+     * it responds `403` if the caller doesn't manage the target profile, or if an API token's
+     * grant doesn't allow acting as it. Works for both API-token and seed/DID-auth clients,
+     * since seed-based users may also manage — and act as — other profiles.
+     */
+    actAs?: string;
 }
 
 export async function getLearnCardNetworkPlugin(
@@ -527,7 +541,12 @@ export async function getLearnCardNetworkPlugin(
         extraHeaders,
         trustedFederationHosts,
         allowLocalhostFederation,
+        actAs,
     } = resolvedOptions;
+
+    // Only allocate a new headers object when actAs is actually set, so behavior/identity
+    // of `extraHeaders` is unchanged for existing callers that don't use actAs.
+    const mergedExtraHeaders = actAs ? { ...extraHeaders, [ACT_AS_HEADER]: actAs } : extraHeaders;
 
     // Parse service URL to determine origin and auto-detect localhost
     const serviceUrl = new URL(url);
@@ -554,7 +573,7 @@ export async function getLearnCardNetworkPlugin(
 
     learnCard?.debug?.('Adding LearnCardNetwork Plugin');
     const client = apiToken
-        ? await getApiTokenClient(url, apiToken, guardianApprovalGetter, extraHeaders)
+        ? await getApiTokenClient(url, apiToken, guardianApprovalGetter, mergedExtraHeaders)
         : await getClient(
               url,
               async challenge => {
@@ -568,7 +587,7 @@ export async function getLearnCardNetworkPlugin(
                   return jwt;
               },
               guardianApprovalGetter,
-              extraHeaders
+              mergedExtraHeaders
           );
 
     let userData: LCNProfile | undefined;
@@ -856,6 +875,18 @@ export async function getLearnCardNetworkPlugin(
             },
             getManagedProfiles: async (_learnCard, options = {}) => {
                 return client.profileManager.getManagedProfiles.query(options);
+            },
+            actAs: async (_learnCard, profileId) => {
+                const actingOptions: LearnCardNetworkPluginOptions = {
+                    ...resolvedOptions,
+                    actAs: profileId,
+                };
+
+                const actingPlugin = apiToken
+                    ? await getLearnCardNetworkPlugin(_learnCard, url, apiToken, actingOptions)
+                    : await getLearnCardNetworkPlugin(_learnCard, url, actingOptions);
+
+                return _learnCard.addPlugin(actingPlugin);
             },
             claimPendingGuardianLinks: async () => {
                 await ensureUser();

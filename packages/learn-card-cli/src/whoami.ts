@@ -1,4 +1,5 @@
 import type { Command } from 'commander';
+import type { AuthGrantType } from '@learncard/types';
 
 import {
     connect,
@@ -9,12 +10,31 @@ import {
 } from './project';
 import { out } from './out';
 import type { RunCommand } from './doctor';
+import { describeActAs, getGrantActAs } from './auth-grant';
 
 export interface ManagedSummary {
     profileId: string;
     displayName: string;
     did: string;
 }
+
+export interface ServiceAccountSummary {
+    name: string;
+    scope: string;
+    actAs?: string;
+}
+
+/** Only active grants are relevant here; revoked ones are noise for this summary. */
+export const summarizeServiceAccounts = (
+    grants: Array<Partial<AuthGrantType>>
+): ServiceAccountSummary[] =>
+    grants
+        .filter(grant => grant.status === 'active')
+        .map(grant => ({
+            name: grant.name ?? '',
+            scope: grant.scope ?? '',
+            actAs: getGrantActAs(grant),
+        }));
 
 export const runWhoami = async (options: ProjectOptions): Promise<void> => {
     const project = await loadProject(process.cwd());
@@ -65,6 +85,18 @@ export const runWhoami = async (options: ProjectOptions): Promise<void> => {
         }
     }
 
+    const grants = (await learnCard.invoke.getAuthGrants()) ?? [];
+    const serviceAccounts = summarizeServiceAccounts(grants);
+    if (serviceAccounts.length) {
+        out.log('Service accounts:');
+        const nameWidth = Math.max(...serviceAccounts.map(entry => entry.name.length));
+        const scopeWidth = Math.max(...serviceAccounts.map(entry => entry.scope.length));
+        for (const entry of serviceAccounts)
+            out.log(
+                `  ${entry.name.padEnd(nameWidth)}  ${entry.scope.padEnd(scopeWidth)}  ${describeActAs(entry.actAs)}`
+            );
+    }
+
     if (process.env.LEARNCARD_AS)
         out.log(
             `LEARNCARD_AS is set: commands that support --as will act as "${process.env.LEARNCARD_AS}".`
@@ -78,6 +110,7 @@ export const runWhoami = async (options: ProjectOptions): Promise<void> => {
         signingAuthority: project.env.SIGNING_AUTHORITY_NAME,
         managerDid,
         managed,
+        serviceAccounts,
         actingAs: process.env.LEARNCARD_AS,
     });
 };
