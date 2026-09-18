@@ -1,3 +1,5 @@
+# A state agency with districts underneath it. The agency issues; each district is a
+# managed profile (no seed of its own) that the agency can act as with `send --as`.
 issuer:
     profileId: exde
     displayName: Example Department of Education

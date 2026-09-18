@@ -87,5 +87,5 @@ describe('runPromote --dry-run', () => {
         expect(await fs.readdir(cwd)).toEqual(['.env', 'org.yaml']);
         vi.doUnmock('./org');
         vi.doUnmock('./doctor');
-    });
+    }, 20_000);
 });

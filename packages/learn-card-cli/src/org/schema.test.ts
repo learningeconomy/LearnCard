@@ -128,3 +128,18 @@ describe('OrgSpecValidator', () => {
         if (result.success) expect(result.data.profileManager?.managed).toEqual([]);
     });
 });
+
+describe('examples/*.network.yaml', () => {
+    it('every shipped example parses', async () => {
+        const fs = await import('node:fs/promises');
+        const path = await import('node:path');
+        const { loadOrgSpec } = await import('./load');
+        const dir = path.resolve(__dirname, '../../examples');
+        const files = (await fs.readdir(dir)).filter(f => f.endsWith('.network.yaml'));
+        expect(files.length).toBeGreaterThanOrEqual(5);
+        for (const file of files) {
+            const spec = await loadOrgSpec(path.join(dir, file));
+            expect(spec.issuer.profileId, file).toBeTruthy();
+        }
+    });
+});
