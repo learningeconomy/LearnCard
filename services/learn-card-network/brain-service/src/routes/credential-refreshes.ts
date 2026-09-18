@@ -158,6 +158,7 @@ export const credentialRefreshesRouter = t.router({
                 issuerProfile: profile,
                 input: input as PublishCredentialRefreshInput,
                 domain: ctx.domain,
+                branding: ctx.tenant?.emailBranding,
             });
         }),
 

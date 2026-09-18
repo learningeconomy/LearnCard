@@ -103,6 +103,7 @@ export const advancePendingInboxRefresh = async (params: {
          CREATE (p:InboxRefreshPublication $publication)
          SET ic.credential = $credential, ic.credentialName = $credentialName,
              refresh.currentVersion = $version, refresh.materialDigest = $materialDigest,
+             refresh.credentialDisplayName = coalesce($credentialName, refresh.credentialDisplayName),
              refresh.lastPublishedAt = $publishedAt, refresh.updatedAt = $publishedAt,
              refresh.updateSummary = $updateSummary
          RETURN p`,

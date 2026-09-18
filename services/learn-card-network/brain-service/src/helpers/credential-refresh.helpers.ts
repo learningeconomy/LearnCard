@@ -64,6 +64,9 @@ import {
     buildInitialCredentialReceivedNotification,
     buildCredentialRefreshedNotification,
 } from './notifications.helpers';
+import { deliverCredentialRefreshEmailNotification } from './credential-refresh-email.helpers';
+import { extractBoundedCredentialDisplayTitle } from './credential-refresh-email-content.helpers';
+import type { TenantBranding } from '@learncard/email-templates';
 import { getDidWeb } from './did.helpers';
 import { isRelationshipBlocked } from './connection.helpers';
 import { ProfileType } from 'types/profile';
@@ -862,48 +865,69 @@ const deliverCredentialRefreshNotification = async (params: {
     version: CredentialRefreshVersionNode;
     issuerProfile: ProfileType;
     holderProfile: ProfileType;
+    branding?: Partial<TenantBranding>;
 }): Promise<PublishCredentialRefreshNotification> => {
-    const { version, issuerProfile, holderProfile } = params;
+    const { version, issuerProfile, holderProfile, branding } = params;
 
-    if (version.notificationDeliveredAt) return 'queued';
+    let inAppOutcome: PublishCredentialRefreshNotification = 'queued';
 
-    const event = buildCredentialRefreshedNotification({
-        holderProfile,
-        issuerProfile,
-        refreshId: version.refreshId,
-        version: version.version,
-        notificationId: version.notificationId,
-        deliveryKey: version.notificationDeliveryKey,
-        notifiedAt: version.notificationCreatedAt,
-    });
-
-    try {
-        await addNotificationToQueue(event.notification);
-        await recordCredentialRefreshNotification({
+    if (!version.notificationDeliveredAt) {
+        const event = buildCredentialRefreshedNotification({
+            holderProfile,
+            issuerProfile,
             refreshId: version.refreshId,
             version: version.version,
-            notificationId: event.notificationId,
-            deliveryKey: event.deliveryKey,
-            notifiedAt: event.notifiedAt,
+            notificationId: version.notificationId,
+            deliveryKey: version.notificationDeliveryKey,
+            notifiedAt: version.notificationCreatedAt,
         });
 
-        return 'queued';
+        try {
+            await addNotificationToQueue(event.notification);
+            await recordCredentialRefreshNotification({
+                refreshId: version.refreshId,
+                version: version.version,
+                notificationId: event.notificationId,
+                deliveryKey: event.deliveryKey,
+                notifiedAt: event.notifiedAt,
+            });
+        } catch (error) {
+            console.error(
+                'Credential Refresh Helpers - Failed to enqueue CREDENTIAL_REFRESHED notification:',
+                error
+            );
+
+            inAppOutcome = 'delivery-failed';
+        }
+    }
+
+    // Email is an independent channel: attempted even when the durable in-app
+    // event was already delivered or just failed. Its own outcome is never allowed
+    // to change the publication result or duplicate the push notification.
+    try {
+        await deliverCredentialRefreshEmailNotification({
+            version,
+            issuerProfile,
+            holderProfile,
+            branding,
+        });
     } catch (error) {
         console.error(
-            'Credential Refresh Helpers - Failed to enqueue CREDENTIAL_REFRESHED notification:',
+            'Credential Refresh Helpers - Unexpected error delivering refresh update email:',
             error
         );
-
-        return 'delivery-failed';
     }
+
+    return inAppOutcome;
 };
 
 const resolveCredentialRefreshReplayNotification = async (params: {
     version: CredentialRefreshVersionNode;
     aggregate: CredentialRefreshRecord;
     issuerProfile: ProfileType;
+    branding?: Partial<TenantBranding>;
 }): Promise<PublishCredentialRefreshNotification> => {
-    const { version, aggregate, issuerProfile } = params;
+    const { version, aggregate, issuerProfile, branding } = params;
     const persistedOutcome = version.notificationOutcome ?? 'suppressed';
 
     if (persistedOutcome !== 'queued') return persistedOutcome;
@@ -913,7 +937,7 @@ const resolveCredentialRefreshReplayNotification = async (params: {
         : null;
 
     return holderProfile
-        ? deliverCredentialRefreshNotification({ version, issuerProfile, holderProfile })
+        ? deliverCredentialRefreshNotification({ version, issuerProfile, holderProfile, branding })
         : 'delivery-failed';
 };
 
@@ -925,8 +949,10 @@ export const deliverPendingCredentialRefreshNotificationForAcceptedCredential = 
     credentialNodeId: string;
     issuerProfile: ProfileType;
     holderProfile: ProfileType;
+    /** Optional tenant branding for the update email; defaults to LearnCard. */
+    branding?: Partial<TenantBranding>;
 }): Promise<PublishCredentialRefreshNotification> => {
-    const { credentialNodeId, issuerProfile, holderProfile } = params;
+    const { credentialNodeId, issuerProfile, holderProfile, branding } = params;
     const result = await neogma.queryRunner.run(
         `MATCH (refresh:CredentialRefresh)-[:ROOT]->(:Credential {id: $credentialNodeId})
          RETURN refresh.refreshId AS refreshId, refresh.state AS state
@@ -948,6 +974,7 @@ export const deliverPendingCredentialRefreshNotificationForAcceptedCredential = 
         version: head,
         issuerProfile,
         holderProfile,
+        branding,
     });
 };
 
@@ -1022,6 +1049,8 @@ export type PublishCredentialRefreshParams = {
     issuerProfile: ProfileType;
     input: PublishCredentialRefreshInput;
     domain: string;
+    /** Optional tenant branding for the update email; defaults to LearnCard. */
+    branding?: Partial<TenantBranding>;
 };
 
 /**
@@ -1039,6 +1068,14 @@ export const publishCredentialRefresh = async (
 ): Promise<PublishCredentialRefreshResult> => {
     const { issuerProfile, input, domain } = params;
     const { refreshId, idempotencyKey, notifyHolder, updateSummary } = input;
+    const branding = params.branding;
+
+    // Email-only bounded display title. Read from the issuer-supplied publication
+    // input (never from the holder-encrypted payload); `undefined` falls back to
+    // the original boost template at delivery time, then to generic copy.
+    const credentialDisplayName = extractBoundedCredentialDisplayTitle(
+        input.mode === 'signing-authority' ? input.credential.name : input.signedCredential.name
+    );
 
     const aggregate = await getCredentialRefresh(refreshId);
 
@@ -1091,6 +1128,7 @@ export const publishCredentialRefresh = async (
                 version: replayed,
                 aggregate,
                 issuerProfile,
+                branding,
             });
 
             return {
@@ -1254,6 +1292,7 @@ export const publishCredentialRefresh = async (
         etag,
         materialDigest: nextDigest,
         updateSummary,
+        credentialDisplayName,
         effectiveAt:
             effectiveTime !== undefined ? new Date(effectiveTime).toISOString() : undefined,
         notificationOutcome: notification,
@@ -1289,6 +1328,7 @@ export const publishCredentialRefresh = async (
                 version: replayed,
                 aggregate,
                 issuerProfile,
+                branding,
             }),
         };
     }
@@ -1304,6 +1344,7 @@ export const publishCredentialRefresh = async (
                       version: persistedVersion,
                       issuerProfile,
                       holderProfile,
+                      branding,
                   })
                 : 'delivery-failed';
     }

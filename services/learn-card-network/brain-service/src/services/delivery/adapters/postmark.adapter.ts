@@ -41,6 +41,7 @@ const LOCAL_TEMPLATE_MAP: Record<string, TemplateId> = {
     'guardian-credential-approval': 'guardian-credential-approval',
     'guardian-email-otp': 'guardian-email-otp',
     'guardian-rejected-credential': 'guardian-rejected-credential',
+    'credential-updated': 'credential-updated',
 };
 
 export class PostmarkAdapter implements DeliveryService {
@@ -215,6 +216,12 @@ export class PostmarkAdapter implements DeliveryService {
                     issuer: model.issuer,
                     credential: model.credential,
                     recipient: model.recipient,
+                };
+
+            case 'credential-updated':
+                return {
+                    issuer: model.issuer,
+                    credential: model.credential,
                 };
 
             default:

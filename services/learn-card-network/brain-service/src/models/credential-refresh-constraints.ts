@@ -7,6 +7,7 @@ const CREDENTIAL_REFRESH_CONSTRAINT_QUERIES = [
     'CREATE CONSTRAINT credential_refresh_id_unique IF NOT EXISTS FOR (r:CredentialRefresh) REQUIRE (r.refreshId) IS UNIQUE',
     'CREATE CONSTRAINT credential_refresh_version_key_unique IF NOT EXISTS FOR (c:Credential) REQUIRE (c.refreshVersionKey) IS UNIQUE',
     'CREATE CONSTRAINT credential_refresh_idempotency_key_unique IF NOT EXISTS FOR (c:Credential) REQUIRE (c.refreshIdempotencyKey) IS UNIQUE',
+    'CREATE CONSTRAINT credential_refresh_email_delivery_key_unique IF NOT EXISTS FOR (d:CredentialRefreshEmailDelivery) REQUIRE (d.deliveryKey) IS UNIQUE',
     'CREATE CONSTRAINT refresh_send_intent_key_unique IF NOT EXISTS FOR (i:RefreshSendIntent) REQUIRE (i.intentKey) IS UNIQUE',
 ];
 
