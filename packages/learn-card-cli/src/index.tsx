@@ -12,7 +12,7 @@ import * as types from '@learncard/types';
 import { getLinkedClaimsPlugin } from '@learncard/linked-claims-plugin';
 import gradient from 'gradient-string';
 import figlet from 'figlet';
-import { program } from 'commander';
+import { Option, program } from 'commander';
 import clipboard from 'clipboardy';
 
 import { getLerRsPlugin } from '@learncard/ler-rs-plugin';
@@ -32,6 +32,13 @@ import {
     createExportLearnCardBundleHelper,
     createRestoreLearnCardFromBundleHelper,
 } from './replHelpers';
+import { registerOrgCommand } from './org';
+import { registerDoctorCommand } from './doctor';
+import { registerClrCommand } from './clr';
+import { registerInboxCommand } from './inbox';
+import { registerRefreshCommand } from './refresh';
+import { registerWhoamiCommand } from './whoami';
+import { registerPromoteCommand } from './promote';
 
 import packageJson from '../package.json';
 
@@ -331,7 +338,7 @@ const startCliRepl = async (colorize: (input: string) => string): Promise<void> 
 program
     .command('send [recipient]')
     .description(
-        'Send a "Quickstart Complete" badge to an email address or phone number (prompts if omitted). Creates .env and send.mjs in the current folder.'
+        'Send a "Quickstart Complete" badge to an email, phone number, profile ID, or DID (prompts if omitted). Creates .env and send.mjs in the current folder.'
     )
     .option('-y, --yes', 'accept defaults without prompting')
     .option('--name <displayName>', 'display name for your issuer profile')
@@ -342,7 +349,17 @@ program
         'public handle for your profile (default: derived from the display name)'
     )
     .option('--network <url>', 'network tRPC URL (default: production)')
-    .option('--template', 'send using a reusable template and hosted signing authority')
+    .addOption(
+        new Option(
+            '--as <profileId>',
+            'send as a profile you manage (from `org apply`), signed with its did:web'
+        ).env('LEARNCARD_AS')
+    )
+    .option(
+        '--template',
+        'send using a reusable template and hosted signing authority (default once setup-signing or org apply has run)'
+    )
+    .option('--no-template', 'sign with the local key even if a signing authority is registered')
     .option('--template-uri <uri>', 'send from a specific template (implies --template)')
     .option('--webhook-url <url>', 'receive ISSUANCE_DELIVERED / ISSUANCE_CLAIMED at this URL')
     .option('--suppress-delivery', 'skip the claim email; you deliver inbox.claimUrl yourself')
@@ -601,9 +618,18 @@ commandOptions(
         })
     );
 
+registerOrgCommand(program, runCommand);
+registerDoctorCommand(program, runCommand);
+registerClrCommand(program, runCommand);
+registerInboxCommand(program, runCommand);
+registerRefreshCommand(program, runCommand);
+registerWhoamiCommand(program, runCommand);
+registerPromoteCommand(program, runCommand);
+
 const JOURNEY = [
     'send',
     'status',
+    'whoami',
     'setup-signing',
     'token',
     'webhook',
@@ -612,6 +638,12 @@ const JOURNEY = [
     'verify',
     'revoke',
     'open',
+    'org',
+    'doctor',
+    'promote',
+    'clr',
+    'inbox',
+    'refresh',
     'init',
     'repl',
 ];

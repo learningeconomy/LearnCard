@@ -100,16 +100,19 @@ export const getLCAPlugin = async (
         const initialized = learnCard.invoke
             .getProfile()
             .then(async profile => {
-                if (profile) await updateLearnCard(learnCard);
+                // getEncryptionKey is a profile route; without a profile it can only 401.
+                if (!profile) return;
+                await updateLearnCard(learnCard);
                 encryptionJwk = await getEncryptionJwk(
                     await getNewClient(url, learnCard, extraHeaders),
                     learnCard
                 );
             })
             .catch(error => {
-                console.warn('[LCA Plugin] Initialization warning:', error);
                 // Continue without encryption JWK if initialization fails
                 // This allows the plugin methods to still work even if initial setup has issues
+                const message = error instanceof Error ? error.message : String(error);
+                console.warn(`[LCA Plugin] Initialization warning: ${message}`);
             });
 
         return {

@@ -1,0 +1,33 @@
+# A state agency with districts underneath it. The agency issues; each district is a
+# managed profile (no seed of its own) that the agency can act as with `send --as`.
+issuer:
+    profileId: exde
+    displayName: Example Department of Education
+    branding:
+        image: https://cdn.example.org/exde-logo.png
+        shortBio: State education agency for Example.
+        websiteLink: https://ed.example.gov
+        type: organization
+        display:
+            backgroundColor: '#18224E'
+            accentColor: '#2E7D32'
+    signingAuthority:
+        type: learncard-hosted
+        name: exde-clr
+
+profileManager:
+    displayName: Example Districts
+    managed:
+        - profileId: cs-exampleville
+          displayName: Exampleville County Schools
+          branding:
+              websiteLink: https://exampleville.k12.example
+              display: { accentColor: '#B45309' }
+
+serviceAccounts:
+    - name: ex-clr-issuer
+      scopes: [inbox:write, inbox:read, credentials:write, credentials:read]
+      expiresAt: 2027-06-30
+
+webhooks:
+    - url: https://clr.example.org/learncard/webhook
