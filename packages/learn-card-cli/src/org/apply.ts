@@ -4,7 +4,8 @@ import type { LCALearnCard } from '@learncard/lca-api-plugin';
 import { ensureGitignored, saveProject, type Project } from '../project';
 import { setupSigning } from '../setup-signing';
 import { out } from '../out';
-import type { OrgBranding, OrgSpec } from './schema';
+import { describeActAs, getGrantActAs, type AuthGrantWithActAs } from '../auth-grant';
+import type { OrgBranding, OrgServiceAccountSpec, OrgSpec } from './schema';
 
 export type OrgResource =
     | 'issuer'
@@ -405,6 +406,10 @@ const applyProfileManager = async (
     return managerDid;
 };
 
+/** `'*'` stays `'*'`; a profileId list joins with `,` to match the grant's flat `actAs` string. */
+const actAsValue = (actAs: OrgServiceAccountSpec['actAs']): string | undefined =>
+    actAs === undefined ? undefined : actAs === '*' ? '*' : actAs.join(',');
+
 const applyServiceAccounts = async (
     spec: OrgSpec,
     learnCard: OrgLearnCard,
@@ -417,6 +422,7 @@ const applyServiceAccounts = async (
 
     const grants = (await learnCard.invoke.getAuthGrants()) ?? [];
     for (const account of spec.serviceAccounts) {
+        const actAs = actAsValue(account.actAs);
         const existing = grants.find(g => g.name === account.name && g.status === 'active');
         if (existing) {
             serviceAccounts.push({
@@ -424,6 +430,14 @@ const applyServiceAccounts = async (
                 grantId: existing.id ?? '',
                 created: false,
             });
+            const existingActAs = getGrantActAs(existing);
+            if (existingActAs !== actAs) {
+                // Like `scope`, `actAs` is fixed when the token is minted — the network
+                // rejects it on update. The only way to change it is a new token.
+                throw new Error(
+                    `Service account "${account.name}" exists with actAs ${describeActAs(existingActAs)} but the spec says ${describeActAs(actAs)}. actAs cannot be changed on an existing token — revoke it (npx @learncard/cli token --revoke ${existing.id ?? '<grantId>'}) and re-run org apply with --secrets-out to mint a replacement.`
+                );
+            }
             changes.push({ resource: 'serviceAccount', name: account.name, action: 'unchanged' });
             continue;
         }
@@ -439,11 +453,13 @@ const applyServiceAccounts = async (
             throw new Error(
                 `Pass --secrets-out ./secrets.env (any path; keep it beside .env and out of git) to create service account "${account.name}" — its token can only be retrieved once.`
             );
-        const grantId = await learnCard.invoke.addAuthGrant({
+        const payload: AuthGrantWithActAs = {
             name: account.name,
             scope: account.scopes.join(' '),
             ...(account.expiresAt ? { expiresAt: new Date(account.expiresAt).toISOString() } : {}),
-        });
+            ...(actAs !== undefined ? { actAs } : {}),
+        };
+        const grantId = await learnCard.invoke.addAuthGrant(payload);
         const token = await learnCard.invoke.getAPITokenForAuthGrant(grantId);
         await writeSecret(secretsOut, account.name, token);
         out.log(`Token for "${account.name}" written to ${secretsOut}`);

@@ -5,6 +5,7 @@ import path from 'node:path';
 import { applyOrg, type OrgLearnCard } from './apply';
 import { loadProject } from '../project';
 import type { OrgSpec } from './schema';
+import type { AuthGrantWithActAs } from '../auth-grant';
 
 const spec: OrgSpec = {
     issuer: {
@@ -37,7 +38,9 @@ const managerDid = 'did:web:network.learncard.com:manager:m1';
 const managedDid = 'did:web:network.learncard.com:users:sc-greenville';
 
 const makeMockCard = (): OrgLearnCard & {
-    invoke: { [K in keyof OrgLearnCard['invoke']]: ReturnType<typeof vi.fn> };
+    invoke: { [K in keyof OrgLearnCard['invoke']]: ReturnType<typeof vi.fn> } & {
+        updateAuthGrant: ReturnType<typeof vi.fn>;
+    };
 } => ({
     id: { did: vi.fn((method?: string) => (method === 'web' ? issuerDid : 'did:key:z6Mk...')) },
     invoke: {
@@ -47,6 +50,7 @@ const makeMockCard = (): OrgLearnCard & {
         createProfileManager: vi.fn().mockResolvedValue(managerDid),
         getAuthGrants: vi.fn().mockResolvedValue([]),
         addAuthGrant: vi.fn().mockResolvedValue('grant-1'),
+        updateAuthGrant: vi.fn().mockResolvedValue(true),
         getAPITokenForAuthGrant: vi.fn().mockResolvedValue('jwt-token-abc'),
         getRegisteredSigningAuthorities: vi.fn().mockResolvedValue([]),
         registerSigningAuthority: vi.fn().mockResolvedValue(true),
@@ -217,6 +221,7 @@ describe('applyOrg', () => {
                 'setPrimaryRegisteredSigningAuthority',
                 'createProfileManager',
                 'addAuthGrant',
+                'updateAuthGrant',
                 'getAPITokenForAuthGrant',
             ] as const) {
                 expect(card.invoke[key]).not.toHaveBeenCalled();
@@ -251,6 +256,165 @@ describe('applyOrg', () => {
                 applyOrg(spec, card, project, { connectAsManager: async () => makeMockManager() })
             ).rejects.toThrow('--secrets-out');
             expect(card.invoke.addAuthGrant).not.toHaveBeenCalled();
+
+            log.mockRestore();
+        });
+    });
+
+    it("joins a new service account's actAs list with a comma when creating the grant", async () => {
+        await withTmpProject(async project => {
+            const card = makeMockCard();
+            const secretsOut = path.join(path.dirname(project.envPath), 'secrets.env');
+            const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+            const specWithActAs: OrgSpec = {
+                ...spec,
+                serviceAccounts: [
+                    { ...spec.serviceAccounts![0]!, actAs: ['sc-greenville', 'sc-north'] },
+                ],
+            };
+
+            await applyOrg(specWithActAs, card, project, {
+                secretsOut,
+                connectAsManager: async () => makeMockManager(),
+            });
+
+            expect(card.invoke.addAuthGrant).toHaveBeenCalledWith({
+                name: 'ea-clr-issuer',
+                scope: 'inbox:write inbox:read credentials:write credentials:read',
+                expiresAt: new Date('2027-06-30').toISOString(),
+                actAs: 'sc-greenville,sc-north',
+            });
+
+            log.mockRestore();
+        });
+    });
+
+    it('passes "*" straight through as actAs when creating the grant', async () => {
+        await withTmpProject(async project => {
+            const card = makeMockCard();
+            const secretsOut = path.join(path.dirname(project.envPath), 'secrets.env');
+            const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+            const specWithActAs: OrgSpec = {
+                ...spec,
+                serviceAccounts: [{ ...spec.serviceAccounts![0]!, actAs: '*' }],
+            };
+
+            await applyOrg(specWithActAs, card, project, {
+                secretsOut,
+                connectAsManager: async () => makeMockManager(),
+            });
+
+            expect(card.invoke.addAuthGrant).toHaveBeenCalledWith(
+                expect.objectContaining({ actAs: '*' })
+            );
+
+            log.mockRestore();
+        });
+    });
+
+    it('fails with a revoke + re-create hint when actAs differs from the existing grant', async () => {
+        await withTmpProject(async project => {
+            const card = makeMockCard();
+            card.invoke.getProfile.mockResolvedValue({
+                profileId: 'scde',
+                displayName: 'South Carolina Department of Education',
+                did: issuerDid,
+            });
+            card.invoke.getRegisteredSigningAuthorities.mockResolvedValue([
+                {
+                    signingAuthority: { endpoint: authorityRecord.endpoint },
+                    relationship: { name: 'scde-clr', did: authorityRecord.did, isPrimary: true },
+                },
+            ]);
+            const existingGrant: AuthGrantWithActAs = {
+                id: 'grant-1',
+                name: 'ea-clr-issuer',
+                status: 'active',
+                scope: 'inbox:write',
+                actAs: 'sc-greenville',
+            };
+            card.invoke.getAuthGrants.mockResolvedValue([existingGrant]);
+            const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+            const specWithActAs: OrgSpec = {
+                ...spec,
+                serviceAccounts: [{ ...spec.serviceAccounts![0]!, actAs: '*' }],
+            };
+
+            for (const dryRun of [true, false]) {
+                await expect(
+                    applyOrg(specWithActAs, card, project, {
+                        dryRun,
+                        connectAsManager: async () => makeMockManager(),
+                    })
+                ).rejects.toThrow(
+                    'Service account "ea-clr-issuer" exists with actAs sc-greenville but the spec says any managed profile. actAs cannot be changed on an existing token — revoke it (npx @learncard/cli token --revoke grant-1)'
+                );
+            }
+
+            expect(card.invoke.updateAuthGrant).not.toHaveBeenCalled();
+            expect(card.invoke.addAuthGrant).not.toHaveBeenCalled();
+
+            log.mockRestore();
+        });
+    });
+
+    it('fails when the spec drops actAs from a grant that has it', async () => {
+        await withTmpProject(async project => {
+            const card = makeMockCard();
+            const existingGrant: AuthGrantWithActAs = {
+                id: 'grant-1',
+                name: 'ea-clr-issuer',
+                status: 'active',
+                scope: 'inbox:write',
+                actAs: '*',
+            };
+            card.invoke.getAuthGrants.mockResolvedValue([existingGrant]);
+            const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+            await expect(
+                applyOrg(spec, card, project, { connectAsManager: async () => makeMockManager() })
+            ).rejects.toThrow(
+                'exists with actAs any managed profile but the spec says no delegation'
+            );
+            expect(card.invoke.updateAuthGrant).not.toHaveBeenCalled();
+
+            log.mockRestore();
+        });
+    });
+
+    it('leaves an existing grant unchanged when actAs already matches the spec', async () => {
+        await withTmpProject(async project => {
+            const card = makeMockCard();
+            const existingGrant: AuthGrantWithActAs = {
+                id: 'grant-1',
+                name: 'ea-clr-issuer',
+                status: 'active',
+                scope: 'inbox:write',
+                actAs: 'sc-greenville,sc-north',
+            };
+            card.invoke.getAuthGrants.mockResolvedValue([existingGrant]);
+            const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+            const specWithActAs: OrgSpec = {
+                ...spec,
+                serviceAccounts: [
+                    { ...spec.serviceAccounts![0]!, actAs: ['sc-greenville', 'sc-north'] },
+                ],
+            };
+
+            const result = await applyOrg(specWithActAs, card, project, {
+                connectAsManager: async () => makeMockManager(),
+            });
+
+            expect(card.invoke.updateAuthGrant).not.toHaveBeenCalled();
+            expect(
+                result.changes.find(
+                    c => c.resource === 'serviceAccount' && c.name === 'ea-clr-issuer'
+                )
+            ).toMatchObject({ action: 'unchanged' });
 
             log.mockRestore();
         });
