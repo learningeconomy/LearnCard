@@ -15,6 +15,20 @@ plugins:
     - serverless-prune-plugin
 
 constructs:
+    inbox-queue:
+        type: queue
+        batchSize: 1
+        maxConcurrency: 10
+        maxRetries: 5
+        worker:
+            handler: lambda.inboxQueueWorker
+            timeout: 300
+            reservedConcurrency: 10
+            vpc:
+                securityGroupIds:
+                    - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
+                subnetIds:
+                    - Ref: PrivateSubnetA
     notifications-queue:
         type: queue
         worker:
@@ -155,6 +169,7 @@ provider:
         REDIS_PORT:
             'Fn::GetAtt': [ElasticCacheCluster, RedisEndpoint.Port]
         NOTIFICATIONS_QUEUE_URL: ${construct:notifications-queue.queueUrl}
+        INBOX_QUEUE_URL: ${construct:inbox-queue.queueUrl}
         SKILL_EMBEDDING_GOOGLE_API_KEY: ${env:SKILL_EMBEDDING_GOOGLE_API_KEY, ""}
         SKILL_EMBEDDING_GOOGLE_MODEL: ${env:SKILL_EMBEDDING_GOOGLE_MODEL, "gemini-embedding-001"}
         SKILL_EMBEDDING_BATCH_SIZE: ${env:SKILL_EMBEDDING_BATCH_SIZE, "25"}
@@ -192,6 +207,31 @@ provider:
                 - ETag
 
 functions:
+    inboxDeadLetterWorker:
+        handler: lambda.inboxDeadLetterWorker
+        timeout: 30
+        reservedConcurrency: 2
+        vpc:
+            securityGroupIds:
+                - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
+            subnetIds:
+                - Ref: PrivateSubnetA
+        events:
+            - sqs:
+                  arn: ${construct:inbox-queue.dlqArn}
+                  batchSize: 1
+                  functionResponseType: ReportBatchItemFailures
+    inboxQueueDispatcher:
+        handler: lambda.inboxQueueDispatcher
+        timeout: 60
+        reservedConcurrency: 1
+        vpc:
+            securityGroupIds:
+                - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
+            subnetIds:
+                - Ref: PrivateSubnetA
+        events:
+            - schedule: rate(1 minute)
     inboxMaintenance:
         handler: lambda.inboxMaintenanceHandler
         timeout: 300
@@ -290,6 +330,39 @@ functions:
 
 resources:
     Resources:
+        InboxQueueAgeAlarm:
+            Type: AWS::CloudWatch::Alarm
+            Properties:
+                AlarmDescription: Inbox issuance has waited over five minutes
+                Namespace: AWS/SQS
+                MetricName: ApproximateAgeOfOldestMessage
+                Dimensions:
+                    - Name: QueueName
+                      Value:
+                          Fn::Select:
+                              - 4
+                              - Fn::Split: ['/', '${construct:inbox-queue.queueUrl}']
+                Statistic: Maximum
+                Period: 60
+                EvaluationPeriods: 2
+                Threshold: 300
+                ComparisonOperator: GreaterThanThreshold
+                TreatMissingData: notBreaching
+        InboxDispatcherErrorsAlarm:
+            Type: AWS::CloudWatch::Alarm
+            Properties:
+                AlarmDescription: Durable inbox dispatch or recovery failed
+                Namespace: AWS/Lambda
+                MetricName: Errors
+                Dimensions:
+                    - Name: FunctionName
+                      Value: { Ref: InboxQueueDispatcherLambdaFunction }
+                Statistic: Sum
+                Period: 60
+                EvaluationPeriods: 1
+                Threshold: 0
+                ComparisonOperator: GreaterThanThreshold
+                TreatMissingData: notBreaching
         VPC:
             Type: AWS::EC2::VPC
             Properties:
