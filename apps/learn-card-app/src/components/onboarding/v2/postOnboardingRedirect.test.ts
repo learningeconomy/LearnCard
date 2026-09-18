@@ -21,6 +21,7 @@ describe('resolvePostOnboardingRedirect', () => {
         expect(resolvePostOnboardingRedirect('//evil.example.com')).toBeNull();
         expect(resolvePostOnboardingRedirect('javascript:alert(1)')).toBeNull();
         expect(resolvePostOnboardingRedirect('dashboard')).toBeNull();
+        expect(resolvePostOnboardingRedirect('/\\evil.example.com')).toBeNull();
     });
 
     it('trims surrounding whitespace from a valid path', () => {

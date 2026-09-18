@@ -219,6 +219,7 @@ export const LoginContent: React.FC = () => {
         // Never route during key/wallet rebuild or recovery/migration; the
         // coordinator's overlays own those states.
         if (authStatus.tag === 'resolving' || authStatus.tag === 'recovering') return;
+        if (authStatus.tag === 'ready' && authStatus.profile.tag === 'loading') return;
 
         const needsOnboarding =
             coordinatorState.status === 'needs_setup' ||

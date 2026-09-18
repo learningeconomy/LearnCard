@@ -709,7 +709,9 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
         // Resume a preserved claim/destination only after the profile was
         // successfully created (this runs from the celebrate step). Clearing
         // it here — never earlier — keeps it safe across signup and retries.
-        const pendingRedirect = pendingRedirectRef.current;
+        const pendingRedirect =
+            pendingRedirectRef.current ??
+            resolvePostOnboardingRedirect(redirectStore.get.lcnRedirect());
         if (pendingRedirect) {
             pendingRedirectRef.current = null;
             redirectStore.set.lcnRedirect(null);

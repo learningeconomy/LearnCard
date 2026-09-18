@@ -10,7 +10,13 @@ export const resolvePostOnboardingRedirect = (pendingRedirect: unknown): string 
 
     const trimmed = pendingRedirect.trim();
 
-    if (!trimmed.startsWith('/') || trimmed.startsWith('//')) return null;
+    if (
+        !trimmed.startsWith('/') ||
+        trimmed.startsWith('//') ||
+        trimmed.includes('\\') ||
+        Array.from(trimmed).some(character => character.charCodeAt(0) < 32)
+    )
+        return null;
 
     return trimmed;
 };

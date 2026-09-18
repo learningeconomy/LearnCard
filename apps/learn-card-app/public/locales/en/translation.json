@@ -1,4 +1,9 @@
 {
+    "inboxClaimSetup": {
+        "setup": "Finish setting up your account to claim your credential.",
+        "continue": "Continue Account Setup",
+        "connection": "We couldn’t confirm your account. Check your connection and try again."
+    },
     "connectionPrompts": {
         "title": "Connect with {{name}}?",
         "description": "Stay in touch and recognize what comes next.",

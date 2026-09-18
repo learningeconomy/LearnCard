@@ -59,7 +59,7 @@ describe('InboxClaimProfileGate', () => {
 
         renderGate();
 
-        expect(screen.getByText('Exchange loading')).toBeInTheDocument();
+        expect(screen.getByRole('status')).toBeInTheDocument();
         expect(mocks.setIsOnboardingOpen).toHaveBeenCalledWith(true);
         expect(mocks.setLcnRedirect).toHaveBeenCalledWith(
             `/request?vc_request_url=${encodeURIComponent(exchangeUrl)}`
@@ -112,7 +112,7 @@ describe('InboxClaimProfileGate', () => {
 
         renderGate();
 
-        expect(screen.getByText('Exchange loading')).toBeInTheDocument();
+        expect(screen.getByRole('status')).toBeInTheDocument();
         expect(mocks.newModal).not.toHaveBeenCalled();
         expect(mocks.setLcnRedirect).not.toHaveBeenCalled();
     });
@@ -133,6 +133,14 @@ describe('InboxClaimProfileGate', () => {
         expect(mocks.newModal).not.toHaveBeenCalled();
         fireEvent.click(screen.getByRole('button', { name: /try again/i }));
         expect(mocks.refetch).toHaveBeenCalled();
+    });
+
+    it('lets a user resume onboarding after dismissing it', () => {
+        mocks.useAuthStatus.mockReturnValue(ready('absent'));
+        renderGate();
+        mocks.isOnboardingOpen.mockReturnValue(false);
+        fireEvent.click(screen.getByRole('button', { name: /continue account setup/i }));
+        expect(mocks.newModal).toHaveBeenCalledTimes(2);
     });
 
     it('does not prompt onboarding when a profile is present', () => {
