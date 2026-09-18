@@ -400,6 +400,11 @@ export const keysRouter = t.router({
                 RECOVERY_EMAIL_CODE_TTL_SECS
             );
 
+            // Clear the verification attempt counter so user can try the new code
+            await clearRateLimit(
+                `recovery-verify-attempts:${contactMethod.type}:${contactMethod.value}`
+            );
+
             try {
                 // Always render locally via @learncard/email-templates for
                 // tenant-branded output. Falls back to the 'recovery-email-code'
