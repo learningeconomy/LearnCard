@@ -12,14 +12,13 @@ const DEFAULT_RATE_PREFIX = 'rate-limit:';
 
 /**
  * Lua script for atomic increment with TTL.
- * Ensures the key always has an expiry, even if the process crashes
- * between INCR and EXPIRE in a non-atomic implementation.
+ * Always sets EXPIRE on every call (not just first) to ensure self-healing:
+ * if a key somehow exists without a TTL (previous bug, manual creation, etc.),
+ * it will get a TTL on the next request rather than blocking indefinitely.
  */
 const ATOMIC_INCR_SCRIPT = `
 local current = redis.call('INCR', KEYS[1])
-if current == 1 then
-    redis.call('EXPIRE', KEYS[1], ARGV[1])
-end
+redis.call('EXPIRE', KEYS[1], ARGV[1])
 return current
 `;
 
