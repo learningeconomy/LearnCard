@@ -5,6 +5,7 @@ import type { InboxBatchReceipt, IssueInboxCredentialBatchItemResult } from '@le
 import { neogma } from '@instance';
 import { encryptInboxCredential, decryptInboxCredential } from '@helpers/inbox-encryption.helpers';
 import type { BatchItem, BatchJob, BatchReplayStore } from 'types/inbox-batch';
+import { getInboxBatchState } from '@helpers/inbox-batch-status.helpers';
 
 export const DAY = 86_400_000;
 export const LEASE_MS = 360_000;
@@ -79,7 +80,8 @@ export const createBatchJob = async (input: {
         if (input.requestId) {
             const prior = await tx.run(
                 `MATCH (b:InboxBatch {issuer: $issuer, requestId: $requestId})
-                WHERE b.createdAt > $cutoff RETURN b`,
+                WHERE b.createdAt > $cutoff
+                MATCH (b)-[:HAS_ITEM]->(i:InboxBatchItem) RETURN b, collect(i.state) AS states`,
                 { issuer: input.issuer, requestId: input.requestId, cutoff: now - DAY }
             );
             const batch = prior.records[0]?.get('b').properties;
@@ -91,7 +93,7 @@ export const createBatchJob = async (input: {
                     });
                 return {
                     batchId: batch.id,
-                    status: 'QUEUED',
+                    status: getInboxBatchState(prior.records[0]!.get('states')),
                     createdAt: new Date(Number(batch.createdAt)).toISOString(),
                 };
             }
@@ -260,6 +262,20 @@ export const batchReplayStore = (
     },
 });
 
+/** Terminal items no longer need the original credential payload, including uncertain outcomes.
+ * Replay reservations are separate nodes and survive the 30-day job retention period.
+ */
+const finalizeSettledBatch = async (tx: ManagedTransaction, id: string): Promise<void> => {
+    await tx.run(
+        `MATCH (b:InboxBatch {id: $id}) SET b.lock = coalesce(b.lock, 0) + 1
+        WITH b WHERE NOT EXISTS {
+            MATCH (b)-[:HAS_ITEM]->(i) WHERE i.state IN ['QUEUED', 'PROCESSING']
+        }
+        SET b.completedAt = coalesce(b.completedAt, $now) REMOVE b.payload`,
+        { id, now: Date.now() }
+    );
+};
+
 export const finishBatchItem = async (
     id: string,
     owner: string,
@@ -288,12 +304,7 @@ export const finishBatchItem = async (
                 result: retry ? null : encrypted,
             }
         );
-        await tx.run(
-            `MATCH (b:InboxBatch)-[:HAS_ITEM]->(i:InboxBatchItem {id: $id})
-            WHERE NOT EXISTS { MATCH (b)-[:HAS_ITEM]->(pending) WHERE pending.state <> 'COMPLETED' }
-            SET b.completedAt = $now REMOVE b.payload`,
-            { id, now: Date.now() }
-        );
+        await finalizeSettledBatch(tx, item.batchId);
     });
 };
 
@@ -348,19 +359,29 @@ export const deadLetterBatchItem = async (id: string): Promise<void> =>
                 result: saved ?? null,
             }
         );
+        await finalizeSettledBatch(tx, item.batchId);
     });
 
-/** Expired issuance leases are never reissued. Preparation can safely start again. */
+/** Recover bounded groups in short transactions without holding locks across the whole maintenance run. */
 export const recoverInboxJobs = async (): Promise<void> => {
-    await transaction(async tx => {
-        const rows = await tx.run(
-            `MATCH (i:InboxBatchItem) WHERE i.state = 'PROCESSING' AND i.leaseUntil < $now
-            WITH i LIMIT 100 SET i.lock = coalesce(i.lock, 0) + 1
-            WITH i WHERE i.state = 'PROCESSING' AND i.leaseUntil < $now RETURN i`,
-            { now: Date.now() }
-        );
-        for (const row of rows.records) {
-            const item = row.get('i').properties as BatchItem;
+    const deadline = Date.now() + 20_000;
+    await ensureInboxBatchConstraints();
+    const expired = await neogma.queryRunner.run(
+        `MATCH (i:InboxBatchItem) WHERE i.state = 'PROCESSING' AND i.leaseUntil < $now
+        RETURN i.id AS id LIMIT 100`,
+        { now: Date.now() }
+    );
+    for (const row of expired.records) {
+        if (Date.now() >= deadline) break;
+        await transaction(async tx => {
+            const rows = await tx.run(
+                `MATCH (i:InboxBatchItem {id: $id})
+                SET i.lock = coalesce(i.lock, 0) + 1
+                WITH i WHERE i.state = 'PROCESSING' AND i.leaseUntil < $now RETURN i`,
+                { id: row.get('id'), now: Date.now() }
+            );
+            const item = rows.records[0]?.get('i').properties as BatchItem | undefined;
+            if (!item) return;
             // A persisted success is authoritative even if the worker lost its completion reply.
             const replay = await tx.run(
                 `MATCH (r:InboxBatchReplay {itemId: $id}) WHERE r.marker IS NULL RETURN r.value AS value`,
@@ -384,23 +405,31 @@ export const recoverInboxJobs = async (): Promise<void> => {
                 i.leaseUntil = null, i.dispatchAt = 0, i.result = $result`,
                 { id: item.id, state, result: saved ?? null }
             );
-        }
+            await finalizeSettledBatch(tx, item.batchId);
+        });
+    }
+    // Also finalize older terminal batches that predate immediate terminal cleanup.
+    const settled = await neogma.queryRunner.run(
+        `MATCH (b:InboxBatch) WHERE b.completedAt IS NULL
+        AND NOT EXISTS { MATCH (b)-[:HAS_ITEM]->(i) WHERE i.state IN ['QUEUED', 'PROCESSING'] }
+        RETURN b.id AS id LIMIT 100`
+    );
+    for (const row of settled.records) {
+        if (Date.now() >= deadline) break;
+        await transaction(tx => finalizeSettledBatch(tx, row.get('id')));
+    }
+
+    await transaction(async tx => {
         await tx.run(
-            `MATCH (b:InboxBatch) WHERE b.completedAt IS NULL
-            AND NOT EXISTS { MATCH (b)-[:HAS_ITEM]->(i) WHERE i.state <> 'COMPLETED' }
-            SET b.completedAt = $now REMOVE b.payload`,
-            { now: Date.now() }
-        );
-        await tx.run(
-            `MATCH (b:InboxBatch) WHERE b.completedAt < $cutoff WITH b LIMIT 100
-                MATCH (b)-[:HAS_ITEM]->(i) DETACH DELETE i, b`,
+            `MATCH (b:InboxBatch) WHERE b.completedAt < $cutoff WITH b LIMIT 25
+            MATCH (b)-[:HAS_ITEM]->(i) DETACH DELETE i, b`,
             { cutoff: Date.now() - 30 * DAY }
         );
+    });
+    await transaction(async tx => {
         await tx.run(
             `MATCH (r:InboxBatchReplay) WHERE r.expiresAt < $now WITH r LIMIT 1000 DELETE r`,
-            {
-                now: Date.now(),
-            }
+            { now: Date.now() }
         );
     });
 };

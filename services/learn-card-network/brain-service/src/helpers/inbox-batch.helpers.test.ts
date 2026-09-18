@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TRPCError } from '@trpc/server';
 import { IssueInboxCredentialBatchValidator } from '@learncard/types';
 import type { IssueInboxCredentialBatch } from '@learncard/types';
@@ -8,36 +8,17 @@ import { InboxIssuancePreflightError } from './inbox-issuance-error.helpers';
 
 const mocks = vi.hoisted(() => ({
     get: vi.fn(),
-    set: vi.fn(),
     setIfAbsent: vi.fn(),
     compareAndSet: vi.fn(),
-    incr: vi.fn(),
-    consumeQuota: vi.fn(),
     beforeIssue: vi.fn(),
     issue: vi.fn(),
     resolve: vi.fn(),
 }));
-vi.mock('@cache', () => ({
-    default: {
-        get: mocks.get,
-        set: mocks.set,
-        incr: mocks.incr,
-        consumeQuota: mocks.consumeQuota,
-        setIfAbsent: mocks.setIfAbsent,
-        compareAndSet: mocks.compareAndSet,
-    },
-}));
-vi.mock('@environment', () => ({
-    getInboxBatchRuntimeEnvironment: () => ({
-        NODE_ENV: process.env.NODE_ENV,
-        AWS_LAMBDA_FUNCTION_NAME: process.env.AWS_LAMBDA_FUNCTION_NAME,
-        IS_OFFLINE: process.env.IS_OFFLINE === 'true',
-        INBOX_BATCH_CONCURRENCY: process.env.INBOX_BATCH_CONCURRENCY,
-        INBOX_BATCH_ITEMS_PER_HOUR: process.env.INBOX_BATCH_ITEMS_PER_HOUR,
-    }),
-}));
 vi.mock('./inbox.helpers', () => ({
-    issueToInbox: mocks.issue,
+    issueToInbox: async (...args: Parameters<typeof import('./inbox.helpers').issueToInbox>) => {
+        await args[5]?.();
+        return mocks.issue(...args);
+    },
     resolveInboxCredentialInput: mocks.resolve,
 }));
 import { issueInboxBatch } from './inbox-batch.helpers';
@@ -67,11 +48,8 @@ describe('inbox batch worker processing', () => {
     beforeEach(() => {
         vi.resetAllMocks();
         mocks.get.mockResolvedValue(null);
-        mocks.set.mockResolvedValue('OK');
         mocks.setIfAbsent.mockResolvedValue('OK');
         mocks.compareAndSet.mockResolvedValue(true);
-        mocks.incr.mockResolvedValue(1);
-        mocks.consumeQuota.mockResolvedValue(true);
         mocks.resolve.mockImplementation(async input => ({ credential: input.credential }));
         mocks.issue.mockImplementation(async (_profile, recipient) => ({
             inboxCredential: { id: recipient.value },
@@ -79,10 +57,8 @@ describe('inbox batch worker processing', () => {
             claimUrl: 'https://example.test/claim',
         }));
     });
-    afterEach(() => vi.unstubAllEnvs());
 
     it('bounds concurrency and preserves order when work completes out of order', async () => {
-        vi.stubEnv('INBOX_BATCH_CONCURRENCY', '2');
         let active = 0;
         let peak = 0;
         mocks.issue.mockImplementation(async (_profile, recipient) => {
@@ -94,13 +70,11 @@ describe('inbox batch worker processing', () => {
             active--;
             return { inboxCredential: { id: recipient.value }, status: 'PENDING' };
         });
-        const batch = await run({ items: Array.from({ length: 5 }, (_, i) => item(String(i))) });
-        expect(peak).toBe(2);
+        const batch = await run({ items: Array.from({ length: 12 }, (_, i) => item(String(i))) });
+        expect(peak).toBe(10);
         expect(batch.results.map(r => r.success && r.issuanceId)).toEqual(
-            Array.from({ length: 5 }, (_, i) => `${i}@example.test`)
+            Array.from({ length: 12 }, (_, i) => `${i}@example.test`)
         );
-        // Admission already consumed quota; background work must not charge again.
-        expect(mocks.consumeQuota).not.toHaveBeenCalled();
     });
 
     it('isolates missing credentials, TRPC errors and unknown exceptions without leaking internals', async () => {
@@ -192,7 +166,6 @@ describe('inbox batch worker processing', () => {
     it('does not deduplicate unkeyed items', async () => {
         await run({ items: [item(), item()] });
         expect(mocks.get).not.toHaveBeenCalled();
-        expect(mocks.set).not.toHaveBeenCalled();
         expect(mocks.setIfAbsent).not.toHaveBeenCalled();
         expect(mocks.issue).toHaveBeenCalledTimes(2);
     });
@@ -303,26 +276,22 @@ describe('inbox batch worker processing', () => {
         expect(mocks.compareAndSet).not.toHaveBeenCalled();
     });
 
-    it.each([1, 10])(
-        'rejects later duplicate keys deterministically with concurrency %i',
-        async concurrency => {
-            vi.stubEnv('INBOX_BATCH_CONCURRENCY', String(concurrency));
-            const result = await run({
-                items: [
-                    { ...item(), idempotencyKey: 'same' },
-                    { ...item(), idempotencyKey: 'same' },
-                    { ...item('different'), idempotencyKey: 'same' },
-                ],
-            });
-            expect(result.results).toMatchObject([
-                { index: 0, success: true },
-                { index: 1, success: false, error: { code: 'CONFLICT' } },
-                { index: 2, success: false, error: { code: 'CONFLICT' } },
-            ]);
-            expect(mocks.issue).toHaveBeenCalledTimes(1);
-            expect(mocks.setIfAbsent).toHaveBeenCalledTimes(1);
-        }
-    );
+    it('rejects later duplicate keys deterministically', async () => {
+        const result = await run({
+            items: [
+                { ...item(), idempotencyKey: 'same' },
+                { ...item(), idempotencyKey: 'same' },
+                { ...item('different'), idempotencyKey: 'same' },
+            ],
+        });
+        expect(result.results).toMatchObject([
+            { index: 0, success: true },
+            { index: 1, success: false, error: { code: 'CONFLICT' } },
+            { index: 2, success: false, error: { code: 'CONFLICT' } },
+        ]);
+        expect(mocks.issue).toHaveBeenCalledTimes(1);
+        expect(mocks.setIfAbsent).toHaveBeenCalledTimes(1);
+    });
 
     it('does not attempt later duplicate keys even if the first item fails validation', async () => {
         const result = await run({
@@ -394,6 +363,30 @@ describe('inbox batch worker processing', () => {
             null,
             86400
         );
+    });
+
+    it('preserves preparation errors when releasing a reservation throws', async () => {
+        mocks.resolve.mockRejectedValueOnce(
+            new TRPCError({ code: 'NOT_FOUND', message: 'Missing template' })
+        );
+        mocks.compareAndSet.mockRejectedValueOnce(new Error('Storage unavailable'));
+        const result = await run({ items: [{ ...item(), idempotencyKey: 'cleanup' }] });
+        expect(result.results[0]).toMatchObject({
+            success: false,
+            error: { code: 'NOT_FOUND', message: 'Missing template' },
+        });
+        expect(mocks.issue).not.toHaveBeenCalled();
+    });
+
+    it('returns the item outcome when the lease checkpoint and cleanup both fail', async () => {
+        mocks.beforeIssue.mockRejectedValueOnce(new Error('Inbox item lease lost'));
+        mocks.compareAndSet.mockRejectedValueOnce(new Error('Inbox item lease lost'));
+        const result = await run({ items: [{ ...item(), idempotencyKey: 'lost' }] });
+        expect(result.results[0]).toMatchObject({
+            success: false,
+            error: { code: 'INTERNAL_SERVER_ERROR' },
+        });
+        expect(mocks.issue).not.toHaveBeenCalled();
     });
 
     it('serializes overlapping keys across requests and rejects changed payloads', async () => {

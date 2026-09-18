@@ -194,7 +194,9 @@ export const issueToInbox = async (
         integrationId?: string;
         guardianEmail?: string;
     } = {},
-    ctx: Context
+    ctx: Context,
+    /** Queue ownership checkpoint immediately before delivery or inbox persistence. */
+    beforeDelivery?: () => Promise<void>
 ): Promise<{
     status: 'PENDING' | 'ISSUED' | 'EXPIRED' | 'DELIVERED' | 'CLAIMED'; // DELIVERED & CLAIMED are deprecated, use ISSUED
     inboxCredential: InboxCredentialType;
@@ -320,6 +322,7 @@ export const issueToInbox = async (
         };
         if (boostUri) {
             const boost = await getBoostByUri(boostUri);
+            await beforeDelivery?.();
             if (boost) {
                 await sendBoost({
                     from: { type: 'profile', profile: issuerProfile },
@@ -343,6 +346,7 @@ export const issueToInbox = async (
                 );
             }
         } else {
+            await beforeDelivery?.();
             await sendCredential(
                 issuerProfile,
                 existingProfile,
@@ -430,6 +434,7 @@ export const issueToInbox = async (
         // Store in inbox for claiming
         // Guardian gate if issuer specified guardianEmail OR recipient is a managed child
         const needsGuardianGate = !!guardianEmail || recipientIsManaged;
+        await beforeDelivery?.();
         const inboxCredential = await createInboxCredential({
             credential: JSON.stringify(credential),
             isSigned,

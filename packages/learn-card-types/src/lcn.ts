@@ -1516,7 +1516,7 @@ export type IssueInboxCredentialBatchResponse = z.infer<
 /** Submission acknowledges durable storage, not completed credential delivery. */
 export const InboxBatchReceiptValidator = z.object({
     batchId: z.string(),
-    status: z.literal('QUEUED'),
+    status: z.enum(['QUEUED', 'PROCESSING', 'COMPLETED', 'NEEDS_RECONCILIATION']),
     createdAt: z.string(),
 });
 export type InboxBatchReceipt = z.infer<typeof InboxBatchReceiptValidator>;

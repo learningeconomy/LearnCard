@@ -31,6 +31,7 @@ import { acknowledgeInboxDispatches, deadLetterBatchItem } from '@accesslayer/in
 import { encryptInboxCredential, decryptInboxCredential } from './inbox-encryption.helpers';
 import { fingerprint, issueInboxBatch } from './inbox-batch.helpers';
 import { INBOX_BATCH_MAX_BYTES } from './inbox-batch-http.helpers';
+import { getInboxBatchState } from './inbox-batch-status.helpers';
 
 const queue = (): { client: SQSClient; url: string } => {
     const env = getInboxBatchRuntimeEnvironment();
@@ -59,12 +60,15 @@ export const submitInboxBatch = async (
     batch: IssueInboxCredentialBatch,
     ctx: Context
 ): Promise<InboxBatchReceipt> => {
-    const { client } = queue();
-    client.destroy();
     if (Buffer.byteLength(JSON.stringify(batch), 'utf8') > INBOX_BATCH_MAX_BYTES)
         throw new TRPCError({
             code: 'PAYLOAD_TOO_LARGE',
             message: 'Inbox batch exceeds the 4 MiB JSON payload limit',
+        });
+    if (!getInboxBatchRuntimeEnvironment().INBOX_QUEUE_URL)
+        throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Inbox queue is not configured.',
         });
     const seen = new Set<string>();
     const items = batch.items.map(item => {
@@ -116,7 +120,7 @@ export const getInboxBatch = async (issuer: string, batchId: string): Promise<In
                         message:
                             state === 'NEEDS_RECONCILIATION'
                                 ? 'Issuance outcome is unconfirmed. Keep this key and contact support for reconciliation.'
-                                : 'Preparation failed after repeated worker interruptions.',
+                                : 'Processing could not be completed after worker failures or queue delivery exhaustion.',
                     },
                 };
             return { index: Number(item.index), state, ...(result ? { result } : {}) };
@@ -128,13 +132,7 @@ export const getInboxBatch = async (issuer: string, batchId: string): Promise<In
     return {
         batchId,
         createdAt: new Date(Number(job.createdAt)).toISOString(),
-        status: unconfirmed
-            ? 'NEEDS_RECONCILIATION'
-            : completed === entries.length
-              ? 'COMPLETED'
-              : entries.every(i => i.state === 'QUEUED')
-                ? 'QUEUED'
-                : 'PROCESSING',
+        status: getInboxBatchState(entries.map(item => item.state)),
         items: entries,
         summary: {
             total: entries.length,
@@ -235,26 +233,45 @@ export const processInboxDeadLetter = async (body: string): Promise<void> => {
 export const dispatchInboxJobs = async (): Promise<void> => {
     const { client, url } = queue();
     try {
-        await recoverInboxJobs();
-        // Bounded work keeps the dispatcher invocation short; the next run resumes the outbox.
+        // Publish before maintenance: an unavailable recovery path must not stall new work.
         const ids = await takeInboxDispatches();
+        const failures: unknown[] = [];
         for (let offset = 0; offset < ids.length; offset += 10) {
-            const response = await client.send(
-                new SendMessageBatchCommand({
-                    QueueUrl: url,
-                    Entries: ids.slice(offset, offset + 10).map((itemId, index) => ({
-                        Id: String(index),
-                        MessageBody: JSON.stringify({ itemId }),
-                    })),
-                })
-            );
-            await acknowledgeInboxDispatches(
-                (response.Successful ?? []).map(entry => ids[offset + Number(entry.Id)]!)
-            );
-            if (response.Failed?.length)
-                throw new Error('Inbox dispatch partially failed; durable outbox will retry');
+            try {
+                const response = await client.send(
+                    new SendMessageBatchCommand({
+                        QueueUrl: url,
+                        Entries: ids.slice(offset, offset + 10).map((itemId, index) => ({
+                            Id: String(index),
+                            MessageBody: JSON.stringify({ itemId }),
+                        })),
+                    })
+                );
+                await acknowledgeInboxDispatches(
+                    (response.Successful ?? []).map(entry => ids[offset + Number(entry.Id)]!)
+                );
+                if (response.Failed?.length) {
+                    console.error('Inbox dispatch entries failed', {
+                        count: response.Failed.length,
+                    });
+                    failures.push(
+                        new Error('Inbox dispatch partially failed; durable outbox will retry')
+                    );
+                }
+            } catch (error) {
+                console.error('Inbox dispatch chunk failed', { offset });
+                failures.push(error);
+            }
         }
-        if (ids.length) console.info('Inbox jobs dispatched', { count: ids.length });
+        if (ids.length) console.info('Inbox dispatch attempted', { count: ids.length });
+        try {
+            await recoverInboxJobs();
+        } catch (error) {
+            console.error('Inbox maintenance failed; publication was attempted independently');
+            failures.push(error);
+        }
+        // Report failures after attempting every chunk; alarms require sustained failures.
+        if (failures.length) throw failures[0];
     } finally {
         client.destroy();
     }

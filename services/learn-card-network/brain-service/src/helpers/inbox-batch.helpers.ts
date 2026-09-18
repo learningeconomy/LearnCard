@@ -10,14 +10,13 @@ import {
     IssueInboxCredentialValidator,
     IssueInboxCredentialBatchItemResultValidator,
 } from '@learncard/types';
-import { getInboxBatchRuntimeEnvironment } from '@environment';
 import type { Context } from '@routes';
 import type { ProfileType } from 'types/profile';
 import type { BatchReplayStore } from 'types/inbox-batch';
 import { issueToInbox, resolveInboxCredentialInput } from './inbox.helpers';
 import { InboxIssuancePreflightError } from './inbox-issuance-error.helpers';
 
-export const INBOX_BATCH_CONCURRENCY = 10;
+const INTERNAL_BATCH_CONCURRENCY = 10;
 const IDEMPOTENCY_TTL_SECONDS = 24 * 60 * 60;
 
 const unavailable = (): TRPCError =>
@@ -83,11 +82,6 @@ const replayResult = (
     return { ...result, index, deduplicated: true };
 };
 
-const positiveInteger = (value: string | undefined, fallback: number): number => {
-    const parsed = Number(value);
-    return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : fallback;
-};
-
 /**
  * Internal processing only: HTTP callers must use submitInboxBatch. Queue workers supply durable
  * replay storage and an ownership checkpoint; quota was already charged at admission. Each item
@@ -104,11 +98,12 @@ export const issueInboxBatch = async (
         beforeIssue: () => Promise<void>;
     }
 ): Promise<IssueInboxCredentialBatchResponse> => {
-    const runtimeEnvironment = getInboxBatchRuntimeEnvironment();
     // Payload size and quota are enforced at admission. Internal queue metadata must not make
     // a previously accepted request fail the HTTP byte limit during background processing.
     const replayCache = execution.cache;
 
+    // Queue workers pass one item; the bounded pool, duplicate guard, and summary also protect
+    // internal multi-item callers. Production concurrency is configured on the SQS queue.
     // Workers claim indexes synchronously before their first await. Results are written by index,
     // so the response remains in caller order even when template work completes out of order.
     const results: IssueInboxCredentialBatchItemResult[] = new Array(batch.items.length);
@@ -202,16 +197,18 @@ export const issueInboxBatch = async (
                     reservation = marker;
                 }
                 const { credential } = await resolveInboxCredentialInput(input, ctx);
-                await execution.beforeIssue();
-                // From this point, issueToInbox may persist records or send an email before an
-                // error is observed. Keep the reservation on failure to prevent a blind retry.
-                issuanceStarted = true;
                 const result = await issueToInbox(
                     profile,
                     input.recipient,
                     credential,
                     input.configuration,
-                    ctx
+                    ctx,
+                    async () => {
+                        // Preparation (including signing) has not delivered anything yet. Signing
+                        // retries can leave unused status allocations, but must not block delivery.
+                        await execution.beforeIssue();
+                        issuanceStarted = true;
+                    }
                 );
                 const success: Extract<IssueInboxCredentialBatchItemResult, { success: true }> = {
                     success: true,
@@ -259,12 +256,17 @@ export const issueInboxBatch = async (
                 if (key && reservation && safeToRelease) {
                     // Preparation and explicit preflight failures have no delivery side effects,
                     // so freeing the owned marker makes a corrected item retryable.
-                    await replayCache.compareAndSet(
-                        key,
-                        reservation,
-                        null,
-                        IDEMPOTENCY_TTL_SECONDS
-                    );
+                    try {
+                        await replayCache.compareAndSet(
+                            key,
+                            reservation,
+                            null,
+                            IDEMPOTENCY_TTL_SECONDS
+                        );
+                    } catch {
+                        // A lost lease or storage outage must not replace the original outcome.
+                        // Recovery owns cleanup when this worker can no longer release its marker.
+                    }
                 }
                 let itemError = {
                     code: 'INTERNAL_SERVER_ERROR',
@@ -292,13 +294,7 @@ export const issueInboxBatch = async (
     await Promise.all(
         Array.from(
             {
-                length: Math.min(
-                    batch.items.length,
-                    positiveInteger(
-                        runtimeEnvironment.INBOX_BATCH_CONCURRENCY,
-                        INBOX_BATCH_CONCURRENCY
-                    )
-                ),
+                length: Math.min(batch.items.length, INTERNAL_BATCH_CONCURRENCY),
             },
             worker
         )

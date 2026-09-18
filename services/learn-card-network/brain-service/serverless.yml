@@ -142,7 +142,6 @@ provider:
         PORT: ${env:PORT, 3000}
         INBOX_DELETE_EXPIRED_RECORDS: ${env:INBOX_DELETE_EXPIRED_RECORDS, "false"}
         LAMBDA_STAGE: ${opt:stage, "dev"}
-        INBOX_BATCH_CONCURRENCY: ${env:INBOX_BATCH_CONCURRENCY, '10'}
         INBOX_BATCH_ITEMS_PER_HOUR: ${env:INBOX_BATCH_ITEMS_PER_HOUR, '10000'}
         SEED: ${env:SEED}
         DOMAIN_NAME: ${env:DOMAIN_NAME}
@@ -351,7 +350,7 @@ resources:
         InboxDispatcherErrorsAlarm:
             Type: AWS::CloudWatch::Alarm
             Properties:
-                AlarmDescription: Durable inbox dispatch or recovery failed
+                AlarmDescription: Durable inbox dispatch or recovery failed in three of five minutes
                 Namespace: AWS/Lambda
                 MetricName: Errors
                 Dimensions:
@@ -359,7 +358,8 @@ resources:
                       Value: { Ref: InboxQueueDispatcherLambdaFunction }
                 Statistic: Sum
                 Period: 60
-                EvaluationPeriods: 1
+                EvaluationPeriods: 5
+                DatapointsToAlarm: 3
                 Threshold: 0
                 ComparisonOperator: GreaterThanThreshold
                 TreatMissingData: notBreaching

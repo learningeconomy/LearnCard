@@ -2,7 +2,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 import Fastify, { type FastifyInstance } from 'fastify';
 import { fastifyTRPCOpenApiPlugin } from 'trpc-to-openapi';
 import { randomUUID } from 'node:crypto';
-import type { IssueInboxCredentialBatch, VC, VP } from '@learncard/types';
+import type { InboxBatchReceipt, IssueInboxCredentialBatch, VC, VP } from '@learncard/types';
 import { appRouter, createContext } from '../src/app';
 import { getClient, getUser } from './helpers/getClient';
 import { testUnsignedBoost } from './helpers/send';
@@ -30,7 +30,7 @@ import {
 import { fingerprint } from '@helpers/inbox-batch.helpers';
 import * as jobStore from '@accesslayer/inbox-batch/store';
 import * as issuance from '@helpers/inbox.helpers';
-import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
+import { SQSClient, SendMessageCommand, SendMessageBatchCommand } from '@aws-sdk/client-sqs';
 
 vi.mock('@services/delivery/delivery.factory', () => ({
     getDeliveryService: () => ({ send: sendSpy }),
@@ -159,7 +159,7 @@ describe('Universal Inbox batch issuance', () => {
     const submit = async (batch: IssueInboxCredentialBatch) => {
         const response = await post(batch);
         expect(response.statusCode, response.body).toBe(202);
-        return response.json() as { batchId: string; status: 'QUEUED'; createdAt: string };
+        return response.json() as InboxBatchReceipt;
     };
     const statusOf = (batchId: string) => issuer.clients.fullAuth.inbox.getBatch({ batchId });
     const expireLease = (batchId: string) =>
@@ -249,6 +249,86 @@ describe('Universal Inbox batch issuance', () => {
         });
         expect(conflict.statusCode).toBe(409);
         expect((await poll(receipts[0]!.batchId)).summary.succeeded).toBe(1);
+        expect(await submit(batch)).toMatchObject({
+            batchId: receipts[0]!.batchId,
+            status: 'COMPLETED',
+        });
+    });
+
+    it('reports live processing and reconciliation states when replaying a request ID', async () => {
+        const batch = {
+            requestId: randomUUID(),
+            items: [{ recipient: email('receipt@test.com'), credential: await signed() }],
+        };
+        const receipt = await submit(batch);
+        expect(receipt.status).toBe('QUEUED');
+        const id = `${receipt.batchId}:0`;
+        await jobStore.claimBatchItem(id, 'worker');
+        expect(await submit(batch)).toMatchObject({
+            batchId: receipt.batchId,
+            status: 'PROCESSING',
+        });
+        await jobStore.markBatchIssuanceStarted(id, 'worker');
+        await expireLease(receipt.batchId);
+        await jobStore.recoverInboxJobs();
+        expect(await submit(batch)).toMatchObject({
+            batchId: receipt.batchId,
+            status: 'NEEDS_RECONCILIATION',
+        });
+    });
+
+    it('continues dispatching later chunks after a partial SQS failure', async () => {
+        const credential = await signed();
+        const receipt = await submit({
+            items: Array.from({ length: 25 }, (_, i) => ({
+                recipient: email(`partial-${i}@test.com`),
+                credential,
+            })),
+        });
+        const originalSend = SQSClient.prototype.send;
+        const send = vi.spyOn(SQSClient.prototype, 'send').mockImplementationOnce(async function (
+            this: SQSClient,
+            command
+        ) {
+            if (!(command instanceof SendMessageBatchCommand))
+                throw new Error('Expected batch publication');
+            const [failed, ...entries] = command.input.Entries!;
+            const response = await originalSend.call(
+                this,
+                new SendMessageBatchCommand({ ...command.input, Entries: entries })
+            );
+            return {
+                ...response,
+                Failed: [{ Id: failed!.Id, Code: 'ServiceUnavailable', SenderFault: false }],
+            };
+        });
+        await expect(dispatchInboxJobs()).rejects.toThrow('partially failed');
+        expect(send).toHaveBeenCalledTimes(3);
+        send.mockRestore();
+        for (let i = 0; i < 3; i++) await consumeInboxQueueOnce(0);
+        expect(await statusOf(receipt.batchId)).toMatchObject({
+            summary: { succeeded: 24, pending: 1 },
+        });
+        await neogma.queryRunner.run(
+            'MATCH (i:InboxBatchItem {batchId: $id}) WHERE i.state = "QUEUED" SET i.dispatchAt = 0',
+            { id: receipt.batchId }
+        );
+        expect((await poll(receipt.batchId)).summary.succeeded).toBe(25);
+    });
+
+    it('publishes queued work even when recovery fails', async () => {
+        const receipt = await submit({
+            items: [{ recipient: email('maintenance@test.com'), credential: await signed() }],
+        });
+        vi.spyOn(jobStore, 'recoverInboxJobs').mockRejectedValueOnce(
+            new Error('Maintenance unavailable')
+        );
+        await expect(dispatchInboxJobs()).rejects.toThrow('Maintenance unavailable');
+        await consumeInboxQueueOnce(0);
+        expect(await statusOf(receipt.batchId)).toMatchObject({
+            status: 'COMPLETED',
+            summary: { succeeded: 1 },
+        });
     });
 
     it('tolerates duplicate SQS deliveries and concurrent consumers without duplicating unkeyed issuance', async () => {
@@ -411,8 +491,16 @@ describe('Universal Inbox batch issuance', () => {
 
     it('fails closed without queue configuration and leaves no accepted job', async () => {
         vi.stubEnv('INBOX_QUEUE_URL', '');
+        const credential = await signed();
+        // The programmatic route also rejects oversized input before checking queue setup.
+        await expect(
+            issuer.clients.fullAuth.inbox.issueBatch({
+                items: [{ recipient: email('too-large@test.com'), credential }],
+                configuration: { templateData: { padding: 'x'.repeat(4 * 1024 * 1024) } },
+            })
+        ).rejects.toMatchObject({ code: 'PAYLOAD_TOO_LARGE' });
         const response = await post({
-            items: [{ recipient: email('offline@test.com'), credential: await signed() }],
+            items: [{ recipient: email('offline@test.com'), credential }],
         });
         expect(response.statusCode).toBe(500);
         const rows = await neogma.queryRunner.run('MATCH (b:InboxBatch) RETURN count(b) AS count');
@@ -500,6 +588,132 @@ describe('Universal Inbox batch issuance', () => {
         expect(await claim(result.claimUrl!)).toEqual([credential]);
         expect(sign).not.toHaveBeenCalled();
     });
+
+    it('retries a transient signing failure before delivery without requiring reconciliation', async () => {
+        const contact = await createContactMethod({
+            ...email('retry-signing@test.com'),
+            isVerified: true,
+        });
+        await createProfileContactMethodRelationship('batch-holder', contact.id);
+        const sign = vi
+            .spyOn(signing, 'issueCredentialWithSigningAuthority')
+            .mockRejectedValueOnce(new Error('Signing authority timeout'));
+        const receipt = await submit({
+            configuration: { signingAuthority },
+            items: [
+                {
+                    recipient: email('retry-signing@test.com'),
+                    credential: await unsigned(),
+                    idempotencyKey: 'retry-signing',
+                },
+            ],
+        });
+        await dispatchInboxJobs();
+        await consumeInboxQueueOnce(0);
+        expect(await statusOf(receipt.batchId)).toMatchObject({
+            status: 'QUEUED',
+            summary: { pending: 1, unconfirmed: 0 },
+        });
+        expect(await replay('retry-signing')).toBeUndefined();
+        expect(await InboxCredential.findMany({ where: {} })).toHaveLength(0);
+        expect(
+            (await jobStore.readBatchJob(receipt.batchId, 'batch-issuer')).job.payload
+        ).toBeDefined();
+        expect((await poll(receipt.batchId)).summary.succeeded).toBe(1);
+        expect(sign).toHaveBeenCalledTimes(2);
+        expect(await InboxCredential.findMany({ where: {} })).toHaveLength(1);
+    });
+
+    it('blocks a stale worker after signing and before delivery', async () => {
+        const contact = await createContactMethod({
+            ...email('stale-signing@test.com'),
+            isVerified: true,
+        });
+        await createProfileContactMethodRelationship('batch-holder', contact.id);
+        const receipt = await submit({
+            configuration: { signingAuthority },
+            items: [
+                {
+                    recipient: email('stale-signing@test.com'),
+                    credential: await unsigned(),
+                    idempotencyKey: 'stale-signing',
+                },
+            ],
+        });
+        const originalSign = signing.issueCredentialWithSigningAuthority;
+        vi.spyOn(signing, 'issueCredentialWithSigningAuthority').mockImplementationOnce(
+            async (...args) => {
+                const result = await originalSign(...args);
+                await expireLease(receipt.batchId);
+                await jobStore.recoverInboxJobs();
+                return result;
+            }
+        );
+        await dispatchInboxJobs();
+        await expect(consumeInboxQueueOnce(0)).rejects.toThrow('lease lost');
+        expect(await InboxCredential.findMany({ where: {} })).toHaveLength(0);
+        expect((await poll(receipt.batchId)).summary.succeeded).toBe(1);
+        expect(await InboxCredential.findMany({ where: {} })).toHaveLength(1);
+    });
+
+    it.each(['finish', 'recovery', 'dead-letter'] as const)(
+        'drops settled payloads and prunes uncertain jobs while preserving reservations via %s',
+        async path => {
+            const entry = {
+                recipient: email('retention@test.com'),
+                credential: await signed(),
+                idempotencyKey: 'retention',
+            };
+            const receipt = await submit({
+                items: [entry, { ...entry, idempotencyKey: 'retention-second' }],
+            });
+            const id = `${receipt.batchId}:0`;
+            const claimed = await jobStore.claimBatchItem(id, 'worker');
+            await jobStore
+                .batchReplayStore(id, 'worker', claimed!.item.replayKey)
+                .setIfAbsent(
+                    '',
+                    JSON.stringify({ state: 'processing', requestHash: 'retention' }),
+                    86400
+                );
+            await jobStore.markBatchIssuanceStarted(id, 'worker');
+            if (path === 'finish') {
+                await jobStore.finishBatchItem(id, 'worker', {
+                    success: false,
+                    index: 0,
+                    error: { code: 'CONFLICT', message: 'Delivery uncertain' },
+                });
+            } else {
+                await expireLease(receipt.batchId);
+                if (path === 'recovery') await jobStore.recoverInboxJobs();
+                else await jobStore.deadLetterBatchItem(id);
+            }
+            // The second item can still progress, so the payload must remain available.
+            expect(
+                (await jobStore.readBatchJob(receipt.batchId, 'batch-issuer')).job.payload
+            ).toBeDefined();
+            await jobStore.deadLetterBatchItem(`${receipt.batchId}:1`);
+            const { job } = await jobStore.readBatchJob(receipt.batchId, 'batch-issuer');
+            expect(job.payload).toBeUndefined();
+            expect(job.completedAt).toBeDefined();
+            expect(await statusOf(receipt.batchId)).toMatchObject({
+                status: 'NEEDS_RECONCILIATION',
+                summary: { pending: 0, unconfirmed: 1 },
+            });
+            await neogma.queryRunner.run(
+                'MATCH (b:InboxBatch {id: $id}) SET b.completedAt = $old',
+                { id: receipt.batchId, old: Date.now() - 31 * jobStore.DAY }
+            );
+            await jobStore.recoverInboxJobs();
+            await expect(statusOf(receipt.batchId)).rejects.toMatchObject({ code: 'NOT_FOUND' });
+            expect((await replay('retention')).expiresAt).toBeUndefined();
+            expect((await issue({ items: [entry] })).results[0]).toMatchObject({
+                success: false,
+                error: { code: 'CONFLICT' },
+            });
+            expect(sendSpy).not.toHaveBeenCalled();
+        }
+    );
 
     it('signs and auto-delivers only the verified known recipient', async () => {
         const contact = await createContactMethod({ ...email('known@test.com'), isVerified: true });
