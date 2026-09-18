@@ -212,7 +212,64 @@ describe('inbox batch method', () => {
             response
         );
         expect(mutate).toHaveBeenCalledExactlyOnceWith(batch);
+        await expect(
+            plugin.methods?.sendCredentialBatchViaInbox(learnCard, batch)
+        ).resolves.toEqual(response);
+        expect(mutate).toHaveBeenLastCalledWith(batch);
         expect(client.profile.getProfile.query).toHaveBeenCalled();
+    });
+
+    it('submits once, persists the receipt, and waits for completion through the SDK', async () => {
+        const receipt = { batchId: 'batch-1', status: 'QUEUED', createdAt: '2026-09-17' };
+        const response = { ...receipt, done: true, status: 'COMPLETED', items: [] };
+        const mutate = vi.fn().mockResolvedValue(receipt);
+        let saved = false;
+        const query = vi.fn(async () => {
+            expect(saved).toBe(true);
+            return response;
+        });
+        const client = {
+            ...getMockClient(),
+            inbox: { issueBatch: { mutate }, getBatch: { query } },
+        };
+        vi.mocked(getBrainClient).mockResolvedValue(client as never);
+        const learnCard = getMockLearnCard();
+        const plugin = await getLearnCardNetworkPlugin(learnCard, 'https://network.example/trpc');
+        const batch = {
+            items: [
+                {
+                    recipient: { type: 'email' as const, value: 'a@example.test' },
+                    templateUri: 'template',
+                },
+            ],
+        };
+        await expect(
+            plugin.methods?.sendCredentialsViaInboxAndWait(learnCard, batch, {
+                onSubmitted: async received => {
+                    expect(received).toEqual(receipt);
+                    await Promise.resolve();
+                    saved = true;
+                },
+            })
+        ).resolves.toEqual(response);
+        expect(mutate).toHaveBeenCalledTimes(1);
+        expect(query).toHaveBeenCalledWith(
+            { batchId: receipt.batchId },
+            { signal: expect.any(AbortSignal) }
+        );
+        await expect(
+            plugin.methods?.waitForInboxCredentialBatch(learnCard, receipt.batchId)
+        ).resolves.toEqual(response);
+        expect(mutate).toHaveBeenCalledTimes(1);
+
+        const controller = new AbortController();
+        controller.abort();
+        await expect(
+            plugin.methods?.sendCredentialsViaInboxAndWait(learnCard, batch, {
+                signal: controller.signal,
+            })
+        ).rejects.toMatchObject({ name: 'AbortError' });
+        expect(mutate).toHaveBeenCalledTimes(1);
     });
 
     it('polls the batch endpoint and preserves progress and item results', async () => {

@@ -1,3 +1,4 @@
+import { waitForInboxCredentialBatch } from './inbox-batch';
 import { getClient, getApiTokenClient } from '@learncard/network-brain-client';
 import {
     JWEValidator,
@@ -2396,6 +2397,29 @@ export async function getLearnCardNetworkPlugin(
             sendCredentialsViaInbox: async (_learnCard, batch) => {
                 await ensureUser();
                 return client.inbox.issueBatch.mutate(batch);
+            },
+            sendCredentialBatchViaInbox: async (_learnCard, batch) => {
+                await ensureUser();
+                return client.inbox.issueBatch.mutate(batch);
+            },
+            waitForInboxCredentialBatch: async (_learnCard, batchId, options) => {
+                await ensureUser();
+                return waitForInboxCredentialBatch(
+                    signal => client.inbox.getBatch.query({ batchId }, { signal }),
+                    options
+                );
+            },
+            sendCredentialsViaInboxAndWait: async (_learnCard, batch, options) => {
+                await ensureUser();
+                if (options?.signal?.aborted) throw options.signal.reason;
+                const receipt = await client.inbox.issueBatch.mutate(batch, {
+                    signal: options?.signal,
+                });
+                await options?.onSubmitted?.(receipt);
+                return waitForInboxCredentialBatch(
+                    signal => client.inbox.getBatch.query({ batchId: receipt.batchId }, { signal }),
+                    options
+                );
             },
             getInboxCredentialBatch: async (_learnCard, batchId) => {
                 await ensureUser();
