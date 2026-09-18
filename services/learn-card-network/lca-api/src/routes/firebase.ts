@@ -14,6 +14,7 @@ import {
     FirebaseCustomAuthResponseSchema,
 } from '@helpers/firebase.helpers';
 import cache from '@cache';
+import { checkRateLimit, clearRateLimit } from '@helpers/rateLimit.helpers';
 import { TRPCError } from '@trpc/server';
 import { getDeliveryService, getFrom } from '../services/delivery';
 import { resolveLocaleByEmail } from '../helpers/locale.helpers';
@@ -66,6 +67,11 @@ const CODE_TTL_SECONDS = 5 * 60; // 5 minutes
 const MAX_ATTEMPTS = 6;
 const ATTEMPT_TTL_SECONDS = 5 * 60; // 5 minutes
 
+// Rate limiting for login code verification (brute-force protection)
+const LOGIN_VERIFY_MAX_ATTEMPTS_PER_EMAIL = 5; // max failed attempts per email
+const LOGIN_VERIFY_MAX_ATTEMPTS_PER_IP = 30; // max attempts per IP per window
+const LOGIN_VERIFY_IP_WINDOW_SECONDS = 600; // 10 minutes
+
 export const CONTACT_METHOD_SESSION_PREFIX = 'contact_method_session:';
 
 async function createFirebaseToken(keycloakToken: string): Promise<string> {
@@ -87,10 +93,7 @@ async function createFirebaseToken(keycloakToken: string): Promise<string> {
                 firebaseUser = existingUsers?.users?.[0];
 
                 if (firebaseUser?.uid !== uid) {
-                    console.log(
-                        `⚠️ Existing account found for ${email}, linking Keycloak UID: ${uid}`
-                    );
-
+                    // Link existing account to Keycloak UID
                     await admin.auth().updateUser(firebaseUser.uid, {
                         emailVerified,
                         displayName,
@@ -102,8 +105,6 @@ async function createFirebaseToken(keycloakToken: string): Promise<string> {
         }
 
         if (!firebaseUser) {
-            console.log(`🆕 Creating new Firebase user for ${email} (UID: ${uid})`);
-
             firebaseUser = await admin.auth().createUser({
                 uid,
                 email,
@@ -111,8 +112,7 @@ async function createFirebaseToken(keycloakToken: string): Promise<string> {
                 emailVerified,
             });
         }
-    } catch (error) {
-        console.error('Error checking or creating Firebase user:', error);
+    } catch (_error) {
         throw new Error('Firebase user creation or lookup failed');
     }
 
@@ -165,8 +165,7 @@ export const firebaseRouter = t.router({
                 };
 
                 return { userRecord: formattedUserRecord };
-            } catch (error) {
-                console.error('Error fetching firebase user data', error);
+            } catch (_error) {
                 return { userRecord: null };
             }
         }),
@@ -188,8 +187,7 @@ export const firebaseRouter = t.router({
                 const { keycloakToken } = input;
                 const firebaseToken = await createFirebaseToken(keycloakToken);
                 return { firebaseToken };
-            } catch (error) {
-                console.error('Error during Keycloak authentication:', error);
+            } catch (_error) {
                 throw new Error('Authentication failed');
             }
         }),
@@ -230,8 +228,7 @@ export const firebaseRouter = t.router({
                 );
 
                 return response.data ?? null;
-            } catch (error) {
-                console.log('Unable to authenticate with Scouts SSO', error);
+            } catch (_error) {
                 throw new TRPCError({
                     code: 'INTERNAL_SERVER_ERROR',
                     message: 'Unable to authenticate with Scouts SSO',
@@ -280,6 +277,9 @@ export const firebaseRouter = t.router({
                 // store code in Redis with 5-min TTL
                 await cache.set(redisKey, '1', CODE_TTL_SECONDS);
 
+                // Clear the verification attempt counter so user can try the new code
+                await clearRateLimit(`login-verify-attempts:${email}`);
+
                 // Login is pre-auth, so the client only knows its UI language.
                 // Prefer the account's saved locale (resolved by email via
                 // brain-service) so a user whose preference is Spanish gets a
@@ -304,15 +304,13 @@ export const firebaseRouter = t.router({
                             branding: ctx.tenant?.emailBranding,
                         }),
                     });
-                } catch (error) {
-                    console.error('Failed to send verification email:', error);
+                } catch (_error) {
                     return { success: false, error: 'Error sending login verification code' };
                 }
 
                 return { success: true };
-            } catch (err: any) {
-                console.error('Error sending login verification code:', err);
-                return { success: false, error: err.message };
+            } catch (_err) {
+                return { success: false, error: 'An error occurred. Please try again.' };
             }
         }),
     verifyLoginCode: openRoute
@@ -334,23 +332,64 @@ export const firebaseRouter = t.router({
                 token: z.string().optional(),
             })
         )
-        .mutation(async ({ input }) => {
+        .mutation(async ({ input, ctx }) => {
             const { email, code } = input;
+            const clientIp = ctx.clientIp ?? 'unknown';
 
-            const redisKey = `login-code:${email}:${code}`;
+            // Rate limit keys
+            const emailAttemptKey = `login-verify-attempts:${email}`;
+            const ipAttemptKey = `login-verify-ip:${clientIp}`;
 
             try {
-                // check if code exists
+                // Check IP-based rate limit (30 attempts per 10 minutes across all emails)
+                const ipAllowed = await checkRateLimit(
+                    ipAttemptKey,
+                    LOGIN_VERIFY_MAX_ATTEMPTS_PER_IP,
+                    LOGIN_VERIFY_IP_WINDOW_SECONDS
+                );
+
+                if (!ipAllowed) {
+                    return {
+                        success: false,
+                        error: 'Too many attempts. Please request a new code.',
+                    };
+                }
+
+                // Check per-email rate limit (5 failed attempts per code lifetime)
+                const emailAllowed = await checkRateLimit(
+                    emailAttemptKey,
+                    LOGIN_VERIFY_MAX_ATTEMPTS_PER_EMAIL,
+                    CODE_TTL_SECONDS
+                );
+
+                if (!emailAllowed) {
+                    // On 6th failure, invalidate any active codes for this email
+                    const existingCodeKeys = await cache.keys(`login-code:${email}:*`);
+                    if (existingCodeKeys?.length) {
+                        await cache.delete(existingCodeKeys);
+                    }
+                    return {
+                        success: false,
+                        error: 'Too many attempts. Please request a new code.',
+                    };
+                }
+
+                // Check if code exists
+                const redisKey = `login-code:${email}:${code}`;
                 const cached = await cache.get(redisKey);
+
                 if (!cached) {
+                    // Invalid code — this counts as a failed attempt (already incremented above)
                     return { success: false, error: 'Invalid or expired code.' };
                 }
 
-                // delete the code to prevent reuse
+                // Valid code — delete it to prevent reuse
                 await cache.delete([redisKey]);
 
-                // get or create the Firebase user
-                console.log('Getting or creating Firebase user...', email);
+                // Clear the per-email attempt counter on success
+                await clearRateLimit(emailAttemptKey);
+
+                // Get or create the Firebase user
                 let user;
                 try {
                     user = await app?.auth().getUserByEmail(email);
@@ -362,13 +401,13 @@ export const firebaseRouter = t.router({
                     return { success: false, error: 'Unable to find or create user.' };
                 }
 
-                // create Firebase custom auth token
+                // Create Firebase custom auth token
                 const token = await app?.auth().createCustomToken(user.uid);
 
                 return { success: true, token };
             } catch (err: any) {
-                console.error('Error verifying login code:', err);
-                return { success: false, error: err.message };
+                // Log error without exposing user data
+                return { success: false, error: 'An error occurred. Please try again.' };
             }
         }),
     verifyNetworkHandoffToken: openRoute
@@ -474,9 +513,8 @@ export const firebaseRouter = t.router({
                 const token = await app?.auth().createCustomToken(user.uid);
 
                 return { success: true, token };
-            } catch (err: any) {
-                console.error('Error verifying login code:', err);
-                return { success: false, error: err.message };
+            } catch (_err) {
+                return { success: false, error: 'An error occurred. Please try again.' };
             }
         }),
     getProofOfLoginVp: openRoute
@@ -520,9 +558,8 @@ export const firebaseRouter = t.router({
                 if (typeof result !== 'string') throw new Error('Error getting DID-Auth-JWT!');
 
                 return { success: true, vp: result };
-            } catch (err: any) {
-                console.error('Error verifying login code:', err);
-                return { success: false, error: err.message };
+            } catch (_err) {
+                return { success: false, error: 'An error occurred. Please try again.' };
             }
         }),
 });
