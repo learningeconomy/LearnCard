@@ -20,11 +20,17 @@ import {
     useWallet,
     useGetCurrentLCNUser,
     useTenantBaseUrl,
+    getLogger,
 } from 'learn-card-base';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 import { EndorsementRequestState } from './endorsement-request.helpers';
 import { VC } from '@learncard/types';
 import * as m from '../../../paraglide/messages.js';
+
+const log = getLogger('endorsement-request-options');
+
+type LinkGenerationFailureStage =
+    'missing-identity' | 'incomplete-share-link' | 'invalid-share-link' | 'share-mutation';
 
 const schema = zod.object({
     email: zod.string().email(),
@@ -63,7 +69,23 @@ export const EndorsementRequestOptions: React.FC<{
 
     const { mutate: shareEarnedBoost, isPending: isLinkLoading } = useShareBoostMutation();
 
-    const handleLinkGenerationError = () => {
+    const handleLinkGenerationError = (stage: LinkGenerationFailureStage, error?: unknown) => {
+        const diagnostics = {
+            stage,
+            hasCredentialId: Boolean(credential.id),
+            hasCredentialUri: Boolean(credentialUri),
+            hasShareCredentialUri: Boolean(shareCredentialUri),
+            isCertifiedBoostCredential: Boolean(
+                credential.type?.includes('CertifiedBoostCredential')
+            ),
+        };
+
+        if (error) {
+            log.warn('endorsement.request.link.failed', error, diagnostics);
+        } else {
+            log.warn('endorsement.request.link.failed', diagnostics);
+        }
+
         setShareLink(undefined);
         presentToast(m['toasts.boost.endorsementRequestFailed'](), {
             type: ToastTypeEnum.Error,
@@ -73,7 +95,7 @@ export const EndorsementRequestOptions: React.FC<{
 
     const generateShareLink = () => {
         if (!credential.id || !credentialUri) {
-            handleLinkGenerationError();
+            handleLinkGenerationError('missing-identity');
             return;
         }
 
@@ -90,7 +112,7 @@ export const EndorsementRequestOptions: React.FC<{
                         const pin = url.searchParams.get('pin');
 
                         if (!uri || !seed || !pin) {
-                            handleLinkGenerationError();
+                            handleLinkGenerationError('incomplete-share-link');
                             return;
                         }
 
@@ -108,11 +130,13 @@ export const EndorsementRequestOptions: React.FC<{
                             boostType: achievementType,
                             method: 'Share Boost',
                         });
-                    } catch {
-                        handleLinkGenerationError();
+                    } catch (error) {
+                        handleLinkGenerationError('invalid-share-link', error);
                     }
                 },
-                onError: handleLinkGenerationError,
+                onError(error) {
+                    handleLinkGenerationError('share-mutation', error);
+                },
                 onSettled() {
                     setIsGeneratingShareLink(false);
                 },

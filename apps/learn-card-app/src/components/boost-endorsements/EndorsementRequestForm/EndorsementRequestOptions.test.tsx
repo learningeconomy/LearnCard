@@ -2,8 +2,9 @@ import React from 'react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { clipboardWriteMock, mutateMock, presentToastMock } = vi.hoisted(() => ({
+const { clipboardWriteMock, logWarnMock, mutateMock, presentToastMock } = vi.hoisted(() => ({
     clipboardWriteMock: vi.fn(),
+    logWarnMock: vi.fn(),
     mutateMock: vi.fn(),
     presentToastMock: vi.fn(),
 }));
@@ -25,6 +26,7 @@ vi.mock('learn-card-base', () => ({
     CredentialCategoryEnum: { achievement: 'Achievement' },
     ModalTypes: { FullScreen: 'fullscreen' },
     ToastTypeEnum: { Error: 'error' },
+    getLogger: () => ({ warn: logWarnMock }),
     useGetCurrentLCNUser: () => ({ currentLCNUser: { displayName: 'Requester' } }),
     useGetVCInfo: () => ({ achievementType: 'Achievement', title: 'Credential' }),
     useModal: () => ({
@@ -152,6 +154,31 @@ describe('EndorsementRequestOptions', () => {
         });
         expect(screen.getByRole('button', { name: /copy link/i })).toBeDisabled();
         expect(screen.getByRole('button', { name: /get code/i })).toBeDisabled();
+    });
+
+    it('logs the share mutation stage without exposing credential values', async () => {
+        render(
+            <EndorsementRequestOptions
+                credential={credential}
+                shareCredentialUri="lc:credential:record-a"
+                categoryType={'Achievement' as never}
+                endorsementRequest={{ email: '', text: '' }}
+                setEndorsementRequest={vi.fn()}
+            />
+        );
+
+        await waitFor(() => expect(mutateMock).toHaveBeenCalledOnce());
+
+        const error = new Error('Unable to read the shared credential cache');
+        act(() => mutateMock.mock.calls[0][1].onError(error));
+
+        expect(logWarnMock).toHaveBeenCalledWith('endorsement.request.link.failed', error, {
+            stage: 'share-mutation',
+            hasCredentialId: true,
+            hasCredentialUri: true,
+            hasShareCredentialUri: true,
+            isCertifiedBoostCredential: false,
+        });
     });
 
     it('regenerates requests with each credential record URI', async () => {
