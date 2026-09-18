@@ -329,9 +329,9 @@ const startCliRepl = async (colorize: (input: string) => string): Promise<void> 
 };
 
 program
-    .command('send <email>')
+    .command('send [recipient]')
     .description(
-        'Send a "Quickstart Complete" badge to an email address. Creates .env and send.mjs in the current folder.'
+        'Send a "Quickstart Complete" badge to an email address or phone number (prompts if omitted). Creates .env and send.mjs in the current folder.'
     )
     .option('-y, --yes', 'accept defaults without prompting')
     .option('--name <displayName>', 'display name for your issuer profile')
@@ -353,7 +353,7 @@ program
     .option('--json', 'print a single JSON result on stdout')
     .action(
         async (
-            email: string,
+            recipient: string | undefined,
             opts: {
                 yes?: boolean;
                 name?: string;
@@ -371,7 +371,7 @@ program
                 require.resolve('@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm')
             );
             try {
-                await runSend(email, { ...opts, didkit });
+                await runSend(recipient, { ...opts, didkit });
                 if (out.json) {
                     process.stdout.write(
                         JSON.stringify({ ok: true, command: 'send', ...out.result }) + '\n'
@@ -389,7 +389,11 @@ program
                 }
                 console.error(`\n${firstLine}`);
                 // Input mistakes explain themselves; keep the docs link for network/auth failures.
-                if (!/is not an email address/.test(firstLine))
+                if (
+                    !/is not an email address|is a placeholder address|A recipient is required/.test(
+                        firstLine
+                    )
+                )
                     console.error(
                         'Troubleshooting: https://docs.learncard.com/start-here/your-first-integration#if-something-goes-wrong'
                     );
@@ -651,7 +655,7 @@ program
     })
     .addHelpText(
         'before',
-        '\nStart here:  npx @learncard/cli send you@example.com\nThen:        npx @learncard/cli status\n'
+        '\nStart here:  npx @learncard/cli send\nThen:        npx @learncard/cli status\n'
     )
     .addHelpText(
         'after',

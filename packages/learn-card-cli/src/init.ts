@@ -22,5 +22,5 @@ export const runInit = async (options: ProjectOptions): Promise<void> => {
         envPath: project.envPath,
     });
     out.log(fresh ? 'Ready. Your identity is in .env (keep it out of git).' : 'Already set up.');
-    out.log('Next: npx @learncard/cli send you@example.com');
+    out.log('Next: npx @learncard/cli send');
 };
