@@ -410,7 +410,7 @@ export const firebaseRouter = t.router({
 
                 return { success: true, token };
             } catch (err: any) {
-                // Log error without exposing user data
+                console.error('[verifyLoginCode] Unexpected error:', err);
                 return { success: false, error: 'An error occurred. Please try again.' };
             }
         }),
