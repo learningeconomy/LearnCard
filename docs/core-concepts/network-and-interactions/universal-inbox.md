@@ -105,7 +105,8 @@ deep merge; arrays replace defaults. The existing signing, claiming, webhook,
 guardian, and tenant-branding behavior applies. Both single and batch issuance
 accept `configuration.guardianEmail`; it must differ from the recipient email,
 ignoring case. Batches validate this at submission after applying item overrides.
-Defaults are additive; undefined inherits them and null cannot clear them.
+Set an item's `configuration.guardianEmail` to `null` to clear a batch-level guardian
+default for that recipient. Other omitted item settings inherit their batch defaults.
 
 ### Retries and recovery
 

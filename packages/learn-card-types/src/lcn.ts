@@ -1453,10 +1453,18 @@ const InboxBatchConfigurationValidator = IssueInboxCredentialValidator.shape.con
             .optional(),
     });
 
+const InboxBatchItemConfigurationValidator = InboxBatchConfigurationValidator.extend({
+    guardianEmail: InboxBatchConfigurationValidator.shape.guardianEmail
+        .nullable()
+        .describe(
+            'Require guardian approval, or set null to clear a batch-level guardianEmail for this item.'
+        ),
+});
+
 export const IssueInboxCredentialBatchItemValidator = z
     .object({
         ...IssueInboxCredentialValidator.shape,
-        configuration: InboxBatchConfigurationValidator.optional(),
+        configuration: InboxBatchItemConfigurationValidator.optional(),
         idempotencyKey: z.string().max(256).optional(),
     })
     .refine(data => data.credential || data.templateUri, {
@@ -1475,8 +1483,11 @@ export const IssueInboxCredentialBatchValidator = z
     })
     .superRefine((batch, ctx) => {
         batch.items.forEach((item, index) => {
+            const itemGuardian = item.configuration?.guardianEmail;
             const guardian =
-                item.configuration?.guardianEmail ?? batch.configuration?.guardianEmail;
+                itemGuardian === null
+                    ? undefined
+                    : (itemGuardian ?? batch.configuration?.guardianEmail);
             if (
                 guardian &&
                 item.recipient.type === 'email' &&

@@ -1308,13 +1308,17 @@ describe('Universal Inbox batch issuance', () => {
     it('gates only the item configured with a guardian email', async () => {
         const credential = await signed();
         const batch = await issue({
+            configuration: { guardianEmail: 'guardian@test.com' },
             items: [
                 {
                     recipient: email('child@test.com'),
                     credential,
-                    configuration: { guardianEmail: 'guardian@test.com' },
                 },
-                { recipient: email('adult@test.com'), credential },
+                {
+                    recipient: email('adult@test.com'),
+                    credential,
+                    configuration: { guardianEmail: null },
+                },
             ],
         });
         expect(batch.results[0]).toMatchObject({

@@ -360,12 +360,13 @@ describe('inbox batch worker processing', () => {
         expect(mocks.issue).not.toHaveBeenCalled();
     });
 
-    it('validates guardian self-approval after merging item overrides', async () => {
+    it('validates guardian self-approval after merging overrides and allows null to clear it', async () => {
         const result = await run({
             configuration: { guardianEmail: 'A@example.test' },
             items: [
                 item(),
                 { ...item(), configuration: { guardianEmail: 'guardian@example.test' } },
+                { ...item('clear'), configuration: { guardianEmail: null } },
             ],
         });
         expect(result.results).toMatchObject([
@@ -374,8 +375,10 @@ describe('inbox batch worker processing', () => {
                 error: { code: 'BAD_REQUEST', message: expect.stringContaining('self-approval') },
             },
             { success: true },
+            { success: true },
         ]);
-        expect(mocks.issue).toHaveBeenCalledTimes(1);
+        expect(mocks.issue).toHaveBeenCalledTimes(2);
+        expect(mocks.issue.mock.calls[1]?.[3]).not.toHaveProperty('guardianEmail');
     });
 
     it('checks the durable worker lease before entering issuance', async () => {
@@ -533,6 +536,7 @@ describe('batch admission validation', () => {
                 { recipient: item('b').recipient },
                 item(),
                 { ...item(), configuration: { guardianEmail: 'guardian@example.test' } },
+                { ...item('clear'), configuration: { guardianEmail: null } },
             ],
         });
         expect(result.success).toBe(false);

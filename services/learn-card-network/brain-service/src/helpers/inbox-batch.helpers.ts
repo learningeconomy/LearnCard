@@ -156,6 +156,11 @@ export const issueInboxBatch = async (
                     (_base: unknown, override: unknown) =>
                         Array.isArray(override) ? override : undefined
                 );
+                // null is an explicit per-item escape hatch for the batch guardian default.
+                // Remove it before validating against the single-issue contract.
+                if (item.configuration?.guardianEmail === null) {
+                    delete configuration.guardianEmail;
+                }
                 // Parse only after merging. Parsing each partial configuration first would apply
                 // defaults too early and make an omitted item field override the batch default.
                 const parsed = IssueInboxCredentialValidator.safeParse({ ...item, configuration });

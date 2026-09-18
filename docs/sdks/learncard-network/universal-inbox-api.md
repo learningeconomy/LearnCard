@@ -132,8 +132,8 @@ Missing credentials/templates and guardian self-approval are rejected with HTTP 
 admission or quota charging. REST validation `issues` contain `message` and `path`;
 for item issues, `path[1]` is the zero-based item index. Effective guardian defaults
 are checked after applying item overrides. Configuration defaults are additive:
-`undefined` inherits a default; `null` is invalid and cannot clear one. Put optional
-guardian settings on individual items when only some recipients need them.
+`undefined` inherits a default. An item may set `guardianEmail: null` to clear that
+batch-level default for the recipient.
 
 | Item `error.code`            | `error.reason`         | Action                                                                                                        |
 | ---------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------- |
