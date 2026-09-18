@@ -43,7 +43,7 @@ const learnCard = await initLearnCard({
 If you are using the LearnCard CLI, you can specify the network using the `--network` flag:
 
 ```bash
-learncard send you@example.com --network https://staging.network.learncard.com/trpc
+learncard send --network https://staging.network.learncard.com/trpc
 ```
 
 The CLI's `send` command only exposes `--network`, not a `--cloud` equivalent — it moves where credentials are issued, not where they're stored.

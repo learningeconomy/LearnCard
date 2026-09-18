@@ -23,17 +23,10 @@
 import React, { useMemo, useState } from 'react';
 
 import { IonIcon } from '@ionic/react';
-import {
-    chevronDownOutline,
-    chevronUpOutline,
-    ribbonOutline,
-} from 'ionicons/icons';
+import { chevronDownOutline, chevronUpOutline, ribbonOutline } from 'ionicons/icons';
 import { AnimatePresence, motion } from 'motion/react';
 
-import {
-    ProjectionError,
-    toAchievementCredential,
-} from '../projection/toAchievementCredential';
+import { ProjectionError, toAchievementCredential } from '../projection/toAchievementCredential';
 import type { PathwayNode } from '../types';
 
 interface CredentialPreviewProps {
@@ -88,10 +81,7 @@ const CredentialPreview: React.FC<CredentialPreviewProps> = ({ node, ownerDid })
                     className="shrink-0 w-8 h-8 rounded-full bg-emerald-100
                                flex items-center justify-center"
                 >
-                    <IonIcon
-                        icon={ribbonOutline}
-                        className="text-emerald-700 text-base"
-                    />
+                    <IonIcon icon={ribbonOutline} className="text-emerald-700 text-base" />
                 </span>
 
                 <div className="min-w-0 flex-1">
@@ -143,8 +133,8 @@ const CredentialPreview: React.FC<CredentialPreviewProps> = ({ node, ownerDid })
                                     {evidenceCount === 0
                                         ? 'No evidence attached'
                                         : evidenceCount === 1
-                                            ? '1 piece of evidence'
-                                            : `${evidenceCount} pieces of evidence`}
+                                          ? '1 piece of evidence'
+                                          : `${evidenceCount} pieces of evidence`}
                                 </span>
 
                                 {endorsementCount > 0 && (
