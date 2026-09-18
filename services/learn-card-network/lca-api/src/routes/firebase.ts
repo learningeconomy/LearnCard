@@ -275,6 +275,7 @@ export const firebaseRouter = t.router({
 
                 // Clear the verification attempt counter so user can try the new code
                 await clearRateLimit(`login-verify-attempts:${email}`);
+                await clearRateLimit(`login-verify-ip:${ctx.clientIp ?? 'unknown'}`);
 
                 // Login is pre-auth, so the client only knows its UI language.
                 // Prefer the account's saved locale (resolved by email via
