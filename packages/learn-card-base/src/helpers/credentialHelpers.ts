@@ -42,6 +42,7 @@ import { getFileMetadata } from './attachment.helpers';
 import { getLogger } from '../logging/logger';
 import { parseLcTags } from './displayTags.helpers';
 import { getBespokeLearnCard } from './walletHelpers';
+import { stringify } from './jsonHelpers';
 const log = getLogger('credential-helpers');
 
 type CredentialType =
@@ -1289,6 +1290,28 @@ export const getCategoryDarkColor = (category = CredentialCategoryEnum.achieveme
     return `${getCategoryPrimaryColor(category)}-700`;
 };
 
+const sha256 = async (value: string): Promise<string> => {
+    const bytes = new TextEncoder().encode(value);
+    const digest = await crypto.subtle.digest('SHA-256', bytes);
+
+    return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
+};
+
+/**
+ * Returns the stable identifier used to link endorsements to a credential.
+ *
+ * W3C credential IDs are optional. Idless credentials use a content-addressed
+ * identifier derived from the exact credential shared with the endorser.
+ */
+export const getEndorsementTargetId = async (credential: VC): Promise<string> => {
+    if (credential.id) return credential.id;
+
+    const sharedCredential = { ...credential } as VC & { boostID?: unknown };
+    delete sharedCredential.boostID;
+
+    return `urn:sha256:${await sha256(stringify(sharedCredential))}`;
+};
+
 export const resolveSharedCredential = async (sharedUri?: string): Promise<VC | undefined> => {
     if (!sharedUri) return undefined;
 
@@ -1312,11 +1335,12 @@ const getMatchingEndorsementRecords = async (
     vc: VC,
     visibility?: 'public' | 'private'
 ) => {
-    if (!vc.id) return [];
+    if (!wallet) return [];
 
+    const credentialId = await getEndorsementTargetId(vc);
     const [canonicalRecords = [], credentialRecords = []] = await Promise.all([
-        wallet?.index.LearnCloud.get({ originalCredentialId: vc.id }),
-        wallet?.index.LearnCloud.get({ credentialId: vc.id }),
+        wallet.index.LearnCloud.get({ originalCredentialId: credentialId }),
+        wallet.index.LearnCloud.get({ credentialId }),
     ]);
 
     const subjectId = getCredentialSubject(vc)?.id;
@@ -1326,7 +1350,10 @@ const getMatchingEndorsementRecords = async (
     const verifiedLegacyRecords = await Promise.all(
         (legacyRecords ?? []).map(async record => {
             const sharedCredential = await resolveSharedCredential(record.sharedUri);
-            return sharedCredential?.id === vc.id ? record : undefined;
+            if (!sharedCredential) return undefined;
+
+            const sharedCredentialId = await getEndorsementTargetId(sharedCredential);
+            return sharedCredentialId === credentialId ? record : undefined;
         })
     );
 

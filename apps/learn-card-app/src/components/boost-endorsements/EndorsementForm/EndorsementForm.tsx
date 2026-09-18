@@ -99,12 +99,15 @@ export const EndorsementForm: React.FC<{
                 const wallet = await initWallet();
                 const evidence = convertAttachmentsToEvidence(endorsement.mediaAttachments);
                 const target = getEndorsementTarget(credential, targetCredential);
-                const endorsementVC = await wallet.invoke.endorseCredential(targetCredential, {
-                    endorsementComment: endorsement.qualification,
-                    name: `Endorsement of ${target.name}`,
-                    description: endorsement.description,
-                    evidence,
-                });
+                const endorsementVC = await wallet.invoke.endorseCredential(
+                    { id: target.id } as VC,
+                    {
+                        endorsementComment: endorsement.qualification,
+                        name: `Endorsement of ${target.name}`,
+                        description: endorsement.description,
+                        evidence,
+                    }
+                );
 
                 await wallet.invoke.sendCredential(recipientProfileId, endorsementVC, {
                     type: 'endorsement',

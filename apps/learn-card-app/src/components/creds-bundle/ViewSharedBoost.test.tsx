@@ -50,6 +50,8 @@ vi.mock('learn-card-base', () => ({
     useIsLoggedIn: () => false,
 }));
 vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
+    getEndorsementTargetId: async (value: { id?: string }) =>
+        value.id ?? `urn:sha256:${'a'.repeat(64)}`,
     getDefaultCategoryForCredential: () => 'Achievement',
     getEndorsementsFromPresentations: () => [],
     isClrCredential: () => false,
@@ -151,14 +153,14 @@ describe('ViewSharedBoost', () => {
         ).toBe(true);
     });
 
-    it('passes the verified wrapper as the endorsement target', async () => {
+    it('passes only the verified credential id as the endorsement target', async () => {
         render(<ViewSharedBoost showEndorsementRequest />);
 
         await waitFor(() =>
             expect(mocks.requestModalProps).toContainEqual(
                 expect.objectContaining({
                     credential: displayCredential,
-                    targetCredential: credential,
+                    targetCredential: { id: credential.id },
                 })
             )
         );
@@ -191,10 +193,9 @@ describe('ViewSharedBoost', () => {
             expect(mocks.requestModalProps).toContainEqual(
                 expect.objectContaining({
                     credential: idlessCredential,
-                    targetCredential: expect.objectContaining({
-                        ...idlessCredential,
+                    targetCredential: {
                         id: expect.stringMatching(/^urn:sha256:[0-9a-f]{64}$/),
-                    }),
+                    },
                 })
             )
         );
@@ -228,8 +229,6 @@ describe('ViewSharedBoost', () => {
             })
         );
         expect(mocks.setCredentialInfo).not.toHaveBeenCalled();
-        expect(mocks.requestModalProps.some(props => props.targetCredential === credential)).toBe(
-            false
-        );
+        expect(mocks.requestModalProps.some(props => Boolean(props.targetCredential))).toBe(false);
     });
 });

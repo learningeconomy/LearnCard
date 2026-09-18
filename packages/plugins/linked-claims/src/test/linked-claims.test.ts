@@ -91,6 +91,26 @@ describe('LinkedClaims Plugin', () => {
         expect((endorsement as any).name).toBe('Endorsement of urn:uuid:original-123');
     });
 
+    test('uses the endorsing wallet DID instead of the target identity as issuer', async () => {
+        const lc = createMockLearnCard();
+        const plugin = getLinkedClaimsPlugin(lc);
+        const target = {
+            ...makeOriginalWithId(),
+            id: `urn:sha256:${'a'.repeat(64)}`,
+            issuer: `urn:sha256:${'b'.repeat(64)}`,
+        };
+
+        const endorsement = await plugin.methods.endorseCredential(
+            lc,
+            target,
+            { endorsementComment: 'Solid work' },
+            {}
+        );
+
+        expect(endorsement.issuer).toBe('did:example:issuer');
+        expect((endorsement.credentialSubject as { id?: string }).id).toBe(target.id);
+    });
+
     test('endorseCredential: rejects a subject DID as a credential target', async () => {
         const lc = createMockLearnCard();
         const plugin = getLinkedClaimsPlugin(lc);

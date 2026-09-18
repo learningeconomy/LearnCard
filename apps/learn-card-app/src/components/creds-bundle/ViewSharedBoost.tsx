@@ -21,6 +21,7 @@ import ClrTranscriptFullPage from '../clr-transcript/surfaces/ClrTranscriptFullP
 import { VC, VerificationItem, VP } from '@learncard/types';
 import {
     getDefaultCategoryForCredential,
+    getEndorsementTargetId,
     getEndorsementsFromPresentations,
     isClrCredential,
     unwrapBoostCredential,
@@ -41,7 +42,6 @@ import EndorsementDraftRequestSuccess from '../boost-endorsements/EndorsementReq
 import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
 import { createEndorsementShareLinkInfo } from '../boost-endorsements/EndorsementRequestForm/endorsement-request.helpers';
 import * as m from '../../paraglide/messages.js';
-import { resolveEndorsementTargetCredential } from '../boost-endorsements/endorsement-credential.helpers';
 
 const websiteLink = `${getAppBaseUrl()}/login`;
 
@@ -140,12 +140,9 @@ const ViewSharedBoost: React.FC<{
                     : resolvedVc?.verifiableCredential;
 
                 if (showEndorsementRequest || showDraftSuccess) {
-                    const targetCredential = await resolveEndorsementTargetCredential(credential);
+                    const targetId = await getEndorsementTargetId(credential);
 
-                    if (
-                        endorsementCredentialId &&
-                        endorsementCredentialId !== targetCredential.id
-                    ) {
+                    if (endorsementCredentialId && endorsementCredentialId !== targetId) {
                         throw new Error(
                             'The endorsement request does not match the shared credential'
                         );
@@ -155,10 +152,10 @@ const ViewSharedBoost: React.FC<{
                         uri: String(uri),
                         seed: String(seed),
                         pin: String(pin),
-                        credentialId: targetCredential.id,
+                        credentialId: targetId,
                     };
 
-                    setEndorsementTargetCredential(targetCredential);
+                    setEndorsementTargetCredential({ id: targetId } as VC);
                     setShareLinkInfo(createEndorsementShareLinkInfo(credentialInfo));
                     endorsementsRequestStore.set.credentialInfo(credentialInfo);
                 }

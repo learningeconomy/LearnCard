@@ -6,6 +6,7 @@ import {
     getEndorsements,
     type CredentialEndorsement,
 } from 'learn-card-base/helpers/credentialHelpers';
+import { stringify } from 'learn-card-base/helpers/jsonHelpers';
 
 type Credential = UnsignedVC | UnsignedAchievementCredential;
 const EMPTY_ENDORSEMENTS: CredentialEndorsement[] = [];
@@ -18,7 +19,7 @@ type EndorsementState = {
 /** Loads endorsements without exposing results from a previously displayed credential. */
 export const useCredentialEndorsements = (credential: Credential): CredentialEndorsement[] => {
     const { initWallet } = useWallet();
-    const credentialKey = credential?.id ?? '';
+    const credentialKey = credential?.id ?? (credential ? stringify(credential) : '');
     const credentialRef = useRef(credential);
     const initWalletRef = useRef(initWallet);
     const [state, setState] = useState<EndorsementState>({

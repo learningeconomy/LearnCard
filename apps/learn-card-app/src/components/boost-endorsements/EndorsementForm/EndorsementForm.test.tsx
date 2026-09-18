@@ -120,6 +120,10 @@ describe('EndorsementForm', () => {
 
         fireEvent.click(screen.getByRole('button', { name: 'Endorse' }));
         expect(await screen.findByRole('button', { name: 'Sending...' })).toBeDisabled();
+        expect(mocks.endorseCredential).toHaveBeenCalledWith(
+            { id: 'urn:uuid:credential' },
+            expect.anything()
+        );
         expect(mocks.sendCredential).toHaveBeenCalledWith(
             'recipient-profile',
             { id: 'urn:uuid:endorsement' },

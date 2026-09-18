@@ -142,12 +142,15 @@ export const EndorsementDraftRequestSuccess: React.FC<{
                 );
                 const target = getEndorsementTarget(credential, targetCredential);
 
-                const endorsementVC = await wallet.invoke.endorseCredential(targetCredential, {
-                    endorsementComment: draftEndorsementRequest.qualification,
-                    name: `Endorsement of ${target.name}`,
-                    description: draftEndorsementRequest.description,
-                    evidence,
-                });
+                const endorsementVC = await wallet.invoke.endorseCredential(
+                    { id: target.id } as VC,
+                    {
+                        endorsementComment: draftEndorsementRequest.qualification,
+                        name: `Endorsement of ${target.name}`,
+                        description: draftEndorsementRequest.description,
+                        evidence,
+                    }
+                );
 
                 const sentCredential = await wallet.invoke.sendCredential(
                     issueeProfile?.profileId || '',

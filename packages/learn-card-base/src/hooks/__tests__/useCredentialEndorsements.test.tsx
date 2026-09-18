@@ -69,22 +69,40 @@ describe('useCredentialEndorsements', () => {
         await waitFor(() => expect(result.current).toEqual([endorsementB]));
     });
 
-    it('does not query or share results for credentials without ids', () => {
+    it('loads idless credentials and isolates results by credential content', async () => {
+        const requestA = Promise.withResolvers<EndorsementRecord[]>();
+        const requestB = Promise.withResolvers<EndorsementRecord[]>();
+        mocks.getEndorsements.mockImplementation(
+            (_wallet: unknown, credential: { name: string }) =>
+                credential.name === 'First' ? requestA.promise : requestB.promise
+        );
+
         const { result, rerender } = renderHook(
             ({ credential }) => useCredentialEndorsements(credential as never),
             {
                 initialProps: {
-                    credential: { credentialSubject: { id: 'did:example:subject' } },
+                    credential: {
+                        name: 'First',
+                        credentialSubject: { id: 'did:example:subject' },
+                    },
                 },
             }
         );
 
+        await waitFor(() => expect(mocks.getEndorsements).toHaveBeenCalledTimes(1));
         rerender({
-            credential: { credentialSubject: { id: 'did:example:subject' }, name: 'Second' },
+            credential: {
+                name: 'Second',
+                credentialSubject: { id: 'did:example:subject' },
+            },
         });
-
         expect(result.current).toEqual([]);
-        expect(mocks.initWallet).not.toHaveBeenCalled();
-        expect(mocks.getEndorsements).not.toHaveBeenCalled();
+        await waitFor(() => expect(mocks.getEndorsements).toHaveBeenCalledTimes(2));
+
+        await act(async () => requestA.resolve([endorsementA]));
+        expect(result.current).toEqual([]);
+
+        await act(async () => requestB.resolve([endorsementB]));
+        await waitFor(() => expect(result.current).toEqual([endorsementB]));
     });
 });

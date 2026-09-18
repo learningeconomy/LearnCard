@@ -26,7 +26,7 @@ import { useAnalytics, AnalyticsEvents } from '@analytics';
 import { EndorsementRequestState } from './endorsement-request.helpers';
 import { VC } from '@learncard/types';
 import * as m from '../../../paraglide/messages.js';
-import { resolveEndorsementTargetCredential } from '../endorsement-credential.helpers';
+import { getEndorsementTargetId } from 'learn-card-base/helpers/credentialHelpers';
 
 const log = getLogger('endorsement-request-options');
 
@@ -159,9 +159,14 @@ export const EndorsementRequestOptions: React.FC<{
     useEffect(() => {
         let cancelled = false;
 
-        void resolveEndorsementTargetCredential(credential)
-            .then(target => {
-                if (!cancelled) setCredentialIdentity({ source: credential, target });
+        setShareLink(undefined);
+        setIsGeneratingShareLink(true);
+
+        void getEndorsementTargetId(credential)
+            .then(id => {
+                if (!cancelled) {
+                    setCredentialIdentity({ source: credential, target: { id } as VC });
+                }
             })
             .catch(error => {
                 if (!cancelled) handleLinkGenerationError('identity-resolution', error);

@@ -194,6 +194,7 @@ describe('EndorsementDraftRequestSuccess', () => {
         };
         const targetCredential = {
             id: 'urn:uuid:credential:test',
+            issuer: 'urn:sha256:not-the-endorser',
             boostCredential: displayCredential,
         };
 
@@ -208,7 +209,7 @@ describe('EndorsementDraftRequestSuccess', () => {
 
         await waitFor(() =>
             expect(mocks.endorseCredential).toHaveBeenCalledWith(
-                targetCredential,
+                { id: 'urn:uuid:credential:test' },
                 expect.anything()
             )
         );

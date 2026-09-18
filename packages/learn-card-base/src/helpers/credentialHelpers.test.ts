@@ -20,7 +20,7 @@ vi.mock('./walletHelpers', () => ({
     getBespokeLearnCard: async () => ({ read: { get: mocks.sharedRead } }),
 }));
 
-import { getEndorsements, getEndorsementsForVC } from './credentialHelpers';
+import { getEndorsements, getEndorsementsForVC, getEndorsementTargetId } from './credentialHelpers';
 
 const createWallet = () => {
     const get = vi.fn();
@@ -113,15 +113,53 @@ describe('getEndorsements', () => {
         ).resolves.toEqual([]);
     });
 
-    it('does not query endorsements for credentials without ids', async () => {
-        const { wallet, get } = createWallet();
+    it('loads endorsements for an idless credential through its content identity', async () => {
+        const { wallet, get, read } = createWallet();
+        const idlessCredential = {
+            '@context': ['https://www.w3.org/2018/credentials/v1'],
+            type: ['VerifiableCredential'],
+            issuer: 'did:example:issuer',
+            credentialSubject: { id: 'did:example:holder' },
+            proof: { type: 'Ed25519Signature2020', proofValue: 'zExample' },
+        } as never;
+        const record = { id: 'record-idless', uri: 'lc:endorsement:idless' };
+        const endorsement = { id: 'urn:uuid:endorsement-idless' };
+        get.mockResolvedValueOnce([record]).mockResolvedValueOnce([]);
+        read.mockResolvedValue(endorsement);
+
+        const targetId = await getEndorsementTargetId(idlessCredential);
+
+        await expect(getEndorsements(wallet, idlessCredential)).resolves.toEqual([
+            { endorsement, metadata: record },
+        ]);
+        expect(targetId).toMatch(/^urn:sha256:[0-9a-f]{64}$/);
+        expect(get).toHaveBeenNthCalledWith(1, { originalCredentialId: targetId });
+        expect(get).toHaveBeenNthCalledWith(2, { credentialId: targetId });
+    });
+});
+
+describe('getEndorsementTargetId', () => {
+    it('preserves explicit ids and ignores local display metadata in content ids', async () => {
+        await expect(
+            getEndorsementTargetId({ id: 'urn:uuid:credential-a' } as never)
+        ).resolves.toBe('urn:uuid:credential-a');
+
+        const credential = {
+            '@context': ['https://www.w3.org/2018/credentials/v1'],
+            type: ['VerifiableCredential'],
+            issuer: 'did:example:issuer',
+            credentialSubject: { id: 'did:example:holder' },
+            proof: { type: 'Ed25519Signature2020', proofValue: 'zExample' },
+        };
+        const contentId = await getEndorsementTargetId(credential as never);
 
         await expect(
-            getEndorsements(wallet, {
-                credentialSubject: { id: 'did:example:holder' },
+            getEndorsementTargetId({
+                ...credential,
+                boostID: { backgroundImage: 'local-display-only' },
             } as never)
-        ).resolves.toEqual([]);
-        expect(get).not.toHaveBeenCalled();
+        ).resolves.toBe(contentId);
+        expect(contentId).toMatch(/^urn:sha256:[0-9a-f]{64}$/);
     });
 });
 
@@ -206,5 +244,25 @@ describe('getEndorsementsForVC', () => {
             credentialId: 'urn:uuid:wrapper-credential',
         });
         expect(read).toHaveBeenCalledWith(publicWrapperRecord.uri);
+    });
+    it('includes public endorsements for an idless credential when sharing', async () => {
+        const { wallet, get, read } = createWallet();
+        const credential = {
+            '@context': ['https://www.w3.org/2018/credentials/v1'],
+            type: ['VerifiableCredential'],
+            issuer: 'did:example:issuer',
+            credentialSubject: { id: 'did:example:holder' },
+            proof: { type: 'Ed25519Signature2020', proofValue: 'zExample' },
+        } as never;
+        const publicRecord = {
+            id: 'record-idless-public',
+            uri: 'lc:endorsement:idless-public',
+            visibility: 'public',
+        };
+        const endorsement = { id: 'urn:uuid:endorsement-idless-public' };
+        get.mockResolvedValueOnce([publicRecord]).mockResolvedValueOnce([]);
+        read.mockResolvedValue(endorsement);
+
+        await expect(getEndorsementsForVC(wallet, credential)).resolves.toEqual([endorsement]);
     });
 });
