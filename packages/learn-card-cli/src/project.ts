@@ -173,6 +173,7 @@ export const createPrompts = (yes?: boolean) => {
         ? createInterface({ input: process.stdin, output: process.stdout })
         : null;
     return {
+        interactive,
         ask: async (question: string, fallback: string): Promise<string> => {
             if (rl) return (await rl.question(`${question} [${fallback}] `)).trim() || fallback;
             if (!fallback)

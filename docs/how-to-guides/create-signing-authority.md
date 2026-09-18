@@ -16,7 +16,7 @@ Every credential is signed by a private key. You have two choices: **you sign** 
 npx @learncard/cli setup-signing
 ```
 
-Creates a hosted signing authority, registers it, and makes it your primary — the "LearnCard signs for you" path below, done. Idempotent: run it again and it tells you it's already set. Then `npx @learncard/cli send you@example.com --template` sends from a template with no signing details in the call.
+Creates a hosted signing authority, registers it, and makes it your primary — the "LearnCard signs for you" path below, done. Idempotent: run it again and it tells you it's already set. Then `npx @learncard/cli send --template` sends from a template with no signing details in the call.
 
 ## Pick a path
 
@@ -144,8 +144,7 @@ import { initLearnCard } from '@learncard/init';
 const recipient = process.argv[2];
 if (!recipient)
     throw new Error('Usage: node --env-file=.env send-from-template.mjs you@example.com');
-if (!process.env.TEMPLATE_URI)
-    throw new Error('Run npx @learncard/cli send you@example.com --template first.');
+if (!process.env.TEMPLATE_URI) throw new Error('Run npx @learncard/cli send --template first.');
 
 // The CLI saved a template and registered your primary signing authority once.
 const learnCard = await initLearnCard({ seed: process.env.SECURE_SEED, network: true });
