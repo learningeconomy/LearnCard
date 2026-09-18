@@ -9,7 +9,7 @@ import { CreateFastifyContextOptions } from '@trpc/server/adapters/fastify';
 import { OpenApiMeta } from 'trpc-to-openapi';
 import jwtDecode from 'jwt-decode';
 import * as Sentry from '@sentry/serverless';
-import { AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX } from '@learncard/types';
+import { ACT_AS_HEADER, AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX } from '@learncard/types';
 import { ContactMethodType } from '@learncard/types';
 
 import { RegExpTransformer } from '@learncard/helpers';
@@ -48,7 +48,11 @@ export type Context = {
         did: string;
         isChallengeValid: boolean;
         scope?: string;
+        isAuthGrant?: boolean;
+        actAsPolicy?: string;
+        onBehalfOf?: string;
     };
+    actAs?: string;
     contactMethod?: ContactMethodType;
     domain: string;
     tenant: ResolvedTenant;
@@ -84,6 +88,14 @@ export const createContext = async (
         | { req: { headers: Map<string, string> } }
 ): Promise<Context> => {
     const event = 'event' in options ? options.event : options.req;
+    const headerEntries =
+        'get' in event.headers
+            ? Array.from(event.headers as Map<string, string>)
+            : Object.entries(event.headers);
+    const rawActAs = headerEntries.find(
+        ([name]) => name.toLowerCase() === ACT_AS_HEADER.toLowerCase()
+    )?.[1];
+    const actAs = Array.isArray(rawActAs) ? rawActAs.join(',') : rawActAs;
     const authHeader =
         'get' in event.headers
             ? (event.headers as Map<string, string>).get('authorization')
@@ -141,6 +153,7 @@ export const createContext = async (
                 if (!challenge)
                     return {
                         user: { did, isChallengeValid: false, scope: AUTH_GRANT_NO_ACCESS_SCOPE },
+                        actAs,
                         domain,
                         tenant,
                         sourceIp,
@@ -148,6 +161,8 @@ export const createContext = async (
 
                 let isChallengeValid = false;
                 let scope = AUTH_GRANT_FULL_ACCESS_SCOPE;
+                let isAuthGrant = false;
+                let actAsPolicy: string | undefined;
 
                 // If the user is using a provisional auth token for a contact method:
                 if (challenge?.includes(CONTACT_METHOD_SESSION_PREFIX)) {
@@ -159,6 +174,7 @@ export const createContext = async (
                         if (!contactMethod) throw new TRPCError({ code: 'NOT_FOUND' });
                         return {
                             contactMethod,
+                            actAs,
                             domain,
                             tenant,
                             sourceIp,
@@ -166,9 +182,14 @@ export const createContext = async (
                     }
                     // If the user is using a real auth grant i.e. an API Token.
                 } else if (challenge?.includes(AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX)) {
-                    const { isChallengeValid: _isChallengeValid, scope: _scope } =
-                        await isAuthGrantChallengeValidForDID(challenge, did);
+                    const {
+                        isChallengeValid: _isChallengeValid,
+                        scope: _scope,
+                        actAs: policy,
+                    } = await isAuthGrantChallengeValidForDID(challenge, did);
 
+                    isAuthGrant = true;
+                    actAsPolicy = policy;
                     isChallengeValid = _isChallengeValid;
                     scope = _scope;
                     // If the user is using a real challenge signed by their private key.
@@ -182,7 +203,8 @@ export const createContext = async (
                 Sentry.setUser({ id: did });
 
                 return {
-                    user: { did, isChallengeValid, scope },
+                    user: { did, isChallengeValid, scope, isAuthGrant, actAsPolicy },
+                    actAs,
                     domain,
                     tenant,
                     _guardianApprovalToken,
@@ -192,7 +214,7 @@ export const createContext = async (
         }
     }
 
-    return { domain, tenant, _guardianApprovalToken, sourceIp };
+    return { domain, tenant, _guardianApprovalToken, sourceIp, actAs };
 };
 
 export const openRoute = t.procedure
@@ -245,6 +267,52 @@ export const resolveProfileFromContextDid = async (
     return getProfileByDid(did);
 };
 
+type ActingUser = NonNullable<Context['user']> & { profile: ProfileType | null };
+
+const resolveActAs = async (
+    user: ActingUser,
+    actAs: string | undefined,
+    domain: string
+): Promise<ActingUser> => {
+    const requested = actAs?.trim();
+    if (!requested) return user;
+
+    const { profile } = user;
+    const prefix = `did:web:${domain}:users:`;
+    const profileId = requested.startsWith(prefix) ? requested.slice(prefix.length) : requested;
+    if (!profileId || /[:/?#]/.test(profileId)) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid act-as profile identifier' });
+    }
+
+    const target = await getProfileByProfileId(profileId);
+    if (!target) throw new TRPCError({ code: 'NOT_FOUND' });
+
+    const managers = await getProfilesThatManageAProfile(target.profileId);
+    if (!profile || !managers.some(manager => manager.profileId === profile.profileId)) {
+        throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: `You do not manage profile "${profileId}".`,
+        });
+    }
+
+    const policy = user.actAsPolicy;
+    const permitted =
+        policy === '*' ||
+        policy
+            ?.split(',')
+            .map(id => id.trim())
+            .includes(target.profileId);
+    if (user.isAuthGrant && !permitted) {
+        throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: `This API token may not act as "${profileId}". Grant actAs on the token.`,
+        });
+    }
+
+    Sentry.setUser({ id: target.profileId, username: target.displayName });
+    return { ...user, profile: target, did: target.did, onBehalfOf: profile.profileId };
+};
+
 export const didRoute = openRoute.use(async ({ ctx, next }) => {
     if (!ctx.user?.did) {
         throw new TRPCError({ code: 'UNAUTHORIZED' });
@@ -254,7 +322,11 @@ export const didRoute = openRoute.use(async ({ ctx, next }) => {
 
     if (profile) Sentry.setUser({ id: profile.profileId, username: profile.displayName });
 
-    return next({ ctx: { ...ctx, user: { ...ctx.user, profile } } });
+    const user = ctx.user.isChallengeValid
+        ? await resolveActAs({ ...ctx.user, profile }, ctx.actAs, ctx.domain)
+        : { ...ctx.user, profile };
+
+    return next({ ctx: { ...ctx, user } });
 });
 
 export const didAndChallengeRoute = didRoute.use(({ ctx, next }) => {

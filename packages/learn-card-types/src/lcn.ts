@@ -1074,6 +1074,7 @@ export const LCNNotificationValidator = z.object({
 export type LCNNotification = z.infer<typeof LCNNotificationValidator>;
 
 export const AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX = 'auth-grant:';
+export const ACT_AS_HEADER = 'X-LearnCard-Act-As';
 
 export const AuthGrantValidator = z.object({
     id: z.string(),
@@ -1091,6 +1092,7 @@ export const AuthGrantValidator = z.object({
         },
     }),
     scope: z.string(),
+    actAs: z.string().optional(),
     createdAt: z.iso.datetime({ error: 'createdAt must be a valid ISO 8601 datetime string' }),
     expiresAt: z.iso
         .datetime({ error: 'expiresAt must be a valid ISO 8601 datetime string' })
@@ -2245,6 +2247,7 @@ export const CredentialActivityValidator = z.object({
     eventType: CredentialActivityEventTypeValidator,
     timestamp: z.string(),
     actorProfileId: z.string().optional(),
+    onBehalfOf: z.string().optional(),
     recipientType: CredentialActivityRecipientTypeValidator,
     recipientIdentifier: z.string(),
     boostUri: z.string().optional(),

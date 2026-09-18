@@ -682,6 +682,7 @@ export const inboxRouter = t.router({
             // Log initial activity so embed claims appear in the dashboard
             const activityId = await logCredentialSent({
                 actorProfileId: issuerProfile.profileId,
+                onBehalfOf: ctx.user?.onBehalfOf,
                 recipientType: contactMethod.type as 'email' | 'phone',
                 recipientIdentifier: contactMethod.value,
                 integrationId: integration.id,
