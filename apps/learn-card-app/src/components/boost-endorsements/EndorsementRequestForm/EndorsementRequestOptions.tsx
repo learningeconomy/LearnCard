@@ -23,7 +23,10 @@ import {
     getLogger,
 } from 'learn-card-base';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
-import { EndorsementRequestState } from './endorsement-request.helpers';
+import {
+    EndorsementRequestState,
+    getEndorsementRequestBaseUrl,
+} from './endorsement-request.helpers';
 import { VC } from '@learncard/types';
 import * as m from '../../../paraglide/messages.js';
 import { getEndorsementTargetId } from 'learn-card-base/helpers/credentialHelpers';
@@ -65,7 +68,7 @@ export const EndorsementRequestOptions: React.FC<{
         desktop: ModalTypes.FullScreen,
     });
     const { achievementType, title } = useGetVCInfo(credential, categoryType);
-    const tenantBaseUrl = useTenantBaseUrl();
+    const endorsementRequestBaseUrl = getEndorsementRequestBaseUrl(useTenantBaseUrl());
     const { track } = useAnalytics();
 
     const { presentToast } = useToast();
@@ -94,7 +97,8 @@ export const EndorsementRequestOptions: React.FC<{
         }
 
         setShareLink(undefined);
-        presentToast(m['toasts.boost.endorsementRequestFailed'](), {
+        setIsGeneratingShareLink(false);
+        presentToast(m['endorsement.request.options.linkGenerationFailed'](), {
             type: ToastTypeEnum.Error,
             hasDismissButton: true,
         });
@@ -120,7 +124,7 @@ export const EndorsementRequestOptions: React.FC<{
                             return;
                         }
 
-                        const endorsementUrl = new URL('/', tenantBaseUrl);
+                        const endorsementUrl = new URL('/', endorsementRequestBaseUrl);
                         endorsementUrl.search = new URLSearchParams({
                             uri,
                             seed,

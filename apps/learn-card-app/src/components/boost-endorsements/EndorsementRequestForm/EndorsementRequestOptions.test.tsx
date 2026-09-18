@@ -2,12 +2,15 @@ import React from 'react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { clipboardWriteMock, logWarnMock, mutateMock, presentToastMock } = vi.hoisted(() => ({
-    clipboardWriteMock: vi.fn(),
-    logWarnMock: vi.fn(),
-    mutateMock: vi.fn(),
-    presentToastMock: vi.fn(),
-}));
+const { clipboardWriteMock, logWarnMock, mutateMock, presentToastMock, targetIdMock } = vi.hoisted(
+    () => ({
+        clipboardWriteMock: vi.fn(),
+        logWarnMock: vi.fn(),
+        mutateMock: vi.fn(),
+        presentToastMock: vi.fn(),
+        targetIdMock: vi.fn(),
+    })
+);
 
 vi.mock('@capacitor/clipboard', () => ({
     Clipboard: { write: clipboardWriteMock },
@@ -39,12 +42,15 @@ vi.mock('learn-card-base', () => ({
     useWallet: () => ({ initWallet: vi.fn() }),
     useTenantBaseUrl: () => 'http://localhost:3000',
 }));
+vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
+    getEndorsementTargetId: targetIdMock,
+}));
 vi.mock('@analytics', () => ({
     AnalyticsEvents: { GENERATE_SHARE_LINK: 'generate-share-link' },
     useAnalytics: () => ({ track: vi.fn() }),
 }));
 vi.mock('../../../paraglide/messages.js', () => ({
-    'toasts.boost.endorsementRequestFailed': () => 'Unable to generate request',
+    'endorsement.request.options.linkGenerationFailed': () => 'Unable to generate request',
     'toasts.boost.endorsementLinkCopied': () => 'Copied',
     'endorsement.request.options.howToSend': () => 'How to send',
     'endorsement.request.options.generating': () => 'Generating',
@@ -64,6 +70,9 @@ const credential = { id: 'credential:test' } as never;
 describe('EndorsementRequestOptions', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        targetIdMock.mockImplementation(async (value: { id?: string }) =>
+            Promise.resolve(value.id ?? `urn:sha256:${'a'.repeat(64)}`)
+        );
     });
 
     it('keeps request actions disabled until link generation settles', async () => {
@@ -154,6 +163,30 @@ describe('EndorsementRequestOptions', () => {
         });
         expect(screen.getByRole('button', { name: /copy link/i })).toBeDisabled();
         expect(screen.getByRole('button', { name: /get code/i })).toBeDisabled();
+    });
+
+    it('stops the loading state when credential identity resolution fails', async () => {
+        const error = new Error('Unable to derive credential identity');
+        targetIdMock.mockRejectedValueOnce(error);
+
+        render(
+            <EndorsementRequestOptions
+                credential={credential}
+                shareCredentialUri="lc:credential:record-a"
+                categoryType={'Achievement' as never}
+                endorsementRequest={{ email: '', text: '' }}
+                setEndorsementRequest={vi.fn()}
+            />
+        );
+
+        expect(await screen.findByRole('button', { name: /copy link/i })).toBeDisabled();
+        expect(screen.queryByText(/generating/i)).not.toBeInTheDocument();
+        expect(mutateMock).not.toHaveBeenCalled();
+        expect(logWarnMock).toHaveBeenCalledWith(
+            'endorsement.request.link.failed',
+            error,
+            expect.objectContaining({ stage: 'identity-resolution' })
+        );
     });
 
     it('logs the share mutation stage without exposing credential values', async () => {

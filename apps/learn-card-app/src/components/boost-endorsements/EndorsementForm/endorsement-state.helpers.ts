@@ -3,7 +3,10 @@ import Document from 'learn-card-base/svgs/Document';
 import Video from 'learn-card-base/svgs/Video';
 import LinkChain from 'learn-card-base/svgs/LinkChain';
 import type { VC } from '@learncard/types';
-import { getCredentialName } from 'learn-card-base/helpers/credentialHelpers';
+import {
+    getCredentialName,
+    getEndorsementTargetId,
+} from 'learn-card-base/helpers/credentialHelpers';
 
 export enum EndorsementFormModeEnum {
     create = 'create',
@@ -120,17 +123,15 @@ export const initialEndorsementState: EndorsementState = {
     mediaAttachments: [],
     relationship: null,
 };
-export const getEndorsementTarget = (
+export const getEndorsementTarget = async (
     credential: VC,
     targetCredential: VC = credential
-): { id: string; name: string } => {
-    if (!targetCredential?.id) {
-        throw new Error('The credential must have an id before it can be endorsed');
-    }
+): Promise<{ id: string; name: string }> => {
+    const id = await getEndorsementTargetId(targetCredential);
 
     return {
-        id: targetCredential.id,
-        name: getCredentialName(credential) || targetCredential.id,
+        id,
+        name: getCredentialName(credential) || id,
     };
 };
 

@@ -140,7 +140,7 @@ export const EndorsementDraftRequestSuccess: React.FC<{
                 const evidence = convertAttachmentsToEvidence(
                     draftEndorsementRequest.mediaAttachments
                 );
-                const target = getEndorsementTarget(credential, targetCredential);
+                const target = await getEndorsementTarget(credential, targetCredential);
 
                 const endorsementVC = await wallet.invoke.endorseCredential(
                     { id: target.id } as VC,

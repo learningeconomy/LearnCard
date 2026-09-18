@@ -39,6 +39,10 @@ import {
 import { UnsignedVC, VC } from '@learncard/types';
 import { getEmojiFromDidString } from 'learn-card-base/helpers/walletHelpers';
 import * as m from '../../../paraglide/messages.js';
+import {
+    createEndorsementShareLinkInfo,
+    getEndorsementRequestBaseUrl,
+} from '../../boost-endorsements/EndorsementRequestForm/endorsement-request.helpers';
 
 type ShareBoostLinkProps = {
     handleClose?: () => void;
@@ -67,8 +71,9 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
 }) => {
     const sharedCredentialId = credentialId ?? boost.id;
     const { presentToast } = useToast();
-    const tenantBaseUrl = useTenantBaseUrl();
+    const endorsementRequestBaseUrl = getEndorsementRequestBaseUrl(useTenantBaseUrl());
     const [shareLink, setShareLink] = useState<string | undefined>('');
+    const [hasLinkGenerationError, setHasLinkGenerationError] = useState(false);
 
     const { track } = useAnalytics();
     const qrTrackedRef = React.useRef(false);
@@ -76,8 +81,9 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
     const {
         mutate: shareEarnedBoost,
         isPending: isLinkLoading,
-        isError: isShareError,
+        isError: mutationHasShareError,
     } = useShareBoostMutation();
+    const isShareError = mutationHasShareError || hasLinkGenerationError;
 
     const boostMetadata = getBoostMetadata(categoryType);
     const { IconComponent, CategoryImage, title: categoryTitle } = boostMetadata ?? {};
@@ -156,6 +162,8 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
     );
 
     const generateShareLink = () => {
+        setHasLinkGenerationError(false);
+        setShareLink(undefined);
         shareEarnedBoost(
             {
                 credential: boost,
@@ -163,27 +171,42 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                 credentialId: sharedCredentialId,
             },
             {
-                async onSuccess(data) {
-                    if (isEndorsementRequest) {
-                        const url = new URL(data?.link);
-                        const params = new URLSearchParams(url.search);
+                onSuccess(data) {
+                    let generatedLink: string;
 
-                        const uri = params.get('uri');
-                        const seed = params.get('seed');
-                        const pin = params.get('pin');
-                        const endorsementUrl = new URL('/', tenantBaseUrl);
-                        endorsementUrl.search = new URLSearchParams({
-                            uri: uri ?? '',
-                            seed: seed ?? '',
-                            pin: pin ?? '',
-                            credentialId: sharedCredentialId ?? '',
-                            endorsementRequest: 'true',
-                        }).toString();
-                        setShareLink(endorsementUrl.toString());
-                    } else {
-                        setShareLink(data?.link);
+                    try {
+                        if (isEndorsementRequest) {
+                            const url = new URL(data.link);
+                            const uri = url.searchParams.get('uri');
+                            const seed = url.searchParams.get('seed');
+                            const pin = url.searchParams.get('pin');
+
+                            if (!uri || !seed || !pin) {
+                                throw new Error('Generated share link is incomplete');
+                            }
+
+                            const endorsementUrl = new URL('/', endorsementRequestBaseUrl);
+                            const endorsementParams = new URLSearchParams(
+                                createEndorsementShareLinkInfo({
+                                    uri,
+                                    seed,
+                                    pin,
+                                    credentialId: sharedCredentialId,
+                                })
+                            );
+                            endorsementParams.set('endorsementRequest', 'true');
+                            endorsementUrl.search = endorsementParams.toString();
+                            generatedLink = endorsementUrl.toString();
+                        } else {
+                            generatedLink = data.link;
+                        }
+                    } catch {
+                        setShareLink(undefined);
+                        setHasLinkGenerationError(true);
+                        return;
                     }
 
+                    setShareLink(generatedLink);
                     track(AnalyticsEvents.GENERATE_SHARE_LINK, {
                         category: categoryType,
                         boostType: achievementType,

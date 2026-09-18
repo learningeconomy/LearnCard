@@ -3689,6 +3689,9 @@
             "upload": "Téléverser",
             "change": "Changer le {{type}}"
         },
+        "activity": {
+            "title": "Recommandation de {{name}}"
+        },
         "request": {
             "header": {
                 "title": "Demande de recommandation",
@@ -3703,7 +3706,8 @@
                 "messagePlaceholder": "Message…",
                 "emailPlaceholder": "E-mail",
                 "sendEmail": "Envoyer la demande par e-mail",
-                "sending": "Envoi..."
+                "sending": "Envoi...",
+                "linkGenerationFailed": "Impossible de créer ce lien. Réessayez."
             },
             "success": {
                 "title": "Demande envoyée !",

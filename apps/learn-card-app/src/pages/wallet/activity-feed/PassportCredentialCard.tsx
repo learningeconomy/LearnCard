@@ -10,6 +10,7 @@ import type { LCR } from 'learn-card-base/types/credential-records';
 
 import BoostEarnedCard from '../../../components/boost/boost-earned-card/BoostEarnedCard';
 import { resolveActivityCategory } from './activityFeed.helpers';
+import * as m from '../../../paraglide/messages.js';
 
 export type ActivityIndexRecord = Partial<LCR> & { uri: string; sharedUri?: string };
 
@@ -23,25 +24,28 @@ export const resolveEndorsementTitle = async (sharedUri?: string): Promise<strin
 
     const credential = await resolveSharedCredential(sharedUri);
     const name = credential && getCredentialName(credential);
-    return name ? `Endorsement of ${name}` : null;
+    return name ? m['endorsement.activity.title']({ name }) : null;
 };
 
 const PassportCredentialCard: React.FC<PassportCredentialCardProps> = ({ record, className }) => {
     const category = resolveActivityCategory(record.category);
     const isEndorsement = record.category === 'Endorsement';
     const storedTitle =
-        isEndorsement && !record.title?.includes('undefined') ? record.title : undefined;
+        isEndorsement && record.title !== 'Endorsement of undefined' ? record.title : undefined;
     const needsResolvedTitle = isEndorsement && !storedTitle;
     const { data: resolvedTitle, isPending } = useQuery<string | null>({
         queryKey: ['endorsement-target-title', record.sharedUri],
         enabled: needsResolvedTitle && Boolean(record.sharedUri),
         queryFn: () => resolveEndorsementTitle(record.sharedUri),
+        staleTime: Infinity,
     });
     const isResolvingTitle = needsResolvedTitle && Boolean(record.sharedUri) && isPending;
     const titleOverride =
         storedTitle ??
         resolvedTitle ??
-        (needsResolvedTitle && !isResolvingTitle ? 'Endorsement' : undefined);
+        (needsResolvedTitle && !isResolvingTitle
+            ? m['endorsement.fullview.endorsement']()
+            : undefined);
     return (
         <div className={className}>
             <BoostEarnedCard

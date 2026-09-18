@@ -8,6 +8,8 @@ vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
     }) =>
         credential.boostCredential?.credentialSubject?.achievement?.name ??
         credential.credentialSubject?.achievement?.name,
+    getEndorsementTargetId: async (credential: { id?: string }) =>
+        credential.id ?? `urn:sha256:${'a'.repeat(64)}`,
 }));
 vi.mock('learn-card-base/svgs/Camera', () => ({ default: () => React.createElement('span') }));
 vi.mock('learn-card-base/svgs/Document', () => ({ default: () => React.createElement('span') }));
@@ -45,7 +47,7 @@ describe('convertAttachmentsToEvidence', () => {
 });
 
 describe('getEndorsementTarget', () => {
-    it('uses the wrapper id and displayed credential name', () => {
+    it('uses the wrapper id and displayed credential name', async () => {
         const credential = {
             id: 'urn:uuid:credential-a',
             type: ['VerifiableCredential', 'CertifiedBoostCredential'],
@@ -58,13 +60,13 @@ describe('getEndorsementTarget', () => {
             },
         };
 
-        expect(getEndorsementTarget(credential as never)).toEqual({
+        await expect(getEndorsementTarget(credential as never)).resolves.toEqual({
             id: 'urn:uuid:credential-a',
             name: 'First Aid',
         });
     });
 
-    it('uses the trusted wrapper when the display credential is unwrapped', () => {
+    it('uses the trusted wrapper when the display credential is unwrapped', async () => {
         const credential = {
             type: ['VerifiableCredential', 'OpenBadgeCredential'],
             credentialSubject: {
@@ -74,18 +76,23 @@ describe('getEndorsementTarget', () => {
         };
         const targetCredential = { id: 'urn:uuid:credential-a' };
 
-        expect(getEndorsementTarget(credential as never, targetCredential as never)).toEqual({
+        await expect(
+            getEndorsementTarget(credential as never, targetCredential as never)
+        ).resolves.toEqual({
             id: 'urn:uuid:credential-a',
             name: 'First Aid',
         });
     });
 
-    it('rejects credentials without a credential-specific id', () => {
-        expect(() =>
+    it('derives a content identity for credentials without an id', async () => {
+        await expect(
             getEndorsementTarget({
                 type: ['VerifiableCredential'],
                 credentialSubject: { id: 'did:example:holder' },
             } as never)
-        ).toThrow('The credential must have an id before it can be endorsed');
+        ).resolves.toEqual({
+            id: `urn:sha256:${'a'.repeat(64)}`,
+            name: `urn:sha256:${'a'.repeat(64)}`,
+        });
     });
 });

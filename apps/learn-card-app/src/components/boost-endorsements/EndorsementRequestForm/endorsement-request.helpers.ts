@@ -19,6 +19,23 @@ export type EndorsementRequestCredentialInfo = {
     credentialId?: string;
 };
 
+export const getEndorsementRequestBaseUrl = (
+    tenantBaseUrl: string,
+    browserOrigin = globalThis.location?.origin
+): string => {
+    if (!browserOrigin) return tenantBaseUrl;
+
+    try {
+        const origin = new URL(browserOrigin);
+
+        return origin.protocol === 'http:' || origin.protocol === 'https:'
+            ? origin.origin
+            : tenantBaseUrl;
+    } catch {
+        return tenantBaseUrl;
+    }
+};
+
 export const createEndorsementShareLinkInfo = ({
     uri,
     seed,
@@ -73,10 +90,12 @@ export const findEndorsementForRequest = <T extends SentEndorsement>(
         const endorsementParts = getEndorsementRequestParts(sharedUri);
         if (!endorsementParts) return false;
 
+        const requestCredentialId = requestParts[3];
         const metadataCredentialId = metadata?.credentialId;
-        const credentialId =
-            endorsementParts[3] ??
-            (typeof metadataCredentialId === 'string' ? metadataCredentialId : null);
+        const credentialId = requestCredentialId
+            ? (endorsementParts[3] ??
+              (typeof metadataCredentialId === 'string' ? metadataCredentialId : null))
+            : null;
 
         return (
             JSON.stringify([...endorsementParts.slice(0, 3), credentialId]) ===

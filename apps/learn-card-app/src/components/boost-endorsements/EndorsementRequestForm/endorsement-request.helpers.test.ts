@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
     createEndorsementShareLinkInfo,
     findEndorsementForRequest,
+    getEndorsementRequestBaseUrl,
     getEndorsementRequestId,
 } from './endorsement-request.helpers';
 
@@ -75,6 +76,15 @@ describe('endorsement request identity', () => {
         );
     });
 
+    it('uses the current web origin and falls back for native origins', () => {
+        expect(
+            getEndorsementRequestBaseUrl('https://learncard.app', 'https://preview.example.com')
+        ).toBe('https://preview.example.com');
+        expect(getEndorsementRequestBaseUrl('https://learncard.app', 'capacitor://localhost')).toBe(
+            'https://learncard.app'
+        );
+    });
+
     it('separates credentials even when a legacy share link was reused', () => {
         const reusedLinkEndorsements = [
             {
@@ -129,5 +139,23 @@ describe('endorsement request identity', () => {
                 'uri=shared%3Apresentation&seed=reused-seed&pin=1234&credentialId=credential%3Asecond'
             )?.uri
         ).toBe('endorsement:second');
+    });
+
+    it('matches legacy requests without using newer credential metadata', () => {
+        const legacyEndorsement = {
+            uri: 'endorsement:legacy',
+            metadata: {
+                type: 'endorsement',
+                sharedUri: 'uri=shared%3Apresentation&seed=legacy-seed&pin=1234',
+                credentialId: 'credential:new-metadata',
+            },
+        };
+
+        expect(
+            findEndorsementForRequest(
+                [legacyEndorsement],
+                'uri=shared%3Apresentation&seed=legacy-seed&pin=1234'
+            )
+        ).toBe(legacyEndorsement);
     });
 });

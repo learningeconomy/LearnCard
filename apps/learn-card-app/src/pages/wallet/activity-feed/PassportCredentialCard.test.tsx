@@ -15,6 +15,15 @@ vi.mock('learn-card-base', () => ({
     categoryMetadata: { 'Social Badge': { defaultImageSrc: 'social-badge.svg' } },
 }));
 
+vi.mock(
+    '../../../paraglide/messages.js',
+    async (importOriginal: () => Promise<Record<string, unknown>>) => ({
+        ...(await importOriginal()),
+        'endorsement.activity.title': ({ name }: { name: string }) => `Endorsement of ${name}`,
+        'endorsement.fullview.endorsement': () => 'Endorsement',
+    })
+);
+
 vi.mock('../../../components/boost/boost-earned-card/BoostEarnedCard', () => ({
     default: ({
         titleOverride,
@@ -91,6 +100,17 @@ describe('PassportCredentialCard', () => {
         });
 
         expect(screen.getByText('Endorsement')).toBeInTheDocument();
+        expect(mocks.resolveSharedCredential).not.toHaveBeenCalled();
+    });
+
+    it('preserves valid titles that happen to contain the word undefined', () => {
+        renderCard({
+            uri: 'lc:endorsement:accepted',
+            category: 'Endorsement',
+            title: 'Endorsement of Undefined Behavior',
+        });
+
+        expect(screen.getByText('Endorsement of Undefined Behavior')).toBeInTheDocument();
         expect(mocks.resolveSharedCredential).not.toHaveBeenCalled();
     });
 

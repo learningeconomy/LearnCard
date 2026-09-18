@@ -147,6 +147,36 @@ describe('ShareBoostLink error recovery', () => {
         ).toBeInTheDocument();
         client.clear();
     });
+
+    it.each([
+        ['malformed', 'not-a-url'],
+        ['incomplete', 'https://learncard.app/share-boost?uri=encrypted%3Apresentation&seed=seed'],
+    ])('shows the retry surface for a %s endorsement link', async (_kind, invalidLink) => {
+        createLink.mockResolvedValueOnce({ link: invalidLink }).mockResolvedValueOnce({
+            link: 'https://learncard.app/share-boost?uri=encrypted%3Apresentation&seed=seed&pin=1234',
+        });
+        const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
+
+        render(
+            <QueryClientProvider client={client}>
+                <ShareBoostLink
+                    boost={credential}
+                    boostUri="credential:test"
+                    categoryType={'Achievement' as never}
+                    isEndorsementRequest
+                />
+            </QueryClientProvider>
+        );
+
+        expect(await screen.findByRole('alert')).toBeInTheDocument();
+        expect(screen.queryByRole('img', { name: /share.*qr code/i })).not.toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('button', { name: /try again/i }));
+
+        expect(await screen.findByRole('img', { name: /share.*qr code/i })).toBeInTheDocument();
+        expect(createLink).toHaveBeenCalledTimes(2);
+        client.clear();
+    });
     it('uses an explicit identity for an idless endorsement credential', async () => {
         const idlessCredential = {
             ...credential,
@@ -185,6 +215,31 @@ describe('ShareBoostLink error recovery', () => {
             },
             expect.anything()
         );
+        client.clear();
+    });
+
+    it('omits an empty credential identity from legacy endorsement links', async () => {
+        createLink.mockResolvedValue({
+            link: 'https://learncard.app/share-boost?uri=encrypted%3Apresentation&seed=seed&pin=1234',
+        });
+        const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
+
+        render(
+            <QueryClientProvider client={client}>
+                <ShareBoostLink
+                    boost={{ ...credential, id: undefined }}
+                    boostUri="lc:credential:legacy-record"
+                    categoryType={'Achievement' as never}
+                    isEndorsementRequest
+                />
+            </QueryClientProvider>
+        );
+
+        expect(
+            await screen.findByText(
+                'http://localhost:3000/?uri=encrypted%3Apresentation&seed=seed&pin=1234&endorsementRequest=true'
+            )
+        ).toBeInTheDocument();
         client.clear();
     });
 });
