@@ -3695,6 +3695,9 @@
             "upload": "Upload",
             "change": "Change {{type}}"
         },
+        "activity": {
+            "title": "Endorsement of {{name}}"
+        },
         "request": {
             "header": {
                 "title": "Endorsement Request",
@@ -3709,7 +3712,8 @@
                 "messagePlaceholder": "Message...",
                 "emailPlaceholder": "Email",
                 "sendEmail": "Send Email Request",
-                "sending": "Sending..."
+                "sending": "Sending...",
+                "linkGenerationFailed": "Unable to create this link. Please try again."
             },
             "success": {
                 "title": "Request Sent!",

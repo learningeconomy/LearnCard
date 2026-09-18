@@ -12,6 +12,7 @@ export const endorsementsRequestStore = createStore('endorsementsRequestStore')<
               uri: string;
               seed: string;
               pin: string;
+              credentialId?: string;
           }
         | undefined;
 }>(
