@@ -1,3 +1,4 @@
+import { isClrCredential } from 'learn-card-base';
 import { getTypeByObv3, typeLabel as resolveTypeLabel } from '../components/credentialTypeCatalog';
 
 export interface ImportSummary {
@@ -17,8 +18,9 @@ const str = (v: unknown): string | undefined =>
 export const summarizeObv3 = (json: Record<string, unknown>): ImportSummary => {
     const subject = asRecord(json.credentialSubject);
     const achievement = asRecord(subject.achievement);
-
-    const name = str(achievement.name) ?? str(json.name) ?? 'Imported credential';
+    const name = isClrCredential(json as Parameters<typeof isClrCredential>[0])
+        ? 'Transcript'
+        : (str(achievement.name) ?? str(json.name) ?? 'Imported credential');
     const description = str(achievement.description) ?? str(json.description);
     const image = str(achievement.image) ?? str(json.image);
     const achievementType = str(achievement.achievementType);

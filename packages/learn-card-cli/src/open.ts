@@ -120,7 +120,7 @@ export const runOpen = async (
     const seed = project.env.SECURE_SEED;
     if (!seed)
         throw new Error(
-            'No SECURE_SEED in .env. Run a command that creates one first, e.g. npx @learncard/cli send you@example.com'
+            'No SECURE_SEED in .env. Run a command that creates one first, e.g. npx @learncard/cli send'
         );
 
     const path = openPath(target, project.env);
