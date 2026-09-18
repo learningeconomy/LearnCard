@@ -40,11 +40,11 @@ const createMockAuthToken = (userId: string, email: string) => {
 
 /**
  * Seed a login verification code directly into Redis.
- * Key pattern: `login-code:{email}:{code}`
+ * Key pattern: `login-code:{email}` → code value
  */
 const seedLoginCode = async (email: string, code: string): Promise<void> => {
-    const cacheKey = `${LOGIN_CODE_PREFIX}${email}:${code}`;
-    await redis.set(cacheKey, '1', 'EX', 300); // 5 minutes TTL
+    const cacheKey = `${LOGIN_CODE_PREFIX}${email}`;
+    await redis.set(cacheKey, code, 'EX', 300); // 5 minutes TTL
 };
 
 /**
