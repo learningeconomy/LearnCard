@@ -230,10 +230,14 @@ export const processInboxDeadLetter = async (body: string): Promise<void> => {
     console.error('Inbox dead-letter recorded', { itemId: message.itemId });
 };
 
-export const dispatchInboxJobs = async (): Promise<void> => {
+export const dispatchInboxJobs = async (
+    maintenanceDeadline = Date.now() + 20_000
+): Promise<void> => {
     const { client, url } = queue();
     try {
         // Publish before maintenance: an unavailable recovery path must not stall new work.
+        // Recovered items become dispatchable here but wait for the next one-minute invocation,
+        // because this run has already claimed its publication set.
         const ids = await takeInboxDispatches();
         const failures: unknown[] = [];
         for (let offset = 0; offset < ids.length; offset += 10) {
@@ -265,7 +269,7 @@ export const dispatchInboxJobs = async (): Promise<void> => {
         }
         if (ids.length) console.info('Inbox dispatch attempted', { count: ids.length });
         try {
-            await recoverInboxJobs();
+            await recoverInboxJobs(maintenanceDeadline);
         } catch (error) {
             console.error('Inbox maintenance failed; publication was attempted independently');
             failures.push(error);

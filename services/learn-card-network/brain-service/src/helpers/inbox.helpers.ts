@@ -1,5 +1,8 @@
 import { TRPCError } from '@trpc/server';
-import { InboxIssuancePreflightError } from './inbox-issuance-error.helpers';
+import {
+    InboxDeliveryCheckpointError,
+    InboxIssuancePreflightError,
+} from './inbox-issuance-error.helpers';
 import {
     VC,
     UnsignedVC,
@@ -216,6 +219,14 @@ export const issueToInbox = async (
     } = configuration;
     const isSigned = !!credential?.proof;
     let signingAuthority: IssueInboxSigningAuthority | undefined = _signingAuthority;
+    let deliveryCheckpointReached = beforeDelivery === undefined;
+    const checkpointDelivery = async (): Promise<void> => {
+        await beforeDelivery?.();
+        deliveryCheckpointReached = true;
+    };
+    const assertDeliveryCheckpoint = (): void => {
+        if (!deliveryCheckpointReached) throw new InboxDeliveryCheckpointError();
+    };
 
     if (recipient.type === 'phone') {
         const isTrusted = await getRegistryService().isTrusted(issuerProfile.did);
@@ -320,33 +331,20 @@ export const issueToInbox = async (
             credential: encryptedDelivery,
             statusEntries: getBitstringStatusListEntries(finalCredential),
         };
-        if (boostUri) {
-            const boost = await getBoostByUri(boostUri);
-            await beforeDelivery?.();
-            if (boost) {
-                await sendBoost({
-                    from: { type: 'profile', profile: issuerProfile },
-                    to: existingProfile,
-                    boost,
-                    credential: delivery,
-                    domain: ctx.domain,
-                    activityId,
-                    integrationId,
-                });
-            } else {
-                // Fallback to sendCredential if boost not found
-                await sendCredential(
-                    issuerProfile,
-                    existingProfile,
-                    delivery,
-                    ctx.domain,
-                    undefined,
-                    activityId,
-                    integrationId
-                );
-            }
+        const boost = boostUri ? await getBoostByUri(boostUri) : undefined;
+        await checkpointDelivery();
+        if (boostUri && boost) {
+            await sendBoost({
+                from: { type: 'profile', profile: issuerProfile },
+                to: existingProfile,
+                boost,
+                credential: delivery,
+                domain: ctx.domain,
+                activityId,
+                integrationId,
+            });
         } else {
-            await beforeDelivery?.();
+            // Fall back to ordinary delivery when no boost exists for the supplied URI.
             await sendCredential(
                 issuerProfile,
                 existingProfile,
@@ -425,6 +423,7 @@ export const issueToInbox = async (
             });
         }
 
+        assertDeliveryCheckpoint();
         return {
             status: LCNInboxStatusEnumValidator.enum.ISSUED,
             inboxCredential: finalizedInboxCredential,
@@ -434,7 +433,7 @@ export const issueToInbox = async (
         // Store in inbox for claiming
         // Guardian gate if issuer specified guardianEmail OR recipient is a managed child
         const needsGuardianGate = !!guardianEmail || recipientIsManaged;
-        await beforeDelivery?.();
+        await checkpointDelivery();
         const inboxCredential = await createInboxCredential({
             credential: JSON.stringify(credential),
             isSigned,
@@ -825,6 +824,7 @@ export const issueToInbox = async (
         );
         const claimUrl = generateClaimUrl(claimToken);
 
+        assertDeliveryCheckpoint();
         return {
             status: LCNInboxStatusEnumValidator.enum.PENDING,
             inboxCredential,

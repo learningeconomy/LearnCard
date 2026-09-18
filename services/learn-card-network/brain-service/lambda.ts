@@ -144,10 +144,14 @@ export const inboxQueueWorker: SQSHandler = Sentry.AWSLambda.wrapHandler(async e
     return { batchItemFailures } satisfies SQSBatchResponse;
 });
 
-export const inboxQueueDispatcher = Sentry.AWSLambda.wrapHandler(async (): Promise<void> => {
-    const { dispatchInboxJobs } = await import('./src/helpers/inbox-queue.helpers');
-    await dispatchInboxJobs();
-});
+export const inboxQueueDispatcher = Sentry.AWSLambda.wrapHandler(
+    async (_event: unknown, context: Context): Promise<void> => {
+        const { dispatchInboxJobs } = await import('./src/helpers/inbox-queue.helpers');
+        // Share one clock across publication and recovery, retaining five seconds for shutdown.
+        const deadline = Date.now() + Math.max(0, context.getRemainingTimeInMillis() - 5_000);
+        await dispatchInboxJobs(deadline);
+    }
+);
 
 export const inboxDeadLetterWorker: SQSHandler = Sentry.AWSLambda.wrapHandler(async event => {
     const { processInboxDeadLetter } = await import('./src/helpers/inbox-queue.helpers');

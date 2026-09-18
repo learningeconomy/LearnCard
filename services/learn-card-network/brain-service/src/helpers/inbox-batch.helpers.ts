@@ -14,7 +14,10 @@ import type { Context } from '@routes';
 import type { ProfileType } from 'types/profile';
 import type { BatchReplayStore } from 'types/inbox-batch';
 import { issueToInbox, resolveInboxCredentialInput } from './inbox.helpers';
-import { InboxIssuancePreflightError } from './inbox-issuance-error.helpers';
+import {
+    InboxDeliveryCheckpointError,
+    InboxIssuancePreflightError,
+} from './inbox-issuance-error.helpers';
 
 const INTERNAL_BATCH_CONCURRENCY = 10;
 const IDEMPOTENCY_TTL_SECONDS = 24 * 60 * 60;
@@ -249,6 +252,16 @@ export const issueInboxBatch = async (
                 }
                 results[index] = success;
             } catch (error) {
+                if (error instanceof InboxDeliveryCheckpointError) {
+                    // A write may already have happened. Persist the uncertain phase when possible,
+                    // and always retain the replay reservation to prevent automatic reissuance.
+                    issuanceStarted = true;
+                    try {
+                        await execution.beforeIssue();
+                    } catch {
+                        // finishBatchItem still records a terminal conflict if this lease remains.
+                    }
+                }
                 // Only an explicitly marked preflight rejection proves the helper has not
                 // written anything. A generic 4xx after a write must retain the reservation.
                 const safeToRelease =

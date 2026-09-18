@@ -5,6 +5,7 @@ import type { IssueInboxCredentialBatch } from '@learncard/types';
 import type { ProfileType } from 'types/profile';
 import type { Context } from '@routes';
 import { InboxIssuancePreflightError } from './inbox-issuance-error.helpers';
+import { getInboxBatchState } from './inbox-batch-status.helpers';
 
 const mocks = vi.hoisted(() => ({
     get: vi.fn(),
@@ -13,11 +14,19 @@ const mocks = vi.hoisted(() => ({
     beforeIssue: vi.fn(),
     issue: vi.fn(),
     resolve: vi.fn(),
+    skipCheckpoint: false,
 }));
 vi.mock('./inbox.helpers', () => ({
     issueToInbox: async (...args: Parameters<typeof import('./inbox.helpers').issueToInbox>) => {
-        await args[5]?.();
-        return mocks.issue(...args);
+        // This fake models delivery after the checkpoint. The container test "retries a transient
+        // signing failure before delivery" pins the real helper's signing/checkpoint ordering.
+        if (!mocks.skipCheckpoint) await args[5]?.();
+        const result = await mocks.issue(...args);
+        if (mocks.skipCheckpoint) {
+            const { InboxDeliveryCheckpointError } = await import('./inbox-issuance-error.helpers');
+            throw new InboxDeliveryCheckpointError();
+        }
+        return result;
     },
     resolveInboxCredentialInput: mocks.resolve,
 }));
@@ -44,6 +53,18 @@ const run = (batch: IssueInboxCredentialBatch) =>
         beforeIssue: mocks.beforeIssue,
     });
 
+describe('getInboxBatchState', () => {
+    it('does not classify an empty state list as completed', () => {
+        expect(getInboxBatchState([])).toBe('QUEUED');
+    });
+
+    it('uses reconciliation, completion, and progress precedence', () => {
+        expect(getInboxBatchState(['QUEUED', 'NEEDS_RECONCILIATION'])).toBe('NEEDS_RECONCILIATION');
+        expect(getInboxBatchState(['COMPLETED', 'COMPLETED'])).toBe('COMPLETED');
+        expect(getInboxBatchState(['QUEUED', 'PROCESSING'])).toBe('PROCESSING');
+    });
+});
+
 describe('inbox batch worker processing', () => {
     beforeEach(() => {
         vi.resetAllMocks();
@@ -51,6 +72,7 @@ describe('inbox batch worker processing', () => {
         mocks.setIfAbsent.mockResolvedValue('OK');
         mocks.compareAndSet.mockResolvedValue(true);
         mocks.resolve.mockImplementation(async input => ({ credential: input.credential }));
+        mocks.skipCheckpoint = false;
         mocks.issue.mockImplementation(async (_profile, recipient) => ({
             inboxCredential: { id: recipient.value },
             status: 'PENDING',
@@ -363,6 +385,18 @@ describe('inbox batch worker processing', () => {
             null,
             86400
         );
+    });
+
+    it('retains the reservation when delivery returns without its ownership checkpoint', async () => {
+        mocks.skipCheckpoint = true;
+        const result = await run({ items: [{ ...item(), idempotencyKey: 'missing-checkpoint' }] });
+
+        expect(result.results[0]).toMatchObject({
+            success: false,
+            error: { code: 'CONFLICT', message: expect.stringContaining('unconfirmed') },
+        });
+        expect(mocks.beforeIssue).toHaveBeenCalledTimes(1);
+        expect(mocks.compareAndSet).not.toHaveBeenCalled();
     });
 
     it('preserves preparation errors when releasing a reservation throws', async () => {

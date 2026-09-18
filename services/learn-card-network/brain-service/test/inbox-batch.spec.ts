@@ -320,10 +320,12 @@ describe('Universal Inbox batch issuance', () => {
         const receipt = await submit({
             items: [{ recipient: email('maintenance@test.com'), credential: await signed() }],
         });
-        vi.spyOn(jobStore, 'recoverInboxJobs').mockRejectedValueOnce(
-            new Error('Maintenance unavailable')
-        );
-        await expect(dispatchInboxJobs()).rejects.toThrow('Maintenance unavailable');
+        const recover = vi
+            .spyOn(jobStore, 'recoverInboxJobs')
+            .mockRejectedValueOnce(new Error('Maintenance unavailable'));
+        const deadline = Date.now() + 10_000;
+        await expect(dispatchInboxJobs(deadline)).rejects.toThrow('Maintenance unavailable');
+        expect(recover).toHaveBeenCalledWith(deadline);
         await consumeInboxQueueOnce(0);
         expect(await statusOf(receipt.batchId)).toMatchObject({
             status: 'COMPLETED',

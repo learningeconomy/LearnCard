@@ -71,6 +71,8 @@ export const createBatchJob = async (input: {
     const now = Date.now();
     const id = randomUUID();
     return transaction(async tx => {
+        // The property write acquires Neo4j's exclusive node lock until commit. Concurrent
+        // admissions therefore cannot read quota between this statement and the update below.
         const locked = await tx.run(
             `MERGE (q:InboxBatchIssuer {id: $issuer})
             ON CREATE SET q.used = 0, q.window = $now
@@ -78,6 +80,8 @@ export const createBatchJob = async (input: {
             { issuer: input.issuer, now }
         );
         if (input.requestId) {
+            // Creation atomically creates at least one HAS_ITEM relationship. Requiring it here
+            // prevents a structurally incomplete batch from being returned as a valid replay.
             const prior = await tx.run(
                 `MATCH (b:InboxBatch {issuer: $issuer, requestId: $requestId})
                 WHERE b.createdAt > $cutoff
@@ -363,9 +367,9 @@ export const deadLetterBatchItem = async (id: string): Promise<void> =>
     });
 
 /** Recover bounded groups in short transactions without holding locks across the whole maintenance run. */
-export const recoverInboxJobs = async (): Promise<void> => {
-    const deadline = Date.now() + 20_000;
+export const recoverInboxJobs = async (deadline = Date.now() + 20_000): Promise<void> => {
     await ensureInboxBatchConstraints();
+    if (Date.now() >= deadline) return;
     const expired = await neogma.queryRunner.run(
         `MATCH (i:InboxBatchItem) WHERE i.state = 'PROCESSING' AND i.leaseUntil < $now
         RETURN i.id AS id LIMIT 100`,
@@ -408,28 +412,32 @@ export const recoverInboxJobs = async (): Promise<void> => {
             await finalizeSettledBatch(tx, item.batchId);
         });
     }
-    // Also finalize older terminal batches that predate immediate terminal cleanup.
-    const settled = await neogma.queryRunner.run(
-        `MATCH (b:InboxBatch) WHERE b.completedAt IS NULL
-        AND NOT EXISTS { MATCH (b)-[:HAS_ITEM]->(i) WHERE i.state IN ['QUEUED', 'PROCESSING'] }
-        RETURN b.id AS id LIMIT 100`
-    );
-    for (const row of settled.records) {
-        if (Date.now() >= deadline) break;
-        await transaction(tx => finalizeSettledBatch(tx, row.get('id')));
+    if (Date.now() < deadline) {
+        // Also finalize older terminal batches that predate immediate terminal cleanup.
+        const settled = await neogma.queryRunner.run(
+            `MATCH (b:InboxBatch) WHERE b.completedAt IS NULL
+            AND NOT EXISTS { MATCH (b)-[:HAS_ITEM]->(i) WHERE i.state IN ['QUEUED', 'PROCESSING'] }
+            RETURN b.id AS id LIMIT 100`
+        );
+        for (const row of settled.records) {
+            if (Date.now() >= deadline) break;
+            await transaction(tx => finalizeSettledBatch(tx, row.get('id')));
+        }
     }
 
-    await transaction(async tx => {
-        await tx.run(
-            `MATCH (b:InboxBatch) WHERE b.completedAt < $cutoff WITH b LIMIT 25
-            MATCH (b)-[:HAS_ITEM]->(i) DETACH DELETE i, b`,
-            { cutoff: Date.now() - 30 * DAY }
-        );
-    });
-    await transaction(async tx => {
-        await tx.run(
-            `MATCH (r:InboxBatchReplay) WHERE r.expiresAt < $now WITH r LIMIT 1000 DELETE r`,
-            { now: Date.now() }
-        );
-    });
+    if (Date.now() < deadline)
+        await transaction(async tx => {
+            await tx.run(
+                `MATCH (b:InboxBatch) WHERE b.completedAt < $cutoff WITH b LIMIT 25
+                MATCH (b)-[:HAS_ITEM]->(i) DETACH DELETE i, b`,
+                { cutoff: Date.now() - 30 * DAY }
+            );
+        });
+    if (Date.now() < deadline)
+        await transaction(async tx => {
+            await tx.run(
+                `MATCH (r:InboxBatchReplay) WHERE r.expiresAt < $now WITH r LIMIT 1000 DELETE r`,
+                { now: Date.now() }
+            );
+        });
 };
