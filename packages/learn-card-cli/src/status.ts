@@ -46,9 +46,7 @@ type StatusOptions = ProjectOptions & { limit?: string; event?: string };
 export const runStatus = async (activityId: string | undefined, options: StatusOptions) => {
     const project = await loadProject(process.cwd());
     if (!project.env.SECURE_SEED)
-        throw new Error(
-            'No SECURE_SEED in .env. Send something first: npx @learncard/cli send you@example.com'
-        );
+        throw new Error('No SECURE_SEED in .env. Send something first: npx @learncard/cli send');
     await ensureIdentity(project, options);
     const learnCard = await connect(project, options);
 
@@ -73,7 +71,7 @@ export const runStatus = async (activityId: string | undefined, options: StatusO
     });
     const records = page.records as ActivityEvent[];
     if (!records.length) {
-        out.log('No sends yet. Try: npx @learncard/cli send you@example.com');
+        out.log('No sends yet. Try: npx @learncard/cli send');
         out.set({ activities: [] });
         return;
     }
