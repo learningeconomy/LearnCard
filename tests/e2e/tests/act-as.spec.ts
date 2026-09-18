@@ -9,6 +9,13 @@ const rejectsWith = async (promise: Promise<unknown>, code: string): Promise<voi
     await expect(promise).rejects.toMatchObject({ data: expect.objectContaining({ code }) });
 };
 
+type AnyCard = {
+    invoke: { getLCNClient: () => { profile: { getProfile: { query: () => Promise<unknown> } } } };
+};
+
+const whoAmI = (card: AnyCard): Promise<unknown> =>
+    card.invoke.getLCNClient().profile.getProfile.query();
+
 describe('Act as a managed profile', () => {
     const seed = randomBytes(32).toString('hex');
     const suffix = randomBytes(3).toString('hex');
@@ -65,39 +72,36 @@ describe('Act as a managed profile', () => {
             const me = await district.invoke.getProfile();
             expect(me?.profileId).toBe(districtId);
 
+            const signed = await district.invoke.issueCredential({
+                '@context': [
+                    'https://www.w3.org/ns/credentials/v2',
+                    'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+                ],
+                type: ['VerifiableCredential', 'OpenBadgeCredential'],
+                issuer: district.id.did(),
+                validFrom: new Date().toISOString(),
+                name: 'From the district',
+                credentialSubject: {
+                    type: ['AchievementSubject'],
+                    achievement: {
+                        id: 'urn:uuid:00000000-0000-4000-8000-00000000ac7a',
+                        type: ['Achievement'],
+                        name: 'From the district',
+                        description: 'act-as e2e',
+                        criteria: { narrative: 'be here' },
+                    },
+                },
+            });
             const result = await district.invoke.send({
                 type: 'boost',
                 recipient: USERS.b.profileId,
-                template: {
-                    credential: {
-                        '@context': [
-                            'https://www.w3.org/ns/credentials/v2',
-                            'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
-                        ],
-                        type: ['VerifiableCredential', 'OpenBadgeCredential'],
-                        issuer: district.id.did(),
-                        validFrom: new Date().toISOString(),
-                        name: 'From the district',
-                        credentialSubject: {
-                            type: ['AchievementSubject'],
-                            achievement: {
-                                id: 'urn:uuid:00000000-0000-4000-8000-00000000ac7a',
-                                type: ['Achievement'],
-                                name: 'From the district',
-                                description: 'act-as e2e',
-                                criteria: { narrative: 'be here' },
-                            },
-                        },
-                    },
-                    name: 'From the district',
-                    category: 'Achievement',
-                },
+                signedCredential: signed,
             });
             expect(result.credentialUri).toMatch(/^lc:network:/);
 
             const recipient = await getLearnCardForUser('b');
-            const received = await recipient.invoke.getReceivedCredentials();
-            expect(received.some(record => record.from === districtId)).toBe(true);
+            const incoming = await recipient.invoke.getIncomingCredentials(districtId);
+            expect(incoming.length).toBeGreaterThan(0);
         });
 
         test('invoke.actAs() returns a scoped instance and leaves the original alone', async () => {
@@ -108,12 +112,12 @@ describe('Act as a managed profile', () => {
 
         test('cannot act as a profile it does not manage', async () => {
             const bogus = await initLearnCard({ seed, network: NETWORK, actAs: strangerId });
-            await rejectsWith(bogus.invoke.getProfile(), 'FORBIDDEN');
+            await rejectsWith(whoAmI(bogus), 'FORBIDDEN');
         });
 
         test('unknown profile is NOT_FOUND', async () => {
             const bogus = await initLearnCard({ seed, network: NETWORK, actAs: `nope-${suffix}` });
-            await rejectsWith(bogus.invoke.getProfile(), 'NOT_FOUND');
+            await rejectsWith(whoAmI(bogus), 'NOT_FOUND');
         });
     });
 
@@ -134,7 +138,7 @@ describe('Act as a managed profile', () => {
 
         test('a token without actAs may not delegate (deny by default)', async () => {
             const lc = await cardWith(await tokenFor(), districtId);
-            await rejectsWith(lc.invoke.getProfile(), 'FORBIDDEN');
+            await rejectsWith(whoAmI(lc), 'FORBIDDEN');
         });
 
         test("actAs: '*' may act as any managed profile", async () => {
@@ -150,10 +154,7 @@ describe('Act as a managed profile', () => {
             expect((await (await cardWith(token, districtId)).invoke.getProfile())?.profileId).toBe(
                 districtId
             );
-            await rejectsWith(
-                (await cardWith(token, otherDistrictId)).invoke.getProfile(),
-                'FORBIDDEN'
-            );
+            await rejectsWith(whoAmI(await cardWith(token, otherDistrictId)), 'FORBIDDEN');
         });
 
         test('acting does not widen the token scope', async () => {
@@ -166,7 +167,7 @@ describe('Act as a managed profile', () => {
 
         test("the relationship is still required even with actAs: '*'", async () => {
             const lc = await cardWith(await tokenFor('*'), strangerId);
-            await rejectsWith(lc.invoke.getProfile(), 'FORBIDDEN');
+            await rejectsWith(whoAmI(lc), 'FORBIDDEN');
         });
     });
 });

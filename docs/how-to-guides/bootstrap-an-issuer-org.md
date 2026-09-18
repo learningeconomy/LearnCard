@@ -215,6 +215,76 @@ console.log(result.inbox?.claimUrl ?? result.credentialUri);
 
 `getManagedProfiles()` on the manager's `did:web` (shown by `whoami`) returns every managed DID if you need to loop.
 
+### Let a service account act as a district
+
+Your backend probably holds a **token**, not the seed. A token is bound to the profile that minted it — so to issue as a district, the request says who it is acting as, and the network checks two things: that your issuer really manages that profile, and that the token was allowed to delegate.
+
+Allow it in the spec, per account:
+
+```yaml
+serviceAccounts:
+    - name: nightly-issuer
+      scopes: [inbox:write, inbox:read, credentials:write, credentials:read]
+      actAs: [example-north] # or '*' for every profile under profileManager
+```
+
+Omit `actAs` and the token cannot act as anyone — this is deny-by-default on purpose, so a leaked single-district token can never issue as the whole state. `doctor` and `whoami` both report what each token may act as.
+
+Then in your backend, name the district on the call:
+
+<!-- snippet: cli/org/send-as-managed-token.mjs -->
+
+```javascript
+import { initLearnCard } from '@learncard/init';
+
+const { API_TOKEN, DISTRICT_PROFILE_ID, RECIPIENT } = process.env;
+if (!API_TOKEN || !DISTRICT_PROFILE_ID || !RECIPIENT) {
+    throw new Error('Set API_TOKEN (from --secrets-out), DISTRICT_PROFILE_ID, and RECIPIENT');
+}
+
+// One token for the whole org. Each request names the profile it acts as; the network
+// enforces both the manager relationship and the token's actAs policy.
+const org = await initLearnCard({ apiKey: API_TOKEN, network: true });
+const district = await org.invoke.actAs(DISTRICT_PROFILE_ID);
+
+const me = await district.invoke.getProfile();
+console.log(`Acting as ${me.displayName} (${me.profileId})`);
+
+const result = await district.invoke.send({
+    type: 'boost',
+    recipient: RECIPIENT,
+    template: {
+        credential: {
+            '@context': [
+                'https://www.w3.org/ns/credentials/v2',
+                'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+            ],
+            type: ['VerifiableCredential', 'OpenBadgeCredential'],
+            issuer: me.did,
+            validFrom: new Date().toISOString(),
+            name: 'Welcome',
+            credentialSubject: {
+                type: ['AchievementSubject'],
+                achievement: {
+                    id: `urn:uuid:${crypto.randomUUID()}`,
+                    type: ['Achievement'],
+                    name: 'Welcome',
+                    description: 'Sent by a district through the org token.',
+                    criteria: { narrative: 'Be a recipient.' },
+                },
+            },
+        },
+        name: 'Welcome',
+        category: 'Achievement',
+    },
+});
+console.log(result.inbox?.claimUrl ?? result.credentialUri);
+```
+
+<!-- /snippet -->
+
+`org.invoke.actAs(id)` returns a new instance; `org` itself is unchanged. If you only ever act as one profile, `initLearnCard({ apiKey, network: true, actAs: id })` sets it once. Under the hood this is a single request header, `X-LearnCard-Act-As`, so any HTTP client can do the same against the REST API. The token's scope is unchanged while acting — `inbox:write` as a district is still just `inbox:write`.
+
 ## 6. Move it to production
 
 Staging and production are [separate networks](deploy-infrastructure/test-safely.md): profiles, tokens, signing authorities, and credentials do not carry over. Your seed does. So the production setup is the **same file, applied again**:
@@ -243,6 +313,8 @@ The production issuer's DID is `did:web:network.learncard.com:users:<profileId>`
 | `--from … does not match this folder's network`                                | `promote` must run from the folder that is on `--from`. `whoami` shows which network a folder is on.                                               |
 | `Credential refresh isn't enabled on this network`                             | Expected on some deployments. `doctor` reports it; nothing else is affected.                                                                       |
 | `local files are not uploaded yet — host the image…`                           | Branding images must be `https://` URLs for now.                                                                                                   |
+| `This API token may not act as "x". Grant actAs on the token.`                 | Add `actAs` to that service account in the spec and re-run `org apply`.                                                                            |
+| `You do not manage profile "x".`                                               | `x` isn't under your `profileManager.managed`, or you're acting from the wrong issuer.                                                             |
 | `Profile not found. Are you sure this person exists?`                          | You sent to a profile ID that doesn't exist on this network.                                                                                       |
 | `Signing authority "x" is registered at … with DID …, but the spec declares …` | The network keys a registration by name + DID, so a rotated key cannot be swapped in place. Register it under a new name or fix `did` in the spec. |
 | `Unrecognized key(s) in object`                                                | A field in the spec is misspelled or misplaced. Compare with the reference table.                                                                  |
