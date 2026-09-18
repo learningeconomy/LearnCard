@@ -99,22 +99,18 @@ const ClrCompetencyDetailPanel: React.FC<{
             {!emptyHeader && section.title && (
                 <div className="px-3 py-3 flex items-center gap-2 min-w-0">
                     {section.dateLabel && (
-                        <p className="shrink-0 text-[13px] text-grayscale-700">
-                            {section.dateLabel}
-                        </p>
+                        <p className="shrink-0 text-base text-grayscale-700">{section.dateLabel}</p>
                     )}
                     {section.dateLabel && <span className="shrink-0 text-grayscale-700">•</span>}
                     <span className="shrink-0 text-grayscale-700">
                         <FlatIcon>{icon}</FlatIcon>
                     </span>
                     {section.humanCode && (
-                        <p className="shrink-0 text-[13px] font-semibold text-grayscale-700">
+                        <p className="shrink-0 text-base font-semibold text-grayscale-700">
                             {section.humanCode}
                         </p>
                     )}
-                    <p className="min-w-0 truncate text-[13px] text-grayscale-700">
-                        {section.title}
-                    </p>
+                    <p className="min-w-0 truncate text-base text-grayscale-700">{section.title}</p>
                 </div>
             )}
 
