@@ -76,6 +76,8 @@ export {
 } from './escrow-crypto';
 
 export type { EscrowEnvelope, EscrowBlobPlaintext, EscrowReleasePlaintext } from './escrow-crypto';
+export { verifyEnclaveAttestation } from './escrow-attestation';
+export type { EscrowAttestationPolicy, EscrowHoldStatus, EscrowRecoveryStart } from './types';
 
 export {
     createPasskeyCredential,
@@ -113,7 +115,11 @@ export type {
     StorageOperations,
 } from './atomic-operations';
 
-export { createSSSStrategy, IdentityRecoverySessionConsumedError } from './sss-strategy';
+export {
+    createSSSStrategy,
+    IdentityRecoverySessionConsumedError,
+    EscrowRequestError,
+} from './sss-strategy';
 
 export type { SSSStorageFunctions, SSSStrategyConfig } from './sss-strategy';
 
