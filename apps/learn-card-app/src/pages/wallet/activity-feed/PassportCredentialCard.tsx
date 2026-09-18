@@ -12,7 +12,11 @@ import BoostEarnedCard from '../../../components/boost/boost-earned-card/BoostEa
 import { resolveActivityCategory } from './activityFeed.helpers';
 import * as m from '../../../paraglide/messages.js';
 
-export type ActivityIndexRecord = Partial<LCR> & { uri: string; sharedUri?: string };
+export type ActivityIndexRecord = Omit<Partial<LCR>, 'category'> & {
+    uri: string;
+    sharedUri?: string;
+    category?: LCR['category'] | 'Endorsement';
+};
 
 type PassportCredentialCardProps = {
     record: ActivityIndexRecord;

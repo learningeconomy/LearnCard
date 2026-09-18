@@ -83,12 +83,12 @@ describe('PassportCredentialCard', () => {
     });
 
     it('reformats a resolved target name when the locale changes', async () => {
-        const record = {
+        const record: ActivityIndexRecord = {
             uri: 'lc:endorsement:legacy',
             category: 'Endorsement',
             title: 'Endorsement of undefined',
             sharedUri: 'uri=lc%3Ashared&seed=seed&pin=1234',
-        } as ActivityIndexRecord;
+        };
         mocks.resolveSharedCredential.mockResolvedValue({ name: 'First Aid' });
         const { rerender } = renderCard(record);
 
