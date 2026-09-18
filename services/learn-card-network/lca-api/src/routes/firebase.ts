@@ -14,7 +14,7 @@ import {
     FirebaseCustomAuthResponseSchema,
 } from '@helpers/firebase.helpers';
 import cache from '@cache';
-import { checkRateLimit, clearRateLimit, getRateLimitCount } from '@helpers/rateLimit.helpers';
+import { checkRateLimit, clearRateLimit } from '@helpers/rateLimit.helpers';
 import { TRPCError } from '@trpc/server';
 import { getDeliveryService, getFrom } from '../services/delivery';
 import { resolveLocaleByEmail } from '../helpers/locale.helpers';
@@ -338,19 +338,30 @@ export const firebaseRouter = t.router({
             const ipAttemptKey = `login-verify-ip:${clientIp}`;
 
             try {
-                // Check rate limits BEFORE incrementing (only increment on failures)
-                const ipCount = await getRateLimitCount(ipAttemptKey);
-                if (ipCount >= LOGIN_VERIFY_MAX_ATTEMPTS_PER_IP) {
+                const loginCodeKey = `login-code:${email}`;
+
+                // Atomic increment + check for IP-based rate limit
+                // This prevents TOCTOU races where concurrent requests could bypass the limit
+                const ipAllowed = await checkRateLimit(
+                    ipAttemptKey,
+                    LOGIN_VERIFY_MAX_ATTEMPTS_PER_IP,
+                    LOGIN_VERIFY_IP_WINDOW_SECONDS
+                );
+                if (!ipAllowed) {
                     return {
                         success: false,
                         error: 'Too many attempts. Please request a new code.',
                     };
                 }
 
-                const emailCount = await getRateLimitCount(emailAttemptKey);
-                if (emailCount >= LOGIN_VERIFY_MAX_ATTEMPTS_PER_EMAIL) {
-                    // Already at limit, invalidate the code and reject
-                    const loginCodeKey = `login-code:${email}`;
+                // Atomic increment + check for per-email rate limit
+                const emailAllowed = await checkRateLimit(
+                    emailAttemptKey,
+                    LOGIN_VERIFY_MAX_ATTEMPTS_PER_EMAIL,
+                    CODE_TTL_SECONDS
+                );
+                if (!emailAllowed) {
+                    // Limit exceeded — invalidate the code
                     await cache.delete([loginCodeKey]);
                     return {
                         success: false,
@@ -359,37 +370,17 @@ export const firebaseRouter = t.router({
                 }
 
                 // Check if code exists and matches
-                // Key structure: login-code:${email} → code value (no wildcard needed)
-                const loginCodeKey = `login-code:${email}`;
                 const storedCode = await cache.get(loginCodeKey);
 
                 if (!storedCode || storedCode !== code) {
-                    // Invalid code — increment rate limit counters on failure only
-                    await checkRateLimit(
-                        emailAttemptKey,
-                        LOGIN_VERIFY_MAX_ATTEMPTS_PER_EMAIL,
-                        CODE_TTL_SECONDS
-                    );
-                    await checkRateLimit(
-                        ipAttemptKey,
-                        LOGIN_VERIFY_MAX_ATTEMPTS_PER_IP,
-                        LOGIN_VERIFY_IP_WINDOW_SECONDS
-                    );
-
-                    // If this failure hit the limit, invalidate the code
-                    // The NEXT request will be blocked by the pre-check
-                    const newEmailCount = await getRateLimitCount(emailAttemptKey);
-                    if (newEmailCount >= LOGIN_VERIFY_MAX_ATTEMPTS_PER_EMAIL) {
-                        await cache.delete([loginCodeKey]);
-                    }
-
+                    // Invalid code — counters already incremented above
                     return { success: false, error: 'Invalid or expired code.' };
                 }
 
                 // Valid code — delete it to prevent reuse
                 await cache.delete([loginCodeKey]);
 
-                // Clear rate limit counters on success
+                // Clear rate limit counters on success so only failures accumulate
                 await clearRateLimit(emailAttemptKey);
                 await clearRateLimit(ipAttemptKey);
 
