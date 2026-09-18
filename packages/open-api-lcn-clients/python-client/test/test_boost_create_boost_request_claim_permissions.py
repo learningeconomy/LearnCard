@@ -36,6 +36,7 @@ class TestBoostCreateBoostRequestClaimPermissions(unittest.TestCase):
         if include_optional:
             return BoostCreateBoostRequestClaimPermissions(
                 role = '',
+                can_view = True,
                 can_edit = True,
                 can_issue = True,
                 can_revoke = True,

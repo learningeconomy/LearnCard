@@ -22,6 +22,7 @@ from typing import Any, ClassVar, Dict, List, Optional
 from openapi_client.models.integrations_add_integration_request_whitelisted_domains_inner import IntegrationsAddIntegrationRequestWhitelistedDomainsInner
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class IntegrationsUpdateIntegrationRequestUpdates(BaseModel):
     """
@@ -47,7 +48,8 @@ class IntegrationsUpdateIntegrationRequestUpdates(BaseModel):
         return value
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -59,8 +61,7 @@ class IntegrationsUpdateIntegrationRequestUpdates(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -89,8 +90,7 @@ class IntegrationsUpdateIntegrationRequestUpdates(BaseModel):
         _items = []
         if self.whitelisted_domains:
             for _item_whitelisted_domains in self.whitelisted_domains:
-                if _item_whitelisted_domains:
-                    _items.append(_item_whitelisted_domains.to_dict())
+                _items.append(_item_whitelisted_domains.to_dict() if _item_whitelisted_domains is not None else None)
             _dict['whitelistedDomains'] = _items
         # set to None if name (nullable) is None
         # and model_fields_set contains the field

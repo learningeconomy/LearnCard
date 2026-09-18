@@ -23,6 +23,7 @@ from openapi_client.models.contracts_get_consent_flow_contracts_request_query_re
 from openapi_client.models.contracts_get_consent_flow_contracts_request_query_read_credentials_categories_value import ContractsGetConsentFlowContractsRequestQueryReadCredentialsCategoriesValue
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ContractsGetConsentFlowContractsRequestQueryRead(BaseModel):
     """
@@ -34,7 +35,8 @@ class ContractsGetConsentFlowContractsRequestQueryRead(BaseModel):
     __properties: ClassVar[List[str]] = ["anonymize", "credentials", "personal"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -46,8 +48,7 @@ class ContractsGetConsentFlowContractsRequestQueryRead(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -79,8 +80,7 @@ class ContractsGetConsentFlowContractsRequestQueryRead(BaseModel):
         _field_dict = {}
         if self.personal:
             for _key_personal in self.personal:
-                if self.personal[_key_personal]:
-                    _field_dict[_key_personal] = self.personal[_key_personal].to_dict()
+                _field_dict[_key_personal] = self.personal[_key_personal].to_dict() if self.personal[_key_personal] is not None else None
             _dict['personal'] = _field_dict
         return _dict
 

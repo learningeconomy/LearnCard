@@ -19,22 +19,24 @@ import json
 
 from pydantic import BaseModel, ConfigDict
 from typing import Any, ClassVar, Dict, List
+from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_contract_contract_write import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWrite
 from openapi_client.models.storage_resolve200_response_any_of_any_of1_read import StorageResolve200ResponseAnyOfAnyOf1Read
-from openapi_client.models.storage_resolve200_response_any_of_any_of1_write import StorageResolve200ResponseAnyOfAnyOf1Write
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class StorageResolve200ResponseAnyOfAnyOf1(BaseModel):
     """
     StorageResolve200ResponseAnyOfAnyOf1
     """ # noqa: E501
     read: StorageResolve200ResponseAnyOfAnyOf1Read
-    write: StorageResolve200ResponseAnyOfAnyOf1Write
+    write: CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWrite
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["read", "write"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -46,8 +48,7 @@ class StorageResolve200ResponseAnyOfAnyOf1(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -98,7 +99,7 @@ class StorageResolve200ResponseAnyOfAnyOf1(BaseModel):
 
         _obj = cls.model_validate({
             "read": StorageResolve200ResponseAnyOfAnyOf1Read.from_dict(obj["read"]) if obj.get("read") is not None else None,
-            "write": StorageResolve200ResponseAnyOfAnyOf1Write.from_dict(obj["write"]) if obj.get("write") is not None else None
+            "write": CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWrite.from_dict(obj["write"]) if obj.get("write") is not None else None
         })
         # store additional fields in additional_properties
         for _key in obj.keys():
