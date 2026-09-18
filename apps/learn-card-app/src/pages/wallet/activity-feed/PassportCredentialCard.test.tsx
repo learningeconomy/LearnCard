@@ -3,7 +3,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const mocks = vi.hoisted(() => ({ resolveSharedCredential: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+    locale: 'en',
+    resolveSharedCredential: vi.fn(),
+}));
 
 vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
     resolveSharedCredential: mocks.resolveSharedCredential,
@@ -19,7 +22,8 @@ vi.mock(
     '../../../paraglide/messages.js',
     async (importOriginal: () => Promise<Record<string, unknown>>) => ({
         ...(await importOriginal()),
-        'endorsement.activity.title': ({ name }: { name: string }) => `Endorsement of ${name}`,
+        'endorsement.activity.title': ({ name }: { name: string }) =>
+            `${mocks.locale === 'es' ? 'Respaldo de' : 'Endorsement of'} ${name}`,
         'endorsement.fullview.endorsement': () => 'Endorsement',
     })
 );
@@ -43,7 +47,7 @@ vi.mock('../../../components/boost/boost-earned-card/BoostEarnedCard', () => ({
 
 import PassportCredentialCard, {
     type ActivityIndexRecord,
-    resolveEndorsementTitle,
+    resolveEndorsementTargetName,
 } from './PassportCredentialCard';
 
 const renderCard = (record: ActivityIndexRecord) => {
@@ -51,30 +55,50 @@ const renderCard = (record: ActivityIndexRecord) => {
         defaultOptions: { queries: { retry: false } },
     });
 
-    return render(
-        <QueryClientProvider client={queryClient}>
-            <PassportCredentialCard record={record} />
-        </QueryClientProvider>
-    );
+    return render(<PassportCredentialCard record={record} />, {
+        wrapper: ({ children }) => (
+            <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+        ),
+    });
 };
 
 describe('PassportCredentialCard', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mocks.locale = 'en';
     });
 
     it('uses the shared target credential name for legacy endorsement records', async () => {
         mocks.resolveSharedCredential.mockResolvedValue({ name: 'First Aid' });
-
-        await expect(resolveEndorsementTitle('uri=lc%3Ashared&seed=seed&pin=1234')).resolves.toBe(
-            'Endorsement of First Aid'
-        );
+        await expect(
+            resolveEndorsementTargetName('uri=lc%3Ashared&seed=seed&pin=1234')
+        ).resolves.toBe('First Aid');
     });
 
     it('returns null when the shared credential has no usable name', async () => {
         mocks.resolveSharedCredential.mockResolvedValue(undefined);
+        await expect(
+            resolveEndorsementTargetName('uri=expired&seed=seed&pin=1234')
+        ).resolves.toBeNull();
+    });
 
-        await expect(resolveEndorsementTitle('uri=expired&seed=seed&pin=1234')).resolves.toBeNull();
+    it('reformats a resolved target name when the locale changes', async () => {
+        const record = {
+            uri: 'lc:endorsement:legacy',
+            category: 'Endorsement',
+            title: 'Endorsement of undefined',
+            sharedUri: 'uri=lc%3Ashared&seed=seed&pin=1234',
+        };
+        mocks.resolveSharedCredential.mockResolvedValue({ name: 'First Aid' });
+        const { rerender } = renderCard(record);
+
+        expect(await screen.findByText('Endorsement of First Aid')).toBeInTheDocument();
+
+        mocks.locale = 'es';
+        rerender(<PassportCredentialCard record={record} />);
+
+        expect(screen.getByText('Respaldo de First Aid')).toBeInTheDocument();
+        expect(mocks.resolveSharedCredential).toHaveBeenCalledOnce();
     });
 
     it('shows a loading surface instead of the malformed credential title while resolving', () => {
@@ -84,7 +108,7 @@ describe('PassportCredentialCard', () => {
         renderCard({
             uri: 'lc:endorsement:legacy',
             category: 'Endorsement',
-            title: 'Endorsement of undefined',
+            title: ' Endorsement of undefined ',
             sharedUri: 'uri=lc%3Ashared&seed=seed&pin=1234',
         });
 
@@ -107,10 +131,10 @@ describe('PassportCredentialCard', () => {
         renderCard({
             uri: 'lc:endorsement:accepted',
             category: 'Endorsement',
-            title: 'Endorsement of Undefined Behavior',
+            title: 'Endorsement of undefined behavior',
         });
 
-        expect(screen.getByText('Endorsement of Undefined Behavior')).toBeInTheDocument();
+        expect(screen.getByText('Endorsement of undefined behavior')).toBeInTheDocument();
         expect(mocks.resolveSharedCredential).not.toHaveBeenCalled();
     });
 

@@ -19,27 +19,32 @@ type PassportCredentialCardProps = {
     className?: string;
 };
 
-export const resolveEndorsementTitle = async (sharedUri?: string): Promise<string | null> => {
+export const resolveEndorsementTargetName = async (sharedUri?: string): Promise<string | null> => {
     if (!sharedUri) return null;
 
     const credential = await resolveSharedCredential(sharedUri);
     const name = credential && getCredentialName(credential);
-    return name ? m['endorsement.activity.title']({ name }) : null;
+    return name || null;
 };
 
 const PassportCredentialCard: React.FC<PassportCredentialCardProps> = ({ record, className }) => {
     const category = resolveActivityCategory(record.category);
     const isEndorsement = record.category === 'Endorsement';
     const storedTitle =
-        isEndorsement && record.title !== 'Endorsement of undefined' ? record.title : undefined;
+        isEndorsement && record.title?.trim() !== 'Endorsement of undefined'
+            ? record.title
+            : undefined;
     const needsResolvedTitle = isEndorsement && !storedTitle;
-    const { data: resolvedTitle, isPending } = useQuery<string | null>({
-        queryKey: ['endorsement-target-title', record.sharedUri],
+    const { data: resolvedTargetName, isPending } = useQuery<string | null>({
+        queryKey: ['endorsement-target-name', record.sharedUri],
         enabled: needsResolvedTitle && Boolean(record.sharedUri),
-        queryFn: () => resolveEndorsementTitle(record.sharedUri),
+        queryFn: () => resolveEndorsementTargetName(record.sharedUri),
         staleTime: Infinity,
     });
     const isResolvingTitle = needsResolvedTitle && Boolean(record.sharedUri) && isPending;
+    const resolvedTitle = resolvedTargetName
+        ? m['endorsement.activity.title']({ name: resolvedTargetName })
+        : null;
     const titleOverride =
         storedTitle ??
         resolvedTitle ??
