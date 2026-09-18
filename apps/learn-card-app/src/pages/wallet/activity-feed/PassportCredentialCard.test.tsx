@@ -10,9 +10,25 @@ vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
     getCredentialName: (credential: { name?: string }) => credential.name ?? '',
 }));
 
+vi.mock('learn-card-base', () => ({
+    CredentialCategoryEnum: { socialBadge: 'Social Badge' },
+    categoryMetadata: { 'Social Badge': { defaultImageSrc: 'social-badge.svg' } },
+}));
+
 vi.mock('../../../components/boost/boost-earned-card/BoostEarnedCard', () => ({
-    default: ({ titleOverride, loading }: { titleOverride?: string | null; loading?: boolean }) => (
-        <div>{loading ? 'Loading endorsement title' : titleOverride}</div>
+    default: ({
+        titleOverride,
+        loading,
+        displayIssuerAsSubject,
+    }: {
+        titleOverride?: string | null;
+        loading?: boolean;
+        displayIssuerAsSubject?: boolean;
+    }) => (
+        <div>
+            {loading ? 'Loading endorsement title' : titleOverride}
+            <span>{displayIssuerAsSubject ? 'Signed issuer subject' : 'Credential subject'}</span>
+        </div>
     ),
 }));
 
@@ -76,5 +92,15 @@ describe('PassportCredentialCard', () => {
 
         expect(screen.getByText('Endorsement')).toBeInTheDocument();
         expect(mocks.resolveSharedCredential).not.toHaveBeenCalled();
+    });
+
+    it('uses the signed issuer as the display subject for endorsement credentials', () => {
+        renderCard({
+            uri: 'lc:endorsement:accepted',
+            category: 'Endorsement',
+            title: 'Endorsement of First Aid',
+        });
+
+        expect(screen.getByText('Signed issuer subject')).toBeInTheDocument();
     });
 });

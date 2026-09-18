@@ -48,6 +48,7 @@ const PassportCredentialCard: React.FC<PassportCredentialCardProps> = ({ record,
                 record={record}
                 titleOverride={titleOverride}
                 loading={isResolvingTitle}
+                displayIssuerAsSubject={isEndorsement}
                 categoryType={category}
                 defaultImg={categoryMetadata[category as CredentialCategoryEnum]?.defaultImageSrc}
                 useWrapper={false}

@@ -13,6 +13,7 @@ type PreviewProps = {
     onDotsClick?: () => void;
     credential?: VC;
     boostUri?: string;
+    issueeOverride?: string;
 };
 
 const mocks = vi.hoisted(() => ({
@@ -34,6 +35,7 @@ vi.mock('learn-card-base', () => ({
     CredentialSubjectDisplay: () => null,
     useGetVCInfo: () => ({
         issuerName: 'Example University',
+        issuerDid: 'did:example:issuer',
         issueeName: 'Ada Learner',
         title: 'Example Achievement',
         achievementType: 'Achievement',
@@ -227,6 +229,27 @@ describe('BoostEarnedCard', () => {
         expect(preview).toBeDefined();
         expect(preview!.props.onDotsClick).toBeUndefined();
         expect(mocks.presentOptions).not.toHaveBeenCalled();
+    });
+
+    it('displays the signed issuer DID instead of the endorsement target ID', () => {
+        mocks.isBoostCredential.mockReturnValue(false);
+
+        render(
+            <BoostEarnedCard
+                credential={credential}
+                record={{ uri: 'urn:credential:endorsement' }}
+                categoryType="Social Badge"
+                useWrapper={false}
+                displayIssuerAsSubject
+            />
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Open credential' }));
+
+        const preview = mocks.newModal.mock.calls[0]?.[0] as
+            React.ReactElement<PreviewProps> | undefined;
+        expect(preview?.props.issueeOverride).toBe('did:example:issuer');
+        expect(preview?.props.issueeOverride).not.toBe('Ada Learner');
     });
 
     it('uses the earned preview flow from a custom trigger', () => {
