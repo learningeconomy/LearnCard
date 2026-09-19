@@ -1,5 +1,26 @@
 # learn-card-base
 
+## 0.4.10
+
+### Patch Changes
+
+- [#1585](https://github.com/learningeconomy/LearnCard/pull/1585) [`0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e`](https://github.com/learningeconomy/LearnCard/commit/0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e) Thanks [@goblincore](https://github.com/goblincore)! - Wait for direct sign-in wallet initialization before deciding whether onboarding is required. Preserve the developer account-switch handoff across remounts until sign-in succeeds.
+
+- [#1585](https://github.com/learningeconomy/LearnCard/pull/1585) [`0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e`](https://github.com/learningeconomy/LearnCard/commit/0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e) Thanks [@goblincore](https://github.com/goblincore)! - Honor delegated boost issuance permissions for managed refresh delivery. Expire saved post-login destinations after 30 minutes, discard legacy untimed destinations, and clear superseded claim redirects during sign-in.
+
+- [#1585](https://github.com/learningeconomy/LearnCard/pull/1585) [`0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e`](https://github.com/learningeconomy/LearnCard/commit/0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e) Thanks [@goblincore](https://github.com/goblincore)! - Recognize initialized demo and seed sessions in the profile gate while the identity-provider coordinator is idle. Keep incomplete, persisted-only, and recovery sessions blocked, and let the login page finish onboarding before redirecting demo users.
+
+- [#1572](https://github.com/learningeconomy/LearnCard/pull/1572) [`2e0bce4bb25b412c9c8f82fecc2894e2f5f693b4`](https://github.com/learningeconomy/LearnCard/commit/2e0bce4bb25b412c9c8f82fecc2894e2f5f693b4) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-2109] & LC-2168 Various Updates to Transcripts
+
+- Updated dependencies [[`0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e`](https://github.com/learningeconomy/LearnCard/commit/0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e)]:
+    - @learncard/types@5.21.0
+    - @learncard/helpers@1.6.0
+    - @learncard/lca-api-plugin@2.0.6
+    - @learncard/learn-card-plugin@1.2.36
+    - @learncard/ler-rs-plugin@0.1.27
+    - @learncard/render-method-plugin@8.0.0
+    - @learncard/sss-key-manager@0.1.24
+
 ## 0.4.9
 
 ### Patch Changes

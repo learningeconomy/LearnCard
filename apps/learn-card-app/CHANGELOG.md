@@ -1,5 +1,37 @@
 # Changelog
 
+## 1.98.10
+
+### Patch Changes
+
+- [#1594](https://github.com/learningeconomy/LearnCard/pull/1594) [`bb9af1b61037839716b817865155ff923256aafb`](https://github.com/learningeconomy/LearnCard/commit/bb9af1b61037839716b817865155ff923256aafb) Thanks [@smurflo2](https://github.com/smurflo2)! - fix: [LC-2153] Restore issuer skill search.
+
+- [#1588](https://github.com/learningeconomy/LearnCard/pull/1588) [`02ed52ec7d86b51cc45de29b4f741e596e8d7c0a`](https://github.com/learningeconomy/LearnCard/commit/02ed52ec7d86b51cc45de29b4f741e596e8d7c0a) Thanks [@goblincore](https://github.com/goblincore)! - Fix automatic email verification in local dev stacks
+
+- [#1585](https://github.com/learningeconomy/LearnCard/pull/1585) [`0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e`](https://github.com/learningeconomy/LearnCard/commit/0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e) Thanks [@goblincore](https://github.com/goblincore)! - Preserve the demo account's wallet landing page after profile and onboarding checks. Explicit destinations and pending claims still take precedence.
+
+- [#1585](https://github.com/learningeconomy/LearnCard/pull/1585) [`0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e`](https://github.com/learningeconomy/LearnCard/commit/0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e) Thanks [@goblincore](https://github.com/goblincore)! - Wait for direct sign-in wallet initialization before deciding whether onboarding is required. Preserve the developer account-switch handoff across remounts until sign-in succeeds.
+
+- [#1585](https://github.com/learningeconomy/LearnCard/pull/1585) [`0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e`](https://github.com/learningeconomy/LearnCard/commit/0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e) Thanks [@goblincore](https://github.com/goblincore)! - Require account setup before Universal Inbox claims in the app so later credential updates can reach the recipient. Preserve the claim link through onboarding and provide retry and resume controls without treating profile lookup failures as a missing account.
+
+- [#1585](https://github.com/learningeconomy/LearnCard/pull/1585) [`0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e`](https://github.com/learningeconomy/LearnCard/commit/0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e) Thanks [@goblincore](https://github.com/goblincore)! - Honor delegated boost issuance permissions for managed refresh delivery. Expire saved post-login destinations after 30 minutes, discard legacy untimed destinations, and clear superseded claim redirects during sign-in.
+
+- [#1585](https://github.com/learningeconomy/LearnCard/pull/1585) [`0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e`](https://github.com/learningeconomy/LearnCard/commit/0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e) Thanks [@goblincore](https://github.com/goblincore)! - Recognize initialized demo and seed sessions in the profile gate while the identity-provider coordinator is idle. Keep incomplete, persisted-only, and recovery sessions blocked, and let the login page finish onboarding before redirecting demo users.
+
+- [#1572](https://github.com/learningeconomy/LearnCard/pull/1572) [`2e0bce4bb25b412c9c8f82fecc2894e2f5f693b4`](https://github.com/learningeconomy/LearnCard/commit/2e0bce4bb25b412c9c8f82fecc2894e2f5f693b4) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-2109] & LC-2168 Various Updates to Transcripts
+
+- [#1539](https://github.com/learningeconomy/LearnCard/pull/1539) [`5c87de780c20924cfb94cfce2a155437014f9ea1`](https://github.com/learningeconomy/LearnCard/commit/5c87de780c20924cfb94cfce2a155437014f9ea1) Thanks [@smurflo2](https://github.com/smurflo2)! - feat: [LC-2165] Support Open Skills Alignment result authoring.
+
+- Updated dependencies [[`0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e`](https://github.com/learningeconomy/LearnCard/commit/0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e), [`5c87de780c20924cfb94cfce2a155437014f9ea1`](https://github.com/learningeconomy/LearnCard/commit/5c87de780c20924cfb94cfce2a155437014f9ea1)]:
+    - @learncard/helpers@1.6.0
+    - @learncard/credential-library@2.0.4
+    - @learncard/lca-api-plugin@2.0.6
+    - @learncard/ler-rs-plugin@0.1.27
+    - @learncard/open-badge-v2-plugin@1.1.37
+    - @learncard/render-method-plugin@8.0.0
+    - @learncard/react@2.12.7
+    - @learncard/sss-key-manager@0.1.24
+
 ## 1.98.9
 
 ### Patch Changes
