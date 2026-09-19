@@ -87,6 +87,21 @@ describe('useAuthGateState — resume race', () => {
         expect(shouldPromptProfileOnboarding(result.current)).toBe(false);
     });
 
+    it('waits for direct sign-in wallet mode before deciding absence or navigation', () => {
+        setSources({ coordinatorStatus: 'idle', walletReady: true, isLoggedIn: true });
+        mockUseWalletMode.mockReturnValue(null);
+        mockUseCurrentUser.mockReturnValue({
+            uid: 'demo',
+            privateKey: 'in-memory-key',
+            typeOfLogin: '',
+        });
+        const { result, rerender } = renderHook(() => useAuthGateState('success', false));
+        expect(result.current).toEqual({ tag: 'resolving' });
+        mockUseWalletMode.mockReturnValue('full');
+        rerender();
+        expect(shouldPromptProfileOnboarding(result.current)).toBe(true);
+    });
+
     it('does not infer a normal identity-provider session from leftover wallet state', () => {
         setSources({ coordinatorStatus: 'idle', walletReady: true, isLoggedIn: true });
         mockUseCurrentUser.mockReturnValue({

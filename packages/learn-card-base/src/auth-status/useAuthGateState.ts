@@ -48,9 +48,14 @@ export const useAuthGateState = (
         (currentUser.uid === 'demo' || currentUser.uid === '') &&
         !currentUser.typeOfLogin;
     const walletReady = !!wallet;
+    // Other hooks may initialize the wallet while direct sign-in is still
+    // setting up its network mode. That window must not authorize navigation
+    // with an unconfirmed profile before the onboarding decision is ready.
     const coordinatorStatus = resolveCoordinatorStatus(
-        coordinator?.state.status === 'idle' && directKeySession && walletReady
-            ? 'ready'
+        coordinator?.state.status === 'idle' && directKeySession
+            ? walletReady && walletMode !== null
+                ? 'ready'
+                : 'deriving_key'
             : coordinator?.state.status,
         walletReady,
         isLoggedIn
