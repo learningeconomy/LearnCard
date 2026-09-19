@@ -1,5 +1,15 @@
 # @learncard/credential-library
 
+## 2.0.4
+
+### Patch Changes
+
+- [#1539](https://github.com/learningeconomy/LearnCard/pull/1539) [`5c87de780c20924cfb94cfce2a155437014f9ea1`](https://github.com/learningeconomy/LearnCard/commit/5c87de780c20924cfb94cfce2a155437014f9ea1) Thanks [@smurflo2](https://github.com/smurflo2)! - feat: [LC-2165] Support Open Skills Alignment result authoring.
+
+- Updated dependencies [[`0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e`](https://github.com/learningeconomy/LearnCard/commit/0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e)]:
+    - @learncard/types@5.21.0
+    - @learncard/sd-jwt-vc-plugin@0.2.14
+
 ## 2.0.3
 
 ### Patch Changes

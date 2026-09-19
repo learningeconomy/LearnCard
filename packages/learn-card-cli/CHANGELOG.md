@@ -1,5 +1,37 @@
 # @learncard/cli
 
+## 3.6.0
+
+### Minor Changes
+
+- [#1586](https://github.com/learningeconomy/LearnCard/pull/1586) [`dac4695428e42ecc99b05c1774fce937c021c657`](https://github.com/learningeconomy/LearnCard/commit/dac4695428e42ecc99b05c1774fce937c021c657) Thanks [@Custard7](https://github.com/Custard7)! - `send` now prompts for the recipient when omitted (`npx @learncard/cli send`) and rejects placeholder addresses such as `you@example.com` instead of silently sending to an undeliverable domain. Non-interactive runs (`--yes`, no TTY) still require the recipient as an argument.
+
+- [#1585](https://github.com/learningeconomy/LearnCard/pull/1585) [`0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e`](https://github.com/learningeconomy/LearnCard/commit/0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e) Thanks [@goblincore](https://github.com/goblincore)! - Add `learncard demo refresh`, a guided demonstration of sending a refreshable badge through `sendBoost`, publishing a new version from the returned receipt, and verifying the recipient's refreshed copy. Uses fresh demo accounts, defaults to the local network, and supports `--network staging`, `--yes`, and `--json`.
+
+    Add interactive `--ui` mode for the local LearnCard app: print a demo recipient sign-in link, deliver claim and update notifications, and wait for the app to save each version. Supports a custom local `--app-url` and validates that the app and CLI use matching local services.
+
+    Add `learncard demo refresh --inbox` for the deferred Universal Inbox path: issue a refreshable certificate to a random `@example.com` address with email delivery suppressed, publish a final version before any holder exists (`notification: "not-applicable"`), then claim with a real DIDAuth presentation and refresh to an honors version. `--inbox --ui` prints a claim link for the local app, waits for the human to claim, publishes an update to the bound holder, and verifies the app replaced (not duplicated) the same entry. Terminal mode supports `--yes`/`--json`, is local-only, and takes `--lca-url` (default `http://localhost:5100/trpc`) for the local signing service. The existing direct demo is unchanged.
+
+    Add opt-in `--inbox --ui --email [address]`: prompt for an address, send a provisional certificate through normal email delivery, let the recipient sign in and claim, then publish a visible final-results update. This mode never reads recipient keys or personal credential storage. Keep the pre-claim update in the separate disposable-account walkthrough.
+
+    Stop the email walkthrough before publishing if the claim has no recipient account, and only advertise queued notifications when publication confirms them.
+
+### Patch Changes
+
+- Updated dependencies [[`0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e`](https://github.com/learningeconomy/LearnCard/commit/0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e)]:
+    - @learncard/types@5.21.0
+    - @learncard/init@2.4.17
+    - @learncard/holder-continuity@0.2.19
+    - @learncard/core@9.4.36
+    - @learncard/network-brain-client@2.5.57
+    - @learncard/didkit-plugin@1.10.1
+    - @learncard/lca-api-plugin@2.0.6
+    - @learncard/learn-cloud-plugin@2.3.42
+    - @learncard/ler-rs-plugin@0.1.27
+    - @learncard/linked-claims-plugin@0.2.36
+    - @learncard/open-badge-v2-plugin@1.1.37
+    - @learncard/render-method-plugin@8.0.0
+
 ## 3.5.1
 
 ### Patch Changes

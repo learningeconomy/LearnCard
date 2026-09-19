@@ -1,5 +1,56 @@
 # @learncard/network-brain-service
 
+## 3.19.0
+
+### Minor Changes
+
+- [#1585](https://github.com/learningeconomy/LearnCard/pull/1585) [`0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e`](https://github.com/learningeconomy/LearnCard/commit/0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e) Thanks [@goblincore](https://github.com/goblincore)! - Send managed credential update emails to a bound holder's verified email (or a verified manager for managed accounts). Include the issuer display name and a bounded credential title, with a translated link to app notifications; exclude grades, subject data, and update summaries. Keep email failures independent of publication and in-app notifications, and persist a single delivery attempt per publication notification window so retries cannot send duplicate email.
+
+    Email delivery is best effort: a failed or ambiguous provider attempt is recorded and not retried within that window. A later material update in a new window can send another email. There is no background email retry worker.
+
+    Existing verified Universal Inbox recipients also receive an initial email pointing to their app notifications when delivery is not suppressed. Local claim and update links use the frontend address.
+
+    Preserve recipient profile identities when local webhook delivery normalizes notification DIDs, so the subsequent update-email lookup can still find verified contacts.
+
+### Patch Changes
+
+- [#1585](https://github.com/learningeconomy/LearnCard/pull/1585) [`0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e`](https://github.com/learningeconomy/LearnCard/commit/0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e) Thanks [@goblincore](https://github.com/goblincore)! - Managed refreshable sends through the standard send paths (LC-2198). `send({ type: 'boost', refresh: true })` now issues refreshable credentials for profile/DID recipients: with local signing the SDK asks the server to run every managed-send guard, create or reuse the boost and allocate the managed refresh service in one step, injects the service (with its inline JSON-LD context) before signing, and hands the signed credential to the server's unified send so activity/contract behavior and the canonical receipt are preserved; without local signing the request is served by the signing-authority path. Email/phone recipients now use Universal Inbox deferred issuance: allocate a stable refresh service at issue, queue unsigned updates in encrypted inbox escrow, and bind/sign the latest content at verified claim. The deferred receipt is returned at `inbox.refresh`; direct `inbox/issue` returns it at `refresh`.
+
+    `sendBoost` with literal `{ enableRefresh: true }` now returns `{ credentialUri, refresh }` instead of a plain URI string, where `refresh` is the metadata-only issuance receipt (refreshId, refreshService, credentialId, issuerDid, holderDid, credentialStatus) needed to publish future versions via `publishCredentialRefresh`. Legacy callers — boolean options, omitted options, or object options without `enableRefresh` — still receive the credential URI string; a dynamically typed `enableRefresh` degrades the result to `string | { credentialUri, refresh }`. Delivered managed credentials remain holder-encrypted even when `encrypt: false`. Pending Inbox content uses the existing service-readable encrypted escrow until claim, when it is wiped.
+
+    `@learncard/types` adds the `ManagedCredentialRefreshReceipt` validator plus optional `refresh` on the unified send input/response validators; `@learncard/helpers` adds the shared managed context preparation helpers (`prepareManagedRefreshContext`, `injectManagedRefreshService`) now also used by SDK `issueCredential` signing.
+
+    Refreshable `send` accepts an optional `idempotencyKey` so a whole call can be retried without duplicating the boost, refresh allocation or delivery.
+
+    Completed-send comparisons canonicalize nested result keys so equivalent receipts remain idempotent regardless of property insertion order. Keyed sends reuse the recipient validation already performed in the request.
+
+    Keyed pre-signed retries now recover the original result when delivery bound successfully but its intent result was not recorded, matching preparation and signing-authority retries. Pending receipt fallbacks use the holder's network profile DID consistently.
+
+    Signing a credential with a managed refresh service now rejects conflicting inline JSON-LD term definitions (including `authorization`) instead of producing a credential whose refresh terms are not correctly signed. Credentials without a managed service are unaffected.
+
+    Managed send and refresh publication recover from a stale local issuer DID document after signing-authority registration: if proof verification fails, the server refreshes the authenticated issuer's document and verifies once more without relaxing signature checks.
+
+    Universal Inbox accepts `refresh: true` and an issuance `idempotencyKey`; both claim paths bind the latest revision atomically. Publication keys survive claim, and issuer `getInboxCredential` exposes the metadata-only receipt with its bound holder DID.
+
+- [#1585](https://github.com/learningeconomy/LearnCard/pull/1585) [`0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e`](https://github.com/learningeconomy/LearnCard/commit/0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e) Thanks [@goblincore](https://github.com/goblincore)! - Honor delegated boost issuance permissions for managed refresh delivery. Expire saved post-login destinations after 30 minutes, discard legacy untimed destinations, and clear superseded claim redirects during sign-in.
+
+- Updated dependencies [[`0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e`](https://github.com/learningeconomy/LearnCard/commit/0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e), [`0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e`](https://github.com/learningeconomy/LearnCard/commit/0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e)]:
+    - @learncard/types@5.21.0
+    - @learncard/helpers@1.6.0
+    - @learncard/vc-plugin@1.6.2
+    - @learncard/email-templates@1.1.0
+    - @learncard/core@9.4.36
+    - @learncard/did-web-plugin@1.1.36
+    - @learncard/didkey-plugin@1.1.36
+    - @learncard/didkit-plugin@1.10.1
+    - @learncard/didkit-plugin-node@0.3.1
+    - @learncard/encryption-plugin@1.1.36
+    - @learncard/learn-card-plugin@1.2.36
+    - @learncard/vc-templates-plugin@1.1.36
+    - @learncard/crypto-plugin@1.1.36
+    - @learncard/dynamic-loader-plugin@1.1.36
+    - @learncard/expiration-plugin@1.2.36
+
 ## 3.18.0
 
 ### Minor Changes

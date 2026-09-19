@@ -1,5 +1,15 @@
 # @learncard/ai-agent-service
 
+## 0.0.5
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/init@2.4.17
+    - @learncard/network-brain-client@2.5.57
+    - @learncard/didkit-plugin@1.10.1
+    - @learncard/didkit-plugin-node@0.3.1
+
 ## 0.0.4
 
 ### Patch Changes
