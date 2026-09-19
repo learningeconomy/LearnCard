@@ -1,6 +1,5 @@
 import { environment } from '@environment';
 import OpenAI from 'openai';
-import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
 
 import { t, didAndChallengeRoute } from '@routes';
@@ -13,6 +12,7 @@ import {
     aiSkillsHierarchyRule,
     aiTitleCharsetRule,
 } from '@helpers/aiLocale.helpers';
+import { boostSkillsResponseFormat } from '@helpers/aiResponseFormat.helpers';
 const client = filestack.init('A7RsW3VzfSNO2TCsFJ6Eiz');
 
 export enum BoostCategoryOptionsEnum {
@@ -181,7 +181,7 @@ export const aiRouter = t.router({
                     },
                     { role: 'user', content: description },
                 ],
-                response_format: zodResponseFormat(BoostSkillHierarchyValidator, 'skills'),
+                response_format: boostSkillsResponseFormat,
                 user: did,
             });
 
