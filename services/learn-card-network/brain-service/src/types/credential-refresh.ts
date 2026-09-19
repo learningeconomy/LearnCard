@@ -12,17 +12,26 @@ import {
  * immutable Credential nodes as holder-encrypted JWE JSON — never plaintext VC JSON.
  */
 
-export const CredentialRefreshStateValidator = z.enum(['awaiting_claim', 'active', 'revoked']);
+export const CredentialRefreshStateValidator = z.enum([
+    'pending_holder',
+    'awaiting_claim',
+    'active',
+    'revoked',
+]);
 export type CredentialRefreshState = z.infer<typeof CredentialRefreshStateValidator>;
 
 /** The managed refresh aggregate node (metadata only — no credential bodies) */
 export const CredentialRefreshRecordValidator = z.object({
+    /** Pending Universal Inbox delivery associated with this aggregate. */
+    inboxCredentialId: z.string().optional(),
+    /** Public status mechanism coordinates retained for the issuer allocation receipt. */
+    inboxCredentialStatus: z.string().optional(),
     /** Cryptographically random, unguessable public route identifier */
     refreshId: z.string().min(1),
     issuerProfileId: z.string().min(1),
     issuerDid: z.string().min(1),
     holderProfileId: z.string().min(1).optional(),
-    holderDid: z.string().min(1),
+    holderDid: z.string().min(1).optional(),
     /** Stable nonempty VC identifier shared by every version */
     credentialId: z.string().min(1),
     state: CredentialRefreshStateValidator,
@@ -45,6 +54,12 @@ export const CredentialRefreshRecordValidator = z.object({
     idempotencyKey: z.string().optional(),
     /** Issuer-authored, privacy-safe update summary */
     updateSummary: z.string().optional(),
+    /**
+     * Bounded, normalized credential display title used only for the email update
+     * notice. Never rendered in in-app/push payloads. Sourced from the unsigned
+     * publish input or the original boost template; never from decrypted content.
+     */
+    credentialDisplayName: z.string().optional(),
     lastPublishedAt: z.string().optional(),
     /** Notification delivery window key used to collapse repeat notifications */
     notificationWindowKey: z.string().optional(),
@@ -93,6 +108,8 @@ export const CredentialRefreshVersionNodeValidator = z.object({
     etag: z.string().optional(),
     signingMode: CredentialRefreshSigningModeValidator,
     updateSummary: z.string().optional(),
+    /** Bounded credential display title for the email update notice only. */
+    credentialDisplayName: z.string().optional(),
     /** Caller-provided key for replaying this exact historical publication */
     idempotencyKey: z.string().optional(),
     /** Aggregate-scoped unique key used to enforce historical idempotency */
@@ -132,6 +149,8 @@ export const AdvanceCredentialRefreshHeadParamsValidator = z.object({
     materialDigest: z.string().optional(),
     signingMode: CredentialRefreshSigningModeValidator,
     updateSummary: z.string().optional(),
+    /** Bounded credential display title persisted for the email update notice only. */
+    credentialDisplayName: z.string().optional(),
     idempotencyKey: z.string().optional(),
     /** Aggregate state observed by the caller; prevents claim/revocation races. */
     expectedState: CredentialRefreshStateValidator.optional(),

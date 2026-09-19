@@ -1,4 +1,9 @@
 {
+    "inboxClaimSetup": {
+        "setup": "Termina de configurar tu cuenta para reclamar tu credencial.",
+        "continue": "Continuar configurando la cuenta",
+        "connection": "No pudimos confirmar tu cuenta. Revisa tu conexión e inténtalo de nuevo."
+    },
     "connectionPrompts": {
         "title": "¿Conectar con {{name}}?",
         "description": "Mantente en contacto y reconoce lo que viene después.",

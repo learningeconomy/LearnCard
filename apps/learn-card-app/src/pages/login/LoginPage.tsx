@@ -22,6 +22,7 @@ import {
     QrLoginRequester,
     getAuthConfig,
     getSSSConfig,
+    useAuthStatus,
 } from 'learn-card-base';
 
 import { getLogger } from 'learn-card-base';
@@ -74,6 +75,7 @@ export const LoginContent: React.FC = () => {
     const { theme } = useTheme();
     const { newModal, closeModal } = useModal();
     const { state: coordinatorState } = useAppAuth();
+    const authStatus = useAuthStatus();
     const { track } = useAnalytics();
     const isLoggedIn = useIsLoggedIn();
     const currentUser = useCurrentUser();
@@ -189,25 +191,55 @@ export const LoginContent: React.FC = () => {
     }, [track]);
 
     useEffect(() => {
-        if (coordinatorState.status !== 'needs_setup') {
+        const profilePresent = authStatus.tag === 'ready' && authStatus.profile.tag === 'present';
+
+        // Reset the "already prompted" guards only once onboarding actually
+        // succeeded (profile present) or the user fully signed out. Resetting on
+        // every coordinator transition re-armed the prompt mid-onboarding,
+        // risking duplicate modals and lost claim redirects.
+        if (profilePresent || authStatus.tag === 'unauthenticated') {
             didOpenOnboardingRef.current = false;
             didTrackSignupStartedRef.current = false;
         }
-    }, [coordinatorState.status]);
+
+        if (authStatus.tag === 'unauthenticated') {
+            didRedirectRef.current = false;
+        }
+    }, [authStatus]);
 
     useEffect(() => {
         if (didRedirectRef.current) return;
         if (!currentUser && !isLoggedIn && coordinatorState.status !== 'needs_setup') return;
 
-        if (coordinatorState.status === 'needs_setup') {
+        // Onboarding owns navigation while it is open. Leave the pending
+        // redirect untouched so OnboardingFlow can resume it after the profile
+        // is created — clearing it here is what lost inbox claim links.
+        if (redirectStore.get.isOnboardingOpen()) return;
+
+        // Never route during key/wallet rebuild or recovery/migration; the
+        // coordinator's overlays own those states.
+        if (authStatus.tag === 'resolving' || authStatus.tag === 'recovering') return;
+        if (authStatus.tag === 'ready' && authStatus.profile.tag === 'loading') return;
+
+        const needsOnboarding =
+            coordinatorState.status === 'needs_setup' ||
+            (authStatus.tag === 'ready' && authStatus.profile.tag === 'absent');
+
+        if (needsOnboarding) {
             if (didOpenOnboardingRef.current) return;
 
             trackSignupStarted();
             didOpenOnboardingRef.current = true;
             didRedirectRef.current = false;
-            void handlePromptOnboarding();
+            // Profile is confirmed absent or the coordinator needs setup, so
+            // open the existing onboarding flow directly — no async profile
+            // re-check that could resolve after navigation.
+            openOnboardingModal();
             return;
         }
+
+        // A definitively signed-out visitor has nowhere to go.
+        if (authStatus.tag === 'unauthenticated') return;
 
         didRedirectRef.current = true;
 
@@ -231,26 +263,38 @@ export const LoginContent: React.FC = () => {
                     return;
                 }
             }
+
+            // Only re-prompt onboarding for an existing profile (EU parental
+            // consent). A still-resolving profile must never open a second
+            // onboarding modal over the destination page — that page's own gate
+            // handles a confirmed absence.
+            const canRepromptOnboarding =
+                authStatus.tag === 'ready' && authStatus.profile.tag === 'present';
+
             if (redirectTo) {
+                redirectStore.set.lcnRedirect(null);
                 redirectStore.set.authRedirect(null);
                 chapiStore.set.isChapiInteraction(null);
                 history.push(redirectTo);
                 void handleGeneratePinUpdateToken();
-                void handlePromptOnboarding();
+                if (canRepromptOnboarding) void handlePromptOnboarding();
             } else if (lcnRedirectTo) {
                 redirectStore.set.lcnRedirect(null);
                 history.push(lcnRedirectTo);
                 void handleGeneratePinUpdateToken();
-                void handlePromptOnboarding();
+                if (canRepromptOnboarding) void handlePromptOnboarding();
             } else {
-                history.push('/dashboard');
+                // Preserve the demo shortcut's existing landing page after the
+                // profile/onboarding gates above have completed.
+                history.push(currentUser?.uid === 'demo' ? '/wallet' : '/dashboard');
                 void handleGeneratePinUpdateToken();
-                void handlePromptOnboarding();
+                if (canRepromptOnboarding) void handlePromptOnboarding();
             }
         } catch (e) {
             log.error(e);
         }
     }, [
+        authStatus,
         currentUser,
         isLoggedIn,
         coordinatorState.status,
@@ -259,6 +303,7 @@ export const LoginContent: React.FC = () => {
         handleGeneratePinUpdateToken,
         handlePromptOnboarding,
         handleLogout,
+        openOnboardingModal,
         trackSignupStarted,
     ]);
 
@@ -543,6 +588,7 @@ export const LoginContent: React.FC = () => {
                             <GenericErrorBoundary hideGoHome>
                                 {activeLoginType === LoginTypesEnum.email && (
                                     <EmailForm
+                                        suppressRedirect
                                         setShowSocialLogins={setShowSocialLogins}
                                         showSocialLogins={showSocialLogins}
                                     />

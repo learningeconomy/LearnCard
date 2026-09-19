@@ -423,12 +423,15 @@ describe('Credential Refresh (managed)', () => {
 
     test('stops serving after revocation while local history remains available', async () => {
         // Boost-issued refreshable credential: revocation moves through the
-        // canonical boost revocation path.
+        // canonical boost revocation path. LC-2198: refresh-enabled sendBoost now
+        // returns the issuance receipt so the issuer can publish updates.
         const boostUri = await issuer.invoke.createBoost(testUnsignedBoost);
 
-        const sentUri = await issuer.invoke.sendBoost(USERS.b.profileId, boostUri, {
-            enableRefresh: true,
-        });
+        const { credentialUri: sentUri } = await issuer.invoke.sendBoost(
+            USERS.b.profileId,
+            boostUri,
+            { enableRefresh: true }
+        );
 
         const incoming = await holder.invoke.getIncomingCredentials();
 

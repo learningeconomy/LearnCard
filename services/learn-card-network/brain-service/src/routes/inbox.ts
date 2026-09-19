@@ -1,3 +1,10 @@
+import {
+    assertInboxRefreshEnabled,
+    inboxRefreshRequestDigest,
+    getInboxRefreshReplay,
+    getInboxRefreshReceipt,
+    resumeInboxRefreshDelivery,
+} from '@helpers/inbox-refresh.helpers';
 import { getDidWeb } from '@helpers/did.helpers';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
@@ -449,6 +456,33 @@ export const inboxRouter = t.router({
             const { profile } = ctx.user;
             const { recipient, credential: inputCredential, templateUri, configuration } = input;
 
+            const refreshDigest = input.refresh ? inboxRefreshRequestDigest(input) : undefined;
+            if (input.refresh) {
+                await assertInboxRefreshEnabled(ctx.user.scope);
+                const replay = await getInboxRefreshReplay(
+                    profile.profileId,
+                    input.idempotencyKey,
+                    refreshDigest!
+                );
+                if (replay && (replay.claimUrl || replay.inbox.currentStatus !== 'PENDING')) {
+                    await resumeInboxRefreshDelivery(replay.inbox.refreshId!, ctx.domain);
+                    const receipt = await getInboxRefreshReceipt(
+                        replay.inbox.refreshId!,
+                        ctx.domain
+                    );
+                    return {
+                        issuanceId: replay.inbox.id,
+                        status: replay.inbox.currentStatus,
+                        recipient,
+                        claimUrl: replay.claimUrl,
+                        refresh: receipt,
+                        ...(replay.inbox.currentStatus === 'ISSUED'
+                            ? { recipientDid: receipt.holderDid }
+                            : {}),
+                    };
+                }
+            }
+
             // Resolve credential from templateUri if provided
             let credential = inputCredential;
             let resolvedBoostUri: string | undefined;
@@ -513,11 +547,18 @@ export const inboxRouter = t.router({
                     profile,
                     recipient,
                     credential,
-                    normalizedConfiguration,
+                    {
+                        ...normalizedConfiguration,
+                        boostUri: resolvedBoostUri,
+                        refresh: input.refresh,
+                        idempotencyKey: input.idempotencyKey,
+                        refreshRequestDigest: refreshDigest,
+                    },
                     ctx
                 );
 
                 return {
+                    refresh: result.refresh,
                     issuanceId: result.inboxCredential.id,
                     status: result.status,
                     recipient,
@@ -825,7 +866,17 @@ export const inboxRouter = t.router({
                 });
             }
 
-            return inboxCredential;
+            return {
+                ...inboxCredential,
+                ...(inboxCredential.refreshId
+                    ? {
+                          refresh: await getInboxRefreshReceipt(
+                              inboxCredential.refreshId,
+                              ctx.domain
+                          ),
+                      }
+                    : {}),
+            };
         }),
 
     // ─── Guardian Credential Approval Routes ─────────────────────────────────────
