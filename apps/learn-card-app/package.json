@@ -153,6 +153,7 @@
         "storybook": "storybook dev -p 6007",
         "build-storybook": "storybook build",
         "i18n:check-keys": "node scripts/check-i18n-keys.mjs",
+        "i18n:compile": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide --output-structure locale-modules --is-server \"import.meta.env?.SSR ?? typeof window === 'undefined'\"",
         "test-storybook": "test-storybook --url http://localhost:6007",
         "test-storybook:ci": "concurrently -k -s first -n \"SB,TEST\" -c \"magenta,blue\" \"http-server storybook-static --port 6099 --silent\" \"wait-on tcp:127.0.0.1:6099 && test-storybook --url http://127.0.0.1:6099\"",
         "test-mock": "playwright test --config=playwright.mock.config.ts",
