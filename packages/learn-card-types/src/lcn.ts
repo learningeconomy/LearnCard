@@ -1304,6 +1304,13 @@ export const IssueInboxCredentialValidator = z
         // HOW should this issuance be handled?
         configuration: z
             .object({
+                guardianEmail: z
+                    .string()
+                    .email()
+                    .optional()
+                    .describe(
+                        'Require approval from this guardian before the recipient can claim. Must differ from the recipient email.'
+                    ),
                 signingAuthority: IssueInboxSigningAuthorityValidator.optional().describe(
                     'The signing authority to use for the credential. If not provided, the users default signing authority will be used if the credential is not signed.'
                 ),
@@ -1413,7 +1420,17 @@ export const IssueInboxCredentialValidator = z
     .refine(data => data.credential || data.templateUri, {
         message: 'Either credential or templateUri must be provided.',
         path: ['credential'],
-    });
+    })
+    .refine(
+        data =>
+            !data.configuration?.guardianEmail ||
+            data.recipient.type !== 'email' ||
+            data.configuration.guardianEmail.toLowerCase() !== data.recipient.value.toLowerCase(),
+        {
+            message: 'guardianEmail must differ from recipient (self-approval not allowed)',
+            path: ['configuration', 'guardianEmail'],
+        }
+    );
 
 export type IssueInboxCredentialType = z.infer<typeof IssueInboxCredentialValidator>;
 
@@ -1424,6 +1441,157 @@ export const IssueInboxCredentialResponseValidator = z.object({
     claimUrl: z.string().url().optional(),
     recipientDid: z.string().optional(),
 });
+
+// Do not apply delivery defaults before merging: omitted per-item fields inherit batch defaults.
+const InboxBatchConfigurationValidator = IssueInboxCredentialValidator.shape.configuration
+    .unwrap()
+    .extend({
+        delivery: IssueInboxCredentialValidator.shape.configuration
+            .unwrap()
+            .shape.delivery.unwrap()
+            .extend({ suppress: z.boolean().optional() })
+            .optional(),
+    });
+
+const InboxBatchItemConfigurationValidator = InboxBatchConfigurationValidator.extend({
+    guardianEmail: InboxBatchConfigurationValidator.shape.guardianEmail
+        .nullable()
+        .describe(
+            'Require guardian approval, or set null to clear a batch-level guardianEmail for this item.'
+        ),
+});
+
+export const IssueInboxCredentialBatchItemValidator = z
+    .object({
+        ...IssueInboxCredentialValidator.shape,
+        configuration: InboxBatchItemConfigurationValidator.optional(),
+        idempotencyKey: z.string().max(256).optional(),
+    })
+    .refine(data => data.credential || data.templateUri, {
+        message: 'Either credential or templateUri must be provided.',
+        path: ['credential'],
+    })
+    .describe(
+        'One issuance: provide credential or templateUri. Invalid input is rejected at submission with its item index.'
+    );
+
+export const IssueInboxCredentialBatchValidator = z
+    .object({
+        requestId: z.string().min(1).max(256).optional(),
+        items: z.array(IssueInboxCredentialBatchItemValidator).min(1).max(100),
+        configuration: InboxBatchConfigurationValidator.optional(),
+    })
+    .superRefine((batch, ctx) => {
+        batch.items.forEach((item, index) => {
+            const itemGuardian = item.configuration?.guardianEmail;
+            const guardian =
+                itemGuardian === null
+                    ? undefined
+                    : (itemGuardian ?? batch.configuration?.guardianEmail);
+            if (
+                guardian &&
+                item.recipient.type === 'email' &&
+                guardian.toLowerCase() === item.recipient.value.toLowerCase()
+            ) {
+                ctx.addIssue({
+                    code: 'custom',
+                    path: ['items', index, 'configuration', 'guardianEmail'],
+                    message: 'guardianEmail must differ from recipient (self-approval not allowed)',
+                });
+            }
+        });
+    });
+export type IssueInboxCredentialBatch = z.infer<typeof IssueInboxCredentialBatchValidator>;
+
+export const InboxBatchErrorReasonValidator = z.enum([
+    'DUPLICATE_KEY',
+    'IDEMPOTENCY_MISMATCH',
+    'IN_PROGRESS',
+    'UNCONFIRMED',
+]);
+export type InboxBatchErrorReason = z.infer<typeof InboxBatchErrorReasonValidator>;
+
+export const IssueInboxCredentialBatchItemResultValidator = z.discriminatedUnion('success', [
+    IssueInboxCredentialResponseValidator.extend({
+        success: z.literal(true),
+        index: z.number().int().nonnegative(),
+        deduplicated: z.boolean().optional(),
+        guardianStatus: GuardianStatusValidator.optional(),
+        idempotencyKey: z.string().optional(),
+    }),
+    z.object({
+        success: z.literal(false),
+        index: z.number().int().nonnegative(),
+        idempotencyKey: z.string().optional(),
+        recipient: ContactMethodQueryValidator.optional(),
+        error: z.object({
+            code: z.string(),
+            message: z.string(),
+            reason: InboxBatchErrorReasonValidator.optional(),
+        }),
+        issuanceId: z
+            .string()
+            .optional()
+            .describe(
+                'Present when issuance completed but replay storage could not be confirmed. Reconcile this issuance; do not issue again with a new key.'
+            ),
+        claimUrl: z
+            .string()
+            .url()
+            .optional()
+            .describe(
+                'Claim URL of the completed issuance, if available, when replay storage could not be confirmed.'
+            ),
+    }),
+]);
+export type IssueInboxCredentialBatchItemResult = z.infer<
+    typeof IssueInboxCredentialBatchItemResultValidator
+>;
+
+export const IssueInboxCredentialBatchResponseValidator = z.object({
+    results: z.array(IssueInboxCredentialBatchItemResultValidator),
+    summary: z.object({
+        total: z.number(),
+        succeeded: z.number(),
+        failed: z.number(),
+        deduplicated: z.number(),
+    }),
+});
+export type IssueInboxCredentialBatchResponse = z.infer<
+    typeof IssueInboxCredentialBatchResponseValidator
+>;
+
+/** Submission acknowledges durable storage, not completed credential delivery. */
+export const InboxBatchReceiptValidator = z.object({
+    batchId: z.string(),
+    status: z.enum(['QUEUED', 'PROCESSING', 'COMPLETED', 'NEEDS_RECONCILIATION']),
+    createdAt: z.string(),
+});
+export type InboxBatchReceipt = z.infer<typeof InboxBatchReceiptValidator>;
+
+export const InboxBatchStatusValidator = z.object({
+    batchId: z.string(),
+    createdAt: z.string(),
+    done: z
+        .boolean()
+        .describe(
+            'True when no queued or processing items remain, including unconfirmed outcomes.'
+        ),
+    status: z.enum(['QUEUED', 'PROCESSING', 'COMPLETED', 'NEEDS_RECONCILIATION']),
+    items: z.array(
+        z.object({
+            index: z.number().int().nonnegative(),
+            state: z.enum(['QUEUED', 'PROCESSING', 'COMPLETED', 'NEEDS_RECONCILIATION']),
+            result: IssueInboxCredentialBatchItemResultValidator.optional(),
+        })
+    ),
+    summary: IssueInboxCredentialBatchResponseValidator.shape.summary.extend({
+        completed: z.number(),
+        pending: z.number(),
+        unconfirmed: z.number(),
+    }),
+});
+export type InboxBatchStatus = z.infer<typeof InboxBatchStatusValidator>;
 
 export type IssueInboxCredentialResponseType = z.infer<
     typeof IssueInboxCredentialResponseValidator

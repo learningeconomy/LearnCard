@@ -22,6 +22,13 @@ The REST examples below use a tiny helper so each recipe stays short. It's plain
 const API_BASE = 'https://network.learncard.com/api';
 
 const learncardApiClient = {
+    get: async path => {
+        const res = await fetch(`${API_BASE}${path}`, {
+            headers: { Authorization: `Bearer ${process.env.LEARNCARD_API_TOKEN}` },
+        });
+        if (!res.ok) throw new Error(`${path} failed: ${res.status} ${await res.text()}`);
+        return res.json();
+    },
     post: async (path, body) => {
         const res = await fetch(`${API_BASE}${path}`, {
             method: 'POST',
@@ -36,6 +43,123 @@ const learncardApiClient = {
     },
 };
 ```
+
+### Issue a batch
+
+`POST /api/inbox/issue-batch` requires `inbox:write` and returns HTTP **202** with
+`{ batchId, status: 'QUEUED', createdAt }`. The SDK equivalent is
+`learnCard.invoke.sendCredentialBatchViaInbox(batch)` (also available as
+`sendCredentialsViaInbox`); tRPC uses `inbox.issueBatch`.
+An identical `requestId` retry returns the original batch ID and its current state,
+which may already be `PROCESSING`, `COMPLETED`, or `NEEDS_RECONCILIATION`.
+Receipt status is an advisory snapshot. Always poll the batch endpoint and use
+`done` to determine whether processing has finished, including unconfirmed outcomes.
+
+```javascript
+const receipt = await learncardApiClient.post('/inbox/issue-batch', {
+    requestId: 'course-2026-chunk-001',
+    configuration: { delivery: { suppress: true } },
+    items: [
+        {
+            recipient: { type: 'email', value: 'student@example.com' },
+            templateUri: 'lc:network:network.learncard.com/trpc:boost:YOUR_BOOST_ID',
+            idempotencyKey: 'course-2026-student-001',
+        },
+    ],
+});
+// Poll with a bounded deadline and backoff until progress.done is true.
+const progress = await learncardApiClient.get('/inbox/batches/' + receipt.batchId);
+for (const item of progress.items) console.log(item.index, item.state, item.result);
+```
+
+`GET /api/inbox/batches/{batchId}` requires `inbox:read` and the submitting issuer
+profile. Use `learnCard.invoke.getInboxCredentialBatch(batchId)` or tRPC
+`inbox.getBatch({ batchId })`. Missing or inaccessible jobs return 404.
+
+| Field                    | Contract                                                                                                                                                                                     |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Submission `items`       | 1–100 items, each with a recipient and either credential or template URI.                                                                                                                    |
+| `configuration`          | Shared defaults deep-merged with item overrides; arrays replace defaults.                                                                                                                    |
+| `requestId`              | Optional 1–256 character submission ID. Identical retries return the same batch for 24 hours without charging again; changed input conflicts.                                                |
+| `items[].idempotencyKey` | Optional item key, up to 256 characters; successful replay window is 24 hours per issuer.                                                                                                    |
+| Polling `done`           | True when no items remain queued or processing. Does not imply every issuance succeeded or was confirmed.                                                                                    |
+| Polling `status`         | `QUEUED`, `PROCESSING`, `COMPLETED`, or `NEEDS_RECONCILIATION`.                                                                                                                              |
+| Polling `items`          | Ordered entries with original `index`, processing `state`, and optional `result`.                                                                                                            |
+| Success result           | `success: true`, `index`, optional `idempotencyKey`, `issuanceId`, credential `status`, `recipient`, optional `claimUrl`, `recipientDid`, `guardianStatus`, and `deduplicated`.              |
+| Failure result           | `success: false`, `index`, `recipient`, optional `idempotencyKey`, `error.code`, `error.message`, optional `error.reason`; known issuance ID and claim URL may accompany uncertain outcomes. |
+| `summary`                | `total`, `succeeded`, `failed`, `deduplicated`, `completed`, `pending`, `unconfirmed`.                                                                                                       |
+
+Polling returns HTTP 200 even with item failures. Results remain available for
+30 days after all items reach a terminal state, including `NEEDS_RECONCILIATION`.
+The original payload is removed when no items remain queued or processing.
+Unresolved client-keyed replay reservations remain blocked even after the job and results expire.
+Internal reservations for unkeyed items are collected after their batch items are pruned.
+`NEEDS_RECONCILIATION` can coexist with unfinished items; `done` stays false until they finish.
+`completed` counts terminal items regardless of outcome, including unconfirmed items.
+Counts are disjoint: `succeeded + failed + unconfirmed + pending === total`;
+`deduplicated` is a subset of `succeeded`.
+
+Use the SDK polling helper for a bounded deadline, backoff, and cancellation:
+
+```typescript
+const batch = await learnCard.invoke.waitForInboxCredentialBatch(receipt.batchId, {
+    timeoutMs: 10 * 60_000,
+    intervalMs: 2_000,
+    signal: abortController.signal,
+    onProgress: progress => console.log(progress.summary),
+});
+```
+
+The interval increases by 1.5× to a maximum of ten seconds (or the initial interval,
+if larger). Timeout rejects with `TimeoutError`; abort rejects with the signal's reason.
+Neither cancels the job. Keep the batch ID to resume polling. Scripts can use
+`sendCredentialsViaInboxAndWait(input, { onSubmitted: receipt => saveReceipt(receipt) })`
+to submit once and wait. Both read and write scopes are required for this helper.
+
+Identical keyed item retries replay the same issuance with `deduplicated: true`.
+Changed payloads conflict. Later occurrences of a key within a batch always conflict.
+Side-effect-free failures release the key; transient preparation and signing errors
+retry up to five worker attempts before delivery. An overlapping key also retries with
+backoff (five total attempts); if still blocked, the result retains `IN_PROGRESS`.
+Uncertain delivery outcomes retain the key.
+Never bypass an uncertain result by issuing with a new key.
+
+Bodies over 4 MiB return 413; quota exhaustion returns 429. The default quota is
+10,000 admitted items per issuer per hour. Rejected submissions and internal worker
+retries do not consume quota; admitted item replays and failures do.
+
+Missing credentials/templates and guardian self-approval are rejected with HTTP 400 before
+admission or quota charging. REST validation `issues` contain `message` and `path`;
+for item issues, `path[1]` is the zero-based item index. Effective guardian defaults
+are checked after applying item overrides. Configuration defaults are additive:
+`undefined` inherits a default. An item may set `guardianEmail: null` to clear that
+batch-level default for the recipient.
+
+| Item `error.code`            | `error.reason`         | Action                                                                                                        |
+| ---------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `CONFLICT`                   | `DUPLICATE_KEY`        | Remove later occurrences of the key within this batch.                                                        |
+| `CONFLICT`                   | `IDEMPOTENCY_MISMATCH` | Restore the original input for this key; use a new key only for an intentionally new issuance.                |
+| `CONFLICT`                   | `IN_PROGRESS`          | Another attempt owns the key or remains unconfirmed. Retry the same key later; reconcile if it stays blocked. |
+| `CONFLICT`                   | `UNCONFIRMED`          | Check the known issuance ID and reconcile; never bypass it with a new key.                                    |
+| `BAD_REQUEST`                | —                      | Correct the input before resubmitting.                                                                        |
+| `NOT_FOUND`                  | —                      | Check the template or issuer still exists.                                                                    |
+| `UNAUTHORIZED` / `FORBIDDEN` | —                      | Check permissions and signing-authority access.                                                               |
+| `INTERNAL_SERVER_ERROR`      | —                      | Safe preparation or worker retries were exhausted; retry the same key.                                        |
+
+For 5,000 recipients, create 50 batches of at most 100 items; split earlier when
+JSON approaches 4 MiB. Persist a stable `requestId` for each chunk and an
+`idempotencyKey` for each issuance before sending. Start with two in-flight batches,
+waiting for `done` before submitting the next chunk. At the default 10,000-item hourly
+quota, a 5,000-item run consumes half the window; resubmitting all items under new
+request IDs consumes the remaining half, even if every item replays. Retry a lost
+submission with its original request ID within 24 hours. On HTTP 429, stop admissions
+until the issuer's hourly window resets (at most one hour).
+
+Issuance runs in a dedicated background queue; dispatch can take up to about a minute.
+For an immediate single-item result, use `sendCredentialViaInbox`. Single issuance remains synchronous.
+Both routes accept `configuration.guardianEmail`; it must differ from the recipient's
+email, ignoring case. See [batch issuance](../../core-concepts/network-and-interactions/universal-inbox.md#batch-issuance)
+for polling, worker timeouts, and recovery guidance.
 
 ### The Simplest Case: Fire and Forget
 

@@ -1,5 +1,9 @@
 import { TRPCError } from '@trpc/server';
 import {
+    InboxDeliveryCheckpointError,
+    InboxIssuancePreflightError,
+} from './inbox-issuance-error.helpers';
+import {
     VC,
     UnsignedVC,
     LCNNotificationTypeEnumValidator,
@@ -32,7 +36,7 @@ import { doesProfileManageProfile } from '@accesslayer/profile-manager/relations
 import { getProfilesThatManageAProfile } from '@accesslayer/profile/relationships/read';
 import { getProfileForInboxCredential } from '@accesslayer/inbox-credential/read';
 import { sendCredential } from '@helpers/credential.helpers';
-import { sendBoost } from '@helpers/boost.helpers';
+import { prepareCredentialFromBoost, getBoostUri, sendBoost } from '@helpers/boost.helpers';
 import { getBoostByUri } from '@accesslayer/boost/read';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
@@ -193,7 +197,9 @@ export const issueToInbox = async (
         integrationId?: string;
         guardianEmail?: string;
     } = {},
-    ctx: Context
+    ctx: Context,
+    /** Queue ownership checkpoint immediately before delivery or inbox persistence. */
+    beforeDelivery?: () => Promise<void>
 ): Promise<{
     status: 'PENDING' | 'ISSUED' | 'EXPIRED' | 'DELIVERED' | 'CLAIMED'; // DELIVERED & CLAIMED are deprecated, use ISSUED
     inboxCredential: InboxCredentialType;
@@ -213,11 +219,19 @@ export const issueToInbox = async (
     } = configuration;
     const isSigned = !!credential?.proof;
     let signingAuthority: IssueInboxSigningAuthority | undefined = _signingAuthority;
+    let deliveryCheckpointReached = beforeDelivery === undefined;
+    const checkpointDelivery = async (): Promise<void> => {
+        await beforeDelivery?.();
+        deliveryCheckpointReached = true;
+    };
+    const assertDeliveryCheckpoint = (result: InboxDeliveryCheckpointError['result']): void => {
+        if (!deliveryCheckpointReached) throw new InboxDeliveryCheckpointError(result);
+    };
 
     if (recipient.type === 'phone') {
         const isTrusted = await getRegistryService().isTrusted(issuerProfile.did);
         if (!isTrusted) {
-            throw new TRPCError({
+            throw new InboxIssuancePreflightError({
                 code: 'FORBIDDEN',
                 message:
                     'Sending credentials via phone is a feature reserved for members of the LearnCard Trusted Registry. Email delivery is available for all issuers. To verify your issuer, visit: https://docs.learncard.com/how-to-guides/verify-my-issuer',
@@ -245,14 +259,14 @@ export const issueToInbox = async (
              * By providing this parameter, the developer explicitly takes responsibility for the signing process. We trust them and proceed.
              **/
             if (!(await verifyCredentialCanBeSigned(credential as UnsignedVC))) {
-                throw new TRPCError({
+                throw new InboxIssuancePreflightError({
                     code: 'BAD_REQUEST',
                     message:
                         'Credential failed to pass a pre-flight issuance test. Please verify that the credential is well-formed and can be issued.',
                 });
             }
         } else {
-            throw new TRPCError({
+            throw new InboxIssuancePreflightError({
                 code: 'BAD_REQUEST',
                 message: 'Unsigned credentials require a signing authority',
             });
@@ -287,7 +301,7 @@ export const issueToInbox = async (
             );
 
             if (!signingAuthorityForUser) {
-                throw new TRPCError({
+                throw new InboxIssuancePreflightError({
                     code: 'NOT_FOUND',
                     message: 'Signing authority not found for issuer',
                 });
@@ -317,31 +331,20 @@ export const issueToInbox = async (
             credential: encryptedDelivery,
             statusEntries: getBitstringStatusListEntries(finalCredential),
         };
-        if (boostUri) {
-            const boost = await getBoostByUri(boostUri);
-            if (boost) {
-                await sendBoost({
-                    from: { type: 'profile', profile: issuerProfile },
-                    to: existingProfile,
-                    boost,
-                    credential: delivery,
-                    domain: ctx.domain,
-                    activityId,
-                    integrationId,
-                });
-            } else {
-                // Fallback to sendCredential if boost not found
-                await sendCredential(
-                    issuerProfile,
-                    existingProfile,
-                    delivery,
-                    ctx.domain,
-                    undefined,
-                    activityId,
-                    integrationId
-                );
-            }
+        const boost = boostUri ? await getBoostByUri(boostUri) : undefined;
+        await checkpointDelivery();
+        if (boostUri && boost) {
+            await sendBoost({
+                from: { type: 'profile', profile: issuerProfile },
+                to: existingProfile,
+                boost,
+                credential: delivery,
+                domain: ctx.domain,
+                activityId,
+                integrationId,
+            });
         } else {
+            // Fall back to ordinary delivery when no boost exists for the supplied URI.
             await sendCredential(
                 issuerProfile,
                 existingProfile,
@@ -420,6 +423,11 @@ export const issueToInbox = async (
             });
         }
 
+        assertDeliveryCheckpoint({
+            issuanceId: finalizedInboxCredential.id,
+            status: LCNInboxStatusEnumValidator.enum.ISSUED,
+            recipientDid: existingProfile.did,
+        });
         return {
             status: LCNInboxStatusEnumValidator.enum.ISSUED,
             inboxCredential: finalizedInboxCredential,
@@ -429,6 +437,7 @@ export const issueToInbox = async (
         // Store in inbox for claiming
         // Guardian gate if issuer specified guardianEmail OR recipient is a managed child
         const needsGuardianGate = !!guardianEmail || recipientIsManaged;
+        await checkpointDelivery();
         const inboxCredential = await createInboxCredential({
             credential: JSON.stringify(credential),
             isSigned,
@@ -819,6 +828,12 @@ export const issueToInbox = async (
         );
         const claimUrl = generateClaimUrl(claimToken);
 
+        assertDeliveryCheckpoint({
+            issuanceId: inboxCredential.id,
+            status: LCNInboxStatusEnumValidator.enum.PENDING,
+            claimUrl,
+            ...(guardianEmail ? { guardianStatus: 'AWAITING_GUARDIAN' as const } : {}),
+        });
         return {
             status: LCNInboxStatusEnumValidator.enum.PENDING,
             inboxCredential,
@@ -826,4 +841,66 @@ export const issueToInbox = async (
             ...(guardianEmail ? { guardianStatus: 'AWAITING_GUARDIAN' as const } : {}),
         };
     }
+};
+
+/**
+ * Resolves an input into the credential that issueToInbox consumes. Keeping this outside either
+ * route makes direct credentials and Boost templates behave identically for single and batch
+ * issuance, including template rendering, Boost metadata, and standard client-facing errors.
+ */
+export const resolveInboxCredentialInput = async (
+    input: IssueInboxCredentialType,
+    ctx: Context
+): Promise<{ credential: VC | UnsignedVC | VP; resolvedBoostUri?: string }> => {
+    const { templateUri, configuration } = input;
+    // A direct credential wins when both fields are present, matching the existing single-route
+    // behavior. A template is only loaded when the caller supplied no credential.
+    let credential = input.credential;
+    let resolvedBoostUri: string | undefined;
+
+    if (templateUri && !credential) {
+        const boostInstance = await getBoostByUri(templateUri);
+
+        if (!boostInstance) {
+            throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: `Boost not found: ${templateUri}`,
+            });
+        }
+
+        if (!boostInstance.dataValues.boost) {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: `Boost does not contain a credential template: ${templateUri}`,
+            });
+        }
+
+        try {
+            // Use shared helper to prepare credential with templateData rendering,
+            // issuance date, boostId injection, and OBv3 alignments
+            resolvedBoostUri = getBoostUri(boostInstance.id, ctx.domain);
+
+            credential = await prepareCredentialFromBoost(
+                boostInstance,
+                resolvedBoostUri,
+                ctx.domain,
+                { templateData: configuration?.templateData as Record<string, unknown> }
+            );
+        } catch (e) {
+            console.error('Failed to prepare boost credential', e);
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: `Failed to prepare boost credential template: ${templateUri}`,
+            });
+        }
+    }
+
+    if (!credential) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Either credential or templateUri must be provided',
+        });
+    }
+
+    return { credential, resolvedBoostUri };
 };
