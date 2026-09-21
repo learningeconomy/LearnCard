@@ -88,23 +88,21 @@ describe('resolveShareLinkExpiry', () => {
 
 describe('resolveShareLinkOwnerApiConfig (fail closed)', () => {
     const enabledRaw = (overrides: Record<string, unknown> = {}) => ({
-        SHARE_LINK_OWNER_API_ENABLED: 'true',
-        SHARE_LINK_MAINTENANCE_ENABLED: 'true',
         SHARE_LINK_MAINTENANCE_NAMESPACE: 'deployment-ns',
         SHARE_LINK_MAINTENANCE_ORIGIN: 'https://learncloud.test',
         SHARE_LINK_MAINTENANCE_AUDIENCE: 'did:web:brain.test',
         ...overrides,
     });
 
-    it('is disabled when absent or explicitly false', () => {
+    it('does no setup without service wiring', () => {
         expect(resolveShareLinkOwnerApiConfig({})).toEqual({ status: 'disabled' });
-        expect(resolveShareLinkOwnerApiConfig({ SHARE_LINK_OWNER_API_ENABLED: 'false' })).toEqual({
+        expect(resolveShareLinkOwnerApiConfig({ SHARE_LINK_MAINTENANCE_NAMESPACE: '' })).toEqual({
             status: 'disabled',
         });
     });
 
-    it('is invalid when enabled without a valid service-client configuration', () => {
-        expect(resolveShareLinkOwnerApiConfig({ SHARE_LINK_OWNER_API_ENABLED: 'true' })).toEqual({
+    it('rejects incomplete service-client configuration', () => {
+        expect(resolveShareLinkOwnerApiConfig({ SHARE_LINK_MAINTENANCE_NAMESPACE: 'ns' })).toEqual({
             status: 'invalid',
         });
     });
@@ -117,9 +115,9 @@ describe('resolveShareLinkOwnerApiConfig (fail closed)', () => {
         ).toEqual({ status: 'invalid' });
     });
 
-    it('allows the owner API while maintenance stays explicitly disabled', () => {
+    it('ignores the retired owner rollout flag', () => {
         expect(
-            resolveShareLinkOwnerApiConfig(enabledRaw({ SHARE_LINK_MAINTENANCE_ENABLED: 'false' }))
+            resolveShareLinkOwnerApiConfig(enabledRaw({ SHARE_LINK_OWNER_API_ENABLED: 'false' }))
         ).toMatchObject({ status: 'enabled', namespace: 'deployment-ns' });
     });
 

@@ -3,7 +3,7 @@ import type { ShareRecoveryRunSummary, CleanupRunSummary } from '../share-link-c
 /**
  * LC-2187 share-link maintenance (scheduling + cleanup integration).
  *
- * This module owns the disabled-by-default, namespace-scoped maintenance pass. It
+ * This module owns the automatically configured, namespace-scoped maintenance pass. It
  * is deliberately separate from the coordinator barrel so unit tests never load
  * the Neo4j `@instance` or the LearnCard signing graph.
  */

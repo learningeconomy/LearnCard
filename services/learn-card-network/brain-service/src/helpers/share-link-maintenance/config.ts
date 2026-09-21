@@ -14,18 +14,16 @@ import { validateShareContentOrigin } from '../share-content-client/config';
 import type { ShareLinkMaintenanceConfig, ShareLinkMaintenanceConfigResolution } from './types';
 
 /**
- * Operator-facing configuration for the disabled-by-default share-link
- * maintenance pass.
+ * Operator-facing configuration for the automatic share-link maintenance pass.
  *
  * Every value is read and validated here rather than in the global environment
  * schema so malformed maintenance settings fail closed to a fixed category
- * instead of preventing the whole Brain service from booting. Disabled or
+ * instead of preventing the whole Brain service from booting. Absent or
  * invalid configuration must perform no graph or remote I/O and must not
  * initialize a signer.
  */
 
 export const SHARE_LINK_MAINTENANCE_ENV = {
-    ENABLED: 'SHARE_LINK_MAINTENANCE_ENABLED',
     NAMESPACE: 'SHARE_LINK_MAINTENANCE_NAMESPACE',
     ORIGIN: 'SHARE_LINK_MAINTENANCE_ORIGIN',
     AUDIENCE: 'SHARE_LINK_MAINTENANCE_AUDIENCE',
@@ -63,10 +61,8 @@ export const SHARE_LINK_MAINTENANCE_INVALID_CATEGORY =
 /**
  * Transport/service-client portion of the share-content configuration.
  *
- * This is deliberately independent of `SHARE_LINK_MAINTENANCE_ENABLED`: the
- * owner API needs the same validated origin/namespace/audience to reach
- * LearnCloud, but enabling the owner API must not start the maintenance
- * scheduler. Both features share this one validated transport resolution.
+ * Owner/public APIs and maintenance use the same validated namespace, origin,
+ * and audience. No backend rollout flag is required.
  */
 export type ShareLinkServiceTransportConfig = {
     namespace: string;
@@ -78,9 +74,16 @@ export type ShareLinkServiceTransportConfig = {
 export type ShareLinkServiceTransportConfigResolution =
     { status: 'enabled'; config: ShareLinkServiceTransportConfig } | { status: 'invalid' };
 
+/** Whether any required service wiring has been supplied (empty deployment defaults are absent). */
+export const hasShareLinkServiceTransportConfig = (source: Record<string, unknown>): boolean =>
+    [
+        SHARE_LINK_MAINTENANCE_ENV.NAMESPACE,
+        SHARE_LINK_MAINTENANCE_ENV.ORIGIN,
+        SHARE_LINK_MAINTENANCE_ENV.AUDIENCE,
+    ].some(key => source[key] !== undefined && source[key] !== null && source[key] !== '');
+
 /**
- * Validate the service-client transport fields out of a raw record. Never reads
- * the maintenance enable flag and never echoes a value or an exception.
+ * Validate service-client transport fields without echoing values or exceptions.
  */
 export const resolveShareLinkServiceTransportConfig = (
     raw: unknown
@@ -179,10 +182,7 @@ export const resolveShareLinkMaintenanceConfig = (
     if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return invalid();
 
     const source = raw as Record<string, unknown>;
-    const enabled = parseDeliberateBoolean(source[SHARE_LINK_MAINTENANCE_ENV.ENABLED]);
-
-    if (enabled === MISSING || enabled === false) return { status: 'disabled' };
-    if (enabled === null) return invalid();
+    if (!hasShareLinkServiceTransportConfig(source)) return { status: 'disabled' };
 
     const transport = resolveShareLinkServiceTransportConfig(source);
     if (transport.status !== 'enabled') return invalid();

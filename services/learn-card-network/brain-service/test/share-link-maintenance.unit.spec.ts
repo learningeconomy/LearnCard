@@ -33,7 +33,6 @@ const NOW_ISO = '2026-09-20T12:00:00.000Z';
 const silentLogger = { info: vi.fn(), error: vi.fn() };
 
 const enabledEnv = (overrides: Record<string, unknown> = {}) => ({
-    SHARE_LINK_MAINTENANCE_ENABLED: 'true',
     SHARE_LINK_MAINTENANCE_NAMESPACE: NAMESPACE,
     SHARE_LINK_MAINTENANCE_ORIGIN: 'https://learncloud.example',
     SHARE_LINK_MAINTENANCE_AUDIENCE: 'did:web:learncloud.example',
@@ -97,19 +96,29 @@ const makeRecoveryRepository = (): RecoveryRunnerDependencies['repository'] =>
     }) as unknown as RecoveryRunnerDependencies['repository'];
 
 describe('share-link maintenance config', () => {
-    it('disables when the flag is absent or deliberately false', () => {
+    it('does no setup without service wiring', () => {
         expect(resolveShareLinkMaintenanceConfig({})).toEqual({ status: 'disabled' });
         expect(
-            resolveShareLinkMaintenanceConfig({ SHARE_LINK_MAINTENANCE_ENABLED: 'false' })
+            resolveShareLinkMaintenanceConfig({
+                SHARE_LINK_MAINTENANCE_NAMESPACE: '',
+                SHARE_LINK_MAINTENANCE_ORIGIN: '',
+                SHARE_LINK_MAINTENANCE_AUDIENCE: '',
+            })
         ).toEqual({ status: 'disabled' });
+    });
+    it('runs automatically with valid configuration despite retired rollout flags', () => {
         expect(
-            resolveShareLinkMaintenanceConfig({ SHARE_LINK_MAINTENANCE_ENABLED: false })
-        ).toEqual({ status: 'disabled' });
+            resolveShareLinkMaintenanceConfig(
+                enabledEnv({ SHARE_LINK_MAINTENANCE_ENABLED: 'false' })
+            ).status
+        ).toBe('enabled');
     });
 
     it('rejects a malformed boolean instead of coercing it', () => {
         expect(
-            resolveShareLinkMaintenanceConfig(enabledEnv({ SHARE_LINK_MAINTENANCE_ENABLED: 'yes' }))
+            resolveShareLinkMaintenanceConfig(
+                enabledEnv({ SHARE_LINK_MAINTENANCE_ALLOW_INSECURE_LOOPBACK: 'yes' })
+            )
         ).toEqual({
             status: 'invalid',
             category: 'share_link_maintenance_configuration_invalid',
@@ -181,7 +190,7 @@ describe('share-link maintenance runtime', () => {
         const createClient = vi.fn();
         const createRepositories = vi.fn();
         const runtime = createShareLinkMaintenanceRuntime({
-            rawEnvironment: { SHARE_LINK_MAINTENANCE_ENABLED: 'false' },
+            rawEnvironment: {},
             logger: silentLogger,
             createClient,
             createRepositories,
@@ -609,7 +618,7 @@ describe('maintenance budget helper', () => {
 describe('Lambda and Docker wiring is disabled by default', () => {
     const serverless = readFileSync(join(__dirname, '..', 'serverless.yml'), 'utf8');
 
-    it('registers a dedicated handler on a disabled schedule', () => {
+    it('registers the automatic maintenance schedule', () => {
         expect(serverless).toContain(
             'handler: shareLinkMaintenanceLambda.shareLinkMaintenanceHandler'
         );
@@ -619,14 +628,12 @@ describe('Lambda and Docker wiring is disabled by default', () => {
             serverless.indexOf('trpc:')
         );
 
-        expect(functionBlock).toContain('enabled: false');
-        expect(functionBlock).not.toContain('enabled: true');
+        expect(functionBlock).toContain('enabled: true');
+        expect(functionBlock).not.toContain('enabled: false');
     });
 
-    it('ships the maintenance flag disabled by default', () => {
-        expect(serverless).toContain(
-            'SHARE_LINK_MAINTENANCE_ENABLED: ${env:SHARE_LINK_MAINTENANCE_ENABLED, "false"}'
-        );
+    it('does not ship a maintenance rollout flag', () => {
+        expect(serverless).not.toContain('SHARE_LINK_MAINTENANCE_ENABLED:');
     });
 });
 

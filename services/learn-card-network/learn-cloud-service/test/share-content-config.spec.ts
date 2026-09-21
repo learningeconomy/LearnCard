@@ -18,7 +18,6 @@ const KID = `${SIGNER}#key-1`;
 const NAMESPACE = 'learncard';
 
 const fullConfig = (overrides: Record<string, unknown> = {}) => ({
-    enabled: true,
     audience: AUDIENCE,
     serviceDids: SIGNER,
     verificationMethods: KID,
@@ -27,12 +26,22 @@ const fullConfig = (overrides: Record<string, unknown> = {}) => ({
 });
 
 describe('share-content runtime configuration', () => {
-    it('is disabled when the enabled flag is absent or false', () => {
+    it('does no setup without service wiring', () => {
         expect(resolveShareContentConfig({}).status).toBe('disabled');
-        expect(resolveShareContentConfig({ enabled: false, audience: AUDIENCE }).status).toBe(
-            'disabled'
-        );
+        expect(
+            resolveShareContentConfig({
+                audience: '',
+                serviceDids: '',
+                verificationMethods: '',
+                namespaceBindings: '',
+            }).status
+        ).toBe('disabled');
         expect(resolveShareContentConfig(null).status).toBe('disabled');
+    });
+
+    it('is available without a rollout flag and ignores its retired value', () => {
+        expect(resolveShareContentConfig(fullConfig()).status).toBe('enabled');
+        expect(resolveShareContentConfig(fullConfig({ enabled: false })).status).toBe('enabled');
     });
 
     it('is invalid when an enabled configuration is incomplete (fail closed)', () => {
@@ -161,9 +170,9 @@ describe('share-content runtime boot order and disabled side effects', () => {
         const order: string[] = [];
         const dependencies = makeDependencies(order);
 
-        await expect(buildShareContentRuntime({ enabled: true }, dependencies)).rejects.toThrow(
-            /Invalid LC-2187 share-content configuration/
-        );
+        await expect(
+            buildShareContentRuntime({ audience: AUDIENCE }, dependencies)
+        ).rejects.toThrow(/Invalid LC-2187 share-content configuration/);
 
         expect(dependencies.getRepository).not.toHaveBeenCalled();
         expect(dependencies.createReplayStore).not.toHaveBeenCalled();
@@ -190,9 +199,7 @@ describe('share-content environment schema', () => {
     it('defaults to disabled and does not require any share-content values', () => {
         const environment = parseLearnCloudServiceEnvironment({ NODE_ENV: 'test' }, 'test');
 
-        expect(environment.SHARE_CONTENT_ENABLED).toBe(false);
         expect(getShareContentRawConfig(environment)).toEqual({
-            enabled: false,
             audience: undefined,
             serviceDids: undefined,
             verificationMethods: undefined,
@@ -200,10 +207,10 @@ describe('share-content environment schema', () => {
         });
     });
 
-    it('requires the full share-content configuration once enabled', () => {
+    it('requires all trust fields when any are supplied', () => {
         expect(() =>
             parseLearnCloudServiceEnvironment(
-                { NODE_ENV: 'test', SHARE_CONTENT_ENABLED: 'true' },
+                { NODE_ENV: 'test', SHARE_CONTENT_SERVICE_DIDS: SIGNER },
                 'test'
             )
         ).toThrow(/SHARE_CONTENT_AUDIENCE/);
@@ -211,7 +218,6 @@ describe('share-content environment schema', () => {
         const environment = parseLearnCloudServiceEnvironment(
             {
                 NODE_ENV: 'test',
-                SHARE_CONTENT_ENABLED: 'true',
                 SHARE_CONTENT_AUDIENCE: AUDIENCE,
                 SHARE_CONTENT_SERVICE_DIDS: SIGNER,
                 SHARE_CONTENT_VERIFICATION_METHODS: KID,
@@ -220,7 +226,6 @@ describe('share-content environment schema', () => {
             'test'
         );
 
-        expect(environment.SHARE_CONTENT_ENABLED).toBe(true);
         expect(resolveShareContentConfig(getShareContentRawConfig(environment)).status).toBe(
             'enabled'
         );

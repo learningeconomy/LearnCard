@@ -101,8 +101,8 @@ const buildNamespacePolicy = (
 
 /**
  * Resolve the explicit configuration. An empty allowlist, empty verification
- * methods, missing namespace bindings or a disabled flag all fail closed. A
- * partially valid "enabled" configuration is reported as `invalid`; the caller
+ * methods, or missing namespace bindings all fail closed. A
+ * partially supplied configuration is reported as `invalid`; the caller
  * must then refuse to register routes (startup fails explicitly rather than
  * silently widening access).
  */
@@ -113,7 +113,12 @@ export const resolveShareContentConfig = (raw: unknown): ResolvedShareContentCon
 
     const source = raw as Record<string, unknown>;
 
-    if (source.enabled !== true) return { status: 'disabled' };
+    if (
+        !['audience', 'serviceDids', 'verificationMethods', 'namespaceBindings'].some(
+            key => source[key] !== undefined && source[key] !== null && source[key] !== ''
+        )
+    )
+        return { status: 'disabled' };
 
     const errors: string[] = [];
 
@@ -151,7 +156,7 @@ export const resolveShareContentConfig = (raw: unknown): ResolvedShareContentCon
 
     // Reuse the C1 resolver for the cryptographic trust config. Passing a value
     // that C1 would silently disable is an explicit invalid configuration here.
-    const trustConfig = resolveShareContentTrustConfig(source);
+    const trustConfig = resolveShareContentTrustConfig({ ...source, enabled: true });
 
     if (!isShareContentTrustConfigActive(trustConfig)) {
         return {
@@ -172,13 +177,11 @@ export const resolveShareContentConfig = (raw: unknown): ResolvedShareContentCon
  * LearnCloud environment. Kept tiny so entrypoints cannot drift from each other.
  */
 export const getShareContentRawConfig = (environment: {
-    SHARE_CONTENT_ENABLED?: boolean;
     SHARE_CONTENT_AUDIENCE?: string;
     SHARE_CONTENT_SERVICE_DIDS?: string;
     SHARE_CONTENT_VERIFICATION_METHODS?: string;
     SHARE_CONTENT_NAMESPACE_BINDINGS?: string;
 }): Record<string, unknown> => ({
-    enabled: environment.SHARE_CONTENT_ENABLED === true,
     audience: environment.SHARE_CONTENT_AUDIENCE,
     serviceDids: environment.SHARE_CONTENT_SERVICE_DIDS,
     verificationMethods: environment.SHARE_CONTENT_VERIFICATION_METHODS,

@@ -10,8 +10,8 @@ import {
  *
  * It deliberately does NOT import `lambda.ts`, so no unrelated embedding
  * backfill, tRPC router, Sentry input capture or inbox handler runs at import
- * time. The only side effect is resolving the disabled-by-default maintenance
- * configuration; when it is disabled or malformed the runtime is inert and the
+ * time. The only side effect is resolving the service and maintenance
+ * configuration; when it is absent or malformed the runtime is inert and the
  * handler performs no graph, remote or signing work.
  *
  * The scheduled event payload is ignored entirely: it can never override the

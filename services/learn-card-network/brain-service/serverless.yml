@@ -177,10 +177,9 @@ provider:
         CREDENTIAL_REFRESH_ENABLED: ${env:CREDENTIAL_REFRESH_ENABLED, "false"}
         CREDENTIAL_REFRESH_DIGEST_SECRET: ${env:CREDENTIAL_REFRESH_DIGEST_SECRET, ""}
         CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS: ${env:CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS, "24"}
-        # LC-2187 share-link maintenance. Disabled by default; every value is
+        # LC-2187 share-link service wiring and automatic maintenance. Every value is
         # bounded and re-validated fail-closed at runtime. Never read from the
         # scheduled event payload.
-        SHARE_LINK_MAINTENANCE_ENABLED: ${env:SHARE_LINK_MAINTENANCE_ENABLED, "false"}
         SHARE_LINK_MAINTENANCE_NAMESPACE: ${env:SHARE_LINK_MAINTENANCE_NAMESPACE, ""}
         SHARE_LINK_MAINTENANCE_ORIGIN: ${env:SHARE_LINK_MAINTENANCE_ORIGIN, ""}
         SHARE_LINK_MAINTENANCE_AUDIENCE: ${env:SHARE_LINK_MAINTENANCE_AUDIENCE, ""}
@@ -222,8 +221,8 @@ functions:
                   enabled: true
 
     # LC-2187 share-link recovery + cleanup. Dedicated entrypoint (no lambda.ts
-    # import-time work) and disabled by default. The runtime config gate also
-    # keeps a manual invocation inert unless explicitly enabled.
+    # import-time work). Runs automatically with valid service configuration;
+    # absent wiring remains inert and partial wiring fails closed.
     shareLinkMaintenance:
         handler: shareLinkMaintenanceLambda.shareLinkMaintenanceHandler
         timeout: 300
@@ -235,7 +234,7 @@ functions:
         events:
             - schedule:
                   rate: rate(1 day)
-                  enabled: false
+                  enabled: true
 
     trpc:
         handler: lambda.trpcHandler

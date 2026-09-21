@@ -1,20 +1,13 @@
-import { resolveShareLinkServiceTransportConfig } from '../share-link-maintenance/config';
+import {
+    hasShareLinkServiceTransportConfig,
+    resolveShareLinkServiceTransportConfig,
+} from '../share-link-maintenance/config';
 
 /**
- * Disabled-by-default configuration for the LC-2187 public share-link API.
- *
- * Deliberately INDEPENDENT of both `SHARE_LINK_OWNER_API_ENABLED` and
- * `SHARE_LINK_MAINTENANCE_ENABLED`: enabling anonymous public resolve/content/
- * acknowledgement must not enable owner writes or start the maintenance
- * scheduler, and vice versa. It shares only the single validated service-client
- * transport namespace/origin/audience (never a caller, tenant or Host value).
- * A disabled or malformed configuration resolves to `null` and performs no
- * repository, signer or remote client setup.
+ * Available automatically once trusted service configuration is complete.
+ * Namespace, origin and audience come only from server configuration. Missing
+ * wiring is inactive; partial or invalid wiring fails closed.
  */
-
-export const SHARE_LINK_PUBLIC_API_ENV = {
-    ENABLED: 'SHARE_LINK_PUBLIC_API_ENABLED',
-} as const;
 
 export type ShareLinkPublicApiConfigResolution =
     | { status: 'disabled' }
@@ -27,30 +20,13 @@ export type ShareLinkPublicApiConfigResolution =
           allowInsecureLoopback: boolean;
       };
 
-const MISSING = Symbol('missing');
-
-const parseDeliberateBoolean = (value: unknown): boolean | typeof MISSING | null => {
-    if (value === undefined || value === null || value === '') return MISSING;
-    if (typeof value === 'boolean') return value;
-    if (typeof value === 'string') {
-        const normalized = value.trim().toLowerCase();
-        if (normalized === 'true') return true;
-        if (normalized === 'false') return false;
-    }
-
-    return null;
-};
-
 export const resolveShareLinkPublicApiConfig = (
     raw: unknown
 ): ShareLinkPublicApiConfigResolution => {
     if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return { status: 'invalid' };
 
     const source = raw as Record<string, unknown>;
-    const enabled = parseDeliberateBoolean(source[SHARE_LINK_PUBLIC_API_ENV.ENABLED]);
-
-    if (enabled === MISSING || enabled === false) return { status: 'disabled' };
-    if (enabled === null) return { status: 'invalid' };
+    if (!hasShareLinkServiceTransportConfig(source)) return { status: 'disabled' };
 
     const transport = resolveShareLinkServiceTransportConfig(source);
     if (transport.status !== 'enabled') return { status: 'invalid' };

@@ -140,10 +140,9 @@ provider:
             'Fn::GetAtt': [ElasticCacheCluster, RedisEndpoint.Address]
         REDIS_PORT:
             'Fn::GetAtt': [ElasticCacheCluster, RedisEndpoint.Port]
-        # LC-2187 service-only share-content routes. Disabled by default; enabling
-        # requires an explicit audience, service DID/key-method allowlists and
+        # LC-2187 service-only share-content routes. Require an explicit
+        # audience, service DID/key-method allowlists and
         # per-service namespace bindings. No secret material is passed here.
-        SHARE_CONTENT_ENABLED: ${env:SHARE_CONTENT_ENABLED, 'false'}
         SHARE_CONTENT_AUDIENCE: ${env:SHARE_CONTENT_AUDIENCE, ''}
         SHARE_CONTENT_SERVICE_DIDS: ${env:SHARE_CONTENT_SERVICE_DIDS, ''}
         SHARE_CONTENT_VERIFICATION_METHODS: ${env:SHARE_CONTENT_VERIFICATION_METHODS, ''}
@@ -178,8 +177,8 @@ functions:
         events:
             - httpApi: ANY /api/{trpc+}
 
-    # LC-2187 service-only share-content transport. Disabled by default: the
-    # handler returns 404 for every path until SHARE_CONTENT_ENABLED=true with a
+    # LC-2187 service-only share-content transport. The handler returns 404
+    # for every path until configured with a
     # complete configuration. Events are the exact reviewed operations; there is
     # no wildcard/wildcard enumeration surface.
     shareContent:

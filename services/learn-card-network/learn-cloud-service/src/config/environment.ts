@@ -29,10 +29,9 @@ export const learnCloudServiceEnvironmentShape = {
     IS_OFFLINE: optionalEnvironmentBoolean.default(false),
     SKIP_DIDKIT_NAPI: optionalEnvironmentBoolean.default(false),
     CI: optionalEnvironmentBoolean.default(false),
-    // LC-2187 service-only share-content routes. Disabled unless an operator
+    // LC-2187 service-only share-content routes. Available once an operator
     // provisions an explicit audience, service DID allowlist, exact verification
     // methods and per-service namespace bindings.
-    SHARE_CONTENT_ENABLED: optionalEnvironmentBoolean.default(false),
     SHARE_CONTENT_AUDIENCE: optionalEnvironmentString,
     SHARE_CONTENT_SERVICE_DIDS: optionalEnvironmentString,
     SHARE_CONTENT_VERIFICATION_METHODS: optionalEnvironmentString,
@@ -65,7 +64,14 @@ export const learnCloudServiceEnvironmentSchema = z
             });
         }
 
-        if (environment.SHARE_CONTENT_ENABLED) {
+        if (
+            [
+                environment.SHARE_CONTENT_AUDIENCE,
+                environment.SHARE_CONTENT_SERVICE_DIDS,
+                environment.SHARE_CONTENT_VERIFICATION_METHODS,
+                environment.SHARE_CONTENT_NAMESPACE_BINDINGS,
+            ].some(Boolean)
+        ) {
             const requiredShareContentFields = [
                 'SHARE_CONTENT_AUDIENCE',
                 'SHARE_CONTENT_SERVICE_DIDS',
@@ -78,7 +84,7 @@ export const learnCloudServiceEnvironmentSchema = z
                     context.addIssue({
                         code: 'custom',
                         path: [field],
-                        message: 'Required when SHARE_CONTENT_ENABLED=true',
+                        message: 'Required when share-content service configuration is supplied',
                     });
                 }
             }
