@@ -89,6 +89,15 @@ profile. Use `learnCard.invoke.getInboxCredentialBatch(batchId)` or tRPC
 | Failure result           | `success: false`, `index`, `recipient`, optional `idempotencyKey`, `error.code`, `error.message`, optional `error.reason`; known issuance ID and claim URL may accompany uncertain outcomes. |
 | `summary`                | `total`, `succeeded`, `failed`, `deduplicated`, `completed`, `pending`, `unconfirmed`.                                                                                                       |
 
+Set `configuration.refresh: true` to enable managed credential refresh for the batch.
+Each `items[].configuration.refresh` overrides that default; explicit `false` disables
+refresh for that item. The existing top-level `items[].refresh` is also supported:
+precedence is item configuration, then item top-level flag, then batch configuration.
+Refresh requires `credentials:write` in addition to `inbox:write`, managed refresh
+enabled on the server, unsigned content, and a registered signing authority.
+Successful refreshable items include `result.refresh`; retain this receipt to publish
+future versions of the same credential. Idempotent replays preserve the receipt.
+
 Polling returns HTTP 200 even with item failures. Results remain available for
 30 days after all items reach a terminal state, including `NEEDS_RECONCILIATION`.
 The original payload is removed when no items remain queued or processing.
