@@ -46,6 +46,7 @@ import { getDefaultPrivacyPreferences, OnboardingPrivacyPreferences } from '../p
 import { ProfileIDStateValidator } from '../onboardingNetworkForm/helpers/validators';
 import { generateHandle, generateRandomSuffix } from './handleGenerator';
 import { inferCountryCode } from './countryInference';
+import { resolvePostOnboardingRedirect } from './postOnboardingRedirect';
 
 import BirthdayPicker from './BirthdayPicker';
 import CountrySelectorModal from '../onboardingNetworkForm/components/CountrySelectorModal';
@@ -183,7 +184,6 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
         'age-country': false,
         profile: false,
     });
-
     const getStepMetadata = useCallback((currentStep: Step) => {
         switch (currentStep) {
             case 'age-country':
@@ -695,9 +695,20 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
         if (onSuccess) {
             await onSuccess();
-        } else {
-            history.push('/dashboard');
+            return;
         }
+
+        // Resume a preserved claim/destination only after the profile was
+        // successfully created (this runs from the celebrate step). Clearing
+        // it here — never earlier — keeps it safe across signup and retries.
+        const pendingRedirect = resolvePostOnboardingRedirect(redirectStore.get.lcnRedirect());
+        if (pendingRedirect) {
+            redirectStore.set.lcnRedirect(null);
+            history.push(pendingRedirect);
+            return;
+        }
+
+        history.push('/dashboard');
     };
 
     const handleRoleSelect = async (selectedRole: LearnCardRolesEnum) => {

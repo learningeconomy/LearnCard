@@ -6,6 +6,7 @@
         "brainServiceApi": "http://localhost:4000/api",
         "cloudService": "http://localhost:4100/trpc",
         "lcaApi": "http://localhost:5100/trpc",
+        "notificationsEndpoint": "http://localhost:5100/api/notifications/send",
         "aiAgentService": "http://localhost:4300",
         "xapi": "http://localhost:4100/xapi"
     },

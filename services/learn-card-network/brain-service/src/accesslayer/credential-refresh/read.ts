@@ -262,8 +262,14 @@ export const getCredentialRefreshVersions = async (
     }
 
     const result = await neogma.queryRunner.run(
-        `MATCH (version:Credential {refreshId: $refreshId})
-         WHERE $beforeVersion IS NULL OR version.version < $beforeVersion
+        `CALL {
+             MATCH (version:Credential {refreshId: $refreshId}) RETURN version
+             UNION ALL
+             MATCH (version:InboxRefreshPublication {refreshId: $refreshId})
+             WHERE NOT EXISTS { MATCH (:Credential {refreshVersionKey: version.refreshVersionKey}) }
+             RETURN version
+         }
+         WITH version WHERE $beforeVersion IS NULL OR version.version < $beforeVersion
          RETURN {
              id: version.id,
              refreshId: version.refreshId,

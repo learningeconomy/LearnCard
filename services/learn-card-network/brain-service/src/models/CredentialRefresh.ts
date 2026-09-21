@@ -36,16 +36,18 @@ export const CredentialRefresh = ModelFactory<
     {
         label: 'CredentialRefresh',
         schema: {
+            inboxCredentialId: { type: 'string', required: false },
+            inboxCredentialStatus: { type: 'string', required: false },
             refreshId: { type: 'string', required: true },
             issuerProfileId: { type: 'string', required: true },
             issuerDid: { type: 'string', required: true },
             holderProfileId: { type: 'string', required: false },
-            holderDid: { type: 'string', required: true },
+            holderDid: { type: 'string', required: false },
             credentialId: { type: 'string', required: true },
             state: {
                 type: 'string',
                 required: true,
-                enum: ['awaiting_claim', 'active', 'revoked'],
+                enum: ['pending_holder', 'awaiting_claim', 'active', 'revoked'],
             },
             currentVersion: { type: 'number', required: true },
             etag: { type: 'string', required: false },
