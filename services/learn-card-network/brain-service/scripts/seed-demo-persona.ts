@@ -183,12 +183,14 @@ const main = async (): Promise<void> => {
         await run(
             `MERGE (p:Profile {profileId: $profileId})
              SET p.displayName = $displayName,
-                 p.shortBio = $shortBio
+                 p.shortBio = $shortBio,
+                 p.did = $did
              RETURN p`,
             {
                 profileId,
                 displayName: PROFILE_NAME,
                 shortBio: 'Issuer for LearnCard sample credentials',
+                did: signingAuthorityDid,
             }
         );
 

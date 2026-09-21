@@ -238,7 +238,9 @@ export const consentToContract = async (
 
                     boostCredential.issuer = { id: contractOwnerSigningAuthority.relationship.did };
 
-                    boostCredential.boostId = getBoostUri(boost.target.id, domain);
+                    if (boostCredential.type.includes('BoostCredential')) {
+                        boostCredential.boostId = getBoostUri(boost.target.id, domain);
+                    }
 
                     if (Array.isArray(boostCredential.credentialSubject)) {
                         boostCredential.credentialSubject = boostCredential.credentialSubject.map(

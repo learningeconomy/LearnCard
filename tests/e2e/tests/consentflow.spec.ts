@@ -466,10 +466,15 @@ describe('ConsentFlow E2E Tests', () => {
         let signingAuthority: { endpoint: string; name: string };
 
         beforeEach(async () => {
-            // Create a boost for auto-issuing
-            boostUri = await a.invoke.createBoost(testUnsignedBoost, {
+            const standardObv3Credential = {
+                ...testUnsignedBoost,
+                '@context': testUnsignedBoost['@context'].slice(0, 2),
+                type: testUnsignedBoost.type.filter(type => type !== 'BoostCredential'),
+            };
+
+            boostUri = await a.invoke.createBoost(standardObv3Credential, {
                 category: 'Achievement',
-                name: 'Auto-Boost Test',
+                name: 'Standard OBv3 Auto-Boost Test',
             });
 
             const sa = await a.invoke.createSigningAuthority('autoboost');
@@ -490,7 +495,7 @@ describe('ConsentFlow E2E Tests', () => {
             };
         });
 
-        it('should auto-issue credentials when consenting to a contract with auto-boosts', async () => {
+        it('should auto-issue standards-pure credentials when consenting to a contract with auto-boosts', async () => {
             // Create a contract with an auto-boost
             const contractUri = await a.invoke.createContract({
                 contract: normalContract,
@@ -626,9 +631,8 @@ describe('ConsentFlow E2E Tests', () => {
             const { termsUri: initialTermsUri } = await b.invoke.consentToContract(contractUri, {
                 terms: normalFullTerms, // No deniedWriters
             });
-            let credentialsAfterInitialConsent = await b.invoke.getCredentialsForContract(
-                initialTermsUri
-            );
+            const credentialsAfterInitialConsent =
+                await b.invoke.getCredentialsForContract(initialTermsUri);
             // Should have boosts from both A and C
             expect(credentialsAfterInitialConsent.records).toHaveLength(2);
             expect(
@@ -649,9 +653,8 @@ describe('ConsentFlow E2E Tests', () => {
                 terms: { ...normalFullTerms, deniedWriters: [USERS.c.profileId] }, // Deny User C
             });
 
-            const credentialsAfterReconsent = await b.invoke.getCredentialsForContract(
-                reconsentTermsUri
-            );
+            const credentialsAfterReconsent =
+                await b.invoke.getCredentialsForContract(reconsentTermsUri);
 
             expect(credentialsAfterReconsent.records).toHaveLength(3); // Only User A's boost for this new terms instance
             expect(

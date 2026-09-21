@@ -154,7 +154,9 @@ export const reconsentTerms = async (
                     // Set the issuer and subject
                     boostCredential.issuer = { id: contractOwnerSigningAuthority.relationship.did };
 
-                    boostCredential.boostId = getBoostUri(boost.dataValues.id, domain);
+                    if (boostCredential.type.includes('BoostCredential')) {
+                        boostCredential.boostId = getBoostUri(boost.dataValues.id, domain);
+                    }
 
                     if (Array.isArray(boostCredential.credentialSubject)) {
                         boostCredential.credentialSubject = boostCredential.credentialSubject.map(
@@ -384,7 +386,9 @@ export const updateTerms = async (
                     // Set the issuer and subject
                     boostCredential.issuer = { id: contractOwnerSigningAuthority.relationship.did };
 
-                    boostCredential.boostId = getBoostUri(boost.target.id, domain);
+                    if (boostCredential.type.includes('BoostCredential')) {
+                        boostCredential.boostId = getBoostUri(boost.target.id, domain);
+                    }
 
                     if (Array.isArray(boostCredential.credentialSubject)) {
                         boostCredential.credentialSubject = boostCredential.credentialSubject.map(
