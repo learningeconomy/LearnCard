@@ -10,10 +10,6 @@ import * as m from '../../../paraglide/messages.js';
 import SamplePersonaAddButton from './SamplePersonaAddButton';
 import { useSamplePersonas } from './useSamplePersonas';
 
-interface SamplePersonaBoxProps {
-    variant?: 'card' | 'empty';
-}
-
 interface PersonaPickerProps {
     personas: SamplePersonaConfig[];
     onAdded: () => void;
@@ -57,7 +53,7 @@ const PersonaPicker: React.FC<PersonaPickerProps> = ({ personas, onAdded }) => (
     </div>
 );
 
-const SamplePersonaBoxContent: React.FC<SamplePersonaBoxProps> = ({ variant = 'card' }) => {
+const SamplePersonaBoxContent: React.FC = () => {
     const confirm = useConfirmation();
     const { newModal, closeModal, closeAllModals } = useModal({
         desktop: ModalTypes.Center,
@@ -106,12 +102,9 @@ const SamplePersonaBoxContent: React.FC<SamplePersonaBoxProps> = ({ variant = 'c
         if (confirmed) await removeSampleCredentials();
     };
 
-    const containerClassName =
-        variant === 'empty' ? 'border border-grayscale-200 bg-white' : 'bg-white shadow-bottom-2-4';
-
     return (
         <section
-            className={`flex flex-col gap-5 p-6 rounded-[20px] font-poppins ${containerClassName}`}
+            className="flex flex-col gap-5 p-6 rounded-[20px] font-poppins bg-white shadow-bottom-2-4"
             aria-label={m['passport.buildMyLearnCard.samplePersona.title']()}
         >
             <div className="space-y-1">
@@ -180,12 +173,12 @@ const SamplePersonaBoxContent: React.FC<SamplePersonaBoxProps> = ({ variant = 'c
     );
 };
 
-const SamplePersonaBox: React.FC<SamplePersonaBoxProps> = props => {
+const SamplePersonaBox: React.FC = () => {
     const { samplePersonas, legacySamplePersonaContractUris } = useFeatureConfig();
 
     if (samplePersonas.length === 0 && legacySamplePersonaContractUris.length === 0) return null;
 
-    return <SamplePersonaBoxContent variant={props.variant} />;
+    return <SamplePersonaBoxContent />;
 };
 
 export default SamplePersonaBox;

@@ -21,7 +21,6 @@ import {
     ToastTypeEnum,
     useDeviceTypeByWidth,
     QRCodeScannerStore,
-    useGetCredentialCount,
 } from 'learn-card-base';
 
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
@@ -38,7 +37,6 @@ import Plus from 'learn-card-base/svgs/Plus';
 import ScanIcon from 'learn-card-base/svgs/ScanIcon';
 import AddToPassportMenu from '../../components/add-to-passport/AddToPassportMenu';
 import NewCredentialsPill from '../../components/main-subheader/NewCredentialsPill';
-import SamplePersonaBox from '../../components/learncard/checklist/SamplePersonaBox';
 
 import { useTheme } from '../../theme/hooks/useTheme';
 import { chatBotStore } from '../../stores/chatBotStore';
@@ -83,10 +81,6 @@ const WalletPage: React.FC = () => {
 
     const { isAiEnabled, reason } = useAiFeatureGate();
     const { presentToast } = useToast();
-    const { data: credentialCount, isLoading: credentialCountLoading } = useGetCredentialCount(
-        undefined,
-        true
-    );
 
     useEffect(() => {
         prefetchRoutes({ aiEnabled: isAiEnabled });
@@ -293,11 +287,6 @@ const WalletPage: React.FC = () => {
                                     </div>
                                 </div>
                             </IonRow>
-                            {!credentialCountLoading && credentialCount === 0 && (
-                                <div className="mt-4">
-                                    <SamplePersonaBox variant="empty" />
-                                </div>
-                            )}
                             <IonRow className="wallet-squares-wrapper max-w-[840px] mx-auto mt-[16px]">
                                 <IonCol
                                     className={`wallet-squares-container ${
