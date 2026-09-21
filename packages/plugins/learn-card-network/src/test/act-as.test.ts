@@ -209,8 +209,8 @@ describe('actAs', () => {
             );
         });
 
-        it.each(['FORBIDDEN', 'NOT_FOUND'])(
-            'rethrows a %s act-as denial instead of returning a broken instance',
+        it.each(['FORBIDDEN', 'BAD_REQUEST'])(
+            'rethrows a %s act-as denial, wrapping the original error as `cause`',
             async code => {
                 const denial = Object.assign(new Error(`act-as ${code}`), { data: { code } });
                 const actingClient = {
@@ -223,10 +223,79 @@ describe('actAs', () => {
                 const learnCard = getMockLearnCard();
                 const plugin = await getLearnCardNetworkPlugin(learnCard, URL, 'api-token-value');
 
-                await expect(plugin.methods.actAs(learnCard, 'not-mine')).rejects.toBe(denial);
+                const rejection: any = await plugin.methods
+                    .actAs(learnCard, 'not-mine')
+                    .catch(e => e);
+                expect(rejection).toBeInstanceOf(Error);
+                expect(rejection.cause).toBe(denial);
                 expect(learnCard.addPlugin).not.toHaveBeenCalled();
             }
         );
+
+        it('rethrows a NOT_FOUND act-as denial when the message matches resolveActAs', async () => {
+            const denial = Object.assign(new Error('Act-as target profile not found'), {
+                data: { code: 'NOT_FOUND' },
+            });
+            const actingClient = {
+                profile: { getProfile: { query: vi.fn().mockRejectedValue(denial) } },
+            };
+            vi.mocked(getApiTokenClient)
+                .mockResolvedValueOnce(getMockClient() as never)
+                .mockResolvedValueOnce(actingClient as never);
+
+            const learnCard = getMockLearnCard();
+            const plugin = await getLearnCardNetworkPlugin(learnCard, URL, 'api-token-value');
+
+            const rejection: any = await plugin.methods.actAs(learnCard, 'not-mine').catch(e => e);
+            expect(rejection).toBeInstanceOf(Error);
+            expect(rejection.cause).toBe(denial);
+            expect(learnCard.addPlugin).not.toHaveBeenCalled();
+        });
+
+        it('does not treat a NOT_FOUND with an unrelated message as an act-as denial', async () => {
+            const unrelated = Object.assign(
+                new Error('Profile not found. Please make a profile!'),
+                { data: { code: 'NOT_FOUND' } }
+            );
+            const actingClient = {
+                profile: { getProfile: { query: vi.fn().mockRejectedValue(unrelated) } },
+            };
+            vi.mocked(getApiTokenClient)
+                .mockResolvedValueOnce(getMockClient() as never)
+                .mockResolvedValueOnce(actingClient as never);
+
+            const learnCard = getMockLearnCard();
+            const plugin = await getLearnCardNetworkPlugin(learnCard, URL, 'api-token-value');
+
+            await expect(plugin.methods.actAs(learnCard, 'managed-child')).resolves.toBeDefined();
+            expect(learnCard.addPlugin).toHaveBeenCalledTimes(1);
+            expect(learnCard.debug).toHaveBeenCalledWith(
+                'LCN actAs: getProfile failed (non-fatal)',
+                unrelated
+            );
+        });
+
+        it('does not treat an INTERNAL_SERVER_ERROR as an act-as denial', async () => {
+            const serverError = Object.assign(new Error('boom'), {
+                data: { code: 'INTERNAL_SERVER_ERROR' },
+            });
+            const actingClient = {
+                profile: { getProfile: { query: vi.fn().mockRejectedValue(serverError) } },
+            };
+            vi.mocked(getApiTokenClient)
+                .mockResolvedValueOnce(getMockClient() as never)
+                .mockResolvedValueOnce(actingClient as never);
+
+            const learnCard = getMockLearnCard();
+            const plugin = await getLearnCardNetworkPlugin(learnCard, URL, 'api-token-value');
+
+            await expect(plugin.methods.actAs(learnCard, 'managed-child')).resolves.toBeDefined();
+            expect(learnCard.addPlugin).toHaveBeenCalledTimes(1);
+            expect(learnCard.debug).toHaveBeenCalledWith(
+                'LCN actAs: getProfile failed (non-fatal)',
+                serverError
+            );
+        });
 
         it('still returns an instance when the profile fetch fails for an unrelated reason', async () => {
             const actingClient = {

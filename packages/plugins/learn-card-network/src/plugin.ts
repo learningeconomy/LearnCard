@@ -523,9 +523,26 @@ export type GuardianApprovalGetter = () => string | undefined | Promise<string |
 
 export { ACT_AS_HEADER };
 
+// Must match the message resolveActAs throws for a missing target
+// (services/learn-card-network/brain-service/src/routes/index.ts).
+const ACT_AS_TARGET_NOT_FOUND_MESSAGE = 'Act-as target profile not found';
+
+/**
+ * True only for errors the server's act-as resolver throws when denying the delegation
+ * itself (FORBIDDEN: not a manager / policy denies; BAD_REQUEST: malformed header;
+ * NOT_FOUND: the target profile). Any other error — including a NOT_FOUND from elsewhere —
+ * is unrelated and must surface unchanged.
+ */
 const isActAsDenial = (error: unknown): boolean => {
     const code = (error as { data?: { code?: string } } | undefined)?.data?.code;
-    return code === 'FORBIDDEN' || code === 'NOT_FOUND';
+    if (code === 'FORBIDDEN' || code === 'BAD_REQUEST') return true;
+    if (code === 'NOT_FOUND') {
+        return (
+            (error as { message?: unknown } | undefined)?.message ===
+            ACT_AS_TARGET_NOT_FOUND_MESSAGE
+        );
+    }
+    return false;
 };
 
 /**
@@ -922,7 +939,11 @@ export async function getLearnCardNetworkPlugin(
                 try {
                     await actingPlugin.methods.getLCNClient(_learnCard).profile.getProfile.query();
                 } catch (error) {
-                    if (isActAsDenial(error)) throw error;
+                    if (isActAsDenial(error)) {
+                        const message =
+                            error instanceof Error ? error.message : 'Act-as request was denied.';
+                        throw new Error(message, { cause: error });
+                    }
                     _learnCard.debug?.('LCN actAs: getProfile failed (non-fatal)', error);
                 }
 

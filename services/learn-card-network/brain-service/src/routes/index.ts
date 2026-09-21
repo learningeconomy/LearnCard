@@ -284,8 +284,11 @@ const resolveActAs = async (
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid act-as profile identifier' });
     }
 
+    // Two DB lookups per request when the act-as header is present (target profile,
+    // then its managers) — acceptable at backend issuance volume; not worth caching.
     const target = await getProfileByProfileId(profileId);
-    if (!target) throw new TRPCError({ code: 'NOT_FOUND' });
+    if (!target)
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Act-as target profile not found' });
 
     const managers = await getProfilesThatManageAProfile(target.profileId);
     if (!profile || !managers.some(manager => manager.profileId === profile.profileId)) {
