@@ -232,7 +232,7 @@ const WalletPage: React.FC = () => {
                                             tone={passportBgColor ? 'onColor' : 'light'}
                                         />
 
-                                        {flags?.shareLinksEnabled === true && (
+                                        {flags?.shareMultipleEnabled === true && (
                                             <button
                                                 type="button"
                                                 onClick={handleShareModal}
