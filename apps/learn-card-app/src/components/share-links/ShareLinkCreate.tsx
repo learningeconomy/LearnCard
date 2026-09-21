@@ -10,6 +10,7 @@ import {
     lockClosedOutline,
 } from 'ionicons/icons';
 import type { VC } from '@learncard/types';
+import { QRCodeSVG } from 'qrcode.react';
 import { Clipboard } from '@capacitor/clipboard';
 import { useWallet } from 'learn-card-base';
 import { buildShareLinkUrl, isShareLinkError } from 'learn-card-base/helpers/share-links';
@@ -400,6 +401,22 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
                                     </p>
                                 )}
                             </div>
+                            <figure className="flex flex-col items-center gap-3 rounded-[20px] border border-grayscale-200 bg-white p-5">
+                                <QRCodeSVG
+                                    value={link}
+                                    size={224}
+                                    level="M"
+                                    includeMargin
+                                    bgColor="#FFFFFF"
+                                    fgColor="#18224E"
+                                    role="img"
+                                    aria-label={m['shareLinks.qrLabel']()}
+                                    className="h-auto max-w-full"
+                                />
+                                <figcaption className="text-sm text-grayscale-600 text-center">
+                                    {m['shareLinks.qrHint']()}
+                                </figcaption>
+                            </figure>
                             <label className="block text-xs font-medium text-grayscale-700">
                                 {m['shareLinks.privateLink']()}
                                 <input

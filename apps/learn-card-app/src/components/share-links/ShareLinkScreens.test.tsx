@@ -1,4 +1,5 @@
 import React from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 const mocks = vi.hoisted(() => ({
@@ -132,6 +133,20 @@ describe('create screen', () => {
         await screen.findByRole('checkbox');
         expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
     });
+    it('renders a QR encoding the entire completed link, including its key', async () => {
+        await chooseAndCreate();
+        const qr = await screen.findByRole('img', { name: 'Private link QR code' });
+        const link = screen.getByLabelText('Private link') as HTMLInputElement;
+        expect(link.value).toBe(
+            'https://tenant.example/s/AAAAAAAAAAAAAAAAAAAAAA#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+        );
+        const expected = render(
+            <QRCodeSVG value={link.value} size={224} level="M" includeMargin />
+        );
+        expect(qr.querySelectorAll('path')[1].getAttribute('d')).toBe(
+            expected.container.querySelectorAll('path')[1].getAttribute('d')
+        );
+    });
     it('reuses encrypted input after a lost response', async () => {
         mocks.wallet.invoke.createShareLink.mockRejectedValueOnce(new Error('lost response'));
         await chooseAndCreate();
@@ -154,6 +169,7 @@ describe('create screen', () => {
         await chooseAndCreate();
         await screen.findByText(/Your link is still being prepared/);
         expect(screen.queryByRole('button', { name: 'Copy link' })).toBeNull();
+        expect(screen.queryByRole('img', { name: 'Private link QR code' })).toBeNull();
         fireEvent.click(screen.getByRole('button', { name: 'Check again' }));
         await screen.findByText('Your link is ready');
         expect(mocks.wallet.invoke.retryShareLinkOperation).toHaveBeenCalledWith({

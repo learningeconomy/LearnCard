@@ -8918,6 +8918,8 @@
         }
     },
     "shareLinks": {
+        "qrLabel": "Code QR du lien privé",
+        "qrHint": "Scannez pour ouvrir ces justificatifs.",
         "privateLink": "Lien privé",
         "close": "Fermer",
         "ready": "Prêt à envoyer",

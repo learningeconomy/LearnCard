@@ -8918,6 +8918,8 @@
         }
     },
     "shareLinks": {
+        "qrLabel": "Código QR del enlace privado",
+        "qrHint": "Escanea para abrir estas credenciales.",
         "privateLink": "Enlace privado",
         "close": "Cerrar",
         "ready": "Listo para enviar",

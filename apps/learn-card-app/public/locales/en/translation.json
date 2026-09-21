@@ -8924,6 +8924,8 @@
         }
     },
     "shareLinks": {
+        "qrLabel": "Private link QR code",
+        "qrHint": "Scan to open these credentials.",
         "privateLink": "Private link",
         "close": "Close",
         "ready": "Ready to send",
