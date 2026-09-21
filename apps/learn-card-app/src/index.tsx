@@ -10,6 +10,7 @@ import { asyncWithLDProvider, basicLogger } from 'launchdarkly-react-client-sdk'
 import { TenantConfigProvider, renderConfigurationError } from 'learn-card-base';
 import { registerExternalUrlOpener } from 'learn-card-base/helpers/externalUrlOpener';
 import { bootstrapTenantConfig } from './config/bootstrapTenantConfig';
+import { applyNativeViewportRestrictions } from './helpers/applyNativeViewportRestrictions';
 import { getLaunchDarklyConfig } from './constants/runtimeLaunchDarkly';
 import App from './App';
 
@@ -21,6 +22,8 @@ import * as Sentry from '@sentry/browser';
 
 const browserGlobals = window as Window & { Buffer: typeof Buffer };
 browserGlobals.Buffer = Buffer;
+
+applyNativeViewportRestrictions(Capacitor.isNativePlatform());
 
 // Dev-only: simulate device safe-area insets via ?insets so band bugs are
 // visible on desktop. Must run before React renders (sets CSS vars on <html>).
