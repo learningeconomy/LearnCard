@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
     deleteCredentialFromAllContracts: vi.fn(),
     deleteCredentialRecord: vi.fn(),
     fetchNewContractCredentials: vi.fn(),
+    getCredentialsForContract: vi.fn(),
     initWallet: vi.fn(),
     invalidateQueries: vi.fn(),
     newModal: vi.fn(),
@@ -111,7 +112,9 @@ vi.mock('learn-card-base', () => ({
     }),
     useSyncConsentFlow: () => ({ refetch: mocks.fetchNewContractCredentials }),
     useToast: () => ({ presentToast: mocks.presentToast }),
-    useWallet: () => ({ initWallet: mocks.initWallet }),
+    useWallet: () => ({
+        initWallet: mocks.initWallet,
+    }),
     useWithdrawConsent: () => ({
         mutateAsync: mocks.withdrawConsent,
         isPending: false,
@@ -142,13 +145,17 @@ describe('SamplePersonaBox', () => {
             legacySamplePersonaContractUris: [legacyContractUri],
         });
         mocks.useContract.mockReturnValue({
-            data: { contract: {}, owner: { did: 'did:example:demo-school' } },
+            data: {
+                contract: {},
+                owner: { did: 'did:example:demo-school' },
+                autoBoosts: Array.from({ length: 4 }, (_, index) => `boost-${index}`),
+            },
             isLoading: false,
         });
         mocks.useConsentedContracts.mockReturnValue({ data: [], isLoading: false });
         mocks.useGetCredentialsFromContracts.mockReturnValue({ data: [], isLoading: false });
         mocks.confirm.mockResolvedValue(true);
-        mocks.consentToContract.mockResolvedValue(undefined);
+        mocks.consentToContract.mockResolvedValue({ termsUri: currentTermsUri });
         mocks.deleteCredentialRecord.mockResolvedValue(undefined);
         mocks.deleteCredentialFromAllContracts.mockResolvedValue({
             contractsUpdated: 0,
@@ -156,7 +163,14 @@ describe('SamplePersonaBox', () => {
         });
         mocks.refetchQueries.mockResolvedValue(undefined);
         mocks.fetchNewContractCredentials.mockResolvedValue({ isError: false });
-        mocks.initWallet.mockResolvedValue({});
+        mocks.getCredentialsForContract.mockResolvedValue({
+            records: Array.from({ length: 4 }, (_, index) => ({
+                credentialUri: `credential-${index}`,
+            })),
+        });
+        mocks.initWallet.mockResolvedValue({
+            invoke: { getCredentialsForContract: mocks.getCredentialsForContract },
+        });
         mocks.queueAiInsightCredentialRefresh.mockResolvedValue(undefined);
     });
 
@@ -174,6 +188,7 @@ describe('SamplePersonaBox', () => {
         await waitFor(() => expect(mocks.fetchNewContractCredentials).toHaveBeenCalledOnce());
         expect(mocks.confirm).not.toHaveBeenCalled();
         expect(mocks.consentToContract).toHaveBeenCalledOnce();
+        expect(mocks.getCredentialsForContract).toHaveBeenCalledWith(currentTermsUri);
         expect(mocks.presentToast).toHaveBeenCalledWith('Sample credentials added.', {
             hasDismissButton: true,
         });
@@ -187,6 +202,56 @@ describe('SamplePersonaBox', () => {
 
         render(<SamplePersonaBox />);
         fireEvent.click(screen.getByRole('button', { name: 'See an example LearnCard' }));
+
+        await waitFor(() =>
+            expect(mocks.presentToast).toHaveBeenCalledWith('Add failed', {
+                type: 'error',
+                hasDismissButton: true,
+            })
+        );
+        expect(mocks.presentToast).not.toHaveBeenCalledWith(
+            'Sample credentials added.',
+            expect.anything()
+        );
+        expect(mocks.closeAllModals).not.toHaveBeenCalled();
+    });
+
+    it('reports an error when the sample contract has no auto-boosts', async () => {
+        mocks.useContract.mockReturnValue({
+            data: {
+                contract: {},
+                owner: { did: 'did:example:demo-school' },
+                autoBoosts: [],
+            },
+            isLoading: false,
+        });
+
+        render(<SamplePersonaBox />);
+        fireEvent.click(screen.getByRole('button', { name: 'See an example LearnCard' }));
+
+        await waitFor(() =>
+            expect(mocks.presentToast).toHaveBeenCalledWith('Add failed', {
+                type: 'error',
+                hasDismissButton: true,
+            })
+        );
+        expect(mocks.getCredentialsForContract).not.toHaveBeenCalled();
+        expect(mocks.presentToast).not.toHaveBeenCalledWith(
+            'Sample credentials added.',
+            expect.anything()
+        );
+        expect(mocks.closeAllModals).not.toHaveBeenCalled();
+    });
+
+    it('reports an error when the consent instance has no issued credentials', async () => {
+        mocks.getCredentialsForContract.mockResolvedValueOnce({ records: [] });
+
+        render(<SamplePersonaBox />);
+        fireEvent.click(screen.getByRole('button', { name: 'See an example LearnCard' }));
+
+        await waitFor(() =>
+            expect(mocks.getCredentialsForContract).toHaveBeenCalledWith(currentTermsUri)
+        );
 
         await waitFor(() =>
             expect(mocks.presentToast).toHaveBeenCalledWith('Add failed', {

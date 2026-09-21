@@ -11,6 +11,10 @@ import { waitForAuthenticatedState } from './test.helpers';
 const contractUri =
     'lc:network:localhost%3A4000/trpc:contract:79672d1a-fe7c-5715-95db-27586e529934';
 const termsUri = 'lc:network:localhost%3A4000/trpc:terms:sample-persona';
+const studentBundle = getBundle('student');
+const autoBoostUris = studentBundle.entries.map(
+    (_, index) => `lc:network:localhost%3A4000/trpc:boost:sample-persona-${index}`
+);
 const owner = {
     did: 'did:web:localhost%3A4000:users:demo-school',
     profileId: 'demo-school',
@@ -43,7 +47,7 @@ const contract = {
     createdAt: '2026-09-17T00:00:00.000Z',
     updatedAt: '2026-09-17T00:00:00.000Z',
     uri: contractUri,
-    autoBoosts: [],
+    autoBoosts: autoBoostUris,
 };
 
 let populatedIndexResponse: unknown;
@@ -58,7 +62,7 @@ test.beforeAll(async () => {
     });
     const records = [];
     let firstCredential: VC | undefined;
-    for (const [index, entry] of getBundle('student').entries.entries()) {
+    for (const [index, entry] of studentBundle.entries.entries()) {
         const credential = await wallet.invoke.issueCredential(
             prepareFixture(getFixture(entry.fixtureId), {
                 issuerDid: wallet.id.did(),
@@ -125,6 +129,17 @@ test.describe('Sample persona @mocked', () => {
         trpc.on('contracts.getAllCredentialsForTerms', () => ({
             hasMore: false,
             records: [],
+        }));
+        trpc.on('contracts.getCredentialsForContract', () => ({
+            hasMore: false,
+            records: autoBoostUris.map((boostUri, index) => ({
+                credentialUri: `lc:cloud:localhost%3A4100/trpc:credential:sample-persona-${index}`,
+                termsUri,
+                contractUri,
+                boostUri,
+                category: 'Achievement',
+                date: '2026-09-17T00:00:00.000Z',
+            })),
         }));
         trpc.on('contracts.withdrawConsent', () => {
             hasSample = false;

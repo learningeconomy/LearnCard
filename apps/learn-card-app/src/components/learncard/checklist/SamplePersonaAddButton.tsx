@@ -10,6 +10,7 @@ import {
     useCurrentUser,
     useSyncConsentFlow,
     useToast,
+    useWallet,
 } from 'learn-card-base';
 import type { SamplePersonaConfig } from 'learn-card-base/config/tenantConfig';
 
@@ -36,6 +37,7 @@ const SamplePersonaAddButton: React.FC<SamplePersonaAddButtonProps> = ({
     const currentUser = useCurrentUser();
     const queryClient = useQueryClient();
     const { presentToast } = useToast();
+    const { initWallet } = useWallet();
     const [status, setStatus] = useState<AddStatus>('idle');
     const { data: contract, isLoading: contractLoading } = useContract(persona.contractUri);
     const { mutateAsync: consentToContract, isPending } = useConsentToContract(
@@ -49,7 +51,7 @@ const SamplePersonaAddButton: React.FC<SamplePersonaAddButtonProps> = ({
 
         setStatus('connecting');
         try {
-            await consentToContract({
+            const { termsUri } = await consentToContract({
                 terms: getMinimumTermsForContract(contract.contract, currentUser),
                 expiresAt: '',
                 oneTime: false,
@@ -63,6 +65,20 @@ const SamplePersonaAddButton: React.FC<SamplePersonaAddButtonProps> = ({
             if (syncResult.isError) {
                 throw syncResult.error ?? new Error('Sample credential sync failed');
             }
+
+            const expectedCredentialCount = contract.autoBoosts?.length ?? 0;
+            if (expectedCredentialCount === 0) {
+                throw new Error('Sample contract has no auto-boost credentials');
+            }
+
+            const wallet = await initWallet();
+            const issuedCredentials = await wallet.invoke.getCredentialsForContract(termsUri);
+            if (issuedCredentials.records.length < expectedCredentialCount) {
+                throw new Error(
+                    `Sample credential sync returned ${issuedCredentials.records.length} of ${expectedCredentialCount} expected records`
+                );
+            }
+
             presentToast(m['passport.buildMyLearnCard.samplePersona.addSuccess'](), {
                 hasDismissButton: true,
             });
