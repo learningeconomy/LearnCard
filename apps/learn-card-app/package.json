@@ -165,6 +165,7 @@
         "check:i18n-imports": "node scripts/check-i18n-imports.mjs",
         "create-tenant": "bun scripts/create-tenant.ts",
         "skill-frameworks": "bun run --cwd ../../services/learn-card-network/brain-service skill-frameworks",
+        "seed:demo-persona": "bun run --cwd ../../services/learn-card-network/brain-service seed:demo-persona",
         "lc": "bun scripts/lc.ts",
         "config-editor": "bun scripts/config-editor.ts",
         "docker-start": "bun scripts/prepare-native-config.ts learncard --stage local && vite --host",

@@ -31,16 +31,16 @@ Deploy this producer before an AI Passport consumer that requires the new guardi
 
 ## Sample persona seeding
 
-Sample personas are defined as ordered credential-library bundles. Publish one as an
-idempotent consent-flow contract from this service directory:
+Sample personas are defined as ordered credential-library bundles. From
+`apps/learn-card-app`, publish one as an idempotent consent-flow contract:
 
 ```bash
 bun run seed:demo-persona student
 ```
 
-When the active environment points at the local Docker databases, no extra arguments
-are needed. If an existing `.env` points elsewhere, override `NEO4J_URI`, the Neo4j
-credentials, `MONGO_URI`, `MONGO_DB_NAME`, and `DOMAIN_NAME` for the intended stack.
+The app command delegates to the brain-service seeder, which loads
+`services/learn-card-network/brain-service/.env`. `NEO4J_URI`, the Neo4j credentials,
+`MONGO_URI`, `MONGO_DB_NAME`, and `DOMAIN_NAME` select the target stack.
 For staging or production, also supply `DEMO_PERSONA_SA_SEED` and
 `DEMO_PERSONA_SIGNING_AUTHORITY_ENDPOINT`. The command updates the signed Demo School
 Boost templates and auto-boost relationships in place, then prints the stable contract

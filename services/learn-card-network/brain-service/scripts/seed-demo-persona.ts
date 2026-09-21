@@ -15,6 +15,8 @@
  *   DEMO_PERSONA_SIGNING_AUTHORITY_ENDPOINT=https://<lca-api>/api
  */
 
+import { fileURLToPath } from 'url';
+
 import * as bs58 from 'bs58';
 import * as dotenv from 'dotenv';
 import { MongoClient } from 'mongodb';
@@ -31,7 +33,7 @@ import {
 import type { UnsignedVC } from '@learncard/types';
 import { flattenObject } from '../src/helpers/objects.helpers';
 
-dotenv.config();
+dotenv.config({ path: fileURLToPath(new URL('../.env', import.meta.url)) });
 
 const PERSONA_NAMESPACE = '5c4bb193-6e65-43d9-940d-d85b758a94f2';
 const PROFILE_ID = 'demo-school';
