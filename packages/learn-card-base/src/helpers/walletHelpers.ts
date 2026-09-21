@@ -17,6 +17,7 @@ import { QueryClient } from '@tanstack/react-query';
 import { getGuardianApprovalVP } from 'learn-card-base/stores/guardianApprovalStore';
 import { PRODUCTION_NETWORK_URL } from './networkHelpers';
 import { getLogger } from '../logging/logger';
+import { getLocalDevelopmentBoostRegistry } from '../config/localDevelopmentNetwork';
 
 const log = getLogger('wallet-helpers');
 
@@ -71,7 +72,10 @@ export const getBespokeLearnCard = async (
     options?: GetBespokeLearnCardOptions
 ): Promise<BespokeLearnCard> => {
     const offline = options?.offline ?? false;
-    const cacheKey = [seed, didWeb, offline ? 'offline' : 'full'].toString();
+    const localRegistry = offline
+        ? undefined
+        : getLocalDevelopmentBoostRegistry(networkStore.get.networkUrl());
+    const cacheKey = [seed, didWeb, offline ? 'offline' : 'full', localRegistry].toString();
 
     LEARN_CARDS[cacheKey] ??= buildBespokeLearnCard(seed, didWeb, offline).catch(error => {
         delete LEARN_CARDS[cacheKey];
@@ -120,6 +124,7 @@ const buildBespokeLearnCard = async (
               seed,
               didkit,
               network: network,
+              trustedBoostRegistry: getLocalDevelopmentBoostRegistry(network),
               cloud: { url: cloudUrl, automaticallyAssociateDids: !Boolean(didWeb) },
               allowRemoteContexts: true,
               guardianApprovalGetter: () => getGuardianApprovalVP(didWeb),

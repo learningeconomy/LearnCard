@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { buildInboxClaimRedirect } from './inboxClaimGate';
 import { useIonModal } from '@ionic/react';
 import ClaimBoostLoggedOutPrompt from 'learn-card-base/components/boost/claimBoostLoggedOutPrompt/ClaimBoostLoggedOutPrompt';
 import { redirectStore } from 'learn-card-base';
@@ -16,9 +17,9 @@ const LoggedOutRequest: React.FC<{ vc_request_url?: string | (string | null)[] |
     vc_request_url,
 }) => {
     useEffect(() => {
-        const redirectTo = `/request?vc_request_url=${vc_request_url}`;
-        redirectStore.set.lcnRedirect(redirectTo);
-    }, []);
+        const redirectTo = buildInboxClaimRedirect(vc_request_url);
+        if (redirectTo) redirectStore.set.lcnRedirect(redirectTo);
+    }, [vc_request_url]);
 
     return (
         <ClaimLoginPage

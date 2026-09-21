@@ -113,6 +113,7 @@ import {
     BitstringCredentialStatusEntry,
     AllocateCredentialRefreshInput,
     AllocateCredentialRefreshResult,
+    ManagedCredentialRefreshReceipt,
     PublishCredentialRefreshInput,
     PublishCredentialRefreshResult,
     GetCredentialRefreshHistoryInput,
@@ -123,6 +124,56 @@ import { ProofOptions } from '@learncard/didkit-plugin';
 import { VerifyExtension } from '@learncard/vc-plugin';
 
 export type { BitstringCredentialStatusPurpose, BitstringCredentialStatusEntry };
+
+/** Object-form options for the network plugin's `sendBoost` */
+export type SendBoostNetworkOptions = {
+    encrypt?: boolean;
+    overideFn?: (boost: UnsignedVC) => UnsignedVC;
+    skipNotification?: boolean;
+    templateData?: Record<string, unknown>;
+    statusPurposes?: BitstringCredentialStatusPurpose[];
+    /**
+     * Opt into a managed refresh service. When true, a stable UUID credential ID is
+     * generated if the boost template has none, a refresh service is allocated BEFORE
+     * signing and injected into the signed credential, and the credential is sent via
+     * the dedicated managed-send procedure (holder-encrypted storage only) instead of
+     * legacy credential storage. The `encrypt` option is ignored in this mode —
+     * managed storage is always holder-only.
+     */
+    enableRefresh?: boolean;
+};
+
+/** Result of a refresh-enabled `sendBoost` call (opt-in via `enableRefresh: true`) */
+export type SendBoostRefreshResult = {
+    /** URI of the issued (managed, holder-encrypted) credential */
+    credentialUri: string;
+    /** Issuance metadata the issuer keeps in order to publish future updates */
+    refresh: ManagedCredentialRefreshReceipt;
+};
+
+/** The `enableRefresh` type carried by `sendBoost` options (`undefined` when absent). */
+type EnableRefreshOf<Options> = Options extends object
+    ? 'enableRefresh' extends keyof Options
+        ? Options extends { enableRefresh?: infer Enabled }
+            ? Enabled
+            : undefined
+        : undefined
+    : undefined;
+
+/**
+ * Resolves the `sendBoost` return type from the (const-inferred) options type.
+ *
+ * - legacy `boolean` options, omitted options, and object options without
+ *   `enableRefresh` keep the historical `string` result.
+ * - literal `enableRefresh: true` returns the refreshable-issuance result.
+ * - anything that may be `true` at runtime (a `boolean`, an optional property, or a
+ *   union of option shapes) degrades to the union of both shapes.
+ */
+export type SendBoostResultFor<Options> = [EnableRefreshOf<Options>] extends [true]
+    ? SendBoostRefreshResult
+    : true extends EnableRefreshOf<Options>
+      ? string | SendBoostRefreshResult
+      : string;
 
 /** @group LearnCardNetwork Plugin */
 export type LearnCardNetworkPluginDependentMethods = {
@@ -473,29 +524,23 @@ export type LearnCardNetworkPluginMethods = {
         recipientProfileId: string,
         credentialUri?: string
     ) => Promise<boolean>;
-    sendBoost: (
+    /**
+     * Sends a boost credential to a recipient profile.
+     *
+     * **Return shape (opt-in):** legacy callers (boolean options, omitted options, or
+     * object options without `enableRefresh`) receive the issued credential URI as a
+     * `string`, exactly as before. Passing literal `{ enableRefresh: true }` opts into
+     * managed refresh and returns `{ credentialUri, refresh }` instead, where `refresh`
+     * is the issuance receipt needed to publish future versions (see
+     * `publishCredentialRefresh`). Options whose `enableRefresh` may be `true` at runtime
+     * (a `boolean`, or a variable typed `SendBoostNetworkOptions`) degrade the result to
+     * `string | { credentialUri, refresh }`.
+     */
+    sendBoost: <const Options extends boolean | SendBoostNetworkOptions | undefined = undefined>(
         profileId: string,
         boostUri: string,
-        options?:
-            | boolean
-            | {
-                  encrypt?: boolean;
-                  overideFn?: (boost: UnsignedVC) => UnsignedVC;
-                  skipNotification?: boolean;
-                  templateData?: Record<string, unknown>;
-                  statusPurposes?: BitstringCredentialStatusPurpose[];
-                  /**
-                   * Opt into a managed refresh service. When true, a stable UUID
-                   * credential ID is generated if the boost template has none, a
-                   * refresh service is allocated BEFORE signing and injected into the
-                   * signed credential, and the credential is sent via the dedicated
-                   * managed-send procedure (holder-encrypted storage only) instead of
-                   * legacy credential storage. The `encrypt` option is ignored in this
-                   * mode — managed storage is always holder-only.
-                   */
-                  enableRefresh?: boolean;
-              }
-    ) => Promise<string>;
+        options?: Options
+    ) => Promise<SendBoostResultFor<Options>>;
 
     registerSigningAuthority: (endpoint: string, name: string, did: string) => Promise<boolean>;
     getRegisteredSigningAuthorities: () => Promise<LCNSigningAuthorityForUserType[]>;

@@ -223,8 +223,10 @@ export const buildCredentialRefreshedNotification = (
     return {
         notification: {
             type: LCNNotificationTypeEnumValidator.enum.CREDENTIAL_REFRESHED,
-            to: holderProfile,
-            from: issuerProfile,
+            // Local webhook delivery normalizes these DIDs in place. Keep the
+            // database profiles intact for the subsequent verified-email lookup.
+            to: { ...holderProfile },
+            from: { ...issuerProfile },
             message: getNotificationMessage(
                 'credentialRefreshed',
                 resolveRecipientLocale(holderProfile),

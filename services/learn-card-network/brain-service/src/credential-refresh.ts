@@ -172,7 +172,11 @@ const authenticateRefreshRequest = async (
 
     // Missing aggregates, wrong holders, and awaiting-claim aggregates deliberately
     // share one response so a valid DID cannot use the endpoint as an existence oracle.
-    if (aggregate.holderDid !== auth.holderDid) {
+    if (
+        !aggregate.holderDid ||
+        aggregate.state === 'pending_holder' ||
+        aggregate.holderDid !== auth.holderDid
+    ) {
         logRefreshRequest(refreshId, 'unauthorized', startedAt);
         await reply.status(403).send({ code: 'CREDENTIAL_REFRESH_UNAUTHORIZED' });
         return null;

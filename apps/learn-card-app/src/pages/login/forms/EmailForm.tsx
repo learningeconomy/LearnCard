@@ -1,3 +1,4 @@
+import { walletModeStore } from 'learn-card-base/stores/walletModeStore';
 import React, { useState, useEffect } from 'react';
 import * as m from '../../../paraglide/messages.js';
 import { TransP } from '../../../i18n/TransP';
@@ -215,6 +216,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
 
             const wallet = await initWallet(pk);
             if (wallet) {
+                walletModeStore.set.mode('full');
                 walletStore.set.wallet(wallet);
             } else {
                 throw new Error('Error: Could not initialize wallet');
@@ -328,8 +330,8 @@ const EmailForm: React.FC<EmailFormProps> = ({
                     ? 'border-red-300'
                     : 'border-grayscale-200'
                 : emailError
-                ? 'login-input-email-error'
-                : '';
+                  ? 'login-input-email-error'
+                  : '';
 
         activeStep = (
             <div

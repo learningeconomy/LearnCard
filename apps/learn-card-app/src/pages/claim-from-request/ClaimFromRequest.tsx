@@ -21,6 +21,7 @@ import {
     useToast,
     ToastTypeEnum,
     CredentialCategoryEnum,
+    useAuthStatus,
 } from 'learn-card-base';
 import { useQueryClient } from '@tanstack/react-query';
 import useRegistry from 'learn-card-base/hooks/useRegistry';
@@ -61,6 +62,7 @@ import { getInboxDeliveryId, type InboxDelivery } from './inboxDelivery';
 import ExchangeInitiate from './ExchangeInitiate';
 import ExchangeDidAuth from './ExchangeDidAuth';
 import ExchangeLoading from './ExchangeLoading';
+import InboxClaimProfileGate from './InboxClaimProfileGate';
 
 import { AlertCircle, RefreshCw, Home, CheckCircle } from 'lucide-react';
 import LoggedOutRequest from './LoggedOutRequest';
@@ -69,8 +71,10 @@ import * as m from '../../paraglide/messages.js';
 import {
     getClaimInteractionBoostUri,
     getClaimInteractionDuplicateLookup,
+    isInboxClaimInteraction,
     shouldCompleteInboxClaimLocally,
 } from './claimRequest.helpers';
+import { canParticipateInExchange, deriveInboxClaimProfileState } from './inboxClaimGate';
 
 export type RequestMetadata = {
     credentialName: string;
@@ -570,6 +574,19 @@ const ClaimFromRequest: React.FC = () => {
 
     const isLoggedIn = useIsLoggedIn();
 
+    // The canonical, race-safe auth gate. Universal Inbox claims are finalized
+    // against the recipient's LCN profile, so they must not begin until that
+    // profile is confirmed present — but a loading/error/offline profile is
+    // "unknown", never "absent", and generic VC-API flows stay ungated.
+    const authStatus = useAuthStatus();
+    const isInboxClaim = useMemo(() => isInboxClaimInteraction(vc_request_url), [vc_request_url]);
+    const inboxProfileState = deriveInboxClaimProfileState(authStatus);
+    const canParticipate = canParticipateInExchange({
+        isLoggedIn,
+        isInboxClaim,
+        profileState: inboxProfileState,
+    });
+
     const { initWallet, storeAndAddVCToWallet } = useWallet();
 
     const { presentToast } = useToast();
@@ -616,6 +633,15 @@ const ClaimFromRequest: React.FC = () => {
         body: Record<string, unknown> = {},
         credentialClaimCount?: number
     ) => {
+        // Hard stop: never contact the exchange endpoint (or locally complete an
+        // inbox batch) until a Universal Inbox recipient has a confirmed LCN
+        // profile. The UI routes profileless inbox claims through
+        // InboxClaimProfileGate, but retries/submits must be safe too.
+        if (!canParticipate) {
+            log.warn('Exchange participation blocked until the profile is confirmed');
+            return;
+        }
+
         // Inbox credentials are finalized before the returned VCs are shown to the learner.
         // Once the learner saves that batch locally, there is no server-side completion request
         // left to make: posting an empty body would be interpreted as a new claim initiation and
@@ -725,10 +751,10 @@ const ClaimFromRequest: React.FC = () => {
     };
 
     useEffect(() => {
-        if (isLoggedIn) {
+        if (canParticipate) {
             handleRequest(); // Initiate the exchange
         }
-    }, [isLoggedIn]);
+    }, [canParticipate]);
 
     const handleAfterCredentialClaim = async (claimedCredential?: VC) => {
         setExchangeState({ state: ExchangeState.Finished });
@@ -912,9 +938,23 @@ const ClaimFromRequest: React.FC = () => {
         }
     };
 
-    if (!isLoggedIn) {
+    if (!isLoggedIn || authStatus.tag === 'needs_setup') {
         return <LoggedOutRequest vc_request_url={vc_request_url} />;
     }
+
+    // Universal Inbox deep links / refreshes land here directly. Block the
+    // exchange until the profile is confirmed; the gate starts onboarding on a
+    // confirmed absence and preserves the claim link through it.
+    if (isInboxClaim && inboxProfileState !== 'present') {
+        return (
+            <IonPage>
+                <IonContent>
+                    <InboxClaimProfileGate vc_request_url={vc_request_url} />
+                </IonContent>
+            </IonPage>
+        );
+    }
+
     return (
         <IonPage>
             {duplicateCredentialPrompt}

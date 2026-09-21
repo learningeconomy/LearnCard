@@ -10,7 +10,7 @@ import {
 
 export const updateInboxCredential = async (
     id: string,
-    updates: Partial<Omit<InboxCredentialType, 'id' | 'createdAt' | 'credential'>>
+    updates: Partial<Omit<InboxCredentialType, 'id' | 'createdAt' | 'credential' | 'refresh'>>
 ): Promise<InboxCredentialType | null> => {
     const result = await new QueryBuilder(new BindParam({ id, updates: flattenObject(updates) }))
         .match({ model: InboxCredential, identifier: 'inboxCredential' })
