@@ -1,10 +1,8 @@
-data "aws_secretsmanager_secret_version" "db_password" {
-  secret_id = var.db_password_secret_arn
-}
-
 locals {
   db_engine_version = "16.14"
   private_azs       = sort(tolist(toset([for subnet in data.aws_subnet.private : subnet.availability_zone])))
+  # ARN of the RDS-managed master-user secret ({"username","password"} JSON).
+  db_master_secret_arn = aws_rds_cluster.keycloak.master_user_secret[0].secret_arn
 }
 
 resource "aws_db_subnet_group" "keycloak" {
@@ -20,23 +18,25 @@ resource "aws_db_subnet_group" "keycloak" {
 }
 
 resource "aws_rds_cluster" "keycloak" {
-  cluster_identifier        = local.name
-  engine                    = "aurora-postgresql"
-  engine_version            = local.db_engine_version
-  engine_mode               = "provisioned"
-  database_name             = "keycloak"
-  master_username           = "keycloak"
-  master_password           = data.aws_secretsmanager_secret_version.db_password.secret_string
-  port                      = 5432
-  db_subnet_group_name      = aws_db_subnet_group.keycloak.name
-  vpc_security_group_ids    = [aws_security_group.db.id]
-  storage_encrypted         = true
-  backup_retention_period   = var.db_backup_retention_days
-  deletion_protection       = var.db_deletion_protection
-  copy_tags_to_snapshot     = true
-  skip_final_snapshot       = var.environment != "production"
-  final_snapshot_identifier = "${local.name}-final"
-  apply_immediately         = false
+  cluster_identifier = local.name
+  engine             = "aurora-postgresql"
+  engine_version     = local.db_engine_version
+  engine_mode        = "provisioned"
+  database_name      = "keycloak"
+  master_username    = "keycloak"
+  # RDS generates, stores and rotates the master password in Secrets Manager.
+  # Terraform never reads the value, so it never lands in state or saved plans.
+  manage_master_user_password = true
+  port                        = 5432
+  db_subnet_group_name        = aws_db_subnet_group.keycloak.name
+  vpc_security_group_ids      = [aws_security_group.db.id]
+  storage_encrypted           = true
+  backup_retention_period     = var.db_backup_retention_days
+  deletion_protection         = var.db_deletion_protection
+  copy_tags_to_snapshot       = true
+  skip_final_snapshot         = var.environment != "production"
+  final_snapshot_identifier   = "${local.name}-final"
+  apply_immediately           = false
 
   serverlessv2_scaling_configuration {
     min_capacity = var.db_min_capacity

@@ -51,10 +51,12 @@ Provision these outside this root, separately for staging and production:
    to its full tagged URI; there is no stock-image or `latest` fallback. The image
    must be accessible to the execution role (cross-account ECR also needs a
    repository policy). `keycloak_version` is a descriptive tag only.
-4. Two Secrets Manager secrets created **out of band**, in the deployment region:
-   database password and temporary bootstrap administrator password. Each secret
-   must be a **plain string, not a JSON object**, with no trailing newline. Use a
-   PostgreSQL/RDS-compatible password. The execution role can read only these two
+4. One Secrets Manager secret created **out of band**, in the deployment region:
+   the temporary bootstrap administrator password. It must be a **plain string,
+   not a JSON object**, with no trailing newline. The database master password is
+   **RDS-managed** (`manage_master_user_password`): Aurora generates it, stores it
+   in Secrets Manager and rotates it; Terraform only references the secret ARN and
+   ECS reads the `password` key from it. The execution role can read only these two
    ARNs. This root assumes the AWS-managed `aws/secretsmanager` encryption key;
    customer-managed secret keys require an explicitly reviewed scoped `kms:Decrypt`
    grant and key policy before use. No passwords belong in tfvars or image layers.
@@ -64,12 +66,11 @@ Provision these outside this root, separately for staging and production:
    init. The deploy identity needs state/lock access, KMS access if applicable,
    database secret read access, and AWS resource provisioning/IAM pass-role rights.
 
-**State is sensitive:** the database password is read by
-`data.aws_secretsmanager_secret_version` and stored in Terraform state and saved
-plans even though it is redacted in terminal output. Restrict state, bucket
-versions, local backups, plan files, and CI log access. Do not upload saved plans
-as public artifacts. The bootstrap secret is injected by ECS and is not fetched
-by Terraform. Use separate backend keys and credentials per environment.
+**State is still sensitive:** no password values are stored in state (the
+database password is RDS-managed and the bootstrap secret is injected by ECS, not
+fetched by Terraform), but state contains endpoints, ARNs and network layout.
+Restrict state, bucket versions, local backups, plan files, and CI log access. Do
+not upload saved plans as public artifacts. Use separate backend keys and credentials per environment.
 
 Realm/client/IdP configuration is **not in this root**. After the server is healthy,
 the separate Keycloak Terraform provider layer owns it under AD-8/AD-9. Do not
@@ -244,10 +245,10 @@ No AWS credentials are exposed to PR validation. No automatic push deployments.
    pre-upgrade snapshot to a new cluster, reconciling Terraform and the database
    endpoint, then starting the old image. Writes since the snapshot may be lost.
 
-Secret rotation is also coordinated: update the DB password, apply/reconcile it in
-Aurora, then replace tasks so ECS re-reads the secret. Updating Secrets Manager alone
-does not refresh a running container. Never rotate the DB password independently
-of the database. Configure alerts for ALB unhealthy targets/5xx, ECS deployment
+Secret rotation is also coordinated: the DB password is rotated by RDS in Secrets
+Manager, but a running container keeps the value it started with. After a rotation
+(or when enabling automatic rotation), force a new ECS deployment so tasks re-read
+the secret. Never set the master password manually outside RDS. Configure alerts for ALB unhealthy targets/5xx, ECS deployment
 failures, DB capacity/connections and backup failures in the organization's
 monitoring stack before go-live; this root enables Container Insights and logs but
 does not define organization-specific alert destinations.

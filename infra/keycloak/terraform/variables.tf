@@ -138,11 +138,6 @@ variable "db_deletion_protection" {
   default     = true
 }
 
-variable "db_password_secret_arn" {
-  description = "Secrets Manager ARN containing the database password as a plain string (not JSON), encrypted with the AWS-managed Secrets Manager key"
-  type        = string
-}
-
 variable "bootstrap_admin_password_secret_arn" {
   description = "Secrets Manager ARN containing the bootstrap admin password as a plain string, encrypted with the AWS-managed Secrets Manager key"
   type        = string

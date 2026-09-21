@@ -12,8 +12,8 @@ const offlineFirebaseClaimsSchema = z.object({
     sub: z.string().optional(),
     uid: z.string().optional(),
     user_id: z.string().optional(),
-    email: z.string().optional(),
-    phone_number: z.string().optional(),
+    email: z.string().nullish(),
+    phone_number: z.string().nullish(),
 });
 
 export interface VerifiedUser {
@@ -45,8 +45,8 @@ export async function verifyFirebaseToken(token: string): Promise<VerifiedUser> 
         if (payload) {
             return {
                 id: payload.sub || payload.uid || payload.user_id || 'offline-user',
-                email: payload.email,
-                phone: payload.phone_number,
+                email: payload.email ?? undefined,
+                phone: payload.phone_number ?? undefined,
                 providerType: 'firebase',
             };
         }
@@ -61,7 +61,8 @@ export async function verifyFirebaseToken(token: string): Promise<VerifiedUser> 
             phone: decodedToken.phone_number,
             providerType: 'firebase',
         };
-    } catch {
+    } catch (error) {
+        console.warn('Firebase token verification failed:', error);
         throw new TRPCError({
             code: 'UNAUTHORIZED',
             message: 'Invalid Firebase token',

@@ -29,7 +29,7 @@ resource "aws_iam_role_policy" "secrets" {
     Statement = [{
       Effect   = "Allow"
       Action   = "secretsmanager:GetSecretValue"
-      Resource = [var.db_password_secret_arn, var.bootstrap_admin_password_secret_arn]
+      Resource = [local.db_master_secret_arn, var.bootstrap_admin_password_secret_arn]
     }]
   })
 }
@@ -84,7 +84,8 @@ resource "aws_ecs_task_definition" "keycloak" {
       KC_CACHE_STACK              = "jdbc-ping"
     } : { name = name, value = value }]
     secrets = [
-      { name = "KC_DB_PASSWORD", valueFrom = var.db_password_secret_arn },
+      # RDS-managed secret is JSON ({"username","password"}); select the password key.
+      { name = "KC_DB_PASSWORD", valueFrom = "${local.db_master_secret_arn}:password::" },
       { name = "KC_BOOTSTRAP_ADMIN_PASSWORD", valueFrom = var.bootstrap_admin_password_secret_arn }
     ]
     logConfiguration = {

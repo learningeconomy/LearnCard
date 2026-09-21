@@ -9,7 +9,6 @@ route53_zone_id                      = "Z_REPLACE_ME"
 hostname                            = "auth-staging.example.com"
 admin_hostname                      = "auth-admin-staging.example.com"
 keycloak_image                      = "000000000000.dkr.ecr.us-east-1.amazonaws.com/keycloak:26.7.4-build-1"
-db_password_secret_arn              = "arn:aws:secretsmanager:us-east-1:000000000000:secret:keycloak-staging-db-REPLACE"
 bootstrap_admin_password_secret_arn = "arn:aws:secretsmanager:us-east-1:000000000000:secret:keycloak-staging-admin-REPLACE"
 desired_count                       = 1
 db_min_capacity                     = 0.5
