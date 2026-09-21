@@ -15,6 +15,7 @@ import type { Context } from '@routes';
 import type { ProfileType } from 'types/profile';
 import type { BatchReplayStore } from 'types/inbox-batch';
 import { issueToInbox, resolveInboxCredentialInput } from './inbox.helpers';
+import { assertInboxRefreshEnabled, inboxRefreshRequestDigest } from './inbox-refresh.helpers';
 import {
     InboxDeliveryCheckpointError,
     InboxIssuancePreflightError,
@@ -169,6 +170,9 @@ export const issueInboxBatch = async (
                 const { idempotencyKey: _batchIdempotencyKey, ...issueInput } = item;
                 const parsed = IssueInboxCredentialValidator.safeParse({
                     ...issueInput,
+                    // Explicit item settings win over shared defaults. Keep the existing
+                    // top-level item flag as a compatibility alias.
+                    refresh: item.configuration?.refresh ?? item.refresh ?? configuration.refresh,
                     configuration,
                 });
                 if (!parsed.success) {
@@ -219,12 +223,24 @@ export const issueInboxBatch = async (
                     }
                     reservation = marker;
                 }
-                const { credential } = await resolveInboxCredentialInput(input, ctx);
+                if (input.refresh) await assertInboxRefreshEnabled(ctx.user?.scope);
+                const refreshRequestDigest = input.refresh
+                    ? inboxRefreshRequestDigest(input)
+                    : undefined;
+                const { credential, resolvedBoostUri } = await resolveInboxCredentialInput(
+                    input,
+                    ctx
+                );
                 const result = await issueToInbox(
                     profile,
                     input.recipient,
                     credential,
-                    input.configuration,
+                    {
+                        ...input.configuration,
+                        boostUri: resolvedBoostUri,
+                        refresh: input.refresh,
+                        refreshRequestDigest,
+                    },
                     ctx,
                     async () => {
                         // Preparation (including signing) has not delivered anything yet. Signing
@@ -243,6 +259,7 @@ export const issueInboxBatch = async (
                     claimUrl: result.claimUrl,
                     recipientDid: result.recipientDid,
                     guardianStatus: result.guardianStatus,
+                    refresh: result.refresh,
                 };
                 issued = success;
                 if (key && reservation) {

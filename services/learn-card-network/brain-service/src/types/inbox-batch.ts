@@ -30,6 +30,8 @@ export type BatchJob = {
 export type BatchJobPayload = {
     batch: IssueInboxCredentialBatch;
     context: Pick<Context, 'domain' | 'tenant'>;
+    /** Submitting caller's permissions, retained for deferred refresh authorization. */
+    scope?: string;
 };
 
 export type BatchReplayStore = {

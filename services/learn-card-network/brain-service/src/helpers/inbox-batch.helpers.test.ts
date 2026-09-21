@@ -14,7 +14,13 @@ const mocks = vi.hoisted(() => ({
     beforeIssue: vi.fn(),
     issue: vi.fn(),
     resolve: vi.fn(),
+    assertRefresh: vi.fn(),
+    refreshDigest: vi.fn(),
     skipCheckpoint: false,
+}));
+vi.mock('./inbox-refresh.helpers', () => ({
+    assertInboxRefreshEnabled: mocks.assertRefresh,
+    inboxRefreshRequestDigest: mocks.refreshDigest,
 }));
 vi.mock('./inbox.helpers', () => ({
     issueToInbox: async (...args: Parameters<typeof import('./inbox.helpers').issueToInbox>) => {
@@ -79,12 +85,125 @@ describe('inbox batch worker processing', () => {
         mocks.compareAndSet.mockResolvedValue(true);
         mocks.resolve.mockImplementation(async input => ({ credential: input.credential }));
         mocks.skipCheckpoint = false;
+        mocks.refreshDigest.mockReturnValue('refresh-digest');
         mocks.issue.mockImplementation(async (_profile, recipient) => ({
             inboxCredential: { id: recipient.value },
             status: 'PENDING',
             claimUrl: 'https://example.test/claim',
         }));
     });
+
+    it('inherits refresh and honors item overrides including false and the top-level alias', async () => {
+        const batch = IssueInboxCredentialBatchValidator.parse({
+            configuration: { refresh: true },
+            items: [
+                item('inherit'),
+                { ...item('off'), configuration: { refresh: false } },
+                { ...item('alias'), refresh: false },
+                { ...item('explicit'), refresh: false, configuration: { refresh: true } },
+            ],
+        });
+        await run(batch);
+        const flags = Object.fromEntries(
+            mocks.issue.mock.calls.map(call => [call[1].value, call[3].refresh])
+        );
+        expect(flags).toEqual({
+            'inherit@example.test': true,
+            'off@example.test': false,
+            'alias@example.test': false,
+            'explicit@example.test': true,
+        });
+        expect(mocks.assertRefresh).toHaveBeenCalledTimes(2);
+        await run(
+            IssueInboxCredentialBatchValidator.parse({
+                configuration: { refresh: false },
+                items: [{ ...item('on'), configuration: { refresh: true } }],
+            })
+        );
+        expect(mocks.issue.mock.calls.at(-1)?.[3].refresh).toBe(true);
+    });
+
+    it('returns and replays refresh receipts and forwards the template anchor and digest', async () => {
+        const refresh = {
+            refreshId: 'refresh-id',
+            credentialId: 'credential-id',
+            issuerDid: 'did:example:issuer',
+            refreshService: {
+                id: 'https://example.test/refresh',
+                type: 'LearnCardCredentialRefresh2026',
+            },
+        };
+        mocks.resolve.mockResolvedValue({ credential, resolvedBoostUri: 'boost:template' });
+        mocks.issue.mockResolvedValue({
+            inboxCredential: { id: 'issued' },
+            status: 'PENDING',
+            refresh,
+        });
+        const batch = IssueInboxCredentialBatchValidator.parse({
+            configuration: { refresh: true },
+            items: [{ ...item(), idempotencyKey: 'refresh-key' }],
+        });
+        const result = await run(batch);
+        expect(result.results[0]).toMatchObject({ success: true, refresh });
+        expect(mocks.issue.mock.calls[0]?.[3]).toMatchObject({
+            refresh: true,
+            boostUri: 'boost:template',
+            refreshRequestDigest: 'refresh-digest',
+        });
+        mocks.get.mockResolvedValue(mocks.compareAndSet.mock.calls[0]![2]);
+        const replay = await run(batch);
+        expect(replay.results[0]).toMatchObject({ success: true, refresh, deduplicated: true });
+        expect(mocks.issue).toHaveBeenCalledTimes(1);
+        const changed = await run({ ...batch, configuration: { refresh: false } });
+        expect(changed.results[0]).toMatchObject({
+            success: false,
+            error: { reason: 'IDEMPOTENCY_MISMATCH' },
+        });
+    });
+
+    it('rejects unavailable refresh before resolving or issuing an item', async () => {
+        mocks.assertRefresh.mockRejectedValue(new TRPCError({ code: 'UNAUTHORIZED' }));
+        const result = await run({ configuration: { refresh: true }, items: [item()] });
+        expect(result.results[0]).toMatchObject({
+            success: false,
+            error: { code: 'UNAUTHORIZED' },
+        });
+        expect(mocks.resolve).not.toHaveBeenCalled();
+        expect(mocks.issue).not.toHaveBeenCalled();
+    });
+
+    it('isolates disabled refresh failures while issuing opted-out items', async () => {
+        mocks.assertRefresh.mockRejectedValue(new TRPCError({ code: 'NOT_FOUND' }));
+        const result = await run(
+            IssueInboxCredentialBatchValidator.parse({
+                configuration: { refresh: true },
+                items: [item('refresh'), { ...item('normal'), configuration: { refresh: false } }],
+            })
+        );
+        expect(result.results).toMatchObject([
+            { success: false, error: { code: 'NOT_FOUND' } },
+            { success: true, recipient: item('normal').recipient },
+        ]);
+        expect(mocks.issue).toHaveBeenCalledTimes(1);
+        expect(mocks.issue.mock.lastCall![3].refresh).toBe(false);
+    });
+
+    it.each(['true', 1, null])(
+        'rejects invalid refresh value %s at both configuration levels',
+        refresh => {
+            expect(
+                IssueInboxCredentialBatchValidator.safeParse({
+                    configuration: { refresh },
+                    items: [item()],
+                }).success
+            ).toBe(false);
+            expect(
+                IssueInboxCredentialBatchValidator.safeParse({
+                    items: [{ ...item(), configuration: { refresh } }],
+                }).success
+            ).toBe(false);
+        }
+    );
 
     it('bounds concurrency and preserves order when work completes out of order', async () => {
         let active = 0;

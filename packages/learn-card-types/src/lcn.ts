@@ -1515,6 +1515,9 @@ export const IssueInboxCredentialResponseValidator = z.object({
 const InboxBatchConfigurationValidator = IssueInboxCredentialValidator.shape.configuration
     .unwrap()
     .extend({
+        refresh: IssueInboxCredentialValidator.shape.refresh.describe(
+            'Enable managed refresh by default. An item configuration.refresh overrides this value, including false.'
+        ),
         delivery: IssueInboxCredentialValidator.shape.configuration
             .unwrap()
             .shape.delivery.unwrap()

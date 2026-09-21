@@ -99,6 +99,7 @@ export const submitInboxBatch = async (
             JSON.stringify({
                 batch,
                 context: { domain: ctx.domain, tenant: ctx.tenant },
+                scope: ctx.user?.scope,
             } satisfies BatchJobPayload)
         ),
         items,
@@ -222,7 +223,10 @@ export const processInboxQueueMessage = async (body: string): Promise<void> => {
             // Internal keys protect unkeyed items against SQS redelivery without deduplicating new submissions.
             items: [{ ...input, idempotencyKey: input.idempotencyKey ?? item.id }],
         },
-        payload.context,
+        {
+            ...payload.context,
+            user: { did: profile.did, isChallengeValid: true, scope: payload.scope },
+        },
         {
             cache: batchReplayStore(item.id, owner, item.replayKey),
             beforeIssue: () => markBatchIssuanceStarted(item.id, owner),
