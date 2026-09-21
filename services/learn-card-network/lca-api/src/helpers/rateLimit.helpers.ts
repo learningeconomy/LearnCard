@@ -11,14 +11,16 @@ import cache from '@cache';
 const DEFAULT_RATE_PREFIX = 'rate-limit:';
 
 /**
- * Lua script for atomic increment with TTL.
- * Always sets EXPIRE on every call (not just first) to ensure self-healing:
- * if a key somehow exists without a TTL (previous bug, manual creation, etc.),
- * it will get a TTL on the next request rather than blocking indefinitely.
+ * Lua script for atomic increment with fixed-window TTL.
+ * Only sets EXPIRE on first increment OR when TTL is missing/expired.
+ * This prevents a sliding window where blocked clients keep retrying
+ * and re-arming their own TTL indefinitely.
  */
 const ATOMIC_INCR_SCRIPT = `
 local current = redis.call('INCR', KEYS[1])
-redis.call('EXPIRE', KEYS[1], ARGV[1])
+if current == 1 or redis.call('TTL', KEYS[1]) < 0 then
+    redis.call('EXPIRE', KEYS[1], ARGV[1])
+end
 return current
 `;
 
@@ -88,4 +90,23 @@ export const clearRateLimit = async (
     const fullKey = `${prefix}${key}`;
     const redis = cache.redis ?? cache.node;
     await redis.del(fullKey);
+};
+
+/**
+ * Decrement a rate-limit counter (e.g., on successful login to not penalize legit users).
+ * Unlike clearRateLimit, this preserves the counter for abuse detection while
+ * ensuring legitimate successes don't accumulate toward the limit.
+ *
+ * @param key - The rate-limit key to decrement
+ * @param prefix - Optional key prefix (defaults to 'rate-limit:')
+ */
+export const decrementRateLimit = async (
+    key: string,
+    prefix: string = DEFAULT_RATE_PREFIX
+): Promise<void> => {
+    const fullKey = `${prefix}${key}`;
+    const redis = cache.redis ?? cache.node;
+    // DECR returns -1 if key doesn't exist, but we don't care about the result
+    // The key will naturally expire via its TTL
+    await redis.decr(fullKey);
 };
