@@ -163,7 +163,14 @@ export const issueInboxBatch = async (
                 }
                 // Parse only after merging. Parsing each partial configuration first would apply
                 // defaults too early and make an omitted item field override the batch default.
-                const parsed = IssueInboxCredentialValidator.safeParse({ ...item, configuration });
+                // Batch idempotency predates refresh issuance and is handled by this worker's
+                // replay cache. Do not pass that key through the single-issue validator, where
+                // idempotencyKey is reserved for refresh requests.
+                const { idempotencyKey: _batchIdempotencyKey, ...issueInput } = item;
+                const parsed = IssueInboxCredentialValidator.safeParse({
+                    ...issueInput,
+                    configuration,
+                });
                 if (!parsed.success) {
                     throw new TRPCError({
                         code: 'BAD_REQUEST',

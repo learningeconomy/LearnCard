@@ -1,3 +1,4 @@
+import { finalizeInboxRefresh } from './inbox-refresh.helpers';
 import {
     LCNNotificationTypeEnumValidator,
     LCNInboxStatusEnumValidator,
@@ -79,10 +80,21 @@ export async function finalizeInboxCredentialsForProfile(
 
             try {
                 let finalCredential: VC;
-                const credentialPayload = await decryptInboxCredential(inboxCredential.credential);
+                const credentialPayload = inboxCredential.refreshId
+                    ? undefined
+                    : await decryptInboxCredential(inboxCredential.credential);
 
-                if (!inboxCredential.isSigned) {
-                    const unsignedCredential = JSON.parse(credentialPayload) as UnsignedVC;
+                if (inboxCredential.refreshId) {
+                    finalCredential = (
+                        await finalizeInboxRefresh({
+                            inboxId: inboxCredential.id,
+                            holderDid: profile.did,
+                            holderProfile: profile,
+                            domain,
+                        })
+                    ).credential;
+                } else if (!inboxCredential.isSigned) {
+                    const unsignedCredential = JSON.parse(credentialPayload!) as UnsignedVC;
 
                     const endpoint =
                         (inboxCredential.signingAuthority?.endpoint as string) ?? undefined;
@@ -135,19 +147,22 @@ export async function finalizeInboxCredentialsForProfile(
                         )
                     ).credential as VC;
                 } else {
-                    finalCredential = JSON.parse(credentialPayload) as VC;
+                    finalCredential = JSON.parse(credentialPayload!) as VC;
                 }
 
-                // The seeded encryption plugin adds the service DID; use explicit recipients.
-                const learnCard = await getEmptyLearnCard();
-                const recoveryCredential = await learnCard.invoke.createDagJwe(finalCredential, [
-                    profile.did,
-                ]);
-                const finalized = await finalizeAndWipeInboxCredential(inboxCredential.id, {
-                    recipientDid: profile.did,
-                    credential: recoveryCredential,
-                });
-                if (!finalized) throw new Error('Inbox credential is no longer pending');
+                if (!inboxCredential.refreshId) {
+                    // The seeded encryption plugin adds the service DID; use explicit recipients.
+                    const learnCard = await getEmptyLearnCard();
+                    const recoveryCredential = await learnCard.invoke.createDagJwe(
+                        finalCredential,
+                        [profile.did]
+                    );
+                    const finalized = await finalizeAndWipeInboxCredential(inboxCredential.id, {
+                        recipientDid: profile.did,
+                        credential: recoveryCredential,
+                    });
+                    if (!finalized) throw new Error('Inbox credential is no longer pending');
+                }
 
                 // Only write a claim audit edge once the record is actually finalized.
                 await createClaimedRelationship(profile.profileId, inboxCredential.id, 'finalize');

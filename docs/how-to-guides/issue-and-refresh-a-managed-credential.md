@@ -14,10 +14,9 @@ sequenceDiagram
     participant N as LearnCard Network
     participant H as Recipient's wallet
 
-    I->>N: allocateCredentialRefresh
-    N-->>I: refreshId + refreshService
-    I->>I: put refreshService in the credential, sign it
-    I->>N: sendRefreshableCredential
+    I->>N: send({ refresh: true })
+    N->>N: allocate refresh service, sign, store holder-only
+    N-->>I: issuance receipt (refreshId, refreshService, …)
     N-->>H: credential offer
     H->>N: claim
     I->>N: publishCredentialRefresh (new version)
@@ -26,6 +25,8 @@ sequenceDiagram
     N-->>H: new version, encrypted to the recipient
     H->>H: replace the wallet record in place
 ```
+
+The send call hides the machinery: it allocates the refresh service, injects it (with its JSON-LD context) before signing, signs, and delivers — the same steps the [lower-level path](#the-lower-level-path) below performs explicitly.
 
 {% hint style="info" %}
 Managed refresh is rolling out network by network. If any of these calls fails with `Credential refresh is not available`, it isn't enabled on the network you're connected to yet.
@@ -38,14 +39,15 @@ Managed refresh is rolling out network by network. If any of these calls fails w
 
 The scripts below use `node --env-file=.env`. Install `@learncard/init` in the folder where you run them.
 
+For an existing boost template, refresh uses the same issuance permissions as an ordinary send, including delegated issue roles. The issuing profile owns the refresh record and controls subsequent updates; creating the template alone does not grant access to another issuer’s refresh records.
+
 ## 1. Issue a credential that can be refreshed
 
-The refresh service's URL is part of the signed credential, so you allocate it first, add it to the credential, then sign and send. The network stores the credential encrypted to the recipient only.
+One call does it. `send()` with `refresh: true` takes an ordinary credential template — no refresh fields, no hand-copied JSON-LD context — and handles the refresh setup, signing, and holder-only encrypted delivery. Profile/DID recipients use immediate issuance. Email and phone recipients use deferred Universal Inbox signing; see [Refresh through Universal Inbox](#refresh-through-universal-inbox) below.
 
 <!-- snippet: refresh/issue-refreshable.mjs -->
 
 ```javascript
-import { randomUUID } from 'node:crypto';
 import { writeFileSync } from 'node:fs';
 import { initLearnCard } from '@learncard/init';
 
@@ -58,68 +60,53 @@ const issuer = await initLearnCard({ seed: SECURE_SEED, network: true });
 if (!(await issuer.invoke.getProfile())) {
     await issuer.invoke.createProfile({ profileId: PROFILE_ID, displayName: 'Example University' });
 }
-// Your network identity. Every version of the credential must be issued by this exact DID.
-const issuerDid = (await issuer.invoke.getProfile()).did;
 
-const recipient = await issuer.invoke.getProfile(RECIPIENT_PROFILE_ID);
-if (!recipient) throw new Error(`No profile named ${RECIPIENT_PROFILE_ID}`);
-
-// Every version of this credential must reuse this exact ID.
-const credentialId = `urn:uuid:${randomUUID()}`;
-
-// 1. Allocate the refresh service BEFORE signing. Its URL becomes part of the signed credential.
-const { refreshId, refreshService } = await issuer.invoke.allocateCredentialRefresh({
-    holder: { profileId: RECIPIENT_PROFILE_ID, did: recipient.did },
-    credentialId,
-});
-
-// 2. Add the service to the credential. The inline context defines the LearnCard refresh
-//    terms, which the standard Open Badges context does not include.
-const credential = await issuer.invoke.issueCredential({
-    '@context': [
-        'https://www.w3.org/ns/credentials/v2',
-        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
-        {
-            LearnCardCredentialRefresh2026:
-                'https://learncard.com/refresh#LearnCardCredentialRefresh2026',
-            authorization: {
-                '@id': 'https://purl.imsglobal.org/spec/ob/v3p0#authorization',
-                '@context': {
-                    LearnCardDIDAuth: 'https://docs.learncard.com/definitions#LearnCardDIDAuth',
+// An ordinary credential template: no refresh fields, no special JSON-LD context.
+// `refresh: true` makes send() allocate the managed refresh service, add it (with its
+// JSON-LD context) before signing, and deliver the credential encrypted to the
+// recipient only. Recipients must be LearnCard profiles or DIDs on your network —
+// email and phone recipients use the separate deferred Inbox flow in the guide.
+const result = await issuer.invoke.send({
+    type: 'boost',
+    recipient: RECIPIENT_PROFILE_ID,
+    template: {
+        credential: {
+            '@context': [
+                'https://www.w3.org/ns/credentials/v2',
+                'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+            ],
+            type: ['VerifiableCredential', 'OpenBadgeCredential'],
+            issuer: issuer.id.did(),
+            name: 'Provisional Transcript',
+            credentialSubject: {
+                type: ['AchievementSubject'],
+                achievement: {
+                    id: 'urn:uuid:5b2d6c4e-1f57-4b9a-9d0f-3a8c2e7f1b10',
+                    type: ['Achievement'],
+                    name: 'Introduction to Biology',
+                    description: 'Grade pending final exam.',
+                    criteria: { narrative: 'Complete all coursework and the final exam.' },
                 },
             },
         },
-    ],
-    id: credentialId,
-    type: ['VerifiableCredential', 'OpenBadgeCredential'],
-    issuer: issuerDid,
-    validFrom: new Date().toISOString(),
-    name: 'Provisional Transcript',
-    refreshService,
-    credentialSubject: {
-        id: recipient.did,
-        type: ['AchievementSubject'],
-        achievement: {
-            id: 'urn:uuid:5b2d6c4e-1f57-4b9a-9d0f-3a8c2e7f1b10',
-            type: ['Achievement'],
-            name: 'Introduction to Biology',
-            description: 'Grade pending final exam.',
-            criteria: { narrative: 'Complete all coursework and the final exam.' },
-        },
+        name: 'Provisional Transcript',
+        category: 'Achievement',
     },
+    refresh: true,
 });
 
-// 3. Send through the refresh path. The network stores it encrypted to the recipient only.
-const credentialUri = await issuer.invoke.sendRefreshableCredential(refreshId, credential);
-
-// Keep these with your own record of the credential: publishing an update needs all of them.
+// `refresh` is the issuance receipt: the metadata every future version must reuse.
+// Keep it with your own record of the claims. You cannot read the credential back —
+// the network stores it encrypted to the recipient only.
 const record = {
-    refreshId,
-    issuerDid,
-    refreshService,
-    credentialId,
-    credentialUri,
-    recipientDid: recipient.did,
+    refreshId: result.refresh.refreshId,
+    refreshService: result.refresh.refreshService,
+    credentialId: result.refresh.credentialId,
+    issuerDid: result.refresh.issuerDid,
+    holderDid: result.refresh.holderDid,
+    credentialStatus: result.refresh.credentialStatus,
+    credentialUri: result.credentialUri,
+    activityId: result.activityId,
 };
 writeFileSync('refresh.json', JSON.stringify(record, null, 2));
 console.log(JSON.stringify(record));
@@ -131,15 +118,82 @@ console.log(JSON.stringify(record));
 RECIPIENT_PROFILE_ID=their-profile-id node --env-file=.env issue-refreshable.mjs
 ```
 
-The script writes `refresh.json`. In a real integration, store `refreshId`, `refreshService`, and `issuerDid` alongside your own record of the credential (the student row, the license number). You need them to publish an update, and you can't recover them later: the network only holds the credential encrypted to the recipient.
+The script writes `refresh.json` — the issuance receipt:
 
-The issuer DID matters more than it looks. Your account has two: a local `did:key` and your network `did:web`. Every version must use the same one, so read it from `getProfile()` as the script does rather than from `id.did()`, which can return either depending on timing.
+- `refreshId` / `refreshService` — the managed service that serves your updates
+- `credentialId` / `issuerDid` / `holderDid` — the identity every version must reuse
+- `credentialStatus` — the revocation status descriptor to preserve on every version
+- `credentialUri` / `activityId` — where the credential lives and how to track delivery
+
+The receipt is metadata only — it never contains the credential's claims. Keep it alongside your own record of the credential (the student row, the license number): publishing an update needs it, and you can't read the credential back afterwards. The network stores it encrypted to the recipient only, so neither the network nor you can decrypt it once sent.
+
+If your template includes the `BoostCredential` type, also keep `result.uri` (the boost URI). `send()` embeds it as `boostId` before signing; include the same `boostId` when rebuilding each update so the recipient can verify the boost's authenticity. This is distinct from `result.credentialUri`, which identifies the issued credential.
 
 The recipient sees **Provisional Transcript** in their LearnCard app once they claim it.
 
-{% hint style="warning" %}
-`sendBoost(recipient, templateUri, { enableRefresh: true })` also issues a refreshable credential, but it doesn't return the `refreshId`, so you can't publish updates to it. Use the explicit flow above until `send()` supports refresh directly.
-{% endhint %}
+### Retrying a refreshable send safely
+
+Issuing a refreshable credential takes several network steps (prepare, sign, deliver). Pass an `idempotencyKey` that is stable for the logical send — for example your own enrollment or award ID — and retry the **same** call after any failure:
+
+```js
+const result = await learnCard.invoke.send({
+    type: 'boost',
+    recipient: 'student-profile-id',
+    templateUri,
+    refresh: true,
+    idempotencyKey: `course-cert:${enrollmentId}`,
+});
+```
+
+Retries with the same key reuse the same boost and refresh allocation and return the original result once delivery has succeeded. Reusing a key for a different recipient, template, template data, integration, contract, or explicitly supplied credential ID is rejected with `CONFLICT`. Keys are scoped to your profile and only apply to `refresh: true` sends.
+
+For manually signed credentials, `idempotencyKey` requires an earlier `boost.prepareRefreshableSend`
+call with that key. That preparation procedure is tRPC-only; the SDK handles it automatically
+when signing locally. Direct REST callers supplying `signedCredential` should omit the key and
+retry the exact same signed credential with the same `templateUri`: the refresh allocation's
+binding already prevents duplicate delivery. A key without prior preparation is rejected with
+`BAD_REQUEST` before any send state is created.
+
+### `sendBoost` also issues refreshable credentials
+
+For a guided demonstration without writing SDK code, the CLI offers `learncard demo refresh`.
+It creates demo issuer and recipient accounts, sends a provisional certificate through
+`sendBoost`, publishes a final version, and refreshes the recipient's copy. Press Enter
+between steps to present the before and after. It defaults to the local network at
+`http://localhost:4000/trpc`; use `--network staging` for a staging network with managed
+refresh and LC-2198 deployed. Use a CLI build containing this command. The updated copy
+is displayed in the terminal, not saved to the app. Demo records remain on the selected
+network; account keys stay in memory for the session.
+
+To demonstrate the recipient experience in the local LearnCard app, start its local
+development stack and run `learncard demo refresh --ui` (or, from this repository,
+`bun --cwd packages/learn-card-cli start demo refresh --ui`). Follow the printed demo
+sign-in link, then press Enter to send. In the app, open **Alerts → Claim → Accept**.
+Press Enter in the terminal to publish the update, then open the new update notification
+in the app. Press Enter once more to confirm the final certificate was saved. The CLI
+waits for the app to save each version; it does not claim or refresh on the app's behalf.
+Open the full certificate to compare **Provisional Results — Final grade: Pending** with
+**Final Results — Final grade: A** after the update. Both its title and description change.
+Keep the sign-in link private: it controls a disposable demo account. This mode is
+interactive and local-only; `--app-url` selects a different local app port.
+
+If you already work boost-first — create the boost template, then send it to many people — `sendBoost` takes an opt-in flag instead. With literal `{ enableRefresh: true }` it returns the credential URI **and** the receipt; without it, the plain URI string, exactly as before:
+
+```typescript
+const boostUri = await issuer.invoke.createBoost(template); // ordinary boost template
+
+const sent = await issuer.invoke.sendBoost(recipientProfileId, boostUri, {
+    enableRefresh: true,
+});
+
+console.log(sent.credentialUri); // the issued credential
+console.log(sent.refresh.refreshId); // publish future versions with this receipt
+
+// Omit the flag (or pass the legacy boolean options) and you get the URI string:
+const plainUri = await issuer.invoke.sendBoost(recipientProfileId, boostUri);
+```
+
+Publishing works the same way: rebuild the update from your own claims plus `sent.refresh`, and pass it to `publishCredentialRefresh` as shown in the next section. Like `send()`, `enableRefresh` requires a profile or DID recipient on your network, a network with refresh enabled, and — for API-token callers — a token with `credentials:write` in addition to `boosts:write`.
 
 ## 2. Publish an update
 
@@ -154,36 +208,27 @@ import { initLearnCard } from '@learncard/init';
 if (!process.env.SECURE_SEED) throw new Error('Set SECURE_SEED');
 
 // Written by issue-refreshable.mjs.
-const { refreshId, refreshService, credentialId, issuerDid, recipientDid } = JSON.parse(
-    readFileSync('refresh.json', 'utf8')
-);
+const record = JSON.parse(readFileSync('refresh.json', 'utf8'));
 
 const issuer = await initLearnCard({ seed: process.env.SECURE_SEED, network: true });
 
-// The update is a complete credential: same id, issuer, and refreshService; newer validFrom.
+// Rebuild the credential from your own claims plus the receipt: same id, issuer,
+// subject, refreshService, and status descriptor as version 1; newer validFrom.
+// The refresh terms' JSON-LD context is injected automatically at signing.
 const updated = await issuer.invoke.issueCredential({
     '@context': [
         'https://www.w3.org/ns/credentials/v2',
         'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
-        {
-            LearnCardCredentialRefresh2026:
-                'https://learncard.com/refresh#LearnCardCredentialRefresh2026',
-            authorization: {
-                '@id': 'https://purl.imsglobal.org/spec/ob/v3p0#authorization',
-                '@context': {
-                    LearnCardDIDAuth: 'https://docs.learncard.com/definitions#LearnCardDIDAuth',
-                },
-            },
-        },
     ],
-    id: credentialId,
     type: ['VerifiableCredential', 'OpenBadgeCredential'],
-    issuer: issuerDid,
+    id: record.credentialId,
+    issuer: record.issuerDid,
     validFrom: new Date().toISOString(),
     name: 'Final Transcript',
-    refreshService,
+    ...(record.credentialStatus ? { credentialStatus: record.credentialStatus } : {}),
+    refreshService: record.refreshService,
     credentialSubject: {
-        id: recipientDid,
+        id: record.holderDid,
         type: ['AchievementSubject'],
         achievement: {
             id: 'urn:uuid:5b2d6c4e-1f57-4b9a-9d0f-3a8c2e7f1b10',
@@ -197,7 +242,7 @@ const updated = await issuer.invoke.issueCredential({
 
 const result = await issuer.invoke.publishCredentialRefresh({
     mode: 'issuer-signed',
-    refreshId,
+    refreshId: record.refreshId,
     signedCredential: updated,
     updateSummary: 'Final grades posted',
     idempotencyKey: 'final-grades', // retrying with the same key returns the same version
@@ -244,6 +289,34 @@ const { records } = await issuer.invoke.getCredentialRefreshHistory({ refreshId,
 ```
 
 History is metadata only. It never includes credential content.
+
+### The lower-level path
+
+Everything `send({ refresh: true })` does is also available as explicit steps — useful when one service signs and another delivers, or when you need the allocation record before issuing:
+
+```typescript
+// 1. Allocate the refresh service BEFORE signing. Its URL becomes part of the signed
+//    credential, bound to the recipient and the credential's stable ID.
+const { refreshId, refreshService } = await issuer.invoke.allocateCredentialRefresh({
+    holder: { profileId: recipientProfileId, did: recipientDid },
+    credentialId,
+});
+
+// 2. Issue with the service attached. issueCredential injects the refresh terms'
+//    JSON-LD context automatically before signing — no hand-copied context needed.
+const credential = await issuer.invoke.issueCredential({
+    ...ordinaryCredential,
+    id: credentialId,
+    refreshService,
+});
+
+// 3. Send through the managed path. The network stores it encrypted to the recipient only.
+const credentialUri = await issuer.invoke.sendRefreshableCredential(refreshId, credential);
+```
+
+You can also sign first and hand the signed credential to `send({ …, signedCredential, refresh: true })`. The signed credential must already contain its allocated managed refresh service — the network never adds refresh to an already-signed credential, and it rejects a refresh send whose credential carries no suitable allocation rather than issuing a second one.
+
+Publishing from this path is identical: keep `refreshId`, `refreshService`, and the signed identity with your records, and follow the next section.
 
 ## 3. Refresh from the recipient's side
 
@@ -292,19 +365,137 @@ Before publishing: `Up to date: Provisional Transcript`. After: `Updated to vers
 
 `refreshCredential` verifies the credential you hold, contacts the service once, verifies what comes back (valid proof, same issuer, same ID, not older than what you have), and returns it. It never writes to storage; where the new version goes is your wallet's decision. It also refuses to talk to non-HTTPS or private-network addresses unless you opt in for local development.
 
+The LearnCard app's development server handles local testing automatically when both the
+app and its configured Brain service use loopback addresses (`localhost`, `127.0.0.1`, or
+`[::1]`). It trusts that configured network for Boost verification and permits HTTP refresh
+requests only to that backend's origin, with redirects disabled. Signature, issuer, holder,
+and credential identity checks still run. No extra flag or custom Vite configuration is needed.
+Set `VITE_CREDENTIAL_REFRESH_LOCAL_QA=false` to opt out. These local exceptions are always
+disabled in production and staging builds, even if the flag is set to `true`; standalone SDK
+clients retain their existing explicit opt-in behavior.
+
+## Refresh through Universal Inbox
+
+Use this path when you know an email address or phone number but the recipient does not yet have a LearnCard account. A registered signing authority is required: the credential remains unsigned until the verified recipient claims it. Phone delivery retains the existing trusted-issuer requirement.
+
+For the easiest visual walkthrough, enable the [local email demo configuration](https://github.com/learningeconomy/LearnCard/blob/9cc5b605659db41f2381ff34bcbc63004b6cc87e/tests/e2e/email-demo/README.md), then run:
+
+```bash
+bun --cwd packages/learn-card-cli start demo refresh --inbox --ui --email
+```
+
+Enter an address you can access. The demo school emails a provisional certificate; open the email on the computer running the app, sign in with that address, finish account setup if prompted, and claim it. The app preserves the claim link through setup and returns you to it afterward. Return to the terminal to publish final results. View the updated certificate through the in-app notification or the update email's **View Updates** link. The email includes the issuer and credential title when available; grades and credential contents stay in the app. The CLI checks the issuer's bound receipt and recipient profile without accessing your account keys or personal saved records. If an older demo claimed before account setup, complete setup and start a fresh demo; that earlier delivery cannot receive update notifications.
+
+This walkthrough deliberately publishes only after claim, so you can see the change. Publishing before the recipient creates an account also works; the recipient gets the latest pending version at claim, as described below.
+
+For an optional disposable-account demonstration with no actual email, run `learncard demo refresh --inbox --ui`. It demonstrates the pre-claim update separately. Omit `--ui` for terminal-only testing (add `--lca-url http://localhost:5200/trpc` for the E2E stack). The UI mode reads service URLs from the running app's tenant configuration.
+
+```javascript
+const template = {
+    '@context': ['https://www.w3.org/ns/credentials/v2'],
+    type: ['VerifiableCredential'],
+    issuer: issuer.id.did(),
+    name: 'Provisional results',
+    credentialSubject: {},
+};
+const signingAuthority = { endpoint: 'https://your-authority.example/api', name: 'school' };
+
+const issued = await issuer.invoke.sendCredentialViaInbox({
+    recipient: { type: 'email', value: 'student@example.com' },
+    credential: template,
+    refresh: true,
+    idempotencyKey: 'student-123-biology',
+    configuration: {
+        signingAuthority,
+        delivery: { suppress: true }, // return a claim URL for your own delivery flow
+    },
+});
+const receipt = issued.refresh;
+// issued.claimUrl is used by the recipient to claim.
+// receipt.holderDid is absent until a holder has been bound.
+```
+
+The equivalent REST request is `POST /api/inbox/issue` with `refresh: true`. API tokens require both `inbox:write` and `credentials:write`. Reusing an issuance key with the same request reuses the inbox record and refresh allocation; using it for a different request conflicts. Each request without a key creates a separate issuance.
+
+To publish before claim, rebuild the unsigned content from your template and the allocation receipt. Keep the credential ID, issuer, refresh service, status descriptors, and subject identity fields unchanged. The inbox binds the subject ID when the recipient claims.
+
+```javascript
+import { injectManagedRefreshService } from '@learncard/helpers';
+
+const latest = injectManagedRefreshService(
+    {
+        ...template,
+        id: receipt.credentialId,
+        issuer: receipt.issuerDid,
+        name: 'Final grade A',
+        credentialStatus: receipt.credentialStatus,
+    },
+    receipt.refreshService
+);
+
+await issuer.invoke.publishCredentialRefresh({
+    refreshId: receipt.refreshId,
+    mode: 'signing-authority',
+    credential: latest,
+    signingAuthority: { type: 'http', ...signingAuthority },
+    idempotencyKey: 'student-123-biology-final',
+});
+```
+
+Publication replaces the pending encrypted content. No update notification is sent before a holder exists. Claim signs and delivers the newest content with the same credential ID and refresh URL. Earlier pending revisions retain metadata in issuer history; they are not signed, holder-downloadable credentials. Claim and publication use a version check, so an update racing with claim cannot silently deliver stale content. Expired or guardian-blocked inbox records cannot be claimed.
+
+The temporary unsigned content uses the existing encrypted, expiring inbox escrow, which the service can decrypt for signing. At successful claim, the escrow is erased and the signed version is stored encrypted for the holder (and their authorized managers). This differs from immediate managed sends, which never need inbox escrow.
+
+After claim, fetch the metadata-only receipt to learn the bound DID, then publish normally:
+
+```javascript
+const metadata = await issuer.invoke.getInboxCredential(issued.issuanceId);
+const bound = metadata.refresh;
+if (bound?.holderDid) {
+    await issuer.invoke.publishCredentialRefresh({
+        refreshId: bound.refreshId,
+        mode: 'signing-authority',
+        credential: {
+            ...latest,
+            name: 'Final grade A with honors',
+            credentialSubject: { ...latest.credentialSubject, id: bound.holderDid },
+        },
+        signingAuthority: { type: 'http', ...signingAuthority },
+        idempotencyKey: 'student-123-biology-honors',
+    });
+}
+```
+
+`getInboxCredential` requires `inbox:read`. Historical publication keys remain replayable after claim. If publication conflicts because claim just bound the holder, fetch this receipt and rebuild using its holder DID. A verified existing recipient is delivered the signed credential immediately and follows the normal acceptance/refresh lifecycle.
+
+The unified SDK send path also supports email/phone recipients:
+
+```javascript
+const sent = await issuer.invoke.send({
+    type: 'boost',
+    recipient: 'student@example.com',
+    templateUri: boostUri,
+    refresh: true,
+    idempotencyKey: 'student-123-boost',
+    options: { suppressDelivery: true },
+});
+const inboxReceipt = sent.inbox.refresh;
+```
+
+This uses the issuer's primary registered signing authority, including for seed-based SDK callers. The deferred allocation receipt is at `sent.inbox.refresh`; the existing `sent.refresh` signed-delivery receipt remains the profile/DID contract. Preserve `boostId: boostUri` when rebuilding boost content for publication. Pre-signed inbox credentials, multiple subjects, and pre-claim consent-contract linking are not supported with refresh. Remote-DID federation remains outside this path.
+
 ## Troubleshooting
 
-| You see                                                      | Why                                                                                        | Fix                                                                                         |
-| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
-| `Credential refresh is not available`                        | Refresh isn't enabled on this network                                                      | Check which network you're connected to; contact us if you need it enabled                  |
-| `Profile did not allocate this credential refresh`           | Publishing with a different seed than the one that allocated                               | Use the issuer seed that ran `issue-refreshable.mjs`                                        |
-| Signing fails mentioning `refreshService` or `authorization` | The inline context object is missing from `@context`                                       | Copy the third `@context` entry from the scripts above                                      |
-| `Credential issuer does not match the allocated refresh`     | The update was signed with a different DID than version 1 (usually `did:key` vs `did:web`) | Use `issuerDid` from `refresh.json`, not `id.did()`                                         |
-| `publishCredentialRefresh` rejects the update                | `id` or `refreshService` differs from the original, or `validFrom` is older                | Rebuild the update from `refresh.json`; set `validFrom` to now                              |
-| `notification: "not-applicable"`                             | The recipient hasn't claimed yet                                                           | Nothing to do; they'll receive the newest version when they claim                           |
-| `refreshCredential` returns `UNSAFE_ENDPOINT`                | The service URL isn't HTTPS or resolves to a private address                               | For local development only, pass `{ allowInsecureHttp: true, allowPrivateAddresses: true }` |
-| `refreshCredential` returns `REVOKED`                        | You revoked the credential                                                                 | Expected; the recipient keeps their local copy and history                                  |
-| `refreshCredential` returns `ROLLBACK`                       | The service returned something older than what the wallet holds                            | Publish a version with a newer `validFrom`                                                  |
+| You see                                                  | Why                                                                         | Fix                                                                                         |
+| -------------------------------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `Credential refresh is not available`                    | Refresh isn't enabled on this network                                       | Check which network you're connected to; contact us if you need it enabled                  |
+| `Profile did not allocate this credential refresh`       | Publishing with a different seed than the one that sent the credential      | Use the issuer seed that ran `issue-refreshable.mjs`                                        |
+| `Credential issuer does not match the allocated refresh` | The update was signed with a different DID than version 1                   | Rebuild the update from `issuerDid` in `refresh.json`                                       |
+| `publishCredentialRefresh` rejects the update            | `id` or `refreshService` differs from the original, or `validFrom` is older | Rebuild the update from `refresh.json`; set `validFrom` to now                              |
+| `notification: "not-applicable"`                         | The recipient hasn't claimed yet                                            | Nothing to do; they'll receive the newest version when they claim                           |
+| `refreshCredential` returns `UNSAFE_ENDPOINT`            | The service URL isn't HTTPS or resolves to a private address                | For local development only, pass `{ allowInsecureHttp: true, allowPrivateAddresses: true }` |
+| `refreshCredential` returns `REVOKED`                    | You revoked the credential                                                  | Expected; the recipient keeps their local copy and history                                  |
+| `refreshCredential` returns `ROLLBACK`                   | The service returned something older than what the wallet holds             | Publish a version with a newer `validFrom`                                                  |
 
 ## Limits to know about
 

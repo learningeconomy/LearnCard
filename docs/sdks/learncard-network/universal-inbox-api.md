@@ -444,3 +444,11 @@ await learncardApiClient.post('/inbox/issue', {
 ### Want an ongoing relationship instead of one-off sends?
 
 If you'll issue to the same people repeatedly, have them connect once through a [ConsentFlow](../../tutorials/create-a-consentflow.md) — after that, credentials land directly in their LearnCard with no email or claim link. See [Connect a User's LearnCard to Your Platform](../../tutorials/create-a-consentflow.md).
+
+## Managed refresh
+
+`sendCredentialViaInbox` / `POST /api/inbox/issue` accepts `refresh: true` and an optional `idempotencyKey`. API tokens need `inbox:write` plus `credentials:write`. Supply an unsigned, single-subject credential and a registered signing authority (explicit or primary).
+
+The response includes `refresh` allocation metadata: `refreshId`, `refreshService`, `credentialId`, `issuerDid`, optional `credentialStatus`, and `holderDid` only once bound. Pending publication uses `publishCredentialRefresh` in `signing-authority` mode with the same authority; claim signs the newest pending revision and clears encrypted inbox escrow. After claim, `getInboxCredential(issuanceId)` returns the bound metadata receipt under `refresh`, allowing normal subsequent publication without reading the holder's claims.
+
+See [Refresh through Universal Inbox](../../how-to-guides/issue-and-refresh-a-managed-credential.md#refresh-through-universal-inbox) for runnable SDK request shapes, idempotency, encryption, and claim behavior.

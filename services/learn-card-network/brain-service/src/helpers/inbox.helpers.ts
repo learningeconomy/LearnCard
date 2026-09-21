@@ -1,3 +1,14 @@
+import { environment } from '@environment';
+import { recordInboxRefreshClaimUrl } from '@accesslayer/inbox-credential/refresh';
+import { randomUUID } from 'node:crypto';
+import {
+    assertInboxRefreshEnabled,
+    prepareInboxRefresh,
+    getInboxRefreshReceipt,
+    finalizeInboxRefresh,
+    getInboxRefreshIssueKey,
+    resumeInboxRefreshDelivery,
+} from './inbox-refresh.helpers';
 import { TRPCError } from '@trpc/server';
 import {
     InboxDeliveryCheckpointError,
@@ -196,11 +207,15 @@ export const issueToInbox = async (
         activityId?: string;
         integrationId?: string;
         guardianEmail?: string;
+        refresh?: boolean;
+        idempotencyKey?: string;
+        refreshRequestDigest?: string;
     } = {},
     ctx: Context,
     /** Queue ownership checkpoint immediately before delivery or inbox persistence. */
     beforeDelivery?: () => Promise<void>
 ): Promise<{
+    refresh?: import('@learncard/types').InboxCredentialRefreshReceipt;
     status: 'PENDING' | 'ISSUED' | 'EXPIRED' | 'DELIVERED' | 'CLAIMED'; // DELIVERED & CLAIMED are deprecated, use ISSUED
     inboxCredential: InboxCredentialType;
     claimUrl?: string;
@@ -217,6 +232,20 @@ export const issueToInbox = async (
         integrationId,
         guardianEmail,
     } = configuration;
+    if (configuration.refresh) {
+        await assertInboxRefreshEnabled(ctx.user?.scope);
+        if (
+            credential.proof ||
+            credential.type.includes('VerifiablePresentation') ||
+            Array.isArray(credential.credentialSubject)
+        ) {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message:
+                    'Inbox refresh requires an unsigned credential with a single subject and a signing authority.',
+            });
+        }
+    }
     const isSigned = !!credential?.proof;
     let signingAuthority: IssueInboxSigningAuthority | undefined = _signingAuthority;
     let deliveryCheckpointReached = beforeDelivery === undefined;
@@ -273,6 +302,21 @@ export const issueToInbox = async (
         }
     }
 
+    if (
+        configuration.refresh &&
+        (!signingAuthority ||
+            !(await getSigningAuthorityForUserByName(
+                issuerProfile,
+                signingAuthority.endpoint,
+                signingAuthority.name
+            )))
+    ) {
+        throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Signing authority not found for issuer',
+        });
+    }
+
     // Check if recipient already exists with verified email
     const existingProfile = await getProfileByVerifiedContactMethod(
         recipient.type,
@@ -286,7 +330,7 @@ export const issueToInbox = async (
         : [];
     const recipientIsManaged = recipientManagers.length > 0;
 
-    if (existingProfile && !guardianEmail && !recipientIsManaged) {
+    if (existingProfile && !guardianEmail && !recipientIsManaged && !configuration.refresh) {
         // Auto-deliver to existing user
         let finalCredential: VC;
 
@@ -437,8 +481,24 @@ export const issueToInbox = async (
         // Store in inbox for claiming
         // Guardian gate if issuer specified guardianEmail OR recipient is a managed child
         const needsGuardianGate = !!guardianEmail || recipientIsManaged;
+        const preparedRefresh = configuration.refresh
+            ? await prepareInboxRefresh(credential, issuerProfile, ctx.domain)
+            : undefined;
+        if (preparedRefresh) credential = preparedRefresh.credential;
         await checkpointDelivery();
         const inboxCredential = await createInboxCredential({
+            ...(preparedRefresh
+                ? {
+                      refresh: {
+                          aggregate: preparedRefresh.aggregate,
+                          issueKey: getInboxRefreshIssueKey(
+                              issuerProfile.profileId,
+                              configuration.idempotencyKey ?? randomUUID()
+                          ),
+                          requestDigest: configuration.refreshRequestDigest!,
+                      },
+                  }
+                : {}),
             credential: JSON.stringify(credential),
             isSigned,
             recipient,
@@ -452,6 +512,100 @@ export const issueToInbox = async (
             ...(guardianEmail ? { guardianEmail } : {}),
             ...(needsGuardianGate ? { guardianStatus: 'AWAITING_GUARDIAN' as const } : {}),
         });
+
+        const refresh = inboxCredential.refreshId
+            ? await getInboxRefreshReceipt(inboxCredential.refreshId, ctx.domain)
+            : undefined;
+        if (refresh && existingProfile && !needsGuardianGate) {
+            await finalizeInboxRefresh({
+                inboxId: inboxCredential.id,
+                holderDid: existingProfile.did,
+                holderProfile: existingProfile,
+                domain: ctx.domain,
+                accepted: false,
+            });
+            await resumeInboxRefreshDelivery(refresh.refreshId, ctx.domain);
+            await createDeliveredRelationship(
+                issuerProfile.profileId,
+                inboxCredential.id,
+                existingProfile.did,
+                'auto-delivery'
+            );
+            if (activityId)
+                await logCredentialDelivered({
+                    activityId,
+                    actorProfileId: issuerProfile.profileId,
+                    recipientType: recipient.type,
+                    recipientIdentifier: recipient.value,
+                    recipientProfileId: existingProfile.profileId,
+                    boostUri,
+                    inboxCredentialId: inboxCredential.id,
+                    integrationId,
+                    source: 'send',
+                });
+            if (webhookUrl)
+                await addNotificationToQueue({
+                    webhookUrl,
+                    type: LCNNotificationTypeEnumValidator.enum.ISSUANCE_DELIVERED,
+                    from: { did: (await getLearnCard()).id.did() },
+                    to: issuerProfile,
+                    message: getNotificationMessage(
+                        'issuanceDelivered',
+                        resolveRecipientLocale(issuerProfile),
+                        {
+                            issuer: issuerProfile.displayName,
+                            recipientType: recipient.type,
+                            recipientValue: recipient.value,
+                        }
+                    ),
+                    data: {
+                        inbox: {
+                            issuanceId: inboxCredential.id,
+                            status: LCNInboxStatusEnumValidator.enum.ISSUED,
+                            recipient: {
+                                contactMethod: recipient,
+                                learnCardId: existingProfile.did,
+                            },
+                            timestamp: new Date().toISOString(),
+                        },
+                    },
+                });
+            // Existing accounts receive the signed credential in their app inbox.
+            // Send the email there too, without a claim token for an already-bound delivery.
+            if (recipient.type === 'email' && !delivery?.suppress) {
+                try {
+                    const appUrl = environment.IS_OFFLINE
+                        ? generateClaimUrl('')
+                        : ctx.tenant?.emailBranding?.appUrl || generateClaimUrl('');
+                    await getDeliveryService(recipient).send({
+                        contactMethod: recipient,
+                        templateId: 'universal-inbox-claim',
+                        templateModel: {
+                            claimUrl: new URL('/notifications', appUrl).href,
+                            issuer: { name: issuerProfile.displayName },
+                            credential: { name: credential.name },
+                        },
+                        branding: ctx.tenant?.emailBranding,
+                        locale: resolveRecipientLocale(existingProfile),
+                        messageStream: 'universal-inbox',
+                    });
+                } catch {
+                    // The credential and in-app notification are already durable. An
+                    // email transport failure must not turn that delivery into an error.
+                    console.warn('Inbox refresh: initial email failed after auto-delivery.');
+                }
+            }
+            return {
+                status: 'ISSUED',
+                inboxCredential: {
+                    ...inboxCredential,
+                    currentStatus: 'ISSUED',
+                    credential: undefined,
+                },
+                recipientDid: existingProfile.did,
+                refresh: { ...refresh, holderDid: existingProfile.did },
+            };
+        }
 
         // Generate claim token
         let recipientContactMethod = await getContactMethodByValue(recipient.type, recipient.value);
@@ -826,7 +980,9 @@ export const issueToInbox = async (
             expiresInDays ? 24 * expiresInDays : 24,
             false
         );
-        const claimUrl = generateClaimUrl(claimToken);
+        const claimUrl = refresh
+            ? await recordInboxRefreshClaimUrl(inboxCredential.id, generateClaimUrl(claimToken))
+            : generateClaimUrl(claimToken);
 
         assertDeliveryCheckpoint({
             issuanceId: inboxCredential.id,
@@ -838,6 +994,7 @@ export const issueToInbox = async (
             status: LCNInboxStatusEnumValidator.enum.PENDING,
             inboxCredential,
             claimUrl,
+            ...(refresh ? { refresh } : {}),
             ...(guardianEmail ? { guardianStatus: 'AWAITING_GUARDIAN' as const } : {}),
         };
     }

@@ -41,6 +41,7 @@ const LOCAL_TEMPLATE_MAP: Record<string, TemplateId> = {
     'guardian-credential-approval': 'guardian-credential-approval',
     'guardian-email-otp': 'guardian-email-otp',
     'guardian-rejected-credential': 'guardian-rejected-credential',
+    'credential-updated': 'credential-updated',
 };
 
 export class PostmarkAdapter implements DeliveryService {
@@ -85,6 +86,8 @@ export class PostmarkAdapter implements DeliveryService {
                     `[PostmarkAdapter] Local render failed for "${notification.templateId}":`,
                     renderError
                 );
+                // This template is owned locally; there is no legacy provider alias.
+                if (notification.templateId === 'credential-updated') throw renderError;
             }
 
             if (rendered) {
@@ -104,6 +107,9 @@ export class PostmarkAdapter implements DeliveryService {
                         `[PostmarkAdapter] sendEmail API failed for "${notification.templateId}":`,
                         sendError
                     );
+                    // A lost provider acknowledgement may already have sent the email.
+                    // Do not bypass the refresh delivery claim with a second attempt.
+                    if (notification.templateId === 'credential-updated') throw sendError;
                 }
             }
         }
@@ -215,6 +221,12 @@ export class PostmarkAdapter implements DeliveryService {
                     issuer: model.issuer,
                     credential: model.credential,
                     recipient: model.recipient,
+                };
+
+            case 'credential-updated':
+                return {
+                    issuer: model.issuer,
+                    credential: model.credential,
                 };
 
             default:

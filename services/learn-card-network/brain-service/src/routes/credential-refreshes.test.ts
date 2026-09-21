@@ -116,7 +116,10 @@ describe('credential refresh issuer route gating', () => {
                 markConstraintsReady = resolve;
             })
         );
-        mocks.sendRefreshableCredential.mockResolvedValue('lc:network:credential:root');
+        mocks.sendRefreshableCredential.mockResolvedValue({
+            uri: 'lc:network:credential:root',
+            receipt: { refreshId: 'opaque-refresh-id' },
+        });
 
         const caller = credentialRefreshesRouter.createCaller({
             domain: 'network.example.com',
@@ -174,7 +177,10 @@ describe('credential refresh issuer route gating', () => {
 
     it('forwards initial notification suppression to managed delivery', async () => {
         process.env.CREDENTIAL_REFRESH_ENABLED = 'true';
-        mocks.sendRefreshableCredential.mockResolvedValue('lc:network:credential:root');
+        mocks.sendRefreshableCredential.mockResolvedValue({
+            uri: 'lc:network:credential:root',
+            receipt: { refreshId: 'opaque-refresh-id' },
+        });
 
         const caller = credentialRefreshesRouter.createCaller({
             domain: 'network.example.com',

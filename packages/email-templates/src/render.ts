@@ -39,6 +39,8 @@ import {
     getGuardianRejectedCredentialSubject,
     EmailVerification,
     getEmailVerificationSubject,
+    CredentialUpdated,
+    getCredentialUpdatedSubject,
 } from './templates';
 
 import type {
@@ -53,6 +55,7 @@ import type {
     GuardianEmailOtpProps,
     GuardianRejectedCredentialProps,
     EmailVerificationProps,
+    CredentialUpdatedProps,
 } from './templates';
 
 // ---------------------------------------------------------------------------
@@ -146,6 +149,9 @@ export interface TemplateDataMap {
 
     /** Sent to student: guardian rejected credential */
     'guardian-rejected-credential': GuardianRejectedCredentialData;
+
+    /** brain-service: managed credential refresh update notice (LC-2198) */
+    'credential-updated': CredentialUpdatedData;
 }
 
 export type TemplateId = keyof TemplateDataMap;
@@ -221,6 +227,12 @@ export interface GuardianRejectedCredentialData {
     issuer?: { name?: string };
     credential?: { name?: string };
     recipient?: { email?: string };
+}
+
+export interface CredentialUpdatedData {
+    issuer?: { name?: string; logoUrl?: string };
+    /** Bounded credential display title. Omitted when unavailable. */
+    credential?: { name?: string };
 }
 
 // ---------------------------------------------------------------------------
@@ -417,6 +429,16 @@ function buildElement(
             return {
                 element: React.createElement(GuardianRejectedCredential, props),
                 subject: getGuardianRejectedCredentialSubject(branding, locale),
+            };
+        }
+
+        case 'credential-updated': {
+            const d = data as CredentialUpdatedData;
+            const props: CredentialUpdatedProps = { branding, ...d, locale };
+
+            return {
+                element: React.createElement(CredentialUpdated, props),
+                subject: getCredentialUpdatedSubject(branding, locale),
             };
         }
 

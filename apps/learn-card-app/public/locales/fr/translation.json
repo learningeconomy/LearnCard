@@ -1,4 +1,9 @@
 {
+    "inboxClaimSetup": {
+        "setup": "Terminez la configuration de votre compte pour récupérer votre attestation.",
+        "continue": "Continuer la configuration du compte",
+        "connection": "Nous n’avons pas pu confirmer votre compte. Vérifiez votre connexion et réessayez."
+    },
     "connectionPrompts": {
         "title": "Se connecter avec {{name}} ?",
         "description": "Restez en contact et valorisez la suite.",

@@ -17,17 +17,13 @@ vi.mock('@learncard/core', () => ({ generateLearnCard: vi.fn() }));
 vi.mock('@learncard/didkit-plugin', () => ({ getDidKitPlugin: vi.fn() }));
 vi.mock('@learncard/didkey-plugin', () => ({ getDidKeyPlugin: vi.fn() }));
 vi.mock('@learncard/vc-plugin', () => ({ getVCPlugin: vi.fn() }));
-vi.mock('@learncard/helpers', () => ({
-    isVC2Format: (credential: any) => {
-        const contexts = credential?.['@context'];
-        const list = Array.isArray(contexts) ? contexts : [contexts];
-
-        return list.includes('https://www.w3.org/ns/credentials/v2');
-    },
+vi.mock('@learncard/helpers', async importOriginal => ({
+    ...(await importOriginal<typeof import('@learncard/helpers')>()),
     getCredentialStatusArray: () => [],
     resolveStorageReadResult: (value: any) => value,
 }));
-vi.mock('@learncard/types', () => ({
+vi.mock('@learncard/types', async importOriginal => ({
+    ...(await importOriginal<object>()),
     VCValidator: {
         parse: (value: any) => {
             if (!value?.type) throw new Error('Invalid credential');
@@ -552,12 +548,25 @@ describe('credential refresh methods', () => {
         const { learnCard, issuedCredentials } = getMockIssuingLearnCard();
         const plugin = await getLearnCardNetworkPlugin(learnCard, 'https://network.example/trpc');
 
-        const uri = await plugin.methods?.sendBoost(learnCard, 'userb', 'did:example:boost:1', {
+        const result = await plugin.methods?.sendBoost(learnCard, 'userb', 'did:example:boost:1', {
             enableRefresh: true,
             skipNotification: true,
         });
 
-        expect(uri).toEqual('managed-credential-uri');
+        // Refresh-enabled callers receive the issuance receipt alongside the
+        // credential URI (LC-2198 decision 4).
+        expect(result).toEqual({
+            credentialUri: 'managed-credential-uri',
+            refresh: {
+                refreshId: REFRESH_ID,
+                refreshService: ALLOCATION.refreshService,
+                credentialId: expect.stringMatching(
+                    /^urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+                ),
+                issuerDid: PROFILE.did,
+                holderDid: TARGET_DID,
+            },
+        });
 
         // A stable UUID credential ID is generated when the template has none
         expect(client.credentialRefresh.allocateCredentialRefresh.mutate).toHaveBeenCalledTimes(1);
@@ -567,6 +576,9 @@ describe('credential refresh methods', () => {
         expect(allocateInput.credentialId).toMatch(
             /^urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
         );
+        expect(
+            (result as unknown as { refresh: { credentialId: string } }).refresh.credentialId
+        ).toEqual(allocateInput.credentialId);
 
         // Allocation happens before signing so the service lands in the signed payload
         const allocateOrder =
@@ -599,6 +611,27 @@ describe('credential refresh methods', () => {
         expect(client.boost.sendBoost.mutate).not.toHaveBeenCalled();
         expect(learnCard.invoke.createDagJwe).not.toHaveBeenCalled();
         expect(client.utilities.getDid.query).not.toHaveBeenCalled();
+    });
+
+    it('sendBoost receipt preserves the exact credentialStatus descriptor from the signed VC', async () => {
+        const client = getMockClient();
+        vi.mocked(getBrainClient).mockResolvedValue(client as never);
+        const { learnCard } = getMockIssuingLearnCard();
+        const credentialStatus = {
+            id: 'https://network.example/status/3#94567',
+            type: 'BitstringStatusListEntry',
+            statusPurpose: 'revocation',
+            statusListIndex: '94567',
+            statusListCredential: 'https://network.example/status/3',
+        };
+        client.boost.allocateCredentialStatus.mutate.mockResolvedValue([credentialStatus]);
+        const plugin = await getLearnCardNetworkPlugin(learnCard, 'https://network.example/trpc');
+
+        const result = (await plugin.methods?.sendBoost(learnCard, 'userb', 'did:example:boost:1', {
+            enableRefresh: true,
+        })) as unknown as { refresh: Record<string, unknown> };
+
+        expect(result.refresh.credentialStatus).toEqual(credentialStatus);
     });
 
     it('sendBoost with enableRefresh reuses an existing credential ID', async () => {

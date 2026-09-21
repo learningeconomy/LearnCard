@@ -1,3 +1,4 @@
+import { walletModeStore } from 'learn-card-base/stores/walletModeStore';
 import { useCallback } from 'react';
 import * as m from '../../paraglide/messages.js';
 import {
@@ -64,6 +65,7 @@ export const useSeedLogin = () => {
 
                 const wallet = await initWallet(seed);
                 if (wallet) {
+                    walletModeStore.set.mode('full');
                     walletStore.set.wallet(wallet);
                 } else {
                     throw new Error('Error: Could not initialize wallet');

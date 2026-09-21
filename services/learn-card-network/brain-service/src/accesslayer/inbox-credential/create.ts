@@ -9,12 +9,14 @@ import { getContactMethodByValue } from '@accesslayer/contact-method/read';
 import { createContactMethod } from '@accesslayer/contact-method/create';
 import { ProfileType } from 'types/profile';
 import { encryptInboxCredential } from '@helpers/inbox-encryption.helpers';
+import { createPendingInboxRefresh } from './refresh';
 import { parseCredentialMeta } from '@helpers/credential-meta.helpers';
 
 export const DEFAULT_INBOX_EXPIRY_DAYS = 30;
 
 export const createInboxCredential = async (input: {
     credential: string;
+    refresh?: { aggregate: Record<string, unknown>; issueKey: string; requestDigest: string };
     /** Only set after the normal delivery helper has durably stored the credential. */
     delivered?: boolean;
     isSigned: boolean;
@@ -39,7 +41,7 @@ export const createInboxCredential = async (input: {
         throw new Error('expiresInDays must be an integer between 1 and 720');
     }
 
-    const id = uuid();
+    let id = uuid();
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + (input.expiresInDays ?? DEFAULT_INBOX_EXPIRY_DAYS));
     // Encrypt before persisting so the credential itself is not stored in plaintext in the inbox.
@@ -50,6 +52,7 @@ export const createInboxCredential = async (input: {
 
     const inboxCredentialData = {
         id,
+        ...(input.refresh ? { refreshId: input.refresh.aggregate.refreshId } : {}),
         credential: encryptedCredential,
         ...credentialMeta,
         isSigned: input.isSigned,
@@ -76,28 +79,55 @@ export const createInboxCredential = async (input: {
         ...(input.guardianStatus ? { guardianStatus: input.guardianStatus } : {}),
     };
 
-    await new QueryBuilder(
-        new BindParam({
-            params: flattenObject(inboxCredentialData),
-            issuerProfileId: input.issuerProfile.profileId,
-            timestamp: new Date().toISOString(),
-        })
-    )
-        .create({ model: InboxCredential, identifier: 'inboxCredential' })
-        .set('inboxCredential += $params')
-        .run();
+    if (input.refresh) {
+        const created = await createPendingInboxRefresh({
+            inbox: Object.fromEntries(
+                Object.entries(flattenObject(inboxCredentialData)).filter(
+                    ([, value]) => value !== undefined
+                )
+            ),
+            aggregate: Object.fromEntries(
+                Object.entries({ ...input.refresh.aggregate, inboxCredentialId: id }).filter(
+                    ([, value]) => value !== undefined
+                )
+            ),
+            issueKey: input.refresh.issueKey,
+            requestDigest: input.refresh.requestDigest,
+        });
+        id = created.id;
+    } else {
+        await new QueryBuilder(
+            new BindParam({
+                params: flattenObject(inboxCredentialData),
+                issuerProfileId: input.issuerProfile.profileId,
+                timestamp: new Date().toISOString(),
+            })
+        )
+            .create({ model: InboxCredential, identifier: 'inboxCredential' })
+            .set('inboxCredential += $params')
+            .run();
+    }
 
     const contactMethod = await getContactMethodByValue(
         input.recipient.type,
         input.recipient.value
     );
     if (!contactMethod) {
-        await createContactMethod({
-            type: input.recipient.type,
-            value: input.recipient.value,
-            isVerified: false,
-            isPrimary: false,
-        });
+        try {
+            await createContactMethod({
+                type: input.recipient.type,
+                value: input.recipient.value,
+                isVerified: false,
+                isPrimary: false,
+            });
+        } catch (error) {
+            // A concurrent idempotent issue may have created the same contact first.
+            if (
+                !input.refresh ||
+                !(await getContactMethodByValue(input.recipient.type, input.recipient.value))
+            )
+                throw error;
+        }
     }
 
     // Create relationships SEQUENTIALLY to prevent deadlocks
@@ -112,7 +142,8 @@ export const createInboxCredential = async (input: {
         .where('ic.id = $inboxId')
         .match('(profile:Profile)')
         .where('profile.profileId = $profileId')
-        .create('(profile)-[:CREATED_INBOX_CREDENTIAL { timestamp: $timestamp }]->(ic)')
+        .merge('(profile)-[created:CREATED_INBOX_CREDENTIAL]->(ic)')
+        .set('created.timestamp = coalesce(created.timestamp, $timestamp)')
         .run();
 
     await new QueryBuilder(
@@ -127,7 +158,8 @@ export const createInboxCredential = async (input: {
         .where('ic.id = $inboxId')
         .match('(contactMethod:ContactMethod)')
         .where('contactMethod.type = $type AND contactMethod.value = $value')
-        .create('(ic)-[:ADDRESSED_TO { timestamp: $timestamp }]->(contactMethod)')
+        .merge('(ic)-[addressed:ADDRESSED_TO]->(contactMethod)')
+        .set('addressed.timestamp = coalesce(addressed.timestamp, $timestamp)')
         .run();
 
     return (await getInboxCredentialById(id))!;

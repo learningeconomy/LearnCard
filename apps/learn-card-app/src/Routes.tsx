@@ -196,7 +196,9 @@ const PrivateRoute = ({ component: Component, ...rest }) => {
     return isLoggedIn ? (
         <SentryRoute {...rest} render={props => <Component {...props} {...rest} />} />
     ) : (
-        <Redirect to="/login" />
+        <Redirect
+            to={rest.path === '/notifications' ? '/login?redirectTo=%2Fnotifications' : '/login'}
+        />
     );
 };
 
