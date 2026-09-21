@@ -21,6 +21,7 @@ import * as bs58 from 'bs58';
 import * as dotenv from 'dotenv';
 import { MongoClient } from 'mongodb';
 import { Neogma } from 'neogma';
+import Redis from 'ioredis';
 import * as nacl from 'tweetnacl';
 import { v4 as uuid, v5 as uuidv5 } from 'uuid';
 
@@ -45,6 +46,8 @@ const NEO4J_USERNAME = process.env.NEO4J_USERNAME ?? 'neo4j';
 const NEO4J_PASSWORD = process.env.NEO4J_PASSWORD ?? 'this-is-the-password';
 const MONGO_URI = process.env.MONGO_URI ?? 'mongodb://localhost:27017/?replicaSet=rs0';
 const MONGO_DB_NAME = process.env.MONGO_DB_NAME ?? 'lca-api';
+const REDIS_HOST = process.env.REDIS_HOST ?? 'localhost';
+const REDIS_PORT = Number.parseInt(process.env.REDIS_PORT ?? '6379', 10);
 const BRAIN_DOMAIN = process.env.DOMAIN_NAME || 'localhost%3A4000';
 const SIGNING_AUTHORITY_ENDPOINT =
     process.env.DEMO_PERSONA_SIGNING_AUTHORITY_ENDPOINT ?? 'http://localhost:5100/api';
@@ -66,6 +69,7 @@ const isLocalDatabase = (uri: string): boolean => {
         return false;
     }
 };
+const IS_LOCAL_TARGET = isLocalDatabase(NEO4J_URI) && isLocalDatabase(MONGO_URI);
 
 const personaId = process.argv[2];
 
@@ -78,7 +82,7 @@ if (!/^[0-9a-f]{64}$/i.test(SIGNING_AUTHORITY_SEED)) {
 }
 
 if (
-    (!isLocalDatabase(NEO4J_URI) || !isLocalDatabase(MONGO_URI)) &&
+    !IS_LOCAL_TARGET &&
     (!process.env.DEMO_PERSONA_SA_SEED || !process.env.DEMO_PERSONA_SIGNING_AUTHORITY_ENDPOINT)
 ) {
     throw new Error(
@@ -105,6 +109,27 @@ const deriveDidKeyFromSeed = (hexSeed: string): string => {
     const multicodec = Buffer.concat([Buffer.from('ed01', 'hex'), Buffer.from(keyPair.publicKey)]);
 
     return `did:key:z${bs58.encode(multicodec)}`;
+};
+
+const clearProfileDidDocumentCache = async (profileId: string): Promise<void> => {
+    const redis = new Redis({
+        host: REDIS_HOST,
+        port: REDIS_PORT,
+        lazyConnect: true,
+        connectTimeout: 2_000,
+        retryStrategy: () => null,
+    });
+
+    try {
+        await redis.connect();
+        await redis.del(`did-doc:${profileId}`);
+    } catch {
+        console.warn(
+            `Could not clear did-doc:${profileId} at ${REDIS_HOST}:${REDIS_PORT}; delete that Redis key manually, or restart the brain service if it uses an in-memory cache.`
+        );
+    } finally {
+        redis.disconnect();
+    }
 };
 
 const shiftDate = (offsetDays: number): string => {
@@ -208,6 +233,7 @@ const main = async (): Promise<void> => {
                 did: signingAuthorityDid,
             }
         );
+        await clearProfileDidDocumentCache(profileId);
         await ensureSigningAuthority(issuerDid, signingAuthorityDid);
 
         const boostIds: string[] = [];

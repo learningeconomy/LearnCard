@@ -519,6 +519,20 @@ describe('ConsentFlow E2E Tests', () => {
             const autoBoost = credentials.records[0];
             expect(autoBoost.boostUri).toContain(boostUri.split(':').pop());
 
+            const issuedCredential = (await b.read.get(autoBoost.credentialUri!)) as VC;
+            expect(issuedCredential.type).toEqual(
+                expect.arrayContaining(['VerifiableCredential', 'OpenBadgeCredential'])
+            );
+            expect(issuedCredential.type).not.toContain('BoostCredential');
+            expect(issuedCredential).not.toHaveProperty('boostId');
+            expect(Array.isArray(issuedCredential.credentialSubject)).toBe(false);
+            expect(issuedCredential.credentialSubject).toMatchObject({
+                type: ['AchievementSubject'],
+                achievement: expect.objectContaining({
+                    name: 'Awesome Badge',
+                }),
+            });
+
             // Check transactions to verify auto-boost was recorded
             const transactions = await b.invoke.getConsentFlowTransactions(termsUri);
 
