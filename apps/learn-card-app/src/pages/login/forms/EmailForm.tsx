@@ -104,6 +104,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
     const [errors, setErrors] = useState<Record<string, string[]>>({});
     const [codeError, setCodeError] = useState<string>('');
     const [isLoading, setIsLoading] = useState(false);
+    const [hasVerificationFailed, setHasVerificationFailed] = useState(false);
 
     const { mutateAsync: sendLoginVerificationCode } = useSendLoginVerificationCode();
     const { mutateAsync: verifyLoginVerificationCode } = useVerifyLoginVerificationCode();
@@ -171,11 +172,15 @@ const EmailForm: React.FC<EmailFormProps> = ({
                 if (response?.success && response?.token) {
                     redirectStore.set.email(null);
                     await signInWithCustomFirebaseToken(response?.token);
+                } else {
+                    // Verification failed - require manual submit for next attempt
+                    setHasVerificationFailed(true);
                 }
                 // Error handling is done via the mutation's onSuccess alert popup
                 setIsLoading(false);
             } catch (e) {
                 setIsLoading(false);
+                setHasVerificationFailed(true);
                 // Network/exception errors still show inline
                 setCodeError(m['login.email.verification.error']());
             }
@@ -183,11 +188,17 @@ const EmailForm: React.FC<EmailFormProps> = ({
     };
 
     useEffect(() => {
-        if (currentStep === EmailFormStepsEnum.verification && code.length === 6 && !isLoading) {
-            // auto verify code when 6 digits are entered
+        if (
+            currentStep === EmailFormStepsEnum.verification &&
+            code.length === 6 &&
+            !isLoading &&
+            !hasVerificationFailed
+        ) {
+            // Auto verify code when 6 digits are entered (only on first attempt)
+            // After a failed verification, user must manually click Verify
             handleVerifyCode();
         }
-    }, [code, currentStep]);
+    }, [code, currentStep, hasVerificationFailed]);
 
     const handleDemoLogin = async () => {
         setIsLoading(true);
