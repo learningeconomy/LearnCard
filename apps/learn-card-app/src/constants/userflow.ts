@@ -1,3 +1,4 @@
+import { isSharePrivateSession } from '../components/share-links/sharePrivacy';
 import userflow from 'userflow.js';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('userflow');
@@ -28,7 +29,7 @@ const getUserflowToken = (): string => {
 export const initUserflowFromTenant = (): void => {
     const token = getUserflowToken();
 
-    if (token) {
+    if (token && !isSharePrivateSession()) {
         userflow.init(token);
     }
 };
@@ -37,11 +38,12 @@ export const useUserflowIdentify = (options: UseUserflowIdentifyOptions = {}) =>
     const currentUser = useCurrentUser();
     const { getDID } = useWallet();
     useEffect(() => {
-        if (getUserflowToken()) {
+        if (getUserflowToken() && !isSharePrivateSession()) {
             if (currentUser) {
                 if (options.debug) log.debug('Userflow Identify user! 🎸', currentUser);
                 getDID()
                     .then(did => {
+                        if (isSharePrivateSession()) return;
                         const userAttributes = {
                             device_type: window?.innerWidth > 800 ? 'desktop' : 'mobile',
                         };

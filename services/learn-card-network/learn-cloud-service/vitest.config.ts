@@ -6,6 +6,7 @@ export default createVitestConfig(nodePreset, {
             'test/uri-helpers.spec.ts',
             'test/query.helpers.spec.ts',
             'test/xapi.helpers.spec.ts',
+            'test/share-content-auth.spec.ts',
         ],
     },
 });

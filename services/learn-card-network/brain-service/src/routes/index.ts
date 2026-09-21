@@ -11,6 +11,7 @@ import jwtDecode from 'jwt-decode';
 import * as Sentry from '@sentry/serverless';
 import { AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX } from '@learncard/types';
 import { ContactMethodType } from '@learncard/types';
+import { MAX_SHARE_LINK_REQUEST_BYTES, utf8ByteLength } from '@learncard/types';
 
 import { RegExpTransformer } from '@learncard/helpers';
 import { resolveTenantFromRequest, type ResolvedTenant } from '@learncard/email-templates';
@@ -195,14 +196,93 @@ export const createContext = async (
     return { domain, tenant, _guardianApprovalToken, sourceIp };
 };
 
-export const openRoute = t.procedure
-    .use(t.middleware(Sentry.Handlers.trpcMiddleware({ attachRpcInput: true }) as any))
-    .use(({ ctx, next, path }) => {
-        Sentry.configureScope(scope => {
-            scope.setTransactionName(`trpc-${path}`);
-        });
-        return next({ ctx });
+const sentryTransactionNameMiddleware = t.middleware(({ ctx, next, path }) => {
+    Sentry.configureScope(scope => {
+        scope.setTransactionName(`trpc-${path}`);
     });
+    return next({ ctx });
+});
+
+// Sentry's tRPC middleware type predates this repo's generic context. Cast
+// through the tRPC builder's expected parameter type instead of `any`.
+type SentryTrpcMiddleware = Parameters<typeof t.middleware>[0];
+
+const sentryInputCaptureMiddleware = Sentry.Handlers.trpcMiddleware({
+    attachRpcInput: true,
+}) as unknown as SentryTrpcMiddleware;
+
+const sentryNoInputCaptureMiddleware = Sentry.Handlers.trpcMiddleware({
+    attachRpcInput: false,
+}) as unknown as SentryTrpcMiddleware;
+
+/**
+ * Complete-request byte bound for owner share-link routes, enforced on the RAW
+ * input before Zod parsing/stripping. Individual field validators cannot bound a
+ * request whose unknown or duplicate fields are stripped first, so this measures
+ * the whole serialized body (UTF-8) and fails closed over the shared 1 MiB cap.
+ *
+ * It is composed into the base so it runs before authentication and before any
+ * input parser, and can never be skipped by a malformed or unauthenticated call.
+ */
+const enforceShareLinkRequestByteBound = t.middleware(async ({ ctx, next, getRawInput }) => {
+    const raw = await getRawInput();
+
+    let bytes: number;
+    if (raw === undefined || raw === null) {
+        bytes = 0;
+    } else if (typeof raw === 'string') {
+        bytes = utf8ByteLength(raw);
+    } else {
+        let serialized: string;
+        try {
+            serialized = JSON.stringify(raw);
+        } catch {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: 'invalid share-link request' });
+        }
+        bytes = utf8ByteLength(serialized);
+    }
+
+    if (bytes > MAX_SHARE_LINK_REQUEST_BYTES) {
+        throw new TRPCError({
+            code: 'PAYLOAD_TOO_LARGE',
+            message: 'share-link request exceeds the 1 MiB limit',
+        });
+    }
+
+    return next({ ctx });
+});
+
+export const openRoute = t.procedure
+    .use(t.middleware(sentryInputCaptureMiddleware))
+    .use(sentryTransactionNameMiddleware);
+
+/**
+ * LC-2187 public share-link paths must never be cached by an intermediary or a
+ * browser. tRPC has no per-procedure header API, so the actual HTTP adapters
+ * (Fastify and Lambda, both tRPC and OpenAPI) apply `Cache-Control` from the
+ * resolved procedure path through this single helper.
+ */
+export const PUBLIC_SHARE_LINK_ROUTE_PREFIX = 'publicShareLinks.';
+
+export const publicShareLinkCacheControlHeaders = (
+    paths: readonly string[] | undefined
+): Record<string, string> =>
+    (paths ?? []).some(path => path.startsWith(PUBLIC_SHARE_LINK_ROUTE_PREFIX))
+        ? { 'Cache-Control': 'private, no-store' }
+        : {};
+
+/**
+ * Route base for procedures whose input carries owner-private material (titles,
+ * notes, ciphertext envelopes, recovery JWEs) and whose error paths must not
+ * attach raw request bodies to Sentry. It runs the same Sentry error/transaction
+ * handling but with input attachment disabled, so no branch — malformed,
+ * unauthenticated or failing — can capture the payload, and it enforces the
+ * complete-request byte bound before input parsing.
+ */
+export const openRouteWithoutInputCapture = t.procedure
+    .use(t.middleware(sentryNoInputCaptureMiddleware))
+    .use(sentryTransactionNameMiddleware)
+    .use(enforceShareLinkRequestByteBound);
 
 export const resolveProfileFromContextDid = async (
     didFromContext: string | undefined,
@@ -322,6 +402,68 @@ export const profileRoute = didAndChallengeRoute.use(async ({ ctx, next, meta })
 
     return next({ ctx: { ...ctx, user: { ...ctx.user, profile } } });
 });
+
+/**
+ * Owner share-link routes: identical auth, challenge, profile and scope
+ * enforcement to {@link profileRoute}, but composed on the base that disables
+ * Sentry RPC input attachment because the payload contains owner-private
+ * material (title, note, ciphertext envelope, recovery JWE).
+ *
+ * The handlers are intentionally inlined rather than extracted into standalone
+ * `t.middleware` values so tRPC's context-narrowing (the added `profile` field)
+ * flows to each resolver exactly as it does for `profileRoute`.
+ */
+export const didRouteWithoutInputCapture = openRouteWithoutInputCapture.use(
+    async ({ ctx, next }) => {
+        if (!ctx.user?.did) {
+            throw new TRPCError({ code: 'UNAUTHORIZED' });
+        }
+
+        const profile = await resolveProfileFromContextDid(ctx.user.did, ctx.domain);
+
+        if (profile) Sentry.setUser({ id: profile.profileId, username: profile.displayName });
+
+        return next({ ctx: { ...ctx, user: { ...ctx.user, profile } } });
+    }
+);
+
+export const didAndChallengeRouteWithoutInputCapture = didRouteWithoutInputCapture.use(
+    ({ ctx, next }) => {
+        if (!ctx.user?.isChallengeValid) throw new TRPCError({ code: 'UNAUTHORIZED' });
+
+        return next({ ctx: { ...ctx, user: ctx.user } });
+    }
+);
+
+export const profileRouteWithoutInputCapture = didAndChallengeRouteWithoutInputCapture.use(
+    async ({ ctx, next, meta }) => {
+        const { profile } = ctx.user;
+
+        if (!profile) {
+            throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: 'Profile not found. Please make a profile!',
+            });
+        }
+
+        if (!meta?.requiredScope) {
+            return next({ ctx: { ...ctx, user: { ...ctx.user, profile } } });
+        }
+
+        const userScope = ctx.user?.scope || AUTH_GRANT_NO_ACCESS_SCOPE;
+
+        const hasRequiredScope = userHasRequiredScopes(userScope, meta.requiredScope);
+
+        if (!hasRequiredScope) {
+            throw new TRPCError({
+                code: 'UNAUTHORIZED',
+                message: `This operation requires ${meta.requiredScope} scope`,
+            });
+        }
+
+        return next({ ctx: { ...ctx, user: { ...ctx.user, profile } } });
+    }
+);
 
 export const openProfileManagerRoute = openRoute.use(async ({ ctx, next }) => {
     if (!ctx.user?.did) throw new TRPCError({ code: 'UNAUTHORIZED' });

@@ -59,6 +59,7 @@ const VerifySharedResume = lazyWithRetry(() => import('./pages/resume-builder/Ve
 const AiPathways = lazyWithRetry(() => import('./pages/ai-pathways/AiPathways'));
 const MyAssistantPage = lazyWithRetry(() => import('./pages/my-assistant/MyAssistantPage'));
 const PathwaysShell = lazyWithRetry(() => import('./pages/pathways/PathwaysShell'));
+const ShareLinkViewer = lazyWithRetry(() => import('./components/share-links/ShareLinkViewer'));
 const ViewCredsBundle = lazyWithRetry(() => import('./components/creds-bundle/ViewCredsBundle'));
 const ViewSharedBoost = lazyWithRetry(() => import('./components/creds-bundle/ViewSharedBoost'));
 const MembershipPage = lazyWithRetry(() => import('./pages/membership/MembershipPage'));
@@ -232,6 +233,7 @@ export const Routes: React.FC = () => {
             >
                 <GenericErrorBoundary>
                     <Switch location={background || location}>
+                        <Route exact path="/s/:id" component={ShareLinkViewer} />
                         <SentryRoute exact path="/login" component={LoginPage} />
                         <SentryRoute
                             exact

@@ -14,6 +14,7 @@ import skillsViewerApp from './src/skills-viewer';
 import statusListsApp from './src/status-lists';
 import credentialRefreshApp from './src/credential-refresh';
 import { appRouter, createContext } from './src/app';
+import { publicShareLinkCacheControlHeaders } from './src/routes';
 import { deliverQueuedNotification } from './src/helpers/notificationQueue.helpers';
 import { startSkillEmbeddingBackfill } from './src/helpers/skill-embedding.helpers';
 import { createOpenApiAwsLambdaHandler } from './src/helpers/shim';
@@ -61,12 +62,13 @@ export const credentialRefreshHandler: typeof credentialRefreshProxy = async (ev
 
 export const _openApiHandler = createOpenApiAwsLambdaHandler({
     router: appRouter,
-    responseMeta: () => {
+    responseMeta: ({ paths }) => {
         return {
             headers: {
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
                 'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+                ...publicShareLinkCacheControlHeaders(paths),
             },
         };
     },
@@ -79,12 +81,13 @@ export const _trpcHandler = awsLambdaRequestHandler({
     router: appRouter,
     createContext,
     onError: handleTrpcError,
-    responseMeta: () => {
+    responseMeta: ({ paths }) => {
         return {
             headers: {
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': '*',
                 'Access-Control-Allow-Headers': 'authorization',
+                ...publicShareLinkCacheControlHeaders(paths),
             },
         };
     },

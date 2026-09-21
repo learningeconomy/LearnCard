@@ -29,6 +29,14 @@ export const learnCloudServiceEnvironmentShape = {
     IS_OFFLINE: optionalEnvironmentBoolean.default(false),
     SKIP_DIDKIT_NAPI: optionalEnvironmentBoolean.default(false),
     CI: optionalEnvironmentBoolean.default(false),
+    // LC-2187 service-only share-content routes. Disabled unless an operator
+    // provisions an explicit audience, service DID allowlist, exact verification
+    // methods and per-service namespace bindings.
+    SHARE_CONTENT_ENABLED: optionalEnvironmentBoolean.default(false),
+    SHARE_CONTENT_AUDIENCE: optionalEnvironmentString,
+    SHARE_CONTENT_SERVICE_DIDS: optionalEnvironmentString,
+    SHARE_CONTENT_VERIFICATION_METHODS: optionalEnvironmentString,
+    SHARE_CONTENT_NAMESPACE_BINDINGS: optionalEnvironmentString,
 } satisfies z.ZodRawShape;
 
 export const learnCloudServiceEnvironmentSchema = z
@@ -55,6 +63,25 @@ export const learnCloudServiceEnvironmentSchema = z
                 path: [hasPrivateKey ? 'RSA_PUBLIC_KEY' : 'RSA_PRIVATE_KEY'],
                 message: 'RSA_PRIVATE_KEY and RSA_PUBLIC_KEY must be configured together',
             });
+        }
+
+        if (environment.SHARE_CONTENT_ENABLED) {
+            const requiredShareContentFields = [
+                'SHARE_CONTENT_AUDIENCE',
+                'SHARE_CONTENT_SERVICE_DIDS',
+                'SHARE_CONTENT_VERIFICATION_METHODS',
+                'SHARE_CONTENT_NAMESPACE_BINDINGS',
+            ] as const;
+
+            for (const field of requiredShareContentFields) {
+                if (!environment[field]) {
+                    context.addIssue({
+                        code: 'custom',
+                        path: [field],
+                        message: 'Required when SHARE_CONTENT_ENABLED=true',
+                    });
+                }
+            }
         }
     });
 

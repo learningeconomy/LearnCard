@@ -45,3 +45,8 @@ export const AUTH_GRANT_CREDENTIAL_MANAGEMENT_SCOPE = 'credential:* presentation
 export const AUTH_GRANT_CONTRACTS_SCOPE = 'contracts:*';
 export const AUTH_GRANT_DID_METADATA_SCOPE = 'didMetadata:*';
 export const AUTH_GRANT_AUTH_GRANTS_SCOPE = 'authGrants:*';
+
+// LC-2187 owner share-link APIs. Least privilege: owner metadata/recovery reads
+// use `shareLinks:read`; create/update/revoke/retry use `shareLinks:write`.
+export const AUTH_GRANT_SHARE_LINKS_READ_SCOPE = 'shareLinks:read';
+export const AUTH_GRANT_SHARE_LINKS_WRITE_SCOPE = 'shareLinks:write';

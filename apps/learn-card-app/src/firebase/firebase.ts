@@ -1,3 +1,4 @@
+import { isSharePrivateSession } from '../components/share-links/sharePrivacy';
 import { Capacitor } from '@capacitor/core';
 import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getAnalytics } from 'firebase/analytics';
@@ -59,7 +60,7 @@ export const initializeFirebaseFromTenant = (tenantFirebase?: TenantFirebaseConf
     initializeApp(config);
 
     try {
-        getAnalytics(getApp());
+        if (!isSharePrivateSession()) getAnalytics(getApp());
     } catch {
         // Analytics may not be available in all environments
     }

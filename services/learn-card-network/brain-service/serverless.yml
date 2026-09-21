@@ -177,6 +177,24 @@ provider:
         CREDENTIAL_REFRESH_ENABLED: ${env:CREDENTIAL_REFRESH_ENABLED, "false"}
         CREDENTIAL_REFRESH_DIGEST_SECRET: ${env:CREDENTIAL_REFRESH_DIGEST_SECRET, ""}
         CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS: ${env:CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS, "24"}
+        # LC-2187 share-link maintenance. Disabled by default; every value is
+        # bounded and re-validated fail-closed at runtime. Never read from the
+        # scheduled event payload.
+        SHARE_LINK_MAINTENANCE_ENABLED: ${env:SHARE_LINK_MAINTENANCE_ENABLED, "false"}
+        SHARE_LINK_MAINTENANCE_NAMESPACE: ${env:SHARE_LINK_MAINTENANCE_NAMESPACE, ""}
+        SHARE_LINK_MAINTENANCE_ORIGIN: ${env:SHARE_LINK_MAINTENANCE_ORIGIN, ""}
+        SHARE_LINK_MAINTENANCE_AUDIENCE: ${env:SHARE_LINK_MAINTENANCE_AUDIENCE, ""}
+        SHARE_LINK_MAINTENANCE_ALLOW_INSECURE_LOOPBACK: ${env:SHARE_LINK_MAINTENANCE_ALLOW_INSECURE_LOOPBACK, "false"}
+        SHARE_LINK_MAINTENANCE_CLAIMANT: ${env:SHARE_LINK_MAINTENANCE_CLAIMANT, "brain-share-link-maintenance"}
+        SHARE_LINK_MAINTENANCE_RECOVERY_LIMIT: ${env:SHARE_LINK_MAINTENANCE_RECOVERY_LIMIT, "25"}
+        SHARE_LINK_MAINTENANCE_CLEANUP_LIMIT: ${env:SHARE_LINK_MAINTENANCE_CLEANUP_LIMIT, "25"}
+        SHARE_LINK_MAINTENANCE_LEASE_MS: ${env:SHARE_LINK_MAINTENANCE_LEASE_MS, "120000"}
+        SHARE_LINK_MAINTENANCE_CLAIM_MS: ${env:SHARE_LINK_MAINTENANCE_CLAIM_MS, "300000"}
+        SHARE_LINK_MAINTENANCE_BUDGET_MS: ${env:SHARE_LINK_MAINTENANCE_BUDGET_MS, "60000"}
+        SHARE_LINK_MAINTENANCE_INTERVAL_MS: ${env:SHARE_LINK_MAINTENANCE_INTERVAL_MS, "300000"}
+        SHARE_LINK_MAINTENANCE_REQUEST_TIMEOUT_MS: ${env:SHARE_LINK_MAINTENANCE_REQUEST_TIMEOUT_MS, "10000"}
+        SHARE_LINK_MAINTENANCE_FINALIZE_RESERVE_MS: ${env:SHARE_LINK_MAINTENANCE_FINALIZE_RESERVE_MS, "5000"}
+        SHARE_LINK_MAINTENANCE_GRAPH_TIMEOUT_MS: ${env:SHARE_LINK_MAINTENANCE_GRAPH_TIMEOUT_MS, "15000"}
     tracing:
         apiGateway: true
         lambda: true
@@ -202,6 +220,22 @@ functions:
             - schedule:
                   rate: rate(1 day)
                   enabled: true
+
+    # LC-2187 share-link recovery + cleanup. Dedicated entrypoint (no lambda.ts
+    # import-time work) and disabled by default. The runtime config gate also
+    # keeps a manual invocation inert unless explicitly enabled.
+    shareLinkMaintenance:
+        handler: shareLinkMaintenanceLambda.shareLinkMaintenanceHandler
+        timeout: 300
+        vpc:
+            securityGroupIds:
+                - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
+            subnetIds:
+                - Ref: PrivateSubnetA
+        events:
+            - schedule:
+                  rate: rate(1 day)
+                  enabled: false
 
     trpc:
         handler: lambda.trpcHandler

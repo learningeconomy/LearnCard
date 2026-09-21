@@ -11,6 +11,11 @@ import { openApiDocument } from './openapi';
 import { didFastifyPlugin } from './dids';
 import { xapiFastifyPlugin } from './xapi';
 import { oidcFastifyPlugin } from './oidc';
+import {
+    createShareContentRuntimeFromEnvironment,
+    registerShareContentRoutes,
+    type ShareContentRuntime,
+} from './share-content';
 
 const server = Fastify({ maxParamLength: 5000 });
 
@@ -52,10 +57,24 @@ server.register(xapiFastifyPlugin);
 server.register(oidcFastifyPlugin);
 
 (async () => {
+    let shareContentRuntime: ShareContentRuntime | null = null;
+
     try {
+        // Disabled by default: this performs no Mongo/Redis/index work unless an
+        // operator explicitly enables the routes with a valid configuration.
+        shareContentRuntime = await createShareContentRuntimeFromEnvironment();
+
+        if (shareContentRuntime.enabled) {
+            await registerShareContentRoutes(server, shareContentRuntime);
+        }
+
         console.log('Server starting on port ', environment.PORT || 3000);
         await server.listen({ host: '0.0.0.0', port: Number(environment.PORT || 3000) });
     } catch (err) {
+        if (shareContentRuntime?.enabled) {
+            await shareContentRuntime.close().catch(() => {});
+        }
+
         console.error(err);
         process.exit(1);
     }

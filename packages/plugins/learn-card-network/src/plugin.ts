@@ -1082,6 +1082,56 @@ export async function getLearnCardNetworkPlugin(
                 return client.profile.invalidateInvite.mutate({ challenge });
             },
 
+            createShareLink: async (_learnCard, input) => {
+                await ensureUser();
+
+                return client.shareLinks.create.mutate(input);
+            },
+            updateShareLink: async (_learnCard, input) => {
+                await ensureUser();
+
+                return client.shareLinks.update.mutate(input);
+            },
+            revokeShareLink: async (_learnCard, input) => {
+                await ensureUser();
+
+                return client.shareLinks.revoke.mutate(input);
+            },
+            getShareLink: async (_learnCard, id) => {
+                await ensureUser();
+
+                return client.shareLinks.get.query({ id });
+            },
+            getShareLinkOperationStatus: async (_learnCard, input) => {
+                await ensureUser();
+
+                return client.shareLinks.getOperationStatus.query(input);
+            },
+            retryShareLinkOperation: async (_learnCard, input) => {
+                await ensureUser();
+
+                return client.shareLinks.retry.mutate(input);
+            },
+            getShareLinkRecovery: async (_learnCard, id) => {
+                await ensureUser();
+
+                return client.shareLinks.getRecovery.query({ id });
+            },
+            listShareLinks: async (_learnCard, input) => {
+                await ensureUser();
+
+                return client.shareLinks.list.query(input);
+            },
+
+            // Anonymous public methods: deliberately NO `ensureUser()`. A viewer
+            // has no account and must not need one.
+            resolveShareLink: async (_learnCard, id) =>
+                client.publicShareLinks.resolve.query({ id }),
+            getShareLinkContent: async (_learnCard, id) =>
+                client.publicShareLinks.content.query({ id }),
+            acknowledgeShareLinkView: async (_learnCard, receipt) =>
+                client.publicShareLinks.acknowledgeView.mutate({ receipt }),
+
             blockProfile: async (_learnCard, profileId) => {
                 await ensureUser();
 

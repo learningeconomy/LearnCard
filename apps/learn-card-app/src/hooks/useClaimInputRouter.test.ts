@@ -1,6 +1,9 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 
+import { enterSharePrivacy } from '../components/share-links/sharePrivacy';
+vi.mock('../components/share-links/sharePrivacy', () => ({ enterSharePrivacy: vi.fn() }));
+
 import { AnalyticsEvents } from '../analytics/events';
 
 const { trackMock, pushMock, getProfileMock, initWalletMock, validateTextVCMock, fetchMock } =
@@ -361,5 +364,15 @@ describe('useClaimInputRouter', () => {
             const payload = findTrackCall();
             expect(payload?.source).toBe('camera');
         });
+    });
+    it('routes a private credential QR/paste link without emitting analytics and preserves its fragment', async () => {
+        vi.mocked(enterSharePrivacy).mockClear();
+        const path = '/s/AAAAAAAAAAAAAAAAAAAAAA#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+        const router = renderRouter();
+        const result = await router.current('https://learncard.app' + path);
+        expect(result.kind).toBe('routed');
+        expect(enterSharePrivacy).toHaveBeenCalledTimes(1);
+        expect(pushMock).toHaveBeenCalledWith(path);
+        expect(trackMock).not.toHaveBeenCalled();
     });
 });
