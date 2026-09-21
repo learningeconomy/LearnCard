@@ -14,7 +14,7 @@ import {
     FirebaseCustomAuthResponseSchema,
 } from '@helpers/firebase.helpers';
 import cache from '@cache';
-import { checkRateLimit, clearRateLimit } from '@helpers/rateLimit.helpers';
+import { checkRateLimit, clearRateLimit, decrementRateLimit } from '@helpers/rateLimit.helpers';
 import { TRPCError } from '@trpc/server';
 import { getDeliveryService, getFrom } from '../services/delivery';
 import { resolveLocaleByEmail } from '../helpers/locale.helpers';
@@ -113,7 +113,8 @@ async function createFirebaseToken(keycloakToken: string): Promise<string> {
                 emailVerified,
             });
         }
-    } catch (_error) {
+    } catch (error) {
+        console.error('[createFirebaseToken] Firebase user creation or lookup failed:', error);
         throw new Error('Firebase user creation or lookup failed');
     }
 
@@ -166,7 +167,8 @@ export const firebaseRouter = t.router({
                 };
 
                 return { userRecord: formattedUserRecord };
-            } catch (_error) {
+            } catch (error) {
+                console.error('[getFirebaseUserByEmail] Failed to fetch user:', error);
                 return { userRecord: null };
             }
         }),
@@ -188,7 +190,8 @@ export const firebaseRouter = t.router({
                 const { keycloakToken } = input;
                 const firebaseToken = await createFirebaseToken(keycloakToken);
                 return { firebaseToken };
-            } catch (_error) {
+            } catch (error) {
+                console.error('[authenticateWithKeycloak] Authentication failed:', error);
                 throw new Error('Authentication failed');
             }
         }),
@@ -229,7 +232,8 @@ export const firebaseRouter = t.router({
                 );
 
                 return response.data ?? null;
-            } catch (_error) {
+            } catch (error) {
+                console.error('[authenticateWithScoutsSSO] Authentication failed:', error);
                 throw new TRPCError({
                     code: 'INTERNAL_SERVER_ERROR',
                     message: 'Unable to authenticate with Scouts SSO',
@@ -252,18 +256,19 @@ export const firebaseRouter = t.router({
             const { email, locale } = input;
 
             try {
-                // rate limit attempts (max 3 codes per 10 mins)
-                const attemptKey = `login-attempts:${email}`;
-                const attemptCount = Number(await cache.get(attemptKey)) || 0;
-
-                if (attemptCount >= MAX_ATTEMPTS) {
+                // Atomic rate limit for sending codes (max 3 codes per 10 mins)
+                // Uses new key to avoid collision with legacy un-prefixed keys during rolling deploy
+                const sendAllowed = await checkRateLimit(
+                    `login-send:${email}`,
+                    MAX_ATTEMPTS,
+                    ATTEMPT_TTL_SECONDS
+                );
+                if (!sendAllowed) {
                     return {
                         success: false,
                         error: 'Too many login attempts. Try again in a few minutes.',
                     };
                 }
-
-                await cache.set(attemptKey, attemptCount + 1, ATTEMPT_TTL_SECONDS);
 
                 // generate secure random 6-digit code
                 const code = crypto.randomInt(100000, 999999).toString();
@@ -274,9 +279,9 @@ export const firebaseRouter = t.router({
                 const loginCodeKey = `login-code:${email}`;
                 await cache.set(loginCodeKey, code, CODE_TTL_SECONDS);
 
-                // Clear the verification attempt counter so user can try the new code
+                // Clear the per-email verification attempt counter so user can try the new code
+                // Note: IP counter is NOT cleared here to prevent abuse via email rotation
                 await clearRateLimit(`login-verify-attempts:${email}`);
-                await clearRateLimit(`login-verify-ip:${ctx.clientIp ?? 'unknown'}`);
 
                 // Login is pre-auth, so the client only knows its UI language.
                 // Prefer the account's saved locale (resolved by email via
@@ -302,12 +307,14 @@ export const firebaseRouter = t.router({
                             branding: ctx.tenant?.emailBranding,
                         }),
                     });
-                } catch (_error) {
+                } catch (error) {
+                    console.error('[sendLoginVerificationCode] Failed to send email:', error);
                     return { success: false, error: 'Error sending login verification code' };
                 }
 
                 return { success: true };
-            } catch (_err) {
+            } catch (err) {
+                console.error('[sendLoginVerificationCode] Unexpected error:', err);
                 return { success: false, error: 'An error occurred. Please try again.' };
             }
         }),
@@ -381,9 +388,10 @@ export const firebaseRouter = t.router({
                 // Valid code — delete it to prevent reuse
                 await cache.delete([loginCodeKey]);
 
-                // Clear rate limit counters on success so only failures accumulate
+                // Clear email counter on success; decrement (not clear) IP counter
+                // so legitimate successes don't accumulate but we don't hand attackers a wipe
                 await clearRateLimit(emailAttemptKey);
-                await clearRateLimit(ipAttemptKey);
+                await decrementRateLimit(ipAttemptKey);
 
                 // Get or create the Firebase user
                 let user;
@@ -509,7 +517,8 @@ export const firebaseRouter = t.router({
                 const token = await app?.auth().createCustomToken(user.uid);
 
                 return { success: true, token };
-            } catch (_err) {
+            } catch (err) {
+                console.error('[verifyNetworkHandoffToken] Unexpected error:', err);
                 return { success: false, error: 'An error occurred. Please try again.' };
             }
         }),
@@ -554,7 +563,8 @@ export const firebaseRouter = t.router({
                 if (typeof result !== 'string') throw new Error('Error getting DID-Auth-JWT!');
 
                 return { success: true, vp: result };
-            } catch (_err) {
+            } catch (err) {
+                console.error('[getProofOfLoginVp] Unexpected error:', err);
                 return { success: false, error: 'An error occurred. Please try again.' };
             }
         }),
