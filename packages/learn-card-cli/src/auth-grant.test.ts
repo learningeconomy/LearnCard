@@ -10,6 +10,13 @@ describe('getGrantActAs', () => {
     it('is undefined when the grant has no actAs', () => {
         expect(getGrantActAs({ id: 'g1' })).toBeUndefined();
     });
+
+    it.each([null, ''])(
+        'coerces %j from the wire to undefined so it matches an absent spec value',
+        value => {
+            expect(getGrantActAs({ id: 'g1', actAs: value as unknown as string })).toBeUndefined();
+        }
+    );
 });
 
 describe('describeActAs', () => {

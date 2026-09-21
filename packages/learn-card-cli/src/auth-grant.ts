@@ -7,7 +7,9 @@ import type { AuthGrantType } from '@learncard/types';
  */
 export type AuthGrantWithActAs = Partial<AuthGrantType>;
 
-export const getGrantActAs = (grant: Partial<AuthGrantType>): string | undefined => grant.actAs;
+/** Coerces `null` / `''` from the wire to `undefined` so drift checks compare like with like. */
+export const getGrantActAs = (grant: Partial<AuthGrantType>): string | undefined =>
+    grant.actAs || undefined;
 
 /** `'*'` -> "any managed profile"; `'a,b'` -> "a, b"; absent -> "no delegation". */
 export const describeActAs = (actAs: string | undefined): string => {
