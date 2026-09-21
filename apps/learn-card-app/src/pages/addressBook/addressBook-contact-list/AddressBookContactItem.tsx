@@ -28,7 +28,6 @@ import {
     useToast,
     ToastTypeEnum,
 } from 'learn-card-base';
-import BoostTemplateSelector from 'apps/learn-card-app/src/components/boost/boost-template/BoostTemplateSelector';
 import useLCNGatedAction from 'apps/learn-card-app/src/components/network-prompts/hooks/useLCNGatedAction';
 
 import useTheme from '../../../theme/hooks/useTheme';
@@ -666,16 +665,16 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                             const { prompted } = await gate();
                             if (prompted) return;
 
-                            newModal(
-                                <BoostTemplateSelector otherUserProfileId={contact?.profileId} />,
-                                {
-                                    hideButton: true,
+                            history.push('/issue', {
+                                entryPoint: 'contact-list',
+                                recipient: {
+                                    kind: 'profile',
+                                    profileId: contact.profileId,
+                                    displayName: contact.displayName || contact.profileId,
+                                    image: contact.image,
+                                    did: contact.did,
                                 },
-                                {
-                                    desktop: ModalTypes.FullScreen,
-                                    mobile: ModalTypes.FullScreen,
-                                }
-                            );
+                            });
                         }}
                         className={`flex items-center justify-center text-white rounded-[45px] bg-${primaryColor}`}
                     >

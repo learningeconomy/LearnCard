@@ -38,7 +38,6 @@ import { CalendarIcon } from 'learn-card-base/svgs/CalendarIcon';
 import { CredentialGeneralIcon } from 'learn-card-base/svgs/CredentialGeneralIcon';
 import BoostOutline3 from 'learn-card-base/svgs/BoostOutline3';
 
-import BoostTemplateSelector from '../../../components/boost/boost-template/BoostTemplateSelector';
 import useLCNGatedAction from '../../../components/network-prompts/hooks/useLCNGatedAction';
 import SlimCaretLeft from '../../../components/svgs/SlimCaretLeft';
 import SlimCaretRight from '../../../components/svgs/SlimCaretRight';
@@ -265,11 +264,16 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
             if (prompted) return;
 
             closeModal();
-            newModal(
-                <BoostTemplateSelector otherUserProfileId={contact.profileId} />,
-                { hideButton: true },
-                { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
-            );
+            history.push('/issue', {
+                entryPoint: 'contact-card',
+                recipient: {
+                    kind: 'profile',
+                    profileId: contact.profileId,
+                    displayName: contact.displayName || contact.profileId,
+                    image: contact.image,
+                    did: contact.did,
+                },
+            });
         } finally {
             setLoadingAction(null);
         }
