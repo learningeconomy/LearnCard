@@ -38,11 +38,16 @@ describe('credential refresh constraint readiness', () => {
         releaseFirstQuery();
         await Promise.all([first, second]);
 
-        expect(mocks.run).toHaveBeenCalledTimes(3);
+        expect(mocks.run).toHaveBeenCalledTimes(8);
         expect(mocks.run.mock.calls.map(([query]) => query)).toEqual([
+            'CREATE CONSTRAINT inbox_refresh_issue_key_unique IF NOT EXISTS FOR (i:InboxCredential) REQUIRE (i.refreshIssueKey) IS UNIQUE',
+            'CREATE CONSTRAINT inbox_refresh_publication_key_unique IF NOT EXISTS FOR (p:InboxRefreshPublication) REQUIRE (p.refreshIdempotencyKey) IS UNIQUE',
+            'CREATE CONSTRAINT inbox_refresh_version_key_unique IF NOT EXISTS FOR (p:InboxRefreshPublication) REQUIRE (p.refreshVersionKey) IS UNIQUE',
             'CREATE CONSTRAINT credential_refresh_id_unique IF NOT EXISTS FOR (r:CredentialRefresh) REQUIRE (r.refreshId) IS UNIQUE',
             'CREATE CONSTRAINT credential_refresh_version_key_unique IF NOT EXISTS FOR (c:Credential) REQUIRE (c.refreshVersionKey) IS UNIQUE',
             'CREATE CONSTRAINT credential_refresh_idempotency_key_unique IF NOT EXISTS FOR (c:Credential) REQUIRE (c.refreshIdempotencyKey) IS UNIQUE',
+            'CREATE CONSTRAINT credential_refresh_email_delivery_key_unique IF NOT EXISTS FOR (d:CredentialRefreshEmailDelivery) REQUIRE (d.deliveryKey) IS UNIQUE',
+            'CREATE CONSTRAINT refresh_send_intent_key_unique IF NOT EXISTS FOR (i:RefreshSendIntent) REQUIRE (i.intentKey) IS UNIQUE',
         ]);
     });
 
@@ -57,7 +62,7 @@ describe('credential refresh constraint readiness', () => {
             await import('./credential-refresh-constraints');
 
         await expect(ensureCredentialRefreshConstraints()).resolves.toBeUndefined();
-        expect(mocks.run).toHaveBeenCalledTimes(3);
+        expect(mocks.run).toHaveBeenCalledTimes(8);
     });
 
     it('clears failed readiness so a later request can retry', async () => {
@@ -70,6 +75,6 @@ describe('credential refresh constraint readiness', () => {
         await expect(ensureCredentialRefreshConstraints()).rejects.toBe(setupFailure);
         await expect(ensureCredentialRefreshConstraints()).resolves.toBeUndefined();
 
-        expect(mocks.run).toHaveBeenCalledTimes(4);
+        expect(mocks.run).toHaveBeenCalledTimes(9);
     });
 });

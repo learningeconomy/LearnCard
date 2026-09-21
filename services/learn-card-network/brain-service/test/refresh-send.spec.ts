@@ -1,0 +1,1799 @@
+import { vi } from 'vitest';
+import { JWEValidator, VC, UnsignedVC } from '@learncard/types';
+import { injectManagedRefreshService } from '@learncard/helpers';
+
+const MANAGED_REFRESH_TYPE_TERM = 'LearnCardCredentialRefresh2026';
+
+/**
+ * The signing-authority helper signs as the brain identity under the unit-test mock,
+ * which managed binding would (correctly) reject as a foreign issuer. Replace it with
+ * an issuer-controlled authority: the credential is signed with the issuer's own key
+ * after the server-driven status allocation, mirroring a real registered SA.
+ */
+const signingAuthorityMocks = vi.hoisted(() => ({
+    issueCredential: vi.fn(),
+}));
+
+vi.mock('@helpers/signingAuthority.helpers', async importOriginal => ({
+    ...(await importOriginal<Record<string, unknown>>()),
+    issueCredentialWithSigningAuthority: signingAuthorityMocks.issueCredential,
+}));
+
+import { neogma } from '@instance';
+import {
+    Boost,
+    ConsentFlowContract,
+    Credential,
+    CredentialActivity,
+    CredentialRefresh,
+    InboxCredential,
+    Profile,
+    ProfileManager,
+    SigningAuthority,
+} from '@models';
+
+import { getClient, getUser } from './helpers/getClient';
+import { addNotificationToQueueSpy } from './helpers/spies';
+import * as Notifications from '@helpers/notifications.helpers';
+import { getLearnCard, SeedLearnCard } from '@helpers/learnCard.helpers';
+import { blockProfile } from '@helpers/connection.helpers';
+import { appendBitstringStatusListEntries } from '@helpers/status-list.helpers';
+import { getDidWeb } from '@helpers/did.helpers';
+import { getCredentialRefresh, getCredentialRefreshHead } from '@accesslayer/credential-refresh';
+import { testUnsignedBoost } from './helpers/send';
+import {
+    claimRefreshSendIntent,
+    getRefreshSendIntent,
+    recordRefreshSendIntent,
+    recordRefreshSendIntentPending,
+    markRefreshSendIntentDelivered,
+} from '@helpers/refresh-send-intent.helpers';
+import { extractManagedRefreshHandoff } from '@helpers/credential-refresh.helpers';
+
+// Minimal VC 2.0 isolates the managed send/status behavior here. The real-signing
+// E2E matrix also covers VCDM 2.0 + OBv3 3.0.3: only older OB contexts (through
+// 3.0.1) conflict with VC2 protected terms, not OBv3 as a whole.
+const testUnsignedVcV2: UnsignedVC = {
+    '@context': ['https://www.w3.org/ns/credentials/v2'],
+    type: ['VerifiableCredential'],
+    issuer: 'did:web:localhost%3A3000:users:refresh-send-issuer',
+    name: 'Refreshable VC',
+    credentialSubject: { id: 'did:example:recipient' },
+} as UnsignedVC;
+
+let brain: SeedLearnCard;
+let issuer: Awaited<ReturnType<typeof getUser>>;
+let holder: Awaited<ReturnType<typeof getUser>>;
+let outsider: Awaited<ReturnType<typeof getUser>>;
+
+const ISSUER_PROFILE_ID = 'refresh-send-issuer';
+const HOLDER_PROFILE_ID = 'refresh-send-holder';
+const OUTSIDER_PROFILE_ID = 'refresh-send-outsider';
+const MANAGED_PROFILE_ID = 'refresh-send-managed';
+const DOMAIN = 'localhost%3A3000';
+
+type SendResult = {
+    type: 'boost';
+    uri: string;
+    credentialUri: string;
+    activityId: string;
+    refresh?: {
+        refreshId: string;
+        refreshService: { id: string; type: string; authorization?: { type: string } };
+        credentialId: string;
+        issuerDid: string;
+        holderDid: string;
+        credentialStatus?: unknown;
+    };
+};
+
+const toNum = (value: unknown): number =>
+    value && typeof (value as { toNumber?: () => number }).toNumber === 'function'
+        ? (value as { toNumber: () => number }).toNumber()
+        : Number(value ?? 0);
+
+const runQuery = async (cypher: string, params: Record<string, unknown> = {}) =>
+    neogma.queryRunner.run(cypher, params);
+
+const countNodes = async (label: string): Promise<number> =>
+    toNum((await runQuery(`MATCH (n:${label}) RETURN count(n) AS count`)).records[0]?.get('count'));
+
+const countRelationships = async (type: string): Promise<number> =>
+    toNum(
+        (await runQuery(`MATCH ()-[r:${type}]->() RETURN count(r) AS count`)).records[0]?.get(
+            'count'
+        )
+    );
+
+/** The stored root credential body must be a holder-only JWE, never plaintext. */
+const getRootCredentialBody = async (refreshId: string): Promise<string> => {
+    const result = await runQuery(
+        `MATCH (:CredentialRefresh {refreshId: $refreshId})-[:ROOT]->(root:Credential)
+         RETURN root.credential AS credential LIMIT 1`,
+        { refreshId }
+    );
+
+    return result.records[0]?.get('credential');
+};
+
+const expectsNoMutation = async (baseline: Record<string, number>) => {
+    const counts: Record<string, number> = {
+        credential: await countNodes('Credential'),
+        boost: await countNodes('Boost'),
+        refresh: await countNodes('CredentialRefresh'),
+        activity: await countNodes('CredentialActivity'),
+        inbox: await countNodes('InboxCredential'),
+    };
+
+    expect(counts).toEqual(baseline);
+};
+
+const getMutationBaseline = async (): Promise<Record<string, number>> => ({
+    credential: await countNodes('Credential'),
+    boost: await countNodes('Boost'),
+    refresh: await countNodes('CredentialRefresh'),
+    activity: await countNodes('CredentialActivity'),
+    inbox: await countNodes('InboxCredential'),
+});
+
+describe('Unified send with managed refresh (LC-2198)', () => {
+    beforeAll(async () => {
+        process.env.CREDENTIAL_REFRESH_ENABLED = 'true';
+
+        brain = await getLearnCard();
+        issuer = await getUser('e'.repeat(64));
+        holder = await getUser('9'.repeat(64));
+        outsider = await getUser('1'.repeat(64));
+
+        vi.spyOn(Notifications, 'addNotificationToQueue').mockImplementation(
+            addNotificationToQueueSpy
+        );
+
+        await runQuery(
+            'CREATE CONSTRAINT credential_refresh_id_unique IF NOT EXISTS FOR (r:CredentialRefresh) REQUIRE (r.refreshId) IS UNIQUE'
+        );
+        await runQuery(
+            'CREATE CONSTRAINT credential_refresh_version_key_unique IF NOT EXISTS FOR (c:Credential) REQUIRE (c.refreshVersionKey) IS UNIQUE'
+        );
+        await runQuery(
+            'CREATE CONSTRAINT refresh_send_intent_key_unique IF NOT EXISTS FOR (i:RefreshSendIntent) REQUIRE (i.intentKey) IS UNIQUE'
+        );
+
+        signingAuthorityMocks.issueCredential.mockImplementation(
+            async (
+                _issuer: unknown,
+                credential: UnsignedVC,
+                _signingAuthority: unknown,
+                domain: string,
+                _encrypt = true,
+                _ownerDidOverride: unknown,
+                appendCredentialStatus = true
+            ) => {
+                const body = appendCredentialStatus
+                    ? await appendBitstringStatusListEntries(credential, ISSUER_PROFILE_ID, domain)
+                    : credential;
+
+                const vc = await issuer.learnCard.invoke.issueCredential({
+                    ...body,
+                    issuer: issuer.learnCard.id.did(),
+                });
+
+                return { kind: 'issued-credential', credential: vc, statusEntries: [] };
+            }
+        );
+    });
+
+    afterAll(() => {
+        signingAuthorityMocks.issueCredential.mockRestore();
+    });
+
+    beforeEach(async () => {
+        await runQuery('MATCH (r:CredentialRefresh) DETACH DELETE r');
+        await runQuery('MATCH (i:RefreshSendIntent) DETACH DELETE i');
+        await runQuery('MATCH (a:CredentialActivity) DETACH DELETE a');
+        await runQuery('MATCH (t:ConsentFlowTransaction) DETACH DELETE t');
+        await runQuery('MATCH (c:Credential) DETACH DELETE c');
+        await Boost.delete({ detach: true, where: {} });
+        await InboxCredential.delete({ detach: true, where: {} });
+        await ConsentFlowContract.delete({ detach: true, where: {} });
+        await SigningAuthority.delete({ detach: true, where: {} });
+        await runQuery('MATCH (m:ProfileManager) DETACH DELETE m');
+        await runQuery('MATCH (p:Profile) DETACH DELETE p');
+
+        await issuer.clients.fullAuth.profile.createProfile({ profileId: ISSUER_PROFILE_ID });
+        await holder.clients.fullAuth.profile.createProfile({ profileId: HOLDER_PROFILE_ID });
+        await outsider.clients.fullAuth.profile.createProfile({ profileId: OUTSIDER_PROFILE_ID });
+
+        await issuer.clients.fullAuth.profile.registerSigningAuthority({
+            endpoint: 'https://sa.example.com',
+            name: 'refresh-send-sa',
+            did: issuer.learnCard.id.did(),
+        });
+
+        addNotificationToQueueSpy.mockReset();
+        signingAuthorityMocks.issueCredential.mockClear();
+    });
+
+    describe('inline refresh preparation', () => {
+        it('preserves metadata, permissions, skills and contract linkage, then reuses one boost', async () => {
+            const contractUri = await issuer.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: {
+                    read: { anonymize: false },
+                    write: { credentials: { categories: { TestBoosts: { required: false } } } },
+                },
+                name: 'Prepared Refresh Contract',
+                writers: [ISSUER_PROFILE_ID],
+            });
+            await holder.clients.fullAuth.contracts.consentToContract({
+                contractUri,
+                terms: {
+                    read: { anonymize: false },
+                    write: { credentials: { categories: { TestBoosts: true } } },
+                },
+            });
+            const frameworkId = `refresh-prep-${crypto.randomUUID()}`;
+            await issuer.clients.fullAuth.skillFrameworks.createManaged({
+                id: frameworkId,
+                name: 'Refresh skills',
+            });
+            await issuer.clients.fullAuth.skills.create({
+                frameworkId,
+                skill: { id: 'skill-1', statement: 'Refresh skill' },
+            });
+            const baseline = await getMutationBaseline();
+            const prepared = await issuer.clients.fullAuth.boost.prepareRefreshableSend({
+                recipient: HOLDER_PROFILE_ID,
+                contractUri,
+                template: {
+                    credential: testUnsignedBoost,
+                    name: 'Prepared Boost',
+                    category: 'TestBoosts',
+                    claimPermissions: { canView: true },
+                    skills: [{ frameworkId, id: 'skill-1', proficiencyLevel: 2 }],
+                },
+            });
+            const boost = await issuer.clients.fullAuth.boost.getBoost({
+                uri: prepared.boostUri,
+            });
+            expect(boost).toMatchObject({
+                name: 'Prepared Boost',
+                category: 'TestBoosts',
+                claimPermissions: { canView: true },
+            });
+            expect(
+                await issuer.clients.fullAuth.boost.getBoostSkills({ uri: prepared.boostUri })
+            ).toEqual([expect.objectContaining({ id: 'skill-1', proficiencyLevel: 2 })]);
+            const links = await runQuery(
+                'MATCH (:ConsentFlowContract)-[:RELATED_TO]->(b:Boost {name: $name}) RETURN count(b) AS count',
+                { name: 'Prepared Boost' }
+            );
+            expect(toNum(links.records[0].get('count'))).toBe(1);
+            // Preparation creates the anchor AND the refresh allocation, but never a
+            // credential, activity or delivery.
+            await expectsNoMutation({
+                ...baseline,
+                boost: baseline.boost + 1,
+                refresh: baseline.refresh + 1,
+            });
+            expect(prepared.refreshId).toBeDefined();
+            const signedCredential = await issuer.learnCard.invoke.issueCredential(
+                injectManagedRefreshService(
+                    {
+                        ...testUnsignedBoost,
+                        id: prepared.credentialId,
+                        issuer: issuer.learnCard.id.did(),
+                        credentialSubject: {
+                            ...testUnsignedBoost.credentialSubject,
+                            id: prepared.holderDid,
+                        },
+                        boostId: prepared.boostUri,
+                    },
+                    prepared.refreshService
+                )
+            );
+            const result = await issuer.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: HOLDER_PROFILE_ID,
+                templateUri: prepared.boostUri,
+                signedCredential,
+                contractUri,
+                refresh: true,
+            });
+            expect(result.uri).toBe(prepared.boostUri);
+            expect(await countNodes('Boost')).toBe(baseline.boost + 1);
+            const rows = await runQuery(
+                `MATCH (root:Credential {refreshVersionKey: $key})-[:ISSUED_VIA_TRANSACTION]->(:ConsentFlowTransaction)-[:IS_FOR]->(:ConsentFlowTerms)
+                 RETURN count(*) AS count`,
+                { key: `${prepared.refreshId}:1` }
+            );
+            expect(toNum(rows.records[0].get('count'))).toBe(1);
+        });
+
+        it.each([
+            ['holder@example.com', 'BAD_REQUEST'],
+            ['+15551234567', 'BAD_REQUEST'],
+            ['did:web:example.com:users:remote-holder', 'NOT_FOUND'],
+            ['did:key:z6Mkunknown', 'NOT_FOUND'],
+            ['unknown-profile', 'NOT_FOUND'],
+        ])('rejects unsupported recipient %s before creating anything', async (recipient, code) => {
+            const baseline = await getMutationBaseline();
+            await expect(
+                issuer.clients.fullAuth.boost.prepareRefreshableSend({
+                    recipient,
+                    template: { credential: testUnsignedBoost },
+                })
+            ).rejects.toMatchObject({ code });
+            await expectsNoMutation(baseline);
+        });
+
+        it.each(['boosts:write', 'credentials:write'])(
+            'requires both scopes, not just %s',
+            async scope => {
+                const client = getClient({
+                    did: issuer.learnCard.id.did(),
+                    isChallengeValid: true,
+                    scope,
+                });
+                const baseline = await getMutationBaseline();
+                await expect(
+                    client.boost.prepareRefreshableSend({
+                        recipient: HOLDER_PROFILE_ID,
+                        template: { credential: testUnsignedBoost },
+                    })
+                ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+                await expectsNoMutation(baseline);
+            }
+        );
+
+        it('rejects disabled refresh before creating anything', async () => {
+            const baseline = await getMutationBaseline();
+            const previous = process.env.CREDENTIAL_REFRESH_ENABLED;
+            process.env.CREDENTIAL_REFRESH_ENABLED = 'false';
+            try {
+                await expect(
+                    issuer.clients.fullAuth.boost.prepareRefreshableSend({
+                        recipient: HOLDER_PROFILE_ID,
+                        template: { credential: testUnsignedBoost },
+                    })
+                ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+            } finally {
+                process.env.CREDENTIAL_REFRESH_ENABLED = previous;
+            }
+            await expectsNoMutation(baseline);
+        });
+
+        it('rejects blocked recipients before creating anything', async () => {
+            await blockProfile(
+                await issuer.clients.fullAuth.profile.getProfile(),
+                await holder.clients.fullAuth.profile.getProfile()
+            );
+            const baseline = await getMutationBaseline();
+            await expect(
+                issuer.clients.fullAuth.boost.prepareRefreshableSend({
+                    recipient: HOLDER_PROFILE_ID,
+                    template: { credential: testUnsignedBoost },
+                })
+            ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+            await expectsNoMutation(baseline);
+        });
+
+        it('rejects draft templates before creating anything', async () => {
+            const baseline = await getMutationBaseline();
+            await expect(
+                issuer.clients.fullAuth.boost.prepareRefreshableSend({
+                    recipient: HOLDER_PROFILE_ID,
+                    template: { credential: testUnsignedBoost, status: 'DRAFT' },
+                })
+            ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+            await expectsNoMutation(baseline);
+        });
+    });
+
+    describe('whole-call idempotency (idempotencyKey)', () => {
+        const inlineTemplate = () => ({
+            credential: testUnsignedVcV2,
+            name: 'Idempotent Refreshable',
+        });
+
+        it('prepares a templateUri send with the allocation and full guards', async () => {
+            const boostUri = await issuer.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedVcV2,
+            });
+
+            const prepared = await issuer.clients.fullAuth.boost.prepareRefreshableSend({
+                recipient: HOLDER_PROFILE_ID,
+                templateUri: boostUri,
+            });
+
+            expect(prepared.boostUri).toBe(boostUri);
+            expect(prepared.refreshService.id).toContain(prepared.refreshId);
+            expect(prepared.holderDid).toBe(getDidWeb(DOMAIN, HOLDER_PROFILE_ID));
+            expect(prepared.completed).toBeUndefined();
+            expect(await countNodes('CredentialRefresh')).toBe(1);
+        });
+
+        it('reuses the same boost and allocation when prepare is retried with the same key', async () => {
+            const input = {
+                recipient: HOLDER_PROFILE_ID,
+                template: inlineTemplate(),
+                idempotencyKey: 'retry-prepare-1',
+            };
+
+            const first = await issuer.clients.fullAuth.boost.prepareRefreshableSend(input);
+            const second = await issuer.clients.fullAuth.boost.prepareRefreshableSend(input);
+
+            expect(second).toEqual(first);
+            expect(await countNodes('Boost')).toBe(1);
+            expect(await countNodes('CredentialRefresh')).toBe(1);
+        });
+
+        it('rejects reusing a key for a different request', async () => {
+            await issuer.clients.fullAuth.boost.prepareRefreshableSend({
+                recipient: HOLDER_PROFILE_ID,
+                template: inlineTemplate(),
+                idempotencyKey: 'retry-prepare-2',
+            });
+
+            await expect(
+                issuer.clients.fullAuth.boost.prepareRefreshableSend({
+                    recipient: OUTSIDER_PROFILE_ID,
+                    template: inlineTemplate(),
+                    idempotencyKey: 'retry-prepare-2',
+                })
+            ).rejects.toMatchObject({ code: 'CONFLICT' });
+        });
+
+        it('scopes keys per issuer', async () => {
+            const a = await issuer.clients.fullAuth.boost.prepareRefreshableSend({
+                recipient: HOLDER_PROFILE_ID,
+                template: inlineTemplate(),
+                idempotencyKey: 'shared-key',
+            });
+            const b = await outsider.clients.fullAuth.boost.prepareRefreshableSend({
+                recipient: HOLDER_PROFILE_ID,
+                template: inlineTemplate(),
+                idempotencyKey: 'shared-key',
+            });
+
+            expect(b.refreshId).not.toBe(a.refreshId);
+        });
+
+        it('retries a signing-authority send with the same key without duplicating anything', async () => {
+            const input = {
+                type: 'boost' as const,
+                recipient: HOLDER_PROFILE_ID,
+                template: inlineTemplate(),
+                refresh: true,
+                idempotencyKey: 'sa-send-1',
+            };
+
+            const first = (await issuer.clients.fullAuth.boost.send(input)) as SendResult;
+            const second = (await issuer.clients.fullAuth.boost.send(input)) as SendResult;
+
+            expect(second).toEqual(first);
+            expect(await countNodes('Boost')).toBe(1);
+            expect(await countNodes('CredentialRefresh')).toBe(1);
+            expect(await countNodes('CredentialActivity')).toBe(1);
+            expect(await countRelationships('CREDENTIAL_SENT')).toBe(1);
+            expect(signingAuthorityMocks.issueCredential).toHaveBeenCalledTimes(1);
+        });
+
+        it('completes an abandoned prepare on the next send with the same key', async () => {
+            // Simulates the SDK failing after prepare (e.g. while signing).
+            const prepared = await issuer.clients.fullAuth.boost.prepareRefreshableSend({
+                recipient: HOLDER_PROFILE_ID,
+                template: inlineTemplate(),
+                idempotencyKey: 'abandoned-1',
+            });
+
+            const signed = await issuer.learnCard.invoke.issueCredential(
+                injectManagedRefreshService(
+                    {
+                        ...testUnsignedVcV2,
+                        id: prepared.credentialId,
+                        issuer: issuer.learnCard.id.did(),
+                        validFrom: '2026-01-01T00:00:00Z',
+                        credentialSubject: { id: prepared.holderDid },
+                    } as UnsignedVC,
+                    prepared.refreshService
+                )
+            );
+
+            const result = (await issuer.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: HOLDER_PROFILE_ID,
+                templateUri: prepared.boostUri,
+                signedCredential: signed,
+                refresh: true,
+                idempotencyKey: 'abandoned-1',
+            })) as SendResult;
+
+            expect(result.refresh!.refreshId).toBe(prepared.refreshId);
+            expect(await countNodes('Boost')).toBe(1);
+            expect(await countNodes('CredentialRefresh')).toBe(1);
+
+            // A later prepare with the same key reports the completed result: the SDK
+            // returns it without signing again.
+            const again = await issuer.clients.fullAuth.boost.prepareRefreshableSend({
+                recipient: HOLDER_PROFILE_ID,
+                template: inlineTemplate(),
+                idempotencyKey: 'abandoned-1',
+            });
+            expect(again.completed).toEqual(result);
+        });
+
+        it.each([false, true])(
+            'reconciles a keyed pre-signed delivery (material retry change: %s)',
+            async materialChange => {
+                const idempotencyKey = 'pre-signed-post-bind';
+                const prepared = await issuer.clients.fullAuth.boost.prepareRefreshableSend({
+                    recipient: HOLDER_PROFILE_ID,
+                    template: inlineTemplate(),
+                    idempotencyKey,
+                });
+                const unsigned = injectManagedRefreshService(
+                    {
+                        ...testUnsignedVcV2,
+                        id: prepared.credentialId,
+                        issuer: issuer.learnCard.id.did(),
+                        validFrom: '2026-01-01T00:00:00Z',
+                        credentialSubject: { id: prepared.holderDid },
+                    } as UnsignedVC,
+                    prepared.refreshService
+                );
+                const input = {
+                    type: 'boost' as const,
+                    recipient: HOLDER_PROFILE_ID,
+                    templateUri: prepared.boostUri,
+                    signedCredential: await issuer.learnCard.invoke.issueCredential(unsigned),
+                    refresh: true,
+                    idempotencyKey,
+                };
+                const first = await issuer.clients.fullAuth.boost.send(input);
+                // Model a crash after binding/delivery but before storing the intent result.
+                await runQuery(
+                    `MATCH (i:RefreshSendIntent {intentKey: $key})
+                 SET i.state = 'prepared' REMOVE i.result`,
+                    { key: `${ISSUER_PROFILE_ID}:${idempotencyKey}` }
+                );
+                const resigned = await issuer.learnCard.invoke.issueCredential({
+                    ...unsigned,
+                    validFrom: '2026-01-02T00:00:00Z',
+                    ...(materialChange ? { name: 'Rebuilt credential on retry' } : {}),
+                });
+                const baseline = await getMutationBaseline();
+                const deliveries = await countRelationships('CREDENTIAL_SENT');
+                const notifications = addNotificationToQueueSpy.mock.calls.length;
+                // No second prepare call: a direct client retries only the send leg.
+                const retry = await issuer.clients.fullAuth.boost.send({
+                    ...input,
+                    signedCredential: resigned,
+                });
+                expect(retry).toEqual(first);
+                expect((await getRefreshSendIntent(ISSUER_PROFILE_ID, idempotencyKey))?.state).toBe(
+                    'delivered'
+                );
+                await expectsNoMutation(baseline);
+                expect(await countRelationships('CREDENTIAL_SENT')).toBe(deliveries);
+                expect(addNotificationToQueueSpy.mock.calls.length).toBe(notifications);
+                // Without a key, material changes must still fail the exact-replay guard.
+                if (materialChange) {
+                    await expect(
+                        issuer.clients.fullAuth.boost.send({
+                            ...input,
+                            signedCredential: resigned,
+                            idempotencyKey: undefined,
+                        })
+                    ).rejects.toMatchObject({ code: 'CONFLICT' });
+                }
+            }
+        );
+
+        it('reconciles a delivery that was bound but never recorded', async () => {
+            const input = {
+                type: 'boost' as const,
+                recipient: HOLDER_PROFILE_ID,
+                template: inlineTemplate(),
+                refresh: true,
+                idempotencyKey: 'crash-after-bind',
+            };
+
+            const first = (await issuer.clients.fullAuth.boost.send(input)) as SendResult;
+
+            // Simulate a crash between binding and recording the result.
+            await runQuery(
+                `MATCH (i:RefreshSendIntent {intentKey: $key})
+                 SET i.state = 'prepared' REMOVE i.result`,
+                { key: `${ISSUER_PROFILE_ID}:crash-after-bind` }
+            );
+
+            const second = (await issuer.clients.fullAuth.boost.send(input)) as SendResult;
+
+            expect(second).toEqual(first);
+            expect(signingAuthorityMocks.issueCredential).toHaveBeenCalledTimes(1);
+            expect(await countNodes('CredentialActivity')).toBe(1);
+        });
+
+        it.each(['templateData', 'integrationId', 'credentialId'] as const)(
+            'rejects changing %s after preparation without allocating again',
+            async field => {
+                const input = {
+                    recipient: HOLDER_PROFILE_ID,
+                    template: inlineTemplate(),
+                    templateData: { grade: 'A' },
+                    integrationId: 'integration-a',
+                    credentialId: 'urn:uuid:fixed-award',
+                    idempotencyKey: 'bound-request',
+                };
+                await issuer.clients.fullAuth.boost.prepareRefreshableSend(input);
+                const changes = {
+                    templateData: { grade: 'F' },
+                    integrationId: 'integration-b',
+                    credentialId: 'urn:uuid:another-award',
+                };
+                const baseline = await getMutationBaseline();
+                await expect(
+                    issuer.clients.fullAuth.boost.prepareRefreshableSend({
+                        ...input,
+                        [field]: changes[field],
+                    })
+                ).rejects.toMatchObject({ code: 'CONFLICT' });
+                await expectsNoMutation(baseline);
+            }
+        );
+
+        it.each(['templateData', 'integrationId'] as const)(
+            'rejects changing %s after delivery instead of returning the old receipt',
+            async field => {
+                const input = {
+                    type: 'boost' as const,
+                    recipient: HOLDER_PROFILE_ID,
+                    template: inlineTemplate(),
+                    templateData: { grade: 'A' },
+                    integrationId: 'integration-a',
+                    refresh: true,
+                    idempotencyKey: 'delivered-request',
+                };
+                await issuer.clients.fullAuth.boost.send(input);
+                const changes = { templateData: { grade: 'F' }, integrationId: 'integration-b' };
+                const baseline = await getMutationBaseline();
+                await expect(
+                    issuer.clients.fullAuth.boost.send({ ...input, [field]: changes[field] })
+                ).rejects.toMatchObject({ code: 'CONFLICT' });
+                await expectsNoMutation(baseline);
+            }
+        );
+
+        it('accepts reordered delivery results but rejects changed receipt metadata', async () => {
+            const input = {
+                type: 'boost' as const,
+                recipient: HOLDER_PROFILE_ID,
+                template: inlineTemplate(),
+                refresh: true,
+                idempotencyKey: 'reordered-result',
+            };
+            const first = await issuer.clients.fullAuth.boost.send(input);
+            const intent = await getRefreshSendIntent(ISSUER_PROFILE_ID, input.idempotencyKey);
+            const receipt = first.refresh!;
+            const reordered = {
+                refresh: {
+                    holderDid: receipt.holderDid,
+                    issuerDid: receipt.issuerDid,
+                    credentialId: receipt.credentialId,
+                    credentialStatus: receipt.credentialStatus,
+                    refreshService: {
+                        authorization: receipt.refreshService.authorization,
+                        type: receipt.refreshService.type,
+                        id: receipt.refreshService.id,
+                    },
+                    refreshId: receipt.refreshId,
+                },
+                activityId: first.activityId,
+                credentialUri: first.credentialUri,
+                uri: first.uri,
+                type: first.type,
+            };
+            expect(reordered).toEqual(first);
+            expect(JSON.stringify(reordered)).not.toBe(JSON.stringify(first));
+            await expect(
+                markRefreshSendIntentDelivered(intent!, reordered)
+            ).resolves.toBeUndefined();
+            await expect(
+                markRefreshSendIntentDelivered(intent!, {
+                    ...reordered,
+                    refresh: { ...reordered.refresh, holderDid: 'did:key:another-holder' },
+                })
+            ).rejects.toMatchObject({ code: 'CONFLICT' });
+            expect(
+                (await getRefreshSendIntent(ISSUER_PROFILE_ID, input.idempotencyKey))?.result
+            ).toEqual(first);
+        });
+
+        it('fences every stale-owner write after another request takes over', async () => {
+            const request = {
+                issuerProfileId: ISSUER_PROFILE_ID,
+                idempotencyKey: 'stale-owner',
+                requestDigest: 'same-request',
+            };
+            const first = (await claimRefreshSendIntent(request)).intent;
+            await runQuery('MATCH (i:RefreshSendIntent {intentKey: $key}) SET i.updatedAt = $old', {
+                key: first.intentKey,
+                old: '2000-01-01T00:00:00.000Z',
+            });
+            const second = (await claimRefreshSendIntent(request)).intent;
+            expect(second.claimToken).not.toBe(first.claimToken);
+            await recordRefreshSendIntent(second, {
+                boostUri: 'boost:new-owner',
+                state: 'prepared',
+            });
+            const receipt = {
+                refreshId: 'r',
+                refreshService: {
+                    id: 'https://example.com/refresh/r',
+                    type: 'LearnCardCredentialRefresh2026' as const,
+                    authorization: { type: 'LearnCardDIDAuth' as const },
+                },
+                credentialId: 'urn:uuid:award',
+                issuerDid: issuer.learnCard.id.did(),
+                holderDid: holder.learnCard.id.did(),
+            };
+            const result = {
+                type: 'boost' as const,
+                uri: 'boost:new-owner',
+                credentialUri: 'credential:new-owner',
+                activityId: 'activity',
+            };
+            await expect(
+                recordRefreshSendIntent(first, { boostUri: 'boost:old-owner', state: 'prepared' })
+            ).rejects.toMatchObject({ code: 'CONFLICT' });
+            await expect(recordRefreshSendIntentPending(first, receipt)).rejects.toMatchObject({
+                code: 'CONFLICT',
+            });
+            await expect(markRefreshSendIntentDelivered(first, result)).rejects.toMatchObject({
+                code: 'CONFLICT',
+            });
+            await recordRefreshSendIntentPending(second, receipt);
+            await markRefreshSendIntentDelivered(second, result);
+            await expect(
+                recordRefreshSendIntent(second, { state: 'prepared' })
+            ).rejects.toMatchObject({ code: 'CONFLICT' });
+            const final = await getRefreshSendIntent(ISSUER_PROFILE_ID, request.idempotencyKey);
+            expect(final).toMatchObject({
+                boostUri: 'boost:new-owner',
+                state: 'delivered',
+                result,
+            });
+        });
+
+        it('rejects idempotencyKey without refresh', async () => {
+            const boostUri = await issuer.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await expect(
+                issuer.clients.fullAuth.boost.send({
+                    type: 'boost',
+                    recipient: HOLDER_PROFILE_ID,
+                    templateUri: boostUri,
+                    idempotencyKey: 'no-refresh',
+                })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        });
+    });
+
+    describe('managed-profile holders', () => {
+        const createManagedHolder = async (): Promise<void> => {
+            // `holder` administers a profile manager that manages MANAGED_PROFILE_ID.
+            // Mirrors test/credentials.spec.ts ("should clear did:web cache for managed profiles").
+            const managerDid = await holder.clients.fullAuth.profileManager.createProfileManager(
+                {}
+            );
+            const managerClient = getClient({ did: managerDid, isChallengeValid: true });
+
+            await managerClient.profileManager.createManagedProfile({
+                profileId: MANAGED_PROFILE_ID,
+            });
+        };
+
+        it('encrypts managed refresh storage so the managing profile can decrypt it', async () => {
+            await createManagedHolder();
+
+            const boostUri = await issuer.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedVcV2,
+            });
+
+            const result = (await issuer.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: MANAGED_PROFILE_ID,
+                templateUri: boostUri,
+                refresh: true,
+            })) as SendResult;
+
+            const stored = JSON.parse(await getRootCredentialBody(result.refresh!.refreshId));
+
+            // The manager's own key must be a recipient: the managed profile's did:key
+            // seed was discarded at creation, so without it nobody could decrypt.
+            const decrypted = (await holder.learnCard.invoke.decryptDagJwe(stored)) as VC;
+            expect(decrypted.name).toBe('Refreshable VC');
+
+            // Still holder-side only: the brain cannot recover the plaintext.
+            // (DIDKit resolves an empty string instead of throwing for non-recipients,
+            // so assert on the outcome rather than the error.)
+            const brainAttempt = await brain.invoke.decryptDagJwe(stored).catch(() => null);
+            expect(brainAttempt).not.toEqual(decrypted);
+        });
+
+        it('encrypts managed publication storage so the managing profile can decrypt it', async () => {
+            await createManagedHolder();
+
+            const boostUri = await issuer.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedVcV2,
+            });
+
+            const result = (await issuer.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: MANAGED_PROFILE_ID,
+                templateUri: boostUri,
+                refresh: true,
+            })) as SendResult;
+
+            const receipt = result.refresh!;
+            expect(receipt.credentialStatus).toBeDefined();
+
+            // Rebuild the updated body from the receipt metadata plus the issuer's own
+            // claims, mirroring the existing receipt-driven publication test.
+            const updatedBody = {
+                '@context': ['https://www.w3.org/ns/credentials/v2'],
+                id: receipt.credentialId,
+                type: ['VerifiableCredential'],
+                issuer: receipt.issuerDid,
+                name: 'Updated Refreshable VC',
+                credentialSubject: { id: receipt.holderDid },
+                refreshService: receipt.refreshService,
+                credentialStatus: receipt.credentialStatus,
+                validFrom: new Date().toISOString(),
+            };
+
+            const updated = await issuer.learnCard.invoke.issueCredential(
+                updatedBody as UnsignedVC
+            );
+
+            const publishResult =
+                await issuer.clients.fullAuth.credentialRefresh.publishCredentialRefresh({
+                    mode: 'issuer-signed',
+                    refreshId: receipt.refreshId,
+                    signedCredential: updated,
+                });
+
+            expect(publishResult.version).toBe(2);
+
+            const head = await runQuery(
+                `MATCH (:CredentialRefresh {refreshId: $refreshId})-[:HEAD]->(head:Credential)
+                 RETURN head.credential AS credential`,
+                { refreshId: receipt.refreshId }
+            );
+            const stored = JSON.parse(head.records[0]!.get('credential'));
+
+            const decrypted = (await holder.learnCard.invoke.decryptDagJwe(stored)) as VC;
+            expect(decrypted.name).toBe('Updated Refreshable VC');
+
+            // Same as the initial send: the brain cannot recover the plaintext.
+            const brainAttempt = await brain.invoke.decryptDagJwe(stored).catch(() => null);
+            expect(brainAttempt).not.toEqual(decrypted);
+        });
+    });
+
+    describe('refresh sends produce a usable receipt', () => {
+        it('sends a refreshable boost from a templateUri to a local profile', async () => {
+            const boostUri = await issuer.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedVcV2,
+            });
+
+            const result = (await issuer.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: HOLDER_PROFILE_ID,
+                templateUri: boostUri,
+                refresh: true,
+            })) as SendResult;
+
+            expect(result.type).toBe('boost');
+            expect(result.uri).toBe(boostUri);
+            expect(result.credentialUri).toBeDefined();
+            expect(result.activityId).toBeDefined();
+
+            expect(result.refresh).toBeDefined();
+            expect(result.refresh!.refreshId).toBeDefined();
+            expect(result.refresh!.refreshService.type).toBe('LearnCardCredentialRefresh2026');
+            expect(result.refresh!.refreshService.id).toContain(result.refresh!.refreshId);
+            expect(result.refresh!.credentialId).toBeDefined();
+            expect(result.refresh!.issuerDid).toBe(issuer.learnCard.id.did());
+            expect(result.refresh!.holderDid).toBe(getDidWeb(DOMAIN, HOLDER_PROFILE_ID));
+            // Status descriptors are taken from the signed version 1
+            expect(result.refresh!.credentialStatus).toBeDefined();
+
+            // The stored root is a holder-only JWE, never plaintext
+            const stored = await getRootCredentialBody(result.refresh!.refreshId);
+            expect(stored).toBeDefined();
+            expect(stored).not.toContain('Refreshable VC');
+            expect(JWEValidator.safeParse(JSON.parse(stored)).success).toBe(true);
+
+            // Bound as version 1
+            const head = await getCredentialRefreshHead(result.refresh!.refreshId);
+            expect(head).toMatchObject({ version: 1 });
+        });
+
+        it('resolves profile DIDs as recipients', async () => {
+            const boostUri = await issuer.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const holderProfile = await holder.clients.fullAuth.profile.getProfile();
+
+            const result = (await issuer.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: holderProfile.did,
+                templateUri: boostUri,
+                refresh: true,
+            })) as SendResult;
+
+            expect(result.refresh).toBeDefined();
+            // The receipt holder identity is the holder's public did:web, matching the
+            // credential subject written by the template renderer.
+            expect(result.refresh!.holderDid).toBe(getDidWeb(DOMAIN, HOLDER_PROFILE_ID));
+
+            const didWeb = getDidWeb(DOMAIN, HOLDER_PROFILE_ID);
+
+            const result2 = (await issuer.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: didWeb,
+                templateUri: boostUri,
+                refresh: true,
+            })) as SendResult;
+
+            expect(result2.refresh).toBeDefined();
+            expect(result2.refresh!.holderDid).toBe(didWeb);
+        });
+
+        it('creates the boost when sending a refreshable inline template', async () => {
+            const result = (await issuer.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: HOLDER_PROFILE_ID,
+                template: { credential: testUnsignedBoost },
+                refresh: true,
+            })) as SendResult;
+
+            expect(result.uri).toBeDefined();
+            expect(result.refresh).toBeDefined();
+            expect(result.refresh!.refreshId).toBeDefined();
+
+            const boostId = await runQuery(
+                `MATCH (c:Credential {refreshVersionKey: $key})-[:INSTANCE_OF]->(b:Boost)
+                 RETURN b.id AS id LIMIT 1`,
+                { key: `${result.refresh!.refreshId}:1` }
+            );
+
+            expect(boostId.records.length).toBe(1);
+        });
+
+        it('preserves activityId, integrationId, and boost linkage on the managed root', async () => {
+            const boostUri = await issuer.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const result = (await issuer.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: HOLDER_PROFILE_ID,
+                templateUri: boostUri,
+                integrationId: 'integration-123',
+                refresh: true,
+            })) as SendResult;
+
+            const rows = await runQuery(
+                `MATCH (:Profile {profileId: $issuerId})-[sent:CREDENTIAL_SENT]->(root:Credential {refreshVersionKey: $key})
+                 OPTIONAL MATCH (root)-[:INSTANCE_OF]->(b:Boost)
+                 RETURN sent.activityId AS activityId, sent.integrationId AS integrationId,
+                        b.id AS boostNodeId, $boostUri AS boostUri`,
+                {
+                    issuerId: ISSUER_PROFILE_ID,
+                    key: `${result.refresh!.refreshId}:1`,
+                    boostUri,
+                }
+            );
+
+            expect(rows.records.length).toBe(1);
+            expect(rows.records[0].get('activityId')).toBe(result.activityId);
+            expect(rows.records[0].get('integrationId')).toBe('integration-123');
+            expect(String(rows.records[0].get('boostNodeId'))).toBe(
+                boostUri.split('/').pop()!.split(':').pop()
+            );
+        });
+
+        it('correlates SEND and CLAIM activities through the same activityId', async () => {
+            const boostUri = await issuer.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const result = (await issuer.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: HOLDER_PROFILE_ID,
+                templateUri: boostUri,
+                refresh: true,
+            })) as SendResult;
+
+            await holder.clients.fullAuth.credential.acceptCredential({
+                uri: result.credentialUri,
+            });
+
+            const events = await runQuery(
+                `MATCH (a:CredentialActivity {activityId: $activityId})
+                 RETURN a.eventType AS eventType ORDER BY a.eventType`,
+                { activityId: result.activityId }
+            );
+
+            const types = events.records.map(record => record.get('eventType')).sort();
+
+            expect(types).toEqual(['CLAIMED', 'DELIVERED']);
+        });
+
+        it('preserves approved contract linkage on the managed root', async () => {
+            const contractUri = await issuer.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: {
+                    read: { anonymize: false },
+                    write: { credentials: { categories: { TestBoosts: { required: false } } } },
+                },
+                name: 'Refresh Send Contract',
+                writers: [ISSUER_PROFILE_ID],
+            });
+
+            const boostUri = await issuer.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'TestBoosts',
+            });
+
+            await holder.clients.fullAuth.contracts.consentToContract({
+                contractUri,
+                terms: {
+                    read: { anonymize: false },
+                    write: { credentials: { categories: { TestBoosts: true } } },
+                },
+            });
+
+            const result = (await issuer.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: HOLDER_PROFILE_ID,
+                templateUri: boostUri,
+                contractUri,
+                refresh: true,
+            })) as SendResult;
+
+            expect(result.refresh).toBeDefined();
+
+            const rows = await runQuery(
+                `MATCH (root:Credential {refreshVersionKey: $key})-[:ISSUED_VIA_TRANSACTION]->(:ConsentFlowTransaction)-[:IS_FOR]->(:ConsentFlowTerms)
+                 RETURN count(*) AS count`,
+                { key: `${result.refresh!.refreshId}:1` }
+            );
+
+            expect(toNum(rows.records[0].get('count'))).toBe(1);
+        });
+    });
+
+    describe('preallocated signed credential handoff', () => {
+        const buildHandoff = async (withStatus = false) => {
+            const boostUri = await issuer.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const credentialId = `urn:uuid:refresh-send-handoff-${withStatus ? 'status' : 'plain'}`;
+            const allocation =
+                await issuer.clients.fullAuth.credentialRefresh.allocateCredentialRefresh({
+                    holder: { profileId: HOLDER_PROFILE_ID, did: holder.learnCard.id.did() },
+                    credentialId,
+                });
+
+            const injected = injectManagedRefreshService(
+                {
+                    '@context': ['https://www.w3.org/ns/credentials/v2'],
+                    id: credentialId,
+                    type: ['VerifiableCredential'],
+                    issuer: issuer.learnCard.id.did(),
+                    validFrom: '2026-01-01T00:00:00Z',
+                    name: 'Handoff Badge',
+                    credentialSubject: { id: holder.learnCard.id.did() },
+                } as UnsignedVC,
+                allocation.refreshService
+            );
+
+            const toSign = withStatus
+                ? ((await appendBitstringStatusListEntries(
+                      injected,
+                      ISSUER_PROFILE_ID,
+                      DOMAIN
+                  )) as UnsignedVC)
+                : injected;
+
+            const signed = await issuer.learnCard.invoke.issueCredential(toSign);
+
+            return { boostUri, allocation, signed };
+        };
+
+        it('rejects a directly signed keyed send before creating any send state', async () => {
+            const { signed } = await buildHandoff(false);
+            const baseline = await getMutationBaseline();
+            await expect(
+                issuer.clients.fullAuth.boost.send({
+                    type: 'boost',
+                    recipient: HOLDER_PROFILE_ID,
+                    signedCredential: signed,
+                    refresh: true,
+                    idempotencyKey: 'never-prepared',
+                })
+            ).rejects.toMatchObject({
+                code: 'BAD_REQUEST',
+                message: expect.stringContaining('omit idempotencyKey'),
+            });
+            await expectsNoMutation(baseline);
+        });
+
+        it.each([
+            '../..',
+            '?query',
+            '#fragment',
+            'a/b',
+            'a'.repeat(4096),
+            'a'.repeat(42),
+            'a'.repeat(44),
+        ])('rejects a noncanonical managed refresh route identifier (%s)', async invalidId => {
+            const { signed, allocation } = await buildHandoff(false);
+            const prefix = allocation.refreshService.id.slice(0, -allocation.refreshId.length);
+            expect(() =>
+                extractManagedRefreshHandoff(
+                    {
+                        ...signed,
+                        refreshService: {
+                            ...allocation.refreshService,
+                            id: `${prefix}${invalidId}`,
+                        },
+                    },
+                    DOMAIN
+                )
+            ).toThrow();
+            expect(extractManagedRefreshHandoff(signed, DOMAIN)?.refreshId).toBe(
+                allocation.refreshId
+            );
+        });
+
+        it('binds an already-allocated signed credential and returns the receipt', async () => {
+            const { boostUri, signed } = await buildHandoff(true);
+
+            const result = (await issuer.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: HOLDER_PROFILE_ID,
+                templateUri: boostUri,
+                signedCredential: signed,
+                refresh: true,
+            })) as SendResult;
+
+            expect(result.refresh).toBeDefined();
+            expect(result.refresh!.refreshId).toBeDefined();
+            expect(result.refresh!.credentialId).toBe(signed.id);
+            expect(result.refresh!.issuerDid).toBe(issuer.learnCard.id.did());
+            expect(result.refresh!.holderDid).toBe(holder.learnCard.id.did());
+            expect(result.refresh!.credentialStatus).toEqual(
+                (signed as unknown as Record<string, unknown>).credentialStatus
+            );
+
+            const head = await getCredentialRefreshHead(result.refresh!.refreshId);
+            expect(head).toMatchObject({ version: 1 });
+        });
+
+        it('rejects a signed credential without an allocated managed service, with no second allocation', async () => {
+            const baseline = await getMutationBaseline();
+
+            const boostUri = await issuer.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const signed = await issuer.learnCard.invoke.issueCredential({
+                '@context': ['https://www.w3.org/ns/credentials/v2'],
+                id: 'urn:uuid:no-managed-service',
+                type: ['VerifiableCredential'],
+                issuer: issuer.learnCard.id.did(),
+                validFrom: '2026-01-01T00:00:00Z',
+                credentialSubject: { id: holder.learnCard.id.did() },
+            } as UnsignedVC);
+
+            await expect(
+                issuer.clients.fullAuth.boost.send({
+                    type: 'boost',
+                    recipient: HOLDER_PROFILE_ID,
+                    templateUri: boostUri,
+                    signedCredential: signed,
+                    refresh: true,
+                })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+
+            // No allocation, no managed binding, no duplicate credential storage
+            expect(await countNodes('CredentialRefresh')).toBe(baseline.refresh);
+            expect(await countNodes('Credential')).toBe(baseline.credential);
+        });
+
+        it('rejects a signed credential whose allocation belongs to another issuer', async () => {
+            const boostUri = await issuer.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const credentialId = 'urn:uuid:foreign-allocation';
+            const allocation =
+                await outsider.clients.fullAuth.credentialRefresh.allocateCredentialRefresh({
+                    holder: { profileId: HOLDER_PROFILE_ID, did: holder.learnCard.id.did() },
+                    credentialId,
+                });
+
+            const signed = await outsider.learnCard.invoke.issueCredential(
+                injectManagedRefreshService(
+                    {
+                        '@context': ['https://www.w3.org/ns/credentials/v2'],
+                        id: credentialId,
+                        type: ['VerifiableCredential'],
+                        issuer: outsider.learnCard.id.did(),
+                        validFrom: '2026-01-01T00:00:00Z',
+                        credentialSubject: { id: holder.learnCard.id.did() },
+                    } as UnsignedVC,
+                    allocation.refreshService
+                )
+            );
+
+            const baseline = await getMutationBaseline();
+
+            await expect(
+                issuer.clients.fullAuth.boost.send({
+                    type: 'boost',
+                    recipient: HOLDER_PROFILE_ID,
+                    templateUri: boostUri,
+                    signedCredential: signed,
+                    refresh: true,
+                })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+
+            expect(await countNodes('Credential')).toBe(baseline.credential);
+        });
+
+        it('does not duplicate the root, activity, or notification when the same handoff is retried', async () => {
+            const { boostUri, signed } = await buildHandoff();
+
+            const first = (await issuer.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: HOLDER_PROFILE_ID,
+                templateUri: boostUri,
+                integrationId: 'retry-integration',
+                signedCredential: signed,
+                refresh: true,
+            })) as SendResult;
+
+            const second = (await issuer.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: HOLDER_PROFILE_ID,
+                templateUri: boostUri,
+                integrationId: 'retry-integration',
+                signedCredential: signed,
+                refresh: true,
+            })) as SendResult;
+
+            expect(second.credentialUri).toBe(first.credentialUri);
+            expect(second.refresh!.refreshId).toBe(first.refresh!.refreshId);
+
+            // Same activity reused — no duplicate issuance activity on resume
+            expect(second.activityId).toBe(first.activityId);
+            expect(await countNodes('CredentialActivity')).toBe(1);
+
+            // One stored root, one sent relationship, one initial notification
+            expect(await countNodes('Credential')).toBe(1);
+            expect(await countRelationships('CREDENTIAL_SENT')).toBe(1);
+
+            const notifications = addNotificationToQueueSpy.mock.calls.filter(
+                ([event]) =>
+                    (event as { type?: string })?.type === 'CREDENTIAL_RECEIVED' ||
+                    (event as { notification?: { type?: string } })?.notification?.type ===
+                        'CREDENTIAL_RECEIVED'
+            );
+            expect(notifications).toHaveLength(1);
+
+            const head = await getCredentialRefreshHead(first.refresh!.refreshId);
+            expect(head).toMatchObject({ version: 1 });
+        });
+
+        it('replays a signed handoff without templateUri without creating another boost', async () => {
+            const { signed } = await buildHandoff();
+
+            const send = async () =>
+                (await issuer.clients.fullAuth.boost.send({
+                    type: 'boost',
+                    recipient: HOLDER_PROFILE_ID,
+                    signedCredential: signed,
+                    refresh: true,
+                })) as SendResult;
+
+            const first = await send();
+            const boostsAfterFirst = await countNodes('Boost');
+
+            const second = await send();
+
+            expect(second.uri).toBe(first.uri);
+            expect(second.credentialUri).toBe(first.credentialUri);
+            expect(second.activityId).toBe(first.activityId);
+            expect(second.refresh!.refreshId).toBe(first.refresh!.refreshId);
+            expect(await countNodes('Boost')).toBe(boostsAfterFirst);
+            expect(await countNodes('CredentialActivity')).toBe(1);
+        });
+
+        it('does not store the refresh service in a boost auto-created from a signed handoff', async () => {
+            const { signed } = await buildHandoff();
+
+            const result = (await issuer.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: HOLDER_PROFILE_ID,
+                signedCredential: signed,
+                refresh: true,
+            })) as SendResult;
+
+            const boostId = result.uri.split(':').pop();
+            const boostRecord = await runQuery(
+                'MATCH (b:Boost {id: $boostId}) RETURN b.boost AS boost',
+                { boostId }
+            );
+            const storedTemplate = JSON.parse(boostRecord.records[0]!.get('boost'));
+
+            expect(result.refresh).toBeDefined();
+            expect(storedTemplate.refreshService).toBeUndefined();
+        });
+    });
+
+    describe('normal sends are unchanged', () => {
+        it('returns no refresh receipt when refresh is omitted', async () => {
+            const boostUri = await issuer.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const result = (await issuer.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: HOLDER_PROFILE_ID,
+                templateUri: boostUri,
+            })) as SendResult;
+
+            expect(result.refresh).toBeUndefined();
+            expect(result.credentialUri).toBeDefined();
+            expect(result.activityId).toBeDefined();
+            expect(await countNodes('CredentialRefresh')).toBe(0);
+        });
+
+        it('returns no refresh receipt when refresh is false', async () => {
+            const boostUri = await issuer.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const result = (await issuer.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: HOLDER_PROFILE_ID,
+                templateUri: boostUri,
+                refresh: false,
+            })) as SendResult;
+
+            expect(result.refresh).toBeUndefined();
+            expect(await countNodes('CredentialRefresh')).toBe(0);
+        });
+
+        it('keeps the normal BOOST_RECEIVED notification for non-refresh sends', async () => {
+            const boostUri = await issuer.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await issuer.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: HOLDER_PROFILE_ID,
+                templateUri: boostUri,
+            });
+
+            const boostNotifications = addNotificationToQueueSpy.mock.calls.filter(
+                ([event]) =>
+                    (event as { type?: string })?.type === 'BOOST_RECEIVED' ||
+                    (event as { notification?: { type?: string } })?.notification?.type ===
+                        'BOOST_RECEIVED'
+            );
+
+            expect(boostNotifications.length).toBeGreaterThan(0);
+        });
+    });
+
+    describe('early rejection before any mutation', () => {
+        it.each(['holder@example.com', '+15551234567'])(
+            'rejects inbox refresh for %s before mutation when disabled',
+            async recipient => {
+                const baseline = await getMutationBaseline();
+                process.env.CREDENTIAL_REFRESH_ENABLED = 'false';
+                try {
+                    await expect(
+                        issuer.clients.fullAuth.boost.send({
+                            type: 'boost',
+                            recipient,
+                            template: { credential: testUnsignedBoost },
+                            refresh: true,
+                        })
+                    ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+                    await expectsNoMutation(baseline);
+                } finally {
+                    process.env.CREDENTIAL_REFRESH_ENABLED = 'true';
+                }
+            }
+        );
+
+        it('rejects remote/unresolvable DIDs before federation or delivery', async () => {
+            const baseline = await getMutationBaseline();
+
+            await expect(
+                issuer.clients.fullAuth.boost.send({
+                    type: 'boost',
+                    recipient: 'did:web:example.com:users:remote-holder',
+                    template: { credential: testUnsignedBoost },
+                    refresh: true,
+                })
+            ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+
+            await expectsNoMutation(baseline);
+
+            await expect(
+                issuer.clients.fullAuth.boost.send({
+                    type: 'boost',
+                    recipient: 'did:key:z6MkremoteHolderThatIsNotRegistered0000000',
+                    template: { credential: testUnsignedBoost },
+                    refresh: true,
+                })
+            ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+
+            await expectsNoMutation(baseline);
+        });
+
+        it('rejects when the refresh feature is disabled and creates nothing', async () => {
+            const baseline = await getMutationBaseline();
+            const previous = process.env.CREDENTIAL_REFRESH_ENABLED;
+            process.env.CREDENTIAL_REFRESH_ENABLED = 'false';
+
+            try {
+                await expect(
+                    issuer.clients.fullAuth.boost.send({
+                        type: 'boost',
+                        recipient: HOLDER_PROFILE_ID,
+                        template: { credential: testUnsignedBoost },
+                        refresh: true,
+                    })
+                ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+            } finally {
+                process.env.CREDENTIAL_REFRESH_ENABLED = previous;
+            }
+
+            await expectsNoMutation(baseline);
+        });
+
+        it('rejects refresh sends without the credentials:write scope', async () => {
+            const boostUri = await issuer.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const scopedClient = getClient({
+                did: issuer.learnCard.id.did(),
+                isChallengeValid: true,
+                scope: 'boosts:write boosts:read',
+            });
+
+            const baseline = await getMutationBaseline();
+
+            await expect(
+                scopedClient.boost.send({
+                    type: 'boost',
+                    recipient: HOLDER_PROFILE_ID,
+                    templateUri: boostUri,
+                    refresh: true,
+                })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+
+            await expectsNoMutation(baseline);
+        });
+
+        it('rejects blocked recipients before any mutation', async () => {
+            const issuerProfile = await issuer.clients.fullAuth.profile.getProfile();
+            const holderProfile = await holder.clients.fullAuth.profile.getProfile();
+            await blockProfile(issuerProfile, holderProfile);
+
+            const baseline = await getMutationBaseline();
+
+            await expect(
+                issuer.clients.fullAuth.boost.send({
+                    type: 'boost',
+                    recipient: HOLDER_PROFILE_ID,
+                    template: { credential: testUnsignedBoost },
+                    refresh: true,
+                })
+            ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+
+            await expectsNoMutation(baseline);
+        });
+
+        it('rejects unauthorized issuers and draft boosts', async () => {
+            const boostUri = await issuer.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await expect(
+                outsider.clients.fullAuth.boost.send({
+                    type: 'boost',
+                    recipient: HOLDER_PROFILE_ID,
+                    templateUri: boostUri,
+                    refresh: true,
+                })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+
+            const draftUri = await issuer.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                status: 'DRAFT',
+            });
+
+            const baseline = await getMutationBaseline();
+
+            await expect(
+                issuer.clients.fullAuth.boost.send({
+                    type: 'boost',
+                    recipient: HOLDER_PROFILE_ID,
+                    templateUri: draftUri,
+                    refresh: true,
+                })
+            ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+
+            // The draft boost existed before the attempt; nothing new was created
+            expect(await countNodes('CredentialRefresh')).toBe(baseline.refresh);
+            expect(await countNodes('Credential')).toBe(baseline.credential);
+        });
+    });
+
+    describe('self-send and notification behavior', () => {
+        it('suppresses the initial notification for self-sends', async () => {
+            const boostUri = await issuer.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const result = (await issuer.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: ISSUER_PROFILE_ID,
+                templateUri: boostUri,
+                refresh: true,
+            })) as SendResult;
+
+            expect(result.refresh).toBeDefined();
+
+            const refreshNotifications = addNotificationToQueueSpy.mock.calls.filter(
+                ([event]) =>
+                    (event as { type?: string })?.type === 'CREDENTIAL_RECEIVED' ||
+                    (event as { notification?: { type?: string } })?.notification?.type ===
+                        'CREDENTIAL_RECEIVED'
+            );
+            expect(refreshNotifications).toHaveLength(0);
+        });
+
+        it('notifies the holder with a CREDENTIAL_RECEIVED notification for managed sends', async () => {
+            const boostUri = await issuer.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await issuer.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: HOLDER_PROFILE_ID,
+                templateUri: boostUri,
+                refresh: true,
+            });
+
+            const refreshNotifications = addNotificationToQueueSpy.mock.calls.filter(
+                ([event]) =>
+                    (event as { type?: string })?.type === 'CREDENTIAL_RECEIVED' ||
+                    (event as { notification?: { type?: string } })?.notification?.type ===
+                        'CREDENTIAL_RECEIVED'
+            );
+            expect(refreshNotifications).toHaveLength(1);
+        });
+    });
+
+    describe('receipt-driven publication', () => {
+        it("allows a delegated issuer to send and publish refreshes on another profile's boost", async () => {
+            const boostUri = await outsider.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedVcV2,
+            });
+            const baseline = await getMutationBaseline();
+            await expect(
+                issuer.clients.fullAuth.boost.send({
+                    type: 'boost',
+                    recipient: HOLDER_PROFILE_ID,
+                    templateUri: boostUri,
+                    refresh: true,
+                })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+            await expectsNoMutation(baseline);
+            expect(signingAuthorityMocks.issueCredential).not.toHaveBeenCalled();
+
+            await outsider.clients.fullAuth.boost.addBoostAdmin({
+                uri: boostUri,
+                profileId: ISSUER_PROFILE_ID,
+            });
+            const result = await issuer.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: HOLDER_PROFILE_ID,
+                templateUri: boostUri,
+                refresh: true,
+            });
+            const receipt = result.refresh!;
+            const signedCredential = await issuer.learnCard.invoke.issueCredential({
+                ...testUnsignedVcV2,
+                id: receipt.credentialId,
+                issuer: receipt.issuerDid,
+                credentialSubject: { id: receipt.holderDid },
+                name: 'Updated by delegated issuer',
+                refreshService: receipt.refreshService,
+                credentialStatus: receipt.credentialStatus,
+            } as UnsignedVC);
+            const published =
+                await issuer.clients.fullAuth.credentialRefresh.publishCredentialRefresh({
+                    mode: 'issuer-signed',
+                    refreshId: receipt.refreshId,
+                    signedCredential,
+                });
+            expect(published.version).toBe(2);
+            // Template ownership does not grant access to the delegate's aggregate.
+            await expect(
+                outsider.clients.fullAuth.credentialRefresh.publishCredentialRefresh({
+                    mode: 'issuer-signed',
+                    refreshId: receipt.refreshId,
+                    signedCredential,
+                })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        });
+
+        it('publishes version 2 from the retained receipt without a new status allocation', async () => {
+            const boostUri = await issuer.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedVcV2,
+            });
+
+            const result = (await issuer.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: HOLDER_PROFILE_ID,
+                templateUri: boostUri,
+                refresh: true,
+            })) as SendResult;
+
+            const receipt = result.refresh!;
+            expect(receipt.credentialStatus).toBeDefined();
+
+            // Rebuild the updated body from the receipt metadata plus the issuer's own
+            // claims; the managed service and exact status descriptor come from the
+            // receipt (the issuer cannot read the holder-encrypted stored version).
+            const updatedBody = {
+                '@context': ['https://www.w3.org/ns/credentials/v2'],
+                id: receipt.credentialId,
+                type: ['VerifiableCredential'],
+                issuer: receipt.issuerDid,
+                name: 'Updated Refreshable VC',
+                credentialSubject: { id: receipt.holderDid },
+                refreshService: receipt.refreshService,
+                credentialStatus: receipt.credentialStatus,
+                validFrom: new Date().toISOString(),
+            };
+
+            const updated = await issuer.learnCard.invoke.issueCredential(
+                updatedBody as UnsignedVC
+            );
+
+            const publishResult =
+                await issuer.clients.fullAuth.credentialRefresh.publishCredentialRefresh({
+                    mode: 'issuer-signed',
+                    refreshId: receipt.refreshId,
+                    signedCredential: updated,
+                });
+
+            expect(publishResult.version).toBe(2);
+
+            const newHead = await getCredentialRefreshHead(receipt.refreshId);
+            expect(newHead).toMatchObject({ version: 2 });
+        });
+
+        it('applies managed context preparation to signing-authority publications', async () => {
+            const boostUri = await issuer.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const result = (await issuer.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: HOLDER_PROFILE_ID,
+                templateUri: boostUri,
+                refresh: true,
+            })) as SendResult;
+
+            const receipt = result.refresh!;
+
+            // Unsigned body WITHOUT the inline managed context fragment: the service
+            // must add it before handing the body to the signing authority.
+            const unsignedBody = {
+                '@context': ['https://www.w3.org/ns/credentials/v2'],
+                id: receipt.credentialId,
+                type: ['VerifiableCredential'],
+                issuer: receipt.issuerDid,
+                name: 'SA Updated Badge',
+                credentialSubject: { id: receipt.holderDid },
+                refreshService: receipt.refreshService,
+                validFrom: new Date().toISOString(),
+            };
+
+            const capturedBodies: UnsignedVC[] = [];
+            signingAuthorityMocks.issueCredential.mockImplementationOnce(
+                async (_issuer: unknown, credential: UnsignedVC) => {
+                    capturedBodies.push(credential);
+
+                    const vc = await issuer.learnCard.invoke.issueCredential({
+                        ...credential,
+                        issuer: issuer.learnCard.id.did(),
+                    });
+
+                    return { kind: 'issued-credential', credential: vc, statusEntries: [] };
+                }
+            );
+
+            const publishResult =
+                await issuer.clients.fullAuth.credentialRefresh.publishCredentialRefresh({
+                    mode: 'signing-authority',
+                    refreshId: receipt.refreshId,
+                    credential: unsignedBody as UnsignedVC,
+                    signingAuthority: {
+                        type: 'SigningAuthority',
+                        name: 'refresh-send-sa',
+                        endpoint: 'https://sa.example.com',
+                    },
+                });
+
+            expect(publishResult.version).toBe(2);
+
+            expect(capturedBodies).toHaveLength(1);
+            const contexts = capturedBodies[0]['@context'];
+            const hasManagedTerm = (Array.isArray(contexts) ? contexts : [contexts]).some(
+                entry =>
+                    typeof entry === 'object' &&
+                    entry !== null &&
+                    MANAGED_REFRESH_TYPE_TERM in (entry as Record<string, unknown>)
+            );
+            expect(hasManagedTerm).toBe(true);
+
+            // The publication must not have appended new status entries: the
+            // credentialStatus descriptor supplied by the receipt is preserved.
+            const head = await getCredentialRefreshHead(receipt.refreshId);
+            expect(head).toMatchObject({ version: 2 });
+        });
+    });
+
+    describe('allocation state integrity', () => {
+        it('binds the aggregate to the signed issuer identity and exposes it for publication', async () => {
+            const boostUri = await issuer.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const result = (await issuer.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: HOLDER_PROFILE_ID,
+                templateUri: boostUri,
+                refresh: true,
+            })) as SendResult;
+
+            const aggregate = await getCredentialRefresh(result.refresh!.refreshId);
+            expect(aggregate).toMatchObject({
+                issuerProfileId: ISSUER_PROFILE_ID,
+                holderProfileId: HOLDER_PROFILE_ID,
+                credentialId: result.refresh!.credentialId,
+                state: 'awaiting_claim',
+                currentVersion: 1,
+            });
+        });
+    });
+});

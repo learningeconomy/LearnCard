@@ -25,6 +25,7 @@ function load(file, dependencies = {}) {
 
 async function checkSetup(config, expectedOrigin) {
     const navigations = [];
+    const completedSignIns = [];
     let launches = 0;
     const locator = {
         waitFor: async () => {},
@@ -68,12 +69,17 @@ async function checkSetup(config, expectedOrigin) {
     };
     const setup = load('playwright-global-setup.ts', {
         '@playwright/test': { chromium: browserType, firefox: browserType },
-        './tests/test.helpers': { locatorExists: async () => false },
+        './tests/setup-auth': {
+            finishSetupSignIn: async (_page, profileId) => {
+                completedSignIns.push(profileId);
+            },
+        },
         './tests/route.helpers': { mockDidKitWasmForContext: async () => {} },
         'learn-card-base/src/logging/logger': { getLogger: () => ({ info() {}, error() {} }) },
     }).default;
     if (expectedOrigin) {
         await setup(config);
+        assert.deepEqual(completedSignIns, ['test-demo', 'test-seed-two']);
         assert.deepEqual(
             navigations.map(url => new URL(url).href),
             [expectedOrigin + '/', expectedOrigin + '/developer/sign-in']
@@ -81,6 +87,7 @@ async function checkSetup(config, expectedOrigin) {
     } else {
         await assert.rejects(setup(config), /baseURL.*absolute HTTP\(S\) URL/);
         assert.equal(launches, 0, 'invalid URL must fail before browser launch');
+        assert.deepEqual(completedSignIns, []);
     }
 }
 

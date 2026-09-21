@@ -118,7 +118,7 @@ export const credentialsRouter = t.router({
             const { profile } = ctx.user;
             const { uri } = input;
 
-            return acceptCredential(profile, uri, input?.options ?? {});
+            return acceptCredential(profile, uri, input?.options ?? {}, ctx.tenant?.emailBranding);
         }),
 
     receivedCredentials: profileRoute

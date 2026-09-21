@@ -19,6 +19,8 @@ import {
 } from 'learn-card-base';
 import { initNetworkStoreFromTenant } from 'learn-card-base';
 import { setOnFetchFailure } from 'learn-card-base/config/resolveTenantConfig';
+import { configureLocalDevelopmentNetwork } from 'learn-card-base/config/localDevelopmentNetwork';
+import { environment } from './environment';
 
 import { initSentryFromTenant } from '../constants/sentry';
 import { initUserflowFromTenant } from '../constants/userflow';
@@ -73,6 +75,12 @@ const initializeTenantSubsystems = async (config: TenantConfig): Promise<void> =
 
     // 3. Populate network store with tenant API endpoints + tenant ID
     initNetworkStoreFromTenant(config.apis, config.tenantId);
+    configureLocalDevelopmentNetwork(
+        environment.DEV,
+        environment.VITE_CREDENTIAL_REFRESH_LOCAL_QA,
+        typeof window === 'undefined' ? '' : window.location.origin,
+        config.apis.brainService
+    );
     emitConfigDebugEvent(
         'bootstrap:network_store_init',
         'Network store populated with tenant API endpoints'
