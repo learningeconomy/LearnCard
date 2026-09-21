@@ -344,8 +344,10 @@ resources:
             Properties:
                 AutoMinorVersionUpgrade: true
                 Engine: redis
-                # GETDEL (login codes/tickets/auth codes) needs Redis >= 6.2
-                EngineVersion: '7.0'
+                # GETDEL (login codes/tickets/auth codes) needs Redis >= 6.2. The
+                # version is deliberately NOT pinned here: existing clusters are
+                # already on 7.x, and a pin below the running version is rejected
+                # by CloudFormation as a downgrade (failing the whole deploy).
                 CacheNodeType: ${self:custom.config.CACHE_INSTANCE_SIZE}
                 NumCacheNodes: 1
                 VpcSecurityGroupIds:

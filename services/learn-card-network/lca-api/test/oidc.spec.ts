@@ -61,9 +61,14 @@ let privateJwk: string;
 // A fresh instance per test: @fastify/rate-limit keeps its in-memory counters
 // on the instance for the whole time window, which would otherwise leak across tests.
 let app: FastifyInstance;
-const authorize = (overrides: Record<string, string> = {}, headers: Record<string, string> = {}) =>
+const authorize = (
+    overrides: Record<string, string> = {},
+    headers: Record<string, string> = {},
+    remoteAddress?: string
+) =>
     app.inject({
         method: 'GET',
+        ...(remoteAddress ? { remoteAddress } : {}),
         url: `/oidc/authorize?${new URLSearchParams({
             client_id: env.OIDC_CLIENT_ID,
             redirect_uri: redirectUri,
@@ -102,10 +107,12 @@ const exchange = (
     value: string,
     overrides: Record<string, string> = {},
     basic: BasicMode = false,
-    headers: Record<string, string> = {}
+    headers: Record<string, string> = {},
+    remoteAddress?: string
 ) =>
     app.inject({
         method: 'POST',
+        ...(remoteAddress ? { remoteAddress } : {}),
         url: '/oidc/token',
         headers: {
             'content-type': 'application/x-www-form-urlencoded',
@@ -396,7 +403,7 @@ describe('OIDC provider', () => {
 
     describe('per-IP failures-only rate limiting', () => {
         const rateKeys = () => [...entries.keys()].filter(key => key.startsWith('oidc-rl:'));
-        const otherIp = { 'x-forwarded-for': '203.0.113.7, 10.0.0.1' };
+        const otherIp = '203.0.113.7';
         const expectRateLimited = (response: {
             statusCode: number;
             headers: Record<string, unknown>;
@@ -420,19 +427,28 @@ describe('OIDC provider', () => {
             expect(rateKeys()).toEqual([]);
         });
 
-        it('limits the token endpoint after 50 invalid_client / invalid_grant failures', async () => {
-            for (let index = 0; index < 25; index++) {
+        it('limits the token endpoint after 50 invalid_client failures', async () => {
+            for (let index = 0; index < 50; index++) {
                 expect((await exchange(await code(), { client_secret: 'wrong' })).statusCode).toBe(
                     401
                 );
-                expect((await exchange('unknown-code')).statusCode).toBe(400);
             }
             expect(entries.get('oidc-rl:token:127.0.0.1')?.value).toBe('50');
 
             expectRateLimited(await exchange(await code()));
             expectRateLimited(await exchange('x', { client_secret: 'wrong' }));
 
-            expect((await exchange(await code(), {}, false, otherIp)).statusCode).toBe(200);
+            expect((await exchange(await code(), {}, false, {}, otherIp)).statusCode).toBe(200);
+        });
+
+        it('never counts invalid_grant from an authenticated client against its IP', async () => {
+            // The broker relays whatever code a browser hands it from one shared
+            // egress IP; counting those would let anyone lock every user out.
+            for (let index = 0; index < 60; index++) {
+                expect((await exchange('unknown-code')).statusCode).toBe(400);
+            }
+            expect(rateKeys()).toEqual([]);
+            expect((await exchange(await code())).statusCode).toBe(200);
         });
 
         it('limits authorize after 50 invalid tickets and redirects with temporarily_unavailable', async () => {
@@ -453,7 +469,9 @@ describe('OIDC provider', () => {
             expect(await redeemLoginTicket(value)).not.toBeNull();
 
             expectRateLimited(await authorize({ redirect_uri: 'https://evil.test/' }));
-            expect((await authorize({ login_hint: await ticket() }, otherIp)).statusCode).toBe(302);
+            expect((await authorize({ login_hint: await ticket() }, {}, otherIp)).statusCode).toBe(
+                302
+            );
         });
 
         it('limits authorize after 50 invalid_request failures with a 429, never a redirect', async () => {
@@ -465,22 +483,26 @@ describe('OIDC provider', () => {
             expect(response.headers.location).toBeUndefined();
         });
 
-        it('keys the limit on the first x-forwarded-for hop', async () => {
-            const forwarded = { 'x-forwarded-for': '198.51.100.9, 10.0.0.2' };
+        it('keys the limit on the transport peer address, never x-forwarded-for', async () => {
+            const peer = '198.51.100.9';
+            const spoofed = { 'x-forwarded-for': '203.0.113.50, 10.0.0.2' };
             for (let index = 0; index < 50; index++) {
-                await exchange('nope', {}, false, forwarded);
+                await exchange('nope', { client_secret: 'wrong' }, false, spoofed, peer);
             }
-            expect(entries.has('oidc-rl:token:198.51.100.9')).toBe(true);
-            expectRateLimited(await exchange(await code(), {}, false, forwarded));
+            expect(entries.has(`oidc-rl:token:${peer}`)).toBe(true);
+            expect(entries.has('oidc-rl:token:203.0.113.50')).toBe(false);
+
+            // Rotating the header does not escape the bucket ...
             expectRateLimited(
-                await exchange(await code(), {}, false, { 'x-forwarded-for': '198.51.100.9' })
+                await exchange(await code(), {}, false, { 'x-forwarded-for': '203.0.113.51' }, peer)
             );
+            // ... and a different peer is unaffected.
             expect((await exchange(await code())).statusCode).toBe(200);
         });
 
         it('sets the 10-minute window when the key is first created', async () => {
             const before = Date.now();
-            await exchange('nope');
+            await exchange('nope', { client_secret: 'wrong' });
             const entry = entries.get('oidc-rl:token:127.0.0.1')!;
             expect(entry.expires).toBeGreaterThanOrEqual(before + 600_000);
             expect(entry.expires).toBeLessThan(before + 601_000);
@@ -488,25 +510,21 @@ describe('OIDC provider', () => {
     });
 
     describe('@fastify/rate-limit request ceiling', () => {
-        it('caps /oidc/token at 60 requests per minute per IP regardless of outcome', async () => {
-            for (let index = 0; index < 60; index++) {
+        it('gives the server-to-server /oidc/token a high sanity ceiling, not the browser cap', async () => {
+            // Every legitimate token call comes from the broker's single egress
+            // IP, so a 60/min cap here would be a global login ceiling.
+            for (let index = 0; index < 61; index++) {
                 const response = await exchange('x', { grant_type: 'password' });
                 expect(response.statusCode).toBe(400);
-                expect(response.headers['x-ratelimit-limit']).toBe('60');
+                expect(response.headers['x-ratelimit-limit']).toBe('3000');
             }
-            const limited = await exchange('x', { grant_type: 'password' });
-            expect(limited.statusCode).toBe(429);
-            expect(limited.json()).toEqual({ error: 'temporarily_unavailable' });
-            expect(Number(limited.headers['retry-after'])).toBeGreaterThan(0);
             expect([...entries.keys()].filter(key => key.startsWith('oidc-rl:'))).toEqual([]);
+        });
 
-            expect(
-                (
-                    await exchange('x', { grant_type: 'password' }, false, {
-                        'x-forwarded-for': '203.0.113.7',
-                    })
-                ).statusCode
-            ).toBe(400);
+        it('gives /oidc/userinfo the same server-to-server ceiling', async () => {
+            const response = await app.inject('/oidc/userinfo');
+            expect(response.statusCode).toBe(401);
+            expect(response.headers['x-ratelimit-limit']).toBe('3000');
         });
 
         it('caps /oidc/authorize at 60 requests per minute per IP', async () => {

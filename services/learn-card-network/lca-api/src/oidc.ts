@@ -56,12 +56,20 @@ const RATE_LIMIT_WINDOW_SECONDS = DEFAULT_RATE_LIMIT_WINDOW_SECONDS;
 
 // Coarse all-requests ceilings enforced by @fastify/rate-limit (per IP, per
 // minute). Discovery/JWKS are polled by Keycloak, so the global default is
-// generous; authorize/token get a tighter per-route cap. The failures-only
-// counter above remains the fine-grained brute-force control.
+// generous. `/oidc/authorize` is hit by end-user browsers, so it gets a tight
+// per-IP cap. `/oidc/token` and `/oidc/userinfo` are only ever called by the
+// broker (Keycloak) server-side, so every legitimate request shares one NAT
+// egress IP: a per-IP cap there is a global login ceiling, not a per-user
+// control. They therefore get a high sanity ceiling only; the client secret /
+// bearer token and the failures-only counter are the real access controls.
 const GLOBAL_REQUESTS_PER_MINUTE = 300;
-const AUTH_ROUTE_REQUESTS_PER_MINUTE = 60;
-const AUTH_ROUTE_RATE_LIMIT = {
-    config: { rateLimit: { max: AUTH_ROUTE_REQUESTS_PER_MINUTE, timeWindow: '1 minute' } },
+const BROWSER_ROUTE_REQUESTS_PER_MINUTE = 60;
+const SERVER_ROUTE_REQUESTS_PER_MINUTE = 3000;
+const BROWSER_ROUTE_RATE_LIMIT = {
+    config: { rateLimit: { max: BROWSER_ROUTE_REQUESTS_PER_MINUTE, timeWindow: '1 minute' } },
+};
+const SERVER_ROUTE_RATE_LIMIT = {
+    config: { rateLimit: { max: SERVER_ROUTE_REQUESTS_PER_MINUTE, timeWindow: '1 minute' } },
 };
 
 // @fastify/rate-limit throws whatever errorResponseBuilder returns; the plugin's
@@ -179,7 +187,7 @@ export const oidcFastifyPlugin: FastifyPluginAsync = async fastify => {
         return reply.send(await getOidcJwks());
     });
 
-    fastify.get('/oidc/authorize', AUTH_ROUTE_RATE_LIMIT, async (request, reply) => {
+    fastify.get('/oidc/authorize', BROWSER_ROUTE_RATE_LIMIT, async (request, reply) => {
         const query = request.query as Record<string, string | undefined>;
         const redirectUri = query.redirect_uri;
         const state = query.state;
@@ -240,7 +248,7 @@ export const oidcFastifyPlugin: FastifyPluginAsync = async fastify => {
         return reply.redirect(appendParams(redirectUri, state ? { code, state } : { code }));
     });
 
-    fastify.post('/oidc/token', AUTH_ROUTE_RATE_LIMIT, async (request, reply) => {
+    fastify.post('/oidc/token', SERVER_ROUTE_RATE_LIMIT, async (request, reply) => {
         const limitKey = rateLimitKey('token', request);
         if (await isRateLimited(limitKey, RATE_LIMIT_MAX_FAILURES)) {
             return sendRateLimited(reply);
@@ -277,13 +285,18 @@ export const oidcFastifyPlugin: FastifyPluginAsync = async fastify => {
             return reply.status(400).send({ error: 'invalid_request' });
         }
 
+        // Past this point the caller has proven the client secret, i.e. it is the
+        // broker. `invalid_grant` is deliberately NOT counted against the IP:
+        // the broker forwards whatever `code` a browser hands it, so an attacker
+        // (or ordinary expired/replayed codes) could otherwise trip the shared
+        // NAT IP's failure counter and lock every user out of login. Codes are
+        // 256-bit random and single-use, so guessing is not a realistic threat.
         const codeData = await consumeAuthorizationCode(body.code);
         if (
             !codeData ||
             codeData.clientId !== clientId ||
             body.redirect_uri !== codeData.redirectUri
         ) {
-            await recordFailure(limitKey, RATE_LIMIT_WINDOW_SECONDS);
             return reply.status(400).send({ error: 'invalid_grant' });
         }
 
@@ -322,7 +335,7 @@ export const oidcFastifyPlugin: FastifyPluginAsync = async fastify => {
         });
     });
 
-    fastify.get('/oidc/userinfo', async (request, reply) => {
+    fastify.get('/oidc/userinfo', SERVER_ROUTE_RATE_LIMIT, async (request, reply) => {
         const authorization = request.headers.authorization;
         if (!authorization?.startsWith('Bearer ')) {
             return reply

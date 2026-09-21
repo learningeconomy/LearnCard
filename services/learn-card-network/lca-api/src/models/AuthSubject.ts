@@ -40,7 +40,21 @@ export const ensureAuthSubjectIndexes = (): Promise<void> => {
     return authSubjectIndexesReady;
 };
 
-/** Persist a random, permanent subject independently of Firebase and UserKey. */
+const MONGO_DUPLICATE_KEY = 11000;
+
+const isDuplicateKeyError = (error: unknown): boolean =>
+    typeof error === 'object' &&
+    error !== null &&
+    (error as { code?: unknown }).code === MONGO_DUPLICATE_KEY;
+
+/**
+ * Persist a random, permanent subject independently of Firebase and UserKey.
+ *
+ * Two concurrent first logins for the same identity can both miss the lookup
+ * and race on the insert; the unique `identityKey` index rejects the loser
+ * with E11000. Retrying once then finds the winner's document and only runs
+ * the `$set` half of the upsert.
+ */
 export const getOrCreateAuthSubject = async (
     identityKey: string,
     attrs: AuthSubjectAttributes
@@ -54,14 +68,24 @@ export const getOrCreateAuthSubject = async (
     if (attrs.email !== undefined) fields.email = attrs.email;
     if (attrs.displayName !== undefined) fields.displayName = attrs.displayName;
     if (attrs.pictureUrl !== undefined) fields.pictureUrl = attrs.pictureUrl;
-    const record = await getAuthSubjectsCollection().findOneAndUpdate(
-        { identityKey },
-        {
-            $setOnInsert: { subject: randomUUID(), identityKey, createdAt: now },
-            $set: fields,
-        },
-        { upsert: true, returnDocument: 'after' }
-    );
+
+    const upsert = () =>
+        getAuthSubjectsCollection().findOneAndUpdate(
+            { identityKey },
+            {
+                $setOnInsert: { subject: randomUUID(), identityKey, createdAt: now },
+                $set: fields,
+            },
+            { upsert: true, returnDocument: 'after' }
+        );
+
+    let record: MongoAuthSubjectType | null;
+    try {
+        record = await upsert();
+    } catch (error) {
+        if (!isDuplicateKeyError(error)) throw error;
+        record = await upsert();
+    }
     if (!record) throw new Error('Unable to persist authentication subject');
     return record;
 };
