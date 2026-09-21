@@ -4,6 +4,16 @@ import { PRODUCTION_NETWORK, STAGING_NETWORK } from './project';
 import { assertSourceNetwork, planPromotion, PROMOTE_CHECKLIST } from './promote';
 
 describe('planPromotion', () => {
+    it('places the target under the supplied working directory', () => {
+        expect(planPromotion('staging', 'production', '/tmp/source-project').targetDir).toBe(
+            path.join('/tmp/source-project', '.learncard', 'production')
+        );
+    });
+    it('defaults the working directory to process.cwd()', () => {
+        expect(planPromotion('staging', 'production').targetDir).toBe(
+            path.join(process.cwd(), '.learncard', 'production')
+        );
+    });
     it('resolves staging -> production and targets a project folder named after it', () => {
         const plan = planPromotion('staging', 'production');
         expect(plan.fromNetwork).toBe(STAGING_NETWORK);
@@ -52,40 +62,50 @@ describe('assertSourceNetwork', () => {
 });
 
 describe('runPromote --dry-run', () => {
-    it('leaves the source .env byte-identical and creates no target folder', async () => {
+    it('uses options.cwd without changing process.cwd and leaves the source untouched', async () => {
         const fs = await import('node:fs/promises');
         const os = await import('node:os');
         const { vi } = await import('vitest');
-        vi.spyOn(console, 'log').mockImplementation(() => {});
-
+        const log = vi.spyOn(console, 'log').mockImplementation(() => {});
         const cwd = await fs.mkdtemp(path.join(os.tmpdir(), 'lc-promote-'));
-        const before = `SECURE_SEED=${'a'.repeat(64)}\nPROFILE_ID=exde\nNETWORK_URL=http://localhost:4000/trpc\n`;
-        await fs.writeFile(path.join(cwd, '.env'), before);
-        await fs.writeFile(
-            path.join(cwd, 'org.yaml'),
-            'issuer:\n  profileId: exde\n  displayName: Ex\n  signingAuthority: { type: learncard-hosted, name: ex }\n'
-        );
-
-        vi.doMock('./org', () => ({ runOrgApply: vi.fn().mockResolvedValue(undefined) }));
-        vi.doMock('./doctor', () => ({ runDoctor: vi.fn() }));
-        const { runPromote } = await import('./promote');
-
         const previousCwd = process.cwd();
-        process.chdir(cwd);
+        const before = `SECURE_SEED=${'a'.repeat(64)}\nPROFILE_ID=exde\nNETWORK_URL=http://localhost:4000/trpc\n`;
+        const runOrgApply = vi.fn().mockResolvedValue(undefined);
+        vi.doMock('./org', () => ({ runOrgApply }));
+        vi.doMock('./doctor', () => ({ runDoctor: vi.fn() }));
+        vi.resetModules();
         try {
+            await fs.writeFile(path.join(cwd, '.env'), before);
+            const org = path.join(cwd, 'org.yaml');
+            await fs.writeFile(
+                org,
+                'issuer:\n  profileId: exde\n  displayName: Ex\n  signingAuthority: { type: learncard-hosted, name: ex }\n'
+            );
+            const { runPromote } = await import('./promote');
             await runPromote({
+                cwd,
                 from: 'http://localhost:4000/trpc',
                 to: 'staging',
-                org: 'org.yaml',
+                org,
                 dryRun: true,
             });
+            const targetDir = path.join(cwd, '.learncard', 'staging');
+            expect(runOrgApply).toHaveBeenCalledWith(
+                org,
+                expect.objectContaining({
+                    project: expect.objectContaining({ envPath: path.join(targetDir, '.env') }),
+                    secretsOut: path.join(targetDir, 'secrets.env'),
+                })
+            );
+            expect(process.cwd()).toBe(previousCwd);
+            expect(await fs.readFile(path.join(cwd, '.env'), 'utf8')).toBe(before);
+            expect(await fs.readdir(cwd)).toEqual(['.env', 'org.yaml']);
         } finally {
-            process.chdir(previousCwd);
+            vi.doUnmock('./org');
+            vi.doUnmock('./doctor');
+            vi.resetModules();
+            log.mockRestore();
+            await fs.rm(cwd, { recursive: true, force: true });
         }
-
-        expect(await fs.readFile(path.join(cwd, '.env'), 'utf8')).toBe(before);
-        expect(await fs.readdir(cwd)).toEqual(['.env', 'org.yaml']);
-        vi.doUnmock('./org');
-        vi.doUnmock('./doctor');
     }, 20_000);
 });

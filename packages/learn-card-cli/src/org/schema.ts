@@ -115,7 +115,10 @@ const isoDateSchema = z.string().refine(value => !Number.isNaN(Date.parse(value)
     message: 'must be a valid ISO date',
 });
 
-// Becomes the key in `--secrets-out` (see `toEnvKey` in apply.ts), so keep it shell-safe.
+/** Normalize a service-account name to its shell-safe secrets-file key. */
+export const toEnvKey = (name: string): string => name.replace(/-/g, '_').toUpperCase();
+
+// Becomes the key in `--secrets-out`, so keep it shell-safe.
 const SERVICE_ACCOUNT_NAME_PATTERN = /^[A-Za-z_][A-Za-z0-9_-]*$/;
 
 const serviceAccountNameSchema = z
@@ -138,7 +141,22 @@ const webhookSchema = z.object({
 export const OrgSpecValidator = z.object({
     issuer: issuerSchema,
     profileManager: profileManagerSchema.optional(),
-    serviceAccounts: z.array(serviceAccountSchema).optional(),
+    serviceAccounts: z
+        .array(serviceAccountSchema)
+        .superRefine((accounts, ctx) => {
+            const keys = new Set<string>();
+            accounts.forEach((account, index) => {
+                const key = toEnvKey(account.name);
+                if (keys.has(key))
+                    ctx.addIssue({
+                        code: 'custom',
+                        path: [index, 'name'],
+                        message: `Duplicate service-account secrets key "${key}" after normalizing names`,
+                    });
+                keys.add(key);
+            });
+        })
+        .optional(),
     webhooks: z.array(webhookSchema).optional(),
 });
 

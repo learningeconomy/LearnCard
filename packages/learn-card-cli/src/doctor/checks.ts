@@ -213,8 +213,11 @@ export const tokenScopesCheck: Check = {
 
         const token = project.env.API_TOKEN;
         if (!token) {
-            const covering = active.find(candidate =>
-                requiredScopes.every(required => scopeCovers(candidate.scope ?? '', required))
+            const covering = active.find(
+                candidate =>
+                    (!candidate.expiresAt ||
+                        new Date(candidate.expiresAt).getTime() > Date.now()) &&
+                    requiredScopes.every(required => scopeCovers(candidate.scope ?? '', required))
             );
             if (covering) {
                 return {
@@ -230,6 +233,13 @@ export const tokenScopesCheck: Check = {
         }
 
         const grantId = project.env.API_TOKEN_GRANT_ID;
+        if (!grantId && !project.env.API_TOKEN_SCOPE) {
+            return {
+                status: 'warn',
+                detail: 'API_TOKEN has no grant ID or scope metadata; its grant cannot be identified.',
+                fix: 'Set API_TOKEN_GRANT_ID in .env to the grant ID for this token.',
+            };
+        }
         const grant = grantId
             ? active.find(candidate => candidate.id === grantId)
             : active.find(candidate => candidate.scope === project.env.API_TOKEN_SCOPE);

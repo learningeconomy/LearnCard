@@ -100,9 +100,7 @@ export const getLCAPlugin = async (
         const initialized = learnCard.invoke
             .getProfile()
             .then(async profile => {
-                // getEncryptionKey is a profile route; without a profile it can only 401.
-                if (!profile) return;
-                await updateLearnCard(learnCard);
+                if (profile) await updateLearnCard(learnCard);
                 encryptionJwk = await getEncryptionJwk(
                     await getNewClient(url, learnCard, extraHeaders),
                     learnCard

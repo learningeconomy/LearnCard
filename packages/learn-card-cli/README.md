@@ -278,13 +278,17 @@ serviceAccounts:
 
 Once the org exists, `send` picks up its pieces automatically: with a signing authority registered it signs through that authority by default (`--no-template` opts back out to the local key), and `--as <managedProfileId>` sends as one of the managed profiles — signed with that profile's own did:web, no separate seed or folder needed. `inbox list --as <managedProfileId>` shows what that profile has sent. `LEARNCARD_AS=<profileId>` does the same for a whole shell session without persisting anything, and `whoami` shows the folder's identity plus every profile `--as` can target. A folder is one identity; passing a different `--profile-id` is an error that points you at `--as`.
 
+Service-account scopes and expiry are compared with the spec. If either drifts, apply errors with a revoke command: revoke the grant and re-run to create a replacement (dry-run reports `drifted`). With `--secrets-out`, a matching grant whose normalized key is missing from the secrets file gets a re-issued token. Tokens are written only to that file, never printed or stored elsewhere by the CLI.
+
+New `send --as` scripts save `MANAGED_DID` in `.env` and use it with `didWeb` on the selected network. They reject missing or changed managed identities. Existing scripts are left untouched, with a warning to use the CLI if their issuer differs.
+
 ## Preflight with doctor
 
 ```bash
 npx @learncard/cli doctor
 ```
 
-Checks this project's issuer setup against the network — identity, network reachability, API token scopes, signing authority (with a real test-sign + verify), did:web resolution, an optional `--webhook-url` ping, and whether managed credential refresh is enabled — printing one line per check with a remediation command for anything that fails. Nothing is sent, allocated, or written to the network. Pass `--strict` to also exit non-zero on warnings, or `--scopes "..."` to check different permissions than the default Universal Inbox set.
+Checks this project's issuer setup against the network — identity, network reachability, API token scopes, signing authority (with a real test-sign + verify), did:web resolution, an optional `--webhook-url` POST ping, and whether managed credential refresh is enabled — printing one line per check with a remediation command for anything that fails. It calls network services but does not deliver credentials or provision resources. Trusted Registry verification is a manual check reported as skipped. Pass `--strict` to also exit non-zero on warnings, or `--scopes "..."` to check different permissions than the default Universal Inbox set.
 
 ## Promote staging → production
 

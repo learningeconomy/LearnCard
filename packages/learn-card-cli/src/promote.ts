@@ -53,13 +53,14 @@ const networkDirName = (network: string): string =>
 /** Pure: resolves --from/--to to network URLs and picks the target project folder. */
 export const planPromotion = (
     from: string,
-    to: string
+    to: string,
+    cwd: string = process.cwd()
 ): { fromNetwork: string; toNetwork: string; targetDir: string } => {
     const fromNetwork = resolveNetworkUrl(from);
     const toNetwork = resolveNetworkUrl(to);
     if (fromNetwork === toNetwork)
         throw new Error(`--from and --to resolve to the same network (${toNetwork}).`);
-    const targetDir = path.join(process.cwd(), '.learncard', networkDirName(toNetwork));
+    const targetDir = path.join(cwd, '.learncard', networkDirName(toNetwork));
     return { fromNetwork, toNetwork, targetDir };
 };
 
@@ -77,6 +78,7 @@ export const assertSourceNetwork = (
 };
 
 export type PromoteOptions = ProjectOptions & {
+    cwd?: string;
     from: string;
     to: string;
     org: string;
@@ -87,12 +89,12 @@ export type PromoteOptions = ProjectOptions & {
 
 export const runPromote = async (options: PromoteOptions): Promise<void> => {
     const { from, to, org, dryRun, skipDoctor } = options;
-    const { fromNetwork, toNetwork, targetDir } = planPromotion(from, to);
+    const { fromNetwork, toNetwork, targetDir } = planPromotion(from, to, options.cwd);
     const secretsOut = options.secretsOut ?? path.join(targetDir, 'secrets.env');
     out.log(`Promoting ${org} from ${from} to ${to}`);
     out.log(`Target: ${targetDir}`);
 
-    const sourceProject = await loadProject(process.cwd());
+    const sourceProject = await loadProject(options.cwd ?? process.cwd());
     if (!sourceProject.env.SECURE_SEED)
         throw new Error(
             `No SECURE_SEED in .env here. Run \`org apply\` against ${from} in this folder first.`

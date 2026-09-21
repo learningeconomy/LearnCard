@@ -1,10 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
+import { Command } from 'commander';
 import {
     fetchSentInboxCredentials,
-    filterRecipientType,
     filterSince,
     parseLimit,
     parseSince,
+    registerInboxCommand,
     toJsonRecord,
     type SentInboxRecord,
 } from './inbox';
@@ -76,22 +77,50 @@ describe('filterSince', () => {
     });
 });
 
-describe('filterRecipientType', () => {
-    it('keeps only the matching recipient type', () => {
-        const records = [
-            baseRecord({ id: 'a', recipient: { type: 'email', value: 'a@example.com' } }),
-            baseRecord({ id: 'b', recipient: { type: 'phone' } }),
-        ];
-        expect(filterRecipientType(records, 'phone').map(r => r.id)).toEqual(['b']);
-    });
-
-    it('is a no-op without a recipient-type filter', () => {
-        const records = [baseRecord()];
-        expect(filterRecipientType(records, undefined)).toBe(records);
+describe('inbox command registration', () => {
+    it('does not advertise or accept the unsupported recipient-type filter', async () => {
+        const program = new Command().exitOverride().configureOutput({ writeErr: () => {} });
+        const run = vi.fn();
+        registerInboxCommand(program, run);
+        const list = program.commands[0]!.commands[0]!;
+        expect(list.helpInformation()).not.toContain('--recipient-type');
+        await expect(
+            program.parseAsync(['inbox', 'list', '--recipient-type', 'email'], { from: 'user' })
+        ).rejects.toThrow("unknown option '--recipient-type'");
+        expect(run).not.toHaveBeenCalled();
     });
 });
 
 describe('fetchSentInboxCredentials', () => {
+    it.each([false, true])(
+        'reports overflow even when server hasMore is %s',
+        async serverHasMore => {
+            const getMySentInboxCredentials = vi.fn().mockResolvedValue({
+                records: [baseRecord({ id: '1' }), baseRecord({ id: '2' })],
+                hasMore: serverHasMore,
+            });
+            const result = await fetchSentInboxCredentials(
+                { getMySentInboxCredentials },
+                { limit: 1 }
+            );
+            expect(result.records.map(record => record.id)).toEqual(['1']);
+            expect(result.hasMore).toBe(true);
+            expect(getMySentInboxCredentials).toHaveBeenCalledExactlyOnceWith({ limit: 1 });
+        }
+    );
+
+    it('requests the last remaining record and stops at an exact limit', async () => {
+        const getMySentInboxCredentials = vi
+            .fn()
+            .mockResolvedValueOnce({ records: [baseRecord()], hasMore: true, cursor: 'next' })
+            .mockResolvedValueOnce({ records: [baseRecord({ id: '2' })], hasMore: false });
+        const result = await fetchSentInboxCredentials({ getMySentInboxCredentials }, { limit: 2 });
+        expect(getMySentInboxCredentials).toHaveBeenNthCalledWith(2, { limit: 1, cursor: 'next' });
+        expect(getMySentInboxCredentials).toHaveBeenCalledTimes(2);
+        expect(result.records).toHaveLength(2);
+        expect(result.hasMore).toBe(false);
+    });
+
     it('merges cursor-paginated pages up to the requested limit', async () => {
         const page1 = {
             hasMore: true,
@@ -114,7 +143,7 @@ describe('fetchSentInboxCredentials', () => {
         expect(getMySentInboxCredentials).toHaveBeenCalledTimes(2);
         expect(getMySentInboxCredentials).toHaveBeenNthCalledWith(
             2,
-            expect.objectContaining({ cursor: 'cursor-1' })
+            expect.objectContaining({ cursor: 'cursor-1', limit: 8 })
         );
     });
 
@@ -163,7 +192,7 @@ describe('toJsonRecord', () => {
 });
 
 describe('inbox list pipeline', () => {
-    it('merges two mocked pages, filters by since + recipient-type, and shapes json records', async () => {
+    it('merges two mocked pages, filters by since, and shapes json records', async () => {
         const page1 = {
             hasMore: true,
             cursor: 'c1',
@@ -200,11 +229,20 @@ describe('inbox list pipeline', () => {
             { limit: 10 }
         );
         const since = parseSince('7d', new Date('2026-01-10T00:00:00.000Z'));
-        const filtered = filterRecipientType(filterSince(records, since), 'email');
+        const filtered = filterSince(records, since);
 
-        expect(filtered.map(r => r.id)).toEqual(['3']);
+        expect(filtered.map(r => r.id)).toEqual(['2', '3']);
         expect(hasMore).toBe(false);
         expect(filtered.map(toJsonRecord)).toEqual([
+            {
+                id: '2',
+                status: 'PENDING',
+                recipient: { type: 'phone' },
+                createdAt: '2026-01-08T00:00:00.000Z',
+                expiresAt: page1.records[1]!.expiresAt,
+                credentialName: undefined,
+                isSigned: true,
+            },
             {
                 id: '3',
                 status: 'PENDING',

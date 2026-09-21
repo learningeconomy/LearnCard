@@ -16,7 +16,7 @@ An _organization_ on LearnCard is an issuer profile, the signing authority that 
 npx @learncard/cli org apply org.yaml --network staging --secrets-out ./secrets.env
 ```
 
-Creates whatever the file describes that doesn't exist yet, updates what differs, and leaves the rest alone. Run it again and it prints `No changes.`
+Creates missing resources, updates supported profile and signing settings, and leaves matching resources alone. Service-account scope or expiry drift requires revoking the grant and re-running; it is never silently updated. With `--secrets-out`, a missing token is re-issued into that file. An identical run with all tokens present prints `No changes.`
 
 ## Before you start: one folder, one identity
 
@@ -83,7 +83,7 @@ npx @learncard/cli whoami
 npx @learncard/cli doctor
 ```
 
-`whoami` shows who this folder is. `doctor` runs a read-only preflight — identity, network, signing authority (it signs and verifies a throwaway credential), your `did:web` document, whether credential refresh is on — and prints one fix line for anything red. Nothing it does touches the network.
+`whoami` shows who this folder is. `doctor` checks identity, network, signing authority (it signs and verifies a throwaway credential), your `did:web` document, and whether credential refresh is on, then prints one fix line for anything red. It calls network services and optionally POSTs a webhook ping, but does not issue credentials to recipients or provision resources. The Trusted Registry check is a manual check reported as skipped.
 
 ## 4. Send something
 
@@ -110,7 +110,7 @@ serviceAccounts:
 npx @learncard/cli org apply org.yaml --network staging --secrets-out ./secrets.env
 ```
 
-The token is written **once** to `secrets.env` (mode 0600, added to `.gitignore`) as `NIGHTLY_ISSUER=…`. It is never printed. Your backend uses it as `Authorization: Bearer …` or `initLearnCard({ apiToken })` and acts as your issuer profile within those scopes. Re-running `org apply` never re-fetches an existing token; delete the grant in the Developer Portal (or change `name`) to rotate.
+The token is written to `secrets.env` (mode 0600, added to `.gitignore`) as `NIGHTLY_ISSUER=…`. It is never printed or stored elsewhere by the CLI. Your backend uses it as `Authorization: Bearer …` or `initLearnCard({ apiToken })` and acts as your issuer profile within those scopes. Re-running `org apply --secrets-out ./secrets.env` re-issues a token if its key is missing from the file. If scopes or expiry differ, apply errors with a revoke command; revoke the grant and re-run to create its replacement. Dry-run reports this as `drifted`.
 
 {% hint style="warning" %}
 Two different secrets, two different owners. The **seed** in `.env` _is_ the organization — whoever holds it can do anything, including mint more tokens. The **token** in `secrets.env` is what you hand to a vendor or a cron job: scoped, expiring, revocable. Keep them apart.
@@ -152,23 +152,32 @@ npx @learncard/cli inbox list --as example-north
 
 The credential is signed with `did:web:…:users:example-north` — the district, not the parent. `whoami` lists every profile you can `--as`, and `LEARNCARD_AS=example-north` does the same for a whole shell session without persisting anything. Passing `--profile-id example-north` instead is an error: the folder's identity doesn't change.
 
-In your own code it is one option on `initLearnCard`:
+When creating a new runnable script, `send --as` saves `MANAGED_DID` in `.env` and binds the script to that managed issuer and network. The script rejects a missing or changed `MANAGED_DID`. Existing scripts are not overwritten; the CLI warns that they may use a different issuer.
+
+In your own code it is one option on `initLearnCard`. Export `NETWORK_URL` from your staging project's `.env` along with the seed; without it this snippet defaults to production:
 
 <!-- snippet: cli/org/send-as-managed.mjs -->
 
 ```javascript
 import { initLearnCard } from '@learncard/init';
 
-const { SECURE_SEED, MANAGED_DID, RECIPIENT } = process.env;
+const { SECURE_SEED, MANAGED_DID, RECIPIENT, NETWORK_URL } = process.env;
 if (!SECURE_SEED || !MANAGED_DID || !RECIPIENT) {
     throw new Error('Set SECURE_SEED, MANAGED_DID (did:web:…:users:<profileId>), and RECIPIENT');
 }
 
 // The parent org's seed, bound to a managed profile's did:web. The network
 // accepts it because the managed profile's DID document lists the manager's key.
-const district = await initLearnCard({ seed: SECURE_SEED, network: true, didWeb: MANAGED_DID });
+const district = await initLearnCard({
+    seed: SECURE_SEED,
+    network: true,
+    // Keep the default explicit so the docs test harness can substitute its local network.
+    ...(NETWORK_URL != null ? { network: NETWORK_URL } : {}),
+    didWeb: MANAGED_DID,
+});
 
 const me = await district.invoke.getProfile();
+if (!me) throw new Error('Managed profile not found. Check MANAGED_DID and NETWORK_URL.');
 console.log(`Sending as ${me.displayName} (${me.profileId})`);
 
 // Sign with the district's own key, then send. (Registering a hosted signing authority

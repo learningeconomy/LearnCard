@@ -22,6 +22,37 @@ const validSpec = {
 };
 
 describe('OrgSpecValidator', () => {
+    it.each([
+        ['read-only', 'READ_ONLY'],
+        ['issuer', 'issuer'],
+        ['Issuer', 'issuer'],
+    ])('rejects duplicate normalized secrets keys: %s / %s', (first, second) => {
+        const result = OrgSpecValidator.safeParse({
+            ...validSpec,
+            serviceAccounts: [first, second].map(name => ({ name, scopes: ['inbox:read'] })),
+        });
+        expect(result.success).toBe(false);
+        if (!result.success)
+            expect(result.error.issues).toContainEqual(
+                expect.objectContaining({
+                    path: ['serviceAccounts', 1, 'name'],
+                    message: expect.stringContaining('Duplicate service-account secrets key'),
+                })
+            );
+    });
+
+    it('accepts distinct normalized secrets keys', () => {
+        expect(
+            OrgSpecValidator.safeParse({
+                ...validSpec,
+                serviceAccounts: ['read-only', 'write-only'].map(name => ({
+                    name,
+                    scopes: ['inbox:read'],
+                })),
+            }).success
+        ).toBe(true);
+    });
+
     it('accepts a fully-populated spec', () => {
         const result = OrgSpecValidator.safeParse(validSpec);
         expect(result.success).toBe(true);

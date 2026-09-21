@@ -3,6 +3,7 @@ import type { CredentialRefreshVersionMetadata } from '@learncard/types';
 
 import { connect, loadProject, resolveServices, type ProjectOptions } from './project';
 import { out } from './out';
+import { parseLimit } from './inbox';
 
 export type RefreshHistoryOptions = ProjectOptions & { limit?: string };
 
@@ -27,18 +28,17 @@ export const runRefreshHistory = async (
     refreshId: string,
     options: RefreshHistoryOptions
 ): Promise<void> => {
+    const limit = options.limit === undefined ? undefined : parseLimit(options.limit);
     const project = await loadProject(process.cwd());
     const services = resolveServices(project.env, options.network);
     const learnCard = await connect(project, options);
-
-    const limit = options.limit ? Number(options.limit) : undefined;
 
     let records: CredentialRefreshVersionMetadata[];
     let hasMore: boolean;
     try {
         const result = await learnCard.invoke.getCredentialRefreshHistory({
             refreshId,
-            ...(limit ? { limit } : {}),
+            ...(limit !== undefined ? { limit } : {}),
         });
         records = result.records;
         hasMore = result.hasMore;

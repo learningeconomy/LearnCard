@@ -197,17 +197,15 @@ export const prepareFixture = (fixture: LibraryFixture, options: PrepareOptions)
     } else {
         // A fixture's hard-coded expiry goes stale; keep provisional records valid
         // relative to when they are prepared so verification does not fail on age.
-        const from = new Date((credential.validFrom ?? credential.issuanceDate) as string);
-        if (typeof credential.validUntil === 'string' && new Date(credential.validUntil) <= from) {
-            credential.validUntil = new Date(from.getTime() + FIXTURE_VALIDITY_MS).toISOString();
-        }
-        if (
-            typeof credential.expirationDate === 'string' &&
-            new Date(credential.expirationDate) <= from
-        ) {
-            credential.expirationDate = new Date(
-                from.getTime() + FIXTURE_VALIDITY_MS
-            ).toISOString();
+        const from = new Date(
+            (credential.validFrom ?? credential.issuanceDate) as string
+        ).getTime();
+        const baseline = Math.max(from, Date.now());
+        for (const field of ['validUntil', 'expirationDate']) {
+            const expiry = credential[field];
+            if (typeof expiry === 'string' && new Date(expiry).getTime() <= baseline) {
+                credential[field] = new Date(baseline + FIXTURE_VALIDITY_MS).toISOString();
+            }
         }
     }
 

@@ -1,10 +1,12 @@
 import fs from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import type { LCALearnCard } from '@learncard/lca-api-plugin';
-import { ensureGitignored, saveProject, type Project } from '../project';
+import { ensureGitignored, parseEnv, upsertEnv, saveProject, type Project } from '../project';
 import { setupSigning } from '../setup-signing';
 import { out } from '../out';
-import type { OrgBranding, OrgSpec } from './schema';
+import { toEnvKey, type OrgBranding, type OrgSpec } from './schema';
+export { toEnvKey } from './schema';
 
 export type OrgResource =
     | 'issuer'
@@ -15,7 +17,8 @@ export type OrgResource =
     | 'serviceAccount'
     | 'webhook';
 
-export type OrgChangeAction = 'created' | 'updated' | 'unchanged' | 'would-create' | 'would-update';
+export type OrgChangeAction =
+    'created' | 'updated' | 'unchanged' | 'would-create' | 'would-update' | 'drifted';
 
 export interface OrgChange {
     resource: OrgResource;
@@ -84,16 +87,55 @@ const resolveIssuerDid = (learnCard: OrgLearnCard): string => {
     }
 };
 
-/** `ea-clr-issuer` -> `EA_CLR_ISSUER`, so the file can be sourced by a shell as well as parsed by dotenv. */
-export const toEnvKey = (name: string): string => name.replace(/-/g, '_').toUpperCase();
+const inspectSecrets = async (secretsOut: string) => {
+    const info = await fs.lstat(secretsOut).catch((error: NodeJS.ErrnoException) => {
+        if (error.code === 'ENOENT') return undefined;
+        throw error;
+    });
+    if (info && !info.isFile())
+        throw new Error('Secrets output must be a regular file, not a symlink.');
+    return info;
+};
 
-/** Append a `NAME=token` line, creating the file with owner-only permissions if needed. */
+const hasSecret = async (secretsOut: string, name: string): Promise<boolean> => {
+    if (!(await inspectSecrets(secretsOut))) return false;
+    const env = parseEnv(await fs.readFile(secretsOut, 'utf8'));
+    return !!env[toEnvKey(name)]?.trim();
+};
+
+/** Replace a token entry without duplicate keys, securing existing files before writing. */
 const writeSecret = async (secretsOut: string, name: string, token: string): Promise<void> => {
     await fs.mkdir(path.dirname(secretsOut), { recursive: true });
-    await fs.appendFile(secretsOut, `${toEnvKey(name)}=${token}\n`, { mode: 0o600 });
-    await fs.chmod(secretsOut, 0o600);
+    const info = await inspectSecrets(secretsOut);
+    if (info) await fs.chmod(secretsOut, 0o600);
+    const existing = info ? await fs.readFile(secretsOut, 'utf8') : '';
+    const key = toEnvKey(name);
+    const retained = existing
+        .split('\n')
+        .filter(line => line.match(/^\s*(?:export\s+)?([\w]+)\s*=/)?.[1] !== key)
+        .join('\n');
+    const next = upsertEnv(retained, { [key]: token });
+    // Like saveProject, stage the replacement so a failed write cannot destroy other tokens.
+    const temporary = `${secretsOut}.${randomUUID()}.tmp`;
+    const handle = await fs.open(temporary, 'wx', 0o600);
+    try {
+        try {
+            await handle.writeFile(next, 'utf8');
+        } finally {
+            await handle.close();
+        }
+        await inspectSecrets(secretsOut);
+        await fs.rename(temporary, secretsOut);
+    } finally {
+        await fs.rm(temporary, { force: true });
+    }
     await ensureGitignored(path.dirname(secretsOut), path.basename(secretsOut));
 };
+
+const normalizeScope = (scope: string | undefined): string =>
+    (scope ?? '').split(/\s+/).filter(Boolean).sort().join(' ');
+const expiryInstant = (value: string | null | undefined): number | undefined =>
+    value == null ? undefined : Date.parse(value);
 
 type BrandingUpdate = Partial<OrgBranding> & { display?: Record<string, unknown> };
 
@@ -419,12 +461,48 @@ const applyServiceAccounts = async (
     for (const account of spec.serviceAccounts) {
         const existing = grants.find(g => g.name === account.name && g.status === 'active');
         if (existing) {
+            if (!existing.id)
+                throw new Error(
+                    `Service account "${account.name}" returned a grant without an ID; cannot safely reconcile it.`
+                );
             serviceAccounts.push({
                 name: account.name,
-                grantId: existing.id ?? '',
+                grantId: existing.id,
                 created: false,
             });
-            changes.push({ resource: 'serviceAccount', name: account.name, action: 'unchanged' });
+            const drift = [
+                normalizeScope(existing.scope) !== normalizeScope(account.scopes.join(' ')) &&
+                    'scope',
+                expiryInstant(existing.expiresAt) !== expiryInstant(account.expiresAt) &&
+                    'expiresAt',
+            ].filter(Boolean);
+            if (drift.length) {
+                const detail = `Service account "${account.name}" grant has drifted (${drift.join(', ')}). Run npx @learncard/cli token --revoke ${existing.id} then re-run org apply.`;
+                if (!dryRun) throw new Error(detail);
+                changes.push({
+                    resource: 'serviceAccount',
+                    name: account.name,
+                    action: 'drifted',
+                    detail,
+                });
+            } else if (secretsOut && !(await hasSecret(secretsOut, account.name))) {
+                if (!dryRun) {
+                    const token = await learnCard.invoke.getAPITokenForAuthGrant(existing.id);
+                    await writeSecret(secretsOut, account.name, token);
+                }
+                changes.push({
+                    resource: 'serviceAccount',
+                    name: account.name,
+                    action: dryRun ? 'would-update' : 'updated',
+                    detail: dryRun ? 'token would be re-issued' : 'token re-issued',
+                });
+            } else {
+                changes.push({
+                    resource: 'serviceAccount',
+                    name: account.name,
+                    action: 'unchanged',
+                });
+            }
             continue;
         }
         if (dryRun) {
@@ -437,7 +515,7 @@ const applyServiceAccounts = async (
         }
         if (!secretsOut)
             throw new Error(
-                `Pass --secrets-out ./secrets.env (any path; keep it beside .env and out of git) to create service account "${account.name}" — its token can only be retrieved once.`
+                `Pass --secrets-out ./secrets.env (any path; keep it beside .env and out of git) to create service account "${account.name}" — the token is written to this file and not stored elsewhere by the CLI.`
             );
         const grantId = await learnCard.invoke.addAuthGrant({
             name: account.name,

@@ -122,6 +122,27 @@ export const personalizeSendFromTemplateMjs = (deliveryOptions?: SendDeliveryOpt
         deliveryOptions
     );
 
+/** Bind a generated script to its managed issuer, never the parent seed identity. */
+export const withManagedIssuer = (content: string, managedDid: string): string =>
+    content
+        .replace(
+            'const learnCard = await initLearnCard(',
+            `if (process.env.MANAGED_DID !== ${JSON.stringify(managedDid)}) {
+    throw new Error('MANAGED_DID is missing or changed. Re-run the CLI with --as to send as the intended profile.');
+}
+const learnCard = await initLearnCard(`
+        )
+        .replace(
+            'seed: process.env.SECURE_SEED,',
+            'seed: process.env.SECURE_SEED, didWeb: process.env.MANAGED_DID,'
+        )
+        .replace(
+            /if \(!\(await learnCard\.invoke\.getProfile\(\)\)\) \{[\s\S]*?\n\}/,
+            `if (!(await learnCard.invoke.getProfile())) {
+    throw new Error('The managed issuer profile could not be found.');
+}`
+        );
+
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE = /^\+?\d{10,15}$/;
 const DID = /^did:[a-z0-9]+:.+$/;
@@ -142,7 +163,8 @@ export const classifyRecipient = (value: string): RecipientKind => {
 /** Domains reserved for documentation (RFC 2606 / RFC 6761). Mail to them goes nowhere. */
 const PLACEHOLDER_DOMAIN = /(^|\.)example\.(com|net|org)$|(^|\.)(example|test|invalid|localhost)$/i;
 
-export const RECIPIENT_PROMPT = 'Where should we send your first badge? (email, phone number, profile ID, or DID)';
+export const RECIPIENT_PROMPT =
+    'Where should we send your first badge? (email, phone number, profile ID, or DID)';
 
 export const isPlaceholderRecipient = (recipient: string): boolean => {
     const at = recipient.lastIndexOf('@');
@@ -158,7 +180,12 @@ export const invalidRecipientReason = (recipient: string): string | undefined =>
     if (!recipient) return 'Enter an email, phone number, profile ID, or DID.';
     if (EMAIL.test(recipient) && isPlaceholderRecipient(recipient))
         return `"${recipient}" is a placeholder address — nobody will receive the badge. Use a real email you can open.`;
-    if (!EMAIL.test(recipient) && !PHONE.test(recipient) && !DID.test(recipient) && !PROFILE_ID.test(recipient))
+    if (
+        !EMAIL.test(recipient) &&
+        !PHONE.test(recipient) &&
+        !DID.test(recipient) &&
+        !PROFILE_ID.test(recipient)
+    )
         return `"${recipient}" is not an email, phone number, profile ID, or DID.`;
     return undefined;
 };
@@ -299,25 +326,32 @@ export const runSend = async (
             `Delivered. ${resolvedRecipient} already uses LearnCard — the credential is in their wallet.`
         );
     } else {
-        out.log(`Delivered directly to ${resolvedRecipient} — it is waiting in their LearnCard wallet.`);
+        out.log(
+            `Delivered directly to ${resolvedRecipient} — it is waiting in their LearnCard wallet.`
+        );
     }
     out.log(`Reusable template for this badge: ${result.uri}`);
     const filename = useTemplate ? 'send-from-template.mjs' : 'send.mjs';
     const sendPath = path.join(cwd, filename);
     let wroteSendFile = false;
     if (!(await fs.stat(sendPath).catch(() => null))) {
-        await fs.writeFile(
-            sendPath,
-            localizeSnippet(
-                useTemplate
-                    ? personalizeSendFromTemplateMjs(effectiveSendOptions.options)
-                    : personalizeSendMjs(identity.displayName, badge, effectiveSendOptions.options),
-                resolveServices(project.env, options.network)
-            )
-        );
+        let content = useTemplate
+            ? personalizeSendFromTemplateMjs(effectiveSendOptions.options)
+            : personalizeSendMjs(identity.displayName, badge, effectiveSendOptions.options);
+        content = localizeSnippet(content, resolveServices(project.env, options.network));
+        if (asManaged) {
+            const managedDid = learnCard.id.did();
+            await saveProject(project, { MANAGED_DID: managedDid });
+            content = withManagedIssuer(content, managedDid);
+        }
+        await fs.writeFile(sendPath, content);
         wroteSendFile = true;
         out.log(
             `\nThe code that just ran is in ./${filename} — run it yourself:\n  npm install @learncard/init\n  node --env-file=.env ${filename} ${resolvedRecipient}`
+        );
+    } else if (asManaged) {
+        out.log(
+            `Existing ./${filename} was not changed and may use a different issuer. Repeat this send with the CLI --as ${options.as} instead.`
         );
     }
     out.log(`Check whether it was claimed: npx @learncard/cli status ${result.activityId}`);

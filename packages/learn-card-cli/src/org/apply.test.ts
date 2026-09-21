@@ -75,6 +75,278 @@ const withTmpProject = async (
     }
 };
 
+const accountSpec: OrgSpec = { issuer: spec.issuer, serviceAccounts: spec.serviceAccounts };
+const matchingGrant = {
+    id: 'grant-1',
+    name: 'ea-clr-issuer',
+    status: 'active',
+    scope: 'inbox:write inbox:read credentials:write credentials:read',
+    expiresAt: '2027-06-30T00:00:00.000Z',
+};
+
+const makeExistingCard = () => {
+    const card = makeMockCard();
+    card.invoke.getProfile.mockResolvedValue(spec.issuer);
+    card.invoke.getRegisteredSigningAuthorities.mockResolvedValue([
+        {
+            signingAuthority: { endpoint: authorityRecord.endpoint },
+            relationship: { name: 'scde-clr', did: authorityRecord.did, isPrimary: true },
+        },
+    ]);
+    card.invoke.getAuthGrants.mockResolvedValue([matchingGrant]);
+    return card;
+};
+
+describe('service-account reconciliation', () => {
+    it('rejects a malformed grant without an ID before attempting recovery', async () => {
+        await withTmpProject(async project => {
+            const card = makeExistingCard();
+            card.invoke.getAuthGrants.mockResolvedValue([{ ...matchingGrant, id: undefined }]);
+            await expect(
+                applyOrg(accountSpec, card, project, {
+                    secretsOut: path.join(path.dirname(project.envPath), 'secrets.env'),
+                })
+            ).rejects.toThrow('grant without an ID');
+            expect(card.invoke.getAPITokenForAuthGrant).not.toHaveBeenCalled();
+        });
+    });
+
+    it.each([
+        { scope: 'inbox:read' },
+        { expiresAt: '2028-06-30T00:00:00.000Z' },
+        { expiresAt: undefined },
+    ])('rejects drift without minting or persisting tokens: %j', async drift => {
+        await withTmpProject(async project => {
+            const card = makeExistingCard();
+            card.invoke.getAuthGrants.mockResolvedValue([{ ...matchingGrant, ...drift }]);
+            const secretsOut = path.join(path.dirname(project.envPath), 'secrets.env');
+            await expect(applyOrg(accountSpec, card, project, { secretsOut })).rejects.toThrow(
+                'grant has drifted'
+            );
+            await expect(applyOrg(accountSpec, card, project)).rejects.toThrow(
+                'npx @learncard/cli token --revoke grant-1 then re-run org apply'
+            );
+            expect(card.invoke.addAuthGrant).not.toHaveBeenCalled();
+            expect(card.invoke.getAPITokenForAuthGrant).not.toHaveBeenCalled();
+            await expect(fs.stat(secretsOut)).rejects.toMatchObject({ code: 'ENOENT' });
+        });
+    });
+
+    it.each([{ scope: 'inbox:read' }, { expiresAt: undefined }])(
+        'reports drift in dry-run without writes: %j',
+        async drift => {
+            await withTmpProject(async project => {
+                const card = makeExistingCard();
+                card.invoke.getAuthGrants.mockResolvedValue([{ ...matchingGrant, ...drift }]);
+                const result = await applyOrg(accountSpec, card, project, {
+                    dryRun: true,
+                    secretsOut: path.join(path.dirname(project.envPath), 'secrets.env'),
+                });
+                expect(result.changes).toContainEqual(
+                    expect.objectContaining({
+                        resource: 'serviceAccount',
+                        action: 'drifted',
+                        detail: expect.stringContaining('token --revoke grant-1'),
+                    })
+                );
+                expect(card.invoke.getAPITokenForAuthGrant).not.toHaveBeenCalled();
+                expect(card.invoke.addAuthGrant).not.toHaveBeenCalled();
+                expect(await fs.readdir(path.dirname(project.envPath))).toEqual([]);
+            });
+        }
+    );
+
+    it('compares normalized scopes and equivalent expiry instants', async () => {
+        await withTmpProject(async project => {
+            const card = makeExistingCard();
+            card.invoke.getAuthGrants.mockResolvedValue([
+                {
+                    ...matchingGrant,
+                    scope: '  credentials:read\tcredentials:write\n inbox:read  inbox:write ',
+                    expiresAt: '2027-06-29T20:00:00-04:00',
+                },
+            ]);
+            const result = await applyOrg(accountSpec, card, project);
+            expect(result.changes.every(change => change.action === 'unchanged')).toBe(true);
+        });
+    });
+
+    it.each([undefined, null])('treats absent expiry as no expiry: %j', async expiresAt => {
+        await withTmpProject(async project => {
+            const card = makeExistingCard();
+            card.invoke.getAuthGrants.mockResolvedValue([{ ...matchingGrant, expiresAt }]);
+            const withoutExpiry = {
+                ...accountSpec,
+                serviceAccounts: [
+                    {
+                        name: matchingGrant.name,
+                        scopes: matchingGrant.scope.split(' '),
+                    },
+                ],
+            };
+            const result = await applyOrg(withoutExpiry, card, project);
+            expect(result.changes.every(change => change.action === 'unchanged')).toBe(true);
+            await expect(applyOrg(withoutExpiry, makeExistingCard(), project)).rejects.toThrow(
+                'expiresAt'
+            );
+        });
+    });
+
+    it.each(['', 'OTHER=keep\n', 'OTHER=keep\nEA_CLR_ISSUER=\n'])(
+        're-issues a missing or empty token (contents: %j)',
+        async contents => {
+            await withTmpProject(async project => {
+                const card = makeExistingCard();
+                const secretsOut = path.join(path.dirname(project.envPath), 'secrets.env');
+                if (contents) await fs.writeFile(secretsOut, contents);
+                const result = await applyOrg(accountSpec, card, project, { secretsOut });
+                expect(card.invoke.getAPITokenForAuthGrant).toHaveBeenCalledWith('grant-1');
+                expect(card.invoke.addAuthGrant).not.toHaveBeenCalled();
+                expect(result.changes).toContainEqual({
+                    resource: 'serviceAccount',
+                    name: matchingGrant.name,
+                    action: 'updated',
+                    detail: 'token re-issued',
+                });
+                expect(result.outputs.serviceAccounts).toEqual([
+                    { name: matchingGrant.name, grantId: 'grant-1', created: false },
+                ]);
+                expect(await fs.readFile(secretsOut, 'utf8')).toBe(
+                    `${contents ? 'OTHER=keep\n' : ''}EA_CLR_ISSUER=jwt-token-abc\n`
+                );
+                expect((await fs.stat(secretsOut)).mode & 0o777).toBe(0o600);
+                card.invoke.getAPITokenForAuthGrant.mockClear();
+                const second = await applyOrg(accountSpec, card, project, { secretsOut });
+                expect(second.changes.every(change => change.action === 'unchanged')).toBe(true);
+                expect(card.invoke.getAPITokenForAuthGrant).not.toHaveBeenCalled();
+            });
+        }
+    );
+
+    it('only previews missing-token recovery during dry-run', async () => {
+        await withTmpProject(async project => {
+            const card = makeExistingCard();
+            const result = await applyOrg(accountSpec, card, project, {
+                secretsOut: path.join(path.dirname(project.envPath), 'secrets.env'),
+                dryRun: true,
+            });
+            expect(result.changes).toContainEqual(
+                expect.objectContaining({
+                    resource: 'serviceAccount',
+                    action: 'would-update',
+                    detail: 'token would be re-issued',
+                })
+            );
+            expect(card.invoke.getAPITokenForAuthGrant).not.toHaveBeenCalled();
+            expect(await fs.readdir(path.dirname(project.envPath))).toEqual([]);
+        });
+    });
+
+    it('tightens permissions before opening, replaces duplicate keys, and preserves other lines', async () => {
+        await withTmpProject(async project => {
+            const card = makeExistingCard();
+            card.invoke.getAuthGrants.mockResolvedValue([]);
+            const secretsOut = path.join(path.dirname(project.envPath), 'secrets.env');
+            await fs.writeFile(
+                secretsOut,
+                '# keep\nOTHER=keep\nEA_CLR_ISSUER=old\nexport EA_CLR_ISSUER=older\n'
+            );
+            await fs.chmod(secretsOut, 0o644);
+            const open = fs.open.bind(fs);
+            const spy = vi.spyOn(fs, 'open').mockImplementation(async (file, flags, mode) => {
+                if (String(file).startsWith(`${secretsOut}.`)) {
+                    expect((await fs.stat(secretsOut)).mode & 0o777).toBe(0o600);
+                    expect(flags).toBe('wx');
+                    expect(mode).toBe(0o600);
+                }
+                return open(file, flags, mode);
+            });
+            try {
+                await applyOrg(accountSpec, card, project, { secretsOut });
+                expect(await fs.readFile(secretsOut, 'utf8')).toBe(
+                    '# keep\nOTHER=keep\nEA_CLR_ISSUER=jwt-token-abc\n'
+                );
+            } finally {
+                spy.mockRestore();
+            }
+        });
+    });
+
+    it.each(['symlink', 'directory', 'dangling symlink'])(
+        'rejects a %s secrets path without touching its target',
+        async kind => {
+            await withTmpProject(async project => {
+                const card = makeExistingCard();
+                const dir = path.dirname(project.envPath);
+                const secretsOut = path.join(dir, 'secrets.env');
+                const target = path.join(dir, 'target.env');
+                if (kind === 'directory') await fs.mkdir(secretsOut);
+                else {
+                    if (kind === 'symlink')
+                        await fs.writeFile(target, 'DO_NOT_TOUCH=secret\n', { mode: 0o644 });
+                    await fs.symlink(target, secretsOut);
+                }
+                await expect(applyOrg(accountSpec, card, project, { secretsOut })).rejects.toThrow(
+                    'regular file'
+                );
+                expect(card.invoke.getAPITokenForAuthGrant).not.toHaveBeenCalled();
+                card.invoke.getAuthGrants.mockResolvedValue([]);
+                await expect(applyOrg(accountSpec, card, project, { secretsOut })).rejects.toThrow(
+                    'regular file'
+                );
+                if (kind === 'symlink') {
+                    expect(await fs.readFile(target, 'utf8')).toBe('DO_NOT_TOUCH=secret\n');
+                    expect((await fs.stat(target)).mode & 0o777).toBe(0o644);
+                }
+            });
+        }
+    );
+
+    it('closes a failed write and recovers on the next run without creating another grant', async () => {
+        await withTmpProject(async project => {
+            const card = makeExistingCard();
+            card.invoke.getAuthGrants.mockResolvedValueOnce([]);
+            const secretsOut = path.join(path.dirname(project.envPath), 'secrets.env');
+            await fs.writeFile(secretsOut, 'OTHER=keep\n');
+            const originalOpen = fs.open.bind(fs);
+            const close = vi.fn();
+            const open = vi.spyOn(fs, 'open').mockImplementationOnce(async (file, flags, mode) => {
+                const handle = await originalOpen(file, flags, mode);
+                const originalWrite = handle.writeFile.bind(handle);
+                vi.spyOn(handle, 'writeFile').mockImplementationOnce(async () => {
+                    await originalWrite('EA_CLR_ISSUER=partial', 'utf8');
+                    throw new Error('disk full');
+                });
+                const originalClose = handle.close.bind(handle);
+                vi.spyOn(handle, 'close').mockImplementation(async () => {
+                    close();
+                    await originalClose();
+                });
+                return handle;
+            });
+            try {
+                await expect(applyOrg(accountSpec, card, project, { secretsOut })).rejects.toThrow(
+                    'disk full'
+                );
+                expect(close).toHaveBeenCalledOnce();
+                expect(await fs.readFile(secretsOut, 'utf8')).toBe('OTHER=keep\n');
+                expect(await fs.readdir(path.dirname(secretsOut))).toEqual(['secrets.env']);
+            } finally {
+                open.mockRestore();
+            }
+            const result = await applyOrg(accountSpec, card, project, { secretsOut });
+            expect(card.invoke.addAuthGrant).toHaveBeenCalledOnce();
+            expect(card.invoke.getAPITokenForAuthGrant).toHaveBeenCalledTimes(2);
+            expect(result.changes).toContainEqual(
+                expect.objectContaining({ action: 'updated', detail: 'token re-issued' })
+            );
+            expect(await fs.readFile(secretsOut, 'utf8')).toBe(
+                'OTHER=keep\nEA_CLR_ISSUER=jwt-token-abc\n'
+            );
+        });
+    });
+});
+
 describe('applyOrg', () => {
     it('creates every resource on a fresh project and writes the service-account token', async () => {
         await withTmpProject(async project => {
@@ -167,7 +439,13 @@ describe('applyOrg', () => {
                 ],
             });
             card.invoke.getAuthGrants.mockResolvedValue([
-                { id: 'grant-1', name: 'ea-clr-issuer', status: 'active', scope: 'inbox:write' },
+                {
+                    id: 'grant-1',
+                    name: 'ea-clr-issuer',
+                    status: 'active',
+                    scope: spec.serviceAccounts![0]!.scopes.join(' '),
+                    expiresAt: '2027-06-30T00:00:00.000Z',
+                },
             ]);
             project.env.ORG_PROFILE_MANAGER_DID = managerDid;
             project.env.WEBHOOK_URL = 'https://clr.example.org/learncard/webhook';

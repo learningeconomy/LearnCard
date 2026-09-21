@@ -124,6 +124,54 @@ describe('signingServiceCheck', () => {
 });
 
 describe('tokenScopesCheck', () => {
+    it('warns when a token has no grant metadata, even if a scopeless grant exists', async () => {
+        const result = await tokenScopesCheck.run(
+            createContext({
+                project: { env: { API_TOKEN: 'secret' }, envPath: '/x', existing: '' },
+                learnCard: createLearnCard({
+                    getAuthGrants: vi.fn().mockResolvedValue([{ id: 'g1', status: 'active' }]),
+                }),
+            })
+        );
+        expect(result.status).toBe('warn');
+        expect(result.fix).toContain('API_TOKEN_GRANT_ID');
+    });
+
+    it('does not count expired covering grants when no token is configured', async () => {
+        const result = await tokenScopesCheck.run(
+            createContext({
+                learnCard: createLearnCard({
+                    getAuthGrants: vi.fn().mockResolvedValue([
+                        {
+                            id: 'g1',
+                            status: 'active',
+                            scope: '*:*',
+                            expiresAt: '2000-01-01T00:00:00.000Z',
+                        },
+                    ]),
+                }),
+            })
+        );
+        expect(result.status).toBe('warn');
+    });
+
+    it('matches a token by grant ID without scope metadata', async () => {
+        const result = await tokenScopesCheck.run(
+            createContext({
+                project: {
+                    env: { API_TOKEN: 'secret', API_TOKEN_GRANT_ID: 'g1' },
+                    envPath: '/x',
+                    existing: '',
+                },
+                learnCard: createLearnCard({
+                    getAuthGrants: vi
+                        .fn()
+                        .mockResolvedValue([{ id: 'g1', status: 'active', scope: '*:*' }]),
+                }),
+            })
+        );
+        expect(result.status).toBe('pass');
+    });
     it('passes when the active grant covers every required scope', async () => {
         const scope = DEFAULT_REQUIRED_SCOPES.join(' ');
         const ctx = createContext({

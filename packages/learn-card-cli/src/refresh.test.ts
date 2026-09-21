@@ -1,5 +1,48 @@
-import { describe, expect, it } from 'vitest';
-import { formatRefreshVersion, mapRefreshHistoryError } from './refresh';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { formatRefreshVersion, mapRefreshHistoryError, runRefreshHistory } from './refresh';
+import { connect, loadProject } from './project';
+
+const { getCredentialRefreshHistory } = vi.hoisted(() => ({
+    getCredentialRefreshHistory: vi.fn(),
+}));
+vi.mock('./project', () => ({
+    loadProject: vi.fn().mockResolvedValue({ env: {} }),
+    resolveServices: vi.fn().mockReturnValue({ network: 'https://network.learncard.com/trpc' }),
+    connect: vi.fn().mockResolvedValue({ invoke: { getCredentialRefreshHistory } }),
+}));
+vi.mock('./out', () => ({ out: { log: vi.fn(), set: vi.fn() } }));
+
+describe('refresh history limit', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        getCredentialRefreshHistory.mockResolvedValue({ records: [], hasMore: false });
+    });
+
+    it.each(['abc', '0', '-1', '1.5', '', 'NaN', 'Infinity'])(
+        'rejects %j before connecting',
+        async limit => {
+            await expect(runRefreshHistory('refresh-1', { limit })).rejects.toThrow(
+                'Invalid --limit'
+            );
+            expect(loadProject).not.toHaveBeenCalled();
+            expect(connect).not.toHaveBeenCalled();
+            expect(getCredentialRefreshHistory).not.toHaveBeenCalled();
+        }
+    );
+
+    it.each(['1', '10'])('passes a validated limit of %s', async limit => {
+        await runRefreshHistory('refresh-1', { limit });
+        expect(getCredentialRefreshHistory).toHaveBeenCalledWith({
+            refreshId: 'refresh-1',
+            limit: Number(limit),
+        });
+    });
+
+    it('leaves the server default unchanged when omitted', async () => {
+        await runRefreshHistory('refresh-1', {});
+        expect(getCredentialRefreshHistory).toHaveBeenCalledWith({ refreshId: 'refresh-1' });
+    });
+});
 
 describe('formatRefreshVersion', () => {
     it('formats version, publishedAt, and summary', () => {

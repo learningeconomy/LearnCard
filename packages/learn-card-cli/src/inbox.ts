@@ -22,8 +22,7 @@ export interface InboxRecipient {
 /**
  * The network's current inbox listing carries no recipient contact info per record
  * (only the send-time response does). `recipient` is modeled as optional so this type
- * stays compatible with today's API while allowing `--recipient-type` to work the day
- * the server starts returning it.
+ * stays compatible with today's API.
  */
 export type SentInboxRecord = InboxCredentialType & { recipient?: InboxRecipient };
 
@@ -85,15 +84,6 @@ export const filterSince = <T extends { createdAt: string }>(records: T[], since
     return records.filter(record => new Date(record.createdAt).getTime() >= cutoff);
 };
 
-/** Keeps only records addressed to a contact method of this type; a no-op without a filter. */
-export const filterRecipientType = (
-    records: SentInboxRecord[],
-    recipientType?: string
-): SentInboxRecord[] => {
-    if (!recipientType) return records;
-    return records.filter(record => record.recipient?.type === recipientType);
-};
-
 export interface FetchSentInboxOptions {
     limit: number;
     currentStatus?: InboxStatus;
@@ -115,7 +105,7 @@ export const fetchSentInboxCredentials = async (
 
     while (serverHasMore && records.length < options.limit) {
         const query: Partial<PaginationOptionsType> & { query?: InboxCredentialQuery } = {
-            limit: options.limit,
+            limit: Math.max(1, options.limit - records.length),
             ...(cursor ? { cursor } : {}),
             ...(options.currentStatus ? { query: { currentStatus: options.currentStatus } } : {}),
         };
@@ -125,9 +115,10 @@ export const fetchSentInboxCredentials = async (
         cursor = page.cursor;
     }
 
+    const total = records.length;
     return {
         records: records.slice(0, options.limit),
-        hasMore: serverHasMore || records.length > options.limit,
+        hasMore: serverHasMore || total > options.limit,
     };
 };
 
@@ -159,7 +150,7 @@ export type InboxListOptions = ProjectOptions & {
     as?: string;
     status?: string;
     since?: string;
-    recipientType?: string;
+
     limit?: string;
 };
 
@@ -178,12 +169,10 @@ export const runInboxList = async (options: InboxListOptions): Promise<void> => 
         currentStatus,
     });
 
-    const filtered = filterRecipientType(filterSince(fetched, since), options.recipientType);
+    const filtered = filterSince(fetched, since);
 
     if (!filtered.length) {
-        out.log(
-            'No sent inbox credentials match. Try widening --since or dropping --status/--recipient-type.'
-        );
+        out.log('No sent inbox credentials match. Try widening --since or dropping --status.');
         out.set({ records: [], hasMore });
         return;
     }
@@ -220,7 +209,7 @@ export const registerInboxCommand = (
             '--since <duration|iso>',
             'only sends at/after this: 7d, 24h, 30m, or an ISO timestamp'
         )
-        .option('--recipient-type <type>', 'email, phone, or state_student_id')
+
         .option('--limit <n>', 'how many to list (default: 50)')
         .option('--network <url>', 'network tRPC URL or staging (default: production)')
         .option('--json', 'print a single JSON result on stdout')
