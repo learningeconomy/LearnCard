@@ -1,7 +1,7 @@
 import React from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 const mocks = vi.hoisted(() => ({
     wallet: {
         id: { did: vi.fn(() => 'owner') },
@@ -13,6 +13,8 @@ const mocks = vi.hoisted(() => ({
             resolveShareLink: vi.fn(),
             getShareLinkContent: vi.fn(),
             acknowledgeShareLinkView: vi.fn(),
+            verifyPresentation: vi.fn(),
+            verifyCredential: vi.fn(),
         },
     },
     prepare: vi.fn(),
@@ -22,6 +24,7 @@ const mocks = vi.hoisted(() => ({
     intersect: undefined as undefined | ((entries: { isIntersecting: boolean }[]) => void),
 }));
 vi.mock('learn-card-base', () => ({ useWallet: () => ({ initWallet: async () => mocks.wallet }) }));
+vi.mock('@capacitor/clipboard', () => ({ Clipboard: { write: vi.fn() } }));
 vi.mock('learn-card-base/helpers/walletHelpers', () => ({
     getBespokeLearnCard: async () => mocks.wallet,
 }));
@@ -51,10 +54,9 @@ vi.mock('learn-card-base/helpers/share-links', () => ({
 vi.mock('./shareLinkFlow', async importOriginal => ({
     ...(await importOriginal<object>()),
     prepareShare: (...args: unknown[]) => mocks.prepare(...args),
-    verifySharedPresentation: async () => 'verified',
-    verifyCredentialTree: async () => 'verified',
 }));
 import { enterSharePrivacy } from './sharePrivacy';
+import { Clipboard } from '@capacitor/clipboard';
 import ShareLinkCreate from './ShareLinkCreate';
 import ShareLinkViewer from './ShareLinkViewer';
 const credential = { name: 'Community leadership', issuer: { name: 'Learning Collective' } };
@@ -102,6 +104,17 @@ beforeEach(() => {
         envelope: {},
     });
     mocks.wallet.invoke.acknowledgeShareLinkView.mockResolvedValue({ ok: true });
+    mocks.wallet.invoke.verifyPresentation.mockResolvedValue({
+        checks: ['proof'],
+        warnings: [],
+        errors: [],
+    });
+    mocks.wallet.invoke.verifyCredential.mockResolvedValue({
+        checks: ['proof'],
+        warnings: [],
+        errors: [],
+    });
+    vi.mocked(Clipboard.write).mockResolvedValue(undefined);
     mocks.decrypt.mockResolvedValue({});
     mocks.validate.mockReturnValue({
         ok: true,
@@ -366,5 +379,124 @@ describe('recipient screen', () => {
         await waitFor(() =>
             expect(mocks.wallet.invoke.acknowledgeShareLinkView).toHaveBeenCalledTimes(1)
         );
+    });
+    it('copies the full private link only on a deliberate gesture', async () => {
+        render(<ShareLinkViewer />);
+        await screen.findByText('Community leadership');
+        expect(Clipboard.write).not.toHaveBeenCalled();
+        fireEvent.click(screen.getByRole('button', { name: 'Copy link' }));
+        await waitFor(() =>
+            expect(Clipboard.write).toHaveBeenCalledWith({
+                string: `https://${window.location.host}/s/AAAAAAAAAAAAAAAAAAAAAA#${'A'.repeat(43)}`,
+            })
+        );
+        expect(mocks.wallet.invoke.acknowledgeShareLinkView).not.toHaveBeenCalled();
+    });
+    it('downloads only the signed presentation and excludes private material', async () => {
+        const signed = {
+            ...credential,
+            credentialSubject: { id: 'did:example:owner' },
+            proof: { type: 'Ed25519Signature2020', proofValue: 'selected-signature' },
+        };
+        const endorsement = {
+            name: 'Public endorsement',
+            proof: { type: 'Ed25519Signature2020', proofValue: 'endorsement-signature' },
+        };
+        const holderProof = { type: 'Ed25519Signature2020', proofValue: 'holder-signature' };
+        mocks.validate.mockReturnValueOnce({
+            ok: true,
+            manifest: {
+                presentation: {
+                    verifiableCredential: [signed, endorsement],
+                    proof: holderProof,
+                },
+                selection: [{ credentialIndex: 0 }],
+                endorsements: [{ credentialIndex: 1, targetCredentialIndex: 0 }],
+                ownerEncryptedRecovery: { protected: 'owner-recovery-secret' },
+                ownerSourceRef: 'private:one',
+            },
+        });
+        const createObjectURL = vi.fn((_blob: Blob) => 'blob:mock');
+        const revokeObjectURL = vi.fn();
+        const patched = URL as unknown as {
+            createObjectURL?: unknown;
+            revokeObjectURL?: unknown;
+        };
+        const originalCreate = patched.createObjectURL;
+        const originalRevoke = patched.revokeObjectURL;
+        patched.createObjectURL = createObjectURL;
+        patched.revokeObjectURL = revokeObjectURL;
+        const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+        try {
+            render(<ShareLinkViewer />);
+            await screen.findByText('Community leadership');
+            fireEvent.click(screen.getByRole('button', { name: 'Download JSON' }));
+            expect(createObjectURL).toHaveBeenCalledTimes(1);
+            const blob = createObjectURL.mock.calls[0][0];
+            expect(blob.type).toBe('application/json');
+            const contents = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(String(reader.result));
+                reader.onerror = () => reject(reader.error);
+                reader.readAsText(blob);
+            });
+            expect(JSON.parse(contents)).toEqual({
+                verifiableCredential: [signed, endorsement],
+                proof: holderProof,
+            });
+            expect(contents).not.toContain('ownerEncryptedRecovery');
+            expect(contents).not.toContain('owner-recovery-secret');
+            expect(contents).not.toContain('private:one');
+            expect(contents).not.toContain('A'.repeat(43));
+            await waitFor(() => expect(revokeObjectURL).toHaveBeenCalledWith('blob:mock'));
+            expect(mocks.wallet.invoke.acknowledgeShareLinkView).not.toHaveBeenCalled();
+        } finally {
+            click.mockRestore();
+            patched.createObjectURL = originalCreate;
+            patched.revokeObjectURL = originalRevoke;
+        }
+    });
+    it('keeps at most one pending acknowledgement frame and drops stale callbacks', async () => {
+        const frames: FrameRequestCallback[] = [];
+        const requestFrame = vi.fn((callback: FrameRequestCallback) => {
+            frames.push(callback);
+            return frames.length;
+        });
+        const cancelFrame = vi.fn();
+        vi.stubGlobal('requestAnimationFrame', requestFrame);
+        vi.stubGlobal('cancelAnimationFrame', cancelFrame);
+        const view = render(<ShareLinkViewer />);
+        await screen.findByText('Community leadership');
+        mocks.intersect?.([{ isIntersecting: true }]);
+        mocks.intersect?.([{ isIntersecting: true }]);
+        fireEvent(document, new Event('visibilitychange'));
+        expect(requestFrame).toHaveBeenCalledTimes(1);
+        view.unmount();
+        expect(cancelFrame).toHaveBeenCalled();
+        frames.forEach(callback => callback(0));
+        await Promise.resolve();
+        expect(mocks.wallet.invoke.acknowledgeShareLinkView).not.toHaveBeenCalled();
+    });
+    it('replaces checking badges when the shared verification deadline passes', async () => {
+        vi.useFakeTimers();
+        try {
+            mocks.wallet.invoke.verifyPresentation.mockReturnValue(new Promise(() => {}));
+            mocks.wallet.invoke.verifyCredential.mockReturnValue(new Promise(() => {}));
+            render(<ShareLinkViewer />);
+            // Flush the async load without waitFor, whose polling relies on timers.
+            await act(async () => {
+                for (let tick = 0; tick < 20; tick++) await Promise.resolve();
+            });
+            expect(screen.getByText('Community leadership')).toBeTruthy();
+            expect(screen.getAllByText('Checking signature…').length).toBeGreaterThan(0);
+            await act(async () => {
+                await vi.advanceTimersByTimeAsync(30_001);
+            });
+            expect(screen.queryByText('Checking signature…')).toBeNull();
+            expect(screen.getAllByText('Could not fully verify').length).toBeGreaterThan(0);
+            expect(mocks.wallet.invoke.acknowledgeShareLinkView).not.toHaveBeenCalled();
+        } finally {
+            vi.useRealTimers();
+        }
     });
 });

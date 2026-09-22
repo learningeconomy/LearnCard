@@ -115,14 +115,10 @@ export const expiryToDays = (choice: ExpiryChoice): number | null =>
     choice === 'never' ? null : Number(choice);
 
 /** Absolute timestamp pinned once per prepared attempt; `null` means never. */
-export const resolveExpiryIso = (
-    choice: ExpiryChoice,
-    now: number = Date.now()
-): string | null => {
+export const resolveExpiryIso = (choice: ExpiryChoice, now: number = Date.now()): string | null => {
     const days = expiryToDays(choice);
     return days === null ? null : new Date(now + days * DAY_MS).toISOString();
 };
-
 
 export const readShareAddress = (id: string, hash: string) => {
     const key = hash.startsWith('#') ? hash.slice(1) : '';
@@ -225,16 +221,79 @@ export const prepareShare = async (
     return { input, key, ownerDid, payload };
 };
 
-/** Offline or unresponsive issuers must not leave a permanent checking badge. */
-const boundedVerification = async (
-    verification: Promise<VerificationCheck>
-): Promise<VerificationCheck> => {
+/**
+ * Shared wall-clock budget for the whole recipient verification pass: the holder
+ * presentation plus every selected credential and endorsement. One budget (not a
+ * per-check timeout) bounds total work, so a large-but-structurally-valid
+ * collection cannot multiply a per-check 30s wait across hundreds of members.
+ */
+export const VERIFICATION_TOTAL_BUDGET_MS = 30_000;
+
+export interface VerificationBudget {
+    /** Milliseconds left before the shared deadline; 0 once exhausted. */
+    remaining(): number;
+    /** True once the deadline passed or the pass was cancelled. */
+    expired(): boolean;
+    /** True only after {@link VerificationBudget.cancel}. */
+    cancelled(): boolean;
+    /** Cancel the pass; rejects {@link VerificationBudget.whenCancelled}. */
+    cancel(): void;
+    /** Rejects as soon as the budget is cancelled. */
+    whenCancelled(): Promise<never>;
+}
+
+/**
+ * Create the single budget shared by a verification pass. `now` is injectable so
+ * tests can advance the deadline deterministically without wall-clock waits.
+ */
+export const createVerificationBudget = (
+    totalMs: number = VERIFICATION_TOTAL_BUDGET_MS,
+    now: () => number = () => Date.now()
+): VerificationBudget => {
+    const deadline = now() + totalMs;
+    let cancelled = false;
+    let rejectCancelled: ((error: Error) => void) | undefined;
+    const cancellation = new Promise<never>((_, reject) => {
+        rejectCancelled = reject;
+    });
+    // Never surface an unhandled rejection if a caller stops racing the promise.
+    void cancellation.catch(() => {});
+    return {
+        remaining: () => Math.max(0, deadline - now()),
+        expired: () => cancelled || now() >= deadline,
+        cancelled: () => cancelled,
+        cancel: () => {
+            if (cancelled) return;
+            cancelled = true;
+            rejectCancelled?.(new Error('verification cancelled'));
+        },
+        whenCancelled: () => cancellation,
+    };
+};
+
+/**
+ * Bound a single wallet check by the shared budget. The injected wallet verify
+ * API has no abort signal, so the in-flight promise itself cannot be stopped;
+ * callers must ignore its late result. What is guaranteed here is that no check
+ * is scheduled once the budget is spent or cancelled, and a timed-out check
+ * resolves to `unavailable`, never to `verified`.
+ */
+const boundedVerification = async <T>(
+    verification: Promise<T>,
+    budget: VerificationBudget
+): Promise<T> => {
+    if (budget.expired()) throw new Error('verification budget exhausted');
+    const remaining = budget.remaining();
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
         return await Promise.race([
             verification,
+            budget.whenCancelled(),
             new Promise<never>((_, reject) => {
-                timer = setTimeout(() => reject(new Error('verification unavailable')), 30_000);
+                timer = setTimeout(
+                    () => reject(new Error('verification budget exhausted')),
+                    remaining
+                );
             }),
         ]);
     } finally {
@@ -249,45 +308,87 @@ export const proofState = (result: VerificationCheck): ProofState =>
           ? 'unavailable'
           : 'verified';
 
-/** Verify nested CLR members independently, without fetching unsigned display references. */
+interface CredentialTreeContext {
+    readonly states: ProofState[];
+    /** A check was skipped, cancelled or timed out, so the tree is not fully verified. */
+    incomplete: boolean;
+}
+
+/**
+ * Verify nested CLR members independently, without fetching unsigned display
+ * references. Any member that was not actually checked (budget spent/cancelled)
+ * marks the tree `incomplete`, so a partially checked tree can never be
+ * reported as fully verified.
+ */
+const verifyCredentialNode = async (
+    wallet: ShareWallet,
+    credential: VC,
+    budget: VerificationBudget,
+    context: CredentialTreeContext
+): Promise<void> => {
+    if (budget.expired()) {
+        context.incomplete = true;
+        return;
+    }
+    try {
+        context.states.push(
+            proofState(
+                await boundedVerification(wallet.invoke.verifyCredential(credential), budget)
+            )
+        );
+    } catch {
+        context.states.push('unavailable');
+    }
+    const visit = async (value: unknown): Promise<void> => {
+        if (!value || typeof value !== 'object') return;
+        for (const [key, child] of Object.entries(value)) {
+            if (budget.expired()) {
+                context.incomplete = true;
+                return;
+            }
+            if (key === 'verifiableCredential' && Array.isArray(child)) {
+                for (const nested of child) {
+                    if (budget.expired()) {
+                        context.incomplete = true;
+                        return;
+                    }
+                    await verifyCredentialNode(wallet, nested as VC, budget, context);
+                }
+            } else if (child && typeof child === 'object') await visit(child);
+        }
+    };
+    await visit(credential);
+};
+
 export const verifyCredentialTree = async (
     wallet: ShareWallet,
-    credential: VC
+    credential: VC,
+    budget: VerificationBudget
 ): Promise<ProofState> => {
+    const context: CredentialTreeContext = { states: [], incomplete: false };
     try {
-        const states = [
-            proofState(await boundedVerification(wallet.invoke.verifyCredential(credential))),
-        ];
-        const visit = async (value: unknown): Promise<void> => {
-            if (!value || typeof value !== 'object') return;
-            for (const [key, child] of Object.entries(value)) {
-                if (key === 'verifiableCredential' && Array.isArray(child)) {
-                    for (const nested of child)
-                        states.push(await verifyCredentialTree(wallet, nested as VC));
-                } else if (child && typeof child === 'object') await visit(child);
-            }
-        };
-        await visit(credential);
-        return states.includes('failed')
-            ? 'failed'
-            : states.includes('unavailable')
-              ? 'unavailable'
-              : 'verified';
+        await verifyCredentialNode(wallet, credential, budget, context);
     } catch {
         return 'unavailable';
     }
+    if (context.states.includes('failed')) return 'failed';
+    if (context.incomplete || context.states.includes('unavailable')) return 'unavailable';
+    return 'verified';
 };
 
 export const verifySharedPresentation = async (
     wallet: ShareWallet,
-    payload: SharePayload
+    payload: SharePayload,
+    budget: VerificationBudget
 ): Promise<ProofState> => {
+    if (budget.expired()) return 'unavailable';
     try {
         return proofState(
             await boundedVerification(
                 wallet.invoke.verifyPresentation(payload.presentation, {
                     proofPurpose: 'authentication',
-                })
+                }),
+                budget
             )
         );
     } catch {

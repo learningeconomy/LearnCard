@@ -7,8 +7,8 @@ import { credentialText, type ProofState } from './shareLinkFlow';
 
 /**
  * Display-only projection of the exact manifest that will be encrypted and
- * published. Explicit props keep it reusable by the recipient viewer (task 3)
- * without coupling either surface to the other.
+ * published. Explicit props keep it reusable by the recipient viewer without
+ * coupling either surface to the other.
  *
  * `proofs` is optional and keyed by `credentialIndex`. A credential with no
  * entry never renders a badge, so the preview can never claim "verified".
@@ -22,6 +22,10 @@ export interface ShareLinkPreviewProps {
     proofs?: Readonly<Record<number, ProofState>>;
     /** Rendered above the collection when the host wants an explicit heading. */
     heading?: string;
+    /** Extra summary content (for example the collection proof) below the metadata. */
+    summaryExtra?: React.ReactNode;
+    /** Opt in to the raw original credential disclosure for each selected member. */
+    showOriginal?: boolean;
     className?: string;
 }
 
@@ -63,6 +67,8 @@ export const ShareLinkPreview = ({
     expiresAt,
     proofs,
     heading,
+    summaryExtra,
+    showOriginal = false,
     className = '',
 }: ShareLinkPreviewProps) => (
     <div className={`space-y-5 ${className}`} data-testid="share-link-preview">
@@ -91,12 +97,15 @@ export const ShareLinkPreview = ({
                 </span>
                 {expiresAt ? (
                     <span>
-                        {m['shareLinks.expires']({ date: new Date(expiresAt).toLocaleDateString() })}
+                        {m['shareLinks.expires']({
+                            date: new Date(expiresAt).toLocaleDateString(),
+                        })}
                     </span>
                 ) : (
                     <span>{m['shareLinks.neverExpires']()}</span>
                 )}
             </div>
+            {summaryExtra}
         </section>
         <div className="space-y-4">
             {payload.selection.map(({ credentialIndex }, order) => {
@@ -145,14 +154,36 @@ export const ShareLinkPreview = ({
                                     {m['shareLinks.endorsements']()}
                                 </h3>
                                 {endorsements.map(item => {
+                                    const endorsementText = credentialText(
+                                        payload.presentation.verifiableCredential[
+                                            item.credentialIndex
+                                        ]
+                                    );
                                     const endorsementProof = proofs?.[item.credentialIndex];
-                                    return endorsementProof ? (
-                                        <div key={item.credentialIndex}>
-                                            <ProofBadge state={endorsementProof} />
+                                    return (
+                                        <div key={item.credentialIndex} className="space-y-1">
+                                            {endorsementText.name && (
+                                                <p className="text-sm text-grayscale-700 break-words">
+                                                    {endorsementText.name}
+                                                </p>
+                                            )}
+                                            {endorsementProof && (
+                                                <ProofBadge state={endorsementProof} />
+                                            )}
                                         </div>
-                                    ) : null;
+                                    );
                                 })}
                             </div>
+                        )}
+                        {showOriginal && (
+                            <details className="text-xs text-grayscale-600">
+                                <summary className="cursor-pointer py-2">
+                                    {m['shareLinks.original']()}
+                                </summary>
+                                <pre className="mt-2 p-4 bg-grayscale-100 rounded-xl overflow-auto max-h-80 text-xs whitespace-pre-wrap break-all">
+                                    {JSON.stringify(credential, null, 2)}
+                                </pre>
+                            </details>
                         )}
                     </article>
                 );
