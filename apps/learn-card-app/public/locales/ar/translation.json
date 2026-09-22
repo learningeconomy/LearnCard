@@ -3695,6 +3695,9 @@
             "upload": "رفع",
             "change": "تغيير {{type}}"
         },
+        "activity": {
+            "title": "توصية لـ {{name}}"
+        },
         "request": {
             "header": {
                 "title": "طلب توصية",
@@ -3709,7 +3712,8 @@
                 "messagePlaceholder": "رسالة...",
                 "emailPlaceholder": "البريد الإلكتروني",
                 "sendEmail": "إرسال الطلب عبر البريد",
-                "sending": "جارٍ الإرسال..."
+                "sending": "جارٍ الإرسال...",
+                "linkGenerationFailed": "تعذر إنشاء هذا الرابط. حاول مرة أخرى."
             },
             "success": {
                 "title": "تم إرسال الطلب!",
