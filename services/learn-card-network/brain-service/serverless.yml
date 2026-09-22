@@ -222,7 +222,8 @@ functions:
 
     # LC-2187 share-link recovery + cleanup. Dedicated entrypoint (no lambda.ts
     # import-time work). Runs automatically with valid service configuration;
-    # absent wiring remains inert and partial wiring fails closed.
+    # absent wiring remains inert and partial wiring fails closed. The cadence
+    # matches the default Docker maintenance interval (5 minutes).
     shareLinkMaintenance:
         handler: shareLinkMaintenanceLambda.shareLinkMaintenanceHandler
         timeout: 300
@@ -233,7 +234,7 @@ functions:
                 - Ref: PrivateSubnetA
         events:
             - schedule:
-                  rate: rate(1 day)
+                  rate: rate(5 minutes)
                   enabled: true
 
     trpc:

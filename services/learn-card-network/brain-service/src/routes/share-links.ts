@@ -22,6 +22,11 @@ import { toOwnerShareLink } from '@helpers/share-link-owner-projection';
 import { createRetryableLazyInitializer } from '@helpers/share-link-owner/lazy-initializer';
 import { resolveShareLinkOwnerApiConfig } from '@helpers/share-link-owner/config';
 import type { ShareLinkOwnerApiConfigResolution } from '@helpers/share-link-owner/config';
+import {
+    createBoundedShareLinkDiagnosticReporter,
+    createShareLinkDependencyResolver,
+    SHARE_LINK_COMPOSITION_DIAGNOSTIC,
+} from '@helpers/share-link-owner/diagnostics';
 import { createShareLinkPolicyResolver } from '@helpers/share-link-policy/resolver';
 import { ShareLinkCoordinatorError } from '@helpers/share-link-coordinator';
 import type {
@@ -507,12 +512,13 @@ export const enforceOwnerShareWriteRateLimit = async (
 };
 
 /**
- * Lazy production composition. Config is resolved before any signer/graph import;
- * a disabled or malformed configuration resolves to `null` and every procedure
- * answers NOT_FOUND without touching a signer or the graph.
+ * Lazy production composition. Config is resolved before any signer/graph import.
+ * A disabled configuration is inert and silent; malformed wiring emits a bounded
+ * sanitized diagnostic and fails closed to NOT_FOUND. A failed build is never
+ * cached, so a later request retries with non-null dependencies.
  */
 const initializeProductionDependencies =
-    createRetryableLazyInitializer<ShareLinkRouterDependencies | null>(() =>
+    createRetryableLazyInitializer<ShareLinkRouterDependencies>(() =>
         buildProductionDependencies(
             resolveShareLinkOwnerApiConfig(process.env as Record<string, unknown>) as Extract<
                 ShareLinkOwnerApiConfigResolution,
@@ -521,17 +527,18 @@ const initializeProductionDependencies =
         )
     );
 
-const getProductionDependencies = async (): Promise<ShareLinkRouterDependencies | null> => {
-    const config = resolveShareLinkOwnerApiConfig(process.env as Record<string, unknown>);
-
-    if (config.status !== 'enabled') return null;
-
-    return initializeProductionDependencies();
-};
+export const getProductionDependencies =
+    createShareLinkDependencyResolver<ShareLinkRouterDependencies>({
+        resolveConfig: () => resolveShareLinkOwnerApiConfig(process.env as Record<string, unknown>),
+        initializeDependencies: initializeProductionDependencies,
+        reportDiagnostic: createBoundedShareLinkDiagnosticReporter(),
+        configurationInvalidCategory: SHARE_LINK_COMPOSITION_DIAGNOSTIC.OWNER_CONFIGURATION_INVALID,
+        initializationFailedCategory: SHARE_LINK_COMPOSITION_DIAGNOSTIC.OWNER_INITIALIZATION_FAILED,
+    });
 
 const buildProductionDependencies = async (
     config: Extract<ShareLinkOwnerApiConfigResolution, { status: 'enabled' }>
-): Promise<ShareLinkRouterDependencies | null> => {
+): Promise<ShareLinkRouterDependencies> => {
     const [
         { getServerDidWebDID },
         { createDidWebLearnCardTokenSigner },
@@ -560,7 +567,11 @@ const buildProductionDependencies = async (
         signer: createDidWebLearnCardTokenSigner(),
     });
 
-    if (!clientConfig.enabled) return null;
+    if (!clientConfig.enabled) {
+        // Fail the build so the retryable lazy initializer does not cache it and
+        // a later request retries once the wiring is corrected.
+        throw new Error('share-content client configuration is invalid');
+    }
 
     const client = clientModule.createShareContentClient(clientConfig);
     const policyResolver = createShareLinkPolicyResolver(createProductionShareLinkPolicySource());

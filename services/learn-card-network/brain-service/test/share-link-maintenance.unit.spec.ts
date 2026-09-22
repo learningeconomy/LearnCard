@@ -632,6 +632,22 @@ describe('Lambda and Docker wiring is disabled by default', () => {
         expect(functionBlock).not.toContain('enabled: false');
     });
 
+    it('runs share-link maintenance every five minutes while inbox maintenance stays daily', () => {
+        const shareLinkBlock = serverless.slice(
+            serverless.indexOf('shareLinkMaintenance:'),
+            serverless.indexOf('trpc:')
+        );
+        expect(shareLinkBlock).toContain('rate: rate(5 minutes)');
+        expect(shareLinkBlock).not.toContain('rate: rate(1 day)');
+
+        const inboxBlock = serverless.slice(
+            serverless.indexOf('inboxMaintenance:'),
+            serverless.indexOf('shareLinkMaintenance:')
+        );
+        expect(inboxBlock).toContain('rate: rate(1 day)');
+        expect(inboxBlock).not.toContain('rate: rate(5 minutes)');
+    });
+
     it('does not ship a maintenance rollout flag', () => {
         expect(serverless).not.toContain('SHARE_LINK_MAINTENANCE_ENABLED:');
     });
