@@ -3,9 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { Keyboard } from '@capacitor/keyboard';
-import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
-import { auth } from '../../../firebase/firebase';
-import { updateProfile } from 'firebase/auth';
+import { useSignInAdapter } from 'learn-card-base';
 import { Check, Loader2, Edit2, ShieldCheck, User } from 'lucide-react';
 
 import * as m from '../../../paraglide/messages.js';
@@ -81,8 +79,9 @@ type OnboardingFlowProps = {
 };
 
 const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
+    const adapter = useSignInAdapter();
     const { newModal, closeModal } = useModal();
-    const { state: coordinatorState, setupNewKey } = useAppAuth();
+    const { state: coordinatorState, setupNewKey, authProvider } = useAppAuth();
     const { initWallet } = useWallet();
     const { track } = useAnalytics();
     const { mutateAsync: updatePreferences } = useUpdatePreferences();
@@ -354,12 +353,12 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
     // Pre-fill from Firebase
     useEffect(() => {
-        if (auth()?.currentUser) {
-            const fbUser = auth()?.currentUser;
-            if (fbUser?.displayName && !name) setName(fbUser.displayName);
-            if (fbUser?.photoURL && !photo) setPhoto(fbUser.photoURL);
+        const fbUser = adapter.getCurrentUser();
+        if (fbUser) {
+            if (fbUser.displayName && !name) setName(fbUser.displayName);
+            if (fbUser.photoUrl && !photo) setPhoto(fbUser.photoUrl);
         }
-    }, [name, photo]);
+    }, [name, photo, adapter]);
 
     // Photo Upload
     const onUpload = (data: UploadRes) => {
@@ -528,13 +527,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
             let fbAuthToken: string | undefined;
             try {
-                if (Capacitor.isNativePlatform()) {
-                    const res = await FirebaseAuthentication.getIdToken({ forceRefresh: false });
-                    fbAuthToken = res?.token;
-                } else {
-                    const user = auth()?.currentUser;
-                    fbAuthToken = user ? await user.getIdToken(false) : undefined;
-                }
+                fbAuthToken = await authProvider?.getIdToken(false);
             } catch (e) {
                 log.warn('Could not get Firebase ID token (non-fatal):', e);
             }
@@ -612,11 +605,11 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
                 if (authToken !== 'dummy') {
                     try {
-                        const fbUser = auth()?.currentUser;
+                        const fbUser = adapter.getCurrentUser();
                         if (fbUser) {
-                            await updateProfile(fbUser, {
+                            await adapter.updateProfile?.({
                                 displayName: name,
-                                photoURL: photo,
+                                photoUrl: photo,
                             });
                         }
                     } catch (e) {

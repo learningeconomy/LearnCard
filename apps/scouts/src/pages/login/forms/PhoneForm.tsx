@@ -1,17 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ReactCodeInput from 'react-code-input';
 import PhoneInput from 'react-phone-number-input';
 import { Capacitor } from '@capacitor/core';
-import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { z } from 'zod';
 
-import {
-    authStore,
-    isPlatformAndroid,
-    destroyRecaptcha,
-    useToast,
-    ToastTypeEnum,
-} from 'learn-card-base';
+import { useSignInAdapter, useToast, ToastTypeEnum } from 'learn-card-base';
 import { useFirebase } from '../../../hooks/useFirebase';
 
 import { IonCol, IonInput, IonCheckbox, IonToggle, IonRouterLink } from '@ionic/react';
@@ -34,6 +27,7 @@ const CodeValidator = z.object({
 });
 
 const PhoneForm: React.FC = () => {
+    const adapter = useSignInAdapter();
     const {
         sendSmsAuthCode,
         verifySmsAuthCode,
@@ -43,7 +37,7 @@ const PhoneForm: React.FC = () => {
     const { presentToast } = useToast();
 
     const [currentStep, setCurrentStep] = useState<PhoneFormStepsEnum>(PhoneFormStepsEnum.phone);
-    const [phone, setPhone] = useState<any>('');
+    const [phone, setPhone] = useState<string>('');
     const [code, setCode] = useState<string | number>('');
     const [password, setPassword] = useState<string | null | undefined>('');
 
@@ -53,45 +47,61 @@ const PhoneForm: React.FC = () => {
 
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [isResendCodeLoading, setIsResendCodeLoading] = useState<boolean>(false);
+    const [phoneSession, setPhoneSession] = useState(0);
+    const sessionGeneration = useRef(0);
+
+    // The adapter subscriptions below are set up once per session; keep the latest
+    // hook function reachable so the auto-verify callback never runs a stale closure.
+    const loginAfterAutoVerifiedSMSRef = useRef(loginAfterAutoVerifiedSMS);
+    loginAfterAutoVerifiedSMSRef.current = loginAfterAutoVerifiedSMS;
 
     useEffect(() => {
-        FirebaseAuthentication.addListener('phoneCodeSent', e => {
-            log.debug('📞📞📞 phoneCodeSent::res 📞📞📞', e);
-
-            const verificationId = e?.verificationId;
-
-            if (e?.verificationId) {
-                authStore.set.verificationId(verificationId);
+        const generation = sessionGeneration.current;
+        const removeCodeSent = adapter.onPhoneCodeSent(() => {
+            if (Capacitor.isNativePlatform()) {
                 showSuccessToast();
                 setCurrentStep(PhoneFormStepsEnum.verification);
-                setIsLoading(false);
-                setIsResendCodeLoading(false);
-            } else {
                 setIsLoading(false);
                 setIsResendCodeLoading(false);
             }
         });
 
-        FirebaseAuthentication.addListener('phoneVerificationCompleted', e => {
-            loginAfterAutoVerifiedSMS(
-                e?.verificationCode,
+        const removeCompleted = adapter.onPhoneVerificationCompleted(verificationCode => {
+            loginAfterAutoVerifiedSMSRef.current(
+                verificationCode,
                 () => {
+                    if (generation !== sessionGeneration.current) return;
                     setIsLoading(false);
                 },
                 (err: string) => {
+                    if (generation !== sessionGeneration.current) return;
                     setIsLoading(false);
                     setCodeError(err);
                 }
             );
         });
 
-        // FirebaseAuthentication.addListener('authStateChange', e => {
-        //     log.debug('📞📞📞 authStateChange::res 📞📞📞', e);
-        // });
-    }, []);
+        const removeFailed = adapter.onPhoneVerificationFailed(error => {
+            setIsLoading(false);
+            setIsResendCodeLoading(false);
+            setError(error instanceof Error ? error.message : '');
+            setCodeError('');
+            setCurrentStep(PhoneFormStepsEnum.phone);
+        });
+
+        return () => {
+            sessionGeneration.current += 1;
+            removeCodeSent();
+            removeCompleted();
+            removeFailed();
+            adapter.cleanup?.();
+        };
+    }, [adapter, phoneSession]);
 
     const resetForm = () => {
-        destroyRecaptcha();
+        sessionGeneration.current += 1;
+        adapter.cleanup?.();
+        setPhoneSession(session => session + 1);
         setCurrentStep(PhoneFormStepsEnum.phone);
         setPhone('');
         setCode('');
@@ -143,6 +153,7 @@ const PhoneForm: React.FC = () => {
 
     const handleOnClick = async (e: React.FormEvent, resendCode = false) => {
         e.preventDefault();
+        const generation = sessionGeneration.current;
         if (!resendCode) {
             setIsLoading(true);
         } else {
@@ -153,33 +164,27 @@ const PhoneForm: React.FC = () => {
             if (validate()) {
                 // native sms auth
                 if (Capacitor.isNativePlatform()) {
-                    FirebaseAuthentication.signInWithPhoneNumber({
-                        phoneNumber: phone,
-                        skipNativeAuth: isPlatformAndroid() ? true : false,
+                    void adapter.sendPhoneOtp(phone).catch(error => {
+                        if (generation !== sessionGeneration.current) return;
+                        log.error('Phone verification failed', error);
+                        setIsLoading(false);
+                        setIsResendCodeLoading(false);
+                        setError(error instanceof Error ? error.message : '');
+                        setCurrentStep(PhoneFormStepsEnum.phone);
                     });
-                    // .then(({ verificationId }) => {
-                    //     authStore.set.verificationId(verificationId);
-                    //     showSuccessToast();
-                    //     setCurrentStep(PhoneFormStepsEnum.verification);
-                    //     setIsLoading(false);
-                    //     setIsResendCodeLoading(false);
-                    // })
-                    // .catch(err => {
-                    //     setIsLoading(false);
-                    //     setIsResendCodeLoading(false);
-                    //     setError(err.errorMessage);
-                    // });
                 } else {
                     // web sms auth
                     sendSmsAuthCode(
                         phone,
                         () => {
+                            if (generation !== sessionGeneration.current) return;
                             setIsLoading(false);
                             setIsResendCodeLoading(false);
                             showSuccessToast();
                             setCurrentStep(PhoneFormStepsEnum.verification);
                         },
                         (err: string) => {
+                            if (generation !== sessionGeneration.current) return;
                             setIsLoading(false);
                             setIsResendCodeLoading(false);
                             setError(err);
@@ -190,10 +195,8 @@ const PhoneForm: React.FC = () => {
         } else if (currentStep === PhoneFormStepsEnum.verification) {
             if (validateCode()) {
                 if (Capacitor.isNativePlatform()) {
-                    const verificationId = authStore.get.verificationId();
                     // native sms code  verification
                     await verifySmsAuthCodeOnNative(
-                        verificationId,
                         code,
                         () => {
                             setIsLoading(false);
