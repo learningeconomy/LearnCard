@@ -1593,6 +1593,7 @@ export const boostsRouter = t.router({
                             const activityId = await traceDb('logCredentialSent:refresh', () =>
                                 logCredentialSent({
                                     actorProfileId: profile.profileId,
+                                    onBehalfOf: ctx.user.onBehalfOf,
                                     recipientType: 'profile',
                                     recipientIdentifier: targetProfile.profileId,
                                     recipientProfileId: targetProfile.profileId,
@@ -1652,6 +1653,7 @@ export const boostsRouter = t.router({
                                     logCredentialFailed({
                                         activityId,
                                         actorProfileId: profile.profileId,
+                                        onBehalfOf: ctx.user.onBehalfOf,
                                         recipientType: 'profile',
                                         recipientIdentifier: targetProfile.profileId,
                                         recipientProfileId: targetProfile.profileId,

@@ -9,6 +9,9 @@ const mocks = vi.hoisted(() => ({
     getProfilesThatManageAProfile: vi.fn(),
     grant: vi.fn(),
     verifyPresentation: vi.fn(),
+    isAuthGrantAssociatedWithProfile: vi.fn(),
+    getAuthGrantById: vi.fn(),
+    updateAuthGrant: vi.fn(),
 }));
 
 vi.mock('@accesslayer/profile/read', () => ({
@@ -20,13 +23,17 @@ vi.mock('@accesslayer/profile/relationships/read', () => ({
 }));
 vi.mock('@accesslayer/auth-grant/read', () => ({
     isAuthGrantChallengeValidForDID: mocks.grant,
+    isAuthGrantAssociatedWithProfile: mocks.isAuthGrantAssociatedWithProfile,
+    getAuthGrantById: mocks.getAuthGrantById,
 }));
+vi.mock('@accesslayer/auth-grant/update', () => ({ updateAuthGrant: mocks.updateAuthGrant }));
 vi.mock('@helpers/learnCard.helpers', () => ({
     getEmptyLearnCard: async () => ({ invoke: { verifyPresentation: mocks.verifyPresentation } }),
 }));
 
 import { createContext, didRoute, profileRoute, t, type Context } from './index';
 import { profilesRouter } from './profiles';
+import { authGrantsRouter } from './auth-grants';
 
 const domain = 'network.example.com';
 const manager: ProfileType = {
@@ -180,5 +187,53 @@ describe('act-as ordering', () => {
             did: manager.did,
         });
         expect(mocks.getProfileByProfileId).not.toHaveBeenCalled();
+    });
+});
+
+describe('auth grant actAs is immutable', () => {
+    const grant = {
+        id: 'grant-1',
+        name: 'svc',
+        challenge: `${AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX}test`,
+        status: 'active',
+        scope: 'inbox:write',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        actAs: '*',
+    };
+
+    beforeEach(() => {
+        mocks.isAuthGrantAssociatedWithProfile.mockResolvedValue(true);
+        mocks.getAuthGrantById.mockResolvedValue(grant);
+        mocks.updateAuthGrant.mockResolvedValue(true);
+    });
+
+    it.each([{ actAs: 'the-id' }, { actAs: '*' }, { scope: '*:*' }, { status: 'revoked' }])(
+        'rejects %j with BAD_REQUEST instead of silently dropping it',
+        async updates => {
+            const caller = authGrantsRouter.createCaller(context({ actAs: undefined }));
+            await expect(
+                caller.updateAuthGrant({ id: grant.id, updates: updates as never })
+            ).rejects.toMatchObject({
+                code: 'BAD_REQUEST',
+                message: expect.stringContaining('Cannot update id, scope, actAs'),
+            });
+            expect(mocks.updateAuthGrant).not.toHaveBeenCalled();
+        }
+    );
+
+    it('rejects unknown keys', async () => {
+        const caller = authGrantsRouter.createCaller(context({ actAs: undefined }));
+        await expect(
+            caller.updateAuthGrant({ id: grant.id, updates: { bogus: true } as never })
+        ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        expect(mocks.updateAuthGrant).not.toHaveBeenCalled();
+    });
+
+    it('still allows mutable fields', async () => {
+        const caller = authGrantsRouter.createCaller(context({ actAs: undefined }));
+        await expect(
+            caller.updateAuthGrant({ id: grant.id, updates: { description: 'renamed' } })
+        ).resolves.toBe(true);
+        expect(mocks.updateAuthGrant).toHaveBeenCalledWith(grant, { description: 'renamed' });
     });
 });

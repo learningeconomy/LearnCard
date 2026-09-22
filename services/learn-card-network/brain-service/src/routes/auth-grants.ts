@@ -139,15 +139,9 @@ export const authGrantsRouter = t.router({
         .input(
             z.object({
                 id: z.string(),
-                updates: AuthGrantValidator.partial().omit({
-                    id: true,
-                    scope: true,
-                    actAs: true,
-                    status: true,
-                    createdAt: true,
-                    expiresAt: true,
-                    challenge: true,
-                }),
+                // Immutable fields stay in the schema so the guard below can reject them
+                // explicitly; omitting them would strip the key and silently no-op instead.
+                updates: AuthGrantValidator.partial().strict(),
             })
         )
         .output(z.boolean())
@@ -159,7 +153,6 @@ export const authGrantsRouter = t.router({
                 });
             }
 
-            // Extra check to reject sensitive, invalid updates
             const invalidUpdates = [
                 'id',
                 'scope',
