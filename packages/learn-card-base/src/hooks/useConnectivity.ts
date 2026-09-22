@@ -1,10 +1,30 @@
 import { useEffect, useRef } from 'react';
 
 import { connectivityStore, type ConnectivityStatus } from '../stores/connectivityStore';
+import type {
+    ConnectionQuality,
+    ConnectionQualityReason,
+} from '../connectivity/connectionQuality';
 
 export const useConnectivityStatus = (): ConnectivityStatus => connectivityStore.use.status();
 
 export const useIsOffline = (): boolean => connectivityStore.use.status() === 'offline';
+
+/** Advisory quality — never use for gating. See connectionQuality.ts. */
+export const useConnectionQuality = (): ConnectionQuality => connectivityStore.use.quality();
+
+export const useConnectionQualityReason = (): ConnectionQualityReason | null =>
+    connectivityStore.use.qualityReason();
+
+/**
+ * True when the advisory slow/unstable warning should show. Offline display
+ * takes precedence — a verified offline state is not also "slow".
+ */
+export const useIsSlowOrUnstable = (): boolean => {
+    const status = connectivityStore.use.status();
+    const quality = connectivityStore.use.quality();
+    return status !== 'offline' && quality === 'poor';
+};
 
 /**
  * Run `callback` once each time connectivity transitions offline → online.
