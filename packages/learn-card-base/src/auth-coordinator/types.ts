@@ -22,10 +22,16 @@ export type {
     AuthProviderType,
     RecoveryMethodInfo,
     RecoveryResult,
+    IdentityRecoverySession,
+    DidAuthVpSigner,
+    SssActivationState,
     SignInAdapter,
     SignInCapabilities,
     SocialSignInOptions,
     PhoneVerificationHandle,
+    EscrowEnrollmentState,
+    EscrowEnrollmentOptions,
+    EscrowPinStatus,
 } from '@learncard/types';
 
 // --- SSS-specific (canonical source: @learncard/sss-key-manager) ---
@@ -35,14 +41,18 @@ export type {
     RecoveryInput,
     RecoverySetupInput,
     RecoverySetupResult,
+    RecoveryConfirmationInput,
     SSSKeyDerivationStrategy,
 } from '@learncard/sss-key-manager';
 
 import type {
     AuthProvider,
     AuthUser,
+    EscrowPinStatus,
+    EscrowEnrollmentState,
     KeyDerivationStrategy,
     RecoveryMethodInfo,
+    SssActivationState,
 } from '@learncard/types';
 
 /**
@@ -64,18 +74,41 @@ export type UnifiedAuthState =
     | { status: 'needs_migration'; authUser: AuthUser; migrationData?: Record<string, unknown> }
     | {
           status: 'needs_recovery';
+          escrowPin?: EscrowPinStatus;
           authUser: AuthUser;
           recoveryMethods: RecoveryMethodInfo[];
           recoveryReason: RecoveryReason;
           maskedRecoveryEmail?: string | null;
+          sssActivationState?: SssActivationState | null;
+      }
+    | {
+          status: 'identity_recovery';
+          phase: 'enter_email' | 'verify_email' | 'choose_method' | 'new_login';
+          email?: string;
+          recoverySessionToken?: string;
+          recoveryMethods: RecoveryMethodInfo[];
+          recoveredDid?: string;
+          error?: string;
+      }
+    | { status: 'awaiting_rebind'; did: string }
+    | {
+          status: 'identity_recovery_success';
+          authUser: AuthUser;
+          did: string;
+          privateKey: string;
       }
     | { status: 'deriving_key' }
     | {
           status: 'ready';
+          escrowEnrollment?: EscrowEnrollmentState['state'];
+          pendingEscrowHold?: { holdId: string; requestedAt: string; releaseAfter: string };
+          /** Whether a recovery PIN is set on the escrow release policy, and attempts remaining. */
+          escrowPin?: EscrowPinStatus;
           authUser?: AuthUser;
           did: string;
           privateKey: string;
           authSessionValid: boolean;
+          sssActivationState?: SssActivationState | null;
       }
     | { status: 'error'; error: string; canRetry: boolean; previousState?: UnifiedAuthState };
 
@@ -98,7 +131,7 @@ export interface AuthCoordinatorConfig {
      * addRecoveryMethod, etc.) with the server. The server verifies the VP JWT
      * to confirm the caller controls the private key for the claimed DID.
      */
-    signDidAuthVp?: (privateKey: string) => Promise<string>;
+    signDidAuthVp?: import('@learncard/types').DidAuthVpSigner;
 
     /**
      * Optional: retrieve a cached private key from secure storage.
@@ -113,6 +146,13 @@ export interface AuthCoordinatorConfig {
      * stores, databases, and redirecting.
      */
     onLogout?: () => Promise<void>;
+
+    /**
+     * Optional: wipe any pending escrow recovery request from the storage the
+     * app actually uses for device secrets. Called by `forgetDevice()`. When
+     * omitted the coordinator clears the web (IndexedDB / sessionStorage) copy.
+     */
+    clearPendingEscrowRecovery?: () => Promise<void>;
 
     /**
      * Optional: threshold (in ms) for detecting legacy accounts that need migration.

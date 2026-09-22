@@ -9,6 +9,7 @@ import { fastifyTRPCOpenApiPlugin, CreateOpenApiFastifyPluginOptions } from 'trp
 import { appRouter, type AppRouter, createContext } from './app';
 import { openApiDocument } from './openapi';
 import { didFastifyPlugin } from './dids';
+import { ensureUserKeysIndexes, createEscrowHoldsIndexes } from './models';
 import { oidcFastifyPlugin } from './oidc';
 import { ensureAuthSubjectIndexes } from './models/AuthSubject';
 
@@ -52,6 +53,7 @@ server.register(fastifyCors, {
         'Authorization',
         'X-Tenant-Id',
         'X-Guardian-Approval',
+        'X-Auth-Token',
         'baggage',
         'sentry-trace',
     ],
@@ -108,6 +110,8 @@ server.register(oidcFastifyPlugin);
     try {
         await ensureAuthSubjectIndexes();
         console.log('Server starting on port ', environment.PORT || 3000);
+        await ensureUserKeysIndexes();
+        await createEscrowHoldsIndexes();
         await server.listen({ host: '0.0.0.0', port: Number(environment.PORT || 3000) });
     } catch (err) {
         console.error(err);

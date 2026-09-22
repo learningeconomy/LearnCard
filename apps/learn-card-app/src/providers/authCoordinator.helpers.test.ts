@@ -19,6 +19,12 @@ describe('registerRecoveryMethodCompletion', () => {
 });
 
 describe('countUserConfiguredRecoveryMethods', () => {
+    it('does not count automatic recovery as a user-configured method', () => {
+        expect(countUserConfiguredRecoveryMethods([{ type: 'escrow' }])).toBe(0);
+        expect(countUserConfiguredRecoveryMethods([{ type: 'escrow' }, { type: 'phrase' }])).toBe(
+            1
+        );
+    });
     it('counts durable methods and ignores a synthetic primary-email entry', () => {
         expect(
             countUserConfiguredRecoveryMethods([
@@ -31,6 +37,14 @@ describe('countUserConfiguredRecoveryMethods', () => {
 
     it('counts a verified recovery email after reload', () => {
         expect(countUserConfiguredRecoveryMethods([{ type: 'email' }], 'r***@example.com')).toBe(1);
+    });
+
+    it('counts a code-confirmed email method even without a masked recovery email', () => {
+        expect(
+            countUserConfiguredRecoveryMethods([
+                { type: 'email', confirmedAt: '2026-09-03T00:00:00.000Z' },
+            ])
+        ).toBe(1);
     });
 });
 

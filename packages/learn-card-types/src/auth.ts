@@ -6,6 +6,8 @@
  * coupling consumers to any specific implementation.
  */
 
+import { z } from 'zod';
+
 // ---------------------------------------------------------------------------
 // Auth Session Error
 // ---------------------------------------------------------------------------
@@ -253,6 +255,8 @@ export interface RecoveryMethodInfo {
     type: string;
     createdAt: Date;
     credentialId?: string;
+    shareVersion?: number;
+    confirmedAt?: Date;
 }
 
 /**
@@ -264,9 +268,42 @@ export interface RecoveryResult {
     did: string;
 }
 
+export interface IdentityRecoverySession {
+    recoverySessionToken: string;
+    recoveryMethods: RecoveryMethodInfo[];
+}
+
 // ---------------------------------------------------------------------------
 // Server Key Status
 // ---------------------------------------------------------------------------
+
+export type SssActivationState = 'provisional' | 'active';
+
+/** Optional PIN enrollment requires rotating the existing escrow share. */
+export type EscrowEnrollmentOptions = { pin?: string };
+
+/** Stable error-message contract shared by PIN recovery clients and servers. */
+export const ESCROW_PIN_LOCKED_MESSAGE =
+    'Too many incorrect PIN attempts. You can still recover by waiting.';
+export const ESCROW_PIN_UNAVAILABLE_MESSAGE = 'PIN recovery is not available for this account.';
+export const ESCROW_PIN_MISMATCH_PATTERN = /^Incorrect PIN\. (\d+) attempts left\.$/;
+export const escrowPinMismatchMessage = (attemptsRemaining: number): string =>
+    `Incorrect PIN. ${attemptsRemaining} attempts left.`;
+
+/** Public PIN availability and remaining lifetime attempts; never includes the verifier. */
+export const EscrowPinStatusValidator = z.object({
+    state: z.enum(['none', 'enabled', 'locked', 'stale']),
+    enabled: z.boolean(),
+    attemptsRemaining: z.number().int().nonnegative(),
+    salt: z.string().optional(),
+});
+export type EscrowPinStatus = z.infer<typeof EscrowPinStatusValidator>;
+
+/** Enrollment details for PIN-aware strategies. Legacy strategies may still return a string. */
+export interface EscrowEnrollmentState {
+    state: 'enrolled' | 'not-enrolled' | 'opted-out' | 'disabled';
+    escrowPin?: EscrowPinStatus;
+}
 
 /**
  * Server key status returned by the strategy's fetchServerKeyStatus.
@@ -281,7 +318,13 @@ export interface ServerKeyStatus {
     authShare: string | null;
     shareVersion: number | null;
     maskedRecoveryEmail?: string | null;
+    escrowOptedOut?: boolean;
+    escrowPin?: EscrowPinStatus;
+    sssActivationState?: SssActivationState | null;
 }
+
+/** Signs a DID-Auth VP. A supplied challenge must be embedded as the VP nonce. */
+export type DidAuthVpSigner = (privateKey: string, challenge?: string) => Promise<string>;
 
 // ---------------------------------------------------------------------------
 // Key Derivation Capabilities
@@ -359,6 +402,7 @@ export interface KeyDerivationStrategy<
     TRecoveryInput = unknown,
     TRecoverySetupInput = unknown,
     TRecoverySetupResult = unknown,
+    TRecoveryConfirmationInput = unknown,
 > {
     readonly name: string;
 
@@ -393,6 +437,38 @@ export interface KeyDerivationStrategy<
         didFromPrivateKey: (pk: string) => Promise<string>
     ): Promise<boolean>;
 
+    /**
+     * Atomically split and persist a private key's local and remote components.
+     * Strategies that implement this use it for initial setup and rotations so
+     * callers never have to coordinate device/server writes themselves.
+     */
+    atomicUpdateShares?(params: {
+        token: string;
+        providerType: AuthProviderType;
+        privateKey: string;
+        did: string;
+        signDidAuthVp?: DidAuthVpSigner;
+    }): Promise<void>;
+
+    /**
+     * Repair local/server share-version skew after an ambiguous write. Returns
+     * the recovered key when reconciliation was needed, otherwise null.
+     */
+    reconcileShares?(params: {
+        token: string;
+        providerType: AuthProviderType;
+        expectedDid: string;
+        didFromPrivateKey: (privateKey: string) => Promise<string>;
+        signDidAuthVp?: DidAuthVpSigner;
+    }): Promise<RecoveryResult | null>;
+
+    /** Obtain a short-lived, single-use challenged DID-Auth VP for a write. */
+    getFreshDidAuthVp?(
+        privateKey: string,
+        did: string,
+        signDidAuthVp: DidAuthVpSigner
+    ): Promise<string>;
+
     // --- Server communication ---
 
     /** Fetch the server-side key status for the authenticated user */
@@ -410,7 +486,112 @@ export interface KeyDerivationStrategy<
     /** Mark migration complete on the server (optional — only needed for migration-capable strategies) */
     markMigrated?(token: string, providerType: AuthProviderType, didAuthVp?: string): Promise<void>;
 
+    /** Commit a provisioned key after the server verifies recovery enrollment. */
+    activate?(token: string, providerType: AuthProviderType, didAuthVp?: string): Promise<void>;
+
     // --- Recovery ---
+
+    /** Read the current automatic recovery enrollment status. */
+    getEscrowEnrollmentState?(params: {
+        token: string;
+        providerType: AuthProviderType;
+    }): Promise<EscrowEnrollmentState['state'] | EscrowEnrollmentState>;
+
+    /** Opt out with an owner proof; requires another confirmed recovery method. */
+    disableEscrowRecovery?(params: {
+        token: string;
+        providerType: AuthProviderType;
+        privateKey: string;
+        signDidAuthVp: DidAuthVpSigner;
+    }): Promise<void>;
+
+    /** Opt back in and enroll automatic recovery material. */
+    enableEscrowRecovery?(params: {
+        token: string;
+        providerType: AuthProviderType;
+        privateKey: string;
+        signDidAuthVp: DidAuthVpSigner;
+        options?: EscrowEnrollmentOptions;
+    }): Promise<
+        | { enrolled: false; reason: 'disabled' | 'opted-out' }
+        | { enrolled: true; changed: false }
+        | { enrolled: true; changed: true; shareVersion: number }
+    >;
+
+    /** Repair escrow enrollment, rotating shares only when no current confirmed enrollment exists. */
+    ensureEscrowEnrollment?(params: {
+        token: string;
+        providerType: AuthProviderType;
+        privateKey: string;
+        signDidAuthVp: DidAuthVpSigner;
+        options?: EscrowEnrollmentOptions;
+    }): Promise<
+        | { enrolled: false; reason: 'disabled' | 'opted-out' }
+        | { enrolled: true; changed: false }
+        | { enrolled: true; changed: true; shareVersion: number }
+    >;
+
+    /** Set or change a PIN by rotating escrow material with an owner proof. */
+    setEscrowPin?(params: {
+        token: string;
+        providerType: AuthProviderType;
+        privateKey: string;
+        signDidAuthVp: DidAuthVpSigner;
+        pin: string;
+    }): Promise<void>;
+
+    /** Remove a PIN by rotating escrow material with an owner proof. */
+    clearEscrowPin?(params: {
+        token: string;
+        providerType: AuthProviderType;
+        privateKey: string;
+        signDidAuthVp: DidAuthVpSigner;
+    }): Promise<void>;
+
+    /** Start an escrow hold. Securely persist the returned secrets; null means an existing hold. */
+    startEscrowRecovery?(params: {
+        token?: string;
+        providerType?: AuthProviderType;
+        recoverySessionToken?: string;
+        tenantId?: string;
+        options?: { releasePolicy?: 'hold' | 'pin'; restart?: boolean };
+    }): Promise<{
+        holdId: string;
+        status: 'pending' | 'cancelled' | 'completed' | 'expired';
+        requestedAt: string;
+        releaseAfter: string;
+        cancelledAt?: string;
+        completedAt?: string;
+        resumeToken: string | null;
+        clientEphemeralPrivateKey: string;
+        pinSalt?: string;
+        /** Absent on legacy hold-only strategies. */
+        releasePolicy?: 'hold' | 'pin';
+    }>;
+
+    /** Read a hold using its resume proof or the active device's provider session. */
+    getEscrowRecoveryStatus?(
+        params:
+            | { holdId: string; resumeToken: string }
+            | { token: string; providerType: AuthProviderType }
+    ): Promise<{
+        holdId: string;
+        status: 'pending' | 'cancelled' | 'completed' | 'expired';
+        requestedAt: string;
+        releaseAfter: string;
+        /** Absent on legacy hold-only strategies. */
+        releasePolicy?: 'hold' | 'pin';
+        cancelledAt?: string;
+        completedAt?: string;
+    } | null>;
+
+    /** Cancel a pending hold with a fresh, owner-signed DID challenge. */
+    cancelEscrowRecovery?(params: {
+        token: string;
+        providerType: AuthProviderType;
+        privateKey: string;
+        signDidAuthVp: DidAuthVpSigner;
+    }): Promise<{ cancelled: boolean }>;
 
     /** Execute a recovery flow and return the recovered private key + DID */
     executeRecovery(params: {
@@ -419,6 +600,8 @@ export interface KeyDerivationStrategy<
         input: TRecoveryInput;
         /** Optional: validate the reconstructed key's DID before rotating shares */
         didFromPrivateKey?: (privateKey: string) => Promise<string>;
+        /** Optional: sign the fresh challenge required to persist rotated shares */
+        signDidAuthVp?: DidAuthVpSigner;
     }): Promise<RecoveryResult>;
 
     /** Set up a new recovery method */
@@ -429,14 +612,51 @@ export interface KeyDerivationStrategy<
         input: TRecoverySetupInput;
         authUser?: AuthUser;
         /** Optional: sign a DID-Auth VP JWT for server write operations */
-        signDidAuthVp?: (privateKey: string) => Promise<string>;
+        signDidAuthVp?: DidAuthVpSigner;
     }): Promise<TRecoverySetupResult>;
+
+    /** Confirm a pending method after the strategy verifies proof of receipt locally. */
+    confirmRecoveryMethod?(params: {
+        token: string;
+        providerType: AuthProviderType;
+        privateKey: string;
+        input: TRecoveryConfirmationInput;
+        signDidAuthVp?: DidAuthVpSigner;
+    }): Promise<void>;
 
     /** Get configured recovery methods for the authenticated user */
     getAvailableRecoveryMethods?(
         token: string,
         providerType: AuthProviderType
     ): Promise<RecoveryMethodInfo[]>;
+
+    // --- Lost login identity recovery ---
+
+    /** Send an OTP to the verified recovery email without requiring provider auth. */
+    startIdentityRecovery?(email: string): Promise<void>;
+
+    /** Verify the OTP and receive a one-use, recovery-scoped session. */
+    verifyIdentityRecovery?(email: string, code: string): Promise<IdentityRecoverySession>;
+
+    /** Reconstruct and hard-validate the key before the replacement login is bound. */
+    prepareIdentityRecovery?(params: {
+        recoverySessionToken: string;
+        input: TRecoveryInput;
+        didFromPrivateKey: (privateKey: string) => Promise<string>;
+    }): Promise<RecoveryResult>;
+
+    /** Whether reconstructed identity recovery is waiting for a replacement login. */
+    hasPendingIdentityRecovery?(): boolean;
+
+    /** Discard any reconstructed identity recovery that has not been rebound. */
+    cancelIdentityRecovery?(): void;
+
+    /** Bind the current provider identity and commit a full share rotation. */
+    completeIdentityRecovery?(params: {
+        token: string;
+        providerType: AuthProviderType;
+        signDidAuthVp?: DidAuthVpSigner;
+    }): Promise<RecoveryResult>;
 
     // --- Contact method management ---
 
@@ -478,7 +698,8 @@ export interface KeyDerivationStrategy<
         token: string,
         providerType: AuthProviderType,
         privateKey: string,
-        email: string
+        email: string,
+        didAuthVp?: string
     ): Promise<void>;
 
     // --- Share versioning ---

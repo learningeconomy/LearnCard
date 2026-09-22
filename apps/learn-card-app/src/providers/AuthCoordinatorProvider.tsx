@@ -48,6 +48,7 @@ import {
     SocialLoginTypes,
     getAuthConfig,
     getSSSConfig,
+    getEscrowStrategyConfig,
     getLogger,
     type AuthCoordinatorContextValue,
     type AuthProvider,
@@ -83,12 +84,15 @@ import { alertCircleOutline } from 'ionicons/icons';
 import {
     createSSSStrategy,
     generateEd25519PrivateKey,
-    createAdaptiveStorage,
     isPublicComputerMode,
 } from '@learncard/sss-key-manager';
-import type { RecoveryInput, RecoverySetupInput } from '@learncard/sss-key-manager';
+import type {
+    RecoveryConfirmationInput,
+    RecoveryInput,
+    RecoverySetupInput,
+} from '@learncard/sss-key-manager';
 import useSQLiteStorage from 'learn-card-base/hooks/useSQLiteStorage';
-import { createNativeSSSStorage } from 'learn-card-base/security/nativeSSSStorage';
+import { createDeviceShareStorage } from 'learn-card-base/security/deviceShareStorage';
 
 import { getBespokeLearnCard, getSigningLearnCard } from 'learn-card-base/helpers/walletHelpers';
 import {
@@ -125,6 +129,13 @@ import {
 import { Overlay, ErrorOverlay, StalledMigrationOverlay, EmailLinkOverlay } from 'learn-card-base';
 
 import { RecoveryFlowModal } from '../components/recovery/RecoveryFlowModal';
+import { EscrowRecoveryHoldBanner } from '../components/recovery/EscrowRecoveryHoldBanner';
+import { RecoveryPinResetBanner } from '../components/recovery/RecoveryPinResetBanner';
+import { clearAllPendingEscrowRecovery } from '../components/recovery/escrowRecoveryStorage';
+import {
+    readRecoveryPinPromptFlag,
+    writeRecoveryPinPromptFlag,
+} from '../components/recovery/recoveryPinPromptFlag';
 import {
     RecoverySetupModal,
     type RecoverySetupType,
@@ -274,11 +285,11 @@ registerKeyDerivationFactory('sss', () => {
 
     return createSSSStrategy({
         serverUrl: sss.serverUrl,
-        // On native Capacitor (iOS/Android), use encrypted SQLite instead of
-        // IndexedDB to avoid iOS WKWebView IndexedDB eviction issues.
-        // On web, use adaptive storage that routes to sessionStorage when the
-        // user has enabled "public computer" mode.
-        storage: Capacitor.isNativePlatform() ? createNativeSSSStorage() : createAdaptiveStorage(),
+        escrowRelayPublicKey: sss.escrowRelayPublicKey,
+        escrowRelayKeyId: sss.escrowRelayKeyId,
+        escrow: getEscrowStrategyConfig(sss),
+        onEscrowError: err => log.warn('escrow.enrollment.failed', err),
+        storage: createDeviceShareStorage(),
         enableEmailBackupShare: sss.enableEmailBackupShare,
         tenantId,
     });
@@ -336,6 +347,9 @@ export interface AppAuthContextValue extends AuthCoordinatorContextValue {
 
     /** Number of recovery methods configured (null = not yet checked) */
     recoveryMethodCount: number | null;
+
+    /** Migration is provisional until a recovery method is confirmed */
+    recoveryActivationPending: boolean;
 
     /** Open the recovery setup modal */
     openRecoverySetup: (options?: RecoverySetupOptions) => void;
@@ -454,6 +468,9 @@ const AuthSessionManager: React.FC<{
     const recoverySetupOptionsRef = useRef<RecoverySetupOptions>({});
     const completedRecoveryMethodsRef = useRef<Set<RecoverySetupType>>(new Set());
     const wasNewUserRef = useRef(false);
+    // Set when a PIN-based recovery just succeeded, proving the user had a PIN
+    // even on a new/forgotten device where the local prompt flag is absent.
+    const recoveredWithPinRef = useRef(false);
 
     // null = recovery method status has not been checked yet
     const [recoveryMethodCount, setRecoveryMethodCount] = useState<number | null>(null);
@@ -537,7 +554,7 @@ const AuthSessionManager: React.FC<{
     // --- Device link modal ---
     const [deviceLinkVisible, setDeviceLinkVisible] = useState(false);
 
-    const { keyDerivation } = coordinator;
+    const { keyDerivation, refreshAuthSession } = coordinator;
 
     // --- Auto-open approver from push notification ---
     // When a DEVICE_LINK_REQUEST push notification is tapped, the push handler
@@ -554,12 +571,44 @@ const AuthSessionManager: React.FC<{
         }
     }, [coordinator.state.status]);
 
+    const [recoveryPinSetupReason, setRecoveryPinSetupReason] =
+        useState<RecoveryPinSetupReason | null>(null);
+    const [showRecoveryPinReset, setShowRecoveryPinReset] = useState(false);
+    const readyDid = coordinator.state.status === 'ready' ? coordinator.state.did : undefined;
+    const readyPinEnabled =
+        coordinator.state.status === 'ready' ? coordinator.state.escrowPin?.enabled : undefined;
+    const readyEnrollment =
+        coordinator.state.status === 'ready' ? coordinator.state.escrowEnrollment : undefined;
+
     // Track whether the user went through needs_setup (new user flow)
     useEffect(() => {
         if (coordinator.state.status === 'needs_setup') {
             wasNewUserRef.current = true;
         }
     }, [coordinator.state.status]);
+
+    useEffect(() => {
+        if (coordinator.state.status === 'ready') {
+            const did = coordinator.state.did;
+            const flag = readRecoveryPinPromptFlag(did);
+
+            if (wasNewUserRef.current && !flag && readyEnrollment === 'enrolled') {
+                setRecoveryPinSetupReason('first-time');
+            }
+
+            if (readyPinEnabled === true) {
+                recoveredWithPinRef.current = false;
+            } else if (readyPinEnabled === false) {
+                if (recoveredWithPinRef.current) {
+                    writeRecoveryPinPromptFlag(did, 'set');
+                    setRecoveryPinSetupReason('after-recovery');
+                    recoveredWithPinRef.current = false;
+                } else if (flag === 'set') {
+                    setShowRecoveryPinReset(true);
+                }
+            }
+        }
+    }, [coordinator.state.status, readyDid, readyPinEnabled, readyEnrollment]);
 
     // --- QR login device share pickup from sessionStorage ---
     // When Device B completes Firebase auth after a QR login, the coordinator
@@ -637,7 +686,7 @@ const AuthSessionManager: React.FC<{
 
         const check = async () => {
             // Try a force-refresh first via the coordinator
-            const refreshed = await coordinator.refreshAuthSession();
+            const refreshed = await refreshAuthSession();
 
             if (cancelled) return;
 
@@ -660,7 +709,7 @@ const AuthSessionManager: React.FC<{
         return () => {
             cancelled = true;
         };
-    }, [showRecoverySetup, authProvider, coordinator]);
+    }, [showRecoverySetup, authProvider, refreshAuthSession]);
 
     // --- DID derivation (shared between auto-setup and recovery) ---
     // Uses getSigningLearnCard (no network) so lc.id.did() returns did:key,
@@ -674,25 +723,28 @@ const AuthSessionManager: React.FC<{
     // --- DID-Auth VP signing (for recovery setup write ops) ---
     // Uses getSigningLearnCard (no network) so lc.id.did() returns did:key,
     // which is deterministic and directly tied to the private key.
-    const signDidAuthVp = useCallback(async (privateKey: string): Promise<string> => {
-        try {
-            const lc = await getSigningLearnCard(privateKey);
+    const signDidAuthVp = useCallback(
+        async (privateKey: string, challenge?: string): Promise<string> => {
+            try {
+                const lc = await getSigningLearnCard(privateKey);
 
-            const vpJwt = await lc.invoke.getDidAuthVp({ proofFormat: 'jwt' });
+                const vpJwt = await lc.invoke.getDidAuthVp({ proofFormat: 'jwt', challenge });
 
-            if (!vpJwt || typeof vpJwt !== 'string') {
-                log.error('[signDidAuthVp] getDidAuthVp returned non-string', {
-                    type: typeof vpJwt,
-                });
-                throw new Error('Failed to sign DID-Auth VP JWT');
+                if (!vpJwt || typeof vpJwt !== 'string') {
+                    log.error('[signDidAuthVp] getDidAuthVp returned non-string', {
+                        type: typeof vpJwt,
+                    });
+                    throw new Error('Failed to sign DID-Auth VP JWT');
+                }
+
+                return vpJwt;
+            } catch (e) {
+                log.error('[signDidAuthVp] error', e);
+                throw e instanceof Error ? e : new Error(String(e));
             }
-
-            return vpJwt;
-        } catch (e) {
-            log.error('[signDidAuthVp] error', e);
-            throw e instanceof Error ? e : new Error(String(e));
-        }
-    }, []);
+        },
+        []
+    );
 
     // --- Web3Auth key extraction for migration ---
     // When coordinator enters needs_migration, extract the Web3Auth key and
@@ -1047,6 +1099,7 @@ const AuthSessionManager: React.FC<{
             walletInitRef.current = false;
             walletModeRef.current = null;
             walletModeStore.set.mode(null);
+            recoveredWithPinRef.current = false;
         }
     }, [coordinator.state.status, wallet]);
 
@@ -1187,7 +1240,12 @@ const AuthSessionManager: React.FC<{
 
     // --- Derived values for the recovery modal ---
     const availableMethods = useMemo(() => {
-        if (coordinator.state.status !== 'needs_recovery') return [];
+        if (
+            coordinator.state.status !== 'needs_recovery' &&
+            coordinator.state.status !== 'identity_recovery'
+        ) {
+            return [];
+        }
 
         return coordinator.state.recoveryMethods.map(m => ({
             type: m.type,
@@ -1200,7 +1258,10 @@ const AuthSessionManager: React.FC<{
     // --- Determine which overlay (if any) to show ---
     const { status } = coordinator.state;
 
-    const showRecovery = status === 'needs_recovery' && !!authProvider;
+    const showRecovery =
+        (status === 'needs_recovery' && !!authProvider) ||
+        status === 'identity_recovery' ||
+        status === 'identity_recovery_success';
 
     const showMigrationLoading = status === 'needs_migration' && !migrationStallVisible;
 
@@ -1222,6 +1283,35 @@ const AuthSessionManager: React.FC<{
     const showDeviceLinkModal = useCallback(() => {
         setDeviceLinkVisible(true);
     }, []);
+
+    // Record the prompt flag when a PIN is set/removed from recovery settings
+    // (MyLearnCardModal -> AutomaticRecoveryCard), mirroring what the
+    // post-setup RecoveryPinSetupOverlay already does on its own callbacks.
+    const setEscrowPin = useCallback<AppAuthContextValue['setEscrowPin']>(
+        async pin => {
+            await coordinator.setEscrowPin(pin);
+            if (coordinator.state.status === 'ready') {
+                writeRecoveryPinPromptFlag(coordinator.state.did, 'set');
+            }
+            // A PIN is a deliberately chosen recovery secret, so it completes
+            // activation the same way a passkey or phrase does.
+            if (coordinator.needsActivation) {
+                try {
+                    await coordinator.activate();
+                } catch (error) {
+                    log.warn('escrow.pin.activate.failed', error);
+                }
+            }
+        },
+        [coordinator]
+    );
+
+    const clearEscrowPin = useCallback<AppAuthContextValue['clearEscrowPin']>(async () => {
+        await coordinator.clearEscrowPin();
+        if (coordinator.state.status === 'ready') {
+            writeRecoveryPinPromptFlag(coordinator.state.did, 'skipped');
+        }
+    }, [coordinator]);
 
     const enrichedValue: AppAuthContextValue = useMemo(
         () => ({
@@ -1245,7 +1335,10 @@ const AuthSessionManager: React.FC<{
 
             // Recovery
             recoveryMethodCount,
+            recoveryActivationPending: coordinator.needsActivation,
             openRecoverySetup,
+            setEscrowPin,
+            clearEscrowPin,
 
             // Provider-agnostic auth provider (consumers should use this
             // instead of importing Firebase directly)
@@ -1264,6 +1357,8 @@ const AuthSessionManager: React.FC<{
             deviceLinkVisible,
             recoveryMethodCount,
             openRecoverySetup,
+            setEscrowPin,
+            clearEscrowPin,
             authProvider,
         ]
     );
@@ -1271,10 +1366,58 @@ const AuthSessionManager: React.FC<{
     return (
         <AppAuthContext.Provider value={enrichedValue}>
             {children}
+            {coordinator.state.status === 'ready' && (
+                <div className="fixed top-6 inset-x-4 z-[10000] max-w-md mx-auto space-y-2">
+                    {coordinator.state.pendingEscrowHold && (
+                        <EscrowRecoveryHoldBanner
+                            key={coordinator.state.pendingEscrowHold.holdId}
+                            requestedAt={coordinator.state.pendingEscrowHold.requestedAt}
+                            onCancel={coordinator.cancelEscrowRecovery}
+                        />
+                    )}
+                    {showRecoveryPinReset && (
+                        <RecoveryPinResetBanner
+                            onSetAgain={() => {
+                                setShowRecoveryPinReset(false);
+                                setRecoveryPinSetupReason('after-recovery');
+                            }}
+                            onDismiss={() => {
+                                if (!readyDid) return;
+                                writeRecoveryPinPromptFlag(readyDid, 'skipped');
+                                setShowRecoveryPinReset(false);
+                            }}
+                        />
+                    )}
+                </div>
+            )}
 
             {/* ── Recovery overlay ─────────────────────────────── */}
-            {showRecovery && authProvider && (
+            {showRecovery && (
                 <RecoveryFlowModal
+                    escrowRecovery={{
+                        pinAvailable:
+                            coordinator.state.status === 'needs_recovery' &&
+                            coordinator.state.escrowPin?.enabled === true,
+                        scope: JSON.stringify([
+                            getSSSConfig().serverUrl,
+                            coordinator.state.status === 'needs_recovery'
+                                ? coordinator.state.authUser.id
+                                : coordinator.state.status === 'identity_recovery'
+                                  ? coordinator.state.email
+                                  : undefined,
+                        ]),
+                        onStart: coordinator.startEscrowRecovery,
+                        onStatus: coordinator.getEscrowRecoveryStatus,
+                        onRecover: async input => {
+                            await coordinator.recover(input);
+
+                            if (input.method === 'escrow-pin') {
+                                recoveredWithPinRef.current = true;
+                            }
+                        },
+                        canResumeCompleted: () =>
+                            coordinator.keyDerivation.hasPendingIdentityRecovery?.() ?? false,
+                    }}
                     availableMethods={availableMethods}
                     recoveryReason={
                         coordinator.state.status === 'needs_recovery'
@@ -1286,17 +1429,79 @@ const AuthSessionManager: React.FC<{
                             ? coordinator.state.maskedRecoveryEmail
                             : null
                     }
+                    identityPhase={
+                        coordinator.state.status === 'identity_recovery'
+                            ? coordinator.state.phase
+                            : coordinator.state.status === 'identity_recovery_success'
+                              ? 'success'
+                              : undefined
+                    }
+                    identityEmail={
+                        coordinator.state.status === 'identity_recovery'
+                            ? coordinator.state.email
+                            : undefined
+                    }
+                    identityError={
+                        coordinator.state.status === 'identity_recovery'
+                            ? coordinator.state.error
+                            : undefined
+                    }
+                    onSendIdentityCode={async (email: string) => {
+                        await coordinator.sendIdentityRecoveryCode(email);
+                    }}
+                    onVerifyIdentityCode={async (code: string) => {
+                        await coordinator.verifyIdentityRecoveryCode(code);
+                    }}
+                    onContinueWithNewLogin={() => {
+                        coordinator.continueIdentityRecoveryLogin();
+                    }}
+                    onFinishIdentityRecovery={() => {
+                        coordinator.finishIdentityRecovery();
+                    }}
                     onRecoverWithPasskey={async (credentialId: string) => {
-                        await coordinator.recover({ method: 'passkey', credentialId });
+                        if (coordinator.state.status === 'identity_recovery') {
+                            await coordinator.prepareIdentityRecovery({
+                                method: 'passkey',
+                                credentialId,
+                            });
+                        } else {
+                            await coordinator.recover({ method: 'passkey', credentialId });
+                        }
                     }}
                     onRecoverWithPhrase={async (phrase: string) => {
-                        await coordinator.recover({ method: 'phrase', phrase });
+                        if (coordinator.state.status === 'identity_recovery') {
+                            await coordinator.prepareIdentityRecovery({
+                                method: 'phrase',
+                                phrase,
+                            });
+                        } else {
+                            await coordinator.recover({ method: 'phrase', phrase });
+                        }
                     }}
                     onRecoverWithBackup={async (fileContents: string, password: string) => {
-                        await coordinator.recover({ method: 'backup', fileContents, password });
+                        if (coordinator.state.status === 'identity_recovery') {
+                            await coordinator.prepareIdentityRecovery({
+                                method: 'backup',
+                                fileContents,
+                                password,
+                            });
+                        } else {
+                            await coordinator.recover({
+                                method: 'backup',
+                                fileContents,
+                                password,
+                            });
+                        }
                     }}
                     onRecoverWithEmail={async (emailShare: string) => {
-                        await coordinator.recover({ method: 'email', emailShare });
+                        if (coordinator.state.status === 'identity_recovery') {
+                            await coordinator.prepareIdentityRecovery({
+                                method: 'email',
+                                emailShare,
+                            });
+                        } else {
+                            await coordinator.recover({ method: 'email', emailShare });
+                        }
                     }}
                     onRecoverWithDevice={async (deviceShare: string, shareVersion?: number) => {
                         // Store the received device share locally, then
@@ -1314,9 +1519,22 @@ const AuthSessionManager: React.FC<{
                             );
                         }
 
-                        await coordinator.initialize();
+                        if (coordinator.state.status === 'identity_recovery') {
+                            await coordinator.prepareIdentityRecovery({ method: 'device' });
+                        } else {
+                            await coordinator.initialize();
+                        }
                     }}
-                    onCancel={handleLogout}
+                    onCancel={() => {
+                        if (
+                            coordinator.state.status === 'identity_recovery' ||
+                            coordinator.state.status === 'identity_recovery_success'
+                        ) {
+                            coordinator.cancelIdentityRecovery();
+                        } else {
+                            handleLogout();
+                        }
+                    }}
                 />
             )}
 
@@ -1415,19 +1633,31 @@ const AuthSessionManager: React.FC<{
                                 const freshToken = await authProvider.getIdToken();
                                 const pk = coordinator.state.privateKey;
                                 const did = coordinator.state.did;
-                                const vpJwt = await signDidAuthVp(pk);
+                                const providerType = authProvider.getProviderType();
 
-                                const { localKey, remoteKey } = await keyDerivation.splitKey(pk);
+                                if (keyDerivation.atomicUpdateShares) {
+                                    await keyDerivation.atomicUpdateShares({
+                                        token: freshToken,
+                                        providerType,
+                                        privateKey: pk,
+                                        did,
+                                        signDidAuthVp,
+                                    });
+                                } else {
+                                    const vpJwt = await signDidAuthVp(pk);
+                                    const { localKey, remoteKey } =
+                                        await keyDerivation.splitKey(pk);
 
-                                await keyDerivation.storeLocalKey(localKey);
+                                    await keyDerivation.storeLocalKey(localKey);
 
-                                await keyDerivation.storeAuthShare(
-                                    freshToken,
-                                    authProvider.getProviderType(),
-                                    remoteKey,
-                                    did,
-                                    vpJwt
-                                );
+                                    await keyDerivation.storeAuthShare(
+                                        freshToken,
+                                        providerType,
+                                        remoteKey,
+                                        did,
+                                        vpJwt
+                                    );
+                                }
 
                                 await keyDerivation.sendEmailBackupShare(
                                     freshToken,
@@ -1443,6 +1673,22 @@ const AuthSessionManager: React.FC<{
                         setShowEmailLinkGate(false);
                     }}
                     onLogout={handleLogout}
+                />
+            )}
+
+            {recoveryPinSetupReason && coordinator.state.status === 'ready' && (
+                <RecoveryPinSetupOverlay
+                    reason={recoveryPinSetupReason}
+                    onComplete={() => {
+                        if (!readyDid) return;
+                        writeRecoveryPinPromptFlag(readyDid, 'set');
+                        setRecoveryPinSetupReason(null);
+                    }}
+                    onSkip={() => {
+                        if (!readyDid) return;
+                        writeRecoveryPinPromptFlag(readyDid, 'skipped');
+                        setRecoveryPinSetupReason(null);
+                    }}
                 />
             )}
 
@@ -1574,18 +1820,49 @@ const AuthSessionManager: React.FC<{
                         });
                     };
 
+                    const confirmMethod = async (input: RecoveryConfirmationInput) => {
+                        if (!keyDerivation.confirmRecoveryMethod) {
+                            throw new Error('Recovery confirmation is unavailable.');
+                        }
+
+                        const token = await authProvider.getIdToken();
+                        const providerType = authProvider.getProviderType();
+
+                        await keyDerivation.confirmRecoveryMethod({
+                            token,
+                            providerType,
+                            privateKey: currentPrivateKey,
+                            input,
+                            signDidAuthVp,
+                        });
+
+                        if (coordinator.needsActivation) {
+                            await coordinator.activate();
+                        }
+                    };
+
                     const getTokenAndProvider = async () => {
                         const token = await authProvider.getIdToken();
                         const providerType = authProvider.getProviderType();
                         return { token, providerType };
                     };
 
+                    const currentDid =
+                        coordinator.state.status === 'ready' ? coordinator.state.did : '';
+
+                    // Recovery-email routes require a server-issued challenge in the VP.
                     const getDidAuthHeaders = async (): Promise<Record<string, string>> => {
-                        const vpJwt = await signDidAuthVp(currentPrivateKey);
+                        const vpJwt = keyDerivation.getFreshDidAuthVp
+                            ? await keyDerivation.getFreshDidAuthVp(
+                                  currentPrivateKey,
+                                  currentDid,
+                                  signDidAuthVp
+                              )
+                            : await signDidAuthVp(currentPrivateKey);
 
                         return {
                             'Content-Type': 'application/json',
-                            ...(vpJwt ? { Authorization: `Bearer ${vpJwt}` } : {}),
+                            Authorization: `Bearer ${vpJwt}`,
                             ...getTenantHeaders(),
                         };
                     };
@@ -1593,6 +1870,11 @@ const AuthSessionManager: React.FC<{
                     return (
                         <Overlay onDismiss={closeRecoverySetup}>
                             <RecoverySetupModal
+                                onGetEscrowEnrollmentState={coordinator.getEscrowEnrollmentState}
+                                onDisableEscrowRecovery={coordinator.disableEscrowRecovery}
+                                onEnableEscrowRecovery={coordinator.enableEscrowRecovery}
+                                onSetEscrowPin={setEscrowPin}
+                                onClearEscrowPin={clearEscrowPin}
                                 existingMethods={[]}
                                 maskedRecoveryEmail={null}
                                 initialMethod={recoverySetupOptionsRef.current.initialMethod}
@@ -1603,6 +1885,13 @@ const AuthSessionManager: React.FC<{
                                         { method: 'passkey' },
                                         authUser
                                     );
+
+                                    // Passkey setup confirms server-side in one step, so it
+                                    // never reaches confirmMethod; activate here instead.
+                                    if (coordinator.needsActivation) {
+                                        await coordinator.activate();
+                                    }
+
                                     return result.method === 'passkey' ? result.credentialId : '';
                                 }}
                                 onGeneratePhrase={async () => {
@@ -1611,7 +1900,17 @@ const AuthSessionManager: React.FC<{
                                         { method: 'phrase' },
                                         authUser
                                     );
-                                    return result.method === 'phrase' ? result.phrase : '';
+                                    if (result.method !== 'phrase') {
+                                        throw new Error('Could not generate recovery words.');
+                                    }
+
+                                    return {
+                                        phrase: result.phrase,
+                                        challengeWordIndices: result.challengeWordIndices,
+                                    };
+                                }}
+                                onConfirmPhrase={async challengeWords => {
+                                    await confirmMethod({ method: 'phrase', challengeWords });
                                 }}
                                 onSetupBackup={async (backupPw: string) => {
                                     const authUser = await authProvider.getCurrentUser();
@@ -1626,6 +1925,13 @@ const AuthSessionManager: React.FC<{
                                     return result.method === 'backup'
                                         ? JSON.stringify(result.backupFile, null, 2)
                                         : '';
+                                }}
+                                onConfirmBackup={async (fileContents, password) => {
+                                    await confirmMethod({
+                                        method: 'backup',
+                                        fileContents,
+                                        password,
+                                    });
                                 }}
                                 onAddRecoveryEmail={async (email: string) => {
                                     const { token, providerType } = await getTokenAndProvider();
@@ -1675,10 +1981,14 @@ const AuthSessionManager: React.FC<{
 
                                     return res.json();
                                 }}
-                                onSetupEmailRecovery={async () => {
+                                onSetupEmailRecovery={async email => {
                                     const authUser = await authProvider.getCurrentUser();
-                                    await setupMethod({ method: 'email' }, authUser);
+                                    await setupMethod({ method: 'email', email }, authUser);
                                 }}
+                                onConfirmEmailRecovery={async code => {
+                                    await confirmMethod({ method: 'email', code });
+                                }}
+                                isActivationPending={coordinator.needsActivation}
                                 onClose={closeRecoverySetup}
                             />
                         </Overlay>
@@ -1687,6 +1997,11 @@ const AuthSessionManager: React.FC<{
         </AppAuthContext.Provider>
     );
 };
+
+import {
+    RecoveryPinSetupOverlay,
+    type RecoveryPinSetupReason,
+} from '../components/recovery/RecoveryPinSetupOverlay';
 
 // --- Cached private key retrieval for private-key-first init ---
 // In public computer mode, skip the persistent cache so the coordinator
@@ -1735,17 +2050,20 @@ export const AuthCoordinatorProvider: React.FC<AppAuthCoordinatorProviderProps> 
 
     // DID-Auth VP signing — proves private key ownership to the server on write ops.
     // Uses getSigningLearnCard (no network) so did:key is used deterministically.
-    const signDidAuthVp = useCallback(async (privateKey: string): Promise<string> => {
-        const lc = await getSigningLearnCard(privateKey);
+    const signDidAuthVp = useCallback(
+        async (privateKey: string, challenge?: string): Promise<string> => {
+            const lc = await getSigningLearnCard(privateKey);
 
-        const vpJwt = await lc.invoke.getDidAuthVp({ proofFormat: 'jwt' });
+            const vpJwt = await lc.invoke.getDidAuthVp({ proofFormat: 'jwt', challenge });
 
-        if (!vpJwt || typeof vpJwt !== 'string') {
-            throw new Error('Failed to sign DID-Auth VP JWT');
-        }
+            if (!vpJwt || typeof vpJwt !== 'string') {
+                throw new Error('Failed to sign DID-Auth VP JWT');
+            }
 
-        return vpJwt;
-    }, []);
+            return vpJwt;
+        },
+        []
+    );
 
     // Resolve key derivation strategy from the provider registry (env-var driven)
     const keyDerivation = useMemo(
@@ -1840,6 +2158,7 @@ export const AuthCoordinatorProvider: React.FC<AppAuthCoordinatorProviderProps> 
                 signDidAuthVp={signDidAuthVp}
                 getCachedPrivateKey={getCachedPrivateKey}
                 onLogout={handleAppLogout}
+                clearPendingEscrowRecovery={clearAllPendingEscrowRecovery}
                 onDebugEvent={handleDebugEvent}
                 legacyAccountThresholdMs={5 * 60 * 1000}
                 // The coordinator is always enabled. To switch key derivation

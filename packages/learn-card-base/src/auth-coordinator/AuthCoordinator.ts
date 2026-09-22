@@ -18,6 +18,11 @@ const log = getLogger('auth-coordinator');
 
 import { withDeadline, withDeadlineOr, isDeadlineError } from '../helpers/withDeadline';
 import { withNetworkFault } from '../helpers/networkFault';
+import {
+    IdentityRecoverySessionConsumedError,
+    createAdaptiveStorage,
+    deleteDeviceShare,
+} from '@learncard/sss-key-manager';
 
 import { AuthSessionError } from './types';
 
@@ -57,16 +62,70 @@ import type {
     AuthProvider,
     AuthUser,
     AuthCoordinatorConfig,
+    EscrowEnrollmentState,
     KeyDerivationStrategy,
     RecoveryMethodInfo,
     RecoveryReason,
     UnifiedAuthState,
 } from './types';
 
+/** True for recovery inputs that consume a single-use escrow hold (delay or PIN release). */
+const isEscrowRecoveryMethod = (input: unknown): boolean =>
+    typeof input === 'object' &&
+    input !== null &&
+    'method' in input &&
+    (input.method === 'escrow' || input.method === 'escrow-pin');
+
+/** Legacy strategies resolve a bare state string; PIN-aware strategies resolve the full object. */
+const normalizeEscrowEnrollmentState = (
+    result: EscrowEnrollmentState['state'] | EscrowEnrollmentState | undefined
+): EscrowEnrollmentState => {
+    if (result === undefined) return { state: 'disabled' };
+    if (typeof result === 'string') return { state: result };
+    return result;
+};
+
 export class AuthCoordinator {
     private state: UnifiedAuthState = { status: 'idle' };
     private config: AuthCoordinatorConfig;
     private keyDerivation: KeyDerivationStrategy;
+    private recoveryGeneration = 0;
+    private escrowRecoveryInFlight = false;
+    private escrowStatusGeneration = 0;
+    private escrowOperations = new Set<Promise<unknown>>();
+    private endingSession = false;
+    private destroyed = false;
+    private stopEscrowPolling?: () => void;
+
+    static readonly ESCROW_STATUS_REFRESH_MS = 60_000;
+
+    /** Upper bound on waiting for in-flight escrow writes before logout / forget-device proceeds. */
+    static readonly ESCROW_DRAIN_TIMEOUT_MS = 10_000;
+
+    /** Drain escrow writes before clearing a device or changing its signed-in identity. */
+    private async runEscrowOperation<T>(operation: () => Promise<T>): Promise<T> {
+        if (this.endingSession) throw new Error('This recovery request was cancelled.');
+        const pending = operation();
+        this.escrowOperations.add(pending);
+        try {
+            return await pending;
+        } finally {
+            this.escrowOperations.delete(pending);
+        }
+    }
+
+    /**
+     * Wait for outstanding escrow writes, but never indefinitely: a stalled
+     * network request must not block the user from logging out.
+     */
+    private async drainEscrowOperations(): Promise<void> {
+        if (this.escrowOperations.size === 0) return;
+        await withDeadlineOr(Promise.allSettled(this.escrowOperations), undefined, {
+            ms: AuthCoordinator.ESCROW_DRAIN_TIMEOUT_MS,
+            label: 'escrow drain',
+            onTimeout: () => log.warn('Escrow operations did not settle before session end'),
+        });
+    }
 
     constructor(config: AuthCoordinatorConfig) {
         this.config = config;
@@ -78,8 +137,339 @@ export class AuthCoordinator {
     }
 
     private setState(newState: UnifiedAuthState): void {
+        if (newState.status !== 'ready') this.escrowStatusGeneration++;
+        const enteringReady =
+            newState.status === 'ready' &&
+            (this.state.status !== 'ready' ||
+                (!this.state.authSessionValid && newState.authSessionValid));
         this.state = newState;
+        if (newState.status !== 'ready' || !newState.authSessionValid) {
+            this.stopEscrowPolling?.();
+        } else if (!this.stopEscrowPolling && !this.endingSession && !this.destroyed) {
+            this.startEscrowPolling();
+        }
         this.config.onStateChange?.(newState);
+        if (enteringReady && newState.status === 'ready' && newState.authSessionValid) {
+            void this.refreshEscrow(newState);
+        }
+    }
+
+    /** Poll only hold status; background discovery must never rotate shares. */
+    private startEscrowPolling(): void {
+        if (typeof document === 'undefined' || !this.keyDerivation.getEscrowRecoveryStatus) return;
+        let stopped = false;
+        let inFlight = false;
+        const refresh = async (): Promise<void> => {
+            const ready = this.state;
+            if (
+                stopped ||
+                inFlight ||
+                this.endingSession ||
+                ready.status !== 'ready' ||
+                !ready.authSessionValid ||
+                document.visibilityState !== 'visible'
+            )
+                return;
+            const generation = this.escrowStatusGeneration;
+            const isCurrent = () =>
+                !stopped &&
+                !this.endingSession &&
+                generation === this.escrowStatusGeneration &&
+                this.state.status === 'ready' &&
+                this.state.authSessionValid &&
+                this.state.privateKey === ready.privateKey &&
+                this.state.authUser?.id === ready.authUser?.id;
+            inFlight = true;
+            try {
+                const credentials = await this.getAuthCredentials();
+                if (!isCurrent()) return;
+                const hold = await this.keyDerivation.getEscrowRecoveryStatus!(credentials);
+                if (!isCurrent() || this.state.status !== 'ready') return;
+                const pendingEscrowHold =
+                    hold?.status === 'pending'
+                        ? {
+                              holdId: hold.holdId,
+                              requestedAt: hold.requestedAt,
+                              releaseAfter: hold.releaseAfter,
+                          }
+                        : undefined;
+                // Only emit when the hold actually changed; avoid a render every tick.
+                if (this.state.pendingEscrowHold?.holdId !== pendingEscrowHold?.holdId) {
+                    this.setState({ ...this.state, pendingEscrowHold });
+                }
+            } catch (err) {
+                log.warn('escrow.status.failed', err);
+            } finally {
+                inFlight = false;
+            }
+        };
+        const onVisible = () => {
+            void refresh();
+        };
+        const timer = setInterval(onVisible, AuthCoordinator.ESCROW_STATUS_REFRESH_MS);
+        document.addEventListener('visibilitychange', onVisible);
+        this.stopEscrowPolling = () => {
+            stopped = true;
+            clearInterval(timer);
+            document.removeEventListener('visibilitychange', onVisible);
+            this.stopEscrowPolling = undefined;
+        };
+    }
+
+    /** Release background status observers when the coordinator is disposed. */
+    destroy(): void {
+        this.destroyed = true;
+        this.stopEscrowPolling?.();
+    }
+
+    /** Best-effort repair and hold discovery must never block account access. */
+    private async refreshEscrow(
+        ready: Extract<UnifiedAuthState, { status: 'ready' }>
+    ): Promise<void> {
+        if (
+            !this.keyDerivation.ensureEscrowEnrollment &&
+            !this.keyDerivation.getEscrowRecoveryStatus &&
+            !this.keyDerivation.getEscrowEnrollmentState
+        )
+            return;
+        const generation = ++this.escrowStatusGeneration;
+        const isCurrentAccount = () =>
+            generation === this.escrowStatusGeneration &&
+            this.state.status === 'ready' &&
+            this.state.authSessionValid &&
+            this.state.privateKey === ready.privateKey &&
+            this.state.authUser?.id === ready.authUser?.id;
+        try {
+            const credentials = await this.getAuthCredentials();
+            if (!isCurrentAccount()) return;
+            const signDidAuthVp = this.config.signDidAuthVp;
+            if (signDidAuthVp && this.keyDerivation.ensureEscrowEnrollment) {
+                await this.runEscrowOperation(async () =>
+                    isCurrentAccount()
+                        ? this.keyDerivation.ensureEscrowEnrollment?.({
+                              ...credentials,
+                              privateKey: ready.privateKey,
+                              signDidAuthVp,
+                          })
+                        : undefined
+                ).catch(err => log.warn('escrow.enrollment.failed', err));
+            }
+            if (!isCurrentAccount()) return;
+            if (this.keyDerivation.getEscrowEnrollmentState) {
+                try {
+                    const enrollment = normalizeEscrowEnrollmentState(
+                        await this.keyDerivation.getEscrowEnrollmentState(credentials)
+                    );
+                    if (isCurrentAccount() && this.state.status === 'ready') {
+                        this.setState({
+                            ...this.state,
+                            escrowPin: enrollment.escrowPin,
+                            escrowEnrollment: enrollment.state,
+                        });
+                    }
+                } catch (err) {
+                    log.warn('escrow.pin.status.failed', err);
+                }
+            }
+            const hold = await this.keyDerivation.getEscrowRecoveryStatus?.(credentials);
+            if (isCurrentAccount() && this.state.status === 'ready' && hold?.status === 'pending') {
+                this.setState({
+                    ...this.state,
+                    pendingEscrowHold: {
+                        holdId: hold.holdId,
+                        requestedAt: hold.requestedAt,
+                        releaseAfter: hold.releaseAfter,
+                    },
+                });
+            }
+        } catch (err) {
+            log.warn('escrow.status.failed', err);
+        }
+    }
+
+    /** Start recovery using either a signed-in identity or a verified recovery session. */
+    async startEscrowRecovery(options?: { restart?: boolean }) {
+        const generation = this.recoveryGeneration;
+        if (!this.keyDerivation.startEscrowRecovery) throw new Error('Recovery is not available');
+        const start = this.keyDerivation.startEscrowRecovery.bind(this.keyDerivation);
+        const result = await this.runEscrowOperation(async () => {
+            if (this.state.status === 'identity_recovery' && this.state.recoverySessionToken) {
+                return start({ recoverySessionToken: this.state.recoverySessionToken, options });
+            }
+            if (this.state.status !== 'needs_recovery') throw new Error('Recovery is not ready');
+            return start({ ...(await this.getAuthCredentials()), options });
+        });
+        if (generation !== this.recoveryGeneration)
+            throw new Error('This recovery request was cancelled.');
+        return result;
+    }
+
+    /** Resume proofs allow status checks without an active sign-in session. */
+    async getEscrowRecoveryStatus(proof?: { holdId: string; resumeToken: string }) {
+        if (!this.keyDerivation.getEscrowRecoveryStatus) return null;
+        return this.keyDerivation.getEscrowRecoveryStatus(
+            proof ?? (await this.getAuthCredentials())
+        );
+    }
+
+    /** Cancel a pending request from an account-owning device. */
+    async cancelEscrowRecovery(): Promise<UnifiedAuthState> {
+        const ready = this.state;
+        if (
+            ready.status !== 'ready' ||
+            !this.keyDerivation.cancelEscrowRecovery ||
+            !this.config.signDidAuthVp
+        ) {
+            throw new Error('Sign in on a trusted device to cancel recovery');
+        }
+        const generation = ++this.escrowStatusGeneration;
+        await this.keyDerivation.cancelEscrowRecovery({
+            ...(await this.getAuthCredentials()),
+            privateKey: ready.privateKey,
+            signDidAuthVp: this.config.signDidAuthVp,
+        });
+        if (
+            generation === this.escrowStatusGeneration &&
+            this.state.status === 'ready' &&
+            this.state.privateKey === ready.privateKey &&
+            this.state.authUser?.id === ready.authUser?.id
+        ) {
+            this.setState({ ...this.state, pendingEscrowHold: undefined });
+        }
+        return this.state;
+    }
+
+    /** Read automatic recovery status (and PIN status) from a signed-in device. */
+    async getEscrowEnrollmentState(): Promise<EscrowEnrollmentState> {
+        if (this.state.status !== 'ready') throw new Error('Sign in to manage recovery');
+        return normalizeEscrowEnrollmentState(
+            await this.keyDerivation.getEscrowEnrollmentState?.(await this.getAuthCredentials())
+        );
+    }
+
+    /** Disable automatic recovery and clear any cancelled pending hold. */
+    async disableEscrowRecovery(): Promise<void> {
+        const ready = this.state;
+        if (
+            ready.status !== 'ready' ||
+            !this.keyDerivation.disableEscrowRecovery ||
+            !this.config.signDidAuthVp
+        ) {
+            throw new Error('Sign in on a trusted device to manage recovery');
+        }
+        const generation = ++this.escrowStatusGeneration;
+        await this.runEscrowOperation(async () =>
+            this.keyDerivation.disableEscrowRecovery!({
+                ...(await this.getAuthCredentials()),
+                privateKey: ready.privateKey,
+                signDidAuthVp: this.config.signDidAuthVp!,
+            })
+        );
+        if (
+            generation === this.escrowStatusGeneration &&
+            this.state.status === 'ready' &&
+            this.state.privateKey === ready.privateKey &&
+            this.state.authUser?.id === ready.authUser?.id
+        ) {
+            this.setState({ ...this.state, pendingEscrowHold: undefined });
+        }
+    }
+
+    /** Opt in and enroll automatic recovery from a trusted device. */
+    async enableEscrowRecovery() {
+        const ready = this.state;
+        if (
+            ready.status !== 'ready' ||
+            !this.keyDerivation.enableEscrowRecovery ||
+            !this.config.signDidAuthVp
+        ) {
+            throw new Error('Sign in on a trusted device to manage recovery');
+        }
+        return this.runEscrowOperation(async () =>
+            this.keyDerivation.enableEscrowRecovery!({
+                ...(await this.getAuthCredentials()),
+                privateKey: ready.privateKey,
+                signDidAuthVp: this.config.signDidAuthVp!,
+            })
+        );
+    }
+
+    /** Set or change a PIN by rotating escrow material with an owner proof. */
+    async setEscrowPin(pin: string): Promise<void> {
+        const ready = this.state;
+        if (
+            ready.status !== 'ready' ||
+            !this.keyDerivation.setEscrowPin ||
+            !this.config.signDidAuthVp
+        ) {
+            throw new Error('Sign in on a trusted device to manage recovery');
+        }
+        const generation = ++this.escrowStatusGeneration;
+        this.setState({ ...ready, escrowPin: undefined, escrowEnrollment: undefined });
+        try {
+            await this.runEscrowOperation(async () =>
+                this.keyDerivation.setEscrowPin!({
+                    ...(await this.getAuthCredentials()),
+                    privateKey: ready.privateKey,
+                    signDidAuthVp: this.config.signDidAuthVp!,
+                    pin,
+                })
+            );
+        } finally {
+            await this.refreshEscrowPinStatus(ready, generation);
+        }
+    }
+
+    /** Remove a PIN by rotating escrow material with an owner proof. */
+    async clearEscrowPin(): Promise<void> {
+        const ready = this.state;
+        if (
+            ready.status !== 'ready' ||
+            !this.keyDerivation.clearEscrowPin ||
+            !this.config.signDidAuthVp
+        ) {
+            throw new Error('Sign in on a trusted device to manage recovery');
+        }
+        const generation = ++this.escrowStatusGeneration;
+        this.setState({ ...ready, escrowPin: undefined, escrowEnrollment: undefined });
+        try {
+            await this.runEscrowOperation(async () =>
+                this.keyDerivation.clearEscrowPin!({
+                    ...(await this.getAuthCredentials()),
+                    privateKey: ready.privateKey,
+                    signDidAuthVp: this.config.signDidAuthVp!,
+                })
+            );
+        } finally {
+            await this.refreshEscrowPinStatus(ready, generation);
+        }
+    }
+
+    /** Re-fetch enrollment after a PIN change so `ready.escrowPin` reflects the new status. */
+    private async refreshEscrowPinStatus(
+        ready: Extract<UnifiedAuthState, { status: 'ready' }>,
+        generation: number
+    ): Promise<void> {
+        if (!this.keyDerivation.getEscrowEnrollmentState) return;
+        try {
+            const enrollment = normalizeEscrowEnrollmentState(
+                await this.keyDerivation.getEscrowEnrollmentState(await this.getAuthCredentials())
+            );
+            if (
+                generation === this.escrowStatusGeneration &&
+                this.state.status === 'ready' &&
+                this.state.privateKey === ready.privateKey &&
+                this.state.authUser?.id === ready.authUser?.id
+            ) {
+                this.setState({
+                    ...this.state,
+                    escrowPin: enrollment.escrowPin,
+                    escrowEnrollment: enrollment.state,
+                });
+            }
+        } catch (err) {
+            log.warn('escrow.pin.refresh.failed', err);
+        }
     }
 
     /** Helper: get token + providerType from the auth provider.
@@ -93,6 +483,16 @@ export class AuthCoordinator {
         return { token, providerType };
     }
 
+    private async getFreshDidAuthVp(privateKey: string, did: string): Promise<string | undefined> {
+        if (!this.config.signDidAuthVp) return undefined;
+
+        if (this.keyDerivation.getFreshDidAuthVp) {
+            return this.keyDerivation.getFreshDidAuthVp(privateKey, did, this.config.signDidAuthVp);
+        }
+
+        return this.config.signDidAuthVp(privateKey);
+    }
+
     /**
      * Initialize the coordinator and determine the correct state.
      *
@@ -104,6 +504,7 @@ export class AuthCoordinator {
      * 4. Determine state: ready, needs_setup, needs_migration, needs_recovery
      */
     async initialize(): Promise<UnifiedAuthState> {
+        if (this.endingSession) return this.state;
         try {
             // --- Private-key-first path ---
             if (this.config.getCachedPrivateKey && this.config.didFromPrivateKey) {
@@ -141,6 +542,8 @@ export class AuthCoordinator {
                             // A missing record means the key was created under a different
                             // strategy (e.g. Web3Auth) and needs to be migrated to SSS
                             // so it's protected by split shares + recovery methods.
+                            let sssActivationState: 'provisional' | 'active' | null = null;
+
                             if (authUser && this.keyDerivation.capabilities?.recovery) {
                                 try {
                                     const serverStatus = await withDeadline(
@@ -163,7 +566,13 @@ export class AuthCoordinator {
                                         }
                                     );
 
-                                    if (!serverStatus.exists || serverStatus.needsMigration) {
+                                    sssActivationState = serverStatus.sssActivationState ?? null;
+
+                                    if (
+                                        !serverStatus.exists ||
+                                        (serverStatus.needsMigration &&
+                                            sssActivationState !== 'provisional')
+                                    ) {
                                         this.setState({
                                             status: 'needs_migration',
                                             authUser,
@@ -188,6 +597,7 @@ export class AuthCoordinator {
                                 did,
                                 privateKey: cachedKey,
                                 authSessionValid: !!authUser,
+                                sssActivationState,
                             });
 
                             return this.state;
@@ -224,6 +634,28 @@ export class AuthCoordinator {
             // Scope local storage to this user so device shares don't collide
             if (this.keyDerivation.setActiveUser) {
                 this.keyDerivation.setActiveUser(authUser.id);
+            }
+
+            if (
+                this.keyDerivation.hasPendingIdentityRecovery?.() &&
+                this.keyDerivation.completeIdentityRecovery
+            ) {
+                this.setState({ status: 'deriving_key' });
+                const { token, providerType } = await this.getAuthCredentials();
+                const result = await this.keyDerivation.completeIdentityRecovery({
+                    token,
+                    providerType,
+                    signDidAuthVp: this.config.signDidAuthVp,
+                });
+
+                this.setState({
+                    status: 'identity_recovery_success',
+                    authUser,
+                    did: result.did,
+                    privateKey: result.privateKey,
+                });
+
+                return this.state;
             }
 
             this.setState({ status: 'checking_key_status' });
@@ -268,7 +700,7 @@ export class AuthCoordinator {
             }
 
             // Case 2: Strategy says migration is needed
-            if (serverStatus.needsMigration) {
+            if (serverStatus.needsMigration && serverStatus.sssActivationState !== 'provisional') {
                 this.setState({ status: 'needs_migration', authUser });
                 return this.state;
             }
@@ -280,7 +712,9 @@ export class AuthCoordinator {
                     authUser,
                     recoveryMethods,
                     recoveryReason: 'new_device',
+                    escrowPin: serverStatus.escrowPin,
                     maskedRecoveryEmail: serverStatus.maskedRecoveryEmail ?? null,
+                    sssActivationState: serverStatus.sssActivationState ?? null,
                 });
                 return this.state;
             }
@@ -296,12 +730,14 @@ export class AuthCoordinator {
                     authUser,
                     recoveryMethods,
                     recoveryReason: 'missing_server_data',
+                    escrowPin: serverStatus.escrowPin,
                     maskedRecoveryEmail: serverStatus.maskedRecoveryEmail ?? null,
+                    sssActivationState: serverStatus.sssActivationState ?? null,
                 });
                 return this.state;
             }
 
-            const privateKey = await this.keyDerivation.reconstructKey(
+            let privateKey = await this.keyDerivation.reconstructKey(
                 localKey,
                 serverStatus.authShare
             );
@@ -311,17 +747,43 @@ export class AuthCoordinator {
                 const derivedDid = await this.config.didFromPrivateKey(privateKey);
 
                 if (derivedDid !== serverStatus.primaryDid) {
-                    log.warn('DID mismatch - stale local key detected');
-                    await this.keyDerivation.clearLocalKeys();
+                    const reconciled = this.keyDerivation.reconcileShares
+                        ? await this.keyDerivation.reconcileShares({
+                              token,
+                              providerType,
+                              expectedDid: serverStatus.primaryDid,
+                              didFromPrivateKey: this.config.didFromPrivateKey,
+                              signDidAuthVp: this.config.signDidAuthVp,
+                          })
+                        : null;
 
-                    this.setState({
-                        status: 'needs_recovery',
-                        authUser,
-                        recoveryMethods,
-                        recoveryReason: 'stale_local_key',
-                        maskedRecoveryEmail: serverStatus.maskedRecoveryEmail ?? null,
+                    if (reconciled) {
+                        privateKey = reconciled.privateKey;
+                    } else {
+                        log.warn('DID mismatch - stale local key detected');
+                        await this.keyDerivation.clearLocalKeys();
+
+                        this.setState({
+                            status: 'needs_recovery',
+                            authUser,
+                            recoveryMethods,
+                            recoveryReason: 'stale_local_key',
+                            escrowPin: serverStatus.escrowPin,
+                            maskedRecoveryEmail: serverStatus.maskedRecoveryEmail ?? null,
+                            sssActivationState: serverStatus.sssActivationState ?? null,
+                        });
+                        return this.state;
+                    }
+                } else if (this.keyDerivation.reconcileShares) {
+                    const reconciled = await this.keyDerivation.reconcileShares({
+                        token,
+                        providerType,
+                        expectedDid: serverStatus.primaryDid,
+                        didFromPrivateKey: this.config.didFromPrivateKey,
+                        signDidAuthVp: this.config.signDidAuthVp,
                     });
-                    return this.state;
+
+                    if (reconciled) privateKey = reconciled.privateKey;
                 }
             }
 
@@ -337,6 +799,7 @@ export class AuthCoordinator {
                 did,
                 privateKey,
                 authSessionValid: true,
+                sssActivationState: serverStatus.sssActivationState ?? null,
             });
 
             return this.state;
@@ -386,20 +849,27 @@ export class AuthCoordinator {
             this.setState({ status: 'deriving_key' });
 
             const { token, providerType } = await this.getAuthCredentials();
-            const didAuthVp = this.config.signDidAuthVp
-                ? await this.config.signDidAuthVp(privateKey)
-                : undefined;
 
-            const { localKey, remoteKey } = await this.keyDerivation.splitKey(privateKey);
+            if (this.keyDerivation.atomicUpdateShares) {
+                await this.keyDerivation.atomicUpdateShares({
+                    token,
+                    providerType,
+                    privateKey,
+                    did,
+                    signDidAuthVp: this.config.signDidAuthVp,
+                });
+            } else {
+                const didAuthVp = await this.getFreshDidAuthVp(privateKey, did);
+                const { localKey, remoteKey } = await this.keyDerivation.splitKey(privateKey);
 
-            await this.keyDerivation.storeLocalKey(localKey);
-            await this.keyDerivation.storeAuthShare(token, providerType, remoteKey, did, didAuthVp);
-
-            // Fire-and-forget: send email backup share if the strategy supports it
-            if (this.keyDerivation.sendEmailBackupShare && authUser?.email) {
-                this.keyDerivation
-                    .sendEmailBackupShare(token, providerType, privateKey, authUser.email)
-                    .catch(e => log.warn('Email backup share failed (non-fatal):', e));
+                await this.keyDerivation.storeLocalKey(localKey);
+                await this.keyDerivation.storeAuthShare(
+                    token,
+                    providerType,
+                    remoteKey,
+                    did,
+                    didAuthVp
+                );
             }
 
             this.setState({
@@ -408,6 +878,7 @@ export class AuthCoordinator {
                 did,
                 privateKey,
                 authSessionValid: true,
+                sssActivationState: 'provisional',
             });
 
             return this.state;
@@ -458,24 +929,32 @@ export class AuthCoordinator {
             this.setState({ status: 'deriving_key' });
 
             const { token, providerType } = await this.getAuthCredentials();
-            const didAuthVp = this.config.signDidAuthVp
-                ? await this.config.signDidAuthVp(privateKey)
-                : undefined;
 
-            const { localKey, remoteKey } = await this.keyDerivation.splitKey(privateKey);
+            if (this.keyDerivation.atomicUpdateShares) {
+                await this.keyDerivation.atomicUpdateShares({
+                    token,
+                    providerType,
+                    privateKey,
+                    did,
+                    signDidAuthVp: this.config.signDidAuthVp,
+                });
+            } else {
+                const didAuthVp = await this.getFreshDidAuthVp(privateKey, did);
+                const { localKey, remoteKey } = await this.keyDerivation.splitKey(privateKey);
 
-            await this.keyDerivation.storeLocalKey(localKey);
-            await this.keyDerivation.storeAuthShare(token, providerType, remoteKey, did, didAuthVp);
-
-            if (this.keyDerivation.markMigrated) {
-                await this.keyDerivation.markMigrated(token, providerType, didAuthVp);
+                await this.keyDerivation.storeLocalKey(localKey);
+                await this.keyDerivation.storeAuthShare(
+                    token,
+                    providerType,
+                    remoteKey,
+                    did,
+                    didAuthVp
+                );
             }
 
-            // Fire-and-forget: send email backup share if the strategy supports it
-            if (this.keyDerivation.sendEmailBackupShare && authUser?.email) {
-                this.keyDerivation
-                    .sendEmailBackupShare(token, providerType, privateKey, authUser.email)
-                    .catch(e => log.warn('Email backup share failed (non-fatal):', e));
+            if (this.keyDerivation.markMigrated) {
+                const didAuthVp = await this.getFreshDidAuthVp(privateKey, did);
+                await this.keyDerivation.markMigrated(token, providerType, didAuthVp);
             }
 
             this.setState({
@@ -484,6 +963,7 @@ export class AuthCoordinator {
                 did,
                 privateKey,
                 authSessionValid: true,
+                sssActivationState: 'provisional',
             });
 
             return this.state;
@@ -502,12 +982,87 @@ export class AuthCoordinator {
     }
 
     /**
+     * Commit a provisioned SSS key after recovery enrollment succeeds.
+     * The server re-checks the recovery-method invariant atomically.
+     */
+    async activate(): Promise<UnifiedAuthState> {
+        if (this.state.status !== 'ready' || this.state.sssActivationState !== 'provisional') {
+            throw new Error(`Cannot activate key in state: ${this.state.status}`);
+        }
+
+        if (!this.keyDerivation.activate) {
+            throw new Error('The active key derivation strategy does not support activation');
+        }
+
+        const readyState = this.state;
+        const { token, providerType } = await this.getAuthCredentials();
+        const didAuthVp = await this.getFreshDidAuthVp(readyState.privateKey, readyState.did);
+
+        await this.keyDerivation.activate(token, providerType, didAuthVp);
+
+        this.setState({ ...readyState, sssActivationState: 'active' });
+
+        return this.state;
+    }
+
+    /**
      * Recover account using a recovery method.
      * Only valid when state is 'needs_recovery'.
      *
      * Delegates the actual recovery logic to the strategy's executeRecovery().
      */
     async recover(input: unknown): Promise<UnifiedAuthState> {
+        if (isEscrowRecoveryMethod(input)) {
+            return this.runEscrowOperation(() => this.executeRecovery(input));
+        }
+        return this.executeRecovery(input);
+    }
+
+    private async executeRecovery(input: unknown): Promise<UnifiedAuthState> {
+        if (
+            this.state.status === 'identity_recovery' &&
+            input &&
+            typeof input === 'object' &&
+            'method' in input &&
+            input.method === 'escrow-pin'
+        ) {
+            throw new Error('PIN recovery requires signing in first.');
+        }
+        const isEscrow = isEscrowRecoveryMethod(input);
+        if (isEscrow && this.escrowRecoveryInFlight) throw new Error('Recovery is already running');
+        if (
+            this.state.status === 'identity_recovery' &&
+            typeof input === 'object' &&
+            input !== null &&
+            'method' in input &&
+            input.method === 'escrow'
+        ) {
+            const identityState = this.state;
+            const generation = this.recoveryGeneration;
+            this.escrowRecoveryInFlight = true;
+            try {
+                const result = await this.keyDerivation.executeRecovery({
+                    token: '',
+                    providerType: this.config.authProvider.getProviderType(),
+                    input,
+                    didFromPrivateKey: this.config.didFromPrivateKey,
+                    signDidAuthVp: this.config.signDidAuthVp,
+                });
+                if (generation !== this.recoveryGeneration || this.state !== identityState) {
+                    this.keyDerivation.cancelIdentityRecovery?.();
+                    throw new Error('This recovery request was cancelled.');
+                }
+                this.setState({
+                    ...identityState,
+                    phase: 'new_login',
+                    recoverySessionToken: undefined,
+                    recoveredDid: result.did,
+                });
+                return this.state;
+            } finally {
+                this.escrowRecoveryInFlight = false;
+            }
+        }
         if (this.state.status !== 'needs_recovery') {
             throw new Error(`Cannot recover in state: ${this.state.status}`);
         }
@@ -516,18 +1071,33 @@ export class AuthCoordinator {
         const recoveryMethods = this.state.recoveryMethods;
         const recoveryReason = this.state.recoveryReason;
         const maskedRecoveryEmail = this.state.maskedRecoveryEmail;
+        const sssActivationState = this.state.sssActivationState;
+        const generation = this.recoveryGeneration;
+        if (isEscrow) this.escrowRecoveryInFlight = true;
 
         try {
-            this.setState({ status: 'deriving_key' });
+            // Keep the request panel mounted so it owns progress, errors and retry proofs.
+            if (!isEscrow) this.setState({ status: 'deriving_key' });
 
             const { token, providerType } = await this.getAuthCredentials();
 
-            const { privateKey, did } = await this.keyDerivation.executeRecovery({
+            const params = {
                 token,
                 providerType,
                 input,
                 didFromPrivateKey: this.config.didFromPrivateKey,
-            });
+                signDidAuthVp: this.config.signDidAuthVp,
+            };
+            const { privateKey, did } =
+                isEscrow &&
+                this.keyDerivation.hasPendingIdentityRecovery?.() &&
+                this.keyDerivation.completeIdentityRecovery
+                    ? await this.keyDerivation.completeIdentityRecovery(params)
+                    : await this.keyDerivation.executeRecovery(params);
+            if (isEscrow && generation !== this.recoveryGeneration) {
+                this.keyDerivation.cancelIdentityRecovery?.();
+                throw new Error('This recovery request was cancelled.');
+            }
 
             this.setState({
                 status: 'ready',
@@ -535,10 +1105,12 @@ export class AuthCoordinator {
                 did,
                 privateKey,
                 authSessionValid: true,
+                sssActivationState,
             });
 
             return this.state;
         } catch (e) {
+            if (isEscrow) throw e;
             const errorMessage = e instanceof Error ? e.message : 'Recovery failed';
 
             this.setState({
@@ -551,11 +1123,161 @@ export class AuthCoordinator {
                     recoveryMethods,
                     recoveryReason,
                     maskedRecoveryEmail,
+                    sssActivationState,
                 },
             });
 
             return this.state;
+        } finally {
+            if (isEscrow) this.escrowRecoveryInFlight = false;
         }
+    }
+
+    beginIdentityRecovery(): UnifiedAuthState {
+        if (this.state.status !== 'idle') {
+            throw new Error(`Cannot start identity recovery in state: ${this.state.status}`);
+        }
+        if (!this.keyDerivation.startIdentityRecovery) {
+            throw new Error('Identity recovery is not supported');
+        }
+
+        this.setState({
+            status: 'identity_recovery',
+            phase: 'enter_email',
+            recoveryMethods: [],
+        });
+        return this.state;
+    }
+
+    async sendIdentityRecoveryCode(email: string): Promise<UnifiedAuthState> {
+        if (
+            this.state.status !== 'identity_recovery' ||
+            !this.keyDerivation.startIdentityRecovery
+        ) {
+            throw new Error('Identity recovery has not been started');
+        }
+
+        await this.keyDerivation.startIdentityRecovery(email);
+        this.setState({
+            status: 'identity_recovery',
+            phase: 'verify_email',
+            email: email.trim().toLowerCase(),
+            recoveryMethods: [],
+        });
+        return this.state;
+    }
+
+    async verifyIdentityRecoveryCode(code: string): Promise<UnifiedAuthState> {
+        if (
+            this.state.status !== 'identity_recovery' ||
+            this.state.phase !== 'verify_email' ||
+            !this.state.email ||
+            !this.keyDerivation.verifyIdentityRecovery
+        ) {
+            throw new Error('No recovery code is waiting to be verified');
+        }
+
+        const session = await this.keyDerivation.verifyIdentityRecovery(this.state.email, code);
+        this.setState({
+            status: 'identity_recovery',
+            phase: 'choose_method',
+            email: this.state.email,
+            recoverySessionToken: session.recoverySessionToken,
+            recoveryMethods: session.recoveryMethods,
+        });
+        return this.state;
+    }
+
+    async prepareIdentityRecovery(input: unknown): Promise<UnifiedAuthState> {
+        if (
+            this.state.status !== 'identity_recovery' ||
+            this.state.phase !== 'choose_method' ||
+            !this.state.recoverySessionToken ||
+            !this.keyDerivation.prepareIdentityRecovery ||
+            !this.config.didFromPrivateKey
+        ) {
+            throw new Error('Identity recovery is not ready for a recovery method');
+        }
+
+        const email = this.state.email;
+        const recoveryMethods = this.state.recoveryMethods;
+
+        try {
+            const result = await this.keyDerivation.prepareIdentityRecovery({
+                recoverySessionToken: this.state.recoverySessionToken,
+                input,
+                didFromPrivateKey: this.config.didFromPrivateKey,
+            });
+
+            this.setState({
+                status: 'identity_recovery',
+                phase: 'new_login',
+                email,
+                recoveryMethods,
+                recoveredDid: result.did,
+            });
+        } catch (error) {
+            const errorMessage =
+                error instanceof Error ? error.message : 'Identity recovery failed';
+
+            if (error instanceof IdentityRecoverySessionConsumedError) {
+                this.keyDerivation.cancelIdentityRecovery?.();
+                this.setState({
+                    status: 'identity_recovery',
+                    phase: 'enter_email',
+                    email,
+                    recoveryMethods: [],
+                    error: errorMessage,
+                });
+            } else {
+                this.setState({
+                    status: 'identity_recovery',
+                    phase: 'choose_method',
+                    email,
+                    recoverySessionToken: this.state.recoverySessionToken,
+                    recoveryMethods,
+                    error: errorMessage,
+                });
+            }
+        }
+
+        return this.state;
+    }
+
+    continueIdentityRecoveryLogin(): UnifiedAuthState {
+        if (this.state.status !== 'identity_recovery' || this.state.phase !== 'new_login') {
+            throw new Error('Identity recovery is not waiting for a new sign-in');
+        }
+
+        this.setState({ status: 'awaiting_rebind', did: this.state.recoveredDid ?? '' });
+        return this.state;
+    }
+
+    finishIdentityRecovery(): UnifiedAuthState {
+        if (this.state.status !== 'identity_recovery_success') {
+            throw new Error('Identity recovery has not completed');
+        }
+
+        this.setState({
+            status: 'ready',
+            authUser: this.state.authUser,
+            did: this.state.did,
+            privateKey: this.state.privateKey,
+            authSessionValid: true,
+            sssActivationState: 'active',
+        });
+        return this.state;
+    }
+
+    cancelIdentityRecovery(): UnifiedAuthState {
+        if (this.state.status !== 'identity_recovery' && this.state.status !== 'awaiting_rebind') {
+            return this.state;
+        }
+
+        this.recoveryGeneration++;
+        this.keyDerivation.cancelIdentityRecovery?.();
+        this.setState({ status: 'idle' });
+        return this.state;
     }
 
     /**
@@ -685,17 +1407,27 @@ export class AuthCoordinator {
      * call `forgetDevice()` before or after logout.
      */
     async logout(): Promise<void> {
-        await this.config.authProvider.signOut();
+        this.endingSession = true;
+        this.stopEscrowPolling?.();
+        this.recoveryGeneration++;
+        this.escrowStatusGeneration++;
+        try {
+            await this.drainEscrowOperations();
+            this.keyDerivation.cancelIdentityRecovery?.();
+            await this.config.authProvider.signOut();
 
-        if (this.keyDerivation.cleanup) {
-            await this.keyDerivation.cleanup();
+            if (this.keyDerivation.cleanup) {
+                await this.keyDerivation.cleanup();
+            }
+
+            if (this.config.onLogout) {
+                await this.config.onLogout();
+            }
+
+            this.setState({ status: 'idle' });
+        } finally {
+            this.endingSession = false;
         }
-
-        if (this.config.onLogout) {
-            await this.config.onLogout();
-        }
-
-        this.setState({ status: 'idle' });
     }
 
     /**
@@ -707,7 +1439,32 @@ export class AuthCoordinator {
      * Use case: logging out on a shared / public computer.
      */
     async forgetDevice(): Promise<void> {
-        await this.keyDerivation.clearLocalKeys();
+        this.endingSession = true;
+        this.stopEscrowPolling?.();
+        this.recoveryGeneration++;
+        this.escrowStatusGeneration++;
+        try {
+            await this.drainEscrowOperations();
+            this.keyDerivation.cancelIdentityRecovery?.();
+            await this.keyDerivation.clearLocalKeys();
+            if (this.config.clearPendingEscrowRecovery) {
+                await this.config.clearPendingEscrowRecovery();
+                return;
+            }
+            const clearPendingRecovery = async () => {
+                if (typeof indexedDB !== 'undefined')
+                    await deleteDeviceShare('escrow-recovery-pending');
+                if (typeof sessionStorage !== 'undefined')
+                    await createAdaptiveStorage().clearAllShares('escrow-recovery-pending');
+            };
+            if (typeof navigator !== 'undefined' && navigator.locks) {
+                await navigator.locks.request('escrow-recovery-pending', clearPendingRecovery);
+            } else {
+                await clearPendingRecovery();
+            }
+        } finally {
+            this.endingSession = false;
+        }
     }
 
     /**

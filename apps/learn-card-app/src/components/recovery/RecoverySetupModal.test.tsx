@@ -1,6 +1,6 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 
 // Stub URL methods that don't exist in happy-dom/jsdom
 beforeAll(() => {
@@ -24,15 +24,19 @@ vi.mock('@ionic/react', () => ({
     IonIcon: ({ className }: { className?: string }) => <span className={className} />,
 }));
 
-vi.mock('learn-card-base', () => ({
+vi.mock('learn-card-base', async () => ({
     getLogger: () => ({ error: vi.fn() }),
+    Toggle: (
+        await import('../../../../../packages/learn-card-base/src/components/form-inputs/Toggle')
+    ).default,
 }));
 
 import RecoverySetupModal from './RecoverySetupModal';
 
 const renderModal = (
     initialMethod: 'passkey' | 'phrase' | 'backup' | 'email',
-    onCompleted = vi.fn()
+    onCompleted = vi.fn(),
+    overrides: Partial<React.ComponentProps<typeof RecoverySetupModal>> = {}
 ) => {
     const props: React.ComponentProps<typeof RecoverySetupModal> = {
         initialMethod,
@@ -40,12 +44,19 @@ const renderModal = (
         existingMethods: [],
         maskedRecoveryEmail: null,
         onSetupPasskey: vi.fn().mockResolvedValue('credential-id'),
-        onGeneratePhrase: vi.fn().mockResolvedValue('one two three'),
+        onGeneratePhrase: vi.fn().mockResolvedValue({
+            phrase: 'one two three',
+            challengeWordIndices: [0, 2],
+        }),
+        onConfirmPhrase: vi.fn().mockResolvedValue(undefined),
         onSetupBackup: vi.fn().mockResolvedValue('{}'),
+        onConfirmBackup: vi.fn().mockResolvedValue(undefined),
         onAddRecoveryEmail: vi.fn().mockResolvedValue(undefined),
         onVerifyRecoveryEmail: vi.fn().mockResolvedValue({ maskedEmail: 'r***@example.com' }),
         onSetupEmailRecovery: vi.fn().mockResolvedValue(undefined),
+        onConfirmEmailRecovery: vi.fn().mockResolvedValue(undefined),
         onClose: vi.fn(),
+        ...overrides,
     };
 
     render(<RecoverySetupModal {...props} />);
@@ -53,11 +64,121 @@ const renderModal = (
 };
 
 describe('RecoverySetupModal prompt integration', () => {
-    afterEach(() => {
-        vi.unstubAllGlobals();
-        vi.restoreAllMocks();
+    it('shows Set PIN pill when enrolled without a PIN and opens PIN entry', async () => {
+        const onSetEscrowPin = vi.fn().mockResolvedValue(undefined);
+        renderModal('email', vi.fn(), {
+            onGetEscrowEnrollmentState: vi.fn().mockResolvedValue({ state: 'enrolled' }),
+            onDisableEscrowRecovery: vi.fn(),
+            onEnableEscrowRecovery: vi.fn(),
+            onSetEscrowPin,
+        });
+
+        const setPinButton = await screen.findByRole('button', { name: 'Set a recovery PIN' });
+        expect(setPinButton).toBeInTheDocument();
+
+        fireEvent.click(setPinButton);
+        expect(screen.getByText('Enter a 6-digit PIN')).toBeInTheDocument();
     });
 
+    it('shows Change and Remove buttons when PIN is set', async () => {
+        const onClearEscrowPin = vi.fn().mockResolvedValue(undefined);
+        renderModal('email', vi.fn(), {
+            onGetEscrowEnrollmentState: vi
+                .fn()
+                .mockResolvedValue({ state: 'enrolled', escrowPin: { state: 'enabled' } }),
+            onDisableEscrowRecovery: vi.fn(),
+            onEnableEscrowRecovery: vi.fn(),
+            onSetEscrowPin: vi.fn(),
+            onClearEscrowPin,
+        });
+
+        const changeButton = await screen.findByRole('button', { name: 'Change' });
+        const removeButton = await screen.findByRole('button', { name: 'Remove PIN' });
+
+        expect(changeButton).toBeInTheDocument();
+        expect(removeButton).toBeInTheDocument();
+
+        fireEvent.click(removeButton);
+        expect(
+            screen.getByText(/Are you sure you want to remove your recovery PIN/)
+        ).toBeInTheDocument();
+    });
+
+    it.each(['enrolled', 'opted-out'] as const)('renders automatic recovery %s', async state => {
+        renderModal('email', vi.fn(), {
+            onGetEscrowEnrollmentState: vi.fn().mockResolvedValue(state),
+            onDisableEscrowRecovery: vi.fn(),
+            onEnableEscrowRecovery: vi.fn(),
+        });
+        expect(await screen.findByRole('switch')).toHaveAttribute(
+            'aria-checked',
+            String(state === 'enrolled')
+        );
+        expect(
+            screen.getByText(state === 'enrolled' ? 'Restore after a 7-day wait' : 'Off')
+        ).toBeInTheDocument();
+    });
+
+    it('confirms before disabling automatic recovery', async () => {
+        const onDisableEscrowRecovery = vi.fn().mockResolvedValue(undefined);
+        renderModal('email', vi.fn(), {
+            onGetEscrowEnrollmentState: vi
+                .fn()
+                .mockResolvedValueOnce('enrolled')
+                .mockResolvedValue('opted-out'),
+            onDisableEscrowRecovery,
+            onEnableEscrowRecovery: vi.fn(),
+        });
+        fireEvent.click(await screen.findByRole('switch'));
+        expect(onDisableEscrowRecovery).not.toHaveBeenCalled();
+        expect(
+            screen.getByText(
+                'Without automatic recovery, losing every device and every recovery method means losing your account.'
+            )
+        ).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'Turn off' }));
+        await waitFor(() =>
+            expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'false')
+        );
+        expect(onDisableEscrowRecovery).toHaveBeenCalledOnce();
+    });
+
+    it('keeps automatic recovery on after a precondition failure', async () => {
+        renderModal('email', vi.fn(), {
+            onGetEscrowEnrollmentState: vi.fn().mockResolvedValue('enrolled'),
+            onDisableEscrowRecovery: vi
+                .fn()
+                .mockRejectedValue(Object.assign(new Error('private details'), { status: 412 })),
+            onEnableEscrowRecovery: vi.fn(),
+        });
+        fireEvent.click(await screen.findByRole('switch'));
+        fireEvent.click(screen.getByRole('button', { name: 'Turn off' }));
+        expect(await screen.findByRole('alert')).toHaveTextContent(
+            'Set up another recovery method first.'
+        );
+        expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'true');
+        expect(screen.getByRole('switch')).not.toBeDisabled();
+        expect(screen.queryByText('private details')).not.toBeInTheDocument();
+    });
+
+    it.each(['opted-out', 'not-enrolled'] as const)(
+        'enables automatic recovery from %s',
+        async state => {
+            const onEnableEscrowRecovery = vi.fn().mockResolvedValue({ enrolled: true });
+            renderModal('email', vi.fn(), {
+                onGetEscrowEnrollmentState: vi
+                    .fn()
+                    .mockResolvedValueOnce(state)
+                    .mockResolvedValue('enrolled'),
+                onDisableEscrowRecovery: vi.fn(),
+                onEnableEscrowRecovery,
+            });
+            const toggle = await screen.findByRole('switch');
+            fireEvent.click(toggle);
+            await waitFor(() => expect(toggle).toHaveAttribute('aria-checked', 'true'));
+            expect(onEnableEscrowRecovery).toHaveBeenCalledOnce();
+        }
+    );
     it('opens on the requested passkey method and reports terminal completion', async () => {
         const { onCompleted, props } = renderModal('passkey');
 
@@ -75,19 +196,32 @@ describe('RecoverySetupModal prompt integration', () => {
         expect(onCompleted).not.toHaveBeenCalled();
 
         fireEvent.click(screen.getByRole('button', { name: "I've Saved It Somewhere Safe" }));
+        expect(onCompleted).not.toHaveBeenCalled();
+
+        const challengeInputs = screen.getAllByRole('textbox');
+        expect(challengeInputs).toHaveLength(2);
+
+        fireEvent.click(screen.getByRole('button', { name: 'Passkey' }));
+        expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Phrase' }));
+
+        const phraseInputs = screen.getAllByRole('textbox');
+        fireEvent.change(phraseInputs[0], { target: { value: 'one' } });
+        fireEvent.change(phraseInputs[1], { target: { value: 'three' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Confirm Recovery Phrase' }));
+
+        await waitFor(() => expect(props.onConfirmPhrase).toHaveBeenCalledWith(['one', 'three']));
         expect(onCompleted).toHaveBeenCalledWith('phrase');
     });
 
     it('waits for backup download confirmation before reporting completion', async () => {
-        // jsdom does not implement blob URL creation or revocation.
-        vi.stubGlobal(
-            'URL',
-            class extends URL {
-                static createObjectURL = vi.fn(() => 'blob:backup');
-                static revokeObjectURL = vi.fn();
-            }
-        );
-        vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+        const createObjectURL = vi.fn().mockReturnValue('blob:backup');
+        const revokeObjectURL = vi.fn();
+        vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
+        const anchorClick = vi
+            .spyOn(HTMLAnchorElement.prototype, 'click')
+            .mockImplementation(() => {});
         const { onCompleted, props } = renderModal('backup');
 
         fireEvent.change(screen.getByPlaceholderText('At least 8 characters'), {
@@ -102,9 +236,18 @@ describe('RecoverySetupModal prompt integration', () => {
         expect(onCompleted).not.toHaveBeenCalled();
 
         fireEvent.click(screen.getByRole('button', { name: 'Download Backup File' }));
-        fireEvent.click(screen.getByRole('button', { name: "I've Saved It Somewhere Safe" }));
+        fireEvent.change(screen.getByPlaceholderText('Type it again'), {
+            target: { value: 'secure-password' },
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'Verify Backup File' }));
 
+        expect(onCompleted).not.toHaveBeenCalled();
+        await waitFor(() =>
+            expect(props.onConfirmBackup).toHaveBeenCalledWith('{}', 'secure-password')
+        );
         expect(onCompleted).toHaveBeenCalledWith('backup');
+        vi.unstubAllGlobals();
+        anchorClick.mockRestore();
     });
 
     it('reports email completion only after the recovery key is sent', async () => {
@@ -128,6 +271,23 @@ describe('RecoverySetupModal prompt integration', () => {
 
         fireEvent.click(screen.getByRole('button', { name: 'Send Recovery Key' }));
         await waitFor(() => expect(props.onSetupEmailRecovery).toHaveBeenCalledOnce());
+        expect(onCompleted).not.toHaveBeenCalled();
+
+        fireEvent.change(screen.getByPlaceholderText('123456'), {
+            target: { value: '654321' },
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'Confirm Recovery Key' }));
+
+        await waitFor(() => expect(props.onConfirmEmailRecovery).toHaveBeenCalledWith('654321'));
         expect(onCompleted).toHaveBeenCalledWith('email');
+    });
+
+    it('renders a close button that calls onClose even while activation is pending', () => {
+        const onClose = vi.fn();
+        renderModal('email', vi.fn(), { isActivationPending: true, onClose });
+
+        fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+
+        expect(onClose).toHaveBeenCalledOnce();
     });
 });
