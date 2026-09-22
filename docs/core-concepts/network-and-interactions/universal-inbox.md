@@ -76,6 +76,7 @@ const receipt = await learnCard.invoke.sendCredentialsViaInbox({
     ],
 });
 
+// Dispatch can take up to about a minute before processing begins.
 const batch = await learnCard.invoke.waitForInboxCredentialBatch(receipt.batchId, {
     timeoutMs: 10 * 60_000,
     intervalMs: 2_000,
@@ -107,30 +108,41 @@ accept `configuration.guardianEmail`; it must differ from the recipient email,
 ignoring case. Batches validate this at submission after applying item overrides.
 Set an item's `configuration.guardianEmail` to `null` to clear a batch-level guardian
 default for that recipient. Other omitted item settings inherit their batch defaults.
+This includes `configuration.delivery.suppress`: set it on an item to `true` to suppress
+notifications or `false` to enable them; omit it to inherit the batch setting.
+For refreshable batches, effective `refresh: true` on any item requires server refresh
+support and `credentials:write` at submission, before quota is charged.
 
 ### Retries and recovery
 
-An optional `requestId` (1–256 characters) makes submission retries safe for 24 hours.
+An optional `requestId` (1–256 characters) makes submission retries safe for 72 hours.
 The same issuer, payload, domain, and tenant ID return the original receipt without
 another quota charge. Reusing it with changed input returns HTTP 409.
 
 An optional item `idempotencyKey` (up to 256 characters) durably stores a successful
-result for 24 hours per issuer. Reusing it returns the same issuance with
+result for 72 hours per issuer. Reusing it returns the same issuance with
 `deduplicated: true`, without another credential, email, or webhook. Changed input
 returns a per-item `CONFLICT` with `IDEMPOTENCY_MISMATCH`. Overlapping attempts
 retry with backoff for up to five total attempts, then return `CONFLICT` with `IN_PROGRESS`
 if the original attempt is still processing or unconfirmed. Within a batch, only the
 first occurrence of a key is attempted; later occurrences always conflict.
+After 72 hours, the successful replay record may expire and resubmission can issue
+another credential, including for refreshable items.
 
 Validation, preparation, and explicitly side-effect-free preflight failures release
 the key. Correct the input and resubmit that item under the same item key, using a
 new batch request ID. Transient preparation and signing failures retry up to five
 worker attempts before delivery begins. Signing retries can leave unused credential-status
 allocations, but do not repeat delivery. Worker retries do not consume additional quota.
+Item errors expose optional `retryable`: permanent signing-authority failures return
+`false` and require a configuration fix; transient failures return `true`. Reconciliation
+errors still require checking the existing issuance before taking further action.
+The polling helper retries transient reads within its deadline. Polling errors carry
+`batchId` and the original `cause`, so callers can resume even without `onSubmitted`.
 
 If a worker fails after delivery or inbox persistence may have started, it does not automatically issue
 again. The item is flagged for reconciliation and its reservation remains blocked
-until resolved, beyond the normal 24-hour replay window. If known, `issuanceId`
+until resolved, beyond the normal 72-hour replay window. If known, `issuanceId`
 and `claimUrl` accompany the failure. Check the issuer's sent inbox records and
 contact support; do not work around uncertainty with a new key. This is not an
 exactly-once transaction across credential storage, email, and webhooks.

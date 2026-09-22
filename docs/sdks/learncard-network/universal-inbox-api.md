@@ -76,18 +76,18 @@ for (const item of progress.items) console.log(item.index, item.state, item.resu
 profile. Use `learnCard.invoke.getInboxCredentialBatch(batchId)` or tRPC
 `inbox.getBatch({ batchId })`. Missing or inaccessible jobs return 404.
 
-| Field                    | Contract                                                                                                                                                                                     |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Submission `items`       | 1–100 items, each with a recipient and either credential or template URI.                                                                                                                    |
-| `configuration`          | Shared defaults deep-merged with item overrides; arrays replace defaults.                                                                                                                    |
-| `requestId`              | Optional 1–256 character submission ID. Identical retries return the same batch for 24 hours without charging again; changed input conflicts.                                                |
-| `items[].idempotencyKey` | Optional item key, up to 256 characters; successful replay window is 24 hours per issuer.                                                                                                    |
-| Polling `done`           | True when no items remain queued or processing. Does not imply every issuance succeeded or was confirmed.                                                                                    |
-| Polling `status`         | `QUEUED`, `PROCESSING`, `COMPLETED`, or `NEEDS_RECONCILIATION`.                                                                                                                              |
-| Polling `items`          | Ordered entries with original `index`, processing `state`, and optional `result`.                                                                                                            |
-| Success result           | `success: true`, `index`, optional `idempotencyKey`, `issuanceId`, credential `status`, `recipient`, optional `claimUrl`, `recipientDid`, `guardianStatus`, and `deduplicated`.              |
-| Failure result           | `success: false`, `index`, `recipient`, optional `idempotencyKey`, `error.code`, `error.message`, optional `error.reason`; known issuance ID and claim URL may accompany uncertain outcomes. |
-| `summary`                | `total`, `succeeded`, `failed`, `deduplicated`, `completed`, `pending`, `unconfirmed`.                                                                                                       |
+| Field                    | Contract                                                                                                                                                                                                           |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Submission `items`       | 1–100 items, each with a recipient and either credential or template URI.                                                                                                                                          |
+| `configuration`          | Shared defaults deep-merged with item overrides; arrays replace defaults.                                                                                                                                          |
+| `requestId`              | Optional 1–256 character submission ID. Identical retries return the same batch for 72 hours without charging again; changed input conflicts.                                                                      |
+| `items[].idempotencyKey` | Optional item key, up to 256 characters; successful replay window is 72 hours per issuer.                                                                                                                          |
+| Polling `done`           | True when no items remain queued or processing. Does not imply every issuance succeeded or was confirmed.                                                                                                          |
+| Polling `status`         | `QUEUED`, `PROCESSING`, `COMPLETED`, or `NEEDS_RECONCILIATION`.                                                                                                                                                    |
+| Polling `items`          | Ordered entries with original `index`, processing `state`, and optional `result`.                                                                                                                                  |
+| Success result           | `success: true`, `index`, optional `idempotencyKey`, `issuanceId`, credential `status`, `recipient`, optional `claimUrl`, `recipientDid`, `guardianStatus`, and `deduplicated`.                                    |
+| Failure result           | `success: false`, `index`, `recipient`, optional `idempotencyKey`, `error.code`, `error.message`, optional `error.reason` and `error.retryable`; known issuance ID and claim URL may accompany uncertain outcomes. |
+| `summary`                | `total`, `succeeded`, `failed`, `deduplicated`, `completed`, `pending`, `unconfirmed`.                                                                                                                             |
 
 Set `configuration.refresh: true` to enable managed credential refresh for the batch.
 Each `items[].configuration.refresh` overrides that default; explicit `false` disables
@@ -95,6 +95,8 @@ refresh for that item. The existing top-level `items[].refresh` is also supporte
 precedence is item configuration, then item top-level flag, then batch configuration.
 Refresh requires `credentials:write` in addition to `inbox:write`, managed refresh
 enabled on the server, unsigned content, and a registered signing authority.
+If any item enables refresh, server availability and scope are checked before admission
+and quota charging, and checked again by the worker.
 Successful refreshable items include `result.refresh`; retain this receipt to publish
 future versions of the same credential. Idempotent replays preserve the receipt.
 
@@ -108,6 +110,7 @@ Internal reservations for unkeyed items are collected after their batch items ar
 Counts are disjoint: `succeeded + failed + unconfirmed + pending === total`;
 `deduplicated` is a subset of `succeeded`.
 
+Issuance runs in a dedicated background queue; dispatch can take up to about a minute.
 Use the SDK polling helper for a bounded deadline, backoff, and cancellation:
 
 ```typescript
@@ -120,12 +123,17 @@ const batch = await learnCard.invoke.waitForInboxCredentialBatch(receipt.batchId
 ```
 
 The interval increases by 1.5× to a maximum of ten seconds (or the initial interval,
-if larger). Timeout rejects with `TimeoutError`; abort rejects with the signal's reason.
-Neither cancels the job. Keep the batch ID to resume polling. Scripts can use
+if larger). Transient read failures retry within the same deadline; permission and other
+permanent read failures stop polling. Timeout rejects with `TimeoutError`; abort rejects
+with the signal's reason as `cause`. Polling errors include `batchId` in both the message
+and a property, and preserve the original error as `cause`. Neither timeout nor abort
+cancels the job. Use `error.batchId` to resume polling. Scripts can use
 `sendCredentialsViaInboxAndWait(input, { onSubmitted: receipt => saveReceipt(receipt) })`
 to submit once and wait. Both read and write scopes are required for this helper.
 
 Identical keyed item retries replay the same issuance with `deduplicated: true`.
+After 72 hours, a successful replay record may expire; resubmitting that item key
+can issue another credential, including for refreshable items.
 Changed payloads conflict. Later occurrences of a key within a batch always conflict.
 Side-effect-free failures release the key; transient preparation and signing errors
 retry up to five worker attempts before delivery. An overlapping key also retries with
@@ -143,17 +151,27 @@ for item issues, `path[1]` is the zero-based item index. Effective guardian defa
 are checked after applying item overrides. Configuration defaults are additive:
 `undefined` inherits a default. An item may set `guardianEmail: null` to clear that
 batch-level default for the recipient.
+`items[].configuration.delivery.suppress` overrides the batch delivery setting:
+`true` suppresses delivery notifications, `false` enables them, and omission inherits
+the batch default.
 
-| Item `error.code`            | `error.reason`         | Action                                                                                                        |
-| ---------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `CONFLICT`                   | `DUPLICATE_KEY`        | Remove later occurrences of the key within this batch.                                                        |
-| `CONFLICT`                   | `IDEMPOTENCY_MISMATCH` | Restore the original input for this key; use a new key only for an intentionally new issuance.                |
-| `CONFLICT`                   | `IN_PROGRESS`          | Another attempt owns the key or remains unconfirmed. Retry the same key later; reconcile if it stays blocked. |
-| `CONFLICT`                   | `UNCONFIRMED`          | Check the known issuance ID and reconcile; never bypass it with a new key.                                    |
-| `BAD_REQUEST`                | —                      | Correct the input before resubmitting.                                                                        |
-| `NOT_FOUND`                  | —                      | Check the template or issuer still exists.                                                                    |
-| `UNAUTHORIZED` / `FORBIDDEN` | —                      | Check permissions and signing-authority access.                                                               |
-| `INTERNAL_SERVER_ERROR`      | —                      | Safe preparation or worker retries were exhausted; retry the same key.                                        |
+| Item `error.code`            | `error.reason`         | Action                                                                                                                 |
+| ---------------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `CONFLICT`                   | `DUPLICATE_KEY`        | Remove later occurrences of the key within this batch.                                                                 |
+| `CONFLICT`                   | `IDEMPOTENCY_MISMATCH` | Restore the original input for this key; use a new key only for an intentionally new issuance.                         |
+| `CONFLICT`                   | `IN_PROGRESS`          | Another attempt owns the key or remains unconfirmed. Retry the same key later; reconcile if it stays blocked.          |
+| `CONFLICT`                   | `UNCONFIRMED`          | Check the known issuance ID and reconcile; never bypass it with a new key.                                             |
+| `BAD_REQUEST`                | —                      | Correct the input before resubmitting.                                                                                 |
+| `NOT_FOUND`                  | —                      | Check the template or issuer still exists.                                                                             |
+| `UNAUTHORIZED` / `FORBIDDEN` | —                      | Check permissions and signing-authority access.                                                                        |
+| `INTERNAL_SERVER_ERROR`      | —                      | Check `error.retryable`: retry the same item key only when true; when false, fix the signing authority or input first. |
+
+`error.retryable` is optional for compatibility with older stored results. Signing-authority
+failures preserve their retry decision; generic internal failures default to `true`,
+and request/permission failures are `false`. `IN_PROGRESS` permits retrying the same key;
+`UNCONFIRMED` requires reconciliation. Never bypass it with a new key. When retrying a
+terminal failed item, use the same item key with a new batch `requestId`; the original
+request ID returns the original job. Permanent signing failures are not retried by workers.
 
 For 5,000 recipients, create 50 batches of at most 100 items; split earlier when
 JSON approaches 4 MiB. Persist a stable `requestId` for each chunk and an
@@ -161,10 +179,9 @@ JSON approaches 4 MiB. Persist a stable `requestId` for each chunk and an
 waiting for `done` before submitting the next chunk. At the default 10,000-item hourly
 quota, a 5,000-item run consumes half the window; resubmitting all items under new
 request IDs consumes the remaining half, even if every item replays. Retry a lost
-submission with its original request ID within 24 hours. On HTTP 429, stop admissions
+submission with its original request ID within 72 hours. On HTTP 429, stop admissions
 until the issuer's hourly window resets (at most one hour).
 
-Issuance runs in a dedicated background queue; dispatch can take up to about a minute.
 For an immediate single-item result, use `sendCredentialViaInbox`. Single issuance remains synchronous.
 Both routes accept `configuration.guardianEmail`; it must differ from the recipient's
 email, ignoring case. See [batch issuance](../../core-concepts/network-and-interactions/universal-inbox.md#batch-issuance)
