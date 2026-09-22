@@ -11,7 +11,11 @@ describe('LearnCard App build environment', () => {
             'build'
         );
 
-        expect(environment).toMatchObject({ DEV: false, PROD: true });
+        expect(environment).toMatchObject({
+            DEV: false,
+            PROD: true,
+            VITE_CREDENTIAL_REFRESH_LOCAL_QA: false,
+        });
     });
 
     it('enables development flags for the Vite dev server', () => {
@@ -21,7 +25,31 @@ describe('LearnCard App build environment', () => {
             'serve'
         );
 
-        expect(environment).toMatchObject({ DEV: true, PROD: false });
+        expect(environment).toMatchObject({
+            DEV: true,
+            PROD: false,
+            VITE_CREDENTIAL_REFRESH_LOCAL_QA: true,
+        });
+    });
+
+    it('allows developers to opt out of local trust and refresh transport exceptions', () => {
+        expect(
+            parseLearnCardAppEnvironment(
+                { MODE: 'development', VITE_CREDENTIAL_REFRESH_LOCAL_QA: 'false' },
+                'test',
+                'serve'
+            ).VITE_CREDENTIAL_REFRESH_LOCAL_QA
+        ).toBe(false);
+    });
+
+    it('cannot enable local exceptions in a build even with an explicit flag', () => {
+        expect(
+            parseLearnCardAppEnvironment(
+                { MODE: 'development', VITE_CREDENTIAL_REFRESH_LOCAL_QA: 'true' },
+                'test',
+                'build'
+            ).VITE_CREDENTIAL_REFRESH_LOCAL_QA
+        ).toBe(false);
     });
 
     it('defines application build constants under Vitest', () => {

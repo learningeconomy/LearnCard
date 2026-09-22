@@ -1,3 +1,12 @@
+import { trace } from '@tracing';
+import { submitInboxBatch, getInboxBatch } from '@helpers/inbox-queue.helpers';
+import {
+    assertInboxRefreshEnabled,
+    inboxRefreshRequestDigest,
+    getInboxRefreshReplay,
+    getInboxRefreshReceipt,
+    resumeInboxRefreshDelivery,
+} from '@helpers/inbox-refresh.helpers';
 import { getDidWeb } from '@helpers/did.helpers';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
@@ -6,6 +15,9 @@ import { t, profileRoute, openRoute, verifiedContactRoute, scopedRoute } from '@
 import {
     PaginationOptionsValidator,
     IssueInboxCredentialValidator,
+    IssueInboxCredentialBatchValidator,
+    InboxBatchReceiptValidator,
+    InboxBatchStatusValidator,
     IssueInboxCredentialResponseValidator,
     InboxCredentialValidator,
     PaginatedInboxCredentialsValidator,
@@ -18,15 +30,14 @@ import {
     JWEValidator,
 } from '@learncard/types';
 import { getInboxCredentialMeta } from '@helpers/credential-meta.helpers';
-import { claimIntoInbox, issueToInbox } from '@helpers/inbox.helpers';
-import { prepareCredentialFromBoost, getBoostUri } from '@helpers/boost.helpers';
+import { claimIntoInbox, issueToInbox, resolveInboxCredentialInput } from '@helpers/inbox.helpers';
 import {
     hasMustacheVariables,
     renderBoostTemplate,
     parseRenderedTemplate,
 } from '@helpers/template.helpers';
 import { getProfileByVerifiedContactMethod } from '@accesslayer/contact-method/relationships/read';
-import { getBoostByUri, getBoostsForProfile } from '@accesslayer/boost/read';
+import { getBoostsForProfile } from '@accesslayer/boost/read';
 import {
     generateGuardianApprovalToken,
     generateGuardianApprovalUrl,
@@ -447,55 +458,36 @@ export const inboxRouter = t.router({
         .output(IssueInboxCredentialResponseValidator)
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { recipient, credential: inputCredential, templateUri, configuration } = input;
+            const { recipient, configuration } = input;
 
-            // Resolve credential from templateUri if provided
-            let credential = inputCredential;
-            let resolvedBoostUri: string | undefined;
-
-            if (templateUri && !credential) {
-                const boostInstance = await getBoostByUri(templateUri);
-
-                if (!boostInstance) {
-                    throw new TRPCError({
-                        code: 'NOT_FOUND',
-                        message: `Boost not found: ${templateUri}`,
-                    });
-                }
-
-                if (!boostInstance.dataValues.boost) {
-                    throw new TRPCError({
-                        code: 'BAD_REQUEST',
-                        message: `Boost does not contain a credential template: ${templateUri}`,
-                    });
-                }
-
-                try {
-                    // Use shared helper to prepare credential with templateData rendering,
-                    // issuance date, boostId injection, and OBv3 alignments
-                    resolvedBoostUri = getBoostUri(boostInstance.id, ctx.domain);
-
-                    credential = await prepareCredentialFromBoost(
-                        boostInstance,
-                        resolvedBoostUri,
-                        ctx.domain,
-                        { templateData: configuration?.templateData as Record<string, unknown> }
+            const refreshDigest = input.refresh ? inboxRefreshRequestDigest(input) : undefined;
+            if (input.refresh) {
+                await assertInboxRefreshEnabled(ctx.user.scope);
+                const replay = await getInboxRefreshReplay(
+                    profile.profileId,
+                    input.idempotencyKey,
+                    refreshDigest!
+                );
+                if (replay && (replay.claimUrl || replay.inbox.currentStatus !== 'PENDING')) {
+                    await resumeInboxRefreshDelivery(replay.inbox.refreshId!, ctx.domain);
+                    const receipt = await getInboxRefreshReceipt(
+                        replay.inbox.refreshId!,
+                        ctx.domain
                     );
-                } catch (e) {
-                    console.error('Failed to prepare boost credential', e);
-                    throw new TRPCError({
-                        code: 'BAD_REQUEST',
-                        message: `Failed to prepare boost credential template: ${templateUri}`,
-                    });
+                    return {
+                        issuanceId: replay.inbox.id,
+                        status: replay.inbox.currentStatus,
+                        recipient,
+                        claimUrl: replay.claimUrl,
+                        refresh: receipt,
+                        ...(replay.inbox.currentStatus === 'ISSUED'
+                            ? { recipientDid: receipt.holderDid }
+                            : {}),
+                    };
                 }
             }
 
-            if (!credential) {
-                throw new TRPCError({
-                    code: 'BAD_REQUEST',
-                    message: 'Either credential or templateUri must be provided',
-                });
-            }
+            const { credential, resolvedBoostUri } = await resolveInboxCredentialInput(input, ctx);
 
             // Normalize signing authority name if provided
             const normalizedConfiguration = configuration?.signingAuthority
@@ -513,11 +505,18 @@ export const inboxRouter = t.router({
                     profile,
                     recipient,
                     credential,
-                    normalizedConfiguration,
+                    {
+                        ...normalizedConfiguration,
+                        boostUri: resolvedBoostUri,
+                        refresh: input.refresh,
+                        idempotencyKey: input.idempotencyKey,
+                        refreshRequestDigest: refreshDigest,
+                    },
                     ctx
                 );
 
                 return {
+                    refresh: result.refresh,
                     issuanceId: result.inboxCredential.id,
                     status: result.status,
                     recipient,
@@ -535,6 +534,42 @@ export const inboxRouter = t.router({
                 });
             }
         }),
+
+    issueBatch: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/inbox/issue-batch',
+                tags: ['Universal Inbox'],
+                summary: 'Issue Credentials to Universal Inbox (Batch)',
+                description:
+                    'Queue 1–100 credentials for background issuance. Returns a durable batch ID; poll GET /inbox/batches/{batchId} for ordered results. Request and item idempotency keys are issuer-scoped for 24 hours. Maximum JSON payload: 4 MiB.',
+            },
+            requiredScope: 'inbox:write',
+        })
+        .input(IssueInboxCredentialBatchValidator)
+        .output(InboxBatchReceiptValidator)
+        .mutation(({ ctx, input }) =>
+            trace('route', 'issueBatch', () => submitInboxBatch(ctx.user.profile, input, ctx), {
+                itemCount: input.items.length,
+            })
+        ),
+
+    getBatch: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/inbox/batches/{batchId}',
+                tags: ['Universal Inbox'],
+                summary: 'Get Inbox Batch Progress',
+            },
+            requiredScope: 'inbox:read',
+        })
+        .input(z.object({ batchId: z.string() }))
+        .output(InboxBatchStatusValidator)
+        .query(({ ctx, input }) => getInboxBatch(ctx.user.profile.profileId, input.batchId)),
 
     claim: verifiedContactRoute
         .meta({
@@ -825,7 +860,17 @@ export const inboxRouter = t.router({
                 });
             }
 
-            return inboxCredential;
+            return {
+                ...inboxCredential,
+                ...(inboxCredential.refreshId
+                    ? {
+                          refresh: await getInboxRefreshReceipt(
+                              inboxCredential.refreshId,
+                              ctx.domain
+                          ),
+                      }
+                    : {}),
+            };
         }),
 
     // ─── Guardian Credential Approval Routes ─────────────────────────────────────

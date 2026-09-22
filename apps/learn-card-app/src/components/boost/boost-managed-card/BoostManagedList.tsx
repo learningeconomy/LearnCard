@@ -4,7 +4,6 @@ import * as m from '../../../paraglide/messages.js';
 import { useHistory } from 'react-router-dom';
 import { useLoadingLine } from '../../../stores/loadingStore';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
-import useBoostModal from '../hooks/useBoostModal';
 import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore';
 import { IonRow, IonCol, IonGrid, IonSpinner } from '@ionic/react';
 import BoostManagedCard from '../../../components/boost/boost-managed-card/BoostManagedCard';
@@ -83,7 +82,7 @@ const BoostManagedList: React.FC<BoostManagedListProps> = ({
     const { bgColor: noResultsLineColor } =
         SubheaderContentType[credentialCategoryToSubheaderType(category)];
 
-    const { handlePresentBoostModal } = useBoostModal(history, category);
+    const handleNewBoost = () => history.push('/issue');
 
     const credentialsBackgroundFetching = managedBoostsFetching && !managedBoostsLoading;
 
@@ -151,7 +150,7 @@ const BoostManagedList: React.FC<BoostManagedListProps> = ({
                                     {managedBoostsList}
                                     <NewBoostButton
                                         credentialType={category}
-                                        onClick={handlePresentBoostModal}
+                                        onClick={handleNewBoost}
                                     />
                                 </IonRow>
                                 <div role="presentation" ref={managedBoostInfiniteScrollRef} />
@@ -164,7 +163,7 @@ const BoostManagedList: React.FC<BoostManagedListProps> = ({
                                     {managedBoostsList}
                                     <NewBoostButton
                                         credentialType={category}
-                                        onClick={handlePresentBoostModal}
+                                        onClick={handleNewBoost}
                                         viewMode={viewMode}
                                     />
                                 </div>
@@ -197,7 +196,7 @@ const BoostManagedList: React.FC<BoostManagedListProps> = ({
                     >
                         <NewBoostButton
                             credentialType={category}
-                            onClick={handlePresentBoostModal}
+                            onClick={handleNewBoost}
                             viewMode={viewMode}
                         />
                     </section>

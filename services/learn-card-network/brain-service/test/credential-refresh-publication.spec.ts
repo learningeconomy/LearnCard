@@ -208,6 +208,8 @@ describe('Credential Refresh Publication', () => {
     beforeEach(async () => {
         await runQuery('MATCH (r:CredentialRefresh) DETACH DELETE r');
         await runQuery('MATCH (c:Credential) DETACH DELETE c');
+        // Other refresh suites allocate status lists in this shared test database.
+        await runQuery('MATCH (l:BitstringStatusList) DETACH DELETE l');
         await runQuery('MATCH (p:Profile) DETACH DELETE p');
 
         await issuer.clients.fullAuth.profile.createProfile({ profileId: ISSUER_PROFILE_ID });

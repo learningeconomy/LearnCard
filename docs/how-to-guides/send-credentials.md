@@ -25,10 +25,11 @@ const result = await learnCard.invoke.send({
     recipient: 'jane@example.com', // email, phone, profile ID, or DID — detected automatically
     signedCredential, //             ← you signed it       (or)
     templateUri, //                  ← LearnCard signs from a template you created
+    refresh: true, //                ← optional: issue it refreshable (email/phone uses deferred inbox signing)
 });
 ```
 
-You choose **who the recipient is** and **who signs**. Everything else — delivery, the claim email, auto-delivery to existing accounts — is the same call.
+You choose **who the recipient is** and **who signs**. Everything else — delivery, the claim email, auto-delivery to existing accounts — is the same call. Add `refresh: true` and the recipient can receive in-place updates later; see [Issue and Refresh a Managed Credential](issue-and-refresh-a-managed-credential.md). Add `idempotencyKey` to make an SDK-signed or server-signed refreshable send safe to retry (direct REST callers providing `signedCredential` omit the key and retry the same signed credential and `templateUri`); see [Retrying a refreshable send safely](issue-and-refresh-a-managed-credential.md#retrying-a-refreshable-send-safely).
 
 | Recipient looks like          | What happens                                                                                                                                                                                                   |
 | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -193,6 +194,14 @@ The guardian gets an approval email with a 6-digit code; the learner sees a pend
     uri: string,            // the template used or created — reuse it
     activityId: string,     // key for status tracking (below)
     credentialUri?: string, // the issued credential — set for profile/DID sends; for email/phone, once claimed
+    refresh?: {             // set when you passed refresh: true — the issuance receipt
+        refreshId: string,      // publish future versions against this
+        refreshService: object, // the managed refresh service inside the signed credential
+        credentialId: string,   // every version reuses this ID
+        issuerDid: string,      // every version reuses this issuer
+        holderDid: string,      // the recipient identity
+        credentialStatus?: object, // the status descriptor to preserve
+    },
 
     inbox?: {               // only for email/phone recipients
         issuanceId: string,
@@ -202,6 +211,8 @@ The guardian gets an approval email with a 6-digit code; the learner sees a pend
     },
 }
 ```
+
+`refresh` is the one part you can't get anywhere else: refreshable credentials are stored encrypted to the recipient, so keep the receipt alongside your own record of the claims if you want to publish updates. It's metadata only — no credential content. Full walkthrough: [Issue and Refresh a Managed Credential](issue-and-refresh-a-managed-credential.md).
 
 | `inbox.status` | Means                                                                                               | `claimUrl` |
 | :------------- | :-------------------------------------------------------------------------------------------------- | :--------- |

@@ -25,6 +25,14 @@ export const openApiDocument = generateOpenApiDocument(appRouter, {
     ],
 });
 
+// Keep this path/status aligned with inboxBatchResponseMeta in helpers/inbox-batch-http.helpers.ts.
+// The adapter's responseMeta returns 202 for durable batch acceptance.
+const batchResponses = openApiDocument.paths?.['/inbox/issue-batch']?.post?.responses;
+if (batchResponses?.['200']) {
+    batchResponses['202'] = batchResponses['200'];
+    delete batchResponses['200'];
+}
+
 // trpc-to-openapi requires a top-level ZodObject and cannot render the validator's
 // cross-field refinement. Preserve the runtime-safe object parser while documenting
 // the two mutually exclusive publication shapes for generated OpenAPI clients.

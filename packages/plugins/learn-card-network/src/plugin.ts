@@ -1,3 +1,4 @@
+import { waitForInboxCredentialBatch } from './inbox-batch';
 import { getClient, getApiTokenClient } from '@learncard/network-brain-client';
 import {
     JWEValidator,
@@ -14,6 +15,8 @@ import {
     VC,
     BitstringCredentialStatusEntry,
     BitstringCredentialStatusPurpose,
+    AllocateCredentialRefreshResult,
+    ManagedCredentialRefreshReceipt,
     ManagedCredentialRefreshService,
     StoredCredentialEnvelope,
     StoredCredentialEnvelopeValidator,
@@ -22,7 +25,9 @@ import {
 import { LearnCard } from '@learncard/core';
 import { VerifyExtension } from '@learncard/vc-plugin';
 import {
+    getCredentialIssuerId,
     getCredentialStatusArray,
+    injectManagedRefreshService as injectSharedManagedRefreshService,
     isVC2Format,
     resolveStorageReadResult,
 } from '@learncard/helpers';
@@ -443,49 +448,72 @@ const issueCredentialWithNetworkStatus = async (
 };
 
 /**
- * Inline JSON-LD context fragment required to sign credentials carrying a
- * LearnCard-managed `LearnCardCredentialRefresh2026` refresh service.
- *
- * Neither VCDM 1.1 (which defines only `ManualRefreshService2018`), VCDM 2.0, nor the
- * live OBv3 contexts define the term `LearnCardCredentialRefresh2026` (nor the LearnCard
- * `authorization` / `LearnCardDIDAuth` extension terms), so DIDKit's data-loss
- * detection refuses to sign unless issuers define these terms inline.
- */
-const MANAGED_REFRESH_SERVICE_CONTEXT = {
-    'LearnCardCredentialRefresh2026':
-        'https://learncard.com/refresh#LearnCardCredentialRefresh2026',
-    authorization: {
-        '@id': 'https://purl.imsglobal.org/spec/ob/v3p0#authorization',
-        '@context': {
-            LearnCardDIDAuth: 'https://docs.learncard.com/definitions#LearnCardDIDAuth',
-        },
-    },
-};
-
-/**
  * Injects an allocated managed refresh service into an unsigned credential so the
- * service becomes part of the signed payload. Appends the inline context fragment
- * unless an equivalent mapping is already present.
+ * service (and its required inline JSON-LD context) becomes part of the signed
+ * payload.
+ *
+ * Thin re-export of the shared {@link injectSharedManagedRefreshService} helper
+ * (LC-2198 Task 1): validates the service, rejects a second/different managed
+ * service, and prepares the inline context idempotently — replacing this plugin's
+ * former private copy that could silently overwrite an existing service and only
+ * checked context presence by key existence.
  */
 const injectManagedRefreshService = (
     credential: UnsignedVC,
     refreshService: ManagedCredentialRefreshService
-): UnsignedVC => {
-    const existingContext = (credential as Record<string, unknown>)['@context'];
-    const contextList = Array.isArray(existingContext) ? existingContext : [existingContext];
+): UnsignedVC => injectSharedManagedRefreshService(credential, refreshService);
 
-    const hasMapping = contextList.some(
-        entry =>
-            !!entry &&
-            typeof entry === 'object' &&
-            'LearnCardCredentialRefresh2026' in (entry as Record<string, unknown>)
-    );
+const getCredentialSubjectIds = (vc: VC): string[] => {
+    const subject = (vc as Record<string, unknown>).credentialSubject;
+    const subjects = Array.isArray(subject) ? subject : subject ? [subject] : [];
+
+    return subjects.flatMap(entry => {
+        const id = (entry as Record<string, unknown> | undefined)?.id;
+
+        return typeof id === 'string' && id.length > 0 ? [id] : [];
+    });
+};
+
+/**
+ * Builds the metadata-only managed-refresh issuance receipt (LC-2198 decision 2)
+ * from the actual signed version-1 credential plus the allocation used to send it.
+ *
+ * Deliberately excludes all credential claims, subject bodies, plaintext VC
+ * content, and JWE payloads: the issuer keeps its own template/claims and retains
+ * this receipt to publish future versions (including the exact `credentialStatus`
+ * descriptor, so publishing never allocates another one).
+ */
+const buildManagedRefreshReceipt = (
+    vc: VC,
+    allocation: AllocateCredentialRefreshResult,
+    credentialId: string,
+    fallbackHolderDid: string,
+    fallbackIssuerDid: string
+): ManagedCredentialRefreshReceipt => {
+    const issuerDid = getCredentialIssuerId(vc) ?? fallbackIssuerDid;
+    const holderDid = getCredentialSubjectIds(vc)[0] ?? fallbackHolderDid;
+    const rawStatus = (vc as Record<string, unknown>).credentialStatus;
+
+    // Skip empty status collections (e.g. a VC2 credential whose status allocation
+    // returned no entries) — only a real descriptor round-trips for publication.
+    const hasStatus =
+        rawStatus !== undefined &&
+        rawStatus !== null &&
+        !(Array.isArray(rawStatus) && rawStatus.length === 0);
 
     return {
-        ...credential,
-        '@context': hasMapping ? contextList : [...contextList, MANAGED_REFRESH_SERVICE_CONTEXT],
-        refreshService,
-    } as UnsignedVC;
+        refreshId: allocation.refreshId,
+        refreshService: allocation.refreshService,
+        credentialId: typeof vc.id === 'string' && vc.id.length > 0 ? vc.id : credentialId,
+        issuerDid,
+        holderDid,
+        ...(hasStatus
+            ? {
+                  credentialStatus:
+                      rawStatus as ManagedCredentialRefreshReceipt['credentialStatus'],
+              }
+            : {}),
+    };
 };
 
 export * from './types';
@@ -1703,7 +1731,7 @@ export async function getLearnCardNetworkPlugin(
 
                 const enableRefresh = typeof options === 'object' && options.enableRefresh === true;
 
-                let managedRefreshId: string | undefined;
+                let refreshAllocation: AllocateCredentialRefreshResult | undefined;
 
                 if (enableRefresh) {
                     // Generate a stable UUID credential ID when the template has none;
@@ -1711,15 +1739,16 @@ export async function getLearnCardNetworkPlugin(
                     if (!boost.id) boost.id = `urn:uuid:${crypto.randomUUID()}`;
 
                     // Allocate BEFORE signing: the refresh service must be part of the
-                    // signed payload, so it is injected before proof creation.
-                    const allocation =
+                    // signed payload, so it is injected before proof creation. The
+                    // allocation descriptor is retained through signing so the receipt
+                    // can be returned alongside the issued credential URI.
+                    refreshAllocation =
                         await client.credentialRefresh.allocateCredentialRefresh.mutate({
                             holder: { profileId, did: targetProfile.did },
                             credentialId: boost.id,
                         });
 
-                    managedRefreshId = allocation.refreshId;
-                    boost = injectManagedRefreshService(boost, allocation.refreshService);
+                    boost = injectManagedRefreshService(boost, refreshAllocation.refreshService);
                 }
 
                 const statusPurposes =
@@ -1731,20 +1760,37 @@ export async function getLearnCardNetworkPlugin(
                     statusPurposes
                 );
 
-                if (managedRefreshId) {
+                if (refreshAllocation) {
                     // Dedicated managed send: brain-service verifies the proof and
                     // persists ONLY a holder-encrypted JWE. Legacy credential storage
-                    // (issuer/LCN-readable JWE or plaintext) is intentionally bypassed.
+                    // (issuer/LCN-readable JWE or plaintext) is intentionally bypassed —
+                    // managed encryption is mandatory even when `encrypt: false`.
                     // The boost URI is forwarded so the credential stays linked
                     // INSTANCE_OF the boost for canonical recipient management.
-                    return client.credentialRefresh.sendRefreshableCredential.mutate({
-                        refreshId: managedRefreshId,
-                        credential: vc,
-                        boostUri,
-                        ...(typeof options === 'object' && options.skipNotification
-                            ? { skipNotification: true }
-                            : {}),
-                    });
+                    const credentialUri =
+                        await client.credentialRefresh.sendRefreshableCredential.mutate({
+                            refreshId: refreshAllocation.refreshId,
+                            credential: vc,
+                            boostUri,
+                            ...(typeof options === 'object' && options.skipNotification
+                                ? { skipNotification: true }
+                                : {}),
+                        });
+
+                    // Refresh-enabled callers get the issuance receipt needed to publish
+                    // future versions, populated from the actual signed version 1
+                    // (LC-2198 decision 4). Non-opt-in callers still receive a plain URI
+                    // string.
+                    return {
+                        credentialUri,
+                        refresh: buildManagedRefreshReceipt(
+                            vc,
+                            refreshAllocation,
+                            boost.id ?? '',
+                            targetProfile.did,
+                            _learnCard.id.did()
+                        ),
+                    };
                 }
 
                 // options is allowed to be a boolean to maintain backwards compatibility
@@ -1827,6 +1873,145 @@ export async function getLearnCardNetworkPlugin(
 
             send: async (_learnCard, input) => {
                 await ensureUser();
+
+                if (input.type === 'boost' && input.refresh === true) {
+                    // LC-2198: dedicated managed-refresh branch — evaluated BEFORE the
+                    // ordinary local-signing / remote-DID / federation shortcuts so a
+                    // refresh request can never fall back to a non-refresh delivery.
+                    // Inbox credentials stay unsigned until a verified claimant binds their DID.
+                    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.recipient);
+                    const isPhone = /^\+?[\d\s-]{10,}$/.test(input.recipient.replace(/[\s-]/g, ''));
+                    if (isEmail || isPhone) return client.boost.send.mutate(input);
+
+                    const canIssueLocally = 'issueCredential' in _learnCard.invoke;
+
+                    if (
+                        canIssueLocally &&
+                        !input.signedCredential &&
+                        (input.templateUri || input.template)
+                    ) {
+                        // Local signing. Load the template first (read-only) so a template-
+                        // supplied credential ID is honored, then let the server run every
+                        // managed-send guard, create/reuse the boost and allocate the refresh
+                        // in ONE step. With an idempotencyKey that step also makes the whole
+                        // call retryable; `completed` means this key already delivered.
+                        let boost: UnsignedVC;
+
+                        if (input.templateUri) {
+                            const result = await getBoostTemplateForIssuance(
+                                _learnCard,
+                                input.templateUri
+                            );
+                            const data = await UnsignedVCValidator.spa(result);
+
+                            if (!data.success)
+                                throw new Error('Did not get a valid boost from URI');
+
+                            boost = data.data;
+                        } else {
+                            // Clone before preparation so template rendering never
+                            // mutates the caller's claims.
+                            boost = JSON.parse(
+                                JSON.stringify(input.template!.credential)
+                            ) as UnsignedVC;
+                        }
+
+                        const prepared = await client.boost.prepareRefreshableSend.mutate({
+                            recipient: input.recipient,
+                            ...(input.templateUri
+                                ? { templateUri: input.templateUri }
+                                : { template: input.template! }),
+                            ...(input.contractUri ? { contractUri: input.contractUri } : {}),
+                            ...(input.templateData ? { templateData: input.templateData } : {}),
+                            ...(input.integrationId ? { integrationId: input.integrationId } : {}),
+                            ...(boost.id ? { credentialId: boost.id } : {}),
+                            ...(input.idempotencyKey
+                                ? { idempotencyKey: input.idempotencyKey }
+                                : {}),
+                        });
+
+                        if (prepared.completed) return prepared.completed;
+
+                        const boostString = JSON.stringify(boost);
+                        const allowAutoAppendEvidence = !hasDynamicEvidenceTemplate(boostString);
+
+                        if (input.templateData && Object.keys(input.templateData).length > 0) {
+                            try {
+                                const rendered = renderTemplateJson(
+                                    boostString,
+                                    input.templateData
+                                );
+                                boost = JSON.parse(rendered);
+                                boost = appendTemplateEvidence(
+                                    boost,
+                                    input.templateData,
+                                    allowAutoAppendEvidence
+                                );
+                            } catch (error) {
+                                throw new Error(
+                                    `Failed to apply template data: ${
+                                        error instanceof Error ? error.message : 'Unknown error'
+                                    }`,
+                                    { cause: error }
+                                );
+                            }
+                        }
+
+                        if (isVC2Format(boost)) {
+                            boost.validFrom = new Date().toISOString();
+                        } else {
+                            boost.issuanceDate = new Date().toISOString();
+                        }
+
+                        boost.issuer = _learnCard.id.did();
+
+                        if (Array.isArray(boost.credentialSubject)) {
+                            boost.credentialSubject = boost.credentialSubject.map(subject => ({
+                                ...subject,
+                                id: prepared.holderDid,
+                            }));
+                        } else {
+                            boost.credentialSubject = {
+                                ...boost.credentialSubject,
+                                id: prepared.holderDid,
+                            };
+                        }
+
+                        // The refresh aggregate is permanently bound to this ID.
+                        boost.id = prepared.credentialId;
+
+                        if (boost.type?.includes('BoostCredential'))
+                            boost.boostId = prepared.boostUri;
+
+                        boost = injectManagedRefreshService(boost, prepared.refreshService);
+
+                        // Signing goes through the vc-plugin boundary, which prepares the
+                        // managed inline JSON-LD context — the service and its terms are
+                        // signed in one proof, never mutated afterwards.
+                        const signedCredential = await issueCredentialWithNetworkStatus(
+                            _learnCard,
+                            client,
+                            boost
+                        );
+
+                        // Validated handoff: the server re-derives the refresh ID from the
+                        // signed service, re-validates ownership/holder/proof, records the
+                        // idempotency intent, and returns the canonical receipt.
+                        return client.boost.send.mutate({
+                            ...input,
+                            template: undefined,
+                            templateUri: prepared.boostUri,
+                            signedCredential,
+                            refresh: true,
+                        });
+                    }
+
+                    // No local signing capability (or caller-supplied signedCredential,
+                    // which is forwarded untouched — its proof is never mutated):
+                    // delegate the unchanged refresh request to the server signing
+                    // authority path.
+                    return client.boost.send.mutate(input);
+                }
 
                 if (input.type === 'boost') {
                     const recipient = input.recipient;
@@ -2392,6 +2577,37 @@ export async function getLearnCardNetworkPlugin(
                 await ensureUser();
 
                 return client.inbox.issue.mutate(issueInboxCredential);
+            },
+            sendCredentialsViaInbox: async (_learnCard, batch) => {
+                await ensureUser();
+                return client.inbox.issueBatch.mutate(batch);
+            },
+            sendCredentialBatchViaInbox: async (_learnCard, batch) => {
+                await ensureUser();
+                return client.inbox.issueBatch.mutate(batch);
+            },
+            waitForInboxCredentialBatch: async (_learnCard, batchId, options) => {
+                await ensureUser();
+                return waitForInboxCredentialBatch(
+                    signal => client.inbox.getBatch.query({ batchId }, { signal }),
+                    options
+                );
+            },
+            sendCredentialsViaInboxAndWait: async (_learnCard, batch, options) => {
+                await ensureUser();
+                if (options?.signal?.aborted) throw options.signal.reason;
+                const receipt = await client.inbox.issueBatch.mutate(batch, {
+                    signal: options?.signal,
+                });
+                await options?.onSubmitted?.(receipt);
+                return waitForInboxCredentialBatch(
+                    signal => client.inbox.getBatch.query({ batchId: receipt.batchId }, { signal }),
+                    options
+                );
+            },
+            getInboxCredentialBatch: async (_learnCard, batchId) => {
+                await ensureUser();
+                return client.inbox.getBatch.query({ batchId });
             },
             getMySentInboxCredentials: async (_learnCard, options) => {
                 await ensureUser();

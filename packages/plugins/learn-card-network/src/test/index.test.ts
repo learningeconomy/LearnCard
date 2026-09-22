@@ -17,17 +17,13 @@ vi.mock('@learncard/core', () => ({ generateLearnCard: vi.fn() }));
 vi.mock('@learncard/didkit-plugin', () => ({ getDidKitPlugin: vi.fn() }));
 vi.mock('@learncard/didkey-plugin', () => ({ getDidKeyPlugin: vi.fn() }));
 vi.mock('@learncard/vc-plugin', () => ({ getVCPlugin: vi.fn() }));
-vi.mock('@learncard/helpers', () => ({
-    isVC2Format: (credential: any) => {
-        const contexts = credential?.['@context'];
-        const list = Array.isArray(contexts) ? contexts : [contexts];
-
-        return list.includes('https://www.w3.org/ns/credentials/v2');
-    },
+vi.mock('@learncard/helpers', async importOriginal => ({
+    ...(await importOriginal<typeof import('@learncard/helpers')>()),
     getCredentialStatusArray: () => [],
     resolveStorageReadResult: (value: any) => value,
 }));
-vi.mock('@learncard/types', () => ({
+vi.mock('@learncard/types', async importOriginal => ({
+    ...(await importOriginal<object>()),
     VCValidator: {
         parse: (value: any) => {
             if (!value?.type) throw new Error('Invalid credential');
@@ -183,6 +179,124 @@ const getLearnCard = async (seed = 'a'.repeat(64)) => {
         ...learnCards[seed].learnCard,
     };
 };
+
+describe('inbox batch method', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it('forwards configuration, keys and items to issueBatch and returns an acceptance receipt', async () => {
+        const response = {
+            batchId: 'batch-1',
+            status: 'QUEUED',
+            createdAt: '2026-09-17T00:00:00.000Z',
+        };
+        const mutate = vi.fn().mockResolvedValue(response);
+        const client = { ...getMockClient(), inbox: { issueBatch: { mutate } } };
+        vi.mocked(getBrainClient).mockResolvedValue(client as never);
+        const learnCard = getMockLearnCard();
+        const plugin = await getLearnCardNetworkPlugin(learnCard, 'https://network.example/trpc');
+        const batch = {
+            configuration: { delivery: { suppress: true } },
+            items: [
+                {
+                    recipient: { type: 'email' as const, value: 'student@example.test' },
+                    templateUri: 'test-template',
+                    idempotencyKey: 'test-key',
+                },
+            ],
+        };
+        await expect(plugin.methods?.sendCredentialsViaInbox(learnCard, batch)).resolves.toEqual(
+            response
+        );
+        expect(mutate).toHaveBeenCalledExactlyOnceWith(batch);
+        await expect(
+            plugin.methods?.sendCredentialBatchViaInbox(learnCard, batch)
+        ).resolves.toEqual(response);
+        expect(mutate).toHaveBeenLastCalledWith(batch);
+        expect(client.profile.getProfile.query).toHaveBeenCalled();
+    });
+
+    it('submits once, persists the receipt, and waits for completion through the SDK', async () => {
+        const receipt = { batchId: 'batch-1', status: 'QUEUED', createdAt: '2026-09-17' };
+        const response = { ...receipt, done: true, status: 'COMPLETED', items: [] };
+        const mutate = vi.fn().mockResolvedValue(receipt);
+        let saved = false;
+        const query = vi.fn(async () => {
+            expect(saved).toBe(true);
+            return response;
+        });
+        const client = {
+            ...getMockClient(),
+            inbox: { issueBatch: { mutate }, getBatch: { query } },
+        };
+        vi.mocked(getBrainClient).mockResolvedValue(client as never);
+        const learnCard = getMockLearnCard();
+        const plugin = await getLearnCardNetworkPlugin(learnCard, 'https://network.example/trpc');
+        const batch = {
+            items: [
+                {
+                    recipient: { type: 'email' as const, value: 'a@example.test' },
+                    templateUri: 'template',
+                },
+            ],
+        };
+        await expect(
+            plugin.methods?.sendCredentialsViaInboxAndWait(learnCard, batch, {
+                onSubmitted: async received => {
+                    expect(received).toEqual(receipt);
+                    await Promise.resolve();
+                    saved = true;
+                },
+            })
+        ).resolves.toEqual(response);
+        expect(mutate).toHaveBeenCalledTimes(1);
+        expect(query).toHaveBeenCalledWith(
+            { batchId: receipt.batchId },
+            { signal: expect.any(AbortSignal) }
+        );
+        await expect(
+            plugin.methods?.waitForInboxCredentialBatch(learnCard, receipt.batchId)
+        ).resolves.toEqual(response);
+        expect(mutate).toHaveBeenCalledTimes(1);
+
+        const controller = new AbortController();
+        controller.abort();
+        await expect(
+            plugin.methods?.sendCredentialsViaInboxAndWait(learnCard, batch, {
+                signal: controller.signal,
+            })
+        ).rejects.toMatchObject({ name: 'AbortError' });
+        expect(mutate).toHaveBeenCalledTimes(1);
+    });
+
+    it('polls the batch endpoint and preserves progress and item results', async () => {
+        const response = { batchId: 'batch-1', status: 'PROCESSING', items: [] };
+        const query = vi.fn().mockResolvedValue(response);
+        const client = { ...getMockClient(), inbox: { getBatch: { query } } };
+        vi.mocked(getBrainClient).mockResolvedValue(client as never);
+        const learnCard = getMockLearnCard();
+        const plugin = await getLearnCardNetworkPlugin(learnCard, 'https://network.example/trpc');
+        await expect(
+            plugin.methods?.getInboxCredentialBatch(learnCard, 'batch-1')
+        ).resolves.toEqual(response);
+        expect(query).toHaveBeenCalledExactlyOnceWith({ batchId: 'batch-1' });
+        query.mockRejectedValueOnce(new Error('Not found'));
+        await expect(plugin.methods?.getInboxCredentialBatch(learnCard, 'missing')).rejects.toThrow(
+            'Not found'
+        );
+    });
+
+    it('does not submit a batch when the issuer profile is missing', async () => {
+        const mutate = vi.fn();
+        const client = { ...getMockClient(null), inbox: { issueBatch: { mutate } } };
+        vi.mocked(getBrainClient).mockResolvedValue(client as never);
+        const learnCard = getMockLearnCard();
+        const plugin = await getLearnCardNetworkPlugin(learnCard, 'https://network.example/trpc');
+        await expect(
+            plugin.methods?.sendCredentialsViaInbox(learnCard, { items: [] })
+        ).rejects.toThrow();
+        expect(mutate).not.toHaveBeenCalled();
+    });
+});
 
 describe('connection prompt methods', () => {
     beforeEach(() => {
@@ -434,12 +548,25 @@ describe('credential refresh methods', () => {
         const { learnCard, issuedCredentials } = getMockIssuingLearnCard();
         const plugin = await getLearnCardNetworkPlugin(learnCard, 'https://network.example/trpc');
 
-        const uri = await plugin.methods?.sendBoost(learnCard, 'userb', 'did:example:boost:1', {
+        const result = await plugin.methods?.sendBoost(learnCard, 'userb', 'did:example:boost:1', {
             enableRefresh: true,
             skipNotification: true,
         });
 
-        expect(uri).toEqual('managed-credential-uri');
+        // Refresh-enabled callers receive the issuance receipt alongside the
+        // credential URI (LC-2198 decision 4).
+        expect(result).toEqual({
+            credentialUri: 'managed-credential-uri',
+            refresh: {
+                refreshId: REFRESH_ID,
+                refreshService: ALLOCATION.refreshService,
+                credentialId: expect.stringMatching(
+                    /^urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+                ),
+                issuerDid: PROFILE.did,
+                holderDid: TARGET_DID,
+            },
+        });
 
         // A stable UUID credential ID is generated when the template has none
         expect(client.credentialRefresh.allocateCredentialRefresh.mutate).toHaveBeenCalledTimes(1);
@@ -449,6 +576,9 @@ describe('credential refresh methods', () => {
         expect(allocateInput.credentialId).toMatch(
             /^urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
         );
+        expect(
+            (result as unknown as { refresh: { credentialId: string } }).refresh.credentialId
+        ).toEqual(allocateInput.credentialId);
 
         // Allocation happens before signing so the service lands in the signed payload
         const allocateOrder =
@@ -481,6 +611,27 @@ describe('credential refresh methods', () => {
         expect(client.boost.sendBoost.mutate).not.toHaveBeenCalled();
         expect(learnCard.invoke.createDagJwe).not.toHaveBeenCalled();
         expect(client.utilities.getDid.query).not.toHaveBeenCalled();
+    });
+
+    it('sendBoost receipt preserves the exact credentialStatus descriptor from the signed VC', async () => {
+        const client = getMockClient();
+        vi.mocked(getBrainClient).mockResolvedValue(client as never);
+        const { learnCard } = getMockIssuingLearnCard();
+        const credentialStatus = {
+            id: 'https://network.example/status/3#94567',
+            type: 'BitstringStatusListEntry',
+            statusPurpose: 'revocation',
+            statusListIndex: '94567',
+            statusListCredential: 'https://network.example/status/3',
+        };
+        client.boost.allocateCredentialStatus.mutate.mockResolvedValue([credentialStatus]);
+        const plugin = await getLearnCardNetworkPlugin(learnCard, 'https://network.example/trpc');
+
+        const result = (await plugin.methods?.sendBoost(learnCard, 'userb', 'did:example:boost:1', {
+            enableRefresh: true,
+        })) as unknown as { refresh: Record<string, unknown> };
+
+        expect(result.refresh.credentialStatus).toEqual(credentialStatus);
     });
 
     it('sendBoost with enableRefresh reuses an existing credential ID', async () => {

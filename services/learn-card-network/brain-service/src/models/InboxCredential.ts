@@ -6,6 +6,7 @@ import { Profile, ProfileInstance } from './Profile';
 import ContactMethod, { ContactMethodInstance } from './ContactMethod';
 
 export type InboxCredentialType = {
+    refreshId?: string;
     id: string;
     credential?: string; // Versioned JWE; removed immediately after successful finalization
     isSigned: boolean;
@@ -86,6 +87,7 @@ export const InboxCredential = ModelFactory<InboxCredentialType, InboxCredential
     {
         label: 'InboxCredential',
         schema: {
+            refreshId: { type: 'string', required: false },
             id: { type: 'string', required: true, uniqueItems: true },
             credential: { type: 'string', required: false },
             isSigned: { type: 'boolean', required: true },

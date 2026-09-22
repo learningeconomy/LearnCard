@@ -58,6 +58,11 @@ describe('Docs: Issue and Refresh a Managed Credential', () => {
         expect(record.credentialId).toMatch(/^urn:uuid:/);
         expect(record.refreshService.type).toBe('LearnCardCredentialRefresh2026');
         expect(record.credentialUri).toMatch(/^lc:network:/);
+        expect(record.issuerDid).toMatch(/^did:/);
+        expect(record.holderDid).toMatch(/^did:/);
+        expect(record.activityId).toBeTruthy();
+        // Status allocation is automatic; the receipt preserves the exact descriptor.
+        expect(record.credentialStatus).toBeDefined();
 
         const holderEnv = { HOLDER_SEED: USERS.b.seed, CREDENTIAL_URI: record.credentialUri };
         expect(run('refresh-held.mjs', holderEnv)).toBe('Up to date: Provisional Transcript');

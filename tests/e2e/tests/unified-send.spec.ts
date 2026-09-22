@@ -39,6 +39,25 @@ describe('Unified Send API E2E Tests', () => {
     });
 
     describe('Recipient Type Detection', () => {
+        it('should not return a refresh receipt when refresh is not requested', async () => {
+            const boostUri = await a.invoke.createBoost(testUnsignedBoost);
+
+            // LC-2198 compatibility: refresh omitted (and explicit refresh: false) must
+            // behave exactly like before — no managed receipt in the response.
+            for (const refresh of [undefined, false]) {
+                const result = await a.invoke.send({
+                    type: 'boost',
+                    recipient: USERS.b.profileId,
+                    templateUri: boostUri,
+                    ...(refresh === undefined ? {} : { refresh }),
+                });
+
+                expect(result.type).toBe('boost');
+                expect(result.credentialUri).toBeDefined();
+                expect(result.refresh).toBeUndefined();
+            }
+        });
+
         it('should detect email recipient and route to inbox', async () => {
             const boostUri = await a.invoke.createBoost(testUnsignedBoost);
 

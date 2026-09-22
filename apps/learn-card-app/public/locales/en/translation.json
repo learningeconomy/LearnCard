@@ -1,4 +1,9 @@
 {
+    "inboxClaimSetup": {
+        "setup": "Finish setting up your account to claim your credential.",
+        "continue": "Continue Account Setup",
+        "connection": "We couldn’t confirm your account. Check your connection and try again."
+    },
     "connectionPrompts": {
         "title": "Connect with {{name}}?",
         "description": "Stay in touch and recognize what comes next.",
@@ -1799,6 +1804,7 @@
         "syncMyData": "Sync My Data",
         "shareOneTimeOnly": "Share One Time Only",
         "customDuration": "Custom Duration",
+        "shareDuration": "Share duration",
         "noCredentials": "No Credentials",
         "fetchingCredentials": "Fetching your credentials...",
         "shareAll": "Share all",
@@ -1893,6 +1899,9 @@
         "method.phraseSaved": "Phrase is saved",
         "method.setEmail": "Email Recovery Key",
         "noPasskey": "No passkey found on this device.",
+        "preparingSecureLink": "Preparing secure link...",
+        "deviceLinkUnavailable": "This device can’t link your account.",
+        "verifyingSession": "Verifying session...",
         "protectAccount": "Protect Your Account",
         "recommendTwo": "We recommend setting up at least two recovery methods.",
         "recoverAccount": "Recover Account",
@@ -2864,6 +2873,7 @@
             "experience": "New Experience",
             "assistance": "New Assistance",
             "portfolio": "New Portfolio",
+            "badge": "New Badge",
             "boost": "New Boost",
             "achievement": "New Achievement",
             "skill": "New Skill",
@@ -3695,6 +3705,9 @@
             "upload": "Upload",
             "change": "Change {{type}}"
         },
+        "activity": {
+            "title": "Endorsement of {{name}}"
+        },
         "request": {
             "header": {
                 "title": "Endorsement Request",
@@ -3709,7 +3722,8 @@
                 "messagePlaceholder": "Message...",
                 "emailPlaceholder": "Email",
                 "sendEmail": "Send Email Request",
-                "sending": "Sending..."
+                "sending": "Sending...",
+                "linkGenerationFailed": "Unable to create this link. Please try again."
             },
             "success": {
                 "title": "Request Sent!",

@@ -1,4 +1,9 @@
 {
+    "inboxClaimSetup": {
+        "setup": "Terminez la configuration de votre compte pour récupérer votre attestation.",
+        "continue": "Continuer la configuration du compte",
+        "connection": "Nous n’avons pas pu confirmer votre compte. Vérifiez votre connexion et réessayez."
+    },
     "connectionPrompts": {
         "title": "Se connecter avec {{name}} ?",
         "description": "Restez en contact et valorisez la suite.",
@@ -1799,6 +1804,7 @@
         "syncMyData": "Synchroniser mes données",
         "shareOneTimeOnly": "Partager une seule fois",
         "customDuration": "Durée personnalisée",
+        "shareDuration": "Durée du partage",
         "noCredentials": "Aucune certification",
         "fetchingCredentials": "Récupération de vos certifications...",
         "shareAll": "Tout partager",
@@ -1882,6 +1888,9 @@
         "connectionIssue": "Problème de connexion. Veuillez vérifier votre connexion internet et réessayer.",
         "couldNotSave": "Impossible de sauvegarder le fichier. Veuillez réessayer.",
         "noPasskey": "Aucune clé d'accès trouvée sur cet appareil.",
+        "preparingSecureLink": "Préparation du lien sécurisé...",
+        "deviceLinkUnavailable": "Cet appareil ne peut pas associer votre compte.",
+        "verifyingSession": "Vérification de la session...",
         "securityUpdated": "La sécurité de votre compte a été récemment mise à jour sur un autre appareil. Veuillez vérifier pour continuer.",
         "recoveryEmailSent": "Nous avons précédemment envoyé un e-mail de récupération à votre adresse. Ouvrez cet e-mail et suivez les étapes ci-dessous.",
         "copyToClipboard": "Copier dans le presse-papiers",
@@ -2553,6 +2562,7 @@
             "experience": "Nouvelle expérience",
             "assistance": "Nouvel aménagement",
             "portfolio": "Nouveau portfolio",
+            "badge": "Nouveau badge",
             "boost": "Nouveau boost",
             "achievement": "Nouvelle réalisation",
             "skill": "Nouvelle compétence",
@@ -3689,6 +3699,9 @@
             "upload": "Téléverser",
             "change": "Changer le {{type}}"
         },
+        "activity": {
+            "title": "Recommandation de {{name}}"
+        },
         "request": {
             "header": {
                 "title": "Demande de recommandation",
@@ -3703,7 +3716,8 @@
                 "messagePlaceholder": "Message…",
                 "emailPlaceholder": "E-mail",
                 "sendEmail": "Envoyer la demande par e-mail",
-                "sending": "Envoi..."
+                "sending": "Envoi...",
+                "linkGenerationFailed": "Impossible de créer ce lien. Réessayez."
             },
             "success": {
                 "title": "Demande envoyée !",
