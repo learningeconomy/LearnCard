@@ -637,7 +637,6 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                         <AddressBookContactDetailsView
                             showCloseButton
                             contact={contact}
-                            showBoostButton={showBoostButton}
                             showRequestButton={showRequestButton}
                             handleConnectionRequest={handleConnectionRequest}
                             handleAcceptConnectionRequest={handleAcceptConnectionRequest}
@@ -704,7 +703,6 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                                 <AddressBookContactDetailsView
                                     showCloseButton
                                     contact={contact}
-                                    showBoostButton={showBoostButton}
                                     showRequestButton={showRequestButton}
                                     handleConnectionRequest={handleConnectionRequest}
                                     handleAcceptConnectionRequest={handleAcceptConnectionRequest}
