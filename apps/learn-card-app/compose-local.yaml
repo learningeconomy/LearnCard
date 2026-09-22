@@ -423,7 +423,7 @@ services:
             - 'host.docker.internal:host-gateway'
         volumes:
             - ../../infra/keycloak/realms/learncard-dev-realm.json:/opt/keycloak/data/import/learncard-realm.json:ro
-            - keycloak-data:/opt/keycloak/data/h2
+            - keycloak-data:/opt/keycloak/data
         healthcheck:
             test:
                 [

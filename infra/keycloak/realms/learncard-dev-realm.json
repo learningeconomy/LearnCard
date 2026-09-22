@@ -34,6 +34,7 @@
                 "post.logout.redirect.uris": "http://localhost:3000/*##capacitor://localhost/*"
             },
             "defaultClientScopes": ["profile", "email", "roles", "web-origins", "basic"],
+            "optionalClientScopes": ["phone"],
             "protocolMappers": [
                 {
                     "name": "phone_number",

@@ -19,6 +19,7 @@ import {
     usePathQuery,
     useSQLiteStorage,
     setPlatformPrivateKey,
+    useSignInAdapter,
 } from 'learn-card-base';
 import { walletStore } from 'learn-card-base/stores/walletStore';
 
@@ -36,6 +37,7 @@ import {
 import { generatePK } from 'apps/learn-card-app/src/helpers/privateKeyHelpers';
 import AppStoreDownloadButtons from '../appStoreButtons/AppStoreDownloadButtons';
 import AccessibleCodeInput from './AccessibleCodeInput';
+import { exchangeEmailCode } from '../../../auth/exchangeEmailCode';
 
 const StateValidator = z.object({
     email: z.string().regex(EMAIL_REGEX, `Missing or Invalid Email`),
@@ -92,8 +94,10 @@ const EmailForm: React.FC<EmailFormProps> = ({
     const { initWallet } = useWallet();
     const { setCurrentUser } = useSQLiteStorage();
     const { sendSignInLink, signInWithCustomFirebaseToken } = useFirebase();
+    const adapter = useSignInAdapter();
 
-    const enableMagicLinkLogin = flags?.enableMagicLinkLogin ?? false;
+    const enableMagicLinkLogin =
+        adapter.capabilities.emailLink && (flags?.enableMagicLinkLogin ?? false);
 
     const verificationEmail = redirectStore.get.email();
     const shouldVerifyCode = Boolean(query.get('verifyCode') || verificationEmail);
@@ -165,10 +169,14 @@ const EmailForm: React.FC<EmailFormProps> = ({
             try {
                 setCodeError('');
                 setIsLoading(true);
-                const response = await verifyLoginVerificationCode({
-                    email: verificationEmail as string,
-                    code: code,
-                });
+                const response = await exchangeEmailCode(
+                    adapter.providerType,
+                    {
+                        email: verificationEmail as string,
+                        code: code,
+                    },
+                    verifyLoginVerificationCode
+                );
                 if (response?.token) {
                     redirectStore.set.email(null);
                     await signInWithCustomFirebaseToken(response?.token);

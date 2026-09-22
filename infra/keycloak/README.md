@@ -21,7 +21,9 @@ local stack at a time. Preview exposes port 8080 internally only, not on the hos
 it does not configure a public Keycloak route.
 
 `--import-realm` is bootstrap-only: it skips existing realms. H2 persists in the
-`keycloak-data` named volume. To re-import a changed fixture:
+`keycloak-data` named volume, mounted at `/opt/keycloak/data` so a fresh volume
+inherits the image's writable directory ownership (mounting the nonexistent
+`data/h2` directory created a root-owned volume). To re-import a changed fixture:
 
 ```bash
 docker compose -f apps/learn-card-app/compose-local.yaml down -v
@@ -72,6 +74,37 @@ request scope, not a stored client scope.
 
 The local tenant `auth.keycloak` block is preserved by schema passthrough; its typed
 schema field lands with the client provider PR. The active provider is unchanged.
+
+## App email-code round-trip
+
+Use the opt-in `keycloak-local` stage described in
+[the app environments guide](../../apps/learn-card-app/environments/README.md#opt-in-local-keycloak).
+`learncard-app` permits the optional `phone` scope requested by the client provider;
+without that assignment Keycloak rejects the whole request with `invalid_scope`.
+The callback uses the existing `/login` route.
+
+Before signing in as the **pre-created** `dev-email@example.com` fixture, run from
+the repository root (Mongo and Keycloak must be running):
+
+```bash
+node infra/keycloak/link-dev-email.mjs
+```
+
+This provisions a permanent lca-api `AuthSubject` and explicitly links its subject
+to that synthetic Keycloak user. It is idempotent, local-only, and refuses to
+overwrite a different existing link. Without it, the default first-broker-login
+flow correctly shows “Account already exists.” Do **not** disable that protection
+or enable automatic account linking by email. New email addresses are created by
+the broker without this provisioning step; names are already optional in the
+fixture, so no profile-review flow override is needed.
+
+Request codes via `POST /trpc/firebase.sendLoginVerificationCode`, body
+`{"email":"dev-email@example.com"}`. This is lca-api's code issuer, not a Firebase
+SDK call. With log delivery enabled, read the code in API logs or scan the local
+`redis3` service for `login-code:dev-email@example.com:*`. Exchange it via
+`POST /trpc/auth.requestLoginTicket`, then pass the returned ticket as `login_hint`
+with `kc_idp_hint=lca-api` to Keycloak's S256 PKCE authorization endpoint. Never
+persist or print real tickets, codes, or tokens in test reports.
 
 ## Export and normalize
 

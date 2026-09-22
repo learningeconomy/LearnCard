@@ -114,6 +114,31 @@ If no `--stage` is specified, **production** is assumed (no overlay applied).
 
 ## Switching tenants
 
+### Opt-in local Keycloak
+
+From the repository root, run
+`STAGE=keycloak-local docker compose -f apps/learn-card-app/compose-local.yaml up -d`.
+This selects `learncard/config.keycloak-local.json`; the shared `local` stage and
+all production defaults remain Firebase. For a host-run frontend, use
+`bun scripts/prepare-native-config.ts learncard --stage keycloak-local` from the app directory.
+Stage overlays merge onto `config.json`, not onto `config.local.json`, so this
+opt-in overlay explicitly includes the local API endpoints.
+
+The callback is `http://localhost:3000/login` (an existing route, allowed by the
+realm fixture). The app completes the callback at router boot, then uses its
+normal signed-in/onboarding routing. Ticket exchanges use the unauthenticated
+lca-api tRPC routes with tenant headers; they do not initialize a dummy wallet.
+Email code issuance still uses `firebase.sendLoginVerificationCode`: despite its
+namespace it writes lca-api's `login-code:<email>:<code>` Redis store. Do not use
+Firebase's custom-token verification to consume a Keycloak login code.
+
+Native social token acquisition currently only exists through
+`@capacitor-firebase/authentication`. Keycloak deliberately does not initialize
+that SDK: `nativeSocial` remains unset. The adapter's `signInWithOidcCredential`
+completion is wired to `auth.requestSocialLoginTicket`, ready for a separate
+native token source. Native system-browser/deep-link integration is not provided
+by this web wiring. Web Google/Apple require their IdPs configured in Keycloak.
+
 ```bash
 # Production vetpass
 bun scripts/prepare-native-config.ts vetpass

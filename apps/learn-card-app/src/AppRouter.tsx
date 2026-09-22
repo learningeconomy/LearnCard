@@ -48,6 +48,7 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import endorsementsRequestStore from './stores/endorsementsRequestStore';
 import { useFirebase } from './hooks/useFirebase';
+import { useKeycloakRedirect } from './auth/useKeycloakRedirect';
 import { useSentryIdentify } from './constants/sentry';
 
 import { Modals, getLogger } from 'learn-card-base';
@@ -134,6 +135,7 @@ const AppRouter: React.FC = () => {
         return () => clearTimeout(t);
     }, []);
     const { verifySignInLinkAndLogin, verifyAppleLogin } = useFirebase();
+    const isKeycloak = useKeycloakRedirect();
     const history = useHistory();
     const location = useLocation();
     const isLoggedIn = useIsLoggedIn();
@@ -435,7 +437,7 @@ const AppRouter: React.FC = () => {
     }, [saved_email]);
 
     useEffect(() => {
-        if (!saved_email) {
+        if (!saved_email && !isKeycloak) {
             verifyAppleLogin();
         }
     }, []);

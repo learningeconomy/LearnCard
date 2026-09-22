@@ -105,6 +105,8 @@ const WALLET_INIT_TIMEOUT_MS = 15000;
 // this seam so provider-agnostic code (this file) never imports the Firebase
 // SDK directly. See `../auth/firebaseProviderInit` for what it registers.
 import '../auth/firebaseProviderInit';
+import { registerKeycloakFactories } from '../auth/registerKeycloakFactories';
+registerKeycloakFactories();
 import {
     countUserConfiguredRecoveryMethods,
     mergeAuthUserIntoCurrentUser,
