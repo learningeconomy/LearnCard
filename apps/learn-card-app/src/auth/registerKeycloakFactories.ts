@@ -18,7 +18,7 @@ export const registerKeycloakFactories = (): void => {
         provider = createKeycloakAuthProvider({
             ...config,
             redirectUri: `${window.location.origin}/login`,
-            postLogoutRedirectUri: window.location.origin,
+            postLogoutRedirectUri: `${window.location.origin}/login`,
         });
         return provider;
     };

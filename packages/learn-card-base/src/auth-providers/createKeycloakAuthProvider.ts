@@ -10,7 +10,10 @@ export interface UserManagerLike {
     signinSilent(): Promise<User | null>;
     signinRedirect(args: { extraQueryParams: Record<string, string> }): Promise<void>;
     signinCallback(url?: string): Promise<User | undefined>;
-    signoutRedirect(args: { post_logout_redirect_uri: string }): Promise<void>;
+    signoutRedirect(args: {
+        post_logout_redirect_uri: string;
+        id_token_hint?: string;
+    }): Promise<void>;
     removeUser(): Promise<void>;
     events: {
         addUserLoaded(callback: (user: User) => void): unknown;
@@ -40,6 +43,8 @@ export interface KeycloakAuthProviderConfig {
 
 export interface KeycloakAuthProvider extends AuthProvider {
     userManager: UserManagerLike;
+    /** Finish host cleanup before navigating away; the ID token is captured first. */
+    signOut(beforeRedirect?: () => Promise<void>): Promise<void>;
     handleRedirectCallback(url?: string): Promise<AuthUser | null>;
     /** Callback completion is distinct from user-loaded events raised by token renewal. */
     onRedirectComplete(callback: (result: KeycloakRedirectResult) => void): () => void;
@@ -89,7 +94,8 @@ export const createKeycloakAuthProvider = (
                 loadUserInfo: false,
                 monitorSession: false,
                 filterProtocolClaims: true,
-                revokeTokensOnSignout: true,
+                // Keycloak end-session ends the session and invalidates tokens without prior revocation.
+                revokeTokensOnSignout: false,
                 stateStore: new WebStorageStateStore({
                     store: config.stateStore ?? window.localStorage,
                 }),
@@ -205,13 +211,22 @@ export const createKeycloakAuthProvider = (
                 reauthenticating = false;
             }
         },
-        signOut: async (): Promise<void> => {
+        signOut: async (beforeRedirect?: () => Promise<void>): Promise<void> => {
             signOutRevision++;
-            if (config.postLogoutRedirectUri) {
+            const user = await userManager.getUser();
+            if (!config.postLogoutRedirectUri || !user?.id_token) {
+                await userManager.removeUser();
+                return;
+            }
+            try {
+                // A redirect unloads the page before the coordinator can run its normal cleanup.
+                await beforeRedirect?.();
                 await userManager.signoutRedirect({
                     post_logout_redirect_uri: config.postLogoutRedirectUri,
+                    id_token_hint: user.id_token,
                 });
-            } else {
+            } catch {
+                // Still clear local auth when host cleanup, discovery, or navigation fails.
                 await userManager.removeUser();
             }
         },

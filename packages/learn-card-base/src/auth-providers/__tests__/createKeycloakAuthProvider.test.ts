@@ -47,7 +47,7 @@ describe('createKeycloakAuthProvider', () => {
             loadUserInfo: false,
             monitorSession: false,
             filterProtocolClaims: true,
-            revokeTokensOnSignout: true,
+            revokeTokensOnSignout: false,
             disablePKCE: false,
             stateStore: expect.any(WebStorageStateStore),
             userStore: expect.any(WebStorageStateStore),
@@ -148,6 +148,16 @@ describe('createKeycloakAuthProvider', () => {
             await expect(create(manager).getIdToken(true)).rejects.toBeInstanceOf(AuthSessionError);
         }
     );
+    it('clears local auth if host cleanup rejects without navigating with stale app state', async () => {
+        const manager = createManager();
+        const cleanup = vi.fn().mockRejectedValue(new Error('cleanup failed'));
+        await create(manager, { postLogoutRedirectUri: keycloakConfig.redirectUri }).signOut(
+            cleanup
+        );
+        expect(manager.removeUser).toHaveBeenCalledOnce();
+        expect(manager.signoutRedirect).not.toHaveBeenCalled();
+        expect(await manager.getUser()).toBeNull();
+    });
     it('rejects missing cached ID tokens', async () => {
         await expect(
             create(createManager(createUser({ id_token: undefined }))).getIdToken()
@@ -234,6 +244,7 @@ describe('createKeycloakAuthProvider', () => {
         }).signOut();
         expect(manager.signoutRedirect).toHaveBeenCalledWith({
             post_logout_redirect_uri: 'https://app.example.org/logout',
+            id_token_hint: 'id',
         });
         expect(manager.removeUser).not.toHaveBeenCalled();
     });
@@ -242,6 +253,38 @@ describe('createKeycloakAuthProvider', () => {
         await create(manager).signOut();
         expect(manager.removeUser).toHaveBeenCalledOnce();
         expect(manager.signoutRedirect).not.toHaveBeenCalled();
+    });
+    it('falls back to local logout when the redirect rejects', async () => {
+        const manager = createManager();
+        vi.mocked(manager.signoutRedirect).mockRejectedValue(new Error('offline'));
+        const provider = create(manager, { postLogoutRedirectUri: keycloakConfig.redirectUri });
+        await expect(provider.signOut()).resolves.toBeUndefined();
+        expect(manager.removeUser).toHaveBeenCalledOnce();
+        expect(await provider.getCurrentUser()).toBeNull();
+    });
+    it.each([null, createUser({ id_token: undefined })])(
+        'removes local state without redirecting when no ID token is available',
+        async user => {
+            const manager = createManager(user);
+            await create(manager, { postLogoutRedirectUri: keycloakConfig.redirectUri }).signOut();
+            expect(manager.removeUser).toHaveBeenCalledOnce();
+            expect(manager.signoutRedirect).not.toHaveBeenCalled();
+        }
+    );
+    it('captures the ID token before awaiting host cleanup that clears storage', async () => {
+        const manager = createManager();
+        const cleanup = vi.fn(async () => {
+            expect(manager.signoutRedirect).not.toHaveBeenCalled();
+            await manager.removeUser();
+        });
+        await create(manager, { postLogoutRedirectUri: keycloakConfig.redirectUri }).signOut(
+            cleanup
+        );
+        expect(cleanup).toHaveBeenCalledOnce();
+        expect(manager.signoutRedirect).toHaveBeenCalledWith({
+            post_logout_redirect_uri: keycloakConfig.redirectUri,
+            id_token_hint: 'id',
+        });
     });
     it('delegates redirect callback validation to the SDK', async () => {
         const manager: UserManagerLike = createManager();

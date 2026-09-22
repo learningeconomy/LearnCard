@@ -49,7 +49,7 @@ describe('Keycloak factory registration', () => {
         expect(mocks.createProvider).toHaveBeenCalledWith(
             expect.objectContaining({
                 redirectUri: `${window.location.origin}/login`,
-                postLogoutRedirectUri: window.location.origin,
+                postLogoutRedirectUri: `${window.location.origin}/login`,
             })
         );
         expect(mocks.createAdapter).toHaveBeenCalledWith(

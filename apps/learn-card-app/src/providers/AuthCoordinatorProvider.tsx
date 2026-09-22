@@ -110,6 +110,7 @@ const WALLET_INIT_TIMEOUT_MS = 15000;
 // SDK directly. See `../auth/firebaseProviderInit` for what it registers.
 import '../auth/firebaseProviderInit';
 import { registerKeycloakFactories } from '../auth/registerKeycloakFactories';
+import { withKeycloakLogoutCleanup } from '../auth/withKeycloakLogoutCleanup';
 registerKeycloakFactories();
 import {
     countUserConfiguredRecoveryMethods,
@@ -2149,11 +2150,23 @@ export const AuthCoordinatorProvider: React.FC<AppAuthCoordinatorProviderProps> 
         }
     }, [queryClient, keyDerivation]);
 
+    const coordinatorAuthProvider = useMemo(
+        () =>
+            withKeycloakLogoutCleanup(authProvider, async () => {
+                try {
+                    await keyDerivation.cleanup?.();
+                } finally {
+                    await handleAppLogout();
+                }
+            }),
+        [authProvider, keyDerivation, handleAppLogout]
+    );
+
     return (
         <SignInAdapterProvider>
             <BaseAuthCoordinatorProvider
                 keyDerivation={keyDerivation}
-                authProvider={authProvider}
+                authProvider={coordinatorAuthProvider}
                 didFromPrivateKey={didFromPrivateKey}
                 signDidAuthVp={signDidAuthVp}
                 getCachedPrivateKey={getCachedPrivateKey}

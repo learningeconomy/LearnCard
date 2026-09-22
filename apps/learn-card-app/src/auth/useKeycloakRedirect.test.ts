@@ -42,6 +42,13 @@ describe('Keycloak callback boot', () => {
         expect(mocks.adapter.checkRedirectResult).not.toHaveBeenCalled();
     });
 
+    it('does not mistake a state-only post-logout return for sign-in', () => {
+        window.history.replaceState({}, '', '/login?state=logout-state');
+        renderHook(() => useKeycloakRedirect());
+        expect(mocks.adapter.checkRedirectResult).not.toHaveBeenCalled();
+        expect(mocks.toast).not.toHaveBeenCalled();
+    });
+
     it('shows friendly expired-sign-in feedback without exposing callback details', async () => {
         window.history.replaceState({}, '', '/login?error=login_required&state=state');
         mocks.adapter.checkRedirectResult.mockRejectedValue(
