@@ -63,7 +63,7 @@ jobs:
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
 
-            - name: Run jsx-a11y lint
+            - name: Run LearnCard app and shared library jsx-a11y lint
               run: bun run lint:a11y
 
     WorkspaceLint:

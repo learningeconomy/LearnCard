@@ -2,6 +2,11 @@ import Camera from 'learn-card-base/svgs/Camera';
 import Document from 'learn-card-base/svgs/Document';
 import Video from 'learn-card-base/svgs/Video';
 import LinkChain from 'learn-card-base/svgs/LinkChain';
+import type { VC } from '@learncard/types';
+import {
+    getCredentialName,
+    getEndorsementTargetId,
+} from 'learn-card-base/helpers/credentialHelpers';
 
 export enum EndorsementFormModeEnum {
     create = 'create',
@@ -118,6 +123,17 @@ export const initialEndorsementState: EndorsementState = {
     mediaAttachments: [],
     relationship: null,
 };
+export const getEndorsementTarget = async (
+    credential: VC,
+    targetCredential: VC = credential
+): Promise<{ id: string; name: string }> => {
+    const id = await getEndorsementTargetId(targetCredential);
+
+    return {
+        id,
+        name: getCredentialName(credential) || id,
+    };
+};
 
 export type EndorsementEvidence = {
     id?: string;
@@ -141,7 +157,7 @@ export const convertAttachmentsToEvidence = (
         .map(att => {
             const evidence: EndorsementEvidence = {
                 id: att.url || undefined,
-                type: ['Evidence', 'EvidenceFile'] as [string, ...string[]],
+                type: ['Evidence'],
                 name: att.title || att.fileName || undefined,
                 genre: att.type || undefined,
 

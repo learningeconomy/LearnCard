@@ -9,7 +9,10 @@ import { Capacitor } from '@capacitor/core';
 import { asyncWithLDProvider, basicLogger } from 'launchdarkly-react-client-sdk';
 import { TenantConfigProvider, renderConfigurationError } from 'learn-card-base';
 import { registerExternalUrlOpener } from 'learn-card-base/helpers/externalUrlOpener';
+// Registers the Firebase provider initializer before bootstrapTenantConfig() runs it.
+import './auth/firebaseProviderInit';
 import { bootstrapTenantConfig } from './config/bootstrapTenantConfig';
+import { environment } from './config/environment';
 import { getLaunchDarklyConfig } from './constants/runtimeLaunchDarkly';
 import App from './App';
 
@@ -60,7 +63,7 @@ installInsetSimulator();
     const ldOptions = {
         options: {
             logger: basicLogger({ level: 'none' }),
-            ...(import.meta.env.DEV
+            ...(environment.DEV
                 ? {
                       bootstrap: {
                           enableLearnCardAssistant: true,

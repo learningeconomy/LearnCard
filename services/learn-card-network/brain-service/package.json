@@ -9,6 +9,8 @@
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
+        "inbox:setup-queues": "bun scripts/setup-inbox-queues.ts",
+        "inbox:worker": "bun --conditions=development src/inbox-queue-local.ts",
         "test": "vitest run --config vitest.config.ts",
         "test:watch": "vitest --config vitest.config.ts",
         "test:coverage": "vitest run --coverage --config vitest.config.ts",
