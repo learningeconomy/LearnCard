@@ -19,6 +19,16 @@ vi.mock('learn-card-base/hooks/useSocialLogins', () => ({
 }));
 
 vi.mock('learn-card-base', () => ({
+    useSignInAdapter: () => ({
+        capabilities: {
+            google: true,
+            apple: true,
+            social: true,
+            phoneOtp: true,
+            emailOtp: true,
+            emailLink: true,
+        },
+    }),
     SocialLoginTypes: {
         apple: 'apple',
         google: 'google',
