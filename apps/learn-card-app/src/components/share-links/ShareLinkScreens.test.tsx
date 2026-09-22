@@ -41,7 +41,6 @@ vi.mock('@ionic/react', () => ({
 }));
 vi.mock('./sharePrivacy', () => ({
     enterSharePrivacy: vi.fn(),
-    enterCreatorPrivacy: () => vi.fn(),
 }));
 vi.mock('learn-card-base/helpers/share-links', () => ({
     isShareLinkError: () => false,
@@ -55,12 +54,14 @@ vi.mock('./shareLinkFlow', async importOriginal => ({
     verifySharedPresentation: async () => 'verified',
     verifyCredentialTree: async () => 'verified',
 }));
+import { enterSharePrivacy } from './sharePrivacy';
 import ShareLinkCreate from './ShareLinkCreate';
 import ShareLinkViewer from './ShareLinkViewer';
 const credential = { name: 'Community leadership', issuer: { name: 'Learning Collective' } };
 beforeEach(() => {
     vi.clearAllMocks();
     mocks.appBaseUrl = 'https://tenant.example';
+    mocks.wallet.id.did.mockReturnValue('owner');
     window.history.replaceState(
         null,
         '',
@@ -149,6 +150,35 @@ describe('create screen', () => {
         await screen.findByRole('checkbox');
         expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
     });
+    it('masks the creator without changing session privacy on open or close', async () => {
+        const view = render(<ShareLinkCreate onDismiss={() => {}} />);
+        await screen.findByRole('checkbox');
+        expect(view.container.querySelector('.sentry-block.ph-no-capture')).toBeTruthy();
+        view.unmount();
+        expect(enterSharePrivacy).not.toHaveBeenCalled();
+    });
+    it.each([
+        ['7 days', 7],
+        ['30 days', 30],
+        ['1 year', 365],
+        ['Never', null],
+    ])('prepares the selected %s expiry before publishing', async (label, days) => {
+        render(<ShareLinkCreate onDismiss={() => {}} />);
+        fireEvent.click(await screen.findByRole('checkbox'));
+        fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+        fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Highlights' } });
+        fireEvent.click(screen.getByRole('radio', { name: String(label) }));
+        const before = Date.now();
+        fireEvent.click(screen.getByRole('button', { name: /Preview/ }));
+        await screen.findByTestId('share-link-preview');
+        const expiry = mocks.prepare.mock.calls[0][4];
+        if (days === null) expect(expiry).toBeNull();
+        else {
+            expect(Date.parse(expiry)).toBeGreaterThanOrEqual(before + Number(days) * 86400000);
+            expect(Date.parse(expiry)).toBeLessThanOrEqual(Date.now() + Number(days) * 86400000);
+        }
+        expect(mocks.wallet.invoke.createShareLink).not.toHaveBeenCalled();
+    });
     it('renders a QR encoding the entire completed link, including its key', async () => {
         await chooseAndCreate();
         const qr = await screen.findByRole('img', { name: 'Private link QR code' });
@@ -166,7 +196,9 @@ describe('create screen', () => {
     it('reuses encrypted input after a lost response', async () => {
         mocks.wallet.invoke.createShareLink.mockRejectedValueOnce(new Error('lost response'));
         await chooseAndCreate();
-        fireEvent.click(await screen.findByRole('button', { name: 'Create private link' }));
+        await screen.findByRole('alert');
+        expect(screen.getByRole('button', { name: /Edit/ })).toBeDisabled();
+        fireEvent.click(screen.getByRole('button', { name: 'Create private link' }));
         await screen.findByText('Your link is ready');
         expect(mocks.prepare).toHaveBeenCalledTimes(1);
         const calls = mocks.wallet.invoke.createShareLink.mock.calls;
@@ -184,6 +216,7 @@ describe('create screen', () => {
         });
         await chooseAndCreate();
         await screen.findByText(/Your link is still being prepared/);
+        expect(screen.getByRole('button', { name: /Edit/ })).toBeDisabled();
         expect(screen.queryByRole('button', { name: 'Copy link' })).toBeNull();
         expect(screen.queryByRole('img', { name: 'Private link QR code' })).toBeNull();
         fireEvent.click(screen.getByRole('button', { name: 'Check again' }));
@@ -251,7 +284,9 @@ describe('create screen', () => {
         render(<ShareLinkCreate onDismiss={() => {}} />);
         fireEvent.click(await screen.findByRole('checkbox'));
         fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
-        fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Learning highlights' } });
+        fireEvent.change(screen.getByLabelText('Title'), {
+            target: { value: 'Learning highlights' },
+        });
         fireEvent.click(screen.getByRole('button', { name: /Preview/ }));
         await screen.findByTestId('share-link-preview');
         expect(screen.getByText('Community leadership')).toBeTruthy();

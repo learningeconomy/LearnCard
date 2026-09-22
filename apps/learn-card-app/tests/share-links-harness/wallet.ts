@@ -50,9 +50,9 @@ export const wallet = {
             proof: { ...proof, proofPurpose: 'authentication' },
         }),
         createDagJwe: async () => ({ protected: 'e30', iv: 'a', ciphertext: 'b', tag: 'c' }),
-        createShareLink: async () => ({
+        createShareLink: async (input: { expiresAt?: string | null }) => ({
             status: 'completed',
-            share: { status: 'active', expiresAt: '2026-10-21T00:00:00Z' },
+            share: { status: 'active', expiresAt: input.expiresAt ?? null },
         }),
         resolveShareLink: async () =>
             params.get('state')

@@ -32,7 +32,6 @@ import {
     type ShareWallet,
 } from './shareLinkFlow';
 import { ShareLinkPreview } from './ShareLinkPreview';
-import { enterCreatorPrivacy } from './sharePrivacy';
 
 export const primary =
     'px-5 py-3 rounded-[20px] bg-grayscale-900 text-white text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-emerald-500';
@@ -74,7 +73,7 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
     const [expiresAt, setExpiresAt] = useState<string | null>(null);
     const [expiryChoice, setExpiryChoice] = useState<ExpiryChoice>(DEFAULT_EXPIRY_CHOICE);
     const [copied, setCopied] = useState(false);
-    const [publishing, setPublishing] = useState(false);
+    const [publicationStarted, setPublicationStarted] = useState(false);
     const prepared = useRef<PreparedShare>();
     const operation = useRef<{ id: string; operationId: string }>();
     const busy = useRef(false);
@@ -93,22 +92,18 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
             });
             if (!page || (page.hasMore && (!page.cursor || page.cursor === pageCursor)))
                 throw new Error('page');
-            const rows = await mapWithConcurrency(
-                page.records,
-                READ_CONCURRENCY,
-                async record => {
-                    // Internal preference records are not learner credentials.
-                    if (record.id?.startsWith('__verifiable_data_')) return undefined;
-                    try {
-                        return {
-                            uri: record.uri,
-                            credential: (await wallet.read.get(record.uri)) as VC | undefined,
-                        } satisfies CredentialChoice;
-                    } catch {
-                        return { uri: record.uri } satisfies CredentialChoice;
-                    }
+            const rows = await mapWithConcurrency(page.records, READ_CONCURRENCY, async record => {
+                // Internal preference records are not learner credentials.
+                if (record.id?.startsWith('__verifiable_data_')) return undefined;
+                try {
+                    return {
+                        uri: record.uri,
+                        credential: (await wallet.read.get(record.uri)) as VC | undefined,
+                    } satisfies CredentialChoice;
+                } catch {
+                    return { uri: record.uri } satisfies CredentialChoice;
                 }
-            );
+            });
             if (!alive.current) return;
             setChoices(previous => [
                 ...new Map(
@@ -156,19 +151,17 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
     };
     useEffect(() => {
         alive.current = true;
-        // Scoped suppression: creator surfaces must not make analytics off sticky,
-        // and cancelling must not disable the signed-in session's telemetry.
-        const releasePrivacy = enterCreatorPrivacy();
+        // The masked surface and sanitized errors protect the draft without
+        // changing the signed-in session's telemetry preferences.
         void load();
         return () => {
             alive.current = false;
-            releasePrivacy();
         };
     }, []);
 
     /** A draft is only valid until any input that feeds it changes. */
     const invalidateDraft = () => {
-        if (!publishing) prepared.current = undefined;
+        if (!publicationStarted) prepared.current = undefined;
     };
     const guardBase = (): string | undefined => {
         const host = shareLinkHost(getAppBaseUrl());
@@ -188,13 +181,7 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
             if (!guardBase()) return;
             const wallet = shareWallet(await walletRef.current());
             const pinnedExpiry = resolveExpiryIso(expiryChoice);
-            prepared.current = await prepareShare(
-                wallet,
-                selected,
-                title,
-                note,
-                pinnedExpiry
-            );
+            prepared.current = await prepareShare(wallet, selected, title, note, pinnedExpiry);
             if (!alive.current) return;
             setStep('preview');
         } catch (cause) {
@@ -211,10 +198,10 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
         }
     };
 
-    const succeed = (host: string) => {
+    const succeed = (host: string, expiresAt: string | null) => {
         const value = prepared.current!;
         setLink(buildShareLinkUrl(host, value.input.id, value.key));
-        setExpiresAt(value.input.expiresAt ?? null);
+        setExpiresAt(expiresAt);
         setStep('done');
     };
 
@@ -224,7 +211,11 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
      * `reserveCreate` resumes by the same clientRequestId. A pending result is
      * retried by operation key and is never sent as a fresh create.
      */
-    const commit = async (wallet: ShareWallet, host: string, allowReplay: boolean): Promise<void> => {
+    const commit = async (
+        wallet: ShareWallet,
+        host: string,
+        allowReplay: boolean
+    ): Promise<void> => {
         const result = operation.current
             ? await wallet.invoke.retryShareLinkOperation(operation.current)
             : await wallet.invoke.createShareLink(prepared.current!.input);
@@ -235,6 +226,7 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
             return;
         }
         if (outcome.status === 'abandoned') {
+            if (!alive.current) return;
             operation.current = undefined;
             if (!allowReplay) throw new Error('abandoned');
             const replay = await wallet.invoke.createShareLink(prepared.current!.input);
@@ -246,17 +238,16 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
             }
             if (replayed.status === 'abandoned') throw new Error('abandoned');
             if (replayed.status === 'inactive') throw new Error('inactive');
-            if (alive.current) succeed(host);
+            if (alive.current) succeed(host, replayed.share.expiresAt);
             return;
         }
         if (outcome.status === 'inactive') throw new Error('inactive');
-        if (alive.current) succeed(host);
+        if (alive.current) succeed(host, outcome.share.expiresAt);
     };
 
     const publish = async () => {
         if (busy.current || !prepared.current) return;
         busy.current = true;
-        setPublishing(true);
         setLoading(true);
         setError(false);
         setTooLarge(false);
@@ -265,7 +256,9 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
             const host = guardBase();
             if (!host) return;
             const wallet = shareWallet(await walletRef.current());
+            if (!alive.current) return;
             if (prepared.current.ownerDid !== wallet.id.did()) throw new Error('identity');
+            setPublicationStarted(true);
             await commit(wallet, host, true);
         } catch (cause) {
             if (alive.current) {
@@ -279,7 +272,6 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
             busy.current = false;
             if (alive.current) {
                 setLoading(false);
-                setPublishing(false);
             }
         }
     };
@@ -300,7 +292,7 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
             .name.toLocaleLowerCase()
             .includes(search.toLocaleLowerCase())
     );
-    const fieldsLocked = publishing || loading;
+    const fieldsLocked = publicationStarted || loading;
     const effectiveExpiry = prepared.current?.input.expiresAt ?? resolveExpiryIso(expiryChoice);
     return (
         <section
@@ -529,9 +521,7 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
                                 <p className="text-xs text-grayscale-600">
                                     {effectiveExpiry
                                         ? m['shareLinks.expires']({
-                                              date: new Date(
-                                                  effectiveExpiry
-                                              ).toLocaleDateString(),
+                                              date: new Date(effectiveExpiry).toLocaleDateString(),
                                           })
                                         : m['shareLinks.neverExpires']()}
                                 </p>
@@ -642,7 +632,7 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
                         </button>
                     ) : step === 'preview' ? (
                         <button
-                            disabled={loading || publishing}
+                            disabled={loading || publicationStarted}
                             className={secondary}
                             onClick={() => {
                                 prepared.current = undefined;
