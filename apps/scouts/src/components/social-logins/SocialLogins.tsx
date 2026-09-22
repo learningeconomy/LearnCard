@@ -32,7 +32,7 @@ export const SocialLogins: React.FC<{
         if (login.type === SocialLoginTypes.apple) return adapter.capabilities.apple;
         return adapter.capabilities.social;
     });
-    if (!adapter.capabilities.social || !_socialLogins.length) return null;
+    if (!_socialLogins.length) return null;
 
     return (
         <IonRow className="w-full max-w-[600px] px-6 flex items-center justify-center social-logins-container">

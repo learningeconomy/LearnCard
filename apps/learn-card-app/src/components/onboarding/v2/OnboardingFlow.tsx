@@ -353,10 +353,10 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
     // Pre-fill from Firebase
     useEffect(() => {
-        if (adapter.getCurrentUser()) {
-            const fbUser = adapter.getCurrentUser();
-            if (fbUser?.displayName && !name) setName(fbUser.displayName);
-            if (fbUser?.photoUrl && !photo) setPhoto(fbUser.photoUrl);
+        const fbUser = adapter.getCurrentUser();
+        if (fbUser) {
+            if (fbUser.displayName && !name) setName(fbUser.displayName);
+            if (fbUser.photoUrl && !photo) setPhoto(fbUser.photoUrl);
         }
     }, [name, photo, adapter]);
 
