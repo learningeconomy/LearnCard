@@ -7,7 +7,7 @@ import {
     type DidWebNetworkLearnCardFromSeed,
     type NetworkLearnCardFromSeed,
 } from '@learncard/init';
-import { initLCALearnCard, type LCALearnCard } from '@learncard/lca-api-plugin';
+import { getLCAPlugin, initLCALearnCard, type LCALearnCard } from '@learncard/lca-api-plugin';
 import { generateRandomSeed } from './random';
 import { out } from './out';
 
@@ -413,6 +413,34 @@ export const connectAsDidWeb = async (
         ...(services.cloud && { cloud: { url: services.cloud } }),
         ...(options.didkit && { didkit: options.didkit }),
     });
+};
+
+/**
+ * Like `connectAsDidWeb`, plus the LCA plugin so the managed profile can create and
+ * register its own hosted signing authority (tokens acting as it have no key to sign with).
+ */
+export const connectAsDidWebSigner = async (
+    project: Project,
+    options: ProjectOptions,
+    didWeb: string
+): Promise<LCALearnCard> => {
+    const seed = project.env.SECURE_SEED;
+    if (!seed) throw new Error('Create an identity before connecting.');
+    const services = resolveServices(project.env, options.network);
+    const learnCard = await initLearnCard({
+        seed,
+        network: services.network === PRODUCTION_NETWORK ? true : services.network,
+        didWeb,
+        ...(services.cloud && { cloud: { url: services.cloud } }),
+        ...(options.didkit && { didkit: options.didkit }),
+    });
+    const lcaAPI = services.lcaAPI?.replace(/\/api\/?$/, '/trpc');
+    return learnCard.addPlugin(
+        await getLCAPlugin(
+            learnCard as unknown as Parameters<typeof getLCAPlugin>[0],
+            lcaAPI ?? 'https://api.learncard.app/trpc'
+        )
+    ) as unknown as LCALearnCard;
 };
 
 export const connectAsManaged = async (

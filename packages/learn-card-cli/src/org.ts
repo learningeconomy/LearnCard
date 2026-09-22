@@ -2,6 +2,7 @@ import type { Command } from 'commander';
 import {
     connect,
     connectAsDidWeb,
+    connectAsDidWebSigner,
     ensureIdentity,
     loadProject,
     type Project,
@@ -61,6 +62,7 @@ export const runOrgApply = async (file: string, options: OrgApplyOptions): Promi
         secretsOut: options.secretsOut,
         connectAsManager: managerDid => connectAsDidWeb(project, options, managerDid),
         connectAsManaged: managedDid => connectAsDidWeb(project, options, managedDid),
+        connectAsManagedSigner: managedDid => connectAsDidWebSigner(project, options, managedDid),
     });
 
     if (options.dryRun) out.log('Dry run: no changes were made.');

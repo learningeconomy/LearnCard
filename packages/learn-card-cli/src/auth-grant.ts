@@ -17,3 +17,18 @@ export const describeActAs = (actAs: string | undefined): string => {
     if (actAs === '*') return 'any managed profile';
     return actAs.split(',').filter(Boolean).join(', ');
 };
+
+/** Order- and whitespace-insensitive form for drift checks: `'b, a'` and `'a,b'` are the same policy. */
+export const normalizeActAs = (actAs: string | undefined): string | undefined => {
+    if (!actAs) return undefined;
+    if (actAs.trim() === '*') return '*';
+    const ids = [
+        ...new Set(
+            actAs
+                .split(',')
+                .map(id => id.trim())
+                .filter(Boolean)
+        ),
+    ].sort();
+    return ids.length ? ids.join(',') : undefined;
+};

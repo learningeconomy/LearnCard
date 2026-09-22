@@ -61,7 +61,8 @@ describe('Docs: Bootstrap an Issuer Organization', () => {
         });
 
         // The token snippet sends with `template`, which needs a hosted signing
-        // authority on the district (what `org apply` sets up for real orgs).
+        // authority on the district. `org apply` registers one per managed profile for
+        // hosted-signer specs; this fixture is built by hand, so register it here.
         const districtWithLca = await getLearnCard(seed, managedDid);
         const sa = await districtWithLca.invoke.createSigningAuthority('docs-org');
         if (!sa) throw new Error('Could not create a signing authority for the district');

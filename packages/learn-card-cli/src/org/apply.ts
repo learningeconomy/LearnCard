@@ -5,7 +5,12 @@ import type { LCALearnCard } from '@learncard/lca-api-plugin';
 import { ensureGitignored, parseEnv, upsertEnv, saveProject, type Project } from '../project';
 import { setupSigning } from '../setup-signing';
 import { out } from '../out';
-import { describeActAs, getGrantActAs, type AuthGrantWithActAs } from '../auth-grant';
+import {
+    describeActAs,
+    getGrantActAs,
+    normalizeActAs,
+    type AuthGrantWithActAs,
+} from '../auth-grant';
 import { toEnvKey, type OrgBranding, type OrgServiceAccountSpec, type OrgSpec } from './schema';
 export { toEnvKey } from './schema';
 
@@ -57,6 +62,17 @@ export type ProfileCard = {
     invoke: Pick<LCALearnCard['invoke'], 'getProfile' | 'updateProfile'>;
 };
 
+export type ManagedSignerCard = {
+    invoke: Pick<
+        LCALearnCard['invoke'],
+        | 'getRegisteredSigningAuthorities'
+        | 'getSigningAuthorities'
+        | 'createSigningAuthority'
+        | 'registerSigningAuthority'
+        | 'setPrimaryRegisteredSigningAuthority'
+    >;
+};
+
 export interface ApplyOrgOptions {
     dryRun?: boolean;
     secretsOut?: string;
@@ -64,6 +80,11 @@ export interface ApplyOrgOptions {
     connectAsManager?: (managerDid: string) => Promise<ManagerLearnCard>;
     /** Required when a managed profile declares `branding`; opens a wallet bound to that profile's did:web. */
     connectAsManaged?: (managedDid: string) => Promise<ProfileCard>;
+    /**
+     * Required with a `learncard-hosted` signer and managed profiles: API tokens acting as a
+     * district have no key, so each managed profile gets its own hosted signer registered.
+     */
+    connectAsManagedSigner?: (managedDid: string) => Promise<ManagedSignerCard>;
 }
 
 export type OrgLearnCard = {
@@ -453,6 +474,46 @@ const applySigningAuthority = async (
     await reportSignerSelection(project, name, endpoint, dryRun, changes);
 };
 
+const applyManagedSigner = async (
+    spec: OrgSpec,
+    profileId: string,
+    managedDid: string,
+    dryRun: boolean,
+    connectAsManagedSigner: ApplyOrgOptions['connectAsManagedSigner'],
+    changes: OrgChange[]
+): Promise<void> => {
+    const signingAuthority = spec.issuer.signingAuthority;
+    if (signingAuthority.type !== 'learncard-hosted') return;
+    const name = `${profileId}/${signingAuthority.name}`;
+    if (!connectAsManagedSigner)
+        throw new Error('Managed profiles with a hosted signer require connectAsManagedSigner.');
+    const card = await connectAsManagedSigner(managedDid);
+    const registered = (await card.invoke.getRegisteredSigningAuthorities()).find(
+        authority => authority.relationship.name === signingAuthority.name
+    );
+    if (registered?.relationship.isPrimary) {
+        changes.push({ resource: 'signingAuthority', name, action: 'unchanged' });
+        return;
+    }
+    if (dryRun) {
+        changes.push({
+            resource: 'signingAuthority',
+            name,
+            action: registered ? 'would-update' : 'would-create',
+            ...(registered && { detail: 'set primary' }),
+        });
+        return;
+    }
+    const scratch: Project = { env: {}, envPath: '', existing: '' };
+    await setupSigning(scratch, card, signingAuthority.name, { persist: false });
+    changes.push({
+        resource: 'signingAuthority',
+        name,
+        action: registered ? 'updated' : 'created',
+        ...(registered && { detail: 'set primary' }),
+    });
+};
+
 const applyProfileManager = async (
     spec: OrgSpec,
     learnCard: OrgLearnCard,
@@ -460,6 +521,7 @@ const applyProfileManager = async (
     dryRun: boolean,
     connectAsManager: ApplyOrgOptions['connectAsManager'],
     connectAsManaged: ApplyOrgOptions['connectAsManaged'],
+    connectAsManagedSigner: ApplyOrgOptions['connectAsManagedSigner'],
     changes: OrgChange[],
     managed: Array<{ profileId: string; did: string }>
 ): Promise<string | undefined> => {
@@ -502,6 +564,12 @@ const applyProfileManager = async (
                 name: managedSpec.profileId,
                 action: 'would-create',
             });
+            if (spec.issuer.signingAuthority.type === 'learncard-hosted')
+                changes.push({
+                    resource: 'signingAuthority',
+                    name: `${managedSpec.profileId}/${spec.issuer.signingAuthority.name}`,
+                    action: 'would-create',
+                });
         }
         return managerDid;
     }
@@ -562,6 +630,14 @@ const applyProfileManager = async (
                     changes
                 );
             }
+            await applyManagedSigner(
+                spec,
+                managedSpec.profileId,
+                existing.did,
+                dryRun,
+                connectAsManagedSigner,
+                changes
+            );
             continue;
         }
         if (dryRun) {
@@ -587,6 +663,14 @@ const applyProfileManager = async (
             name: managedSpec.profileId,
             action: 'created',
         });
+        await applyManagedSigner(
+            spec,
+            managedSpec.profileId,
+            newDid,
+            false,
+            connectAsManagedSigner,
+            changes
+        );
     }
 
     return managerDid;
@@ -627,7 +711,7 @@ const applyServiceAccounts = async (
                         'scope',
                     expiryInstant(existing.expiresAt) !== expiryInstant(account.expiresAt) &&
                         'expiresAt',
-                    getGrantActAs(existing) !== actAs &&
+                    normalizeActAs(getGrantActAs(existing)) !== normalizeActAs(actAs) &&
                         `actAs ${describeActAs(getGrantActAs(existing))} -> ${describeActAs(actAs)}`,
                 ].filter(Boolean);
                 if (drift.length) {
@@ -753,13 +837,21 @@ const planFreshOrg = (spec: OrgSpec, project: Project, changes: OrgChange[]): vo
             action: 'would-create',
             detail: note,
         });
-        for (const entry of spec.profileManager.managed ?? [])
+        for (const entry of spec.profileManager.managed ?? []) {
             changes.push({
                 resource: 'managedProfile',
                 name: entry.profileId,
                 action: 'would-create',
                 detail: note,
             });
+            if (spec.issuer.signingAuthority.type === 'learncard-hosted')
+                changes.push({
+                    resource: 'signingAuthority',
+                    name: `${entry.profileId}/${spec.issuer.signingAuthority.name}`,
+                    action: 'would-create',
+                    detail: note,
+                });
+        }
     }
     for (const account of spec.serviceAccounts ?? [])
         changes.push({
@@ -813,6 +905,7 @@ export const applyOrg = async (
         dryRun,
         opts.connectAsManager,
         opts.connectAsManaged,
+        opts.connectAsManagedSigner,
         changes,
         managed
     );

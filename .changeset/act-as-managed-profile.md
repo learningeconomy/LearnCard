@@ -9,4 +9,4 @@ Act as a managed profile. A request may carry `X-LearnCard-Act-As: <profileId>`;
 
 - `@learncard/types`: `ACT_AS_HEADER`, `AuthGrant.actAs`.
 - `@learncard/network-plugin` / `@learncard/init`: `actAs` option on `initLearnCard` and the network plugin; `learnCard.invoke.actAs(profileId)` returns a scoped instance.
-- `@learncard/cli`: `serviceAccounts[].actAs` in the org spec is set on the grant at creation; like scope and expiry, it is compared on re-apply and any drift errors with a revoke hint (dry-run reports `drifted`). Shown by `doctor` and `whoami`; new `examples/delegated-service-account.network.yaml`.
+- `@learncard/cli`: `serviceAccounts[].actAs` in the org spec is set on the grant at creation; like scope and expiry, it is compared on re-apply and any drift errors with a revoke hint (dry-run reports `drifted`). `actAs` lists are compared as sets, so reordering profile IDs is not drift. With a `learncard-hosted` signer, `org apply` also registers a hosted signing authority on each managed profile so tokens acting as it can sign. Shown by `doctor` and `whoami`; new `examples/delegated-service-account.network.yaml`.

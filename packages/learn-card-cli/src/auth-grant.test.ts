@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { describeActAs, getGrantActAs, type AuthGrantWithActAs } from './auth-grant';
+import {
+    describeActAs,
+    getGrantActAs,
+    normalizeActAs,
+    type AuthGrantWithActAs,
+} from './auth-grant';
 
 describe('getGrantActAs', () => {
     it('reads actAs off a grant', () => {
@@ -30,5 +35,20 @@ describe('describeActAs', () => {
 
     it('renders undefined as no delegation', () => {
         expect(describeActAs(undefined)).toBe('no delegation');
+    });
+});
+
+describe('normalizeActAs', () => {
+    it('sorts, trims, and de-duplicates profile IDs', () => {
+        expect(normalizeActAs(' sc-north , sc-greenville,sc-north ')).toBe(
+            'sc-greenville,sc-north'
+        );
+    });
+
+    it('keeps "*" and treats empty values as no delegation', () => {
+        expect(normalizeActAs(' * ')).toBe('*');
+        expect(normalizeActAs('')).toBeUndefined();
+        expect(normalizeActAs(' , ')).toBeUndefined();
+        expect(normalizeActAs(undefined)).toBeUndefined();
     });
 });

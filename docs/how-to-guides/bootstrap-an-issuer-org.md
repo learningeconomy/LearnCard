@@ -143,6 +143,8 @@ profileManager:
           branding: { websiteLink: https://north.example.org }
 ```
 
+With a `learncard-hosted` signer, `org apply` also creates and registers a hosted signing authority on each managed profile (shown as `signingAuthority example-north/example-signer created`). That is what lets an API token, which has no key of its own, sign as a district later. With a `self-hosted` signer you register one on each district yourself.
+
 Managed profiles have **no seed of their own**. You act as one from the parent's folder:
 
 ```bash
@@ -230,7 +232,7 @@ serviceAccounts:
 
 Omit `actAs` and the token cannot act as anyone — this is deny-by-default on purpose, so a leaked single-district token can never issue as the whole state. `doctor` and `whoami` both report what each token may act as.
 
-Then in your backend, name the district on the call:
+Then in your backend, name the district on the call. The send below passes `template`, so the network signs through the hosted signing authority `org apply` registered on the district; if your spec uses a `self-hosted` signer, register one on the district first or `send()` fails with `You must register a signing authority`.
 
 <!-- snippet: cli/org/send-as-managed-token.mjs -->
 
