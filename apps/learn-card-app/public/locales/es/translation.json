@@ -8941,7 +8941,7 @@
         "loadMore": "Cargar más",
         "title": "Título",
         "note": "Nota (opcional)",
-        "privacyHint": "Solo se incluyen las credenciales seleccionadas y sus avales públicos. La caducidad depende de tu cuenta.",
+        "privacyHint": "Solo se incluyen las credenciales seleccionadas y sus avales públicos. Tú eliges cuánto tiempo estará disponible el enlace.",
         "pending": "Tu enlace aún se está preparando. Vuelve a comprobarlo en un momento.",
         "expires": "Disponible hasta el {{date}}",
         "copying": "Copiando…",

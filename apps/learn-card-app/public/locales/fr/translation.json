@@ -8941,7 +8941,7 @@
         "loadMore": "Afficher plus",
         "title": "Titre",
         "note": "Note (facultative)",
-        "privacyHint": "Seuls les justificatifs sélectionnés et leurs validations publiques sont inclus. L’expiration dépend de votre compte.",
+        "privacyHint": "Seuls les justificatifs sélectionnés et leurs validations publiques sont inclus. Vous choisissez la durée de disponibilité du lien.",
         "pending": "Votre lien est en cours de préparation. Vérifiez à nouveau dans un instant.",
         "expires": "Disponible jusqu’au {{date}}",
         "copying": "Copie…",

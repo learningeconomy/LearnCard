@@ -8947,7 +8947,7 @@
         "loadMore": "Load more",
         "title": "Title",
         "note": "Note (optional)",
-        "privacyHint": "Only selected credentials and their public endorsements are included. The link’s expiry is set for your account.",
+        "privacyHint": "Only selected credentials and their public endorsements are included. You choose how long the link stays available.",
         "pending": "Your link is still being prepared. Check again in a moment.",
         "expires": "Available until {{date}}",
         "copying": "Copying…",
