@@ -158,6 +158,41 @@ describe('OrgSpecValidator', () => {
         expect(result.success).toBe(true);
         if (result.success) expect(result.data.profileManager?.managed).toEqual([]);
     });
+
+    it.each([
+        [
+            'profileManager.managedProfiles',
+            { profileManager: { displayName: 'SC Districts', managedProfiles: [] } },
+            ['profileManager'],
+        ],
+        [
+            'issuer.signingAuthority.endpoint on a hosted signer',
+            {
+                issuer: {
+                    ...validSpec.issuer,
+                    signingAuthority: {
+                        type: 'learncard-hosted',
+                        name: 'scde-clr',
+                        endpoint: 'https://x',
+                    },
+                },
+            },
+            ['issuer', 'signingAuthority'],
+        ],
+        [
+            'serviceAccounts[].scope',
+            { serviceAccounts: [{ name: 'a', scope: ['inbox:read'] }] },
+            ['serviceAccounts', 0],
+        ],
+        ['top-level typo', { webhook: [{ url: 'https://x' }] }, []],
+    ])('rejects unknown keys instead of silently dropping them: %s', (_label, override, path) => {
+        const result = OrgSpecValidator.safeParse({ ...validSpec, ...override });
+        expect(result.success).toBe(false);
+        if (!result.success)
+            expect(result.error.issues).toContainEqual(
+                expect.objectContaining({ code: 'unrecognized_keys', path })
+            );
+    });
 });
 
 describe('examples/*.network.yaml', () => {

@@ -16,7 +16,7 @@ An _organization_ on LearnCard is an issuer profile, the signing authority that 
 npx @learncard/cli org apply org.yaml --network staging --secrets-out ./secrets.env
 ```
 
-Creates missing resources, updates supported profile and signing settings, and leaves matching resources alone. Service-account scope or expiry drift requires revoking the grant and re-running; it is never silently updated. With `--secrets-out`, a missing token is re-issued into that file. An identical run with all tokens present prints `No changes.`
+Creates missing resources, updates supported profile and signing settings (display names, branding, primary signer, the `SIGNING_AUTHORITY_*` selection in `.env`), and leaves matching resources alone. Service-account scope or expiry drift requires revoking the grant and re-running; it is never silently updated. A self-hosted signer whose registered DID differs from the spec is reported as drift and fails the run. Unknown keys anywhere in the spec are rejected, so a typo cannot silently drop a section. With `--secrets-out`, a missing token is re-issued into that file. An identical run with all tokens present prints `No changes.`
 
 ## Before you start: one folder, one identity
 
@@ -237,10 +237,14 @@ The production issuer's DID is `did:web:network.learncard.com:users:<profileId>`
 
 ## Troubleshooting
 
-| You see                                                                    | It means                                                                                             |
-| :------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------- |
-| `This folder's .env is already the profile "x"; --profile-id y would not…` | One folder, one identity. Use `--as y` if `y` is a managed profile, or a new folder.                 |
-| `--from … does not match this folder's network`                            | `promote` must run from the folder that is on `--from`. `whoami` shows which network a folder is on. |
-| `Credential refresh isn't enabled on this network`                         | Expected on some deployments. `doctor` reports it; nothing else is affected.                         |
-| `local files are not uploaded yet — host the image…`                       | Branding images must be `https://` URLs for now.                                                     |
-| `Profile not found. Are you sure this person exists?`                      | You sent to a profile ID that doesn't exist on this network.                                         |
+| You see                                                                        | It means                                                                                                                                           |
+| :----------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `This folder's .env is already the profile "x"; --profile-id y would not…`     | One folder, one identity. Use `--as y` if `y` is a managed profile, or a new folder.                                                               |
+| `--from … does not match this folder's network`                                | `promote` must run from the folder that is on `--from`. `whoami` shows which network a folder is on.                                               |
+| `Credential refresh isn't enabled on this network`                             | Expected on some deployments. `doctor` reports it; nothing else is affected.                                                                       |
+| `local files are not uploaded yet — host the image…`                           | Branding images must be `https://` URLs for now.                                                                                                   |
+| `Profile not found. Are you sure this person exists?`                          | You sent to a profile ID that doesn't exist on this network.                                                                                       |
+| `Signing authority "x" is registered at … with DID …, but the spec declares …` | The network keys a registration by name + DID, so a rotated key cannot be swapped in place. Register it under a new name or fix `did` in the spec. |
+| `Unrecognized key(s) in object`                                                | A field in the spec is misspelled or misplaced. Compare with the reference table.                                                                  |
+| `… already holds a different SECURE_SEED`                                      | The `promote` target folder belongs to another identity. Move that `.env` aside or choose another target.                                          |
+| `Another org apply is reconciling service accounts for …`                      | Two applies overlapped on the same secrets file. Wait for the other to finish (remove a stale `.secrets.env.lock` only if none is running).        |

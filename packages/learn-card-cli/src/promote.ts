@@ -77,6 +77,18 @@ export const assertSourceNetwork = (
         );
 };
 
+/** Pure: a target folder already bound to another seed would be provisioned as a different identity than the preview shows. */
+export const assertTargetSeed = (
+    targetEnv: Record<string, string>,
+    seed: string,
+    targetDir: string
+): void => {
+    if (targetEnv.SECURE_SEED && targetEnv.SECURE_SEED !== seed)
+        throw new Error(
+            `${path.join(targetDir, '.env')} already holds a different SECURE_SEED. Promotion carries this folder's seed; move that .env aside or pick a different target before re-running.`
+        );
+};
+
 export type PromoteOptions = ProjectOptions & {
     cwd?: string;
     from: string;
@@ -110,6 +122,9 @@ export const runPromote = async (options: PromoteOptions): Promise<void> => {
         NETWORK_URL: toNetwork,
     };
 
+    const targetProject = await loadProject(targetDir);
+    assertTargetSeed(targetProject.env, carried.SECURE_SEED, targetDir);
+
     const spec = await loadOrgSpec(org);
     if (spec.serviceAccounts?.length && !dryRun)
         out.log(`Any new service-account tokens for ${to} go to ${secretsOut}`);
@@ -119,8 +134,8 @@ export const runPromote = async (options: PromoteOptions): Promise<void> => {
             `Dry run: ${targetDir} is not created; previewing against ${to} with the carried-over seed.`
         );
         const preview: Project = {
-            env: { ...carried },
-            envPath: path.join(targetDir, '.env'),
+            env: { ...targetProject.env, ...carried },
+            envPath: targetProject.envPath,
             existing: '',
         };
         await runOrgApply(org, {
@@ -132,8 +147,7 @@ export const runPromote = async (options: PromoteOptions): Promise<void> => {
         });
     } else {
         await fs.mkdir(targetDir, { recursive: true });
-        const targetProject = await loadProject(targetDir);
-        if (!targetProject.env.SECURE_SEED) await saveProject(targetProject, carried);
+        await saveProject(targetProject, carried);
         await runOrgApply(org, {
             ...options,
             cwd: targetDir,

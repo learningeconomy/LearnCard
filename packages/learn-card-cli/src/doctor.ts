@@ -53,7 +53,7 @@ export const runDoctor = async (options: DoctorOptions): Promise<void> => {
             'No SECURE_SEED in .env. Run `npx @learncard/cli init` or `org apply` first.'
         );
     }
-    const learnCard = await connect(project, options);
+    const learnCard = await connect(project, { ...options, readOnly: true });
     const services = resolveServices(project.env, options.network);
     const requiredScopes = options.scopes
         ? validateScope(options.scopes).split(' ').filter(Boolean)

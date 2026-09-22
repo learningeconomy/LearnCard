@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { PRODUCTION_NETWORK, STAGING_NETWORK } from './project';
-import { assertSourceNetwork, planPromotion, PROMOTE_CHECKLIST } from './promote';
+import { assertSourceNetwork, assertTargetSeed, planPromotion, PROMOTE_CHECKLIST } from './promote';
 
 describe('planPromotion', () => {
     it('places the target under the supplied working directory', () => {
@@ -61,6 +61,21 @@ describe('assertSourceNetwork', () => {
     });
 });
 
+describe('assertTargetSeed', () => {
+    const seed = 'a'.repeat(64);
+
+    it('accepts an empty target or one already bound to the same seed', () => {
+        expect(() => assertTargetSeed({}, seed, '/t')).not.toThrow();
+        expect(() => assertTargetSeed({ SECURE_SEED: seed }, seed, '/t')).not.toThrow();
+    });
+
+    it('rejects a target already bound to a different seed', () => {
+        expect(() => assertTargetSeed({ SECURE_SEED: 'b'.repeat(64) }, seed, '/t')).toThrow(
+            `${path.join('/t', '.env')} already holds a different SECURE_SEED`
+        );
+    });
+});
+
 describe('runPromote --dry-run', () => {
     it('uses options.cwd without changing process.cwd and leaves the source untouched', async () => {
         const fs = await import('node:fs/promises');
@@ -100,6 +115,22 @@ describe('runPromote --dry-run', () => {
             expect(process.cwd()).toBe(previousCwd);
             expect(await fs.readFile(path.join(cwd, '.env'), 'utf8')).toBe(before);
             expect(await fs.readdir(cwd)).toEqual(['.env', 'org.yaml']);
+
+            runOrgApply.mockClear();
+            await fs.mkdir(targetDir, { recursive: true });
+            await fs.writeFile(path.join(targetDir, '.env'), `SECURE_SEED=${'b'.repeat(64)}\n`);
+            for (const dryRun of [true, false]) {
+                await expect(
+                    runPromote({
+                        cwd,
+                        from: 'http://localhost:4000/trpc',
+                        to: 'staging',
+                        org,
+                        dryRun,
+                    })
+                ).rejects.toThrow('already holds a different SECURE_SEED');
+            }
+            expect(runOrgApply).not.toHaveBeenCalled();
         } finally {
             vi.doUnmock('./org');
             vi.doUnmock('./doctor');

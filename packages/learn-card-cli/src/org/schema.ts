@@ -17,20 +17,24 @@ const signingAuthorityNameSchema = z
     .max(15, 'must be at most 15 characters')
     .regex(SIGNING_AUTHORITY_NAME_PATTERN, 'must be lowercase letters, numbers, and hyphens');
 
-const hostedSigningAuthoritySchema = z.object({
-    type: z.literal('learncard-hosted'),
-    name: signingAuthorityNameSchema,
-});
+const hostedSigningAuthoritySchema = z
+    .object({
+        type: z.literal('learncard-hosted'),
+        name: signingAuthorityNameSchema,
+    })
+    .strict();
 
-const selfHostedSigningAuthoritySchema = z.object({
-    type: z.literal('self-hosted'),
-    name: signingAuthorityNameSchema,
-    endpoint: z
-        .string()
-        .url('must be a valid URL')
-        .startsWith('https://', 'must be an https:// URL'),
-    did: z.string().regex(/^did:/, 'must be a DID (did:web:..., did:key:...)'),
-});
+const selfHostedSigningAuthoritySchema = z
+    .object({
+        type: z.literal('self-hosted'),
+        name: signingAuthorityNameSchema,
+        endpoint: z
+            .string()
+            .url('must be a valid URL')
+            .startsWith('https://', 'must be an https:// URL'),
+        did: z.string().regex(/^did:/, 'must be a DID (did:web:..., did:key:...)'),
+    })
+    .strict();
 
 const signingAuthoritySchema = z.discriminatedUnion('type', [
     hostedSigningAuthoritySchema,
@@ -79,23 +83,29 @@ export const brandingSchema = z
 
 export type OrgBranding = z.infer<typeof brandingSchema>;
 
-const issuerSchema = z.object({
-    profileId: profileIdSchema,
-    displayName: displayNameSchema,
-    branding: brandingSchema.optional(),
-    signingAuthority: signingAuthoritySchema,
-});
+const issuerSchema = z
+    .object({
+        profileId: profileIdSchema,
+        displayName: displayNameSchema,
+        branding: brandingSchema.optional(),
+        signingAuthority: signingAuthoritySchema,
+    })
+    .strict();
 
-const managedProfileSchema = z.object({
-    profileId: profileIdSchema,
-    displayName: displayNameSchema,
-    branding: brandingSchema.optional(),
-});
+const managedProfileSchema = z
+    .object({
+        profileId: profileIdSchema,
+        displayName: displayNameSchema,
+        branding: brandingSchema.optional(),
+    })
+    .strict();
 
-const profileManagerSchema = z.object({
-    displayName: displayNameSchema,
-    managed: z.array(managedProfileSchema).default([]),
-});
+const profileManagerSchema = z
+    .object({
+        displayName: displayNameSchema,
+        managed: z.array(managedProfileSchema).default([]),
+    })
+    .strict();
 
 const scopesSchema = z
     .array(z.string().min(1, 'must not be empty'))
@@ -128,37 +138,46 @@ const serviceAccountNameSchema = z
         'must start with a letter or underscore and contain only letters, numbers, hyphens, and underscores'
     );
 
-const serviceAccountSchema = z.object({
-    name: serviceAccountNameSchema,
-    scopes: scopesSchema,
-    expiresAt: isoDateSchema.optional(),
-});
+const serviceAccountSchema = z
+    .object({
+        name: serviceAccountNameSchema,
+        scopes: scopesSchema,
+        expiresAt: isoDateSchema.optional(),
+    })
+    .strict();
 
-const webhookSchema = z.object({
-    url: z.string().url('must be a valid URL').startsWith('https://', 'must be an https:// URL'),
-});
+const webhookSchema = z
+    .object({
+        url: z
+            .string()
+            .url('must be a valid URL')
+            .startsWith('https://', 'must be an https:// URL'),
+    })
+    .strict();
 
-export const OrgSpecValidator = z.object({
-    issuer: issuerSchema,
-    profileManager: profileManagerSchema.optional(),
-    serviceAccounts: z
-        .array(serviceAccountSchema)
-        .superRefine((accounts, ctx) => {
-            const keys = new Set<string>();
-            accounts.forEach((account, index) => {
-                const key = toEnvKey(account.name);
-                if (keys.has(key))
-                    ctx.addIssue({
-                        code: 'custom',
-                        path: [index, 'name'],
-                        message: `Duplicate service-account secrets key "${key}" after normalizing names`,
-                    });
-                keys.add(key);
-            });
-        })
-        .optional(),
-    webhooks: z.array(webhookSchema).optional(),
-});
+export const OrgSpecValidator = z
+    .object({
+        issuer: issuerSchema,
+        profileManager: profileManagerSchema.optional(),
+        serviceAccounts: z
+            .array(serviceAccountSchema)
+            .superRefine((accounts, ctx) => {
+                const keys = new Set<string>();
+                accounts.forEach((account, index) => {
+                    const key = toEnvKey(account.name);
+                    if (keys.has(key))
+                        ctx.addIssue({
+                            code: 'custom',
+                            path: [index, 'name'],
+                            message: `Duplicate service-account secrets key "${key}" after normalizing names`,
+                        });
+                    keys.add(key);
+                });
+            })
+            .optional(),
+        webhooks: z.array(webhookSchema).optional(),
+    })
+    .strict();
 
 export type OrgSpec = z.infer<typeof OrgSpecValidator>;
 export type OrgSigningAuthoritySpec = z.infer<typeof signingAuthoritySchema>;

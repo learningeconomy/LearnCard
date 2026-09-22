@@ -60,6 +60,12 @@ const makeMockManager = () => ({
     invoke: {
         createManagedProfile: vi.fn().mockResolvedValue(managedDid),
         getManagedProfiles: vi.fn().mockResolvedValue({ hasMore: false, records: [] }),
+        getProfileManagerProfile: vi.fn().mockResolvedValue({
+            id: 'm1',
+            created: '2026-01-01T00:00:00.000Z',
+            displayName: 'SC Districts',
+        }),
+        updateProfileManagerProfile: vi.fn().mockResolvedValue(true),
     },
 });
 
@@ -310,8 +316,11 @@ describe('service-account reconciliation', () => {
             await fs.writeFile(secretsOut, 'OTHER=keep\n');
             const originalOpen = fs.open.bind(fs);
             const close = vi.fn();
-            const open = vi.spyOn(fs, 'open').mockImplementationOnce(async (file, flags, mode) => {
+            let injected = false;
+            const open = vi.spyOn(fs, 'open').mockImplementation(async (file, flags, mode) => {
                 const handle = await originalOpen(file, flags, mode);
+                if (injected || !String(file).startsWith(`${secretsOut}.`)) return handle;
+                injected = true;
                 const originalWrite = handle.writeFile.bind(handle);
                 vi.spyOn(handle, 'writeFile').mockImplementationOnce(async () => {
                     await originalWrite('EA_CLR_ISSUER=partial', 'utf8');
@@ -530,6 +539,274 @@ describe('applyOrg', () => {
             ).rejects.toThrow('--secrets-out');
             expect(card.invoke.addAuthGrant).not.toHaveBeenCalled();
 
+            log.mockRestore();
+        });
+    });
+});
+
+describe('signing-authority reconciliation', () => {
+    const selfHosted = {
+        type: 'self-hosted' as const,
+        name: 'scde-clr',
+        endpoint: authorityRecord.endpoint,
+        did: authorityRecord.did,
+    };
+    const selfHostedSpec: OrgSpec = {
+        issuer: { ...spec.issuer, signingAuthority: selfHosted },
+    };
+    const registration = (did: string, isPrimary = true) => ({
+        signingAuthority: { endpoint: authorityRecord.endpoint },
+        relationship: { name: 'scde-clr', did, isPrimary },
+    });
+    const selected = {
+        SIGNING_AUTHORITY_NAME: 'scde-clr',
+        SIGNING_AUTHORITY_ENDPOINT: authorityRecord.endpoint,
+    };
+
+    it('fails clearly when the registered DID differs from the spec', async () => {
+        await withTmpProject(async project => {
+            const card = makeExistingCard();
+            card.invoke.getRegisteredSigningAuthorities.mockResolvedValue([
+                registration('did:web:sa.example.com:rotated'),
+            ]);
+            await expect(applyOrg(selfHostedSpec, card, project)).rejects.toThrow(
+                /registered at .* with DID did:web:sa\.example\.com:rotated, but the spec declares/
+            );
+            expect(card.invoke.registerSigningAuthority).not.toHaveBeenCalled();
+            expect(card.invoke.setPrimaryRegisteredSigningAuthority).not.toHaveBeenCalled();
+            expect(project.env.SIGNING_AUTHORITY_NAME).toBeUndefined();
+
+            const preview = await applyOrg(selfHostedSpec, card, project, { dryRun: true });
+            expect(preview.changes).toContainEqual(
+                expect.objectContaining({ resource: 'signingAuthority', action: 'drifted' })
+            );
+        });
+    });
+
+    it('persists the selection in .env when the registration already matches', async () => {
+        await withTmpProject(async project => {
+            const card = makeExistingCard();
+            const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+            const preview = await applyOrg(selfHostedSpec, card, project, { dryRun: true });
+            expect(preview.changes).toContainEqual(
+                expect.objectContaining({
+                    resource: 'signingAuthority',
+                    action: 'would-update',
+                    detail: expect.stringContaining('.env'),
+                })
+            );
+            expect(project.env.SIGNING_AUTHORITY_NAME).toBeUndefined();
+
+            const result = await applyOrg(selfHostedSpec, card, project);
+            expect(result.changes).toContainEqual(
+                expect.objectContaining({ resource: 'signingAuthority', action: 'updated' })
+            );
+            expect(project.env).toMatchObject(selected);
+            expect(card.invoke.setPrimaryRegisteredSigningAuthority).not.toHaveBeenCalled();
+
+            const second = await applyOrg(selfHostedSpec, card, project);
+            expect(second.changes).toContainEqual({
+                resource: 'signingAuthority',
+                name: 'scde-clr',
+                action: 'unchanged',
+            });
+            log.mockRestore();
+        });
+    });
+
+    it('persists the selection when it has to set the registration primary', async () => {
+        await withTmpProject(async project => {
+            const card = makeExistingCard();
+            card.invoke.getRegisteredSigningAuthorities.mockResolvedValue([
+                registration(authorityRecord.did, false),
+            ]);
+            const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+            const result = await applyOrg(selfHostedSpec, card, project);
+            expect(card.invoke.setPrimaryRegisteredSigningAuthority).toHaveBeenCalledWith(
+                authorityRecord.endpoint,
+                'scde-clr'
+            );
+            expect(result.changes).toContainEqual(
+                expect.objectContaining({ action: 'updated', detail: 'set primary' })
+            );
+            expect(project.env).toMatchObject(selected);
+            log.mockRestore();
+        });
+    });
+});
+
+describe('profile-manager reconciliation', () => {
+    const managerSpec: OrgSpec = { issuer: spec.issuer, profileManager: spec.profileManager };
+    const existingManaged = {
+        hasMore: false,
+        records: [
+            {
+                profileId: 'sc-greenville',
+                displayName: 'Greenville County Schools',
+                did: managedDid,
+            },
+        ],
+    };
+
+    it('renames the manager when the spec displayName changes', async () => {
+        await withTmpProject(async project => {
+            const card = makeExistingCard();
+            const manager = makeMockManager();
+            manager.invoke.getProfileManagerProfile.mockResolvedValue({
+                id: 'm1',
+                created: '2026-01-01T00:00:00.000Z',
+                displayName: 'Old Districts',
+            });
+            manager.invoke.getManagedProfiles.mockResolvedValue(existingManaged);
+            project.env.ORG_PROFILE_MANAGER_DID = managerDid;
+
+            const preview = await applyOrg(managerSpec, card, project, {
+                dryRun: true,
+                connectAsManager: async () => manager,
+            });
+            expect(preview.changes).toContainEqual(
+                expect.objectContaining({
+                    resource: 'profileManager',
+                    action: 'would-update',
+                    detail: 'displayName',
+                })
+            );
+            expect(manager.invoke.updateProfileManagerProfile).not.toHaveBeenCalled();
+
+            const result = await applyOrg(managerSpec, card, project, {
+                connectAsManager: async () => manager,
+            });
+            expect(manager.invoke.updateProfileManagerProfile).toHaveBeenCalledWith({
+                displayName: 'SC Districts',
+            });
+            expect(result.changes).toContainEqual(
+                expect.objectContaining({
+                    resource: 'profileManager',
+                    action: 'updated',
+                    detail: 'displayName',
+                })
+            );
+        });
+    });
+
+    it('renames a managed profile when the spec displayName changes', async () => {
+        await withTmpProject(async project => {
+            const card = makeExistingCard();
+            const manager = makeMockManager();
+            manager.invoke.getManagedProfiles.mockResolvedValue({
+                hasMore: false,
+                records: [{ ...existingManaged.records[0], displayName: 'Greenville Schools' }],
+            });
+            const managedCard = {
+                invoke: { getProfile: vi.fn(), updateProfile: vi.fn().mockResolvedValue(true) },
+            };
+            const connectAsManaged = vi.fn().mockResolvedValue(managedCard);
+            project.env.ORG_PROFILE_MANAGER_DID = managerDid;
+
+            const preview = await applyOrg(managerSpec, card, project, {
+                dryRun: true,
+                connectAsManager: async () => manager,
+                connectAsManaged,
+            });
+            expect(preview.changes).toContainEqual(
+                expect.objectContaining({
+                    resource: 'managedProfile',
+                    action: 'would-update',
+                    detail: 'displayName',
+                })
+            );
+            expect(connectAsManaged).not.toHaveBeenCalled();
+
+            const result = await applyOrg(managerSpec, card, project, {
+                connectAsManager: async () => manager,
+                connectAsManaged,
+            });
+            expect(connectAsManaged).toHaveBeenCalledWith(managedDid);
+            expect(managedCard.invoke.updateProfile).toHaveBeenCalledWith({
+                displayName: 'Greenville County Schools',
+            });
+            expect(result.changes).toContainEqual(
+                expect.objectContaining({
+                    resource: 'managedProfile',
+                    action: 'updated',
+                    detail: 'displayName',
+                })
+            );
+            expect(manager.invoke.createManagedProfile).not.toHaveBeenCalled();
+        });
+    });
+});
+
+describe('service-account lookup', () => {
+    const page = (index: number) =>
+        Array.from({ length: 100 }, (_, i) => ({
+            id: `other-${index}-${i}`,
+            name: `other-${index}-${i}`,
+            status: 'active',
+            scope: 'inbox:read',
+            createdAt: new Date(Date.UTC(2026, 0, 1, 0, index, i)).toISOString(),
+        }));
+
+    it('pages through grants before deciding an account is absent', async () => {
+        await withTmpProject(async project => {
+            const card = makeExistingCard();
+            const first = page(1);
+            card.invoke.getAuthGrants
+                .mockResolvedValueOnce(first)
+                .mockResolvedValueOnce([
+                    { ...matchingGrant, createdAt: '2025-12-31T00:00:00.000Z' },
+                ]);
+            const result = await applyOrg(accountSpec, card, project);
+            expect(card.invoke.getAuthGrants).toHaveBeenCalledTimes(2);
+            expect(card.invoke.getAuthGrants).toHaveBeenNthCalledWith(1, {
+                limit: 100,
+                cursor: undefined,
+                query: { name: 'ea-clr-issuer', status: 'active' },
+            });
+            expect(card.invoke.getAuthGrants).toHaveBeenNthCalledWith(2, {
+                limit: 100,
+                cursor: first.at(-1)!.createdAt,
+                query: { name: 'ea-clr-issuer', status: 'active' },
+            });
+            expect(card.invoke.addAuthGrant).not.toHaveBeenCalled();
+            expect(result.outputs.serviceAccounts).toEqual([
+                { name: 'ea-clr-issuer', grantId: 'grant-1', created: false },
+            ]);
+        });
+    });
+
+    it('stops paging on a short page and creates the grant', async () => {
+        await withTmpProject(async project => {
+            const card = makeExistingCard();
+            card.invoke.getAuthGrants.mockResolvedValueOnce(page(1)).mockResolvedValueOnce([]);
+            const secretsOut = path.join(path.dirname(project.envPath), 'secrets.env');
+            const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+            await applyOrg(accountSpec, card, project, { secretsOut });
+            expect(card.invoke.getAuthGrants).toHaveBeenCalledTimes(2);
+            expect(card.invoke.addAuthGrant).toHaveBeenCalledOnce();
+            log.mockRestore();
+        });
+    });
+
+    it('refuses to reconcile while another apply holds the secrets lock, and releases its own', async () => {
+        await withTmpProject(async project => {
+            const card = makeExistingCard();
+            card.invoke.getAuthGrants.mockResolvedValue([]);
+            const dir = path.dirname(project.envPath);
+            const secretsOut = path.join(dir, 'secrets.env');
+            const lockPath = path.join(dir, '.secrets.env.lock');
+            await fs.writeFile(lockPath, '');
+            await expect(applyOrg(accountSpec, card, project, { secretsOut })).rejects.toThrow(
+                'Another org apply is reconciling service accounts'
+            );
+            expect(card.invoke.getAuthGrants).not.toHaveBeenCalled();
+            expect(card.invoke.addAuthGrant).not.toHaveBeenCalled();
+            await fs.rm(lockPath);
+
+            const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+            await applyOrg(accountSpec, card, project, { secretsOut });
+            expect(card.invoke.addAuthGrant).toHaveBeenCalledOnce();
+            expect(await fs.readdir(dir)).not.toContain('.secrets.env.lock');
             log.mockRestore();
         });
     });

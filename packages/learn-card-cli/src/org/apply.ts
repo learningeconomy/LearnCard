@@ -43,7 +43,13 @@ export interface OrgApplyResult {
  * supply this to open a second wallet bound to the manager DID.
  */
 export type ManagerLearnCard = {
-    invoke: Pick<LCALearnCard['invoke'], 'createManagedProfile' | 'getManagedProfiles'>;
+    invoke: Pick<
+        LCALearnCard['invoke'],
+        | 'createManagedProfile'
+        | 'getManagedProfiles'
+        | 'getProfileManagerProfile'
+        | 'updateProfileManagerProfile'
+    >;
 };
 
 export type ProfileCard = {
@@ -130,6 +136,58 @@ const writeSecret = async (secretsOut: string, name: string, token: string): Pro
         await fs.rm(temporary, { force: true });
     }
     await ensureGitignored(path.dirname(secretsOut), path.basename(secretsOut));
+};
+
+const GRANT_PAGE_SIZE = 100;
+
+type Grant = NonNullable<Awaited<ReturnType<OrgLearnCard['invoke']['getAuthGrants']>>>[number];
+
+/** Walk every page for this account's name so an older active grant is never missed and duplicated. */
+const findActiveGrant = async (
+    learnCard: OrgLearnCard,
+    name: string
+): Promise<Grant | undefined> => {
+    let cursor: string | undefined;
+    for (;;) {
+        const page =
+            (await learnCard.invoke.getAuthGrants({
+                limit: GRANT_PAGE_SIZE,
+                cursor,
+                query: { name, status: 'active' },
+            })) ?? [];
+        const match = page.find(grant => grant.name === name && grant.status === 'active');
+        if (match) return match;
+        const last = page.at(-1);
+        if (page.length < GRANT_PAGE_SIZE || !last?.createdAt || last.createdAt === cursor)
+            return undefined;
+        cursor = last.createdAt;
+    }
+};
+
+/**
+ * Serialize applies that share a secrets file: two overlapping runs would otherwise
+ * both miss the grant, both create one, and overwrite each other's token.
+ */
+const withSecretsLock = async <T>(
+    secretsOut: string | undefined,
+    fn: () => Promise<T>
+): Promise<T> => {
+    if (!secretsOut) return fn();
+    await fs.mkdir(path.dirname(secretsOut), { recursive: true });
+    const lockPath = path.join(path.dirname(secretsOut), `.${path.basename(secretsOut)}.lock`);
+    const lock = await fs.open(lockPath, 'wx', 0o600).catch((error: NodeJS.ErrnoException) => {
+        if (error.code === 'EEXIST')
+            throw new Error(
+                `Another org apply is reconciling service accounts for ${secretsOut}. Retry when it finishes; remove a stale ${path.basename(lockPath)} only if no command is running.`
+            );
+        throw error;
+    });
+    try {
+        return await fn();
+    } finally {
+        await lock.close();
+        await fs.rm(lockPath, { force: true });
+    }
 };
 
 const normalizeScope = (scope: string | undefined): string =>
@@ -321,6 +379,26 @@ const applySigningAuthority = async (
         changes.push({ resource: 'signingAuthority', name, action: 'created' });
         return;
     }
+    // The network keys a registration by name + DID, so a rotated DID at the same
+    // endpoint cannot be updated in place; surface it instead of silently keeping the old signer.
+    if (match.relationship.did !== did) {
+        const detail = `Signing authority "${name}" is registered at ${endpoint} with DID ${match.relationship.did}, but the spec declares ${did}. Register the rotated signer under a new name, or update the spec's did to match.`;
+        if (!dryRun) throw new Error(detail);
+        changes.push({ resource: 'signingAuthority', name, action: 'drifted', detail });
+        return;
+    }
+    // `send` reads these to pick template signing, so a matching registration must
+    // still land in .env — otherwise later sends silently fall back to the local key.
+    const envSelected =
+        project.env.SIGNING_AUTHORITY_NAME === name &&
+        project.env.SIGNING_AUTHORITY_ENDPOINT === endpoint;
+    const persist = async () => {
+        if (envSelected) return;
+        await saveProject(project, {
+            SIGNING_AUTHORITY_NAME: name,
+            SIGNING_AUTHORITY_ENDPOINT: endpoint,
+        });
+    };
     if (!match.relationship.isPrimary) {
         if (dryRun) {
             changes.push({
@@ -333,11 +411,22 @@ const applySigningAuthority = async (
         }
         if (!(await learnCard.invoke.setPrimaryRegisteredSigningAuthority(endpoint, name)))
             throw new Error(`Could not set "${name}" as the primary signing authority.`);
+        await persist();
         changes.push({
             resource: 'signingAuthority',
             name,
             action: 'updated',
             detail: 'set primary',
+        });
+        return;
+    }
+    if (!envSelected) {
+        if (!dryRun) await persist();
+        changes.push({
+            resource: 'signingAuthority',
+            name,
+            action: dryRun ? 'would-update' : 'updated',
+            detail: 'SIGNING_AUTHORITY_NAME and SIGNING_AUTHORITY_ENDPOINT in .env',
         });
         return;
     }
@@ -358,9 +447,24 @@ const applyProfileManager = async (
     const { displayName, managed: managedSpecs } = spec.profileManager;
 
     let managerDid: string | undefined;
+    let managerCard: ManagerLearnCard | undefined;
     if (project.env.ORG_PROFILE_MANAGER_DID) {
         managerDid = project.env.ORG_PROFILE_MANAGER_DID;
-        changes.push({ resource: 'profileManager', name: displayName, action: 'unchanged' });
+        if (!connectAsManager)
+            throw new Error('A profile manager requires a manager connection (connectAsManager).');
+        managerCard = await connectAsManager(managerDid);
+        const existingManager = await managerCard.invoke.getProfileManagerProfile();
+        if (existingManager && existingManager.displayName !== displayName) {
+            if (!dryRun) await managerCard.invoke.updateProfileManagerProfile({ displayName });
+            changes.push({
+                resource: 'profileManager',
+                name: displayName,
+                action: dryRun ? 'would-update' : 'updated',
+                detail: 'displayName',
+            });
+        } else {
+            changes.push({ resource: 'profileManager', name: displayName, action: 'unchanged' });
+        }
     } else if (dryRun) {
         changes.push({ resource: 'profileManager', name: displayName, action: 'would-create' });
     } else {
@@ -384,35 +488,56 @@ const applyProfileManager = async (
 
     if (!connectAsManager)
         throw new Error('Managed profiles require a manager connection (connectAsManager).');
-    const managerCard = await connectAsManager(managerDid);
+    managerCard ??= await connectAsManager(managerDid);
 
-    const existingManaged = new Map<string, string>();
+    const existingManaged = new Map<string, { did: string; displayName?: string }>();
     let cursor: string | undefined;
     let hasMore = true;
     while (hasMore) {
         const page = await managerCard.invoke.getManagedProfiles({ limit: 100, cursor });
-        for (const profile of page.records) existingManaged.set(profile.profileId, profile.did);
+        for (const profile of page.records)
+            existingManaged.set(profile.profileId, {
+                did: profile.did,
+                displayName: profile.displayName,
+            });
         hasMore = page.hasMore;
         cursor = page.cursor;
         if (hasMore && !cursor) break;
     }
 
     for (const managedSpec of managedSpecs) {
-        const existingDid = existingManaged.get(managedSpec.profileId);
-        if (existingDid) {
-            managed.push({ profileId: managedSpec.profileId, did: existingDid });
-            changes.push({
-                resource: 'managedProfile',
-                name: managedSpec.profileId,
-                action: 'unchanged',
-            });
+        const existing = existingManaged.get(managedSpec.profileId);
+        if (existing) {
+            managed.push({ profileId: managedSpec.profileId, did: existing.did });
+            const needsRename = existing.displayName !== managedSpec.displayName;
+            if ((needsRename || managedSpec.branding) && !connectAsManaged)
+                throw new Error(
+                    'Updating a managed profile (displayName or branding) requires connectAsManaged.'
+                );
+            const openManaged = () => connectAsManaged!(existing.did);
+            if (needsRename) {
+                if (!dryRun) {
+                    const card = await openManaged();
+                    await card.invoke.updateProfile({ displayName: managedSpec.displayName });
+                }
+                changes.push({
+                    resource: 'managedProfile',
+                    name: managedSpec.profileId,
+                    action: dryRun ? 'would-update' : 'updated',
+                    detail: 'displayName',
+                });
+            } else {
+                changes.push({
+                    resource: 'managedProfile',
+                    name: managedSpec.profileId,
+                    action: 'unchanged',
+                });
+            }
             if (managedSpec.branding) {
-                if (!connectAsManaged)
-                    throw new Error('Managed-profile branding requires connectAsManaged.');
                 await applyBranding(
                     managedSpec.profileId,
                     managedSpec.branding,
-                    await connectAsManaged(existingDid),
+                    await openManaged(),
                     dryRun,
                     changes
                 );
@@ -457,77 +582,80 @@ const applyServiceAccounts = async (
 ): Promise<void> => {
     if (!spec.serviceAccounts?.length) return;
 
-    const grants = (await learnCard.invoke.getAuthGrants()) ?? [];
-    for (const account of spec.serviceAccounts) {
-        const existing = grants.find(g => g.name === account.name && g.status === 'active');
-        if (existing) {
-            if (!existing.id)
-                throw new Error(
-                    `Service account "${account.name}" returned a grant without an ID; cannot safely reconcile it.`
-                );
-            serviceAccounts.push({
-                name: account.name,
-                grantId: existing.id,
-                created: false,
-            });
-            const drift = [
-                normalizeScope(existing.scope) !== normalizeScope(account.scopes.join(' ')) &&
-                    'scope',
-                expiryInstant(existing.expiresAt) !== expiryInstant(account.expiresAt) &&
-                    'expiresAt',
-            ].filter(Boolean);
-            if (drift.length) {
-                const detail = `Service account "${account.name}" grant has drifted (${drift.join(', ')}). Run npx @learncard/cli token --revoke ${existing.id} then re-run org apply.`;
-                if (!dryRun) throw new Error(detail);
-                changes.push({
-                    resource: 'serviceAccount',
+    await withSecretsLock(dryRun ? undefined : secretsOut, async () => {
+        for (const account of spec.serviceAccounts ?? []) {
+            const existing = await findActiveGrant(learnCard, account.name);
+            if (existing) {
+                if (!existing.id)
+                    throw new Error(
+                        `Service account "${account.name}" returned a grant without an ID; cannot safely reconcile it.`
+                    );
+                serviceAccounts.push({
                     name: account.name,
-                    action: 'drifted',
-                    detail,
+                    grantId: existing.id,
+                    created: false,
                 });
-            } else if (secretsOut && !(await hasSecret(secretsOut, account.name))) {
-                if (!dryRun) {
-                    const token = await learnCard.invoke.getAPITokenForAuthGrant(existing.id);
-                    await writeSecret(secretsOut, account.name, token);
+                const drift = [
+                    normalizeScope(existing.scope) !== normalizeScope(account.scopes.join(' ')) &&
+                        'scope',
+                    expiryInstant(existing.expiresAt) !== expiryInstant(account.expiresAt) &&
+                        'expiresAt',
+                ].filter(Boolean);
+                if (drift.length) {
+                    const detail = `Service account "${account.name}" grant has drifted (${drift.join(', ')}). Run npx @learncard/cli token --revoke ${existing.id} then re-run org apply.`;
+                    if (!dryRun) throw new Error(detail);
+                    changes.push({
+                        resource: 'serviceAccount',
+                        name: account.name,
+                        action: 'drifted',
+                        detail,
+                    });
+                } else if (secretsOut && !(await hasSecret(secretsOut, account.name))) {
+                    if (!dryRun) {
+                        const token = await learnCard.invoke.getAPITokenForAuthGrant(existing.id);
+                        await writeSecret(secretsOut, account.name, token);
+                    }
+                    changes.push({
+                        resource: 'serviceAccount',
+                        name: account.name,
+                        action: dryRun ? 'would-update' : 'updated',
+                        detail: dryRun ? 'token would be re-issued' : 'token re-issued',
+                    });
+                } else {
+                    changes.push({
+                        resource: 'serviceAccount',
+                        name: account.name,
+                        action: 'unchanged',
+                    });
                 }
-                changes.push({
-                    resource: 'serviceAccount',
-                    name: account.name,
-                    action: dryRun ? 'would-update' : 'updated',
-                    detail: dryRun ? 'token would be re-issued' : 'token re-issued',
-                });
-            } else {
-                changes.push({
-                    resource: 'serviceAccount',
-                    name: account.name,
-                    action: 'unchanged',
-                });
+                continue;
             }
-            continue;
-        }
-        if (dryRun) {
-            changes.push({
-                resource: 'serviceAccount',
+            if (dryRun) {
+                changes.push({
+                    resource: 'serviceAccount',
+                    name: account.name,
+                    action: 'would-create',
+                });
+                continue;
+            }
+            if (!secretsOut)
+                throw new Error(
+                    `Pass --secrets-out ./secrets.env (any path; keep it beside .env and out of git) to create service account "${account.name}" — the token is written to this file and not stored elsewhere by the CLI.`
+                );
+            const grantId = await learnCard.invoke.addAuthGrant({
                 name: account.name,
-                action: 'would-create',
+                scope: account.scopes.join(' '),
+                ...(account.expiresAt
+                    ? { expiresAt: new Date(account.expiresAt).toISOString() }
+                    : {}),
             });
-            continue;
+            const token = await learnCard.invoke.getAPITokenForAuthGrant(grantId);
+            await writeSecret(secretsOut, account.name, token);
+            out.log(`Token for "${account.name}" written to ${secretsOut}`);
+            serviceAccounts.push({ name: account.name, grantId, created: true });
+            changes.push({ resource: 'serviceAccount', name: account.name, action: 'created' });
         }
-        if (!secretsOut)
-            throw new Error(
-                `Pass --secrets-out ./secrets.env (any path; keep it beside .env and out of git) to create service account "${account.name}" — the token is written to this file and not stored elsewhere by the CLI.`
-            );
-        const grantId = await learnCard.invoke.addAuthGrant({
-            name: account.name,
-            scope: account.scopes.join(' '),
-            ...(account.expiresAt ? { expiresAt: new Date(account.expiresAt).toISOString() } : {}),
-        });
-        const token = await learnCard.invoke.getAPITokenForAuthGrant(grantId);
-        await writeSecret(secretsOut, account.name, token);
-        out.log(`Token for "${account.name}" written to ${secretsOut}`);
-        serviceAccounts.push({ name: account.name, grantId, created: true });
-        changes.push({ resource: 'serviceAccount', name: account.name, action: 'created' });
-    }
+    });
 };
 
 const applyWebhooks = async (
