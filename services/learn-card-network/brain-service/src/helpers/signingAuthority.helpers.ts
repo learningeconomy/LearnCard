@@ -33,8 +33,8 @@ const RETRY_BACKOFF_JITTER_MS = 150;
 /**
  * Error thrown from the SA issue path. Adds structured fields so callers can
  * distinguish transient vs. permanent failures and log the SA response body.
- * `retryable` is only meaningful inside this module — it drives the retry
- * decision; callers should treat any thrown SaIssueError as a hard failure.
+ * `retryable` drives transport retries and lets batch callers distinguish failures
+ * that can be retried after transport attempts are exhausted.
  */
 export class SaIssueError extends Error {
     readonly status: number;

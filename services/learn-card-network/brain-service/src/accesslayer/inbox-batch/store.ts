@@ -294,6 +294,7 @@ export const finishBatchItem = async (
         const unconfirmed = !result.success && item.phase === 'ISSUING';
         const retry =
             !result.success &&
+            result.error.retryable !== false &&
             (result.error.code === 'INTERNAL_SERVER_ERROR' ||
                 result.error.reason === 'IN_PROGRESS') &&
             !unconfirmed &&

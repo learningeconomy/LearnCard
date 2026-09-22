@@ -138,6 +138,7 @@ export const getInboxBatch = async (issuer: string, batchId: string): Promise<In
                         ...(state === 'NEEDS_RECONCILIATION'
                             ? { reason: 'UNCONFIRMED' as const }
                             : {}),
+                        retryable: state !== 'NEEDS_RECONCILIATION',
                         message:
                             state === 'NEEDS_RECONCILIATION'
                                 ? 'Issuance outcome is unconfirmed. Keep this key and contact support for reconciliation.'
@@ -199,6 +200,7 @@ export const processInboxQueueMessage = async (body: string): Promise<void> => {
         index: Number(item.index),
         error: {
             code,
+            retryable: false,
             message: text,
             ...(item.duplicate ? { reason: 'DUPLICATE_KEY' as const } : {}),
         },

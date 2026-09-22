@@ -1600,6 +1600,7 @@ export const IssueInboxCredentialBatchItemResultValidator = z.discriminatedUnion
             code: z.string(),
             message: z.string(),
             reason: InboxBatchErrorReasonValidator.optional(),
+            retryable: z.boolean().optional(),
         }),
         issuanceId: z
             .string()

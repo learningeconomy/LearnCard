@@ -1,4 +1,6 @@
 import { TRPCError } from '@trpc/server';
+import { getHTTPStatusCodeFromError } from '@trpc/server/http';
+import { SaIssueError } from './signingAuthority.helpers';
 import { mergeWith } from 'lodash';
 import { createHash, randomUUID } from 'node:crypto';
 import type {
@@ -326,19 +328,27 @@ export const issueInboxBatch = async (
                 >['error'] = {
                     code: 'INTERNAL_SERVER_ERROR',
                     message: 'Failed to issue credential',
+                    retryable: true,
                 };
                 if (key && reservation && !safeToRelease) {
                     itemError = {
                         code: 'CONFLICT',
                         reason: 'UNCONFIRMED',
+                        retryable: false,
                         message: issued
                             ? 'Credential issued, but replay storage could not be confirmed. Reconcile using issuanceId; do not issue with a new key.'
                             : 'Issuance outcome is unconfirmed. Retry this same key later; do not issue with a new key. Contact support if it remains unconfirmed.',
                     };
+                } else if (error instanceof SaIssueError) {
+                    itemError.retryable = error.retryable;
                 } else if (error instanceof TRPCError && error.code !== 'INTERNAL_SERVER_ERROR') {
                     itemError = {
                         code: error.code,
                         message: error.message,
+                        retryable:
+                            error instanceof InboxBatchConflict && error.reason === 'IN_PROGRESS'
+                                ? true
+                                : getHTTPStatusCodeFromError(error) >= 500,
                         ...(error instanceof InboxBatchConflict ? { reason: error.reason } : {}),
                     };
                 }

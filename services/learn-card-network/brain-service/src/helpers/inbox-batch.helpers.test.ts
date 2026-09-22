@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TRPCError } from '@trpc/server';
-import { IssueInboxCredentialBatchValidator } from '@learncard/types';
+import { SaIssueError } from './signingAuthority.helpers';
+import {
+    IssueInboxCredentialBatchValidator,
+    IssueInboxCredentialBatchItemResultValidator,
+} from '@learncard/types';
 import type { IssueInboxCredentialBatch } from '@learncard/types';
 import type { ProfileType } from 'types/profile';
 import type { Context } from '@routes';
@@ -91,6 +95,59 @@ describe('inbox batch worker processing', () => {
             status: 'PENDING',
             claimUrl: 'https://example.test/claim',
         }));
+    });
+
+    it.each([
+        { status: 400, kind: 'http_4xx' as const, retryable: false },
+        { status: 503, kind: 'http_5xx' as const, retryable: true },
+        { status: 429, kind: 'http_429' as const, retryable: true },
+    ])(
+        'preserves signing authority retryability for $status without exposing response details',
+        async failure => {
+            mocks.resolve.mockRejectedValue(
+                new SaIssueError({
+                    ...failure,
+                    message: 'secret signing endpoint details',
+                    body: 'private response',
+                })
+            );
+            const result = await run({ items: [{ ...item(), idempotencyKey: 'signing' }] });
+            expect(
+                IssueInboxCredentialBatchItemResultValidator.parse(result.results[0])
+            ).toMatchObject({
+                success: false,
+                error: {
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: 'Failed to issue credential',
+                    retryable: failure.retryable,
+                },
+            });
+            expect(mocks.compareAndSet).toHaveBeenCalledWith(
+                expect.any(String),
+                expect.any(String),
+                null,
+                86400
+            );
+        }
+    );
+
+    it.each(['BAD_REQUEST', 'UNAUTHORIZED', 'FORBIDDEN', 'NOT_FOUND'] as const)(
+        'marks %s failures as non-retryable',
+        async code => {
+            mocks.resolve.mockRejectedValue(new TRPCError({ code }));
+            expect((await run({ items: [item()] })).results[0]).toMatchObject({
+                success: false,
+                error: { code, retryable: false },
+            });
+        }
+    );
+
+    it('marks unknown failures as retryable', async () => {
+        mocks.resolve.mockRejectedValue(new Error('transient failure'));
+        expect((await run({ items: [item()] })).results[0]).toMatchObject({
+            success: false,
+            error: { code: 'INTERNAL_SERVER_ERROR', retryable: true },
+        });
     });
 
     it('inherits refresh and honors item overrides including false and the top-level alias', async () => {

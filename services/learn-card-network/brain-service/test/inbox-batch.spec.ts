@@ -269,6 +269,43 @@ describe('Universal Inbox batch issuance', () => {
         ).toMatchObject({ name: 'Final results' });
     });
 
+    it('does not retry a permanent signing authority failure', async () => {
+        const contact = await createContactMethod({
+            ...email('broken-sa@test.com'),
+            isVerified: true,
+        });
+        await createProfileContactMethodRelationship('batch-holder', contact.id);
+        const sign = vi.spyOn(signing, 'issueCredentialWithSigningAuthority').mockRejectedValue(
+            new signing.SaIssueError({
+                message: 'private endpoint response',
+                status: 400,
+                kind: 'http_4xx',
+                retryable: false,
+            })
+        );
+        const batch = await issue({
+            configuration: { signingAuthority },
+            items: [
+                {
+                    recipient: email('broken-sa@test.com'),
+                    credential: await unsigned(),
+                    idempotencyKey: 'broken-sa',
+                },
+            ],
+        });
+        expect(batch.results[0]).toMatchObject({
+            success: false,
+            error: {
+                code: 'INTERNAL_SERVER_ERROR',
+                retryable: false,
+                message: 'Failed to issue credential',
+            },
+        });
+        expect(sign).toHaveBeenCalledTimes(1);
+        expect(await replay('broken-sa')).toBeUndefined();
+        expect(await InboxCredential.findMany({ where: {} })).toHaveLength(0);
+    });
+
     it('accepts a one-item batch without waiting for a slow worker and restricts polling to its issuer', async () => {
         const receipt = await submit({
             items: [{ recipient: email('slow@test.com'), credential: await signed() }],
