@@ -590,7 +590,15 @@ const AuthSessionManager: React.FC<{
             const did = coordinator.state.did;
             const flag = readRecoveryPinPromptFlag(did);
 
-            if (wasNewUserRef.current && !flag && readyEnrollment === 'enrolled') {
+            // Never prompt a first-time setup for an account that already has a
+            // PIN — guards the window between a PIN mutation resolving and the
+            // prompt flag being written by the caller.
+            if (
+                wasNewUserRef.current &&
+                !flag &&
+                readyEnrollment === 'enrolled' &&
+                readyPinEnabled !== true
+            ) {
                 setRecoveryPinSetupReason('first-time');
             }
 

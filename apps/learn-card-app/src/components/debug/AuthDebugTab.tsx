@@ -43,6 +43,9 @@ import {
     deleteDeviceShare,
     getShareVersion,
     isPublicComputerMode,
+    validatePin,
+    PIN_MIN_LENGTH,
+    PIN_MAX_LENGTH,
 } from '@learncard/sss-key-manager';
 import type { DeviceShareEntry } from '@learncard/sss-key-manager';
 
@@ -404,8 +407,13 @@ export const AuthDebugTab: React.FC = () => {
     };
 
     const handleSetEscrowPin = async () => {
-        if (!escrowPinInput || escrowPinInput.length < 4) {
-            setEscrowActionError('PIN must be at least 4 characters');
+        const pinValidation = validatePin(escrowPinInput);
+        if (!pinValidation.ok) {
+            setEscrowActionError(
+                pinValidation.reason === 'length'
+                    ? `PIN must be ${PIN_MIN_LENGTH}-${PIN_MAX_LENGTH} digits`
+                    : 'PIN is too easy to guess'
+            );
             return;
         }
         if (!confirm('Set new escrow PIN?')) return;
