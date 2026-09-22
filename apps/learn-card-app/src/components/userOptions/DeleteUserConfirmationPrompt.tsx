@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { auth } from '../../firebase/firebase';
+import { useSignInAdapter } from 'learn-card-base';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('delete-user-confirmation-prompt');
 
@@ -26,17 +26,17 @@ const DeleteUserConfirmationPrompt: React.FC<{
     showFixedFooter?: boolean;
     showCloseButton?: boolean;
 }> = ({ handleCloseModal, handleLogout, showCloseButton = true, showFixedFooter = false }) => {
-    const firebaseAuth = auth();
+    const adapter = useSignInAdapter();
     const { removeAllVCsFromWallet, initWallet } = useWallet();
     const { deleteFirebaseUser } = useFirebase();
     const currentUser = useCurrentUser();
     const { newModal } = useModal();
     const authToken = getAuthToken();
-    const currentFirebaseUser = firebaseAuth.currentUser;
+    const currentFirebaseUser = adapter.getCurrentUser();
     const brandingConfig = useBrandingConfig();
 
     const [phrase, setPhrase] = useState<string>(
-        currentFirebaseUser?.email ?? currentFirebaseUser?.phoneNumber ?? currentUser?.email ?? ''
+        currentFirebaseUser?.email ?? currentFirebaseUser?.phone ?? currentUser?.email ?? ''
     );
 
     const [confirmationPhrase, setConfirmationPhrase] = useState<string>();
@@ -99,7 +99,7 @@ const DeleteUserConfirmationPrompt: React.FC<{
                     if (userDeleted.message === 'auth/requires-recent-login') {
                         setError(m['profile.delete.recentLoginRequired']());
                     } else {
-                        setError(userDeleted.message);
+                        setError(String(userDeleted.message ?? ''));
                     }
                     setIsLoading(false);
                     deletingAccountStore.set.deletingAccount(false);

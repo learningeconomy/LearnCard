@@ -8,7 +8,11 @@ export default createVitestConfig(serviceIntegrationPreset, {
     test: {
         globalSetup: './inbox-e2e-setup.ts',
         setupFiles: ['./test/helpers/inbox-e2e-environment.ts'],
-        include: ['test/inbox-security.e2e.ts'],
+        include: [
+            'test/inbox-security.e2e.ts',
+            'test/inbox-batch.spec.ts',
+            'test/atomic-counter.e2e.ts',
+        ],
         alias: { '@instance': require.resolve('./test/helpers/mock-instance.ts') },
         env: {
             NODE_ENV: 'test',

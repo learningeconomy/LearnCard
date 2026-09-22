@@ -104,8 +104,7 @@ const CredentialIssuerPopover: React.FC<CredentialIssuerPopoverProps> = ({
         // ion-popover directly so it closes in both trigger modes (event-based
         // and triggerId), then open the modal once it has gone away.
         const popover = e.currentTarget.closest('ion-popover') as
-            | (HTMLElement & { dismiss?: () => Promise<void> })
-            | null;
+            (HTMLElement & { dismiss?: () => Promise<void> }) | null;
 
         const open = () =>
             newModal(
@@ -207,9 +206,6 @@ const CredentialIssuerPopover: React.FC<CredentialIssuerPopoverProps> = ({
             <div
                 className="bg-white rounded-[10px] border border-grayscale-200 p-4 shadow-2xl font-poppins pointer-events-auto"
                 style={{ width: 'min(320px, calc(100vw - 32px))' }}
-                onClick={stopPopoverInteraction}
-                onPointerDown={stopPopoverInteraction}
-                onTouchStart={stopPopoverInteraction}
             >
                 <p className="text-xs text-grayscale-600 leading-relaxed">{popoverDescription}</p>
 
