@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-// CI has Keycloak but no persistent Redis/Mongo-backed lca-api server.
-// TODO: exercise ticket issuance through the complete broker callback/session flow.
+// Lightweight import contract; the Redis/Mongo-backed full chain is covered by
+// keycloak-broker-roundtrip.integration.spec.ts with KEYCLOAK_ROUNDTRIP=true.
 describe.runIf(process.env.KEYCLOAK_INTEGRATION === 'true')(
     'lca-api Keycloak broker import',
     () => {

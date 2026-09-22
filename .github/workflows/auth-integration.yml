@@ -15,6 +15,35 @@ jobs:
     keycloak-verifier-tests:
         runs-on: ubuntu-latest
         timeout-minutes: 15
+        services:
+            redis:
+                image: redis:7
+                ports: ['6379:6379']
+                options: >-
+                    --health-cmd "redis-cli ping"
+                    --health-interval 5s --health-timeout 3s --health-retries 12
+            mongodb:
+                image: mongo:7
+                ports: ['27017:27017']
+                options: >-
+                    --health-cmd "mongosh --quiet --eval 'db.adminCommand({ping:1}).ok'"
+                    --health-interval 5s --health-timeout 3s --health-retries 12
+        env:
+            PORT: '5100'
+            SEED: c # Public development value; never use for deployed accounts.
+            IS_E2E_TEST: 'true'
+            MONGO_URI: mongodb://localhost:27017
+            MONGO_DB_NAME: lca-api
+            REDIS_HOST: localhost
+            REDIS_PORT: '6379'
+            OIDC_ISSUER: http://localhost:5100
+            OIDC_CLIENT_ID: keycloak-broker
+            OIDC_CLIENT_SECRET: dev-only-broker-secret
+            KEYCLOAK_ISSUERS: http://localhost:8081/realms/learncard
+            KEYCLOAK_AUDIENCES: learncard-app,ci-tests
+            KEYCLOAK_ADMIN_URL: http://localhost:8081
+            KEYCLOAK_ADMIN_USERNAME: admin
+            KEYCLOAK_ADMIN_PASSWORD: admin
         steps:
             - name: Checkout Repo
               uses: actions/checkout@v7
@@ -34,8 +63,14 @@ jobs:
                   curl --fail --silent --show-error --retry 40 --retry-delay 3 \
                     --retry-all-errors --retry-max-time 120 --max-time 3 \
                     http://localhost:9000/health/ready || { docker logs keycloak; exit 1; }
-            - name: Install dependencies
-              run: bun install --frozen-lockfile
+            - name: Start lca-api
+              working-directory: services/learn-card-network/lca-api
+              run: bun --conditions=development src/docker-entry.ts > "$RUNNER_TEMP/lca-api.log" 2>&1 &
+            - name: Wait for lca-api discovery (60 second ceiling)
+              run: |
+                  curl --fail --silent --show-error --retry 60 --retry-delay 1 \
+                    --retry-all-errors --retry-max-time 57 --max-time 3 \
+                    http://localhost:5100/.well-known/openid-configuration
             - name: Verify self-issued OIDC provider (unit)
               working-directory: services/learn-card-network/lca-api
               run: >-
@@ -56,6 +91,22 @@ jobs:
                   KEYCLOAK_ISSUERS: http://localhost:8081/realms/learncard
                   KEYCLOAK_AUDIENCES: learncard-app,ci-tests
                   KEYCLOAK_INTEGRATION: 'true'
+            - name: Verify broker round-trip and Firebase-era migration
+              working-directory: services/learn-card-network/lca-api
+              run: >-
+                  bunx vitest run -c vitest.integration.config.ts
+                  test/keycloak-broker-roundtrip.integration.spec.ts
+                  test/keycloak-migration.integration.spec.ts
+              env:
+                  KEYCLOAK_INTEGRATION: 'true'
+                  KEYCLOAK_ROUNDTRIP: 'true'
             - name: Keycloak logs on failure
               if: ${{ always() && failure() }}
               run: docker logs keycloak
+            - name: Upload API logs on failure
+              if: ${{ always() && failure() }}
+              uses: actions/upload-artifact@v4
+              with:
+                  name: lca-api-auth-integration-logs
+                  path: ${{ runner.temp }}/lca-api.log
+                  retention-days: 1

@@ -9,6 +9,7 @@
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
+        "provision:keycloak": "bun --conditions=development scripts/provision-keycloak-users.ts",
         "test": "vitest run --config vitest.config.ts",
         "test:watch": "vitest --config vitest.config.ts",
         "test:coverage": "vitest run --coverage --config vitest.config.ts",
