@@ -18,6 +18,8 @@ import type { ProfileType } from 'types/profile';
 import type { BatchJobPayload } from 'types/inbox-batch';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import {
+    acknowledgeInboxDispatches,
+    deadLetterBatchItem,
     batchReplayStore,
     claimBatchItem,
     createBatchJob,
@@ -27,8 +29,8 @@ import {
     recoverInboxJobs,
     takeInboxDispatches,
 } from '@accesslayer/inbox-batch/store';
-import { acknowledgeInboxDispatches, deadLetterBatchItem } from '@accesslayer/inbox-batch/store';
 import { encryptInboxCredential, decryptInboxCredential } from './inbox-encryption.helpers';
+import { assertInboxRefreshEnabled } from './inbox-refresh.helpers';
 import { fingerprint, issueInboxBatch } from './inbox-batch.helpers';
 import { INBOX_BATCH_MAX_BYTES } from './inbox-batch-http.helpers';
 import { getInboxBatchState } from './inbox-batch-status.helpers';
@@ -70,6 +72,13 @@ export const submitInboxBatch = async (
             code: 'INTERNAL_SERVER_ERROR',
             message: 'Inbox queue is not configured.',
         });
+    if (
+        batch.items.some(
+            item => item.configuration?.refresh ?? item.refresh ?? batch.configuration?.refresh
+        )
+    ) {
+        await assertInboxRefreshEnabled(ctx.user?.scope);
+    }
     const seen = new Set<string>();
     const items = await Promise.all(
         batch.items.map(async item => {
@@ -241,7 +250,7 @@ export const processInboxQueueMessage = async (body: string): Promise<void> => {
         batchId: job.id,
         index: Number(item.index),
         success: result.results[0]!.success,
-        queueAgeMs: Date.now() - Number(job.createdAt),
+        batchAgeMs: Date.now() - Number(job.createdAt),
     });
 };
 

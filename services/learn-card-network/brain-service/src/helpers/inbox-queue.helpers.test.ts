@@ -17,7 +17,8 @@ const mocks = vi.hoisted(() => ({
     digest: vi.fn(),
     replay: { get: vi.fn(), setIfAbsent: vi.fn(), compareAndSet: vi.fn() },
 }));
-vi.mock('@environment', () => ({
+vi.mock('@environment', async original => ({
+    ...(await original<Record<string, unknown>>()),
     getInboxBatchRuntimeEnvironment: () => ({ INBOX_QUEUE_URL: 'local' }),
 }));
 vi.mock('@accesslayer/inbox-batch/store', () => ({
@@ -116,6 +117,8 @@ describe('refresh through submission, queue processing and polling', () => {
                     scope: 'inbox:write credentials:write',
                 },
             } as Context);
+            // Admission checks the whole batch; the worker must independently check its item.
+            mocks.authorize.mockClear();
             const job = {
                 id: 'batch-id',
                 issuer: profile.profileId,
@@ -160,6 +163,75 @@ describe('refresh through submission, queue processing and polling', () => {
             expect(polled.items[0]!.result).toEqual(JSON.parse(JSON.stringify(result)));
         }
     );
+
+    it.each([
+        { configuration: { refresh: true } },
+        { refresh: true },
+        { refresh: false, configuration: { refresh: true } },
+        {},
+    ])('rejects refresh at admission before creating a job: %j', async overrides => {
+        const batch = IssueInboxCredentialBatchValidator.parse({
+            configuration: { refresh: true },
+            items: [
+                {
+                    recipient: { type: 'email', value: 'a@example.test' },
+                    templateUri: 'template',
+                    ...overrides,
+                },
+            ],
+        });
+        await expect(
+            submitInboxBatch(profile, batch, {
+                user: { scope: 'inbox:write' },
+            } as Context)
+        ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        expect(mocks.create).not.toHaveBeenCalled();
+    });
+
+    it('rejects disabled refresh at admission', async () => {
+        mocks.authorize.mockRejectedValue(new TRPCError({ code: 'NOT_FOUND' }));
+        await expect(
+            submitInboxBatch(
+                profile,
+                {
+                    configuration: { refresh: true },
+                    items: [
+                        {
+                            recipient: { type: 'email', value: 'a@example.test' },
+                            templateUri: 'template',
+                        },
+                    ],
+                },
+                {} as Context
+            )
+        ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+        expect(mocks.create).not.toHaveBeenCalled();
+    });
+
+    it('allows inbox-only submission when every item opts out of batch refresh', async () => {
+        await submitInboxBatch(
+            profile,
+            {
+                configuration: { refresh: true },
+                items: [
+                    {
+                        recipient: { type: 'email', value: 'a@example.test' },
+                        templateUri: 'template',
+                        refresh: false,
+                    },
+                    {
+                        recipient: { type: 'email', value: 'b@example.test' },
+                        templateUri: 'template',
+                        refresh: true,
+                        configuration: { refresh: false },
+                    },
+                ],
+            },
+            { user: { scope: 'inbox:write' } } as Context
+        );
+        expect(mocks.authorize).not.toHaveBeenCalled();
+        expect(mocks.create).toHaveBeenCalledOnce();
+    });
 
     it.each([undefined, 'inbox:write'])(
         'does not grant refresh permissions to queued jobs with scope %s',

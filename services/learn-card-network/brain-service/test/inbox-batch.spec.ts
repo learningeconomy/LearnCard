@@ -22,6 +22,8 @@ import { decryptInboxCredential } from '@helpers/inbox-encryption.helpers';
 import * as notifications from '@helpers/notifications.helpers';
 import { clrWestbridgeFull } from '../../../../packages/credential-library/src/fixtures/clr/westbridge-full';
 import * as signing from '@helpers/signingAuthority.helpers';
+import * as refreshProof from '@helpers/credential-refresh-proof.helpers';
+import { getCredentialRefresh, getCredentialRefreshHead } from '@accesslayer/credential-refresh';
 import {
     dispatchInboxJobs,
     consumeInboxQueueOnce,
@@ -137,7 +139,7 @@ describe('Universal Inbox batch issuance', () => {
             await model.delete({ detach: true, where: {} });
         }
         await neogma.queryRunner.run(
-            'MATCH (n) WHERE n:InboxBatch OR n:InboxBatchItem OR n:InboxBatchIssuer OR n:InboxBatchReplay DETACH DELETE n'
+            'MATCH (n) WHERE n:InboxBatch OR n:InboxBatchItem OR n:InboxBatchIssuer OR n:InboxBatchReplay OR n:CredentialRefresh OR n:InboxRefreshPublication DETACH DELETE n'
         );
         const keys = await cache.keys('inbox-batch-*');
         if (keys?.length) await cache.delete(keys);
@@ -167,6 +169,105 @@ describe('Universal Inbox batch issuance', () => {
             'MATCH (i:InboxBatchItem {batchId: $batchId}) SET i.leaseUntil = 0',
             { batchId }
         );
+
+    it.each(['missing-scope', 'disabled'] as const)(
+        'rejects refresh batches before admission and quota charging: %s',
+        async scenario => {
+            vi.stubEnv('CREDENTIAL_REFRESH_ENABLED', scenario === 'disabled' ? 'false' : 'true');
+            const client = getClient({
+                did: issuer.learnCard.id.did(),
+                isChallengeValid: true,
+                scope:
+                    scenario === 'missing-scope' ? 'inbox:write' : 'inbox:write credentials:write',
+            });
+            await expect(
+                client.inbox.issueBatch({
+                    configuration: { refresh: true, signingAuthority },
+                    items: [{ recipient: email('refresh@test.com'), credential: await unsigned() }],
+                })
+            ).rejects.toMatchObject({
+                code: scenario === 'disabled' ? 'NOT_FOUND' : 'UNAUTHORIZED',
+            });
+            const jobs = await neogma.queryRunner.run('MATCH (b:InboxBatch) RETURN b');
+            const quota = await neogma.queryRunner.run('MATCH (q:InboxBatchIssuer) RETURN q');
+            expect(jobs.records).toHaveLength(0);
+            expect(quota.records).toHaveLength(0);
+        }
+    );
+
+    it('claims version 2 after submitting a refresh batch and publishing while pending', async () => {
+        vi.stubEnv('CREDENTIAL_REFRESH_ENABLED', 'true');
+        // Isolate external authority/proof transport; admission, SQS, persistence, publication,
+        // claim exchange, holder encryption and refresh version binding all use the real paths.
+        vi.spyOn(refreshProof, 'verifyManagedRefreshProof').mockResolvedValue();
+        const sign = vi
+            .spyOn(signing, 'issueCredentialWithSigningAuthority')
+            .mockImplementation(async (_owner, credential) => ({
+                kind: 'issued-credential',
+                credential: {
+                    ...credential,
+                    proof: {
+                        type: 'DataIntegrityProof',
+                        cryptosuite: 'eddsa-rdfc-2022',
+                        proofValue: 'test',
+                        created: new Date().toISOString(),
+                        proofPurpose: 'assertionMethod',
+                        verificationMethod: issuer.learnCard.id.did(),
+                    },
+                },
+                statusEntries: [],
+            }));
+        const batch = await issue({
+            configuration: { refresh: true, signingAuthority, delivery: { suppress: true } },
+            items: [
+                {
+                    recipient: email('refresh@test.com'),
+                    idempotencyKey: 'refresh-loop',
+                    credential: {
+                        '@context': ['https://www.w3.org/ns/credentials/v2'],
+                        type: ['VerifiableCredential'],
+                        name: 'Provisional results',
+                        issuer: issuer.learnCard.id.did(),
+                        credentialSubject: {},
+                    },
+                },
+            ],
+        });
+        const result = batch.results[0]!;
+        expect(result).toMatchObject({
+            success: true,
+            status: 'PENDING',
+            refresh: { refreshId: expect.any(String) },
+        });
+        if (!result.success || !result.refresh) throw new Error('Expected refresh receipt');
+        expect(sign).not.toHaveBeenCalled();
+        const pending = await stored(result.issuanceId);
+        const credential = JSON.parse(await decryptInboxCredential(pending.credential));
+        const published = await issuer.clients.fullAuth.credentialRefresh.publishCredentialRefresh({
+            mode: 'signing-authority',
+            refreshId: result.refresh.refreshId,
+            credential: { ...credential, name: 'Final results' },
+            signingAuthority: { type: 'LearnCardSigningAuthority', ...signingAuthority },
+            idempotencyKey: 'refresh-loop-v2',
+        });
+        expect(published).toMatchObject({ version: 2, notification: 'not-applicable' });
+        const delivered = await claim(result.claimUrl!);
+        expect(delivered[0]).toMatchObject({
+            name: 'Final results',
+            refreshService: { id: result.refresh.refreshService.id },
+        });
+        expect(sign).toHaveBeenCalledTimes(1);
+        expect(await getCredentialRefresh(result.refresh.refreshId)).toMatchObject({
+            state: 'active',
+            currentVersion: 2,
+            holderDid: holder.learnCard.id.did(),
+        });
+        const head = (await getCredentialRefreshHead(result.refresh.refreshId))!;
+        expect(head.version).toBe(2);
+        expect(
+            await holder.learnCard.invoke.decryptDagJwe(JSON.parse(head.credential))
+        ).toMatchObject({ name: 'Final results' });
+    });
 
     it('accepts a one-item batch without waiting for a slow worker and restricts polling to its issuer', async () => {
         const receipt = await submit({
