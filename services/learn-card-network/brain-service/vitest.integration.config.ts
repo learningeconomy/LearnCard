@@ -8,6 +8,8 @@ export default createVitestConfig(serviceIntegrationPreset, {
     test: {
         globalSetup: './test-setup.ts',
         include: ['test/**/*.spec.ts'],
+        // Batch tests require SQS as well as Neo4j; run via test:inbox:e2e.
+        exclude: ['test/inbox-batch.spec.ts'],
         alias: { '@instance': require.resolve('./test/helpers/mock-instance.ts') },
         env: {
             IS_E2E_TEST: 'true',

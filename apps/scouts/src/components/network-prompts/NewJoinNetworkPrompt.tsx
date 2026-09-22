@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { auth } from '../../firebase/firebase';
-import { updateProfile } from 'firebase/auth';
+import { useSignInAdapter } from 'learn-card-base';
 import { z } from 'zod';
 
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
@@ -61,10 +60,11 @@ type NewJoinNetworkPromptProps = {
     showDeleteAccountButton?: boolean;
     showNetworkModal?: boolean;
     showNotificationsModal?: boolean;
-    children?: any;
+    children?: React.ReactNode;
 };
 
 const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleCloseModal }) => {
+    const adapter = useSignInAdapter();
     const { initWallet } = useWallet();
     const { refetch } = useGetCurrentLCNUser();
     const { refetch: refetchIsCurrentUserLCNUser } = useIsCurrentUserLCNUser();
@@ -167,7 +167,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
             profileImage: (photo ?? currentUser?.profileImage ?? '') as string,
         });
         currentUserStore.set.currentUser({
-            ...(currentUser as any),
+            ...currentUser,
             name: name ?? currentUser?.name ?? '',
             profileImage: photo ?? currentUser?.profileImage ?? '',
         });
@@ -179,11 +179,11 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                 setIsLoading(true);
                 setIsCreateLoading(true);
                 const wallet = await initWallet();
-                const didWeb = await (wallet.invoke.createProfile as any)({
+                const didWeb = await wallet.invoke.createProfile({
                     did: wallet.id.did(),
                     profileId: profileId || '',
                     displayName: name || '',
-                    image: (photo || undefined) as any,
+                    image: photo || undefined,
                     notificationsWebhook: getNotificationsEndpoint(),
                 });
 
@@ -196,9 +196,9 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                     setIsLoading(false);
                     setIsCreateLoading(false);
                 }
-            } catch (err: any) {
+            } catch (err: unknown) {
                 log.debug('createProfile::error', err);
-                setError(err?.toString?.() || '');
+                setError(err instanceof Error ? err.message : String(err));
                 setIsLoading(false);
                 setIsCreateLoading(false);
             }
@@ -210,8 +210,8 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
 
         if (lcNetworkProfile && lcNetworkProfile?.profileId) {
             const updatedProfile = await wallet?.invoke?.updateProfile({
-                displayName: (name || undefined) as any,
-                image: (photo || undefined) as any,
+                displayName: name || undefined,
+                image: photo || undefined,
                 notificationsWebhook: getNotificationsEndpoint(),
             });
         } else {
@@ -225,9 +225,9 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
         // ! APPLE HOT FIX
         if (typeOfLogin === SocialLoginTypes.apple) {
             // ! apple's guidelines: name should NOT be required
-            await updateProfile(auth()?.currentUser as any, {
-                displayName: (name ?? '') as any,
-                photoURL: (photo ?? '') as any,
+            await adapter.updateProfile?.({
+                displayName: name ?? '',
+                photoUrl: photo ?? '',
             });
 
             handleStorageUpdate();
@@ -244,7 +244,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                 try {
                     if (authToken === 'dummy') {
                         currentUserStore.set.currentUser({
-                            ...(currentUser as any),
+                            ...currentUser,
                             name: name ?? currentUser?.name ?? '',
                             profileImage: photo ?? currentUser?.profileImage ?? '',
                         });
@@ -257,9 +257,9 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                     } else {
                         // update firebase profile
                         try {
-                            await updateProfile(auth()?.currentUser as any, {
-                                displayName: name as any,
-                                photoURL: photo as any,
+                            await adapter.updateProfile?.({
+                                displayName: name,
+                                photoUrl: photo,
                             });
                         } catch (e) {
                             openErrorLogoutModal();

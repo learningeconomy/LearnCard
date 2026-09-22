@@ -14,10 +14,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
     registerAuthProviderFactory,
     registerKeyDerivationFactory,
+    registerAuthProviderInitializer,
     resolveAuthProvider,
     resolveKeyDerivation,
+    initializeAuthProvider,
     getRegisteredAuthProviders,
     getRegisteredKeyDerivations,
+    getRegisteredAuthProviderInitializers,
 } from '../providerRegistry';
 
 import type { AuthConfig } from '../authConfig';
@@ -215,6 +218,97 @@ describe('providerRegistry', () => {
             const names = getRegisteredKeyDerivations();
 
             expect(names).toContain('test-introspect-kd');
+        });
+    });
+
+    describe('auth provider initializers', () => {
+        it('runs the initializer registered for the matching provider', async () => {
+            const initializer = vi.fn().mockResolvedValue(undefined);
+
+            registerAuthProviderInitializer('test-init-match', initializer);
+
+            await initializeAuthProvider({
+                ...baseConfig,
+                authProvider: 'test-init-match' as 'firebase',
+            });
+
+            expect(initializer).toHaveBeenCalledTimes(1);
+            expect(initializer).toHaveBeenCalledWith(
+                expect.objectContaining({ authProvider: 'test-init-match' })
+            );
+        });
+
+        it('never runs an initializer registered for a different provider', async () => {
+            const matching = vi.fn();
+            const other = vi.fn();
+
+            registerAuthProviderInitializer('test-init-selected', matching);
+            registerAuthProviderInitializer('test-init-unselected', other);
+
+            await initializeAuthProvider({
+                ...baseConfig,
+                authProvider: 'test-init-selected' as 'firebase',
+            });
+
+            expect(matching).toHaveBeenCalledTimes(1);
+            expect(other).not.toHaveBeenCalled();
+        });
+
+        it('is idempotent — calling twice for the same provider only initializes once', async () => {
+            const initializer = vi.fn().mockResolvedValue(undefined);
+
+            registerAuthProviderInitializer('test-init-idempotent', initializer);
+
+            const config = { ...baseConfig, authProvider: 'test-init-idempotent' as 'firebase' };
+
+            await initializeAuthProvider(config);
+            await initializeAuthProvider(config);
+            await initializeAuthProvider(config);
+
+            expect(initializer).toHaveBeenCalledTimes(1);
+        });
+
+        it('retries an initializer after it throws', async () => {
+            const initializer = vi
+                .fn()
+                .mockRejectedValueOnce(new Error('Bootstrap failed'))
+                .mockResolvedValue(undefined);
+            registerAuthProviderInitializer('test-init-retry', initializer);
+            const config = { ...baseConfig, authProvider: 'test-init-retry' as 'firebase' };
+
+            await expect(initializeAuthProvider(config)).rejects.toThrow('Bootstrap failed');
+            await initializeAuthProvider(config);
+
+            expect(initializer).toHaveBeenCalledTimes(2);
+        });
+
+        it('is idempotent across concurrent calls issued before the first resolves', async () => {
+            const initializer = vi.fn().mockResolvedValue(undefined);
+
+            registerAuthProviderInitializer('test-init-concurrent', initializer);
+
+            const config = { ...baseConfig, authProvider: 'test-init-concurrent' as 'firebase' };
+
+            await Promise.all([initializeAuthProvider(config), initializeAuthProvider(config)]);
+
+            expect(initializer).toHaveBeenCalledTimes(1);
+        });
+
+        it('no-ops (does not throw) when no initializer is registered for the provider', async () => {
+            await expect(
+                initializeAuthProvider({
+                    ...baseConfig,
+                    authProvider: 'test-init-missing' as 'firebase',
+                })
+            ).resolves.toBeUndefined();
+        });
+
+        it('getRegisteredAuthProviderInitializers returns registered names', () => {
+            registerAuthProviderInitializer('test-introspect-init', vi.fn());
+
+            const names = getRegisteredAuthProviderInitializers();
+
+            expect(names).toContain('test-introspect-init');
         });
     });
 });

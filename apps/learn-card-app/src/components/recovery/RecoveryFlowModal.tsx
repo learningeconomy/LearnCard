@@ -14,7 +14,7 @@ import { QRCodeSVG } from 'qrcode.react';
 
 import { Capacitor } from '@capacitor/core';
 import { isWebAuthnSupported } from '@learncard/sss-key-manager';
-import { QrLoginRequester, getSSSConfig } from 'learn-card-base';
+import { Overlay, QrLoginRequester, getSSSConfig } from 'learn-card-base';
 import type { RecoveryReason } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
 import { EscrowRecoveryPanel } from './EscrowRecoveryPanel';
@@ -116,6 +116,11 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
 
     const hasMethod = (type: string) => availableMethods.some(m => m.type === type);
     const webAuthnSupported = isWebAuthnSupported();
+
+    const handleBack = (): void => {
+        setActiveMethod(null);
+        setError(null);
+    };
 
     const handlePasskeyRecovery = async () => {
         const passkeyMethod = availableMethods.find(m => m.type === 'passkey');
@@ -262,7 +267,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
     );
 
     if (identityPhase === 'enter_email') {
-        return (
+        const content = (
             <div className="p-6 max-w-md mx-auto font-poppins">
                 <div className="text-center mb-6">
                     <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center">
@@ -323,10 +328,11 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                 </button>
             </div>
         );
+        return <Overlay onDismiss={loading ? undefined : onCancel}>{content}</Overlay>;
     }
 
     if (identityPhase === 'verify_email') {
-        return (
+        const content = (
             <div className="p-6 max-w-md mx-auto font-poppins">
                 <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
                     {m['recovery.identity.checkEmail']()}
@@ -382,10 +388,11 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                 </button>
             </div>
         );
+        return <Overlay onDismiss={loading ? undefined : onCancel}>{content}</Overlay>;
     }
 
     if (identityPhase === 'new_login') {
-        return (
+        const content = (
             <div className="p-8 max-w-md mx-auto text-center font-poppins">
                 <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center">
                     <IonIcon icon={checkmarkCircleOutline} className="text-2xl" />
@@ -404,10 +411,11 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                 </button>
             </div>
         );
+        return <Overlay onDismiss={onCancel}>{content}</Overlay>;
     }
 
     if (identityPhase === 'success') {
-        return (
+        const content = (
             <div className="p-8 max-w-md mx-auto text-center font-poppins">
                 <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
                     <IonIcon icon={checkmarkCircleOutline} className="text-3xl" />
@@ -426,12 +434,13 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                 </button>
             </div>
         );
+        return <Overlay onDismiss={onFinishIdentityRecovery}>{content}</Overlay>;
     }
 
     // ── Method picker ────────────────────────────────────────────
 
     if (!activeMethod) {
-        return (
+        const content = (
             <div className="p-6 max-w-md mx-auto">
                 <div className="text-center mb-6">
                     <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
@@ -501,18 +510,18 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                 </button>
             </div>
         );
+
+        return <Overlay onDismiss={onCancel}>{content}</Overlay>;
     }
 
     // ── Active method detail ─────────────────────────────────────
 
-    return (
+    const content = (
         <div className="p-6 max-w-md mx-auto">
             <button
-                onClick={() => {
-                    setActiveMethod(null);
-                    setError(null);
-                }}
-                className="flex items-center gap-1 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors mb-5"
+                onClick={handleBack}
+                disabled={loading}
+                className="flex items-center gap-1 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors mb-5 disabled:opacity-40 disabled:cursor-not-allowed"
             >
                 <IonIcon icon={chevronBackOutline} className="text-xs" />
                 {m['common.back']()}
@@ -817,6 +826,8 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
             )}
         </div>
     );
+
+    return <Overlay onDismiss={loading ? undefined : handleBack}>{content}</Overlay>;
 };
 
 export default RecoveryFlowModal;
