@@ -126,7 +126,7 @@ describe('inbox batch worker processing', () => {
                 expect.any(String),
                 expect.any(String),
                 null,
-                86400
+                259200
             );
         }
     );
@@ -338,7 +338,7 @@ describe('inbox batch worker processing', () => {
         expect(batch).toEqual(original);
     });
 
-    it('caches only successes for 24 hours and replays using the current index', async () => {
+    it('caches only successes for 72 hours and replays using the current index', async () => {
         const batch = await run({
             items: [
                 { ...item(), idempotencyKey: 'key' },
@@ -350,7 +350,7 @@ describe('inbox batch worker processing', () => {
             'inbox-batch-idem:issuer:key',
             expect.any(String),
             expect.any(String),
-            86400
+            259200
         );
         expect(JSON.parse(mocks.compareAndSet.mock.calls[0]![2])).toMatchObject(
             JSON.parse(JSON.stringify(batch.results[0]))
@@ -395,7 +395,7 @@ describe('inbox batch worker processing', () => {
             expect.any(String),
             expect.any(String),
             null,
-            86400
+            259200
         );
         mocks.compareAndSet.mockClear();
         mocks.issue.mockRejectedValueOnce(new Error('connection lost after write'));
@@ -457,7 +457,7 @@ describe('inbox batch worker processing', () => {
                 expect.any(String),
                 expect.any(String),
                 null,
-                86400
+                259200
             );
             expect(
                 (
@@ -568,7 +568,7 @@ describe('inbox batch worker processing', () => {
             expect.any(String),
             expect.any(String),
             null,
-            86400
+            259200
         );
     });
 

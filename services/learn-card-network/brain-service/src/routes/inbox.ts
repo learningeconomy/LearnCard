@@ -544,7 +544,7 @@ export const inboxRouter = t.router({
                 tags: ['Universal Inbox'],
                 summary: 'Issue Credentials to Universal Inbox (Batch)',
                 description:
-                    'Queue 1–100 credentials for background issuance. Returns a durable batch ID; poll GET /inbox/batches/{batchId} for ordered results. Request and item idempotency keys are issuer-scoped for 24 hours. Maximum JSON payload: 4 MiB.',
+                    'Queue 1–100 credentials for background issuance. Returns a durable batch ID; poll GET /inbox/batches/{batchId} for ordered results. Request and item idempotency keys are issuer-scoped for 72 hours. Maximum JSON payload: 4 MiB.',
             },
             requiredScope: 'inbox:write',
         })

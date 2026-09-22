@@ -24,7 +24,7 @@ import {
 } from './inbox-issuance-error.helpers';
 
 const INTERNAL_BATCH_CONCURRENCY = 10;
-const IDEMPOTENCY_TTL_SECONDS = 24 * 60 * 60;
+const IDEMPOTENCY_TTL_SECONDS = 72 * 60 * 60;
 
 const unavailable = (): TRPCError =>
     new TRPCError({

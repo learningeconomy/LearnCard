@@ -269,6 +269,35 @@ describe('Universal Inbox batch issuance', () => {
         ).toMatchObject({ name: 'Final results' });
     });
 
+    it('keeps submission and successful item replay available across a 48-hour delay', async () => {
+        const batch = {
+            requestId: 'weekend',
+            items: [
+                {
+                    recipient: email('weekend@test.com'),
+                    credential: await signed(),
+                    idempotencyKey: 'weekend',
+                },
+            ],
+        };
+        const receipt = await submit(batch);
+        const first = await poll(receipt.batchId);
+        // Age persisted timestamps without changing timers used by SQS or the database driver.
+        await neogma.queryRunner.run(
+            'MATCH (b:InboxBatch {id: $id}) SET b.createdAt = b.createdAt - $delay',
+            { id: receipt.batchId, delay: 2 * jobStore.DAY }
+        );
+        await neogma.queryRunner.run(
+            'MATCH (r:InboxBatchReplay) SET r.expiresAt = r.expiresAt - $delay',
+            { delay: 2 * jobStore.DAY }
+        );
+        await jobStore.recoverInboxJobs();
+        expect(await submit(batch)).toMatchObject({ batchId: receipt.batchId });
+        const second = await issue({ ...batch, requestId: 'weekend-retry' });
+        expect(second.results[0]).toMatchObject({ ...first.results[0], deduplicated: true });
+        expect(await InboxCredential.findMany({ where: {} })).toHaveLength(1);
+    });
+
     it('does not retry a permanent signing authority failure', async () => {
         const contact = await createContactMethod({
             ...email('broken-sa@test.com'),
@@ -1164,8 +1193,8 @@ describe('Universal Inbox batch issuance', () => {
         expect(sendSpy).toHaveBeenCalledTimes(emails);
         expect(addNotificationToQueueSpy).toHaveBeenCalledTimes(webhooks);
         const ttl = (Number((await replay('replay-0')).expiresAt) - Date.now()) / 1000;
-        expect(ttl).toBeGreaterThan(86300);
-        expect(ttl).toBeLessThanOrEqual(86400);
+        expect(ttl).toBeGreaterThan(259100);
+        expect(ttl).toBeLessThanOrEqual(259200);
     });
 
     it('does not consume an idempotency key on failure', async () => {

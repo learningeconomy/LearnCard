@@ -87,7 +87,7 @@ export const createBatchJob = async (input: {
                 `MATCH (b:InboxBatch {issuer: $issuer, requestId: $requestId})
                 WHERE b.createdAt > $cutoff
                 MATCH (b)-[:HAS_ITEM]->(i:InboxBatchItem) RETURN b, collect(i.state) AS states`,
-                { issuer: input.issuer, requestId: input.requestId, cutoff: now - DAY }
+                { issuer: input.issuer, requestId: input.requestId, cutoff: now - 3 * DAY }
             );
             const batch = prior.records[0]?.get('b').properties;
             if (batch) {
@@ -202,7 +202,7 @@ export const markBatchIssuanceStarted = async (id: string, owner: string): Promi
 
 /** Adapter retains the existing request fingerprint/CAS protocol with durable, encrypted records.
  * Processing markers have no expiry. Orphaned internal markers are removed after job retention;
- * client-keyed markers remain blocked. Only confirmed successes get the 24-hour replay expiry.
+ * client-keyed markers remain blocked. Only confirmed successes get the 72-hour replay expiry.
  */
 export const batchReplayStore = (
     itemId: string,
