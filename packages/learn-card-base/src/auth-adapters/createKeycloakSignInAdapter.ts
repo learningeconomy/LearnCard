@@ -1,11 +1,15 @@
 import { AuthSessionError, UnsupportedSignInOperationError } from '@learncard/types';
-import type { AuthUser, SignInAdapter, SocialSignInOptions } from '@learncard/types';
+import type { AuthUser, SocialSignInOptions } from '@learncard/types';
 import type { User } from 'oidc-client-ts';
 import { keycloakUserToAuthUser } from '../auth-providers/createKeycloakAuthProvider';
 import { getLogger } from '../logging/logger';
-import type { KeycloakSignInAdapterConfig, KeycloakSignInOperation } from './keycloakTypes';
+import type {
+    KeycloakSignInAdapter,
+    KeycloakSignInAdapterConfig,
+    KeycloakSignInOperation,
+} from './keycloakTypes';
 
-export type { KeycloakSignInAdapterConfig } from './keycloakTypes';
+export type { KeycloakSignInAdapter, KeycloakSignInAdapterConfig } from './keycloakTypes';
 
 const log = getLogger('keycloak-sign-in');
 
@@ -15,7 +19,9 @@ const log = getLogger('keycloak-sign-in');
  * sign-in through checkRedirectResult. In a native sheet the same instance can settle
  * its pending promise when the host completes the provider callback.
  */
-export const createKeycloakSignInAdapter = (config: KeycloakSignInAdapterConfig): SignInAdapter => {
+export const createKeycloakSignInAdapter = (
+    config: KeycloakSignInAdapterConfig
+): KeycloakSignInAdapter => {
     const { provider } = config;
     const { userManager } = provider;
     const listeners = new Set<(user: AuthUser | null) => void>();
@@ -23,6 +29,7 @@ export const createKeycloakSignInAdapter = (config: KeycloakSignInAdapterConfig)
     let revision = 0;
     let listening = false;
     let disposed = false;
+    let completingRedirect = false;
     let pending:
         | {
               resolve: (user: AuthUser) => void;
@@ -61,6 +68,8 @@ export const createKeycloakSignInAdapter = (config: KeycloakSignInAdapterConfig)
         for (const listener of listeners) listener(user);
     };
     const loaded = (user: User): void => {
+        // The provider validates the returning identity before publishing it.
+        if (completingRedirect) return;
         emit(keycloakUserToAuthUser(user));
     };
     const unloaded = (): void => emit(null);
@@ -171,10 +180,11 @@ export const createKeycloakSignInAdapter = (config: KeycloakSignInAdapterConfig)
             };
         },
         getCurrentUser: (): AuthUser | null => currentUser,
-        signInWithCustomToken: (ticket): Promise<AuthUser> =>
+        signInWithCustomToken: (ticket, options): Promise<AuthUser> =>
             operation('customToken', async () => {
-                const user = await hop(ticket);
-                notify(() => config.onSignedIn?.('customToken', user));
+                const user = await hop(ticket, options);
+                if (options?.intent !== 'reauthenticate')
+                    notify(() => config.onSignedIn?.('customToken', user));
                 return user;
             }),
         signInWithGoogle: (options): Promise<AuthUser> => social('google', options),
@@ -201,6 +211,8 @@ export const createKeycloakSignInAdapter = (config: KeycloakSignInAdapterConfig)
                 )
                     return null;
                 const attempt = pending;
+                completingRedirect = true;
+                revision++;
                 try {
                     // Always let the SDK validate and consume callback state, including errors.
                     const user = await provider.handleRedirectCallback(url.href);
@@ -228,6 +240,7 @@ export const createKeycloakSignInAdapter = (config: KeycloakSignInAdapterConfig)
                     attempt?.reject(failure);
                     throw failure;
                 } finally {
+                    completingRedirect = false;
                     for (const key of [
                         'code',
                         'state',

@@ -8,7 +8,10 @@ export interface UserManagerLike {
     getUser(): Promise<User | null>;
     storeUser(user: User | null): Promise<void>;
     signinSilent(): Promise<User | null>;
-    signinRedirect(args: { extraQueryParams: Record<string, string> }): Promise<void>;
+    signinRedirect(args: {
+        extraQueryParams: Record<string, string>;
+        state?: unknown;
+    }): Promise<void>;
     signinCallback(url?: string): Promise<User | undefined>;
     signoutRedirect(args: {
         post_logout_redirect_uri: string;
@@ -39,6 +42,8 @@ export interface KeycloakAuthProviderConfig {
     userStore?: OidcStorage;
     /** Injectable SDK boundary for tests and embedding hosts. */
     userManager?: UserManagerLike;
+    /** Validate app-owned OIDC state and returning identity before notifying consumers. */
+    validateRedirectUser?: (user: AuthUser, state: unknown) => void;
 }
 
 export interface KeycloakAuthProvider extends AuthProvider {
@@ -79,9 +84,35 @@ export const createKeycloakAuthProvider = (
     config: KeycloakAuthProviderConfig
 ): KeycloakAuthProvider => {
     const authority = `${config.serverUrl.replace(/\/+$/, '')}/realms/${config.realm}`;
+    let signOutRevision = 0;
+    let redirectRevision: number | undefined;
+    let previousRedirectUser: User | null = null;
+
+    // The SDK stores tokens before raising UserLoaded. Validate at that boundary,
+    // not after signinCallback, so other tabs never see a rejected identity.
+    class ValidatingUserManager extends UserManager {
+        override async storeUser(user: User | null): Promise<void> {
+            if (user && redirectRevision !== undefined) {
+                const current = await this.getUser();
+                if (
+                    signOutRevision !== redirectRevision ||
+                    current?.profile.sub !== previousRedirectUser?.profile.sub
+                ) {
+                    throw new AuthSessionError(
+                        'Sign-in cancelled. Please try again.',
+                        'no_session'
+                    );
+                }
+                const mapped = keycloakUserToAuthUser(user);
+                if (!mapped) throw new AuthSessionError('Please sign in again.', 'no_session');
+                config.validateRedirectUser?.(mapped, user.state);
+            }
+            await super.storeUser(user);
+        }
+    }
     const userManager =
         config.userManager ??
-        new UserManager(
+        new ValidatingUserManager(
             {
                 authority,
                 client_id: config.clientId,
@@ -117,7 +148,6 @@ export const createKeycloakAuthProvider = (
         );
     const redirectListeners = new Set<(result: KeycloakRedirectResult) => void>();
     let reauthenticating = false;
-    let signOutRevision = 0;
 
     const renew = async (): Promise<User> => {
         // Never fall back to iframe silent SSO when there is no refresh token.
@@ -233,14 +263,40 @@ export const createKeycloakAuthProvider = (
         handleRedirectCallback: async (url?: string): Promise<AuthUser | null> => {
             // Snapshot before awaiting: an older callback must never settle a later attempt.
             const listeners = [...redirectListeners];
+            if (redirectRevision !== undefined) {
+                throw new AuthSessionError('Sign-in is already in progress.', 'no_session');
+            }
+            redirectRevision = signOutRevision;
             try {
-                const user = await handleRedirectCallback(userManager, url);
+                const previousUser = await userManager.getUser();
+                previousRedirectUser = previousUser;
+                const oidcUser = await userManager.signinCallback(url);
+                const user = keycloakUserToAuthUser(oidcUser);
                 if (!user) throw new AuthSessionError('Please sign in again.', 'no_session');
+                try {
+                    if (signOutRevision !== redirectRevision) {
+                        throw new AuthSessionError(
+                            'Sign-in cancelled. Please try again.',
+                            'no_session'
+                        );
+                    }
+                    config.validateRedirectUser?.(user, oidcUser?.state);
+                } catch (error) {
+                    // Injected managers may publish before validation. Production validates
+                    // inside storeUser above, before storage or UserLoaded can change.
+                    if (config.userManager && signOutRevision === redirectRevision) {
+                        await userManager.storeUser(previousUser);
+                    }
+                    throw error;
+                }
                 for (const listener of listeners) listener({ user });
                 return user;
             } catch (error) {
                 for (const listener of listeners) listener({ error });
                 throw error;
+            } finally {
+                redirectRevision = undefined;
+                previousRedirectUser = null;
             }
         },
     };

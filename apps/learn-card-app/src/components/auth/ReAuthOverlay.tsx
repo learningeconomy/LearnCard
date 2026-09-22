@@ -24,18 +24,28 @@ import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
 
 import AppleIcon from 'learn-card-base/assets/images/apple-logo.svg';
 import GoogleIcon from 'learn-card-base/assets/images/google-G-logo.svg';
+import { KeycloakReAuthForm } from './KeycloakReAuthForm';
+import type { ReauthAction } from '../../auth/keycloakReauth';
+import type { RecoverySetupType } from '../recovery/RecoverySetupModal';
 
 type ReAuthState = 'refreshing' | 'needs_reauth' | 'reauthing' | 'success' | 'error';
 
 interface ReAuthOverlayProps {
     onSuccess: () => void;
     onCancel: () => void;
+    resumeAction?: ReauthAction;
+    resumeMethod?: RecoverySetupType;
 }
 
 const UID_MISMATCH_ERROR =
     'You signed in with a different account. Please try again with the correct account.';
 
-const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({ onSuccess, onCancel }) => {
+const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({
+    onSuccess,
+    onCancel,
+    resumeAction = 'recovery-setup',
+    resumeMethod,
+}) => {
     const { refreshAuthSession } = useAppAuth();
     const adapter = useSignInAdapter();
 
@@ -176,6 +186,16 @@ const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({ onSuccess, onCancel }) =>
     }
 
     // --- Determine which re-auth buttons to show ---
+    if (adapter.providerType === 'keycloak') {
+        return (
+            <KeycloakReAuthForm
+                action={resumeAction}
+                initialMethod={resumeMethod}
+                onCancel={onCancel}
+            />
+        );
+    }
+
     const isGoogle = adapter.capabilities.google && loginType === SocialLoginTypes.google;
     const isApple = adapter.capabilities.apple && loginType === SocialLoginTypes.apple;
     const hasSocialReAuth = isGoogle || isApple;

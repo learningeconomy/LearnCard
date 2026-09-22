@@ -8,7 +8,7 @@ import {
     keycloakConfig,
 } from '../../auth-providers/__tests__/keycloakTestHelpers';
 import { createKeycloakSignInAdapter } from '../createKeycloakSignInAdapter';
-import type { KeycloakSignInAdapterConfig } from '../keycloakTypes';
+import type { KeycloakSignInAdapter, KeycloakSignInAdapterConfig } from '../keycloakTypes';
 
 vi.mock('../../logging/logger', () => ({ getLogger: (): object => ({ warn: vi.fn() }) }));
 
@@ -16,7 +16,7 @@ let manager = createManager();
 let config: KeycloakSignInAdapterConfig;
 const replaceState = vi.fn();
 const adapters: SignInAdapter[] = [];
-const create = (extra: Partial<KeycloakSignInAdapterConfig> = {}): SignInAdapter => {
+const create = (extra: Partial<KeycloakSignInAdapterConfig> = {}): KeycloakSignInAdapter => {
     const adapter = createKeycloakSignInAdapter({ ...config, ...extra });
     adapters.push(adapter);
     return adapter;
@@ -47,6 +47,22 @@ afterEach(() => {
 });
 
 describe('createKeycloakSignInAdapter', () => {
+    it('forces ticket reauthentication and does not run sign-in side effects', async () => {
+        const onSignedIn = vi.fn();
+        const adapter = create({ onSignedIn });
+        const signIn = adapter.signInWithCustomToken('fresh-ticket', { intent: 'reauthenticate' });
+        await Promise.resolve();
+        expect(manager.signinRedirect).toHaveBeenCalledWith({
+            extraQueryParams: {
+                kc_idp_hint: 'lca-api',
+                login_hint: 'fresh-ticket',
+                prompt: 'login',
+            },
+        });
+        await finish(adapter);
+        await expect(signIn).resolves.toHaveProperty('id', 'user-1');
+        expect(onSignedIn).not.toHaveBeenCalled();
+    });
     it('exposes exact capabilities', () => {
         expect(create().capabilities).toEqual({
             emailLink: false,
@@ -304,6 +320,7 @@ describe('createKeycloakSignInAdapter', () => {
         location('?code=c&state=s');
         const result = adapter.checkRedirectResult?.();
         const rejection = expect(result).rejects.toBeInstanceOf(AuthSessionError);
+        await vi.waitFor(() => expect(manager.signinCallback).toHaveBeenCalled());
         adapter.cleanup?.();
         resolveCallback?.(createUser());
         await rejection;

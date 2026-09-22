@@ -1543,6 +1543,12 @@ const AuthSessionManager: React.FC<{
             {showEmailLinkGate && (
                 <EmailLinkOverlay
                     onSendCode={async (email: string) => {
+                        if (authProvider?.getProviderType() === 'keycloak') {
+                            throw new Error(
+                                'Email upgrades are not available for this account yet.'
+                            );
+                        }
+
                         const { serverUrl } = getSSSConfig();
 
                         const res = await fetch(`${serverUrl}/send-login-verification-code`, {
@@ -1569,6 +1575,14 @@ const AuthSessionManager: React.FC<{
                         }
                     }}
                     onVerifyCode={async (email: string, code: string) => {
+                        // The upgrade endpoint only links Firebase identities today. Do not
+                        // change the contact record without linking the Keycloak identity too.
+                        if (authProvider?.getProviderType() === 'keycloak') {
+                            throw new Error(
+                                'Email upgrades are not available for this account yet.'
+                            );
+                        }
+
                         if (!keyDerivation.upgradeContactMethod) {
                             throw new Error(
                                 'Contact method upgrade is not supported by the current key derivation strategy.'
@@ -1769,6 +1783,7 @@ const AuthSessionManager: React.FC<{
                         return (
                             <Overlay onDismiss={closeRecoverySetup}>
                                 <ReAuthOverlay
+                                    resumeMethod={recoverySetupOptionsRef.current.initialMethod}
                                     onSuccess={() => setRecoverySessionValid(true)}
                                     onCancel={closeRecoverySetup}
                                 />

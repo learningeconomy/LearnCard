@@ -35,6 +35,7 @@ import useLogout from '../../hooks/useLogout';
 
 import { setPublicComputerMode, isPublicComputerMode } from '@learncard/sss-key-manager';
 import { useSignInAdapter } from 'learn-card-base';
+import { readKeycloakReauth } from '../../auth/keycloakReauth';
 import { getConfigCapabilities } from 'learn-card-base/config/authConfig';
 
 import { IonContent, IonGrid, IonPage, IonRow } from '@ionic/react';
@@ -208,6 +209,8 @@ export const LoginContent: React.FC = () => {
 
     useEffect(() => {
         if (didRedirectRef.current) return;
+        // Reauth owns navigation until identity validation and recovery resumption finish.
+        if (adapter.providerType === 'keycloak' && readKeycloakReauth()) return;
         if (!currentUser && !isLoggedIn && coordinatorState.status !== 'needs_setup') return;
 
         // Onboarding owns navigation while it is open. Leave the pending
@@ -293,6 +296,7 @@ export const LoginContent: React.FC = () => {
             log.error(e);
         }
     }, [
+        adapter.providerType,
         authStatus,
         currentUser,
         isLoggedIn,

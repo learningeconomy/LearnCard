@@ -7,6 +7,7 @@ import {
     registerSignInAdapterFactory,
 } from 'learn-card-base';
 import { requestEmailOtpTicket, requestSocialTicket } from './keycloakTickets';
+import { clearKeycloakReauth, readKeycloakReauth, validateKeycloakReauth } from './keycloakReauth';
 
 /** Register lazily: Firebase tenants never construct a Keycloak session. */
 export const registerKeycloakFactories = (): void => {
@@ -19,6 +20,7 @@ export const registerKeycloakFactories = (): void => {
             ...config,
             redirectUri: `${window.location.origin}/login`,
             postLogoutRedirectUri: `${window.location.origin}/login`,
+            validateRedirectUser: validateKeycloakReauth,
         });
         return provider;
     };
@@ -29,6 +31,14 @@ export const registerKeycloakFactories = (): void => {
             provider: getProvider(),
             requestEmailOtpTicket,
             requestSocialTicket,
+            openAuthorization: args => {
+                if (args.extraQueryParams.prompt !== 'login') clearKeycloakReauth();
+                const intent = readKeycloakReauth();
+                return getProvider().userManager.signinRedirect({
+                    ...args,
+                    ...(intent ? { state: { reauthId: intent.id } } : {}),
+                });
+            },
             // The current native token source is Firebase-only; do not initialize it here.
             isNative: () => Capacitor.isNativePlatform(),
         })

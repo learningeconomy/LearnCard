@@ -29,6 +29,81 @@ const create = (
 ): KeycloakAuthProvider => createKeycloakAuthProvider({ ...keycloakConfig, userManager, ...extra });
 
 describe('createKeycloakAuthProvider', () => {
+    it('rejects the identity at the SDK storage boundary before publishing tokens', async () => {
+        const storage = new InMemoryWebStorage();
+        const previous = createUser();
+        const returned = createUser({ profile: { ...previous.profile, sub: 'other-user' } });
+        const provider = createKeycloakAuthProvider({
+            ...keycloakConfig,
+            stateStore: storage,
+            userStore: storage,
+            validateRedirectUser: user => {
+                if (user.id !== previous.profile.sub) throw new Error('Wrong account');
+            },
+        });
+        const manager = provider.userManager;
+        await manager.storeUser(previous);
+        vi.spyOn(manager, 'signinCallback').mockImplementation(async () => {
+            await manager.storeUser(returned);
+            return returned;
+        });
+        await expect(provider.handleRedirectCallback()).rejects.toThrow('Wrong account');
+        expect(await manager.getUser()).toHaveProperty('profile.sub', previous.profile.sub);
+        expect(await provider.getIdToken()).toBe(previous.id_token);
+    });
+
+    it('does not resurrect a session when logout happens during the callback', async () => {
+        const storage = new InMemoryWebStorage();
+        const provider = createKeycloakAuthProvider({
+            ...keycloakConfig,
+            stateStore: storage,
+            userStore: storage,
+        });
+        const manager = provider.userManager;
+        await manager.storeUser(createUser());
+        let finish: (() => void) | undefined;
+        vi.spyOn(manager, 'signinCallback').mockImplementation(async () => {
+            await new Promise<void>(resolve => {
+                finish = resolve;
+            });
+            const user = createUser();
+            await manager.storeUser(user);
+            return user;
+        });
+        const callback = provider.handleRedirectCallback();
+        const rejected = expect(callback).rejects.toBeInstanceOf(AuthSessionError);
+        await vi.waitFor(() => expect(manager.signinCallback).toHaveBeenCalled());
+        await provider.signOut();
+        finish?.();
+        await rejected;
+        expect(await manager.getUser()).toBeNull();
+    });
+
+    it('validates redirect identity and restores the prior session on mismatch', async () => {
+        const previous = createUser();
+        const manager = createManager(previous);
+        const returned = createUser({
+            profile: { ...previous.profile, sub: 'other-user' },
+            userState: { reauthId: 'attempt' },
+        });
+        vi.mocked(manager.signinCallback).mockImplementation(async () => {
+            await manager.storeUser(returned);
+            return returned;
+        });
+        const validateRedirectUser = vi.fn(() => {
+            throw new Error('Wrong account');
+        });
+        const provider = create(manager, { validateRedirectUser });
+        const completed = vi.fn();
+        provider.onRedirectComplete(completed);
+        await expect(provider.handleRedirectCallback()).rejects.toThrow('Wrong account');
+        expect(validateRedirectUser).toHaveBeenCalledWith(
+            expect.objectContaining({ id: 'other-user' }),
+            { reauthId: 'attempt' }
+        );
+        expect(await manager.getUser()).toBe(previous);
+        expect(completed).toHaveBeenCalledWith({ error: expect.any(Error) });
+    });
     it('builds PKCE authorization-code settings and injectable stores without iframe/session monitoring', () => {
         const storage = new InMemoryWebStorage();
         const provider = createKeycloakAuthProvider({

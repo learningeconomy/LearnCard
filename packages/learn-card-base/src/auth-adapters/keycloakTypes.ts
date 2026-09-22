@@ -1,8 +1,13 @@
-import type { AuthUser } from '@learncard/types';
+import type { AuthUser, SignInAdapter, SocialSignInOptions } from '@learncard/types';
 import type { KeycloakAuthProvider } from '../auth-providers/createKeycloakAuthProvider';
 
 export type KeycloakSignInOperation =
     'google' | 'apple' | 'customToken' | 'oidc' | 'redirect' | 'signOut';
+
+/** Keycloak tickets can also establish a fresh session for an existing account. */
+export interface KeycloakSignInAdapter extends SignInAdapter {
+    signInWithCustomToken(ticket: string, options?: SocialSignInOptions): Promise<AuthUser>;
+}
 
 export interface KeycloakSignInAdapterConfig {
     provider: KeycloakAuthProvider;

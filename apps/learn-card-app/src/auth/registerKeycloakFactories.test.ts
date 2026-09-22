@@ -3,7 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
     authFactory: vi.fn<(name: string, factory: () => unknown) => void>(),
     adapterFactory: vi.fn<(name: string, factory: () => unknown) => void>(),
-    createProvider: vi.fn((_config: Record<string, unknown>) => ({ marker: 'provider' })),
+    createProvider: vi.fn((_config: Record<string, unknown>) => ({
+        marker: 'provider',
+        userManager: { signinRedirect: vi.fn(async () => undefined) },
+    })),
     createAdapter: vi.fn((_config: Record<string, unknown>) => ({ marker: 'adapter' })),
     config: vi.fn(() => ({
         serverUrl: 'http://localhost:8081',
@@ -24,9 +27,13 @@ vi.mock('./keycloakTickets', () => ({
 }));
 
 import { registerKeycloakFactories } from './registerKeycloakFactories';
+import { beginKeycloakReauth, readKeycloakReauth } from './keycloakReauth';
 
 describe('Keycloak factory registration', () => {
-    beforeEach(() => vi.clearAllMocks());
+    beforeEach(() => {
+        vi.clearAllMocks();
+        sessionStorage.clear();
+    });
 
     it('registers only Keycloak factories without touching Firebase or constructing a session', () => {
         registerKeycloakFactories();
@@ -61,5 +68,25 @@ describe('Keycloak factory registration', () => {
             })
         );
         expect(mocks.createAdapter.mock.calls[0]?.[0]).not.toHaveProperty('nativeSocial');
+    });
+
+    it('binds the reauth request to OIDC state but clears abandoned intent on normal login', async () => {
+        registerKeycloakFactories();
+        mocks.adapterFactory.mock.calls[0]?.[1]();
+        const open = mocks.createAdapter.mock.calls[0]?.[0].openAuthorization;
+        if (typeof open !== 'function') throw new Error('Missing authorization callback');
+        const intent = beginKeycloakReauth('same-user', 'account-recovery');
+        const extraQueryParams = { prompt: 'login', kc_idp_hint: 'lca-api', login_hint: 'ticket' };
+        await open({ extraQueryParams });
+        const manager = mocks.createProvider.mock.results[0]?.value.userManager;
+        expect(manager.signinRedirect).toHaveBeenLastCalledWith({
+            extraQueryParams,
+            state: { reauthId: intent.id },
+        });
+        await open({ extraQueryParams: { kc_idp_hint: 'google' } });
+        expect(manager.signinRedirect).toHaveBeenLastCalledWith({
+            extraQueryParams: { kc_idp_hint: 'google' },
+        });
+        expect(readKeycloakReauth()).toBeNull();
     });
 });
