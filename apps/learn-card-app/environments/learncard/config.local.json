@@ -20,6 +20,11 @@
         "analyticsProvider": "noop"
     },
     "auth": {
+        "keycloak": {
+            "serverUrl": "http://localhost:8081",
+            "realm": "learncard",
+            "clientId": "learncard-app"
+        },
         "keyDerivation": "sss",
         "sss": {
             "serverUrl": "http://localhost:5100/api"

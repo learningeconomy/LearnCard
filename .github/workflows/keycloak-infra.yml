@@ -1,0 +1,120 @@
+name: Keycloak Infrastructure
+
+on:
+    pull_request:
+        paths:
+            - 'infra/keycloak/terraform/**'
+            - 'infra/keycloak/Dockerfile'
+            - '.github/workflows/keycloak-infra.yml'
+    workflow_dispatch:
+        inputs:
+            environment:
+                description: GitHub deployment environment
+                required: true
+                type: choice
+                options:
+                    - keycloak-staging
+                    - keycloak-production
+            action:
+                description: Plan or apply the reviewed infrastructure
+                required: true
+                default: plan
+                type: choice
+                options:
+                    - plan
+                    - apply
+
+permissions:
+    contents: read
+
+env:
+    TF_IN_AUTOMATION: 'true'
+    TF_INPUT: 'false'
+
+jobs:
+    validate:
+        runs-on: ubuntu-latest
+        defaults:
+            run:
+                working-directory: infra/keycloak/terraform
+        steps:
+            - uses: actions/checkout@v7
+            - uses: hashicorp/setup-terraform@v3
+              with:
+                  terraform_version: '1.9.8'
+            - run: terraform fmt -check -recursive
+            - run: terraform init -backend=false
+            - run: terraform validate
+            - uses: terraform-linters/setup-tflint@v4
+              with:
+                  tflint_version: v0.55.1
+            - name: Lint Terraform (blocking)
+              run: tflint --init && tflint
+            - name: Build optimized Keycloak image (no push)
+              working-directory: .
+              run: docker build --build-arg KEYCLOAK_VERSION=26.7.4 -f infra/keycloak/Dockerfile infra/keycloak
+
+    deploy:
+        if: github.event_name == 'workflow_dispatch'
+        needs: validate
+        runs-on: ubuntu-latest
+        environment: ${{ inputs.environment }}
+        concurrency:
+            group: keycloak-infra-${{ inputs.environment }}
+            cancel-in-progress: false
+        defaults:
+            run:
+                working-directory: infra/keycloak/terraform
+        env:
+            DEPLOY_ENVIRONMENT: ${{ inputs.environment == 'keycloak-production' && 'production' || 'staging' }}
+            AWS_REGION: ${{ vars.AWS_REGION || secrets.AWS_REGION }}
+            TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET || secrets.TF_STATE_BUCKET }}
+            TF_STATE_TABLE: ${{ vars.TF_STATE_TABLE || secrets.TF_STATE_TABLE }}
+        steps:
+            - uses: actions/checkout@v7
+            - uses: hashicorp/setup-terraform@v3
+              with:
+                  terraform_version: '1.9.8'
+            - name: Check backend configuration
+              run: |
+                  : "${AWS_REGION:?Set AWS_REGION in the GitHub environment}"
+                  : "${TF_STATE_BUCKET:?Set TF_STATE_BUCKET in the GitHub environment}"
+                  : "${TF_STATE_TABLE:?Set TF_STATE_TABLE in the GitHub environment}"
+            - name: Configure AWS credentials
+              uses: aws-actions/configure-aws-credentials@v5
+              with:
+                  aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                  aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                  aws-region: ${{ env.AWS_REGION }}
+            - name: Load environment variables file
+              env:
+                  TFVARS: ${{ secrets.TF_VARS }}
+              run: |
+                  umask 077
+                  if [[ -n "$TFVARS" ]]; then
+                      printf '%s\n' "$TFVARS" > "environments/${DEPLOY_ENVIRONMENT}.tfvars"
+                  fi
+                  test -s "environments/${DEPLOY_ENVIRONMENT}.tfvars" || {
+                      echo 'Supply the non-example tfvars file or the TF_VARS environment secret.'
+                      exit 1
+                  }
+            - name: Initialize remote state
+              run: |
+                  terraform init \
+                      -backend-config="bucket=${TF_STATE_BUCKET}" \
+                      -backend-config="key=keycloak/${DEPLOY_ENVIRONMENT}/terraform.tfstate" \
+                      -backend-config="region=${AWS_REGION}" \
+                      -backend-config="dynamodb_table=${TF_STATE_TABLE}"
+            - name: Plan
+              run: |
+                  terraform plan -lock-timeout=5m \
+                      -var-file="environments/${DEPLOY_ENVIRONMENT}.tfvars" \
+                      -var="environment=${DEPLOY_ENVIRONMENT}" \
+                      -var="aws_region=${AWS_REGION}" \
+                      -out=keycloak.tfplan
+            - name: Apply saved plan
+              if: inputs.action == 'apply'
+              run: terraform apply -lock-timeout=5m -auto-approve keycloak.tfplan
+            - name: Remove sensitive local artifacts
+              if: always()
+              run: rm -f keycloak.tfplan "environments/${DEPLOY_ENVIRONMENT}.tfvars"

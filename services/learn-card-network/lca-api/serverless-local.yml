@@ -51,6 +51,16 @@ provider:
         MONGO_DB_NAME: ${env:MONGO_DB_NAME}
         AUTHORIZED_DIDS: ${env:AUTHORIZED_DIDS}
         GOOGLE_APPLICATION_CREDENTIAL: ${env:GOOGLE_APPLICATION_CREDENTIAL, ""}
+        KEYCLOAK_ISSUERS: ${env:KEYCLOAK_ISSUERS, ""}
+        KEYCLOAK_AUDIENCES: ${env:KEYCLOAK_AUDIENCES, ""}
+        KEYCLOAK_JWKS_URL_OVERRIDES: ${env:KEYCLOAK_JWKS_URL_OVERRIDES, ""}
+        OIDC_ISSUER: ${env:OIDC_ISSUER, ""}
+        OIDC_SIGNING_KEY_JWK: ${env:OIDC_SIGNING_KEY_JWK, ""}
+        OIDC_CLIENT_ID: ${env:OIDC_CLIENT_ID, ""}
+        OIDC_CLIENT_SECRET: ${env:OIDC_CLIENT_SECRET, ""}
+        OIDC_REDIRECT_URIS: ${env:OIDC_REDIRECT_URIS, ""}
+        GOOGLE_OAUTH_CLIENT_IDS: ${env:GOOGLE_OAUTH_CLIENT_IDS, ""}
+        APPLE_OAUTH_CLIENT_IDS: ${env:APPLE_OAUTH_CLIENT_IDS, ""}
         REDIS_HOST:
             'Fn::GetAtt': [ElasticCacheCluster, RedisEndpoint.Address]
         REDIS_PORT:
@@ -97,6 +107,17 @@ functions:
             - httpApi: GET /.well-known/did.json
         url:
             cors: true
+
+    oidc:
+        handler: lambda.oidcHandler
+        vpc:
+            securityGroupIds:
+                - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
+            subnetIds:
+                - Ref: PrivateSubnetA
+        events:
+            - httpApi: GET /.well-known/openid-configuration
+            - httpApi: ANY /oidc/{proxy+}
 
     swagger:
         handler: lambda.swaggerUiHandler
@@ -223,6 +244,8 @@ resources:
             Properties:
                 AutoMinorVersionUpgrade: true
                 Engine: redis
+                # GETDEL (login codes/tickets/auth codes) needs Redis >= 6.2
+                EngineVersion: '7.0'
                 CacheNodeType: ${self:custom.config.CACHE_INSTANCE_SIZE}
                 NumCacheNodes: 1
                 VpcSecurityGroupIds:

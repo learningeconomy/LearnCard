@@ -1605,6 +1605,8 @@
       "version": "1.3.1",
       "dependencies": {
         "@fastify/cors": "^11.2.0",
+        "@fastify/formbody": "^8.0.2",
+        "@fastify/rate-limit": "^10.2.0",
         "@fastify/static": "^10.1.1",
         "@learncard/core": "workspace:*",
         "@learncard/did-web-plugin": "workspace:*",
@@ -1629,6 +1631,7 @@
         "firebase-admin": "13.4.0",
         "ioredis": "^5.2.2",
         "ioredis-mock": "^8.2.2",
+        "jose": "^6.2.12",
         "jsonwebtoken": "^9.0.2",
         "jwt-decode": "^3.1.2",
         "libsodium-wrappers": "^0.7.11",
@@ -2855,6 +2858,8 @@
     "@fastify/error": ["@fastify/error@4.2.0", "", {}, "sha512-RSo3sVDXfHskiBZKBPRgnQTtIqpi/7zhJOEmAxCiBcM7d0uwdGdxLlsCaLzGs8v8NnxIRlfG0N51p5yFaOentQ=="],
 
     "@fastify/fast-json-stringify-compiler": ["@fastify/fast-json-stringify-compiler@5.1.0", "", { "dependencies": { "fast-json-stringify": "^7.0.0" } }, "sha512-PxcYtKLbQ8Z+yApiqjK8FwxIwvEj38k2OiLc17u8dkJSlmfi2wHHPaSnaoqBPQqtvF8YVsDgDpP2snDCfFrpfw=="],
+
+    "@fastify/formbody": ["@fastify/formbody@8.0.2", "", { "dependencies": { "fast-querystring": "^1.1.2", "fastify-plugin": "^5.0.0" } }, "sha512-84v5J2KrkXzjgBpYnaNRPqwgMsmY7ZDjuj0YVuMR3NXCJRCgKEZy/taSP1wUYGn0onfxJpLyRGDLa+NMaDJtnA=="],
 
     "@fastify/forwarded": ["@fastify/forwarded@3.0.2", "", {}, "sha512-NE8HgKLgYejV9lDpqkEFaDKMLYelJBVfHekhB0UKvX0ghagXRJqg68feg8er1NPXxG4N9i6vPxzt8E+3wHfcmA=="],
 
@@ -10345,6 +10350,8 @@
     "@learncard/init/@types/node": ["@types/node@17.0.45", "", {}, "sha512-w+tIMs3rq2afQdsPJlODhoUEKzFP1ayaoyl1CcnwtIlsVe7K7bA1NGm4s3PraqTLlXnbIN84zuBlxBWo1u9BLw=="],
 
     "@learncard/lca-api-plugin/@types/node": ["@types/node@17.0.45", "", {}, "sha512-w+tIMs3rq2afQdsPJlODhoUEKzFP1ayaoyl1CcnwtIlsVe7K7bA1NGm4s3PraqTLlXnbIN84zuBlxBWo1u9BLw=="],
+
+    "@learncard/lca-api-service/jose": ["jose@6.2.12", "", {}, "sha512-9NiFmJEex0sy2Dk58j2UGBSHgUs2ypF9eZSu4L6vjOX3Dp96Sw1F3uL+H+D1sx02jZZdzUT0HgvCy59CuvXcWw=="],
 
     "@learncard/lca-api-service/serverless-esbuild": ["serverless-esbuild@1.55.0", "", { "dependencies": { "@effect/platform": "^0.65.5", "@effect/platform-node": "^0.60.5", "@effect/schema": "^0.73.4", "acorn": "^8.8.1", "acorn-walk": "^8.2.0", "anymatch": "^3.1.3", "archiver": "^5.3.1", "bestzip": "^2.2.1", "chokidar": "^3.5.3", "effect": "^3.8.3", "execa": "^5.1.1", "fs-extra": "^11.1.0", "globby": "^11.0.4", "p-map": "^4.0.0", "ramda": "^0.28.0", "semver": "^7.3.8" }, "peerDependencies": { "esbuild": "0.8 - 0.25", "esbuild-node-externals": "^1.0.0" }, "optionalPeers": ["esbuild-node-externals"] }, "sha512-bc25ZXPcY1r1D/7vyW/QxDICutYshY0xcRcbUHuhllt6EWE6V4Ds29igWs9rnoiRvCGrgJwxvbfGSEYeeaSvJg=="],
 
