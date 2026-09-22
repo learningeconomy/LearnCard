@@ -5,10 +5,13 @@ This isolated harness renders the production creation and recipient components w
 From the repository root:
 
 ```sh
+bun --cwd apps/learn-card-app run i18n:compile
 bunx vite --config apps/learn-card-app/tests/share-links-harness/vite.config.mts
 ```
 
 Open `http://127.0.0.1:3018/` for creation. The mocked creation endpoint returns success; copied links point to `preview.example` and are deliberately not live.
+
+Choose credentials, set an expiry, and review the recipient preview before creating the fixture link. Add `?locale=ar` to check Arabic and right-to-left layout; `en`, `es`, and `fr` are also supported. On the recipient fixture, Download JSON exports its signed presentation.
 
 Recipient fixture:
 

@@ -43,8 +43,11 @@ export const downloadSharePresentation = (
         anchor.download = shareExportFilename(title);
         anchor.rel = 'noopener';
         document.body.appendChild(anchor);
-        anchor.click();
-        anchor.remove();
+        try {
+            anchor.click();
+        } finally {
+            anchor.remove();
+        }
     } finally {
         // Defer revocation one task so the click has started the download, then
         // make sure the object URL never outlives the gesture.

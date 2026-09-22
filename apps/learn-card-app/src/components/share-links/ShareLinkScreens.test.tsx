@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
             verifyCredential: vi.fn(),
         },
     },
+    anonymousWallet: vi.fn(),
     prepare: vi.fn(),
     decrypt: vi.fn(),
     validate: vi.fn(),
@@ -26,7 +27,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('learn-card-base', () => ({ useWallet: () => ({ initWallet: async () => mocks.wallet }) }));
 vi.mock('@capacitor/clipboard', () => ({ Clipboard: { write: vi.fn() } }));
 vi.mock('learn-card-base/helpers/walletHelpers', () => ({
-    getBespokeLearnCard: async () => mocks.wallet,
+    getBespokeLearnCard: () => mocks.anonymousWallet(),
 }));
 vi.mock('../../config/bootstrapTenantConfig', () => ({
     getAppBaseUrl: () => mocks.appBaseUrl,
@@ -64,6 +65,7 @@ beforeEach(() => {
     vi.clearAllMocks();
     mocks.appBaseUrl = 'https://tenant.example';
     mocks.wallet.id.did.mockReturnValue('owner');
+    mocks.anonymousWallet.mockResolvedValue(mocks.wallet);
     window.history.replaceState(
         null,
         '',
@@ -477,14 +479,46 @@ describe('recipient screen', () => {
         await Promise.resolve();
         expect(mocks.wallet.invoke.acknowledgeShareLinkView).not.toHaveBeenCalled();
     });
-    it('replaces checking badges when the shared verification deadline passes', async () => {
+    it('does not acknowledge after unmount during anonymous client lookup', async () => {
+        const view = render(<ShareLinkViewer />);
+        await screen.findByText('Community leadership');
+        let resolveWallet!: (wallet: typeof mocks.wallet) => void;
+        mocks.anonymousWallet.mockReturnValueOnce(
+            new Promise(resolve => {
+                resolveWallet = resolve;
+            })
+        );
+        mocks.intersect?.([{ isIntersecting: true }]);
+        view.unmount();
+        await act(async () => {
+            resolveWallet(mocks.wallet);
+        });
+        expect(mocks.wallet.invoke.acknowledgeShareLinkView).not.toHaveBeenCalled();
+    });
+    it('gives verification its full budget after a slow content fetch', async () => {
         vi.useFakeTimers();
         try {
+            let resolveContent!: (content: unknown) => void;
+            mocks.wallet.invoke.getShareLinkContent.mockReturnValueOnce(
+                new Promise(resolve => {
+                    resolveContent = resolve;
+                })
+            );
             mocks.wallet.invoke.verifyPresentation.mockReturnValue(new Promise(() => {}));
             mocks.wallet.invoke.verifyCredential.mockReturnValue(new Promise(() => {}));
             render(<ShareLinkViewer />);
             // Flush the async load without waitFor, whose polling relies on timers.
             await act(async () => {
+                for (let tick = 0; tick < 20; tick++) await Promise.resolve();
+            });
+            await act(async () => {
+                await vi.advanceTimersByTimeAsync(45_000);
+                resolveContent({
+                    id: 'AAAAAAAAAAAAAAAAAAAAAA',
+                    contentVersion: 1,
+                    receipt: 'same-receipt',
+                    envelope: {},
+                });
                 for (let tick = 0; tick < 20; tick++) await Promise.resolve();
             });
             expect(screen.getByText('Community leadership')).toBeTruthy();

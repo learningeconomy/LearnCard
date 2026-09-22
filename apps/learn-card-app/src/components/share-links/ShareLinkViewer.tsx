@@ -60,7 +60,7 @@ const ShareLinkViewer = () => {
         let cancelled = false;
         // One budget bounds the holder proof plus every credential/endorsement
         // check; cancelling on unmount/retry stops any further checks.
-        const budget = createVerificationBudget();
+        let budget: ReturnType<typeof createVerificationBudget> | undefined;
         setReady(undefined);
         setState('loading');
         setProofs([]);
@@ -73,7 +73,7 @@ const ShareLinkViewer = () => {
             setState('incomplete');
             return () => {
                 cancelled = true;
-                budget.cancel();
+                budget?.cancel();
             };
         }
         try {
@@ -116,6 +116,7 @@ const ShareLinkViewer = () => {
                     if (cancelled) return;
                     const payload = validated.manifest;
                     const members = payload.presentation.verifiableCredential;
+                    budget = createVerificationBudget();
                     setReady({ payload, metadata, receipt: content.receipt });
                     setProofs(members.map(() => 'checking'));
                     setState('ready');
@@ -149,7 +150,7 @@ const ShareLinkViewer = () => {
         void load();
         return () => {
             cancelled = true;
-            budget.cancel();
+            budget?.cancel();
         };
     }, [id, hash, attempt]);
 
@@ -175,7 +176,9 @@ const ShareLinkViewer = () => {
                     return;
                 acknowledged.current.add(receipt);
                 void getBespokeLearnCard('a')
-                    .then(wallet => wallet.invoke.acknowledgeShareLinkView(receipt))
+                    .then(wallet => {
+                        if (!disposed) return wallet.invoke.acknowledgeShareLinkView(receipt);
+                    })
                     .catch(() => {
                         // No new receipt or content fetch on an acknowledgement failure.
                     });
