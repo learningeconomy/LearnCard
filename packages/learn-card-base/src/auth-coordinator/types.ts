@@ -26,6 +26,8 @@ export type {
     DidAuthVpSigner,
     SssActivationState,
     SignInAdapter,
+    SignInCapabilities,
+    SocialSignInOptions,
     PhoneVerificationHandle,
     EscrowEnrollmentState,
     EscrowEnrollmentOptions,

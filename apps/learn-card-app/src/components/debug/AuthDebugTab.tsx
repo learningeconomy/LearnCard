@@ -30,6 +30,7 @@ import {
 const log = getLogger('auth-debug-tab');
 
 import { useAuthCoordinator } from '../../providers/AuthCoordinatorProvider';
+import { useSignInAdapter } from 'learn-card-base';
 import { getSigningLearnCard, getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
 
 import { Capacitor } from '@capacitor/core';
@@ -214,6 +215,8 @@ export type { StatusMeta };
 // ---------------------------------------------------------------------------
 
 export const AuthDebugTab: React.FC = () => {
+    const adapter = useSignInAdapter();
+    const { authProvider } = useAuthCoordinator();
     const [copied, copyToClipboard] = useCopyToClipboard();
     const [refreshKey, setRefreshKey] = useState(0);
     const [deviceShareExists, setDeviceShareExists] = useState<boolean | null>(null);
@@ -670,20 +673,20 @@ export const AuthDebugTab: React.FC = () => {
         setServerError(null);
 
         try {
-            const { getIdToken } = await import('firebase/auth');
-            const firebaseAuth = (await import('../../firebase/firebase')).auth();
-
-            if (!firebaseAuth.currentUser) {
+            if (!authProvider || !adapter.getCurrentUser()) {
                 setServerError('No Firebase session — cannot fetch token');
                 return;
             }
 
-            const token = await getIdToken(firebaseAuth.currentUser);
+            const token = await authProvider.getIdToken();
 
             const response = await fetch(`${sssServerUrl}/keys/auth-share`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ authToken: token, providerType: 'firebase' }),
+                body: JSON.stringify({
+                    authToken: token,
+                    providerType: authProvider.getProviderType(),
+                }),
             });
 
             if (!response.ok) {
@@ -766,9 +769,7 @@ export const AuthDebugTab: React.FC = () => {
         if (!authUser) return;
 
         try {
-            const { signOut } = await import('firebase/auth');
-            const firebaseAuth = (await import('../../firebase/firebase')).auth();
-            await signOut(firebaseAuth);
+            await adapter.signOut();
 
             authUserStore.set.setUser(null);
 

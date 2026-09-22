@@ -33,6 +33,7 @@ import {
 const log = getLogger('auth-key-debug-widget');
 
 import { useAuthCoordinator } from '../../providers/AuthCoordinatorProvider';
+import { useSignInAdapter } from 'learn-card-base';
 import { environment } from '../../config/environment';
 import { getSigningLearnCard, getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
 
@@ -329,6 +330,8 @@ const Section: React.FC<{
 // ---------------------------------------------------------------------------
 
 export const AuthKeyDebugWidget: React.FC = () => {
+    const adapter = useSignInAdapter();
+    const { authProvider } = useAuthCoordinator();
     const [isOpen, setIsOpen] = useState(false);
     const [copied, setCopied] = useState<string | null>(null);
     const [refreshKey, setRefreshKey] = useState(0);
@@ -615,21 +618,20 @@ export const AuthKeyDebugWidget: React.FC = () => {
         setServerError(null);
 
         try {
-            // Get the token from the Firebase Auth SDK (authUser is a plain store object)
-            const { getIdToken } = await import('firebase/auth');
-            const firebaseAuth = (await import('../../firebase/firebase')).auth();
-
-            if (!firebaseAuth.currentUser) {
+            if (!authProvider || !adapter.getCurrentUser()) {
                 setServerError('No Firebase session — cannot fetch token');
                 return;
             }
 
-            const token = await getIdToken(firebaseAuth.currentUser);
+            const token = await authProvider.getIdToken();
 
             const response = await fetch(`${sssServerUrl}/keys/auth-share`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ authToken: token, providerType: 'firebase' }),
+                body: JSON.stringify({
+                    authToken: token,
+                    providerType: authProvider.getProviderType(),
+                }),
             });
 
             if (!response.ok) {
@@ -713,9 +715,7 @@ export const AuthKeyDebugWidget: React.FC = () => {
             // This does NOT clear local storage/coordinator state — it only
             // kills the Firebase auth session so getIdToken() will fail,
             // simulating a session expiration.
-            const { signOut } = await import('firebase/auth');
-            const firebaseAuth = (await import('../../firebase/firebase')).auth();
-            await signOut(firebaseAuth);
+            await adapter.signOut();
 
             // Clear the auth user store so the coordinator detects sign-out
             authUserStore.set.setUser(null);

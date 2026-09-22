@@ -7,11 +7,10 @@ import keyboardStore from 'learn-card-base/stores/keyboardStore';
 
 import User from '../../../components/svgs/User';
 import GearPlusIcon from 'learn-card-base/svgs/GearPlusIcon';
-import BoostTemplateSelector from 'apps/learn-card-app/src/components/boost/boost-template/BoostTemplateSelector';
 import AddressBookContactOptions from '../addressBook-contact-options/AddressBookContactOptions';
 import { IonFooter, IonToolbar, IonGrid, IonRow, IonCol, useIonModal } from '@ionic/react';
 
-import { ModalTypes, useIsCurrentUserLCNUser, useModal } from 'learn-card-base';
+import { useIsCurrentUserLCNUser } from 'learn-card-base';
 import useLCNGatedAction from 'apps/learn-card-app/src/components/network-prompts/hooks/useLCNGatedAction';
 
 export const AddressBookFooter: React.FC<{
@@ -20,7 +19,6 @@ export const AddressBookFooter: React.FC<{
 }> = ({ showSearch, handleShowSearch }) => {
     const history = useHistory();
     const bottomBarRef = useRef<HTMLDivElement>();
-    const { newModal } = useModal({ desktop: ModalTypes.Cancel });
 
     const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
     const { gate } = useLCNGatedAction();
@@ -69,16 +67,7 @@ export const AddressBookFooter: React.FC<{
                                     const { prompted } = await gate();
                                     if (prompted) return;
 
-                                    newModal(
-                                        <BoostTemplateSelector />,
-                                        {
-                                            hideButton: true,
-                                        },
-                                        {
-                                            desktop: ModalTypes.FullScreen,
-                                            mobile: ModalTypes.FullScreen,
-                                        }
-                                    );
+                                    history.push('/issue');
                                 }}
                                 className="bg-gradient-rainbow text-lg text-white flex items-center justify-center font-semibold py-[5px] rounded-full w-1/2 border-solid border-white border-[2px] px-[18px] shadow-soft-bottom mb-[10px]"
                             >

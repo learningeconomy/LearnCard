@@ -38,7 +38,6 @@ import {
 import { usePathQuery } from 'learn-card-base';
 import { useIsCurrentUserLCNUser } from 'learn-card-base';
 import { useLoadingLine } from '../../stores/loadingStore';
-import useBoostModal from '../../components/boost/hooks/useBoostModal';
 import useLCNGatedAction from '../../components/network-prompts/hooks/useLCNGatedAction';
 
 import useTheme from '../../theme/hooks/useTheme';
@@ -68,8 +67,6 @@ const FamilyPage: React.FC = () => {
         _activeTab ?? CredentialListTabEnum.Earned
     );
     const [viewMode, setViewMode] = useState<BoostPageViewModeType>(BoostPageViewMode.Card);
-
-    const { handlePresentBoostModal } = useBoostModal(history, BoostCategoryOptionsEnum.family);
 
     const { data: currentLCNUser } = useIsCurrentUserLCNUser();
 
@@ -193,7 +190,7 @@ const FamilyPage: React.FC = () => {
                     {currentLCNUser && (
                         <EarnedAndManagedTabs
                             handleActiveTab={setActiveTab}
-                            handlePlusClick={handlePresentBoostModal}
+                            handlePlusClick={() => history.push('/issue')}
                             activeTab={activeTab}
                             containerClassName="px-[5px]"
                             className="bg-amber-900"
