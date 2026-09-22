@@ -5,7 +5,9 @@ import { alertCircleOutline } from 'ionicons/icons';
 import { authUserStore, currentUserStore, useSignInAdapter } from 'learn-card-base';
 import type { KeycloakSignInAdapter } from 'learn-card-base';
 import { useSendLoginVerificationCode } from 'learn-card-base/react-query/mutations/firebase';
+import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
 import {
+    assertCurrentKeycloakReauth,
     beginKeycloakReauth,
     clearKeycloakReauth,
     getReauthReturnTo,
@@ -18,8 +20,16 @@ export const KeycloakReAuthForm: React.FC<{
     action: ReauthAction;
     initialMethod?: RecoverySetupType;
     onCancel: () => void;
-}> = ({ action, initialMethod, onCancel }) => {
+    /**
+     * Native only: web never reaches this point in-process — the redirect
+     * unloads the page and `useKeycloakRedirect` resumes the caller's flow
+     * after reload instead. Called once refreshAuthSession() has confirmed
+     * the new session is live.
+     */
+    onComplete?: () => void;
+}> = ({ action, initialMethod, onCancel, onComplete }) => {
     const adapter = useSignInAdapter();
+    const { refreshAuthSession } = useAppAuth();
     const user = authUserStore.use.currentUser();
     const savedUser = currentUserStore.use.currentUser();
     const email = user?.email || savedUser?.email;
@@ -30,7 +40,7 @@ export const KeycloakReAuthForm: React.FC<{
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const mounted = useRef(true);
-    const available = !!email && !!userId && !Capacitor.isNativePlatform();
+    const available = !!email && !!userId;
 
     useEffect(() => {
         mounted.current = true;
@@ -54,10 +64,24 @@ export const KeycloakReAuthForm: React.FC<{
             } else {
                 const ticket = await requestEmailOtpTicket(email, code);
                 if (!mounted.current) return;
-                beginKeycloakReauth(userId, action, returnTo, initialMethod);
-                await (adapter as KeycloakSignInAdapter).signInWithCustomToken(ticket, {
-                    intent: 'reauthenticate',
-                });
+                const intent = beginKeycloakReauth(userId, action, returnTo, initialMethod);
+                const signedInUser = await (adapter as KeycloakSignInAdapter).signInWithCustomToken(
+                    ticket,
+                    { intent: 'reauthenticate' }
+                );
+                // Web never reaches here: the browser navigates away mid-flight and
+                // `useKeycloakRedirect` resumes this same intent after the reload.
+                // Native has no reload, so signInWithCustomToken resolves in-place —
+                // run the same post-reauth steps the web resume does, right here.
+                if (Capacitor.isNativePlatform()) {
+                    assertCurrentKeycloakReauth(intent, signedInUser.id);
+                    if (!(await refreshAuthSession())) {
+                        throw new Error('Session could not be restored');
+                    }
+                    assertCurrentKeycloakReauth(intent, signedInUser.id);
+                    clearKeycloakReauth();
+                    onComplete?.();
+                }
             }
         } catch {
             clearKeycloakReauth();

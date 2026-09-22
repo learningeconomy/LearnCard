@@ -132,12 +132,40 @@ Email code issuance still uses `firebase.sendLoginVerificationCode`: despite its
 namespace it writes lca-api's `login-code:<email>:<code>` Redis store. Do not use
 Firebase's custom-token verification to consume a Keycloak login code.
 
-Native social token acquisition currently only exists through
-`@capacitor-firebase/authentication`. Keycloak deliberately does not initialize
-that SDK: `nativeSocial` remains unset. The adapter's `signInWithOidcCredential`
-completion is wired to `auth.requestSocialLoginTicket`, ready for a separate
-native token source. Native system-browser/deep-link integration is not provided
-by this web wiring. Web Google/Apple require their IdPs configured in Keycloak.
+### Native (Capacitor)
+
+Native sign-in opens the Keycloak authorize URL in a system auth sheet instead
+of redirecting the webview: iOS uses an ephemeral `ASWebAuthenticationSession`
+(local plugin `WebAuthSessionPlugin.swift` / `WebAuthSession` in JS); Android
+(and iOS as a fallback) opens `@capacitor/browser` (Chrome Custom Tabs /
+`SFSafariViewController`) and listens for the callback via `appUrlOpen`.
+
+- **Redirect URI**: `<bundleId>://login` (e.g. `com.learncard.app://login`),
+  read from the tenant config's `native.bundleId`. The Keycloak client's
+  **Valid Redirect URIs** must include it, and `prepare-native-config.ts`
+  always registers the bundle ID as a URL scheme / intent-filter (see
+  `native.customSchemes` handling) so the OS routes the callback back to the
+  app.
+- **`prompt=login` on every native authorize request**: Android Custom Tabs
+  and iOS's shared system browser both carry Keycloak's SSO cookie. Without
+  forcing a fresh login prompt, a second account's sign-in (or a reauth ticket
+  hop) could silently resolve against whichever session the browser already
+  holds.
+- **Sign-out**: native never redirects to Keycloak's `end_session` endpoint
+  (there's no page to redirect), so `signOut()` best-effort revokes the
+  refresh token via the token-revocation endpoint before clearing local state.
+- **Native Google/Apple audiences**: native social sign-in acquires a Google
+  or Apple ID token directly through `@capacitor-firebase/authentication`
+  (`skipNativeAuth: true`, no Firebase session created) and exchanges it for
+  an lca-api login ticket exactly like the web OIDC-credential path. The
+  backend's audience allowlists must include the native client IDs:
+  `GOOGLE_OAUTH_CLIENT_IDS` needs the iOS and Android OAuth client IDs (in
+  addition to the web one), and `APPLE_OAUTH_CLIENT_IDS` needs the app's
+  bundle ID (Sign in with Apple uses the bundle ID as the audience for native
+  clients).
+- **Known limitation**: if the OS kills the app process while the auth sheet
+  is open (cold start), the in-flight sign-in is not resumed — the user
+  returns to a logged-out app and simply retries.
 
 ```bash
 # Production vetpass

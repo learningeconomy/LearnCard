@@ -142,6 +142,46 @@ describe('createKeycloakAuthProvider', () => {
         expect(provider.userManager.settings).toHaveProperty('scope', 'openid email');
     });
 
+    it('wires a native navigate hook as the redirect navigator', async () => {
+        const storage = new InMemoryWebStorage();
+        const navigate = vi.fn().mockResolvedValue(undefined);
+        createKeycloakAuthProvider({
+            ...keycloakConfig,
+            stateStore: storage,
+            userStore: storage,
+            navigate,
+        });
+        const redirectNavigator = constructed.mock.lastCall?.[1];
+        expect(redirectNavigator).toBeDefined();
+        const handle = await redirectNavigator.prepare({});
+        const response = await handle.navigate({ url: 'https://auth.example.org/authorize?x=1' });
+        expect(navigate).toHaveBeenCalledWith('https://auth.example.org/authorize?x=1');
+        expect(response).toEqual({ url: 'https://auth.example.org/authorize?x=1' });
+        expect(() => handle.close()).not.toThrow();
+    });
+
+    it('rejects if the native navigate hook fails, without swallowing the error', async () => {
+        const storage = new InMemoryWebStorage();
+        const navigate = vi.fn().mockRejectedValue(new Error('sheet dismissed'));
+        createKeycloakAuthProvider({
+            ...keycloakConfig,
+            stateStore: storage,
+            userStore: storage,
+            navigate,
+        });
+        const redirectNavigator = constructed.mock.lastCall?.[1];
+        const handle = await redirectNavigator.prepare({});
+        await expect(
+            handle.navigate({ url: 'https://auth.example.org/authorize' })
+        ).rejects.toThrow('sheet dismissed');
+    });
+
+    it('omits a redirect navigator on web (no navigate hook)', () => {
+        const storage = new InMemoryWebStorage();
+        createKeycloakAuthProvider({ ...keycloakConfig, stateStore: storage, userStore: storage });
+        expect(constructed.mock.lastCall?.[1]).toBeUndefined();
+    });
+
     it('blocks iframe fallback even when the SDK initiates automatic renewal', async () => {
         const storage = new InMemoryWebStorage();
         const provider = createKeycloakAuthProvider({
@@ -328,6 +368,31 @@ describe('createKeycloakAuthProvider', () => {
         await create(manager).signOut();
         expect(manager.removeUser).toHaveBeenCalledOnce();
         expect(manager.signoutRedirect).not.toHaveBeenCalled();
+    });
+    it('best-effort revokes tokens before clearing local state when there is no end-session redirect', async () => {
+        const manager = createManager();
+        const order: string[] = [];
+        manager.revokeTokens = vi.fn(async () => {
+            order.push('revoke');
+        });
+        vi.mocked(manager.removeUser).mockImplementation(async () => {
+            order.push('remove');
+        });
+        await create(manager).signOut();
+        expect(manager.revokeTokens).toHaveBeenCalledOnce();
+        expect(order).toEqual(['revoke', 'remove']);
+    });
+    it('continues sign-out when token revocation fails (best-effort)', async () => {
+        const manager = createManager();
+        manager.revokeTokens = vi.fn().mockRejectedValue(new Error('offline'));
+        await expect(create(manager).signOut()).resolves.toBeUndefined();
+        expect(manager.removeUser).toHaveBeenCalledOnce();
+    });
+    it('does not revoke tokens when redirecting to end-session', async () => {
+        const manager = createManager();
+        manager.revokeTokens = vi.fn();
+        await create(manager, { postLogoutRedirectUri: keycloakConfig.redirectUri }).signOut();
+        expect(manager.revokeTokens).not.toHaveBeenCalled();
     });
     it('falls back to local logout when the redirect rejects', async () => {
         const manager = createManager();

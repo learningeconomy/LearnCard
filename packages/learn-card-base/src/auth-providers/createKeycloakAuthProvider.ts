@@ -1,7 +1,17 @@
 import { ErrorResponse, User, UserManager, WebStorageStateStore } from 'oidc-client-ts';
-import type { UserManagerSettings } from 'oidc-client-ts';
+import type {
+    INavigator,
+    IWindow,
+    NavigateParams,
+    NavigateResponse,
+    RevokeTokensTypes,
+    UserManagerSettings,
+} from 'oidc-client-ts';
 import { AuthSessionError } from '@learncard/types';
 import type { AuthProvider, AuthUser } from '@learncard/types';
+import { getLogger } from '../logging/logger';
+
+const log = getLogger('keycloak-auth-provider');
 
 /** The SDK boundary used by the provider and sign-in adapter. */
 export interface UserManagerLike {
@@ -18,6 +28,8 @@ export interface UserManagerLike {
         id_token_hint?: string;
     }): Promise<void>;
     removeUser(): Promise<void>;
+    /** Best-effort on hosts that never reach end_session (e.g. native sign-out). */
+    revokeTokens?(types?: RevokeTokensTypes): Promise<void>;
     events: {
         addUserLoaded(callback: (user: User) => void): unknown;
         removeUserLoaded(callback: (user: User) => void): void;
@@ -44,7 +56,25 @@ export interface KeycloakAuthProviderConfig {
     userManager?: UserManagerLike;
     /** Validate app-owned OIDC state and returning identity before notifying consumers. */
     validateRedirectUser?: (user: AuthUser, state: unknown) => void;
+    /**
+     * Native hosts: open `url` in a system auth sheet and resolve only after the
+     * callback URL has been passed to handleRedirectCallback. Web omits this and
+     * uses the SDK's redirect navigator.
+     */
+    navigate?: (url: string) => Promise<void>;
 }
+
+/** Routes the SDK's redirect-navigator through a host-supplied system auth sheet. */
+const createNativeRedirectNavigator = (navigate: (url: string) => Promise<void>): INavigator => ({
+    prepare: async (): Promise<IWindow> => ({
+        navigate: async (params: NavigateParams): Promise<NavigateResponse> => {
+            await navigate(params.url);
+            return { url: params.url };
+        },
+        close: (): void => {},
+    }),
+    callback: async (): Promise<void> => {},
+});
 
 export interface KeycloakAuthProvider extends AuthProvider {
     userManager: UserManagerLike;
@@ -134,7 +164,7 @@ export const createKeycloakAuthProvider = (
                     store: config.userStore ?? window.localStorage,
                 }),
             },
-            undefined,
+            config.navigate ? createNativeRedirectNavigator(config.navigate) : undefined,
             undefined,
             {
                 // Automatic renewal calls the SDK directly. Reject its iframe fallback too.
@@ -245,6 +275,15 @@ export const createKeycloakAuthProvider = (
             signOutRevision++;
             const user = await userManager.getUser();
             if (!config.postLogoutRedirectUri || !user?.id_token) {
+                // No end_session redirect will happen on this path (native and
+                // no-redirect-URI hosts), so the refresh token is never otherwise
+                // revoked server-side. Revoke before clearing local state: revocation
+                // reads the token from storage and is a no-op once it's gone.
+                try {
+                    await userManager.revokeTokens?.();
+                } catch (error) {
+                    log.debug('Unable to revoke Keycloak tokens on sign-out', error);
+                }
                 await userManager.removeUser();
                 return;
             }

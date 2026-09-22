@@ -7,8 +7,11 @@ const mocks = vi.hoisted(() => ({
     ticket: vi.fn(),
     signIn: vi.fn(),
     cancel: vi.fn(),
+    complete: vi.fn(),
+    isNative: false,
+    refreshAuthSession: vi.fn(),
 }));
-vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => false } }));
+vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => mocks.isNative } }));
 vi.mock('@ionic/react', () => ({ IonIcon: () => null }));
 vi.mock('learn-card-base', () => ({
     authUserStore: {
@@ -20,6 +23,9 @@ vi.mock('learn-card-base', () => ({
 vi.mock('learn-card-base/react-query/mutations/firebase', () => ({
     useSendLoginVerificationCode: () => ({ mutateAsync: mocks.send }),
 }));
+vi.mock('../../providers/AuthCoordinatorProvider', () => ({
+    useAppAuth: () => ({ refreshAuthSession: mocks.refreshAuthSession }),
+}));
 vi.mock('../../auth/keycloakTickets', () => ({ requestEmailOtpTicket: mocks.ticket }));
 import { KeycloakReAuthForm } from './KeycloakReAuthForm';
 import { readKeycloakReauth } from '../../auth/keycloakReauth';
@@ -28,9 +34,11 @@ describe('Keycloak identity proof', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         sessionStorage.clear();
+        mocks.isNative = false;
         mocks.send.mockResolvedValue({ success: true });
         mocks.ticket.mockResolvedValue('ticket');
         mocks.signIn.mockResolvedValue({ id: 'same-user' });
+        mocks.refreshAuthSession.mockResolvedValue(true);
         window.history.replaceState({}, '', '/wallet');
     });
     const enterCode = async (): Promise<void> => {
@@ -96,5 +104,83 @@ describe('Keycloak identity proof', () => {
         });
         expect(mocks.signIn).not.toHaveBeenCalled();
         expect(readKeycloakReauth()).toBeNull();
+    });
+
+    describe('native completion (no page reload)', () => {
+        beforeEach(() => {
+            mocks.isNative = true;
+        });
+
+        it('completes reauth in place: refreshes the session, calls onComplete, and clears the intent', async () => {
+            render(
+                <KeycloakReAuthForm
+                    action="account-recovery"
+                    onCancel={mocks.cancel}
+                    onComplete={mocks.complete}
+                />
+            );
+            fireEvent.click(screen.getByRole('button', { name: 'Send Code' }));
+            fireEvent.change(await screen.findByLabelText('Verification code'), {
+                target: { value: '123456' },
+            });
+            await act(async () => {
+                fireEvent.click(screen.getByRole('button', { name: 'Verify Identity' }));
+            });
+            await waitFor(() => expect(mocks.refreshAuthSession).toHaveBeenCalledOnce());
+            expect(mocks.complete).toHaveBeenCalledOnce();
+            expect(readKeycloakReauth()).toBeNull();
+        });
+
+        it('shows friendly feedback and does not complete when a different account signs in', async () => {
+            mocks.signIn.mockResolvedValue({ id: 'someone-else' });
+            render(
+                <KeycloakReAuthForm
+                    action="account-recovery"
+                    onCancel={mocks.cancel}
+                    onComplete={mocks.complete}
+                />
+            );
+            fireEvent.click(screen.getByRole('button', { name: 'Send Code' }));
+            fireEvent.change(await screen.findByLabelText('Verification code'), {
+                target: { value: '123456' },
+            });
+            await act(async () => {
+                fireEvent.click(screen.getByRole('button', { name: 'Verify Identity' }));
+            });
+            expect((await screen.findByRole('alert')).textContent).toContain(
+                'That code could not be verified'
+            );
+            expect(mocks.refreshAuthSession).not.toHaveBeenCalled();
+            expect(mocks.complete).not.toHaveBeenCalled();
+            expect(readKeycloakReauth()).toBeNull();
+        });
+
+        it('shows friendly feedback and does not complete when the session cannot be restored', async () => {
+            mocks.refreshAuthSession.mockResolvedValue(false);
+            render(
+                <KeycloakReAuthForm
+                    action="account-recovery"
+                    onCancel={mocks.cancel}
+                    onComplete={mocks.complete}
+                />
+            );
+            fireEvent.click(screen.getByRole('button', { name: 'Send Code' }));
+            fireEvent.change(await screen.findByLabelText('Verification code'), {
+                target: { value: '123456' },
+            });
+            await act(async () => {
+                fireEvent.click(screen.getByRole('button', { name: 'Verify Identity' }));
+            });
+            expect((await screen.findByRole('alert')).textContent).toContain(
+                'That code could not be verified'
+            );
+            expect(mocks.complete).not.toHaveBeenCalled();
+            expect(readKeycloakReauth()).toBeNull();
+        });
+
+        it('still shows the email-OTP form (available) on native now that the sheet flow works', async () => {
+            render(<KeycloakReAuthForm action="account-recovery" onCancel={mocks.cancel} />);
+            expect(screen.getByRole('button', { name: 'Send Code' })).toBeInTheDocument();
+        });
     });
 });

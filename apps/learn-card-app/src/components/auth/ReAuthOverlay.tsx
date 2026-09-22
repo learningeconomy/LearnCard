@@ -192,6 +192,7 @@ const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({
                 action={resumeAction}
                 initialMethod={resumeMethod}
                 onCancel={onCancel}
+                onComplete={onSuccess}
             />
         );
     }
