@@ -90,6 +90,11 @@ const matchingGrant = {
     expiresAt: '2027-06-30T00:00:00.000Z',
 };
 
+const selectedSigner = {
+    SIGNING_AUTHORITY_NAME: 'scde-clr',
+    SIGNING_AUTHORITY_ENDPOINT: authorityRecord.endpoint,
+};
+
 const makeExistingCard = () => {
     const card = makeMockCard();
     card.invoke.getProfile.mockResolvedValue(spec.issuer);
@@ -164,6 +169,7 @@ describe('service-account reconciliation', () => {
 
     it('compares normalized scopes and equivalent expiry instants', async () => {
         await withTmpProject(async project => {
+            Object.assign(project.env, selectedSigner);
             const card = makeExistingCard();
             card.invoke.getAuthGrants.mockResolvedValue([
                 {
@@ -179,6 +185,7 @@ describe('service-account reconciliation', () => {
 
     it.each([undefined, null])('treats absent expiry as no expiry: %j', async expiresAt => {
         await withTmpProject(async project => {
+            Object.assign(project.env, selectedSigner);
             const card = makeExistingCard();
             card.invoke.getAuthGrants.mockResolvedValue([{ ...matchingGrant, expiresAt }]);
             const withoutExpiry = {
@@ -310,6 +317,7 @@ describe('service-account reconciliation', () => {
 
     it('closes a failed write and recovers on the next run without creating another grant', async () => {
         await withTmpProject(async project => {
+            Object.assign(project.env, selectedSigner);
             const card = makeExistingCard();
             card.invoke.getAuthGrants.mockResolvedValueOnce([]);
             const secretsOut = path.join(path.dirname(project.envPath), 'secrets.env');
@@ -424,6 +432,7 @@ describe('applyOrg', () => {
 
     it('reports everything unchanged and makes zero mutating calls on a second identical run', async () => {
         await withTmpProject(async project => {
+            Object.assign(project.env, selectedSigner);
             const card = makeMockCard();
             card.invoke.getProfile.mockResolvedValue({
                 profileId: 'scde',
@@ -614,6 +623,36 @@ describe('signing-authority reconciliation', () => {
         });
     });
 
+    it('persists a hosted signer selection that was removed from .env', async () => {
+        await withTmpProject(async project => {
+            const card = makeExistingCard();
+            const hostedSpec: OrgSpec = { issuer: spec.issuer };
+            const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+            const preview = await applyOrg(hostedSpec, card, project, { dryRun: true });
+            expect(preview.changes).toContainEqual(
+                expect.objectContaining({
+                    resource: 'signingAuthority',
+                    action: 'would-update',
+                    detail: expect.stringContaining('.env'),
+                })
+            );
+            const result = await applyOrg(hostedSpec, card, project);
+            expect(result.changes).toContainEqual(
+                expect.objectContaining({ resource: 'signingAuthority', action: 'updated' })
+            );
+            expect(project.env).toMatchObject(selected);
+            expect(card.invoke.createSigningAuthority).not.toHaveBeenCalled();
+            expect(card.invoke.setPrimaryRegisteredSigningAuthority).not.toHaveBeenCalled();
+            const second = await applyOrg(hostedSpec, card, project);
+            expect(second.changes).toContainEqual({
+                resource: 'signingAuthority',
+                name: 'scde-clr',
+                action: 'unchanged',
+            });
+            log.mockRestore();
+        });
+    });
+
     it('persists the selection when it has to set the registration primary', async () => {
         await withTmpProject(async project => {
             const card = makeExistingCard();
@@ -650,6 +689,7 @@ describe('profile-manager reconciliation', () => {
 
     it('renames the manager when the spec displayName changes', async () => {
         await withTmpProject(async project => {
+            Object.assign(project.env, selectedSigner);
             const card = makeExistingCard();
             const manager = makeMockManager();
             manager.invoke.getProfileManagerProfile.mockResolvedValue({

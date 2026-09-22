@@ -303,6 +303,45 @@ const applyIssuerProfile = async (
     return true;
 };
 
+// `send` reads these to pick template signing, so a matching registration must still
+// land in .env — otherwise later sends silently fall back to the local key.
+const isSignerSelected = (project: Project, name: string, endpoint: string): boolean =>
+    project.env.SIGNING_AUTHORITY_NAME === name &&
+    project.env.SIGNING_AUTHORITY_ENDPOINT === endpoint;
+
+const persistSignerSelection = async (
+    project: Project,
+    name: string,
+    endpoint: string
+): Promise<void> => {
+    if (isSignerSelected(project, name, endpoint)) return;
+    await saveProject(project, {
+        SIGNING_AUTHORITY_NAME: name,
+        SIGNING_AUTHORITY_ENDPOINT: endpoint,
+    });
+};
+
+/** An already-primary registration is only `unchanged` once .env also selects it. */
+const reportSignerSelection = async (
+    project: Project,
+    name: string,
+    endpoint: string,
+    dryRun: boolean,
+    changes: OrgChange[]
+): Promise<void> => {
+    if (isSignerSelected(project, name, endpoint)) {
+        changes.push({ resource: 'signingAuthority', name, action: 'unchanged' });
+        return;
+    }
+    if (!dryRun) await persistSignerSelection(project, name, endpoint);
+    changes.push({
+        resource: 'signingAuthority',
+        name,
+        action: dryRun ? 'would-update' : 'updated',
+        detail: 'SIGNING_AUTHORITY_NAME and SIGNING_AUTHORITY_ENDPOINT in .env',
+    });
+};
+
 const applySigningAuthority = async (
     spec: OrgSpec,
     learnCard: OrgLearnCard,
@@ -351,11 +390,13 @@ const applySigningAuthority = async (
             });
             return;
         }
-        changes.push({
-            resource: 'signingAuthority',
-            name: signingAuthority.name,
-            action: 'unchanged',
-        });
+        await reportSignerSelection(
+            project,
+            signingAuthority.name,
+            match.signingAuthority.endpoint,
+            dryRun,
+            changes
+        );
         return;
     }
 
@@ -387,18 +428,6 @@ const applySigningAuthority = async (
         changes.push({ resource: 'signingAuthority', name, action: 'drifted', detail });
         return;
     }
-    // `send` reads these to pick template signing, so a matching registration must
-    // still land in .env — otherwise later sends silently fall back to the local key.
-    const envSelected =
-        project.env.SIGNING_AUTHORITY_NAME === name &&
-        project.env.SIGNING_AUTHORITY_ENDPOINT === endpoint;
-    const persist = async () => {
-        if (envSelected) return;
-        await saveProject(project, {
-            SIGNING_AUTHORITY_NAME: name,
-            SIGNING_AUTHORITY_ENDPOINT: endpoint,
-        });
-    };
     if (!match.relationship.isPrimary) {
         if (dryRun) {
             changes.push({
@@ -411,7 +440,7 @@ const applySigningAuthority = async (
         }
         if (!(await learnCard.invoke.setPrimaryRegisteredSigningAuthority(endpoint, name)))
             throw new Error(`Could not set "${name}" as the primary signing authority.`);
-        await persist();
+        await persistSignerSelection(project, name, endpoint);
         changes.push({
             resource: 'signingAuthority',
             name,
@@ -420,17 +449,7 @@ const applySigningAuthority = async (
         });
         return;
     }
-    if (!envSelected) {
-        if (!dryRun) await persist();
-        changes.push({
-            resource: 'signingAuthority',
-            name,
-            action: dryRun ? 'would-update' : 'updated',
-            detail: 'SIGNING_AUTHORITY_NAME and SIGNING_AUTHORITY_ENDPOINT in .env',
-        });
-        return;
-    }
-    changes.push({ resource: 'signingAuthority', name, action: 'unchanged' });
+    await reportSignerSelection(project, name, endpoint, dryRun, changes);
 };
 
 const applyProfileManager = async (
