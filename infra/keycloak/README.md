@@ -47,6 +47,73 @@ All three users have password `password`:
 - `ci-tests`: confidential password-grant client, secret `ci-tests-dev-only-secret`.
   It lets CI obtain real signed tokens without a browser; **never create it in staging/prod**.
 
+## Google and Apple (web)
+
+`google` (built-in) and `apple` ([klausbetz extension](https://github.com/klausbetz/apple-identity-provider-keycloak),
+providerId `apple`) broker **browser** sign-in for the `learncard-app` client — separate
+from the native ticket-forwarding path described below. Both have `trustEmail: false`
+and reuse the stock `first broker login` flow, so an email collision with an existing
+account always shows Keycloak's one-time "Confirm Link Existing Account" page rather
+than auto-linking; there is currently no opt-in for automatic linking by email, and
+enabling one would need `identityProviderMappers`/flow changes reviewed as a separate
+change. Review Profile ("Update Account Information") is explicitly configured off via
+the `authenticatorConfig` override on that flow — the fixture never shows it, regardless
+of missing name/email attributes.
+
+Config placeholders (`${VAR}`, no default — see below): `GOOGLE_CLIENT_ID`,
+`GOOGLE_CLIENT_SECRET`, `APPLE_SERVICE_ID`, `APPLE_TEAM_ID`, `APPLE_KEY_ID`,
+`APPLE_P8_CONTENT` (raw `.p8` contents, single line). Register redirect URIs at
+`https://<keycloak-host>/realms/learncard/broker/google/endpoint` and `/broker/apple/endpoint`.
+**Apple requires HTTPS and a Services ID** — a local `http://localhost:8081` Keycloak
+cannot complete a real Apple sign-in; use a tunneled HTTPS hostname if you need to test
+it end-to-end. Google has no such restriction: `http://localhost:8081/realms/learncard/broker/google/endpoint`
+is a valid authorized redirect URI for local testing. Apple only sends `email`/name on
+the **first** authorization for a given Services ID + user; Keycloak's federated
+identity persists everything after that, so losing the linked Keycloak user loses the
+name/email too.
+
+Verified empirically against 26.7.4: `${VAR}` substitution has no default-value syntax
+support in practice for this use case — `${VAR:default}` _is_ honored when the variable
+is entirely unset, but compose/CI env blocks that pass a defined-but-empty string (the
+common case for an optional var) resolve to the empty string, which Keycloak's identity
+provider config then treats as absent config **silently drops the key** — not the
+default. The fixture therefore has no inline defaults; `apps/learn-card-app/compose-local.yaml`
+and `.github/workflows/auth-integration.yml` supply non-empty dev/CI placeholder values
+via their own `${VAR:-placeholder}` shell-style defaults instead. A totally unset var
+(no default anywhere) leaves the literal `${VAR}` string as the config value — the
+realm still imports cleanly either way; only an actual sign-in attempt would fail.
+
+The `authenticationFlows`/`authenticatorConfig` blocks added for the Review Profile
+override are **not** preserved by `scripts/export-keycloak-realm.sh` (it deletes both
+top-level arrays; see "Export and normalize" below) — if you edit the realm via the
+Admin Console and re-run the export script, manually re-apply the Review Profile
+`authenticatorConfig` override (`update.profile.on.first.login: "off"` on the
+`first broker login` flow's Review Profile execution) before committing.
+
+### Apple provider jar (local, CI, production)
+
+The Apple extension is not built into Keycloak, so its jar must be present everywhere
+the fixture is imported or `apple` as a `providerId` fails realm import with an unknown-provider
+error: `infra/keycloak/Dockerfile.dev` (local compose + CI, `start-dev` builds automatically)
+and the builder stage of `infra/keycloak/Dockerfile` (production, before `kc.sh build`) both
+pin it with `ADD --checksum=sha256:<hex> --chown=keycloak:keycloak <release-jar-url> /opt/keycloak/providers/`.
+To bump the version: download the new jar once, compute `shasum -a 256`, update the
+release URL, filename and checksum in **both** Dockerfiles, and confirm compatibility
+against the [compatibility table](https://github.com/klausbetz/apple-identity-provider-keycloak#compatibility)
+for the target Keycloak version.
+
+### lca-api native sign-in unification
+
+The `google`/`apple` IdPs above are for the **web** flow only. The native app instead
+posts an Apple/Google `id_token` straight to lca-api (`auth.requestSocialLoginTicket`),
+which verifies it and forwards a ticket through the hidden `lca-api` broker — see below.
+When the verified token asserts a verified email, lca-api links that native sign-in to
+an existing `email:<address>` `AuthSubject` (if one already exists) so a user who signed
+in by email code first, then natively with Google/Apple, resolves to one Keycloak user
+instead of hitting "Account already exists". `GOOGLE_OAUTH_CLIENT_IDS`/`APPLE_OAUTH_CLIENT_IDS`
+(lca-api env, CSV) must include the **native** app's OAuth client ID / bundle-backed
+Services ID, not just any web client ID, or native token verification fails closed.
+
 ## lca-api identity provider
 
 The hidden `lca-api` OIDC provider brokers email-code and native Google/Apple proofs

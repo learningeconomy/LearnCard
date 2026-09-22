@@ -3,8 +3,19 @@ import { TRPCError } from '@trpc/server';
 import { t, openRoute } from '@routes';
 import { getDel } from '@cache/getDel';
 import { issueLoginTicket } from '@cache/login-tickets';
-import { getOrCreateAuthSubject } from '../models/AuthSubject';
-import { getSocialProviderConfig, verifySocialIdToken } from '@helpers/social-token.helpers';
+import {
+    findAuthSubjectByIdentityKey,
+    getOrCreateAuthSubject,
+    getOrCreateAuthSubjectLinkedTo,
+    type AuthSubjectAttributes,
+    type MongoAuthSubjectType,
+} from '../models/AuthSubject';
+import {
+    getSocialProviderConfig,
+    verifySocialIdToken,
+    type SocialClaims,
+    type SocialProviderId,
+} from '@helpers/social-token.helpers';
 import { isRateLimited, recordFailure } from '@helpers/rate-limit.helpers';
 
 const resultSchema = z.object({
@@ -39,6 +50,37 @@ const recordFailedAttempt = async (...keys: string[]): Promise<void> => {
 
 const isUnauthorized = (error: unknown): boolean =>
     error instanceof TRPCError && error.code === 'UNAUTHORIZED';
+
+/**
+ * Unify a native social sign-in with an existing email-code identity, so a user who
+ * signed in by email code first and later signs in natively with Google/Apple using the
+ * same verified email lands on one Keycloak user instead of "Account already exists".
+ * Only applies when the IdP itself asserts the email is verified (see
+ * `verifySocialIdToken`, which never returns an unverified email); an unlinked
+ * `${provider}:${sub}` identity otherwise keeps its own independent subject, matching
+ * `requestLoginTicket`'s `email:<address>` keying exactly (never auto-linked otherwise).
+ */
+const resolveSocialAuthSubject = (
+    provider: SocialProviderId,
+    claims: SocialClaims
+): Promise<MongoAuthSubjectType> => {
+    const identityKey = `${provider}:${claims.sub}`;
+    const attrs: AuthSubjectAttributes = {
+        email: claims.email,
+        emailVerified: true,
+        displayName: claims.name,
+        pictureUrl: claims.picture,
+    };
+    if (claims.email && claims.email_verified) {
+        const emailIdentityKey = `email:${claims.email.trim().toLowerCase()}`;
+        return findAuthSubjectByIdentityKey(emailIdentityKey).then(existing =>
+            existing
+                ? getOrCreateAuthSubjectLinkedTo(identityKey, existing.subject, attrs)
+                : getOrCreateAuthSubject(identityKey, attrs)
+        );
+    }
+    return getOrCreateAuthSubject(identityKey, attrs);
+};
 
 export const authRouter = t.router({
     requestLoginTicket: openRoute
@@ -99,16 +141,10 @@ export const authRouter = t.router({
             }
             try {
                 const claims = await verifySocialIdToken(input.provider, input.idToken);
-                const identityKey = `${input.provider}:${claims.sub}`;
-                const record = await getOrCreateAuthSubject(identityKey, {
-                    email: claims.email,
-                    emailVerified: true,
-                    displayName: claims.name,
-                    pictureUrl: claims.picture,
-                });
+                const record = await resolveSocialAuthSubject(input.provider, claims);
                 const ticket = await issueLoginTicket({
                     subject: record.subject,
-                    identityKey,
+                    identityKey: `${input.provider}:${claims.sub}`,
                     email: claims.email,
                     emailVerified: true,
                     name: claims.name,

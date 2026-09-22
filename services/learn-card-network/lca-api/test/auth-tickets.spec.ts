@@ -21,6 +21,9 @@ vi.mock('@mongo', () => ({
     default: {
         collection: () => ({
             createIndex: vi.fn(async () => 'index'),
+            findOne: vi.fn(
+                async (filter: { identityKey: string }) => subjects.get(filter.identityKey) ?? null
+            ),
             findOneAndUpdate: vi.fn(
                 async (
                     filter: { identityKey: string },
@@ -212,13 +215,68 @@ describe('auth login tickets', () => {
             await caller().requestSocialLoginTicket({ provider: 'google', idToken: 'unused' })
         ).toEqual({ success: false, error: 'Sign-in with google is not configured.' });
     });
-    it('does not merge email and social identities', async () => {
+    it('keeps separate subjects when the social email differs from the existing email identity', async () => {
+        const first = payload((await emailLogin()).ticket);
+        const second = payload(
+            (
+                await caller().requestSocialLoginTicket({
+                    provider: 'google',
+                    idToken: await sign({ email: 'different@example.com' }),
+                })
+            ).ticket
+        );
+        expect(first.subject).not.toBe(second.subject);
+    });
+    it('unifies a native social sign-in with an existing email-code identity sharing the same verified email', async () => {
         const first = payload((await emailLogin()).ticket);
         const second = payload(
             (await caller().requestSocialLoginTicket({ provider: 'google', idToken: await sign() }))
                 .ticket
         );
-        expect(first.subject).not.toBe(second.subject);
+        expect(second.subject).toBe(first.subject);
+        expect(subjects.get('google:social-sub')).toMatchObject({ subject: first.subject });
+        expect(subjects.get('email:test@example.com')).toMatchObject({ subject: first.subject });
+    });
+    it('normalizes case/whitespace when matching the social email to an existing identity', async () => {
+        const first = payload((await emailLogin('Test@Example.com')).ticket);
+        const second = payload(
+            (
+                await caller().requestSocialLoginTicket({
+                    provider: 'google',
+                    idToken: await sign({ email: ' Test@Example.com ' }),
+                })
+            ).ticket
+        );
+        expect(second.subject).toBe(first.subject);
+    });
+    it('unifies Apple (string "true" email_verified) with an existing email identity too', async () => {
+        const first = payload((await emailLogin()).ticket);
+        const second = payload(
+            (
+                await caller().requestSocialLoginTicket({
+                    provider: 'apple',
+                    idToken: await sign({
+                        iss: 'https://appleid.apple.com',
+                        aud: 'apple-client',
+                        email_verified: 'true',
+                    }),
+                })
+            ).ticket
+        );
+        expect(second.subject).toBe(first.subject);
+    });
+    it('never rewrites an already-existing social identity onto a later-created email identity', async () => {
+        const socialFirst = payload(
+            (await caller().requestSocialLoginTicket({ provider: 'google', idToken: await sign() }))
+                .ticket
+        );
+        const emailSecond = payload((await emailLogin()).ticket);
+        expect(emailSecond.subject).not.toBe(socialFirst.subject);
+        const socialAgain = payload(
+            (await caller().requestSocialLoginTicket({ provider: 'google', idToken: await sign() }))
+                .ticket
+        );
+        expect(socialAgain.subject).toBe(socialFirst.subject);
     });
     it('returns a distinct server error and logs when ticket issuance fails after the code is consumed', async () => {
         mongo.failNextUpsert = true;

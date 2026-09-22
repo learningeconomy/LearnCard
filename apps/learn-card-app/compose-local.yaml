@@ -407,7 +407,10 @@ services:
             LRSQL_ALLOW_ALL_ORIGINS: true
 
     keycloak:
-        image: quay.io/keycloak/keycloak:26.7.4
+        image: learncard-keycloak-dev
+        build:
+            context: ../../infra/keycloak
+            dockerfile: Dockerfile.dev
         command: start-dev --import-realm
         environment:
             KC_BOOTSTRAP_ADMIN_USERNAME: admin
@@ -415,6 +418,15 @@ services:
             KC_HEALTH_ENABLED: 'true'
             KC_HOSTNAME: http://localhost:8081
             KC_HTTP_ENABLED: 'true'
+            # Web Google/Apple brokering (infra/keycloak/README.md#google-and-apple-web).
+            # Dev placeholder defaults let the realm import with zero setup; only override
+            # in apps/learn-card-app/.env with real values to test an actual provider.
+            GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-dev-google-client-id.apps.googleusercontent.com}
+            GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-dev-google-client-secret}
+            APPLE_SERVICE_ID: ${APPLE_SERVICE_ID:-com.learncard.dev.signin}
+            APPLE_TEAM_ID: ${APPLE_TEAM_ID:-dev-apple-team-id}
+            APPLE_KEY_ID: ${APPLE_KEY_ID:-dev-apple-key-id}
+            APPLE_P8_CONTENT: ${APPLE_P8_CONTENT:-dev-placeholder-not-a-real-key}
         ports:
             - '8081:8080'
         networks:

@@ -49,6 +49,8 @@ jobs:
               uses: actions/checkout@v7
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
+            - name: Build Keycloak dev image (adds Apple identity provider)
+              run: docker build -f infra/keycloak/Dockerfile.dev -t learncard-keycloak-dev infra/keycloak
             - name: Start Keycloak
               run: |
                   docker run -d --name keycloak -p 8081:8080 -p 9000:9000 \
@@ -56,8 +58,14 @@ jobs:
                     -e KC_BOOTSTRAP_ADMIN_USERNAME=admin -e KC_BOOTSTRAP_ADMIN_PASSWORD=admin \
                     -e KC_HEALTH_ENABLED=true -e KC_HOSTNAME=http://localhost:8081 \
                     -e KC_HTTP_ENABLED=true \
+                    -e GOOGLE_CLIENT_ID=ci-google-client-id.apps.googleusercontent.com \
+                    -e GOOGLE_CLIENT_SECRET=ci-google-client-secret \
+                    -e APPLE_SERVICE_ID=com.learncard.ci.signin \
+                    -e APPLE_TEAM_ID=ci-apple-team-id \
+                    -e APPLE_KEY_ID=ci-apple-key-id \
+                    -e APPLE_P8_CONTENT=ci-placeholder-not-a-real-key \
                     -v "$GITHUB_WORKSPACE/infra/keycloak/realms/learncard-dev-realm.json:/opt/keycloak/data/import/learncard-realm.json:ro" \
-                    quay.io/keycloak/keycloak:26.7.4 start-dev --import-realm
+                    learncard-keycloak-dev start-dev --import-realm
             - name: Wait for Keycloak readiness
               run: |
                   curl --fail --silent --show-error --retry 40 --retry-delay 3 \
