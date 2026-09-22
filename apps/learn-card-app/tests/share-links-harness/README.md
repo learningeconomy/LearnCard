@@ -29,3 +29,17 @@ bun --conditions=development apps/learn-card-app/tests/share-links-harness/crypt
 Create a Boolean LaunchDarkly flag with key `share-multiple-enabled`, available to the client-side SDK, with a default/off value of `false`. The React SDK exposes it as `shareMultipleEnabled`. Target local and staging to `true` to show the creation button. The public recipient route is independent of this flag, so disabling creation does not break existing links.
 
 Backend APIs and recovery/cleanup have no rollout flags. They run when their service connection and trust configuration is complete; see the Brain and LearnCloud `.env.example` files. Missing wiring stays inactive, and partial/invalid configuration fails closed. The deployed maintenance schedule runs automatically; authorization, replay protection, expiry, and age/counting policy remain enforced.
+
+## Backend regression tests
+
+From `services/learn-card-network/brain-service`:
+
+```sh
+bunx vitest run --config vitest.share-links-unit.config.ts
+bunx vitest run --config vitest.share-links-neo4j.config.ts
+```
+
+The first command runs the DB-free protocol, lifecycle, policy, router, and HTTP tests.
+The second requires Docker and runs the six database suites serially against the
+existing disposable Neo4j harness. Filter either command by filename to run one suite,
+for example append `share-link-recovery.neo4j.spec.ts` to the second command.

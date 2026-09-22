@@ -325,23 +325,29 @@ export const resolveProfileFromContextDid = async (
     return getProfileByDid(did);
 };
 
-export const didRoute = openRoute.use(async ({ ctx, next }) => {
-    if (!ctx.user?.did) {
-        throw new TRPCError({ code: 'UNAUTHORIZED' });
-    }
+const withDid = (base: typeof openRoute) =>
+    base.use(async ({ ctx, next }) => {
+        if (!ctx.user?.did) {
+            throw new TRPCError({ code: 'UNAUTHORIZED' });
+        }
 
-    const profile = await resolveProfileFromContextDid(ctx.user.did, ctx.domain);
+        const profile = await resolveProfileFromContextDid(ctx.user.did, ctx.domain);
 
-    if (profile) Sentry.setUser({ id: profile.profileId, username: profile.displayName });
+        if (profile) Sentry.setUser({ id: profile.profileId, username: profile.displayName });
 
-    return next({ ctx: { ...ctx, user: { ...ctx.user, profile } } });
-});
+        return next({ ctx: { ...ctx, user: { ...ctx.user, profile } } });
+    });
 
-export const didAndChallengeRoute = didRoute.use(({ ctx, next }) => {
-    if (!ctx.user?.isChallengeValid) throw new TRPCError({ code: 'UNAUTHORIZED' });
+export const didRoute = withDid(openRoute);
 
-    return next({ ctx: { ...ctx, user: ctx.user } });
-});
+const withChallenge = (base: typeof didRoute) =>
+    base.use(({ ctx, next }) => {
+        if (!ctx.user?.isChallengeValid) throw new TRPCError({ code: 'UNAUTHORIZED' });
+
+        return next({ ctx: { ...ctx, user: ctx.user } });
+    });
+
+export const didAndChallengeRoute = withChallenge(didRoute);
 
 export const scopedRoute = didAndChallengeRoute.use(({ ctx, next, meta }) => {
     if (!meta?.requiredScope) {
@@ -375,68 +381,8 @@ export const openProfileRoute = didRoute.use(async ({ ctx, next }) => {
     return next({ ctx: { ...ctx, user: { ...ctx.user, profile } } });
 });
 
-export const profileRoute = didAndChallengeRoute.use(async ({ ctx, next, meta }) => {
-    const { profile } = ctx.user;
-
-    if (!profile) {
-        throw new TRPCError({
-            code: 'NOT_FOUND',
-            message: 'Profile not found. Please make a profile!',
-        });
-    }
-
-    if (!meta?.requiredScope) {
-        return next({ ctx: { ...ctx, user: { ...ctx.user, profile } } });
-    }
-
-    const userScope = ctx.user?.scope || AUTH_GRANT_NO_ACCESS_SCOPE;
-
-    const hasRequiredScope = userHasRequiredScopes(userScope, meta.requiredScope);
-
-    if (!hasRequiredScope) {
-        throw new TRPCError({
-            code: 'UNAUTHORIZED',
-            message: `This operation requires ${meta.requiredScope} scope`,
-        });
-    }
-
-    return next({ ctx: { ...ctx, user: { ...ctx.user, profile } } });
-});
-
-/**
- * Owner share-link routes: identical auth, challenge, profile and scope
- * enforcement to {@link profileRoute}, but composed on the base that disables
- * Sentry RPC input attachment because the payload contains owner-private
- * material (title, note, ciphertext envelope, recovery JWE).
- *
- * The handlers are intentionally inlined rather than extracted into standalone
- * `t.middleware` values so tRPC's context-narrowing (the added `profile` field)
- * flows to each resolver exactly as it does for `profileRoute`.
- */
-export const didRouteWithoutInputCapture = openRouteWithoutInputCapture.use(
-    async ({ ctx, next }) => {
-        if (!ctx.user?.did) {
-            throw new TRPCError({ code: 'UNAUTHORIZED' });
-        }
-
-        const profile = await resolveProfileFromContextDid(ctx.user.did, ctx.domain);
-
-        if (profile) Sentry.setUser({ id: profile.profileId, username: profile.displayName });
-
-        return next({ ctx: { ...ctx, user: { ...ctx.user, profile } } });
-    }
-);
-
-export const didAndChallengeRouteWithoutInputCapture = didRouteWithoutInputCapture.use(
-    ({ ctx, next }) => {
-        if (!ctx.user?.isChallengeValid) throw new TRPCError({ code: 'UNAUTHORIZED' });
-
-        return next({ ctx: { ...ctx, user: ctx.user } });
-    }
-);
-
-export const profileRouteWithoutInputCapture = didAndChallengeRouteWithoutInputCapture.use(
-    async ({ ctx, next, meta }) => {
+const withProfile = (base: typeof didAndChallengeRoute) =>
+    base.use(async ({ ctx, next, meta }) => {
         const { profile } = ctx.user;
 
         if (!profile) {
@@ -462,8 +408,14 @@ export const profileRouteWithoutInputCapture = didAndChallengeRouteWithoutInputC
         }
 
         return next({ ctx: { ...ctx, user: { ...ctx.user, profile } } });
-    }
-);
+    });
+
+export const profileRoute = withProfile(didAndChallengeRoute);
+
+/** Same auth chain, composed on a base that never attaches private RPC input to Sentry. */
+export const didRouteWithoutInputCapture = withDid(openRouteWithoutInputCapture);
+export const didAndChallengeRouteWithoutInputCapture = withChallenge(didRouteWithoutInputCapture);
+export const profileRouteWithoutInputCapture = withProfile(didAndChallengeRouteWithoutInputCapture);
 
 export const openProfileManagerRoute = openRoute.use(async ({ ctx, next }) => {
     if (!ctx.user?.did) throw new TRPCError({ code: 'UNAUTHORIZED' });

@@ -195,7 +195,7 @@ describe('post-lock cleanup completion fence (real Neo4j)', () => {
         });
 
         const holder = holderSession
-            .writeTransaction(async tx => {
+            .executeWrite(async tx => {
                 await tx.run(
                     `MATCH (c:ShareContentCleanupJob {objectRef: $objectRef})
                      SET c.lockTick = coalesce(c.lockTick, 0) + 1 RETURN c`,
@@ -246,7 +246,7 @@ describe('post-lock cleanup completion fence (real Neo4j)', () => {
         });
 
         const holder = holderSession
-            .writeTransaction(async tx => {
+            .executeWrite(async tx => {
                 await tx.run(
                     `MATCH (c:ShareContentCleanupJob {objectRef: $objectRef})
                      SET c.lockTick = coalesce(c.lockTick, 0) + 1 RETURN c`,

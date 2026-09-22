@@ -2,7 +2,10 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 
 import { enterSharePrivacy } from '../components/share-links/sharePrivacy';
-vi.mock('../components/share-links/sharePrivacy', () => ({ enterSharePrivacy: vi.fn() }));
+vi.mock('../components/share-links/sharePrivacy', async importOriginal => ({
+    ...(await importOriginal<typeof import('../components/share-links/sharePrivacy')>()),
+    enterSharePrivacy: vi.fn(),
+}));
 
 import { AnalyticsEvents } from '../analytics/events';
 

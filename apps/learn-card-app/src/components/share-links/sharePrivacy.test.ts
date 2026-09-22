@@ -4,11 +4,22 @@ vi.mock('@sentry/react', () => ({ getReplay: () => ({ stop: vi.fn() }) }));
 vi.mock('userflow.js', () => ({ default: { setPageTrackingDisabled: vi.fn(), reset: vi.fn() } }));
 import {
     scrubShareTelemetry,
+    isShareViewerPath,
     enterSharePrivacy,
     isSharePrivateSession,
     useSharePrivateSession,
 } from './sharePrivacy';
 describe('share privacy', () => {
+    it.each([
+        ['/s', true],
+        ['/s/', true],
+        ['/s/abc', true],
+        ['/settings', false],
+        ['/share-boost', false],
+        ['/wallet/s/abc', false],
+    ])('recognizes only the private viewer prefix: %s', (pathname, expected) => {
+        expect(isShareViewerPath(pathname)).toBe(expected);
+    });
     it('scrubs initial URLs, router breadcrumbs, and nested error text without changing the address bar', () => {
         const before = window.location.href;
         const event = {

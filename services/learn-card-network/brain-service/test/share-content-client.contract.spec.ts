@@ -141,6 +141,20 @@ const basePutRequest = (): ShareContentPutRequest => ({
 
 describe('share-content canonical request hash matches C1', () => {
     it.each([
+        [
+            { 'a': 1, 'b': 'two', 'c': [true, null] },
+            'd6a41c0217ee07fd7db67d3b28147282891df0ab90f17d5eb0181317dd1527bf',
+        ],
+        [
+            { 'z': 'é', 'a': { 'b': 2, 'a': 1 } },
+            '71a3755223791b0f221a3235c7dd6349ec5744be3b9ad0b68cc1215befcbc8a5',
+        ],
+    ])('matches the fixed C1 digest for %#', (body, digest) => {
+        expect(computeShareContentRequestBodyHash(body)).toBe(digest);
+        expect(computeShareContentRequestHash(body)).toBe(digest);
+    });
+
+    it.each([
         [{ a: 1, b: 'two', c: [true, null] }],
         [{ namespace: NAMESPACE, ownerProfileId: 'owner-1', contentVersion: 2 }],
         [

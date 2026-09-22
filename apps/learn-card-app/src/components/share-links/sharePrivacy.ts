@@ -4,8 +4,10 @@ import { FirebaseAnalytics } from '@capacitor-firebase/analytics';
 import userflow from 'userflow.js';
 import * as Sentry from '@sentry/react';
 
+export const isShareViewerPath = (pathname: string): boolean => /^\/s(?:\/|$)/.test(pathname);
+
 const isShareRoute = () =>
-    typeof window !== 'undefined' && /^\/s(?:\/|$)/.test(window.location.pathname);
+    typeof window !== 'undefined' && isShareViewerPath(window.location.pathname);
 let privateSession = isShareRoute();
 const listeners = new Set<() => void>();
 const subscribe = (listener: () => void) => {

@@ -107,7 +107,7 @@ export const withShareLinkTransaction = async <T>(
         // graph-local: no remote uploads or deletes inside the transaction.
         const transactionConfig = resolveTransactionConfig(options?.timeoutMs);
 
-        return await session.writeTransaction(
+        return await session.executeWrite(
             tx => work(tx as unknown as ShareLinkTransaction),
             transactionConfig
         );
