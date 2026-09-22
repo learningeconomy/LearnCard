@@ -1,11 +1,42 @@
 import type { InboxBatchStatus } from '@learncard/types';
 import type { WaitForInboxCredentialBatchOptions } from './types';
 
+/** Read failures with no server response, throttling, timeouts and server errors can recover. */
+const isTransientReadError = (error: unknown): boolean => {
+    const data = (error as { data?: { httpStatus?: number; code?: string } } | null)?.data;
+    if (data?.httpStatus !== undefined) {
+        return data.httpStatus >= 500 || data.httpStatus === 408 || data.httpStatus === 429;
+    }
+    if (data?.code) {
+        return [
+            'INTERNAL_SERVER_ERROR',
+            'TIMEOUT',
+            'TOO_MANY_REQUESTS',
+            'BAD_GATEWAY',
+            'SERVICE_UNAVAILABLE',
+            'GATEWAY_TIMEOUT',
+        ].includes(data.code);
+    }
+    return true;
+};
+
 /** Poll without resubmitting. Timeout/abort stops waiting; the durable job keeps running. */
 export const waitForInboxCredentialBatch = async (
+    batchId: string,
     read: (signal: AbortSignal) => Promise<InboxBatchStatus>,
     options: WaitForInboxCredentialBatchOptions = {}
 ): Promise<InboxBatchStatus> => {
+    const withBatchId = (cause: unknown): Error & { batchId: string } => {
+        const message = `${cause instanceof Error ? cause.message : String(cause)} (batchId: ${batchId})`;
+        return Object.assign(
+            cause instanceof RangeError ? new RangeError(message) : new Error(message),
+            {
+                name: cause instanceof Error ? cause.name : 'Error',
+                cause,
+                batchId,
+            }
+        );
+    };
     const { timeoutMs = 600_000, intervalMs = 2_000, signal, onProgress } = options;
     if (
         !Number.isFinite(timeoutMs) ||
@@ -15,7 +46,9 @@ export const waitForInboxCredentialBatch = async (
         intervalMs <= 0 ||
         intervalMs > 2_147_483_647
     ) {
-        throw new RangeError('timeoutMs and intervalMs must be positive finite timer durations.');
+        throw withBatchId(
+            new RangeError('timeoutMs and intervalMs must be positive finite timer durations.')
+        );
     }
     const controller = new AbortController();
     const abort = (): void => controller.abort(signal?.reason);
@@ -47,9 +80,16 @@ export const waitForInboxCredentialBatch = async (
     let sleepTimer: ReturnType<typeof setTimeout> | undefined;
     try {
         while (true) {
-            const batch = await cancellable(() => read(controller.signal));
-            onProgress?.(batch);
-            if (batch.done) return batch;
+            let batch: InboxBatchStatus | undefined;
+            try {
+                batch = await cancellable(() => read(controller.signal));
+            } catch (error) {
+                if (controller.signal.aborted || !isTransientReadError(error)) throw error;
+            }
+            if (batch) {
+                onProgress?.(batch);
+                if (batch.done) return batch;
+            }
             await cancellable(
                 () =>
                     new Promise<void>(resolve => {
@@ -58,6 +98,8 @@ export const waitForInboxCredentialBatch = async (
             );
             delay = Math.min(delay * 1.5, Math.max(intervalMs, 10_000));
         }
+    } catch (error) {
+        throw withBatchId(error);
     } finally {
         clearTimeout(timeout);
         clearTimeout(sleepTimer);

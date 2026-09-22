@@ -30,7 +30,7 @@ describe('waitForInboxCredentialBatch', () => {
             .mockResolvedValueOnce(status(false))
             .mockResolvedValue(status(true));
         const onProgress = vi.fn();
-        const waiting = waitForInboxCredentialBatch(read, { intervalMs: 100, onProgress });
+        const waiting = waitForInboxCredentialBatch('batch', read, { intervalMs: 100, onProgress });
         await vi.advanceTimersByTimeAsync(0);
         expect(read).toHaveBeenCalledTimes(1);
         await vi.advanceTimersByTimeAsync(100);
@@ -46,8 +46,12 @@ describe('waitForInboxCredentialBatch', () => {
     it('enforces a deadline even if the transport never resolves', async () => {
         vi.useFakeTimers();
         const read = vi.fn((_signal: AbortSignal) => new Promise<InboxBatchStatus>(() => {}));
-        const waiting = waitForInboxCredentialBatch(read, { timeoutMs: 50 });
-        const assertion = expect(waiting).rejects.toMatchObject({ name: 'TimeoutError' });
+        const waiting = waitForInboxCredentialBatch('batch', read, { timeoutMs: 50 });
+        const assertion = expect(waiting).rejects.toMatchObject({
+            name: 'TimeoutError',
+            batchId: 'batch',
+            message: expect.stringContaining('batchId: batch'),
+        });
         await vi.advanceTimersByTimeAsync(50);
         await assertion;
         expect(read.mock.calls[0]?.[0]?.aborted).toBe(true);
@@ -58,7 +62,7 @@ describe('waitForInboxCredentialBatch', () => {
         vi.useFakeTimers();
         const controller = new AbortController();
         const read = vi.fn().mockResolvedValue(status(false));
-        const waiting = waitForInboxCredentialBatch(read, { signal: controller.signal });
+        const waiting = waitForInboxCredentialBatch('batch', read, { signal: controller.signal });
         const assertion = expect(waiting).rejects.toMatchObject({ name: 'AbortError' });
         await vi.advanceTimersByTimeAsync(0);
         controller.abort();
@@ -73,32 +77,63 @@ describe('waitForInboxCredentialBatch', () => {
         controller.abort();
         const read = vi.fn();
         await expect(
-            waitForInboxCredentialBatch(read, { signal: controller.signal })
+            waitForInboxCredentialBatch('batch', read, { signal: controller.signal })
         ).rejects.toMatchObject({ name: 'AbortError' });
         expect(read).not.toHaveBeenCalled();
     });
 
     it('propagates fetch and progress errors without retrying submissions', async () => {
-        const error = new Error('unauthorized');
-        await expect(waitForInboxCredentialBatch(vi.fn().mockRejectedValue(error))).rejects.toBe(
-            error
-        );
+        const error = Object.assign(new Error('unauthorized'), { data: { httpStatus: 401 } });
         await expect(
-            waitForInboxCredentialBatch(vi.fn().mockResolvedValue(status(true)), {
+            waitForInboxCredentialBatch('batch', vi.fn().mockRejectedValue(error))
+        ).rejects.toMatchObject({ cause: error, batchId: 'batch' });
+        await expect(
+            waitForInboxCredentialBatch('batch', vi.fn().mockResolvedValue(status(true)), {
                 onProgress: () => {
                     throw error;
                 },
             })
-        ).rejects.toBe(error);
+        ).rejects.toMatchObject({ cause: error, batchId: 'batch' });
+    });
+
+    it.each([
+        new TypeError('network unavailable'),
+        Object.assign(new Error('unavailable'), { data: { httpStatus: 503 } }),
+        Object.assign(new Error('throttled'), { data: { code: 'TOO_MANY_REQUESTS' } }),
+    ])('retries transient reads within the original deadline: %s', async error => {
+        vi.useFakeTimers();
+        const read = vi.fn().mockRejectedValueOnce(error).mockResolvedValue(status(true));
+        const waiting = waitForInboxCredentialBatch('batch', read, { intervalMs: 100 });
+        await vi.advanceTimersByTimeAsync(100);
+        expect(await waiting).toEqual(status(true));
+        expect(read).toHaveBeenCalledTimes(2);
+        expect(vi.getTimerCount()).toBe(0);
+    });
+
+    it('stops repeated read failures at the deadline and retains the batch ID', async () => {
+        vi.useFakeTimers();
+        const read = vi.fn().mockRejectedValue(new TypeError('offline'));
+        const waiting = waitForInboxCredentialBatch('batch', read, {
+            timeoutMs: 250,
+            intervalMs: 100,
+        });
+        const assertion = expect(waiting).rejects.toMatchObject({
+            name: 'TimeoutError',
+            batchId: 'batch',
+        });
+        await vi.advanceTimersByTimeAsync(250);
+        await assertion;
+        expect(read).toHaveBeenCalledTimes(2);
+        expect(vi.getTimerCount()).toBe(0);
     });
 
     it.each([0, -1, NaN, Infinity])('rejects invalid timer duration %s', async duration => {
         const read = vi.fn();
         await expect(
-            waitForInboxCredentialBatch(read, { timeoutMs: duration })
+            waitForInboxCredentialBatch('batch', read, { timeoutMs: duration })
         ).rejects.toBeInstanceOf(RangeError);
         await expect(
-            waitForInboxCredentialBatch(read, { intervalMs: duration })
+            waitForInboxCredentialBatch('batch', read, { intervalMs: duration })
         ).rejects.toBeInstanceOf(RangeError);
         expect(read).not.toHaveBeenCalled();
     });

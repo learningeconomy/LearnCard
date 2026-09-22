@@ -2589,6 +2589,7 @@ export async function getLearnCardNetworkPlugin(
             waitForInboxCredentialBatch: async (_learnCard, batchId, options) => {
                 await ensureUser();
                 return waitForInboxCredentialBatch(
+                    batchId,
                     signal => client.inbox.getBatch.query({ batchId }, { signal }),
                     options
                 );
@@ -2601,6 +2602,7 @@ export async function getLearnCardNetworkPlugin(
                 });
                 await options?.onSubmitted?.(receipt);
                 return waitForInboxCredentialBatch(
+                    receipt.batchId,
                     signal => client.inbox.getBatch.query({ batchId: receipt.batchId }, { signal }),
                     options
                 );
