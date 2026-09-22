@@ -105,6 +105,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
     const [codeError, setCodeError] = useState<string>('');
     const [isLoading, setIsLoading] = useState(false);
     const [hasVerificationFailed, setHasVerificationFailed] = useState(false);
+    const [isRateLimited, setIsRateLimited] = useState(false);
 
     const { mutateAsync: sendLoginVerificationCode } = useSendLoginVerificationCode();
     const { mutateAsync: verifyLoginVerificationCode } = useVerifyLoginVerificationCode();
@@ -175,8 +176,13 @@ const EmailForm: React.FC<EmailFormProps> = ({
                 } else {
                     // Verification failed - require manual submit for next attempt
                     setHasVerificationFailed(true);
+                    // Rate limit errors shown inline, other errors shown via popup
+                    const rateLimited = response?.error?.includes('Too many attempts');
+                    if (rateLimited) {
+                        setIsRateLimited(true);
+                        setCodeError(response?.error || '');
+                    }
                 }
-                // Error handling is done via the mutation's onSuccess alert popup
                 setIsLoading(false);
             } catch (e) {
                 setIsLoading(false);
@@ -300,6 +306,8 @@ const EmailForm: React.FC<EmailFormProps> = ({
         setIsResendCodeLoading(true);
         setCodeError('');
         setCode('');
+        setIsRateLimited(false);
+        setHasVerificationFailed(false);
         try {
             await sendLoginVerificationCode({ email: verificationEmail as string, locale });
             setIsResendCodeLoading(false);
@@ -420,15 +428,18 @@ const EmailForm: React.FC<EmailFormProps> = ({
                     <p
                         id="login-email-code-error"
                         role="alert"
-                        className="w-full text-center mt-2 text-red-500 font-medium"
+                        className="mt-2 flex w-fit items-center gap-2 rounded-lg bg-pink-50 px-2 py-1 text-sm font-medium text-red-500"
                     >
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full border-2 border-red-500 text-xs font-bold">
+                            !
+                        </span>
                         {verificationError}
                     </p>
                 )}
             </IonCol>
         );
         buttonTitle = isLoading ? m['common.verifying']() : m['common.verify']();
-        disabled = code?.length < 6 || isLoading;
+        disabled = code?.length < 6 || isLoading || isRateLimited;
     }
 
     return (
