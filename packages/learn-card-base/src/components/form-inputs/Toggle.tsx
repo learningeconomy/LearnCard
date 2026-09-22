@@ -3,7 +3,10 @@ import React from 'react';
 type ToggleProps = {
     checked: boolean;
     onChange: (checked: boolean) => void;
+    id?: string;
     label?: string;
+    'aria-label'?: string;
+    'aria-describedby'?: string;
     labelPosition?: 'left' | 'right';
     disabled?: boolean;
     className?: string;
@@ -13,7 +16,10 @@ type ToggleProps = {
 const Toggle: React.FC<ToggleProps> = ({
     checked,
     onChange,
+    id,
     label,
+    'aria-label': ariaLabel,
+    'aria-describedby': ariaDescribedBy,
     labelPosition = 'left',
     disabled = false,
     className = '',
@@ -40,8 +46,11 @@ const Toggle: React.FC<ToggleProps> = ({
             role="switch"
             aria-checked={checked}
             disabled={disabled}
+            id={id}
+            aria-label={ariaLabel ?? label}
+            aria-describedby={ariaDescribedBy}
             onClick={() => !disabled && onChange(!checked)}
-            className={`relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out
+            className={`relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2
                 ${sizes.track}
                 ${checked ? 'bg-emerald-500' : 'bg-grayscale-300'}
                 ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
