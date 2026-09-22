@@ -52,10 +52,8 @@ services:
             __DELETE_SERVICE__REDIS3_PORT: 6379
 
     brain:
-        image: welibrary/lcn-brain-service
-        build:
-            context: ../../
-            dockerfile: services/learn-card-network/brain-service/Dockerfile
+        image: learncard-monorepo-local
+        command: sh -c "cd services/learn-card-network/brain-service && bun run start:docker"
         container_name: 'lcn-brain-service'
         expose:
             - 4000
@@ -93,10 +91,8 @@ services:
             SKILL_EMBEDDING_GOOGLE_MODEL: ${SKILL_EMBEDDING_GOOGLE_MODEL:-gemini-embedding-001}
 
     cloud:
-        image: welibrary/lcn-cloud-service
-        build:
-            context: ../../
-            dockerfile: services/learn-card-network/learn-cloud-service/Dockerfile
+        image: learncard-monorepo-local
+        command: sh -c "cd services/learn-card-network/learn-cloud-service && bun run start:docker"
         container_name: 'lcn-cloud-service'
         expose:
             - 4100
@@ -119,10 +115,8 @@ services:
             REDIS_PORT: 6379
 
     api:
-        image: lca-api-service
-        build:
-            context: ../../
-            dockerfile: services/learn-card-network/lca-api/Dockerfile
+        image: learncard-monorepo-local
+        command: sh -c "cd services/learn-card-network/lca-api && bun run start:docker"
         container_name: 'lcn-api-service'
         expose:
             - 5100
