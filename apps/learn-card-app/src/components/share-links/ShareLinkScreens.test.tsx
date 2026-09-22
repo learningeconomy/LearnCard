@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 const mocks = vi.hoisted(() => ({
     wallet: {
-        id: { did: () => 'owner' },
+        id: { did: vi.fn(() => 'owner') },
         index: { LearnCloud: { getPage: vi.fn() } },
         read: { get: vi.fn() },
         invoke: {
@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
     prepare: vi.fn(),
     decrypt: vi.fn(),
     validate: vi.fn(),
+    appBaseUrl: 'https://tenant.example',
     intersect: undefined as undefined | ((entries: { isIntersecting: boolean }[]) => void),
 }));
 vi.mock('learn-card-base', () => ({ useWallet: () => ({ initWallet: async () => mocks.wallet }) }));
@@ -25,7 +26,7 @@ vi.mock('learn-card-base/helpers/walletHelpers', () => ({
     getBespokeLearnCard: async () => mocks.wallet,
 }));
 vi.mock('../../config/bootstrapTenantConfig', () => ({
-    getAppBaseUrl: () => 'https://tenant.example',
+    getAppBaseUrl: () => mocks.appBaseUrl,
 }));
 vi.mock('react-router-dom', () => ({
     useParams: () => ({ id: 'AAAAAAAAAAAAAAAAAAAAAA' }),
@@ -38,7 +39,10 @@ vi.mock('@ionic/react', () => ({
     IonContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     IonPage: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
-vi.mock('./sharePrivacy', () => ({ enterSharePrivacy: vi.fn() }));
+vi.mock('./sharePrivacy', () => ({
+    enterSharePrivacy: vi.fn(),
+    enterCreatorPrivacy: () => vi.fn(),
+}));
 vi.mock('learn-card-base/helpers/share-links', () => ({
     isShareLinkError: () => false,
     decryptSharePayload: (...args: unknown[]) => mocks.decrypt(...args),
@@ -56,6 +60,7 @@ import ShareLinkViewer from './ShareLinkViewer';
 const credential = { name: 'Community leadership', issuer: { name: 'Learning Collective' } };
 beforeEach(() => {
     vi.clearAllMocks();
+    mocks.appBaseUrl = 'https://tenant.example';
     window.history.replaceState(
         null,
         '',
@@ -67,9 +72,15 @@ beforeEach(() => {
     });
     mocks.wallet.read.get.mockResolvedValue(credential);
     mocks.prepare.mockResolvedValue({
-        input: { id: 'AAAAAAAAAAAAAAAAAAAAAA' },
+        input: { id: 'AAAAAAAAAAAAAAAAAAAAAA', title: 'Learning highlights', expiresAt: null },
         key: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         ownerDid: 'owner',
+        payload: {
+            sharer: { displayName: 'Alex', profileId: 'owner' },
+            presentation: { verifiableCredential: [credential] },
+            selection: [{ credentialIndex: 0 }],
+            endorsements: [],
+        },
     });
     mocks.wallet.invoke.createShareLink.mockResolvedValue({
         status: 'completed',
@@ -120,11 +131,16 @@ afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
 });
-const chooseAndCreate = async () => {
+const chooseAndPreview = async () => {
     render(<ShareLinkCreate onDismiss={() => {}} />);
     fireEvent.click(await screen.findByRole('checkbox'));
     fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
     fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Learning highlights' } });
+    fireEvent.click(screen.getByRole('button', { name: /Preview/ }));
+    await screen.findByTestId('share-link-preview');
+};
+const chooseAndCreate = async () => {
+    await chooseAndPreview();
     fireEvent.click(screen.getByRole('button', { name: 'Create private link' }));
 };
 describe('create screen', () => {
@@ -150,7 +166,7 @@ describe('create screen', () => {
     it('reuses encrypted input after a lost response', async () => {
         mocks.wallet.invoke.createShareLink.mockRejectedValueOnce(new Error('lost response'));
         await chooseAndCreate();
-        fireEvent.click(await screen.findByRole('button', { name: 'Check again' }));
+        fireEvent.click(await screen.findByRole('button', { name: 'Create private link' }));
         await screen.findByText('Your link is ready');
         expect(mocks.prepare).toHaveBeenCalledTimes(1);
         const calls = mocks.wallet.invoke.createShareLink.mock.calls;
@@ -163,7 +179,7 @@ describe('create screen', () => {
             operationId: 'operation',
         });
         mocks.wallet.invoke.retryShareLinkOperation.mockResolvedValue({
-            status: 'completed',
+            status: 'found',
             share: { status: 'active', expiresAt: null },
         });
         await chooseAndCreate();
@@ -176,6 +192,86 @@ describe('create screen', () => {
             id: 'share',
             operationId: 'operation',
         });
+        expect(mocks.wallet.invoke.createShareLink).toHaveBeenCalledTimes(1);
+    });
+    it('recovers a not_found retry by replaying the original prepared create input', async () => {
+        mocks.wallet.invoke.createShareLink
+            .mockResolvedValueOnce({ status: 'pending', id: 'share', operationId: 'operation' })
+            .mockResolvedValueOnce({
+                status: 'completed',
+                share: { status: 'active', expiresAt: null },
+            });
+        mocks.wallet.invoke.retryShareLinkOperation.mockResolvedValue({
+            status: 'not_found',
+            id: 'share',
+        });
+        await chooseAndCreate();
+        await screen.findByText(/Your link is still being prepared/);
+        fireEvent.click(screen.getByRole('button', { name: 'Check again' }));
+        await screen.findByText('Your link is ready');
+        expect(mocks.wallet.invoke.createShareLink).toHaveBeenCalledTimes(2);
+        const calls = mocks.wallet.invoke.createShareLink.mock.calls;
+        expect(calls[0][0]).toBe(calls[1][0]);
+    });
+    it('surfaces a paused pending operation as a terminal error after not_found', async () => {
+        mocks.wallet.invoke.createShareLink
+            .mockResolvedValueOnce({ status: 'pending', id: 'share', operationId: 'operation' })
+            .mockRejectedValueOnce(new Error('reservation lost'));
+        mocks.wallet.invoke.retryShareLinkOperation.mockResolvedValue({
+            status: 'not_found',
+            id: 'share',
+        });
+        await chooseAndCreate();
+        await screen.findByText(/Your link is still being prepared/);
+        fireEvent.click(screen.getByRole('button', { name: 'Check again' }));
+        await screen.findByRole('alert');
+        expect(screen.queryByText('Your link is ready')).toBeNull();
+    });
+    it('does not publish when the derived identity changed', async () => {
+        await chooseAndPreview();
+        mocks.wallet.id.did.mockReturnValue('other');
+        fireEvent.click(screen.getByRole('button', { name: 'Create private link' }));
+        await screen.findByRole('alert');
+        expect(mocks.wallet.invoke.createShareLink).toHaveBeenCalledTimes(0);
+    });
+    it('refuses a non-https base before creating any server state', async () => {
+        mocks.appBaseUrl = 'http://localhost:3000';
+        render(<ShareLinkCreate onDismiss={() => {}} />);
+        fireEvent.click(await screen.findByRole('checkbox'));
+        fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+        fireEvent.change(screen.getByLabelText('Title'), {
+            target: { value: 'Learning highlights' },
+        });
+        fireEvent.click(screen.getByRole('button', { name: /Preview/ }));
+        await screen.findByRole('alert');
+        expect(screen.queryByTestId('share-link-preview')).toBeNull();
+        expect(mocks.wallet.invoke.createShareLink).not.toHaveBeenCalled();
+    });
+    it('shows the actual prepared payload in the recipient preview', async () => {
+        render(<ShareLinkCreate onDismiss={() => {}} />);
+        fireEvent.click(await screen.findByRole('checkbox'));
+        fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+        fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Learning highlights' } });
+        fireEvent.click(screen.getByRole('button', { name: /Preview/ }));
+        await screen.findByTestId('share-link-preview');
+        expect(screen.getByText('Community leadership')).toBeTruthy();
+        expect(screen.getByText('Shared by Alex')).toBeTruthy();
+        expect(screen.queryByText('Signature verified')).toBeNull();
+        expect(mocks.wallet.invoke.createShareLink).not.toHaveBeenCalled();
+    });
+    it('regenerates the draft after returning to edit before publishing', async () => {
+        render(<ShareLinkCreate onDismiss={() => {}} />);
+        fireEvent.click(await screen.findByRole('checkbox'));
+        fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+        fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'First' } });
+        fireEvent.click(screen.getByRole('button', { name: /Preview/ }));
+        await screen.findByTestId('share-link-preview');
+        fireEvent.click(screen.getByRole('button', { name: /Edit/ }));
+        fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Second' } });
+        fireEvent.click(screen.getByRole('button', { name: /Preview/ }));
+        await screen.findByTestId('share-link-preview');
+        expect(mocks.prepare).toHaveBeenCalledTimes(2);
+        expect(mocks.wallet.invoke.createShareLink).not.toHaveBeenCalled();
     });
 });
 describe('recipient screen', () => {

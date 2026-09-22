@@ -1,5 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import userflow from 'userflow.js';
 vi.mock('@sentry/react', () => ({ getReplay: () => ({ stop: vi.fn() }) }));
 vi.mock('userflow.js', () => ({ default: { setPageTrackingDisabled: vi.fn(), reset: vi.fn() } }));
 import {
@@ -8,6 +9,7 @@ import {
     enterSharePrivacy,
     isSharePrivateSession,
     useSharePrivateSession,
+    enterCreatorPrivacy,
 } from './sharePrivacy';
 describe('share privacy', () => {
     it.each([
@@ -31,6 +33,18 @@ describe('share privacy', () => {
         expect(JSON.stringify(result)).not.toMatch(/secret|other|#key/);
         expect(event.request.url).toContain('#secret');
         expect(window.location.href).toBe(before);
+    });
+    it('scopes creator suppression without making privacy sticky', async () => {
+        const release = enterCreatorPrivacy();
+        expect(userflow.setPageTrackingDisabled).toHaveBeenCalledWith(true);
+        // The creator surface must not flip the sticky viewer session.
+        expect(isSharePrivateSession()).toBe(false);
+        release();
+        await act(async () => {
+            await Promise.resolve();
+        });
+        expect(isSharePrivateSession()).toBe(false);
+        expect(userflow.setPageTrackingDisabled).toHaveBeenLastCalledWith(false);
     });
     it('updates mounted privacy consumers immediately', () => {
         const { result, unmount } = renderHook(() => useSharePrivateSession());

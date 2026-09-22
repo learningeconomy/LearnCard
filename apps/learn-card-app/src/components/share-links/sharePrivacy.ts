@@ -52,3 +52,62 @@ export const scrubShareTelemetry = <T>(value: T): T => {
     };
     return scrub(value) as T;
 };
+
+/**
+ * Narrowly scoped suppression for the authenticated creator surface.
+ *
+ * Unlike the sticky viewer session, this must not disable telemetry for the
+ * rest of the signed-in document: analytics are paused while the creator is
+ * open and restored on teardown. Recorders (Sentry Replay) are deliberately
+ * never restarted, because their buffers may hold creator-sensitive content.
+ * The existing user privacy preference is respected: Firebase analytics are
+ * only re-enabled when they were enabled before suppression.
+ */
+let creatorDepth = 0;
+let priorFirebaseEnabled: boolean | undefined;
+let firebaseProbe: Promise<void> | undefined;
+
+const pauseCapture = () => {
+    configureLoggerContext({
+        bugReportsEnabled: false,
+        diagnosticLogCollectionEnabled: false,
+        diagnosticIdentity: null,
+    });
+    userflow.setPageTrackingDisabled(true);
+    userflow.reset();
+    void FirebaseAnalytics.setEnabled({ enabled: false }).catch(() => {});
+    void Sentry.getReplay()?.stop();
+};
+
+export const enterCreatorPrivacy = (): (() => void) => {
+    creatorDepth += 1;
+    if (creatorDepth === 1) {
+        priorFirebaseEnabled = undefined;
+        firebaseProbe = FirebaseAnalytics.isEnabled().then(
+            result => {
+                priorFirebaseEnabled = result?.enabled;
+            },
+            () => {
+                priorFirebaseEnabled = undefined;
+            }
+        );
+        pauseCapture();
+    }
+    let released = false;
+    return () => {
+        if (released) return;
+        released = true;
+        creatorDepth = Math.max(0, creatorDepth - 1);
+        if (creatorDepth > 0 || isSharePrivateSession()) return;
+        // Wait for the pre-suppression probe so a user's disabled preference is
+        // never overwritten by an "enable" from a stale default.
+        void (firebaseProbe ?? Promise.resolve()).then(() => {
+            if (creatorDepth > 0 || isSharePrivateSession()) return;
+            userflow.setPageTrackingDisabled(false);
+            if (priorFirebaseEnabled === true) {
+                void FirebaseAnalytics.setEnabled({ enabled: true }).catch(() => {});
+            }
+        });
+    };
+};
+

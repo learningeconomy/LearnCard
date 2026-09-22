@@ -9,7 +9,9 @@ import {
     type UnsignedVP,
     type VerificationCheck,
     type ShareOwnerRecovery,
+    type ShareLink,
     type ShareLinkOwnerCommitOutput,
+    type ShareLinkOwnerStatusOutput,
     type ShareLinkOperationKeyInput,
     type ShareLinkPublicState,
     type ShareLinkPublicContentView,
@@ -50,7 +52,7 @@ export interface ShareWallet {
         createShareLink(input: CreateShareLinkInput): Promise<ShareLinkOwnerCommitOutput>;
         retryShareLinkOperation(
             input: ShareLinkOperationKeyInput
-        ): Promise<ShareLinkOwnerCommitOutput>;
+        ): Promise<ShareLinkOwnerStatusOutput>;
         resolveShareLink(id: string): Promise<ShareLinkPublicState>;
         getShareLinkContent(id: string): Promise<ShareLinkPublicContentView>;
         acknowledgeShareLinkView(receipt: string): Promise<{ ok: true }>;
@@ -60,8 +62,67 @@ export interface ShareWallet {
 }
 export const shareWallet = (wallet: unknown): ShareWallet => wallet as ShareWallet;
 export type CredentialChoice = { uri: string; credential?: VC };
-export type PreparedShare = { input: CreateShareLinkInput; key: string; ownerDid: string };
+export type PreparedShare = {
+    input: CreateShareLinkInput;
+    key: string;
+    ownerDid: string;
+    /** Exact manifest that was encrypted: the preview must render this, not a rebuild. */
+    payload: SharePayload;
+};
 export type ProofState = 'checking' | 'verified' | 'failed' | 'unavailable';
+
+/** Bounded, order-preserving fan-out so a picker never opens unbounded reads. */
+export const mapWithConcurrency = async <T, R>(
+    items: readonly T[],
+    limit: number,
+    worker: (item: T, index: number) => Promise<R>
+): Promise<R[]> => {
+    const results = new Array<R>(items.length);
+    let next = 0;
+    const run = async (): Promise<void> => {
+        while (next < items.length) {
+            const index = next++;
+            results[index] = await worker(items[index], index);
+        }
+    };
+    await Promise.all(Array.from({ length: Math.min(Math.max(limit, 1), items.length) }, run));
+    return results;
+};
+
+/**
+ * Derive the canonical share host from a tenant base URL. Non-HTTPS bases
+ * (e.g. a local `http://localhost:3000`) are rejected before any server state
+ * can be created, since `buildShareLinkUrl` would otherwise mint an
+ * unreachable `https://localhost:3000/...` link.
+ */
+export const shareLinkHost = (baseUrl: string): string | undefined => {
+    try {
+        const url = new URL(baseUrl);
+        if (url.protocol !== 'https:') return undefined;
+        return url.host || undefined;
+    } catch {
+        return undefined;
+    }
+};
+
+export type ExpiryChoice = '7' | '30' | '365' | 'never';
+export const EXPIRY_CHOICES: ExpiryChoice[] = ['7', '30', '365', 'never'];
+/** Conservative default for a production policy that has no verified age. */
+export const DEFAULT_EXPIRY_CHOICE: ExpiryChoice = '30';
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+export const expiryToDays = (choice: ExpiryChoice): number | null =>
+    choice === 'never' ? null : Number(choice);
+
+/** Absolute timestamp pinned once per prepared attempt; `null` means never. */
+export const resolveExpiryIso = (
+    choice: ExpiryChoice,
+    now: number = Date.now()
+): string | null => {
+    const days = expiryToDays(choice);
+    return days === null ? null : new Date(now + days * DAY_MS).toISOString();
+};
+
 
 export const readShareAddress = (id: string, hash: string) => {
     const key = hash.startsWith('#') ? hash.slice(1) : '';
@@ -76,7 +137,8 @@ export const prepareShare = async (
     wallet: ShareWallet,
     refs: string[],
     title: string,
-    note: string
+    note: string,
+    expiresAt?: string | null
 ): Promise<PreparedShare> => {
     if (!refs.length || refs.length > 50 || new Set(refs).size !== refs.length)
         throw new Error('selection');
@@ -152,6 +214,7 @@ export const prepareShare = async (
         clientRequestId: crypto.randomUUID(),
         title: title.trim(),
         ...(note.trim() ? { note: note.trim() } : {}),
+        ...(expiresAt !== undefined ? { expiresAt } : {}),
         selectedCount: refs.length,
         contentVersion: 1,
         envelope,
@@ -159,7 +222,7 @@ export const prepareShare = async (
     });
     if (new TextEncoder().encode(JSON.stringify(input)).byteLength > 1024 * 1024)
         throw new Error('size');
-    return { input, key, ownerDid };
+    return { input, key, ownerDid, payload };
 };
 
 /** Offline or unresponsive issuers must not leave a permanent checking badge. */
@@ -230,6 +293,32 @@ export const verifySharedPresentation = async (
     } catch {
         return 'unavailable';
     }
+};
+
+/**
+ * Normalize both create (`completed`/`pending`) and status
+ * (`found`/`pending`/`not_found`) responses so the UI never confuses a
+ * retryable pending operation with a completed share or a fresh attempt.
+ */
+export type SharePublicationOutcome =
+    | { status: 'active'; share: ShareLink }
+    | { status: 'inactive'; share: ShareLink }
+    | { status: 'pending'; operation: ShareLinkOperationKeyInput }
+    | { status: 'abandoned'; id: string };
+
+export const classifySharePublication = (
+    result: ShareLinkOwnerCommitOutput | ShareLinkOwnerStatusOutput
+): SharePublicationOutcome => {
+    if (result.status === 'pending') {
+        return {
+            status: 'pending',
+            operation: { id: result.id, operationId: result.operationId },
+        };
+    }
+    if (result.status === 'not_found') return { status: 'abandoned', id: result.id };
+    return result.share.status === 'active'
+        ? { status: 'active', share: result.share }
+        : { status: 'inactive', share: result.share };
 };
 
 export const credentialText = (

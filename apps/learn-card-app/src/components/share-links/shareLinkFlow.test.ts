@@ -3,9 +3,13 @@ import { describe, expect, it, vi } from 'vitest';
 import type { VC } from '@learncard/types';
 import { decryptSharePayload } from 'learn-card-base/helpers/share-links';
 import {
+    classifySharePublication,
+    mapWithConcurrency,
     prepareShare,
     proofState,
     readShareAddress,
+    resolveExpiryIso,
+    shareLinkHost,
     shareWallet,
     verifyCredentialTree,
 } from './shareLinkFlow';
@@ -149,4 +153,69 @@ it('finishes with could-not-check when an issuer never responds', async () => {
     } finally {
         vi.useRealTimers();
     }
+});
+
+describe('publication outcomes', () => {
+    const share = { status: 'active', expiresAt: null } as never;
+    it('maps every create and status tag without conflating them', () => {
+        expect(
+            classifySharePublication({ status: 'completed', share } as never)
+        ).toMatchObject({ status: 'active' });
+        expect(
+            classifySharePublication({ status: 'pending', id: 'share', operationId: 'op' } as never)
+        ).toMatchObject({ status: 'pending', operation: { id: 'share', operationId: 'op' } });
+        expect(
+            classifySharePublication({
+                status: 'found',
+                share: { status: 'stopped', expiresAt: null } as never,
+            } as never)
+        ).toMatchObject({ status: 'inactive' });
+        expect(classifySharePublication({ status: 'not_found', id: 'share' } as never)).toEqual({
+            status: 'abandoned',
+            id: 'share',
+        });
+    });
+});
+
+describe('bounded picker reads', () => {
+    it('keeps result order and never exceeds the concurrency cap', async () => {
+        let active = 0;
+        let peak = 0;
+        const seen: number[] = [];
+        const result = await mapWithConcurrency([0, 1, 2, 3, 4, 5, 6, 7], 4, async item => {
+            active += 1;
+            peak = Math.max(peak, active);
+            await new Promise(resolve => setTimeout(resolve, (7 - item) % 3));
+            seen.push(item);
+            active -= 1;
+            return item * 2;
+        });
+        expect(result).toEqual([0, 2, 4, 6, 8, 10, 12, 14]);
+        expect(peak).toBeLessThanOrEqual(4);
+        expect(active).toBe(0);
+    });
+});
+
+describe('link base and expiry', () => {
+    it('only accepts an https tenant base', () => {
+        expect(shareLinkHost('https://learncard.app')).toBe('learncard.app');
+        expect(shareLinkHost('http://localhost:3000')).toBeUndefined();
+        expect(shareLinkHost('not a url')).toBeUndefined();
+    });
+    it('pins 7/30/365/never and defaults conservatively', () => {
+        const now = Date.parse('2026-01-01T00:00:00.000Z');
+        expect(resolveExpiryIso('never', now)).toBeNull();
+        expect(resolveExpiryIso('7', now)).toBe('2026-01-08T00:00:00.000Z');
+        expect(resolveExpiryIso('30', now)).toBe('2026-01-31T00:00:00.000Z');
+        expect(resolveExpiryIso('365', now)).toBe('2027-01-01T00:00:00.000Z');
+    });
+    it('passes an explicit expiry (and null) into the create input', async () => {
+        const pinned = '2026-02-01T00:00:00.000Z';
+        const withExpiry = await prepareShare(mockWallet(), ['source'], 'Title', '', pinned);
+        expect(withExpiry.input.expiresAt).toBe(pinned);
+        const never = await prepareShare(mockWallet(), ['source'], 'Title', '', null);
+        expect(never.input.expiresAt).toBeNull();
+        const omitted = await prepareShare(mockWallet(), ['source'], 'Title', '');
+        expect(omitted.input.expiresAt).toBeUndefined();
+    });
 });
