@@ -1855,10 +1855,10 @@
     "recovery": {
         "pin": {
             "throttled": "Demasiados intentos por ahora. Espera un minuto y vuelve a intentarlo.",
-            "title": "Recovery PIN",
-            "instantRecoveryOn": "Instant recovery: On",
-            "notSet": "Not set",
-            "change": "Change",
+            "title": "PIN de recuperación",
+            "instantRecoveryOn": "Recuperación instantánea: activada",
+            "notSet": "Sin configurar",
+            "change": "Cambiar",
             "afterRecovery": {
                 "title": "Configura un nuevo PIN de recuperación",
                 "body": "El PIN que acabas de usar ha sido retirado: cada PIN funciona una sola vez para mantener tu cuenta protegida. Elige uno nuevo para tener lista la recuperación instantánea.",
@@ -2112,12 +2112,12 @@
             "invalidRecoveryMethod": "Ese método no pudo verificar tu cuenta. Prueba otro método."
         },
         "automatic": {
-            "restoreWait": "Restore after a 7-day wait"
+            "restoreWait": "Restaurar tras una espera de 7 días"
         },
-        "addWayBackIn": "Add a way back in",
-        "addAnotherMethod": "Add another method",
-        "fullyProtected": "You're fully protected.",
-        "added": "Added"
+        "addWayBackIn": "Añade una forma de volver a entrar",
+        "addAnotherMethod": "Añadir otro método",
+        "fullyProtected": "Tu cuenta está totalmente protegida.",
+        "added": "Añadido"
     },
     "alerts": {
         "title": "Alertas",

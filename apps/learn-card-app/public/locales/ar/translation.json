@@ -1855,10 +1855,10 @@
     "recovery": {
         "pin": {
             "throttled": "محاولات كثيرة الآن. انتظر دقيقة ثم حاول مرة أخرى.",
-            "title": "Recovery PIN",
-            "instantRecoveryOn": "Instant recovery: On",
-            "notSet": "Not set",
-            "change": "Change",
+            "title": "رمز PIN للاسترداد",
+            "instantRecoveryOn": "الاسترداد الفوري: مفعّل",
+            "notSet": "غير معيّن",
+            "change": "تغيير",
             "afterRecovery": {
                 "title": "عيّن رقم تعريف استرداد جديدًا",
                 "body": "تم إبطال رقم التعريف الذي استخدمته للتو — كل رقم يعمل مرة واحدة فقط ليبقى حسابك محميًا. اختر رقمًا جديدًا لإبقاء الاسترداد الفوري جاهزًا.",
@@ -2112,12 +2112,12 @@
             "invalidRecoveryMethod": "تعذر التحقق من حسابك بهذه الطريقة. جرّب طريقة أخرى."
         },
         "automatic": {
-            "restoreWait": "Restore after a 7-day wait"
+            "restoreWait": "الاستعادة بعد انتظار 7 أيام"
         },
-        "addWayBackIn": "Add a way back in",
-        "addAnotherMethod": "Add another method",
-        "fullyProtected": "You're fully protected.",
-        "added": "Added"
+        "addWayBackIn": "أضف طريقة للعودة إلى حسابك",
+        "addAnotherMethod": "إضافة طريقة أخرى",
+        "fullyProtected": "حسابك محمي بالكامل.",
+        "added": "تمت الإضافة"
     },
     "alerts": {
         "title": "التنبيهات",
