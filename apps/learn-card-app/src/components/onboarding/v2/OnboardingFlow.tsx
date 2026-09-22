@@ -24,6 +24,7 @@ import {
     UploadRes,
     useImageUpload,
     getLogger,
+    Toggle,
 } from 'learn-card-base';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import { getAuthToken } from 'learn-card-base/helpers/authHelpers';
@@ -51,7 +52,6 @@ import LocationIcon from '../../svgs/LocationIcon';
 import UnderageModalContent from '../onboardingNetworkForm/components/UnderageModalContent';
 import GuardianLinkedModal from '../GuardianLinkedModal';
 import { Confetti } from '../../../pages/issue/components/Confetti';
-import AccessibleToggle from '../../accessibility/AccessibleToggle';
 
 import useLogout from '../../../hooks/useLogout';
 import useAutoConsentLearnCardAi from '../../../hooks/useAutoConsentLearnCardAi';
@@ -656,7 +656,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                 trackOnboardingStepCompleted('profile', 2);
                 setStep('celebrate');
             }
-        } catch (err) {
+        } catch (err: unknown) {
             const errorDetails =
                 typeof err === 'object' && err !== null ? (err as Record<string, unknown>) : {};
             if (signupLifecycle.terminate()) {
@@ -1179,8 +1179,8 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                                         brand: brandName,
                                                     })}
                                                 </span>
-                                                <AccessibleToggle
-                                                    ariaLabel={m['onboarding.v2.brandAi']({
+                                                <Toggle
+                                                    aria-label={m['onboarding.v2.brandAi']({
                                                         brand: brandName,
                                                     })}
                                                     checked={Boolean(
@@ -1209,8 +1209,8 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                                 <span className="text-sm font-medium text-grayscale-700">
                                                     {m['onboarding.v2.analytics']()}
                                                 </span>
-                                                <AccessibleToggle
-                                                    ariaLabel={m['onboarding.v2.analytics']()}
+                                                <Toggle
+                                                    aria-label={m['onboarding.v2.analytics']()}
                                                     checked={Boolean(
                                                         privacyPreferences?.analyticsEnabled
                                                     )}
@@ -1231,8 +1231,8 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                                 <span className="text-sm font-medium text-grayscale-700">
                                                     {m['onboarding.v2.bugReports']()}
                                                 </span>
-                                                <AccessibleToggle
-                                                    ariaLabel={m['onboarding.v2.bugReports']()}
+                                                <Toggle
+                                                    aria-label={m['onboarding.v2.bugReports']()}
                                                     checked={Boolean(
                                                         privacyPreferences?.bugReportsEnabled
                                                     )}

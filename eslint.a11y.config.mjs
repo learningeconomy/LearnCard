@@ -48,6 +48,16 @@ const zeroViolationRules = Object.fromEntries(
     })
 );
 
+// The LearnCard app still has 27 alt-text and 29 label-association findings
+// in its recorded warning baseline. LC-2101 promotes these rules for the newly
+// covered shared library without expanding into unrelated app remediation.
+const baseZeroViolationRules = Object.fromEntries(
+    ['jsx-a11y/alt-text', 'jsx-a11y/label-has-associated-control'].map(ruleName => {
+        const ruleConfig = recommendedRules[ruleName];
+        return [ruleName, Array.isArray(ruleConfig) ? ['error', ...ruleConfig.slice(1)] : 'error'];
+    })
+);
+
 export default tseslint.config(
     {
         ignores: [
@@ -65,7 +75,10 @@ export default tseslint.config(
         ],
     },
     {
-        files: ['apps/learn-card-app/src/**/*.{ts,tsx}'],
+        files: [
+            'apps/learn-card-app/src/**/*.{ts,tsx}',
+            'packages/learn-card-base/src/**/*.{ts,tsx}',
+        ],
         languageOptions: {
             parser: tseslint.parser,
             parserOptions: {
@@ -88,6 +101,11 @@ export default tseslint.config(
                 'warn',
                 ...recommendedRules['jsx-a11y/control-has-associated-label'].slice(1),
             ],
+            'jsx-a11y/no-autofocus': ['warn', { ignoreNonDOM: true }],
         },
+    },
+    {
+        files: ['packages/learn-card-base/src/**/*.{ts,tsx}'],
+        rules: baseZeroViolationRules,
     }
 );
