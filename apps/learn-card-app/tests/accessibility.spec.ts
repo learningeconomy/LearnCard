@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, type Locator, type Page, type TestInfo } from '@playwright/test';
 
-import { TEST_USER_2_PROFILE_ID, TEST_USER_2_SEED } from './constants';
+import { TEST_USER_2_PROFILE_ID, TEST_USER_2_SEED, TEST_USER_PROFILE_ID } from './constants';
 import { test } from './fixtures/test';
 import { mockDidKitWasmForContext } from './route.helpers';
 import { TEST_CREDENTIAL_TITLE, waitForAuthenticatedState } from './test.helpers';
