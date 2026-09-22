@@ -88,7 +88,6 @@ const ViewCredentialsSharedWithApp: React.FC = () => {
 
                                 {allowUpdatingVPs && (
                                     <button
-                                        role="button"
                                         className="bg-grayscale-900 rounded-[20px] px-[20px] py-[8px] text-white text-[14px] font-[600]"
                                         onClick={() =>
                                             history.push(

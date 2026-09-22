@@ -123,19 +123,18 @@ textarea[class*='border-gray']:-webkit-autofill:active {
 // Keyboard focus is intentionally invisible for pointer interaction and appears
 // only for keyboard-style focus. This covers native controls and the small
 // number of composite widgets used by the core app flows.
-#app-router,
-#modal-mid-root {
+:where(#app-router, #modal-mid-root) {
     :where(
-            button,
-            a[href],
-            input,
-            select,
-            textarea,
-            [role='button'],
-            [role='tab'],
-            [role='option'],
-            [tabindex]:not([tabindex='-1'])
-        ):focus-visible {
+        button,
+        a[href],
+        input,
+        select,
+        textarea,
+        [role='button'],
+        [role='tab'],
+        [role='option'],
+        [tabindex]:not([tabindex='-1'])
+    ):focus-visible {
         @apply outline-none ring-2 ring-emerald-500 ring-offset-2;
     }
 }
