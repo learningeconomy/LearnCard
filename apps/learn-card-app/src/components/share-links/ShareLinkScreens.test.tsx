@@ -2,6 +2,7 @@ import React from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import type { ShareLink } from '@learncard/types';
 const mocks = vi.hoisted(() => ({
     wallet: {
         id: { did: () => 'owner' },
@@ -9,6 +10,7 @@ const mocks = vi.hoisted(() => ({
         read: { get: vi.fn() },
         invoke: {
             createShareLink: vi.fn(),
+            updateShareLink: vi.fn(),
             retryShareLinkOperation: vi.fn(),
             resolveShareLink: vi.fn(),
             getShareLinkContent: vi.fn(),
@@ -16,6 +18,8 @@ const mocks = vi.hoisted(() => ({
         },
     },
     prepare: vi.fn(),
+    prepareUpdate: vi.fn(),
+    recovery: vi.fn(),
     decrypt: vi.fn(),
     validate: vi.fn(),
     intersect: undefined as undefined | ((entries: { isIntersecting: boolean }[]) => void),
@@ -48,6 +52,8 @@ vi.mock('learn-card-base/helpers/share-links', () => ({
 vi.mock('./shareLinkFlow', async importOriginal => ({
     ...(await importOriginal<object>()),
     prepareShare: (...args: unknown[]) => mocks.prepare(...args),
+    prepareShareUpdate: (...args: unknown[]) => mocks.prepareUpdate(...args),
+    readShareRecovery: (...args: unknown[]) => mocks.recovery(...args),
     verifySharedPresentation: async () => 'verified',
     verifyCredentialTree: async () => 'verified',
 }));
@@ -71,7 +77,28 @@ beforeEach(() => {
         key: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         ownerDid: 'owner',
     });
+    mocks.recovery.mockResolvedValue({
+        protocol: 'lc-share-recovery/v1',
+        shareId: 'AAAAAAAAAAAAAAAAAAAAAA',
+        ownerProfileId: 'owner',
+        createdAt: '2026-09-20T00:00:00.000Z',
+        latest: {
+            contentVersion: 1,
+            key: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        },
+        selection: [{ ref: 'private:one', order: 0 }],
+        endorsements: [],
+    });
+    mocks.prepareUpdate.mockResolvedValue({
+        input: { id: 'AAAAAAAAAAAAAAAAAAAAAA', expectedVersion: 1 },
+        key: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        ownerDid: 'owner',
+    });
     mocks.wallet.invoke.createShareLink.mockResolvedValue({
+        status: 'completed',
+        share: { status: 'active', expiresAt: null },
+    });
+    mocks.wallet.invoke.updateShareLink.mockResolvedValue({
         status: 'completed',
         share: { status: 'active', expiresAt: null },
     });
@@ -176,6 +203,47 @@ describe('create screen', () => {
             id: 'share',
             operationId: 'operation',
         });
+    });
+    it('replaces an existing link at the same URL instead of creating another one', async () => {
+        render(
+            <ShareLinkCreate
+                onDismiss={() => {}}
+                editShare={
+                    {
+                        id: 'AAAAAAAAAAAAAAAAAAAAAA',
+                        title: 'Learning highlights',
+                        note: 'Original note',
+                        selectedCount: 1,
+                        version: 1,
+                        contentVersion: 1,
+                        status: 'active',
+                        contentState: 'finalized',
+                        createdAt: '2026-09-20T00:00:00.000Z',
+                        updatedAt: '2026-09-21T00:00:00.000Z',
+                        expiresAt: null,
+                        stoppedAt: null,
+                        lastViewedAt: null,
+                        minorPolicy: {
+                            isMinor: false,
+                            policyResolved: true,
+                            defaultExpiryDays: 365,
+                            viewCountingEnabled: true,
+                        },
+                    } as ShareLink
+                }
+            />
+        );
+        expect(await screen.findByRole('checkbox')).toBeChecked();
+        fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Update private link' }));
+        await screen.findByText('Your link is updated');
+        expect(mocks.wallet.invoke.updateShareLink).toHaveBeenCalledWith(
+            expect.objectContaining({ id: 'AAAAAAAAAAAAAAAAAAAAAA', expectedVersion: 1 })
+        );
+        expect(mocks.wallet.invoke.createShareLink).not.toHaveBeenCalled();
+        expect((screen.getByLabelText('Private link') as HTMLInputElement).value).toBe(
+            'https://tenant.example/s/AAAAAAAAAAAAAAAAAAAAAA#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+        );
     });
 });
 describe('recipient screen', () => {

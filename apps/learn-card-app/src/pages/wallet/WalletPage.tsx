@@ -112,7 +112,13 @@ const WalletPage: React.FC = () => {
     const handleShareModal = () => {
         newModal(
             <Suspense fallback={<SharedBundleModalFallback />}>
-                <ShareBoostsBundleModal onDismiss={() => closeModal()} />
+                <ShareBoostsBundleModal
+                    onDismiss={() => closeModal()}
+                    onManage={() => {
+                        closeModal();
+                        history.push('/privacy-and-data');
+                    }}
+                />
             </Suspense>,
             {},
             { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
@@ -233,13 +239,24 @@ const WalletPage: React.FC = () => {
                                         />
 
                                         {flags?.shareMultipleEnabled === true && (
-                                            <button
-                                                type="button"
-                                                onClick={handleShareModal}
-                                                className="px-4 py-2.5 rounded-[20px] bg-white text-grayscale-900 text-sm font-medium hover:bg-grayscale-100 transition-colors focus-visible:ring-2 focus-visible:ring-emerald-500"
-                                            >
-                                                {m['shareLinks.share']()}
-                                            </button>
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={handleShareModal}
+                                                    className="px-4 py-2.5 rounded-[20px] bg-white text-grayscale-900 text-sm font-medium hover:bg-grayscale-100 transition-colors focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                                >
+                                                    {m['shareLinks.share']()}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        history.push('/privacy-and-data')
+                                                    }
+                                                    className="px-3 py-2.5 rounded-[20px] border border-white/70 text-white text-sm font-medium hover:bg-white/10 transition-colors focus-visible:ring-2 focus-visible:ring-white"
+                                                >
+                                                    {m['shareLinks.manage']()}
+                                                </button>
+                                            </div>
                                         )}
 
                                         {Capacitor.isNativePlatform() && (

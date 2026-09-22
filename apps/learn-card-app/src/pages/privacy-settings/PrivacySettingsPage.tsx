@@ -1,7 +1,13 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 
 import { IonContent, IonPage } from '@ionic/react';
-import { AllowConnectionRequestsEnum, ProfileVisibilityEnum } from '@learncard/types';
+import { useFlags } from 'launchdarkly-react-client-sdk';
+import { useHistory } from 'react-router-dom';
+import {
+    AllowConnectionRequestsEnum,
+    ProfileVisibilityEnum,
+    type ShareLink,
+} from '@learncard/types';
 
 import {
     getAiFeatureAgeGateState,
@@ -14,6 +20,8 @@ import {
     useAiFeatureGate,
     ToastTypeEnum,
     LEARNCARD_AI_PASSPORT_CONTRACT_URI,
+    ModalTypes,
+    useModal,
 } from 'learn-card-base';
 import { switchedProfileStore } from 'learn-card-base/stores/walletStore';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
@@ -23,6 +31,8 @@ import { useAnalytics } from '../../analytics';
 import * as m from '../../paraglide/messages.js';
 import { useLocale } from '../../i18n';
 import DataSharingCenterView from './DataSharingCenterView';
+import ShareLinkCreate from '../../components/share-links/ShareLinkCreate';
+import { useSharedLinks } from './useSharedLinks';
 import type {
     ConnectionRequestsValue,
     DataSharingCenterViewModel,
@@ -37,6 +47,12 @@ type PrivacySettingsProfile = {
 };
 
 const PrivacySettingsPage: React.FC = () => {
+    const flags = useFlags();
+    const history = useHistory();
+    const { newModal, closeModal } = useModal({
+        desktop: ModalTypes.FullScreen,
+        mobile: ModalTypes.FullScreen,
+    });
     const { currentLCNUser, refetch: refetchUser } = useGetCurrentLCNUser();
     const { data: preferences } = useGetPreferencesForDid();
     const { mutate: updatePreferences } = useUpdatePreferences();
@@ -49,6 +65,23 @@ const PrivacySettingsPage: React.FC = () => {
     const { isAiEnabled, reason: aiReason } = useAiFeatureGate();
     const { handleAiToggle } = useAiConsentToggle();
     const [savingField, setSavingField] = useState<string | null>(null);
+    const refreshSharedRef = useRef<(() => Promise<void>) | null>(null);
+
+    const handleUpdateShare = useCallback(
+        (share: ShareLink) => {
+            newModal(
+                <ShareLinkCreate
+                    editShare={share}
+                    onDismiss={() => closeModal()}
+                    onManage={() => closeModal()}
+                    onComplete={() => refreshSharedRef.current?.()}
+                />,
+                {},
+                { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+            );
+        },
+        [closeModal, newModal]
+    );
 
     const ageGate = getAiFeatureAgeGateState({
         profileType,
@@ -56,6 +89,13 @@ const PrivacySettingsPage: React.FC = () => {
         country: currentLCNUser?.country,
     });
     const isMinor = ageGate.isChildProfile || ageGate.isMinorByAge;
+    const shared = useSharedLinks(
+        flags?.shareMultipleEnabled === true,
+        !isMinor,
+        handleUpdateShare,
+        () => history.push('/wallet')
+    );
+    refreshSharedRef.current = shared?.onRefresh ?? null;
 
     const contracts = useMemo(
         () =>
@@ -80,10 +120,13 @@ const PrivacySettingsPage: React.FC = () => {
                 const wallet = await initWallet();
                 await wallet?.invoke?.updateProfile(updates);
                 await refetchUser?.();
-            } catch (error: any) {
-                presentToast(error?.message ?? m['settings.privacy.unableToUpdate'](), {
-                    type: ToastTypeEnum.Error,
-                });
+            } catch (error: unknown) {
+                presentToast(
+                    error instanceof Error ? error.message : m['settings.privacy.unableToUpdate'](),
+                    {
+                        type: ToastTypeEnum.Error,
+                    }
+                );
             } finally {
                 setSavingField(null);
             }
@@ -174,6 +217,7 @@ const PrivacySettingsPage: React.FC = () => {
                     updatePreferences({ bugReportsEnabled: enabled });
                 },
             },
+            shared,
         };
     }, [
         isLoading,
@@ -195,7 +239,7 @@ const PrivacySettingsPage: React.FC = () => {
         handleProfileUpdate,
         updatePreferences,
         setAnalyticsEnabled,
-        ,
+        shared,
         locale,
     ]);
 

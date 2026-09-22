@@ -4,6 +4,7 @@ import type { VC } from '@learncard/types';
 import { decryptSharePayload } from 'learn-card-base/helpers/share-links';
 import {
     prepareShare,
+    prepareShareUpdate,
     proofState,
     readShareAddress,
     shareWallet,
@@ -95,6 +96,65 @@ describe('share publication boundary', () => {
         ]);
         await prepareShare(wallet, ['source'], 'Title', '');
         expect(wallet.read.get).toHaveBeenCalledTimes(1);
+    });
+    it('replaces content at the same link id and key with the next content version', async () => {
+        const wallet = mockWallet();
+        const key = 'A'.repeat(43);
+        const updated = await prepareShareUpdate(
+            wallet,
+            {
+                id: 'A'.repeat(22),
+                title: 'Old title',
+                selectedCount: 1,
+                version: 4,
+                contentVersion: 2,
+                status: 'active',
+                contentState: 'finalized',
+                createdAt: '2026-09-20T00:00:00.000Z',
+                updatedAt: '2026-09-21T00:00:00.000Z',
+                expiresAt: null,
+                stoppedAt: null,
+                lastViewedAt: null,
+                minorPolicy: {
+                    isMinor: false,
+                    policyResolved: true,
+                    defaultExpiryDays: 365,
+                    viewCountingEnabled: true,
+                },
+            },
+            {
+                protocol: 'lc-share-recovery/v1',
+                shareId: 'A'.repeat(22),
+                ownerProfileId: 'owner',
+                createdAt: '2026-09-20T00:00:00.000Z',
+                latest: { contentVersion: 2, key },
+                selection: [{ ref: 'private:credential', order: 0 }],
+                endorsements: [],
+            },
+            ['private:credential'],
+            'Updated title',
+            ''
+        );
+
+        expect(updated.key).toBe(key);
+        expect(updated.input).toMatchObject({
+            id: 'A'.repeat(22),
+            expectedVersion: 4,
+            contentVersion: 3,
+            title: 'Updated title',
+            note: null,
+        });
+        const payload = (await decryptSharePayload({
+            shareId: updated.input.id,
+            contentVersion: 3,
+            key,
+            envelope: updated.input.envelope!,
+        })) as { contentVersion: number };
+        expect(payload.contentVersion).toBe(3);
+        expect(wallet.invoke.createDagJwe).toHaveBeenCalledWith(
+            expect.objectContaining({ latest: { contentVersion: 3, key } }),
+            ['did:example:owner']
+        );
     });
 });
 it('rejects an oversized selection before it can be sent', async () => {

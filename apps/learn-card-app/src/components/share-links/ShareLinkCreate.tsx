@@ -9,7 +9,7 @@ import {
     documentTextOutline,
     lockClosedOutline,
 } from 'ionicons/icons';
-import type { VC } from '@learncard/types';
+import type { ShareLink, ShareRecoveryPlaintext, VC } from '@learncard/types';
 import { QRCodeSVG } from 'qrcode.react';
 import { Clipboard } from '@capacitor/clipboard';
 import { useWallet } from 'learn-card-base';
@@ -19,9 +19,12 @@ import * as m from '../../paraglide/messages.js';
 import {
     credentialText,
     prepareShare,
+    prepareShareUpdate,
+    readShareRecovery,
     shareWallet,
     type CredentialChoice,
     type PreparedShare,
+    type PreparedShareUpdate,
 } from './shareLinkFlow';
 import { enterSharePrivacy } from './sharePrivacy';
 
@@ -41,7 +44,19 @@ export const Busy = ({ children }: { children: React.ReactNode }) => (
     </span>
 );
 
-export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
+type ShareLinkCreateProps = {
+    onDismiss: () => void;
+    onManage?: () => void;
+    onComplete?: () => Promise<unknown> | void;
+    editShare?: ShareLink;
+};
+
+export const ShareLinkCreate = ({
+    onDismiss,
+    onManage,
+    onComplete,
+    editShare,
+}: ShareLinkCreateProps) => {
     const { initWallet } = useWallet();
     const walletRef = useRef(initWallet);
     walletRef.current = initWallet;
@@ -52,26 +67,46 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
     const [loading, setLoading] = useState(false);
     const [step, setStep] = useState<'choose' | 'details' | 'done'>('choose');
     const [search, setSearch] = useState('');
-    const [title, setTitle] = useState('');
-    const [note, setNote] = useState('');
+    const [title, setTitle] = useState(editShare?.title ?? '');
+    const [note, setNote] = useState(editShare?.note ?? '');
     const [error, setError] = useState(false);
     const [tooLarge, setTooLarge] = useState(false);
     const [pending, setPending] = useState(false);
     const [link, setLink] = useState('');
     const [expiresAt, setExpiresAt] = useState<string | null>(null);
     const [copied, setCopied] = useState(false);
-    const prepared = useRef<PreparedShare>();
+    const prepared = useRef<PreparedShare | PreparedShareUpdate>();
+    const editRecovery = useRef<ShareRecoveryPlaintext>();
     const operation = useRef<{ id: string; operationId: string }>();
     const busy = useRef(false);
     const alive = useRef(true);
 
-    const load = async (pageCursor?: string) => {
+    const load = async (pageCursor?: string, includeEditSelection = false) => {
         if (busy.current) return;
         busy.current = true;
         setLoading(true);
         setError(false);
         try {
             const wallet = shareWallet(await walletRef.current());
+            const editRows: CredentialChoice[] = [];
+            if (includeEditSelection && editShare) {
+                const recovery = await readShareRecovery(wallet, editShare);
+                editRecovery.current = recovery;
+                const refs = [...recovery.selection]
+                    .sort((a, b) => a.order - b.order)
+                    .map(item => item.ref);
+                for (const uri of refs) {
+                    try {
+                        editRows.push({
+                            uri,
+                            credential: (await wallet.read.get(uri)) as VC | undefined,
+                        });
+                    } catch {
+                        editRows.push({ uri });
+                    }
+                }
+                if (alive.current) setSelected(refs);
+            }
             const page = await wallet.index.LearnCloud.getPage(undefined, {
                 cursor: pageCursor,
                 limit: 30,
@@ -93,7 +128,7 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
             }
             if (!alive.current) return;
             setChoices(previous => [
-                ...new Map([...previous, ...rows].map(row => [row.uri, row])).values(),
+                ...new Map([...previous, ...editRows, ...rows].map(row => [row.uri, row])).values(),
             ]);
             setCursor(page.cursor);
             setHasMore(page.hasMore);
@@ -135,11 +170,11 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
     useEffect(() => {
         alive.current = true;
         enterSharePrivacy();
-        void load();
+        void load(undefined, Boolean(editShare));
         return () => {
             alive.current = false;
         };
-    }, []);
+    }, [editShare?.id]);
 
     const create = async () => {
         if (busy.current) return;
@@ -149,13 +184,29 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
         setTooLarge(false);
         try {
             const wallet = shareWallet(await walletRef.current());
-            if (!prepared.current)
-                prepared.current = await prepareShare(wallet, selected, title, note);
+            if (!prepared.current) {
+                prepared.current = editShare
+                    ? await prepareShareUpdate(
+                          wallet,
+                          editShare,
+                          editRecovery.current ?? (await readShareRecovery(wallet, editShare)),
+                          selected,
+                          title,
+                          note
+                      )
+                    : await prepareShare(wallet, selected, title, note);
+            }
             const currentWallet = shareWallet(await walletRef.current());
             if (prepared.current.ownerDid !== currentWallet.id.did()) throw new Error('identity');
             const result = operation.current
                 ? await currentWallet.invoke.retryShareLinkOperation(operation.current)
-                : await currentWallet.invoke.createShareLink(prepared.current.input);
+                : editShare
+                  ? await currentWallet.invoke.updateShareLink(
+                        (prepared.current as PreparedShareUpdate).input
+                    )
+                  : await currentWallet.invoke.createShareLink(
+                        (prepared.current as PreparedShare).input
+                    );
             if (!alive.current) return;
             if (result.status === 'pending') {
                 operation.current = { id: result.id, operationId: result.operationId };
@@ -167,6 +218,7 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
             setLink(buildShareLinkUrl(host, prepared.current.input.id, prepared.current.key));
             setExpiresAt(result.share.expiresAt);
             setStep('done');
+            await onComplete?.();
         } catch (cause) {
             if (alive.current) {
                 setError(true);
@@ -231,14 +283,22 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
                         </p>
                         <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">
                             {step === 'choose'
-                                ? m['shareLinks.choose']()
+                                ? editShare
+                                    ? m['shareLinks.updateChoose']()
+                                    : m['shareLinks.choose']()
                                 : step === 'details'
-                                  ? m['shareLinks.details']()
-                                  : m['shareLinks.done']()}
+                                  ? editShare
+                                      ? m['shareLinks.updateDetails']()
+                                      : m['shareLinks.details']()
+                                  : editShare
+                                    ? m['shareLinks.updated']()
+                                    : m['shareLinks.done']()}
                         </h1>
                         <p className="text-sm text-grayscale-600 leading-relaxed mt-3">
                             {step === 'choose'
-                                ? m['shareLinks.chooseHint']()
+                                ? editShare
+                                    ? m['shareLinks.updateChooseHint']()
+                                    : m['shareLinks.chooseHint']()
                                 : step === 'details'
                                   ? m['shareLinks.detailsHint']()
                                   : m['shareLinks.linkHint']()}
@@ -479,18 +539,31 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
                             onClick={() => void create()}
                         >
                             {loading ? (
-                                <Busy>{m['shareLinks.creating']()}</Busy>
+                                <Busy>
+                                    {editShare
+                                        ? m['shareLinks.updating']()
+                                        : m['shareLinks.creating']()}
+                                </Busy>
                             ) : locked ? (
                                 m['shareLinks.checkAgain']()
+                            ) : editShare ? (
+                                m['shareLinks.update']()
                             ) : (
                                 m['shareLinks.create']()
                             )}
                         </button>
                     )}
                     {step === 'done' && (
-                        <button className={secondary} onClick={onDismiss}>
-                            {m['shareLinks.finish']()}
-                        </button>
+                        <div className="flex flex-wrap justify-end gap-3">
+                            {onManage && (
+                                <button className={primary} onClick={onManage}>
+                                    {m['shareLinks.manage']()}
+                                </button>
+                            )}
+                            <button className={secondary} onClick={onDismiss}>
+                                {m['shareLinks.finish']()}
+                            </button>
+                        </div>
                     )}
                 </div>
             </footer>
