@@ -1,14 +1,20 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from 'vitest';
-import type { VC } from '@learncard/types';
+import type { VC, VerificationCheck } from '@learncard/types';
 import { decryptSharePayload } from 'learn-card-base/helpers/share-links';
 import {
+    classifySharePublication,
+    createVerificationBudget,
+    mapWithConcurrency,
     prepareShare,
     prepareShareUpdate,
     proofState,
     readShareAddress,
+    resolveExpiryIso,
+    shareLinkHost,
     shareWallet,
     verifyCredentialTree,
+    verifySharedPresentation,
 } from './shareLinkFlow';
 
 export const fixtureCredential: VC = {
@@ -44,6 +50,9 @@ const mockWallet = () =>
             createDagJwe: vi.fn().mockResolvedValue(jwe),
             decryptDagJwe: vi.fn(),
             verifyCredential: vi
+                .fn()
+                .mockResolvedValue({ checks: ['proof'], warnings: [], errors: [] }),
+            verifyPresentation: vi
                 .fn()
                 .mockResolvedValue({ checks: ['proof'], warnings: [], errors: [] }),
         },
@@ -189,24 +198,210 @@ describe('recipient validation', () => {
             .mockResolvedValueOnce({ checks: ['proof'], warnings: [], errors: [] })
             .mockResolvedValueOnce({ checks: [], warnings: [], errors: ['bad'] });
         expect(
-            await verifyCredentialTree(wallet, {
-                ...fixtureCredential,
-                credentialSubject: { verifiableCredential: [fixtureCredential] },
-            })
+            await verifyCredentialTree(
+                wallet,
+                {
+                    ...fixtureCredential,
+                    credentialSubject: { verifiableCredential: [fixtureCredential] },
+                },
+                createVerificationBudget()
+            )
         ).toBe('failed');
         expect(wallet.invoke.verifyCredential).toHaveBeenCalledTimes(2);
     });
 });
 
-it('finishes with could-not-check when an issuer never responds', async () => {
-    vi.useFakeTimers();
-    try {
+describe('shared verification budget', () => {
+    it('reports remaining time and expires at the deadline', () => {
+        let now = 1_000;
+        const budget = createVerificationBudget(500, () => now);
+        expect(budget.remaining()).toBe(500);
+        expect(budget.expired()).toBe(false);
+        now = 1_500;
+        expect(budget.remaining()).toBe(0);
+        expect(budget.expired()).toBe(true);
+    });
+    it('cancellation rejects its waiter and marks the pass expired', async () => {
+        const budget = createVerificationBudget();
+        const waiter = budget.whenCancelled().catch((error: Error) => error.message);
+        budget.cancel();
+        expect(budget.cancelled()).toBe(true);
+        expect(budget.expired()).toBe(true);
+        expect(await waiter).toBe('verification cancelled');
+    });
+    it('finishes with could-not-check when an issuer never responds', async () => {
+        vi.useFakeTimers();
+        try {
+            const wallet = mockWallet();
+            vi.mocked(wallet.invoke.verifyCredential).mockReturnValue(new Promise(() => {}));
+            const checking = verifyCredentialTree(
+                wallet,
+                fixtureCredential,
+                createVerificationBudget()
+            );
+            await vi.advanceTimersByTimeAsync(30_001);
+            expect(await checking).toBe('unavailable');
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+    it('bounds holder verification by the same budget', async () => {
+        vi.useFakeTimers();
+        try {
+            const wallet = mockWallet();
+            vi.mocked(wallet.invoke.verifyPresentation).mockReturnValue(new Promise(() => {}));
+            const checking = verifySharedPresentation(
+                wallet,
+                { presentation: fixtureCredential } as never,
+                createVerificationBudget()
+            );
+            await vi.advanceTimersByTimeAsync(30_001);
+            expect(await checking).toBe('unavailable');
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+    it('never reports an omitted nested check as verified', async () => {
+        vi.useFakeTimers();
+        try {
+            const wallet = mockWallet();
+            vi.mocked(wallet.invoke.verifyCredential)
+                .mockResolvedValueOnce({ checks: ['proof'], warnings: [], errors: [] })
+                .mockReturnValueOnce(new Promise(() => {}));
+            const checking = verifyCredentialTree(
+                wallet,
+                {
+                    ...fixtureCredential,
+                    credentialSubject: { verifiableCredential: [fixtureCredential] },
+                },
+                createVerificationBudget()
+            );
+            await vi.advanceTimersByTimeAsync(30_001);
+            expect(await checking).toBe('unavailable');
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+    it('stops scheduling new checks once the deadline has passed', async () => {
+        vi.useFakeTimers();
+        try {
+            const wallet = mockWallet();
+            vi.mocked(wallet.invoke.verifyCredential).mockReturnValue(new Promise(() => {}));
+            const budget = createVerificationBudget();
+            const first = verifyCredentialTree(wallet, fixtureCredential, budget);
+            await vi.advanceTimersByTimeAsync(30_001);
+            expect(await first).toBe('unavailable');
+            const calls = vi.mocked(wallet.invoke.verifyCredential).mock.calls.length;
+            expect(await verifyCredentialTree(wallet, fixtureCredential, budget)).toBe(
+                'unavailable'
+            );
+            expect(vi.mocked(wallet.invoke.verifyCredential).mock.calls.length).toBe(calls);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+    it('ignores a stale verified result after cancellation', async () => {
         const wallet = mockWallet();
-        vi.mocked(wallet.invoke.verifyCredential).mockReturnValue(new Promise(() => {}));
-        const checking = verifyCredentialTree(wallet, fixtureCredential);
-        await vi.advanceTimersByTimeAsync(30_001);
+        let resolveVerification: (result: VerificationCheck) => void = () => {};
+        vi.mocked(wallet.invoke.verifyCredential).mockReturnValueOnce(
+            new Promise<VerificationCheck>(resolve => {
+                resolveVerification = resolve;
+            })
+        );
+        const budget = createVerificationBudget();
+        const checking = verifyCredentialTree(wallet, fixtureCredential, budget);
+        budget.cancel();
+        resolveVerification({ checks: ['proof'], warnings: [], errors: [] } as VerificationCheck);
         expect(await checking).toBe('unavailable');
-    } finally {
-        vi.useRealTimers();
-    }
+    });
+    it('stops a nested tree at cancellation without reporting verified', async () => {
+        const wallet = mockWallet();
+        let resolveNested: (result: VerificationCheck) => void = () => {};
+        vi.mocked(wallet.invoke.verifyCredential)
+            .mockResolvedValueOnce({ checks: ['proof'], warnings: [], errors: [] })
+            .mockReturnValueOnce(
+                new Promise<VerificationCheck>(resolve => {
+                    resolveNested = resolve;
+                })
+            );
+        const budget = createVerificationBudget();
+        const checking = verifyCredentialTree(
+            wallet,
+            {
+                ...fixtureCredential,
+                credentialSubject: { verifiableCredential: [fixtureCredential] },
+            },
+            budget
+        );
+        await Promise.resolve();
+        await Promise.resolve();
+        budget.cancel();
+        resolveNested({ checks: ['proof'], warnings: [], errors: [] } as VerificationCheck);
+        expect(await checking).toBe('unavailable');
+    });
+});
+
+describe('publication outcomes', () => {
+    const share = { status: 'active', expiresAt: null } as never;
+    it('maps every create and status tag without conflating them', () => {
+        expect(classifySharePublication({ status: 'completed', share } as never)).toMatchObject({
+            status: 'active',
+        });
+        expect(
+            classifySharePublication({ status: 'pending', id: 'share', operationId: 'op' } as never)
+        ).toMatchObject({ status: 'pending', operation: { id: 'share', operationId: 'op' } });
+        expect(
+            classifySharePublication({
+                status: 'found',
+                share: { status: 'stopped', expiresAt: null } as never,
+            } as never)
+        ).toMatchObject({ status: 'inactive' });
+        expect(classifySharePublication({ status: 'not_found', id: 'share' } as never)).toEqual({
+            status: 'abandoned',
+            id: 'share',
+        });
+    });
+});
+
+describe('bounded picker reads', () => {
+    it('keeps result order and never exceeds the concurrency cap', async () => {
+        let active = 0;
+        let peak = 0;
+        const seen: number[] = [];
+        const result = await mapWithConcurrency([0, 1, 2, 3, 4, 5, 6, 7], 4, async item => {
+            active += 1;
+            peak = Math.max(peak, active);
+            await new Promise(resolve => setTimeout(resolve, (7 - item) % 3));
+            seen.push(item);
+            active -= 1;
+            return item * 2;
+        });
+        expect(result).toEqual([0, 2, 4, 6, 8, 10, 12, 14]);
+        expect(peak).toBeLessThanOrEqual(4);
+        expect(active).toBe(0);
+    });
+});
+
+describe('link base and expiry', () => {
+    it('only accepts an https tenant base', () => {
+        expect(shareLinkHost('https://learncard.app')).toBe('learncard.app');
+        expect(shareLinkHost('http://localhost:3000')).toBeUndefined();
+        expect(shareLinkHost('not a url')).toBeUndefined();
+    });
+    it('pins 7/30/365/never and defaults conservatively', () => {
+        const now = Date.parse('2026-01-01T00:00:00.000Z');
+        expect(resolveExpiryIso('never', now)).toBeNull();
+        expect(resolveExpiryIso('7', now)).toBe('2026-01-08T00:00:00.000Z');
+        expect(resolveExpiryIso('30', now)).toBe('2026-01-31T00:00:00.000Z');
+        expect(resolveExpiryIso('365', now)).toBe('2027-01-01T00:00:00.000Z');
+    });
+    it('passes an explicit expiry (and null) into the create input', async () => {
+        const pinned = '2026-02-01T00:00:00.000Z';
+        const withExpiry = await prepareShare(mockWallet(), ['source'], 'Title', '', pinned);
+        expect(withExpiry.input.expiresAt).toBe(pinned);
+        const never = await prepareShare(mockWallet(), ['source'], 'Title', '', null);
+        expect(never.input.expiresAt).toBeNull();
+        const omitted = await prepareShare(mockWallet(), ['source'], 'Title', '');
+        expect(omitted.input.expiresAt).toBeUndefined();
+    });
 });

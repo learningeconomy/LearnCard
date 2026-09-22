@@ -1,4 +1,4 @@
-import { enterSharePrivacy } from '../components/share-links/sharePrivacy';
+import { enterSharePrivacy, isShareViewerPath } from '../components/share-links/sharePrivacy';
 import { useCallback, useMemo } from 'react';
 import { useHistory } from 'react-router-dom';
 import type { VC } from '@learncard/types';
@@ -143,7 +143,7 @@ export const useClaimInputRouter = ({
         ): Promise<ClaimRouteResult> => {
             if (isTenantHttpsUrl(input, parserConfig)) {
                 const incoming = new URL(input);
-                if (/^\/s(?:\/|$)/.test(incoming.pathname)) {
+                if (isShareViewerPath(incoming.pathname)) {
                     enterSharePrivacy();
                     history.push(incoming.pathname + incoming.hash);
                     return {

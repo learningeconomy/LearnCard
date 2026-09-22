@@ -1,9 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import { IonIcon } from '@ionic/react';
 import {
+    addOutline,
+    calendarOutline,
     copyOutline,
     createOutline,
+    eyeOutline,
     qrCodeOutline,
+    refreshOutline,
     stopCircleOutline,
     timeOutline,
 } from 'ionicons/icons';
@@ -14,7 +18,7 @@ import * as m from '../../../paraglide/messages.js';
 import type { DataSharingSharedLinksViewModel, SharedLinkFilter } from '../DataSharingCenter.types';
 import GlassCard from './GlassCard';
 
-type RowPanel = 'qr' | 'expiry' | 'stop';
+type RowPanel = 'qr' | 'expiry' | 'update' | 'stop';
 
 export const getSharedLinkViewStatus = (
     share: Pick<ShareLink, 'status' | 'expiresAt'>,
@@ -43,6 +47,12 @@ const statusClass = (status: SharedLinkFilter): string =>
 
 const actionClass =
     'inline-flex items-center gap-1.5 px-3 py-2 rounded-[20px] border border-grayscale-300 text-xs font-medium text-grayscale-700 hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed';
+const primaryActionClass =
+    'inline-flex w-full items-center justify-center gap-2 rounded-[20px] bg-grayscale-900 px-4 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40';
+const secondaryActionClass =
+    'inline-flex w-full items-center justify-center gap-2 rounded-[20px] border border-grayscale-300 px-4 py-2.5 text-sm font-medium text-grayscale-700 transition-colors hover:bg-grayscale-10 disabled:cursor-not-allowed disabled:opacity-40';
+const textActionClass =
+    'inline-flex items-center gap-1.5 py-2 text-xs font-medium text-grayscale-600 transition-colors hover:text-grayscale-900 disabled:cursor-not-allowed disabled:opacity-40';
 
 const ShareLinkRow = ({ share, vm }: { share: ShareLink; vm: DataSharingSharedLinksViewModel }) => {
     const status = getSharedLinkViewStatus(share);
@@ -99,10 +109,6 @@ const ShareLinkRow = ({ share, vm }: { share: ShareLink; vm: DataSharingSharedLi
                         {m['dataShareCenter.shared.credentialCount']({
                             count: String(share.selectedCount),
                         })}
-                        {' · '}
-                        {m['dataShareCenter.shared.created']({
-                            date: new Date(share.createdAt).toLocaleDateString(),
-                        })}
                     </p>
                 </div>
                 <span
@@ -112,23 +118,32 @@ const ShareLinkRow = ({ share, vm }: { share: ShareLink; vm: DataSharingSharedLi
                 </span>
             </div>
 
-            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-grayscale-600">
+            <div className="mt-3 flex flex-wrap gap-2 text-xs text-grayscale-600">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-grayscale-100 px-2.5 py-1.5">
+                    <IonIcon icon={calendarOutline} />
+                    {m['dataShareCenter.shared.created']({
+                        date: new Date(share.createdAt).toLocaleDateString(),
+                    })}
+                </span>
                 {status === 'active' && share.expiresAt && (
-                    <span>
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-grayscale-100 px-2.5 py-1.5">
+                        <IonIcon icon={timeOutline} />
                         {m['dataShareCenter.shared.expires']({
                             date: new Date(share.expiresAt).toLocaleDateString(),
                         })}
                     </span>
                 )}
                 {status === 'expired' && share.expiresAt && (
-                    <span>
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1.5 text-amber-900">
+                        <IonIcon icon={timeOutline} />
                         {m['dataShareCenter.shared.expiredOn']({
                             date: new Date(share.expiresAt).toLocaleDateString(),
                         })}
                     </span>
                 )}
                 {vm.showViewStats && share.viewCount !== undefined && share.viewCount > 0 && (
-                    <span>
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-grayscale-100 px-2.5 py-1.5">
+                        <IonIcon icon={eyeOutline} />
                         {m['dataShareCenter.shared.viewed']({
                             count: String(share.viewCount),
                             date: share.lastViewedAt
@@ -138,41 +153,47 @@ const ShareLinkRow = ({ share, vm }: { share: ShareLink; vm: DataSharingSharedLi
                     </span>
                 )}
                 {vm.showViewStats && share.viewCount === 0 && (
-                    <span>{m['dataShareCenter.shared.notViewed']()}</span>
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-grayscale-100 px-2.5 py-1.5">
+                        <IonIcon icon={eyeOutline} />
+                        {m['dataShareCenter.shared.notViewed']()}
+                    </span>
                 )}
             </div>
 
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="mt-4 grid grid-cols-2 gap-2">
                 <button
-                    className={actionClass}
+                    className={primaryActionClass}
                     disabled={!canEdit || busy}
                     onClick={() => void vm.onCopy(share)}
                 >
                     <IonIcon icon={copyOutline} /> {m['dataShareCenter.shared.copy']()}
                 </button>
                 <button
-                    className={actionClass}
+                    className={secondaryActionClass}
                     disabled={!canEdit || busy}
                     onClick={() => void showQr()}
                 >
                     <IonIcon icon={qrCodeOutline} /> {m['dataShareCenter.shared.showQr']()}
                 </button>
+            </div>
+
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 border-t border-grayscale-100 pt-2">
                 <button
-                    className={actionClass}
+                    className={textActionClass}
                     disabled={!canEdit || busy}
                     onClick={() => setPanel(panel === 'expiry' ? null : 'expiry')}
                 >
                     <IonIcon icon={timeOutline} /> {m['dataShareCenter.shared.changeExpiry']()}
                 </button>
                 <button
-                    className={actionClass}
+                    className={textActionClass}
                     disabled={!canEdit || busy}
-                    onClick={() => vm.onUpdate(share)}
+                    onClick={() => setPanel(panel === 'update' ? null : 'update')}
                 >
                     <IonIcon icon={createOutline} /> {m['dataShareCenter.shared.update']()}
                 </button>
                 <button
-                    className={`${actionClass} text-red-700 border-red-100 hover:bg-red-50`}
+                    className={`${textActionClass} text-red-700 hover:text-red-700 sm:ml-auto`}
                     disabled={!canEdit || busy}
                     onClick={() => setPanel(panel === 'stop' ? null : 'stop')}
                 >
@@ -228,6 +249,24 @@ const ShareLinkRow = ({ share, vm }: { share: ShareLink; vm: DataSharingSharedLi
                                     {busy
                                         ? m['dataShareCenter.shared.saving']()
                                         : m['dataShareCenter.shared.saveExpiry']()}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                    {panel === 'update' && (
+                        <div className="space-y-3">
+                            <p className="text-sm text-grayscale-700 leading-relaxed">
+                                {m['dataShareCenter.shared.updateWarning']()}
+                            </p>
+                            <div className="flex flex-wrap justify-end gap-2">
+                                <button className={actionClass} onClick={() => setPanel(null)}>
+                                    {m['common.cancel']()}
+                                </button>
+                                <button
+                                    className="px-4 py-2 rounded-[20px] bg-grayscale-900 text-white text-xs font-medium"
+                                    onClick={() => vm.onUpdate(share)}
+                                >
+                                    {m['dataShareCenter.shared.continueUpdate']()}
                                 </button>
                             </div>
                         </div>
@@ -288,13 +327,25 @@ const SharedLinksSection: React.FC<{ vm: DataSharingSharedLinksViewModel; delay?
                         {m['dataShareCenter.shared.subtitle']()}
                     </p>
                 </div>
-                <button
-                    className="text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors"
-                    disabled={vm.isLoading}
-                    onClick={() => void vm.onRefresh()}
-                >
-                    {m['dataShareCenter.shared.refresh']()}
-                </button>
+                <div className="flex shrink-0 items-center gap-2">
+                    <button
+                        aria-label={m['dataShareCenter.shared.refresh']()}
+                        className="inline-flex items-center gap-1.5 rounded-[20px] border border-grayscale-300 bg-white px-3 py-2 text-xs font-medium text-grayscale-700 transition-colors hover:bg-grayscale-10 disabled:opacity-40"
+                        disabled={vm.isLoading}
+                        onClick={() => void vm.onRefresh()}
+                    >
+                        <IonIcon icon={refreshOutline} />
+                        <span className="hidden sm:inline">
+                            {m['dataShareCenter.shared.refresh']()}
+                        </span>
+                    </button>
+                    <button
+                        className="inline-flex items-center gap-1.5 rounded-[20px] bg-grayscale-900 px-3 py-2 text-xs font-medium text-white transition-opacity hover:opacity-90"
+                        onClick={vm.onOpenPassport}
+                    >
+                        <IonIcon icon={addOutline} /> {m['dataShareCenter.shared.newShare']()}
+                    </button>
+                </div>
             </div>
 
             <div className="mb-3 flex flex-wrap gap-2" role="group">

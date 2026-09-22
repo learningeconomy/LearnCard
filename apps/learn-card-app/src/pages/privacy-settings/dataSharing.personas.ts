@@ -1,10 +1,15 @@
-import { AllowConnectionRequestsEnum, ProfileVisibilityEnum } from '@learncard/types';
+import {
+    AllowConnectionRequestsEnum,
+    ProfileVisibilityEnum,
+    type ShareLink,
+} from '@learncard/types';
 
 import type { ConsentedContract } from '../../components/data-sharing/consentSummary';
 import type {
     DataSharingCenterViewModel,
     DataSharingDiagnosticsViewModel,
     DataSharingProfileViewModel,
+    DataSharingSharedLinksViewModel,
 } from './DataSharingCenter.types';
 
 const noop = () => undefined;
@@ -150,6 +155,73 @@ const baseAi = {
     onRetryConsent: noopToggle,
 };
 
+const makeShare = (overrides: Partial<ShareLink>): ShareLink =>
+    ({
+        id: 'AAAAAAAAAAAAAAAAAAAAAA',
+        title: 'Career highlights',
+        note: 'Selected credentials for applications',
+        selectedCount: 4,
+        version: 2,
+        contentVersion: 1,
+        status: 'active',
+        contentState: 'finalized',
+        createdAt: '2026-09-12T14:30:00.000Z',
+        updatedAt: '2026-09-12T14:30:00.000Z',
+        expiresAt: '2027-09-12T14:30:00.000Z',
+        stoppedAt: null,
+        viewCount: 12,
+        lastViewedAt: '2026-09-21T18:15:00.000Z',
+        minorPolicy: {
+            isMinor: false,
+            policyResolved: true,
+            defaultExpiryDays: 365,
+            viewCountingEnabled: true,
+        },
+        ...overrides,
+    }) as ShareLink;
+
+const sharedLinks: DataSharingSharedLinksViewModel = {
+    records: [
+        makeShare({}),
+        makeShare({
+            id: 'BBBBBBBBBBBBBBBBBBBBBB',
+            title: 'Volunteer credentials',
+            note: null,
+            selectedCount: 2,
+            version: 1,
+            createdAt: '2026-09-20T09:00:00.000Z',
+            updatedAt: '2026-09-20T09:00:00.000Z',
+            expiresAt: null,
+            viewCount: 0,
+            lastViewedAt: null,
+        }),
+        makeShare({
+            id: 'CCCCCCCCCCCCCCCCCCCCCC',
+            title: 'Spring internship application',
+            status: 'stopped',
+            stoppedAt: '2026-09-18T12:00:00.000Z',
+            expiresAt: null,
+        }),
+    ],
+    filter: 'active',
+    isLoading: false,
+    isLoadingMore: false,
+    hasMore: false,
+    error: false,
+    busyId: null,
+    showViewStats: true,
+    onFilterChange: noop,
+    onRefresh: async () => undefined,
+    onLoadMore: async () => undefined,
+    onCopy: async () => undefined,
+    onGetPrivateUrl: async () =>
+        'https://learncard.app/s/AAAAAAAAAAAAAAAAAAAAAA#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    onChangeExpiry: async () => undefined,
+    onStop: async () => undefined,
+    onUpdate: noop,
+    onOpenPassport: noop,
+};
+
 export const DATA_SHARING_PERSONAS: Record<string, DataSharingCenterViewModel> = {
     'Active learner': {
         isLoading: false,
@@ -159,6 +231,16 @@ export const DATA_SHARING_PERSONAS: Record<string, DataSharingCenterViewModel> =
         ai: baseAi,
         profile: baseProfile,
         diagnostics: baseDiagnostics,
+    },
+    'Active learner · shared links': {
+        isLoading: false,
+        isMinor: false,
+        contracts: FEW_CONTRACTS,
+        onContractsUpdate: noop,
+        ai: baseAi,
+        profile: baseProfile,
+        diagnostics: baseDiagnostics,
+        shared: sharedLinks,
     },
     'Nothing shared': {
         isLoading: false,

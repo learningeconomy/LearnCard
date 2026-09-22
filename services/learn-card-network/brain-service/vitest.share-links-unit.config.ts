@@ -7,21 +7,12 @@ const brainServicePreset = {
     plugins: [tsconfigPaths({ root: '../../' })],
 };
 
-/**
- * Isolated, DB-free unit config for the LC-2187 owner share-link policy
- * decision table, route boundary, lazy initialization and coordinator
- * intent-hash/default-expiry regressions.
- */
+// DB-free share-link tests, including real tRPC and HTTP adapter boundaries.
 export default createVitestConfig(brainServicePreset, {
     test: {
         include: [
-            'test/share-link-policy.unit.spec.ts',
-            'test/share-link-owner-policy.unit.spec.ts',
-            'test/share-link-owner-runtime.unit.spec.ts',
-            'test/share-link-owner-route.unit.spec.ts',
-            'test/share-link-list-cursor.unit.spec.ts',
-            'test/share-link-public-config.unit.spec.ts',
-            'test/share-link-public-route.unit.spec.ts',
+            'test/share-link-*.unit.spec.ts',
+            'test/share-content-client.*.spec.ts',
             'test/openapi.spec.ts',
         ],
         env: {

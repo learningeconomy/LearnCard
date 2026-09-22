@@ -1,24 +1,32 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { IonIcon, IonPage, IonHeader, IonToolbar, IonContent } from '@ionic/react';
 import {
-    alertCircleOutline,
-    checkmarkCircleOutline,
+    checkmarkOutline,
+    copyOutline,
     documentTextOutline,
+    downloadOutline,
     lockClosedOutline,
 } from 'ionicons/icons';
+import { Clipboard } from '@capacitor/clipboard';
 import type { ShareLinkPublicState, SharePayload } from '@learncard/types';
 import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
-import { decryptSharePayload, validateShareManifest } from 'learn-card-base/helpers/share-links';
+import {
+    buildShareLinkUrl,
+    decryptSharePayload,
+    validateShareManifest,
+} from 'learn-card-base/helpers/share-links';
 import * as m from '../../paraglide/messages.js';
 import {
-    credentialText,
+    createVerificationBudget,
     readShareAddress,
     shareWallet,
     verifyCredentialTree,
     verifySharedPresentation,
     type ProofState,
 } from './shareLinkFlow';
+import { ProofBadge, ShareLinkPreview } from './ShareLinkPreview';
+import { downloadSharePresentation } from './shareDownload';
 import { enterSharePrivacy } from './sharePrivacy';
 
 type Ready = {
@@ -28,28 +36,9 @@ type Ready = {
 };
 type ViewState =
     'loading' | 'incomplete' | 'expired' | 'stopped' | 'not_found' | 'error' | 'corrupt' | 'ready';
-const proofLabel = (state: ProofState) =>
-    ({
-        checking: m['shareLinks.checking'](),
-        verified: m['shareLinks.verified'](),
-        failed: m['shareLinks.failed'](),
-        unavailable: m['shareLinks.unavailable'](),
-    })[state];
-const ProofBadge = ({ state }: { state: ProofState }) => (
-    <span
-        className={`inline-flex items-center gap-1.5 text-xs font-medium ${state === 'verified' ? 'text-emerald-700' : state === 'failed' ? 'text-red-700' : 'text-grayscale-600'}`}
-    >
-        {state === 'checking' ? (
-            <span
-                aria-hidden
-                className="h-3 w-3 rounded-full border-2 border-current border-t-transparent animate-spin"
-            />
-        ) : (
-            <IonIcon icon={state === 'verified' ? checkmarkCircleOutline : alertCircleOutline} />
-        )}
-        {proofLabel(state)}
-    </span>
-);
+
+const secondaryButton =
+    'inline-flex items-center gap-2 px-5 py-3 rounded-[20px] border border-grayscale-300 text-grayscale-700 text-sm font-medium hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed';
 
 const ShareLinkViewer = () => {
     const { id } = useParams<{ id: string }>();
@@ -59,20 +48,40 @@ const ShareLinkViewer = () => {
     const [attempt, setAttempt] = useState(0);
     const [proofs, setProofs] = useState<ProofState[]>([]);
     const [holder, setHolder] = useState<ProofState>('checking');
+    const [link, setLink] = useState('');
+    const [copyState, setCopyState] = useState<'idle' | 'copying' | 'copied'>('idle');
+    const [downloading, setDownloading] = useState(false);
+    const [actionError, setActionError] = useState<'copy' | 'download'>();
     const visible = useRef<HTMLDivElement>(null);
     const acknowledged = useRef(new Set<string>());
 
     useEffect(() => {
         enterSharePrivacy();
         let cancelled = false;
+        // One budget bounds the holder proof plus every credential/endorsement
+        // check; cancelling on unmount/retry stops any further checks.
+        let budget: ReturnType<typeof createVerificationBudget> | undefined;
         setReady(undefined);
         setState('loading');
         setProofs([]);
         setHolder('checking');
+        setLink('');
+        setCopyState('idle');
+        setActionError(undefined);
         const address = readShareAddress(id, hash);
         if (!address) {
             setState('incomplete');
-            return;
+            return () => {
+                cancelled = true;
+                budget?.cancel();
+            };
+        }
+        try {
+            // Rebuild the full private link (fragment included) only for a
+            // deliberate copy gesture; it is never rendered or logged.
+            setLink(buildShareLinkUrl(window.location.host, id, address.key));
+        } catch {
+            setLink('');
         }
         const load = async () => {
             try {
@@ -106,26 +115,30 @@ const ShareLinkViewer = () => {
                         throw new Error('manifest');
                     if (cancelled) return;
                     const payload = validated.manifest;
+                    const members = payload.presentation.verifiableCredential;
+                    budget = createVerificationBudget();
                     setReady({ payload, metadata, receipt: content.receipt });
-                    setProofs(payload.presentation.verifiableCredential.map(() => 'checking'));
+                    setProofs(members.map(() => 'checking'));
                     setState('ready');
-                    void verifySharedPresentation(wallet, payload).then(result => {
+                    void verifySharedPresentation(wallet, payload, budget).then(result => {
                         if (!cancelled) setHolder(result);
                     });
                     // Bounded sequential checks avoid flooding issuer/status endpoints.
-                    for (
-                        let index = 0;
-                        index < payload.presentation.verifiableCredential.length && !cancelled;
-                        index++
-                    ) {
-                        const result = await verifyCredentialTree(
-                            wallet,
-                            payload.presentation.verifiableCredential[index]
+                    // The shared budget (not the wallet call) decides when to stop; a
+                    // late result from an already-cancelled pass is ignored.
+                    for (let index = 0; index < members.length; index++) {
+                        if (cancelled || budget.expired()) {
+                            if (!cancelled)
+                                setProofs(previous =>
+                                    previous.map((value, i) => (i >= index ? 'unavailable' : value))
+                                );
+                            break;
+                        }
+                        const result = await verifyCredentialTree(wallet, members[index], budget);
+                        if (cancelled) break;
+                        setProofs(previous =>
+                            previous.map((value, i) => (i === index ? result : value))
                         );
-                        if (!cancelled)
-                            setProofs(previous =>
-                                previous.map((value, i) => (i === index ? result : value))
-                            );
                     }
                 } catch {
                     if (!cancelled) setState('corrupt');
@@ -137,23 +150,25 @@ const ShareLinkViewer = () => {
         void load();
         return () => {
             cancelled = true;
+            budget?.cancel();
         };
     }, [id, hash, attempt]);
 
     useEffect(() => {
         if (state !== 'ready' || !ready || !visible.current) return;
         const receipt = ready.receipt;
+        let disposed = false;
+        let pending = false;
         let frame = 0;
         let intersecting = false;
-        const acknowledge = () => {
-            if (
-                !intersecting ||
-                document.visibilityState !== 'visible' ||
-                acknowledged.current.has(receipt)
-            )
-                return;
+        const schedule = () => {
+            if (disposed || pending || !intersecting) return;
+            if (document.visibilityState !== 'visible' || acknowledged.current.has(receipt)) return;
+            pending = true;
             frame = requestAnimationFrame(() => {
+                pending = false;
                 if (
+                    disposed ||
                     !intersecting ||
                     document.visibilityState !== 'visible' ||
                     acknowledged.current.has(receipt)
@@ -161,7 +176,9 @@ const ShareLinkViewer = () => {
                     return;
                 acknowledged.current.add(receipt);
                 void getBespokeLearnCard('a')
-                    .then(wallet => wallet.invoke.acknowledgeShareLinkView(receipt))
+                    .then(wallet => {
+                        if (!disposed) return wallet.invoke.acknowledgeShareLinkView(receipt);
+                    })
                     .catch(() => {
                         // No new receipt or content fetch on an acknowledgement failure.
                     });
@@ -169,16 +186,53 @@ const ShareLinkViewer = () => {
         };
         const observer = new IntersectionObserver(entries => {
             intersecting = entries.some(entry => entry.isIntersecting);
-            acknowledge();
+            schedule();
         });
         observer.observe(visible.current);
-        document.addEventListener('visibilitychange', acknowledge);
+        document.addEventListener('visibilitychange', schedule);
         return () => {
+            disposed = true;
             observer.disconnect();
-            cancelAnimationFrame(frame);
-            document.removeEventListener('visibilitychange', acknowledge);
+            if (frame) cancelAnimationFrame(frame);
+            frame = 0;
+            document.removeEventListener('visibilitychange', schedule);
         };
     }, [ready, state]);
+
+    const proofRecord = useMemo(
+        () =>
+            Object.fromEntries(proofs.map((value, index) => [index, value])) as Record<
+                number,
+                ProofState
+            >,
+        [proofs]
+    );
+
+    const copyLink = async () => {
+        if (!link || copyState === 'copying') return;
+        setCopyState('copying');
+        setActionError(undefined);
+        try {
+            await Clipboard.write({ string: link });
+            setCopyState('copied');
+        } catch {
+            setCopyState('idle');
+            setActionError('copy');
+        }
+    };
+
+    const download = () => {
+        if (!ready || downloading) return;
+        setDownloading(true);
+        setActionError(undefined);
+        try {
+            downloadSharePresentation(ready.payload, ready.metadata.title);
+        } catch {
+            setActionError('download');
+        } finally {
+            setDownloading(false);
+        }
+    };
 
     const stateCopy = {
         loading: [m['shareLinks.opening'](), m['shareLinks.openingHint']()],
@@ -239,125 +293,72 @@ const ShareLinkViewer = () => {
                             </section>
                         ) : (
                             <>
-                                <section className="bg-white rounded-[20px] p-6 md:p-8 space-y-4">
-                                    <p className="text-xs text-grayscale-500">
-                                        {m['shareLinks.sharedBy']({
-                                            name: ready.metadata.sharer.displayName,
-                                        })}
+                                <div ref={visible}>
+                                    <ShareLinkPreview
+                                        payload={ready.payload}
+                                        title={ready.metadata.title}
+                                        note={ready.metadata.note}
+                                        sharerName={ready.metadata.sharer.displayName}
+                                        expiresAt={ready.metadata.expiresAt}
+                                        proofs={proofRecord}
+                                        showOriginal
+                                        summaryExtra={
+                                            <div className="pt-4 border-t border-grayscale-100 space-y-2">
+                                                <p className="text-xs font-medium text-grayscale-700">
+                                                    {m['shareLinks.presentationProof']()}
+                                                </p>
+                                                <ProofBadge state={holder} />
+                                                <p className="text-xs text-grayscale-500 leading-relaxed">
+                                                    {m['shareLinks.proofHint']()}
+                                                </p>
+                                            </div>
+                                        }
+                                    />
+                                </div>
+                                <section className="bg-white rounded-[20px] p-6 md:p-8 space-y-3">
+                                    <p className="text-xs text-grayscale-500 leading-relaxed">
+                                        {m['shareLinks.downloadHint']()}
                                     </p>
-                                    <h1 className="text-2xl md:text-3xl font-semibold break-words">
-                                        {ready.metadata.title}
-                                    </h1>
-                                    {ready.metadata.note && (
-                                        <p className="text-sm text-grayscale-600 leading-relaxed whitespace-pre-wrap break-words">
-                                            {ready.metadata.note}
+                                    <div className="flex flex-wrap gap-3">
+                                        <button
+                                            type="button"
+                                            className={secondaryButton}
+                                            disabled={!link || copyState === 'copying'}
+                                            onClick={() => void copyLink()}
+                                        >
+                                            <IonIcon
+                                                icon={
+                                                    copyState === 'copied'
+                                                        ? checkmarkOutline
+                                                        : copyOutline
+                                                }
+                                            />
+                                            {copyState === 'copied'
+                                                ? m['shareLinks.copied']()
+                                                : copyState === 'copying'
+                                                  ? m['shareLinks.copying']()
+                                                  : m['shareLinks.copy']()}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className={secondaryButton}
+                                            disabled={downloading}
+                                            onClick={download}
+                                        >
+                                            <IonIcon icon={downloadOutline} />
+                                            {downloading
+                                                ? m['shareLinks.downloading']()
+                                                : m['shareLinks.download']()}
+                                        </button>
+                                    </div>
+                                    {actionError && (
+                                        <p role="alert" className="text-sm text-red-700">
+                                            {actionError === 'copy'
+                                                ? m['shareLinks.copyError']()
+                                                : m['shareLinks.downloadError']()}
                                         </p>
                                     )}
-                                    <div className="flex flex-wrap gap-3 text-xs text-grayscale-500">
-                                        <span>
-                                            {m['shareLinks.selected']({
-                                                count: String(ready.payload.selection.length),
-                                            })}
-                                        </span>
-                                        {ready.metadata.expiresAt && (
-                                            <span>
-                                                {m['shareLinks.expires']({
-                                                    date: new Date(
-                                                        ready.metadata.expiresAt
-                                                    ).toLocaleDateString(),
-                                                })}
-                                            </span>
-                                        )}
-                                    </div>
-                                    <div className="pt-4 border-t border-grayscale-100 space-y-2">
-                                        <p className="text-xs font-medium text-grayscale-700">
-                                            {m['shareLinks.presentationProof']()}
-                                        </p>
-                                        <ProofBadge state={holder} />
-                                        <p className="text-xs text-grayscale-500 leading-relaxed">
-                                            {m['shareLinks.proofHint']()}
-                                        </p>
-                                    </div>
                                 </section>
-                                <div ref={visible} className="space-y-4">
-                                    {ready.payload.selection.map(({ credentialIndex }, order) => {
-                                        const credential =
-                                            ready.payload.presentation.verifiableCredential[
-                                                credentialIndex
-                                            ];
-                                        const text = credentialText(credential);
-                                        const endorsements = ready.payload.endorsements.filter(
-                                            item => item.targetCredentialIndex === credentialIndex
-                                        );
-                                        return (
-                                            <article
-                                                key={credentialIndex}
-                                                className="bg-white rounded-[20px] p-6 md:p-8 space-y-4"
-                                            >
-                                                <div className="flex items-start gap-4">
-                                                    <span className="p-3 bg-grayscale-100 rounded-xl text-grayscale-600">
-                                                        <IonIcon
-                                                            icon={documentTextOutline}
-                                                            className="w-6 h-6"
-                                                        />
-                                                    </span>
-                                                    <div className="min-w-0 flex-1">
-                                                        <p className="text-xs text-grayscale-500 mb-1">
-                                                            {String(order + 1).padStart(2, '0')}
-                                                        </p>
-                                                        <h2 className="text-lg font-semibold break-words">
-                                                            {text.name ||
-                                                                m['shareLinks.credential']()}
-                                                        </h2>
-                                                        {text.issuer && (
-                                                            <p className="text-xs text-grayscale-600 mt-1 break-words">
-                                                                {text.issuer}
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                                {text.description && (
-                                                    <p className="text-sm text-grayscale-600 leading-relaxed whitespace-pre-wrap break-words">
-                                                        {text.description}
-                                                    </p>
-                                                )}
-                                                <div aria-live="polite">
-                                                    <ProofBadge
-                                                        state={
-                                                            proofs[credentialIndex] ?? 'checking'
-                                                        }
-                                                    />
-                                                </div>
-                                                {endorsements.length > 0 && (
-                                                    <div className="pt-4 border-t border-grayscale-100 space-y-2">
-                                                        <h3 className="text-xs font-medium text-grayscale-700">
-                                                            {m['shareLinks.endorsements']()}
-                                                        </h3>
-                                                        {endorsements.map(item => (
-                                                            <div key={item.credentialIndex}>
-                                                                <ProofBadge
-                                                                    state={
-                                                                        proofs[
-                                                                            item.credentialIndex
-                                                                        ] ?? 'checking'
-                                                                    }
-                                                                />
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                                <details className="text-xs text-grayscale-600">
-                                                    <summary className="cursor-pointer py-2">
-                                                        {m['shareLinks.original']()}
-                                                    </summary>
-                                                    <pre className="mt-2 p-4 bg-grayscale-100 rounded-xl overflow-auto max-h-80 text-xs whitespace-pre-wrap break-all">
-                                                        {JSON.stringify(credential, null, 2)}
-                                                    </pre>
-                                                </details>
-                                            </article>
-                                        );
-                                    })}
-                                </div>
                                 <p className="text-center text-xs text-grayscale-500 px-4 leading-relaxed">
                                     {m['shareLinks.recipientHint']()}
                                 </p>

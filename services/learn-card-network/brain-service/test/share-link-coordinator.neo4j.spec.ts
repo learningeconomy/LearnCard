@@ -40,6 +40,8 @@ import { ensureShareLinkConstraints } from '../src/models/share-link-constraints
  * NOT the reviewed C4 HTTP endpoint integration.
  */
 
+import { clearLifecycleGraph } from './helpers/share-link-fixtures';
+
 const NAMESPACE = 'test-namespace';
 const OWNER = 'owner-1';
 const LEASE_OWNER = 'coordinator-1';
@@ -223,14 +225,6 @@ const makeCoordinator = (
     });
 
 const context = { namespace: NAMESPACE, ownerProfileId: OWNER };
-
-const clearLifecycleGraph = async (): Promise<void> => {
-    await neogma.queryRunner.run(
-        `MATCH (n)
-         WHERE n:ShareLink OR n:ShareLinkReservation OR n:ShareLinkOperation OR n:ShareContentCleanupJob
-         DETACH DELETE n`
-    );
-};
 
 describe('share-link coordinator (real Neo4j, fake LearnCloud)', () => {
     beforeAll(async () => {

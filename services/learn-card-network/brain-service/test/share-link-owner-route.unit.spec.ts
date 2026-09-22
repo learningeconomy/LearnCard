@@ -1,3 +1,5 @@
+import { t, profileRoute, profileRouteWithoutInputCapture } from '../src/routes';
+import { getProfileByDid } from '@accesslayer/profile/read';
 import { randomUUID } from 'node:crypto';
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -202,6 +204,47 @@ beforeEach(() => {
     rateLimits.enforceRateLimits.mockReset();
     rateLimits.enforceRateLimits.mockResolvedValue(undefined);
     recoveryRunner.recoverShareLinkOperation.mockReset();
+});
+
+describe.each([
+    ['standard', profileRoute],
+    ['private input', profileRouteWithoutInputCapture],
+])('%s profile authentication chain', (_name, procedure) => {
+    const endpoint = t.router({
+        read: procedure
+            .meta({ requiredScope: AUTH_GRANT_SHARE_LINKS_READ_SCOPE })
+            .query(({ ctx }) => ctx.user.profile.profileId),
+    });
+    it.each([
+        [undefined, 'UNAUTHORIZED'],
+        [{ ...authenticatedUser, did: '' }, 'UNAUTHORIZED'],
+        [{ ...authenticatedUser, isChallengeValid: false }, 'UNAUTHORIZED'],
+        [{ ...authenticatedUser, scope: AUTH_GRANT_SHARE_LINKS_WRITE_SCOPE }, 'UNAUTHORIZED'],
+        [{ ...authenticatedUser, scope: AUTH_GRANT_SHARE_LINKS_READ_SCOPE }, null],
+        [authenticatedUser, null],
+    ])('enforces caller %#', async (user, code) => {
+        const call = endpoint
+            .createCaller({
+                domain: 'network.example.com',
+                tenant: { id: 'default' },
+                user,
+            } as never)
+            .read();
+        if (code) await expect(call).rejects.toMatchObject({ code });
+        else await expect(call).resolves.toBe(OWNER_PROFILE.profileId);
+    });
+    it('rejects a DID with no profile', async () => {
+        vi.mocked(getProfileByDid).mockResolvedValueOnce(null);
+        await expect(
+            endpoint
+                .createCaller({
+                    domain: 'network.example.com',
+                    tenant: { id: 'default' },
+                    user: authenticatedUser,
+                } as never)
+                .read()
+        ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    });
 });
 
 describe('share-link owner route boundary', () => {

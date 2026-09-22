@@ -106,3 +106,5 @@ export const isAppDidWeb = (did?: string): boolean => {
     const LCN_APP_DID_WEB_REGEX = /^did:web:.*:app:([^:]+)$/;
     return LCN_APP_DID_WEB_REGEX.test(did);
 };
+
+export * from './share-content-canonical';

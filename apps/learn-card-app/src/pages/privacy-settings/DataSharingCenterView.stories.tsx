@@ -26,6 +26,10 @@ export const ActiveLearner: Story = {
     args: { vm: DATA_SHARING_PERSONAS['Active learner'] },
 };
 
+export const ActiveLearnerWithSharedLinks: Story = {
+    args: { vm: DATA_SHARING_PERSONAS['Active learner · shared links'] },
+};
+
 export const NothingShared: Story = {
     args: { vm: DATA_SHARING_PERSONAS['Nothing shared'] },
 };

@@ -6,7 +6,6 @@ import {
     UpdateShareLinkInputValidator,
     type CreateShareLinkInput,
     type UpdateShareLinkInput,
-    type ShareLink,
     type ShareRecoveryPlaintext,
     type SharePayload,
     type VC,
@@ -14,7 +13,9 @@ import {
     type UnsignedVP,
     type VerificationCheck,
     type ShareOwnerRecovery,
+    type ShareLink,
     type ShareLinkOwnerCommitOutput,
+    type ShareLinkOwnerStatusOutput,
     type ShareLinkOperationKeyInput,
     type ShareLinkPublicState,
     type ShareLinkPublicContentView,
@@ -65,7 +66,7 @@ export interface ShareWallet {
         listShareLinks(input: ListShareLinksInput): Promise<PaginatedShareLinks>;
         retryShareLinkOperation(
             input: ShareLinkOperationKeyInput
-        ): Promise<ShareLinkOwnerCommitOutput>;
+        ): Promise<ShareLinkOwnerStatusOutput>;
         resolveShareLink(id: string): Promise<ShareLinkPublicState>;
         getShareLinkContent(id: string): Promise<ShareLinkPublicContentView>;
         acknowledgeShareLinkView(receipt: string): Promise<{ ok: true }>;
@@ -75,13 +76,70 @@ export interface ShareWallet {
 }
 export const shareWallet = (wallet: unknown): ShareWallet => wallet as ShareWallet;
 export type CredentialChoice = { uri: string; credential?: VC };
-export type PreparedShare = { input: CreateShareLinkInput; key: string; ownerDid: string };
+export type PreparedShare = {
+    input: CreateShareLinkInput;
+    key: string;
+    ownerDid: string;
+    /** Exact manifest that was encrypted: the preview must render this, not a rebuild. */
+    payload: SharePayload;
+};
 export type PreparedShareUpdate = {
     input: UpdateShareLinkInput;
     key: string;
     ownerDid: string;
+    /** Exact manifest that was encrypted: the preview must render this, not a rebuild. */
+    payload: SharePayload;
 };
 export type ProofState = 'checking' | 'verified' | 'failed' | 'unavailable';
+
+/** Bounded, order-preserving fan-out so a picker never opens unbounded reads. */
+export const mapWithConcurrency = async <T, R>(
+    items: readonly T[],
+    limit: number,
+    worker: (item: T, index: number) => Promise<R>
+): Promise<R[]> => {
+    const results = new Array<R>(items.length);
+    let next = 0;
+    const run = async (): Promise<void> => {
+        while (next < items.length) {
+            const index = next++;
+            results[index] = await worker(items[index], index);
+        }
+    };
+    await Promise.all(Array.from({ length: Math.min(Math.max(limit, 1), items.length) }, run));
+    return results;
+};
+
+/**
+ * Derive the canonical share host from a tenant base URL. Non-HTTPS bases
+ * (e.g. a local `http://localhost:3000`) are rejected before any server state
+ * can be created, since `buildShareLinkUrl` would otherwise mint an
+ * unreachable `https://localhost:3000/...` link.
+ */
+export const shareLinkHost = (baseUrl: string): string | undefined => {
+    try {
+        const url = new URL(baseUrl);
+        if (url.protocol !== 'https:') return undefined;
+        return url.host || undefined;
+    } catch {
+        return undefined;
+    }
+};
+
+export type ExpiryChoice = '7' | '30' | '365' | 'never';
+export const EXPIRY_CHOICES: ExpiryChoice[] = ['7', '30', '365', 'never'];
+/** Conservative default for a production policy that has no verified age. */
+export const DEFAULT_EXPIRY_CHOICE: ExpiryChoice = '30';
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+export const expiryToDays = (choice: ExpiryChoice): number | null =>
+    choice === 'never' ? null : Number(choice);
+
+/** Absolute timestamp pinned once per prepared attempt; `null` means never. */
+export const resolveExpiryIso = (choice: ExpiryChoice, now: number = Date.now()): string | null => {
+    const days = expiryToDays(choice);
+    return days === null ? null : new Date(now + days * DAY_MS).toISOString();
+};
 
 export const readShareAddress = (id: string, hash: string) => {
     const key = hash.startsWith('#') ? hash.slice(1) : '';
@@ -192,7 +250,7 @@ const prepareEncryptedRevision = async (
         decrypt: value => wallet.invoke.decryptDagJwe(value),
     });
 
-    return { envelope, ownerEncryptedRecovery, ownerDid };
+    return { envelope, ownerEncryptedRecovery, ownerDid, payload };
 };
 
 export const readShareRecovery = async (
@@ -213,7 +271,8 @@ export const prepareShare = async (
     wallet: ShareWallet,
     refs: string[],
     title: string,
-    note: string
+    note: string,
+    expiresAt?: string | null
 ): Promise<PreparedShare> => {
     const profile = await wallet.invoke.getProfile();
     if (!profile) throw new Error('profile');
@@ -233,6 +292,7 @@ export const prepareShare = async (
         clientRequestId: crypto.randomUUID(),
         title: title.trim(),
         ...(note.trim() ? { note: note.trim() } : {}),
+        ...(expiresAt !== undefined ? { expiresAt } : {}),
         selectedCount: refs.length,
         contentVersion: 1,
         envelope: revision.envelope,
@@ -240,7 +300,7 @@ export const prepareShare = async (
     });
     if (new TextEncoder().encode(JSON.stringify(input)).byteLength > 1024 * 1024)
         throw new Error('size');
-    return { input, key, ownerDid: revision.ownerDid };
+    return { input, key, ownerDid: revision.ownerDid, payload: revision.payload };
 };
 
 /** Re-sign and replace a share's contents while preserving its permanent URL key. */
@@ -277,19 +337,87 @@ export const prepareShareUpdate = async (
     });
     if (new TextEncoder().encode(JSON.stringify(input)).byteLength > 1024 * 1024)
         throw new Error('size');
-    return { input, key: recovery.latest.key, ownerDid: revision.ownerDid };
+    return {
+        input,
+        key: recovery.latest.key,
+        ownerDid: revision.ownerDid,
+        payload: revision.payload,
+    };
 };
 
-/** Offline or unresponsive issuers must not leave a permanent checking badge. */
-const boundedVerification = async (
-    verification: Promise<VerificationCheck>
-): Promise<VerificationCheck> => {
+/**
+ * Shared wall-clock budget for the whole recipient verification pass: the holder
+ * presentation plus every selected credential and endorsement. One budget (not a
+ * per-check timeout) bounds total work, so a large-but-structurally-valid
+ * collection cannot multiply a per-check 30s wait across hundreds of members.
+ */
+export const VERIFICATION_TOTAL_BUDGET_MS = 30_000;
+
+export interface VerificationBudget {
+    /** Milliseconds left before the shared deadline; 0 once exhausted. */
+    remaining(): number;
+    /** True once the deadline passed or the pass was cancelled. */
+    expired(): boolean;
+    /** True only after {@link VerificationBudget.cancel}. */
+    cancelled(): boolean;
+    /** Cancel the pass; rejects {@link VerificationBudget.whenCancelled}. */
+    cancel(): void;
+    /** Rejects as soon as the budget is cancelled. */
+    whenCancelled(): Promise<never>;
+}
+
+/**
+ * Create the single budget shared by a verification pass. `now` is injectable so
+ * tests can advance the deadline deterministically without wall-clock waits.
+ */
+export const createVerificationBudget = (
+    totalMs: number = VERIFICATION_TOTAL_BUDGET_MS,
+    now: () => number = () => Date.now()
+): VerificationBudget => {
+    const deadline = now() + totalMs;
+    let cancelled = false;
+    let rejectCancelled: ((error: Error) => void) | undefined;
+    const cancellation = new Promise<never>((_, reject) => {
+        rejectCancelled = reject;
+    });
+    // Never surface an unhandled rejection if a caller stops racing the promise.
+    void cancellation.catch(() => {});
+    return {
+        remaining: () => Math.max(0, deadline - now()),
+        expired: () => cancelled || now() >= deadline,
+        cancelled: () => cancelled,
+        cancel: () => {
+            if (cancelled) return;
+            cancelled = true;
+            rejectCancelled?.(new Error('verification cancelled'));
+        },
+        whenCancelled: () => cancellation,
+    };
+};
+
+/**
+ * Bound a single wallet check by the shared budget. The injected wallet verify
+ * API has no abort signal, so the in-flight promise itself cannot be stopped;
+ * callers must ignore its late result. What is guaranteed here is that no check
+ * is scheduled once the budget is spent or cancelled, and a timed-out check
+ * resolves to `unavailable`, never to `verified`.
+ */
+const boundedVerification = async <T>(
+    verification: Promise<T>,
+    budget: VerificationBudget
+): Promise<T> => {
+    if (budget.expired()) throw new Error('verification budget exhausted');
+    const remaining = budget.remaining();
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
         return await Promise.race([
             verification,
+            budget.whenCancelled(),
             new Promise<never>((_, reject) => {
-                timer = setTimeout(() => reject(new Error('verification unavailable')), 30_000);
+                timer = setTimeout(
+                    () => reject(new Error('verification budget exhausted')),
+                    remaining
+                );
             }),
         ]);
     } finally {
@@ -304,50 +432,118 @@ export const proofState = (result: VerificationCheck): ProofState =>
           ? 'unavailable'
           : 'verified';
 
-/** Verify nested CLR members independently, without fetching unsigned display references. */
+interface CredentialTreeContext {
+    readonly states: ProofState[];
+    /** A check was skipped, cancelled or timed out, so the tree is not fully verified. */
+    incomplete: boolean;
+}
+
+/**
+ * Verify nested CLR members independently, without fetching unsigned display
+ * references. Any member that was not actually checked (budget spent/cancelled)
+ * marks the tree `incomplete`, so a partially checked tree can never be
+ * reported as fully verified.
+ */
+const verifyCredentialNode = async (
+    wallet: ShareWallet,
+    credential: VC,
+    budget: VerificationBudget,
+    context: CredentialTreeContext
+): Promise<void> => {
+    if (budget.expired()) {
+        context.incomplete = true;
+        return;
+    }
+    try {
+        context.states.push(
+            proofState(
+                await boundedVerification(wallet.invoke.verifyCredential(credential), budget)
+            )
+        );
+    } catch {
+        context.states.push('unavailable');
+    }
+    const visit = async (value: unknown): Promise<void> => {
+        if (!value || typeof value !== 'object') return;
+        for (const [key, child] of Object.entries(value)) {
+            if (budget.expired()) {
+                context.incomplete = true;
+                return;
+            }
+            if (key === 'verifiableCredential' && Array.isArray(child)) {
+                for (const nested of child) {
+                    if (budget.expired()) {
+                        context.incomplete = true;
+                        return;
+                    }
+                    await verifyCredentialNode(wallet, nested as VC, budget, context);
+                }
+            } else if (child && typeof child === 'object') await visit(child);
+        }
+    };
+    await visit(credential);
+};
+
 export const verifyCredentialTree = async (
     wallet: ShareWallet,
-    credential: VC
+    credential: VC,
+    budget: VerificationBudget
 ): Promise<ProofState> => {
+    const context: CredentialTreeContext = { states: [], incomplete: false };
     try {
-        const states = [
-            proofState(await boundedVerification(wallet.invoke.verifyCredential(credential))),
-        ];
-        const visit = async (value: unknown): Promise<void> => {
-            if (!value || typeof value !== 'object') return;
-            for (const [key, child] of Object.entries(value)) {
-                if (key === 'verifiableCredential' && Array.isArray(child)) {
-                    for (const nested of child)
-                        states.push(await verifyCredentialTree(wallet, nested as VC));
-                } else if (child && typeof child === 'object') await visit(child);
-            }
-        };
-        await visit(credential);
-        return states.includes('failed')
-            ? 'failed'
-            : states.includes('unavailable')
-              ? 'unavailable'
-              : 'verified';
+        await verifyCredentialNode(wallet, credential, budget, context);
     } catch {
         return 'unavailable';
     }
+    if (context.states.includes('failed')) return 'failed';
+    if (context.incomplete || context.states.includes('unavailable')) return 'unavailable';
+    return 'verified';
 };
 
 export const verifySharedPresentation = async (
     wallet: ShareWallet,
-    payload: SharePayload
+    payload: SharePayload,
+    budget: VerificationBudget
 ): Promise<ProofState> => {
+    if (budget.expired()) return 'unavailable';
     try {
         return proofState(
             await boundedVerification(
                 wallet.invoke.verifyPresentation(payload.presentation, {
                     proofPurpose: 'authentication',
-                })
+                }),
+                budget
             )
         );
     } catch {
         return 'unavailable';
     }
+};
+
+/**
+ * Normalize both create (`completed`/`pending`) and status
+ * (`found`/`pending`/`not_found`) responses so the UI never confuses a
+ * retryable pending operation with a completed share or a fresh attempt.
+ */
+export type SharePublicationOutcome =
+    | { status: 'active'; share: ShareLink }
+    | { status: 'inactive'; share: ShareLink }
+    | { status: 'pending'; operation: ShareLinkOperationKeyInput }
+    | { status: 'abandoned'; id: string };
+
+export const classifySharePublication = (
+    result: ShareLinkOwnerCommitOutput | ShareLinkOwnerStatusOutput
+): SharePublicationOutcome => {
+    if (result.status === 'pending') {
+        return {
+            status: 'pending',
+            operation: { id: result.id, operationId: result.operationId },
+        };
+    }
+    if (result.status === 'not_found') return { status: 'abandoned', id: result.id };
+    return result.share.status === 'active'
+        ? { status: 'active', share: result.share }
+        : { status: 'inactive', share: result.share };
 };
 
 export const credentialText = (

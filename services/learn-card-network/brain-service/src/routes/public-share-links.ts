@@ -17,6 +17,11 @@ import type { ShareLinkPolicyResolver } from '@helpers/share-link-policy/types';
 import { createShareLinkPolicyResolver } from '@helpers/share-link-policy/resolver';
 import type { ShareContentContentProjection } from '@helpers/share-content-client/types';
 import { createRetryableLazyInitializer } from '@helpers/share-link-owner/lazy-initializer';
+import {
+    createBoundedShareLinkDiagnosticReporter,
+    createShareLinkDependencyResolver,
+    SHARE_LINK_COMPOSITION_DIAGNOSTIC,
+} from '@helpers/share-link-owner/diagnostics';
 import { resolveShareLinkPublicApiConfig } from '@helpers/share-link-public/config';
 import type { ShareLinkPublicApiConfigResolution } from '@helpers/share-link-public/config';
 import type {
@@ -202,7 +207,7 @@ export const createPublicShareLinksRouter = (
                 } catch {
                     dependencies.reportFailure('resolve_rate_limit');
                     throw new TRPCError({
-                        code: 'TOO_MANY_REQUESTS' as 'BAD_REQUEST',
+                        code: 'TOO_MANY_REQUESTS',
                         message: 'rate limit exceeded',
                     });
                 }
@@ -537,9 +542,9 @@ export type PublicShareLinksRouter = ReturnType<typeof createPublicShareLinksRou
 
 /**
  * Lazy production composition. Config is resolved before any signer/graph/remote
- * import; a disabled or malformed configuration resolves to `null` and every
- * procedure answers without touching a repository, signer or remote client. A
- * failed build is not cached, so a later request retries.
+ * import; a disabled configuration is inert and silent, while malformed wiring
+ * emits a single sanitized diagnostic and still fails closed. A failed build is
+ * not cached, so a later request retries.
  */
 const initializeProductionDependencies =
     createRetryableLazyInitializer<PublicShareLinkRouterDependencies>(() =>
@@ -551,13 +556,17 @@ const initializeProductionDependencies =
         )
     );
 
-const getProductionDependencies = async (): Promise<PublicShareLinkRouterDependencies | null> => {
-    const config = resolveShareLinkPublicApiConfig(process.env as Record<string, unknown>);
-
-    if (config.status !== 'enabled') return null;
-
-    return initializeProductionDependencies();
-};
+export const getProductionDependencies =
+    createShareLinkDependencyResolver<PublicShareLinkRouterDependencies>({
+        resolveConfig: () =>
+            resolveShareLinkPublicApiConfig(process.env as Record<string, unknown>),
+        initializeDependencies: initializeProductionDependencies,
+        reportDiagnostic: createBoundedShareLinkDiagnosticReporter(),
+        configurationInvalidCategory:
+            SHARE_LINK_COMPOSITION_DIAGNOSTIC.PUBLIC_CONFIGURATION_INVALID,
+        initializationFailedCategory:
+            SHARE_LINK_COMPOSITION_DIAGNOSTIC.PUBLIC_INITIALIZATION_FAILED,
+    });
 
 const buildProductionDependencies = async (
     config: Extract<ShareLinkPublicApiConfigResolution, { status: 'enabled' }>

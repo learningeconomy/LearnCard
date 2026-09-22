@@ -17,16 +17,24 @@ import { buildShareLinkUrl, isShareLinkError } from 'learn-card-base/helpers/sha
 import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
 import * as m from '../../paraglide/messages.js';
 import {
+    classifySharePublication,
     credentialText,
+    DEFAULT_EXPIRY_CHOICE,
+    EXPIRY_CHOICES,
+    mapWithConcurrency,
     prepareShare,
     prepareShareUpdate,
     readShareRecovery,
+    resolveExpiryIso,
+    shareLinkHost,
     shareWallet,
     type CredentialChoice,
+    type ExpiryChoice,
     type PreparedShare,
     type PreparedShareUpdate,
+    type ShareWallet,
 } from './shareLinkFlow';
-import { enterSharePrivacy } from './sharePrivacy';
+import { ShareLinkPreview } from './ShareLinkPreview';
 
 export const primary =
     'px-5 py-3 rounded-[20px] bg-grayscale-900 text-white text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-emerald-500';
@@ -43,6 +51,9 @@ export const Busy = ({ children }: { children: React.ReactNode }) => (
         {children}
     </span>
 );
+
+/** Bounded read fan-out: never more than four LearnCloud reads at once. */
+const READ_CONCURRENCY = 4;
 
 type ShareLinkCreateProps = {
     onDismiss: () => void;
@@ -65,16 +76,19 @@ export const ShareLinkCreate = ({
     const [cursor, setCursor] = useState<string>();
     const [hasMore, setHasMore] = useState(true);
     const [loading, setLoading] = useState(false);
-    const [step, setStep] = useState<'choose' | 'details' | 'done'>('choose');
+    const [step, setStep] = useState<'choose' | 'details' | 'preview' | 'done'>('choose');
     const [search, setSearch] = useState('');
     const [title, setTitle] = useState(editShare?.title ?? '');
     const [note, setNote] = useState(editShare?.note ?? '');
     const [error, setError] = useState(false);
     const [tooLarge, setTooLarge] = useState(false);
+    const [unsupportedBase, setUnsupportedBase] = useState(false);
     const [pending, setPending] = useState(false);
     const [link, setLink] = useState('');
     const [expiresAt, setExpiresAt] = useState<string | null>(null);
+    const [expiryChoice, setExpiryChoice] = useState<ExpiryChoice>(DEFAULT_EXPIRY_CHOICE);
     const [copied, setCopied] = useState(false);
+    const [publicationStarted, setPublicationStarted] = useState(false);
     const prepared = useRef<PreparedShare | PreparedShareUpdate>();
     const editRecovery = useRef<ShareRecoveryPlaintext>();
     const operation = useRef<{ id: string; operationId: string }>();
@@ -113,22 +127,23 @@ export const ShareLinkCreate = ({
             });
             if (!page || (page.hasMore && (!page.cursor || page.cursor === pageCursor)))
                 throw new Error('page');
-            const rows: CredentialChoice[] = [];
-            for (const record of page.records) {
+            const rows = await mapWithConcurrency(page.records, READ_CONCURRENCY, async record => {
                 // Internal preference records are not learner credentials.
-                if (record.id?.startsWith('__verifiable_data_')) continue;
+                if (record.id?.startsWith('__verifiable_data_')) return undefined;
                 try {
-                    rows.push({
+                    return {
                         uri: record.uri,
                         credential: (await wallet.read.get(record.uri)) as VC | undefined,
-                    });
+                    } satisfies CredentialChoice;
                 } catch {
-                    rows.push({ uri: record.uri });
+                    return { uri: record.uri } satisfies CredentialChoice;
                 }
-            }
+            });
             if (!alive.current) return;
             setChoices(previous => [
-                ...new Map([...previous, ...editRows, ...rows].map(row => [row.uri, row])).values(),
+                ...new Map(
+                    [...previous, ...editRows, ...rows.filter(Boolean)].map(row => [row!.uri, row!])
+                ).values(),
             ]);
             setCursor(page.cursor);
             setHasMore(page.hasMore);
@@ -147,19 +162,21 @@ export const ShareLinkCreate = ({
         setTooLarge(false);
         try {
             const wallet = shareWallet(await walletRef.current());
-            const replacements = new Map<string, VC>();
-            for (const row of choices.filter(choice => !choice.credential)) {
+            const missing = choices.filter(choice => !choice.credential);
+            const replacements = await mapWithConcurrency(missing, READ_CONCURRENCY, async row => {
                 const credential = await wallet.read.get(row.uri);
                 if (!credential) throw new Error('credential');
-                replacements.set(row.uri, credential as VC);
-            }
-            if (alive.current)
+                return [row.uri, credential as VC] as const;
+            });
+            if (alive.current) {
+                const map = new Map(replacements);
                 setChoices(current =>
                     current.map(row => ({
                         ...row,
-                        credential: replacements.get(row.uri) ?? row.credential,
+                        credential: map.get(row.uri) ?? row.credential,
                     }))
                 );
+            }
         } catch {
             if (alive.current) setError(true);
         } finally {
@@ -169,56 +186,47 @@ export const ShareLinkCreate = ({
     };
     useEffect(() => {
         alive.current = true;
-        enterSharePrivacy();
+        // The masked surface and sanitized errors protect the draft without
+        // changing the signed-in session's telemetry preferences.
         void load(undefined, Boolean(editShare));
         return () => {
             alive.current = false;
         };
     }, [editShare?.id]);
 
-    const create = async () => {
+    /** A draft is only valid until any input that feeds it changes. */
+    const invalidateDraft = () => {
+        if (!publicationStarted) prepared.current = undefined;
+    };
+    const guardBase = (): string | undefined => {
+        const host = shareLinkHost(getAppBaseUrl());
+        setUnsupportedBase(!host);
+        if (!host) setError(true);
+        return host;
+    };
+
+    const prepareDraft = async () => {
         if (busy.current) return;
         busy.current = true;
         setLoading(true);
         setError(false);
         setTooLarge(false);
+        setUnsupportedBase(false);
         try {
+            if (!guardBase()) return;
             const wallet = shareWallet(await walletRef.current());
-            if (!prepared.current) {
-                prepared.current = editShare
-                    ? await prepareShareUpdate(
-                          wallet,
-                          editShare,
-                          editRecovery.current ?? (await readShareRecovery(wallet, editShare)),
-                          selected,
-                          title,
-                          note
-                      )
-                    : await prepareShare(wallet, selected, title, note);
-            }
-            const currentWallet = shareWallet(await walletRef.current());
-            if (prepared.current.ownerDid !== currentWallet.id.did()) throw new Error('identity');
-            const result = operation.current
-                ? await currentWallet.invoke.retryShareLinkOperation(operation.current)
-                : editShare
-                  ? await currentWallet.invoke.updateShareLink(
-                        (prepared.current as PreparedShareUpdate).input
-                    )
-                  : await currentWallet.invoke.createShareLink(
-                        (prepared.current as PreparedShare).input
-                    );
+            prepared.current = editShare
+                ? await prepareShareUpdate(
+                      wallet,
+                      editShare,
+                      editRecovery.current ?? (await readShareRecovery(wallet, editShare)),
+                      selected,
+                      title,
+                      note
+                  )
+                : await prepareShare(wallet, selected, title, note, resolveExpiryIso(expiryChoice));
             if (!alive.current) return;
-            if (result.status === 'pending') {
-                operation.current = { id: result.id, operationId: result.operationId };
-                setPending(true);
-                return;
-            }
-            if (result.share.status !== 'active') throw new Error('inactive');
-            const host = new URL(getAppBaseUrl()).host;
-            setLink(buildShareLinkUrl(host, prepared.current.input.id, prepared.current.key));
-            setExpiresAt(result.share.expiresAt);
-            setStep('done');
-            await onComplete?.();
+            setStep('preview');
         } catch (cause) {
             if (alive.current) {
                 setError(true);
@@ -230,6 +238,90 @@ export const ShareLinkCreate = ({
         } finally {
             busy.current = false;
             if (alive.current) setLoading(false);
+        }
+    };
+
+    const succeed = (host: string, expiresAt: string | null) => {
+        const value = prepared.current!;
+        setLink(buildShareLinkUrl(host, value.input.id, value.key));
+        setExpiresAt(expiresAt);
+        setStep('done');
+        void onComplete?.();
+    };
+
+    const publishPrepared = (wallet: ShareWallet) =>
+        editShare
+            ? wallet.invoke.updateShareLink((prepared.current as PreparedShareUpdate).input)
+            : wallet.invoke.createShareLink((prepared.current as PreparedShare).input);
+
+    /**
+     * One publication attempt. `abandoned` (a pending operation whose reservation
+     * no longer exists) replays the original prepared input through the matching
+     * create/update operation. A pending result is retried by operation key and is
+     * never sent as a fresh mutation.
+     */
+    const commit = async (
+        wallet: ShareWallet,
+        host: string,
+        allowReplay: boolean
+    ): Promise<void> => {
+        const result = operation.current
+            ? await wallet.invoke.retryShareLinkOperation(operation.current)
+            : await publishPrepared(wallet);
+        const outcome = classifySharePublication(result);
+        if (outcome.status === 'pending') {
+            operation.current = outcome.operation;
+            if (alive.current) setPending(true);
+            return;
+        }
+        if (outcome.status === 'abandoned') {
+            if (!alive.current) return;
+            operation.current = undefined;
+            if (!allowReplay) throw new Error('abandoned');
+            const replay = await publishPrepared(wallet);
+            const replayed = classifySharePublication(replay);
+            if (replayed.status === 'pending') {
+                operation.current = replayed.operation;
+                if (alive.current) setPending(true);
+                return;
+            }
+            if (replayed.status === 'abandoned') throw new Error('abandoned');
+            if (replayed.status === 'inactive') throw new Error('inactive');
+            if (alive.current) succeed(host, replayed.share.expiresAt);
+            return;
+        }
+        if (outcome.status === 'inactive') throw new Error('inactive');
+        if (alive.current) succeed(host, outcome.share.expiresAt);
+    };
+
+    const publish = async () => {
+        if (busy.current || !prepared.current) return;
+        busy.current = true;
+        setLoading(true);
+        setError(false);
+        setTooLarge(false);
+        setPending(false);
+        try {
+            const host = guardBase();
+            if (!host) return;
+            const wallet = shareWallet(await walletRef.current());
+            if (!alive.current) return;
+            if (prepared.current.ownerDid !== wallet.id.did()) throw new Error('identity');
+            setPublicationStarted(true);
+            await commit(wallet, host, true);
+        } catch (cause) {
+            if (alive.current) {
+                setError(true);
+                setTooLarge(
+                    isShareLinkError(cause) &&
+                        ['CIPHERTEXT_TOO_LARGE', 'RECOVERY_TOO_LARGE'].includes(cause.code)
+                );
+            }
+        } finally {
+            busy.current = false;
+            if (alive.current) {
+                setLoading(false);
+            }
         }
     };
     const copy = async () => {
@@ -249,7 +341,8 @@ export const ShareLinkCreate = ({
             .name.toLocaleLowerCase()
             .includes(search.toLocaleLowerCase())
     );
-    const locked = Boolean(prepared.current);
+    const fieldsLocked = publicationStarted || loading;
+    const effectiveExpiry = prepared.current?.input.expiresAt ?? resolveExpiryIso(expiryChoice);
     return (
         <section
             className="sentry-block ph-no-capture font-poppins bg-white text-grayscale-900 h-full flex flex-col"
@@ -279,7 +372,10 @@ export const ShareLinkCreate = ({
                         <p className="text-xs font-medium text-grayscale-500 mb-2">
                             {step === 'done'
                                 ? m['shareLinks.ready']()
-                                : m['shareLinks.step']({ current: step === 'choose' ? '1' : '2' })}
+                                : m['shareLinks.step']({
+                                      current:
+                                          step === 'choose' ? '1' : step === 'details' ? '2' : '3',
+                                  })}
                         </p>
                         <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">
                             {step === 'choose'
@@ -290,9 +386,11 @@ export const ShareLinkCreate = ({
                                   ? editShare
                                       ? m['shareLinks.updateDetails']()
                                       : m['shareLinks.details']()
-                                  : editShare
-                                    ? m['shareLinks.updated']()
-                                    : m['shareLinks.done']()}
+                                  : step === 'preview'
+                                    ? m['shareLinks.previewTitle']()
+                                    : editShare
+                                      ? m['shareLinks.updated']()
+                                      : m['shareLinks.done']()}
                         </h1>
                         <p className="text-sm text-grayscale-600 leading-relaxed mt-3">
                             {step === 'choose'
@@ -301,12 +399,18 @@ export const ShareLinkCreate = ({
                                     : m['shareLinks.chooseHint']()
                                 : step === 'details'
                                   ? m['shareLinks.detailsHint']()
-                                  : m['shareLinks.linkHint']()}
+                                  : step === 'preview'
+                                    ? m['shareLinks.previewHint']()
+                                    : m['shareLinks.linkHint']()}
                         </p>
                     </div>
-                    {error && (
+                    {(error || unsupportedBase) && (
                         <p role="alert" className="p-4 rounded-2xl bg-red-50 text-red-700 text-sm">
-                            {tooLarge ? m['shareLinks.tooLarge']() : m['shareLinks.error']()}
+                            {unsupportedBase
+                                ? m['shareLinks.unsupportedBase']()
+                                : tooLarge
+                                  ? m['shareLinks.tooLarge']()
+                                  : m['shareLinks.error']()}
                         </p>
                     )}
                     {step === 'choose' && (
@@ -359,15 +463,16 @@ export const ShareLinkCreate = ({
                                                     !choice.credential ||
                                                     (!checked && selected.length >= 50)
                                                 }
-                                                onChange={() =>
+                                                onChange={() => {
+                                                    invalidateDraft();
                                                     setSelected(current =>
                                                         checked
                                                             ? current.filter(
                                                                   uri => uri !== choice.uri
                                                               )
                                                             : [...current, choice.uri]
-                                                    )
-                                                }
+                                                    );
+                                                }}
                                             />
                                         </label>
                                     );
@@ -416,23 +521,99 @@ export const ShareLinkCreate = ({
                                 <input
                                     autoFocus
                                     maxLength={120}
-                                    disabled={locked || loading}
+                                    disabled={fieldsLocked}
                                     className={`${inputClass} mt-2`}
                                     value={title}
-                                    onChange={event => setTitle(event.target.value)}
+                                    onChange={event => {
+                                        invalidateDraft();
+                                        setTitle(event.target.value);
+                                    }}
                                 />
                             </label>
                             <label className="block text-xs font-medium text-grayscale-700">
                                 {m['shareLinks.note']()}
                                 <textarea
                                     maxLength={500}
-                                    disabled={locked || loading}
+                                    disabled={fieldsLocked}
                                     rows={3}
                                     className={`${inputClass} mt-2 resize-y`}
                                     value={note}
-                                    onChange={event => setNote(event.target.value)}
+                                    onChange={event => {
+                                        invalidateDraft();
+                                        setNote(event.target.value);
+                                    }}
                                 />
                             </label>
+                            {editShare ? (
+                                <p className="rounded-2xl bg-grayscale-100 p-4 text-sm text-grayscale-700">
+                                    {editShare.expiresAt
+                                        ? m['shareLinks.expires']({
+                                              date: new Date(
+                                                  editShare.expiresAt
+                                              ).toLocaleDateString(),
+                                          })
+                                        : m['shareLinks.neverExpires']()}
+                                </p>
+                            ) : (
+                                <fieldset className="space-y-2">
+                                    <legend className="text-xs font-medium text-grayscale-700">
+                                        {m['shareLinks.expiry']()}
+                                    </legend>
+                                    <div className="flex flex-wrap gap-2">
+                                        {EXPIRY_CHOICES.map(choice => (
+                                            <label
+                                                key={choice}
+                                                className={`inline-flex items-center gap-2 px-4 py-2 rounded-[20px] border text-sm cursor-pointer ${expiryChoice === choice ? 'border-emerald-600 bg-emerald-50 text-emerald-800' : 'border-grayscale-300 text-grayscale-700'}`}
+                                            >
+                                                <input
+                                                    type="radio"
+                                                    name="share-link-expiry"
+                                                    className="accent-emerald-600"
+                                                    disabled={fieldsLocked}
+                                                    checked={expiryChoice === choice}
+                                                    onChange={() => {
+                                                        invalidateDraft();
+                                                        setExpiryChoice(choice);
+                                                    }}
+                                                />
+                                                {choice === '7'
+                                                    ? m['shareLinks.expiry7']()
+                                                    : choice === '30'
+                                                      ? m['shareLinks.expiry30']()
+                                                      : choice === '365'
+                                                        ? m['shareLinks.expiry365']()
+                                                        : m['shareLinks.expiryNever']()}
+                                            </label>
+                                        ))}
+                                    </div>
+                                    <p className="text-xs text-grayscale-600">
+                                        {effectiveExpiry
+                                            ? m['shareLinks.expires']({
+                                                  date: new Date(
+                                                      effectiveExpiry
+                                                  ).toLocaleDateString(),
+                                              })
+                                            : m['shareLinks.neverExpires']()}
+                                    </p>
+                                </fieldset>
+                            )}
+                            <p className="text-xs text-grayscale-600 leading-relaxed">
+                                {m['shareLinks.privacyHint']()}
+                            </p>
+                        </div>
+                    )}
+                    {step === 'preview' && prepared.current && (
+                        <div className="space-y-5">
+                            <ShareLinkPreview
+                                heading={m['shareLinks.previewHeading']()}
+                                title={prepared.current.input.title}
+                                note={prepared.current.input.note}
+                                sharerName={prepared.current.payload.sharer.displayName}
+                                expiresAt={
+                                    editShare?.expiresAt ?? prepared.current.input.expiresAt ?? null
+                                }
+                                payload={prepared.current.payload}
+                            />
                             <p className="text-xs text-grayscale-600 leading-relaxed">
                                 {m['shareLinks.privacyHint']()}
                             </p>
@@ -453,11 +634,15 @@ export const ShareLinkCreate = ({
                                 <p className="text-xs text-grayscale-500 mt-2">
                                     {m['shareLinks.selected']({ count: String(selected.length) })}
                                 </p>
-                                {expiresAt && (
+                                {expiresAt ? (
                                     <p className="text-xs text-grayscale-600 mt-3">
                                         {m['shareLinks.expires']({
                                             date: new Date(expiresAt).toLocaleDateString(),
                                         })}
+                                    </p>
+                                ) : (
+                                    <p className="text-xs text-grayscale-600 mt-3">
+                                        {m['shareLinks.neverExpires']()}
                                     </p>
                                 )}
                             </div>
@@ -506,16 +691,31 @@ export const ShareLinkCreate = ({
             </div>
             <footer className="border-t border-grayscale-100 px-6 py-5">
                 <div className="max-w-2xl mx-auto flex justify-between gap-3">
-                    {step === 'details' && !locked ? (
+                    {step === 'details' ? (
                         <button
                             disabled={loading}
                             className={secondary}
                             onClick={() => {
                                 setStep('choose');
                                 setError(false);
+                                setUnsupportedBase(false);
                             }}
                         >
                             <IonIcon icon={arrowBackOutline} /> {m['shareLinks.back']()}
+                        </button>
+                    ) : step === 'preview' ? (
+                        <button
+                            disabled={loading || publicationStarted}
+                            className={secondary}
+                            onClick={() => {
+                                prepared.current = undefined;
+                                operation.current = undefined;
+                                setPending(false);
+                                setStep('details');
+                                setError(false);
+                            }}
+                        >
+                            <IonIcon icon={arrowBackOutline} /> {m['shareLinks.edit']()}
                         </button>
                     ) : (
                         <span />
@@ -536,7 +736,23 @@ export const ShareLinkCreate = ({
                         <button
                             className={primary}
                             disabled={loading || !title.trim()}
-                            onClick={() => void create()}
+                            onClick={() => void prepareDraft()}
+                        >
+                            {loading ? (
+                                <Busy>{m['shareLinks.preparing']()}</Busy>
+                            ) : (
+                                <>
+                                    {m['shareLinks.preview']()}{' '}
+                                    <IonIcon icon={arrowForwardOutline} />
+                                </>
+                            )}
+                        </button>
+                    )}
+                    {step === 'preview' && (
+                        <button
+                            className={primary}
+                            disabled={loading || !prepared.current}
+                            onClick={() => void publish()}
                         >
                             {loading ? (
                                 <Busy>
@@ -544,7 +760,7 @@ export const ShareLinkCreate = ({
                                         ? m['shareLinks.updating']()
                                         : m['shareLinks.creating']()}
                                 </Busy>
-                            ) : locked ? (
+                            ) : pending ? (
                                 m['shareLinks.checkAgain']()
                             ) : editShare ? (
                                 m['shareLinks.update']()

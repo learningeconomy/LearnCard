@@ -4,7 +4,7 @@
  * These live outside `transaction.ts` so they can be unit-tested without loading
  * `@instance` (which requires real Neo4j environment variables at import time).
  *
- * The driver's managed `writeTransaction` retries transient failures inline using
+ * The driver's managed `executeWrite` retries transient failures inline using
  * driver-level configuration. That is correct for ordinary request callers, but a
  * cooperative maintenance pass instead wants one bounded attempt: if it cannot
  * commit now it leaves the durable work fenced and lets the next cadence retry.

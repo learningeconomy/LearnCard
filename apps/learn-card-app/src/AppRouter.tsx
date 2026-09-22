@@ -1,4 +1,4 @@
-import { enterSharePrivacy } from './components/share-links/sharePrivacy';
+import { enterSharePrivacy, isShareViewerPath } from './components/share-links/sharePrivacy';
 import React, { useEffect, useRef } from 'react';
 import { App } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
@@ -68,7 +68,7 @@ const log = getLogger('app-router');
 
 const AppRouter: React.FC = () => {
     const location = useLocation();
-    const isShareViewer = /^\/s(?:\/|$)/.test(location.pathname);
+    const isShareViewer = isShareViewerPath(location.pathname);
     const { state: coordinatorState, walletReady } = useAppAuth();
 
     // Initial-load gate: when true, render the loader instead of <Routes>.
@@ -405,7 +405,7 @@ const AppRouter: React.FC = () => {
             // Create a URL object
             const parsedUrl = new URL(data?.url);
 
-            if (/^\/s(?:\/|$)/.test(parsedUrl.pathname)) {
+            if (isShareViewerPath(parsedUrl.pathname)) {
                 enterSharePrivacy();
                 return;
             }
@@ -438,7 +438,7 @@ const AppRouter: React.FC = () => {
         if (
             !Capacitor.isNativePlatform() &&
             saved_email &&
-            !/^\/s(?:\/|$)/.test(window.location.pathname)
+            !isShareViewerPath(window.location.pathname)
         ) {
             verifySignInLinkAndLogin(saved_email, window.location.href);
         }
