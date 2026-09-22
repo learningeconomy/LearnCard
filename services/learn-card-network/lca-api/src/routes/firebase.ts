@@ -358,7 +358,7 @@ export const firebaseRouter = t.router({
                 if (!ipAllowed) {
                     return {
                         success: false,
-                        error: 'Too many attempts. Please request a new code.',
+                        error: 'Too many attempts. Please resend code.',
                     };
                 }
 
@@ -373,7 +373,7 @@ export const firebaseRouter = t.router({
                     await cache.delete([loginCodeKey]);
                     return {
                         success: false,
-                        error: 'Too many attempts. Please request a new code.',
+                        error: 'Too many attempts. Please resend code.',
                     };
                 }
 

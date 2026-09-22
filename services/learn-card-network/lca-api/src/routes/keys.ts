@@ -472,7 +472,7 @@ export const keysRouter = t.router({
                 await cache.delete([cacheKey]);
                 throw new TRPCError({
                     code: 'TOO_MANY_REQUESTS',
-                    message: 'Too many attempts. Please request a new code.',
+                    message: 'Too many attempts. Please resend code.',
                 });
             }
 
