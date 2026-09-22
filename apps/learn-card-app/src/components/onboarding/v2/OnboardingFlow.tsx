@@ -663,7 +663,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                 trackOnboardingStepCompleted('profile', 2);
                 setStep('celebrate');
             }
-               } catch (err: unknown) {
+        } catch (err: unknown) {
             const errorDetails =
                 typeof err === 'object' && err !== null ? (err as Record<string, unknown>) : {};
             if (signupLifecycle.terminate()) {

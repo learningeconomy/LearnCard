@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, type Locator, type Page, type TestInfo } from '@playwright/test';
 
-import { TEST_USER_2_PROFILE_ID, TEST_USER_2_SEED, TEST_USER_PROFILE_ID } from './constants';
+import { TEST_USER_2_PROFILE_ID, TEST_USER_2_SEED } from './constants';
 import { test } from './fixtures/test';
 import { mockDidKitWasmForContext } from './route.helpers';
 import { TEST_CREDENTIAL_TITLE, waitForAuthenticatedState } from './test.helpers';
@@ -11,6 +11,7 @@ import { TEST_CREDENTIAL_TITLE, waitForAuthenticatedState } from './test.helpers
 // and client-side routing have rendered.
 const HIGH_IMPACT_LEVELS = new Set(['serious', 'critical']);
 const FOCUS_RESET_SENTINEL_ID = 'playwright-a11y-focus-reset';
+const SEEDED_ISSUER_PROFILE_ID = 'testa';
 
 /**
  * The Vite server can have a hosted tenant configuration baked in. Override it
@@ -615,7 +616,7 @@ test.describe('Credential lifecycle accessibility', () => {
         test.setTimeout(360_000);
 
         await configureLocalE2EServices(page);
-        await waitForAuthenticatedState(page, { profileId: TEST_USER_PROFILE_ID });
+        await waitForAuthenticatedState(page, { profileId: SEEDED_ISSUER_PROFILE_ID });
 
         // Use separate issuer and recipient contexts so the claim journey uses
         // the same account boundary as a real credential recipient.
@@ -723,7 +724,7 @@ test.describe('Credential lifecycle accessibility', () => {
             // brand-new signing authority can fail its first issuance. Wait for
             // the key to be published before claiming, which is what a
             // second-time issuer already has.
-            await waitForSigningAuthorityKey(page, TEST_USER_PROFILE_ID);
+            await waitForSigningAuthorityKey(page, SEEDED_ISSUER_PROFILE_ID);
 
             const claimUrl = `/claim/boost?boostUri=${encodeURIComponent(
                 claimPayload.boostUri
