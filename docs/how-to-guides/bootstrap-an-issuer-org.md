@@ -226,7 +226,8 @@ Allow it in the spec, per account:
 ```yaml
 serviceAccounts:
     - name: nightly-issuer
-      scopes: [inbox:write, inbox:read, credentials:write, credentials:read]
+      # boosts:write is what `send({ template })` needs; the inbox/credentials scopes cover claim links and reads.
+      scopes: [boosts:write, inbox:write, inbox:read, credentials:write, credentials:read]
       actAs: [example-north] # or '*' for every profile under profileManager
 ```
 

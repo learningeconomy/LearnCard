@@ -955,6 +955,33 @@ describe('profile-manager reconciliation', () => {
         });
     });
 
+    it('previews the hosted signer for a new district under an existing manager', async () => {
+        await withTmpProject(async project => {
+            Object.assign(project.env, selectedSigner);
+            const card = makeExistingCard();
+            const manager = makeMockManager();
+            project.env.ORG_PROFILE_MANAGER_DID = managerDid;
+            const connectAsManagedSigner = vi.fn();
+            const preview = await applyOrg(managerSpec, card, project, {
+                dryRun: true,
+                connectAsManager: async () => manager,
+                connectAsManagedSigner,
+            });
+            expect(preview.changes).toContainEqual({
+                resource: 'managedProfile',
+                name: 'sc-greenville',
+                action: 'would-create',
+            });
+            expect(preview.changes).toContainEqual({
+                resource: 'signingAuthority',
+                name: 'sc-greenville/scde-clr',
+                action: 'would-create',
+            });
+            expect(connectAsManagedSigner).not.toHaveBeenCalled();
+            expect(manager.invoke.createManagedProfile).not.toHaveBeenCalled();
+        });
+    });
+
     it('renames a managed profile when the spec displayName changes', async () => {
         await withTmpProject(async project => {
             const card = makeExistingCard();

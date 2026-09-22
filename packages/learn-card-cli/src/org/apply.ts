@@ -646,6 +646,12 @@ const applyProfileManager = async (
                 name: managedSpec.profileId,
                 action: 'would-create',
             });
+            if (spec.issuer.signingAuthority.type === 'learncard-hosted')
+                changes.push({
+                    resource: 'signingAuthority',
+                    name: `${managedSpec.profileId}/${spec.issuer.signingAuthority.name}`,
+                    action: 'would-create',
+                });
             continue;
         }
         const { display, ...brandingScalars } = managedSpec.branding ?? {};
