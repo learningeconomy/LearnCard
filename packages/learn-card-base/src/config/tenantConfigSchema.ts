@@ -55,6 +55,19 @@ export const tenantFirebaseConfigSchema = z
     })
     .passthrough();
 
+export const tenantKeycloakConfigSchema = z
+    .object({
+        serverUrl: z.string().url(),
+        realm: z.string().min(1),
+        clientId: z.string().min(1),
+        scopes: z.array(z.string()).default(['openid', 'profile', 'email', 'phone']),
+        redirectUri: z.string().optional(),
+        postLogoutRedirectUri: z.string().optional(),
+    })
+    .passthrough();
+
+export type TenantKeycloakConfig = z.infer<typeof tenantKeycloakConfigSchema>;
+
 export const tenantSSSConfigSchema = z
     .object({
         serverUrl: urlOrPlaceholder().default('https://api.learncard.app/trpc'),
@@ -82,6 +95,7 @@ export const tenantAuthConfigSchema = z
         // is used at runtime. Each block is self-contained with its own schema.
         // Unknown providers pass through via the parent .passthrough().
         firebase: tenantFirebaseConfigSchema.optional(),
+        keycloak: tenantKeycloakConfigSchema.optional(),
 
         // Key-derivation strategy config blocks — only the one matching
         // `keyDerivation` is used at runtime.
@@ -90,6 +104,14 @@ export const tenantAuthConfigSchema = z
     })
     .passthrough()
     .superRefine((auth, context) => {
+        if (auth.provider === 'keycloak' && !auth.keycloak) {
+            context.addIssue({
+                code: 'custom',
+                path: ['keycloak'],
+                message: 'Required when auth.provider is keycloak',
+            });
+        }
+
         if (auth.provider === 'firebase' && !auth.firebase) {
             context.addIssue({
                 code: 'custom',
