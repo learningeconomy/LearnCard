@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 interface MockProviderConfig {
     redirectUri?: string;
@@ -65,6 +65,10 @@ import { registerKeycloakFactories } from './registerKeycloakFactories';
 import { beginKeycloakReauth, readKeycloakReauth } from './keycloakReauth';
 
 describe('Keycloak factory registration', () => {
+    afterEach(() => {
+        vi.unstubAllGlobals();
+    });
+
     beforeEach(() => {
         vi.clearAllMocks();
         sessionStorage.clear();
@@ -185,6 +189,10 @@ describe('Keycloak factory registration', () => {
                 clientId: 'learncard-app',
                 authBridgeUrl: 'https://app.example.com/auth/continue.html',
             });
+            vi.stubGlobal(
+                'fetch',
+                vi.fn(async () => new Response(null))
+            );
             registerKeycloakFactories();
             const getProvider = mocks.authFactory.mock.calls[0]?.[1];
             getProvider?.();
@@ -206,6 +214,36 @@ describe('Keycloak factory registration', () => {
             );
             expect(provider.handleRedirectCallback).toHaveBeenCalledWith(
                 'com.learncard.app://login?code=abc'
+            );
+        });
+
+        it('opens Keycloak directly when the bridge page is unreachable', async () => {
+            mocks.config.mockReturnValue({
+                serverUrl: 'http://localhost:8081',
+                realm: 'learncard',
+                clientId: 'learncard-app',
+                authBridgeUrl: 'http://localhost:3000/auth/continue.html',
+            });
+            vi.stubGlobal(
+                'fetch',
+                vi.fn(async () => {
+                    throw new TypeError('Load failed');
+                })
+            );
+            registerKeycloakFactories();
+            const getProvider = mocks.authFactory.mock.calls[0]?.[1];
+            getProvider?.();
+            const navigate = mocks.createProvider.mock.calls[0]?.[0].navigate;
+            if (typeof navigate !== 'function') throw new Error('Missing navigate hook');
+            mocks.openNativeAuthSession.mockResolvedValue('com.learncard.app://login?code=abc');
+
+            await navigate(
+                'https://auth.example.org/realms/learncard/protocol/openid-connect/auth'
+            );
+
+            expect(mocks.openNativeAuthSession).toHaveBeenCalledWith(
+                'https://auth.example.org/realms/learncard/protocol/openid-connect/auth',
+                expect.anything()
             );
         });
 
