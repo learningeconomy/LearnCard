@@ -20,6 +20,7 @@ export const logCredentialActivity = async (
 };
 
 export const logCredentialSent = async (params: {
+    onBehalfOf?: string;
     actorProfileId?: string;
     recipientType: CredentialActivityRecipientType;
     recipientIdentifier: string;
@@ -45,6 +46,7 @@ export const logCredentialSent = async (params: {
 };
 
 export const logCredentialDelivered = async (params: {
+    onBehalfOf?: string;
     activityId: string;
     actorProfileId: string;
     recipientType: CredentialActivityRecipientType;
@@ -64,6 +66,7 @@ export const logCredentialDelivered = async (params: {
 };
 
 export const logCredentialClaimed = async (params: {
+    onBehalfOf?: string;
     activityId?: string;
     actorProfileId: string;
     recipientType: CredentialActivityRecipientType;
@@ -98,6 +101,7 @@ export const logCredentialExpired = async (params: {
 };
 
 export const logCredentialFailed = async (params: {
+    onBehalfOf?: string;
     activityId?: string;
     actorProfileId: string;
     recipientType: CredentialActivityRecipientType;

@@ -14,6 +14,7 @@
     - [Revoke or Update a Credential](how-to-guides/revoke-or-update-a-credential.md)
     - [Issue & Refresh a Managed Credential](how-to-guides/issue-and-refresh-a-managed-credential.md)
     - [Who Signs Your Credentials?](how-to-guides/create-signing-authority.md)
+    - [Bootstrap an Issuer Organization](how-to-guides/bootstrap-an-issuer-org.md)
     - [Know When a Credential Is Claimed](tutorials/listen-to-webhooks.md)
 - [Verify Credentials](tutorials/verify-credentials.md)
 - [Build an App Inside LearnCard](how-to-guides/publish-your-app.md)
@@ -113,6 +114,7 @@
     - [Ethereum](sdks/official-plugins/ethereum.md)
     - [VPQR](sdks/official-plugins/vpqr.md)
 - [LearnCard CLI](sdks/learncard-cli.md)
+    - [Commands & Org Spec](sdks/learncard-cli.md#commands)
     - [Holder Continuity Export](sdks/learncard-cli.md#holder-continuity-export)
 
 ## 📱 Products

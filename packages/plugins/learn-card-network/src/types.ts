@@ -122,7 +122,7 @@ import {
     GetCredentialRefreshHistoryInput,
     GetCredentialRefreshHistoryResult,
 } from '@learncard/types';
-import { Plugin } from '@learncard/core';
+import { LearnCard, Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
 import { VerifyExtension } from '@learncard/vc-plugin';
 
@@ -214,6 +214,14 @@ export type LearnCardNetworkPluginMethods = {
     getManagedProfiles: (
         options?: Partial<PaginationOptionsType> & { query?: LCNProfileQuery }
     ) => Promise<PaginatedLCNProfiles>;
+    /**
+     * Returns a new LearnCard instance whose network plugin sends every request with the
+     * `X-LearnCard-Act-As` header set to `profileId`, asking the server to swap the acting
+     * profile for the duration of each request. Token scope is unchanged; the server responds
+     * `403` if the caller doesn't manage `profileId`, or if an API token's grant doesn't cover
+     * it. The original instance (and its headers) is left untouched.
+     */
+    actAs: (profileId: string) => Promise<ActingLearnCard>;
     claimPendingGuardianLinks: () => Promise<
         Array<{ childProfileId: string; childDisplayName: string; managerId: string | null }>
     >;
@@ -1040,6 +1048,16 @@ export type LearnCardNetworkPluginMethods = {
 };
 
 /** @group LearnCardNetwork Plugin */
+/**
+ * The wallet returned by `invoke.actAs`: the caller's existing plugins with a network
+ * plugin bound to the target profile appended. The caller's plugin list cannot be named
+ * from inside the plugin's own method map, hence the open tuple.
+ */
+export type ActingLearnCard = LearnCard<
+    [...Plugin[], LearnCardNetworkPlugin],
+    'id' | 'read' | 'store'
+>;
+
 export type LearnCardNetworkPlugin = Plugin<
     'LearnCard Network',
     'id' | 'read' | 'store',

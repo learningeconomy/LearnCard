@@ -419,6 +419,7 @@ export const issueToInbox = async (
             await logCredentialDelivered({
                 activityId,
                 actorProfileId: issuerProfile.profileId,
+                onBehalfOf: ctx.user?.onBehalfOf,
                 recipientType: recipient.type as 'email' | 'phone',
                 recipientIdentifier: recipient.value,
                 recipientProfileId: existingProfile.profileId,
@@ -535,6 +536,7 @@ export const issueToInbox = async (
                 await logCredentialDelivered({
                     activityId,
                     actorProfileId: issuerProfile.profileId,
+                    onBehalfOf: ctx.user?.onBehalfOf,
                     recipientType: recipient.type,
                     recipientIdentifier: recipient.value,
                     recipientProfileId: existingProfile.profileId,
