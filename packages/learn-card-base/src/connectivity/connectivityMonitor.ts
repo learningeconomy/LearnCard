@@ -24,10 +24,7 @@
  * bottom is the only zustood touchpoint and is optional.
  */
 
-import {
-    connectivityStore,
-    type ConnectivityStatus,
-} from '../stores/connectivityStore';
+import { connectivityStore, type ConnectivityStatus } from '../stores/connectivityStore';
 
 import {
     createConnectionQualityTracker,
@@ -36,14 +33,12 @@ import {
     type ConnectionQualitySample,
     type ConnectionQualityThresholds,
 } from './connectionQuality';
-import {
-    probeConnectivity,
-    type ProbeOutcome,
-    type ProbeTargetConfig,
-} from './probeConnectivity';
+import { probeConnectivity, type ProbeOutcome, type ProbeTargetConfig } from './probeConnectivity';
 
 /** Default offline retry schedule; the last entry is the cap. */
-export const DEFAULT_OFFLINE_RETRY_DELAYS_MS: readonly number[] = [5000, 10_000, 20_000, 40_000, 60_000];
+export const DEFAULT_OFFLINE_RETRY_DELAYS_MS: readonly number[] = [
+    5000, 10_000, 20_000, 40_000, 60_000,
+];
 
 export interface ConnectivitySnapshot {
     status: ConnectivityStatus;
@@ -90,19 +85,26 @@ export interface ConnectivityMonitor {
     /** Pause automatic retries when backgrounded; resume with an immediate check. */
     setActive: (active: boolean) => void;
     /** Feed an externally observed sample (real request timing) to the quality policy. */
-    reportSample: (sample: Omit<ConnectionQualitySample, 'source'> & { source?: ConnectionQualitySample['source'] }) => void;
+    reportSample: (
+        sample: Omit<ConnectionQualitySample, 'source'> & {
+            source?: ConnectionQualitySample['source'];
+        }
+    ) => void;
     getState: () => ConnectivitySnapshot;
     subscribe: (listener: (snapshot: ConnectivitySnapshot) => void) => () => void;
 }
 
-export const createConnectivityMonitor = (options: ConnectivityMonitorOptions): ConnectivityMonitor => {
+export const createConnectivityMonitor = (
+    options: ConnectivityMonitorOptions
+): ConnectivityMonitor => {
     const now = options.now ?? (() => Date.now());
     const setTimeoutFn =
         options.setTimeoutFn ?? ((handler: () => void, ms: number) => setTimeout(handler, ms));
     const clearTimeoutFn =
         options.clearTimeoutFn ?? (handle => clearTimeout(handle as ReturnType<typeof setTimeout>));
     const retryDelays = options.offlineRetryDelaysMs ?? DEFAULT_OFFLINE_RETRY_DELAYS_MS;
-    const runProbe = options.probe ?? ((target: ProbeTargetConfig | string) => probeConnectivity(target));
+    const runProbe =
+        options.probe ?? ((target: ProbeTargetConfig | string) => probeConnectivity(target));
 
     const quality = createConnectionQualityTracker({ now, thresholds: options.qualityThresholds });
 
@@ -251,6 +253,13 @@ export const createConnectivityMonitor = (options: ConnectivityMonitorOptions): 
             // A newer hint/stop/resume supersedes this result entirely.
             if (cycle.generation !== generation) {
                 activeCycle = null;
+                // A request (e.g. a positive hint) may have arrived while this
+                // stale cycle was in flight; honor it with a fresh cycle so
+                // the pending verification is not silently lost.
+                if (coalesceRequested && running) {
+                    coalesceRequested = false;
+                    void startCycle();
+                }
                 return;
             }
 
@@ -318,7 +327,10 @@ export const createConnectivityMonitor = (options: ConnectivityMonitorOptions): 
 
         check: () => {
             if (!running) return Promise.resolve(status);
-            const waiter: CheckWaiter = { seenOutcomes: appliedOutcomeCount, resolve: () => undefined };
+            const waiter: CheckWaiter = {
+                seenOutcomes: appliedOutcomeCount,
+                resolve: () => undefined,
+            };
             const promise = new Promise<ConnectivityStatus>(resolve => {
                 waiter.resolve = resolve;
             });

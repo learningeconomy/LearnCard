@@ -10,6 +10,8 @@
  *  - HTTP errors, redirects or unexpected bodies are NOT proof of internet
  *    loss — they are `inconclusive` (endpoint misconfig, captive portal,
  *    service outage) and callers must stay permissive.
+ *  - Plain http is permitted for loopback targets only (web development on
+ *    localhost); remote probes must use HTTPS.
  *  - Only a transport-level failure (network error or the deadline elapsing,
  *    including during the body read) may be treated as `unreachable`.
  *
@@ -70,7 +72,8 @@ export interface ProbeDependencies {
 const defaultNow = (): number => Date.now();
 const defaultSetTimeout: (handler: () => void, ms: number) => unknown = (handler, ms) =>
     setTimeout(handler, ms);
-const defaultClearTimeout = (handle: unknown): void => clearTimeout(handle as ReturnType<typeof setTimeout>);
+const defaultClearTimeout = (handle: unknown): void =>
+    clearTimeout(handle as ReturnType<typeof setTimeout>);
 const defaultRandomId = (): string =>
     `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
 
@@ -96,7 +99,11 @@ export const validateProbeTarget = (
     try {
         parsed = new URL(config.url);
     } catch {
-        return { ok: false, reason: 'invalid-url', detail: `probe URL is not parseable: ${config.url}` };
+        return {
+            ok: false,
+            reason: 'invalid-url',
+            detail: `probe URL is not parseable: ${config.url}`,
+        };
     }
 
     if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
@@ -109,14 +116,19 @@ export const validateProbeTarget = (
 
     if (
         parsed.protocol === 'http:' &&
-        !(config.allowPlainHttp ?? defaults.allowPlainHttp)
+        !(config.allowPlainHttp ?? defaults.allowPlainHttp) &&
+        !LOCAL_HOSTNAMES.has(parsed.hostname)
     ) {
-        // Plain http is only acceptable when explicitly allowed (web dev on
-        // localhost). Native builds must use the HTTPS tenant domain.
+        // Plain http is acceptable for loopback development targets (web dev
+        // on localhost) or when explicitly allowed. Everything else — and in
+        // particular any remote origin a native build might reach — must use
+        // HTTPS. The native bundled origin is additionally excluded via
+        // `disallowOrigins`, since hitting it proves nothing about internet
+        // reachability.
         return {
             ok: false,
             reason: 'unsafe-origin',
-            detail: 'plain http requires allowPlainHttp (dev/web localhost only)',
+            detail: 'plain http requires a loopback target or allowPlainHttp',
         };
     }
 
@@ -156,20 +168,20 @@ const readBoundedBody = async (
 
     const body = response.body;
     if (body && typeof body.getReader === 'function') {
-            const reader = body.getReader();
-            const decoder = new TextDecoder();
-            let received = 0;
-            const chunks: Uint8Array[] = [];
-            while (received < maxBytes) {
-                const { done, value } = await Promise.race([reader.read(), abortPromise]);
-                if (done) break;
-                chunks.push(value);
-                received += value.byteLength;
-                if (received >= maxBytes) {
-                    void reader.cancel().catch(() => undefined);
-                    break;
-                }
+        const reader = body.getReader();
+        const decoder = new TextDecoder();
+        let received = 0;
+        const chunks: Uint8Array[] = [];
+        while (received < maxBytes) {
+            const { done, value } = await Promise.race([reader.read(), abortPromise]);
+            if (done) break;
+            chunks.push(value);
+            received += value.byteLength;
+            if (received >= maxBytes) {
+                void reader.cancel().catch(() => undefined);
+                break;
             }
+        }
         return decoder.decode(concatChunks(chunks));
     }
 

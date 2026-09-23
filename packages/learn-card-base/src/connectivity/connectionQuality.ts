@@ -12,7 +12,7 @@
  *  - Quality becomes `poor` when there are at least `minSamplesForPoor`
  *    samples AND at least `poorCount` of them are slow (> `slowMs`) or
  *    transport failures. Failures map to reason `'unstable'`, latency to
- *    `'slow'` (failures win when both are present).
+ *    `'slow'`; any failure among the poor evidence means `'unstable'`.
  *  - `consecutiveHealthyToClear` consecutive healthy successes (< `healthyMs`)
  *    clear the warning and reset the evidence window.
  *  - Stale evidence (older than `windowMs`) expires so an old bad patch never
@@ -79,10 +79,15 @@ export interface CreateConnectionQualityTrackerOptions {
     now?: () => number;
 }
 
-const isSlow = (sample: ConnectionQualitySample, thresholds: ConnectionQualityThresholds): boolean =>
-    typeof sample.durationMs === 'number' && sample.durationMs > thresholds.slowMs;
+const isSlow = (
+    sample: ConnectionQualitySample,
+    thresholds: ConnectionQualityThresholds
+): boolean => typeof sample.durationMs === 'number' && sample.durationMs > thresholds.slowMs;
 
-const isHealthy = (sample: ConnectionQualitySample, thresholds: ConnectionQualityThresholds): boolean =>
+const isHealthy = (
+    sample: ConnectionQualitySample,
+    thresholds: ConnectionQualityThresholds
+): boolean =>
     sample.ok && typeof sample.durationMs === 'number' && sample.durationMs <= thresholds.healthyMs;
 
 /** Live samples: inside the window, capped to the most recent `maxSamples`. */
@@ -91,9 +96,7 @@ export const selectLiveSamples = (
     now: number,
     thresholds: ConnectionQualityThresholds
 ): ConnectionQualitySample[] =>
-    samples
-        .filter(sample => sample.at > now - thresholds.windowMs)
-        .slice(-thresholds.maxSamples);
+    samples.filter(sample => sample.at > now - thresholds.windowMs).slice(-thresholds.maxSamples);
 
 export const createConnectionQualityTracker = (
     options: CreateConnectionQualityTrackerOptions = {}
@@ -112,13 +115,17 @@ export const createConnectionQualityTracker = (
         const live = selectLiveSamples(samples, now(), thresholds);
 
         if (live.length > 0) {
-            const slowCount = live.filter(sample => !sample.ok || isSlow(sample, thresholds)).length;
+            const slowCount = live.filter(
+                sample => !sample.ok || isSlow(sample, thresholds)
+            ).length;
             const failureCount = live.filter(sample => !sample.ok).length;
 
             if (live.length >= thresholds.minSamplesForPoor && slowCount >= thresholds.poorCount) {
-                // Offline display precedence is handled above this module; here
-                // "unstable" (transport failures) wins over "slow" (latency).
-                const reason: ConnectionQualityReason = failureCount >= thresholds.poorCount ? 'unstable' : 'slow';
+                // Offline display precedence is handled above this module;
+                // among poor evidence, any transport failure means
+                // 'unstable' (failures win when both failure and latency are
+                // present) — pure latency evidence is 'slow'.
+                const reason: ConnectionQualityReason = failureCount > 0 ? 'unstable' : 'slow';
                 clearedToGood = false;
                 return { quality: 'poor', reason };
             }
@@ -144,7 +151,9 @@ export const createConnectionQualityTracker = (
         // (isolated slow responses). Never warn from this: report `good` only
         // if it was explicitly established by consecutive healthy successes,
         // otherwise there is nothing verified to claim.
-        return clearedToGood ? { quality: 'good', reason: null } : { quality: 'unknown', reason: null };
+        return clearedToGood
+            ? { quality: 'good', reason: null }
+            : { quality: 'unknown', reason: null };
     };
 
     return {

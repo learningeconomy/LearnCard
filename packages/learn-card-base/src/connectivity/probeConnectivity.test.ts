@@ -146,12 +146,15 @@ describe('probeConnectivity', () => {
     it('sends the required request options and a unique cache-busting query', async () => {
         const inits: RequestInfo[] = [];
         let token = 0;
+        const recordingFetch = (async (input: RequestInfo) => {
+            inits.push(input);
+            return textResponse(CONNECTIVITY_PROBE_MARKER);
+        }) as typeof fetch;
         const deps = depsWith({ randomId: () => `token${(token += 1)}` });
 
         await probeConnectivity('https://learncard.app/connectivity.txt', {
             ...deps,
-            fetchFn: async (input, init) => {
-                inits.push(input as RequestInfo);
+            fetchFn: (input, init) => {
                 expect(init).toMatchObject({
                     method: 'GET',
                     cache: 'no-store',
@@ -159,13 +162,13 @@ describe('probeConnectivity', () => {
                     redirect: 'error',
                 });
                 expect(init?.signal).toBeDefined();
-                return textResponse(CONNECTIVITY_PROBE_MARKER);
+                return recordingFetch(input, init);
             },
         });
 
         await probeConnectivity('https://learncard.app/connectivity.txt', {
             ...deps,
-            fetchFn: async () => textResponse(CONNECTIVITY_PROBE_MARKER),
+            fetchFn: recordingFetch,
         });
 
         expect(inits[0]).toContain('lc=token1');
@@ -178,7 +181,11 @@ describe('probeConnectivity', () => {
             fetchFn: async () => textResponse('Not Found', 404),
         });
 
-        expect(outcome).toMatchObject({ kind: 'inconclusive', reason: 'http-error', httpStatus: 404 });
+        expect(outcome).toMatchObject({
+            kind: 'inconclusive',
+            reason: 'http-error',
+            httpStatus: 404,
+        });
     });
 
     it('classifies unexpected bodies as inconclusive', async () => {
@@ -192,13 +199,16 @@ describe('probeConnectivity', () => {
 
     it('classifies config errors as inconclusive without any fetch', async () => {
         let fetched = false;
-        const outcome = await probeConnectivity({ url: 'https://localhost/connectivity.txt', disallowOrigins: ['https://localhost'] }, {
-            ...depsWith(),
-            fetchFn: async () => {
-                fetched = true;
-                return textResponse(CONNECTIVITY_PROBE_MARKER);
-            },
-        });
+        const outcome = await probeConnectivity(
+            { url: 'https://localhost/connectivity.txt', disallowOrigins: ['https://localhost'] },
+            {
+                ...depsWith(),
+                fetchFn: async () => {
+                    fetched = true;
+                    return textResponse(CONNECTIVITY_PROBE_MARKER);
+                },
+            }
+        );
 
         expect(fetched).toBe(false);
         expect(outcome).toMatchObject({ kind: 'inconclusive', reason: 'unsafe-origin' });
@@ -217,7 +227,7 @@ describe('probeConnectivity', () => {
 
     it('classifies deadline elapsing during fetch as a timeout', async () => {
         const timers = createFakeTimers();
-        const outcome = await probeConnectivity('https://learncard.app/connectivity.txt', {
+        const pending = probeConnectivity('https://learncard.app/connectivity.txt', {
             now: timers.now,
             setTimeoutFn: timers.setTimeoutFn,
             clearTimeoutFn: timers.clearTimeoutFn,
@@ -230,6 +240,10 @@ describe('probeConnectivity', () => {
                     });
                 })) as typeof fetch,
         });
+
+        await flush();
+        timers.advance(CONNECTIVITY_PROBE_TIMEOUT_MS + 1);
+        const outcome = await pending;
 
         expect(outcome).toMatchObject({ kind: 'unreachable', reason: 'timeout' });
     });
@@ -256,26 +270,22 @@ describe('probeConnectivity', () => {
     });
 
     it('bounds body consumption and still verifies the marker within the cap', async () => {
-        let cancelled = false;
-        const bigChunks = [...encoder.encode(CONNECTIVITY_PROBE_MARKER), ...new Uint8Array(2048).fill(97)];
+        // Marker first, then far more whitespace than the read cap, then the
+        // stream never enqueues or closes again. Trailing whitespace is
+        // trimmed, so `reachable` is only possible if the probe stopped
+        // reading at its cap — reading further would hang on the dead stream
+        // until the deadline and return `unreachable` instead.
+        const chunks = [encoder.encode(CONNECTIVITY_PROBE_MARKER), new Uint8Array(2048).fill(32)];
         const stream = new ReadableStream<Uint8Array>({
             pull: controller => {
-                if (bigChunks.length > 0) {
-                    controller.enqueue(bigChunks.shift() as Uint8Array);
-                } else if (!cancelled) {
-                    // Would hang forever if the probe kept reading.
-                    controller.close();
+                if (chunks.length > 0) {
+                    controller.enqueue(chunks.shift() as Uint8Array);
                 }
-            },
-        });
-        Object.defineProperty(stream, 'cancel', {
-            value: () => {
-                cancelled = true;
-                return Promise.resolve();
+                // Intentionally never closes.
             },
         });
 
-        const response = new Response(stream as ReadableStream<Uint8Array>, { status: 200 });
+        const response = new Response(stream, { status: 200 });
         const outcome = await probeConnectivity('https://learncard.app/connectivity.txt', {
             ...depsWith(),
             fetchFn: async () => response,
