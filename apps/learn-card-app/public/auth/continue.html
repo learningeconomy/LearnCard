@@ -108,6 +108,8 @@
         </div>
 
         <script>
+            const MIN_VISIBLE_MS = 600;
+            const pageStartedAt = performance.now();
             (async () => {
                 const hash = window.location.hash.replace(/^#/, '');
                 const params = new URLSearchParams(hash);
@@ -200,9 +202,12 @@
                     await Promise.race([logoSettled, new Promise(r => setTimeout(r, 400))]);
                 }
 
-                // The sheet keeps showing the last painted frame for the whole redirect
-                // chain, so the finished page must actually be on screen before we leave.
-                await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+                // Hold the page until the auth sheet has finished presenting so it is
+                // actually composited before the redirect chain starts. A timer, not
+                // requestAnimationFrame: rAF does not fire while the sheet is still
+                // animating in, which hung sign-in.
+                const remaining = MIN_VISIBLE_MS - (performance.now() - pageStartedAt);
+                if (remaining > 0) await new Promise(r => setTimeout(r, remaining));
                 window.location.replace(nextUrl.href);
             })();
         </script>
