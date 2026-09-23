@@ -12,7 +12,7 @@ import * as types from '@learncard/types';
 import { getLinkedClaimsPlugin } from '@learncard/linked-claims-plugin';
 import gradient from 'gradient-string';
 import figlet from 'figlet';
-import { program } from 'commander';
+import { Option, program } from 'commander';
 import clipboard from 'clipboardy';
 
 import { getLerRsPlugin } from '@learncard/ler-rs-plugin';
@@ -32,6 +32,13 @@ import {
     createExportLearnCardBundleHelper,
     createRestoreLearnCardFromBundleHelper,
 } from './replHelpers';
+import { registerOrgCommand } from './org';
+import { registerDoctorCommand } from './doctor';
+import { registerClrCommand } from './clr';
+import { registerInboxCommand } from './inbox';
+import { registerRefreshCommand } from './refresh';
+import { registerWhoamiCommand } from './whoami';
+import { registerPromoteCommand } from './promote';
 
 import packageJson from '../package.json';
 
@@ -329,9 +336,9 @@ const startCliRepl = async (colorize: (input: string) => string): Promise<void> 
 };
 
 program
-    .command('send <email>')
+    .command('send [recipient]')
     .description(
-        'Send a "Quickstart Complete" badge to an email address. Creates .env and send.mjs in the current folder.'
+        'Send a "Quickstart Complete" badge to an email, phone number, profile ID, or DID (prompts if omitted). Creates .env and send.mjs in the current folder.'
     )
     .option('-y, --yes', 'accept defaults without prompting')
     .option('--name <displayName>', 'display name for your issuer profile')
@@ -342,7 +349,17 @@ program
         'public handle for your profile (default: derived from the display name)'
     )
     .option('--network <url>', 'network tRPC URL (default: production)')
-    .option('--template', 'send using a reusable template and hosted signing authority')
+    .addOption(
+        new Option(
+            '--as <profileId>',
+            'send as a profile you manage (from `org apply`), signed with its did:web'
+        ).env('LEARNCARD_AS')
+    )
+    .option(
+        '--template',
+        'send using a reusable template and hosted signing authority (default once setup-signing or org apply has run)'
+    )
+    .option('--no-template', 'sign with the local key even if a signing authority is registered')
     .option('--template-uri <uri>', 'send from a specific template (implies --template)')
     .option('--webhook-url <url>', 'receive ISSUANCE_DELIVERED / ISSUANCE_CLAIMED at this URL')
     .option('--suppress-delivery', 'skip the claim email; you deliver inbox.claimUrl yourself')
@@ -353,7 +370,7 @@ program
     .option('--json', 'print a single JSON result on stdout')
     .action(
         async (
-            email: string,
+            recipient: string | undefined,
             opts: {
                 yes?: boolean;
                 name?: string;
@@ -371,7 +388,7 @@ program
                 require.resolve('@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm')
             );
             try {
-                await runSend(email, { ...opts, didkit });
+                await runSend(recipient, { ...opts, didkit });
                 if (out.json) {
                     process.stdout.write(
                         JSON.stringify({ ok: true, command: 'send', ...out.result }) + '\n'
@@ -389,7 +406,11 @@ program
                 }
                 console.error(`\n${firstLine}`);
                 // Input mistakes explain themselves; keep the docs link for network/auth failures.
-                if (!/is not an email address/.test(firstLine))
+                if (
+                    !/is not an email address|is a placeholder address|A recipient is required/.test(
+                        firstLine
+                    )
+                )
                     console.error(
                         'Troubleshooting: https://docs.learncard.com/start-here/your-first-integration#if-something-goes-wrong'
                     );
@@ -440,6 +461,32 @@ const runCommand = async (
         process.exit(1);
     }
 };
+
+program
+    .command('demo')
+    .description('Guided demonstrations using real LearnCard credentials.')
+    .command('refresh')
+    .description('Send a demo badge, publish an update, and refresh the recipient’s copy.')
+    .option('--inbox', 'use Universal Inbox deferred issuance for an address with no account')
+    .option('--ui', 'claim and refresh in the local LearnCard app (interactive only)')
+    .option('--app-url <url>', 'local LearnCard app URL for --ui (default: http://localhost:3000)')
+    .option(
+        '--lca-url <url>',
+        'local LCA URL for --inbox terminal mode (default: http://localhost:5100/trpc)'
+    )
+    .option(
+        '--email [address]',
+        'real-email mode: request a provisional claim email to your own address (requires --inbox --ui; prompts when omitted)'
+    )
+    .option('-y, --yes', 'run all steps without pausing')
+    .option('--network <url>', 'network tRPC URL or staging', 'http://localhost:4000/trpc')
+    .option('--json', 'print a single JSON result on stdout (no pauses)')
+    .action(options =>
+        runCommand('demo refresh', options, async didkit => {
+            const { runDemoRefreshCommand } = await import('./demo-refresh-command');
+            await runDemoRefreshCommand({ ...options, didkit });
+        })
+    );
 
 commandOptions(
     program.command('consent-contract').description("Connect a user's LearnCard to your platform.")
@@ -597,9 +644,18 @@ commandOptions(
         })
     );
 
+registerOrgCommand(program, runCommand);
+registerDoctorCommand(program, runCommand);
+registerClrCommand(program, runCommand);
+registerInboxCommand(program, runCommand);
+registerRefreshCommand(program, runCommand);
+registerWhoamiCommand(program, runCommand);
+registerPromoteCommand(program, runCommand);
+
 const JOURNEY = [
     'send',
     'status',
+    'whoami',
     'setup-signing',
     'token',
     'webhook',
@@ -608,6 +664,12 @@ const JOURNEY = [
     'verify',
     'revoke',
     'open',
+    'org',
+    'doctor',
+    'promote',
+    'clr',
+    'inbox',
+    'refresh',
     'init',
     'repl',
 ];
@@ -625,7 +687,7 @@ program
     })
     .addHelpText(
         'before',
-        '\nStart here:  npx @learncard/cli send you@example.com\nThen:        npx @learncard/cli status\n'
+        '\nStart here:  npx @learncard/cli send\nThen:        npx @learncard/cli status\n'
     )
     .addHelpText(
         'after',

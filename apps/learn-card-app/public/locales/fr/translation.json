@@ -1,4 +1,9 @@
 {
+    "inboxClaimSetup": {
+        "setup": "Terminez la configuration de votre compte pour récupérer votre attestation.",
+        "continue": "Continuer la configuration du compte",
+        "connection": "Nous n’avons pas pu confirmer votre compte. Vérifiez votre connexion et réessayez."
+    },
     "connectionPrompts": {
         "title": "Se connecter avec {{name}} ?",
         "description": "Restez en contact et valorisez la suite.",
@@ -1803,6 +1808,7 @@
         "syncMyData": "Synchroniser mes données",
         "shareOneTimeOnly": "Partager une seule fois",
         "customDuration": "Durée personnalisée",
+        "shareDuration": "Durée du partage",
         "noCredentials": "Aucune certification",
         "fetchingCredentials": "Récupération de vos certifications...",
         "shareAll": "Tout partager",
@@ -1886,6 +1892,9 @@
         "connectionIssue": "Problème de connexion. Veuillez vérifier votre connexion internet et réessayer.",
         "couldNotSave": "Impossible de sauvegarder le fichier. Veuillez réessayer.",
         "noPasskey": "Aucune clé d'accès trouvée sur cet appareil.",
+        "preparingSecureLink": "Préparation du lien sécurisé...",
+        "deviceLinkUnavailable": "Cet appareil ne peut pas associer votre compte.",
+        "verifyingSession": "Vérification de la session...",
         "securityUpdated": "La sécurité de votre compte a été récemment mise à jour sur un autre appareil. Veuillez vérifier pour continuer.",
         "recoveryEmailSent": "Nous avons précédemment envoyé un e-mail de récupération à votre adresse. Ouvrez cet e-mail et suivez les étapes ci-dessous.",
         "copyToClipboard": "Copier dans le presse-papiers",
@@ -2557,6 +2566,7 @@
             "experience": "Nouvelle expérience",
             "assistance": "Nouvel aménagement",
             "portfolio": "Nouveau portfolio",
+            "badge": "Nouveau badge",
             "boost": "Nouveau boost",
             "achievement": "Nouvelle réalisation",
             "skill": "Nouvelle compétence",
@@ -3693,6 +3703,9 @@
             "upload": "Téléverser",
             "change": "Changer le {{type}}"
         },
+        "activity": {
+            "title": "Recommandation de {{name}}"
+        },
         "request": {
             "header": {
                 "title": "Demande de recommandation",
@@ -3707,7 +3720,8 @@
                 "messagePlaceholder": "Message…",
                 "emailPlaceholder": "E-mail",
                 "sendEmail": "Envoyer la demande par e-mail",
-                "sending": "Envoi..."
+                "sending": "Envoi...",
+                "linkGenerationFailed": "Impossible de créer ce lien. Réessayez."
             },
             "success": {
                 "title": "Demande envoyée !",
@@ -8772,6 +8786,10 @@
                 "label": "Points",
                 "eg": "p. ex. 720"
             },
+            "RubricCriterionLevel": {
+                "label": "Niveau de rubrique",
+                "eg": "p. ex. 3"
+            },
             "Status": {
                 "label": "Statut",
                 "eg": ""
@@ -8784,6 +8802,52 @@
                 "OnHold": "En attente",
                 "Provisional": "Provisoire",
                 "Withdrew": "Abandonné"
+            },
+            "editor": {
+                "skillAlignedTypes": "Types de résultats alignés sur les compétences",
+                "otherTypes": "Autres types de résultats",
+                "otherTypesHint": "Ces types ne sont pas inclus dans le profil Open Skill Alignment.",
+                "percentRange": "Les résultats en pourcentage utilisent une plage de 0 à 100.",
+                "minimum": "Valeur minimale",
+                "maximum": "Valeur maximale",
+                "minimumPlaceholder": "p. ex. 0",
+                "maximumPlaceholder": "p. ex. 800",
+                "rubricLevels": "Niveaux de rubrique",
+                "rubricHint": "Définissez chaque niveau avant de choisir celui qui a été atteint.",
+                "levelNumber": "Niveau {{number}}",
+                "removeRubricLevel": "Supprimer le niveau de rubrique {{number}}",
+                "id": "ID",
+                "name": "Nom",
+                "level": "Niveau",
+                "points": "Nombre de points",
+                "proficientPlaceholder": "Compétent",
+                "addLevel": "Ajouter un niveau",
+                "achievedLevel": "Niveau atteint",
+                "chooseLevel": "Choisissez un niveau…",
+                "resultAlignments": "Alignements du résultat",
+                "resultAlignmentsHint": "Associez ce résultat à une ressource CTDL du registre des certifications.",
+                "alignmentNumber": "Alignement {{number}}",
+                "removeAlignment": "Supprimer l’alignement du résultat {{number}}",
+                "skillPlaceholder": "Compétence",
+                "ctdlResourceUrl": "URL de la ressource CTDL",
+                "ctdlUrlPlaceholder": "https://credentialengineregistry.org/resources/...",
+                "addResultAlignment": "Ajouter un alignement de résultat"
+            },
+            "validation": {
+                "alignmentNameUrl": "Ajoutez un nom et une URL pour chaque alignement de résultat.",
+                "alignmentUrl": "Saisissez une URL valide pour chaque alignement de résultat.",
+                "numericBounds": "Utilisez des valeurs numériques pour le minimum et le maximum.",
+                "minimumExceedsMaximum": "Le résultat minimum ne peut pas dépasser le maximum.",
+                "addRubricLevel": "Ajoutez au moins un niveau de rubrique.",
+                "completeRubricLevel": "Renseignez l’ID, le nom, le niveau et les points de chaque niveau de rubrique.",
+                "uniqueRubricId": "Utilisez un ID unique pour chaque niveau de rubrique.",
+                "numericRubricPoints": "Saisissez des points numériques pour chaque niveau de rubrique.",
+                "chooseAchievedLevel": "Choisissez le niveau de rubrique atteint.",
+                "chooseDeclaredRubricLevel": "Choisissez l’un des niveaux de rubrique définis.",
+                "numericResult": "Saisissez un résultat numérique.",
+                "resultRange": "Saisissez un résultat compris entre {{minimum}} et {{maximum}}.",
+                "resultMinimum": "Saisissez un résultat d’au moins {{minimum}}.",
+                "resultMaximum": "Saisissez un résultat ne dépassant pas {{maximum}}."
             }
         },
         "field": {

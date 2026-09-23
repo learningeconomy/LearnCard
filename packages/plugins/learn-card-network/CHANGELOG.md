@@ -1,5 +1,69 @@
 # learn-card-core
 
+## 3.0.0
+
+### Major Changes
+
+- [#1585](https://github.com/learningeconomy/LearnCard/pull/1585) [`0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e`](https://github.com/learningeconomy/LearnCard/commit/0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e) Thanks [@goblincore](https://github.com/goblincore)! - Managed refreshable sends through the standard send paths (LC-2198). `send({ type: 'boost', refresh: true })` now issues refreshable credentials for profile/DID recipients: with local signing the SDK asks the server to run every managed-send guard, create or reuse the boost and allocate the managed refresh service in one step, injects the service (with its inline JSON-LD context) before signing, and hands the signed credential to the server's unified send so activity/contract behavior and the canonical receipt are preserved; without local signing the request is served by the signing-authority path. Email/phone recipients now use Universal Inbox deferred issuance: allocate a stable refresh service at issue, queue unsigned updates in encrypted inbox escrow, and bind/sign the latest content at verified claim. The deferred receipt is returned at `inbox.refresh`; direct `inbox/issue` returns it at `refresh`.
+
+    `sendBoost` with literal `{ enableRefresh: true }` now returns `{ credentialUri, refresh }` instead of a plain URI string, where `refresh` is the metadata-only issuance receipt (refreshId, refreshService, credentialId, issuerDid, holderDid, credentialStatus) needed to publish future versions via `publishCredentialRefresh`. Legacy callers — boolean options, omitted options, or object options without `enableRefresh` — still receive the credential URI string; a dynamically typed `enableRefresh` degrades the result to `string | { credentialUri, refresh }`. Delivered managed credentials remain holder-encrypted even when `encrypt: false`. Pending Inbox content uses the existing service-readable encrypted escrow until claim, when it is wiped.
+
+    `@learncard/types` adds the `ManagedCredentialRefreshReceipt` validator plus optional `refresh` on the unified send input/response validators; `@learncard/helpers` adds the shared managed context preparation helpers (`prepareManagedRefreshContext`, `injectManagedRefreshService`) now also used by SDK `issueCredential` signing.
+
+    Refreshable `send` accepts an optional `idempotencyKey` so a whole call can be retried without duplicating the boost, refresh allocation or delivery.
+
+    Completed-send comparisons canonicalize nested result keys so equivalent receipts remain idempotent regardless of property insertion order. Keyed sends reuse the recipient validation already performed in the request.
+
+    Keyed pre-signed retries now recover the original result when delivery bound successfully but its intent result was not recorded, matching preparation and signing-authority retries. Pending receipt fallbacks use the holder's network profile DID consistently.
+
+    Signing a credential with a managed refresh service now rejects conflicting inline JSON-LD term definitions (including `authorization`) instead of producing a credential whose refresh terms are not correctly signed. Credentials without a managed service are unaffected.
+
+    Managed send and refresh publication recover from a stale local issuer DID document after signing-authority registration: if proof verification fails, the server refreshes the authenticated issuer's document and verifies once more without relaxing signature checks.
+
+    Universal Inbox accepts `refresh: true` and an issuance `idempotencyKey`; both claim paths bind the latest revision atomically. Publication keys survive claim, and issuer `getInboxCredential` exposes the metadata-only receipt with its bound holder DID.
+
+### Minor Changes
+
+- [#1598](https://github.com/learningeconomy/LearnCard/pull/1598) [`2991bd32b03e26736239dd8e586e2f720d9bcd45`](https://github.com/learningeconomy/LearnCard/commit/2991bd32b03e26736239dd8e586e2f720d9bcd45) Thanks [@Custard7](https://github.com/Custard7)! - Act as a managed profile. A request may carry `X-LearnCard-Act-As: <profileId>`; the network swaps the acting profile when the authenticated profile manages the target, keeps the token's scope unchanged, and records `onBehalfOf` on the resulting activity. API tokens must opt in via a new `actAs` field on the auth grant (`'*'` or a list of profile IDs; absent = no delegation).
+
+    - `@learncard/types`: `ACT_AS_HEADER`, `AuthGrant.actAs`.
+    - `@learncard/network-plugin` / `@learncard/init`: `actAs` option on `initLearnCard` and the network plugin; `learnCard.invoke.actAs(profileId)` returns a scoped instance.
+    - `@learncard/cli`: `serviceAccounts[].actAs` in the org spec is set on the grant at creation; like scope and expiry, it is compared on re-apply and any drift errors with a revoke hint (dry-run reports `drifted`). `actAs` lists are compared as sets, so reordering profile IDs is not drift. With a `learncard-hosted` signer, `org apply` also registers a hosted signing authority on each managed profile so tokens acting as it can sign. Shown by `doctor` and `whoami`; new `examples/delegated-service-account.network.yaml`.
+
+- [#1591](https://github.com/learningeconomy/LearnCard/pull/1591) [`928e587378b3674766cf58a8bbe1cbd4d66d3a9f`](https://github.com/learningeconomy/LearnCard/commit/928e587378b3674766cf58a8bbe1cbd4d66d3a9f) Thanks [@gerardopar](https://github.com/gerardopar)! - Add Universal Inbox batch issuance through `sendCredentialsViaInbox`, tRPC
+  `inbox.issueBatch`, and `POST /inbox/issue-batch`, with public batch input and result
+  validators/types, shared configuration defaults, ordered per-item outcomes, and
+  24-hour issuer-scoped idempotency keys. Later duplicate keys in one batch conflict
+  deterministically. Completed issuances include reconciliation IDs if replay storage
+  cannot be confirmed; side-effect-free preflight failures release their keys.
+
+    Enforce a 4 MiB JSON payload budget and atomic batch quota admission without
+    charging rejected batches. Batch submission returns HTTP 202 with a durable
+    receipt. Poll `GET /inbox/batches/{batchId}` or
+    `getInboxCredentialBatch` for ordered progress and outcomes. Batch-level request IDs
+    make submission retries safe. Jobs, quota admission, dispatch records, and encrypted
+    results are stored in Neo4j; a dedicated SQS queue processes items independently of
+    notifications. Submission retries report the current batch state. Transient preparation
+    and signing failures retry before delivery. Terminal batches release their original
+    payload and remain available for 30 days, including uncertain outcomes; unresolved
+    client-keyed replay reservations stay blocked for reconciliation after job expiry.
+    Orphaned internal reservations for unkeyed items are collected after job pruning.
+    Container-backed tests exercise Neo4j, Redis, and an SQS emulator, including worker
+    recovery, duplicate delivery, polling authorization, and submission replay.
+
+    The existing single-issue route now accepts `configuration.guardianEmail`, exposing
+    guardian approval to single-issue clients. Both routes reject guardian self-approval
+    case-insensitively. Rate-limit errors use `TOO_MANY_REQUESTS` (HTTP 429); remove stale
+    TypeScript casts to `BAD_REQUEST` from existing callers. Those casts did not change
+    the runtime status code.
+
+### Patch Changes
+
+- Updated dependencies [[`0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e`](https://github.com/learningeconomy/LearnCard/commit/0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e)]:
+    - @learncard/helpers@1.6.0
+    - @learncard/core@9.4.36
+    - @learncard/network-brain-client@2.5.57
+
 ## 2.14.1
 
 ### Patch Changes

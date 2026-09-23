@@ -338,8 +338,8 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
             <VCDisplayCard2
                 categoryType={_category}
                 credential={displayCredential}
-                issueeOverride={overrideIssueName || issueeName}
-                issuerOverride={issuerName}
+                issueeOverride={overrideIssueName ?? issueeOverride ?? issueeName}
+                issuerOverride={issuerOverride ?? issuerName}
                 customThumbComponent={
                     isID || isMembership || isTroopID ? (
                         <IDDisplayCard
@@ -372,9 +372,9 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
                         />
                     )
                 }
-                issuerImageComponent={issuerProfileImageElement}
-                subjectDID={idSubjectDID}
-                subjectImageComponent={subjectProfileImageElement}
+                issuerImageComponent={issuerImageComponent ?? issuerProfileImageElement}
+                subjectDID={subjectDID ?? idSubjectDID}
+                subjectImageComponent={subjectImageComponent ?? subjectProfileImageElement}
                 verificationItems={displayedVerifications}
                 customBodyCardComponent={customBodyCardComponent}
                 customFooterComponent={customFooterComponent}

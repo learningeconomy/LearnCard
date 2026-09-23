@@ -101,7 +101,7 @@ const ClrProgramDetailPanel: React.FC<{
                                     <h3 className="text-lg font-medium text-grayscale-900 mb-2">
                                         Description
                                     </h3>
-                                    <p className="text-sm text-grayscale-700">
+                                    <p className="text-base text-grayscale-700 leading-relaxed">
                                         {program.description.value}
                                     </p>
                                 </div>
@@ -113,7 +113,7 @@ const ClrProgramDetailPanel: React.FC<{
                                             <p className="text-xs font-semibold text-grayscale-500 uppercase tracking-wide mb-0.5">
                                                 Awarded
                                             </p>
-                                            <p className="text-sm text-grayscale-900">
+                                            <p className="text-base text-grayscale-900">
                                                 {formatClrDate(program.earnedAt.value)}
                                             </p>
                                         </div>
@@ -123,7 +123,7 @@ const ClrProgramDetailPanel: React.FC<{
                                             <p className="text-xs font-semibold text-grayscale-500 uppercase tracking-wide mb-0.5">
                                                 Expires
                                             </p>
-                                            <p className="text-sm text-grayscale-900">
+                                            <p className="text-base text-grayscale-900">
                                                 {formatClrDate(program.validUntil.value)}
                                             </p>
                                         </div>

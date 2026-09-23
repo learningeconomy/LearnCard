@@ -35,6 +35,7 @@ import {
     obv3StudentWebDevelopment,
     obv3StudentCommunityImpact,
 } from './obv3/student-achievements';
+import { obv3RubricAlignedBadge } from './obv3/rubric-aligned-badge';
 
 // CLR v2
 import { clrMinimal } from './clr/minimal';
@@ -116,6 +117,7 @@ export const ALL_FIXTURES: LibraryFixture[] = [
     obv3StudentCivicLeadership,
     obv3StudentWebDevelopment,
     obv3StudentCommunityImpact,
+    obv3RubricAlignedBadge,
 
     // CLR v2
     clrMinimal,
@@ -192,6 +194,7 @@ export {
     obv3StudentCivicLeadership,
     obv3StudentWebDevelopment,
     obv3StudentCommunityImpact,
+    obv3RubricAlignedBadge,
     clrUniversityTranscript,
     clrStudentTranscript,
     clrStudentOfficialAcademicTranscript,

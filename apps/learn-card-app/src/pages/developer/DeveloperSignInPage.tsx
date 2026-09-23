@@ -20,7 +20,11 @@ import useTheme from '../../theme/hooks/useTheme';
 import useLogout from '../../hooks/useLogout';
 import { useSeedLogin } from '../login/useSeedLogin';
 import { sanitizeNextPath } from './sanitizeNextPath';
-import { PENDING_SEED_STORAGE_KEY } from './pendingSeedStorage';
+import {
+    PENDING_SEED_STORAGE_KEY,
+    readPendingDeveloperSeed,
+    consumePendingDeveloperSeed,
+} from './pendingSeedStorage';
 
 const PROFILE_ID_PATTERN = /^[a-z0-9][a-z0-9._-]{2,39}$/i;
 
@@ -38,11 +42,9 @@ const readSeedFromHash = (): string | null => {
     return hash.startsWith(SEED_HASH_PREFIX) ? hash.slice(SEED_HASH_PREFIX.length) : null;
 };
 
-const readAndClearPendingSeed = (): string | null => {
+const readStoredPendingSeed = (): string | null => {
     try {
-        const seed = window.sessionStorage.getItem(PENDING_SEED_STORAGE_KEY);
-        if (seed !== null) window.sessionStorage.removeItem(PENDING_SEED_STORAGE_KEY);
-        return seed;
+        return readPendingDeveloperSeed();
     } catch (e) {
         log.warn('Failed to read pending seed from sessionStorage', e);
         return null;
@@ -51,7 +53,7 @@ const readAndClearPendingSeed = (): string | null => {
 
 /** Our own switch-account round-trip (sessionStorage) takes priority over the
  *  `#seed=` fragment, which remains for external entry points only. */
-const readPendingSeed = (): string | null => readAndClearPendingSeed() ?? readSeedFromHash();
+const readPendingSeed = (): string | null => readStoredPendingSeed() ?? readSeedFromHash();
 
 const DeveloperSignInPage: React.FC = () => {
     const { colors } = useTheme();
@@ -101,6 +103,7 @@ const DeveloperSignInPage: React.FC = () => {
 
         const validationError = validate(pendingSeed);
         if (validationError) {
+            consumePendingDeveloperSeed(pendingSeed);
             pendingSeedHandledRef.current = true;
             window.history.replaceState(null, '', location.pathname + location.search);
             setError(validationError);
@@ -123,6 +126,7 @@ const DeveloperSignInPage: React.FC = () => {
         window.history.replaceState(null, '', location.pathname + location.search);
 
         if (privateKey === pendingSeed) {
+            consumePendingDeveloperSeed(pendingSeed);
             history.replace(nextPath);
             return;
         }
@@ -144,6 +148,7 @@ const DeveloperSignInPage: React.FC = () => {
 
         try {
             await signInWithSeed(seedToUse, { profileId: requestedProfileId });
+            consumePendingDeveloperSeed(seedToUse);
             history.replace(nextPath);
         } catch (e: unknown) {
             setError(e instanceof Error ? e.message : m['login.seedPhrase.error.generic']());

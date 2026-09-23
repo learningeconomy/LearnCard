@@ -31,7 +31,11 @@ import {
     SELF_ASSIGNED_SKILLS_BOOST_NAME,
     getEndorsementsForVC,
 } from 'learn-card-base/helpers/credentialHelpers';
-import { insertItem } from './mutation.helpers';
+import {
+    findMatchingSharedCredentialIndex,
+    getSharedCredentialIndexQueries,
+    insertItem,
+} from './mutation.helpers';
 import { convertAttachmentsToEvidence } from '../../components/boost/boost';
 import { v4 as uuidv4 } from 'uuid';
 import { LCR } from 'learn-card-base/types/credential-records';
@@ -43,6 +47,8 @@ const log = getLogger('boosts');
 type SharedCredentialsIndex = {
     type: 'shared-credentials';
     sharedCredentialUri: string;
+    sharedCredentialKey?: string;
+    credentialId?: string;
     pin: string;
     randomSeed: string;
     uri: string;
@@ -57,11 +63,13 @@ export const useShareBoostMutation = () => {
     return useMutation({
         mutationFn: async ({
             credential,
+            credentialId: requestedCredentialId,
             credentialUri,
             shareRouteName = baseBoostShareRouteName,
         }: {
             credential: VC | UnsignedVC;
             credentialUri: string;
+            credentialId?: string;
             shareRouteName?: string;
         }) => {
             const baseUrl = getBaseUrl();
@@ -72,12 +80,28 @@ export const useShareBoostMutation = () => {
 
             const pin = Math.floor(Math.random() * 9000 + 1000)?.toString();
 
-            let currentIndex = await myWallet.invoke.learnCloudRead<SharedCredentialsIndex>({
-                sharedCredentialUri: credentialUri,
-            });
+            const credentialId = requestedCredentialId ?? credential.id;
+            const sharedCredentialIndexQueries = getSharedCredentialIndexQueries(
+                credentialUri,
+                credentialId
+            );
+            let extantCredentialIndex: SharedCredentialsIndex | undefined;
 
-            //Find if credential is already stored in index, if so return that instead
-            const extantCredentialIndex = currentIndex?.length > 0 && currentIndex[0];
+            for (const [index, query] of sharedCredentialIndexQueries.entries()) {
+                const candidates =
+                    (await myWallet.invoke.learnCloudRead<SharedCredentialsIndex>(query)) ?? [];
+                const isLegacyFallback = Boolean(credentialId) && index > 0;
+                const candidate = await findMatchingSharedCredentialIndex(
+                    candidates,
+                    credentialId,
+                    isLegacyFallback
+                );
+
+                if (candidate) {
+                    extantCredentialIndex = candidate;
+                    break;
+                }
+            }
 
             const endorsementVCs: VC[] = await getEndorsementsForVC(myWallet, credential, 'public');
 
@@ -135,6 +159,8 @@ export const useShareBoostMutation = () => {
 
             await myWallet.invoke.learnCloudCreate<SharedCredentialsIndex>({
                 sharedCredentialUri: credentialUri,
+                ...(credentialId ? { credentialId } : {}),
+                ...sharedCredentialIndexQueries[0],
                 pin,
                 randomSeed: randomKey,
                 uri: publishedVpUri,

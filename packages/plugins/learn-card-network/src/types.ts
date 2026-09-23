@@ -53,6 +53,9 @@ import {
     AuthGrantType,
     AuthGrantQuery,
     IssueInboxCredentialType,
+    IssueInboxCredentialBatch,
+    InboxBatchReceipt,
+    InboxBatchStatus,
     InboxCredentialType,
     PaginatedInboxCredentialsType,
     PaginatedSkillFrameworksType,
@@ -113,16 +116,67 @@ import {
     BitstringCredentialStatusEntry,
     AllocateCredentialRefreshInput,
     AllocateCredentialRefreshResult,
+    ManagedCredentialRefreshReceipt,
     PublishCredentialRefreshInput,
     PublishCredentialRefreshResult,
     GetCredentialRefreshHistoryInput,
     GetCredentialRefreshHistoryResult,
 } from '@learncard/types';
-import { Plugin } from '@learncard/core';
+import { LearnCard, Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
 import { VerifyExtension } from '@learncard/vc-plugin';
 
 export type { BitstringCredentialStatusPurpose, BitstringCredentialStatusEntry };
+
+/** Object-form options for the network plugin's `sendBoost` */
+export type SendBoostNetworkOptions = {
+    encrypt?: boolean;
+    overideFn?: (boost: UnsignedVC) => UnsignedVC;
+    skipNotification?: boolean;
+    templateData?: Record<string, unknown>;
+    statusPurposes?: BitstringCredentialStatusPurpose[];
+    /**
+     * Opt into a managed refresh service. When true, a stable UUID credential ID is
+     * generated if the boost template has none, a refresh service is allocated BEFORE
+     * signing and injected into the signed credential, and the credential is sent via
+     * the dedicated managed-send procedure (holder-encrypted storage only) instead of
+     * legacy credential storage. The `encrypt` option is ignored in this mode —
+     * managed storage is always holder-only.
+     */
+    enableRefresh?: boolean;
+};
+
+/** Result of a refresh-enabled `sendBoost` call (opt-in via `enableRefresh: true`) */
+export type SendBoostRefreshResult = {
+    /** URI of the issued (managed, holder-encrypted) credential */
+    credentialUri: string;
+    /** Issuance metadata the issuer keeps in order to publish future updates */
+    refresh: ManagedCredentialRefreshReceipt;
+};
+
+/** The `enableRefresh` type carried by `sendBoost` options (`undefined` when absent). */
+type EnableRefreshOf<Options> = Options extends object
+    ? 'enableRefresh' extends keyof Options
+        ? Options extends { enableRefresh?: infer Enabled }
+            ? Enabled
+            : undefined
+        : undefined
+    : undefined;
+
+/**
+ * Resolves the `sendBoost` return type from the (const-inferred) options type.
+ *
+ * - legacy `boolean` options, omitted options, and object options without
+ *   `enableRefresh` keep the historical `string` result.
+ * - literal `enableRefresh: true` returns the refreshable-issuance result.
+ * - anything that may be `true` at runtime (a `boolean`, an optional property, or a
+ *   union of option shapes) degrades to the union of both shapes.
+ */
+export type SendBoostResultFor<Options> = [EnableRefreshOf<Options>] extends [true]
+    ? SendBoostRefreshResult
+    : true extends EnableRefreshOf<Options>
+      ? string | SendBoostRefreshResult
+      : string;
 
 /** @group LearnCardNetwork Plugin */
 export type LearnCardNetworkPluginDependentMethods = {
@@ -160,6 +214,14 @@ export type LearnCardNetworkPluginMethods = {
     getManagedProfiles: (
         options?: Partial<PaginationOptionsType> & { query?: LCNProfileQuery }
     ) => Promise<PaginatedLCNProfiles>;
+    /**
+     * Returns a new LearnCard instance whose network plugin sends every request with the
+     * `X-LearnCard-Act-As` header set to `profileId`, asking the server to swap the acting
+     * profile for the duration of each request. Token scope is unchanged; the server responds
+     * `403` if the caller doesn't manage `profileId`, or if an API token's grant doesn't cover
+     * it. The original instance (and its headers) is left untouched.
+     */
+    actAs: (profileId: string) => Promise<ActingLearnCard>;
     claimPendingGuardianLinks: () => Promise<
         Array<{ childProfileId: string; childDisplayName: string; managerId: string | null }>
     >;
@@ -473,29 +535,23 @@ export type LearnCardNetworkPluginMethods = {
         recipientProfileId: string,
         credentialUri?: string
     ) => Promise<boolean>;
-    sendBoost: (
+    /**
+     * Sends a boost credential to a recipient profile.
+     *
+     * **Return shape (opt-in):** legacy callers (boolean options, omitted options, or
+     * object options without `enableRefresh`) receive the issued credential URI as a
+     * `string`, exactly as before. Passing literal `{ enableRefresh: true }` opts into
+     * managed refresh and returns `{ credentialUri, refresh }` instead, where `refresh`
+     * is the issuance receipt needed to publish future versions (see
+     * `publishCredentialRefresh`). Options whose `enableRefresh` may be `true` at runtime
+     * (a `boolean`, or a variable typed `SendBoostNetworkOptions`) degrade the result to
+     * `string | { credentialUri, refresh }`.
+     */
+    sendBoost: <const Options extends boolean | SendBoostNetworkOptions | undefined = undefined>(
         profileId: string,
         boostUri: string,
-        options?:
-            | boolean
-            | {
-                  encrypt?: boolean;
-                  overideFn?: (boost: UnsignedVC) => UnsignedVC;
-                  skipNotification?: boolean;
-                  templateData?: Record<string, unknown>;
-                  statusPurposes?: BitstringCredentialStatusPurpose[];
-                  /**
-                   * Opt into a managed refresh service. When true, a stable UUID
-                   * credential ID is generated if the boost template has none, a
-                   * refresh service is allocated BEFORE signing and injected into the
-                   * signed credential, and the credential is sent via the dedicated
-                   * managed-send procedure (holder-encrypted storage only) instead of
-                   * legacy credential storage. The `encrypt` option is ignored in this
-                   * mode — managed storage is always holder-only.
-                   */
-                  enableRefresh?: boolean;
-              }
-    ) => Promise<string>;
+        options?: Options
+    ) => Promise<SendBoostResultFor<Options>>;
 
     registerSigningAuthority: (endpoint: string, name: string, did: string) => Promise<boolean>;
     getRegisteredSigningAuthorities: () => Promise<LCNSigningAuthorityForUserType[]>;
@@ -679,6 +735,27 @@ export type LearnCardNetworkPluginMethods = {
     revokeAuthGrant: (id: string) => Promise<boolean>;
     getAPITokenForAuthGrant: (id: string) => Promise<string>;
 
+    /** Queue 1–100 credentials; workers may start up to a minute later. Use sendCredentialViaInbox for immediate single issuance. */
+    sendCredentialsViaInbox: (batch: IssueInboxCredentialBatch) => Promise<InboxBatchReceipt>;
+    /** Explicit batch alias for sendCredentialsViaInbox. Returns a durable receipt. */
+    sendCredentialBatchViaInbox: (batch: IssueInboxCredentialBatch) => Promise<InboxBatchReceipt>;
+    /** Ordered results and disjoint success/failure/unconfirmed counts. `done` includes unconfirmed outcomes.
+     * @see https://docs.learncard.com/sdks/learncard-network/universal-inbox-api
+     */
+    getInboxCredentialBatch: (batchId: string) => Promise<InboxBatchStatus>;
+    /** Poll until done with bounded backoff. Abort/timeout stops waiting, not processing. */
+    waitForInboxCredentialBatch: (
+        batchId: string,
+        options?: WaitForInboxCredentialBatchOptions
+    ) => Promise<InboxBatchStatus>;
+    /** Submit once and wait; persist the receipt with onSubmitted for recovery after timeout. */
+    sendCredentialsViaInboxAndWait: (
+        batch: IssueInboxCredentialBatch,
+        options?: WaitForInboxCredentialBatchOptions & {
+            onSubmitted?: (receipt: InboxBatchReceipt) => void | Promise<void>;
+        }
+    ) => Promise<InboxBatchStatus>;
+    /** Issue one credential synchronously, without waiting for the batch dispatcher. */
     sendCredentialViaInbox: (
         issueInboxCredential: IssueInboxCredentialType
     ) => Promise<IssueInboxCredentialResponseType>;
@@ -971,6 +1048,16 @@ export type LearnCardNetworkPluginMethods = {
 };
 
 /** @group LearnCardNetwork Plugin */
+/**
+ * The wallet returned by `invoke.actAs`: the caller's existing plugins with a network
+ * plugin bound to the target profile appended. The caller's plugin list cannot be named
+ * from inside the plugin's own method map, hence the open tuple.
+ */
+export type ActingLearnCard = LearnCard<
+    [...Plugin[], LearnCardNetworkPlugin],
+    'id' | 'read' | 'store'
+>;
+
 export type LearnCardNetworkPlugin = Plugin<
     'LearnCard Network',
     'id' | 'read' | 'store',
@@ -988,3 +1075,12 @@ export type TrustedBoostRegistryEntry = {
     url: string;
     did: string;
 };
+
+export interface WaitForInboxCredentialBatchOptions {
+    /** Overall polling deadline; defaults to ten minutes. */
+    timeoutMs?: number;
+    /** Initial interval; increases by 1.5x up to ten seconds (or this interval if larger). */
+    intervalMs?: number;
+    signal?: AbortSignal;
+    onProgress?: (status: InboxBatchStatus) => void;
+}

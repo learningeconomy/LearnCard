@@ -36,6 +36,9 @@ services:
             # contracts explicitly to exercise branch-local validator changes without a
             # full monorepo image rebuild.
             - ../../packages/learn-card-types/src:/app/packages/learn-card-types/src
+            # LC-2198: the unified send route signs through the shared managed context
+            # helpers (@learncard/helpers resolves to src under --conditions=development).
+            - ../../packages/learn-card-helpers/src:/app/packages/learn-card-helpers/src
 
         environment:
             PORT: 4000
@@ -47,6 +50,8 @@ services:
             SKIP_DIDKIT_NAPI: '1'
 
             DOMAIN_NAME: localhost%3A4000
+            # Trust proof-of-login presentations signed by this stack's LCA API.
+            LOGIN_PROVIDER_DID: did:web:localhost%3A5200
 
             NEO4J_URI: ${NEO4J_URI:-bolt://neo4j:7687}
             NEO4J_USERNAME: ${NEO4J_USERNAME:-neo4j}

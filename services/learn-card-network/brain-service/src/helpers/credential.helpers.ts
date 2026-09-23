@@ -1,3 +1,4 @@
+import type { TenantBranding } from '@learncard/email-templates';
 import { TRPCError } from '@trpc/server';
 import { UnsignedVC, VC, JWE, LCNNotificationTypeEnumValidator } from '@learncard/types';
 
@@ -83,7 +84,8 @@ export const acceptCredential = async (
     uri: string,
     options: { skipNotification?: boolean; metadata?: Record<string, unknown> } = {
         skipNotification: false,
-    }
+    },
+    branding?: Partial<TenantBranding>
 ): Promise<boolean> => {
     const { id, type } = getUriParts(uri);
 
@@ -174,6 +176,7 @@ export const acceptCredential = async (
             credentialNodeId: pendingVc.target.id,
             issuerProfile: sourceProfile,
             holderProfile: profile,
+            branding,
         });
     } catch (error) {
         console.error(

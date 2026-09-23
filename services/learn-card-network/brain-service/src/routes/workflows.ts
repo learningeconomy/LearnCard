@@ -1,3 +1,4 @@
+import { finalizeInboxRefresh } from '@helpers/inbox-refresh.helpers';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import base64url from 'base64url';
@@ -606,14 +607,28 @@ async function handleInboxClaimPresentation(
     const credentialProcessingPromises = pendingCredentials.map(async inboxCredential => {
         try {
             let finalCredential: VC;
-            const credentialPayload = await decryptInboxCredential(inboxCredential.credential);
+            const credentialPayload = inboxCredential.refreshId
+                ? undefined
+                : await decryptInboxCredential(inboxCredential.credential);
 
-            if (inboxCredential.isSigned) {
+            if (inboxCredential.refreshId) {
+                // A contact token authorizes delivery to the VP's DID. Never attach an unrelated
+                // contact profile's decryption key to that holder's refresh aggregate.
+                const boundProfile = await getProfileByDid(holderDid);
+                finalCredential = (
+                    await finalizeInboxRefresh({
+                        inboxId: inboxCredential.id,
+                        holderDid,
+                        holderProfile: boundProfile,
+                        domain: ctx.domain,
+                    })
+                ).credential;
+            } else if (inboxCredential.isSigned) {
                 // Credential is already signed
-                finalCredential = JSON.parse(credentialPayload) as VC;
+                finalCredential = JSON.parse(credentialPayload!) as VC;
             } else {
                 // Need to sign the credential using signing authority
-                const unsignedCredential = JSON.parse(credentialPayload) as UnsignedVC;
+                const unsignedCredential = JSON.parse(credentialPayload!) as UnsignedVC;
                 const inboxCredentialSigningAuthorityEndpoint =
                     (inboxCredential.signingAuthority?.endpoint as string) ?? undefined;
                 const inboxCredentialSigningAuthorityName =
@@ -676,25 +691,29 @@ async function handleInboxClaimPresentation(
                 ).credential as VC;
             }
 
-            // Avoid the seeded encryption wrapper, which adds the service as a recipient.
-            const deliveryLearnCard = await getEmptyLearnCard();
-            let encryptedDelivery: JWE;
-            try {
-                encryptedDelivery = await deliveryLearnCard.invoke.createDagJwe(finalCredential, [
-                    holderDid,
-                ]);
-                if (!encryptedDelivery.recipients?.length) {
-                    throw new Error('No supported delivery encryption recipients');
+            let encryptedDelivery: JWE | undefined;
+            if (!inboxCredential.refreshId) {
+                // Avoid the seeded encryption wrapper, which adds the service as a recipient.
+                const deliveryLearnCard = await getEmptyLearnCard();
+
+                try {
+                    encryptedDelivery = await deliveryLearnCard.invoke.createDagJwe(
+                        finalCredential,
+                        [holderDid]
+                    );
+                    if (!encryptedDelivery.recipients?.length) {
+                        throw new Error('No supported delivery encryption recipients');
+                    }
+                } catch (error) {
+                    deliveryEncryptionFailed = true;
+                    throw error;
                 }
-            } catch (error) {
-                deliveryEncryptionFailed = true;
-                throw error;
+                const finalized = await finalizeAndWipeInboxCredential(inboxCredential.id, {
+                    recipientDid: holderDid,
+                    credential: encryptedDelivery,
+                });
+                if (!finalized) throw new Error('Inbox credential is no longer pending');
             }
-            const finalized = await finalizeAndWipeInboxCredential(inboxCredential.id, {
-                recipientDid: holderDid,
-                credential: encryptedDelivery,
-            });
-            if (!finalized) throw new Error('Inbox credential is no longer pending');
 
             // Record the claim only after finalization succeeds so failed compare-and-swap
             // attempts cannot leave a misleading audit relationship behind.
@@ -708,7 +727,7 @@ async function handleInboxClaimPresentation(
 
             // Store credential and create boost relationship if this was a boost issuance
             const boostUri = inboxCredential.boostUri;
-            if (holderProfile && boostUri) {
+            if (!inboxCredential.refreshId && holderProfile && boostUri) {
                 try {
                     const boost = await getBoostByUri(boostUri);
                     const issuerProfile = await getProfileByDid(inboxCredential.issuerDid);
@@ -717,7 +736,7 @@ async function handleInboxClaimPresentation(
                         // Store the credential in the database
                         const credentialInstance = await storeCredential({
                             kind: 'issued-credential',
-                            credential: encryptedDelivery,
+                            credential: encryptedDelivery!,
                             statusEntries: getBitstringStatusListEntries(finalCredential),
                         });
 

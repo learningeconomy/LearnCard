@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 
 import ProfilePicture, {
     UserProfilePicture,
@@ -21,7 +21,6 @@ import {
     isClrCredential as checkIsClrCredential,
     getClrLinkedCredentialCounts,
     getCredentialSubjectAchievementData,
-    getEndorsements,
 } from 'learn-card-base/helpers/credentialHelpers';
 import { isAppDidWeb } from '@learncard/helpers';
 
@@ -33,7 +32,7 @@ import {
     useGetAppStoreListingBySlug,
 } from 'learn-card-base/react-query/queries/queries';
 
-import { UnsignedAchievementCredential, UnsignedVC, VC } from '@learncard/types';
+import { UnsignedAchievementCredential, UnsignedVC } from '@learncard/types';
 import {
     getIDCardDisplayInputsFromVC,
     ID_CARD_DISPLAY_TYPES,
@@ -42,7 +41,7 @@ import { ellipsisMiddle } from 'learn-card-base/helpers/stringHelpers';
 import { getDefaultDisplayType } from 'learn-card-base/helpers/display.helpers';
 import { parseLcTags } from 'learn-card-base/helpers/displayTags.helpers';
 
-import { useWallet } from 'learn-card-base';
+import useCredentialEndorsements from './useCredentialEndorsements';
 
 /**
  * useGetVCInfo Hook
@@ -64,14 +63,10 @@ export const useGetVCInfo = (
         description?: string;
     };
 
-    // --- Wallet context ---
-    const { initWallet } = useWallet();
-
     // --- Current user context ---
     const currentUser = useCurrentUser();
     const { currentLCNUser } = useGetCurrentLCNUser();
     const { data: currentUserDidKey } = useGetDid('key');
-    const [endorsements, setEndorsements] = useState<{ endorsement: VC; metadata: any }[]>([]);
 
     // --- Basic VC fields ---
     const credentialSubject = getCredentialSubject(vc);
@@ -423,18 +418,9 @@ export const useGetVCInfo = (
     const isClrCredential = checkIsClrCredential(vc);
     const linkedCredentialCount = isClrCredential ? getClrLinkedCredentialCounts(vc) : 0;
 
-    // ========================================================================
-    // Endorsements
-    // ========================================================================
-    useEffect(() => {
-        const fetchEndorsements = async () => {
-            const wallet = await initWallet();
-            const endorsements = await getEndorsements(wallet, vc);
-
-            setEndorsements(endorsements);
-        };
-        fetchEndorsements();
-    }, []);
+    // Endorsements are keyed to the displayed credential so a reused modal cannot retain
+    // results from the previously opened credential.
+    const endorsements = useCredentialEndorsements(vc);
     const endorsementComment = vc?.credentialSubject?.endorsementComment ?? '';
 
     // ========================================================================

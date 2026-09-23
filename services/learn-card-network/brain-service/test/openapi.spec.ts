@@ -1,4 +1,7 @@
-import { PublishCredentialRefreshInputValidator } from '@learncard/types';
+import {
+    PublishCredentialRefreshInputValidator,
+    SendBoostResponseValidator,
+} from '@learncard/types';
 
 import { openApiDocument } from '../src/openapi';
 
@@ -64,6 +67,43 @@ describe('OpenAPI generation', () => {
                 not: { required: ['signedCredential'] },
             }),
         ]);
+    });
+
+    it('documents the unified send route with the refresh receipt in its response schema', () => {
+        const paths = openApiDocument.paths ?? {};
+
+        expect(paths['/send']).toBeDefined();
+
+        // The managed receipt must survive response schema generation: the schema is
+        // derived from SendBoostResponseValidator, which carries the optional receipt.
+        const response = SendBoostResponseValidator.safeParse({
+            type: 'boost',
+            uri: 'https://localhost%3A3000/boost/abc',
+            credentialUri: 'https://localhost%3A3000/credentials/def',
+            activityId: 'activity-1',
+            refresh: {
+                refreshId: 'refresh-1',
+                refreshService: {
+                    id: 'https://localhost%3A3000/refresh/refresh-1',
+                    type: 'LearnCardCredentialRefresh2026',
+                    authorization: { type: 'LearnCardDIDAuth' },
+                },
+                credentialId: 'urn:uuid:credential-1',
+                issuerDid: 'did:key:issuer',
+                holderDid: 'did:key:holder',
+                // Unknown keys ride along in the input but must be stripped by the
+                // receipt validator, never silently persisted or returned.
+                credentialSubject: { id: 'did:key:holder' },
+            },
+        });
+
+        expect(response.success).toBe(true);
+
+        if (response.success) {
+            expect(response.data.refresh).toBeDefined();
+            expect(response.data.refresh).not.toHaveProperty('credentialSubject');
+            expect(response.data.refresh!.refreshId).toBe('refresh-1');
+        }
     });
 
     it.each([

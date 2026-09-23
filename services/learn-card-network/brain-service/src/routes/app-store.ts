@@ -1662,7 +1662,7 @@ const handleSendNotificationEvent = async (
         // tRPC does not support HTTP 429 natively, so we cast to BAD_REQUEST
         // while keeping the semantic code in the message for clients.
         throw new TRPCError({
-            code: 'TOO_MANY_REQUESTS' as 'BAD_REQUEST',
+            code: 'TOO_MANY_REQUESTS',
             message: 'Rate limit exceeded: max 10 notifications per user per app per hour',
         });
     }
@@ -2709,7 +2709,7 @@ export const appStoreRouter = t.router({
                 // tRPC does not support HTTP 429 natively, so we cast to BAD_REQUEST
                 // while keeping the semantic code in the message for clients.
                 throw new TRPCError({
-                    code: 'TOO_MANY_REQUESTS' as 'BAD_REQUEST',
+                    code: 'TOO_MANY_REQUESTS',
                     message: 'Rate limit exceeded: max 60 notifications per app per hour',
                 });
             }

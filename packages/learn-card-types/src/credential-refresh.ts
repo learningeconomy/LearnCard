@@ -1,6 +1,6 @@
 import { z } from 'zod/v4';
 
-import { UnsignedVCValidator, VCValidator } from './vc';
+import { CredentialStatusValidator, UnsignedVCValidator, VCValidator } from './vc';
 import { JWEValidator } from './crypto';
 
 /**
@@ -72,6 +72,40 @@ export const AllocateCredentialRefreshResultValidator = z.object({
 export type AllocateCredentialRefreshResult = z.infer<
     typeof AllocateCredentialRefreshResultValidator
 >;
+
+// --- Managed issuance receipt (returned to the issuer after a refreshable send) ---
+
+/**
+ * Issuance metadata returned to the authenticated issuer after a refreshable send
+ * (unified send with `refresh: true`, or `sendBoost` with `enableRefresh: true`).
+ *
+ * Populated from the actual signed version 1 credential — never from the template or
+ * allocation alone. This is issuance metadata only: it must not contain credential
+ * claims, subject bodies, plaintext VCs, or JWEs. The issuer retains its own
+ * template/claims alongside this receipt, and preserves the exact `credentialStatus`
+ * descriptor when publishing an update (no new allocation).
+ */
+export const ManagedCredentialRefreshReceiptValidator = z
+    .object({
+        refreshId: z.string().min(1),
+        refreshService: ManagedCredentialRefreshServiceValidator,
+        credentialId: z.string().min(1),
+        issuerDid: z.string().min(1),
+        holderDid: z.string().min(1),
+        credentialStatus: CredentialStatusValidator.or(
+            CredentialStatusValidator.array()
+        ).optional(),
+    })
+    .strip();
+export type ManagedCredentialRefreshReceipt = z.infer<
+    typeof ManagedCredentialRefreshReceiptValidator
+>;
+
+/** Allocation metadata for deferred Inbox issuance. No holder is invented before claim. */
+export const InboxCredentialRefreshReceiptValidator = ManagedCredentialRefreshReceiptValidator.omit(
+    { holderDid: true }
+).extend({ holderDid: z.string().min(1).optional() });
+export type InboxCredentialRefreshReceipt = z.infer<typeof InboxCredentialRefreshReceiptValidator>;
 
 // --- Publication ------------------------------------------------------------
 

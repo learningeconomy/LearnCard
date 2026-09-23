@@ -27,7 +27,6 @@ import React, {
     useRef,
 } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { Web3Auth } from '@web3auth/single-factor-auth';
 import { CHAIN_NAMESPACES } from '@web3auth/base';
 import { EthereumPrivateKeyProvider } from '@web3auth/ethereum-provider';
@@ -38,16 +37,12 @@ import {
     AuthCoordinatorProvider as BaseAuthCoordinatorProvider,
     useAuthCoordinator as useBaseAuthCoordinator,
     useAuthCoordinatorAutoSetup,
-    createFirebaseAuthProvider,
-    createFirebaseSignInAdapter,
     createWeb3AuthStrategy,
     registerKeyDerivationFactory,
-    registerAuthProviderFactory,
-    registerSignInAdapterFactory,
     resolveKeyDerivation,
     resolveAuthProvider,
     SignInAdapterProvider,
-    firebaseAuthStore,
+    useSignInAdapter,
     authUserStore,
     authStore,
     SocialLoginTypes,
@@ -106,21 +101,17 @@ import {
 
 const WALLET_INIT_TIMEOUT_MS = 15000;
 
-import { auth } from '../firebase/firebase';
+// Firebase-specific auth provider / sign-in adapter registration lives in
+// this seam so provider-agnostic code (this file) never imports the Firebase
+// SDK directly. See `../auth/firebaseProviderInit` for what it registers.
+import '../auth/firebaseProviderInit';
 import {
     countUserConfiguredRecoveryMethods,
     mergeAuthUserIntoCurrentUser,
     registerRecoveryMethodCompletion,
     shouldResetWalletOnStatus,
 } from './authCoordinator.helpers';
-import {
-    getAppBaseUrl,
-    getFirebaseRedirectDomain,
-    getFirebaseDynamicLinkDomain,
-    getNativeBundleId,
-    getTenantHeaders,
-    getResolvedTenantConfig,
-} from '../config/bootstrapTenantConfig';
+import { getTenantHeaders, getResolvedTenantConfig } from '../config/bootstrapTenantConfig';
 
 import {
     emitAuthDebugEvent,
@@ -139,6 +130,7 @@ import {
 import { DeviceLinkModal } from '../components/device-link/DeviceLinkModal';
 import { PENDING_SEED_STORAGE_KEY } from '../pages/developer/pendingSeedStorage';
 import ReAuthOverlay from '../components/auth/ReAuthOverlay';
+import { m } from '../paraglide/messages.js';
 
 const log = getLogger('auth-coordinator');
 
@@ -209,10 +201,10 @@ const DeviceLinkOverlay: React.FC<{
 
     if (loading) {
         return (
-            <Overlay>
+            <Overlay aria-label={m['recovery.preparingSecureLink']()} onDismiss={onClose}>
                 <div className="p-6 flex flex-col items-center">
                     <div className="w-8 h-8 border-2 border-gray-200 border-t-emerald-600 rounded-full animate-spin mb-3" />
-                    <p className="text-sm text-gray-500">Preparing secure link...</p>
+                    <p className="text-sm text-gray-500">{m['recovery.preparingSecureLink']()}</p>
                 </div>
             </Overlay>
         );
@@ -220,17 +212,17 @@ const DeviceLinkOverlay: React.FC<{
 
     if (error || !deviceShare) {
         return (
-            <Overlay>
+            <Overlay aria-label={m['recovery.deviceLinkUnavailable']()} onDismiss={onClose}>
                 <div className="p-6 text-center">
                     <p className="text-sm text-red-600 mb-4">
-                        {error ?? 'No device key available'}
+                        {error ?? m['recovery.deviceLinkUnavailable']()}
                     </p>
 
                     <button
                         onClick={onClose}
                         className="py-2.5 px-4 rounded-lg border border-gray-300 text-gray-700 font-medium text-sm"
                     >
-                        Close
+                        {m['common.close']()}
                     </button>
                 </div>
             </Overlay>
@@ -238,7 +230,7 @@ const DeviceLinkOverlay: React.FC<{
     }
 
     return (
-        <Overlay>
+        <Overlay onDismiss={onClose}>
             <DeviceLinkModal
                 deviceShare={deviceShare}
                 approverDid={did}
@@ -256,6 +248,11 @@ const DeviceLinkOverlay: React.FC<{
 // To swap providers at deploy-time, set environment variables:
 //   VITE_AUTH_PROVIDER=firebase          (default)
 //   VITE_KEY_DERIVATION=sss             (default)
+//
+// Firebase's auth provider factory, sign-in adapter factory, and SDK
+// initializer are registered by the `../auth/firebaseProviderInit`
+// side-effect import above, so this provider-agnostic file never imports the
+// Firebase SDK directly.
 // ---------------------------------------------------------------------------
 
 registerKeyDerivationFactory('sss', () => {
@@ -296,81 +293,6 @@ registerKeyDerivationFactory('web3auth', () => {
         chainConfig: w3a.rpcTarget ? { rpcTarget: w3a.rpcTarget as string } : undefined,
     });
 });
-
-registerAuthProviderFactory('firebase', () =>
-    createFirebaseAuthProvider({
-        getAuth: () => auth(),
-        nativeGetIdToken: Capacitor.isNativePlatform()
-            ? async (forceRefresh?: boolean) => {
-                  // Only Google login signs in on the native Firebase layer.
-                  // Apple uses skipNativeAuth:true, and email/phone sign in
-                  // via the web SDK only.  For those methods the native plugin
-                  // will never have a user, so skip the bridge call entirely
-                  // to avoid a flood of unnecessary native round-trips.
-                  const loginType = authStore.get.typeOfLogin();
-                  const mayHaveNativeUser = loginType === SocialLoginTypes.google;
-
-                  if (mayHaveNativeUser) {
-                      try {
-                          const { user } = await FirebaseAuthentication.getCurrentUser();
-
-                          if (user) {
-                              log.debug('[Auth] Native Firebase user found — using NATIVE token');
-                              const result = await FirebaseAuthentication.getIdToken({
-                                  forceRefresh: forceRefresh ?? false,
-                              });
-                              return result.token;
-                          }
-                      } catch {
-                          // getCurrentUser can fail if the plugin isn't ready yet
-                      }
-                  }
-
-                  // Web SDK token — used for Apple, email, phone, and as
-                  // fallback when native user isn't available yet for Google.
-                  const cu = auth().currentUser;
-
-                  if (!cu) throw new Error('No Firebase user available');
-
-                  return cu.getIdToken(forceRefresh);
-              }
-            : undefined,
-        onReauthenticate: async (token: string) => {
-            const { signInWithCustomToken } = await import('firebase/auth');
-
-            await signInWithCustomToken(auth(), token);
-        },
-        onSignOut: async () => {
-            const firebaseAuth = auth();
-            await firebaseAuth.signOut();
-
-            if (Capacitor.isNativePlatform()) {
-                try {
-                    await FirebaseAuthentication.signOut();
-                } catch (e) {
-                    log.warn('Native FirebaseAuthentication.signOut failed', e);
-                }
-            }
-
-            firebaseAuthStore.set.firebaseAuth(null);
-            authUserStore.set.setUser(null);
-        },
-    })
-);
-
-registerSignInAdapterFactory('firebase', () =>
-    createFirebaseSignInAdapter({
-        getAuth: () => auth(),
-        getNativeAuth: () => FirebaseAuthentication,
-        isNativePlatform: () => Capacitor.isNativePlatform(),
-        emailLinkSettings: {
-            url: `${getAppBaseUrl()}/login`,
-            iOS: { bundleId: getNativeBundleId() },
-            android: { packageName: getNativeBundleId(), installApp: true, minimumVersion: '12' },
-            dynamicLinkDomain: getFirebaseDynamicLinkDomain(),
-        },
-    })
-);
 
 // ---------------------------------------------------------------------------
 // Enriched App Auth Context
@@ -476,6 +398,7 @@ const AuthSessionManager: React.FC<{
     authProvider: AuthProvider | null;
 }> = ({ children, authProvider }) => {
     const coordinator = useBaseAuthCoordinator();
+    const signInAdapter = useSignInAdapter();
     const authConfig = getAuthConfig();
 
     // --- Enriched state ---
@@ -1203,11 +1126,8 @@ const AuthSessionManager: React.FC<{
 
         const timer = setTimeout(() => {
             // Confirm the Firebase SDK truly has no active session
-            const firebaseAuth = auth();
-
-            if (!firebaseAuth.currentUser) {
-                firebaseAuthStore.set.firebaseAuth(null);
-                firebaseAuthStore.set.setFirebaseCurrentUser(null);
+            if (!signInAdapter.getCurrentUser()) {
+                authUserStore.set.setUser(null);
                 authStore.set.typeOfLogin(null);
                 currentUserStore.set.currentUser(null);
                 currentUserStore.set.currentUserPK(null);
@@ -1352,52 +1272,50 @@ const AuthSessionManager: React.FC<{
 
             {/* ── Recovery overlay ─────────────────────────────── */}
             {showRecovery && authProvider && (
-                <Overlay>
-                    <RecoveryFlowModal
-                        availableMethods={availableMethods}
-                        recoveryReason={
-                            coordinator.state.status === 'needs_recovery'
-                                ? coordinator.state.recoveryReason
-                                : undefined
-                        }
-                        maskedRecoveryEmail={
-                            coordinator.state.status === 'needs_recovery'
-                                ? coordinator.state.maskedRecoveryEmail
-                                : null
-                        }
-                        onRecoverWithPasskey={async (credentialId: string) => {
-                            await coordinator.recover({ method: 'passkey', credentialId });
-                        }}
-                        onRecoverWithPhrase={async (phrase: string) => {
-                            await coordinator.recover({ method: 'phrase', phrase });
-                        }}
-                        onRecoverWithBackup={async (fileContents: string, password: string) => {
-                            await coordinator.recover({ method: 'backup', fileContents, password });
-                        }}
-                        onRecoverWithEmail={async (emailShare: string) => {
-                            await coordinator.recover({ method: 'email', emailShare });
-                        }}
-                        onRecoverWithDevice={async (deviceShare: string, shareVersion?: number) => {
-                            // Store the received device share locally, then
-                            // re-initialize the coordinator so it finds both shares.
-                            await keyDerivation.storeLocalKey(deviceShare);
+                <RecoveryFlowModal
+                    availableMethods={availableMethods}
+                    recoveryReason={
+                        coordinator.state.status === 'needs_recovery'
+                            ? coordinator.state.recoveryReason
+                            : undefined
+                    }
+                    maskedRecoveryEmail={
+                        coordinator.state.status === 'needs_recovery'
+                            ? coordinator.state.maskedRecoveryEmail
+                            : null
+                    }
+                    onRecoverWithPasskey={async (credentialId: string) => {
+                        await coordinator.recover({ method: 'passkey', credentialId });
+                    }}
+                    onRecoverWithPhrase={async (phrase: string) => {
+                        await coordinator.recover({ method: 'phrase', phrase });
+                    }}
+                    onRecoverWithBackup={async (fileContents: string, password: string) => {
+                        await coordinator.recover({ method: 'backup', fileContents, password });
+                    }}
+                    onRecoverWithEmail={async (emailShare: string) => {
+                        await coordinator.recover({ method: 'email', emailShare });
+                    }}
+                    onRecoverWithDevice={async (deviceShare: string, shareVersion?: number) => {
+                        // Store the received device share locally, then
+                        // re-initialize the coordinator so it finds both shares.
+                        await keyDerivation.storeLocalKey(deviceShare);
 
-                            if (shareVersion != null) {
-                                log.debug('[Recovery via Device] storing shareVersion', {
-                                    shareVersion,
-                                });
-                                await keyDerivation.storeLocalShareVersion?.(shareVersion);
-                            } else {
-                                log.warn(
-                                    '[Recovery via Device] no shareVersion received from approver device'
-                                );
-                            }
+                        if (shareVersion != null) {
+                            log.debug('[Recovery via Device] storing shareVersion', {
+                                shareVersion,
+                            });
+                            await keyDerivation.storeLocalShareVersion?.(shareVersion);
+                        } else {
+                            log.warn(
+                                '[Recovery via Device] no shareVersion received from approver device'
+                            );
+                        }
 
-                            await coordinator.initialize();
-                        }}
-                        onCancel={handleLogout}
-                    />
-                </Overlay>
+                        await coordinator.initialize();
+                    }}
+                    onCancel={handleLogout}
+                />
             )}
 
             {/* ── Phone→email upgrade gate ─────────────────────── */}
@@ -1475,17 +1393,8 @@ const AuthSessionManager: React.FC<{
                             emailUpgradeCustomTokenRef.current = null;
                         }
 
-                        // Update both the legacy Firebase store and the
-                        // generic authUserStore with the refreshed user.
+                        // Update the generic store with the refreshed user.
                         if (freshUser) {
-                            firebaseAuthStore.set.setFirebaseCurrentUser({
-                                uid: freshUser.id,
-                                email: freshUser.email ?? null,
-                                phoneNumber: freshUser.phone ?? null,
-                                displayName: freshUser.displayName ?? null,
-                                photoUrl: freshUser.photoUrl ?? null,
-                            });
-
                             authUserStore.set.setUser(freshUser);
                         }
 
@@ -1592,11 +1501,14 @@ const AuthSessionManager: React.FC<{
                     // Session check still in progress — show loading
                     if (recoverySessionValid === null) {
                         return (
-                            <Overlay>
+                            <Overlay
+                                aria-label={m['recovery.verifyingSession']()}
+                                onDismiss={closeRecoverySetup}
+                            >
                                 <div className="p-8 flex flex-col items-center">
                                     <div className="w-8 h-8 border-2 border-grayscale-200 border-t-emerald-600 rounded-full animate-spin mb-3" />
                                     <p className="text-sm text-grayscale-500">
-                                        Verifying session...
+                                        {m['recovery.verifyingSession']()}
                                     </p>
                                 </div>
                             </Overlay>
@@ -1606,7 +1518,7 @@ const AuthSessionManager: React.FC<{
                     // Session expired — show in-place re-auth overlay
                     if (recoverySessionValid === false) {
                         return (
-                            <Overlay>
+                            <Overlay onDismiss={closeRecoverySetup}>
                                 <ReAuthOverlay
                                     onSuccess={() => setRecoverySessionValid(true)}
                                     onCancel={closeRecoverySetup}
@@ -1677,7 +1589,7 @@ const AuthSessionManager: React.FC<{
                     };
 
                     return (
-                        <Overlay>
+                        <Overlay onDismiss={closeRecoverySetup}>
                             <RecoverySetupModal
                                 existingMethods={[]}
                                 maskedRecoveryEmail={null}
@@ -1860,7 +1772,6 @@ export const AuthCoordinatorProvider: React.FC<AppAuthCoordinatorProviderProps> 
         web3AuthStore.set.web3Auth(null);
         web3AuthStore.set.provider(null);
         redirectStore.set.lcnRedirect(null);
-        firebaseAuthStore.set.firebaseAuth(null);
         authUserStore.set.setUser(null);
         authStore.set.typeOfLogin(null);
         chapiStore.set.isChapiInteraction(null);
