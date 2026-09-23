@@ -107,9 +107,10 @@ export const getLCAPlugin = async (
                 );
             })
             .catch(error => {
-                console.warn('[LCA Plugin] Initialization warning:', error);
                 // Continue without encryption JWK if initialization fails
                 // This allows the plugin methods to still work even if initial setup has issues
+                const message = error instanceof Error ? error.message : String(error);
+                console.warn(`[LCA Plugin] Initialization warning: ${message}`);
             });
 
         return {
