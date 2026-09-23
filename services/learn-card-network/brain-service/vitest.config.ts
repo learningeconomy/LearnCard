@@ -30,6 +30,7 @@ export default createVitestConfig(brainServicePreset, {
             'src/accesslayer/credential-refresh/read.test.ts',
             'src/models/credential-refresh-constraints.test.ts',
             'src/routes/credential-refreshes.test.ts',
+            'src/routes/act-as.test.ts',
             'src/helpers/percentile.helpers.test.ts',
             'src/helpers/perf.test.ts',
             'src/helpers/signingAuthority.helpers.test.ts',

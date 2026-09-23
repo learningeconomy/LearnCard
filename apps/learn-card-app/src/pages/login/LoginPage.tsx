@@ -34,14 +34,8 @@ import { useFirebase } from '../../hooks/useFirebase';
 import useLogout from '../../hooks/useLogout';
 
 import { setPublicComputerMode, isPublicComputerMode } from '@learncard/sss-key-manager';
-import {
-    setPersistence,
-    browserSessionPersistence,
-    indexedDBLocalPersistence,
-} from 'firebase/auth';
+import { useSignInAdapter } from 'learn-card-base';
 import { getConfigCapabilities } from 'learn-card-base/config/authConfig';
-
-import { auth } from '../../firebase/firebase';
 
 import { IonContent, IonGrid, IonPage, IonRow } from '@ionic/react';
 import EmailForm from './forms/EmailForm';
@@ -71,6 +65,7 @@ import {
 } from '@analytics';
 
 export const LoginContent: React.FC = () => {
+    const adapter = useSignInAdapter();
     const { textLogo, brandMarkLight, fullLogoDark, desktopLoginBg } = useTenantBrandingAssets();
     const { theme } = useTheme();
     const { newModal, closeModal } = useModal();
@@ -89,7 +84,11 @@ export const LoginContent: React.FC = () => {
     const [showSocialLogins, setShowSocialLogins] = useState<boolean>(true);
 
     const showConfirmation = confirmationStore.use.showConfirmation();
-    const [activeLoginType, setActiveLoginType] = useState<LoginTypesEnum>(LoginTypesEnum.email);
+    const [activeLoginType, setActiveLoginType] = useState<LoginTypesEnum>(
+        adapter.capabilities.emailOtp || adapter.capabilities.emailLink
+            ? LoginTypesEnum.email
+            : LoginTypesEnum.phone
+    );
     const [showQrLogin, setShowQrLogin] = useState(false);
     const [qrApproved, setQrApproved] = useState(false);
     const [showLinkedBanner, setShowLinkedBanner] = useState(false);
@@ -586,19 +585,22 @@ export const LoginContent: React.FC = () => {
                         </GenericErrorBoundary>
                         <IonRow className="w-full max-w-[500px] flex items-center justify-center">
                             <GenericErrorBoundary hideGoHome>
-                                {activeLoginType === LoginTypesEnum.email && (
-                                    <EmailForm
-                                        suppressRedirect
-                                        setShowSocialLogins={setShowSocialLogins}
-                                        showSocialLogins={showSocialLogins}
-                                    />
-                                )}
-                                {activeLoginType === LoginTypesEnum.phone && (
-                                    <PhoneForm
-                                        setShowSocialLogins={setShowSocialLogins}
-                                        showSocialLogins={showSocialLogins}
-                                    />
-                                )}
+                                {activeLoginType === LoginTypesEnum.email &&
+                                    (adapter.capabilities.emailOtp ||
+                                        adapter.capabilities.emailLink) && (
+                                        <EmailForm
+                                            suppressRedirect
+                                            setShowSocialLogins={setShowSocialLogins}
+                                            showSocialLogins={showSocialLogins}
+                                        />
+                                    )}
+                                {activeLoginType === LoginTypesEnum.phone &&
+                                    adapter.capabilities.phoneOtp && (
+                                        <PhoneForm
+                                            setShowSocialLogins={setShowSocialLogins}
+                                            showSocialLogins={showSocialLogins}
+                                        />
+                                    )}
                             </GenericErrorBoundary>
                         </IonRow>
                     </IonRow>
@@ -615,12 +617,7 @@ export const LoginContent: React.FC = () => {
                                     // mode so the auth session dies with the tab, or
                                     // IndexedDB (default) when toggling back.
                                     try {
-                                        await setPersistence(
-                                            auth(),
-                                            next
-                                                ? browserSessionPersistence
-                                                : indexedDBLocalPersistence
-                                        );
+                                        await adapter.setSessionPersistence?.(next);
                                     } catch (e) {
                                         log.warn('Failed to set Firebase persistence', e);
                                     }

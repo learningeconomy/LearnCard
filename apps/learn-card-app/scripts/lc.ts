@@ -653,7 +653,7 @@ const generateAssets = async () => {
         log.info(
             `  ${cyan('1')}  ${bold(
                 'Fill missing'
-            )} — only generate assets that don\'t exist yet ${dim('(safe)')}`
+            )} — only generate assets that don't exist yet ${dim('(safe)')}`
         );
         log.info(
             `  ${cyan('2')}  ${bold(
@@ -1079,6 +1079,13 @@ const setNativeBuildEnv = (stageId: string): void => {
 };
 
 const VITE_BUILD_COMMAND = 'NODE_OPTIONS="--max-old-space-size=16608" npx vite build';
+
+/**
+ * Pinned to the same version CI uses (.github/workflows/capgo-upload.yml). `@latest`
+ * (8.51.x) started requiring a capacitor config in the cwd for `bundle upload`, which
+ * broke local uploads run from the monorepo root.
+ */
+const CAPGO_CLI = '@capgo/cli@8.50.3';
 
 const execBlocking = (cmd: string, label: string, cwd: string = APP_ROOT): void => {
     log.info('');
@@ -1718,11 +1725,11 @@ const capgoPreview = async (tenantId?: string, stageId?: string, channelArg?: st
 
     log.info('');
     log.info(green('▶ Step 3/4 — Ensuring Capgo channel exists'));
-    log.info(dim(`  $ bunx @capgo/cli@latest channel add ${channel} ${appId}`));
+    log.info(dim(`  $ bunx ${CAPGO_CLI} channel add ${channel} ${appId}`));
 
     try {
-        execFileSync('bunx', ['@capgo/cli@latest', 'channel', 'add', channel, appId], {
-            cwd: MONOREPO_ROOT,
+        execFileSync('bunx', [CAPGO_CLI, 'channel', 'add', channel, appId], {
+            cwd: APP_ROOT,
             stdio: 'pipe',
             env: { ...process.env, CAPGO_TOKEN: token },
         });
@@ -1744,40 +1751,31 @@ const capgoPreview = async (tenantId?: string, stageId?: string, channelArg?: st
     execFileBlocking(
         'bunx',
         [
-            '@capgo/cli@latest',
+            CAPGO_CLI,
             'bundle',
             'upload',
             appId,
             '--delta',
             '--path',
-            'apps/learn-card-app/build',
+            resolve(APP_ROOT, 'build'),
             '--channel',
             channel,
             '--bundle',
             bundleVersion,
             '--package-json',
-            'apps/learn-card-app/package.json',
+            resolve(APP_ROOT, 'package.json'),
             '--node-modules',
-            'node_modules',
+            resolve(MONOREPO_ROOT, 'node_modules'),
         ],
         'Step 4/4 — Uploading bundle to Capgo',
-        MONOREPO_ROOT
+        APP_ROOT
     );
 
     execFileBlocking(
         'bunx',
-        [
-            '@capgo/cli@latest',
-            'channel',
-            'set',
-            channel,
-            '--bundle',
-            bundleVersion,
-            '--self-assign',
-            appId,
-        ],
+        [CAPGO_CLI, 'channel', 'set', channel, '--bundle', bundleVersion, '--self-assign', appId],
         'Setting channel default (self-assign)',
-        MONOREPO_ROOT
+        APP_ROOT
     );
 
     log.info('');

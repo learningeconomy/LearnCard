@@ -51,7 +51,6 @@ if ! grep -q '^filelock' "$CLIENT_DIR/test-requirements.txt"; then
     echo 'filelock >= 3.20.3' >> "$CLIENT_DIR/test-requirements.txt"
 fi
 
-sed_i 's/python-version: \["3\.9", /python-version: \[/' "$CLIENT_DIR/.github/workflows/python.yml"
 sed_i '/^  - "3\.9"$/d' "$CLIENT_DIR/.travis.yml"
 sed_i '/^pytest-3\.9:$/,/^  image: python:3\.9-alpine$/d' "$CLIENT_DIR/.gitlab-ci.yml"
 
@@ -82,7 +81,6 @@ verify "$CLIENT_DIR/requirements.txt" '^urllib3 >= 2\.7\.0' 'urllib3 floor'
 verify "$CLIENT_DIR/test-requirements.txt" '^pytest >= 9\.0\.3' 'pytest floor'
 verify "$CLIENT_DIR/test-requirements.txt" '^tox >= 4\.11\.0' 'tox floor'
 verify "$CLIENT_DIR/test-requirements.txt" '^filelock >= 3\.20\.3' 'filelock pin'
-refute "$CLIENT_DIR/.github/workflows/python.yml" '"3\.9"' 'python 3.9 matrix removal'
 refute "$CLIENT_DIR/.travis.yml" '^  - "3\.9"' 'python 3.9 removal'
 refute "$CLIENT_DIR/.gitlab-ci.yml" 'python:3\.9-alpine' 'python 3.9 job removal'
 

@@ -98,7 +98,7 @@ export const isAuthGrantAssociatedWithProfile = async (
 export const isAuthGrantChallengeValidForDID = async (
     challenge: string,
     did: string
-): Promise<{ isChallengeValid: boolean; scope: string }> => {
+): Promise<{ isChallengeValid: boolean; scope: string; actAs?: string }> => {
     // TODO: Ideally, this transformation isn't required and we could use DID directly.
     const profileId = getProfileIdFromDid(did);
     if (!profileId) return { isChallengeValid: false, scope: AUTH_GRANT_NO_ACCESS_SCOPE };
@@ -126,5 +126,6 @@ export const isAuthGrantChallengeValidForDID = async (
     return {
         isChallengeValid: result.records.length > 0,
         scope: authGrant?.scope || AUTH_GRANT_NO_ACCESS_SCOPE,
+        actAs: authGrant?.actAs,
     };
 };
