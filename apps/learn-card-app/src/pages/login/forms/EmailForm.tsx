@@ -209,8 +209,6 @@ const EmailForm: React.FC<EmailFormProps> = ({
                 } else {
                     // Verification failed - require manual submit for next attempt
                     setHasVerificationFailed(true);
-                    // Reset countdown timer on failed verification
-                    setCountdownEndTime(Date.now() + 30000);
                     // Rate limit errors shown inline, other errors shown via popup
                     const rateLimited = response?.error?.includes('Too many attempts');
                     if (rateLimited) {
