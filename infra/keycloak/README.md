@@ -119,6 +119,11 @@ in by email code first, then natively with Google/Apple, resolves to one Keycloa
 instead of hitting "Account already exists". `GOOGLE_OAUTH_CLIENT_IDS`/`APPLE_OAUTH_CLIENT_IDS`
 (lca-api env, CSV) must include the **native** app's OAuth client ID / bundle-backed
 Services ID, not just any web client ID, or native token verification fails closed.
+Run `bun run lc auth-audiences` (from `apps/learn-card-app/`) to derive the correct
+per-tenant values from each tenant's `native.bundleId` and Firebase asset files, and
+print the combined CSVs to set on both env vars — see
+[`apps/learn-card-app/environments/README.md`](../../apps/learn-card-app/environments/README.md#native-auth-audiences)
+("Native auth audiences"). `bun run lc dev` sets both automatically for local Docker.
 
 ## lca-api identity provider
 

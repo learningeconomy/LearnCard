@@ -194,6 +194,39 @@ of redirecting the webview: iOS uses an ephemeral `ASWebAuthenticationSession`
   is open (cold start), the in-flight sign-in is not resumed — the user
   returns to a logged-out app and simply retries.
 
+#### Native auth audiences
+
+`bun run lc auth-audiences [tenant…] [stage]` derives the Google/Apple
+audiences and Keycloak native-client requirements described above from files
+that already exist — no new tenant config fields. Per tenant, it reads
+`native.bundleId` from the merged `config.json` (+ stage overlay) and the
+iOS/Android OAuth client IDs from `environments/<tenant>/assets/config/`
+(`GoogleService-Info.plist` / `google-services.json`). Run it with no
+arguments for every tenant; add a stage (e.g. `keycloak-local`) to apply that
+stage's overlay first.
+
+It prints, per tenant, the bundle ID, the iOS + Android-web Google client
+IDs, the Apple audience, and the Keycloak redirect URI + Web Origins, then a
+combined, deduped CSV ready to paste into a deployment:
+
+```
+GOOGLE_OAUTH_CLIENT_IDS=...
+APPLE_OAUTH_CLIENT_IDS=...
+```
+
+Set lca-api's `GOOGLE_OAUTH_CLIENT_IDS` / `APPLE_OAUTH_CLIENT_IDS` from that
+output for every real deployment — union the values across every tenant that
+shares the same lca-api instance. These stay strictly **server-controlled**:
+lca-api reads them once from the environment at startup
+(`services/learn-card-network/lca-api/src/helpers/social-token.helpers.ts`),
+never from a client-claimed tenant config, so a compromised or malicious
+client can't add its own audience to the allowlist.
+
+`bun run lc dev` calls this automatically for the selected tenant/stage when
+starting Docker (full or services mode) and injects both env vars into the
+`api` service — see `compose-local.yaml` — so local native sign-in testing
+needs no manual setup.
+
 ```bash
 # Production vetpass
 bun scripts/prepare-native-config.ts vetpass

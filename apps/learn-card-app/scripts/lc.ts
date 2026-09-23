@@ -36,6 +36,13 @@ import { fileURLToPath } from 'url';
 import { spawn, execSync, execFileSync } from 'child_process';
 import { networkInterfaces } from 'os';
 
+import {
+    buildAudiencesEnvPrefix,
+    deriveNativeAuthRequirements,
+    mergeAudiences,
+    type NativeAuthRequirements,
+} from './native-auth-audiences';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const APP_ROOT = resolve(__dirname, '..');
@@ -511,6 +518,24 @@ const startDev = async (
     const localAiEnv = useLocalAi ? ' LOCAL_AIP=1' : '';
     const dockerUidEnv = 'LOCAL_UID=$(id -u) LOCAL_GID=$(id -g)';
 
+    // Native Google/Apple sign-in audiences + Keycloak client requirements,
+    // derived from this tenant's own config + Firebase asset files (see
+    // native-auth-audiences.ts) instead of the old compose-local.yaml
+    // hardcoded LearnCard defaults. Only Docker-backed modes start the `api`
+    // service that reads them.
+    const nativeAuthRequirements = usesDocker
+        ? deriveNativeAuthRequirements(tenantId, stageId === 'production' ? undefined : stageId)
+        : undefined;
+    const audiencesEnv = nativeAuthRequirements
+        ? buildAudiencesEnvPrefix(mergeAudiences([nativeAuthRequirements]))
+        : '';
+
+    if (nativeAuthRequirements?.warnings.length) {
+        for (const warning of nativeAuthRequirements.warnings) {
+            log.info(yellow(`⚠ ${warning}`));
+        }
+    }
+
     if (useLocalAi) {
         let localAiIsReachable = false;
 
@@ -545,7 +570,7 @@ const startDev = async (
 
         case 'services':
             runCommand(
-                `${dockerUidEnv} docker compose -f compose-local.yaml up${buildFlag} --scale app=0`,
+                `${dockerUidEnv}${audiencesEnv} docker compose -f compose-local.yaml up${buildFlag} --scale app=0`,
                 `Starting Docker services (no app)${noBuild ? ' — skipping rebuild' : ''}`,
                 `bun run lc dev ${tenantId}${stageArg} services${fastArg}`
             );
@@ -554,7 +579,7 @@ const startDev = async (
         case 'full':
         default:
             runCommand(
-                `${dockerUidEnv}${localAiEnv} TENANT=${tenantId} STAGE=${stageId} docker compose -f compose-local.yaml up${buildFlag}`,
+                `${dockerUidEnv}${localAiEnv}${audiencesEnv} TENANT=${tenantId} STAGE=${stageId} docker compose -f compose-local.yaml up${buildFlag}`,
                 `Starting ${displayName}${stageLabel} — full stack${
                     noBuild ? ' (skipping rebuild)' : ''
                 }${useLocalAi ? ' + local AI' : ''}`,
@@ -607,10 +632,97 @@ const pickTenantAndPrepare = async () => {
 
 const runValidators = () => {
     runCommand(
-        'bun scripts/validate-tenant-configs.ts && bun scripts/validate-theme-schemas.ts',
-        'Validating all tenant configs + theme schemas',
+        'bun scripts/validate-tenant-configs.ts && bun scripts/validate-theme-schemas.ts && bun scripts/validate-native-auth.ts',
+        'Validating all tenant configs + theme schemas + native auth wiring',
         'bun run lc validate'
     );
+};
+
+/**
+ * Client IDs are public, but the logger's secret scrubber redacts long tokens,
+ * which would blank the exact values this command exists to print.
+ */
+const printRaw = (line: string): void => {
+    process.stdout.write(`${line}\n`);
+};
+
+const printAuthAudiencesForTenant = (req: NativeAuthRequirements): void => {
+    printRaw('');
+    printRaw(bold(`  ${req.tenantId}`));
+    printRaw(`    Bundle ID:            ${req.bundleId ? cyan(req.bundleId) : dim('(none)')}`);
+    printRaw(
+        `    Google — iOS:         ${
+            req.googleIosClientId ? cyan(req.googleIosClientId) : dim('(none)')
+        }`
+    );
+    printRaw(
+        `    Google — Android-web: ${
+            req.googleAndroidWebClientIds.length > 0
+                ? cyan(req.googleAndroidWebClientIds.join(', '))
+                : dim('(none)')
+        }`
+    );
+    printRaw(
+        `    Apple:                ${
+            req.appleClientIds.length > 0 ? cyan(req.appleClientIds.join(', ')) : dim('(none)')
+        }`
+    );
+    printRaw(`    Keycloak redirect URIs: ${req.keycloakRedirectUris.join(', ') || dim('(none)')}`);
+    printRaw(`    Keycloak web origins:   ${req.keycloakWebOrigins.join(', ')}`);
+
+    for (const warning of req.warnings) {
+        printRaw(`    ${yellow('⚠')} ${warning}`);
+    }
+};
+
+/**
+ * `bun run lc auth-audiences [tenant…] [stage]` — derives native Google/Apple
+ * sign-in audiences + Keycloak native client requirements per tenant (see
+ * native-auth-audiences.ts) and prints combined CSV env lines ready to paste
+ * into an lca-api deployment. GOOGLE_OAUTH_CLIENT_IDS / APPLE_OAUTH_CLIENT_IDS
+ * remain server-controlled — see
+ * services/learn-card-network/lca-api/src/helpers/social-token.helpers.ts.
+ */
+const runAuthAudiences = (args: string[]): void => {
+    const knownTenants = discoverTenants();
+    const stageArg = args.find(a => asStage(a));
+    const tenantArgs = args.filter(a => a !== stageArg);
+    const tenants = tenantArgs.length > 0 ? tenantArgs : knownTenants;
+
+    const unknown = tenants.filter(t => !knownTenants.includes(t));
+
+    if (unknown.length > 0) {
+        log.error(red(`❌ Unknown tenant(s): ${unknown.join(', ')}`));
+        log.error(dim(`   Available: ${knownTenants.join(', ')}`));
+        rl.close();
+        process.exit(1);
+    }
+
+    const stage = stageArg === 'production' ? undefined : stageArg;
+
+    printRaw('');
+    printRaw(bold(`🔐 Native auth audiences${stage ? ` (${stage})` : ''}`));
+
+    const allRequirements = tenants.map(tenantId => deriveNativeAuthRequirements(tenantId, stage));
+
+    for (const req of allRequirements) {
+        printAuthAudiencesForTenant(req);
+    }
+
+    const merged = mergeAudiences(allRequirements);
+
+    printRaw('');
+    printRaw(
+        bold(
+            '  Combined (paste into the lca-api deployment env — union across tenants sharing it):'
+        )
+    );
+    printRaw('');
+    printRaw(`GOOGLE_OAUTH_CLIENT_IDS=${merged.google}`);
+    printRaw(`APPLE_OAUTH_CLIENT_IDS=${merged.apple}`);
+    printRaw('');
+
+    rl.close();
 };
 
 const generateAssets = async () => {
@@ -2126,6 +2238,12 @@ const handleShortcuts = async (): Promise<boolean> => {
             runValidators();
             return true;
 
+        case 'auth-audiences': {
+            // bun run lc auth-audiences [tenant…] [stage]
+            runAuthAudiences(args.slice(1));
+            return true;
+        }
+
         case 'generate': {
             // bun run lc generate <tenant> <logo> [--bg ...] [--name ...] etc.
             // Pass all args directly to generate-tenant-assets.ts
@@ -2343,6 +2461,11 @@ const printHelp = () => {
     log.info(
         `  ${cyan('bun run lc capgo [tenant] [stage] [channel]')} ${dim(
             'Local OTA build → PR/Beta channel (default: prod config)'
+        )}`
+    );
+    log.info(
+        `  ${cyan('bun run lc auth-audiences [tenant…] [stage]')} ${dim(
+            'Native Google/Apple + Keycloak client requirements per tenant'
         )}`
     );
     log.info('');

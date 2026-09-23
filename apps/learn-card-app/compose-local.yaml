@@ -224,11 +224,9 @@ services:
             OIDC_ISSUER: http://localhost:5100
             OIDC_CLIENT_ID: keycloak-broker
             OIDC_CLIENT_SECRET: dev-only-broker-secret # Public local-development placeholder
-            # Native Google/Apple ID-token audiences (public client IDs, LearnCard tenant):
-            # iOS Google = GoogleService-Info.plist CLIENT_ID; Android Google = default_web_client_id;
-            # Apple = bundle ID. Override per tenant from the shell.
-            GOOGLE_OAUTH_CLIENT_IDS: ${GOOGLE_OAUTH_CLIENT_IDS:-776298253175-74or0s6rg2k2mmdks6d45ro0i4te1bvf.apps.googleusercontent.com,776298253175-kkf562eofl541vu0oedfdvrk40bpkbh7.apps.googleusercontent.com}
-            APPLE_OAUTH_CLIENT_IDS: ${APPLE_OAUTH_CLIENT_IDS:-com.learncard.app}
+            # Set by `bun run lc dev` from the tenant's native Firebase files + bundle ID (see `lc auth-audiences`).
+            GOOGLE_OAUTH_CLIENT_IDS: ${GOOGLE_OAUTH_CLIENT_IDS:-}
+            APPLE_OAUTH_CLIENT_IDS: ${APPLE_OAUTH_CLIENT_IDS:-}
 
     ai-agent:
         image: learncard-monorepo-local
