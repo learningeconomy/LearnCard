@@ -26,9 +26,9 @@
  * policy) lives in learn-card-base and is UI/framework-free.
  */
 
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, type PluginListenerHandle } from '@capacitor/core';
 import { Network } from '@capacitor/network';
-import type { ConnectionStatus, PluginListenerHandle } from '@capacitor/network';
+import type { ConnectionStatus } from '@capacitor/network';
 import { App } from '@capacitor/app';
 
 import {
@@ -285,7 +285,7 @@ const buildAppConnectivityDeps = (monitor: ConnectivityMonitor): AppConnectivity
     addNetworkStatusListener: handler =>
         Network.addListener('networkStatusChange', (status: ConnectionStatus) => {
             handler(status.connected);
-        }) as Promise<PluginListenerHandle>,
+        }),
     getInitialTransportState: async () => (await Network.getStatus()).connected,
     // Native lifecycle only — on web, visibilitychange below already covers it.
     addAppStateListener: Capacitor.isNativePlatform()

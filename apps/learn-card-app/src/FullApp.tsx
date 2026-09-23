@@ -104,7 +104,10 @@ const TRANSPORT_PROBE_MIN_INTERVAL_MS = 10_000; // rate-limit the reachability p
 let lastTransportSampleAt = 0;
 let lastTransportProbeAt = 0;
 
-client.queryCache.subscribe(event => {
+// TanStack Query v5: `client.queryCache` was removed — `getQueryCache()` is
+// the accessor, and its typed `subscribe` keeps existing cache callbacks
+// intact (purely additive).
+client.getQueryCache().subscribe(event => {
     if (event.type !== 'updated' || event.action.type !== 'error') return;
     if (!isLikelyTransportError(event.action.error)) return;
 

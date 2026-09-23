@@ -19,6 +19,22 @@ vi.mock('@capacitor/app', () => ({
     },
 }));
 
+// Keep singleton tests hermetic: the lazily-created app monitor falls back to
+// the REAL probe; stub it so no test ever touches the network.
+vi.mock('learn-card-base/connectivity/probeConnectivity', async importOriginal => {
+    const actual = await importOriginal<
+        typeof import('learn-card-base/connectivity/probeConnectivity')
+    >();
+    return {
+        ...actual,
+        probeConnectivity: vi.fn(async () => ({
+            kind: 'unreachable' as const,
+            reason: 'network-error' as const,
+            durationMs: 1,
+        })),
+    };
+});
+
 vi.mock('../../config/bootstrapTenantConfig', () => ({
     getResolvedTenantConfig: vi.fn(() => ({ domain: 'learncard.app' })),
 }));
@@ -106,18 +122,31 @@ const registeredListeners = (deps: AppConnectivityAdapterDeps) => {
     return list;
 };
 
-const trackListenerDeps = (deps: AppConnectivityAdapterDeps): AppConnectivityAdapterDeps => ({
-    ...deps,
-    addNetworkStatusListener: async handler => {
-        const handle: RemovableHandle = { remove: vi.fn() };
-        registeredListeners(deps).push({ handler, handle });
-        return handle;
-    },
-});
+// Wraps `addNetworkStatusListener` so every registration is recorded against
+// the TRACKED deps object — the object tests actually hold. Custom inner
+// implementations (call-order probes, custom handles) are delegated to, never
+// discarded.
+const trackListenerDeps = (deps: AppConnectivityAdapterDeps): AppConnectivityAdapterDeps => {
+    const tracked: AppConnectivityAdapterDeps = {
+        ...deps,
+        addNetworkStatusListener: async handler => {
+            const handle = await deps.addNetworkStatusListener(handler);
+            registeredListeners(tracked).push({ handler, handle });
+            return handle;
+        },
+    };
+    return tracked;
+};
 
 beforeEach(() => {
     vi.clearAllMocks();
     isNativePlatform.mockReturnValue(false);
+    // Deterministic Capacitor defaults: without an implementation the adapter's
+    // snapshot await resolves `getStatus()` to undefined and the resulting
+    // TypeError (caught, but noisy) skips the initial report.
+    (Network.getStatus as ReturnType<typeof vi.fn>).mockResolvedValue({ connected: true });
+    (Network.addListener as ReturnType<typeof vi.fn>).mockResolvedValue({ remove: vi.fn() });
+    (App.addListener as ReturnType<typeof vi.fn>).mockResolvedValue({ remove: vi.fn() });
 });
 
 afterEach(() => {
@@ -204,11 +233,9 @@ describe('createAppConnectivityAdapter', () => {
         const deps = trackListenerDeps(
             makeDeps({
                 monitor,
-                addNetworkStatusListener: async handler => {
+                addNetworkStatusListener: async () => {
                     callOrder.push('addListener');
-                    const handle: RemovableHandle = { remove: vi.fn() };
-                    registeredListeners(deps).push({ handler, handle });
-                    return handle;
+                    return { remove: vi.fn() };
                 },
                 getInitialTransportState: async () => {
                     callOrder.push('getStatus');
@@ -229,10 +256,13 @@ describe('createAppConnectivityAdapter', () => {
         const deps = trackListenerDeps(makeDeps({ monitor }));
 
         createAppConnectivityAdapter(deps);
-        await vi.waitFor(() => expect(registeredListeners(deps)).toHaveLength(1));
+        // The initial snapshot resolves first; hints are forwarded verbatim
+        // (the adapter callback contract is a plain boolean).
+        await vi.waitFor(() => expect(monitor.reports).toEqual([true]));
 
-        registeredListeners(deps)[0].handler({ connected: false } as never);
-        registeredListeners(deps)[0].handler({ connected: true } as never);
+        const handler = registeredListeners(deps)[0].handler;
+        handler(false);
+        handler(true);
         expect(monitor.reports).toEqual([true, false, true]);
     });
 
@@ -301,7 +331,9 @@ describe('createAppConnectivityAdapter', () => {
 
     it('native app state changes pause/resume via monitor.setActive', async () => {
         const monitor = makeFakeMonitor();
-        const appHandlers: ((state: { isActive: boolean }) => void)[] = [];
+        // The adapter contract hands the listener a plain boolean (the real
+        // Capacitor wiring unwraps `state.isActive` in buildAppConnectivityDeps).
+        const appHandlers: ((active: boolean) => void)[] = [];
         createAppConnectivityAdapter(
             makeDeps({
                 monitor,
@@ -314,8 +346,8 @@ describe('createAppConnectivityAdapter', () => {
         );
         await vi.waitFor(() => expect(appHandlers).toHaveLength(1));
 
-        appHandlers[0]({ isActive: false });
-        appHandlers[0]({ isActive: true });
+        appHandlers[0](false);
+        appHandlers[0](true);
         expect(monitor.active).toEqual([false, true]);
     });
 
@@ -462,7 +494,11 @@ describe('store bridge', () => {
             getProbeTarget: () => ({ url: 'https://learncard.app/connectivity.txt' }),
             probe: async () => ({ kind: 'unreachable', reason: 'network-error', durationMs: 1 }),
         });
+        // The store bridge mirrors whatever the monitor publishes; attach it
+        // BEFORE start (same order as the production singleton), then start —
+        // hints are deliberately ignored until the monitor is running.
         const detach = attachConnectivityMonitorToStore(monitor);
+        monitor.start();
         try {
             // Positive hint restores online optimistically.
             monitor.reportTransport(true);
