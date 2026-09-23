@@ -16,4 +16,4 @@ export const getBundle = (id: string): CredentialBundle => {
 };
 
 export { studentBundle } from './student';
-export type { CredentialBundle, CredentialBundleEntry } from './types';
+export type { CredentialBundle, CredentialBundleEntry, CredentialBundleIssuer } from './types';

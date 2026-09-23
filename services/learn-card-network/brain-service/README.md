@@ -42,11 +42,12 @@ The app command delegates to the brain-service seeder, which loads
 `services/learn-card-network/brain-service/.env`. `NEO4J_URI`, the Neo4j credentials,
 `MONGO_URI`, `MONGO_DB_NAME`, and `DOMAIN_NAME` select the target stack.
 For staging or production, also supply `DEMO_PERSONA_SA_SEED` and
-`DEMO_PERSONA_SIGNING_AUTHORITY_ENDPOINT`. The command updates the signed Hill Valley
-High Boost templates and auto-boost relationships in place, then prints the stable contract
-URI to record in that tenant's `features.samplePersonas`. Running it again publishes
-credential-library content changes without duplicating profiles, Boosts, signing
-authorities, or contracts.
+`DEMO_PERSONA_SIGNING_AUTHORITY_ENDPOINT`. The root seed deterministically derives a
+distinct signing identity for every configured sample issuer. The command updates the
+issuer profiles, unsigned credential templates, and auto-boost relationships in place,
+then prints the stable contract URI to record in that tenant's
+`features.samplePersonas`. Running it again publishes credential-library content changes
+without duplicating profiles, Boosts, signing authorities, or contracts.
 
 ## Notes
 

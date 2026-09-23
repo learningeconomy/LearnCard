@@ -147,8 +147,8 @@ describe('SamplePersonaBox', () => {
         mocks.useContract.mockReturnValue({
             data: {
                 contract: {},
-                owner: { did: 'did:example:demo-school' },
-                autoBoosts: ['boost-0'],
+                owner: { did: 'did:example:sample-hill-valley-high' },
+                autoBoosts: Array.from({ length: 4 }, (_, index) => `boost-${index}`),
             },
             isLoading: false,
         });
@@ -164,7 +164,9 @@ describe('SamplePersonaBox', () => {
         mocks.refetchQueries.mockResolvedValue(undefined);
         mocks.fetchNewContractCredentials.mockResolvedValue({ isError: false });
         mocks.getCredentialsForContract.mockResolvedValue({
-            records: [{ credentialUri: 'credential-0' }],
+            records: Array.from({ length: 4 }, (_, index) => ({
+                credentialUri: `credential-${index}`,
+            })),
         });
         mocks.initWallet.mockResolvedValue({
             invoke: { getCredentialsForContract: mocks.getCredentialsForContract },

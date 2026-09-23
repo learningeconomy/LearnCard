@@ -16,6 +16,7 @@
  */
 
 import { fileURLToPath } from 'url';
+import { createHmac } from 'node:crypto';
 
 import * as bs58 from 'bs58';
 import * as dotenv from 'dotenv';
@@ -30,6 +31,7 @@ import {
     getFixture,
     prepareFixture,
     type CredentialBundleEntry,
+    type CredentialBundleIssuer,
 } from '@learncard/credential-library';
 import type { UnsignedVC } from '@learncard/types';
 import { flattenObject } from '../src/helpers/objects.helpers';
@@ -37,8 +39,6 @@ import { flattenObject } from '../src/helpers/objects.helpers';
 dotenv.config({ path: fileURLToPath(new URL('../.env', import.meta.url)) });
 
 const PERSONA_NAMESPACE = '5c4bb193-6e65-43d9-940d-d85b758a94f2';
-const PROFILE_ID = 'hillvalleyhigh';
-const PROFILE_NAME = 'Hill Valley High';
 const SIGNING_AUTHORITY_NAME = 'sample-personas';
 
 const NEO4J_URI = process.env.NEO4J_URI ?? 'bolt://localhost:7687';
@@ -110,6 +110,10 @@ const deriveDidKeyFromSeed = (hexSeed: string): string => {
 
     return `did:key:z${bs58.encode(multicodec)}`;
 };
+const deriveSigningAuthoritySeed = (profileId: string): string =>
+    createHmac('sha256', Buffer.from(SIGNING_AUTHORITY_SEED, 'hex'))
+        .update(`learncard:sample-persona:${profileId}`)
+        .digest('hex');
 
 const clearProfileDidDocumentCache = async (profileId: string): Promise<void> => {
     const redis = new Redis({
@@ -170,7 +174,11 @@ const toBoostTemplate = (credential: UnsignedVC, issuerDid: string): string => {
     return JSON.stringify(template);
 };
 
-const ensureSigningAuthority = async (ownerDid: string, did: string): Promise<void> => {
+const ensureSigningAuthority = async (
+    ownerDid: string,
+    did: string,
+    seed: string
+): Promise<void> => {
     const client = new MongoClient(MONGO_URI);
 
     try {
@@ -181,7 +189,7 @@ const ensureSigningAuthority = async (ownerDid: string, did: string): Promise<vo
             .updateOne(
                 { ownerDid, name: SIGNING_AUTHORITY_NAME },
                 {
-                    $set: { seed: SIGNING_AUTHORITY_SEED, did },
+                    $set: { seed, did },
                     $setOnInsert: { _id: uuid(), ownerDid, name: SIGNING_AUTHORITY_NAME },
                 },
                 { upsert: true }
@@ -193,9 +201,47 @@ const ensureSigningAuthority = async (ownerDid: string, did: string): Promise<vo
 
 const main = async (): Promise<void> => {
     const bundle = getBundle(personaId);
-    const profileId = transformProfileId(PROFILE_ID);
-    const issuerDid = getDidWeb(BRAIN_DOMAIN, profileId);
-    const signingAuthorityDid = deriveDidKeyFromSeed(SIGNING_AUTHORITY_SEED);
+    const [firstEntry] = bundle.entries;
+    if (!firstEntry) {
+        throw new Error(`Credential bundle ${bundle.id} has no entries.`);
+    }
+
+    const issuerProfiles = new Map<
+        string,
+        CredentialBundleIssuer & {
+            profileId: `sample-${string}`;
+            did: string;
+            signingAuthorityDid: string;
+            signingAuthoritySeed: string;
+        }
+    >();
+    for (const entry of bundle.entries) {
+        const profileId = transformProfileId(entry.issuer.profileId);
+        if (!profileId.startsWith('sample-')) {
+            throw new Error(`Refusing to seed non-sample issuer profile: ${profileId}`);
+        }
+        const existingIssuer = issuerProfiles.get(profileId);
+
+        if (
+            existingIssuer &&
+            (existingIssuer.displayName !== entry.issuer.displayName ||
+                existingIssuer.image !== entry.issuer.image)
+        ) {
+            throw new Error(`Conflicting metadata configured for sample issuer ${profileId}.`);
+        }
+
+        const signingAuthoritySeed = deriveSigningAuthoritySeed(profileId);
+        const signingAuthorityDid = deriveDidKeyFromSeed(signingAuthoritySeed);
+        issuerProfiles.set(profileId, {
+            ...entry.issuer,
+            profileId: profileId as `sample-${string}`,
+            did: getDidWeb(BRAIN_DOMAIN, profileId),
+            signingAuthorityDid,
+            signingAuthoritySeed,
+        });
+    }
+
+    const contractOwnerProfileId = transformProfileId(firstEntry.issuer.profileId);
     const contractId = uuidv5(`persona:${bundle.id}:contract`, PERSONA_NAMESPACE);
     const neogma = new Neogma({
         url: NEO4J_URI,
@@ -205,51 +251,67 @@ const main = async (): Promise<void> => {
     const run = neogma.queryRunner.run.bind(neogma.queryRunner);
 
     try {
-        const profileResult = await run(
-            `MERGE (p:Profile {profileId: $profileId})
-             SET p.displayName = $displayName,
-                 p.shortBio = $shortBio,
-                 p.did = $did
-             RETURN p.did AS did`,
-            {
-                profileId,
-                displayName: PROFILE_NAME,
-                shortBio: 'Issuer for LearnCard sample credentials',
-                did: signingAuthorityDid,
+        for (const issuer of issuerProfiles.values()) {
+            const profileResult = await run(
+                `MERGE (p:Profile {profileId: $profileId})
+                 SET p.displayName = $displayName,
+                     p.shortBio = $shortBio,
+                     p.image = $image,
+                     p.did = $did
+                 RETURN p.did AS did`,
+                {
+                    profileId: issuer.profileId,
+                    displayName: issuer.displayName,
+                    shortBio: 'Issuer for LearnCard sample credentials',
+                    image: issuer.image ?? '',
+                    did: issuer.signingAuthorityDid,
+                }
+            );
+            const storedSigningAuthorityDid = profileResult.records[0]?.get('did');
+            if (storedSigningAuthorityDid !== issuer.signingAuthorityDid) {
+                throw new Error(
+                    `Profile ${issuer.profileId} did not retain its signing authority DID.`
+                );
             }
-        );
-        const storedSigningAuthorityDid = profileResult.records[0]?.get('did');
-        if (storedSigningAuthorityDid !== signingAuthorityDid) {
-            throw new Error(`Profile ${profileId} did not retain its signing authority DID.`);
+
+            await run(
+                `MERGE (sa:SigningAuthority {endpoint: $endpoint})
+                 WITH sa
+                 MATCH (p:Profile {profileId: $profileId})
+                 MERGE (p)-[r:USES_SIGNING_AUTHORITY {name: $name}]->(sa)
+                 SET r.did = $did, r.isPrimary = true
+                 RETURN r`,
+                {
+                    endpoint: SIGNING_AUTHORITY_ENDPOINT,
+                    profileId: issuer.profileId,
+                    name: SIGNING_AUTHORITY_NAME,
+                    did: issuer.signingAuthorityDid,
+                }
+            );
+            await clearProfileDidDocumentCache(issuer.profileId);
+            await ensureSigningAuthority(
+                issuer.did,
+                issuer.signingAuthorityDid,
+                issuer.signingAuthoritySeed
+            );
         }
 
-        await run(
-            `MERGE (sa:SigningAuthority {endpoint: $endpoint})
-             WITH sa
-             MATCH (p:Profile {profileId: $profileId})
-             MERGE (p)-[r:USES_SIGNING_AUTHORITY {name: $name}]->(sa)
-             SET r.did = $did, r.isPrimary = true
-             RETURN r`,
-            {
-                endpoint: SIGNING_AUTHORITY_ENDPOINT,
-                profileId,
-                name: SIGNING_AUTHORITY_NAME,
-                did: signingAuthorityDid,
-            }
-        );
-        await clearProfileDidDocumentCache(profileId);
-        await ensureSigningAuthority(issuerDid, signingAuthorityDid);
-
-        const boostIds: string[] = [];
+        const autoBoosts: Array<{ boostId: string; issuerProfileId: string }> = [];
         for (const entry of bundle.entries) {
             const fixture = getFixture(entry.fixtureId);
+            const profileId = transformProfileId(entry.issuer.profileId);
+            const issuer = issuerProfiles.get(profileId);
+            if (!issuer) {
+                throw new Error(`Missing seeded issuer profile ${profileId}.`);
+            }
+
             const boostId = uuidv5(
                 `persona:${bundle.id}:fixture:${entry.fixtureId}`,
                 PERSONA_NAMESPACE
             );
-            const credential = prepareBundleCredential(entry, issuerDid);
-            const boost = toBoostTemplate(credential, issuerDid);
-            boostIds.push(boostId);
+            const credential = prepareBundleCredential(entry, issuer.did);
+            const boost = toBoostTemplate(credential, issuer.did);
+            autoBoosts.push({ boostId, issuerProfileId: profileId });
             const boostProperties = flattenObject({
                 id: boostId,
                 boost,
@@ -273,8 +335,7 @@ const main = async (): Promise<void> => {
                  MATCH (p:Profile {profileId: $profileId})
                  MERGE (b)-[created:CREATED_BY]->(p)
                  SET created.date = $date
-                 MERGE (p)-[role:HAS_ROLE]->(b)
-                 SET role.roleId = '__creator__'
+                 MERGE (p)-[:HAS_ROLE {roleId: '__creator__'}]->(b)
                  WITH b
                  MATCH (b)-[:CREATED_BY]->(creator:Profile)
                  MATCH (roleOwner:Profile)-[:HAS_ROLE {roleId: '__creator__'}]->(b)
@@ -342,7 +403,7 @@ const main = async (): Promise<void> => {
             {
                 contractId,
                 createdAt: now,
-                profileId,
+                profileId: contractOwnerProfileId,
                 properties: contractProperties,
             }
         );
@@ -352,19 +413,18 @@ const main = async (): Promise<void> => {
              OPTIONAL MATCH (c)-[old:AUTO_RECEIVE]->(:Boost)
              DELETE old
              WITH DISTINCT c
-             UNWIND $boostIds AS boostId
-             MATCH (b:Boost {id: boostId})
+             UNWIND $autoBoosts AS autoBoost
+             MATCH (b:Boost {id: autoBoost.boostId})
              CREATE (c)-[:AUTO_RECEIVE {
                  signingAuthorityEndpoint: $endpoint,
                  signingAuthorityName: $name,
-                 issuer: $profileId
+                 issuer: autoBoost.issuerProfileId
              }]->(b)`,
             {
                 contractId,
-                boostIds,
+                autoBoosts,
                 endpoint: SIGNING_AUTHORITY_ENDPOINT,
                 name: SIGNING_AUTHORITY_NAME,
-                profileId,
             }
         );
 

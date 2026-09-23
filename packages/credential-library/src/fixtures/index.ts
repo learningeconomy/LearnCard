@@ -23,7 +23,13 @@ import { obv3CourseCompletion } from './obv3/course-completion';
 import { obv3StandaloneFullCourse } from './obv3/standalone-full-course';
 import { obv3K12Diploma } from './obv3/k12-diploma';
 import { obv3EndorsementCredential } from './obv3/endorsement';
-import { obv3StudentAfterschoolProgramMentor } from './obv3/student-afterschool-program-mentor';
+import {
+    obv3StudentAfterschoolProgramMentor,
+    obv3StudentEnvironmentBadge,
+    obv3StudentRockClimbingMentor,
+    obv3StudentParkCleanupHelper,
+} from './obv3/student-sample-badges';
+import { obv3StudentAdditionalCredentials } from './obv3/student-additional-credentials';
 import {
     obv3StudentCivicLeadership,
     obv3StudentWebDevelopment,
@@ -35,6 +41,7 @@ import { clrMinimal } from './clr/minimal';
 import { clrMultiAchievement } from './clr/multi-achievement';
 import { clrUniversityTranscript } from './clr/university-transcript';
 import { clrStudentTranscript } from './clr/student-transcript';
+import { clrStudentOfficialAcademicTranscript } from './clr/student-official-academic-transcript';
 
 // LearnCard Boosts
 import { boostBasic } from './boost/basic';
@@ -102,6 +109,10 @@ export const ALL_FIXTURES: LibraryFixture[] = [
     obv3K12Diploma,
     obv3EndorsementCredential,
     obv3StudentAfterschoolProgramMentor,
+    obv3StudentEnvironmentBadge,
+    obv3StudentRockClimbingMentor,
+    obv3StudentParkCleanupHelper,
+    ...obv3StudentAdditionalCredentials,
     obv3StudentCivicLeadership,
     obv3StudentWebDevelopment,
     obv3StudentCommunityImpact,
@@ -111,7 +122,7 @@ export const ALL_FIXTURES: LibraryFixture[] = [
     clrMultiAchievement,
     clrUniversityTranscript,
     clrStudentTranscript,
-
+    clrStudentOfficialAcademicTranscript,
     // Boosts
     boostBasic,
     boostId,
@@ -174,11 +185,16 @@ export {
     obv3K12Diploma,
     obv3EndorsementCredential,
     obv3StudentAfterschoolProgramMentor,
+    obv3StudentEnvironmentBadge,
+    obv3StudentRockClimbingMentor,
+    obv3StudentParkCleanupHelper,
+    obv3StudentAdditionalCredentials,
     obv3StudentCivicLeadership,
     obv3StudentWebDevelopment,
     obv3StudentCommunityImpact,
     clrUniversityTranscript,
     clrStudentTranscript,
+    clrStudentOfficialAcademicTranscript,
     boostCommunityAward,
     boostDelegate,
     vcV1AlumniCredential,

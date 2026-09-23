@@ -16,9 +16,9 @@ const autoBoostUris = studentBundle.entries.map(
     (_, index) => `lc:network:localhost%3A4000/trpc:boost:sample-persona-${index}`
 );
 const owner = {
-    did: 'did:web:localhost%3A4000:users:hillvalleyhigh',
-    profileId: 'hillvalleyhigh',
-    displayName: 'Hill Valley High',
+    did: 'did:web:localhost%3A4000:users:sample-hill-valley-high',
+    profileId: 'sample-hill-valley-high',
+    displayName: 'Hill Valley High School',
 };
 const contractTerms = {
     read: {
@@ -51,7 +51,7 @@ const contract = {
 
 let populatedIndexResponse: unknown;
 let emptyIndexResponse: unknown;
-let sampleCredentialResponse: unknown;
+const sampleCredentialResponses = new Map<string, unknown>();
 let sampleRecordCount = 0;
 
 test.beforeAll(async () => {
@@ -60,7 +60,7 @@ test.beforeAll(async () => {
         allowRemoteContexts: false,
     });
     const records = [];
-    let firstCredential: VC | undefined;
+    sampleCredentialResponses.clear();
     for (const [index, entry] of studentBundle.entries.entries()) {
         const credential = await wallet.invoke.issueCredential(
             prepareFixture(getFixture(entry.fixtureId), {
@@ -68,11 +68,12 @@ test.beforeAll(async () => {
                 subjectDid: wallet.id.did(),
             })
         );
-        firstCredential ??= credential;
+        const credentialUri = `lc:cloud:localhost%3A4100/trpc:credential:sample-persona-${index}`;
+        sampleCredentialResponses.set(credentialUri, await wallet.invoke.createDagJwe(credential));
 
         const record = {
             id: `sample-persona-${index}`,
-            uri: `lc:cloud:localhost%3A4100/trpc:credential:sample-persona-${index}`,
+            uri: credentialUri,
             category: 'Achievement',
             contractUri,
             metadata: { category: 'Achievement', contractUri },
@@ -82,15 +83,13 @@ test.beforeAll(async () => {
             fields: [],
         });
     }
-
-    if (!firstCredential) throw new Error('Student bundle is empty');
+    if (records.length === 0) throw new Error('Student bundle is empty');
 
     populatedIndexResponse = await wallet.invoke.createDagJwe({
         records,
         hasMore: false,
     });
     emptyIndexResponse = await wallet.invoke.createDagJwe({ records: [], hasMore: false });
-    sampleCredentialResponse = await wallet.invoke.createDagJwe(firstCredential);
     sampleRecordCount = records.length;
 });
 
@@ -147,7 +146,22 @@ test.describe('Sample persona @mocked', () => {
         trpc.on('index.get', () => (hasSample ? populatedIndexResponse : emptyIndexResponse));
         trpc.on('index.count', () => (hasSample ? sampleRecordCount : 0));
         trpc.on('index.remove', () => true);
-        trpc.on('storage.resolve', () => sampleCredentialResponse);
+        trpc.on('storage.resolve', input => {
+            if (
+                !input ||
+                typeof input !== 'object' ||
+                Array.isArray(input) ||
+                !('uri' in input) ||
+                typeof input.uri !== 'string'
+            ) {
+                throw new Error('storage.resolve received an invalid URI input');
+            }
+
+            const response = sampleCredentialResponses.get(input.uri);
+            if (!response) throw new Error(`No sample credential response for ${input.uri}`);
+
+            return response;
+        });
         trpc.on('contracts.deleteCredentialFromAllContracts', () => ({
             contractsUpdated: 0,
             removedSharedUris: 0,
