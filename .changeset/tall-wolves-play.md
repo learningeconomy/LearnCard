@@ -6,4 +6,4 @@
 'learn-card-app': patch
 ---
 
-feat: [LC-2191] Replace Demo School with standards-pure sample personas.
+feat: [LC-2191] Replace Demo School with standards-pure sample personas, including plain OBv3 ConsentFlow issuance without proprietary `boostId` fields.

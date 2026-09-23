@@ -30,18 +30,12 @@ import {
     obv3StudentParkCleanupHelper,
 } from './obv3/student-sample-badges';
 import { obv3StudentAdditionalCredentials } from './obv3/student-additional-credentials';
-import {
-    obv3StudentCivicLeadership,
-    obv3StudentWebDevelopment,
-    obv3StudentCommunityImpact,
-} from './obv3/student-achievements';
 import { obv3RubricAlignedBadge } from './obv3/rubric-aligned-badge';
 
 // CLR v2
 import { clrMinimal } from './clr/minimal';
 import { clrMultiAchievement } from './clr/multi-achievement';
 import { clrUniversityTranscript } from './clr/university-transcript';
-import { clrStudentTranscript } from './clr/student-transcript';
 import { clrStudentOfficialAcademicTranscript } from './clr/student-official-academic-transcript';
 
 // LearnCard Boosts
@@ -114,16 +108,12 @@ export const ALL_FIXTURES: LibraryFixture[] = [
     obv3StudentRockClimbingMentor,
     obv3StudentParkCleanupHelper,
     ...obv3StudentAdditionalCredentials,
-    obv3StudentCivicLeadership,
-    obv3StudentWebDevelopment,
-    obv3StudentCommunityImpact,
     obv3RubricAlignedBadge,
 
     // CLR v2
     clrMinimal,
     clrMultiAchievement,
     clrUniversityTranscript,
-    clrStudentTranscript,
     clrStudentOfficialAcademicTranscript,
     // Boosts
     boostBasic,
@@ -191,12 +181,8 @@ export {
     obv3StudentRockClimbingMentor,
     obv3StudentParkCleanupHelper,
     obv3StudentAdditionalCredentials,
-    obv3StudentCivicLeadership,
-    obv3StudentWebDevelopment,
-    obv3StudentCommunityImpact,
     obv3RubricAlignedBadge,
     clrUniversityTranscript,
-    clrStudentTranscript,
     clrStudentOfficialAcademicTranscript,
     boostCommunityAward,
     boostDelegate,
