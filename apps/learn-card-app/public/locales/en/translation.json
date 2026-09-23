@@ -270,6 +270,7 @@
                 "addPersonaAction": "Add {{persona}} example",
                 "addSuccess": "Sample credentials added.",
                 "addError": "We couldn’t add the sample credentials. Please try again.",
+                "addPartialError": "Some sample credentials may have been added. Remove them, then try again.",
                 "connecting": "Setting up...",
                 "adding": "Adding sample credentials...",
                 "checking": "Checking sample credentials...",

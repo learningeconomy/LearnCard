@@ -270,6 +270,7 @@
                 "addPersonaAction": "Añadir ejemplo de {{persona}}",
                 "addSuccess": "Credenciales de ejemplo añadidas.",
                 "addError": "No pudimos añadir las credenciales de ejemplo. Inténtalo de nuevo.",
+                "addPartialError": "Es posible que se hayan añadido algunas credenciales de ejemplo. Elimínalas e inténtalo de nuevo.",
                 "connecting": "Configurando...",
                 "adding": "Añadiendo credenciales de ejemplo...",
                 "checking": "Comprobando credenciales de ejemplo...",

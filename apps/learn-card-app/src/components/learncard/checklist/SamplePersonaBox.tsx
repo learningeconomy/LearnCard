@@ -55,7 +55,7 @@ const PersonaPicker: React.FC<PersonaPickerProps> = ({ personas, onAdded }) => (
 
 const SamplePersonaBoxContent: React.FC = () => {
     const confirm = useConfirmation();
-    const { newModal, closeModal, closeAllModals } = useModal({
+    const { newModal, closeAllModals } = useModal({
         desktop: ModalTypes.Center,
         mobile: ModalTypes.Center,
     });
@@ -80,13 +80,7 @@ const SamplePersonaBoxContent: React.FC = () => {
         if (personas.length <= 1) return;
 
         newModal(
-            <PersonaPicker
-                personas={personas}
-                onAdded={() => {
-                    refreshSampleCaches();
-                    closeModal();
-                }}
-            />,
+            <PersonaPicker personas={personas} onAdded={handleAdded} />,
             { hideButton: false },
             { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
         );

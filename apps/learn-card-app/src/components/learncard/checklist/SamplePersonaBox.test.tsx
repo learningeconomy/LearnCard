@@ -72,6 +72,7 @@ vi.mock('../../../paraglide/messages.js', () => ({
     }) => `Add ${persona} example`,
     'passport.buildMyLearnCard.samplePersona.addSuccess': () => 'Sample credentials added.',
     'passport.buildMyLearnCard.samplePersona.addError': () => 'Add failed',
+    'passport.buildMyLearnCard.samplePersona.addPartialError': () => 'Add incomplete',
     'passport.buildMyLearnCard.samplePersona.connecting': () => 'Setting up...',
     'passport.buildMyLearnCard.samplePersona.adding': () => 'Adding sample credentials...',
     'passport.buildMyLearnCard.samplePersona.checking': () => 'Checking sample credentials...',
@@ -234,7 +235,7 @@ describe('SamplePersonaBox', () => {
         fireEvent.click(screen.getByRole('button', { name: 'See an example LearnCard' }));
 
         await waitFor(() =>
-            expect(mocks.presentToast).toHaveBeenCalledWith('Add failed', {
+            expect(mocks.presentToast).toHaveBeenCalledWith('Add incomplete', {
                 type: 'error',
                 hasDismissButton: true,
             })
@@ -288,7 +289,7 @@ describe('SamplePersonaBox', () => {
         );
 
         await waitFor(() =>
-            expect(mocks.presentToast).toHaveBeenCalledWith('Add failed', {
+            expect(mocks.presentToast).toHaveBeenCalledWith('Add incomplete', {
                 type: 'error',
                 hasDismissButton: true,
             })
@@ -360,10 +361,10 @@ describe('SamplePersonaBox', () => {
         expect(mocks.presentToast).not.toHaveBeenCalledWith('Remove failed', expect.anything());
     });
 
-    it('shows a picker only when the tenant config has multiple personas', () => {
+    it('closes the full flow after adding from a multi-persona picker', async () => {
         mocks.useFeatureConfig.mockReturnValue({
             samplePersonas: [
-                studentPersona,
+                { ...studentPersona, displayName: 'Student' },
                 { id: 'worker', contractUri: 'lc:network:example:contract:worker' },
             ],
             legacySamplePersonaContractUris: [],
@@ -372,8 +373,13 @@ describe('SamplePersonaBox', () => {
         render(<SamplePersonaBox />);
         fireEvent.click(screen.getByRole('button', { name: 'Choose an example' }));
 
-        expect(mocks.newModal).toHaveBeenCalledOnce();
-        expect(mocks.useContract).not.toHaveBeenCalled();
+        const picker = mocks.newModal.mock.calls[0]?.[0];
+        expect(picker).toBeDefined();
+        render(picker);
+        fireEvent.click(screen.getByRole('button', { name: 'Add Student example' }));
+
+        await waitFor(() => expect(mocks.closeAllModals).toHaveBeenCalledOnce());
+        expect(mocks.closeModal).not.toHaveBeenCalled();
     });
 
     it('blocks actions while contract-indexed credentials are loading', () => {

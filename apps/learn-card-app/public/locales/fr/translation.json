@@ -270,6 +270,7 @@
                 "addPersonaAction": "Ajouter l’exemple {{persona}}",
                 "addSuccess": "Références d’exemple ajoutées.",
                 "addError": "Impossible d’ajouter les références d’exemple. Veuillez réessayer.",
+                "addPartialError": "Certaines références d’exemple ont peut-être été ajoutées. Supprimez-les, puis réessayez.",
                 "connecting": "Configuration...",
                 "adding": "Ajout des références d’exemple...",
                 "checking": "Vérification des références d’exemple...",

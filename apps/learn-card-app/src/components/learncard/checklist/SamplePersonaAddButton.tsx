@@ -50,6 +50,7 @@ const SamplePersonaAddButton: React.FC<SamplePersonaAddButtonProps> = ({
         if (!contract) return;
 
         setStatus('connecting');
+        let consentCreated = false;
         try {
             const expectedCredentialCount = contract.autoBoosts?.length ?? 0;
             if (expectedCredentialCount === 0) {
@@ -61,6 +62,7 @@ const SamplePersonaAddButton: React.FC<SamplePersonaAddButtonProps> = ({
                 expiresAt: '',
                 oneTime: false,
             });
+            consentCreated = true;
             await queryClient.refetchQueries({
                 queryKey: ['useConsentedContracts', switchedProfileStore.get.switchedDid() ?? ''],
             });
@@ -86,10 +88,15 @@ const SamplePersonaAddButton: React.FC<SamplePersonaAddButtonProps> = ({
             });
             onComplete?.();
         } catch (error) {
-            presentToast(m['passport.buildMyLearnCard.samplePersona.addError'](), {
-                type: ToastTypeEnum.Error,
-                hasDismissButton: true,
-            });
+            presentToast(
+                consentCreated
+                    ? m['passport.buildMyLearnCard.samplePersona.addPartialError']()
+                    : m['passport.buildMyLearnCard.samplePersona.addError'](),
+                {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                }
+            );
             log.error(error);
         } finally {
             setStatus('idle');
