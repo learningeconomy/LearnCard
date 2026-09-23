@@ -108,7 +108,7 @@ const openViaSystemBrowser = async (
                     );
                 }, BROWSER_FINISHED_GRACE_MS);
             });
-            await Browser.open({ url });
+            await Browser.open({ url, toolbarColor: '#FFFFFF' });
         };
 
         setup().catch(reject);

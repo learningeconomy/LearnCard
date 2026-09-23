@@ -17,7 +17,8 @@
         "keycloak": {
             "serverUrl": "http://localhost:8081",
             "realm": "learncard",
-            "clientId": "learncard-app"
+            "clientId": "learncard-app",
+            "authBridgeUrl": "http://localhost:3000/auth/continue.html"
         },
         "keyDerivation": "sss",
         "sss": { "serverUrl": "http://localhost:5100/api" }

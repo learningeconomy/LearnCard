@@ -178,6 +178,37 @@ describe('Keycloak factory registration', () => {
             );
         });
 
+        it('uses authBridgeUrl if provided in config', async () => {
+            mocks.config.mockReturnValue({
+                serverUrl: 'http://localhost:8081',
+                realm: 'learncard',
+                clientId: 'learncard-app',
+                authBridgeUrl: 'https://app.example.com/auth/continue.html',
+            });
+            registerKeycloakFactories();
+            const getProvider = mocks.authFactory.mock.calls[0]?.[1];
+            getProvider?.();
+            const navigate = mocks.createProvider.mock.calls[0]?.[0].navigate;
+            if (typeof navigate !== 'function') throw new Error('Missing navigate hook');
+            const provider = mocks.createProvider.mock.results[0]?.value;
+            mocks.openNativeAuthSession.mockResolvedValue('com.learncard.app://login?code=abc');
+
+            await navigate(
+                'https://auth.example.org/realms/learncard/protocol/openid-connect/auth'
+            );
+
+            expect(mocks.openNativeAuthSession).toHaveBeenCalledWith(
+                'https://app.example.com/auth/continue.html#next=https%3A%2F%2Fauth.example.org%2Frealms%2Flearncard%2Fprotocol%2Fopenid-connect%2Fauth',
+                {
+                    callbackUrlPrefix: 'com.learncard.app://login',
+                    callbackScheme: 'com.learncard.app',
+                }
+            );
+            expect(provider.handleRedirectCallback).toHaveBeenCalledWith(
+                'com.learncard.app://login?code=abc'
+            );
+        });
+
         it('propagates handleRedirectCallback failures out of navigate without swallowing them', async () => {
             registerKeycloakFactories();
             const getProvider = mocks.authFactory.mock.calls[0]?.[1];

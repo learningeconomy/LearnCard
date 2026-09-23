@@ -140,6 +140,11 @@ of redirecting the webview: iOS uses an ephemeral `ASWebAuthenticationSession`
 (and iOS as a fallback) opens `@capacitor/browser` (Chrome Custom Tabs /
 `SFSafariViewController`) and listens for the callback via `appUrlOpen`.
 
+- **authBridgeUrl**: To prevent a blank white screen during the redirect chain,
+  production tenants set `authBridgeUrl: "https://<domain>/auth/continue.html"`.
+  The sheet opens this static page first, which shows a branded loader and then
+  redirects to the Keycloak authorize URL (validated against the exact Keycloak
+  authorize origin+path from the same-origin tenant config).
 - **Redirect URI**: `<bundleId>://login` (e.g. `com.learncard.app://login`),
   read from the tenant config's `native.bundleId`. The Keycloak client's
   **Valid Redirect URIs** must include it, and `prepare-native-config.ts`

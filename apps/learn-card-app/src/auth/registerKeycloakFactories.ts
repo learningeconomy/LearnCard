@@ -11,6 +11,7 @@ import { openNativeAuthSession } from './nativeAuthSession';
 import { getNativeAppleIdToken, getNativeGoogleIdToken } from './nativeSocialTokens';
 import { requestEmailOtpTicket, requestSocialTicket } from './keycloakTickets';
 import { clearKeycloakReauth, readKeycloakReauth, validateKeycloakReauth } from './keycloakReauth';
+import { buildKeycloakBridgeUrl } from './keycloakBridge';
 
 /** Register lazily: Firebase tenants never construct a Keycloak session. */
 export const registerKeycloakFactories = (): void => {
@@ -44,7 +45,11 @@ export const registerKeycloakFactories = (): void => {
             ...(native
                 ? {
                       navigate: async (authorizeUrl: string): Promise<void> => {
-                          const callbackUrl = await openNativeAuthSession(authorizeUrl, {
+                          const bridgeUrl = buildKeycloakBridgeUrl(
+                              authorizeUrl,
+                              config.authBridgeUrl
+                          );
+                          const callbackUrl = await openNativeAuthSession(bridgeUrl, {
                               callbackUrlPrefix: redirectUri,
                               callbackScheme: resolveNativeBundleId(),
                           });

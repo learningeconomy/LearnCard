@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+        <meta name="referrer" content="no-referrer" />
+        <meta name="robots" content="noindex" />
+        <meta
+            http-equiv="Content-Security-Policy"
+            content="default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; font-src 'self' data:"
+        />
+        <title>Signing in</title>
+        <style>
+            :root {
+                --grayscale-900: #18224e;
+                --grayscale-600: #6f7590;
+                --grayscale-200: #e2e3e9;
+            }
+            body {
+                margin: 0;
+                padding: 0;
+                background-color: #ffffff;
+                font-family:
+                    Poppins,
+                    -apple-system,
+                    BlinkMacSystemFont,
+                    'Segoe UI',
+                    sans-serif;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                min-height: 100vh;
+                padding-top: env(safe-area-inset-top);
+                padding-bottom: env(safe-area-inset-bottom);
+                padding-left: env(safe-area-inset-left);
+                padding-right: env(safe-area-inset-right);
+                box-sizing: border-box;
+            }
+            .container {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+                opacity: 0;
+                transform: translateY(8px);
+                animation: fadeInUp 300ms ease-out forwards;
+            }
+            .tile {
+                width: 56px;
+                height: 56px;
+                border-radius: 16px;
+                margin-bottom: 24px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                overflow: hidden;
+            }
+            .tile img {
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+                opacity: 0;
+                transition: opacity 200ms ease-in;
+            }
+            .tile img.loaded {
+                opacity: 1;
+            }
+            h1 {
+                font-size: 20px;
+                font-weight: 600;
+                color: var(--grayscale-900);
+                margin: 0 0 8px 0;
+            }
+            p {
+                font-size: 14px;
+                color: var(--grayscale-600);
+                margin: 0 0 24px 0;
+            }
+            .spinner {
+                width: 20px;
+                height: 20px;
+                border: 2px solid var(--grayscale-200);
+                border-top-color: var(--grayscale-900);
+                border-radius: 50%;
+                animation: spin 0.8s linear infinite;
+            }
+            @keyframes fadeInUp {
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            @keyframes spin {
+                to {
+                    transform: rotate(360deg);
+                }
+            }
+            @media (prefers-reduced-motion: reduce) {
+                .container {
+                    animation: none;
+                    opacity: 1;
+                    transform: none;
+                }
+                .spinner {
+                    animation: pulse 2s ease-in-out infinite;
+                    border-color: var(--grayscale-900);
+                }
+                @keyframes pulse {
+                    0%,
+                    100% {
+                        opacity: 1;
+                    }
+                    50% {
+                        opacity: 0.5;
+                    }
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container" role="status" aria-live="polite">
+            <div class="tile" id="logo-tile"></div>
+            <h1 id="heading">Signing you in…</h1>
+            <p id="subtitle">This only takes a moment.</p>
+            <div class="spinner" id="spinner"></div>
+        </div>
+
+        <script>
+            (async () => {
+                const hash = window.location.hash.replace(/^#/, '');
+                const params = new URLSearchParams(hash);
+                const nextUrlStr = params.get('next');
+
+                // Drop fragment
+                window.history.replaceState(null, '', window.location.pathname);
+
+                const showError = () => {
+                    document.getElementById('heading').textContent = 'Something went wrong';
+                    document.getElementById('subtitle').textContent =
+                        'Close this window and try again.';
+                    document.getElementById('spinner').style.display = 'none';
+                };
+
+                if (!nextUrlStr) {
+                    return showError();
+                }
+
+                let nextUrl;
+                try {
+                    nextUrl = new URL(nextUrlStr);
+                } catch (e) {
+                    return showError();
+                }
+
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 3000);
+
+                // SPA hosts answer unknown paths with index.html (200), so a non-JSON
+                // body must fall through to the next source rather than fail.
+                const loadJson = async url => {
+                    try {
+                        const res = await fetch(url, {
+                            cache: 'no-store',
+                            signal: controller.signal,
+                        });
+                        if (!res.ok) return null;
+                        return await res.json();
+                    } catch (e) {
+                        return null;
+                    }
+                };
+
+                const config =
+                    (await loadJson('/tenant-config.json')) ?? (await loadJson('/__tenant-config'));
+                clearTimeout(timeoutId);
+
+                if (!config) {
+                    return showError();
+                }
+
+                const serverUrl = config?.auth?.keycloak?.serverUrl;
+                const realm = config?.auth?.keycloak?.realm;
+
+                if (!serverUrl || !realm) {
+                    return showError();
+                }
+
+                let allowedUrl;
+                try {
+                    allowedUrl = new URL(
+                        `${serverUrl.replace(/\/+$/, '')}/realms/${realm}/protocol/openid-connect/auth`
+                    );
+                } catch (e) {
+                    return showError();
+                }
+
+                if (
+                    nextUrl.origin !== allowedUrl.origin ||
+                    nextUrl.pathname !== allowedUrl.pathname
+                ) {
+                    return showError();
+                }
+
+                const brandMarkUrl = config?.branding?.brandMarkUrl || config?.branding?.appIconUrl;
+                if (
+                    brandMarkUrl &&
+                    brandMarkUrl.startsWith('/') &&
+                    !brandMarkUrl.startsWith('//')
+                ) {
+                    const img = document.createElement('img');
+                    img.alt = config?.branding?.name || 'Logo';
+                    img.onload = () => img.classList.add('loaded');
+                    img.src = brandMarkUrl;
+                    document.getElementById('logo-tile').appendChild(img);
+                }
+
+                window.location.replace(nextUrl.href);
+            })();
+        </script>
+    </body>
+</html>

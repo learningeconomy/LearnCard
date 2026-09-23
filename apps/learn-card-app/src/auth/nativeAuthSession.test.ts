@@ -76,7 +76,10 @@ describe('openNativeAuthSession', () => {
             await vi.advanceTimersByTimeAsync(0);
 
             expect(mocks.appUrlOpenListener).toBeInstanceOf(Function);
-            expect(mocks.browserOpen).toHaveBeenCalledWith({ url: AUTHORIZE_URL });
+            expect(mocks.browserOpen).toHaveBeenCalledWith({
+                url: AUTHORIZE_URL,
+                toolbarColor: '#FFFFFF',
+            });
 
             const callbackUrl = `${CALLBACK_PREFIX}?code=abc&state=xyz`;
             mocks.appUrlOpenListener?.({ url: callbackUrl });
@@ -158,7 +161,10 @@ describe('openNativeAuthSession', () => {
             });
             await vi.advanceTimersByTimeAsync(0);
 
-            expect(mocks.browserOpen).toHaveBeenCalledWith({ url: AUTHORIZE_URL });
+            expect(mocks.browserOpen).toHaveBeenCalledWith({
+                url: AUTHORIZE_URL,
+                toolbarColor: '#FFFFFF',
+            });
             mocks.appUrlOpenListener?.({ url: `${CALLBACK_PREFIX}?code=abc&state=xyz` });
             await expect(promise).resolves.toBe(`${CALLBACK_PREFIX}?code=abc&state=xyz`);
             expect(mocks.webAuthStart).not.toHaveBeenCalled();
