@@ -5,6 +5,7 @@ import path from 'node:path';
 import { applyOrg, type OrgLearnCard } from './apply';
 import { loadProject } from '../project';
 import type { OrgSpec } from './schema';
+import type { AuthGrantWithActAs } from '../auth-grant';
 
 const spec: OrgSpec = {
     issuer: {
@@ -37,7 +38,9 @@ const managerDid = 'did:web:network.learncard.com:manager:m1';
 const managedDid = 'did:web:network.learncard.com:users:sc-greenville';
 
 const makeMockCard = (): OrgLearnCard & {
-    invoke: { [K in keyof OrgLearnCard['invoke']]: ReturnType<typeof vi.fn> };
+    invoke: { [K in keyof OrgLearnCard['invoke']]: ReturnType<typeof vi.fn> } & {
+        updateAuthGrant: ReturnType<typeof vi.fn>;
+    };
 } => ({
     id: { did: vi.fn((method?: string) => (method === 'web' ? issuerDid : 'did:key:z6Mk...')) },
     invoke: {
@@ -47,6 +50,7 @@ const makeMockCard = (): OrgLearnCard & {
         createProfileManager: vi.fn().mockResolvedValue(managerDid),
         getAuthGrants: vi.fn().mockResolvedValue([]),
         addAuthGrant: vi.fn().mockResolvedValue('grant-1'),
+        updateAuthGrant: vi.fn().mockResolvedValue(true),
         getAPITokenForAuthGrant: vi.fn().mockResolvedValue('jwt-token-abc'),
         getRegisteredSigningAuthorities: vi.fn().mockResolvedValue([]),
         registerSigningAuthority: vi.fn().mockResolvedValue(true),
@@ -55,6 +59,23 @@ const makeMockCard = (): OrgLearnCard & {
         createSigningAuthority: vi.fn().mockResolvedValue(authorityRecord),
     },
 });
+
+const makeMockSigner = (registered: Array<Record<string, unknown>> = []) => ({
+    invoke: {
+        getRegisteredSigningAuthorities: vi.fn().mockResolvedValue(registered),
+        getSigningAuthorities: vi.fn().mockResolvedValue([]),
+        createSigningAuthority: vi.fn().mockResolvedValue(authorityRecord),
+        registerSigningAuthority: vi.fn().mockResolvedValue(true),
+        setPrimaryRegisteredSigningAuthority: vi.fn().mockResolvedValue(true),
+    },
+});
+const primaryDistrictSigner = () =>
+    makeMockSigner([
+        {
+            signingAuthority: { endpoint: authorityRecord.endpoint },
+            relationship: { name: 'scde-clr', did: authorityRecord.did, isPrimary: true },
+        },
+    ]);
 
 const makeMockManager = () => ({
     invoke: {
@@ -135,7 +156,7 @@ describe('service-account reconciliation', () => {
                 'grant has drifted'
             );
             await expect(applyOrg(accountSpec, card, project)).rejects.toThrow(
-                'npx @learncard/cli token --revoke grant-1 then re-run org apply'
+                'revoke it (npx @learncard/cli token --revoke grant-1) and re-run org apply with --secrets-out'
             );
             expect(card.invoke.addAuthGrant).not.toHaveBeenCalled();
             expect(card.invoke.getAPITokenForAuthGrant).not.toHaveBeenCalled();
@@ -373,7 +394,13 @@ describe('applyOrg', () => {
             const secretsOut = path.join(path.dirname(project.envPath), 'secrets.env');
             const log = vi.spyOn(console, 'log').mockImplementation(() => {});
 
-            const result = await applyOrg(spec, card, project, { secretsOut, connectAsManager });
+            const districtSigner = makeMockSigner();
+            const connectAsManagedSigner = vi.fn().mockResolvedValue(districtSigner);
+            const result = await applyOrg(spec, card, project, {
+                secretsOut,
+                connectAsManager,
+                connectAsManagedSigner,
+            });
 
             expect(card.invoke.createProfile).toHaveBeenCalledWith({
                 profileId: 'scde',
@@ -394,6 +421,14 @@ describe('applyOrg', () => {
                 bio: '',
                 shortBio: '',
             });
+            expect(connectAsManagedSigner).toHaveBeenCalledWith(managedDid);
+            expect(districtSigner.invoke.createSigningAuthority).toHaveBeenCalledWith('scde-clr');
+            expect(districtSigner.invoke.registerSigningAuthority).toHaveBeenCalledWith(
+                authorityRecord.endpoint,
+                authorityRecord.name,
+                authorityRecord.did
+            );
+            expect(project.env.SIGNING_AUTHORITY_NAME).toBe('scde-clr');
             expect(card.invoke.addAuthGrant).toHaveBeenCalledWith({
                 name: 'ea-clr-issuer',
                 scope: 'inbox:write inbox:read credentials:write credentials:read',
@@ -406,6 +441,11 @@ describe('applyOrg', () => {
             expect(actions).toContain('signingAuthority:created');
             expect(actions).toContain('profileManager:created');
             expect(actions).toContain('managedProfile:created');
+            expect(result.changes).toContainEqual({
+                resource: 'signingAuthority',
+                name: 'sc-greenville/scde-clr',
+                action: 'created',
+            });
             expect(actions).toContain('serviceAccount:created');
             expect(actions).toContain('webhook:created');
             expect(project.env.WEBHOOK_URL).toBe('https://clr.example.org/learncard/webhook');
@@ -471,6 +511,7 @@ describe('applyOrg', () => {
 
             const result = await applyOrg(spec, card, project, {
                 connectAsManager: async () => manager,
+                connectAsManagedSigner: async () => primaryDistrictSigner(),
             });
 
             expect(card.invoke.createProfile).not.toHaveBeenCalled();
@@ -513,6 +554,7 @@ describe('applyOrg', () => {
                 'setPrimaryRegisteredSigningAuthority',
                 'createProfileManager',
                 'addAuthGrant',
+                'updateAuthGrant',
                 'getAPITokenForAuthGrant',
             ] as const) {
                 expect(card.invoke[key]).not.toHaveBeenCalled();
@@ -544,13 +586,195 @@ describe('applyOrg', () => {
             const log = vi.spyOn(console, 'log').mockImplementation(() => {});
 
             await expect(
-                applyOrg(spec, card, project, { connectAsManager: async () => makeMockManager() })
+                applyOrg(spec, card, project, {
+                    connectAsManager: async () => makeMockManager(),
+                    connectAsManagedSigner: async () => primaryDistrictSigner(),
+                })
             ).rejects.toThrow('--secrets-out');
             expect(card.invoke.addAuthGrant).not.toHaveBeenCalled();
 
             log.mockRestore();
         });
     });
+
+    it("joins a new service account's actAs list with a comma when creating the grant", async () => {
+        await withTmpProject(async project => {
+            const card = makeMockCard();
+            const secretsOut = path.join(path.dirname(project.envPath), 'secrets.env');
+            const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+            const specWithActAs: OrgSpec = {
+                ...spec,
+                serviceAccounts: [
+                    { ...spec.serviceAccounts![0]!, actAs: ['sc-greenville', 'sc-north'] },
+                ],
+            };
+
+            await applyOrg(specWithActAs, card, project, {
+                secretsOut,
+                connectAsManager: async () => makeMockManager(),
+                connectAsManagedSigner: async () => primaryDistrictSigner(),
+            });
+
+            expect(card.invoke.addAuthGrant).toHaveBeenCalledWith({
+                name: 'ea-clr-issuer',
+                scope: 'inbox:write inbox:read credentials:write credentials:read',
+                expiresAt: new Date('2027-06-30').toISOString(),
+                actAs: 'sc-greenville,sc-north',
+            });
+
+            log.mockRestore();
+        });
+    });
+
+    it('passes "*" straight through as actAs when creating the grant', async () => {
+        await withTmpProject(async project => {
+            const card = makeMockCard();
+            const secretsOut = path.join(path.dirname(project.envPath), 'secrets.env');
+            const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+            const specWithActAs: OrgSpec = {
+                ...spec,
+                serviceAccounts: [{ ...spec.serviceAccounts![0]!, actAs: '*' }],
+            };
+
+            await applyOrg(specWithActAs, card, project, {
+                secretsOut,
+                connectAsManager: async () => makeMockManager(),
+                connectAsManagedSigner: async () => primaryDistrictSigner(),
+            });
+
+            expect(card.invoke.addAuthGrant).toHaveBeenCalledWith(
+                expect.objectContaining({ actAs: '*' })
+            );
+
+            log.mockRestore();
+        });
+    });
+
+    it('fails with a revoke + re-create hint when actAs differs from the existing grant', async () => {
+        await withTmpProject(async project => {
+            const card = makeMockCard();
+            card.invoke.getProfile.mockResolvedValue({
+                profileId: 'scde',
+                displayName: 'South Carolina Department of Education',
+                did: issuerDid,
+            });
+            card.invoke.getRegisteredSigningAuthorities.mockResolvedValue([
+                {
+                    signingAuthority: { endpoint: authorityRecord.endpoint },
+                    relationship: { name: 'scde-clr', did: authorityRecord.did, isPrimary: true },
+                },
+            ]);
+            const existingGrant: AuthGrantWithActAs = {
+                id: 'grant-1',
+                name: 'ea-clr-issuer',
+                status: 'active',
+                scope: matchingGrant.scope,
+                expiresAt: matchingGrant.expiresAt,
+                actAs: 'sc-greenville',
+            };
+            card.invoke.getAuthGrants.mockResolvedValue([existingGrant]);
+            const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+            const specWithActAs: OrgSpec = {
+                ...spec,
+                serviceAccounts: [{ ...spec.serviceAccounts![0]!, actAs: '*' }],
+            };
+
+            const message =
+                'Service account "ea-clr-issuer" grant has drifted (actAs sc-greenville -> any managed profile). These are fixed when the token is minted — revoke it (npx @learncard/cli token --revoke grant-1)';
+
+            const preview = await applyOrg(specWithActAs, card, project, {
+                dryRun: true,
+                connectAsManager: async () => makeMockManager(),
+                connectAsManagedSigner: async () => primaryDistrictSigner(),
+            });
+            expect(
+                preview.changes.find(
+                    c => c.resource === 'serviceAccount' && c.name === 'ea-clr-issuer'
+                )
+            ).toMatchObject({ action: 'drifted', detail: expect.stringContaining(message) });
+
+            await expect(
+                applyOrg(specWithActAs, card, project, {
+                    connectAsManager: async () => makeMockManager(),
+                    connectAsManagedSigner: async () => primaryDistrictSigner(),
+                })
+            ).rejects.toThrow(message);
+
+            expect(card.invoke.updateAuthGrant).not.toHaveBeenCalled();
+            expect(card.invoke.addAuthGrant).not.toHaveBeenCalled();
+
+            log.mockRestore();
+        });
+    });
+
+    it('fails when the spec drops actAs from a grant that has it', async () => {
+        await withTmpProject(async project => {
+            const card = makeMockCard();
+            const existingGrant: AuthGrantWithActAs = {
+                id: 'grant-1',
+                name: 'ea-clr-issuer',
+                status: 'active',
+                scope: matchingGrant.scope,
+                expiresAt: matchingGrant.expiresAt,
+                actAs: '*',
+            };
+            card.invoke.getAuthGrants.mockResolvedValue([existingGrant]);
+            const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+            await expect(
+                applyOrg(spec, card, project, {
+                    connectAsManager: async () => makeMockManager(),
+                    connectAsManagedSigner: async () => primaryDistrictSigner(),
+                })
+            ).rejects.toThrow('grant has drifted (actAs any managed profile -> no delegation)');
+            expect(card.invoke.updateAuthGrant).not.toHaveBeenCalled();
+
+            log.mockRestore();
+        });
+    });
+
+    it.each(['sc-greenville,sc-north', 'sc-north,sc-greenville', ' sc-north , sc-greenville '])(
+        'leaves an existing grant unchanged when actAs matches the spec as a set: %j',
+        async grantActAs => {
+            await withTmpProject(async project => {
+                const card = makeMockCard();
+                const existingGrant: AuthGrantWithActAs = {
+                    id: 'grant-1',
+                    name: 'ea-clr-issuer',
+                    status: 'active',
+                    scope: matchingGrant.scope,
+                    expiresAt: matchingGrant.expiresAt,
+                    actAs: grantActAs,
+                };
+                card.invoke.getAuthGrants.mockResolvedValue([existingGrant]);
+                const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+                const specWithActAs: OrgSpec = {
+                    ...spec,
+                    serviceAccounts: [
+                        { ...spec.serviceAccounts![0]!, actAs: ['sc-greenville', 'sc-north'] },
+                    ],
+                };
+
+                const result = await applyOrg(specWithActAs, card, project, {
+                    connectAsManager: async () => makeMockManager(),
+                    connectAsManagedSigner: async () => primaryDistrictSigner(),
+                });
+
+                expect(card.invoke.updateAuthGrant).not.toHaveBeenCalled();
+                expect(
+                    result.changes.find(
+                        c => c.resource === 'serviceAccount' && c.name === 'ea-clr-issuer'
+                    )
+                ).toMatchObject({ action: 'unchanged' });
+
+                log.mockRestore();
+            });
+        }
+    );
 });
 
 describe('signing-authority reconciliation', () => {
@@ -703,6 +927,7 @@ describe('profile-manager reconciliation', () => {
             const preview = await applyOrg(managerSpec, card, project, {
                 dryRun: true,
                 connectAsManager: async () => manager,
+                connectAsManagedSigner: async () => primaryDistrictSigner(),
             });
             expect(preview.changes).toContainEqual(
                 expect.objectContaining({
@@ -715,6 +940,7 @@ describe('profile-manager reconciliation', () => {
 
             const result = await applyOrg(managerSpec, card, project, {
                 connectAsManager: async () => manager,
+                connectAsManagedSigner: async () => primaryDistrictSigner(),
             });
             expect(manager.invoke.updateProfileManagerProfile).toHaveBeenCalledWith({
                 displayName: 'SC Districts',
@@ -726,6 +952,33 @@ describe('profile-manager reconciliation', () => {
                     detail: 'displayName',
                 })
             );
+        });
+    });
+
+    it('previews the hosted signer for a new district under an existing manager', async () => {
+        await withTmpProject(async project => {
+            Object.assign(project.env, selectedSigner);
+            const card = makeExistingCard();
+            const manager = makeMockManager();
+            project.env.ORG_PROFILE_MANAGER_DID = managerDid;
+            const connectAsManagedSigner = vi.fn();
+            const preview = await applyOrg(managerSpec, card, project, {
+                dryRun: true,
+                connectAsManager: async () => manager,
+                connectAsManagedSigner,
+            });
+            expect(preview.changes).toContainEqual({
+                resource: 'managedProfile',
+                name: 'sc-greenville',
+                action: 'would-create',
+            });
+            expect(preview.changes).toContainEqual({
+                resource: 'signingAuthority',
+                name: 'sc-greenville/scde-clr',
+                action: 'would-create',
+            });
+            expect(connectAsManagedSigner).not.toHaveBeenCalled();
+            expect(manager.invoke.createManagedProfile).not.toHaveBeenCalled();
         });
     });
 
@@ -746,6 +999,7 @@ describe('profile-manager reconciliation', () => {
             const preview = await applyOrg(managerSpec, card, project, {
                 dryRun: true,
                 connectAsManager: async () => manager,
+                connectAsManagedSigner: async () => primaryDistrictSigner(),
                 connectAsManaged,
             });
             expect(preview.changes).toContainEqual(
@@ -759,6 +1013,7 @@ describe('profile-manager reconciliation', () => {
 
             const result = await applyOrg(managerSpec, card, project, {
                 connectAsManager: async () => manager,
+                connectAsManagedSigner: async () => primaryDistrictSigner(),
                 connectAsManaged,
             });
             expect(connectAsManaged).toHaveBeenCalledWith(managedDid);

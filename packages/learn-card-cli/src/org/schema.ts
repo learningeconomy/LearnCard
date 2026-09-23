@@ -138,11 +138,18 @@ const serviceAccountNameSchema = z
         'must start with a letter or underscore and contain only letters, numbers, hyphens, and underscores'
     );
 
+// '*' = any profile under profileManager.managed; a list is refined below against it.
+const actAsSchema = z.union([
+    z.literal('*'),
+    z.array(profileIdSchema).min(1, 'must list at least one profileId'),
+]);
+
 const serviceAccountSchema = z
     .object({
         name: serviceAccountNameSchema,
         scopes: scopesSchema,
         expiresAt: isoDateSchema.optional(),
+        actAs: actAsSchema.optional(),
     })
     .strict();
 
@@ -177,7 +184,31 @@ export const OrgSpecValidator = z
             .optional(),
         webhooks: z.array(webhookSchema).optional(),
     })
-    .strict();
+    .strict()
+    .superRefine((spec, ctx) => {
+        const managedIds = new Set(spec.profileManager?.managed.map(entry => entry.profileId));
+        spec.serviceAccounts?.forEach((account, index) => {
+            if (!account.actAs) return;
+            const path = ['serviceAccounts', index, 'actAs'];
+            if (account.actAs === '*') {
+                if (!spec.profileManager)
+                    ctx.addIssue({
+                        code: 'custom',
+                        path,
+                        message: '"*" requires a profileManager in this spec',
+                    });
+                return;
+            }
+            for (const profileId of account.actAs) {
+                if (!managedIds.has(profileId))
+                    ctx.addIssue({
+                        code: 'custom',
+                        path,
+                        message: `"${profileId}" is not a managed profile in this spec`,
+                    });
+            }
+        });
+    });
 
 export type OrgSpec = z.infer<typeof OrgSpecValidator>;
 export type OrgSigningAuthoritySpec = z.infer<typeof signingAuthoritySchema>;

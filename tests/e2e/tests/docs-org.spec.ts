@@ -1,11 +1,11 @@
 /** Runs the issuer-org how-to's verbatim snippet, changing only the network to localhost. */
-import { afterAll, beforeAll, describe, expect, test } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'vitest';
 import { execFileSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { initLearnCard } from '@learncard/init';
-import { getLearnCardForUser, USERS } from './helpers/learncard.helpers';
+import { getLearnCard, getLearnCardForUser, USERS } from './helpers/learncard.helpers';
 
 const NETWORK = 'http://localhost:4000/trpc';
 const SNIPPETS = resolve(__dirname, '../../../docs/snippets/cli/org');
@@ -24,14 +24,21 @@ describe('Docs: Bootstrap an Issuer Organization', () => {
     const suffix = randomBytes(3).toString('hex');
     let managedDid = '';
 
-    beforeAll(async () => {
-        const source = readFileSync(join(SNIPPETS, 'send-as-managed.mjs'), 'utf8');
-        expect(source).toContain('network: true');
-        writeFileSync(
-            join(RUN_DIR, 'send-as-managed.mjs'),
-            source.replaceAll('network: true', `network: '${NETWORK}'`)
-        );
+    let apiToken = '';
 
+    beforeAll(async () => {
+        for (const name of ['send-as-managed.mjs', 'send-as-managed-token.mjs']) {
+            const source = readFileSync(join(SNIPPETS, name), 'utf8');
+            expect(source).toContain('network: true');
+            writeFileSync(
+                join(RUN_DIR, name),
+                source.replaceAll('network: true', `network: '${NETWORK}'`)
+            );
+        }
+    });
+
+    // The shared harness clears every database after each test, so rebuild the org per test.
+    beforeEach(async () => {
         // What `org apply` would have done: a parent profile, a manager, one managed profile.
         const parent = await initLearnCard({ seed, network: NETWORK });
         await parent.invoke.createProfile({
@@ -53,6 +60,21 @@ describe('Docs: Bootstrap an Issuer Organization', () => {
             shortBio: '',
         });
 
+        // The token snippet sends with `template`, which needs a hosted signing
+        // authority on the district. `org apply` registers one per managed profile for
+        // hosted-signer specs; this fixture is built by hand, so register it here.
+        const districtWithLca = await getLearnCard(seed, managedDid);
+        const sa = await districtWithLca.invoke.createSigningAuthority('docs-org');
+        if (!sa) throw new Error('Could not create a signing authority for the district');
+        await districtWithLca.invoke.registerSigningAuthority(sa.endpoint, sa.name, sa.did);
+
+        const grantId = await parent.invoke.addAuthGrant({
+            name: 'org-docs-token',
+            scope: 'boosts:write boosts:read profiles:read',
+            actAs: `org-docs-north-${suffix}`,
+        });
+        apiToken = await parent.invoke.getAPITokenForAuthGrant(grantId);
+
         await getLearnCardForUser('b');
     });
 
@@ -70,5 +92,15 @@ describe('Docs: Bootstrap an Issuer Organization', () => {
         const recipient = await getLearnCardForUser('b');
         const incoming = await recipient.invoke.getIncomingCredentials(`org-docs-north-${suffix}`);
         expect(incoming.length).toBeGreaterThan(0);
+    });
+
+    test('an org token acts as a managed profile via invoke.actAs', async () => {
+        const output = run('send-as-managed-token.mjs', {
+            API_TOKEN: apiToken,
+            DISTRICT_PROFILE_ID: `org-docs-north-${suffix}`,
+            RECIPIENT: USERS.b.profileId,
+        });
+        expect(output).toContain(`Acting as North District (org-docs-north-${suffix})`);
+        expect(output).toMatch(/lc:network:.*:credential:/);
     });
 });

@@ -195,6 +195,51 @@ describe('OrgSpecValidator', () => {
     });
 });
 
+describe('serviceAccounts[].actAs', () => {
+    it('accepts "*" when a profileManager is present', () => {
+        const result = OrgSpecValidator.safeParse({
+            ...validSpec,
+            serviceAccounts: [{ ...validSpec.serviceAccounts[0], actAs: '*' }],
+        });
+        expect(result.success).toBe(true);
+    });
+
+    it('accepts a list of profileIds that are all managed', () => {
+        const result = OrgSpecValidator.safeParse({
+            ...validSpec,
+            serviceAccounts: [{ ...validSpec.serviceAccounts[0], actAs: ['sc-greenville'] }],
+        });
+        expect(result.success).toBe(true);
+    });
+
+    it('rejects a list naming a profileId that is not managed', () => {
+        const result = OrgSpecValidator.safeParse({
+            ...validSpec,
+            serviceAccounts: [
+                { ...validSpec.serviceAccounts[0], actAs: ['sc-greenville', 'sc-north'] },
+            ],
+        });
+        expect(result.success).toBe(false);
+        if (!result.success) {
+            const issue = result.error.issues.find(i => i.message.includes('sc-north'));
+            expect(issue?.message).toBe('"sc-north" is not a managed profile in this spec');
+            expect(issue?.path).toEqual(['serviceAccounts', 0, 'actAs']);
+        }
+    });
+
+    it('rejects "*" when there is no profileManager', () => {
+        const result = OrgSpecValidator.safeParse({
+            issuer: validSpec.issuer,
+            serviceAccounts: [{ ...validSpec.serviceAccounts[0], actAs: '*' }],
+        });
+        expect(result.success).toBe(false);
+        if (!result.success)
+            expect(
+                result.error.issues.some(issue => issue.message.includes('profileManager'))
+            ).toBe(true);
+    });
+});
+
 describe('examples/*.network.yaml', () => {
     it('every shipped example parses', async () => {
         const fs = await import('node:fs/promises');

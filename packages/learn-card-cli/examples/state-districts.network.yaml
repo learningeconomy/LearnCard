@@ -26,8 +26,11 @@ profileManager:
 
 serviceAccounts:
     - name: ex-clr-issuer
-      scopes: [inbox:write, inbox:read, credentials:write, credentials:read]
+      # boosts:write lets the token send through a district's signer via `send({ template })`.
+      scopes: [boosts:write, inbox:write, inbox:read, credentials:write, credentials:read]
       expiresAt: 2027-06-30
+      # '*' lets this token act as any profile under profileManager.managed (e.g. cs-exampleville).
+      actAs: '*'
 
 webhooks:
     - url: https://clr.example.org/learncard/webhook

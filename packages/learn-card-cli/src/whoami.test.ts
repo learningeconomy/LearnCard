@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { Command } from 'commander';
 
-import { registerWhoamiCommand } from './whoami';
+import { registerWhoamiCommand, summarizeServiceAccounts } from './whoami';
+import type { AuthGrantWithActAs } from './auth-grant';
 
 describe('whoami command', () => {
     it('registers with --network and --json only', () => {
@@ -17,6 +18,33 @@ describe('whoami command', () => {
                 .filter(l => l !== '--help')
                 .sort()
         ).toEqual(['--json', '--network']);
+    });
+});
+
+describe('summarizeServiceAccounts', () => {
+    it('shapes active grants as { name, scope, actAs } for --json, dropping revoked ones', () => {
+        const grants: AuthGrantWithActAs[] = [
+            {
+                id: 'g1',
+                name: 'ea-clr-issuer',
+                status: 'active',
+                scope: 'inbox:write',
+                actAs: 'sc-greenville,sc-north',
+            },
+            { id: 'g2', name: 'star-issuer', status: 'active', scope: 'inbox:write', actAs: '*' },
+            { id: 'g3', name: 'no-delegation', status: 'active', scope: 'inbox:write' },
+            { id: 'g4', name: 'old-issuer', status: 'revoked', scope: 'inbox:write', actAs: '*' },
+        ];
+
+        expect(summarizeServiceAccounts(grants)).toEqual([
+            { name: 'ea-clr-issuer', scope: 'inbox:write', actAs: 'sc-greenville,sc-north' },
+            { name: 'star-issuer', scope: 'inbox:write', actAs: '*' },
+            { name: 'no-delegation', scope: 'inbox:write', actAs: undefined },
+        ]);
+    });
+
+    it('returns an empty array when there are no grants', () => {
+        expect(summarizeServiceAccounts([])).toEqual([]);
     });
 });
 
