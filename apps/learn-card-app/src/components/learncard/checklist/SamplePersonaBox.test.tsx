@@ -188,7 +188,37 @@ describe('SamplePersonaBox', () => {
         await waitFor(() => expect(mocks.fetchNewContractCredentials).toHaveBeenCalledOnce());
         expect(mocks.confirm).not.toHaveBeenCalled();
         expect(mocks.consentToContract).toHaveBeenCalledOnce();
-        expect(mocks.getCredentialsForContract).toHaveBeenCalledWith(currentTermsUri);
+        expect(mocks.getCredentialsForContract).toHaveBeenCalledWith(currentTermsUri, { limit: 4 });
+        expect(mocks.presentToast).toHaveBeenCalledWith('Sample credentials added.', {
+            hasDismissButton: true,
+        });
+    });
+
+    it('requests every expected credential when a sample contains more than 25 records', async () => {
+        mocks.useContract.mockReturnValue({
+            data: {
+                contract: {},
+                owner: { did: 'did:example:sample-hill-valley-high' },
+                autoBoosts: Array.from({ length: 33 }, (_, index) => `boost-${index}`),
+            },
+            isLoading: false,
+        });
+        mocks.getCredentialsForContract.mockResolvedValueOnce({
+            records: Array.from({ length: 33 }, (_, index) => ({
+                credentialUri: `credential-${index}`,
+            })),
+            hasMore: false,
+        });
+
+        render(<SamplePersonaBox />);
+        fireEvent.click(screen.getByRole('button', { name: 'See an example LearnCard' }));
+
+        await waitFor(() =>
+            expect(mocks.getCredentialsForContract).toHaveBeenCalledWith(currentTermsUri, {
+                limit: 33,
+            })
+        );
+        expect(mocks.getCredentialsForContract).toHaveBeenCalledTimes(1);
         expect(mocks.presentToast).toHaveBeenCalledWith('Sample credentials added.', {
             hasDismissButton: true,
         });
@@ -252,7 +282,9 @@ describe('SamplePersonaBox', () => {
         fireEvent.click(screen.getByRole('button', { name: 'See an example LearnCard' }));
 
         await waitFor(() =>
-            expect(mocks.getCredentialsForContract).toHaveBeenCalledWith(currentTermsUri)
+            expect(mocks.getCredentialsForContract).toHaveBeenCalledWith(currentTermsUri, {
+                limit: 4,
+            })
         );
 
         await waitFor(() =>

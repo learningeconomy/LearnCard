@@ -23,15 +23,9 @@ export const clrStudentOfficialAcademicTranscript: CredentialFixture = {
         ],
         'type': ['VerifiableCredential', 'ClrCredential'],
         'issuer': {
-            'id': 'did:web:network.learncard.com:users:hillvalleyhigh',
+            'id': 'did:web:network.learncard.com:users:redwoodvalley2',
         },
         'credentialSubject': {
-            '@context': {
-                identifier: {
-                    '@id': 'https://purl.imsglobal.org/spec/vc/ob/vocab.html#identifier',
-                    '@container': '@set',
-                },
-            },
             'id': 'did:example:student',
             'achievement': [
                 {
@@ -3171,6 +3165,13 @@ export const clrStudentOfficialAcademicTranscript: CredentialFixture = {
                     'validFrom': '2021-04-10T00:00:00Z',
                 },
             ],
+            '@context': {
+                'identifier': {
+                    '@id': 'https://purl.imsglobal.org/spec/vc/clr/vocab.html#identifier-1',
+                    '@type': 'https://purl.imsglobal.org/spec/vc/ob/vocab.html#Identifier',
+                    '@container': '@set',
+                },
+            },
         },
         'name': 'Official Academic Transcript — Redwood Valley University',
         'description':
@@ -3197,10 +3198,5 @@ export const clrStudentOfficialAcademicTranscript: CredentialFixture = {
             },
         ],
         'awardedDate': '2025-05-17',
-        'image': {
-            'caption': 'Redwood Valley University official seal',
-            'id': 'https://redwoodvalley.edu/assets/rvu-seal.png',
-            'type': 'Image',
-        },
     },
 };

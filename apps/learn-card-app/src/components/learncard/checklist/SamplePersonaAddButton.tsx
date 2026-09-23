@@ -72,7 +72,9 @@ const SamplePersonaAddButton: React.FC<SamplePersonaAddButtonProps> = ({
             }
 
             const wallet = await initWallet();
-            const issuedCredentials = await wallet.invoke.getCredentialsForContract(termsUri);
+            const issuedCredentials = await wallet.invoke.getCredentialsForContract(termsUri, {
+                limit: expectedCredentialCount,
+            });
             if (issuedCredentials.records.length < expectedCredentialCount) {
                 throw new Error(
                     `Sample credential sync returned ${issuedCredentials.records.length} of ${expectedCredentialCount} expected records`

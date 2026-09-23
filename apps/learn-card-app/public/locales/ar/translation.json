@@ -276,8 +276,7 @@
                 "deleting": "جارٍ إزالة بيانات الاعتماد النموذجية...",
                 "chooseAction": "اختيار مثال",
                 "pickerTitle": "اختر LearnCard نموذجيًا",
-                "pickerDescription": "اختر المثال الأنسب لما تريد استكشافه.",
-                "indicator": "نموذج"
+                "pickerDescription": "اختر المثال الأنسب لما تريد استكشافه."
             },
             "managers": {
                 "resume": {

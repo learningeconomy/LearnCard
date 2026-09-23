@@ -104,6 +104,7 @@ import {
     isDraftBoost,
     appendTemplateEvidenceToCredential,
 } from '@helpers/boost.helpers';
+import { setCredentialSubjectIds } from '@helpers/credentialSubject.helpers';
 import { createBoostForListing } from '@accesslayer/boost/create';
 import { setBoostAsParent } from '@accesslayer/boost/relationships/create';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
@@ -692,17 +693,7 @@ export const handleSendCredentialEvent = async (
 
         const targetDid = getDidWeb(ctx.domain, target.profileId);
 
-        if (Array.isArray(unsignedVc.credentialSubject)) {
-            unsignedVc.credentialSubject = unsignedVc.credentialSubject.map(subject => ({
-                ...subject,
-                id: targetDid,
-            }));
-        } else {
-            unsignedVc.credentialSubject = {
-                ...unsignedVc.credentialSubject,
-                id: targetDid,
-            };
-        }
+        setCredentialSubjectIds(unsignedVc, targetDid);
 
         if (unsignedVc?.type?.includes('BoostCredential')) {
             unsignedVc.boostId = boostUri;

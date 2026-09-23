@@ -145,7 +145,7 @@ export const studentBundle: CredentialBundle = {
         {
             fixtureId: 'clr/student-official-academic-transcript',
             validFromOffsetDays: -494,
-            issuer: ISSUERS.hillValleyHigh,
+            issuer: ISSUERS.redwoodValleyUniversity,
         },
         {
             fixtureId: 'obv3/student-ba-interactive-media-design',

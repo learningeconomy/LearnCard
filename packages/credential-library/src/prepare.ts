@@ -104,16 +104,48 @@ const patchIssuer = (issuer: unknown, issuerDid: string): string | Record<string
     return issuerDid;
 };
 
+const patchCredentialSubject = (credential: unknown, subjectDid: string): unknown => {
+    if (!credential || typeof credential !== 'object' || Array.isArray(credential)) {
+        return credential;
+    }
+
+    const patchedCredential = { ...(credential as Record<string, unknown>) };
+
+    if (patchedCredential.credentialSubject) {
+        patchedCredential.credentialSubject = patchSubject(
+            patchedCredential.credentialSubject,
+            subjectDid
+        );
+    }
+
+    return patchedCredential;
+};
+
 const patchSubject = (subject: unknown, subjectDid: string): unknown => {
     if (Array.isArray(subject)) {
-        return subject.map(s => patchSubject(s, subjectDid));
+        return subject.map(nestedSubject => patchSubject(nestedSubject, subjectDid));
     }
 
-    if (subject && typeof subject === 'object') {
-        return { ...(subject as Record<string, unknown>), id: subjectDid };
+    if (!subject || typeof subject !== 'object') return subject;
+
+    const patchedSubject: Record<string, unknown> = {
+        ...(subject as Record<string, unknown>),
+        id: subjectDid,
+    };
+    const embeddedCredentials = patchedSubject.verifiableCredential;
+
+    if (Array.isArray(embeddedCredentials)) {
+        patchedSubject.verifiableCredential = embeddedCredentials.map(credential =>
+            patchCredentialSubject(credential, subjectDid)
+        );
+    } else if (embeddedCredentials) {
+        patchedSubject.verifiableCredential = patchCredentialSubject(
+            embeddedCredentials,
+            subjectDid
+        );
     }
 
-    return subject;
+    return patchedSubject;
 };
 
 // ---------------------------------------------------------------------------

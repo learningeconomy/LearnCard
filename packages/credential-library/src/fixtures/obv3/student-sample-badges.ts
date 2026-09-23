@@ -62,7 +62,8 @@ export const obv3StudentAfterschoolProgramMentor = createStudentSampleBadge({
     issuerDid: 'did:web:network.learncard.com:users:hillvalleyhigh',
     validFrom: '2026-07-06T03:02:55.786Z',
     achievement: {
-        achievementType: 'ext:LCA_CUSTOM:Social Badge:Community_Champ',
+        achievementType: 'CommunityService',
+        tag: ['lc:category:Social Badge', 'lc:subtype:Community Champ', 'lc:displayType:award'],
         alignment: [
             {
                 targetCode: '6.6',
@@ -136,7 +137,13 @@ export const obv3StudentEnvironmentBadge = createStudentSampleBadge({
     issuerDid: 'did:web:network.learncard.com:users:scouting2',
     validFrom: '2026-07-06T02:58:48.995Z',
     achievement: {
-        achievementType: 'ext:ChallengeMaker',
+        achievementType: 'Badge',
+        tag: [
+            'lc:category:Social Badge',
+            'lc:subtype:Challenge Maker',
+            'lc:displayType:award',
+            'lc:bgImage:https://cdn.filestackcontent.com/5ZNtFOOZRUeDlYrFBP0f',
+        ],
         alignment: [
             {
                 targetCode: '6.6',
@@ -207,7 +214,13 @@ export const obv3StudentRockClimbingMentor = createStudentSampleBadge({
         },
     ],
     achievement: {
-        achievementType: 'ext:Expert',
+        achievementType: 'CommunityService',
+        tag: [
+            'lc:category:Social Badge',
+            'lc:subtype:Expert',
+            'lc:displayType:award',
+            'lc:bgImage:https://cdn.filestackcontent.com/PTeHv2CTQmKWboDbWBso',
+        ],
         alignment: [
             {
                 targetCode: '6.2',
@@ -338,7 +351,13 @@ export const obv3StudentParkCleanupHelper = createStudentSampleBadge({
         },
     ],
     achievement: {
-        achievementType: 'ext:LCA_CUSTOM:Social Badge:Park_Cleanup_Helper',
+        achievementType: 'CommunityService',
+        tag: [
+            'lc:category:Social Badge',
+            'lc:subtype:Park Cleanup Helper',
+            'lc:displayType:award',
+            'lc:bgImage:https://cdn.filestackcontent.com/Ve3UzPtlQOSlRinFlRDI',
+        ],
         alignment: [
             {
                 targetCode: '5.4',

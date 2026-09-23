@@ -17,6 +17,7 @@ import { getNotificationMessage } from '@helpers/notificationMessages';
 import { resolveRecipientLocale } from '@helpers/getRecipientLocale.helpers';
 import { DbContractType, DbTermsType } from 'types/consentflowcontract';
 import { getBoostUri, sendBoost } from '@helpers/boost.helpers';
+import { setCredentialSubjectIds } from '@helpers/credentialSubject.helpers';
 import { getDidWeb } from '@helpers/did.helpers';
 import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
@@ -158,19 +159,10 @@ export const reconsentTerms = async (
                         boostCredential.boostId = getBoostUri(boost.dataValues.id, domain);
                     }
 
-                    if (Array.isArray(boostCredential.credentialSubject)) {
-                        boostCredential.credentialSubject = boostCredential.credentialSubject.map(
-                            subject => ({
-                                ...subject,
-                                id: getDidWeb(domain, relationship.consenter.profileId),
-                            })
-                        );
-                    } else {
-                        boostCredential.credentialSubject.id = getDidWeb(
-                            domain,
-                            relationship.consenter.profileId
-                        );
-                    }
+                    setCredentialSubjectIds(
+                        boostCredential,
+                        getDidWeb(domain, relationship.consenter.profileId)
+                    );
 
                     // Issue the credential using contract owner's signing authority
                     // Inject OBv3 skill alignments based on boost's framework/skills
@@ -390,19 +382,10 @@ export const updateTerms = async (
                         boostCredential.boostId = getBoostUri(boost.target.id, domain);
                     }
 
-                    if (Array.isArray(boostCredential.credentialSubject)) {
-                        boostCredential.credentialSubject = boostCredential.credentialSubject.map(
-                            subject => ({
-                                ...subject,
-                                id: getDidWeb(domain, relationship.consenter.profileId),
-                            })
-                        );
-                    } else {
-                        boostCredential.credentialSubject.id = getDidWeb(
-                            domain,
-                            relationship.consenter.profileId
-                        );
-                    }
+                    setCredentialSubjectIds(
+                        boostCredential,
+                        getDidWeb(domain, relationship.consenter.profileId)
+                    );
 
                     // Issue the credential using contract owner's signing authority
                     // Inject OBv3 skill alignments based on boost's framework/skills

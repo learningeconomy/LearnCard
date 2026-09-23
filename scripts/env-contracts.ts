@@ -83,6 +83,12 @@ export const environmentContracts: readonly EnvironmentContract[] = [
         examplePath: EXAMPLE_PATHS[2],
         schema: brainService.brainServiceEnvironmentSchema,
         shape: brainService.brainServiceEnvironmentShape,
+        unmanagedKeys: [
+            'MONGO_URI',
+            'MONGO_DB_NAME',
+            'DEMO_PERSONA_SIGNING_AUTHORITY_ENDPOINT',
+            'DEMO_PERSONA_SA_SEED',
+        ],
     },
     {
         project: 'lca-api',
@@ -221,7 +227,7 @@ export const validateEnvironmentExamples = (): string[] => {
         }
 
         for (const key of exampleKeys) {
-            if (!schemaKeys.includes(key)) {
+            if (!schemaKeys.includes(key) && !contract.unmanagedKeys?.includes(key)) {
                 errors.push(`${contract.examplePath} documents unknown key ${key}`);
             }
         }

@@ -276,8 +276,7 @@
                 "deleting": "Suppression des références d’exemple...",
                 "chooseAction": "Choisir un exemple",
                 "pickerTitle": "Choisissez un exemple de LearnCard",
-                "pickerDescription": "Choisissez l’exemple qui correspond le mieux à ce que vous souhaitez explorer.",
-                "indicator": "Exemple"
+                "pickerDescription": "Choisissez l’exemple qui correspond le mieux à ce que vous souhaitez explorer."
             },
             "managers": {
                 "resume": {

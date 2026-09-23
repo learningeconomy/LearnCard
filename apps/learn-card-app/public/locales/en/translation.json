@@ -276,8 +276,7 @@
                 "deleting": "Removing sample credentials...",
                 "chooseAction": "Choose an example",
                 "pickerTitle": "Choose an example LearnCard",
-                "pickerDescription": "Pick the example that best matches what you want to explore.",
-                "indicator": "Sample"
+                "pickerDescription": "Pick the example that best matches what you want to explore."
             },
             "managers": {
                 "resume": {

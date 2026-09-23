@@ -39,7 +39,7 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
             'credentialSubject': {
                 'id': 'did:example:student',
                 'achievement': {
-                    'achievementType': 'ext:LCA_CUSTOM:Achievement:First_Place',
+                    'achievementType': 'Award',
                     'alignment': [
                         {
                             'targetCode': '3.1',
@@ -142,6 +142,12 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
                     'image': 'https://cdn.filestackcontent.com/UoWbVpaTjOuC0VXDwIUO',
                     'name': 'First Place in a Science Fair',
                     'type': ['Achievement'],
+                    'tag': [
+                        'lc:category:Achievement',
+                        'lc:subtype:First Place',
+                        'lc:displayType:award',
+                        'lc:bgImage:https://cdn.filestackcontent.com/7A2FhJCTStShKZ4b2Rj4',
+                    ],
                 },
                 'type': ['AchievementSubject'],
             },
@@ -168,7 +174,7 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
             'credentialSubject': {
                 'id': 'did:example:student',
                 'achievement': {
-                    'achievementType': 'ext:LCA_CUSTOM:Achievement:Achievements',
+                    'achievementType': 'Certification',
                     'alignment': [
                         {
                             'targetCode': '1.4',
@@ -281,6 +287,12 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
                     'image': 'https://cdn.filestackcontent.com/U7cxzj5hQBeINu2krh4F',
                     'name': 'TOEFL Certification',
                     'type': ['Achievement'],
+                    'tag': [
+                        'lc:category:Achievement',
+                        'lc:subtype:Achievements',
+                        'lc:displayType:certificate',
+                        'lc:bgImage:https://cdn.filestackcontent.com/7EzPWKWgQIKRkr0JAOKx',
+                    ],
                 },
                 'type': ['AchievementSubject'],
             },
@@ -307,7 +319,7 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
             'credentialSubject': {
                 'id': 'did:example:student',
                 'achievement': {
-                    'achievementType': 'ext:LCA_CUSTOM:Achievement:Achievements',
+                    'achievementType': 'Assignment',
                     'alignment': [
                         {
                             'targetCode': '4.2',
@@ -380,6 +392,12 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
                     'image': 'https://cdn.filestackcontent.com/nGmsluYQpyw8QTUIsmUh',
                     'name': 'Senior Capstone Project',
                     'type': ['Achievement'],
+                    'tag': [
+                        'lc:category:Achievement',
+                        'lc:subtype:Achievements',
+                        'lc:displayType:badge',
+                        'lc:bgImage:https://cdn.filestackcontent.com/8eE2IyevRMeN2c3lhcrD',
+                    ],
                 },
                 'type': ['AchievementSubject'],
             },
@@ -406,7 +424,7 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
             'credentialSubject': {
                 'id': 'did:example:student',
                 'achievement': {
-                    'achievementType': 'ext:LCA_CUSTOM:Achievement:Achievements',
+                    'achievementType': 'Assessment',
                     'alignment': [
                         {
                             'targetCode': '3.5',
@@ -539,6 +557,12 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
                     'image': 'https://cdn.filestackcontent.com/s4YRNyhNQimPZG8YpVsH',
                     'name': 'SAT Score',
                     'type': ['Achievement'],
+                    'tag': [
+                        'lc:category:Achievement',
+                        'lc:subtype:Achievements',
+                        'lc:displayType:certificate',
+                        'lc:bgImage:https://cdn.filestackcontent.com/9JoBhCclQG64sNbByIlS',
+                    ],
                 },
                 'type': ['AchievementSubject'],
             },
@@ -565,7 +589,7 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
             'credentialSubject': {
                 'id': 'did:example:student',
                 'achievement': {
-                    'achievementType': 'ext:LCA_CUSTOM:Achievement:Diploma',
+                    'achievementType': 'SecondarySchoolDiploma',
                     'alignment': [
                         {
                             'targetCode': '6.5',
@@ -1207,6 +1231,12 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
                     'image': 'https://cdn.filestackcontent.com/btcinBSRoCv5pzD3zOYo',
                     'name': 'Hill Valley High School Diploma',
                     'type': ['Achievement'],
+                    'tag': [
+                        'lc:category:Achievement',
+                        'lc:subtype:Diploma',
+                        'lc:displayType:certificate',
+                        'lc:bgImage:https://cdn.filestackcontent.com/fu1JG0dSI61FQgbD7oJL',
+                    ],
                 },
                 'type': ['AchievementSubject'],
             },
@@ -1233,7 +1263,7 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
             'credentialSubject': {
                 'id': 'did:example:student',
                 'achievement': {
-                    'achievementType': 'ext:Class',
+                    'achievementType': 'Course',
                     'alignment': [
                         {
                             'targetCode': '3.1',
@@ -1306,6 +1336,12 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
                     'image': 'https://cdn.filestackcontent.com/gkkuqW0GQnOvUnKN86ur',
                     'name': 'Biology 101',
                     'type': ['Achievement'],
+                    'tag': [
+                        'lc:category:Learning History',
+                        'lc:subtype:Class',
+                        'lc:displayType:certificate',
+                        'lc:bgImage:https://cdn.filestackcontent.com/6UO9ghxsQjGe4gqzNWc7',
+                    ],
                 },
                 'type': ['AchievementSubject'],
             },
@@ -1332,7 +1368,7 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
             'credentialSubject': {
                 'id': 'did:example:student',
                 'achievement': {
-                    'achievementType': 'ext:Training',
+                    'achievementType': 'Course',
                     'alignment': [
                         {
                             'targetCode': '6.5',
@@ -1485,6 +1521,12 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
                     'image': 'https://cdn.filestackcontent.com/aNI8yHPSi6uKBAzFfAru',
                     'name': 'AI Fundamentals',
                     'type': ['Achievement'],
+                    'tag': [
+                        'lc:category:Learning History',
+                        'lc:subtype:Training',
+                        'lc:displayType:badge',
+                        'lc:bgImage:https://cdn.filestackcontent.com/JFlEuwTTIWKVfTFTrsDQ',
+                    ],
                 },
                 'type': ['AchievementSubject'],
             },
@@ -1511,7 +1553,7 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
             'credentialSubject': {
                 'id': 'did:example:student',
                 'achievement': {
-                    'achievementType': 'ext:Bootcamp',
+                    'achievementType': 'LearningProgram',
                     'alignment': [
                         {
                             'targetCode': '3.1',
@@ -1604,6 +1646,12 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
                     'image': 'https://cdn.filestackcontent.com/hQFVQJwTPakN1Ul2AYSR',
                     'name': 'Technical Bootcamp',
                     'type': ['Achievement'],
+                    'tag': [
+                        'lc:category:Learning History',
+                        'lc:subtype:Bootcamp',
+                        'lc:displayType:badge',
+                        'lc:bgImage:https://cdn.filestackcontent.com/aixYSCFSCe3hhtYfpTxd',
+                    ],
                 },
                 'type': ['AchievementSubject'],
             },
@@ -1630,7 +1678,7 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
             'credentialSubject': {
                 'id': 'did:example:student',
                 'achievement': {
-                    'achievementType': 'Degree',
+                    'achievementType': 'BachelorDegree',
                     'alignment': [
                         {
                             'targetCode': '6.5',
@@ -1863,6 +1911,12 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
                     'image': 'https://cdn.filestackcontent.com/Hm24dMReRRaeJxs4dirv',
                     'name': 'B.A., Interactive Media Design',
                     'type': ['Achievement'],
+                    'tag': [
+                        'lc:category:Learning History',
+                        'lc:subtype:Degree',
+                        'lc:displayType:certificate',
+                        'lc:bgImage:https://cdn.filestackcontent.com/DJcAcspR60utsd4NYYAb',
+                    ],
                 },
                 'type': ['AchievementSubject'],
             },
@@ -1889,7 +1943,7 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
             'credentialSubject': {
                 'id': 'did:example:student',
                 'achievement': {
-                    'achievementType': 'ext:Class',
+                    'achievementType': 'Course',
                     'alignment': [
                         {
                             'targetCode': '3.1',
@@ -1992,6 +2046,12 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
                     'image': 'https://cdn.filestackcontent.com/V1l17mddR4evzPDrptmZ',
                     'name': 'AP Math Course',
                     'type': ['Achievement'],
+                    'tag': [
+                        'lc:category:Learning History',
+                        'lc:subtype:Class',
+                        'lc:displayType:certificate',
+                        'lc:bgImage:https://cdn.filestackcontent.com/ciMvwE5ZTqKDcS9hPbtG',
+                    ],
                 },
                 'type': ['AchievementSubject'],
             },
@@ -2017,7 +2077,7 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
             'credentialSubject': {
                 'id': 'did:example:student',
                 'achievement': {
-                    'achievementType': 'ext:Content',
+                    'achievementType': 'Assignment',
                     'alignment': [
                         {
                             'targetCode': '7.2',
@@ -2079,6 +2139,11 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
                     'image': 'https://cdn.filestackcontent.com/8OIEKhtHTAutM1nzlKkT',
                     'name': 'Animated Short',
                     'type': ['Achievement'],
+                    'tag': [
+                        'lc:category:Accomplishment',
+                        'lc:subtype:Content',
+                        'lc:displayType:media',
+                    ],
                 },
                 'type': ['AchievementSubject'],
             },
@@ -2113,7 +2178,7 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
             'credentialSubject': {
                 'id': 'did:example:student',
                 'achievement': {
-                    'achievementType': 'ext:Project',
+                    'achievementType': 'Assignment',
                     'alignment': [
                         {
                             'targetCode': '7.2',
@@ -2186,6 +2251,12 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
                     'image': 'https://cdn.filestackcontent.com/W6nqpwFySGO5EwFi4dAk',
                     'name': 'Capstone Project',
                     'type': ['Achievement'],
+                    'tag': [
+                        'lc:category:Accomplishment',
+                        'lc:subtype:Project',
+                        'lc:displayType:badge',
+                        'lc:bgImage:https://cdn.filestackcontent.com/OQWyjlSauKQAD3Z2qwEw',
+                    ],
                 },
                 'type': ['AchievementSubject'],
             },
@@ -2212,7 +2283,7 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
             'credentialSubject': {
                 'id': 'did:example:student',
                 'achievement': {
-                    'achievementType': 'ext:Content',
+                    'achievementType': 'Assignment',
                     'alignment': [
                         {
                             'targetCode': '1.6',
@@ -2335,6 +2406,11 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
                     'image': 'https://cdn.filestackcontent.com/8OIEKhtHTAutM1nzlKkT',
                     'name': 'Skyway Magazine',
                     'type': ['Achievement'],
+                    'tag': [
+                        'lc:category:Accomplishment',
+                        'lc:subtype:Content',
+                        'lc:displayType:media',
+                    ],
                 },
                 'type': ['AchievementSubject'],
             },
@@ -2370,7 +2446,7 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
             'credentialSubject': {
                 'id': 'did:example:student',
                 'achievement': {
-                    'achievementType': 'ext:LCA_CUSTOM:Accomplishment:AWARD',
+                    'achievementType': 'Award',
                     'alignment': [
                         {
                             'targetCode': '7.2',
@@ -2413,6 +2489,11 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
                     'image': 'https://cdn.filestackcontent.com/8OIEKhtHTAutM1nzlKkT',
                     'name': 'Photo Contest Award',
                     'type': ['Achievement'],
+                    'tag': [
+                        'lc:category:Accomplishment',
+                        'lc:subtype:Award',
+                        'lc:displayType:media',
+                    ],
                 },
                 'type': ['AchievementSubject'],
             },
@@ -2448,7 +2529,7 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
             'credentialSubject': {
                 'id': 'did:example:student',
                 'achievement': {
-                    'achievementType': 'ext:Content',
+                    'achievementType': 'Achievement',
                     'alignment': [
                         {
                             'targetCode': '1.6',
@@ -2630,6 +2711,11 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
                     'image': 'https://cdn.filestackcontent.com/8OIEKhtHTAutM1nzlKkT',
                     'name': 'Design Portfolio',
                     'type': ['Achievement'],
+                    'tag': [
+                        'lc:category:Accomplishment',
+                        'lc:subtype:Content',
+                        'lc:displayType:media',
+                    ],
                 },
                 'type': ['AchievementSubject'],
             },
@@ -2665,7 +2751,7 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
             'credentialSubject': {
                 'id': 'did:example:student',
                 'achievement': {
-                    'achievementType': 'ext:SpecialEquipment',
+                    'achievementType': 'Assessment',
                     'alignment': [
                         {
                             'targetCode': '10.1',
@@ -2698,6 +2784,12 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
                     'image': 'https://cdn.filestackcontent.com/g4KsPArTSnS8fdICVzAB',
                     'name': 'Workplace Ergonomic Assessment',
                     'type': ['Achievement'],
+                    'tag': [
+                        'lc:category:Accommodation',
+                        'lc:subtype:Special Equipment',
+                        'lc:displayType:badge',
+                        'lc:bgImage:https://cdn.filestackcontent.com/YKWxR03OShyB5ACaI8tO',
+                    ],
                 },
                 'type': ['AchievementSubject'],
             },
@@ -2724,7 +2816,7 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
             'credentialSubject': {
                 'id': 'did:example:student',
                 'achievement': {
-                    'achievementType': 'ext:MedicalRecord',
+                    'achievementType': 'Achievement',
                     'criteria': {
                         'narrative':
                             'Official plan detailing individualized educational goals and accommodations for ADHD and physical accessibility needs.',
@@ -2735,6 +2827,12 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
                     'image': 'https://cdn.filestackcontent.com/xqKimytdSrSmxZsqFhJ1',
                     'name': 'IEP Documentation',
                     'type': ['Achievement'],
+                    'tag': [
+                        'lc:category:Accommodation',
+                        'lc:subtype:Medical Record',
+                        'lc:displayType:badge',
+                        'lc:bgImage:https://cdn.filestackcontent.com/C0yZx0iQsOsM8LQXRtvX',
+                    ],
                 },
                 'type': ['AchievementSubject'],
             },
@@ -2761,7 +2859,7 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
             'credentialSubject': {
                 'id': 'did:example:student',
                 'achievement': {
-                    'achievementType': 'ext:MedicalRecord',
+                    'achievementType': 'Membership',
                     'alignment': [
                         {
                             'targetCode': '3.6',
@@ -2794,6 +2892,12 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
                     'image': 'https://cdn.filestackcontent.com/BfNxlkjXRiGg3tPxS1Un',
                     'name': 'Accessibility Services Registration',
                     'type': ['Achievement'],
+                    'tag': [
+                        'lc:category:Accommodation',
+                        'lc:subtype:Medical Record',
+                        'lc:displayType:badge',
+                        'lc:bgImage:https://cdn.filestackcontent.com/fosPgfpLRGqy4C1jGn8k',
+                    ],
                 },
                 'type': ['AchievementSubject'],
             },
@@ -2820,7 +2924,7 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
             'credentialSubject': {
                 'id': 'did:example:student',
                 'achievement': {
-                    'achievementType': 'ext:ExamAdjustments',
+                    'achievementType': 'Achievement',
                     'criteria': {
                         'narrative':
                             'Official permission granting additional time for assessments, ensuring fair evaluation of academic abilities.',
@@ -2831,6 +2935,12 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
                     'image': 'https://cdn.filestackcontent.com/FEalmuXXTsulMohu2zZl',
                     'name': 'Extended Time on Exams Approval',
                     'type': ['Achievement'],
+                    'tag': [
+                        'lc:category:Accommodation',
+                        'lc:subtype:Exam Adjustments',
+                        'lc:displayType:badge',
+                        'lc:bgImage:https://cdn.filestackcontent.com/7yHMI0OPQ9ymycibeUv2',
+                    ],
                 },
                 'type': ['AchievementSubject'],
             },
@@ -2857,7 +2967,7 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
             'credentialSubject': {
                 'id': 'did:example:student',
                 'achievement': {
-                    'achievementType': 'ext:ExamAdjustments',
+                    'achievementType': 'Achievement',
                     'alignment': [
                         {
                             'targetCode': '10.1',
@@ -2900,6 +3010,12 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
                     'image': 'https://cdn.filestackcontent.com/hUOlsgatSva0qnkQGKo5',
                     'name': 'Mental Health Accommodation Letter',
                     'type': ['Achievement'],
+                    'tag': [
+                        'lc:category:Accommodation',
+                        'lc:subtype:Exam Adjustments',
+                        'lc:displayType:badge',
+                        'lc:bgImage:https://cdn.filestackcontent.com/UVqK4fWcTaaXSDsqE7Qh',
+                    ],
                 },
                 'type': ['AchievementSubject'],
             },
@@ -2926,7 +3042,7 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
             'credentialSubject': {
                 'id': 'did:example:student',
                 'achievement': {
-                    'achievementType': 'ext:Study Abroad',
+                    'achievementType': 'LearningProgram',
                     'alignment': [
                         {
                             'targetCode': '1.4',
@@ -3049,6 +3165,12 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
                     'image': 'https://cdn.filestackcontent.com/RcDcjnaTWcgRAH7WbUAc',
                     'name': 'Study Abroad Program',
                     'type': ['Achievement'],
+                    'tag': [
+                        'lc:category:Work History',
+                        'lc:subtype:Study Abroad',
+                        'lc:displayType:certificate',
+                        'lc:bgImage:https://cdn.filestackcontent.com/ruy8siz5SuyS8TlK5shK',
+                    ],
                 },
                 'type': ['AchievementSubject'],
             },
@@ -3075,7 +3197,7 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
             'credentialSubject': {
                 'id': 'did:example:student',
                 'achievement': {
-                    'achievementType': 'ext:Job',
+                    'achievementType': 'Fieldwork',
                     'alignment': [
                         {
                             'targetCode': '3.6',
@@ -3178,6 +3300,12 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
                     'image': 'https://cdn.filestackcontent.com/Dv5Qr3AqTGeJVgxCptcU',
                     'name': 'Camp Counselor',
                     'type': ['Achievement'],
+                    'tag': [
+                        'lc:category:Work History',
+                        'lc:subtype:Job',
+                        'lc:displayType:badge',
+                        'lc:bgImage:https://cdn.filestackcontent.com/fMK1dZqxQ06BCQTQpvqS',
+                    ],
                 },
                 'type': ['AchievementSubject'],
             },
@@ -3204,7 +3332,7 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
             'credentialSubject': {
                 'id': 'did:example:student',
                 'achievement': {
-                    'achievementType': 'ext:Club',
+                    'achievementType': 'Membership',
                     'alignment': [
                         {
                             'targetCode': '5.4',
@@ -3327,6 +3455,12 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
                     'image': 'https://cdn.filestackcontent.com/f9vUJFsiRjCEtOLlXMYN',
                     'name': 'President of Class',
                     'type': ['Achievement'],
+                    'tag': [
+                        'lc:category:Work History',
+                        'lc:subtype:Club',
+                        'lc:displayType:certificate',
+                        'lc:bgImage:https://cdn.filestackcontent.com/z0zF1alRkGXwJFXfP3cB',
+                    ],
                 },
                 'type': ['AchievementSubject'],
             },
@@ -3352,7 +3486,7 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
             'credentialSubject': {
                 'id': 'did:example:student',
                 'achievement': {
-                    'achievementType': 'ext:LCA_CUSTOM:Work History:Resume',
+                    'achievementType': 'Achievement',
                     'alignment': [
                         {
                             'targetCode': '5.4',
@@ -3494,6 +3628,11 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
                     'image': 'https://cdn.filestackcontent.com/A3cfrOaQ3StXLw7guVKO',
                     'name': 'Resume',
                     'type': ['Achievement'],
+                    'tag': [
+                        'lc:category:Work History',
+                        'lc:subtype:Resume',
+                        'lc:displayType:media',
+                    ],
                 },
                 'type': ['AchievementSubject'],
             },
@@ -3529,7 +3668,7 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
             'credentialSubject': {
                 'id': 'did:example:student',
                 'achievement': {
-                    'achievementType': 'ext:Internship',
+                    'achievementType': 'Fieldwork',
                     'alignment': [
                         {
                             'targetCode': '6.2',
@@ -3622,6 +3761,12 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
                     'image': 'https://cdn.filestackcontent.com/P2TlkW1HQAmk78czlLY3',
                     'name': 'Internship',
                     'type': ['Achievement'],
+                    'tag': [
+                        'lc:category:Work History',
+                        'lc:subtype:Internship',
+                        'lc:displayType:badge',
+                        'lc:bgImage:https://cdn.filestackcontent.com/AhuYSfIsTUmv4KN6cw6t',
+                    ],
                 },
                 'type': ['AchievementSubject'],
             },
@@ -3648,7 +3793,7 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
             'credentialSubject': {
                 'id': 'did:example:student',
                 'achievement': {
-                    'achievementType': 'ext:LCA_CUSTOM:ID:Troop_ID',
+                    'achievementType': 'Membership',
                     'criteria': {
                         'narrative': '',
                     },
@@ -3658,6 +3803,15 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
                     'image': 'https://cdn.filestackcontent.com/HRKQyEDZSc2NS01uur0F',
                     'name': 'World Scouting Troop ID',
                     'type': ['Achievement'],
+                    'tag': [
+                        'lc:category:ID',
+                        'lc:subtype:Troop ID',
+                        'lc:displayType:id',
+                        'lc:bgImage:https://cdn.filestackcontent.com/oF9SXNMKTyGwJ8UaDf4w',
+                        'lc:idBackgroundImage:https://cdn.filestackcontent.com/SyKchHHLRucuS087I4rE',
+                        'lc:idIssuerThumbnail:https://cdn.filestackcontent.com/KsarfGXWS2uR4xmqEeDD',
+                        'lc:idDimBackgroundImage:true',
+                    ],
                 },
                 'type': ['AchievementSubject'],
             },
@@ -3684,7 +3838,7 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
             'credentialSubject': {
                 'id': 'did:example:student',
                 'achievement': {
-                    'achievementType': 'ext:SchoolID',
+                    'achievementType': 'Membership',
                     'criteria': {
                         'narrative': '',
                     },
@@ -3694,6 +3848,15 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
                     'image': 'https://cdn.filestackcontent.com/HRKQyEDZSc2NS01uur0F',
                     'name': 'Hill Valley High School Student ID',
                     'type': ['Achievement'],
+                    'tag': [
+                        'lc:category:ID',
+                        'lc:subtype:School ID',
+                        'lc:displayType:id',
+                        'lc:bgImage:https://cdn.filestackcontent.com/fhk4ZeaESISPEQ6jXWob',
+                        'lc:idBackgroundImage:https://cdn.filestackcontent.com/cKTNAyZ9RGF4oUGTRh2r',
+                        'lc:idIssuerThumbnail:https://cdn.filestackcontent.com/Otu9MBWYSemRxEKJQxAB',
+                        'lc:idDimBackgroundImage:true',
+                    ],
                 },
                 'type': ['AchievementSubject'],
             },
@@ -3720,7 +3883,7 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
             'credentialSubject': {
                 'id': 'did:example:student',
                 'achievement': {
-                    'achievementType': 'ext:UniversityID',
+                    'achievementType': 'Membership',
                     'criteria': {
                         'narrative': '',
                     },
@@ -3730,6 +3893,15 @@ export const obv3StudentAdditionalCredentials: CredentialFixture[] = [
                     'image': 'https://cdn.filestackcontent.com/HRKQyEDZSc2NS01uur0F',
                     'name': 'Motlow College ID',
                     'type': ['Achievement'],
+                    'tag': [
+                        'lc:category:ID',
+                        'lc:subtype:University ID',
+                        'lc:displayType:id',
+                        'lc:bgImage:https://cdn.filestackcontent.com/kNaIvOQS6W3i6FZ1kvEu',
+                        'lc:idBackgroundImage:https://cdn.filestackcontent.com/CnqU0q7xQoOxkwQMliz4',
+                        'lc:idIssuerThumbnail:https://cdn.filestackcontent.com/mSjAUhi3Rw2BH2pp4Nah',
+                        'lc:idDimBackgroundImage:true',
+                    ],
                 },
                 'type': ['AchievementSubject'],
             },

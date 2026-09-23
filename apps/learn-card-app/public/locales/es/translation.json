@@ -276,8 +276,7 @@
                 "deleting": "Eliminando credenciales de ejemplo...",
                 "chooseAction": "Elegir un ejemplo",
                 "pickerTitle": "Elige un LearnCard de ejemplo",
-                "pickerDescription": "Elige el ejemplo que mejor se adapte a lo que quieres explorar.",
-                "indicator": "Ejemplo"
+                "pickerDescription": "Elige el ejemplo que mejor se adapte a lo que quieres explorar."
             },
             "managers": {
                 "resume": {
