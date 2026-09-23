@@ -1184,6 +1184,38 @@ const patchPlatformJsonsForLiveReload = (serverUrl: string): void => {
  * shows automatically. But `vite build` always produces a production bundle where
  * `DEV` is false, so we must explicitly enable the widget via env var for non-prod stages.
  */
+/**
+ * Non-production native builds must not take Capgo OTA updates: with
+ * `autoUpdate: true` the app downloads the production channel's web bundle on
+ * launch and runs it instead of the local build — including production's
+ * tenant-config.json, so a stage like `keycloak-local` silently talks to prod.
+ */
+const disableCapgoAutoUpdateForStage = (stageId: string): void => {
+    if (stageId === 'production') return;
+
+    const platformPaths = [
+        resolve(APP_ROOT, 'ios/App/App/capacitor.config.json'),
+        resolve(APP_ROOT, 'android/app/src/main/assets/capacitor.config.json'),
+    ];
+
+    for (const jsonPath of platformPaths) {
+        if (!existsSync(jsonPath)) continue;
+
+        try {
+            const raw = JSON.parse(readFileSync(jsonPath, 'utf-8'));
+            if (!raw.plugins?.CapacitorUpdater) continue;
+
+            raw.plugins.CapacitorUpdater.autoUpdate = false;
+            writeFileSync(jsonPath, JSON.stringify(raw, null, 2) + '\n', 'utf-8');
+            log.info(
+                `   ${green('✓')} ${jsonPath.replace(`${APP_ROOT}/`, '')} → Capgo autoUpdate=false (${stageId})`
+            );
+        } catch (err) {
+            log.warn(`   ⚠️  Failed to disable Capgo autoUpdate in ${jsonPath}:`, err);
+        }
+    }
+};
+
 const setNativeBuildEnv = (stageId: string): void => {
     const isProduction = stageId === 'production';
 
@@ -1271,6 +1303,7 @@ const nativeSync = async (tenantId?: string, stageId?: string) => {
         `bun scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
         'Patching native projects with tenant config'
     );
+    disableCapgoAutoUpdateForStage(stageId);
 
     log.info('');
     log.info(green('✅ Native sync complete.'));
@@ -1319,6 +1352,7 @@ const nativeOpen = async (platform?: Platform, tenantId?: string, stageId?: stri
             `bun scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
             'Patching native projects with tenant config'
         );
+        disableCapgoAutoUpdateForStage(stageId);
     }
 
     rl.close();
@@ -1366,6 +1400,7 @@ const nativeRun = async (tenantId?: string, platform?: Platform) => {
         `bun scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
         'Patching native projects with tenant config'
     );
+    disableCapgoAutoUpdateForStage('local');
 
     const runFlag = platform === 'android' ? ' --target' : '';
 
