@@ -7,11 +7,7 @@ import { Boost, BoostInstance } from './Boost';
 import { AppStoreListing, AppStoreListingInstance } from './AppStoreListing';
 
 export type CredentialActivityEventType =
-    | 'CREATED'
-    | 'DELIVERED'
-    | 'CLAIMED'
-    | 'EXPIRED'
-    | 'FAILED';
+    'CREATED' | 'DELIVERED' | 'CLAIMED' | 'EXPIRED' | 'FAILED';
 
 export type CredentialActivityRecipientType = 'profile' | 'email' | 'phone';
 
@@ -32,6 +28,7 @@ export type CredentialActivityType = {
     eventType: CredentialActivityEventType;
     timestamp: string;
     actorProfileId?: string;
+    onBehalfOf?: string;
     recipientType: CredentialActivityRecipientType;
     recipientIdentifier: string;
     boostUri?: string;
@@ -70,6 +67,7 @@ export const CredentialActivity = ModelFactory<
             },
             timestamp: { type: 'string', required: true },
             actorProfileId: { type: 'string', required: false },
+            onBehalfOf: { type: 'string', required: false },
             recipientType: {
                 type: 'string',
                 required: true,

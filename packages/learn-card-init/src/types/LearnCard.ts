@@ -59,7 +59,7 @@ export type EmptyLearnCard = InitFunction<
             ExpirationPlugin,
             VCTemplatePlugin,
             CHAPIPlugin,
-            LearnCardPlugin
+            LearnCardPlugin,
         ]
     >
 >;
@@ -84,7 +84,7 @@ export type LearnCardFromSeed = InitFunction<
             CHAPIPlugin,
             SdJwtVcPlugin,
             LearnCardPlugin,
-            OpenID4VCPlugin
+            OpenID4VCPlugin,
         ]
     >
 >;
@@ -97,6 +97,8 @@ export type NetworkLearnCardFromSeed = InitFunction<
         trustedBoostRegistry?: string;
         guardianApprovalGetter?: GuardianApprovalGetter;
         extraHeaders?: Record<string, string>;
+        /** Profile ID (or managed `did:web`) to act as for every network request. See `LearnCardNetworkPluginOptions['actAs']`. */
+        actAs?: string;
     },
     keyof LearnCardConfig,
     LearnCard<
@@ -117,7 +119,7 @@ export type NetworkLearnCardFromSeed = InitFunction<
             SdJwtVcPlugin,
             LearnCardPlugin,
             LearnCardNetworkPlugin,
-            OpenID4VCPlugin
+            OpenID4VCPlugin,
         ]
     >
 >;
@@ -130,6 +132,8 @@ export type NetworkLearnCardFromApiKey = InitFunction<
         trustedBoostRegistry?: string;
         guardianApprovalGetter?: GuardianApprovalGetter;
         extraHeaders?: Record<string, string>;
+        /** Profile ID (or managed `did:web`) to act as for every network request. See `LearnCardNetworkPluginOptions['actAs']`. */
+        actAs?: string;
     },
     'didkit' | 'allowRemoteContexts' | 'debug',
     LearnCard<
@@ -144,7 +148,7 @@ export type NetworkLearnCardFromApiKey = InitFunction<
             CHAPIPlugin,
             VerifyBoostPlugin,
             LearnCardPlugin,
-            LearnCardNetworkPlugin
+            LearnCardNetworkPlugin,
         ]
     >
 >;
@@ -170,7 +174,7 @@ export type DidWebLearnCardFromSeed = InitFunction<
             SdJwtVcPlugin,
             LearnCardPlugin,
             DidWebPlugin,
-            OpenID4VCPlugin
+            OpenID4VCPlugin,
         ]
     >
 >;
@@ -184,6 +188,8 @@ export type DidWebNetworkLearnCardFromSeed = InitFunction<
         trustedBoostRegistry?: string;
         guardianApprovalGetter?: GuardianApprovalGetter;
         extraHeaders?: Record<string, string>;
+        /** Profile ID (or managed `did:web`) to act as for every network request. See `LearnCardNetworkPluginOptions['actAs']`. */
+        actAs?: string;
     },
     keyof LearnCardConfig,
     LearnCard<
@@ -205,7 +211,7 @@ export type DidWebNetworkLearnCardFromSeed = InitFunction<
             LearnCardPlugin,
             DidWebPlugin,
             LearnCardNetworkPlugin,
-            OpenID4VCPlugin
+            OpenID4VCPlugin,
         ]
     >
 >;
@@ -221,7 +227,7 @@ export type LearnCardFromVcApi = InitFunction<
             ExpirationPlugin,
             VCTemplatePlugin,
             CHAPIPlugin,
-            LearnCardPlugin
+            LearnCardPlugin,
         ]
     >
 >;
@@ -239,6 +245,6 @@ export type InitLearnCard = GenericInitFunction<
         DidWebNetworkLearnCardFromSeed,
         LearnCardFromVcApi,
         CustomLearnCard,
-        NetworkLearnCardFromApiKey
+        NetworkLearnCardFromApiKey,
     ]
 >;
