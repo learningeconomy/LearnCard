@@ -6,13 +6,15 @@
  * onlineManager):
  *
  *  1. {@link observeConnectionQuality} — a bounded `PerformanceObserver` over
- *     `fetch` / `xmlhttprequest` Resource Timing entries for the configured
- *     FIRST-PARTY API origins (brain service + LearnCloud). It adds no network
- *     traffic of its own and never patches global `fetch`. Entries are ignored
- *     when they are not first-party, are the reachability probe itself, are
- *     cache hits, are known HTTP errors (where `responseStatus` is available),
- *     look like long streams, or completed while the app was backgrounded
- *     (we cannot tell when they started — conservatively dropped).
+ *     `resource` entries whose `initiatorType` is `fetch` / `xmlhttprequest`
+ *     for the configured FIRST-PARTY API origins (brain service + LearnCloud).
+ *     It adds no network traffic of its own and never patches global `fetch`.
+ *     Entries are ignored when they are not first-party, are the reachability
+ *     probe itself, are images/scripts/styles (wrong initiatorType), are cache
+ *     hits, are known HTTP errors (where `responseStatus` is available), look
+ *     like long streams, were delivered while the app is backgrounded, or
+ *     STARTED before the current continuous foreground stretch began (they may
+ *     span a background period, which would fake a slow sample).
  *  2. {@link isLikelyTransportError} — an intentionally NARROW classifier for
  *     React Query cache errors. Only browser-shaped fetch transport failures
  *     count. HTTP statuses, cancellations, and arbitrary application errors
@@ -53,9 +55,19 @@ export interface ObserveConnectionQualityOptions {
     maxDurationMs?: number;
     /** Return `false` while backgrounded; those samples are dropped. */
     isForeground?: () => boolean;
+    /**
+     * Push-based foreground transitions (document `visibilitychange`, native
+     * `appStateChange`). With transitions the observer can exclude requests
+     * that STARTED before the current foreground stretch began — they may
+     * have spent most of their life backgrounded. Without it the observer
+     * falls back to delivery-time `isForeground` checks only.
+     */
+    onForegroundChange?: (listener: (foreground: boolean) => void) => () => void;
+    /** Test seam + monotonic clock matching Resource Timing `startTime`. */
+    performanceNow?: () => number;
     now?: () => number;
-    /** Resource Timing initiator types to observe. */
-    observeTypes?: readonly ('fetch' | 'xmlhttprequest' | string)[];
+    /** Resource Timing `initiatorType` values that count as evidence. */
+    initiatorTypes?: readonly string[];
     /** Test seam. Defaults to the global `PerformanceObserver` when present. */
     PerformanceObserverCtor?: typeof PerformanceObserver;
 }
@@ -68,12 +80,19 @@ export interface ConnectionQualityObserver {
 interface FilteredResourceTiming {
     name: string;
     duration: number;
+    /** Resource Timing initiator type (`fetch`, `xmlhttprequest`, `img`, …). */
+    initiatorType?: string;
+    /** Start time in the same monotonic clock as `performance.now()`. */
+    startTime?: number;
     deliveryType?: string;
     responseStatus?: number;
 }
 
 export const DEFAULT_MAX_OBSERVED_DURATION_MS = 30_000;
-const DEFAULT_OBSERVE_TYPES = ['fetch', 'xmlhttprequest'] as const;
+/** `initiatorType` values that mean a real first-party API request. */
+export const DEFAULT_EVIDENCE_INITIATOR_TYPES = ['fetch', 'xmlhttprequest'] as const;
+/** The only valid PerformanceEntry type for Resource Timing observations. */
+const RESOURCE_ENTRY_TYPE = 'resource';
 
 export const observeConnectionQuality = (
     options: ObserveConnectionQualityOptions
@@ -92,13 +111,36 @@ export const observeConnectionQuality = (
 
     const excludedPaths = new Set(options.excludePathnames ?? [CONNECTIVITY_PROBE_PATH]);
     const maxDurationMs = options.maxDurationMs ?? DEFAULT_MAX_OBSERVED_DURATION_MS;
-    const observeTypes = options.observeTypes ?? DEFAULT_OBSERVE_TYPES;
+    const initiatorTypes = new Set(options.initiatorTypes ?? DEFAULT_EVIDENCE_INITIATOR_TYPES);
     const now = options.now ?? (() => Date.now());
+    const perfNow =
+        options.performanceNow ??
+        (typeof globalThis.performance?.now === 'function'
+            ? () => globalThis.performance.now()
+            : () => Date.now());
 
     let disconnected = false;
 
+    // Foreground-epoch tracking: when the current continuous foreground
+    // stretch began, in the same monotonic clock as Resource Timing
+    // `startTime`. `null` while backgrounded. Initialized from the current
+    // foreground state; requests that started before the observer learned of
+    // the latest resume are conservatively dropped.
+    let foregroundSince: number | null =
+        options.isForeground && !options.isForeground() ? null : perfNow();
+    const unsubscribeForeground = options.onForegroundChange?.((foreground: boolean) => {
+        if (disconnected) return;
+        foregroundSince = foreground ? perfNow() : null;
+    });
+
     const handleEntry = (entry: FilteredResourceTiming): void => {
         if (disconnected) return;
+
+        // Only real API requests count: `fetch` / `xmlhttprequest`
+        // initiatorTypes. Images, scripts, styles, beacons, … are shaped by
+        // caching/CDNs and say nothing about network quality — even on a
+        // first-party origin.
+        if (!initiatorTypes.has(entry.initiatorType ?? '')) return;
 
         let parsed: URL;
         try {
@@ -118,6 +160,12 @@ export const observeConnectionQuality = (
         if (entry.duration > maxDurationMs) return;
         // Entries delivered while backgrounded may span the background — drop.
         if (options.isForeground && !options.isForeground()) return;
+        // A request that STARTED before the current foreground stretch began
+        // may have been stalled in the background — its duration is not
+        // foreground network evidence. (A missing `startTime` reads as
+        // "delivered now", preserving delivery-time-only behavior.)
+        const startedAt = typeof entry.startTime === 'number' ? entry.startTime : perfNow();
+        if (foregroundSince === null || startedAt < foregroundSince) return;
 
         options.onSample({
             at: now(),
@@ -135,19 +183,27 @@ export const observeConnectionQuality = (
         }
     });
 
-    for (const type of observeTypes) {
-        try {
-            // `buffered: false` — we only want requests made from now on, and
-            // never want a burst of historical entries on startup.
-            observer.observe({ type, buffered: false });
-        } catch {
-            // Unsupported entry type on this engine — skip it silently.
-        }
+    try {
+        // `type: 'resource'` is the ONLY valid PerformanceEntry type for
+        // Resource Timing — `fetch`/`xmlhttprequest` are initiatorType VALUES,
+        // not entry types (observing them throws on real browsers). Entries
+        // are filtered by `initiatorType` instead. `buffered: false` — we only
+        // want requests made from now on, and never want a burst of
+        // historical entries on startup.
+        observer.observe({ type: RESOURCE_ENTRY_TYPE, buffered: false });
+    } catch {
+        // Unsupported entry type on this engine — the observer becomes a
+        // quiet no-op (still safely disconnectable).
     }
 
     return {
         disconnect: () => {
             disconnected = true;
+            try {
+                unsubscribeForeground?.();
+            } catch {
+                // Host-provided unsubscribe must never throw through us.
+            }
             try {
                 observer.disconnect();
             } catch {

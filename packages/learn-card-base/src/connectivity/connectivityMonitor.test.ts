@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { connectivityStore } from '../stores/connectivityStore';
+import { CONNECTION_QUALITY_THRESHOLDS } from './connectionQuality';
 
 import {
     DEFAULT_OFFLINE_RETRY_DELAYS_MS,
@@ -303,7 +304,9 @@ describe('connectivityMonitor', () => {
 
             let calls = 1;
             for (const expectedDelay of DEFAULT_OFFLINE_RETRY_DELAYS_MS) {
-                expect(timers.pendingCount()).toBe(1);
+                // One pending RETRY timer, plus — once ≥3 failures are live —
+                // the single local quality-expiry timer (not network work).
+                expect([1, 2]).toContain(timers.pendingCount());
                 timers.advance(expectedDelay - 1);
                 expect(probeCalls).toHaveLength(calls); // no early retry
                 timers.advance(1);
@@ -449,6 +452,70 @@ describe('connectivityMonitor', () => {
             expect(monitor.getState().status).toBe('online');
             expect(timers.pendingCount()).toBe(0);
         });
+
+        it('does not launch the initial probe when started already backgrounded; resume runs exactly one fresh probe', async () => {
+            const { monitor, timers, probeCalls } = createHarness();
+            // Hidden at mount: the adapter calls setActive(false) BEFORE start().
+            monitor.setActive(false);
+            monitor.start();
+            await flush();
+
+            expect(probeCalls).toHaveLength(0); // no background probe, ever
+            expect(monitor.getState().status).toBe('unknown');
+            expect(timers.pendingCount()).toBe(0);
+
+            // Hints and elapsed time in the background change nothing.
+            monitor.reportTransport(true);
+            monitor.reportTransport(false);
+            timers.advance(10 * 60_000);
+            await flush();
+            expect(probeCalls).toHaveLength(0);
+
+            monitor.setActive(true);
+            await flush();
+            expect(probeCalls).toHaveLength(1); // exactly one fresh probe
+            await settleProbe(probeCalls[0], reachable());
+            expect(monitor.getState().status).toBe('online');
+            expect(timers.pendingCount()).toBe(0);
+        });
+
+        it('releases check() callers on background, drops queued follow-ups, and ignores background hints; resume probes exactly once', async () => {
+            const { monitor, timers, probeCalls } = createHarness();
+            monitor.start();
+            await flush();
+
+            // probe #0 in flight; a manual check queues a coalesced follow-up.
+            const pendingCheck = monitor.check();
+            expect(probeCalls).toHaveLength(1);
+
+            // Background: the queued follow-up is dropped AND the caller is
+            // released with the current status instead of hanging forever on
+            // a probe the background just invalidated.
+            monitor.setActive(false);
+            await expect(pendingCheck).resolves.toBe('unknown');
+            expect(timers.pendingCount()).toBe(0);
+
+            // The in-flight probe is now stale: its result must not apply and
+            // must not relaunch anything.
+            await settleProbe(probeCalls[0], unreachable());
+            expect(probeCalls).toHaveLength(1);
+            expect(monitor.getState().status).toBe('unknown');
+
+            // Transport hints in the background are ignored entirely.
+            monitor.reportTransport(true);
+            monitor.reportTransport(false);
+            await flush();
+            expect(probeCalls).toHaveLength(1);
+            expect(monitor.getState().status).toBe('unknown');
+
+            // Resume: exactly ONE fresh verification, then recovery.
+            monitor.setActive(true);
+            await flush();
+            expect(probeCalls).toHaveLength(2);
+            await settleProbe(probeCalls[1], reachable());
+            expect(monitor.getState().status).toBe('online');
+            expect(timers.pendingCount()).toBe(0);
+        });
     });
 
     describe('coalescing and superseded results', () => {
@@ -566,6 +633,86 @@ describe('connectivityMonitor', () => {
             // precedence over quality is resolved at the hook layer).
             expect(state.quality).toBe('poor');
             expect(state.qualityReason).toBe('unstable');
+        });
+
+        it('publishes quality expiry to store subscribers while idle — with zero extra probes and zero new samples', async () => {
+            const { monitor, timers, probeCalls } = createHarness();
+            const detach = attachConnectivityMonitorToStore(monitor);
+            try {
+                monitor.start();
+                await flush();
+                await settleProbe(probeCalls[0], reachable());
+                expect(connectivityStore.get.quality()).toBe('unknown');
+
+                for (let i = 0; i < 3; i += 1) {
+                    monitor.reportSample({
+                        at: BASE_TIME + i,
+                        ok: true,
+                        durationMs: 3000,
+                    });
+                }
+                expect(connectivityStore.get.quality()).toBe('poor');
+                expect(connectivityStore.get.qualityReason()).toBe('slow');
+
+                // Idle: time passes, no new requests, no retries (we're
+                // online). The local expiry timer must publish the expiry.
+                timers.advance(CONNECTION_QUALITY_THRESHOLDS.windowMs + 1);
+
+                expect(connectivityStore.get.quality()).toBe('unknown');
+                expect(connectivityStore.get.qualityReason()).toBeNull();
+                expect(probeCalls).toHaveLength(1); // zero additional probes
+                expect(timers.pendingCount()).toBe(0); // timer did not linger
+            } finally {
+                detach();
+            }
+        });
+
+        it('keeps a still-valid poor rating while only some evidence expired, then expires fully (single bounded timer, re-armed)', async () => {
+            const { monitor, timers } = createHarness({ alwaysReachable: true });
+            monitor.start();
+            await flush();
+
+            for (let i = 0; i < 5; i += 1) {
+                monitor.reportSample({ at: BASE_TIME + i, ok: true, durationMs: 3000 });
+            }
+            expect(monitor.getState().quality).toBe('poor');
+            expect(timers.pendingCount()).toBe(1); // exactly ONE local timer
+
+            // First sample expires: 4 slow remain -> still poor, no churn.
+            timers.advance(CONNECTION_QUALITY_THRESHOLDS.windowMs);
+            expect(monitor.getState().quality).toBe('poor');
+            expect(timers.pendingCount()).toBe(1); // re-armed, never stacked
+
+            // Next expiry leaves 3 slow -> poor holds.
+            timers.advance(1);
+            expect(monitor.getState().quality).toBe('poor');
+
+            // Final expiry drops below poorCount -> unknown.
+            timers.advance(1);
+            expect(monitor.getState().quality).toBe('unknown');
+            expect(timers.pendingCount()).toBe(0);
+        });
+
+        it('clears the quality expiry timer on stop and background; re-arms on resume', async () => {
+            const { monitor, timers } = createHarness({ alwaysReachable: true });
+            monitor.start();
+            await flush();
+
+            for (let i = 0; i < 3; i += 1) {
+                monitor.reportSample({ at: BASE_TIME + i, ok: true, durationMs: 3000 });
+            }
+            expect(monitor.getState().quality).toBe('poor');
+            expect(timers.pendingCount()).toBe(1);
+
+            monitor.setActive(false);
+            expect(timers.pendingCount()).toBe(0); // cleared, not left to fire
+
+            monitor.setActive(true);
+            await flush();
+            expect(timers.pendingCount()).toBe(1); // re-armed for live evidence
+
+            monitor.stop();
+            expect(timers.pendingCount()).toBe(0);
         });
     });
 

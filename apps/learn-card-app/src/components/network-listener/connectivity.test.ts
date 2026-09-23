@@ -16,6 +16,7 @@ vi.mock('@capacitor/network', () => ({
 vi.mock('@capacitor/app', () => ({
     App: {
         addListener: vi.fn(),
+        getState: vi.fn(),
     },
 }));
 
@@ -147,6 +148,7 @@ beforeEach(() => {
     (Network.getStatus as ReturnType<typeof vi.fn>).mockResolvedValue({ connected: true });
     (Network.addListener as ReturnType<typeof vi.fn>).mockResolvedValue({ remove: vi.fn() });
     (App.addListener as ReturnType<typeof vi.fn>).mockResolvedValue({ remove: vi.fn() });
+    (App.getState as ReturnType<typeof vi.fn>).mockResolvedValue({ isActive: true });
 });
 
 afterEach(() => {
@@ -357,6 +359,41 @@ describe('createAppConnectivityAdapter', () => {
         expect(monitor.reports).toEqual([]);
     });
 
+    it('initializes activity from the current hidden state BEFORE starting the monitor', async () => {
+        const monitor = makeFakeMonitor();
+        const events: string[] = [];
+        createAppConnectivityAdapter(
+            makeDeps({
+                monitor,
+                getInitialActivity: async () => {
+                    events.push('activity');
+                    return false; // mounted while hidden/inactive
+                },
+            })
+        );
+
+        await vi.waitFor(() => expect(events).toContain('activity'));
+        await vi.waitFor(() => expect(monitor.started).toBe(1));
+        // The background mount gates automatic work BEFORE start: the shared
+        // monitor suppresses its initial probe until a real resume.
+        expect(monitor.active).toEqual([false]);
+    });
+
+    it('assumes foreground when the initial activity lookup fails', async () => {
+        const monitor = makeFakeMonitor();
+        createAppConnectivityAdapter(
+            makeDeps({
+                monitor,
+                getInitialActivity: () => {
+                    throw new Error('activity lookup exploded');
+                },
+            })
+        );
+
+        await vi.waitFor(() => expect(monitor.started).toBe(1));
+        expect(monitor.active).toEqual([]); // never gated
+    });
+
     it('native app state changes pause/resume via monitor.setActive', async () => {
         const monitor = makeFakeMonitor();
         // The adapter contract hands the listener a plain boolean (the real
@@ -511,6 +548,32 @@ describe('attachAppConnectivity (ref-counted singleton lifecycle)', () => {
         const status = await requestConnectivityCheck();
         expect(status).toBe('unknown'); // not started → resolves current status
         expect(checkSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('native: attaching while inactive gates the initial probe until resume', async () => {
+        isNativePlatform.mockReturnValue(true);
+        (App.getState as ReturnType<typeof vi.fn>).mockResolvedValue({ isActive: false });
+
+        const monitor = getAppConnectivityMonitor();
+        const startSpy = vi.spyOn(monitor, 'start');
+        const dispose = attachAppConnectivity();
+        await vi.waitFor(() => expect(startSpy).toHaveBeenCalled());
+        await new Promise(resolve => setTimeout(resolve, 10));
+
+        // The initial verification was suppressed: no probe was launched
+        // from the background. (App.getState() drove setActive(false)
+        // before start — behavior verified against the REAL monitor.)
+        const { probeConnectivity } = await import(
+            'learn-card-base/connectivity/probeConnectivity'
+        );
+        expect(probeConnectivity).not.toHaveBeenCalled();
+
+        // A resume (setActive(true)) then launches exactly one fresh probe.
+        monitor.setActive(true);
+        await new Promise(resolve => setTimeout(resolve, 10));
+        expect(probeConnectivity).toHaveBeenCalledTimes(1);
+
+        dispose();
     });
 });
 

@@ -143,6 +143,49 @@ describe('connectionQuality', () => {
         ).toHaveLength(5);
     });
 
+    it('bounds retained evidence on insertion: a large sequence never grows past maxSamples', () => {
+        const tracker = createConnectionQualityTracker({ now: () => BASE_TIME });
+
+        // 2 500 slow samples in a row: unbounded append would retain ALL of
+        // them forever. Retention must stay capped at maxSamples.
+        for (let i = 0; i < 2_500; i += 1) {
+            tracker.reportSample(sample({ at: BASE_TIME + i, durationMs: 3000 }));
+            expect(tracker.retainedCount()).toBeLessThanOrEqual(
+                CONNECTION_QUALITY_THRESHOLDS.maxSamples
+            );
+        }
+
+        expect(tracker.retainedCount()).toBe(CONNECTION_QUALITY_THRESHOLDS.maxSamples);
+        // Behavior is unchanged: the most recent 5 slow samples still warn.
+        expect(tracker.snapshot()).toEqual({ quality: 'poor', reason: 'slow' });
+    });
+
+    it('trims exactly at the window boundary on insertion (strict inequality)', () => {
+        const tracker = createConnectionQualityTracker({ now: () => BASE_TIME });
+
+        // A sample exactly windowMs old is EXPIRED (live requires
+        // at > now - windowMs); it must be trimmed, not retained.
+        tracker.reportSample(sample({ at: BASE_TIME - CONNECTION_QUALITY_THRESHOLDS.windowMs }));
+        tracker.reportSample(
+            sample({ at: BASE_TIME - CONNECTION_QUALITY_THRESHOLDS.windowMs + 1 })
+        );
+
+        expect(tracker.retainedCount()).toBe(1);
+        expect(tracker.snapshot().quality).toBe('unknown');
+    });
+
+    it('nextExpiryAt returns the earliest live expiry and null with no live evidence', () => {
+        const tracker = createConnectionQualityTracker({ now: () => BASE_TIME });
+        expect(tracker.nextExpiryAt()).toBeNull();
+
+        tracker.reportSample(sample({ at: BASE_TIME + 10, durationMs: 3000 }));
+        tracker.reportSample(sample({ at: BASE_TIME + 50, durationMs: 3000 }));
+
+        expect(tracker.nextExpiryAt()).toBe(
+            BASE_TIME + 10 + CONNECTION_QUALITY_THRESHOLDS.windowMs
+        );
+    });
+
     it('reset() drops all evidence', () => {
         const tracker = createConnectionQualityTracker({ now: () => BASE_TIME });
 

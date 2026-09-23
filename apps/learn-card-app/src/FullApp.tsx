@@ -268,6 +268,9 @@ const FullApp: React.FC = () => {
     // Passive first-party latency evidence for the advisory slow/unstable
     // warning. The reachability probe itself is excluded (it is monitored
     // directly); only completed, non-HTTP-error, foreground entries count.
+    // Foreground transitions are pushed to the observer so requests that
+    // STARTED before the current foreground stretch (i.e. spanning a
+    // background period) are excluded instead of faking slow samples.
     useEffect(() => {
         const origins = firstPartyApiOrigins();
         if (origins.length === 0) return;
@@ -276,6 +279,17 @@ const FullApp: React.FC = () => {
             origins,
             excludePathnames: [CONNECTIVITY_PROBE_PATH],
             isForeground: () => typeof document === 'undefined' || !document.hidden,
+            onForegroundChange: listener => {
+                // visibilitychange also fires when native webviews are
+                // backgrounded/resumed (Capacitor), so one listener covers
+                // web + native webview lifecycle.
+                const handler = () => {
+                    if (typeof document === 'undefined') return;
+                    listener(!document.hidden);
+                };
+                document.addEventListener('visibilitychange', handler);
+                return () => document.removeEventListener('visibilitychange', handler);
+            },
             onSample: sample => {
                 getAppConnectivityMonitor().reportSample(sample);
             },

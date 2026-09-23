@@ -72,6 +72,14 @@ export interface ConnectionQualityTracker {
     snapshot: () => ConnectionQualitySnapshot;
     /** Drop all evidence (used by tests and by `reset`-style flows). */
     reset: () => void;
+    /**
+     * Epoch millis at which the live-evidence set next changes (the earliest
+     * live sample's expiry), or `null` when nothing is live. Callers use this
+     * to schedule a local expiry timer — NOT a network poll.
+     */
+    nextExpiryAt: () => number | null;
+    /** Samples currently retained (always ≤ `maxSamples`). Tests/diagnostics. */
+    retainedCount: () => number;
 }
 
 export interface CreateConnectionQualityTrackerOptions {
@@ -90,7 +98,11 @@ const isHealthy = (
 ): boolean =>
     sample.ok && typeof sample.durationMs === 'number' && sample.durationMs <= thresholds.healthyMs;
 
-/** Live samples: inside the window, capped to the most recent `maxSamples`. */
+/**
+ * Live samples: inside the window, capped to the most recent `maxSamples`.
+ * Also used as the retention trim on insertion so the retained array itself
+ * can never grow without bound under repeated slow/failing traffic.
+ */
 export const selectLiveSamples = (
     samples: readonly ConnectionQualitySample[],
     now: number,
@@ -158,7 +170,10 @@ export const createConnectionQualityTracker = (
 
     return {
         reportSample: sample => {
-            samples = [...samples, { ...sample }];
+            // Trim ON INSERTION (window + maxSamples cap): repeated slow or
+            // failing traffic must not grow the retained array forever. The
+            // evaluation below sees exactly the same live set as before.
+            samples = selectLiveSamples([...samples, { ...sample }], now(), thresholds);
             return evaluate();
         },
         snapshot: evaluate,
@@ -166,6 +181,13 @@ export const createConnectionQualityTracker = (
             samples = [];
             clearedToGood = false;
         },
+        nextExpiryAt: () => {
+            const t = now();
+            const live = samples.filter(sample => sample.at > t - thresholds.windowMs);
+            if (live.length === 0) return null;
+            return Math.min(...live.map(sample => sample.at)) + thresholds.windowMs;
+        },
+        retainedCount: () => samples.length,
     };
 };
 

@@ -123,6 +123,20 @@ export const createConnectivityMonitor = (
     let retryTimer: unknown = null;
     let backoffIndex = 0;
 
+    /**
+     * The ONE local quality-expiry timer. Quality evidence ages out inside the
+     * tracker, but that only happens lazily on snapshot — subscribers would
+     * never be told while the app sits idle. This timer publishes the expiry
+     * when the last live evidence ages out. It is a local timestamp timer, NOT
+     * network polling: it never probes and never touches the network.
+     */
+    let qualityExpiryTimer: unknown = null;
+    /** Last quality/reason actually published to subscribers (change detector). */
+    let publishedQuality: { quality: ConnectionQuality; reason: ConnectionQualityReason | null } = {
+        quality: 'unknown',
+        reason: null,
+    };
+
     /** Bumped each time an outcome is applied; `check()` waiters key off it. */
     let appliedOutcomeCount = 0;
     type CheckWaiter = { seenOutcomes: number; resolve: (status: ConnectivityStatus) => void };
@@ -146,6 +160,7 @@ export const createConnectivityMonitor = (
 
     const emit = (): void => {
         const current = snapshot();
+        publishedQuality = { quality: current.quality, reason: current.qualityReason };
         listeners.forEach(listener => listener(current));
         options.onStateChange?.(current);
     };
@@ -161,11 +176,50 @@ export const createConnectivityMonitor = (
         checkWaiters = remaining;
     };
 
+    /** Resolve ALL pending check() callers immediately (background/stop). */
+    const resolveAllChecks = (): void => {
+        if (checkWaiters.length === 0) return;
+        const waiters = checkWaiters;
+        checkWaiters = [];
+        waiters.forEach(waiter => waiter.resolve(status));
+    };
+
     const clearRetryTimer = (): void => {
         if (retryTimer !== null) {
             clearTimeoutFn(retryTimer);
             retryTimer = null;
         }
+    };
+
+    const clearQualityExpiryTimer = (): void => {
+        if (qualityExpiryTimer !== null) {
+            clearTimeoutFn(qualityExpiryTimer);
+            qualityExpiryTimer = null;
+        }
+    };
+
+    const armQualityExpiryTimer = (): void => {
+        clearQualityExpiryTimer();
+        if (!running || !foreground) return;
+        // Only a live `poor` can change by aging out — `good` is sticky and
+        // `unknown` never warns.
+        if (quality.snapshot().quality !== 'poor') return;
+        const expiryAt = quality.nextExpiryAt();
+        if (expiryAt === null) return;
+        const delay = Math.max(0, expiryAt - now());
+        qualityExpiryTimer = setTimeoutFn(() => {
+            qualityExpiryTimer = null;
+            const current = quality.snapshot(); // lazy expiry now materialized
+            if (
+                current.quality !== publishedQuality.quality ||
+                current.reason !== publishedQuality.reason
+            ) {
+                emit();
+            }
+            // Poor can survive one expiry (5 retained slow samples age out one
+            // at a time) — re-arm until the evidence is gone.
+            armQualityExpiryTimer();
+        }, delay);
     };
 
     const scheduleRetry = (): void => {
@@ -217,7 +271,10 @@ export const createConnectivityMonitor = (
     };
 
     const startCycle = (): void => {
-        if (!running) return;
+        // Automatic work never starts from the background: backgrounded
+        // probes are useless evidence and waste battery/data. Resume is what
+        // launches the next cycle.
+        if (!running || !foreground) return;
         if (activeCycle) {
             coalesceRequested = true;
             return;
@@ -250,13 +307,14 @@ export const createConnectivityMonitor = (
                 outcome = { kind: 'unreachable', reason: 'network-error', durationMs: 0 };
             }
 
-            // A newer hint/stop/resume supersedes this result entirely.
+            // A newer hint/stop/background/resume supersedes this result.
             if (cycle.generation !== generation) {
                 activeCycle = null;
                 // A request (e.g. a positive hint) may have arrived while this
                 // stale cycle was in flight; honor it with a fresh cycle so
-                // the pending verification is not silently lost.
-                if (coalesceRequested && running) {
+                // the pending verification is not silently lost. Never launch
+                // from the background (setActive(false) drops the queue).
+                if (coalesceRequested && running && foreground) {
                     coalesceRequested = false;
                     void startCycle();
                 }
@@ -267,8 +325,9 @@ export const createConnectivityMonitor = (
             applyOutcome(outcome);
             emit();
             settleChecks();
+            armQualityExpiryTimer();
 
-            if (coalesceRequested && running) {
+            if (coalesceRequested && running && foreground) {
                 coalesceRequested = false;
                 void startCycle();
             }
@@ -282,8 +341,9 @@ export const createConnectivityMonitor = (
             generation += 1; // anything in flight from a previous run is stale
             backoffIndex = 0; // a fresh lifecycle starts a fresh retry schedule
             clearRetryTimer();
-            emit();
-            void startCycle(); // initial verification
+            emit(); // lazy quality expiry materializes here on restart
+            void startCycle(); // initial verification (skipped while backgrounded)
+            armQualityExpiryTimer();
         },
 
         stop: () => {
@@ -291,6 +351,7 @@ export const createConnectivityMonitor = (
             running = false;
             generation += 1;
             clearRetryTimer();
+            clearQualityExpiryTimer();
             settleChecks(); // release pending check() callers
             emit();
         },
@@ -298,7 +359,9 @@ export const createConnectivityMonitor = (
         isRunning: () => running,
 
         reportTransport: connected => {
-            if (!running) return;
+            // Hints while backgrounded are ignored: no probes may start from
+            // the background, and resume re-verifies immediately anyway.
+            if (!running || !foreground) return;
 
             if (connected) {
                 // Positive hint: restore service optimistically (native
@@ -345,26 +408,35 @@ export const createConnectivityMonitor = (
             foreground = active;
             if (!active) {
                 // Pause automatic work; results spanning the background are
-                // superseded so nothing stale lands on resume.
+                // superseded so nothing stale lands on resume. Queued
+                // coalesced follow-ups are dropped (never launched from the
+                // background), the quality expiry timer is cleared, and
+                // pending check() callers are released with the current
+                // status instead of hanging on a probe that may never land.
                 generation += 1;
                 clearRetryTimer();
-                settleChecks();
+                clearQualityExpiryTimer();
+                coalesceRequested = false;
+                resolveAllChecks();
                 emit();
                 return;
             }
             if (running) {
                 // Foreground: check immediately, then backoff resumes for
-                // subsequent failures.
+                // subsequent failures. Evidence that expired while
+                // backgrounded materializes in the emit below.
                 generation += 1;
                 clearRetryTimer();
                 emit();
                 void startCycle();
+                armQualityExpiryTimer();
             }
         },
 
         reportSample: sample => {
             quality.reportSample({ source: 'observed', ...sample });
             emit();
+            armQualityExpiryTimer();
         },
 
         getState: snapshot,

@@ -11,14 +11,20 @@ import {
 type EntryOverrides = Partial<{
     name: string;
     duration: number;
+    startTime: number;
+    initiatorType: string;
     deliveryType: string;
     responseStatus: number;
 }>;
 
 const makeEntry = (overrides: EntryOverrides) =>
     ({
+        // Real Resource Timing shape: entries ALWAYS carry an initiatorType
+        // and a startTime in the performance.now() clock.
         name: 'https://network.learncard.com/trpc/some.procedure',
         duration: 400,
+        startTime: 1000,
+        initiatorType: 'fetch',
         ...overrides,
     } as PerformanceResourceTiming);
 
@@ -37,7 +43,12 @@ interface FakeObserverCtor {
     lastCallback: ObserverCallback | null;
 }
 
-const makeFakeObserverCtor = (supportedTypes: string[] = ['fetch', 'xmlhttprequest']) => {
+/**
+ * Enforces REAL browser semantics: `resource` is the only valid entry type
+ * for Resource Timing. Observing `fetch`/`xmlhttprequest` (initiatorType
+ * values, not types) throws — exactly like Chrome/Safari/Firefox.
+ */
+const makeFakeObserverCtor = (supportedTypes: string[] = ['resource']) => {
     // Must be a real function expression — it is invoked with `new`.
     const Fake = function (this: unknown, callback: ObserverCallback) {
         const instance: FakeObserverInstance = {
@@ -45,7 +56,9 @@ const makeFakeObserverCtor = (supportedTypes: string[] = ['fetch', 'xmlhttpreque
             disconnected: false,
             observe: vi.fn(({ type }: { type: string }) => {
                 if (!supportedTypes.includes(type)) {
-                    throw new Error(`unsupported type ${type}`);
+                    throw new Error(
+                        `Failed to construct 'PerformanceObserver': The provided value '${type}' is not a valid PerformanceEntryType.`
+                    );
                 }
                 instance.observeTypes.push(type);
             }),
@@ -107,19 +120,25 @@ describe('observeConnectionQuality', () => {
         expect(result).toBeNull();
     });
 
-    it('observes fetch and xmlhttprequest entry types without buffering history', () => {
+    it('observes the single valid `resource` entry type once, without buffering history', () => {
         const Fake = makeFakeObserverCtor();
         const observer = observeConnectionQuality(
             makeOptions({ PerformanceObserverCtor: Fake as unknown as typeof PerformanceObserver })
         );
 
         expect(Fake.instances).toHaveLength(1);
-        expect(Fake.instances[0].observeTypes).toEqual(['fetch', 'xmlhttprequest']);
-        expect(Fake.instances[0].observe).toHaveBeenCalledWith({ type: 'fetch', buffered: false });
+        // `fetch`/`xmlhttprequest` are initiatorType VALUES — observing them
+        // throws on every real browser. Exactly one `resource` observation.
+        expect(Fake.instances[0].observeTypes).toEqual(['resource']);
+        expect(Fake.instances[0].observe).toHaveBeenCalledTimes(1);
+        expect(Fake.instances[0].observe).toHaveBeenCalledWith({
+            type: 'resource',
+            buffered: false,
+        });
         observer?.disconnect();
     });
 
-    it('reports completed first-party requests as healthy samples with duration', () => {
+    it('reports completed first-party fetch requests as healthy samples with duration', () => {
         const onSample = vi.fn();
         const Fake = makeFakeObserverCtor();
         const observer = observeConnectionQuality(
@@ -159,6 +178,59 @@ describe('observeConnectionQuality', () => {
             makeEntry({ name: 'https://static.learncard.com/assets/logo.png' }),
         ]);
 
+        expect(onSample).not.toHaveBeenCalled();
+        observer?.disconnect();
+    });
+
+    it('filters entries by initiatorType: only fetch/xmlhttprequest count', () => {
+        const onSample = vi.fn();
+        const Fake = makeFakeObserverCtor();
+        const observer = observeConnectionQuality(
+            makeOptions({
+                onSample,
+                PerformanceObserverCtor: Fake as unknown as typeof PerformanceObserver,
+            })
+        );
+
+        emit(Fake, [
+            // Same first-party origin, wrong initiator: images, scripts and
+            // styles are cache/CDN-shaped and must never be latency evidence.
+            makeEntry({
+                name: 'https://network.learncard.com/assets/logo.png',
+                initiatorType: 'img',
+                duration: 6000,
+            }),
+            makeEntry({
+                name: 'https://network.learncard.com/assets/app.js',
+                initiatorType: 'script',
+                duration: 6000,
+            }),
+            makeEntry({
+                name: 'https://network.learncard.com/assets/app.css',
+                initiatorType: 'css',
+                duration: 6000,
+            }),
+            makeEntry({ initiatorType: 'xmlhttprequest', duration: 400 }),
+            makeEntry({ initiatorType: 'fetch', duration: 500 }),
+        ]);
+
+        expect(onSample).toHaveBeenCalledTimes(2);
+        expect((onSample.mock.calls[0][0] as ObservedConnectionSample).durationMs).toBe(400);
+        expect((onSample.mock.calls[1][0] as ObservedConnectionSample).durationMs).toBe(500);
+        observer?.disconnect();
+    });
+
+    it('drops entries with a missing/unknown initiatorType', () => {
+        const onSample = vi.fn();
+        const Fake = makeFakeObserverCtor();
+        const observer = observeConnectionQuality(
+            makeOptions({
+                onSample,
+                PerformanceObserverCtor: Fake as unknown as typeof PerformanceObserver,
+            })
+        );
+
+        emit(Fake, [makeEntry({ initiatorType: undefined })]);
         expect(onSample).not.toHaveBeenCalled();
         observer?.disconnect();
     });
@@ -281,9 +353,94 @@ describe('observeConnectionQuality', () => {
         observer?.disconnect();
     });
 
-    it('keeps working when the engine throws for an unsupported observe type', () => {
+    it('drops a request that started before the last resume (background-spanning) and counts fresh foreground requests', () => {
         const onSample = vi.fn();
-        const Fake = makeFakeObserverCtor(['fetch']); // xmlhttprequest unsupported
+        const Fake = makeFakeObserverCtor();
+        let foreground = true;
+        let perfTime = 10_000;
+        const foregroundListeners: ((fg: boolean) => void)[] = [];
+        const observer = observeConnectionQuality(
+            makeOptions({
+                onSample,
+                PerformanceObserverCtor: Fake as unknown as typeof PerformanceObserver,
+                isForeground: () => foreground,
+                onForegroundChange: listener => {
+                    foregroundListeners.push(listener);
+                    return () => {
+                        foregroundListeners.splice(foregroundListeners.indexOf(listener), 1);
+                    };
+                },
+                performanceNow: () => perfTime,
+            })
+        );
+
+        // Request started 500ms before the observer existed, delivered now:
+        // entirely in the initial foreground stretch is unknowable — the
+        // conservative epoch (observer creation) excludes it.
+        emit(Fake, [makeEntry({ startTime: 9_500, duration: 600 })]);
+        expect(onSample).not.toHaveBeenCalled();
+
+        // Background, then resume at perfTime 60_000.
+        foregroundListeners.forEach(listener => listener(false));
+        perfTime = 60_000;
+        foregroundListeners.forEach(listener => listener(true));
+        foreground = true;
+
+        // A request that STARTED before the resume (spanned the background)
+        // delivered afterwards: must NOT count as slow foreground evidence.
+        emit(Fake, [makeEntry({ startTime: 59_000, duration: 25_000 })]);
+        expect(onSample).not.toHaveBeenCalled();
+
+        // A request started AND completed inside the current foreground
+        // stretch counts normally.
+        perfTime = 61_000;
+        emit(Fake, [makeEntry({ startTime: 60_500, duration: 400 })]);
+        expect(onSample).toHaveBeenCalledTimes(1);
+        expect((onSample.mock.calls[0][0] as ObservedConnectionSample).durationMs).toBe(400);
+
+        // Another background/resume moves the epoch forward: requests started
+        // during the PREVIOUS foreground stretch are now excluded too.
+        foregroundListeners.forEach(listener => listener(false));
+        perfTime = 120_000;
+        foregroundListeners.forEach(listener => listener(true));
+        emit(Fake, [makeEntry({ startTime: 60_900, duration: 300 })]);
+        expect(onSample).toHaveBeenCalledTimes(1);
+
+        observer?.disconnect();
+    });
+
+    it('stops listening to foreground transitions after disconnect', () => {
+        const onSample = vi.fn();
+        const Fake = makeFakeObserverCtor();
+        let perfTime = 1_000;
+        const foregroundListeners: ((fg: boolean) => void)[] = [];
+        const observer = observeConnectionQuality(
+            makeOptions({
+                onSample,
+                PerformanceObserverCtor: Fake as unknown as typeof PerformanceObserver,
+                onForegroundChange: listener => {
+                    foregroundListeners.push(listener);
+                    return () => {
+                        foregroundListeners.splice(foregroundListeners.indexOf(listener), 1);
+                    };
+                },
+                performanceNow: () => perfTime,
+            })
+        );
+
+        observer?.disconnect();
+        // Post-disconnect transition callbacks are inert.
+        foregroundListeners.forEach(listener => listener(false));
+        perfTime = 5_000;
+        foregroundListeners.forEach(listener => listener(true));
+        emit(Fake, [makeEntry({ startTime: 4_900, duration: 100 })]);
+        expect(onSample).not.toHaveBeenCalled();
+    });
+
+    it('degrades to a quiet no-op when the engine rejects the resource type', () => {
+        const onSample = vi.fn();
+        // Some engines lack Resource Timing entirely: `resource` throws.
+        const Fake = makeFakeObserverCtor(['longtask']);
         const observer = observeConnectionQuality(
             makeOptions({
                 onSample,
@@ -291,11 +448,13 @@ describe('observeConnectionQuality', () => {
             })
         );
 
-        expect(Fake.instances[0].observeTypes).toEqual(['fetch']);
-
-        emit(Fake, [makeEntry({})]);
-        expect(onSample).toHaveBeenCalledTimes(1);
-        observer?.disconnect();
+        // The rejection was swallowed: the observer still exists and can be
+        // disconnected safely. (With no active subscription a real engine can
+        // never deliver entries, so no sample can ever be reported.)
+        expect(observer).not.toBeNull();
+        expect(Fake.instances[0].observeTypes).toEqual([]);
+        expect(() => observer?.disconnect()).not.toThrow();
+        expect(Fake.instances[0].disconnected).toBe(true);
     });
 
     it('stops reporting after disconnect even if a callback already fired', () => {

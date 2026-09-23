@@ -137,6 +137,13 @@ export interface AppConnectivityAdapterDeps {
         handler: () => void
     ) => () => void;
     isDocumentHidden?: () => boolean;
+    /**
+     * Is the app foreground-active RIGHT NOW (at attach time)? Native resolves
+     * `App.getState()`; web reads `document.hidden`. Checked BEFORE the monitor
+     * starts so a hidden/inactive mount never launches the initial probe from
+     * the background. When absent or throwing, foreground is assumed.
+     */
+    getInitialActivity?: () => boolean | Promise<boolean>;
 }
 
 export interface AppConnectivityAdapter {
@@ -162,7 +169,22 @@ export const createAppConnectivityAdapter = (
         }
     };
 
-    deps.monitor.start();
+    // 0. Initialize activity from the CURRENT hidden/inactive state BEFORE the
+    // monitor starts: a mount that happens in the background must not launch
+    // the initial probe. If activity is unknowable, assume foreground.
+    void (async () => {
+        let active = true;
+        if (deps.getInitialActivity) {
+            try {
+                active = await deps.getInitialActivity();
+            } catch {
+                active = true;
+            }
+        }
+        if (disposed) return;
+        if (!active) deps.monitor.setActive(false);
+        deps.monitor.start();
+    })();
 
     // 1. Transport hints. The listener is registered FIRST so no event can
     // fall between registration and the initial snapshot; the snapshot result
@@ -297,6 +319,15 @@ const buildAppConnectivityDeps = (monitor: ConnectivityMonitor): AppConnectivity
             handler(status.connected);
         }),
     getInitialTransportState: async () => (await Network.getStatus()).connected,
+    // Attach-time activity: native asks the App plugin; web reads visibility.
+    // Resolved BEFORE monitor start so a hidden mount never probes first.
+    getInitialActivity: async () => {
+        if (Capacitor.isNativePlatform()) {
+            const state = await App.getState();
+            return state.isActive;
+        }
+        return !document.hidden;
+    },
     // Native lifecycle only — on web, visibilitychange below already covers it.
     addAppStateListener: Capacitor.isNativePlatform()
         ? handler =>
