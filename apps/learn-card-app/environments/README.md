@@ -164,7 +164,10 @@ of redirecting the webview: iOS uses an ephemeral `ASWebAuthenticationSession`
   recovers. On the iOS **Simulator** the usual cause is macOS reporting
   "SafariViewService quit unexpectedly" — the out-of-process host for the
   sheet crashed, so the completion handler can never fire; this is a simulator
-  flake, not app code. Local dev also logs an iOS deprecation warning about
+  flake, not app code. The iOS 18 Simulator also renders the sheet **blank for
+  every page** (even `https://example.com`), so the branded bridge page
+  (`authBridgeUrl`) cannot be evaluated there — sign-in still completes. Judge
+  the sheet's look on a physical device or an iOS 17 simulator runtime. Local dev also logs an iOS deprecation warning about
   `http` scheme authorize URLs — harmless; staging/production Keycloak is HTTPS.
 - **Live-reload (`lc native dev`) cannot exercise Keycloak sign-in**: the
   WebView origin becomes `http://<LAN-IP>:5173`, which is not a secure context,
