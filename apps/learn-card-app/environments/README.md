@@ -146,6 +146,22 @@ of redirecting the webview: iOS uses an ephemeral `ASWebAuthenticationSession`
   always registers the bundle ID as a URL scheme / intent-filter (see
   `native.customSchemes` handling) so the OS routes the callback back to the
   app.
+- **Web Origins**: the token exchange is a `fetch` from the WebView, whose
+  origin is `capacitor://localhost` on iOS and `http://localhost` on Android.
+  Keycloak's `+` wildcard only derives http(s) origins from redirect URIs, so
+  the client's **Web Origins** must list both literally or the token endpoint
+  answers `403` with no CORS header (surfaces in the app as `Load failed`).
+- **Sheet never appears / stuck on "Verifying…"**: `ASWebAuthenticationSession`
+  can accept `start()` and silently not present (non-key presentation anchor,
+  previous sheet still dismissing). The plugin anchors on the scene's key
+  window, checks `canStart`, cancels a stale session on retry, and the JS side
+  cancels natively and fails with "Sign-in expired" after 60 s so the form
+  recovers. Local dev also logs an iOS deprecation warning about `http` scheme
+  authorize URLs — harmless; staging/production Keycloak is HTTPS.
+- **Live-reload (`lc native dev`) cannot exercise Keycloak sign-in**: the
+  WebView origin becomes `http://<LAN-IP>:5173`, which is not a secure context,
+  so `crypto.subtle` (PKCE) is unavailable. Use the bundled flow instead:
+  `bun run lc native open ios <tenant> <stage>`.
 - **`prompt=login` on every native authorize request**: Android Custom Tabs
   and iOS's shared system browser both carry Keycloak's SSO cookie. Without
   forcing a fresh login prompt, a second account's sign-in (or a reauth ticket

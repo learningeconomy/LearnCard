@@ -8,8 +8,10 @@ import { getLogger } from 'learn-card-base';
 
 const log = getLogger('native-auth-session');
 
-/** iOS presents this sheet ephemerally; Android/fallback opens Custom Tabs. */
+/** Android/fallback: the user may be reading a Keycloak error page inside Custom Tabs. */
 const OVERALL_TIMEOUT_MS = 5 * 60 * 1000;
+/** iOS: every native hop is a silent ticket redeem (~1-2 s); anything longer is a stuck sheet. */
+const WEB_AUTH_SESSION_TIMEOUT_MS = 60 * 1000;
 /** Grace window after the browser closes before treating it as a cancellation. */
 const BROWSER_FINISHED_GRACE_MS = 750;
 
@@ -26,6 +28,7 @@ export interface WebAuthSessionResult {
 /** Native counterpart of the iOS `WebAuthSessionPlugin.swift` local plugin. */
 export interface WebAuthSessionPlugin {
     start(options: WebAuthSessionStartOptions): Promise<WebAuthSessionResult>;
+    cancel(): Promise<void>;
 }
 
 export interface OpenNativeAuthSessionOptions {
@@ -45,14 +48,35 @@ const openViaWebAuthSession = async (
     url: string,
     callbackScheme: string
 ): Promise<string> => {
+    let timedOut = false;
+    let watchdog: ReturnType<typeof setTimeout> | undefined;
+
+    // ASWebAuthenticationSession can return true from start() yet never present
+    // or call back; without a watchdog the sign-in form would spin forever.
+    const expiry = new Promise<never>((_, reject) => {
+        watchdog = setTimeout(() => {
+            timedOut = true;
+            plugin.cancel().catch(error => log.debug('Failed to cancel auth sheet', error));
+            reject(new AuthSessionError('Sign-in expired. Please try again.', 'expired'));
+        }, WEB_AUTH_SESSION_TIMEOUT_MS);
+    });
+
     try {
-        const result = await plugin.start({ url, callbackScheme, ephemeral: true });
+        const result = await Promise.race([
+            plugin.start({ url, callbackScheme, ephemeral: true }),
+            expiry,
+        ]);
         return result.url;
     } catch (error) {
+        if (timedOut) {
+            throw new AuthSessionError('Sign-in expired. Please try again.', 'expired');
+        }
         if (getErrorCode(error) === 'CANCELED') {
             throw new AuthSessionError('Sign-in cancelled. Please try again.', 'no_session');
         }
         throw error;
+    } finally {
+        if (watchdog !== undefined) clearTimeout(watchdog);
     }
 };
 

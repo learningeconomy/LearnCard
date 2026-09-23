@@ -1,6 +1,7 @@
 import AuthenticationServices
 import Capacitor
 import Foundation
+import UIKit
 
 /**
  * Opens a Keycloak (or any OAuth) authorize URL in a system auth sheet and
@@ -16,7 +17,8 @@ public class WebAuthSessionPlugin: CAPPlugin, CAPBridgedPlugin {
     public let identifier = "WebAuthSessionPlugin"
     public let jsName = "WebAuthSession"
     public let pluginMethods: [CAPPluginMethod] = [
-        CAPPluginMethod(name: "start", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "start", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "cancel", returnType: CAPPluginReturnPromise),
     ]
 
     private var session: ASWebAuthenticationSession?
@@ -38,9 +40,10 @@ public class WebAuthSessionPlugin: CAPPlugin, CAPBridgedPlugin {
                 return
             }
 
-            guard self.session == nil else {
-                call.reject("A sign-in sheet is already open", "BUSY")
-                return
+            // A stale session (e.g. one that never presented) must not block a retry.
+            if let stale = self.session {
+                stale.cancel()
+                self.session = nil
             }
 
             let session = ASWebAuthenticationSession(
@@ -55,6 +58,12 @@ public class WebAuthSessionPlugin: CAPPlugin, CAPBridgedPlugin {
 
             session.prefersEphemeralWebBrowserSession = ephemeral
             session.presentationContextProvider = self
+
+            guard session.canStart else {
+                call.reject("The sign-in sheet cannot be presented right now", "FAILED")
+                return
+            }
+
             // Retain the session for the lifetime of the sheet; ASWebAuthenticationSession
             // does not keep itself alive.
             self.session = session
@@ -63,6 +72,15 @@ public class WebAuthSessionPlugin: CAPPlugin, CAPBridgedPlugin {
                 self.session = nil
                 call.reject("Unable to start the sign-in sheet", "FAILED")
             }
+        }
+    }
+
+    @objc func cancel(_ call: CAPPluginCall) {
+        DispatchQueue.main.async { [weak self] in
+            // cancel() fires the completion handler with canceledLogin, which
+            // rejects the pending start() call and clears `session`.
+            self?.session?.cancel()
+            call.resolve()
         }
     }
 
@@ -89,6 +107,14 @@ public class WebAuthSessionPlugin: CAPPlugin, CAPBridgedPlugin {
 
 extension WebAuthSessionPlugin: ASWebAuthenticationPresentationContextProviding {
     public func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
-        return bridge?.webView?.window ?? ASPresentationAnchor()
+        // The WebView's window is normally the key window, but during keyboard or
+        // sheet transitions it may not be; ASWebAuthenticationSession silently fails
+        // to present on a non-key anchor, so prefer the scene's key window.
+        let keyWindow = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap { $0.windows }
+            .first { $0.isKeyWindow }
+
+        return keyWindow ?? bridge?.webView?.window ?? ASPresentationAnchor()
     }
 }

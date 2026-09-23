@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
     platform: 'android' as string,
     pluginAvailable: false,
     webAuthStart: vi.fn(),
+    webAuthCancel: vi.fn(async () => undefined),
     browserOpen: vi.fn(async () => undefined),
     browserClose: vi.fn(async () => undefined),
     appUrlOpenListener: undefined as UrlListener | undefined,
@@ -24,7 +25,7 @@ vi.mock('@capacitor/core', () => ({
         getPlatform: () => mocks.platform,
         isPluginAvailable: () => mocks.pluginAvailable,
     },
-    registerPlugin: () => ({ start: mocks.webAuthStart }),
+    registerPlugin: () => ({ start: mocks.webAuthStart, cancel: mocks.webAuthCancel }),
 }));
 
 vi.mock('@capacitor/app', () => ({
@@ -217,6 +218,58 @@ describe('openNativeAuthSession', () => {
                     callbackScheme: 'com.learncard.app',
                 })
             ).rejects.toBe(failure);
+        });
+
+        it('cancels the native sheet and rejects as expired when start() never settles', async () => {
+            mocks.webAuthStart.mockReturnValue(new Promise(() => undefined));
+
+            const pending = openNativeAuthSession(AUTHORIZE_URL, {
+                callbackUrlPrefix: CALLBACK_PREFIX,
+                callbackScheme: 'com.learncard.app',
+            });
+            const outcome = expect(pending).rejects.toMatchObject({
+                name: 'AuthSessionError',
+                reason: 'expired',
+            });
+
+            await vi.advanceTimersByTimeAsync(60 * 1000);
+
+            await outcome;
+            expect(mocks.webAuthCancel).toHaveBeenCalledTimes(1);
+        });
+
+        it('reports expiry, not cancellation, when the watchdog-triggered cancel rejects start() with CANCELED', async () => {
+            let rejectStart: ((error: unknown) => void) | undefined;
+            mocks.webAuthStart.mockReturnValue(
+                new Promise((_, reject) => {
+                    rejectStart = reject;
+                })
+            );
+            mocks.webAuthCancel.mockImplementation(async () => {
+                rejectStart?.(Object.assign(new Error('canceled'), { code: 'CANCELED' }));
+            });
+
+            const pending = openNativeAuthSession(AUTHORIZE_URL, {
+                callbackUrlPrefix: CALLBACK_PREFIX,
+                callbackScheme: 'com.learncard.app',
+            });
+            const outcome = expect(pending).rejects.toMatchObject({ reason: 'expired' });
+
+            await vi.advanceTimersByTimeAsync(60 * 1000);
+
+            await outcome;
+        });
+
+        it('does not fire the watchdog once start() has resolved', async () => {
+            mocks.webAuthStart.mockResolvedValue({ url: `${CALLBACK_PREFIX}?code=a&state=b` });
+
+            await openNativeAuthSession(AUTHORIZE_URL, {
+                callbackUrlPrefix: CALLBACK_PREFIX,
+                callbackScheme: 'com.learncard.app',
+            });
+            await vi.advanceTimersByTimeAsync(60 * 1000);
+
+            expect(mocks.webAuthCancel).not.toHaveBeenCalled();
         });
     });
 });

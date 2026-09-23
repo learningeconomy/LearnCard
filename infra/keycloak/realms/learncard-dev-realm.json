@@ -32,7 +32,7 @@
                 "capacitor://localhost/*",
                 "com.learncard.app://login"
             ],
-            "webOrigins": ["+"],
+            "webOrigins": ["+", "capacitor://localhost", "http://localhost"],
             "attributes": {
                 "pkce.code.challenge.method": "S256",
                 "post.logout.redirect.uris": "http://localhost:3000/*##capacitor://localhost/*"

@@ -1266,15 +1266,21 @@ const nativeRun = async (tenantId?: string, platform?: Platform) => {
     );
 };
 
-const nativeDev = async (tenantId?: string, platform?: Platform) => {
+const nativeDev = async (tenantId?: string, platform?: Platform, stageId?: string) => {
     if (!tenantId) {
         tenantId = await pickTenant();
+    }
+
+    if (!stageId) {
+        stageId = await pickStage(tenantId);
     }
 
     if (!platform) {
         platform = await pickPlatform();
     }
 
+    const stageFlag = stageId === 'production' ? '' : ` --stage ${stageId}`;
+    const stageArg = stageId === 'local' ? '' : ` ${stageId}`;
     const displayName = getTenantDisplayName(tenantId);
     const lanIp = getLanIp();
 
@@ -1289,7 +1295,7 @@ const nativeDev = async (tenantId?: string, platform?: Platform) => {
     const serverUrl = `http://${lanIp}:${vitePort}`;
 
     log.info('');
-    log.info(bold(`📱 Native live-reload: ${displayName} → ${platform}`));
+    log.info(bold(`📱 Native live-reload: ${displayName} (${stageId}) → ${platform}`));
     log.info(`   LAN IP:     ${cyan(lanIp)}`);
     log.info(`   Server URL:  ${cyan(serverUrl)}`);
     log.info('');
@@ -1312,7 +1318,7 @@ const nativeDev = async (tenantId?: string, platform?: Platform) => {
     // which drops the live-reload `server` block and restores Capgo
     // `autoUpdate: true`. Step 5 below re-applies both directly.
     execBlocking(
-        `bun scripts/prepare-native-config.ts ${tenantId} --stage local`,
+        `bun scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
         'Step 4/6 — Patching native projects with tenant config'
     );
 
@@ -1334,9 +1340,12 @@ const nativeDev = async (tenantId?: string, platform?: Platform) => {
     log.info(`   load from ${bold(serverUrl)} with live-reload.`);
     log.info('');
     log.info(dim('   Press Ctrl+C to stop the Vite dev server.'));
+    log.info(dim(`   Shortcut: bun run lc native dev ${tenantId}${stageArg} ${platform}`));
     log.info('');
 
     rl.close();
+
+    setNativeBuildEnv(stageId);
 
     // Open the native IDE in background, then start vite in foreground
     const openCmd = platform === 'ios' ? 'bunx cap open ios' : 'bunx cap open android';
@@ -1897,11 +1906,22 @@ const handleNativeShortcut = async (args: string[]): Promise<boolean> => {
 
     switch (subcommand) {
         case 'dev': {
-            // bun run lc native dev [tenant] [ios|android]
-            const platform = asPlatform(arg2) ?? asPlatform(arg1);
-            const tenant = arg1 && !asPlatform(arg1) ? arg1 : undefined;
+            // bun run lc native dev [tenant] [stage] [ios|android]
+            const allArgs = [arg1, arg2, args[3]];
 
-            await nativeDev(tenant, platform);
+            const platform = allArgs.reduce<Platform | undefined>(
+                (found, a) => found ?? asPlatform(a),
+                undefined
+            );
+
+            const stage = allArgs.reduce<string | undefined>(
+                (found, a) => found ?? asStage(a),
+                undefined
+            );
+
+            const tenant = allArgs.find(a => a && !asPlatform(a) && !asStage(a));
+
+            await nativeDev(tenant, platform, stage);
             return true;
         }
 

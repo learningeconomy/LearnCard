@@ -43,6 +43,12 @@ All three users have password `password`:
 | `dev-unverified` | Unverified `dev-unverified@example.com` (API must reject) |
 
 - `learncard-app`: public authorization-code client with S256 PKCE, no password grant.
+  Redirect URIs cover web (`http://localhost:3000/*`) and native
+  (`com.learncard.app://login`, plus legacy `capacitor://localhost/*`). Web Origins
+  list `capacitor://localhost` (iOS WebView) and `http://localhost` (Android WebView)
+  explicitly: the `+` wildcard only derives http(s) origins, and without them the
+  token endpoint returns `403` with no CORS header. A production realm needs the
+  same three entries with the real bundle ID.
 - `lca-api`: existing confidential service client, placeholder secret `dev-only-secret`.
 - `ci-tests`: confidential password-grant client, secret `ci-tests-dev-only-secret`.
   It lets CI obtain real signed tokens without a browser; **never create it in staging/prod**.
