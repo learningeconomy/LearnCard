@@ -41,8 +41,11 @@ const generateUuid = (): string => {
 
 const patchIds = (
     obj: Record<string, unknown>,
-    idMap: Map<string, string>
+    idMap: Map<string, string>,
+    preserveSignedCredential = false
 ): Record<string, unknown> => {
+    if (preserveSignedCredential && obj.proof !== undefined) return obj;
+
     const result: Record<string, unknown> = {};
 
     for (const [key, value] of Object.entries(obj)) {
@@ -57,11 +60,11 @@ const patchIds = (
         } else if (Array.isArray(value)) {
             result[key] = value.map(item =>
                 item && typeof item === 'object' && !Array.isArray(item)
-                    ? patchIds(item as Record<string, unknown>, idMap)
+                    ? patchIds(item as Record<string, unknown>, idMap, true)
                     : item
             );
         } else if (value && typeof value === 'object' && !Array.isArray(value)) {
-            result[key] = patchIds(value as Record<string, unknown>, idMap);
+            result[key] = patchIds(value as Record<string, unknown>, idMap, true);
         } else {
             result[key] = value;
         }
@@ -70,21 +73,28 @@ const patchIds = (
     return result;
 };
 
-const remapUuidReferences = (value: unknown, idMap: Map<string, string>): unknown => {
+const remapUuidReferences = (
+    value: unknown,
+    idMap: Map<string, string>,
+    preserveSignedCredential = false
+): unknown => {
     if (typeof value === 'string') {
         // Rewrite explicit references that still point at the original ids.
         return idMap.get(value) ?? value;
     }
 
     if (Array.isArray(value)) {
-        return value.map(item => remapUuidReferences(item, idMap));
+        return value.map(item => remapUuidReferences(item, idMap, true));
     }
 
     if (value && typeof value === 'object') {
+        const record = value as Record<string, unknown>;
+        if (preserveSignedCredential && record.proof !== undefined) return record;
+
         return Object.fromEntries(
-            Object.entries(value as Record<string, unknown>).map(([key, nestedValue]) => [
+            Object.entries(record).map(([key, nestedValue]) => [
                 key,
-                remapUuidReferences(nestedValue, idMap),
+                remapUuidReferences(nestedValue, idMap, true),
             ])
         );
     }
@@ -110,6 +120,8 @@ const patchCredentialSubject = (credential: unknown, subjectDid: string): unknow
     }
 
     const patchedCredential = { ...(credential as Record<string, unknown>) };
+
+    if (patchedCredential.proof !== undefined) return patchedCredential;
 
     if (patchedCredential.credentialSubject) {
         patchedCredential.credentialSubject = patchSubject(

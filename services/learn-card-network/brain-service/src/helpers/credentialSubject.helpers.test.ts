@@ -73,4 +73,42 @@ describe('setCredentialSubjectIds', () => {
             ],
         });
     });
+
+    it('preserves signed embedded credentials while patching unsigned subjects', () => {
+        const credential = {
+            credentialSubject: {
+                id: 'did:example:old-root',
+                verifiableCredential: [
+                    {
+                        credentialSubject: { id: 'did:example:signed-subject' },
+                        proof: { type: 'DataIntegrityProof', proofValue: 'signed-value' },
+                    },
+                    {
+                        credentialSubject: { id: 'did:example:unsigned-subject' },
+                    },
+                ],
+            },
+        } as unknown as UnsignedVC;
+
+        setCredentialSubjectIds(credential, 'did:example:learner');
+
+        const subject = credential.credentialSubject as Record<string, unknown>;
+        const embedded = subject.verifiableCredential as Array<Record<string, unknown>>;
+
+        expect(subject.id).toBe('did:example:learner');
+        expect(embedded[0]?.credentialSubject).toEqual({
+            id: 'did:example:signed-subject',
+        });
+        expect(embedded[1]?.credentialSubject).toEqual({
+            id: 'did:example:learner',
+        });
+    });
+
+    it('creates an outer credential subject when a legacy template omits it', () => {
+        const credential = {} as UnsignedVC;
+
+        setCredentialSubjectIds(credential, 'did:example:learner');
+
+        expect(credential.credentialSubject).toEqual({ id: 'did:example:learner' });
+    });
 });
