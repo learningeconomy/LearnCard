@@ -1,21 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import * as m from '../../../paraglide/messages.js';
 import { TransP } from '../../../i18n/TransP';
 import Countdown from 'react-countdown';
 import PhoneInput from 'react-phone-number-input';
 import { Capacitor } from '@capacitor/core';
-import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { z } from 'zod';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('phone-form');
 
-import {
-    authStore,
-    isPlatformAndroid,
-    destroyRecaptcha,
-    useToast,
-    ToastTypeEnum,
-} from 'learn-card-base';
+import { useSignInAdapter, useToast, ToastTypeEnum } from 'learn-card-base';
 import { useFirebase } from '../../../hooks/useFirebase';
 import { useTheme } from '../../../theme/hooks/useTheme';
 
@@ -61,6 +54,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
     showSocialLogins,
 }) => {
     const { theme } = useTheme();
+    const adapter = useSignInAdapter();
     const loginButtonBgColor = theme.colors.defaults.loginButtonBgColor;
     const loginButtonTextColor = theme.colors.defaults.loginButtonTextColor;
 
@@ -73,7 +67,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
     const { presentToast } = useToast();
 
     const [currentStep, setCurrentStep] = useState<PhoneFormStepsEnum>(PhoneFormStepsEnum.phone);
-    const [phone, setPhone] = useState<any>('');
+    const [phone, setPhone] = useState<string>('');
     const [code, setCode] = useState<string>('');
     const [autoValidateCodeTriggered, setAutoValidateCodeTriggered] = useState(false);
 
@@ -84,29 +78,25 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [isResendCodeLoading, setIsResendCodeLoading] = useState<boolean>(false);
 
+    // The adapter subscriptions below are set up once per adapter; keep the latest
+    // hook function reachable so the auto-verify callback never runs a stale closure.
+    const loginAfterAutoVerifiedSMSRef = useRef(loginAfterAutoVerifiedSMS);
+    loginAfterAutoVerifiedSMSRef.current = loginAfterAutoVerifiedSMS;
+
     useEffect(() => {
-        FirebaseAuthentication.addListener('phoneCodeSent', e => {
-            log.info('📞📞📞 phoneCodeSent::res 📞📞📞', e);
-
-            const verificationId = e?.verificationId;
-
-            if (e?.verificationId) {
-                authStore.set.verificationId(verificationId);
+        const unsubscribeSent = adapter.onPhoneCodeSent(() => {
+            if (Capacitor.isNativePlatform()) {
                 showSuccessToast();
                 setCurrentStep(PhoneFormStepsEnum.verification);
                 setIsLoading(false);
                 setIsResendCodeLoading(false);
                 setShowSocialLogins(false);
-            } else {
-                setIsLoading(false);
-                setIsResendCodeLoading(false);
             }
         });
 
-        FirebaseAuthentication.addListener('phoneVerificationCompleted', e => {
-            log.info('📞📞📞 phoneVerificationCompleted::res 📞📞📞', e);
-            loginAfterAutoVerifiedSMS(
-                e?.verificationCode,
+        const unsubscribeCompleted = adapter.onPhoneVerificationCompleted(code => {
+            loginAfterAutoVerifiedSMSRef.current(
+                code ?? '',
                 () => {
                     setIsLoading(false);
                 },
@@ -116,10 +106,26 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                 }
             );
         });
-    }, []);
+        const unsubscribeFailed = adapter.onPhoneVerificationFailed(error => {
+            setIsLoading(false);
+            setIsResendCodeLoading(false);
+            setError(error instanceof Error ? error.message : '');
+            setCodeError('');
+            setCode('');
+            setAutoValidateCodeTriggered(false);
+            setCurrentStep(PhoneFormStepsEnum.phone);
+            setShowSocialLogins(true);
+        });
+        return () => {
+            unsubscribeSent();
+            unsubscribeCompleted();
+            unsubscribeFailed();
+            adapter.cleanup?.();
+        };
+    }, [adapter]);
 
     const resetForm = () => {
-        destroyRecaptcha();
+        adapter.cleanup?.();
         setCurrentStep(PhoneFormStepsEnum.phone);
         setPhone('');
         setCode('');
@@ -183,22 +189,12 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
             if (validate()) {
                 // native sms auth
                 if (Capacitor.isNativePlatform()) {
-                    FirebaseAuthentication.signInWithPhoneNumber({
-                        phoneNumber: phone,
-                        skipNativeAuth: isPlatformAndroid() ? true : false,
+                    void adapter.sendPhoneOtp(phone).catch(error => {
+                        log.error('Phone code request failed', error);
+                        setIsLoading(false);
+                        setIsResendCodeLoading(false);
+                        setError(error instanceof Error ? error.message : '');
                     });
-                    // .then(({ verificationId }) => {
-                    //     authStore.set.verificationId(verificationId);
-                    //     showSuccessToast();
-                    //     setCurrentStep(PhoneFormStepsEnum.verification);
-                    //     setIsLoading(false);
-                    //     setIsResendCodeLoading(false);
-                    // })
-                    // .catch(err => {
-                    //     setIsLoading(false);
-                    //     setIsResendCodeLoading(false);
-                    //     setError(err.errorMessage);
-                    // });
                 } else {
                     // web sms auth
                     sendSmsAuthCode(
@@ -221,10 +217,8 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
         } else if (currentStep === PhoneFormStepsEnum.verification) {
             if (validateCode()) {
                 if (Capacitor.isNativePlatform()) {
-                    const verificationId = authStore.get.verificationId();
                     // native sms code  verification
                     await verifySmsAuthCodeOnNative(
-                        verificationId,
                         code,
                         () => {
                             setIsLoading(false);
@@ -282,8 +276,8 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                         errors?.phone?.[0]
                             ? 'login-phone-error'
                             : error
-                            ? 'login-phone-service-error'
-                            : undefined
+                              ? 'login-phone-service-error'
+                              : undefined
                     }
                     placeholder={m['login.phone.placeholder']()}
                     countryOptionsOrder={['US', 'CA', 'AU', '|', '...']}
