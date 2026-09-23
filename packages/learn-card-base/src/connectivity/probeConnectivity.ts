@@ -80,8 +80,7 @@ const defaultRandomId = (): string =>
 const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '[::1]', '::1']);
 
 export type ProbeTargetValidation =
-    | { ok: true; url: URL }
-    | { ok: false; reason: 'invalid-url' | 'unsafe-origin'; detail: string };
+    { ok: true; url: URL } | { ok: false; reason: 'invalid-url' | 'unsafe-origin'; detail: string };
 
 /**
  * Validate a probe target before any network I/O. The native bundled origin

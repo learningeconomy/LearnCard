@@ -23,9 +23,8 @@ vi.mock('@capacitor/app', () => ({
 // Keep singleton tests hermetic: the lazily-created app monitor falls back to
 // the REAL probe; stub it so no test ever touches the network.
 vi.mock('learn-card-base/connectivity/probeConnectivity', async importOriginal => {
-    const actual = await importOriginal<
-        typeof import('learn-card-base/connectivity/probeConnectivity')
-    >();
+    const actual =
+        await importOriginal<typeof import('learn-card-base/connectivity/probeConnectivity')>();
     return {
         ...actual,
         probeConnectivity: vi.fn(async () => ({
@@ -595,9 +594,8 @@ describe('attachAppConnectivity (ref-counted singleton lifecycle)', () => {
         // The initial verification was suppressed: no probe was launched
         // from the background. (App.getState() drove setActive(false)
         // before start — behavior verified against the REAL monitor.)
-        const { probeConnectivity } = await import(
-            'learn-card-base/connectivity/probeConnectivity'
-        );
+        const { probeConnectivity } =
+            await import('learn-card-base/connectivity/probeConnectivity');
         expect(probeConnectivity).not.toHaveBeenCalled();
 
         // A resume (setActive(true)) then launches exactly one fresh probe.

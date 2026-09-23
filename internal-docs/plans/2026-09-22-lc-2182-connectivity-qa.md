@@ -10,13 +10,13 @@ Scope of this document: what Task 3 changed and why, every check that was actual
 
 Full-diff review of `62967ba0a..b251608c5` (Tasks 1–2) against the behavioral contract found the implementation sound on the critical axes:
 
--   **No false offline on HTTP errors** — `probeConnectivity` classifies non-2xx / unexpected-body / invalid-URL / unsafe-origin as `inconclusive`; the monitor drops to permissive `unknown` and never sets `offline` from an application-level result.
--   **Race cancellation** — monitor generations supersede stale probe results (background-spanning, post-hint, post-stop); retry timers are cleared on every supersede path; verified-online clears network retry timers (no idle network polling).
--   **Native remote URL** — the adapter probes `https://<tenant domain>/connectivity.txt` on native (development included), never the bundled origin; `disallowOrigins` belt-and-braces; plain HTTP restricted to loopback by the shared validator.
--   **Advisory-only quality** — `quality`/`qualityReason` are read by no gating code (onlineManager bridge reads `status` only; AuthCoordinator reads `status` only).
--   **No duplicate auth logic** — banner retry only requests a wallet upgrade on a _verified_ `online` result; BootGate always re-runs `initialize` (cached-key path preserved).
--   **Cleanup** — adapter removes only self-owned handles; late listener/snapshot resolutions after dispose are dropped; ref-counted attach survives StrictMode double-mount.
--   **Netlify** — `/connectivity.txt` ships with `no-store` + CORS `*`; the SPA `/*` rewrite does not shadow the static file (Netlify serves existing files first). Deploy-ordering caveat documented in `netlify.toml`.
+- **No false offline on HTTP errors** — `probeConnectivity` classifies non-2xx / unexpected-body / invalid-URL / unsafe-origin as `inconclusive`; the monitor drops to permissive `unknown` and never sets `offline` from an application-level result.
+- **Race cancellation** — monitor generations supersede stale probe results (background-spanning, post-hint, post-stop); retry timers are cleared on every supersede path; verified-online clears network retry timers (no idle network polling).
+- **Native remote URL** — the adapter probes `https://<tenant domain>/connectivity.txt` on native (development included), never the bundled origin; `disallowOrigins` belt-and-braces; plain HTTP restricted to loopback by the shared validator.
+- **Advisory-only quality** — `quality`/`qualityReason` are read by no gating code (onlineManager bridge reads `status` only; AuthCoordinator reads `status` only).
+- **No duplicate auth logic** — banner retry only requests a wallet upgrade on a _verified_ `online` result; BootGate always re-runs `initialize` (cached-key path preserved).
+- **Cleanup** — adapter removes only self-owned handles; late listener/snapshot resolutions after dispose are dropped; ref-counted attach survives StrictMode double-mount.
+- **Netlify** — `/connectivity.txt` ships with `no-store` + CORS `*`; the SPA `/*` rewrite does not shadow the static file (Netlify serves existing files first). Deploy-ordering caveat documented in `netlify.toml`.
 
 ### Regressions fixed in Task 3
 
@@ -47,9 +47,9 @@ Each fix (#1, #2) has a regression test that was verified to **fail without the 
 
 ### Honest statements
 
--   **`FullApp.connectionPrompt.test.tsx` does not exist** — not at baseline, not on this branch, anywhere. The ticket-named test's concerns are covered by its de-facto equivalent: `OfflineBanner.test.tsx` (8 tests: retry funnel + double-tap guard, upgrade only on verified online, inconclusive retry does not upgrade, limited-vs-offline copy, quality warning priority, back-online toast), `OfflineBootGate.test.tsx` (3 tests: check-then-initialize order, initialize even when offline, verified-online handoff), and `connectivity.test.ts` (22 tests). A FullApp-level test was not added: FullApp mounts the entire auth/router stack and has no existing lighter test harness on this branch; the subscription logic it owns (transport-error → sample/probe) is thin glue over `isLikelyTransportError` (unit-tested with 400 lines of cases in `observeConnectionQuality.test.ts`) and the monitor API (unit-tested).
--   **Full `learn-card-base` suite not re-run end-to-end this pass** beyond the scoped suites above; Task 1's known pre-existing failure (`dateHelpers calculateAge`, unrelated) still exists at baseline.
--   Nothing was deployed, pushed, merged, or posted to Jira.
+- **`FullApp.connectionPrompt.test.tsx` does not exist** — not at baseline, not on this branch, anywhere. The ticket-named test's concerns are covered by its de-facto equivalent: `OfflineBanner.test.tsx` (8 tests: retry funnel + double-tap guard, upgrade only on verified online, inconclusive retry does not upgrade, limited-vs-offline copy, quality warning priority, back-online toast), `OfflineBootGate.test.tsx` (3 tests: check-then-initialize order, initialize even when offline, verified-online handoff), and `connectivity.test.ts` (22 tests). A FullApp-level test was not added: FullApp mounts the entire auth/router stack and has no existing lighter test harness on this branch; the subscription logic it owns (transport-error → sample/probe) is thin glue over `isLikelyTransportError` (unit-tested with 400 lines of cases in `observeConnectionQuality.test.ts`) and the monitor API (unit-tested).
+- **Full `learn-card-base` suite not re-run end-to-end this pass** beyond the scoped suites above; Task 1's known pre-existing failure (`dateHelpers calculateAge`, unrelated) still exists at baseline.
+- Nothing was deployed, pushed, merged, or posted to Jira.
 
 ---
 
@@ -80,10 +80,10 @@ Legend: ✅ covered by automated tests in this repo · 🖥️ requires desktop 
 
 ### Known heuristic limits (documented, by design)
 
--   A **slow server** looks like a slow network; copy is qualified ("seems slow or unstable").
--   A **successful probe proves static-host reachability only** — never brain-service health; a transport-error-triggered probe failing while the API is fine (e.g. DNS hijack on the static domain) would show offline conservatively until probe succeeds.
--   Cross-origin timing entries without `Timing-Allow-Origin` still expose `duration` but `responseStatus` reads `0`, so HTTP-error filtering cannot apply there — acceptable for advisory evidence; first-party origins are configured so this is rare.
--   Query-error classification is intentionally narrow; unrecognized error shapes are conservatively ignored (never treated as disconnection).
+- A **slow server** looks like a slow network; copy is qualified ("seems slow or unstable").
+- A **successful probe proves static-host reachability only** — never brain-service health; a transport-error-triggered probe failing while the API is fine (e.g. DNS hijack on the static domain) would show offline conservatively until probe succeeds.
+- Cross-origin timing entries without `Timing-Allow-Origin` still expose `duration` but `responseStatus` reads `0`, so HTTP-error filtering cannot apply there — acceptable for advisory evidence; first-party origins are configured so this is rare.
+- Query-error classification is intentionally narrow; unrecognized error shapes are conservatively ignored (never treated as disconnection).
 
 ---
 
@@ -98,11 +98,11 @@ Legend: ✅ covered by automated tests in this repo · 🖥️ requires desktop 
 
 ## 5. Environment / invocation notes for the next runner
 
--   **Component tests need paraglide artifacts**: `src/paraglide/messages.js` is gitignored — generate with `bunx paraglide-js compile --project ./project.inlang --outdir ./src/paraglide` (in `apps/learn-card-app`) or banner/boot-gate suites fail to resolve imports.
--   **Run package tests from the package dir** (`packages/learn-card-base`): its `vitest.config.ts` sets `globals: true`, which enables testing-library auto-cleanup. Running `AuthCoordinatorProvider.test.tsx` from the repo root bypasses it and produces a spurious "Found multiple elements by data-testid=status" failure (observed and diagnosed in Task 3 — **not** a product bug).
--   **App-side `.tsx` tests must run from `apps/learn-card-app`** (its `vitest.config.ts` sets `environment: jsdom`); from the repo root they fail with `document is not defined`.
--   **Stale nested worktrees**: this worktree contained leftover `.claude/worktrees/*` snapshots from other dispatcher runs; repo-root vitest runs sweep them up as broken suites (13 "failed files" that are not part of this repo's source). Ignore or prune; do not commit them (they are gitignored).
--   App typecheck requires built cross-package dists (`@learncard/types`, `@learncard/core`, …); the 2491 baseline errors are missing-dist artifacts, identical before and after this task.
+- **Component tests need paraglide artifacts**: `src/paraglide/messages.js` is gitignored — generate with `bunx paraglide-js compile --project ./project.inlang --outdir ./src/paraglide` (in `apps/learn-card-app`) or banner/boot-gate suites fail to resolve imports.
+- **Run package tests from the package dir** (`packages/learn-card-base`): its `vitest.config.ts` sets `globals: true`, which enables testing-library auto-cleanup. Running `AuthCoordinatorProvider.test.tsx` from the repo root bypasses it and produces a spurious "Found multiple elements by data-testid=status" failure (observed and diagnosed in Task 3 — **not** a product bug).
+- **App-side `.tsx` tests must run from `apps/learn-card-app`** (its `vitest.config.ts` sets `environment: jsdom`); from the repo root they fail with `document is not defined`.
+- **Stale nested worktrees**: this worktree contained leftover `.claude/worktrees/*` snapshots from other dispatcher runs; repo-root vitest runs sweep them up as broken suites (13 "failed files" that are not part of this repo's source). Ignore or prune; do not commit them (they are gitignored).
+- App typecheck requires built cross-package dists (`@learncard/types`, `@learncard/core`, …); the 2491 baseline errors are missing-dist artifacts, identical before and after this task.
 
 ---
 
@@ -139,12 +139,12 @@ Current branch: `codex/lc-2182-final-corrections`. The GLM-5.3-flash high dispat
 
 Corrections after Task 3:
 
--   Observe real `resource` entries and filter fetch/XMLHttpRequest initiators. Earlier tests incorrectly accepted nonexistent entry types.
--   Expire idle poor-quality warnings through one local timer without network polling; bound retained quality evidence.
--   Pause all automatic probes in background, settle manual checks without hanging, and discard stale/background-spanning results.
--   Initialize activity before probing, restore foreground on remount, and prevent delayed initial activity from overwriting newer lifecycle events.
--   Use the shared monitor's web/native foreground transitions for observer epochs; ignore background query-error samples.
--   Inject a deterministic performance clock in observer tests, removing a machine-speed-dependent fixture failure.
+- Observe real `resource` entries and filter fetch/XMLHttpRequest initiators. Earlier tests incorrectly accepted nonexistent entry types.
+- Expire idle poor-quality warnings through one local timer without network polling; bound retained quality evidence.
+- Pause all automatic probes in background, settle manual checks without hanging, and discard stale/background-spanning results.
+- Initialize activity before probing, restore foreground on remount, and prevent delayed initial activity from overwriting newer lifecycle events.
+- Use the shared monitor's web/native foreground transitions for observer epochs; ignore background query-error samples.
+- Inject a deterministic performance clock in observer tests, removing a machine-speed-dependent fixture failure.
 
 Final executed focused tests: **140 passed** — 95 base connectivity tests, 7 auth-gate tests, and 38 app network-listener tests. Commands: `bun run test src/connectivity src/auth-status/useAuthGateState.test.tsx` from `packages/learn-card-base`; `bun run test:unit src/components/network-listener` from `apps/learn-card-app`. Safe-area gate passes (64 legacy allowlist entries). The dispatcher report also records a real Firefox smoke check of the actual observer: resource observation receives fetch timing, while the old fetch entry-type observation receives none; excluded probe timing is ignored. This is browser evidence, not physical native QA.
 

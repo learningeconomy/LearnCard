@@ -1,10 +1,7 @@
 import { useEffect, useRef } from 'react';
 
 import { connectivityStore, type ConnectivityStatus } from '../stores/connectivityStore';
-import type {
-    ConnectionQuality,
-    ConnectionQualityReason,
-} from '../connectivity/connectionQuality';
+import type { ConnectionQuality, ConnectionQualityReason } from '../connectivity/connectionQuality';
 
 export const useConnectivityStatus = (): ConnectivityStatus => connectivityStore.use.status();
 
@@ -34,7 +31,9 @@ export const useIsSlowOrUnstable = (): boolean => {
  */
 export const useOnReconnect = (callback: () => void): void => {
     const cbRef = useRef(callback);
-    cbRef.current = callback;
+    useEffect(() => {
+        cbRef.current = callback;
+    }, [callback]);
 
     const status = connectivityStore.use.status();
     const prevStatus = useRef<ConnectivityStatus>(status);

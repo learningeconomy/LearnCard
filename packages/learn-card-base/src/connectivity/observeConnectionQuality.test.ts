@@ -26,7 +26,7 @@ const makeEntry = (overrides: EntryOverrides) =>
         startTime: 1000,
         initiatorType: 'fetch',
         ...overrides,
-    } as PerformanceResourceTiming);
+    }) as PerformanceResourceTiming;
 
 interface FakeObserverInstance {
     observeTypes: string[];

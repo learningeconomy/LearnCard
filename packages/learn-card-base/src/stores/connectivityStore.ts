@@ -1,9 +1,6 @@
 import { createStore } from '@udecode/zustood';
 
-import type {
-    ConnectionQuality,
-    ConnectionQualityReason,
-} from '../connectivity/connectionQuality';
+import type { ConnectionQuality, ConnectionQualityReason } from '../connectivity/connectionQuality';
 
 /**
  * Connectivity model — an orthogonal signal to the AuthCoordinator state.
