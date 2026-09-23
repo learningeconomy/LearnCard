@@ -117,6 +117,11 @@ const createHarness = (
     return { monitor, timers, probeCalls, states };
 };
 
+/** True when the monitor owns no pending timers (type-safe assertion helper). */
+const timersPendingZero = (monitor: { getState: () => ConnectivitySnapshot }): void => {
+    expect(monitor.getState().running).toBe(true);
+};
+
 describe('connectivityMonitor', () => {
     afterEach(() => {
         // The store is module-global; restore a neutral state after bridge tests.
@@ -174,6 +179,30 @@ describe('connectivityMonitor', () => {
             expect(probeCalls).toHaveLength(2);
             await settleProbe(probeCalls[1], unreachable('timeout'));
             expect(monitor.getState().status).toBe('offline');
+        });
+
+        it('restarts the offline backoff schedule from 5s after a stop/start cycle', async () => {
+            const { monitor, timers, probeCalls } = createHarness();
+            monitor.start();
+            await flush();
+            await settleProbe(probeCalls[0], unreachable());
+            expect(timers.pendingCount()).toBe(1); // retry scheduled at 5s
+
+            // Tear down before the retry fires, then start a fresh lifecycle.
+            monitor.stop();
+            monitor.start();
+            await flush();
+            await settleProbe(probeCalls[1], unreachable());
+
+            // A fresh lifecycle must retry from the FIRST delay (5s), not
+            // continue the old schedule (which would now be at 10s).
+            expect(timers.pendingCount()).toBe(1);
+            timers.advance(5_000 - 1);
+            await flush();
+            const callsAfterAlmostFive = probeCalls.length;
+            timers.advance(1);
+            await flush();
+            expect(probeCalls.length).toBe(callsAfterAlmostFive + 1);
         });
     });
 
@@ -614,8 +643,3 @@ describe('connectivityMonitor', () => {
         });
     });
 });
-
-/** True when the monitor owns no pending timers (type-safe assertion helper). */
-const timersPendingZero = (monitor: { getState: () => ConnectivitySnapshot }): void => {
-    expect(monitor.getState().running).toBe(true);
-};

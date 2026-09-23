@@ -148,6 +148,8 @@ export const createAppConnectivityAdapter = (
     deps: AppConnectivityAdapterDeps
 ): AppConnectivityAdapter => {
     let disposed = false;
+    /** True once ANY transport hint arrived — an in-flight snapshot is then stale. */
+    let receivedListenerHint = false;
     /** Handles successfully registered by THIS adapter (owned removals only). */
     const ownedHandles: RemovableHandle[] = [];
     const windowDisposers: (() => void)[] = [];
@@ -169,7 +171,10 @@ export const createAppConnectivityAdapter = (
     void (async () => {
         try {
             const handle = await deps.addNetworkStatusListener(connected => {
-                if (!disposed) deps.monitor.reportTransport(connected);
+                if (!disposed) {
+                    receivedListenerHint = true;
+                    deps.monitor.reportTransport(connected);
+                }
             });
 
             if (disposed) {
@@ -181,7 +186,12 @@ export const createAppConnectivityAdapter = (
             ownedHandles.push(handle);
 
             const connected = await deps.getInitialTransportState();
-            if (!disposed) deps.monitor.reportTransport(connected);
+            // The listener was registered BEFORE this snapshot was taken, so
+            // any hint that arrived while it was in flight is newer by
+            // definition — and a stale initial getStatus must never override
+            // a newer event. Report only when the snapshot is still the
+            // freshest signal we have.
+            if (!disposed && !receivedListenerHint) deps.monitor.reportTransport(connected);
         } catch (error) {
             // Setup failure must never reject globally: connectivity simply
             // stays permissive until the next lifecycle event.

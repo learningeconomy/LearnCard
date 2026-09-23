@@ -312,6 +312,34 @@ describe('createAppConnectivityAdapter', () => {
         expect(monitor.reports).toEqual([]); // nothing was ever reported
     });
 
+    it('a listener hint newer than the in-flight initial snapshot wins — the stale snapshot is dropped', async () => {
+        const monitor = makeFakeMonitor();
+        let resolveSnapshot: (connected: boolean) => void = () => undefined;
+        const deps = trackListenerDeps(
+            makeDeps({
+                monitor,
+                getInitialTransportState: () =>
+                    new Promise<boolean>(resolve => {
+                        resolveSnapshot = resolve;
+                    }),
+            })
+        );
+
+        createAppConnectivityAdapter(deps);
+        await vi.waitFor(() => expect(registeredListeners(deps)).toHaveLength(1));
+
+        // A transport event arrives while the snapshot is still pending — it
+        // is newer than the snapshot by definition (the listener was
+        // registered first).
+        registeredListeners(deps)[0].handler(false);
+        expect(monitor.reports).toEqual([false]);
+
+        // The older snapshot resolves; it must NOT override the newer event.
+        resolveSnapshot(true);
+        await new Promise(resolve => setTimeout(resolve, 10));
+        expect(monitor.reports).toEqual([false]);
+    });
+
     it('listener setup failure does not reject globally and the monitor still starts', async () => {
         const monitor = makeFakeMonitor();
         createAppConnectivityAdapter(

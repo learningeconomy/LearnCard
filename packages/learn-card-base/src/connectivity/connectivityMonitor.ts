@@ -280,6 +280,7 @@ export const createConnectivityMonitor = (
             if (running) return;
             running = true;
             generation += 1; // anything in flight from a previous run is stale
+            backoffIndex = 0; // a fresh lifecycle starts a fresh retry schedule
             clearRetryTimer();
             emit();
             void startCycle(); // initial verification
