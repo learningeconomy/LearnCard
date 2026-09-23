@@ -156,8 +156,11 @@ of redirecting the webview: iOS uses an ephemeral `ASWebAuthenticationSession`
   previous sheet still dismissing). The plugin anchors on the scene's key
   window, checks `canStart`, cancels a stale session on retry, and the JS side
   cancels natively and fails with "Sign-in expired" after 60 s so the form
-  recovers. Local dev also logs an iOS deprecation warning about `http` scheme
-  authorize URLs — harmless; staging/production Keycloak is HTTPS.
+  recovers. On the iOS **Simulator** the usual cause is macOS reporting
+  "SafariViewService quit unexpectedly" — the out-of-process host for the
+  sheet crashed, so the completion handler can never fire; this is a simulator
+  flake, not app code. Local dev also logs an iOS deprecation warning about
+  `http` scheme authorize URLs — harmless; staging/production Keycloak is HTTPS.
 - **Live-reload (`lc native dev`) cannot exercise Keycloak sign-in**: the
   WebView origin becomes `http://<LAN-IP>:5173`, which is not a secure context,
   so `crypto.subtle` (PKCE) is unavailable. Use the bundled flow instead:
