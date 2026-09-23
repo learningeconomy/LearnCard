@@ -37,8 +37,8 @@ import { flattenObject } from '../src/helpers/objects.helpers';
 dotenv.config({ path: fileURLToPath(new URL('../.env', import.meta.url)) });
 
 const PERSONA_NAMESPACE = '5c4bb193-6e65-43d9-940d-d85b758a94f2';
-const PROFILE_ID = 'demo-school';
-const PROFILE_NAME = 'Demo School';
+const PROFILE_ID = 'hillvalleyhigh';
+const PROFILE_NAME = 'Hill Valley High';
 const SIGNING_AUTHORITY_NAME = 'sample-personas';
 
 const NEO4J_URI = process.env.NEO4J_URI ?? 'bolt://localhost:7687';
@@ -205,12 +205,12 @@ const main = async (): Promise<void> => {
     const run = neogma.queryRunner.run.bind(neogma.queryRunner);
 
     try {
-        await run(
+        const profileResult = await run(
             `MERGE (p:Profile {profileId: $profileId})
              SET p.displayName = $displayName,
                  p.shortBio = $shortBio,
                  p.did = $did
-             RETURN p`,
+             RETURN p.did AS did`,
             {
                 profileId,
                 displayName: PROFILE_NAME,
@@ -218,6 +218,10 @@ const main = async (): Promise<void> => {
                 did: signingAuthorityDid,
             }
         );
+        const storedSigningAuthorityDid = profileResult.records[0]?.get('did');
+        if (storedSigningAuthorityDid !== signingAuthorityDid) {
+            throw new Error(`Profile ${profileId} did not retain its signing authority DID.`);
+        }
 
         await run(
             `MERGE (sa:SigningAuthority {endpoint: $endpoint})
@@ -256,16 +260,26 @@ const main = async (): Promise<void> => {
                 meta: { personaId: bundle.id, fixtureId: fixture.id },
             });
 
-            await run(
+            const boostResult = await run(
                 `MERGE (b:Boost {id: $boostId})
                  SET b = $properties
                  WITH b
+                 OPTIONAL MATCH (b)-[oldCreated:CREATED_BY]->(:Profile)
+                 DELETE oldCreated
+                 WITH DISTINCT b
+                 OPTIONAL MATCH (:Profile)-[oldRole:HAS_ROLE {roleId: '__creator__'}]->(b)
+                 DELETE oldRole
+                 WITH DISTINCT b
                  MATCH (p:Profile {profileId: $profileId})
                  MERGE (b)-[created:CREATED_BY]->(p)
                  SET created.date = $date
                  MERGE (p)-[role:HAS_ROLE]->(b)
                  SET role.roleId = '__creator__'
-                 RETURN b`,
+                 WITH b
+                 MATCH (b)-[:CREATED_BY]->(creator:Profile)
+                 MATCH (roleOwner:Profile)-[:HAS_ROLE {roleId: '__creator__'}]->(b)
+                 RETURN collect(creator.profileId) AS creatorProfileIds,
+                        collect(roleOwner.profileId) AS roleOwnerProfileIds`,
                 {
                     boostId,
                     properties: boostProperties,
@@ -273,6 +287,16 @@ const main = async (): Promise<void> => {
                     date: new Date().toISOString(),
                 }
             );
+            const creatorProfileIds = boostResult.records[0]?.get('creatorProfileIds');
+            const roleOwnerProfileIds = boostResult.records[0]?.get('roleOwnerProfileIds');
+            if (
+                creatorProfileIds?.length !== 1 ||
+                creatorProfileIds[0] !== profileId ||
+                roleOwnerProfileIds?.length !== 1 ||
+                roleOwnerProfileIds[0] !== profileId
+            ) {
+                throw new Error(`Boost ${boostId} has ambiguous profile ownership.`);
+            }
         }
 
         const contract = {
@@ -309,6 +333,9 @@ const main = async (): Promise<void> => {
              SET c = $properties,
                  c.createdAt = createdAt
              WITH c
+             OPTIONAL MATCH (c)-[oldOwner:CREATED_BY]->(:Profile)
+             DELETE oldOwner
+             WITH DISTINCT c
              MATCH (p:Profile {profileId: $profileId})
              MERGE (c)-[:CREATED_BY]->(p)
              RETURN c`,

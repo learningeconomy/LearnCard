@@ -23,6 +23,7 @@ import { obv3CourseCompletion } from './obv3/course-completion';
 import { obv3StandaloneFullCourse } from './obv3/standalone-full-course';
 import { obv3K12Diploma } from './obv3/k12-diploma';
 import { obv3EndorsementCredential } from './obv3/endorsement';
+import { obv3StudentAfterschoolProgramMentor } from './obv3/student-afterschool-program-mentor';
 import {
     obv3StudentCivicLeadership,
     obv3StudentWebDevelopment,
@@ -100,6 +101,7 @@ export const ALL_FIXTURES: LibraryFixture[] = [
     obv3StandaloneFullCourse,
     obv3K12Diploma,
     obv3EndorsementCredential,
+    obv3StudentAfterschoolProgramMentor,
     obv3StudentCivicLeadership,
     obv3StudentWebDevelopment,
     obv3StudentCommunityImpact,
@@ -108,8 +110,8 @@ export const ALL_FIXTURES: LibraryFixture[] = [
     clrMinimal,
     clrMultiAchievement,
     clrUniversityTranscript,
-
     clrStudentTranscript,
+
     // Boosts
     boostBasic,
     boostId,
@@ -171,6 +173,7 @@ export {
     obv3StandaloneFullCourse,
     obv3K12Diploma,
     obv3EndorsementCredential,
+    obv3StudentAfterschoolProgramMentor,
     obv3StudentCivicLeadership,
     obv3StudentWebDevelopment,
     obv3StudentCommunityImpact,

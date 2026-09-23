@@ -51,6 +51,11 @@ const SamplePersonaAddButton: React.FC<SamplePersonaAddButtonProps> = ({
 
         setStatus('connecting');
         try {
+            const expectedCredentialCount = contract.autoBoosts?.length ?? 0;
+            if (expectedCredentialCount === 0) {
+                throw new Error('Sample contract has no auto-boost credentials');
+            }
+
             const { termsUri } = await consentToContract({
                 terms: getMinimumTermsForContract(contract.contract, currentUser),
                 expiresAt: '',
@@ -64,11 +69,6 @@ const SamplePersonaAddButton: React.FC<SamplePersonaAddButtonProps> = ({
             const syncResult = await fetchNewContractCredentials();
             if (syncResult.isError) {
                 throw syncResult.error ?? new Error('Sample credential sync failed');
-            }
-
-            const expectedCredentialCount = contract.autoBoosts?.length ?? 0;
-            if (expectedCredentialCount === 0) {
-                throw new Error('Sample contract has no auto-boost credentials');
             }
 
             const wallet = await initWallet();

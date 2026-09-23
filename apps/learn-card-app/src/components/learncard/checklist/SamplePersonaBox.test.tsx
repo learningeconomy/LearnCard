@@ -148,7 +148,7 @@ describe('SamplePersonaBox', () => {
             data: {
                 contract: {},
                 owner: { did: 'did:example:demo-school' },
-                autoBoosts: Array.from({ length: 4 }, (_, index) => `boost-${index}`),
+                autoBoosts: ['boost-0'],
             },
             isLoading: false,
         });
@@ -164,9 +164,7 @@ describe('SamplePersonaBox', () => {
         mocks.refetchQueries.mockResolvedValue(undefined);
         mocks.fetchNewContractCredentials.mockResolvedValue({ isError: false });
         mocks.getCredentialsForContract.mockResolvedValue({
-            records: Array.from({ length: 4 }, (_, index) => ({
-                credentialUri: `credential-${index}`,
-            })),
+            records: [{ credentialUri: 'credential-0' }],
         });
         mocks.initWallet.mockResolvedValue({
             invoke: { getCredentialsForContract: mocks.getCredentialsForContract },
@@ -235,6 +233,8 @@ describe('SamplePersonaBox', () => {
                 hasDismissButton: true,
             })
         );
+        expect(mocks.consentToContract).not.toHaveBeenCalled();
+        expect(mocks.fetchNewContractCredentials).not.toHaveBeenCalled();
         expect(mocks.getCredentialsForContract).not.toHaveBeenCalled();
         expect(mocks.presentToast).not.toHaveBeenCalledWith(
             'Sample credentials added.',

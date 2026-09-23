@@ -16,9 +16,9 @@ const autoBoostUris = studentBundle.entries.map(
     (_, index) => `lc:network:localhost%3A4000/trpc:boost:sample-persona-${index}`
 );
 const owner = {
-    did: 'did:web:localhost%3A4000:users:demo-school',
-    profileId: 'demo-school',
-    displayName: 'Demo School',
+    did: 'did:web:localhost%3A4000:users:hillvalleyhigh',
+    profileId: 'hillvalleyhigh',
+    displayName: 'Hill Valley High',
 };
 const contractTerms = {
     read: {
@@ -36,9 +36,8 @@ const contract = {
     owner,
     contract: contractTerms,
     name: 'Student Sample Credentials',
-    subtitle: 'Explore a learner record with coursework, skills, leadership, and community impact.',
-    description:
-        'Explore a learner record with coursework, skills, leadership, and community impact.',
+    subtitle: studentBundle.blurb,
+    description: studentBundle.blurb,
     reasonForAccessing: '',
     needsGuardianConsent: false,
     redirectUrl: '',
@@ -184,7 +183,7 @@ test.describe('Sample persona @mocked', () => {
         await expect(page.getByRole('heading', { name: 'Sample LearnCard' })).toBeVisible({
             timeout: 30_000,
         });
-        await expect(page.getByText('Civic Leadership').first()).toBeVisible({
+        await expect(page.getByText('Afterschool Program Mentor').first()).toBeVisible({
             timeout: 30_000,
         });
         await page

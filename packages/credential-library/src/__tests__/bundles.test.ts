@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { getBundle, getFixture, getFixtures, isCredentialFixture, prepareFixture } from '../index';
+import { getBundle, getFixture, isCredentialFixture, prepareFixture } from '../index';
 
 const collectContexts = (value: unknown): string[] => {
     if (Array.isArray(value)) return value.flatMap(collectContexts);
@@ -13,92 +13,55 @@ const collectContexts = (value: unknown): string[] => {
     );
 };
 
-const getAchievementIds = (credential: unknown): string[] => {
-    if (!credential || typeof credential !== 'object' || !('credentialSubject' in credential)) {
-        throw new Error('Credential is missing credentialSubject');
-    }
-
-    const subject = credential.credentialSubject;
-    if (!subject || typeof subject !== 'object' || !('achievement' in subject)) {
-        throw new Error('Credential subject is missing achievement');
-    }
-
-    const achievements = Array.isArray(subject.achievement)
-        ? subject.achievement
-        : [subject.achievement];
-
-    return achievements.map(achievement => {
-        if (!achievement || typeof achievement !== 'object' || !('id' in achievement)) {
-            throw new Error('Achievement is missing an id');
-        }
-        if (typeof achievement.id !== 'string') throw new Error('Achievement id is not a string');
-
-        return achievement.id;
-    });
-};
-
 describe('student credential bundle', () => {
-    it('resolves every manifest entry to a standards-pure, valid fixture', () => {
+    it('resolves only the Afterschool Program Mentor credential', () => {
         const bundle = getBundle('student');
 
         expect(bundle.entries.map(entry => entry.fixtureId)).toEqual([
-            'obv3/student-civic-leadership',
-            'obv3/student-web-development',
-            'obv3/student-community-impact',
-            'clr/student-transcript',
+            'obv3/student-afterschool-program-mentor',
         ]);
 
-        for (const entry of bundle.entries) {
-            const fixture = getFixture(entry.fixtureId);
-            expect(isCredentialFixture(fixture)).toBe(true);
-            if (!isCredentialFixture(fixture)) throw new Error(`${entry.fixtureId} is not a VC`);
-            const credential = prepareFixture(fixture, {
-                issuerDid: 'did:web:demo.example:users:demo-school',
-                subjectDid: 'did:example:student',
-                freshIds: false,
-            });
+        const [entry] = bundle.entries;
+        if (!entry) throw new Error('Student bundle is empty');
 
-            expect(fixture.validity).toBe('valid');
-            expect(collectContexts(credential).some(context => context.startsWith('lcn:'))).toBe(
-                false
-            );
-            expect(fixture.validator?.safeParse(credential).success ?? true).toBe(true);
-            if (credential.id?.startsWith('urn:uuid:')) {
-                expect(credential.id).toMatch(
-                    /^urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-                );
-            }
-        }
-    });
+        const fixture = getFixture(entry.fixtureId);
+        expect(isCredentialFixture(fixture)).toBe(true);
+        if (!isCredentialFixture(fixture)) throw new Error(`${entry.fixtureId} is not a VC`);
 
-    it('advertises alignment only for fixtures that contain alignments', () => {
-        const alignedFixtureIds = getFixtures({ features: ['alignment'] }).map(
-            fixture => fixture.id
-        );
+        const credential = prepareFixture(fixture, {
+            issuerDid: 'did:web:demo.example:users:hillvalleyhigh',
+            subjectDid: 'did:example:student',
+            freshIds: false,
+        });
 
-        expect(alignedFixtureIds).toContain('obv3/student-civic-leadership');
-        expect(alignedFixtureIds).toContain('obv3/student-web-development');
-        expect(alignedFixtureIds).not.toContain('obv3/student-community-impact');
-    });
-
-    it('keeps the transcript linked to all three standalone achievements', () => {
-        const transcriptFixture = getFixture('clr/student-transcript');
-        if (!isCredentialFixture(transcriptFixture))
-            throw new Error('Student transcript is not a VC');
-        const transcriptAchievementIds = getAchievementIds(transcriptFixture.credential);
-        const standaloneAchievementIds = getBundle('student')
-            .entries.filter(entry => entry.fixtureId.startsWith('obv3/'))
-            .map(entry => {
-                const fixture = getFixture(entry.fixtureId);
-                if (!isCredentialFixture(fixture))
-                    throw new Error(`${entry.fixtureId} is not a VC`);
-
-                const [achievementId] = getAchievementIds(fixture.credential);
-                if (!achievementId) throw new Error(`${entry.fixtureId} has no achievement`);
-
-                return achievementId;
-            });
-
-        expect(transcriptAchievementIds).toEqual(standaloneAchievementIds);
+        expect(fixture.validity).toBe('valid');
+        expect(fixture.validator?.safeParse(credential).success ?? true).toBe(true);
+        expect(collectContexts(credential)).toEqual([
+            'https://www.w3.org/ns/credentials/v2',
+            'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+            'https://ctx.learncard.com/boosts/1.0.3.json',
+        ]);
+        expect(collectContexts(credential).some(context => context.startsWith('lcn:'))).toBe(false);
+        expect(credential.type).toEqual([
+            'VerifiableCredential',
+            'OpenBadgeCredential',
+            'BoostCredential',
+        ]);
+        expect(credential.name).toBe('Afterschool Program Mentor');
+        expect(credential.credentialSubject).toMatchObject({
+            type: ['AchievementSubject'],
+            achievement: {
+                name: 'Afterschool Program Mentor',
+                achievementType: 'ext:LCA_CUSTOM:Social Badge:Community_Champ',
+                image: 'https://cdn.filestackcontent.com/7hs6fs2Qgurpw2wSjuDx',
+                alignment: [
+                    { targetName: 'Personal Integrity' },
+                    { targetName: 'Interpersonal Relationships' },
+                    { targetName: 'Teamwork/Team-Oriented' },
+                    { targetName: 'Trustworthy' },
+                    { targetName: 'Scheduling' },
+                ],
+            },
+        });
     });
 });
