@@ -31,23 +31,45 @@ Deploy this producer before an AI Passport consumer that requires the new guardi
 
 ## Sample persona seeding
 
-Sample personas are defined as ordered credential-library bundles. From
-`apps/learn-card-app`, publish one as an idempotent consent-flow contract:
+Sample personas are ordered credential-library bundles published as idempotent
+consent-flow contracts. The seeder uses every target value from
+`services/learn-card-network/brain-service/.env`; verify them before running it.
+Do not overwrite an existing `.env` or assume it points to local services.
+
+For the local LearnCard App Compose stack, use explicit host-side values:
+
+```dotenv
+NEO4J_URI=bolt://localhost:7687
+NEO4J_USERNAME=neo4j
+NEO4J_PASSWORD=this-is-the-password
+MONGO_URI=mongodb://localhost:27017/?replicaSet=rs0
+MONGO_DB_NAME=lca-api
+REDIS_HOST=localhost
+REDIS_PORT=6379
+DOMAIN_NAME=localhost%3A4000
+DEMO_PERSONA_SIGNING_AUTHORITY_ENDPOINT=http://localhost:5100/api
+# Disposable local-only seed. Never reuse this value in a shared environment.
+DEMO_PERSONA_SA_SEED=dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+```
+
+Start the stack, then publish the bundle from `apps/learn-card-app`:
 
 ```bash
 bun run seed:demo-persona student
 ```
 
-The app command delegates to the brain-service seeder, which loads
-`services/learn-card-network/brain-service/.env`. `NEO4J_URI`, the Neo4j credentials,
-`MONGO_URI`, `MONGO_DB_NAME`, and `DOMAIN_NAME` select the target stack.
-For staging or production, also supply `DEMO_PERSONA_SA_SEED` and
-`DEMO_PERSONA_SIGNING_AUTHORITY_ENDPOINT`. The root seed deterministically derives a
-distinct signing identity for every configured sample issuer. The command updates the
-issuer profiles, unsigned credential templates, and auto-boost relationships in place,
-then prints the stable contract URI to record in that tenant's
-`features.samplePersonas`. Running it again publishes credential-library content changes
-without duplicating profiles, Boosts, signing authorities, or contracts.
+Staging and production require their own secret 64-character hexadecimal
+`DEMO_PERSONA_SA_SEED`, the matching LCA API endpoint, and explicit Neo4j, MongoDB,
+Redis, and domain settings. Deploy the brain service first, run the seeder against
+the intended environment, verify the printed contract URI, and only then deploy app
+configuration that references it.
+
+The root seed deterministically derives a distinct signing identity for every
+configured sample issuer. The command updates issuer profiles, unsigned credential
+templates, and auto-boost relationships in place, then prints the stable contract URI
+to record in that tenant's `features.samplePersonas`. Running it again publishes
+credential-library content changes without duplicating profiles, Boosts, signing
+authorities, or contracts.
 
 ## Notes
 

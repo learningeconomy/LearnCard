@@ -9,10 +9,8 @@
  * AUTO_RECEIVE identifiers are stable. Re-running updates fixture content and
  * replaces the contract's auto-boost set without changing its URI.
  *
- * Local defaults target the LearnCard Docker stack. For staging/production,
- * provide the normal Neo4j/Mongo connection variables plus:
- *   DEMO_PERSONA_SA_SEED=<64 hex chars>
- *   DEMO_PERSONA_SIGNING_AUTHORITY_ENDPOINT=https://<lca-api>/api
+ * Every target requires explicit database, domain, signing-authority endpoint,
+ * and 64-character signing seed configuration.
  */
 
 import { fileURLToPath } from 'url';
@@ -49,27 +47,8 @@ const MONGO_DB_NAME = process.env.MONGO_DB_NAME ?? 'lca-api';
 const REDIS_HOST = process.env.REDIS_HOST ?? 'localhost';
 const REDIS_PORT = Number.parseInt(process.env.REDIS_PORT ?? '6379', 10);
 const BRAIN_DOMAIN = process.env.DOMAIN_NAME || 'localhost%3A4000';
-const SIGNING_AUTHORITY_ENDPOINT =
-    process.env.DEMO_PERSONA_SIGNING_AUTHORITY_ENDPOINT ?? 'http://localhost:5100/api';
-const SIGNING_AUTHORITY_SEED = process.env.DEMO_PERSONA_SA_SEED ?? 'd'.repeat(64);
-
-const LOCAL_DATABASE_HOSTS: Record<string, true> = {
-    localhost: true,
-    '127.0.0.1': true,
-    neo4j: true,
-    'lcn-neo4j': true,
-    mongodb: true,
-    'lcn-mongodb': true,
-};
-
-const isLocalDatabase = (uri: string): boolean => {
-    try {
-        return LOCAL_DATABASE_HOSTS[new URL(uri).hostname] === true;
-    } catch {
-        return false;
-    }
-};
-const IS_LOCAL_TARGET = isLocalDatabase(NEO4J_URI) && isLocalDatabase(MONGO_URI);
+const SIGNING_AUTHORITY_ENDPOINT = process.env.DEMO_PERSONA_SIGNING_AUTHORITY_ENDPOINT;
+const SIGNING_AUTHORITY_SEED = process.env.DEMO_PERSONA_SA_SEED;
 
 const personaId = process.argv[2];
 
@@ -77,17 +56,14 @@ if (!personaId) {
     throw new Error('Usage: bun scripts/seed-demo-persona.ts <personaId>');
 }
 
-if (!/^[0-9a-f]{64}$/i.test(SIGNING_AUTHORITY_SEED)) {
-    throw new Error('DEMO_PERSONA_SA_SEED must contain exactly 64 hexadecimal characters.');
+if (!SIGNING_AUTHORITY_SEED || !SIGNING_AUTHORITY_ENDPOINT) {
+    throw new Error(
+        'DEMO_PERSONA_SA_SEED and DEMO_PERSONA_SIGNING_AUTHORITY_ENDPOINT are required.'
+    );
 }
 
-if (
-    !IS_LOCAL_TARGET &&
-    (!process.env.DEMO_PERSONA_SA_SEED || !process.env.DEMO_PERSONA_SIGNING_AUTHORITY_ENDPOINT)
-) {
-    throw new Error(
-        'DEMO_PERSONA_SA_SEED and DEMO_PERSONA_SIGNING_AUTHORITY_ENDPOINT are required outside local development.'
-    );
+if (!/^[0-9a-f]{64}$/i.test(SIGNING_AUTHORITY_SEED)) {
+    throw new Error('DEMO_PERSONA_SA_SEED must contain exactly 64 hexadecimal characters.');
 }
 
 const transformProfileId = (raw: string): string => raw.toLowerCase().replace(/:/g, '%3A');
@@ -254,6 +230,10 @@ const main = async (): Promise<void> => {
         for (const issuer of issuerProfiles.values()) {
             const profileResult = await run(
                 `MERGE (p:Profile {profileId: $profileId})
+                 ON CREATE SET p.isSamplePersona = true
+                 WITH p
+                 WHERE p.isSamplePersona = true
+                   AND (p.did IS NULL OR p.did = $did)
                  SET p.displayName = $displayName,
                      p.shortBio = $shortBio,
                      p.image = $image,
@@ -268,6 +248,11 @@ const main = async (): Promise<void> => {
                 }
             );
             const storedSigningAuthorityDid = profileResult.records[0]?.get('did');
+            if (!storedSigningAuthorityDid) {
+                throw new Error(
+                    `Refusing to overwrite existing non-sample profile ${issuer.profileId}.`
+                );
+            }
             if (storedSigningAuthorityDid !== issuer.signingAuthorityDid) {
                 throw new Error(
                     `Profile ${issuer.profileId} did not retain its signing authority DID.`

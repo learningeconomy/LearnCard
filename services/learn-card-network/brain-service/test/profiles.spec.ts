@@ -63,6 +63,14 @@ describe('Profiles', () => {
             ).rejects.toThrow();
         });
 
+        it('should reserve sample persona profileIds', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.createProfile({
+                    profileId: 'Sample-college-board',
+                })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        });
+
         it('should not allow creating a profile with an email that has already been taken', async () => {
             await expect(
                 userA.clients.fullAuth.profile.createProfile({
@@ -387,6 +395,14 @@ describe('Profiles', () => {
             ).rejects.toThrow();
         });
 
+        it('should reserve sample persona profileIds', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.createServiceProfile({
+                    profileId: 'sample-college-board',
+                })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        });
+
         it('should not allow creating a profile with an email that has already been taken', async () => {
             await expect(
                 userA.clients.fullAuth.profile.createServiceProfile({
@@ -489,6 +505,16 @@ describe('Profiles', () => {
                     profileId: 'managed-usera',
                 })
             ).resolves.not.toThrow();
+        });
+
+        it('should reserve sample persona profileIds', async () => {
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+
+            await expect(
+                userA.clients.fullAuth.profile.createManagedServiceProfile({
+                    profileId: 'sample-college-board',
+                })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
         });
     });
 
@@ -1253,6 +1279,14 @@ describe('Profiles', () => {
             await expect(
                 userA.clients.fullAuth.profile.updateProfile({ profileId: 'usera' })
             ).rejects.toMatchObject({ code: 'CONFLICT' });
+        });
+
+        it('should not allow changing a profileId to the sample persona namespace', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.updateProfile({
+                    profileId: 'sample-college-board',
+                })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
         });
 
         it('should allow you to update your email', async () => {

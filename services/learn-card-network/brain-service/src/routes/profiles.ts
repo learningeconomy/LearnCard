@@ -101,8 +101,13 @@ import { verifyContactMethod } from '@accesslayer/contact-method/update';
 import { createProfileContactMethodRelationship } from '@accesslayer/contact-method/relationships/create';
 import { deleteAllProfileContactMethodRelationshipsExceptForProfileId } from '@accesslayer/contact-method/relationships/delete';
 
+const PublicProfileIdValidator = LCNProfileValidator.shape.profileId.refine(
+    profileId => !transformProfileId(profileId).startsWith('sample-'),
+    { message: 'Profile IDs beginning with "sample-" are reserved.' }
+);
+
 const UpdateProfileInputValidator = z.object({
-    profileId: z.string().optional(),
+    profileId: PublicProfileIdValidator.optional(),
     displayName: z.string().optional(),
     shortBio: z.string().optional(),
     bio: z.string().optional(),
@@ -154,7 +159,10 @@ export const profilesRouter = t.router({
             LCNProfileValidator.omit({
                 did: true,
                 isServiceProfile: true,
-            }).extend({ authToken: z.string().optional() })
+            }).extend({
+                profileId: PublicProfileIdValidator,
+                authToken: z.string().optional(),
+            })
         )
         .output(z.string())
         .mutation(async ({ input, ctx }) => {
@@ -243,7 +251,11 @@ export const profilesRouter = t.router({
             },
             requiredScope: 'profiles:write',
         })
-        .input(LCNProfileValidator.omit({ did: true, isServiceProfile: true }))
+        .input(
+            LCNProfileValidator.omit({ did: true, isServiceProfile: true }).extend({
+                profileId: PublicProfileIdValidator,
+            })
+        )
         .output(z.string())
         .mutation(async ({ input, ctx }) => {
             const profileExists = await checkIfProfileExists({ ...input, did: ctx.user.did });
@@ -281,7 +293,11 @@ export const profilesRouter = t.router({
             },
             requiredScope: 'profiles:write',
         })
-        .input(LCNProfileValidator.omit({ did: true, isServiceProfile: true }))
+        .input(
+            LCNProfileValidator.omit({ did: true, isServiceProfile: true }).extend({
+                profileId: PublicProfileIdValidator,
+            })
+        )
         .output(z.string())
         .mutation(async ({ input, ctx }) => {
             const { profileId } = input;
@@ -498,7 +514,7 @@ export const profilesRouter = t.router({
             } = input;
 
             const _selfProfile = ctx.user?.did ? await getProfileByDid(ctx.user.did) : null;
-            const selfProfile = includeSelf ? null : _selfProfile ?? null;
+            const selfProfile = includeSelf ? null : (_selfProfile ?? null);
 
             const blacklist =
                 (_selfProfile && (await getBlockedAndBlockedByIds(_selfProfile))) || [];
