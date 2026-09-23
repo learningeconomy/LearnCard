@@ -112,6 +112,9 @@ client.getQueryCache().subscribe(event => {
     if (!isLikelyTransportError(event.action.error)) return;
 
     const monitor = getAppConnectivityMonitor();
+    if (!monitor.getState().foreground || (typeof document !== 'undefined' && document.hidden)) {
+        return;
+    }
     const now = Date.now();
     if (now - lastTransportSampleAt >= TRANSPORT_SAMPLE_MIN_INTERVAL_MS) {
         lastTransportSampleAt = now;
@@ -275,20 +278,20 @@ const FullApp: React.FC = () => {
         const origins = firstPartyApiOrigins();
         if (origins.length === 0) return;
 
+        const monitor = getAppConnectivityMonitor();
         const observer = observeConnectionQuality({
             origins,
             excludePathnames: [CONNECTIVITY_PROBE_PATH],
-            isForeground: () => typeof document === 'undefined' || !document.hidden,
+            isForeground: () =>
+                monitor.getState().foreground &&
+                (typeof document === 'undefined' || !document.hidden),
             onForegroundChange: listener => {
-                // visibilitychange also fires when native webviews are
-                // backgrounded/resumed (Capacitor), so one listener covers
-                // web + native webview lifecycle.
-                const handler = () => {
-                    if (typeof document === 'undefined') return;
-                    listener(!document.hidden);
-                };
-                document.addEventListener('visibilitychange', handler);
-                return () => document.removeEventListener('visibilitychange', handler);
+                let foreground = monitor.getState().foreground;
+                return monitor.subscribe(snapshot => {
+                    if (snapshot.foreground === foreground) return;
+                    foreground = snapshot.foreground;
+                    listener(foreground);
+                });
             },
             onSample: sample => {
                 getAppConnectivityMonitor().reportSample(sample);

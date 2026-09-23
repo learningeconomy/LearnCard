@@ -391,7 +391,39 @@ describe('createAppConnectivityAdapter', () => {
         );
 
         await vi.waitFor(() => expect(monitor.started).toBe(1));
-        expect(monitor.active).toEqual([]); // never gated
+        expect(monitor.active).toEqual([true]); // unknown activity stays permissive
+    });
+
+    it('restores active state on a foreground remount', async () => {
+        const monitor = makeFakeMonitor();
+        monitor.setActive(false);
+        createAppConnectivityAdapter(makeDeps({ monitor, getInitialActivity: async () => true }));
+        await vi.waitFor(() => expect(monitor.started).toBe(1));
+        expect(monitor.active).toEqual([false, true]);
+    });
+
+    it('a newer lifecycle event wins over a stale initial activity lookup', async () => {
+        const monitor = makeFakeMonitor();
+        let resolveActivity!: (active: boolean) => void;
+        let onActivity!: (active: boolean) => void;
+        const adapter = createAppConnectivityAdapter(
+            makeDeps({
+                monitor,
+                getInitialActivity: () =>
+                    new Promise<boolean>(resolve => {
+                        resolveActivity = resolve;
+                    }),
+                addAppStateListener: async handler => {
+                    onActivity = handler;
+                    return { remove: vi.fn() };
+                },
+            })
+        );
+        onActivity(false);
+        resolveActivity(true);
+        await vi.waitFor(() => expect(monitor.started).toBe(1));
+        expect(monitor.active).toEqual([false]);
+        adapter.dispose();
     });
 
     it('native app state changes pause/resume via monitor.setActive', async () => {

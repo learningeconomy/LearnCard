@@ -11,7 +11,7 @@ Scope of this document: what Task 3 changed and why, every check that was actual
 Full-diff review of `62967ba0a..b251608c5` (Tasks 1–2) against the behavioral contract found the implementation sound on the critical axes:
 
 -   **No false offline on HTTP errors** — `probeConnectivity` classifies non-2xx / unexpected-body / invalid-URL / unsafe-origin as `inconclusive`; the monitor drops to permissive `unknown` and never sets `offline` from an application-level result.
--   **Race cancellation** — monitor generations supersede stale probe results (background-spanning, post-hint, post-stop); retry timers are cleared on every supersede path; verified-online clears all timers (no idle polling).
+-   **Race cancellation** — monitor generations supersede stale probe results (background-spanning, post-hint, post-stop); retry timers are cleared on every supersede path; verified-online clears network retry timers (no idle network polling).
 -   **Native remote URL** — the adapter probes `https://<tenant domain>/connectivity.txt` on native (development included), never the bundled origin; `disallowOrigins` belt-and-braces; plain HTTP restricted to loopback by the shared validator.
 -   **Advisory-only quality** — `quality`/`qualityReason` are read by no gating code (onlineManager bridge reads `status` only; AuthCoordinator reads `status` only).
 -   **No duplicate auth logic** — banner retry only requests a wallet upgrade on a _verified_ `online` result; BootGate always re-runs `initialize` (cached-key path preserved).
@@ -75,7 +75,7 @@ Legend: ✅ covered by automated tests in this repo · 🖥️ requires desktop 
 | 14  | Unsupported Resource Timing / PerformanceObserver (old webview)                                     | 📱 (old devices) | Observer is a safe no-op (`null`); app fully functional, only advisory warning absent                                                                                                                                                                | ✅ observer test (no ctor → null) · ⏳ verify on lowest supported device                                                                                                                |
 | 15  | Native WKWebView `PerformanceObserver` + Resource Timing support                                    | 📱 iOS           | **Must be manually verified** — iOS WebKit support for `responseStatus`/`deliveryType` fields is partial; observer degrades gracefully but evidence may be thinner on iOS                                                                            | ⏳ pending — explicit manual validation item                                                                                                                                            |
 | 16  | Android WebView Resource Timing `responseStatus`                                                    | 📱 Android       | **Must be manually verified** on device                                                                                                                                                                                                              | ⏳ pending                                                                                                                                                                              |
-| 17  | Battery/idle sanity: 10 min foreground online, no activity                                          | 🖥️/📱            | Zero probe traffic after verified online (no idle polling); no timers owned                                                                                                                                                                          | ✅ monitor test asserts 0 pending timers + no probes over 10 min virtual · ⏳ real-network confirm                                                                                      |
+| 17  | Battery/idle sanity: 10 min foreground online, no activity                                          | 🖥️/📱            | Zero probe traffic after verified online (no idle polling); no network retry timers; a local quality-expiry timer is allowed                                                                                                                         | ✅ monitor test asserts 0 pending timers + no probes over 10 min virtual · ⏳ real-network confirm                                                                                      |
 | 18  | Scouts app                                                                                          | —                | Out of scope this pass (ticket-optional); shared API in `learn-card-base` enables later adoption unchanged                                                                                                                                           | N/A (unchanged, by design)                                                                                                                                                              |
 
 ### Known heuristic limits (documented, by design)
@@ -132,3 +132,22 @@ apps/learn-card-app/src/components/network-listener/
 apps/learn-card-app/src/FullApp.tsx — onlineManager bridge (pre-existing), query-cache transport evidence, first-party observer
 apps/learn-card-app/public/connectivity.txt + netlify.toml + locales/{en,es,fr,ar}
 ```
+
+## Update 2026-09-23 — final corrections and timeout recovery
+
+Current branch: `codex/lc-2182-final-corrections`. The GLM-5.3-flash high dispatcher run reached its 40-minute limit during repeated typechecking (exit 124), preserving corrections at `0a6515753`. Final review and verification continued locally; the timeout does not mean its saved code was discarded.
+
+Corrections after Task 3:
+
+-   Observe real `resource` entries and filter fetch/XMLHttpRequest initiators. Earlier tests incorrectly accepted nonexistent entry types.
+-   Expire idle poor-quality warnings through one local timer without network polling; bound retained quality evidence.
+-   Pause all automatic probes in background, settle manual checks without hanging, and discard stale/background-spanning results.
+-   Initialize activity before probing, restore foreground on remount, and prevent delayed initial activity from overwriting newer lifecycle events.
+-   Use the shared monitor's web/native foreground transitions for observer epochs; ignore background query-error samples.
+-   Inject a deterministic performance clock in observer tests, removing a machine-speed-dependent fixture failure.
+
+Final executed focused tests: **140 passed** — 95 base connectivity tests, 7 auth-gate tests, and 38 app network-listener tests. Commands: `bun run test src/connectivity src/auth-status/useAuthGateState.test.tsx` from `packages/learn-card-base`; `bun run test:unit src/components/network-listener` from `apps/learn-card-app`. Safe-area gate passes (64 legacy allowlist entries). The dispatcher report also records a real Firefox smoke check of the actual observer: resource observation receives fetch timing, while the old fetch entry-type observation receives none; excluded probe timing is ignored. This is browser evidence, not physical native QA.
+
+Full application typechecking remains blocked by the previously recorded 2491 baseline workspace errors; no clean full-build claim is made. Physical iOS/Android transitions, visual warning QA, and tenant probe deployment verification remain pending as described above. Nothing has been pushed, merged, or deployed.
+
+Final formatting and diff-whitespace checks pass. Focused ESLint required an 8 GB heap after exhausting the default 4 GB; remaining errors are the existing monitor `startCycle` declaration ordering and two pre-existing `return-await` errors in FullApp storage code. The new foreground guard uses braces to satisfy the rule reported during this review.

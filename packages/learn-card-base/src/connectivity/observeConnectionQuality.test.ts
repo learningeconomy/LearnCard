@@ -83,6 +83,7 @@ const makeOptions = (
     return {
         origins: ['https://network.learncard.com', 'https://cloud.learncard.com'],
         onSample: vi.fn(),
+        performanceNow: () => 0,
         PerformanceObserverCtor: ctor as unknown as typeof PerformanceObserver,
         ...overrides,
     };

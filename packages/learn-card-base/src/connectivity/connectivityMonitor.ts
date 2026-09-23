@@ -390,7 +390,7 @@ export const createConnectivityMonitor = (
         },
 
         check: () => {
-            if (!running) return Promise.resolve(status);
+            if (!running || !foreground) return Promise.resolve(status);
             const waiter: CheckWaiter = {
                 seenOutcomes: appliedOutcomeCount,
                 resolve: () => undefined,

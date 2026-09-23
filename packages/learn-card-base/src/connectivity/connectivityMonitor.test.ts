@@ -717,6 +717,15 @@ describe('connectivityMonitor', () => {
     });
 
     describe('lifecycle and cleanup', () => {
+        it('settles a manual check requested while backgrounded without probing', async () => {
+            const { monitor, probeCalls } = createHarness();
+            monitor.setActive(false);
+            monitor.start();
+            await expect(monitor.check()).resolves.toBe('unknown');
+            expect(probeCalls).toHaveLength(0);
+            monitor.stop();
+        });
+
         it('discards in-flight work on stop() and does not apply it after restart', async () => {
             const { monitor, timers, probeCalls } = createHarness();
             monitor.start();

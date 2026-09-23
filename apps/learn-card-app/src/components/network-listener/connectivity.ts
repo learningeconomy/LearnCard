@@ -157,6 +157,7 @@ export const createAppConnectivityAdapter = (
     let disposed = false;
     /** True once ANY transport hint arrived — an in-flight snapshot is then stale. */
     let receivedListenerHint = false;
+    let receivedActivityHint = false;
     /** Handles successfully registered by THIS adapter (owned removals only). */
     const ownedHandles: RemovableHandle[] = [];
     const windowDisposers: (() => void)[] = [];
@@ -182,7 +183,7 @@ export const createAppConnectivityAdapter = (
             }
         }
         if (disposed) return;
-        if (!active) deps.monitor.setActive(false);
+        if (!receivedActivityHint && deps.getInitialActivity) deps.monitor.setActive(active);
         deps.monitor.start();
     })();
 
@@ -227,7 +228,10 @@ export const createAppConnectivityAdapter = (
         if (!deps.addAppStateListener) return;
         try {
             const handle = await deps.addAppStateListener(active => {
-                if (!disposed) deps.monitor.setActive(active);
+                if (!disposed) {
+                    receivedActivityHint = true;
+                    deps.monitor.setActive(active);
+                }
             });
             if (disposed) {
                 removeHandleQuietly(handle);
@@ -245,6 +249,7 @@ export const createAppConnectivityAdapter = (
         windowDisposers.push(
             deps.addWindowEventListener('visibilitychange', () => {
                 if (disposed) return;
+                receivedActivityHint = true;
                 deps.monitor.setActive(!hidden());
             })
         );
