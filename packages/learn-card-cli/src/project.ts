@@ -2,7 +2,11 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createInterface } from 'node:readline/promises';
 import { randomUUID } from 'node:crypto';
-import { initLearnCard, type NetworkLearnCardFromSeed } from '@learncard/init';
+import {
+    initLearnCard,
+    type DidWebNetworkLearnCardFromSeed,
+    type NetworkLearnCardFromSeed,
+} from '@learncard/init';
 import { initLCALearnCard, type LCALearnCard } from '@learncard/lca-api-plugin';
 import { generateRandomSeed } from './random';
 import { out } from './out';
@@ -35,9 +39,11 @@ export interface ProjectOptions {
     network?: string;
     didkit?: Promise<Buffer>;
     json?: boolean;
+    readOnly?: boolean;
 }
 
 export type NetworkCard = NetworkLearnCardFromSeed['returnValue'];
+export type DidWebCard = DidWebNetworkLearnCardFromSeed['returnValue'];
 
 export const parseEnv = (text: string): Record<string, string> => {
     const env: Record<string, string> = {};
@@ -189,6 +195,16 @@ export const createPrompts = (yes?: boolean) => {
 };
 
 export const ensureIdentity = async (project: Project, options: ProjectOptions) => {
+    if (
+        project.env.PROFILE_ID &&
+        options.profileId &&
+        options.profileId !== project.env.PROFILE_ID
+    ) {
+        throw new Error(
+            `This folder's .env is already the profile "${project.env.PROFILE_ID}"; --profile-id ${options.profileId} would not change that. ` +
+                `To act as a profile you manage from here, use --as ${options.profileId}. To create a separate identity, run from a new folder.`
+        );
+    }
     const existingProfileId = project.env.PROFILE_ID || options.profileId;
     let displayName = options.name ?? project.env.DISPLAY_NAME ?? '';
     if (!existingProfileId && !displayName) {
@@ -220,18 +236,22 @@ export const ensureIdentity = async (project: Project, options: ProjectOptions) 
         PROFILE_ID: profileId,
         ...(existingProfileId ? {} : { DISPLAY_NAME: displayName }),
     });
-    const gitignorePath = path.join(path.dirname(project.envPath), '.gitignore');
+    await ensureGitignored(path.dirname(project.envPath), '.env');
+    return { seed, profileId, displayName };
+};
+
+export const ensureGitignored = async (dir: string, entry: string): Promise<void> => {
+    const gitignorePath = path.join(dir, '.gitignore');
     const gitignore = await readOptional(gitignorePath);
     if (await fs.stat(gitignorePath).catch(() => null)) {
-        if (!gitignore.split('\n').some(line => line.trim() === '.env')) {
-            await fs.writeFile(gitignorePath, `${gitignore.replace(/\n?$/, '\n')}.env\n`);
-            out.log('Added .env to .gitignore');
+        if (!gitignore.split('\n').some(line => line.trim() === entry)) {
+            await fs.writeFile(gitignorePath, `${gitignore.replace(/\n?$/, '\n')}${entry}\n`);
+            out.log(`Added ${entry} to .gitignore`);
         }
     } else {
-        await fs.writeFile(gitignorePath, '.env\n');
-        out.log('Created .gitignore with .env');
+        await fs.writeFile(gitignorePath, `${entry}\n`);
+        out.log(`Created .gitignore with ${entry}`);
     }
-    return { seed, profileId, displayName };
 };
 
 export const PRODUCTION_NETWORK = 'https://network.learncard.com/trpc';
@@ -350,7 +370,7 @@ export async function connect(
     if (!seed) throw new Error('Create an identity before connecting.');
     const services = resolveServices(project.env, options.network);
     assertProjectNetwork(project, services.network);
-    if (services.network !== PRODUCTION_NETWORK || project.env.NETWORK_URL) {
+    if (!options.readOnly && (services.network !== PRODUCTION_NETWORK || project.env.NETWORK_URL)) {
         await saveProject(project, {
             NETWORK_URL: services.network === PRODUCTION_NETWORK ? '' : services.network,
         });
@@ -372,6 +392,52 @@ export async function connect(
               network: services.network === PRODUCTION_NETWORK ? true : services.network,
           });
 }
+
+/**
+ * Open a second wallet on the same seed that authenticates as a `did:web` the
+ * network issued to this seed (e.g. a profile manager). Manager-only routes
+ * reject the seed's base did:key, so `connect()` alone cannot call them.
+ */
+export const connectAsDidWeb = async (
+    project: Project,
+    options: ProjectOptions,
+    didWeb: string
+): Promise<DidWebCard> => {
+    const seed = project.env.SECURE_SEED;
+    if (!seed) throw new Error('Create an identity before connecting.');
+    const services = resolveServices(project.env, options.network);
+    return initLearnCard({
+        seed,
+        network: services.network === PRODUCTION_NETWORK ? true : services.network,
+        didWeb,
+        ...(services.cloud && { cloud: { url: services.cloud } }),
+        ...(options.didkit && { didkit: options.didkit }),
+    });
+};
+
+export const connectAsManaged = async (
+    project: Project,
+    options: ProjectOptions,
+    managedProfileId: string
+): Promise<DidWebCard> => {
+    const managerDid = project.env.ORG_PROFILE_MANAGER_DID;
+    if (!managerDid) {
+        throw new Error(
+            `--as ${managedProfileId} needs a profile manager in this folder. Run \`org apply\` with a profileManager section first.`
+        );
+    }
+    const manager = await connectAsDidWeb(project, options, managerDid);
+    let cursor: string | undefined;
+    do {
+        const page = await manager.invoke.getManagedProfiles({ limit: 100, cursor });
+        const match = page.records.find(record => record.profileId === managedProfileId);
+        if (match) return connectAsDidWeb(project, options, match.did);
+        cursor = page.hasMore ? (page.cursor ?? undefined) : undefined;
+    } while (cursor);
+    throw new Error(
+        `"${managedProfileId}" is not a profile managed from this folder. Add it under profileManager.managed in your org spec and run \`org apply\`.`
+    );
+};
 
 export const ensureProfile = async (
     learnCard: { invoke: Pick<NetworkCard['invoke'], 'getProfile' | 'createProfile'> },

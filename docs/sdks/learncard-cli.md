@@ -1,6 +1,66 @@
 # LearnCard CLI
 
-**LearnCard CLI** is an easy to use node REPL that instantiates a Learn Card wallet for you and gives you all the tools you need to easily play around with the Learn Card SDK!
+`npx @learncard/cli` is two things: a set of commands for setting up and operating an issuer (below), and an interactive REPL for exploring the SDK ([further down](#interactive-repl)).
+
+## Commands
+
+Every command reads its identity from the `.env` in the current folder — **one folder is one profile on one network**. `--network staging` (or a tRPC URL) targets a non-production network; `--json` prints a single JSON result on stdout; `-y` accepts defaults.
+
+| Command                                                                                      | Does                                                                                                                                                                                                                                                                                    |
+| :------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `send <recipient>`                                                                           | Sends a badge to an email or phone (via the Universal Inbox, with a claim link) or to a profile ID or DID (delivered directly). Signs through your registered signing authority when one exists; `--no-template` signs locally. `--as <profileId>` sends as a profile you manage.       |
+| `org apply <file>`                                                                           | Makes the network match an [org spec](#org-spec). Idempotent. `--dry-run` reads only; `--secrets-out <path>` is where new service-account tokens go.                                                                                                                                    |
+| `doctor`                                                                                     | Network preflight: identity, signing service, token scopes, signing authority (test-sign + verify), `did:web`, credential refresh, and optional webhook POST (`--webhook-url`). Trusted Registry is a skipped manual check. Does not provision resources. `--strict` fails on warnings. |
+| `whoami`                                                                                     | This folder's profile, DID, signing authority, manager DID, and every profile `--as` can target.                                                                                                                                                                                        |
+| `promote --from <net> --to <net> --org <file>`                                               | Applies the spec on a second network in `.learncard/<network>/`. Only the seed and profile ID carry over; tokens land in `<target>/secrets.env`; runs `doctor`. `--dry-run` writes nothing.                                                                                             |
+| `status [activityId]`                                                                        | Recent sends, or the claim history of one.                                                                                                                                                                                                                                              |
+| `inbox list`                                                                                 | Sent inbox credentials. `--status PENDING\|ISSUED\|EXPIRED`, `--since 7d`, `--as <profileId>`.                                                                                                                                                                                          |
+| `refresh history <refreshId>`                                                                | Versions published for a [managed credential](../how-to-guides/issue-and-refresh-a-managed-credential.md).                                                                                                                                                                              |
+| `clr validate <file>`                                                                        | Zod-validates a CLR 2.0 credential and lints it as `--profile provisional` or `official`. `--dry-run-sign` signs and verifies without delivering.                                                                                                                                       |
+| `setup-signing`, `token`, `webhook`, `verify`, `revoke`, `open`, `init`, `export`, `restore` | Single-purpose helpers; `--help` on each.                                                                                                                                                                                                                                               |
+
+`LEARNCARD_AS=<profileId>` is the environment fallback for `--as` on every command that accepts it.
+
+A newly generated `send --as` script reads `MANAGED_DID`, saved in `.env`, and stays bound to that managed issuer and network. It rejects a missing or changed DID. Existing scripts are left untouched with a warning that they may use a different issuer.
+
+### Org spec
+
+The file `org apply` and `promote` read. YAML or JSON. Only `issuer` is required. Worked examples: [`packages/learn-card-cli/examples`](https://github.com/learningeconomy/LearnCard/tree/main/packages/learn-card-cli/examples); guide: [Bootstrap an Issuer Organization](../how-to-guides/bootstrap-an-issuer-org.md).
+
+| Field                          | Type                                    | Notes                                                                                                                                                                                                                                                              |
+| :----------------------------- | :-------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `issuer.profileId`             | string                                  | 3–40 chars: lowercase letters, digits, hyphens. Must match the folder's `PROFILE_ID` if one exists.                                                                                                                                                                |
+| `issuer.displayName`           | string                                  | Updated in place if it differs.                                                                                                                                                                                                                                    |
+| `issuer.branding`              | object                                  | See _branding_ below.                                                                                                                                                                                                                                              |
+| `issuer.signingAuthority.type` | `learncard-hosted` \| `self-hosted`     | Hosted: LearnCard creates and registers the key. Self-hosted: also needs `endpoint` (https) and `did`. A registered self-hosted signer whose DID differs from `did` is reported as drift.                                                                          |
+| `issuer.signingAuthority.name` | string                                  | ≤15 chars, lowercase/digits/hyphens.                                                                                                                                                                                                                               |
+| `profileManager.displayName`   | string                                  | Creates a profile manager owned by the issuer. Its DID is saved to `.env` as `ORG_PROFILE_MANAGER_DID`. Updated in place if it differs.                                                                                                                            |
+| `profileManager.managed[]`     | `{ profileId, displayName, branding? }` | Profiles with no seed of their own; act as them with `--as`. `displayName` is updated in place if it differs.                                                                                                                                                      |
+| `serviceAccounts[]`            | `{ name, scopes[], expiresAt? }`        | One auth grant + API token each. Tokens go to `--secrets-out` as `NAME=…` (upper-cased, `-`→`_`; normalized keys must be unique). Missing token keys are re-issued. Scope/expiry drift errors with a revoke command before replacement; dry-run reports `drifted`. |
+| `webhooks[].url`               | https URL                               | Not registered on the network (webhooks are per issuance). The first is saved as `WEBHOOK_URL` in `.env` for `doctor` and your code.                                                                                                                               |
+
+**branding** (on `issuer` and on each `managed[]` entry) — every field optional; only listed fields are compared, `display` is merged not replaced:
+
+| Field                                                | Type                                    | Notes                                                                                 |
+| :--------------------------------------------------- | :-------------------------------------- | :------------------------------------------------------------------------------------ |
+| `image`, `heroImage`                                 | https URL                               | Local paths are rejected with a hint; host the file and use its URL.                  |
+| `shortBio`                                           | string ≤280                             |                                                                                       |
+| `bio`, `websiteLink`                                 | string / URL                            |                                                                                       |
+| `type`                                               | `organization` \| `service` \| `person` |                                                                                       |
+| `display.*Color`                                     | `#RRGGBB`                               | `backgroundColor`, `fontColor`, `accentColor`, `accentFontColor`, `idBackgroundColor` |
+| `display.*Image`, `display.fade*`, `display.repeat*` | https URL / boolean                     | `backgroundImage`, `idBackgroundImage` and their fade/repeat toggles                  |
+
+### Files the CLI keeps
+
+| File                               | Holds                                                                                                                                                                                            |
+| :--------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.env`                             | `SECURE_SEED`, `PROFILE_ID`, `NETWORK_URL`, plus per-network facts `org apply` records (`SIGNING_AUTHORITY_*`, `ORG_PROFILE_MANAGER_DID`, `WEBHOOK_URL`, `TEMPLATE_URI`). Mode 0600, gitignored. |
+| `secrets.env` (or `--secrets-out`) | Service-account tokens for your backend. Mode 0600, gitignored. `org apply --secrets-out` reads existing keys to determine whether a token needs re-issuing.                                     |
+| `.learncard/<network>/`            | Created by `promote`: a sibling project folder for the other network.                                                                                                                            |
+
+## Interactive REPL
+
+**LearnCard CLI** is also an easy to use node REPL that instantiates a Learn Card wallet for you and gives you all the tools you need to easily play around with the Learn Card SDK!
 
 ### Usage
 
