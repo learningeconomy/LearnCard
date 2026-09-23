@@ -67,7 +67,7 @@ import { ProfileType, SigningAuthorityForUserValidator } from 'types/profile';
 
 import { t, openRoute, didAndChallengeRoute, profileRoute, didRoute } from '@routes';
 
-import { transformProfileId } from '@helpers/profile.helpers';
+import { PublicProfileIdValidator, transformProfileId } from '@helpers/profile.helpers';
 import { deleteDidDocForProfile } from '@cache/did-docs';
 import {
     isInviteAlreadySetForProfile,
@@ -100,11 +100,6 @@ import { getContactMethodByValue } from '@accesslayer/contact-method/read';
 import { verifyContactMethod } from '@accesslayer/contact-method/update';
 import { createProfileContactMethodRelationship } from '@accesslayer/contact-method/relationships/create';
 import { deleteAllProfileContactMethodRelationshipsExceptForProfileId } from '@accesslayer/contact-method/relationships/delete';
-
-const PublicProfileIdValidator = LCNProfileValidator.shape.profileId.refine(
-    profileId => !transformProfileId(profileId).startsWith('sample-'),
-    { message: 'Profile IDs beginning with "sample-" are reserved.' }
-);
 
 const UpdateProfileInputValidator = z.object({
     profileId: PublicProfileIdValidator.optional(),

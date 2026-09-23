@@ -5,7 +5,15 @@ import {
     ProfileVisibilityEnum,
 } from '@learncard/types';
 import { getClient, getUser } from './helpers/getClient';
-import { Profile, SigningAuthority, Credential, Boost, ClaimHook, ContactMethod } from '@models';
+import {
+    Profile,
+    ProfileManager,
+    SigningAuthority,
+    Credential,
+    Boost,
+    ClaimHook,
+    ContactMethod,
+} from '@models';
 import cache from '@cache';
 import { testVc, sendBoost, testVp, testUnsignedBoost } from './helpers/send';
 
@@ -26,6 +34,30 @@ describe('Profiles', () => {
         userA = await getUser();
         userB = await getUser('b'.repeat(64));
         userC = await getUser('c'.repeat(64));
+    });
+
+    describe('createManagedProfile', () => {
+        beforeEach(async () => {
+            await ProfileManager.delete({ detach: true, where: {} });
+            await Profile.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+        });
+
+        afterAll(async () => {
+            await ProfileManager.delete({ detach: true, where: {} });
+            await Profile.delete({ detach: true, where: {} });
+        });
+
+        it('should reserve sample persona profileIds', async () => {
+            const managerDid = await userA.clients.fullAuth.profileManager.createProfileManager({});
+            const managerClient = getClient({ did: managerDid, isChallengeValid: true });
+
+            await expect(
+                managerClient.profileManager.createManagedProfile({
+                    profileId: 'Sample-college-board',
+                })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        });
     });
 
     describe('createProfile', () => {
