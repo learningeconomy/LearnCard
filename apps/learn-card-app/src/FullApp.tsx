@@ -1,9 +1,14 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import { createBrowserHistory } from 'history';
 import { IonReactRouter } from '@ionic/react-router';
 import { QueryClient, onlineManager } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
-import { connectivityStore } from 'learn-card-base';
+import { connectivityStore, networkStore } from 'learn-card-base';
+import {
+    isLikelyTransportError,
+    observeConnectionQuality,
+    CONNECTIVITY_PROBE_PATH,
+} from 'learn-card-base';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
 import { IonApp } from '@ionic/react';
 import { LoadingPageDumb } from './pages/loadingPage/LoadingPage';
@@ -26,6 +31,10 @@ import AppUrlListener from './components/app-url-listener/AppUrlListener';
 import PresentVcModalListener from './components/modalListener/ModalListener';
 import QRCodeScannerListener from './components/qrcode-scanner-listener/QRCodeScannerListener';
 import NetworkListener from './components/network-listener/NetworkListener';
+import {
+    getAppConnectivityMonitor,
+    requestConnectivityCheck,
+} from './components/network-listener/connectivity';
 import CredentialSyncListener from './components/credential-sync-listener/CredentialSyncListener';
 import CredentialRefreshListener from './components/credential-refresh-listener/CredentialRefreshListener';
 import NotificationToastListener from './components/notification-toast-listener/NotificationToastListener';
@@ -80,6 +89,61 @@ onlineManager.setEventListener(setOnline => {
 
     return unsubscribe;
 });
+
+// --- Advisory transport-error evidence (LC-2182) -------------------------
+//
+// React Query cache errors that pass a deliberately NARROW transport
+// classification (see `isLikelyTransportError` — browser fetch failures only;
+// NEVER 401/403/4xx/5xx, cancellations, or arbitrary application errors) feed
+// instability evidence into the quality policy and trigger a rate-limited,
+// coalesced reachability probe. `queryCache.subscribe` is additive — existing
+// cache callbacks are preserved. A successful probe says nothing about
+// brain-service health; classification stays conservative on purpose.
+const TRANSPORT_SAMPLE_MIN_INTERVAL_MS = 2_000; // dedupe React Query retry bursts
+const TRANSPORT_PROBE_MIN_INTERVAL_MS = 10_000; // rate-limit the reachability probe
+let lastTransportSampleAt = 0;
+let lastTransportProbeAt = 0;
+
+client.queryCache.subscribe(event => {
+    if (event.type !== 'updated' || event.action.type !== 'error') return;
+    if (!isLikelyTransportError(event.action.error)) return;
+
+    const monitor = getAppConnectivityMonitor();
+    const now = Date.now();
+    if (now - lastTransportSampleAt >= TRANSPORT_SAMPLE_MIN_INTERVAL_MS) {
+        lastTransportSampleAt = now;
+        monitor.reportSample({ at: now, ok: false });
+    }
+
+    // No probes from the background, and never more than one per interval.
+    if (now - lastTransportProbeAt < TRANSPORT_PROBE_MIN_INTERVAL_MS) return;
+    if (typeof document !== 'undefined' && document.hidden) return;
+    lastTransportProbeAt = now;
+    void requestConnectivityCheck().catch(() => undefined);
+});
+
+/**
+ * Passive quality evidence from REAL requests: Resource Timing for the
+ * configured first-party API origins (brain service + LearnCloud). Adds no
+ * traffic, patches nothing; unsupported engines get a safe no-op. Native
+ * webview support must be manually verified on device.
+ */
+const firstPartyApiOrigins = (): string[] => {
+    const origins = new Set<string>();
+    for (const url of [
+        networkStore.get.networkUrl(),
+        networkStore.get.networkApiUrl(),
+        networkStore.get.cloudUrl(),
+        networkStore.get.xapiUrl(),
+    ]) {
+        try {
+            origins.add(new URL(url).origin);
+        } catch {
+            // Skip malformed entries; store values are tenant-config driven.
+        }
+    }
+    return [...origins];
+};
 
 const persister = createAsyncStoragePersister({
     storage: {
@@ -197,6 +261,25 @@ const FullApp: React.FC = () => {
     const showScannerOverlay = QRCodeScannerStore.useTracked.showScanner();
     const scannerMode = QRCodeScannerStore.useTracked.mode();
     const isRecipientScanner = scannerMode === 'recipient';
+
+    // Passive first-party latency evidence for the advisory slow/unstable
+    // warning. The reachability probe itself is excluded (it is monitored
+    // directly); only completed, non-HTTP-error, foreground entries count.
+    useEffect(() => {
+        const origins = firstPartyApiOrigins();
+        if (origins.length === 0) return;
+
+        const observer = observeConnectionQuality({
+            origins,
+            excludePathnames: [CONNECTIVITY_PROBE_PATH],
+            isForeground: () => typeof document === 'undefined' || !document.hidden,
+            onSample: sample => {
+                getAppConnectivityMonitor().reportSample(sample);
+            },
+        });
+
+        return () => observer?.disconnect();
+    }, []);
 
     return (
         <PersistQueryClientProvider

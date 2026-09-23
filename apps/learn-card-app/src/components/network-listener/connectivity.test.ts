@@ -1,0 +1,482 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
+const { isNativePlatform } = vi.hoisted(() => ({ isNativePlatform: vi.fn(() => false) }));
+
+vi.mock('@capacitor/core', () => ({
+    Capacitor: { isNativePlatform: () => isNativePlatform() },
+}));
+
+vi.mock('@capacitor/network', () => ({
+    Network: {
+        addListener: vi.fn(),
+        getStatus: vi.fn(),
+    },
+}));
+
+vi.mock('@capacitor/app', () => ({
+    App: {
+        addListener: vi.fn(),
+    },
+}));
+
+vi.mock('../../config/bootstrapTenantConfig', () => ({
+    getResolvedTenantConfig: vi.fn(() => ({ domain: 'learncard.app' })),
+}));
+
+import { Network } from '@capacitor/network';
+import { App } from '@capacitor/app';
+import { connectivityStore } from 'learn-card-base/stores/connectivityStore';
+import {
+    attachConnectivityMonitorToStore,
+    createConnectivityMonitor,
+} from 'learn-card-base/connectivity/connectivityMonitor';
+
+import {
+    resolveProbeTarget,
+    createAppConnectivityAdapter,
+    attachAppConnectivity,
+    requestConnectivityCheck,
+    getAppConnectivityMonitor,
+    getAppProbeTarget,
+    __resetAppConnectivityForTests,
+    type AppConnectivityAdapterDeps,
+    type MonitorFacade,
+    type RemovableHandle,
+} from './connectivity';
+
+// jsdom's default origin — do not fight `window.location` redefinition.
+const JSDOM_ORIGIN = 'http://localhost:3000';
+
+// --- Fake monitor -----------------------------------------------------------
+
+const makeFakeMonitor = (): MonitorFacade & {
+    reports: boolean[];
+    active: boolean[];
+    checks: number;
+    started: number;
+    stopped: number;
+} => {
+    const fake = {
+        reports: [] as boolean[],
+        active: [] as boolean[],
+        checks: 0,
+        started: 0,
+        stopped: 0,
+        reportTransport: (connected: boolean) => fake.reports.push(connected),
+        setActive: (active: boolean) => fake.active.push(active),
+        check: () => {
+            fake.checks += 1;
+            return Promise.resolve('online' as const);
+        },
+        start: () => {
+            fake.started += 1;
+        },
+        stop: () => {
+            fake.stopped += 1;
+        },
+    };
+    return fake;
+};
+
+// --- Deps factory -----------------------------------------------------------
+
+const makeDeps = (
+    overrides: Partial<AppConnectivityAdapterDeps> = {}
+): AppConnectivityAdapterDeps => ({
+    monitor: makeFakeMonitor(),
+    isNative: () => false,
+    addNetworkStatusListener: async () => ({ remove: vi.fn() }),
+    getInitialTransportState: async () => true,
+    addAppStateListener: null,
+    ...overrides,
+});
+
+// Collected per-deps listener registrations, keyed off the deps object itself.
+const listenerRegistry = new WeakMap<
+    AppConnectivityAdapterDeps,
+    { handler: (connected: boolean) => void; handle: RemovableHandle }[]
+>();
+
+const registeredListeners = (deps: AppConnectivityAdapterDeps) => {
+    let list = listenerRegistry.get(deps);
+    if (!list) {
+        list = [];
+        listenerRegistry.set(deps, list);
+    }
+    return list;
+};
+
+const trackListenerDeps = (deps: AppConnectivityAdapterDeps): AppConnectivityAdapterDeps => ({
+    ...deps,
+    addNetworkStatusListener: async handler => {
+        const handle: RemovableHandle = { remove: vi.fn() };
+        registeredListeners(deps).push({ handler, handle });
+        return handle;
+    },
+});
+
+beforeEach(() => {
+    vi.clearAllMocks();
+    isNativePlatform.mockReturnValue(false);
+});
+
+afterEach(() => {
+    __resetAppConnectivityForTests();
+});
+
+// ---------------------------------------------------------------------------
+
+describe('resolveProbeTarget', () => {
+    it('native always targets the remote HTTPS tenant domain — even in development', () => {
+        const target = resolveProbeTarget({
+            isNative: true,
+            tenantDomain: 'learncard.app',
+            appOrigin: 'http://localhost:3000',
+        });
+        expect(target).not.toBeNull();
+        expect(target!.url).toBe('https://learncard.app/connectivity.txt');
+    });
+
+    it('native never probes the bundled origin (belt and braces)', () => {
+        const target = resolveProbeTarget({
+            isNative: true,
+            tenantDomain: 'localhost',
+            appOrigin: 'https://localhost',
+        });
+        expect(target).not.toBeNull();
+        const parsed = new URL(target!.url);
+        expect(['https://localhost', 'http://localhost', 'capacitor://localhost']).toContain(
+            parsed.origin
+        );
+        expect(target!.disallowOrigins).toContain('https://localhost');
+        expect(target!.disallowOrigins).toContain('capacitor://localhost');
+        expect(target!.disallowOrigins).toContain('ionic://localhost');
+    });
+
+    it('native without a tenant domain yields no target (inconclusive, permissive)', () => {
+        expect(
+            resolveProbeTarget({ isNative: true, tenantDomain: null, appOrigin: null })
+        ).toBeNull();
+    });
+
+    it('web targets the current origin', () => {
+        const target = resolveProbeTarget({
+            isNative: false,
+            tenantDomain: 'learncard.app',
+            appOrigin: 'https://learncard.app',
+        });
+        expect(target!.url).toBe('https://learncard.app/connectivity.txt');
+    });
+
+    it('web with no origin (SSR-ish) yields no target', () => {
+        expect(
+            resolveProbeTarget({ isNative: false, tenantDomain: null, appOrigin: null })
+        ).toBeNull();
+    });
+});
+
+describe('getAppProbeTarget (singleton wiring)', () => {
+    it('web: probes the current (jsdom) origin over its own scheme', () => {
+        const target = getAppProbeTarget();
+        expect(target).not.toBeNull();
+        expect(target!.url).toBe(`${JSDOM_ORIGIN}/connectivity.txt`);
+    });
+
+    it('native: probes the remote HTTPS tenant domain even though the dev origin is localhost', () => {
+        isNativePlatform.mockReturnValue(true);
+        expect(getAppProbeTarget()!.url).toBe('https://learncard.app/connectivity.txt');
+    });
+
+    it('native before tenant config is bootstrapped: no target, stays permissive', async () => {
+        isNativePlatform.mockReturnValue(true);
+        const { getResolvedTenantConfig } = await import('../../config/bootstrapTenantConfig');
+        (getResolvedTenantConfig as ReturnType<typeof vi.fn>).mockImplementationOnce(() => {
+            throw new Error('not bootstrapped yet');
+        });
+        expect(getAppProbeTarget()).toBeNull();
+    });
+});
+
+describe('createAppConnectivityAdapter', () => {
+    it('starts the monitor and registers the listener BEFORE the initial snapshot', async () => {
+        const callOrder: string[] = [];
+        const monitor = makeFakeMonitor();
+        const deps = trackListenerDeps(
+            makeDeps({
+                monitor,
+                addNetworkStatusListener: async handler => {
+                    callOrder.push('addListener');
+                    const handle: RemovableHandle = { remove: vi.fn() };
+                    registeredListeners(deps).push({ handler, handle });
+                    return handle;
+                },
+                getInitialTransportState: async () => {
+                    callOrder.push('getStatus');
+                    return true;
+                },
+            })
+        );
+
+        createAppConnectivityAdapter(deps);
+        await vi.waitFor(() => expect(monitor.reports).toEqual([true]));
+
+        expect(monitor.started).toBe(1);
+        expect(callOrder).toEqual(['addListener', 'getStatus']);
+    });
+
+    it('forwards transport hints from the listener to the monitor', async () => {
+        const monitor = makeFakeMonitor();
+        const deps = trackListenerDeps(makeDeps({ monitor }));
+
+        createAppConnectivityAdapter(deps);
+        await vi.waitFor(() => expect(registeredListeners(deps)).toHaveLength(1));
+
+        registeredListeners(deps)[0].handler({ connected: false } as never);
+        registeredListeners(deps)[0].handler({ connected: true } as never);
+        expect(monitor.reports).toEqual([true, false, true]);
+    });
+
+    it('dispose before the listener resolves removes the handle and reports nothing', async () => {
+        const monitor = makeFakeMonitor();
+        let resolveListener: (handle: RemovableHandle) => void = () => undefined;
+        const deps = makeDeps({
+            monitor,
+            addNetworkStatusListener: () =>
+                new Promise<RemovableHandle>(resolve => {
+                    resolveListener = resolve;
+                }),
+        });
+
+        const adapter = createAppConnectivityAdapter(deps);
+        adapter.dispose();
+        expect(monitor.stopped).toBe(1);
+
+        const handle: RemovableHandle = { remove: vi.fn() };
+        resolveListener(handle);
+        await vi.waitFor(() => expect(handle.remove).toHaveBeenCalled());
+
+        expect(monitor.reports).toEqual([]);
+    });
+
+    it('a late initial snapshot after dispose is ignored', async () => {
+        const monitor = makeFakeMonitor();
+        let resolveSnapshot: (connected: boolean) => void = () => undefined;
+        const deps = trackListenerDeps(
+            makeDeps({
+                monitor,
+                getInitialTransportState: () =>
+                    new Promise<boolean>(resolve => {
+                        resolveSnapshot = resolve;
+                    }),
+            })
+        );
+
+        const adapter = createAppConnectivityAdapter(deps);
+        await vi.waitFor(() => expect(registeredListeners(deps)).toHaveLength(1));
+
+        adapter.dispose();
+        expect(monitor.stopped).toBe(1);
+
+        resolveSnapshot(false); // stale snapshot arriving after dispose
+        await new Promise(resolve => setTimeout(resolve, 10));
+        expect(monitor.reports).toEqual([]); // nothing was ever reported
+    });
+
+    it('listener setup failure does not reject globally and the monitor still starts', async () => {
+        const monitor = makeFakeMonitor();
+        createAppConnectivityAdapter(
+            makeDeps({
+                monitor,
+                addNetworkStatusListener: async () => {
+                    throw new Error('listener registration exploded');
+                },
+            })
+        );
+
+        // Give the async registration a chance to run; no unhandled rejection.
+        await new Promise(resolve => setTimeout(resolve, 10));
+        expect(monitor.started).toBe(1);
+        expect(monitor.reports).toEqual([]);
+    });
+
+    it('native app state changes pause/resume via monitor.setActive', async () => {
+        const monitor = makeFakeMonitor();
+        const appHandlers: ((state: { isActive: boolean }) => void)[] = [];
+        createAppConnectivityAdapter(
+            makeDeps({
+                monitor,
+                isNative: () => true,
+                addAppStateListener: async handler => {
+                    appHandlers.push(handler);
+                    return { remove: vi.fn() };
+                },
+            })
+        );
+        await vi.waitFor(() => expect(appHandlers).toHaveLength(1));
+
+        appHandlers[0]({ isActive: false });
+        appHandlers[0]({ isActive: true });
+        expect(monitor.active).toEqual([false, true]);
+    });
+
+    it('web focus triggers a coalesced check; visibility drives setActive', () => {
+        const monitor = makeFakeMonitor();
+        let hidden = false;
+        const windowListeners = new Map<string, () => void>();
+        createAppConnectivityAdapter(
+            makeDeps({
+                monitor,
+                addWindowEventListener: (type, handler) => {
+                    windowListeners.set(type, handler);
+                    return () => windowListeners.delete(type);
+                },
+                isDocumentHidden: () => hidden,
+            })
+        );
+
+        windowListeners.get('focus')!();
+        expect(monitor.checks).toBe(1);
+
+        windowListeners.get('visibilitychange')!(); // visible
+        expect(monitor.active).toEqual([true]);
+
+        hidden = true;
+        windowListeners.get('visibilitychange')!(); // hidden
+        expect(monitor.active).toEqual([true, false]);
+
+        hidden = false;
+        windowListeners.get('focus')!(); // still runs checks when visible
+        expect(monitor.checks).toBe(2);
+    });
+
+    it('focus while the document is hidden does not check', () => {
+        const monitor = makeFakeMonitor();
+        const windowListeners = new Map<string, () => void>();
+        createAppConnectivityAdapter(
+            makeDeps({
+                monitor,
+                addWindowEventListener: (type, handler) => {
+                    windowListeners.set(type, handler);
+                    return () => undefined;
+                },
+                isDocumentHidden: () => true,
+            })
+        );
+
+        windowListeners.get('focus')!();
+        expect(monitor.checks).toBe(0);
+    });
+
+    it('dispose removes only owned handles, disposes window listeners, stops monitor once', async () => {
+        const monitor = makeFakeMonitor();
+        const removed: string[] = [];
+        const adapter = createAppConnectivityAdapter(
+            makeDeps({
+                monitor,
+                addNetworkStatusListener: async () => ({
+                    remove: async () => {
+                        removed.push('network');
+                    },
+                }),
+                addAppStateListener: async () => ({
+                    remove: async () => {
+                        removed.push('app-state');
+                    },
+                }),
+                addWindowEventListener: (type, handler) => {
+                    void handler;
+                    return () => {
+                        removed.push(`window:${type}`);
+                    };
+                },
+            })
+        );
+
+        adapter.dispose();
+        await vi.waitFor(() =>
+            expect(removed.sort()).toEqual([
+                'app-state',
+                'network',
+                'window:focus',
+                'window:visibilitychange',
+            ])
+        );
+        expect(monitor.stopped).toBe(1);
+
+        adapter.dispose(); // idempotent
+        expect(monitor.stopped).toBe(1);
+    });
+});
+
+describe('attachAppConnectivity (ref-counted singleton lifecycle)', () => {
+    it('two attaches share one listener; the last dispose removes it', async () => {
+        isNativePlatform.mockReturnValue(true);
+        const networkHandleRemove = vi.fn();
+        (Network.addListener as ReturnType<typeof vi.fn>).mockImplementation(
+            async (_event: string, _handler: unknown) => ({ remove: networkHandleRemove })
+        );
+
+        const dispose1 = attachAppConnectivity();
+        const dispose2 = attachAppConnectivity();
+
+        await vi.waitFor(() => expect(Network.addListener).toHaveBeenCalledTimes(1));
+        expect(App.addListener).toHaveBeenCalledTimes(1);
+
+        dispose1();
+        await new Promise(resolve => setTimeout(resolve, 10));
+        expect(networkHandleRemove).not.toHaveBeenCalled(); // still attached
+
+        dispose2();
+        await vi.waitFor(() => expect(networkHandleRemove).toHaveBeenCalledTimes(1));
+        await vi.waitFor(() => expect(App.addListener).toHaveBeenCalledTimes(1)); // single registration
+    });
+
+    it('double dispose of the same attach token is a no-op', async () => {
+        isNativePlatform.mockReturnValue(true);
+        (Network.addListener as ReturnType<typeof vi.fn>).mockResolvedValue({ remove: vi.fn() });
+
+        const dispose = attachAppConnectivity();
+        await vi.waitFor(() => expect(Network.addListener).toHaveBeenCalledTimes(1));
+
+        dispose();
+        dispose();
+        await new Promise(resolve => setTimeout(resolve, 10));
+        expect(Network.addListener).toHaveBeenCalledTimes(1); // no re-registration
+    });
+
+    it('requestConnectivityCheck funnels through the singleton monitor check', async () => {
+        const monitor = getAppConnectivityMonitor();
+        const checkSpy = vi.spyOn(monitor, 'check');
+
+        const status = await requestConnectivityCheck();
+        expect(status).toBe('unknown'); // not started → resolves current status
+        expect(checkSpy).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe('store bridge', () => {
+    it('monitor state (hints + verified probe outcomes) is mirrored into connectivityStore', async () => {
+        connectivityStore.set.status('unknown');
+
+        const monitor = createConnectivityMonitor({
+            getProbeTarget: () => ({ url: 'https://learncard.app/connectivity.txt' }),
+            probe: async () => ({ kind: 'unreachable', reason: 'network-error', durationMs: 1 }),
+        });
+        const detach = attachConnectivityMonitorToStore(monitor);
+        try {
+            // Positive hint restores online optimistically.
+            monitor.reportTransport(true);
+            expect(connectivityStore.get.status()).toBe('online');
+
+            // A verified-probe outcome (unreachable) then sets offline.
+            const status = await monitor.check();
+            expect(status).toBe('offline');
+            expect(connectivityStore.get.status()).toBe('offline');
+            expect(connectivityStore.get.lastDiagnosticReason()).toContain('unreachable');
+        } finally {
+            detach();
+            monitor.stop();
+            connectivityStore.set.status('unknown');
+        }
+    });
+});

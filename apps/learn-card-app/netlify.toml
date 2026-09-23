@@ -101,3 +101,23 @@ Access-Control-Allow-Origin = "*"
   for = "/*.html"
   [headers.values]
     Cache-Control = "no-cache"
+
+# Connectivity probe marker (LC-2182). Read by the verified-reachability probe
+# (learn-card-base probeConnectivity): body must be exactly
+# `learncard-connectivity-v1`.
+#
+#  - `no-store`: every probe must hit the network, never the HTTP cache.
+#  - CORS `*`: native webviews fetch this cross-origin (app runs from its
+#    bundled localhost origin).
+#
+# DEPLOY ORDERING: this static file must be LIVE on the tenant domain before a
+# native app version that probes it ships — until then native probes get the
+# SPA fallback (index.html) or 404/403, which the probe classifies as
+# `inconclusive` (permissive unknown, never a false offline lockout, but no
+# verified-online proof either). Never point the probe at /health-check.
+[[headers]]
+  for = "/connectivity.txt"
+  [headers.values]
+    Cache-Control = "no-store"
+    Content-Type = "text/plain; charset=utf-8"
+    Access-Control-Allow-Origin = "*"

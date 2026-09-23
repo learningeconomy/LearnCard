@@ -102,6 +102,7 @@ export * from './hooks/useConnectivity';
 export * from './connectivity/connectionQuality';
 export * from './connectivity/probeConnectivity';
 export * from './connectivity/connectivityMonitor';
+export * from './connectivity/observeConnectionQuality';
 export * from './helpers/withDeadline';
 export * from './helpers/networkFault';
 export * from './key-derivation';
