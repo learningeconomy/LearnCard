@@ -323,12 +323,6 @@ export const Routes: React.FC = () => {
                         />
                         <SentryRoute path="/did-auth/:challenge" children={<DIDAuthModal />} />
 
-                        <SentryRoute
-                            path="/claim-credential/:uri"
-                            children={<VCClaimModalController />}
-                        />
-                        <SentryRoute path="/did-auth/:challenge" children={<DIDAuthModal />} />
-
                         <SentryRoute exact path="/connect" component={ConnectPage} />
                         <SentryRoute exact path="/connect/:profileId" component={ConnectPage} />
                         <SentryRoute exact path="/invite" component={InvitePage} />
