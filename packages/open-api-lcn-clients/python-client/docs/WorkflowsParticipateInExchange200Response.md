@@ -6,6 +6,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **verifiable_presentation** | [**StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOf1**](StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOf1.md) |  | [optional] 
+**inbox_deliveries** | [**List[WorkflowsParticipateInExchange200ResponseInboxDeliveriesInner]**](WorkflowsParticipateInExchange200ResponseInboxDeliveriesInner.md) |  | [optional] 
 **verifiable_presentation_request** | [**WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequest**](WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequest.md) |  | [optional] 
 **redirect_url** | **str** |  | [optional] 
 

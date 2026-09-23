@@ -45,7 +45,6 @@ class TestBoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1OrIn
                 var_in = [
                     ''
                     ],
-                regex = '',
         )
         """
 

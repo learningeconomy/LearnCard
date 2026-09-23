@@ -17,11 +17,12 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
 from openapi_client.models.boost_get_boost_recipients200_response_inner_to import BoostGetBoostRecipients200ResponseInnerTo
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class BoostGetBoostRecipients200ResponseInner(BaseModel):
     """
@@ -31,11 +32,23 @@ class BoostGetBoostRecipients200ResponseInner(BaseModel):
     var_from: Optional[StrictStr] = Field(alias="from")
     received: Optional[StrictStr] = None
     uri: Optional[StrictStr] = None
+    status: Optional[StrictStr] = None
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["to", "from", "received", "uri"]
+    __properties: ClassVar[List[str]] = ["to", "from", "received", "uri", "status"]
+
+    @field_validator('status')
+    def status_validate_enum(cls, value):
+        """Validates the enum"""
+        if value is None:
+            return value
+
+        if value not in set(['active', 'revoked', 'suspended']):
+            raise ValueError("must be one of enum values ('active', 'revoked', 'suspended')")
+        return value
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -47,8 +60,7 @@ class BoostGetBoostRecipients200ResponseInner(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -113,7 +125,8 @@ class BoostGetBoostRecipients200ResponseInner(BaseModel):
             "to": BoostGetBoostRecipients200ResponseInnerTo.from_dict(obj["to"]) if obj.get("to") is not None else None,
             "from": obj.get("from"),
             "received": obj.get("received"),
-            "uri": obj.get("uri")
+            "uri": obj.get("uri"),
+            "status": obj.get("status")
         })
         # store additional fields in additional_properties
         for _key in obj.keys():

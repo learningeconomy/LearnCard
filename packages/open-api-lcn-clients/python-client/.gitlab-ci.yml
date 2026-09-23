@@ -5,24 +5,27 @@
 # ref: https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Python.gitlab-ci.yml
 
 stages:
-    - test
+  - test
 
 .pytest:
-    stage: test
-    script:
-        - pip install -r requirements.txt
-        - pip install -r test-requirements.txt
-        - pytest --cov=openapi_client
+  stage: test
+  script:
+   - pip install -r requirements.txt
+   - pip install -r test-requirements.txt
+   - pytest --cov=openapi_client
 
 pytest-3.10:
-    extends: .pytest
-    image: python:3.10-alpine
+  extends: .pytest
+  image: python:3.10-alpine
 pytest-3.11:
-    extends: .pytest
-    image: python:3.11-alpine
+  extends: .pytest
+  image: python:3.11-alpine
 pytest-3.12:
-    extends: .pytest
-    image: python:3.12-alpine
+  extends: .pytest
+  image: python:3.12-alpine
 pytest-3.13:
-    extends: .pytest
-    image: python:3.13-alpine
+  extends: .pytest
+  image: python:3.13-alpine
+pytest-3.14:
+  extends: .pytest
+  image: python:3.14-alpine

@@ -6,7 +6,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **listing_id** | **str** |  | 
-**event** | **Dict[str, object]** |  | 
+**event** | [**AppStoreAppEventRequestEvent**](AppStoreAppEventRequestEvent.md) |  | 
 
 ## Example
 

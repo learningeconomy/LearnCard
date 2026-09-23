@@ -8,6 +8,7 @@ Method | HTTP request | Description
 [**activity_get_activity_chain**](ActivityApi.md#activity_get_activity_chain) | **GET** /activity/credentials/{activityId}/chain | Get Activity Chain
 [**activity_get_activity_stats**](ActivityApi.md#activity_get_activity_stats) | **GET** /activity/credentials/stats | Get Credential Activity Stats
 [**activity_get_my_activities**](ActivityApi.md#activity_get_my_activities) | **GET** /activity/credentials | Get Credential Activities
+[**activity_get_my_credential_lifecycle_statuses**](ActivityApi.md#activity_get_my_credential_lifecycle_statuses) | **POST** /activity/credentials/lifecycle-statuses | Get Credential Lifecycle Statuses
 
 
 # **activity_get_activity**
@@ -177,7 +178,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **activity_get_activity_stats**
-> ActivityGetActivityStats200Response activity_get_activity_stats(boost_uris=boost_uris, integration_id=integration_id)
+> ActivityGetActivityStats200Response activity_get_activity_stats(boost_uris=boost_uris, integration_id=integration_id, listing_id=listing_id, event_type=event_type, start_date=start_date, end_date=end_date)
 
 Get Credential Activity Stats
 
@@ -215,10 +216,14 @@ with openapi_client.ApiClient(configuration) as api_client:
     api_instance = openapi_client.ActivityApi(api_client)
     boost_uris = ['boost_uris_example'] # List[str] |  (optional)
     integration_id = 'integration_id_example' # str |  (optional)
+    listing_id = 'listing_id_example' # str |  (optional)
+    event_type = 'event_type_example' # str |  (optional)
+    start_date = '2013-10-20T19:20:30+01:00' # datetime |  (optional)
+    end_date = '2013-10-20T19:20:30+01:00' # datetime |  (optional)
 
     try:
         # Get Credential Activity Stats
-        api_response = api_instance.activity_get_activity_stats(boost_uris=boost_uris, integration_id=integration_id)
+        api_response = api_instance.activity_get_activity_stats(boost_uris=boost_uris, integration_id=integration_id, listing_id=listing_id, event_type=event_type, start_date=start_date, end_date=end_date)
         print("The response of ActivityApi->activity_get_activity_stats:\n")
         pprint(api_response)
     except Exception as e:
@@ -234,6 +239,10 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **boost_uris** | [**List[str]**](str.md)|  | [optional] 
  **integration_id** | **str**|  | [optional] 
+ **listing_id** | **str**|  | [optional] 
+ **event_type** | **str**|  | [optional] 
+ **start_date** | **datetime**|  | [optional] 
+ **end_date** | **datetime**|  | [optional] 
 
 ### Return type
 
@@ -262,7 +271,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **activity_get_my_activities**
-> ActivityGetMyActivities200Response activity_get_my_activities(limit=limit, cursor=cursor, boost_uri=boost_uri, event_type=event_type, integration_id=integration_id)
+> ActivityGetMyActivities200Response activity_get_my_activities(limit=limit, cursor=cursor, boost_uri=boost_uri, event_type=event_type, integration_id=integration_id, listing_id=listing_id, start_date=start_date, end_date=end_date, group_by_latest_status=group_by_latest_status)
 
 Get Credential Activities
 
@@ -303,10 +312,14 @@ with openapi_client.ApiClient(configuration) as api_client:
     boost_uri = 'boost_uri_example' # str |  (optional)
     event_type = 'event_type_example' # str |  (optional)
     integration_id = 'integration_id_example' # str |  (optional)
+    listing_id = 'listing_id_example' # str |  (optional)
+    start_date = '2013-10-20T19:20:30+01:00' # datetime |  (optional)
+    end_date = '2013-10-20T19:20:30+01:00' # datetime |  (optional)
+    group_by_latest_status = True # bool |  (optional)
 
     try:
         # Get Credential Activities
-        api_response = api_instance.activity_get_my_activities(limit=limit, cursor=cursor, boost_uri=boost_uri, event_type=event_type, integration_id=integration_id)
+        api_response = api_instance.activity_get_my_activities(limit=limit, cursor=cursor, boost_uri=boost_uri, event_type=event_type, integration_id=integration_id, listing_id=listing_id, start_date=start_date, end_date=end_date, group_by_latest_status=group_by_latest_status)
         print("The response of ActivityApi->activity_get_my_activities:\n")
         pprint(api_response)
     except Exception as e:
@@ -325,6 +338,10 @@ Name | Type | Description  | Notes
  **boost_uri** | **str**|  | [optional] 
  **event_type** | **str**|  | [optional] 
  **integration_id** | **str**|  | [optional] 
+ **listing_id** | **str**|  | [optional] 
+ **start_date** | **datetime**|  | [optional] 
+ **end_date** | **datetime**|  | [optional] 
+ **group_by_latest_status** | **bool**|  | [optional] 
 
 ### Return type
 
@@ -348,6 +365,88 @@ Name | Type | Description  | Notes
 **401** | Authorization not provided |  -  |
 **403** | Insufficient access |  -  |
 **404** | Not found |  -  |
+**500** | Internal server error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **activity_get_my_credential_lifecycle_statuses**
+> Dict[str, str] activity_get_my_credential_lifecycle_statuses(activity_get_my_credential_lifecycle_statuses_request)
+
+Get Credential Lifecycle Statuses
+
+Returns the authoritative lifecycle status ('active' | 'revoked' | 'suspended') for the authenticated holder's credentials, keyed by URI. URIs the holder did not receive are omitted.
+
+### Example
+
+* Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.activity_get_my_credential_lifecycle_statuses_request import ActivityGetMyCredentialLifecycleStatusesRequest
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://network.learncard.com/api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "https://network.learncard.com/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.ActivityApi(api_client)
+    activity_get_my_credential_lifecycle_statuses_request = openapi_client.ActivityGetMyCredentialLifecycleStatusesRequest() # ActivityGetMyCredentialLifecycleStatusesRequest | 
+
+    try:
+        # Get Credential Lifecycle Statuses
+        api_response = api_instance.activity_get_my_credential_lifecycle_statuses(activity_get_my_credential_lifecycle_statuses_request)
+        print("The response of ActivityApi->activity_get_my_credential_lifecycle_statuses:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling ActivityApi->activity_get_my_credential_lifecycle_statuses: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **activity_get_my_credential_lifecycle_statuses_request** | [**ActivityGetMyCredentialLifecycleStatusesRequest**](ActivityGetMyCredentialLifecycleStatusesRequest.md)|  | 
+
+### Return type
+
+**Dict[str, str]**
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Successful response |  -  |
+**400** | Invalid input data |  -  |
+**401** | Authorization not provided |  -  |
+**403** | Insufficient access |  -  |
 **500** | Internal server error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

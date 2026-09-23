@@ -38,10 +38,18 @@ class TestInboxFinalize200Response(unittest.TestCase):
                 processed = 1.337,
                 claimed = 1.337,
                 errors = 1.337,
+                guardian_pending = 1.337,
                 verifiable_credentials = [
                     {
                         'key' : null
                         }
+                    ],
+                deliveries = [
+                    openapi_client.models.workflows_participate_in_exchange_200_response_inbox_deliveries_inner.workflows_participateInExchange_200_response_inboxDeliveries_inner(
+                        id = '', 
+                        credential = {
+                            'key' : null
+                            }, )
                     ]
             )
         else:
@@ -49,10 +57,18 @@ class TestInboxFinalize200Response(unittest.TestCase):
                 processed = 1.337,
                 claimed = 1.337,
                 errors = 1.337,
+                guardian_pending = 1.337,
                 verifiable_credentials = [
                     {
                         'key' : null
                         }
+                    ],
+                deliveries = [
+                    openapi_client.models.workflows_participate_in_exchange_200_response_inbox_deliveries_inner.workflows_participateInExchange_200_response_inboxDeliveries_inner(
+                        id = '', 
+                        credential = {
+                            'key' : null
+                            }, )
                     ],
         )
         """

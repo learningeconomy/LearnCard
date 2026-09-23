@@ -21,23 +21,28 @@ from pydantic import BaseModel, ConfigDict, Field, StrictFloat, StrictInt
 from typing import Any, ClassVar, Dict, List, Optional, Union
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ActivityGetActivityStats200Response(BaseModel):
     """
     ActivityGetActivityStats200Response
     """ # noqa: E501
+    total_events: Optional[Union[StrictFloat, StrictInt]] = Field(alias="totalEvents")
     total: Optional[Union[StrictFloat, StrictInt]]
     created: Optional[Union[StrictFloat, StrictInt]]
     delivered: Optional[Union[StrictFloat, StrictInt]]
     claimed: Optional[Union[StrictFloat, StrictInt]]
     expired: Optional[Union[StrictFloat, StrictInt]]
     failed: Optional[Union[StrictFloat, StrictInt]]
+    revoked: Optional[Union[StrictFloat, StrictInt]]
+    suspended: Optional[Union[StrictFloat, StrictInt]]
     claim_rate: Optional[Union[StrictFloat, StrictInt]] = Field(alias="claimRate")
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["total", "created", "delivered", "claimed", "expired", "failed", "claimRate"]
+    __properties: ClassVar[List[str]] = ["totalEvents", "total", "created", "delivered", "claimed", "expired", "failed", "revoked", "suspended", "claimRate"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -49,8 +54,7 @@ class ActivityGetActivityStats200Response(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -82,6 +86,11 @@ class ActivityGetActivityStats200Response(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
+        # set to None if total_events (nullable) is None
+        # and model_fields_set contains the field
+        if self.total_events is None and "total_events" in self.model_fields_set:
+            _dict['totalEvents'] = None
+
         # set to None if total (nullable) is None
         # and model_fields_set contains the field
         if self.total is None and "total" in self.model_fields_set:
@@ -112,6 +121,16 @@ class ActivityGetActivityStats200Response(BaseModel):
         if self.failed is None and "failed" in self.model_fields_set:
             _dict['failed'] = None
 
+        # set to None if revoked (nullable) is None
+        # and model_fields_set contains the field
+        if self.revoked is None and "revoked" in self.model_fields_set:
+            _dict['revoked'] = None
+
+        # set to None if suspended (nullable) is None
+        # and model_fields_set contains the field
+        if self.suspended is None and "suspended" in self.model_fields_set:
+            _dict['suspended'] = None
+
         # set to None if claim_rate (nullable) is None
         # and model_fields_set contains the field
         if self.claim_rate is None and "claim_rate" in self.model_fields_set:
@@ -129,12 +148,15 @@ class ActivityGetActivityStats200Response(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
+            "totalEvents": obj.get("totalEvents"),
             "total": obj.get("total"),
             "created": obj.get("created"),
             "delivered": obj.get("delivered"),
             "claimed": obj.get("claimed"),
             "expired": obj.get("expired"),
             "failed": obj.get("failed"),
+            "revoked": obj.get("revoked"),
+            "suspended": obj.get("suspended"),
             "claimRate": obj.get("claimRate")
         })
         # store additional fields in additional_properties
