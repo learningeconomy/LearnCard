@@ -68,11 +68,15 @@ const categoryOf = (choice: CredentialChoice) =>
 export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
     const { initWallet } = useWallet();
     const [categoryFilter, setCategoryFilter] = useState('');
+    const [selectedOnly, setSelectedOnly] = useState(false);
     const searchInput = useRef<HTMLInputElement>(null);
     const walletRef = useRef(initWallet);
     walletRef.current = initWallet;
     const [choices, setChoices] = useState<CredentialChoice[]>([]);
     const [selected, setSelected] = useState<string[]>([]);
+    useEffect(() => {
+        if (!selected.length) setSelectedOnly(false);
+    }, [selected]);
     const [visibleCount, setVisibleCount] = useState(30);
     const [indexReady, setIndexReady] = useState(false);
     const attemptedReads = useRef(new Set<string>());
@@ -328,19 +332,29 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
         }
     };
     const categories = [...new Set(choices.map(categoryOf).filter(Boolean))];
+    const selectedCategoryCount = new Set(
+        choices
+            .filter(choice => selected.includes(choice.uri))
+            .map(categoryOf)
+            .filter(Boolean)
+    ).size;
     const matches = useMemo(
         () =>
-            choices.filter(
-                choice =>
-                    (!categoryFilter || categoryOf(choice) === categoryFilter) &&
-                    (choice.title || credentialText(choice.credential).name)
-                        .toLocaleLowerCase()
-                        .includes(settledSearch.toLocaleLowerCase())
+            choices.filter(choice =>
+                selectedOnly
+                    ? selected.includes(choice.uri)
+                    : (!categoryFilter || categoryOf(choice) === categoryFilter) &&
+                      (choice.title || credentialText(choice.credential).name)
+                          .toLocaleLowerCase()
+                          .includes(settledSearch.toLocaleLowerCase())
             ),
-        [choices, settledSearch, categoryFilter]
+        [choices, settledSearch, categoryFilter, selectedOnly, selected]
     );
-    const filtered = useMemo(() => matches.slice(0, visibleCount), [matches, visibleCount]);
-    const hasMore = matches.length > visibleCount;
+    const filtered = useMemo(
+        () => (selectedOnly ? matches : matches.slice(0, visibleCount)),
+        [matches, visibleCount, selectedOnly]
+    );
+    const hasMore = !selectedOnly && matches.length > visibleCount;
     useEffect(() => {
         setVisibleCount(30);
     }, [settledSearch, categoryFilter]);
@@ -444,58 +458,100 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
                     )}
                     {step === 'choose' && (
                         <>
-                            <div>
-                                <label
-                                    htmlFor="share-credential-search"
-                                    className="block text-xs font-medium text-grayscale-700 mb-2"
-                                >
-                                    {m['shareLinks.search']()}
-                                </label>
-                                <div className="group flex items-center gap-3 rounded-xl border border-grayscale-300 bg-grayscale-10 px-3 transition-colors hover:border-grayscale-400 focus-within:border-emerald-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-emerald-500">
-                                    <IonIcon
-                                        aria-hidden="true"
-                                        icon={searchOutline}
-                                        className="h-5 w-5 shrink-0 text-grayscale-400 transition-colors group-focus-within:text-emerald-600"
-                                    />
-                                    <input
-                                        ref={searchInput}
-                                        id="share-credential-search"
-                                        className="w-full min-w-0 py-3 bg-transparent text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none [&::-webkit-search-cancel-button]:appearance-none"
-                                        placeholder={m['shareLinks.searchPlaceholder']()}
-                                        value={search}
-                                        onChange={event => setSearch(event.target.value)}
-                                        type="search"
-                                    />
-                                    {search && (
+                            <div hidden={selectedOnly} className="space-y-4">
+                                <div>
+                                    <label
+                                        htmlFor="share-credential-search"
+                                        className="block text-xs font-medium text-grayscale-700 mb-2"
+                                    >
+                                        {m['shareLinks.search']()}
+                                    </label>
+                                    <div className="group flex items-center gap-3 rounded-xl border border-grayscale-300 bg-grayscale-10 px-3 transition-colors hover:border-grayscale-400 focus-within:border-emerald-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-emerald-500">
+                                        <IonIcon
+                                            aria-hidden="true"
+                                            icon={searchOutline}
+                                            className="h-5 w-5 shrink-0 text-grayscale-400 transition-colors group-focus-within:text-emerald-600"
+                                        />
+                                        <input
+                                            ref={searchInput}
+                                            id="share-credential-search"
+                                            className="w-full min-w-0 py-3 bg-transparent text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none [&::-webkit-search-cancel-button]:appearance-none"
+                                            placeholder={m['shareLinks.searchPlaceholder']()}
+                                            value={search}
+                                            onChange={event => setSearch(event.target.value)}
+                                            type="search"
+                                        />
+                                        {search && (
+                                            <button
+                                                type="button"
+                                                aria-label={m['shareLinks.clearSearch']()}
+                                                onClick={() => {
+                                                    setSearch('');
+                                                    setSettledSearch('');
+                                                    searchInput.current?.focus();
+                                                }}
+                                                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-grayscale-600 hover:bg-grayscale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                            >
+                                                <IonIcon
+                                                    aria-hidden="true"
+                                                    icon={closeOutline}
+                                                    className="h-4 w-4"
+                                                />
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                                <ShareCategoryFilter
+                                    value={categoryFilter}
+                                    onChange={setCategoryFilter}
+                                    categories={categories}
+                                />
+                            </div>
+                            <div className="rounded-2xl bg-grayscale-100 p-4 space-y-3">
+                                <div className="flex justify-between items-start gap-3 text-xs text-grayscale-600">
+                                    <div>
+                                        <p className="font-medium text-grayscale-900">
+                                            {m['shareLinks.selected']({
+                                                count: String(selected.length),
+                                            })}
+                                        </p>
+                                        {selectedCategoryCount > 0 && (
+                                            <p className="mt-1">
+                                                {selectedCategoryCount === 1
+                                                    ? m['shareLinks.oneCategory']()
+                                                    : m['shareLinks.categoryCount']({
+                                                          count: String(selectedCategoryCount),
+                                                      })}
+                                            </p>
+                                        )}
+                                    </div>
+                                    <span className="shrink-0">{m['shareLinks.limit']()}</span>
+                                </div>
+                                {selected.length > 0 && (
+                                    <div className="flex flex-wrap items-center gap-3">
                                         <button
                                             type="button"
-                                            aria-label={m['shareLinks.clearSearch']()}
-                                            onClick={() => {
-                                                setSearch('');
-                                                setSettledSearch('');
-                                                searchInput.current?.focus();
-                                            }}
-                                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-grayscale-600 hover:bg-grayscale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                            aria-pressed={selectedOnly}
+                                            onClick={() => setSelectedOnly(current => !current)}
+                                            className="rounded-[20px] bg-white px-4 py-2 text-xs font-medium text-grayscale-900 hover:bg-emerald-50 focus-visible:ring-2 focus-visible:ring-emerald-500"
                                         >
-                                            <IonIcon
-                                                aria-hidden="true"
-                                                icon={closeOutline}
-                                                className="h-4 w-4"
-                                            />
+                                            {selectedOnly
+                                                ? m['shareLinks.browseAll']()
+                                                : m['shareLinks.viewSelected']()}
                                         </button>
-                                    )}
-                                </div>
-                            </div>
-                            <ShareCategoryFilter
-                                value={categoryFilter}
-                                onChange={setCategoryFilter}
-                                categories={categories}
-                            />
-                            <div className="flex justify-between text-xs text-grayscale-600">
-                                <span>
-                                    {m['shareLinks.selected']({ count: String(selected.length) })}
-                                </span>
-                                <span>{m['shareLinks.limit']()}</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                invalidateDraft();
+                                                setSelected([]);
+                                                setSelectedOnly(false);
+                                            }}
+                                            className="rounded-[20px] px-3 py-2 text-xs font-medium text-grayscale-600 hover:bg-white focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                        >
+                                            {m['shareLinks.deselectAll']()}
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                             <p role="status" className="min-h-5 text-xs text-grayscale-500">
                                 {searchPending

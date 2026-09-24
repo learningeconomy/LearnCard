@@ -626,3 +626,27 @@ it('combines category and title filters while preserving selections', async () =
     fireEvent.click(screen.getByRole('button', { name: 'Reset' }));
     expect(screen.getByRole('checkbox')).toBeChecked();
 });
+
+it('reviews selections across filters and clears the entire selection', async () => {
+    mocks.wallet.index.LearnCloud.getPage.mockResolvedValue({
+        records: [
+            { uri: 'private:badge', title: 'Badge', category: 'Social Badge' },
+            { uri: 'private:award', title: 'Award', category: 'Achievement' },
+        ],
+        hasMore: false,
+    });
+    render(<ShareLinkCreate onDismiss={() => {}} />);
+    await waitFor(() => expect(screen.getAllByRole('checkbox')).toHaveLength(2));
+    await waitFor(() => expect(screen.getAllByRole('checkbox')[1]).toBeEnabled());
+    screen.getAllByRole('checkbox').forEach(box => fireEvent.click(box));
+    expect(screen.getByText('Across 2 categories')).toBeTruthy();
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'Badge' } });
+    await waitFor(() => expect(screen.getAllByRole('checkbox')).toHaveLength(1));
+    fireEvent.click(screen.getByRole('button', { name: 'View selected' }));
+    expect(screen.getAllByRole('checkbox')).toHaveLength(2);
+    fireEvent.click(screen.getAllByRole('checkbox')[0]);
+    expect(screen.getByText('Across 1 category')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Deselect all' }));
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
+    expect(screen.getByRole('searchbox')).toHaveValue('Badge');
+});
