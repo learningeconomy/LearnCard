@@ -889,19 +889,24 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
                     )}
                     {step === 'choose' && (
                         <button
-                            className={primary}
+                            className={`${primary} inline-flex items-center justify-center gap-2`}
                             disabled={!selected.length || loading}
                             onClick={() => {
                                 setStep('details');
                                 setError(false);
                             }}
                         >
-                            {m['shareLinks.continue']()} <IonIcon icon={arrowForwardOutline} />
+                            {m['shareLinks.continue']()}{' '}
+                            <IonIcon
+                                aria-hidden="true"
+                                icon={arrowForwardOutline}
+                                className="h-4 w-4 shrink-0"
+                            />
                         </button>
                     )}
                     {step === 'details' && (
                         <button
-                            className={primary}
+                            className={`${primary} inline-flex items-center justify-center gap-2`}
                             disabled={loading || !title.trim()}
                             onClick={() => void prepareDraft()}
                         >
@@ -910,7 +915,11 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
                             ) : (
                                 <>
                                     {m['shareLinks.preview']()}{' '}
-                                    <IonIcon icon={arrowForwardOutline} />
+                                    <IonIcon
+                                        aria-hidden="true"
+                                        icon={arrowForwardOutline}
+                                        className="h-4 w-4 shrink-0"
+                                    />
                                 </>
                             )}
                         </button>
