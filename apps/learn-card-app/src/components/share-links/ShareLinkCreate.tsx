@@ -411,7 +411,7 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
                     {m['shareLinks.share']()}
                 </span>
                 <button
-                    className="p-2 rounded-[20px] hover:bg-grayscale-100"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full p-0 hover:bg-grayscale-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                     aria-label={m['shareLinks.close']()}
                     onClick={onDismiss}
                 >
