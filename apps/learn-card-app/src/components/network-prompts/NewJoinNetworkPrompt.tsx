@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { auth } from '../../firebase/firebase';
-import { updateProfile } from 'firebase/auth';
+import { useSignInAdapter } from 'learn-card-base';
 import { z } from 'zod';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('new-join-network-prompt');
@@ -64,6 +63,7 @@ type NewJoinNetworkPromptProps = {
 };
 
 const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleCloseModal }) => {
+    const adapter = useSignInAdapter();
     const { initWallet } = useWallet();
     const { newModal } = useModal();
     const { refetch } = useGetCurrentLCNUser();
@@ -235,16 +235,16 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
         // ! APPLE HOT FIX
         if (typeOfLogin === SocialLoginTypes.apple) {
             // ! apple's guidelines: name should NOT be required
-            const firebaseUser = auth()?.currentUser;
+            const firebaseUser = adapter.getCurrentUser();
             if (!firebaseUser) {
                 presentLogoutErrorModal();
                 setIsLoading(false);
                 return;
             }
 
-            await updateProfile(firebaseUser, {
+            await adapter.updateProfile?.({
                 displayName: name ?? '',
-                photoURL: photo ?? '',
+                photoUrl: photo ?? '',
             });
 
             handleStorageUpdate();
@@ -274,7 +274,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                     } else {
                         // update firebase profile
                         try {
-                            const firebaseUser = auth()?.currentUser;
+                            const firebaseUser = adapter.getCurrentUser();
                             if (!firebaseUser) {
                                 presentLogoutErrorModal();
                                 setIsLoading(false);
@@ -282,9 +282,9 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                                 return;
                             }
 
-                            await updateProfile(firebaseUser, {
+                            await adapter.updateProfile?.({
                                 displayName: name,
-                                photoURL: photo,
+                                photoUrl: photo,
                             });
                         } catch (e: unknown) {
                             presentLogoutErrorModal();

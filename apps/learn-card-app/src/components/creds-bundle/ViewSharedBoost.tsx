@@ -21,6 +21,7 @@ import ClrTranscriptFullPage from '../clr-transcript/surfaces/ClrTranscriptFullP
 import { VC, VerificationItem, VP } from '@learncard/types';
 import {
     getDefaultCategoryForCredential,
+    getEndorsementTargetId,
     getEndorsementsFromPresentations,
     isClrCredential,
     unwrapBoostCredential,
@@ -31,6 +32,7 @@ import {
 } from '../../helpers/clrRenderer.helpers';
 import { BrandingEnum, useGetCredentialWithEdits, useIsLoggedIn } from 'learn-card-base';
 import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
+import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import {
     deriveLifecycleStatus,
     CredentialLifecycleStatus,
@@ -64,22 +66,26 @@ const ViewSharedBoost: React.FC<{
     // endorsements data
     const [shareLinkInfo, setShareLinkInfo] = useState<string>('');
     const [existingEndorsements, setExistingEndorsements] = useState<VC[] | null>(null);
+    const [endorsementTargetCredential, setEndorsementTargetCredential] = useState<VC>();
 
     const draftEndorsementRequest = endorsementsRequestStore.useTracked.endorsementRequest();
     const draftEndorseRequestVC = endorsementsRequestStore.useTracked.credentialInfo();
 
-    const uri = draftEndorseRequestVC?.uri || _uri;
-    const seed = draftEndorseRequestVC?.seed || _seed;
-    const pin = draftEndorseRequestVC?.pin || _pin;
+    const credentialInfo =
+        showEndorsementRequest || showDraftSuccess ? draftEndorseRequestVC : undefined;
+    const uri = credentialInfo?.uri || _uri;
+    const seed = credentialInfo?.seed || _seed;
+    const pin = credentialInfo?.pin || _pin;
+    const endorsementCredentialId = credentialInfo?.credentialId;
 
     const [presentAlert] = useIonAlert();
 
     const [boost, setBoost] = useState<VC[] | undefined>();
     const [category, setCategory] = useState<string>('');
-    const [wallet, setWallet] = useState<any>();
+    const [wallet, setWallet] = useState<BespokeLearnCard>();
 
-    const { credentialWithEdits } = useGetCredentialWithEdits(boost, uri);
-    let _boost = credentialWithEdits ?? boost;
+    const { credentialWithEdits } = useGetCredentialWithEdits(boost);
+    const _boost = credentialWithEdits ?? boost;
     const sharedCredential = Array.isArray(_boost) ? _boost[0] : _boost;
     const isSharedClrCredential = sharedCredential
         ? isClrCredential(sharedCredential as VC)
@@ -122,11 +128,7 @@ const ViewSharedBoost: React.FC<{
             // it. Fail-open to 'active' so a check error never renders a valid credential as
             // revoked.
             try {
-                const rawCheck = await (wallet?.invoke?.verifyCredential as any)?.(
-                    credentialToVerify,
-                    {},
-                    false
-                );
+                const rawCheck = await wallet.invoke.verifyCredential(credentialToVerify, {});
                 setLifecycleStatus(deriveLifecycleStatus(rawCheck));
             } catch {
                 setLifecycleStatus('active');
@@ -138,6 +140,27 @@ const ViewSharedBoost: React.FC<{
                 const credential = Array.isArray(resolvedVc?.verifiableCredential)
                     ? resolvedVc?.verifiableCredential[0]
                     : resolvedVc?.verifiableCredential;
+
+                if (showEndorsementRequest || showDraftSuccess) {
+                    const targetId = await getEndorsementTargetId(credential);
+
+                    if (endorsementCredentialId && endorsementCredentialId !== targetId) {
+                        throw new Error(
+                            'The endorsement request does not match the shared credential'
+                        );
+                    }
+
+                    const credentialInfo = {
+                        uri: String(uri),
+                        seed: String(seed),
+                        pin: String(pin),
+                        credentialId: targetId,
+                    };
+
+                    setEndorsementTargetCredential({ id: targetId } as VC);
+                    setShareLinkInfo(createEndorsementShareLinkInfo(credentialInfo));
+                    endorsementsRequestStore.set.credentialInfo(credentialInfo);
+                }
 
                 const endorsements = getEndorsementsFromPresentations(
                     resolvedVc?.verifiableCredential
@@ -186,16 +209,11 @@ const ViewSharedBoost: React.FC<{
             setBoost(undefined);
             setVC(undefined);
             setExistingEndorsements(null);
-            setShareLinkInfo(
-                createEndorsementShareLinkInfo({
-                    uri: String(uri),
-                    seed: String(seed),
-                    pin: String(pin),
-                })
-            );
+            setEndorsementTargetCredential(undefined);
+            setShareLinkInfo('');
             void fetchCredential((uri as string).replace('localhost:', 'localhost%3A'));
         }
-    }, [pin, seed, uri, tryRefetch]);
+    }, [pin, seed, uri, endorsementCredentialId, tryRefetch]);
 
     const [presentModal, dismissModal] = useIonModal(SharedBoostVerificationBlock, {
         handleCloseModal: () => dismissModal(),
@@ -240,6 +258,7 @@ const ViewSharedBoost: React.FC<{
             <EndorsementRequestModal
                 credential={_boost}
                 shareLinkInfo={shareLinkInfo}
+                targetCredential={endorsementTargetCredential}
                 existingEndorsements={existingEndorsements}
             />
         );
@@ -247,7 +266,12 @@ const ViewSharedBoost: React.FC<{
 
     if (showDraftSuccess) {
         return (
-            <EndorsementDraftRequestSuccess credential={_boost} categoryType={category} autoSend />
+            <EndorsementDraftRequestSuccess
+                credential={_boost}
+                targetCredential={endorsementTargetCredential}
+                categoryType={category}
+                autoSend
+            />
         );
     }
 

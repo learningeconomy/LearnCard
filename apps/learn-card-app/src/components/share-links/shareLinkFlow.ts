@@ -24,6 +24,7 @@ import {
     ShareManifestPresentationValidator,
 } from '@learncard/types';
 import {
+    buildShareLinkUrl,
     buildShareManifest,
     buildShareRecovery,
     encryptSharePayload,
@@ -44,7 +45,7 @@ export interface ShareWallet {
                 query: undefined,
                 options: { cursor?: string; limit: number }
             ): Promise<{
-                records: { id?: string; uri: string }[];
+                records: { id?: string; uri: string; category?: string; title?: string }[];
                 cursor?: string;
                 hasMore: boolean;
             }>;
@@ -75,7 +76,7 @@ export interface ShareWallet {
     };
 }
 export const shareWallet = (wallet: unknown): ShareWallet => wallet as ShareWallet;
-export type CredentialChoice = { uri: string; credential?: VC };
+export type CredentialChoice = { uri: string; credential?: VC; category?: string; title?: string };
 export type PreparedShare = {
     input: CreateShareLinkInput;
     key: string;
@@ -111,19 +112,35 @@ export const mapWithConcurrency = async <T, R>(
 };
 
 /**
- * Derive the canonical share host from a tenant base URL. Non-HTTPS bases
- * (e.g. a local `http://localhost:3000`) are rejected before any server state
- * can be created, since `buildShareLinkUrl` would otherwise mint an
- * unreachable `https://localhost:3000/...` link.
+ * HTTPS everywhere, with an explicit development-only exception for loopback.
+ * Keep this app adapter separate from the canonical HTTPS protocol helpers.
  */
-export const shareLinkHost = (baseUrl: string): string | undefined => {
+export const shareLinkOrigin = (baseUrl: string, development = false): string | undefined => {
     try {
         const url = new URL(baseUrl);
-        if (url.protocol !== 'https:') return undefined;
-        return url.host || undefined;
+        if (url.username || url.password) return undefined;
+        const localHttp =
+            development &&
+            url.protocol === 'http:' &&
+            ['localhost', '127.0.0.1'].includes(url.hostname);
+        if (url.protocol !== 'https:' && !localHttp) return undefined;
+        return url.origin;
     } catch {
         return undefined;
     }
+};
+
+export const buildAppShareLinkUrl = (
+    baseUrl: string,
+    id: string,
+    key: string,
+    development = false
+): string => {
+    const origin = shareLinkOrigin(baseUrl, development);
+    if (!origin) throw new Error('Unsupported share origin');
+    const url = new URL(buildShareLinkUrl(new URL(origin).host, id, key));
+    url.protocol = new URL(origin).protocol;
+    return url.href;
 };
 
 export type ExpiryChoice = '7' | '30' | '365' | 'never';
@@ -202,9 +219,19 @@ const prepareEncryptedRevision = async (
         options.refs
     );
     const ownerDid = wallet.id.did();
+    // A v1 presentation context conflicts with nested v2 protected terms.
+    // A v2 presentation can contain both original v1 and v2 credentials.
+    const presentationContext = credentials.some(credential =>
+        (Array.isArray(credential['@context'])
+            ? credential['@context']
+            : [credential['@context']]
+        ).some(context => context === 'https://www.w3.org/ns/credentials/v2')
+    )
+        ? 'https://www.w3.org/ns/credentials/v2'
+        : 'https://www.w3.org/2018/credentials/v1';
     const presentation = await wallet.invoke.issuePresentation(
         {
-            '@context': ['https://www.w3.org/2018/credentials/v1'],
+            '@context': [presentationContext],
             type: ['VerifiablePresentation'],
             holder: ownerDid,
             verifiableCredential: credentials,

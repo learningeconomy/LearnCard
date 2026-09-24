@@ -10,7 +10,7 @@ import {
     ImageStatus,
     BadgeDataRow,
     ImageTrackingInfo,
-} from './BulkBoostImportPage';
+} from './AdminToolsBulkBoostImportOption';
 import { isValidUrl, truncateWithEllipsis } from 'learn-card-base';
 
 type BulkImportDataRowProps = {

@@ -1,3 +1,5 @@
+import { useFlags } from 'launchdarkly-react-client-sdk';
+import ShareLinkCreate from '../../share-links/ShareLinkCreate';
 /* eslint-disable @typescript-eslint/no-explicit-any -- legacy credential shapes and callback APIs are intentionally untyped. */
 import React from 'react';
 import moment from 'moment';
@@ -66,6 +68,7 @@ type BoostEarnedCardProps = {
     credential?: VC;
     record?: Partial<LCR>;
     defaultImg?: string;
+    titleOverride?: string;
     onCheckMarkClick?: () => void;
     selectAll?: boolean;
     initialCheckmarkState?: boolean;
@@ -93,12 +96,15 @@ type BoostEarnedCardProps = {
     compact?: boolean;
     /** Renders a custom card surface while retaining this component's credential preview flow. */
     renderPreviewTrigger?: (openPreview: () => void) => React.ReactNode;
+    /** Displays the signed issuer DID where generic credential cards normally display the subject. */
+    displayIssuerAsSubject?: boolean;
 };
 
 export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     credential: _credential,
     record,
     defaultImg,
+    titleOverride,
     categoryType,
     sizeLg = 4,
     sizeSm = 4,
@@ -121,6 +127,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     isPreview = false,
     relativeDate = false,
     compact = false,
+    displayIssuerAsSubject = false,
     renderPreviewTrigger,
 }) => {
     const { newModal, closeModal, closeAllModals } = useModal({
@@ -152,6 +159,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
 
     const {
         issuerName,
+        issuerDid,
         issuerProfileImageElement,
 
         // subject
@@ -167,7 +175,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
         mappedInputs,
 
         // VC metadata
-        title,
+        title: credentialTitle,
         achievementType,
         formattedAchievementType,
         badgeThumbnail,
@@ -188,6 +196,11 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
 
         loading: vcInfoLoading,
     } = useGetVCInfo(cred, categoryType);
+    const displaySubjectImage = displayIssuerAsSubject
+        ? issuerProfileImageElement
+        : subjectProfileImageElement;
+    const displaySubjectName = displayIssuerAsSubject ? issuerName || issuerDid : issueeName;
+    const title = titleOverride ?? credentialTitle;
 
     const isCertificate = displayType === DisplayTypeEnum.Certificate;
     const isID = displayType === DisplayTypeEnum.ID || categoryType === 'ID';
@@ -217,11 +230,24 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     const indicatorColor = colors?.indicatorColor;
     const clrBadgeKind = isClrCredential && cred ? getClrTranscriptKind(cred) : 'unknown';
 
+    const flags = useFlags();
     const presentShareBoostLink = () => {
         const shareBoostLinkModalProps = {
             handleClose: () => closeModal(),
             boost: credential,
             boostUri: record?.uri,
+            onShareWithOtherCredentials:
+                flags?.shareMultipleEnabled === true && record?.uri
+                    ? () =>
+                          newModal(
+                              <ShareLinkCreate
+                                  initialSelectedUri={record.uri}
+                                  onDismiss={closeModal}
+                              />,
+                              {},
+                              { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+                          )
+                    : undefined,
             categoryType,
         };
 
@@ -294,17 +320,18 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
         }
 
         const earnedBoostIdCardProps = {
-            credential: cred,
+            credential,
+            boostUri: record?.uri,
             categoryType: categoryType,
             issuerOverride: issuerName,
-            issueeOverride: issueeName,
+            issueeOverride: displaySubjectName,
             verificationItems,
             lifecycleStatus,
             handleCloseModal: () => closeModal(),
             handleShareBoost: () => presentShareBoostLink(),
             onDotsClick: hideOptionsMenu ? undefined : handleOptionsMenu,
             subjectDID: idSubjectDID,
-            subjectImageComponent: subjectProfileImageElement,
+            subjectImageComponent: displaySubjectImage,
             issuerImageComponent: issuerProfileImageElement,
             customThumbComponent: isID ? (
                 <IDDisplayCard
@@ -348,12 +375,12 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             boostUri: record?.uri,
             categoryType: categoryType,
             issuerOverride: issuerName,
-            issueeOverride: issueeName,
+            issueeOverride: displaySubjectName,
             verificationItems,
             lifecycleStatus,
             handleShareBoost: () => presentShareBoostLink(),
             handleCloseModal: () => closeModal(),
-            subjectImageComponent: subjectProfileImageElement,
+            subjectImageComponent: displaySubjectImage,
             issuerImageComponent: issuerProfileImageElement,
             onDotsClick: hideOptionsMenu ? undefined : handleOptionsMenu,
             customThumbComponent: (
@@ -479,7 +506,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     customIssuerName={
                         <CustomIssuerName
                             issuerName={issuerName}
-                            subjectName={issueeName}
+                            subjectName={displaySubjectName}
                             isLoading={showSkeleton}
                             isClrCredential={isClrCredential}
                         />
@@ -561,7 +588,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                         customIssuerName={
                             <CustomIssuerName
                                 issuerName={issuerName}
-                                subjectName={issueeName}
+                                subjectName={displaySubjectName}
                                 isLoading={showSkeleton}
                                 isClrCredential={isClrCredential}
                             />
@@ -660,7 +687,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     customIssuerName={
                         <CustomIssuerName
                             issuerName={issuerName}
-                            subjectName={issueeName}
+                            subjectName={displaySubjectName}
                             isLoading={showSkeleton}
                             isClrCredential={isClrCredential}
                         />

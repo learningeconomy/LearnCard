@@ -2,7 +2,7 @@ import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render } from '@testing-library/react';
 
-const { credentialList } = vi.hoisted(() => ({ credentialList: { value: undefined as any } }));
+const { credentialList } = vi.hoisted(() => ({ credentialList: { value: undefined as unknown } }));
 
 vi.mock('learn-card-base', async () => ({
     ...(await (await import('../../../test-utils/mockLearnCardBase')).learnCardBaseEnumMock()),
@@ -11,18 +11,25 @@ vi.mock('learn-card-base', async () => ({
     ModalTypes: { FullScreen: 'full-screen' },
     categoryMetadata: {},
 }));
-// BoostEarnedCard and AllCredentialsModal are heavy (modal system, previews);
-// stub them so this test stays focused on the strip's filter/sort/cap behavior.
-vi.mock('../../../components/boost/boost-earned-card/BoostEarnedCard', () => ({
+// PassportCredentialCard includes query-backed title resolution and previews;
+// stub it so this test stays focused on the strip's filter/sort/cap behavior.
+vi.mock('./PassportCredentialCard', () => ({
     default: ({ record }: { record: { title?: string } }) => (
         <div data-testid="recent-tile">{record.title}</div>
     ),
 }));
 vi.mock('./AllCredentialsModal', () => ({ AllCredentialsModal: () => null }));
 
+type TestRecord = {
+    uri: string;
+    title?: string;
+    category?: string;
+    date?: string;
+};
+
 import { RecentlyAdded } from './RecentlyAdded';
 
-const withRecords = (records: any[]) => {
+const withRecords = (records: TestRecord[]) => {
     credentialList.value = { pages: [{ records }] };
 };
 

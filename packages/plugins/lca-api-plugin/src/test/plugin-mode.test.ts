@@ -13,6 +13,59 @@ const learnCard = {
 };
 
 describe('getLCAPlugin', () => {
+    it.each([undefined, { profileId: 'alice' }])(
+        'loads the encryption key with profile %j',
+        async profile => {
+            const key = { kty: 'OKP', crv: 'Ed25519', x: 'public', d: 'private' };
+            const query = vi.fn().mockResolvedValue('ab'.repeat(32));
+            const card = {
+                ...learnCard,
+                invoke: {
+                    getProfile: vi.fn().mockResolvedValue(profile),
+                    generateEd25519KeyFromBytes: vi.fn().mockResolvedValue(key),
+                    decryptDagJwe: vi.fn().mockResolvedValue('decrypted'),
+                },
+            };
+            mockedGetClient.mockResolvedValue({
+                utilities: { getEncryptionKey: { query } },
+            } as never);
+            const plugin = await getLCAPlugin(card as never, 'https://example.com/trpc');
+            await plugin.methods.decryptDagJwe(card as never, {} as never);
+            expect(query).toHaveBeenCalledOnce();
+            expect(card.invoke.generateEd25519KeyFromBytes).toHaveBeenCalledWith(
+                new Uint8Array(32).fill(171)
+            );
+            expect(card.invoke.decryptDagJwe).toHaveBeenCalledWith({}, [key]);
+        }
+    );
+
+    it('warns concisely and continues when profileless key initialization fails', async () => {
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        try {
+            const card = {
+                ...learnCard,
+                invoke: {
+                    getProfile: vi.fn().mockResolvedValue(undefined),
+                    decryptDagJwe: vi.fn().mockResolvedValue('decrypted'),
+                },
+            };
+            mockedGetClient.mockResolvedValue({
+                utilities: {
+                    getEncryptionKey: {
+                        query: vi.fn().mockRejectedValue(new Error('connection failed')),
+                    },
+                },
+            } as never);
+            const plugin = await getLCAPlugin(card as never, 'https://example.com/trpc');
+            await plugin.methods.decryptDagJwe(card as never, {} as never);
+            expect(warn).toHaveBeenCalledWith(
+                '[LCA Plugin] Initialization warning: connection failed'
+            );
+            expect(card.invoke.decryptDagJwe).toHaveBeenCalledWith({}, []);
+        } finally {
+            warn.mockRestore();
+        }
+    });
     beforeEach(() => {
         mockedGetClient.mockReset();
     });

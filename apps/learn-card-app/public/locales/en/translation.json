@@ -579,6 +579,7 @@
                 "defaultName": "Resume Preview",
                 "page": "Page",
                 "pages": "Pages",
+                "preparingPdf": "Preparing PDF…",
                 "downloadPdf": "Download PDF",
                 "iframeTitle": "Resume PDF Preview"
             },
@@ -2873,6 +2874,7 @@
             "experience": "New Experience",
             "assistance": "New Assistance",
             "portfolio": "New Portfolio",
+            "badge": "New Badge",
             "boost": "New Boost",
             "achievement": "New Achievement",
             "skill": "New Skill",
@@ -3704,6 +3706,9 @@
             "upload": "Upload",
             "change": "Change {{type}}"
         },
+        "activity": {
+            "title": "Endorsement of {{name}}"
+        },
         "request": {
             "header": {
                 "title": "Endorsement Request",
@@ -3718,7 +3723,8 @@
                 "messagePlaceholder": "Message...",
                 "emailPlaceholder": "Email",
                 "sendEmail": "Send Email Request",
-                "sending": "Sending..."
+                "sending": "Sending...",
+                "linkGenerationFailed": "Unable to create this link. Please try again."
             },
             "success": {
                 "title": "Request Sent!",
@@ -8977,7 +8983,7 @@
         "close": "Close",
         "ready": "Ready to send",
         "step": "Step {{current}} of 3",
-        "choose": "Choose what to share",
+        "choose": "Choose credentials to share",
         "details": "Make it yours",
         "done": "Your link is ready",
         "chooseHint": "Bring your credentials together in one private link.",
@@ -8985,7 +8991,28 @@
         "linkHint": "Anyone with the complete link can open these credentials.",
         "error": "Something went wrong. Please try again.",
         "search": "Search credentials",
+        "searchUpdating": "Updating results…",
+        "searchLoaded": "Search covers loaded credentials. Load more to search further.",
+        "titlePlaceholder": "e.g. My learning highlights",
+        "notePlaceholder": "e.g. Here are the credentials from my recent training.",
+        "categoryFilter": "Category",
+        "allCategories": "All categories",
+        "oneCategory": "Across 1 category",
+        "categoryCount": "Across {{count}} categories",
+        "viewSelected": "View selected",
+        "browseAll": "Back to browsing",
+        "deselectAll": "Deselect all",
+        "searchPlaceholder": "Search by credential name…",
+        "clearSearch": "Clear search",
+        "noSearchResults": "No matching credentials. Try another name.",
         "selected": "{{count}} credentials selected",
+        "shareWithOthers": "Share with other credentials…",
+        "sharedWithYou": "shared {{count}} credentials with you",
+        "preparingPdf": "Preparing PDF…",
+        "downloadQrPdf": "Download QR code PDF",
+        "downloadPdf": "Download PDF",
+        "showQr": "Show QR code",
+        "sharedCount": "{{count}} credentials shared",
         "limit": "Up to 50",
         "credential": "Credential",
         "loadFailed": "Could not load this credential.",

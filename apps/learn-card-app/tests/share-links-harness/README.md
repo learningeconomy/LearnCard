@@ -46,3 +46,13 @@ The first command runs the DB-free protocol, lifecycle, policy, router, and HTTP
 The second requires Docker and runs the six database suites serially against the
 existing disposable Neo4j harness. Filter either command by filename to run one suite,
 for example append `share-link-recovery.neo4j.spec.ts` to the second command.
+
+## Full local app
+
+The normal Vite development server supports private links on
+`http://localhost:3000` (or `http://127.0.0.1:3000`) without installing a certificate.
+The app preserves that scheme in copied links and QR codes. This exception is
+limited to development builds and those loopback hostnames; production builds and
+other hosts still require HTTPS. These links are for the same computer, not a
+phone scanning a QR from another device. Backend service/trust configuration is
+still required for the full app; the isolated harness above uses mocked services.

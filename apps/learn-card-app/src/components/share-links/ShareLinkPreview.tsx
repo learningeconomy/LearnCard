@@ -1,6 +1,9 @@
+import { ShareCredentialVisual } from './ShareCredentialVisual';
+import { ShareCredentialThumbnail } from './ShareCredentialThumbnail';
+import { ShareCredentialMetadata } from './ShareCredentialMetadata';
 import React from 'react';
 import { IonIcon } from '@ionic/react';
-import { alertCircleOutline, checkmarkCircleOutline, documentTextOutline } from 'ionicons/icons';
+import { alertCircleOutline, checkmarkCircleOutline } from 'ionicons/icons';
 import type { SharePayload } from '@learncard/types';
 import * as m from '../../paraglide/messages.js';
 import { credentialText, type ProofState } from './shareLinkFlow';
@@ -18,12 +21,15 @@ export interface ShareLinkPreviewProps {
     title: string;
     note?: string;
     sharerName?: string;
+    sharerAvatar?: string;
+    sharedAt?: string;
     expiresAt?: string | null;
     proofs?: Readonly<Record<number, ProofState>>;
     /** Rendered above the collection when the host wants an explicit heading. */
     heading?: string;
     /** Extra summary content (for example the collection proof) below the metadata. */
     summaryExtra?: React.ReactNode;
+    summaryIllustration?: React.ReactNode;
     /** Opt in to the raw original credential disclosure for each selected member. */
     showOriginal?: boolean;
     className?: string;
@@ -64,10 +70,13 @@ export const ShareLinkPreview = ({
     title,
     note,
     sharerName,
+    sharerAvatar,
+    sharedAt,
     expiresAt,
     proofs,
     heading,
     summaryExtra,
+    summaryIllustration,
     showOriginal = false,
     className = '',
 }: ShareLinkPreviewProps) => (
@@ -78,12 +87,65 @@ export const ShareLinkPreview = ({
             </p>
         )}
         <section className="bg-white rounded-[20px] p-6 md:p-8 space-y-4 border border-grayscale-200">
-            {sharerName && (
-                <p className="text-xs text-grayscale-500">
-                    {m['shareLinks.sharedBy']({ name: sharerName })}
-                </p>
-            )}
-            <h1 className="text-2xl md:text-3xl font-semibold break-words">{title}</h1>
+            <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0 flex-1 space-y-3">
+                    {sharerName &&
+                        (showOriginal ? (
+                            <div className="flex items-center gap-3">
+                                <span
+                                    aria-hidden="true"
+                                    className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-emerald-100 text-lg font-semibold text-grayscale-900"
+                                >
+                                    {sharerName.trim().charAt(0).toUpperCase()}
+                                    {sharerAvatar && (
+                                        <img
+                                            key={sharerAvatar}
+                                            src={sharerAvatar}
+                                            alt=""
+                                            referrerPolicy="no-referrer"
+                                            className="absolute inset-0 h-full w-full object-cover"
+                                            onError={event => {
+                                                event.currentTarget.hidden = true;
+                                            }}
+                                        />
+                                    )}
+                                </span>
+                                <div className="min-w-0">
+                                    <p className="text-sm font-medium text-grayscale-900 break-words">
+                                        {sharerName}
+                                    </p>
+                                    <p className="text-xs text-grayscale-600">
+                                        {m['shareLinks.sharedWithYou']({
+                                            count: String(payload.selection.length),
+                                        })}
+                                    </p>
+                                    {sharedAt && (
+                                        <time
+                                            dateTime={sharedAt}
+                                            className="mt-1 block text-xs text-grayscale-500"
+                                        >
+                                            {new Date(sharedAt).toLocaleDateString(undefined, {
+                                                year: 'numeric',
+                                                month: 'long',
+                                                day: 'numeric',
+                                            })}
+                                        </time>
+                                    )}
+                                </div>
+                            </div>
+                        ) : (
+                            <p className="text-xs text-grayscale-500">
+                                {m['shareLinks.sharedBy']({ name: sharerName })}
+                            </p>
+                        ))}
+                    <h1 className="text-2xl md:text-3xl font-semibold break-words">{title}</h1>
+                </div>
+                {summaryIllustration && (
+                    <div className="shrink-0 [&>svg]:h-16 [&>svg]:w-16 sm:[&>svg]:h-20 sm:[&>svg]:w-20">
+                        {summaryIllustration}
+                    </div>
+                )}
+            </div>
             {note && (
                 <p className="text-sm text-grayscale-600 leading-relaxed whitespace-pre-wrap break-words">
                     {note}
@@ -91,7 +153,7 @@ export const ShareLinkPreview = ({
             )}
             <div className="flex flex-wrap gap-3 text-xs text-grayscale-500">
                 <span>
-                    {m['shareLinks.selected']({
+                    {(showOriginal ? m['shareLinks.sharedCount'] : m['shareLinks.selected'])({
                         count: String(payload.selection.length),
                     })}
                 </span>
@@ -108,7 +170,7 @@ export const ShareLinkPreview = ({
             {summaryExtra}
         </section>
         <div className="space-y-4">
-            {payload.selection.map(({ credentialIndex }, order) => {
+            {payload.selection.map(({ credentialIndex }) => {
                 const credential = payload.presentation.verifiableCredential[credentialIndex];
                 const text = credentialText(credential);
                 const endorsements = payload.endorsements.filter(
@@ -120,22 +182,13 @@ export const ShareLinkPreview = ({
                         key={credentialIndex}
                         className="bg-white rounded-[20px] p-6 md:p-8 space-y-4 border border-grayscale-200"
                     >
-                        <div className="flex items-start gap-4">
-                            <span className="p-3 bg-grayscale-100 rounded-xl text-grayscale-600">
-                                <IonIcon icon={documentTextOutline} className="w-6 h-6" />
-                            </span>
+                        <div className="flex items-center gap-4">
+                            <ShareCredentialThumbnail credential={credential} />
                             <div className="min-w-0 flex-1">
-                                <p className="text-xs text-grayscale-500 mb-1">
-                                    {String(order + 1).padStart(2, '0')}
-                                </p>
                                 <h2 className="text-lg font-semibold break-words">
                                     {text.name || m['shareLinks.credential']()}
                                 </h2>
-                                {text.issuer && (
-                                    <p className="text-xs text-grayscale-600 mt-1 break-words">
-                                        {text.issuer}
-                                    </p>
-                                )}
+                                <ShareCredentialMetadata credential={credential} />
                             </div>
                         </div>
                         {text.description && (
@@ -174,6 +227,18 @@ export const ShareLinkPreview = ({
                                     );
                                 })}
                             </div>
+                        )}
+                        {showOriginal && (
+                            <ShareCredentialVisual
+                                credential={credential}
+                                proof={proof}
+                                endorsements={endorsements.map(
+                                    item =>
+                                        payload.presentation.verifiableCredential[
+                                            item.credentialIndex
+                                        ]
+                                )}
+                            />
                         )}
                         {showOriginal && (
                             <details className="text-xs text-grayscale-600">

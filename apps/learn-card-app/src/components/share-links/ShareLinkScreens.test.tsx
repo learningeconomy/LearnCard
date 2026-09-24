@@ -1,3 +1,6 @@
+vi.mock('../../pages/wallet/activity-feed/activityFeed.helpers', () => ({
+    getActivityFilters: () => [],
+}));
 import React from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -28,7 +31,11 @@ const mocks = vi.hoisted(() => ({
     appBaseUrl: 'https://tenant.example',
     intersect: undefined as undefined | ((entries: { isIntersecting: boolean }[]) => void),
 }));
-vi.mock('learn-card-base', () => ({ useWallet: () => ({ initWallet: async () => mocks.wallet }) }));
+vi.mock('learn-card-base', () => ({
+    useWallet: () => ({ initWallet: async () => mocks.wallet }),
+    ModalTypes: { FullScreen: 'fullscreen' },
+    useModal: () => ({ newModal: vi.fn(), closeModal: vi.fn() }),
+}));
 vi.mock('@capacitor/clipboard', () => ({ Clipboard: { write: vi.fn() } }));
 vi.mock('learn-card-base/helpers/walletHelpers', () => ({
     getBespokeLearnCard: () => mocks.anonymousWallet(),
@@ -46,6 +53,15 @@ vi.mock('@ionic/react', () => ({
     IonToolbar: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     IonContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     IonPage: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+}));
+vi.mock('../../theme/hooks/useTheme', () => ({
+    default: () => ({ getThemedCategory: () => ({ icons: {}, colors: {} }) }),
+    useTheme: () => ({ getThemedCategory: () => ({ icons: {}, colors: {} }) }),
+}));
+vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
+    getDefaultCategoryForCredential: () => 'Achievement',
+    unwrapBoostCredential: (credential: unknown) => credential,
+    getImageUrlFromCredential: () => undefined,
 }));
 vi.mock('./sharePrivacy', () => ({
     enterSharePrivacy: vi.fn(),
@@ -197,6 +213,12 @@ const chooseAndCreate = async () => {
     fireEvent.click(screen.getByRole('button', { name: 'Create private link' }));
 };
 describe('create screen', () => {
+    it('preselects the credential from the detail share action', async () => {
+        render(<ShareLinkCreate initialSelectedUri="private:one" onDismiss={() => {}} />);
+        expect(await screen.findByRole('checkbox')).toBeChecked();
+        expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled();
+    });
+
     it('keeps Continue disabled without a selection', async () => {
         render(<ShareLinkCreate onDismiss={() => {}} />);
         await screen.findByRole('checkbox');
@@ -319,8 +341,17 @@ describe('create screen', () => {
         await screen.findByRole('alert');
         expect(mocks.wallet.invoke.createShareLink).toHaveBeenCalledTimes(0);
     });
-    it('refuses a non-https base before creating any server state', async () => {
+    it('creates a directly usable HTTP localhost link in development', async () => {
         mocks.appBaseUrl = 'http://localhost:3000';
+        await chooseAndCreate();
+        const link = (await screen.findByLabelText('Private link')) as HTMLInputElement;
+        expect(link.value).toBe(
+            'http://localhost:3000/s/AAAAAAAAAAAAAAAAAAAAAA#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+        );
+        expect(screen.getByRole('img', { name: 'Private link QR code' })).toBeTruthy();
+    });
+    it('refuses a non-https base before creating any server state', async () => {
+        mocks.appBaseUrl = 'http://tenant.example';
         render(<ShareLinkCreate onDismiss={() => {}} />);
         fireEvent.click(await screen.findByRole('checkbox'));
         fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
@@ -613,4 +644,100 @@ describe('recipient screen', () => {
             vi.useRealTimers();
         }
     });
+});
+
+it('keeps results while typing, then filters locally and clears immediately', async () => {
+    render(<ShareLinkCreate onDismiss={() => {}} />);
+    await screen.findByRole('checkbox');
+    const requests = mocks.wallet.index.LearnCloud.getPage.mock.calls.length;
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'no-match' } });
+    expect(screen.getByRole('checkbox')).toBeTruthy();
+    expect(screen.getByRole('status').textContent).toBe('Updating results…');
+    await waitFor(() => expect(screen.queryByRole('checkbox')).toBeNull());
+    expect(mocks.wallet.index.LearnCloud.getPage).toHaveBeenCalledTimes(requests);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Clear search' })[0]);
+    expect(screen.getByRole('checkbox')).toBeTruthy();
+    expect(screen.getByRole('searchbox')).toHaveFocus();
+});
+
+it('searches later index pages without resolving offscreen titled credentials', async () => {
+    mocks.wallet.index.LearnCloud.getPage
+        .mockResolvedValueOnce({
+            records: Array.from({ length: 30 }, (_, i) => ({
+                uri: `private:${i}`,
+                title: `Course ${i}`,
+            })),
+            hasMore: true,
+            cursor: 'next',
+        })
+        .mockResolvedValueOnce({
+            records: [{ uri: 'private:target', title: 'Hidden gem' }],
+            hasMore: false,
+        });
+    mocks.wallet.read.get.mockImplementation(async (uri: string) => ({
+        ...credential,
+        name: uri === 'private:target' ? 'Hidden gem' : uri,
+    }));
+    render(<ShareLinkCreate onDismiss={() => {}} />);
+    await waitFor(() => expect(screen.getAllByRole('checkbox')).toHaveLength(30));
+    expect(mocks.wallet.index.LearnCloud.getPage).toHaveBeenCalledWith(undefined, {
+        cursor: 'next',
+        limit: 100,
+    });
+    expect(mocks.wallet.read.get).not.toHaveBeenCalledWith('private:target');
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'Hidden gem' } });
+    await waitFor(() => expect(screen.getAllByRole('checkbox')).toHaveLength(1));
+    await waitFor(() => expect(mocks.wallet.read.get).toHaveBeenCalledWith('private:target'));
+    await waitFor(() => expect(screen.getByRole('checkbox')).toBeEnabled());
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getAllByRole('button', { name: 'Clear search' })[0]);
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled();
+});
+
+it('combines category and title filters while preserving selections', async () => {
+    mocks.wallet.index.LearnCloud.getPage.mockResolvedValue({
+        records: [
+            { uri: 'private:badge', title: 'Badge course', category: 'Social Badge' },
+            { uri: 'private:award', title: 'Award course', category: 'Achievement' },
+        ],
+        hasMore: false,
+    });
+    render(<ShareLinkCreate onDismiss={() => {}} />);
+    await waitFor(() => expect(screen.getAllByRole('checkbox')).toHaveLength(2));
+    await waitFor(() => expect(screen.getAllByRole('checkbox')[0]).toBeEnabled());
+    fireEvent.click(screen.getAllByRole('checkbox')[0]);
+    fireEvent.click(screen.getByRole('button', { name: 'Filter', exact: true }));
+    fireEvent.click(screen.getByRole('button', { name: 'Achievement', exact: true }));
+    fireEvent.click(screen.getByRole('button', { name: 'Apply Filter' }));
+    expect(screen.getAllByRole('checkbox')).toHaveLength(1);
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled();
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'Badge' } });
+    await waitFor(() => expect(screen.queryByRole('checkbox')).toBeNull());
+    fireEvent.click(screen.getByRole('button', { name: 'Achievement', exact: true }));
+    fireEvent.click(screen.getByRole('button', { name: 'Reset' }));
+    expect(screen.getByRole('checkbox')).toBeChecked();
+});
+
+it('reviews selections across filters and clears the entire selection', async () => {
+    mocks.wallet.index.LearnCloud.getPage.mockResolvedValue({
+        records: [
+            { uri: 'private:badge', title: 'Badge', category: 'Social Badge' },
+            { uri: 'private:award', title: 'Award', category: 'Achievement' },
+        ],
+        hasMore: false,
+    });
+    render(<ShareLinkCreate onDismiss={() => {}} />);
+    await waitFor(() => expect(screen.getAllByRole('checkbox')).toHaveLength(2));
+    await waitFor(() => expect(screen.getAllByRole('checkbox')[1]).toBeEnabled());
+    screen.getAllByRole('checkbox').forEach(box => fireEvent.click(box));
+    expect(screen.getByText('Across 2 categories')).toBeTruthy();
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'Badge' } });
+    await waitFor(() => expect(screen.getAllByRole('checkbox')).toHaveLength(1));
+    fireEvent.click(screen.getByRole('button', { name: 'View selected' }));
+    expect(screen.getAllByRole('checkbox')).toHaveLength(2);
+    fireEvent.click(screen.getAllByRole('checkbox')[0]);
+    expect(screen.getByText('Across 1 category')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Deselect all' }));
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
+    expect(screen.getByRole('searchbox')).toHaveValue('Badge');
 });

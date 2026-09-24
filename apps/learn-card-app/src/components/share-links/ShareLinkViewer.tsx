@@ -1,3 +1,8 @@
+import { QRCodeSVG } from 'qrcode.react';
+import { useModal, ModalTypes } from 'learn-card-base';
+import LearnCardBrandMark from '../../assets/images/lca-brandmark.png';
+import LearnCardTextLogo from '../svgs/LearnCardTextLogo';
+import { ShareCredentialsIllustration } from './ShareCredentialsIllustration';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { IonIcon, IonPage, IonHeader, IonToolbar, IonContent } from '@ionic/react';
@@ -6,6 +11,7 @@ import {
     copyOutline,
     documentTextOutline,
     downloadOutline,
+    qrCodeOutline,
     lockClosedOutline,
 } from 'ionicons/icons';
 import { Clipboard } from '@capacitor/clipboard';
@@ -26,6 +32,7 @@ import {
     type ProofState,
 } from './shareLinkFlow';
 import { ProofBadge, ShareLinkPreview } from './ShareLinkPreview';
+import { downloadSharePdf } from './sharePdf';
 import { downloadSharePresentation } from './shareDownload';
 import { enterSharePrivacy } from './sharePrivacy';
 
@@ -38,7 +45,7 @@ type ViewState =
     'loading' | 'incomplete' | 'expired' | 'stopped' | 'not_found' | 'error' | 'corrupt' | 'ready';
 
 const secondaryButton =
-    'inline-flex items-center gap-2 px-5 py-3 rounded-[20px] border border-grayscale-300 text-grayscale-700 text-sm font-medium hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed';
+    'inline-flex items-center justify-center gap-2 px-3 py-3 rounded-[20px] border border-grayscale-300 text-grayscale-700 text-sm font-medium hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed';
 
 const ShareLinkViewer = () => {
     const { id } = useParams<{ id: string }>();
@@ -49,8 +56,13 @@ const ShareLinkViewer = () => {
     const [proofs, setProofs] = useState<ProofState[]>([]);
     const [holder, setHolder] = useState<ProofState>('checking');
     const [link, setLink] = useState('');
+    const { newModal, closeModal } = useModal({
+        desktop: ModalTypes.Center,
+        mobile: ModalTypes.Center,
+    });
     const [copyState, setCopyState] = useState<'idle' | 'copying' | 'copied'>('idle');
     const [downloading, setDownloading] = useState(false);
+    const [pdfDownloading, setPdfDownloading] = useState(false);
     const [actionError, setActionError] = useState<'copy' | 'download'>();
     const visible = useRef<HTMLDivElement>(null);
     const acknowledged = useRef(new Set<string>());
@@ -234,6 +246,18 @@ const ShareLinkViewer = () => {
         }
     };
 
+    const downloadPdf = async () => {
+        if (!ready || !visible.current || pdfDownloading) return;
+        setPdfDownloading(true);
+        setActionError(undefined);
+        try {
+            await downloadSharePdf(visible.current, ready.metadata.title);
+        } catch {
+            setActionError('download');
+        } finally {
+            setPdfDownloading(false);
+        }
+    };
     const stateCopy = {
         loading: [m['shareLinks.opening'](), m['shareLinks.openingHint']()],
         incomplete: [m['shareLinks.incomplete'](), m['shareLinks.incompleteHint']()],
@@ -248,9 +272,24 @@ const ShareLinkViewer = () => {
         <IonPage className="sentry-block ph-no-capture font-poppins" data-html2canvas-ignore>
             <IonHeader className="ion-no-border border-b border-grayscale-200">
                 <IonToolbar style={{ '--background': 'white' }}>
-                    <div className="max-w-3xl mx-auto px-6 py-4 flex items-center gap-2 text-xs font-medium text-grayscale-600">
-                        <IonIcon icon={lockClosedOutline} />
-                        {m['shareLinks.sharedCredentials']()}
+                    <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between gap-4 text-xs font-medium text-grayscale-600">
+                        <a
+                            href="https://learncard.app"
+                            aria-label="LearnCard"
+                            rel="noreferrer"
+                            className="flex items-center gap-2.5 shrink-0 rounded text-grayscale-900 transition-opacity hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                        >
+                            <img
+                                src={LearnCardBrandMark}
+                                alt=""
+                                className="h-8 w-8 sm:h-9 sm:w-9 object-contain"
+                            />
+                            <LearnCardTextLogo className="w-28 sm:w-40 h-auto" />
+                        </a>
+                        <span className="flex items-center gap-2 text-right">
+                            <IonIcon icon={lockClosedOutline} className="shrink-0" />
+                            {m['shareLinks.sharedCredentials']()}
+                        </span>
                     </div>
                 </IonToolbar>
             </IonHeader>
@@ -295,70 +334,141 @@ const ShareLinkViewer = () => {
                             <>
                                 <div ref={visible}>
                                     <ShareLinkPreview
+                                        summaryIllustration={<ShareCredentialsIllustration />}
                                         payload={ready.payload}
                                         title={ready.metadata.title}
                                         note={ready.metadata.note}
                                         sharerName={ready.metadata.sharer.displayName}
+                                        sharerAvatar={ready.metadata.sharer.avatar}
+                                        sharedAt={ready.metadata.createdAt}
                                         expiresAt={ready.metadata.expiresAt}
                                         proofs={proofRecord}
                                         showOriginal
                                         summaryExtra={
-                                            <div className="pt-4 border-t border-grayscale-100 space-y-2">
-                                                <p className="text-xs font-medium text-grayscale-700">
-                                                    {m['shareLinks.presentationProof']()}
-                                                </p>
-                                                <ProofBadge state={holder} />
-                                                <p className="text-xs text-grayscale-500 leading-relaxed">
-                                                    {m['shareLinks.proofHint']()}
-                                                </p>
-                                            </div>
+                                            <>
+                                                <div className="pt-4 border-t border-grayscale-100 space-y-2">
+                                                    <p className="text-xs font-medium text-grayscale-700">
+                                                        {m['shareLinks.presentationProof']()}
+                                                    </p>
+                                                    <ProofBadge state={holder} />
+                                                    <p className="text-xs text-grayscale-500 leading-relaxed">
+                                                        {m['shareLinks.proofHint']()}
+                                                    </p>
+                                                </div>
+                                                <section
+                                                    data-share-export-exclude
+                                                    className="pt-4 border-t border-grayscale-100 space-y-3"
+                                                >
+                                                    <p className="text-xs text-grayscale-500 leading-relaxed">
+                                                        {m['shareLinks.downloadHint']()}
+                                                    </p>
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
+                                                        <button
+                                                            type="button"
+                                                            className={secondaryButton}
+                                                            disabled={
+                                                                !link || copyState === 'copying'
+                                                            }
+                                                            onClick={() => void copyLink()}
+                                                        >
+                                                            <IonIcon
+                                                                icon={
+                                                                    copyState === 'copied'
+                                                                        ? checkmarkOutline
+                                                                        : copyOutline
+                                                                }
+                                                            />
+                                                            {copyState === 'copied'
+                                                                ? m['shareLinks.copied']()
+                                                                : copyState === 'copying'
+                                                                  ? m['shareLinks.copying']()
+                                                                  : m['shareLinks.copy']()}
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            className={secondaryButton}
+                                                            disabled={downloading}
+                                                            onClick={download}
+                                                        >
+                                                            <IonIcon icon={downloadOutline} />
+                                                            {downloading
+                                                                ? m['shareLinks.downloading']()
+                                                                : m['shareLinks.download']()}
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            className={secondaryButton}
+                                                            disabled={!link}
+                                                            onClick={() =>
+                                                                newModal(
+                                                                    <div
+                                                                        className="sentry-block ph-no-capture bg-white p-6 font-poppins text-grayscale-900 text-center space-y-5"
+                                                                        data-html2canvas-ignore
+                                                                    >
+                                                                        <h2 className="text-xl font-semibold break-words">
+                                                                            {ready.metadata.title}
+                                                                        </h2>
+                                                                        <QRCodeSVG
+                                                                            value={link}
+                                                                            size={256}
+                                                                            level="M"
+                                                                            includeMargin
+                                                                            bgColor="#FFFFFF"
+                                                                            fgColor="#18224E"
+                                                                            role="img"
+                                                                            aria-label={m[
+                                                                                'shareLinks.qrLabel'
+                                                                            ]()}
+                                                                            className="mx-auto h-auto max-w-full"
+                                                                        />
+                                                                        <p className="text-sm text-grayscale-600">
+                                                                            {m[
+                                                                                'shareLinks.qrHint'
+                                                                            ]()}
+                                                                        </p>
+                                                                        <button
+                                                                            type="button"
+                                                                            className="rounded-[20px] !bg-grayscale-900 !text-white px-5 py-3 text-sm font-medium"
+                                                                            onClick={closeModal}
+                                                                        >
+                                                                            {m[
+                                                                                'shareLinks.close'
+                                                                            ]()}
+                                                                        </button>
+                                                                    </div>
+                                                                )
+                                                            }
+                                                        >
+                                                            <IonIcon icon={qrCodeOutline} />
+                                                            {m['shareLinks.showQr']()}
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            className={secondaryButton}
+                                                            disabled={pdfDownloading}
+                                                            onClick={() => void downloadPdf()}
+                                                        >
+                                                            <IonIcon icon={downloadOutline} />
+                                                            {pdfDownloading
+                                                                ? m['shareLinks.preparingPdf']()
+                                                                : m['shareLinks.downloadPdf']()}
+                                                        </button>
+                                                    </div>
+                                                    {actionError && (
+                                                        <p
+                                                            role="alert"
+                                                            className="text-sm text-red-700"
+                                                        >
+                                                            {actionError === 'copy'
+                                                                ? m['shareLinks.copyError']()
+                                                                : m['shareLinks.downloadError']()}
+                                                        </p>
+                                                    )}
+                                                </section>
+                                            </>
                                         }
                                     />
                                 </div>
-                                <section className="bg-white rounded-[20px] p-6 md:p-8 space-y-3">
-                                    <p className="text-xs text-grayscale-500 leading-relaxed">
-                                        {m['shareLinks.downloadHint']()}
-                                    </p>
-                                    <div className="flex flex-wrap gap-3">
-                                        <button
-                                            type="button"
-                                            className={secondaryButton}
-                                            disabled={!link || copyState === 'copying'}
-                                            onClick={() => void copyLink()}
-                                        >
-                                            <IonIcon
-                                                icon={
-                                                    copyState === 'copied'
-                                                        ? checkmarkOutline
-                                                        : copyOutline
-                                                }
-                                            />
-                                            {copyState === 'copied'
-                                                ? m['shareLinks.copied']()
-                                                : copyState === 'copying'
-                                                  ? m['shareLinks.copying']()
-                                                  : m['shareLinks.copy']()}
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className={secondaryButton}
-                                            disabled={downloading}
-                                            onClick={download}
-                                        >
-                                            <IonIcon icon={downloadOutline} />
-                                            {downloading
-                                                ? m['shareLinks.downloading']()
-                                                : m['shareLinks.download']()}
-                                        </button>
-                                    </div>
-                                    {actionError && (
-                                        <p role="alert" className="text-sm text-red-700">
-                                            {actionError === 'copy'
-                                                ? m['shareLinks.copyError']()
-                                                : m['shareLinks.downloadError']()}
-                                        </p>
-                                    )}
-                                </section>
                                 <p className="text-center text-xs text-grayscale-500 px-4 leading-relaxed">
                                     {m['shareLinks.recipientHint']()}
                                 </p>

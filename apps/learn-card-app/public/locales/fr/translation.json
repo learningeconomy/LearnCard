@@ -578,6 +578,7 @@
                 "defaultName": "Aperçu du CV",
                 "page": "Page",
                 "pages": "Pages",
+                "preparingPdf": "Préparation du PDF…",
                 "downloadPdf": "Télécharger le PDF",
                 "iframeTitle": "Aperçu PDF du CV"
             },
@@ -2562,6 +2563,7 @@
             "experience": "Nouvelle expérience",
             "assistance": "Nouvel aménagement",
             "portfolio": "Nouveau portfolio",
+            "badge": "Nouveau badge",
             "boost": "Nouveau boost",
             "achievement": "Nouvelle réalisation",
             "skill": "Nouvelle compétence",
@@ -3698,6 +3700,9 @@
             "upload": "Téléverser",
             "change": "Changer le {{type}}"
         },
+        "activity": {
+            "title": "Recommandation de {{name}}"
+        },
         "request": {
             "header": {
                 "title": "Demande de recommandation",
@@ -3712,7 +3717,8 @@
                 "messagePlaceholder": "Message…",
                 "emailPlaceholder": "E-mail",
                 "sendEmail": "Envoyer la demande par e-mail",
-                "sending": "Envoi..."
+                "sending": "Envoi...",
+                "linkGenerationFailed": "Impossible de créer ce lien. Réessayez."
             },
             "success": {
                 "title": "Demande envoyée !",
@@ -8971,7 +8977,7 @@
         "close": "Fermer",
         "ready": "Prêt à envoyer",
         "step": "Étape {{current}} sur 3",
-        "choose": "Choisissez quoi partager",
+        "choose": "Choisissez les justificatifs à partager",
         "details": "Ajoutez votre touche",
         "done": "Votre lien est prêt",
         "chooseHint": "Réunissez vos justificatifs dans un lien privé.",
@@ -8979,7 +8985,28 @@
         "linkHint": "Toute personne disposant du lien complet peut ouvrir ces justificatifs.",
         "error": "Un problème est survenu. Réessayez.",
         "search": "Rechercher des justificatifs",
+        "searchUpdating": "Mise à jour des résultats…",
+        "searchLoaded": "La recherche porte sur les justificatifs chargés. Chargez-en davantage pour élargir la recherche.",
+        "titlePlaceholder": "Ex. : Mes réussites d’apprentissage",
+        "notePlaceholder": "Ex. : Voici les justificatifs de ma récente formation.",
+        "categoryFilter": "Catégorie",
+        "allCategories": "Toutes les catégories",
+        "oneCategory": "Dans 1 catégorie",
+        "categoryCount": "Dans {{count}} catégories",
+        "viewSelected": "Voir la sélection",
+        "browseAll": "Revenir à la liste",
+        "deselectAll": "Tout désélectionner",
+        "searchPlaceholder": "Rechercher par nom de justificatif…",
+        "clearSearch": "Effacer la recherche",
+        "noSearchResults": "Aucun justificatif correspondant. Essayez un autre nom.",
         "selected": "{{count}} justificatifs sélectionnés",
+        "shareWithOthers": "Partager avec d’autres justificatifs…",
+        "sharedWithYou": "a partagé {{count}} justificatifs avec vous",
+        "preparingPdf": "Préparation du PDF…",
+        "downloadQrPdf": "Télécharger le code QR en PDF",
+        "downloadPdf": "Télécharger le PDF",
+        "showQr": "Afficher le code QR",
+        "sharedCount": "{{count}} justificatifs partagés",
         "limit": "Jusqu’à 50",
         "credential": "Justificatif",
         "loadFailed": "Impossible de charger ce justificatif.",
