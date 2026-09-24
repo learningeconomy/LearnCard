@@ -176,6 +176,12 @@ const chooseAndCreate = async () => {
     fireEvent.click(screen.getByRole('button', { name: 'Create private link' }));
 };
 describe('create screen', () => {
+    it('preselects the credential from the detail share action', async () => {
+        render(<ShareLinkCreate initialSelectedUri="private:one" onDismiss={() => {}} />);
+        expect(await screen.findByRole('checkbox')).toBeChecked();
+        expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled();
+    });
+
     it('keeps Continue disabled without a selection', async () => {
         render(<ShareLinkCreate onDismiss={() => {}} />);
         await screen.findByRole('checkbox');

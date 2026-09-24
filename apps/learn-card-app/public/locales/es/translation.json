@@ -8956,6 +8956,7 @@
         "clearSearch": "Borrar búsqueda",
         "noSearchResults": "No hay credenciales coincidentes. Prueba otro nombre.",
         "selected": "{{count}} credenciales seleccionadas",
+        "shareWithOthers": "Compartir con otras credenciales…",
         "sharedCount": "{{count}} credenciales compartidas",
         "limit": "Hasta 50",
         "credential": "Credencial",

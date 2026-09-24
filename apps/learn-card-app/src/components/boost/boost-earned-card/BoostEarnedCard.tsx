@@ -1,3 +1,5 @@
+import { useFlags } from 'launchdarkly-react-client-sdk';
+import ShareLinkCreate from '../../share-links/ShareLinkCreate';
 /* eslint-disable @typescript-eslint/no-explicit-any -- legacy credential shapes and callback APIs are intentionally untyped. */
 import React from 'react';
 import moment from 'moment';
@@ -228,11 +230,24 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     const indicatorColor = colors?.indicatorColor;
     const clrBadgeKind = isClrCredential && cred ? getClrTranscriptKind(cred) : 'unknown';
 
+    const flags = useFlags();
     const presentShareBoostLink = () => {
         const shareBoostLinkModalProps = {
             handleClose: () => closeModal(),
             boost: credential,
             boostUri: record?.uri,
+            onShareWithOtherCredentials:
+                flags?.shareMultipleEnabled === true && record?.uri
+                    ? () =>
+                          newModal(
+                              <ShareLinkCreate
+                                  initialSelectedUri={record.uri}
+                                  onDismiss={closeModal}
+                              />,
+                              {},
+                              { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+                          )
+                    : undefined,
             categoryType,
         };
 

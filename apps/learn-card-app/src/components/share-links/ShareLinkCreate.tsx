@@ -66,7 +66,13 @@ const categoryOf = (choice: CredentialChoice) =>
     (choice.credential && getDefaultCategoryForCredential(choice.credential)) ||
     '';
 
-export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
+export const ShareLinkCreate = ({
+    onDismiss,
+    initialSelectedUri,
+}: {
+    onDismiss: () => void;
+    initialSelectedUri?: string;
+}) => {
     const { initWallet } = useWallet();
     const { getThemedCategory } = useTheme();
     const [categoryFilter, setCategoryFilter] = useState('');
@@ -75,7 +81,9 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
     const walletRef = useRef(initWallet);
     walletRef.current = initWallet;
     const [choices, setChoices] = useState<CredentialChoice[]>([]);
-    const [selected, setSelected] = useState<string[]>([]);
+    const [selected, setSelected] = useState<string[]>(() =>
+        initialSelectedUri ? [initialSelectedUri] : []
+    );
     useEffect(() => {
         if (!selected.length) setSelectedOnly(false);
     }, [selected]);
@@ -146,6 +154,11 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
                 }
             });
             if (!alive.current) return;
+            // Keep the detail entry point visible and hydrate it in the first batch.
+            indexed.sort(
+                (a, b) =>
+                    Number(b.uri === initialSelectedUri) - Number(a.uri === initialSelectedUri)
+            );
             setChoices(previous => {
                 const cached = new Map(previous.map(row => [row.uri, row.credential]));
                 return [
