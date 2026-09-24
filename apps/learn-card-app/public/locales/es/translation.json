@@ -8941,6 +8941,8 @@
         "linkHint": "Cualquiera con el enlace completo puede abrir estas credenciales.",
         "error": "Algo salió mal. Inténtalo de nuevo.",
         "search": "Buscar credenciales",
+        "searchUpdating": "Actualizando resultados…",
+        "searchLoaded": "La búsqueda incluye las credenciales cargadas. Carga más para ampliar la búsqueda.",
         "searchPlaceholder": "Busca por nombre de credencial…",
         "clearSearch": "Borrar búsqueda",
         "noSearchResults": "No hay credenciales coincidentes. Prueba otro nombre.",

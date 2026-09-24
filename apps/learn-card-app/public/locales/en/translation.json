@@ -8947,6 +8947,8 @@
         "linkHint": "Anyone with the complete link can open these credentials.",
         "error": "Something went wrong. Please try again.",
         "search": "Search credentials",
+        "searchUpdating": "Updating results…",
+        "searchLoaded": "Search covers loaded credentials. Load more to search further.",
         "searchPlaceholder": "Search by credential name…",
         "clearSearch": "Clear search",
         "noSearchResults": "No matching credentials. Try another name.",

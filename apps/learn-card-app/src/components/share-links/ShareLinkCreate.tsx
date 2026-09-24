@@ -68,6 +68,12 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
     const [loading, setLoading] = useState(false);
     const [step, setStep] = useState<'choose' | 'details' | 'preview' | 'done'>('choose');
     const [search, setSearch] = useState('');
+    const [settledSearch, setSettledSearch] = useState('');
+    const searchPending = search.trim() !== settledSearch;
+    useEffect(() => {
+        const timer = window.setTimeout(() => setSettledSearch(search.trim()), 300);
+        return () => window.clearTimeout(timer);
+    }, [search]);
     const [title, setTitle] = useState('');
     const [note, setNote] = useState('');
     const [error, setError] = useState(false);
@@ -299,7 +305,7 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
     const filtered = choices.filter(choice =>
         credentialText(choice.credential)
             .name.toLocaleLowerCase()
-            .includes(search.trim().toLocaleLowerCase())
+            .includes(settledSearch.toLocaleLowerCase())
     );
     const fieldsLocked = publicationStarted || loading;
     const effectiveExpiry = prepared.current?.input.expiresAt ?? resolveExpiryIso(expiryChoice);
@@ -390,6 +396,7 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
                                             aria-label={m['shareLinks.clearSearch']()}
                                             onClick={() => {
                                                 setSearch('');
+                                                setSettledSearch('');
                                                 searchInput.current?.focus();
                                             }}
                                             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-grayscale-600 hover:bg-grayscale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
@@ -409,7 +416,17 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
                                 </span>
                                 <span>{m['shareLinks.limit']()}</span>
                             </div>
-                            <div className="space-y-3">
+                            <p role="status" className="min-h-5 text-xs text-grayscale-500">
+                                {searchPending
+                                    ? m['shareLinks.searchUpdating']()
+                                    : hasMore
+                                      ? m['shareLinks.searchLoaded']()
+                                      : null}
+                            </p>
+                            <div
+                                aria-busy={searchPending}
+                                className={`space-y-3 motion-safe:transition-opacity motion-safe:duration-200 ${searchPending ? 'opacity-60' : 'opacity-100'}`}
+                            >
                                 {filtered.map(choice => {
                                     const text = credentialText(choice.credential);
                                     const checked = selected.includes(choice.uri);
@@ -460,9 +477,9 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
                                     );
                                 })}
                             </div>
-                            {!filtered.length && !loading && (
+                            {!filtered.length && !loading && !searchPending && (
                                 <p className="p-6 text-center text-sm text-grayscale-500">
-                                    {search.trim()
+                                    {settledSearch
                                         ? m['shareLinks.noSearchResults']()
                                         : m['shareLinks.empty']()}
                                 </p>

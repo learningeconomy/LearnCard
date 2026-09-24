@@ -550,3 +550,17 @@ describe('recipient screen', () => {
         }
     });
 });
+
+it('keeps results while typing, then filters locally and clears immediately', async () => {
+    render(<ShareLinkCreate onDismiss={() => {}} />);
+    await screen.findByRole('checkbox');
+    const requests = mocks.wallet.index.LearnCloud.getPage.mock.calls.length;
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'no-match' } });
+    expect(screen.getByRole('checkbox')).toBeTruthy();
+    expect(screen.getByRole('status').textContent).toBe('Updating results…');
+    await waitFor(() => expect(screen.queryByRole('checkbox')).toBeNull());
+    expect(mocks.wallet.index.LearnCloud.getPage).toHaveBeenCalledTimes(requests);
+    fireEvent.click(screen.getByRole('button', { name: 'Clear search' }));
+    expect(screen.getByRole('checkbox')).toBeTruthy();
+    expect(screen.getByRole('searchbox')).toHaveFocus();
+});
