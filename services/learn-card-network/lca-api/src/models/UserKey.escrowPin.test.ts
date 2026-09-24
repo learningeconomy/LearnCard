@@ -31,16 +31,19 @@ describe('getEscrowPinStatus', () => {
         });
     });
 
-    it.each([0, 9, 10, 11])('only enables unexhausted PINs (%i reserved)', failedAttempts => {
-        const userKey = {
-            shareVersion: 1,
-            escrowPin: { salt: 'salt', shareVersion: 1, failedAttempts, enabledAt: new Date() },
-        } as MongoUserKeyType;
-        expect(getEscrowPinStatus(userKey)).toEqual({
-            state: failedAttempts < 10 ? 'enabled' : 'locked',
-            enabled: failedAttempts < 10,
-            attemptsRemaining: Math.max(0, 10 - failedAttempts),
-            ...(failedAttempts < 10 ? { salt: 'salt' } : {}),
-        });
-    });
+    it.each([0, 9, 10, 11])(
+        'does not label reservations as verified lockout (%i reserved)',
+        failedAttempts => {
+            const userKey = {
+                shareVersion: 1,
+                escrowPin: { salt: 'salt', shareVersion: 1, failedAttempts, enabledAt: new Date() },
+            } as MongoUserKeyType;
+            expect(getEscrowPinStatus(userKey)).toEqual({
+                state: 'enabled',
+                enabled: true,
+                attemptsRemaining: Math.max(0, 10 - failedAttempts),
+                salt: 'salt',
+            });
+        }
+    );
 });
