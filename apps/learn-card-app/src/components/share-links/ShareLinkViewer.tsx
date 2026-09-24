@@ -45,7 +45,7 @@ type ViewState =
     'loading' | 'incomplete' | 'expired' | 'stopped' | 'not_found' | 'error' | 'corrupt' | 'ready';
 
 const secondaryButton =
-    'inline-flex items-center gap-2 px-5 py-3 rounded-[20px] border border-grayscale-300 text-grayscale-700 text-sm font-medium hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed';
+    'inline-flex items-center justify-center gap-2 px-3 py-3 rounded-[20px] border border-grayscale-300 text-grayscale-700 text-sm font-medium hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed';
 
 const ShareLinkViewer = () => {
     const { id } = useParams<{ id: string }>();
@@ -362,7 +362,7 @@ const ShareLinkViewer = () => {
                                                     <p className="text-xs text-grayscale-500 leading-relaxed">
                                                         {m['shareLinks.downloadHint']()}
                                                     </p>
-                                                    <div className="flex flex-wrap gap-3">
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
                                                         <button
                                                             type="button"
                                                             className={secondaryButton}
