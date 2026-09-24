@@ -424,7 +424,10 @@ export const upsertUserKey = async (
             (updateOps.$set as Record<string, unknown>).recoveryMethods = prunedMethods;
             if (!prunedMethods.some(method => method.type === 'escrow')) {
                 delete (updateOps.$set as Record<string, unknown>).escrowBlob;
-                updateOps.$unset = { escrowBlob: '' };
+                updateOps.$unset = {
+                    ...((updateOps.$unset as Record<string, unknown> | undefined) ?? {}),
+                    escrowBlob: '',
+                };
             }
         } else if (data.authShare) {
             // First auth share — no history to push
@@ -525,7 +528,10 @@ export const upsertUserKeyByAuthProvider = async (
             (updateOps.$set as Record<string, unknown>).recoveryMethods = prunedMethods;
             if (!prunedMethods.some(method => method.type === 'escrow')) {
                 delete (updateOps.$set as Record<string, unknown>).escrowBlob;
-                updateOps.$unset = { escrowBlob: '' };
+                updateOps.$unset = {
+                    ...((updateOps.$unset as Record<string, unknown> | undefined) ?? {}),
+                    escrowBlob: '',
+                };
             }
         } else if (data.authShare) {
             updateOps.$inc = { shareVersion: 1 };
