@@ -851,19 +851,24 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
                     {step === 'details' ? (
                         <button
                             disabled={loading}
-                            className={secondary}
+                            className={`${secondary} inline-flex items-center justify-center gap-2`}
                             onClick={() => {
                                 setStep('choose');
                                 setError(false);
                                 setUnsupportedBase(false);
                             }}
                         >
-                            <IonIcon icon={arrowBackOutline} /> {m['shareLinks.back']()}
+                            <IonIcon
+                                aria-hidden="true"
+                                icon={arrowBackOutline}
+                                className="h-4 w-4 shrink-0"
+                            />{' '}
+                            {m['shareLinks.back']()}
                         </button>
                     ) : step === 'preview' ? (
                         <button
                             disabled={loading || publicationStarted}
-                            className={secondary}
+                            className={`${secondary} inline-flex items-center justify-center gap-2`}
                             onClick={() => {
                                 prepared.current = undefined;
                                 operation.current = undefined;
@@ -872,7 +877,12 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
                                 setError(false);
                             }}
                         >
-                            <IonIcon icon={arrowBackOutline} /> {m['shareLinks.edit']()}
+                            <IonIcon
+                                aria-hidden="true"
+                                icon={arrowBackOutline}
+                                className="h-4 w-4 shrink-0"
+                            />{' '}
+                            {m['shareLinks.edit']()}
                         </button>
                     ) : (
                         <span />
