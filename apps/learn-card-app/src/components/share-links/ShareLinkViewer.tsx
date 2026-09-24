@@ -1,3 +1,4 @@
+import LearnCardBrandMark from '../../assets/images/lca-brandmark.png';
 import LearnCardTextLogo from '../svgs/LearnCardTextLogo';
 import { ShareCredentialsIllustration } from './ShareCredentialsIllustration';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -255,8 +256,13 @@ const ShareLinkViewer = () => {
                             href="https://learncard.app"
                             aria-label="LearnCard"
                             rel="noreferrer"
-                            className="shrink-0 rounded text-grayscale-900 transition-opacity hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                            className="flex items-center gap-2.5 shrink-0 rounded text-grayscale-900 transition-opacity hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                         >
+                            <img
+                                src={LearnCardBrandMark}
+                                alt=""
+                                className="h-8 w-8 sm:h-9 sm:w-9 object-contain"
+                            />
                             <LearnCardTextLogo className="w-28 sm:w-40 h-auto" />
                         </a>
                         <span className="flex items-center gap-2 text-right">
