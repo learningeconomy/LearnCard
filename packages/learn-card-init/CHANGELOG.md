@@ -1,5 +1,40 @@
 # learn-card-core
 
+## 2.5.0
+
+### Minor Changes
+
+- [#1598](https://github.com/learningeconomy/LearnCard/pull/1598) [`2991bd32b03e26736239dd8e586e2f720d9bcd45`](https://github.com/learningeconomy/LearnCard/commit/2991bd32b03e26736239dd8e586e2f720d9bcd45) Thanks [@Custard7](https://github.com/Custard7)! - Act as a managed profile. A request may carry `X-LearnCard-Act-As: <profileId>`; the network swaps the acting profile when the authenticated profile manages the target, keeps the token's scope unchanged, and records `onBehalfOf` on the resulting activity. API tokens must opt in via a new `actAs` field on the auth grant (`'*'` or a list of profile IDs; absent = no delegation).
+
+    - `@learncard/types`: `ACT_AS_HEADER`, `AuthGrant.actAs`.
+    - `@learncard/network-plugin` / `@learncard/init`: `actAs` option on `initLearnCard` and the network plugin; `learnCard.invoke.actAs(profileId)` returns a scoped instance.
+    - `@learncard/cli`: `serviceAccounts[].actAs` in the org spec is set on the grant at creation; like scope and expiry, it is compared on re-apply and any drift errors with a revoke hint (dry-run reports `drifted`). `actAs` lists are compared as sets, so reordering profile IDs is not drift. With a `learncard-hosted` signer, `org apply` also registers a hosted signing authority on each managed profile so tokens acting as it can sign. Shown by `doctor` and `whoami`; new `examples/delegated-service-account.network.yaml`.
+
+### Patch Changes
+
+- Updated dependencies [[`2991bd32b03e26736239dd8e586e2f720d9bcd45`](https://github.com/learningeconomy/LearnCard/commit/2991bd32b03e26736239dd8e586e2f720d9bcd45), [`0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e`](https://github.com/learningeconomy/LearnCard/commit/0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e), [`3174c09b97fde6f7b5251390245038cf6b7ea9ba`](https://github.com/learningeconomy/LearnCard/commit/3174c09b97fde6f7b5251390245038cf6b7ea9ba), [`928e587378b3674766cf58a8bbe1cbd4d66d3a9f`](https://github.com/learningeconomy/LearnCard/commit/928e587378b3674766cf58a8bbe1cbd4d66d3a9f), [`928e587378b3674766cf58a8bbe1cbd4d66d3a9f`](https://github.com/learningeconomy/LearnCard/commit/928e587378b3674766cf58a8bbe1cbd4d66d3a9f)]:
+    - @learncard/types@5.21.0
+    - @learncard/network-plugin@3.0.0
+    - @learncard/helpers@1.6.0
+    - @learncard/vc-plugin@1.6.2
+    - @learncard/core@9.4.36
+    - @learncard/chapi-plugin@1.1.36
+    - @learncard/did-web-plugin@1.1.36
+    - @learncard/didkey-plugin@1.1.36
+    - @learncard/didkit-plugin@1.10.1
+    - @learncard/encryption-plugin@1.1.36
+    - @learncard/learn-card-plugin@1.2.36
+    - @learncard/learn-cloud-plugin@2.3.42
+    - @learncard/openid4vc-plugin@0.3.9
+    - @learncard/sd-jwt-vc-plugin@0.2.14
+    - @learncard/vc-api-plugin@1.1.36
+    - @learncard/vc-templates-plugin@1.1.36
+    - @learncard/vpqr-plugin@1.1.36
+    - @learncard/crypto-plugin@1.1.36
+    - @learncard/dynamic-loader-plugin@1.1.36
+    - @learncard/ethereum-plugin@1.1.37
+    - @learncard/expiration-plugin@1.2.36
+
 ## 2.4.16
 
 ### Patch Changes
