@@ -17,6 +17,7 @@ import { encryptAuthShare, decryptAuthShare } from '@helpers/shareEncryption.hel
 import { maskEmail } from '@helpers/maskEmail';
 import cache from '@cache';
 import { setValidChallengeForDid } from '@cache/challenges';
+import { checkRateLimit, clearRateLimit } from '@helpers/rateLimit.helpers';
 import {
     MAX_RECOVERY_OTP_ATTEMPTS,
     claimRecoveryOtpSendWindow,
@@ -61,6 +62,9 @@ const RECOVERY_METHOD_CONFIRMATION_TTL_MS = 15 * 60 * 1000;
 const MAX_RECOVERY_METHOD_CONFIRMATION_ATTEMPTS = 5;
 const EMAIL_RELAY_ALGORITHM = 'P-256-HKDF-SHA256-AES-256-GCM' as const;
 const ESCROW_RELAY_TIMEOUT_MS = 15_000;
+
+// Rate limiting for recovery email verification (brute-force protection)
+const RECOVERY_VERIFY_MAX_ATTEMPTS = 5; // max failed attempts per auth provider identity
 
 const generate6DigitCode = (): string => randomInt(100000, 1000000).toString();
 
@@ -1135,6 +1139,11 @@ export const keysRouter = t.router({
                 RECOVERY_EMAIL_CODE_TTL_SECS
             );
 
+            // Clear the verification attempt counter so user can try the new code
+            await clearRateLimit(
+                `recovery-verify-attempts:${authProvider.type}:${authProvider.id}`
+            );
+
             try {
                 // Always render locally via @learncard/email-templates for
                 // tenant-branded output. Falls back to the 'recovery-email-code'
@@ -1183,6 +1192,24 @@ export const keysRouter = t.router({
             assertDidOwner(userKey, ctx.user.did);
 
             const cacheKey = `${RECOVERY_EMAIL_CODE_PREFIX}${authProvider.type}:${authProvider.id}`;
+            const attemptKey = `recovery-verify-attempts:${authProvider.type}:${authProvider.id}`;
+
+            // Check rate limit (5 failed attempts per auth provider identity within code TTL)
+            const allowed = await checkRateLimit(
+                attemptKey,
+                RECOVERY_VERIFY_MAX_ATTEMPTS,
+                RECOVERY_EMAIL_CODE_TTL_SECS
+            );
+
+            if (!allowed) {
+                // On exceeding limit, delete the pending recovery code
+                await cache.delete([cacheKey]);
+                throw new TRPCError({
+                    code: 'TOO_MANY_REQUESTS',
+                    message: 'Too many attempts. Please resend code.',
+                });
+            }
+
             const raw = await cache.get(cacheKey);
 
             if (!raw) {
@@ -1195,6 +1222,7 @@ export const keysRouter = t.router({
             const { code: storedCode, email } = JSON.parse(raw) as { code: string; email: string };
 
             if (input.code !== storedCode) {
+                // Failed attempt — rate limit counter already incremented above
                 throw new TRPCError({
                     code: 'BAD_REQUEST',
                     message: 'Incorrect code. Please try again.',
@@ -1203,6 +1231,7 @@ export const keysRouter = t.router({
 
             // Code is valid — consume it and store the verified recovery email
             await cache.delete([cacheKey]);
+            await clearRateLimit(attemptKey);
             await setRecoveryEmailByAuthProvider(authProvider, email);
 
             return { success: true, maskedEmail: maskEmail(email) };
