@@ -650,44 +650,46 @@ export const escrowRouter = t.router({
             }
             // Claim the pending hold BEFORE releasing secrets. The enclave receives the
             // pending snapshot whose CAS we won; release failures burn the hold (fail-closed).
-            const completed = await completeEscrowHold(hold._id);
-            if (!completed) {
-                if (reserved)
-                    await refundEscrowPinAttempt(
-                        hold.authProvider,
-                        hold.shareVersion,
-                        expectedCiphertext
-                    );
-                throw new TRPCError({
-                    code: 'CONFLICT',
-                    message: 'Recovery state changed; please retry.',
-                });
-            }
-            // Revalidate after the claim so a rotation or removal cannot release the old snapshot.
-            const current = await findUserKeyByAuthProvider(
-                hold.authProvider.type,
-                hold.authProvider.id
-            );
-            if (
-                !current?.escrowBlob ||
-                current.escrowOptedOutAt ||
-                current.shareVersion !== userKey.shareVersion ||
-                current.escrowBlob.shareVersion !== hold.shareVersion ||
-                current.escrowBlob.envelope.ciphertext !== expectedCiphertext ||
-                !hasConfirmedEscrow(current, hold.shareVersion)
-            ) {
-                await markClaimedEscrowHoldFailed(
-                    hold._id,
-                    'release-failed',
-                    completed.completedAt!
+            let completed: Awaited<ReturnType<typeof completeEscrowHold>> = null;
+            try {
+                completed = await completeEscrowHold(hold._id);
+                if (!completed) {
+                    throw new TRPCError({
+                        code: 'CONFLICT',
+                        message: 'Recovery state changed; please retry.',
+                    });
+                }
+                // Revalidate after the claim so a rotation/removal cannot release the old snapshot.
+                const current = await findUserKeyByAuthProvider(
+                    hold.authProvider.type,
+                    hold.authProvider.id
                 );
+                if (
+                    !current?.escrowBlob ||
+                    current.escrowOptedOutAt ||
+                    current.shareVersion !== userKey.shareVersion ||
+                    current.escrowBlob.shareVersion !== hold.shareVersion ||
+                    current.escrowBlob.envelope.ciphertext !== expectedCiphertext ||
+                    !hasConfirmedEscrow(current, hold.shareVersion)
+                ) {
+                    throw new TRPCError({ code: 'FORBIDDEN', message: invalidMessage });
+                }
+            } catch (error) {
+                // No enclave evaluation occurred, including when Mongo throws rather
+                // than returning a lost CAS. Refund before any fallible hold cleanup.
                 if (reserved)
                     await refundEscrowPinAttempt(
                         hold.authProvider,
                         hold.shareVersion,
                         expectedCiphertext
                     );
-                throw new TRPCError({ code: 'FORBIDDEN', message: invalidMessage });
+                if (completed)
+                    await markClaimedEscrowHoldFailed(
+                        hold._id,
+                        'release-failed',
+                        completed.completedAt!
+                    );
+                throw error;
             }
             const release = await enclaveOperation(async () => {
                 try {
@@ -727,7 +729,8 @@ export const escrowRouter = t.router({
                     expectedCiphertext
                 );
                 const attemptsRemaining =
-                    ESCROW_PIN_MAX_ATTEMPTS - (failed?.escrowPin?.verifiedFailedAttempts ?? 0);
+                    ESCROW_PIN_MAX_ATTEMPTS -
+                    (failed?.escrowPin?.failedAttempts ?? reserved!.escrowPin!.failedAttempts);
                 const locked = !!failed?.escrowPin?.disabledAt;
                 const cancelReason = locked ? 'pin-locked' : 'pin-mismatch';
                 await markClaimedEscrowHoldFailed(hold._id, cancelReason, completed.completedAt!);

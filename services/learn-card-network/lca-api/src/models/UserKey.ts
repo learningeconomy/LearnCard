@@ -771,10 +771,10 @@ export const reserveEscrowPinAttempt = async (
         [
             {
                 $set: {
-                    // Existing documents have only the charged counter. Snapshot their prior
-                    // failures before the first reservation using the new accounting.
+                    // Legacy charged history may include unresolved reservations. Keep
+                    // its budget, but never infer verified mismatches from it.
                     'escrowPin.verifiedFailedAttempts': {
-                        $ifNull: ['$escrowPin.verifiedFailedAttempts', '$escrowPin.failedAttempts'],
+                        $ifNull: ['$escrowPin.verifiedFailedAttempts', 0],
                     },
                     'escrowPin.failedAttempts': { $add: ['$escrowPin.failedAttempts', 1] },
                     updatedAt: new Date(),

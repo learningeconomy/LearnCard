@@ -857,7 +857,7 @@ describe('escrow PIN release', () => {
         await enrollPin();
         await getUserKeysCollection().updateOne(
             { 'authProviders.id': authProvider.id },
-            { $set: { 'escrowPin.failedAttempts': 9 } }
+            { $set: { 'escrowPin.failedAttempts': 9, 'escrowPin.verifiedFailedAttempts': 9 } }
         );
         const waiting = await start();
         const hold = await startPin();
@@ -892,13 +892,13 @@ describe('escrow PIN release', () => {
         await enrollPin();
         await getUserKeysCollection().updateOne(
             { 'authProviders.id': authProvider.id },
-            { $set: { 'escrowPin.failedAttempts': 8 } }
+            { $set: { 'escrowPin.failedAttempts': 8, 'escrowPin.verifiedFailedAttempts': 8 } }
         );
         const hold = await startPin();
         const ciphertext = (await record())!.escrowBlob!.envelope.ciphertext;
         await models.reserveEscrowPinAttempt(authProvider, 1, ciphertext);
         await expect(completePin(hold, wrongProof)).rejects.toMatchObject({
-            message: 'Incorrect PIN. 1 attempts left.',
+            message: 'Incorrect PIN. 0 attempts left.',
         });
         expect((await record())?.escrowPin?.disabledAt).toBeUndefined();
         await models.refundEscrowPinAttempt(authProvider, 1, ciphertext);
@@ -908,6 +908,39 @@ describe('escrow PIN release', () => {
         });
         expect((await record())?.escrowPin?.verifiedFailedAttempts).toBe(10);
         expect((await record())?.escrowPin?.disabledAt).toBeInstanceOf(Date);
+    });
+
+    it('keeps legacy charged history without treating unresolved attempts as verified failures', async () => {
+        await enrollPin();
+        await getUserKeysCollection().updateOne(
+            { 'authProviders.id': authProvider.id },
+            { $set: { 'escrowPin.failedAttempts': 9 } }
+        );
+        const hold = await startPin();
+        await expect(completePin(hold, wrongProof)).rejects.toMatchObject({
+            message: 'Incorrect PIN. 0 attempts left.',
+        });
+        expect((await record())?.escrowPin).toMatchObject({
+            failedAttempts: 10,
+            verifiedFailedAttempts: 1,
+        });
+        expect((await record())?.escrowPin?.disabledAt).toBeUndefined();
+        await expect(completePin(await startPin())).rejects.toMatchObject({
+            message: 'Please wait before trying again.',
+        });
+    });
+
+    it('reports the charged budget after successful evaluations followed by a mismatch', async () => {
+        await enrollPin();
+        for (let attempt = 0; attempt < 9; attempt++) await completePin(await startPin());
+        await expect(completePin(await startPin(), wrongProof)).rejects.toMatchObject({
+            message: 'Incorrect PIN. 0 attempts left.',
+        });
+        expect((await record())?.escrowPin?.disabledAt).toBeUndefined();
+        expect((await owner().keys.getAuthShare(auth))?.escrowPin?.attemptsRemaining).toBe(0);
+        await expect(completePin(await startPin())).rejects.toMatchObject({
+            message: 'Please wait before trying again.',
+        });
     });
 
     it('ignores the restart flag for PIN policy and supersedes immediately', async () => {
@@ -1009,6 +1042,42 @@ describe('escrow PIN release', () => {
         expect((await record())?.escrowPin?.failedAttempts).toBe(9);
         expect((await record())?.escrowPin?.disabledAt).toBeUndefined();
     });
+
+    it.each(['claim', 'revalidation', 'cleanup'] as const)(
+        'refunds pre-enclave reservations when %s throws',
+        async failure => {
+            await enrollPin();
+            await getUserKeysCollection().updateOne(
+                { 'authProviders.id': authProvider.id },
+                { $set: { 'escrowPin.failedAttempts': 9, 'escrowPin.verifiedFailedAttempts': 9 } }
+            );
+            const hold = await startPin();
+            const claim = models.completeEscrowHold;
+            vi.spyOn(models, 'completeEscrowHold').mockImplementationOnce(async id => {
+                if (failure === 'claim') throw new Error('claim unavailable');
+                const completed = await claim(id);
+                if (failure === 'revalidation') {
+                    vi.spyOn(models, 'findUserKeyByAuthProvider').mockRejectedValueOnce(
+                        new Error('lookup unavailable')
+                    );
+                } else {
+                    vi.spyOn(models, 'findUserKeyByAuthProvider').mockResolvedValueOnce(null);
+                    vi.spyOn(models, 'markClaimedEscrowHoldFailed').mockRejectedValueOnce(
+                        new Error('cleanup unavailable')
+                    );
+                }
+                return completed;
+            });
+            const release = vi.spyOn(getEscrowEnclave(), 'releaseEscrow');
+            await expect(completePin(hold)).rejects.toBeDefined();
+            expect(release).not.toHaveBeenCalled();
+            expect((await record())?.escrowPin).toMatchObject({
+                failedAttempts: 9,
+                verifiedFailedAttempts: 9,
+            });
+            expect((await record())?.escrowPin?.disabledAt).toBeUndefined();
+        }
+    );
 
     it.each(['disabled', 'cleared', 'version', 'ciphertext'] as const)(
         'returns unavailable rather than lockout for concurrent PIN changes: %s',
