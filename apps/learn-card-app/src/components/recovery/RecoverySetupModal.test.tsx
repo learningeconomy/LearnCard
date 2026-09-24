@@ -33,6 +33,7 @@ vi.mock('learn-card-base', async () => ({
 
 import RecoverySetupModal from './RecoverySetupModal';
 import { createRecoverySetupRunner } from '../../../../../packages/learn-card-base/src/auth-coordinator/recoverySetup';
+import { createRecoveryPinActions } from '../../providers/recoveryPinActions';
 
 const renderModal = (
     initialMethod: 'passkey' | 'phrase' | 'backup' | 'email',
@@ -65,6 +66,63 @@ const renderModal = (
 };
 
 describe('RecoverySetupModal prompt integration', () => {
+    it.each([false, true])(
+        'PIN settings (existing PIN: %s) retry activation without re-saving',
+        async hasPin => {
+            const activate = vi
+                .fn()
+                .mockRejectedValueOnce(new Error('offline'))
+                .mockResolvedValue(undefined);
+            const identity = {};
+            const runner = createRecoverySetupRunner(
+                () => ({ identity, needsActivation: true, activate }),
+                vi.fn()
+            );
+            const save = vi.fn().mockResolvedValue(undefined);
+            const actions = createRecoveryPinActions({
+                runRecoverySetup: runner.run,
+                resetRecoverySetup: runner.reset,
+                setEscrowPin: save,
+                clearEscrowPin: vi.fn(),
+            });
+            const getEnrollment = vi.fn().mockResolvedValue({
+                state: 'enrolled',
+                ...(hasPin ? { escrowPin: { state: 'enabled' } } : {}),
+            });
+            renderModal('email', vi.fn(), {
+                onGetEscrowEnrollmentState: getEnrollment,
+                onEnableEscrowRecovery: vi.fn(),
+                onDisableEscrowRecovery: vi.fn(),
+                onSetEscrowPin: actions.setEscrowPin,
+                onClearEscrowPin: actions.clearEscrowPin,
+            });
+            fireEvent.click(
+                await screen.findByRole('button', {
+                    name: hasPin ? 'Change' : 'Set a recovery PIN',
+                })
+            );
+            const enterPin = () =>
+                fireEvent.paste(screen.getAllByLabelText(/PIN digit/)[0], {
+                    clipboardData: { getData: () => '135790' },
+                });
+            enterPin();
+            enterPin();
+            await waitFor(() => expect(activate).toHaveBeenCalledOnce());
+            await waitFor(() =>
+                expect(screen.getAllByLabelText(/PIN digit/)[0]).not.toBeDisabled()
+            );
+            expect(screen.getByText('Confirm your PIN')).toBeInTheDocument();
+            expect(getEnrollment).toHaveBeenCalledOnce();
+            enterPin();
+            await waitFor(() =>
+                expect(screen.queryByText('Confirm your PIN')).not.toBeInTheDocument()
+            );
+            expect(save).toHaveBeenCalledOnce();
+            expect(activate).toHaveBeenCalledTimes(2);
+            expect(getEnrollment).toHaveBeenCalledTimes(2);
+        }
+    );
+
     it('shows Set PIN pill when enrolled without a PIN and opens PIN entry', async () => {
         const onSetEscrowPin = vi.fn().mockResolvedValue(undefined);
         renderModal('email', vi.fn(), {
