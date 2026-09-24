@@ -14,10 +14,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
     registerAuthProviderFactory,
     registerKeyDerivationFactory,
+    registerAuthProviderInitializer,
     resolveAuthProvider,
     resolveKeyDerivation,
+    initializeAuthProvider,
     getRegisteredAuthProviders,
     getRegisteredKeyDerivations,
+    getRegisteredAuthProviderInitializers,
 } from '../providerRegistry';
 
 import type { AuthConfig } from '../authConfig';
@@ -42,14 +45,25 @@ const createMockAuthProvider = (): AuthProvider => ({
 
 const createMockKeyDerivation = (): KeyDerivationStrategy => ({
     name: 'test-sss',
-    capabilities: { recovery: false, deviceLinking: false, localKeyPersistence: false, contactMethodUpgrade: false },
+    capabilities: {
+        recovery: false,
+        deviceLinking: false,
+        localKeyPersistence: false,
+        contactMethodUpgrade: false,
+    },
     hasLocalKey: vi.fn().mockResolvedValue(false),
     getLocalKey: vi.fn().mockResolvedValue(null),
     storeLocalKey: vi.fn().mockResolvedValue(undefined),
     clearLocalKeys: vi.fn().mockResolvedValue(undefined),
     splitKey: vi.fn().mockResolvedValue({ localKey: 'l', remoteKey: 'r' }),
     reconstructKey: vi.fn().mockResolvedValue('pk'),
-    fetchServerKeyStatus: vi.fn().mockResolvedValue({ exists: false, needsMigration: false, primaryDid: null, recoveryMethods: [], authShare: null }),
+    fetchServerKeyStatus: vi.fn().mockResolvedValue({
+        exists: false,
+        needsMigration: false,
+        primaryDid: null,
+        recoveryMethods: [],
+        authShare: null,
+    }),
     storeAuthShare: vi.fn().mockResolvedValue(undefined),
     executeRecovery: vi.fn().mockResolvedValue({ privateKey: 'pk', did: 'did:key:z1' }),
     getPreservedStorageKeys: vi.fn().mockReturnValue([]),
@@ -72,9 +86,14 @@ describe('providerRegistry', () => {
 
             registerAuthProviderFactory('test-auth-1', factory);
 
-            const result = resolveAuthProvider({ ...baseConfig, authProvider: 'test-auth-1' as 'firebase' });
+            const result = resolveAuthProvider({
+                ...baseConfig,
+                authProvider: 'test-auth-1' as 'firebase',
+            });
 
-            expect(factory).toHaveBeenCalledWith(expect.objectContaining({ authProvider: 'test-auth-1' }));
+            expect(factory).toHaveBeenCalledWith(
+                expect.objectContaining({ authProvider: 'test-auth-1' })
+            );
             expect(result).toBe(mockProvider);
         });
 
@@ -83,14 +102,20 @@ describe('providerRegistry', () => {
 
             registerAuthProviderFactory('test-auth-null', factory);
 
-            const result = resolveAuthProvider({ ...baseConfig, authProvider: 'test-auth-null' as 'firebase' });
+            const result = resolveAuthProvider({
+                ...baseConfig,
+                authProvider: 'test-auth-null' as 'firebase',
+            });
 
             expect(result).toBeNull();
         });
 
         it('throws when no factory registered for the given name', () => {
             expect(() =>
-                resolveAuthProvider({ ...baseConfig, authProvider: 'nonexistent-provider' as 'firebase' })
+                resolveAuthProvider({
+                    ...baseConfig,
+                    authProvider: 'nonexistent-provider' as 'firebase',
+                })
             ).toThrow('No auth provider factory registered for "nonexistent-provider"');
         });
 
@@ -101,7 +126,10 @@ describe('providerRegistry', () => {
             registerAuthProviderFactory('test-auth-overwrite', factory1);
             registerAuthProviderFactory('test-auth-overwrite', factory2);
 
-            resolveAuthProvider({ ...baseConfig, authProvider: 'test-auth-overwrite' as 'firebase' });
+            resolveAuthProvider({
+                ...baseConfig,
+                authProvider: 'test-auth-overwrite' as 'firebase',
+            });
 
             expect(factory1).not.toHaveBeenCalled();
             expect(factory2).toHaveBeenCalled();
@@ -131,9 +159,14 @@ describe('providerRegistry', () => {
 
             registerKeyDerivationFactory('test-kd-1', factory);
 
-            const result = resolveKeyDerivation({ ...baseConfig, keyDerivation: 'test-kd-1' as 'sss' });
+            const result = resolveKeyDerivation({
+                ...baseConfig,
+                keyDerivation: 'test-kd-1' as 'sss',
+            });
 
-            expect(factory).toHaveBeenCalledWith(expect.objectContaining({ keyDerivation: 'test-kd-1' }));
+            expect(factory).toHaveBeenCalledWith(
+                expect.objectContaining({ keyDerivation: 'test-kd-1' })
+            );
             expect(result).toBe(mockStrategy);
         });
 
@@ -144,7 +177,10 @@ describe('providerRegistry', () => {
         });
 
         it('error message includes registered factory names', () => {
-            registerKeyDerivationFactory('test-kd-listed', vi.fn().mockReturnValue(createMockKeyDerivation()));
+            registerKeyDerivationFactory(
+                'test-kd-listed',
+                vi.fn().mockReturnValue(createMockKeyDerivation())
+            );
 
             try {
                 resolveKeyDerivation({ ...baseConfig, keyDerivation: 'missing-kd' as 'sss' });
@@ -185,4 +221,94 @@ describe('providerRegistry', () => {
         });
     });
 
+    describe('auth provider initializers', () => {
+        it('runs the initializer registered for the matching provider', async () => {
+            const initializer = vi.fn().mockResolvedValue(undefined);
+
+            registerAuthProviderInitializer('test-init-match', initializer);
+
+            await initializeAuthProvider({
+                ...baseConfig,
+                authProvider: 'test-init-match' as 'firebase',
+            });
+
+            expect(initializer).toHaveBeenCalledTimes(1);
+            expect(initializer).toHaveBeenCalledWith(
+                expect.objectContaining({ authProvider: 'test-init-match' })
+            );
+        });
+
+        it('never runs an initializer registered for a different provider', async () => {
+            const matching = vi.fn();
+            const other = vi.fn();
+
+            registerAuthProviderInitializer('test-init-selected', matching);
+            registerAuthProviderInitializer('test-init-unselected', other);
+
+            await initializeAuthProvider({
+                ...baseConfig,
+                authProvider: 'test-init-selected' as 'firebase',
+            });
+
+            expect(matching).toHaveBeenCalledTimes(1);
+            expect(other).not.toHaveBeenCalled();
+        });
+
+        it('is idempotent — calling twice for the same provider only initializes once', async () => {
+            const initializer = vi.fn().mockResolvedValue(undefined);
+
+            registerAuthProviderInitializer('test-init-idempotent', initializer);
+
+            const config = { ...baseConfig, authProvider: 'test-init-idempotent' as 'firebase' };
+
+            await initializeAuthProvider(config);
+            await initializeAuthProvider(config);
+            await initializeAuthProvider(config);
+
+            expect(initializer).toHaveBeenCalledTimes(1);
+        });
+
+        it('retries an initializer after it throws', async () => {
+            const initializer = vi
+                .fn()
+                .mockRejectedValueOnce(new Error('Bootstrap failed'))
+                .mockResolvedValue(undefined);
+            registerAuthProviderInitializer('test-init-retry', initializer);
+            const config = { ...baseConfig, authProvider: 'test-init-retry' as 'firebase' };
+
+            await expect(initializeAuthProvider(config)).rejects.toThrow('Bootstrap failed');
+            await initializeAuthProvider(config);
+
+            expect(initializer).toHaveBeenCalledTimes(2);
+        });
+
+        it('is idempotent across concurrent calls issued before the first resolves', async () => {
+            const initializer = vi.fn().mockResolvedValue(undefined);
+
+            registerAuthProviderInitializer('test-init-concurrent', initializer);
+
+            const config = { ...baseConfig, authProvider: 'test-init-concurrent' as 'firebase' };
+
+            await Promise.all([initializeAuthProvider(config), initializeAuthProvider(config)]);
+
+            expect(initializer).toHaveBeenCalledTimes(1);
+        });
+
+        it('no-ops (does not throw) when no initializer is registered for the provider', async () => {
+            await expect(
+                initializeAuthProvider({
+                    ...baseConfig,
+                    authProvider: 'test-init-missing' as 'firebase',
+                })
+            ).resolves.toBeUndefined();
+        });
+
+        it('getRegisteredAuthProviderInitializers returns registered names', () => {
+            registerAuthProviderInitializer('test-introspect-init', vi.fn());
+
+            const names = getRegisteredAuthProviderInitializers();
+
+            expect(names).toContain('test-introspect-init');
+        });
+    });
 });

@@ -345,11 +345,12 @@ const ReportSection: React.FC<ReportSectionProps> = ({
     // composing | sending
     return (
         <div className="space-y-2">
-            <label className="text-xs font-medium text-grayscale-700">
+            <label htmlFor="exchange-error-note" className="text-xs font-medium text-grayscale-700">
                 Anything to add? (optional)
             </label>
 
             <textarea
+                id="exchange-error-note"
                 value={note}
                 onChange={e => onNoteChange(e.target.value)}
                 placeholder="What were you trying to do? Any extra context?"

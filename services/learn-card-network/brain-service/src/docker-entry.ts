@@ -1,3 +1,4 @@
+import { configureInboxBatchBodyLimit } from '@helpers/inbox-batch-http.helpers';
 import { environment } from '@environment';
 import Fastify from 'fastify';
 import fastifyCors from '@fastify/cors';
@@ -17,6 +18,7 @@ import { appRouter, type AppRouter, createContext } from './app';
 import { publicShareLinkCacheControlHeaders } from './routes';
 import { registerPublicShareLinkNoStore } from './public-share-link-http';
 import { openApiDocument } from './openapi';
+import { inboxBatchResponseMeta } from './helpers/inbox-batch-http.helpers';
 import { didFastifyPlugin } from './dids';
 import { skillsViewerFastifyPlugin } from './skills-viewer';
 import { statusListsFastifyPlugin } from './status-lists';
@@ -43,6 +45,10 @@ let shareLinkMaintenanceScheduler: ShareLinkMaintenanceScheduler | null = null;
 server.addHook('onClose', async () => {
     await shareLinkMaintenanceScheduler?.stop();
 });
+// Register before either OpenAPI or tRPC registers its wildcard route. The hook raises the
+// parser ceiling for those shared routes, then narrows it back to 4 MiB only for batch issuance.
+// Registering this later would leave the already-created adapter routes at Fastify's 1 MiB limit.
+configureInboxBatchBodyLimit(server);
 
 server.addHook('onRequest', (request, _reply, done) => {
     type RawWithEmitter = typeof request.raw & {
@@ -101,6 +107,7 @@ server.register(fastifyTRPCPlugin, {
 });
 
 server.register(fastifyTRPCOpenApiPlugin, {
+    responseMeta: inboxBatchResponseMeta,
     basePath: '/api',
     router: appRouter,
     createContext,

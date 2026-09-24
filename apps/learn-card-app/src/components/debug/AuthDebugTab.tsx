@@ -30,6 +30,7 @@ import {
 const log = getLogger('auth-debug-tab');
 
 import { useAuthCoordinator } from '../../providers/AuthCoordinatorProvider';
+import { useSignInAdapter } from 'learn-card-base';
 import { getSigningLearnCard, getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
 
 import { Capacitor } from '@capacitor/core';
@@ -198,6 +199,8 @@ export type { StatusMeta };
 // ---------------------------------------------------------------------------
 
 export const AuthDebugTab: React.FC = () => {
+    const adapter = useSignInAdapter();
+    const { authProvider } = useAuthCoordinator();
     const [copied, copyToClipboard] = useCopyToClipboard();
     const [refreshKey, setRefreshKey] = useState(0);
     const [deviceShareExists, setDeviceShareExists] = useState<boolean | null>(null);
@@ -260,7 +263,7 @@ export const AuthDebugTab: React.FC = () => {
             const authUser = 'authUser' in state ? state.authUser : null;
 
             if (authUser) {
-                rows.push({ label: 'Auth UID', value: authUser.uid });
+                rows.push({ label: 'Auth UID', value: authUser.id });
                 rows.push({ label: 'Auth Email', value: authUser.email ?? '—' });
             }
         }
@@ -467,20 +470,20 @@ export const AuthDebugTab: React.FC = () => {
         setServerError(null);
 
         try {
-            const { getIdToken } = await import('firebase/auth');
-            const firebaseAuth = (await import('../../firebase/firebase')).auth();
-
-            if (!firebaseAuth.currentUser) {
+            if (!authProvider || !adapter.getCurrentUser()) {
                 setServerError('No Firebase session — cannot fetch token');
                 return;
             }
 
-            const token = await getIdToken(firebaseAuth.currentUser);
+            const token = await authProvider.getIdToken();
 
             const response = await fetch(`${sssServerUrl}/keys/auth-share`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ authToken: token, providerType: 'firebase' }),
+                body: JSON.stringify({
+                    authToken: token,
+                    providerType: authProvider.getProviderType(),
+                }),
             });
 
             if (!response.ok) {
@@ -559,9 +562,7 @@ export const AuthDebugTab: React.FC = () => {
         if (!authUser) return;
 
         try {
-            const { signOut } = await import('firebase/auth');
-            const firebaseAuth = (await import('../../firebase/firebase')).auth();
-            await signOut(firebaseAuth);
+            await adapter.signOut();
 
             authUserStore.set.setUser(null);
 
@@ -641,8 +642,8 @@ export const AuthDebugTab: React.FC = () => {
                                         keyIntegrityResult === true
                                             ? 'text-emerald-400'
                                             : keyIntegrityResult === false
-                                            ? 'text-red-400'
-                                            : 'text-gray-500'
+                                              ? 'text-red-400'
+                                              : 'text-gray-500'
                                     }`}
                                 />
                             </button>
@@ -750,8 +751,8 @@ export const AuthDebugTab: React.FC = () => {
                         isNative
                             ? 'SQLite (native)'
                             : isPublicComputerMode()
-                            ? 'sessionStorage (ephemeral)'
-                            : 'IndexedDB (persistent)'
+                              ? 'sessionStorage (ephemeral)'
+                              : 'IndexedDB (persistent)'
                     }
                     mono={false}
                     copied={copied}
@@ -1101,10 +1102,10 @@ export const AuthDebugTab: React.FC = () => {
                                             rm.type === 'password'
                                                 ? 'bg-sky-500/20 text-sky-400'
                                                 : rm.type === 'passkey'
-                                                ? 'bg-purple-500/20 text-purple-400'
-                                                : rm.type === 'phrase'
-                                                ? 'bg-amber-500/20 text-amber-400'
-                                                : 'bg-gray-700 text-gray-400'
+                                                  ? 'bg-purple-500/20 text-purple-400'
+                                                  : rm.type === 'phrase'
+                                                    ? 'bg-amber-500/20 text-amber-400'
+                                                    : 'bg-gray-700 text-gray-400'
                                         }`}
                                     >
                                         {rm.type}
@@ -1218,8 +1219,8 @@ export const AuthDebugTab: React.FC = () => {
                         {isNative
                             ? 'No device shares in SQLite'
                             : isPublicComputerMode()
-                            ? 'No device shares in sessionStorage (public mode)'
-                            : 'No device shares in IndexedDB'}
+                              ? 'No device shares in sessionStorage (public mode)'
+                              : 'No device shares in IndexedDB'}
                     </p>
                 ) : (
                     <div className="mt-1.5 space-y-1">
@@ -1251,8 +1252,8 @@ export const AuthDebugTab: React.FC = () => {
                                                 {isLegacy
                                                     ? '(legacy default)'
                                                     : userSuffix
-                                                    ? `user: ${truncate(userSuffix, 16)}`
-                                                    : entry.id}
+                                                      ? `user: ${truncate(userSuffix, 16)}`
+                                                      : entry.id}
                                             </span>
 
                                             {isActive && (

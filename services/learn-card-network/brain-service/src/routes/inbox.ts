@@ -1,3 +1,5 @@
+import { trace } from '@tracing';
+import { submitInboxBatch, getInboxBatch } from '@helpers/inbox-queue.helpers';
 import {
     assertInboxRefreshEnabled,
     inboxRefreshRequestDigest,
@@ -13,6 +15,9 @@ import { t, profileRoute, openRoute, verifiedContactRoute, scopedRoute } from '@
 import {
     PaginationOptionsValidator,
     IssueInboxCredentialValidator,
+    IssueInboxCredentialBatchValidator,
+    InboxBatchReceiptValidator,
+    InboxBatchStatusValidator,
     IssueInboxCredentialResponseValidator,
     InboxCredentialValidator,
     PaginatedInboxCredentialsValidator,
@@ -25,15 +30,14 @@ import {
     JWEValidator,
 } from '@learncard/types';
 import { getInboxCredentialMeta } from '@helpers/credential-meta.helpers';
-import { claimIntoInbox, issueToInbox } from '@helpers/inbox.helpers';
-import { prepareCredentialFromBoost, getBoostUri } from '@helpers/boost.helpers';
+import { claimIntoInbox, issueToInbox, resolveInboxCredentialInput } from '@helpers/inbox.helpers';
 import {
     hasMustacheVariables,
     renderBoostTemplate,
     parseRenderedTemplate,
 } from '@helpers/template.helpers';
 import { getProfileByVerifiedContactMethod } from '@accesslayer/contact-method/relationships/read';
-import { getBoostByUri, getBoostsForProfile } from '@accesslayer/boost/read';
+import { getBoostsForProfile } from '@accesslayer/boost/read';
 import {
     generateGuardianApprovalToken,
     generateGuardianApprovalUrl,
@@ -454,7 +458,7 @@ export const inboxRouter = t.router({
         .output(IssueInboxCredentialResponseValidator)
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { recipient, credential: inputCredential, templateUri, configuration } = input;
+            const { recipient, configuration } = input;
 
             const refreshDigest = input.refresh ? inboxRefreshRequestDigest(input) : undefined;
             if (input.refresh) {
@@ -483,53 +487,7 @@ export const inboxRouter = t.router({
                 }
             }
 
-            // Resolve credential from templateUri if provided
-            let credential = inputCredential;
-            let resolvedBoostUri: string | undefined;
-
-            if (templateUri && !credential) {
-                const boostInstance = await getBoostByUri(templateUri);
-
-                if (!boostInstance) {
-                    throw new TRPCError({
-                        code: 'NOT_FOUND',
-                        message: `Boost not found: ${templateUri}`,
-                    });
-                }
-
-                if (!boostInstance.dataValues.boost) {
-                    throw new TRPCError({
-                        code: 'BAD_REQUEST',
-                        message: `Boost does not contain a credential template: ${templateUri}`,
-                    });
-                }
-
-                try {
-                    // Use shared helper to prepare credential with templateData rendering,
-                    // issuance date, boostId injection, and OBv3 alignments
-                    resolvedBoostUri = getBoostUri(boostInstance.id, ctx.domain);
-
-                    credential = await prepareCredentialFromBoost(
-                        boostInstance,
-                        resolvedBoostUri,
-                        ctx.domain,
-                        { templateData: configuration?.templateData as Record<string, unknown> }
-                    );
-                } catch (e) {
-                    console.error('Failed to prepare boost credential', e);
-                    throw new TRPCError({
-                        code: 'BAD_REQUEST',
-                        message: `Failed to prepare boost credential template: ${templateUri}`,
-                    });
-                }
-            }
-
-            if (!credential) {
-                throw new TRPCError({
-                    code: 'BAD_REQUEST',
-                    message: 'Either credential or templateUri must be provided',
-                });
-            }
+            const { credential, resolvedBoostUri } = await resolveInboxCredentialInput(input, ctx);
 
             // Normalize signing authority name if provided
             const normalizedConfiguration = configuration?.signingAuthority
@@ -576,6 +534,42 @@ export const inboxRouter = t.router({
                 });
             }
         }),
+
+    issueBatch: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/inbox/issue-batch',
+                tags: ['Universal Inbox'],
+                summary: 'Issue Credentials to Universal Inbox (Batch)',
+                description:
+                    'Queue 1–100 credentials for background issuance. Returns a durable batch ID; poll GET /inbox/batches/{batchId} for ordered results. Request and item idempotency keys are issuer-scoped for 24 hours. Maximum JSON payload: 4 MiB.',
+            },
+            requiredScope: 'inbox:write',
+        })
+        .input(IssueInboxCredentialBatchValidator)
+        .output(InboxBatchReceiptValidator)
+        .mutation(({ ctx, input }) =>
+            trace('route', 'issueBatch', () => submitInboxBatch(ctx.user.profile, input, ctx), {
+                itemCount: input.items.length,
+            })
+        ),
+
+    getBatch: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/inbox/batches/{batchId}',
+                tags: ['Universal Inbox'],
+                summary: 'Get Inbox Batch Progress',
+            },
+            requiredScope: 'inbox:read',
+        })
+        .input(z.object({ batchId: z.string() }))
+        .output(InboxBatchStatusValidator)
+        .query(({ ctx, input }) => getInboxBatch(ctx.user.profile.profileId, input.batchId)),
 
     claim: verifiedContactRoute
         .meta({
@@ -723,6 +717,7 @@ export const inboxRouter = t.router({
             // Log initial activity so embed claims appear in the dashboard
             const activityId = await logCredentialSent({
                 actorProfileId: issuerProfile.profileId,
+                onBehalfOf: ctx.user?.onBehalfOf,
                 recipientType: contactMethod.type as 'email' | 'phone',
                 recipientIdentifier: contactMethod.value,
                 integrationId: integration.id,

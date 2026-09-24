@@ -192,6 +192,7 @@ const AppRouter: React.FC = () => {
     const seed = params.seed;
     const pin = params.pin;
     const endorsementRequest = params.endorsementRequest;
+    const endorsementCredentialId = params.credentialId;
     const draftEndorsementRequest = endorsementsRequestStore.useTracked.endorsementRequest();
 
     // Insights Consent
@@ -303,6 +304,10 @@ const AppRouter: React.FC = () => {
                 uri: boostUri as string,
                 seed: seed as string,
                 pin: pin as string,
+                credentialId:
+                    typeof endorsementCredentialId === 'string'
+                        ? endorsementCredentialId
+                        : undefined,
             });
             newModal(
                 <ViewSharedBoost
@@ -313,7 +318,7 @@ const AppRouter: React.FC = () => {
                 { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
             );
         }
-    }, [boostUri, seed, pin, endorsementRequest, newModal]);
+    }, [boostUri, seed, pin, endorsementRequest, endorsementCredentialId, newModal]);
 
     useEffect(() => {
         // Skip entirely if this is a fresh endorsement link click - the first useEffect handles it

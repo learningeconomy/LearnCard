@@ -144,10 +144,10 @@ const PrivacySettingsModal: React.FC = () => {
                 const wallet = await initWallet();
                 await wallet?.invoke?.updateProfile(updates);
                 await refetch?.();
-            } catch (error: any) {
-                presentToast(error?.message ?? m['settings.privacy.unableToUpdate'](), {
-                    type: ToastTypeEnum.Error,
-                });
+            } catch (error: unknown) {
+                const message =
+                    error instanceof Error ? error.message : m['settings.privacy.unableToUpdate']();
+                presentToast(message, { type: ToastTypeEnum.Error });
             } finally {
                 setSavingProfileField(null);
             }
@@ -318,7 +318,7 @@ const PrivacySettingsModal: React.FC = () => {
                                 {m['settings.privacy.profileVisibilityDesc']()}
                             </p>
                             <RadioGroup
-                                name="profile-visibility"
+                                aria-label={m['settings.privacy.profileVisibility']()}
                                 value={profileVisibility}
                                 onChange={handleProfileVisibilityChange}
                                 options={visibilityOptions}
@@ -357,7 +357,7 @@ const PrivacySettingsModal: React.FC = () => {
                                 {m['settings.privacy.connectionRequestsDesc']()}
                             </p>
                             <RadioGroup
-                                name="allow-connection-requests"
+                                aria-label={m['settings.privacy.connectionRequests']()}
                                 value={allowConnectionRequests}
                                 onChange={handleAllowConnectionRequestsChange}
                                 options={connectionRequestOptions}

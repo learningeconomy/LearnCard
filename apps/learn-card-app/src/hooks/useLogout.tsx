@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('use-logout');
 
@@ -12,6 +11,7 @@ import {
     useToast,
     useWallet,
     ToastTypeEnum,
+    useSignInAdapter,
 } from 'learn-card-base';
 import { resumeBuilderStore } from '../stores/resumeBuilderStore';
 
@@ -19,6 +19,7 @@ import { useAuthCoordinator } from '../providers/AuthCoordinatorProvider';
 import { getLoginRedirectUrl } from '../config/bootstrapTenantConfig';
 
 const useLogout = () => {
+    const adapter = useSignInAdapter();
     const { initWallet } = useWallet();
     const { logout: coordinatorLogout } = useAuthCoordinator();
 
@@ -67,13 +68,13 @@ const useLogout = () => {
                 // Native Firebase sign-out for Capacitor social logins.
                 // The coordinator's onSignOut also calls this, but we do it here first
                 // to ensure native session is cleared before the coordinator runs.
-                // Double-calling FirebaseAuthentication.signOut() is harmless.
+                // Signing out twice is harmless.
                 const isNativeSocialLogin =
                     !!typeOfLogin && nativeSocialLogins.includes(typeOfLogin as SocialLoginTypes);
 
                 if (isNativeSocialLogin && Capacitor.isNativePlatform()) {
                     try {
-                        await FirebaseAuthentication?.signOut?.();
+                        await adapter.signOut();
                     } catch (e) {
                         log.warn('firebase::signout::error', e);
                     }

@@ -1804,6 +1804,7 @@
         "syncMyData": "مزامنة بياناتي",
         "shareOneTimeOnly": "مشاركة مرة واحدة فقط",
         "customDuration": "مدة مخصصة",
+        "shareDuration": "مدة المشاركة",
         "noCredentials": "لا توجد بيانات اعتماد",
         "fetchingCredentials": "جارٍ جلب بيانات الاعتماد الخاصة بك...",
         "shareAll": "مشاركة الكل",
@@ -1887,6 +1888,9 @@
         "connectionIssue": "مشكلة في الاتصال. يرجى التحقق من الإنترنت والمحاولة مرة أخرى.",
         "couldNotSave": "تعذر حفظ الملف. يرجى المحاولة مرة أخرى.",
         "noPasskey": "لم يتم العثور على مفتاح مرور على هذا الجهاز.",
+        "preparingSecureLink": "جاري تجهيز الرابط الآمن...",
+        "deviceLinkUnavailable": "يتعذر على هذا الجهاز ربط حسابك.",
+        "verifyingSession": "جاري التحقق من الجلسة...",
         "securityUpdated": "تم تحديث أمان حسابك مؤخراً على جهاز آخر. يرجى التحقق للمتابعة.",
         "recoveryEmailSent": "أرسلنا سابقاً بريداً إلكترونياً للاستعادة إلى عنوانك. افتح ذلك البريد واتبع الخطوات أدناه.",
         "copyToClipboard": "نسخ إلى الحافظة",
@@ -2558,6 +2562,7 @@
             "experience": "خبرة جديدة",
             "assistance": "مساعدة جديدة",
             "portfolio": "ملف أعمال جديد",
+            "badge": "شارة جديدة",
             "boost": "تعزيز جديد",
             "achievement": "إنجاز جديد",
             "skill": "مهارة جديدة",
@@ -3691,6 +3696,9 @@
             "upload": "رفع",
             "change": "تغيير {{type}}"
         },
+        "activity": {
+            "title": "توصية لـ {{name}}"
+        },
         "request": {
             "header": {
                 "title": "طلب توصية",
@@ -3705,7 +3713,8 @@
                 "messagePlaceholder": "رسالة...",
                 "emailPlaceholder": "البريد الإلكتروني",
                 "sendEmail": "إرسال الطلب عبر البريد",
-                "sending": "جارٍ الإرسال..."
+                "sending": "جارٍ الإرسال...",
+                "linkGenerationFailed": "تعذر إنشاء هذا الرابط. حاول مرة أخرى."
             },
             "success": {
                 "title": "تم إرسال الطلب!",
