@@ -192,7 +192,7 @@ export const prepareShare = async (
         (Array.isArray(credential['@context'])
             ? credential['@context']
             : [credential['@context']]
-        ).includes('https://www.w3.org/ns/credentials/v2')
+        ).some(context => context === 'https://www.w3.org/ns/credentials/v2')
     )
         ? 'https://www.w3.org/ns/credentials/v2'
         : 'https://www.w3.org/2018/credentials/v1';

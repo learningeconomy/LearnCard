@@ -58,6 +58,29 @@ const mockWallet = () =>
         },
     });
 describe('share publication boundary', () => {
+    it.each([
+        ['https://www.w3.org/ns/credentials/v2', 'https://www.w3.org/ns/credentials/v2'],
+        [
+            'https://evil.example/https://www.w3.org/ns/credentials/v2',
+            'https://www.w3.org/2018/credentials/v1',
+        ],
+        [
+            'https://www.w3.org/ns/credentials/v2.evil.example',
+            'https://www.w3.org/2018/credentials/v1',
+        ],
+    ])('matches the entire context URL: %s', async (context, expected) => {
+        const wallet = mockWallet();
+        vi.mocked(wallet.read.get).mockResolvedValue({
+            ...fixtureCredential,
+            '@context': [context],
+        });
+        await prepareShare(wallet, ['private:credential'], 'My credentials', '');
+        expect(wallet.invoke.issuePresentation).toHaveBeenCalledWith(
+            expect.objectContaining({ '@context': [expected] }),
+            expect.anything()
+        );
+    });
+
     it('preserves original signed claims and encrypts source URIs only for the owner', async () => {
         const wallet = mockWallet();
         const prepared = await prepareShare(
