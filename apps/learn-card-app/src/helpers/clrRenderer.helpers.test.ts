@@ -5,6 +5,9 @@ import { clrUniversityTranscript } from '../../../../packages/credential-library
 import { clrNdStudentTranscript } from '../../../../packages/credential-library/src/fixtures/clr/nd-student-transcript';
 import { clrGreatPlainsFull } from '../../../../packages/credential-library/src/fixtures/clr/great-plains-full';
 import { clrDemoIsdDiplomaAssessments } from '../../../../packages/credential-library/src/fixtures/clr/demo-isd-diploma-assessments';
+import { clrWestbridgeFull } from '../../../../packages/credential-library/src/fixtures/clr/westbridge-full';
+import { clrCompetencyAligned } from '../../../../packages/credential-library/src/fixtures/clr/competency-aligned';
+import { clrAchievementIdAssociations } from '../../../../packages/credential-library/src/fixtures/clr/achievement-id-associations';
 import { obv3CourseCompletion } from '../../../../packages/credential-library/src/fixtures/obv3/course-completion';
 import { obv3StandaloneFullCourse } from '../../../../packages/credential-library/src/fixtures/obv3/standalone-full-course';
 
@@ -484,6 +487,154 @@ describe('normalizeClrTranscriptDisplayModel', () => {
         it('leaves creditsFromDescription undefined when description is missing', () => {
             const model = normalizeClrTranscriptDisplayModel(makeClrWithCourse(undefined));
             expect(model.courses[0]?.creditsFromDescription).toBeUndefined();
+        });
+    });
+
+    describe('result descriptions and relationship graph', () => {
+        it('preserves scale requirements and alignments from results and descriptions', () => {
+            const model = normalizeClrTranscriptDisplayModel(
+                clrAchievementIdAssociations.credential as unknown as Record<string, unknown>
+            );
+            const foundation = model.courses.find(
+                course => course.name?.value === 'Foundations of Systems Thinking'
+            )!;
+            const advanced = model.courses.find(
+                course => course.name?.value === 'Applied Systems Design'
+            )!;
+            const assessment = model.assessments[0]!;
+            const program = model.programs[0]!;
+
+            expect(foundation.achievementId).toBe('urn:achievement:relationship-foundation');
+            expect(foundation.results[0]?.requiredValue?.value).toBe('Proficient');
+            expect(foundation.results[0]?.alignments[0]?.targetName?.value).toBe(
+                'Systems Thinking'
+            );
+            expect(advanced.results[0]?.valueMin?.value).toBe('0');
+            expect(advanced.results[0]?.valueMax?.value).toBe('100');
+            expect(advanced.results[0]?.requiredValue?.value).toBe('70');
+            expect(assessment.results[0]?.requiredRubricLevel?.name).toBe('Proficient');
+            expect(assessment.results[0]?.alignments[0]?.targetName?.value).toBe('Design Quality');
+            expect(program.results[0]?.resultType?.value).toBe('Status');
+        });
+
+        it('resolves all association types through Achievement.id aliases on both ends', () => {
+            const model = normalizeClrTranscriptDisplayModel(
+                clrAchievementIdAssociations.credential as unknown as Record<string, unknown>
+            );
+            const byName = Object.fromEntries(
+                [
+                    ...model.courses,
+                    ...model.programs,
+                    ...model.assessments,
+                    ...model.competencies,
+                ].map(record => [record.name?.value, record.sourceCredentialId])
+            );
+            const labelsFor = (name: string): string[] =>
+                model.relationships[byName[name]]?.map(relationship => relationship.label) ?? [];
+
+            expect(
+                new Set(model.associations.map(association => association.associationType))
+            ).toEqual(
+                new Set([
+                    'isChildOf',
+                    'isParentOf',
+                    'isPartOf',
+                    'precedes',
+                    'isPeerOf',
+                    'exactMatchOf',
+                    'replacedBy',
+                    'isRelatedTo',
+                ])
+            );
+            expect(model.associations.every(association => association.sourceRecordId)).toBe(true);
+            expect(model.associations.every(association => association.targetRecordId)).toBe(true);
+            expect(labelsFor('Foundations of Systems Thinking')).toEqual(
+                expect.arrayContaining([
+                    'Part of Systems Design Certificate',
+                    'Unlocks Applied Systems Design',
+                    'Taken alongside Systems Design Assessment',
+                    'Superseded by Applied Systems Design',
+                ])
+            );
+            expect(labelsFor('Applied Systems Design')).toEqual(
+                expect.arrayContaining([
+                    'Part of Systems Design Certificate',
+                    'Requires Foundations of Systems Thinking',
+                    'Replaces Foundations of Systems Thinking',
+                    'Related Systems Thinking',
+                ])
+            );
+            expect(labelsFor('Systems Design Assessment')).toEqual(
+                expect.arrayContaining([
+                    'Part of Systems Design Certificate',
+                    'Taken alongside Foundations of Systems Thinking',
+                    'Equivalent to Systems Thinking',
+                ])
+            );
+            expect(labelsFor('Systems Design Certificate')).toEqual(
+                expect.arrayContaining([
+                    'Includes Foundations of Systems Thinking',
+                    'Includes Applied Systems Design',
+                    'Includes Systems Design Assessment',
+                ])
+            );
+        });
+
+        it('warns and preserves a plain value when a result description link is broken', () => {
+            const credential = structuredClone(
+                clrAchievementIdAssociations.credential
+            ) as unknown as Record<string, unknown>;
+            type NestedCredential = {
+                credentialSubject: {
+                    achievement: { name: string };
+                    result: Array<{ resultDescription: string }>;
+                };
+            };
+            const subject = credential.credentialSubject as {
+                verifiableCredential: NestedCredential[];
+            };
+            const foundation = subject.verifiableCredential.find(
+                nested =>
+                    nested.credentialSubject.achievement.name === 'Foundations of Systems Thinking'
+            )!;
+            foundation.credentialSubject.result[0].resultDescription =
+                'urn:result-description:missing';
+
+            const model = normalizeClrTranscriptDisplayModel(credential);
+            const result = model.courses.find(
+                course => course.name?.value === 'Foundations of Systems Thinking'
+            )!.results[0]!;
+
+            expect(result.value.value).toBe('Advanced');
+            expect(result.label).toBeUndefined();
+            expect(result.resultDescriptionResolved).toBe(false);
+            expect(
+                model.warnings.some(warning => warning.code === 'UNRESOLVED_RESULT_DESCRIPTION')
+            ).toBe(true);
+        });
+
+        it('normalizes scale data from the three acceptance fixtures', () => {
+            const westbridge = normalizeClrTranscriptDisplayModel(
+                clrWestbridgeFull.credential as unknown as Record<string, unknown>
+            );
+            const demoIsd = normalizeClrTranscriptDisplayModel(
+                clrDemoIsdDiplomaAssessments.credential as unknown as Record<string, unknown>
+            );
+            const competencyAligned = normalizeClrTranscriptDisplayModel(
+                clrCompetencyAligned.credential as unknown as Record<string, unknown>
+            );
+
+            expect(westbridge.courses.some(course => course.results[0]?.allowedValue)).toBe(true);
+            expect(
+                demoIsd.assessments.some(assessment =>
+                    assessment.results.some(result => result.rubricLevels?.length)
+                )
+            ).toBe(true);
+            expect(
+                competencyAligned.courses.some(course =>
+                    course.results.some(result => result.allowedValue?.value.length)
+                )
+            ).toBe(true);
         });
     });
 });
