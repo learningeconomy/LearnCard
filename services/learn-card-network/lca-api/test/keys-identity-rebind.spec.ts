@@ -9,7 +9,12 @@ import {
     getRecoverySessionCacheKey,
     MAX_RECOVERY_OTP_ATTEMPTS,
 } from '@cache/recoverySessions';
-import { createUserKeysIndexes, getUserKeysCollection, type MongoUserKeyType } from '@models';
+import {
+    createUserKeysIndexes,
+    getUserKeysCollection,
+    purgeExpiredProvisionalMigrationByAuthProvider,
+    type MongoUserKeyType,
+} from '@models';
 import * as delivery from '../src/services/delivery';
 
 import { getClient, getUser } from './helpers/getClient';
@@ -306,6 +311,39 @@ describe('P0-3 lost-identity recovery sessions', () => {
             expect(oldStatus).toBeNull();
             expect(newStatus?.authShare?.encryptedData).toBe('rotated-auth-share');
             expect(newStatus?.recoveryMethods).toEqual([]);
+            expect(newStatus?.sssActivationState).toBe('provisional');
+            expect(stored?.keyProvider).toBe('sss');
+            expect(stored?.provisionalCreatedAt).toBeUndefined();
+
+            // Even after the migration TTL, a rebound SSS account must retain its key.
+            const afterTtl = new Date(Date.now() + 31 * 24 * 60 * 60 * 1000);
+            await expect(
+                purgeExpiredProvisionalMigrationByAuthProvider(
+                    { type: 'firebase', id: newUid },
+                    afterTtl
+                )
+            ).resolves.toBe(false);
+            const afterCleanup = await collection.findOne({ primaryDid: learnCard.id.did() });
+            expect(afterCleanup?.authShare).toEqual(stored?.authShare);
+            expect(afterCleanup?.sssActivationState).toBe('provisional');
+
+            const caller = getClient({ did: learnCard.id.did(), isChallengeValid: true });
+            const auth = {
+                authToken: makeMockToken(newLoginEmail, newUid),
+                providerType: 'firebase' as const,
+            };
+            await expect(caller.keys.activate(auth)).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+            await caller.keys.addRecoveryMethod({ ...auth, type: 'phrase', shareVersion: 3 });
+            await expect(caller.keys.activate(auth)).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+            await caller.keys.confirmRecoveryMethod({ ...auth, type: 'phrase' });
+            await expect(caller.keys.activate(auth)).resolves.toEqual({ success: true });
+            const activated = await collection.findOne({ primaryDid: learnCard.id.did() });
+            expect(activated?.sssActivationState).toBe('active');
+            expect(activated?.recoveryMethods[0]).toMatchObject({
+                shareVersion: 3,
+                confirmationStatus: 'confirmed',
+                confirmedAt: expect.any(Date),
+            });
         } finally {
             vi.restoreAllMocks();
             await collection.deleteMany({ recoveryEmail });

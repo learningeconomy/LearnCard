@@ -32,6 +32,7 @@ vi.mock('learn-card-base', async () => ({
 }));
 
 import RecoverySetupModal from './RecoverySetupModal';
+import { createRecoverySetupRunner } from '../../../../../packages/learn-card-base/src/auth-coordinator/recoverySetup';
 
 const renderModal = (
     initialMethod: 'passkey' | 'phrase' | 'backup' | 'email',
@@ -179,6 +180,64 @@ describe('RecoverySetupModal prompt integration', () => {
             expect(onEnableEscrowRecovery).toHaveBeenCalledOnce();
         }
     );
+    it('keeps passkey setup open on activation failure and retries activation only', async () => {
+        const { onCompleted, props } = renderModal('passkey');
+        const activate = vi
+            .fn()
+            .mockRejectedValueOnce(new Error('offline'))
+            .mockResolvedValue(undefined);
+        const identity = {};
+        const runner = createRecoverySetupRunner(
+            () => ({ identity, needsActivation: true, activate }),
+            vi.fn()
+        );
+        const setup = vi.fn().mockResolvedValue('credential-id');
+        vi.mocked(props.onSetupPasskey).mockImplementation(() => runner.run('passkey', setup));
+
+        fireEvent.click(screen.getByRole('button', { name: 'Set Up Passkey' }));
+        await screen.findByText('Could not finish account setup. Please try again.');
+        expect(onCompleted).not.toHaveBeenCalled();
+        fireEvent.click(screen.getByRole('button', { name: 'Set Up Passkey' }));
+        await waitFor(() => expect(onCompleted).toHaveBeenCalledWith('passkey'));
+        expect(setup).toHaveBeenCalledOnce();
+        expect(activate).toHaveBeenCalledTimes(2);
+    });
+
+    it('retries activation after a consumed phrase confirmation without reporting early success', async () => {
+        const { onCompleted, props } = renderModal('phrase');
+        const activate = vi
+            .fn()
+            .mockRejectedValueOnce(new Error('offline'))
+            .mockResolvedValue(undefined);
+        const identity = {};
+        const runner = createRecoverySetupRunner(
+            () => ({ identity, needsActivation: true, activate }),
+            vi.fn()
+        );
+        const confirm = vi.fn().mockResolvedValue(undefined);
+        vi.mocked(props.onConfirmPhrase).mockImplementation(() => runner.run('phrase', confirm));
+
+        fireEvent.click(screen.getByRole('button', { name: 'Generate Recovery Phrase' }));
+        fireEvent.click(
+            await screen.findByRole('button', { name: "I've Saved It Somewhere Safe" })
+        );
+        const inputs = screen.getAllByRole('textbox');
+        fireEvent.change(inputs[0], { target: { value: 'one' } });
+        fireEvent.change(inputs[1], { target: { value: 'three' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Confirm Recovery Phrase' }));
+        await waitFor(() => expect(activate).toHaveBeenCalledOnce());
+        await waitFor(() =>
+            expect(
+                screen.getByRole('button', { name: 'Confirm Recovery Phrase' })
+            ).not.toBeDisabled()
+        );
+        expect(onCompleted).not.toHaveBeenCalled();
+        fireEvent.click(screen.getByRole('button', { name: 'Confirm Recovery Phrase' }));
+        await waitFor(() => expect(onCompleted).toHaveBeenCalledWith('phrase'));
+        expect(confirm).toHaveBeenCalledOnce();
+        expect(activate).toHaveBeenCalledTimes(2);
+    });
+
     it('opens on the requested passkey method and reports terminal completion', async () => {
         const { onCompleted, props } = renderModal('passkey');
 

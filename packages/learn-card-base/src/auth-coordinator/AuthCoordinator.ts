@@ -66,6 +66,7 @@ import type {
     KeyDerivationStrategy,
     RecoveryMethodInfo,
     RecoveryReason,
+    SssActivationState,
     UnifiedAuthState,
 } from './types';
 
@@ -648,11 +649,30 @@ export class AuthCoordinator {
                     signDidAuthVp: this.config.signDidAuthVp,
                 });
 
+                // Rebinding can require fresh recovery enrollment. Honor older servers that
+                // report active, but do not skip enrollment if the status refresh fails.
+                let sssActivationState: SssActivationState = 'provisional';
+                try {
+                    const serverStatus = await withDeadline(
+                        this.keyDerivation.fetchServerKeyStatus(token, providerType),
+                        {
+                            ms:
+                                this.config.serverStatusTimeoutMs ??
+                                DEFAULT_SERVER_STATUS_TIMEOUT_MS,
+                            label: 'fetchServerKeyStatus(identityRecovery)',
+                        }
+                    );
+                    sssActivationState = serverStatus.sssActivationState ?? 'provisional';
+                } catch (error) {
+                    log.warn('Unable to refresh activation state after identity recovery', error);
+                }
+
                 this.setState({
                     status: 'identity_recovery_success',
                     authUser,
                     did: result.did,
                     privateKey: result.privateKey,
+                    sssActivationState,
                 });
 
                 return this.state;
@@ -1239,6 +1259,8 @@ export class AuthCoordinator {
                     error: errorMessage,
                 });
             }
+            // Recovery forms await this call to surface errors and release their loading state.
+            throw error;
         }
 
         return this.state;
@@ -1264,7 +1286,7 @@ export class AuthCoordinator {
             did: this.state.did,
             privateKey: this.state.privateKey,
             authSessionValid: true,
-            sssActivationState: 'active',
+            sssActivationState: this.state.sssActivationState ?? 'provisional',
         });
         return this.state;
     }

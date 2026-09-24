@@ -5,6 +5,7 @@
  */
 
 export { AuthCoordinator, createAuthCoordinator } from './AuthCoordinator';
+export { countConfiguredRecoveryMethods } from './recoverySetup';
 
 // Auth provider factories (canonical location: ../auth-providers/)
 // Re-exported here for convenience

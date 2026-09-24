@@ -112,7 +112,6 @@ import '../auth/firebaseProviderInit';
 import {
     countUserConfiguredRecoveryMethods,
     mergeAuthUserIntoCurrentUser,
-    registerRecoveryMethodCompletion,
     shouldResetWalletOnStatus,
 } from './authCoordinator.helpers';
 import { getTenantHeaders, getResolvedTenantConfig } from '../config/bootstrapTenantConfig';
@@ -464,7 +463,6 @@ const AuthSessionManager: React.FC<{
     // --- Recovery setup prompt (shown after first-time setup with no recovery methods) ---
     const [showRecoverySetup, setShowRecoverySetup] = useState(false);
     const recoverySetupOptionsRef = useRef<RecoverySetupOptions>({});
-    const completedRecoveryMethodsRef = useRef<Set<RecoverySetupType>>(new Set());
     const wasNewUserRef = useRef(false);
     // Set when a PIN-based recovery just succeeded, proving the user had a PIN
     // even on a new/forgotten device where the local prompt flag is absent.
@@ -472,10 +470,10 @@ const AuthSessionManager: React.FC<{
 
     // null = recovery method status has not been checked yet
     const [recoveryMethodCount, setRecoveryMethodCount] = useState<number | null>(null);
+    const recoveryMethodReadRef = useRef(0);
 
     const openRecoverySetup = useCallback((options: RecoverySetupOptions = {}) => {
         recoverySetupOptionsRef.current = options;
-        completedRecoveryMethodsRef.current.clear();
         setShowRecoverySetup(true);
     }, []);
 
@@ -483,16 +481,11 @@ const AuthSessionManager: React.FC<{
         const onClosed = recoverySetupOptionsRef.current.onClosed;
 
         recoverySetupOptionsRef.current = {};
-        completedRecoveryMethodsRef.current.clear();
         setShowRecoverySetup(false);
         onClosed?.();
     }, []);
 
     const completeRecoverySetup = useCallback((method: RecoverySetupType) => {
-        if (registerRecoveryMethodCompletion(completedRecoveryMethodsRef.current, method)) {
-            setRecoveryMethodCount(previousCount => (previousCount ?? 0) + 1);
-        }
-
         const onCompleted = recoverySetupOptionsRef.current.onCompleted;
 
         // Prompt-owned setup is a single-action flow, so return to the Dashboard.
@@ -1051,6 +1044,7 @@ const AuthSessionManager: React.FC<{
                         keyDerivation.getAvailableRecoveryMethods
                     ) {
                         wasNewUserRef.current = false;
+                        const readId = ++recoveryMethodReadRef.current;
 
                         try {
                             const token = await authProvider.getIdToken();
@@ -1070,7 +1064,8 @@ const AuthSessionManager: React.FC<{
                                 status?.maskedRecoveryEmail
                             );
 
-                            setRecoveryMethodCount(userConfiguredCount);
+                            if (readId === recoveryMethodReadRef.current)
+                                setRecoveryMethodCount(userConfiguredCount);
                         } catch {
                             // Non-critical — don't block the user
                         }
@@ -1102,6 +1097,7 @@ const AuthSessionManager: React.FC<{
             setWallet(null);
             setLcnProfile(null);
             setRecoveryMethodCount(null);
+            recoveryMethodReadRef.current += 1;
             walletInitRef.current = false;
             walletModeRef.current = null;
             walletModeStore.set.mode(null);
@@ -1134,13 +1130,15 @@ const AuthSessionManager: React.FC<{
             coordinator.state.status !== 'ready' ||
             !wallet ||
             !authProvider ||
-            recoveryMethodCount !== null ||
+            (recoveryMethodCount !== null && coordinator.recoverySetupRevision === 0) ||
             !keyDerivation.capabilities.recovery ||
             !keyDerivation.getAvailableRecoveryMethods
         )
             return;
 
         let cancelled = false;
+
+        const readId = ++recoveryMethodReadRef.current;
 
         void (async () => {
             try {
@@ -1157,7 +1155,7 @@ const AuthSessionManager: React.FC<{
                           .catch(() => null)
                     : null;
 
-                if (!cancelled) {
+                if (!cancelled && readId === recoveryMethodReadRef.current) {
                     setRecoveryMethodCount(
                         countUserConfiguredRecoveryMethods(methods, status?.maskedRecoveryEmail)
                     );
@@ -1170,7 +1168,14 @@ const AuthSessionManager: React.FC<{
         return () => {
             cancelled = true;
         };
-    }, [coordinator.state.status, wallet, authProvider, recoveryMethodCount, keyDerivation]);
+    }, [
+        coordinator.state.status,
+        coordinator.recoverySetupRevision,
+        wallet,
+        authProvider,
+        recoveryMethodCount,
+        keyDerivation,
+    ]);
 
     // --- Clear stale legacy stores when coordinator is idle ---
     // After a public-computer session, the tab close destroys the Firebase
@@ -1816,6 +1821,9 @@ const AuthSessionManager: React.FC<{
                             providerType,
                         });
 
+                        if (input.method !== 'passkey')
+                            coordinator.resetRecoverySetup(input.method);
+
                         return keyDerivation.setupRecoveryMethod!({
                             token,
                             providerType,
@@ -1834,17 +1842,15 @@ const AuthSessionManager: React.FC<{
                         const token = await authProvider.getIdToken();
                         const providerType = authProvider.getProviderType();
 
-                        await keyDerivation.confirmRecoveryMethod({
-                            token,
-                            providerType,
-                            privateKey: currentPrivateKey,
-                            input,
-                            signDidAuthVp,
-                        });
-
-                        if (coordinator.needsActivation) {
-                            await coordinator.activate();
-                        }
+                        await coordinator.runRecoverySetup(input.method, () =>
+                            keyDerivation.confirmRecoveryMethod!({
+                                token,
+                                providerType,
+                                privateKey: currentPrivateKey,
+                                input,
+                                signDidAuthVp,
+                            })
+                        );
                     };
 
                     const getTokenAndProvider = async () => {
@@ -1887,9 +1893,9 @@ const AuthSessionManager: React.FC<{
                                 onCompleted={completeRecoverySetup}
                                 onSetupPasskey={async () => {
                                     const authUser = await authProvider.getCurrentUser();
-                                    const result = await setupMethod(
-                                        { method: 'passkey' },
-                                        authUser
+                                    const result = await coordinator.runRecoverySetup(
+                                        'passkey',
+                                        () => setupMethod({ method: 'passkey' }, authUser)
                                     );
 
                                     // Passkey setup confirms server-side in one step, so it

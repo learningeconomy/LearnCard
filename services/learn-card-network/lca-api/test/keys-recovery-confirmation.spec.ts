@@ -76,6 +76,85 @@ afterAll(async () => {
 });
 
 describe('P0-2 two-phase recovery enrollment', () => {
+    it.each([1, 2, undefined])(
+        'records the envelope version %s after another device rotates',
+        async shareVersion => {
+            const suffix = randomUUID();
+            const email = `version-${suffix}@example.com`;
+            const uid = `uid-${suffix}`;
+            const recoveryEmail = `recovery-${suffix}@example.com`;
+            const did = `did:key:z${suffix}`;
+            const collection = getUserKeysCollection();
+            const userKey = setVerifiedRecoveryEmail(makeUserKey(email, uid, did), recoveryEmail);
+            userKey.previousAuthShares = [
+                {
+                    authShare: userKey.authShare!,
+                    shareVersion: 1,
+                    createdAt: new Date(),
+                },
+            ];
+            userKey.shareVersion = 2;
+            const relaySpy = mockRelayAcceptance();
+            await collection.insertOne(userKey);
+
+            try {
+                await getClient({ did, isChallengeValid: true }).keys.sendEmailBackup({
+                    authToken: makeMockToken(email, uid),
+                    providerType: 'firebase',
+                    relayPayload: makeRelayPayload(),
+                    confirmationCode: '123456',
+                    email: recoveryEmail,
+                    shareVersion,
+                });
+                const stored = await collection.findOne({ 'contactMethod.value': email });
+                expect(stored?.recoveryMethods[0]).toMatchObject({
+                    type: 'email',
+                    shareVersion: shareVersion ?? 2,
+                    confirmationStatus: 'pending',
+                });
+                expect(relaySpy).toHaveBeenCalledOnce();
+            } finally {
+                relaySpy.mockRestore();
+                await collection.deleteMany({ 'contactMethod.value': email });
+            }
+        }
+    );
+
+    it.each([1, 3, 0, -1, 1.5])(
+        'rejects unavailable or invalid envelope version %s before delivery',
+        async shareVersion => {
+            const suffix = randomUUID();
+            const email = `invalid-version-${suffix}@example.com`;
+            const uid = `uid-${suffix}`;
+            const recoveryEmail = `recovery-${suffix}@example.com`;
+            const did = `did:key:z${suffix}`;
+            const collection = getUserKeysCollection();
+            const userKey = setVerifiedRecoveryEmail(makeUserKey(email, uid, did), recoveryEmail);
+            userKey.shareVersion = 2;
+            const relaySpy = mockRelayAcceptance();
+            await collection.insertOne(userKey);
+
+            try {
+                await expect(
+                    getClient({ did, isChallengeValid: true }).keys.sendEmailBackup({
+                        authToken: makeMockToken(email, uid),
+                        providerType: 'firebase',
+                        relayPayload: makeRelayPayload(),
+                        confirmationCode: '123456',
+                        email: recoveryEmail,
+                        shareVersion,
+                    })
+                ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+                expect(relaySpy).not.toHaveBeenCalled();
+                const stored = await collection.findOne({ 'contactMethod.value': email });
+                expect(stored?.recoveryMethods).toEqual([]);
+            } finally {
+                relaySpy.mockRestore();
+                await collection.deleteMany({ 'contactMethod.value': email });
+            }
+        }
+    );
+
     it('rejects plaintext email shares even when an encrypted envelope is also supplied', async () => {
         const relaySpy = mockRelayAcceptance();
         const caller = getClient({ did: 'did:key:zPlaintextRejected', isChallengeValid: true });

@@ -125,6 +125,7 @@ export {
     atomicRecovery,
     ShareVerificationError,
     AtomicUpdateError,
+    ShareWriteRejectedError,
 } from './atomic-operations';
 
 export type {
