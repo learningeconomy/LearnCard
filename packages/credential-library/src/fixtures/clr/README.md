@@ -86,14 +86,14 @@ after a recipient change.
 
 For an end-to-end multi-issuer test:
 
--   Start from a cloned unsigned fixture and prepare/remap IDs before any signing.
--   Bind the outer and all child subjects to the intended test learner. Replace or
-    remove the synthetic display-name/membership identifiers where appropriate.
--   Map each fictional issuer to its own test signing wallet. Keep assessor/creator
-    provenance distinct instead of treating every profile as the signer.
--   Sign each child with its mapped issuer, preserving achievement and result IDs.
--   Embed the resulting children unchanged and sign the outer CLR with the publisher.
--   Verify parent and children independently using the intended time and status policy.
+- Start from a cloned unsigned fixture and prepare/remap IDs before any signing.
+- Bind the outer and all child subjects to the intended test learner. Replace or
+  remove the synthetic display-name/membership identifiers where appropriate.
+- Map each fictional issuer to its own test signing wallet. Keep assessor/creator
+  provenance distinct instead of treating every profile as the signer.
+- Sign each child with its mapped issuer, preserving achievement and result IDs.
+- Embed the resulting children unchanged and sign the outer CLR with the publisher.
+- Verify parent and children independently using the intended time and status policy.
 
 Do not run UUID/identity rewriting over already-signed child credentials. Avoid
 routing these rich payloads through a lossy form-template round trip during display
