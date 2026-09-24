@@ -16,7 +16,8 @@ import {
 import type { VC } from '@learncard/types';
 import { QRCodeSVG } from 'qrcode.react';
 import { Clipboard } from '@capacitor/clipboard';
-import { useWallet } from 'learn-card-base';
+import { useWallet, type CredentialCategoryEnum } from 'learn-card-base';
+import useTheme from '../../theme/hooks/useTheme';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { ShareCredentialMetadata } from './ShareCredentialMetadata';
 import { isShareLinkError } from 'learn-card-base/helpers/share-links';
@@ -67,6 +68,7 @@ const categoryOf = (choice: CredentialChoice) =>
 
 export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
     const { initWallet } = useWallet();
+    const { getThemedCategory } = useTheme();
     const [categoryFilter, setCategoryFilter] = useState('');
     const [selectedOnly, setSelectedOnly] = useState(false);
     const searchInput = useRef<HTMLInputElement>(null);
@@ -466,46 +468,55 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
                                     >
                                         {m['shareLinks.search']()}
                                     </label>
-                                    <div className="group flex items-center gap-3 rounded-xl border border-grayscale-300 bg-grayscale-10 px-3 transition-colors hover:border-grayscale-400 focus-within:border-emerald-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-emerald-500">
-                                        <IonIcon
-                                            aria-hidden="true"
-                                            icon={searchOutline}
-                                            className="h-5 w-5 shrink-0 text-grayscale-400 transition-colors group-focus-within:text-emerald-600"
+                                    <div className="relative flex items-stretch gap-2">
+                                        <div className="group flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-grayscale-300 bg-grayscale-10 px-3 transition-colors hover:border-grayscale-400 focus-within:border-emerald-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-emerald-500">
+                                            <IonIcon
+                                                aria-hidden="true"
+                                                icon={searchOutline}
+                                                className="h-5 w-5 shrink-0 text-grayscale-400 transition-colors group-focus-within:text-emerald-600"
+                                            />
+                                            <input
+                                                ref={searchInput}
+                                                id="share-credential-search"
+                                                className="w-full min-w-0 py-3 bg-transparent text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none [&::-webkit-search-cancel-button]:appearance-none"
+                                                placeholder={m['shareLinks.searchPlaceholder']()}
+                                                value={search}
+                                                onChange={event => setSearch(event.target.value)}
+                                                type="search"
+                                            />
+                                            {search && (
+                                                <button
+                                                    type="button"
+                                                    aria-label={m['shareLinks.clearSearch']()}
+                                                    onClick={() => {
+                                                        setSearch('');
+                                                        setSettledSearch('');
+                                                        searchInput.current?.focus();
+                                                    }}
+                                                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-grayscale-600 hover:bg-grayscale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                                >
+                                                    <IonIcon
+                                                        aria-hidden="true"
+                                                        icon={closeOutline}
+                                                        className="h-4 w-4"
+                                                    />
+                                                </button>
+                                            )}
+                                        </div>
+                                        <ShareCategoryFilter
+                                            value={categoryFilter}
+                                            onChange={setCategoryFilter}
+                                            categories={categories}
                                         />
-                                        <input
-                                            ref={searchInput}
-                                            id="share-credential-search"
-                                            className="w-full min-w-0 py-3 bg-transparent text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none [&::-webkit-search-cancel-button]:appearance-none"
-                                            placeholder={m['shareLinks.searchPlaceholder']()}
-                                            value={search}
-                                            onChange={event => setSearch(event.target.value)}
-                                            type="search"
-                                        />
-                                        {search && (
-                                            <button
-                                                type="button"
-                                                aria-label={m['shareLinks.clearSearch']()}
-                                                onClick={() => {
-                                                    setSearch('');
-                                                    setSettledSearch('');
-                                                    searchInput.current?.focus();
-                                                }}
-                                                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-grayscale-600 hover:bg-grayscale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-                                            >
-                                                <IonIcon
-                                                    aria-hidden="true"
-                                                    icon={closeOutline}
-                                                    className="h-4 w-4"
-                                                />
-                                            </button>
-                                        )}
                                     </div>
                                 </div>
-                                <ShareCategoryFilter
-                                    value={categoryFilter}
-                                    onChange={setCategoryFilter}
-                                    categories={categories}
-                                />
+                                {categoryFilter && (
+                                    <p className="text-xs text-grayscale-600">
+                                        {m['shareLinks.categoryFilter']()}:{' '}
+                                        {getThemedCategory(categoryFilter as CredentialCategoryEnum)
+                                            ?.category?.labels.plural || categoryFilter}
+                                    </p>
+                                )}
                             </div>
                             <div className="rounded-2xl bg-grayscale-100 p-4 space-y-3">
                                 <div className="flex justify-between items-start gap-3 text-xs text-grayscale-600">
