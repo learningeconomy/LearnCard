@@ -560,7 +560,7 @@ it('keeps results while typing, then filters locally and clears immediately', as
     expect(screen.getByRole('status').textContent).toBe('Updating results…');
     await waitFor(() => expect(screen.queryByRole('checkbox')).toBeNull());
     expect(mocks.wallet.index.LearnCloud.getPage).toHaveBeenCalledTimes(requests);
-    fireEvent.click(screen.getByRole('button', { name: 'Clear search' }));
+    fireEvent.click(screen.getAllByRole('button', { name: 'Clear search' })[0]);
     expect(screen.getByRole('checkbox')).toBeTruthy();
     expect(screen.getByRole('searchbox')).toHaveFocus();
 });
@@ -595,6 +595,6 @@ it('searches later index pages without resolving offscreen titled credentials', 
     await waitFor(() => expect(mocks.wallet.read.get).toHaveBeenCalledWith('private:target'));
     await waitFor(() => expect(screen.getByRole('checkbox')).toBeEnabled());
     fireEvent.click(screen.getByRole('checkbox'));
-    fireEvent.click(screen.getByRole('button', { name: 'Clear search' }));
+    fireEvent.click(screen.getAllByRole('button', { name: 'Clear search' })[0]);
     expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled();
 });

@@ -1,3 +1,4 @@
+import { ShareSearchEmpty } from './ShareSearchEmpty';
 import { ShareCredentialsIllustration } from './ShareCredentialsIllustration';
 import { ShareCredentialThumbnail } from './ShareCredentialThumbnail';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -545,11 +546,14 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
                                 })}
                             </div>
                             {!filtered.length && !loading && !searchPending && (
-                                <p className="p-6 text-center text-sm text-grayscale-500">
-                                    {settledSearch
-                                        ? m['shareLinks.noSearchResults']()
-                                        : m['shareLinks.empty']()}
-                                </p>
+                                <ShareSearchEmpty
+                                    searching={Boolean(settledSearch)}
+                                    onClear={() => {
+                                        setSearch('');
+                                        setSettledSearch('');
+                                        searchInput.current?.focus();
+                                    }}
+                                />
                             )}
                             {filtered.some(
                                 choice => !choice.credential && failedReads.has(choice.uri)
