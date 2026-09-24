@@ -27,6 +27,7 @@ export interface ShareLinkPreviewProps {
     heading?: string;
     /** Extra summary content (for example the collection proof) below the metadata. */
     summaryExtra?: React.ReactNode;
+    summaryIllustration?: React.ReactNode;
     /** Opt in to the raw original credential disclosure for each selected member. */
     showOriginal?: boolean;
     className?: string;
@@ -71,6 +72,7 @@ export const ShareLinkPreview = ({
     proofs,
     heading,
     summaryExtra,
+    summaryIllustration,
     showOriginal = false,
     className = '',
 }: ShareLinkPreviewProps) => (
@@ -81,12 +83,21 @@ export const ShareLinkPreview = ({
             </p>
         )}
         <section className="bg-white rounded-[20px] p-6 md:p-8 space-y-4 border border-grayscale-200">
-            {sharerName && (
-                <p className="text-xs text-grayscale-500">
-                    {m['shareLinks.sharedBy']({ name: sharerName })}
-                </p>
-            )}
-            <h1 className="text-2xl md:text-3xl font-semibold break-words">{title}</h1>
+            <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0 flex-1 space-y-3">
+                    {sharerName && (
+                        <p className="text-xs text-grayscale-500">
+                            {m['shareLinks.sharedBy']({ name: sharerName })}
+                        </p>
+                    )}
+                    <h1 className="text-2xl md:text-3xl font-semibold break-words">{title}</h1>
+                </div>
+                {summaryIllustration && (
+                    <div className="shrink-0 [&>svg]:h-16 [&>svg]:w-16 sm:[&>svg]:h-20 sm:[&>svg]:w-20">
+                        {summaryIllustration}
+                    </div>
+                )}
+            </div>
             {note && (
                 <p className="text-sm text-grayscale-600 leading-relaxed whitespace-pre-wrap break-words">
                     {note}

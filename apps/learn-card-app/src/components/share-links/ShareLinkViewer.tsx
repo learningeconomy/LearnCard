@@ -1,3 +1,4 @@
+import LearnCardTextLogo from '../svgs/LearnCardTextLogo';
 import { ShareCredentialsIllustration } from './ShareCredentialsIllustration';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
@@ -249,9 +250,19 @@ const ShareLinkViewer = () => {
         <IonPage className="sentry-block ph-no-capture font-poppins" data-html2canvas-ignore>
             <IonHeader className="ion-no-border border-b border-grayscale-200">
                 <IonToolbar style={{ '--background': 'white' }}>
-                    <div className="max-w-3xl mx-auto px-6 py-4 flex items-center gap-2 text-xs font-medium text-grayscale-600">
-                        <IonIcon icon={lockClosedOutline} />
-                        {m['shareLinks.sharedCredentials']()}
+                    <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between gap-4 text-xs font-medium text-grayscale-600">
+                        <a
+                            href="https://learncard.app"
+                            aria-label="LearnCard"
+                            rel="noreferrer"
+                            className="shrink-0 rounded text-grayscale-900 transition-opacity hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                        >
+                            <LearnCardTextLogo className="w-28 sm:w-40 h-auto" />
+                        </a>
+                        <span className="flex items-center gap-2 text-right">
+                            <IonIcon icon={lockClosedOutline} className="shrink-0" />
+                            {m['shareLinks.sharedCredentials']()}
+                        </span>
                     </div>
                 </IonToolbar>
             </IonHeader>
@@ -295,10 +306,8 @@ const ShareLinkViewer = () => {
                         ) : (
                             <>
                                 <div ref={visible}>
-                                    <div className="mb-6">
-                                        <ShareCredentialsIllustration />
-                                    </div>
                                     <ShareLinkPreview
+                                        summaryIllustration={<ShareCredentialsIllustration />}
                                         payload={ready.payload}
                                         title={ready.metadata.title}
                                         note={ready.metadata.note}
