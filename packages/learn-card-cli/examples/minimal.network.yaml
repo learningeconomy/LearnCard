@@ -1,0 +1,7 @@
+# The smallest useful org: one issuer profile that LearnCard signs for.
+issuer:
+    profileId: example-issuer
+    displayName: Example Issuer
+    signingAuthority:
+        type: learncard-hosted
+        name: example-signer

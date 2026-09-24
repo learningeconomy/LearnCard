@@ -1,0 +1,20 @@
+# Profile branding as seen in the LearnCard wallet. Images must be https URLs you host.
+# Only fields listed here are compared; `display` colours are merged, never wiped.
+issuer:
+    profileId: example-issuer
+    displayName: Example Issuer
+    branding:
+        image: https://cdn.example.org/example-issuer/logo.png
+        heroImage: https://cdn.example.org/example-issuer/hero.jpg
+        shortBio: Issuing verified learning records since 2026.
+        bio: Longer description shown on the full profile page.
+        websiteLink: https://example.org
+        type: organization
+        display:
+            backgroundColor: '#18224E'
+            fontColor: '#FFFFFF'
+            accentColor: '#2E7D32'
+            accentFontColor: '#FFFFFF'
+    signingAuthority:
+        type: learncard-hosted
+        name: example-signer
