@@ -1,0 +1,13 @@
+/* The composite search field owns its focus ring. Reset the native input's
+   global focus-visible ring, including the white ring offset. */
+#share-credential-search,
+#share-credential-search:focus,
+#share-credential-search:focus-visible {
+    outline: none !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    --tw-ring-offset-width: 0px !important;
+    --tw-ring-offset-shadow: 0 0 #0000 !important;
+    --tw-ring-shadow: 0 0 #0000 !important;
+}

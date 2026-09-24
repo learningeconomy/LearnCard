@@ -1,3 +1,4 @@
+import './ShareLinkCreate.css';
 import { ShareSearchEmpty } from './ShareSearchEmpty';
 import { ShareCredentialsIllustration } from './ShareCredentialsIllustration';
 import { ShareCredentialThumbnail } from './ShareCredentialThumbnail';
@@ -448,7 +449,7 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
                                     <input
                                         ref={searchInput}
                                         id="share-credential-search"
-                                        className="w-full min-w-0 py-3 !border-0 !ring-0 !shadow-none !outline-none bg-transparent text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none [&::-webkit-search-cancel-button]:appearance-none"
+                                        className="w-full min-w-0 py-3 bg-transparent text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none [&::-webkit-search-cancel-button]:appearance-none"
                                         placeholder={m['shareLinks.searchPlaceholder']()}
                                         value={search}
                                         onChange={event => setSearch(event.target.value)}
