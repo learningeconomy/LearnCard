@@ -21,9 +21,37 @@ export interface MongoAuthSubjectType extends AuthSubjectAttributes {
 export const getAuthSubjectsCollection = (): Collection<MongoAuthSubjectType> =>
     mongodb.collection<MongoAuthSubjectType>(AUTH_SUBJECTS_COLLECTION);
 
+const MONGO_NAMESPACE_NOT_FOUND = 26;
+const MONGO_INDEX_NOT_FOUND = 27;
+
+const mongoErrorCode = (error: unknown): unknown =>
+    typeof error === 'object' && error !== null ? (error as { code?: unknown }).code : undefined;
+
+/**
+ * `identityKey` is unique: each sign-in method maps to exactly one subject.
+ * `subject` is deliberately NOT unique — linked sign-in methods for the same
+ * person (email code + native Google/Apple with the same verified email) share
+ * one subject, so Keycloak and the wallet see a single account. Databases
+ * created before linking existed carry a unique `subject` index; drop it.
+ */
 export const createAuthSubjectIndexes = async (): Promise<void> => {
     const collection = getAuthSubjectsCollection();
-    await collection.createIndex({ subject: 1 }, { unique: true });
+
+    const existing = await collection.indexes().catch(error => {
+        if (mongoErrorCode(error) === MONGO_NAMESPACE_NOT_FOUND) return [];
+        throw error;
+    });
+    const legacyUniqueSubject = existing.find(
+        index =>
+            index.unique === true && index.key?.subject === 1 && Object.keys(index.key).length === 1
+    );
+    if (legacyUniqueSubject?.name) {
+        await collection.dropIndex(legacyUniqueSubject.name).catch(error => {
+            if (mongoErrorCode(error) !== MONGO_INDEX_NOT_FOUND) throw error;
+        });
+    }
+
+    await collection.createIndex({ subject: 1 });
     await collection.createIndex({ identityKey: 1 }, { unique: true });
 };
 

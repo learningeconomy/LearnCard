@@ -21,6 +21,8 @@ vi.mock('@mongo', () => ({
     default: {
         collection: () => ({
             createIndex: vi.fn(async () => 'index'),
+            indexes: vi.fn(async () => []),
+            dropIndex: vi.fn(async () => undefined),
             findOne: vi.fn(
                 async (filter: { identityKey: string }) => subjects.get(filter.identityKey) ?? null
             ),

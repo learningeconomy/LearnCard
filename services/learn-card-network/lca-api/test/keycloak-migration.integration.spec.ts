@@ -225,4 +225,30 @@ describe.runIf(roundtripEnabled)('Firebase-era UserKey migration', () => {
             `Phone-only skip count=${summary.skipped} (includes one synthetic fixture); no writes.\n`
         );
     }, 60_000);
+
+    it('lets a linked social identity share the provisioned subject in real Mongo', async () => {
+        await subjects.createAuthSubjectIndexes();
+        const email = `link-${randomUUID()}@example.com`;
+        const googleKey = `google:${randomUUID()}`;
+        const attrs = { email, emailVerified: true };
+
+        const emailSubject = await subjects.getOrCreateAuthSubject(`email:${email}`, attrs);
+        try {
+            const linked = await subjects.getOrCreateAuthSubjectLinkedTo(
+                googleKey,
+                emailSubject.subject,
+                attrs
+            );
+            expect(linked.subject).toBe(emailSubject.subject);
+            expect(
+                await subjects
+                    .getAuthSubjectsCollection()
+                    .countDocuments({ subject: emailSubject.subject })
+            ).toBe(2);
+        } finally {
+            await subjects
+                .getAuthSubjectsCollection()
+                .deleteMany({ identityKey: { $in: [`email:${email}`, googleKey] } });
+        }
+    }, 60_000);
 });
