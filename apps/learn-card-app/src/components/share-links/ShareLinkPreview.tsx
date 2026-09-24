@@ -105,7 +105,7 @@ export const ShareLinkPreview = ({
             )}
             <div className="flex flex-wrap gap-3 text-xs text-grayscale-500">
                 <span>
-                    {m['shareLinks.selected']({
+                    {(showOriginal ? m['shareLinks.sharedCount'] : m['shareLinks.selected'])({
                         count: String(payload.selection.length),
                     })}
                 </span>

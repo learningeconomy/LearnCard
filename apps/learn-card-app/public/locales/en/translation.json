@@ -8962,6 +8962,7 @@
         "clearSearch": "Clear search",
         "noSearchResults": "No matching credentials. Try another name.",
         "selected": "{{count}} credentials selected",
+        "sharedCount": "{{count}} credentials shared",
         "limit": "Up to 50",
         "credential": "Credential",
         "loadFailed": "Could not load this credential.",
