@@ -29,6 +29,12 @@ import { obv3RubricAlignedBadge } from './obv3/rubric-aligned-badge';
 import { clrMinimal } from './clr/minimal';
 import { clrMultiAchievement } from './clr/multi-achievement';
 import { clrUniversityTranscript } from './clr/university-transcript';
+import { clrEmploymentRecord } from './clr/employment-record';
+import { clrTrainingProviderRecord } from './clr/training-provider-record';
+import { clrMilitaryTrainingRecord } from './clr/military-training-record';
+import { clrProfessionalOrganizationRecord } from './clr/professional-organization-record';
+import { clrLicensingRegulatoryRecord } from './clr/licensing-regulatory-record';
+import { clrMixedCareerRecord } from './clr/mixed-career-record';
 
 // LearnCard Boosts
 import { boostBasic } from './boost/basic';
@@ -101,6 +107,12 @@ export const ALL_FIXTURES: LibraryFixture[] = [
     clrMinimal,
     clrMultiAchievement,
     clrUniversityTranscript,
+    clrEmploymentRecord,
+    clrTrainingProviderRecord,
+    clrMilitaryTrainingRecord,
+    clrProfessionalOrganizationRecord,
+    clrLicensingRegulatoryRecord,
+    clrMixedCareerRecord,
 
     // Boosts
     boostBasic,
@@ -165,6 +177,12 @@ export {
     obv3EndorsementCredential,
     obv3RubricAlignedBadge,
     clrUniversityTranscript,
+    clrEmploymentRecord,
+    clrTrainingProviderRecord,
+    clrMilitaryTrainingRecord,
+    clrProfessionalOrganizationRecord,
+    clrLicensingRegulatoryRecord,
+    clrMixedCareerRecord,
     boostCommunityAward,
     boostDelegate,
     vcV1AlumniCredential,
