@@ -34,7 +34,7 @@ import { readdirSync, existsSync, readFileSync, writeFileSync, statSync } from '
 import { resolve, dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { spawn, execSync, execFileSync } from 'child_process';
-import { networkInterfaces } from 'os';
+import { homedir, networkInterfaces } from 'os';
 
 import {
     buildAudiencesEnvPrefix,
@@ -1317,6 +1317,117 @@ const nativeSync = async (tenantId?: string, stageId?: string) => {
     rl.close();
 };
 
+const NO_ADB_REVERSE_FLAG = '--no-adb-reverse';
+const adbReverseDisabled = process.argv.includes(NO_ADB_REVERSE_FLAG);
+
+/** Ports of every `localhost` URL in the generated tenant config (none for production configs). */
+const localhostPortsFromTenantConfig = (): number[] => {
+    const configPath = resolve(APP_ROOT, 'public/tenant-config.json');
+    if (!existsSync(configPath)) return [];
+
+    const ports = new Set<number>();
+    const visit = (value: unknown): void => {
+        if (typeof value === 'string') {
+            const match = /^https?:\/\/(?:localhost|127\.0\.0\.1):(\d+)/.exec(value);
+            if (match) ports.add(Number(match[1]));
+        } else if (Array.isArray(value)) {
+            value.forEach(visit);
+        } else if (value && typeof value === 'object') {
+            Object.values(value).forEach(visit);
+        }
+    };
+
+    try {
+        visit(JSON.parse(readFileSync(configPath, 'utf-8')));
+    } catch (err) {
+        log.warn('   ⚠️  Could not read public/tenant-config.json for adb reverse:', err);
+    }
+
+    return [...ports].sort((a, b) => a - b);
+};
+
+const resolveAdbPath = (): string | undefined => {
+    const sdkRoots = [
+        process.env.ANDROID_HOME,
+        process.env.ANDROID_SDK_ROOT,
+        join(homedir(), 'Library/Android/sdk'),
+    ].filter((root): root is string => !!root);
+
+    for (const root of sdkRoots) {
+        const candidate = join(root, 'platform-tools', 'adb');
+        if (existsSync(candidate)) return candidate;
+    }
+
+    try {
+        return execSync('command -v adb', { stdio: 'pipe' }).toString().trim() || undefined;
+    } catch {
+        return undefined;
+    }
+};
+
+/**
+ * `localhost` inside an Android emulator is the emulator itself, so local
+ * stages (Keycloak :8081, lca-api :5100, bridge page :3000, …) are unreachable
+ * without `adb reverse`. With `waitForDevice`, a background poller applies the
+ * forwards once an emulator/device connects (up to 10 minutes), since the
+ * emulator usually starts after the IDE opens. Forwards reset when the
+ * emulator restarts — re-run `bun run lc native reverse`.
+ */
+const setupAdbReverse = (waitForDevice: boolean): void => {
+    const ports = localhostPortsFromTenantConfig();
+    if (ports.length === 0) return;
+
+    log.info('');
+    log.info(green('▶ Forwarding emulator localhost → this machine (adb reverse)'));
+    log.info(dim(`   Ports: ${ports.join(', ')}  (skip with ${NO_ADB_REVERSE_FLAG})`));
+
+    const adb = resolveAdbPath();
+    const manual = ports.map(port => `adb reverse tcp:${port} tcp:${port}`).join(' && ');
+
+    if (!adb) {
+        log.warn(yellow(`   adb not found (set ANDROID_HOME). Run manually: ${manual}`));
+        return;
+    }
+
+    const quotedAdb = `'${adb.replace(/'/g, `'\\''`)}'`;
+    const reverses = ports.map(port => `${quotedAdb} reverse tcp:${port} tcp:${port}`).join(' && ');
+
+    if (waitForDevice) {
+        const poller = [
+            'i=0',
+            'while [ $i -lt 120 ]; do',
+            `  if [ "$(${quotedAdb} get-state 2>/dev/null)" = device ]; then ${reverses}; exit $?; fi`,
+            '  i=$((i+1)); sleep 5',
+            'done',
+        ].join('\n');
+        spawn('sh', ['-c', poller], { detached: true, stdio: 'ignore' }).unref();
+        log.info(
+            dim(
+                '   Applied as soon as an emulator/device connects. After an emulator restart: bun run lc native reverse'
+            )
+        );
+        return;
+    }
+
+    try {
+        execSync(reverses, { stdio: 'pipe' });
+        log.info(`   ${green('✓')} Forwarded ${ports.join(', ')}`);
+    } catch (err) {
+        log.warn(
+            yellow('   No emulator/device connected (or more than one)? Start one, then re-run.'),
+            err
+        );
+    }
+};
+
+const nativeReverse = (): void => {
+    setupAdbReverse(false);
+    if (localhostPortsFromTenantConfig().length === 0) {
+        log.info(dim('   No localhost URLs in public/tenant-config.json — nothing to forward.'));
+    }
+    rl.close();
+};
+
 const nativeOpen = async (platform?: Platform, tenantId?: string, stageId?: string) => {
     if (!platform) {
         platform = await pickPlatform();
@@ -1354,6 +1465,8 @@ const nativeOpen = async (platform?: Platform, tenantId?: string, stageId?: stri
         );
         disableCapgoAutoUpdateForStage(stageId);
     }
+
+    if (platform === 'android' && !adbReverseDisabled) setupAdbReverse(true);
 
     rl.close();
 
@@ -1401,6 +1514,8 @@ const nativeRun = async (tenantId?: string, platform?: Platform) => {
         'Patching native projects with tenant config'
     );
     disableCapgoAutoUpdateForStage('local');
+
+    if (platform === 'android' && !adbReverseDisabled) setupAdbReverse(true);
 
     const runFlag = platform === 'android' ? ' --target' : '';
 
@@ -1996,7 +2111,7 @@ const nativeMenu = async () => {
     log.info('');
     log.info(
         dim(
-            '  Or run directly: bun run lc native dev|sync|open|run|build|capgo [tenant] [stage] [ios|android] [beta|release|appetize]'
+            '  Or run directly: bun run lc native dev|sync|open|run|build|capgo|reverse [tenant] [stage] [ios|android] [beta|release|appetize]'
         )
     );
     log.info('');
@@ -2087,6 +2202,12 @@ const handleNativeShortcut = async (args: string[]): Promise<boolean> => {
             return true;
         }
 
+        case 'reverse': {
+            // bun run lc native reverse — re-apply adb reverse (e.g. after an emulator restart)
+            nativeReverse();
+            return true;
+        }
+
         case 'open': {
             // bun run lc native open [ios|android] [tenant] [stage]
             const arg3 = args[3];
@@ -2157,7 +2278,7 @@ const handleNativeShortcut = async (args: string[]): Promise<boolean> => {
 // ---------------------------------------------------------------------------
 
 const handleShortcuts = async (): Promise<boolean> => {
-    const args = process.argv.slice(2);
+    const args = process.argv.slice(2).filter(a => a !== NO_ADB_REVERSE_FLAG);
     const command = args[0];
     const arg = args[1];
     const arg2 = args[2];
@@ -2491,6 +2612,11 @@ const printHelp = () => {
     log.info(
         `  ${cyan('bun run lc native')}                     ${dim(
             'Full native menu (dev, run, build)'
+        )}`
+    );
+    log.info(
+        `  ${cyan('bun run lc native reverse')}             ${dim(
+            'Re-apply adb reverse for local stages (after an emulator restart)'
         )}`
     );
     log.info(

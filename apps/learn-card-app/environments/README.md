@@ -170,6 +170,13 @@ of redirecting the webview: iOS uses an ephemeral `ASWebAuthenticationSession`
   (`authBridgeUrl`) cannot be evaluated there — sign-in still completes. Judge
   the sheet's look on a physical device or an iOS 17 simulator runtime. Local dev also logs an iOS deprecation warning about
   `http` scheme authorize URLs — harmless; staging/production Keycloak is HTTPS.
+- **Android emulator + local stages**: `localhost` inside the emulator is the
+  emulator itself. `bun run lc native open android …` and `native run android`
+  forward every `localhost` port in the generated tenant config via
+  `adb reverse` (applied once an emulator connects; skip with
+  `--no-adb-reverse`). Forwards reset on emulator restart — re-run
+  `bun run lc native reverse`. A fresh emulator's Chrome shows its first-run
+  screen once inside the Custom Tab; tap "Use without an account".
 - **Live-reload (`lc native dev`) cannot exercise Keycloak sign-in**: the
   WebView origin becomes `http://<LAN-IP>:5173`, which is not a secure context,
   so `crypto.subtle` (PKCE) is unavailable. Use the bundled flow instead:
