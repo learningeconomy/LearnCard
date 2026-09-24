@@ -1,3 +1,4 @@
+import { ShareCredentialsIllustration } from './ShareCredentialsIllustration';
 import { ShareCredentialThumbnail } from './ShareCredentialThumbnail';
 import React, { useEffect, useRef, useState } from 'react';
 import { IonIcon } from '@ionic/react';
@@ -7,7 +8,6 @@ import {
     checkmarkOutline,
     closeOutline,
     copyOutline,
-    lockClosedOutline,
 } from 'ionicons/icons';
 import type { VC } from '@learncard/types';
 import { QRCodeSVG } from 'qrcode.react';
@@ -320,12 +320,7 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
             </header>
             <div className="flex-1 overflow-y-auto px-6 py-8 md:py-12">
                 <div className="max-w-2xl mx-auto space-y-6">
-                    <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
-                        <IonIcon
-                            className="w-6 h-6"
-                            icon={step === 'done' ? checkmarkOutline : lockClosedOutline}
-                        />
-                    </div>
+                    <ShareCredentialsIllustration complete={step === 'done'} />
                     <div>
                         <p className="text-xs font-medium text-grayscale-500 mb-2">
                             {step === 'done'
