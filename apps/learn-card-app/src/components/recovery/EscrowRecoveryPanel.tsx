@@ -50,22 +50,22 @@ export const EscrowRecoveryPanel = ({
         };
     }, []);
     useEffect(() => {
-        let active = true;
+        let cancelled = false;
         setLoaded(false);
         loadPendingEscrowRecovery(scope)
             .then(value => {
-                if (active) {
+                if (!cancelled) {
                     setPending(value);
                     setLoaded(true);
                     setError('');
                 }
             })
             .catch(() => {
-                if (active) setError('Recovery details could not be loaded. Please try again.');
+                if (!cancelled) setError('Recovery details could not be loaded. Please try again.');
             });
         const timer = setInterval(() => setNow(Date.now()), 1000);
         return () => {
-            active = false;
+            cancelled = true;
             clearInterval(timer);
         };
     }, [scope, loadAttempt]);
