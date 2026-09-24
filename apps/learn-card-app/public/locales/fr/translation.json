@@ -8943,6 +8943,8 @@
         "search": "Rechercher des justificatifs",
         "searchUpdating": "Mise à jour des résultats…",
         "searchLoaded": "La recherche porte sur les justificatifs chargés. Chargez-en davantage pour élargir la recherche.",
+        "titlePlaceholder": "Ex. : Mes réussites d’apprentissage",
+        "notePlaceholder": "Ex. : Voici les justificatifs de ma récente formation.",
         "searchPlaceholder": "Rechercher par nom de justificatif…",
         "clearSearch": "Effacer la recherche",
         "noSearchResults": "Aucun justificatif correspondant. Essayez un autre nom.",

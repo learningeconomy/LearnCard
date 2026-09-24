@@ -599,6 +599,7 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
                                     maxLength={120}
                                     disabled={fieldsLocked}
                                     className={`${inputClass} mt-2`}
+                                    placeholder={m['shareLinks.titlePlaceholder']()}
                                     value={title}
                                     onChange={event => {
                                         invalidateDraft();
@@ -613,6 +614,7 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
                                     disabled={fieldsLocked}
                                     rows={3}
                                     className={`${inputClass} mt-2 resize-y`}
+                                    placeholder={m['shareLinks.notePlaceholder']()}
                                     value={note}
                                     onChange={event => {
                                         invalidateDraft();
