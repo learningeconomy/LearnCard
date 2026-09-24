@@ -8963,6 +8963,7 @@
         "noSearchResults": "No matching credentials. Try another name.",
         "selected": "{{count}} credentials selected",
         "shareWithOthers": "Share with other credentials…",
+        "sharedWithYou": "shared {{count}} credentials with you",
         "sharedCount": "{{count}} credentials shared",
         "limit": "Up to 50",
         "credential": "Credential",

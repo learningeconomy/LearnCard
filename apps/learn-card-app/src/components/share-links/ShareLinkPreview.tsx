@@ -21,6 +21,8 @@ export interface ShareLinkPreviewProps {
     title: string;
     note?: string;
     sharerName?: string;
+    sharerAvatar?: string;
+    sharedAt?: string;
     expiresAt?: string | null;
     proofs?: Readonly<Record<number, ProofState>>;
     /** Rendered above the collection when the host wants an explicit heading. */
@@ -68,6 +70,8 @@ export const ShareLinkPreview = ({
     title,
     note,
     sharerName,
+    sharerAvatar,
+    sharedAt,
     expiresAt,
     proofs,
     heading,
@@ -85,11 +89,55 @@ export const ShareLinkPreview = ({
         <section className="bg-white rounded-[20px] p-6 md:p-8 space-y-4 border border-grayscale-200">
             <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0 flex-1 space-y-3">
-                    {sharerName && (
-                        <p className="text-xs text-grayscale-500">
-                            {m['shareLinks.sharedBy']({ name: sharerName })}
-                        </p>
-                    )}
+                    {sharerName &&
+                        (showOriginal ? (
+                            <div className="flex items-center gap-3">
+                                <span
+                                    aria-hidden="true"
+                                    className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-emerald-100 text-lg font-semibold text-grayscale-900"
+                                >
+                                    {sharerName.trim().charAt(0).toUpperCase()}
+                                    {sharerAvatar && (
+                                        <img
+                                            key={sharerAvatar}
+                                            src={sharerAvatar}
+                                            alt=""
+                                            referrerPolicy="no-referrer"
+                                            className="absolute inset-0 h-full w-full object-cover"
+                                            onError={event => {
+                                                event.currentTarget.hidden = true;
+                                            }}
+                                        />
+                                    )}
+                                </span>
+                                <div className="min-w-0">
+                                    <p className="text-sm font-medium text-grayscale-900 break-words">
+                                        {sharerName}
+                                    </p>
+                                    <p className="text-xs text-grayscale-600">
+                                        {m['shareLinks.sharedWithYou']({
+                                            count: String(payload.selection.length),
+                                        })}
+                                    </p>
+                                    {sharedAt && (
+                                        <time
+                                            dateTime={sharedAt}
+                                            className="mt-1 block text-xs text-grayscale-500"
+                                        >
+                                            {new Date(sharedAt).toLocaleDateString(undefined, {
+                                                year: 'numeric',
+                                                month: 'long',
+                                                day: 'numeric',
+                                            })}
+                                        </time>
+                                    )}
+                                </div>
+                            </div>
+                        ) : (
+                            <p className="text-xs text-grayscale-500">
+                                {m['shareLinks.sharedBy']({ name: sharerName })}
+                            </p>
+                        ))}
                     <h1 className="text-2xl md:text-3xl font-semibold break-words">{title}</h1>
                 </div>
                 {summaryIllustration && (

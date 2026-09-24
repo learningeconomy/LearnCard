@@ -8957,6 +8957,7 @@
         "noSearchResults": "Aucun justificatif correspondant. Essayez un autre nom.",
         "selected": "{{count}} justificatifs sélectionnés",
         "shareWithOthers": "Partager avec d’autres justificatifs…",
+        "sharedWithYou": "a partagé {{count}} justificatifs avec vous",
         "sharedCount": "{{count}} justificatifs partagés",
         "limit": "Jusqu’à 50",
         "credential": "Justificatif",

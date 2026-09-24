@@ -318,6 +318,8 @@ const ShareLinkViewer = () => {
                                         title={ready.metadata.title}
                                         note={ready.metadata.note}
                                         sharerName={ready.metadata.sharer.displayName}
+                                        sharerAvatar={ready.metadata.sharer.avatar}
+                                        sharedAt={ready.metadata.createdAt}
                                         expiresAt={ready.metadata.expiresAt}
                                         proofs={proofRecord}
                                         showOriginal
