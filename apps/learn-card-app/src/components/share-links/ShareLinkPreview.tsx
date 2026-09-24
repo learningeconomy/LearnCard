@@ -110,7 +110,7 @@ export const ShareLinkPreview = ({
             {summaryExtra}
         </section>
         <div className="space-y-4">
-            {payload.selection.map(({ credentialIndex }, order) => {
+            {payload.selection.map(({ credentialIndex }) => {
                 const credential = payload.presentation.verifiableCredential[credentialIndex];
                 const text = credentialText(credential);
                 const endorsements = payload.endorsements.filter(
@@ -122,12 +122,9 @@ export const ShareLinkPreview = ({
                         key={credentialIndex}
                         className="bg-white rounded-[20px] p-6 md:p-8 space-y-4 border border-grayscale-200"
                     >
-                        <div className="flex items-start gap-4">
+                        <div className="flex items-center gap-4">
                             <ShareCredentialThumbnail credential={credential} />
                             <div className="min-w-0 flex-1">
-                                <p className="text-xs text-grayscale-500 mb-1">
-                                    {String(order + 1).padStart(2, '0')}
-                                </p>
                                 <h2 className="text-lg font-semibold break-words">
                                     {text.name || m['shareLinks.credential']()}
                                 </h2>
