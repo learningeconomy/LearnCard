@@ -992,7 +992,9 @@ export const completeIdentityRebind = async (
                 previousAuthShares: [],
                 recoveryMethods,
                 keyProvider: 'sss',
-                sssActivationState: 'active',
+                // The new split has no confirmed recovery method yet. SSS records
+                // are excluded from provisional migration cleanup (Web3Auth only).
+                sssActivationState: 'provisional',
                 updatedAt: now,
             },
             $unset: { provisionalCreatedAt: '' },
