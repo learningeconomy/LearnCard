@@ -43,6 +43,13 @@ vi.mock('@ionic/react', () => ({
     IonContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     IonPage: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
+vi.mock('../../theme/hooks/useTheme', () => ({
+    default: () => ({ getThemedCategory: () => ({ icons: {}, colors: {} }) }),
+}));
+vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
+    getDefaultCategoryForCredential: () => 'Achievement',
+    getImageUrlFromCredential: () => undefined,
+}));
 vi.mock('./sharePrivacy', () => ({
     enterSharePrivacy: vi.fn(),
 }));

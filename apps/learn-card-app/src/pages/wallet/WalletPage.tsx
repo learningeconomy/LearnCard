@@ -1,4 +1,5 @@
 import React, { Suspense, useEffect } from 'react';
+import Share from '../../components/svgs/Share';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import * as m from '../../paraglide/messages.js';
 import { useHistory, Link } from 'react-router-dom';
@@ -236,9 +237,15 @@ const WalletPage: React.FC = () => {
                                             <button
                                                 type="button"
                                                 onClick={handleShareModal}
-                                                className="px-4 py-2.5 rounded-[20px] bg-white text-grayscale-900 text-sm font-medium hover:bg-grayscale-100 transition-colors focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                                aria-label={m['shareLinks.share']()}
+                                                className="flex h-9 w-9 sm:w-auto sm:px-3 md:h-10 items-center justify-center gap-2 rounded-[20px] bg-white text-grayscale-900 text-sm font-medium hover:bg-grayscale-100 transition-colors focus-visible:ring-2 focus-visible:ring-emerald-500"
                                             >
-                                                {m['shareLinks.share']()}
+                                                <span aria-hidden="true">
+                                                    <Share className="h-5 w-5" />
+                                                </span>
+                                                <span className="hidden sm:inline">
+                                                    {m['common.share']()}
+                                                </span>
                                             </button>
                                         )}
 

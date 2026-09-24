@@ -1,3 +1,4 @@
+import { ShareCredentialThumbnail } from './ShareCredentialThumbnail';
 import React, { useEffect, useRef, useState } from 'react';
 import { IonIcon } from '@ionic/react';
 import {
@@ -6,7 +7,6 @@ import {
     checkmarkOutline,
     closeOutline,
     copyOutline,
-    documentTextOutline,
     lockClosedOutline,
 } from 'ionicons/icons';
 import type { VC } from '@learncard/types';
@@ -100,10 +100,14 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
                 try {
                     return {
                         uri: record.uri,
+                        category: record.category,
                         credential: (await wallet.read.get(record.uri)) as VC | undefined,
                     } satisfies CredentialChoice;
                 } catch {
-                    return { uri: record.uri } satisfies CredentialChoice;
+                    return {
+                        uri: record.uri,
+                        category: record.category,
+                    } satisfies CredentialChoice;
                 }
             });
             if (!alive.current) return;
@@ -303,7 +307,7 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
         >
             <header className="px-6 py-5 flex items-center justify-between border-b border-grayscale-100">
                 <span className="text-xs font-medium text-grayscale-600">
-                    {m['shareLinks.privateLink']()}
+                    {m['shareLinks.share']()}
                 </span>
                 <button
                     className="p-2 rounded-[20px] hover:bg-grayscale-100"
@@ -382,14 +386,12 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
                                     return (
                                         <label
                                             key={choice.uri}
-                                            className={`flex items-start gap-4 p-4 rounded-[20px] border cursor-pointer transition-colors ${checked ? 'border-emerald-600 bg-emerald-50' : 'border-grayscale-200 hover:bg-grayscale-10'}`}
+                                            className={`flex items-center gap-4 p-4 rounded-[20px] border cursor-pointer transition-colors ${checked ? 'border-emerald-600 bg-emerald-50' : 'border-grayscale-200 hover:bg-grayscale-10'}`}
                                         >
-                                            <span className="rounded-xl bg-grayscale-100 p-3 text-grayscale-600">
-                                                <IonIcon
-                                                    icon={documentTextOutline}
-                                                    className="w-5 h-5"
-                                                />
-                                            </span>
+                                            <ShareCredentialThumbnail
+                                                credential={choice.credential}
+                                                category={choice.category}
+                                            />
                                             <span className="flex-1 min-w-0">
                                                 <span className="block text-sm font-medium break-words">
                                                     {text.name || m['shareLinks.credential']()}
@@ -402,7 +404,7 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
                                             </span>
                                             <input
                                                 type="checkbox"
-                                                className="w-5 h-5 mt-2 accent-emerald-600 shrink-0"
+                                                className="w-5 h-5 accent-emerald-600 shrink-0"
                                                 checked={checked}
                                                 disabled={
                                                     !choice.credential ||

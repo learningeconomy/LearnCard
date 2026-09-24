@@ -8939,7 +8939,7 @@
         "close": "Close",
         "ready": "Ready to send",
         "step": "Step {{current}} of 3",
-        "choose": "Choose what to share",
+        "choose": "Choose credentials to share",
         "details": "Make it yours",
         "done": "Your link is ready",
         "chooseHint": "Bring your credentials together in one private link.",

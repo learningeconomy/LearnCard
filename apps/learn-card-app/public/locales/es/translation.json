@@ -8933,7 +8933,7 @@
         "close": "Cerrar",
         "ready": "Listo para enviar",
         "step": "Paso {{current}} de 3",
-        "choose": "Elige qué compartir",
+        "choose": "Elige las credenciales que quieres compartir",
         "details": "Añade los detalles",
         "done": "Tu enlace está listo",
         "chooseHint": "Reúne tus credenciales en un enlace privado.",
