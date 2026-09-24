@@ -186,9 +186,19 @@ export const prepareShare = async (
     const key = generateShareContentKey();
     const createdAt = new Date().toISOString();
     const ownerDid = wallet.id.did();
+    // A v1 presentation context conflicts with nested v2 protected terms.
+    // A v2 presentation can contain both original v1 and v2 credentials.
+    const presentationContext = credentials.some(credential =>
+        (Array.isArray(credential['@context'])
+            ? credential['@context']
+            : [credential['@context']]
+        ).includes('https://www.w3.org/ns/credentials/v2')
+    )
+        ? 'https://www.w3.org/ns/credentials/v2'
+        : 'https://www.w3.org/2018/credentials/v1';
     const presentation = await wallet.invoke.issuePresentation(
         {
-            '@context': ['https://www.w3.org/2018/credentials/v1'],
+            '@context': [presentationContext],
             type: ['VerifiablePresentation'],
             holder: ownerDid,
             verifiableCredential: credentials,

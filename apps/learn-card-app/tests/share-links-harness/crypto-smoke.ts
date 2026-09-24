@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { initLearnCard } from '@learncard/init';
 import {
     prepareShare,
+    createVerificationBudget,
     shareWallet,
     verifyCredentialTree,
     verifySharedPresentation,
@@ -51,11 +52,17 @@ const validated = validateShareManifest(plaintext, {
 });
 assert(validated.ok);
 assert.deepEqual(validated.manifest.presentation.verifiableCredential[0], credential);
-assert.equal(await verifySharedPresentation(adapter, validated.manifest), 'verified');
-assert.equal(await verifyCredentialTree(adapter, credential), 'verified');
+assert.equal(
+    await verifySharedPresentation(adapter, validated.manifest, createVerificationBudget()),
+    'verified'
+);
+assert.equal(
+    await verifyCredentialTree(adapter, credential, createVerificationBudget()),
+    'verified'
+);
 const tampered = structuredClone(credential);
 tampered.credentialSubject = { id: 'did:example:someone-else' };
-assert.equal(await verifyCredentialTree(adapter, tampered), 'failed');
+assert.equal(await verifyCredentialTree(adapter, tampered, createVerificationBudget()), 'failed');
 const recovery = await wallet.invoke.decryptDagJwe<{
     selection: { ref: string }[];
     latest: { key: string };
@@ -66,3 +73,42 @@ assert(!JSON.stringify(plaintext).includes('private:fixture-only'));
 console.log(
     'PASS: real DIDKit holder/issuer proofs, tamper rejection, AES-GCM roundtrip, owner DAG-JWE recovery, original preservation.'
 );
+
+// Real JSON-LD signing regression: v2-only and mixed-version collections.
+const credentialV2 = await wallet.invoke.issueCredential({
+    '@context': ['https://www.w3.org/ns/credentials/v2'],
+    type: ['VerifiableCredential'],
+    issuer: wallet.id.did(),
+    credentialSubject: { id: wallet.id.did() },
+});
+for (const credentials of [[credentialV2], [credential, credentialV2]]) {
+    const mixedAdapter = {
+        ...adapter,
+        read: { get: async (ref: string) => credentials[Number(ref)] },
+    };
+    const mixed = await prepareShare(
+        mixedAdapter,
+        credentials.map((_, i) => String(i)),
+        'Mixed',
+        ''
+    );
+    const payload = await decryptSharePayload({
+        shareId: mixed.input.id,
+        contentVersion: 1,
+        key: mixed.key,
+        envelope: mixed.input.envelope,
+    });
+    const result = validateShareManifest(payload, { shareId: mixed.input.id, contentVersion: 1 });
+    assert(result.ok);
+    assert.deepEqual(result.manifest.presentation.verifiableCredential, credentials);
+    assert.equal(
+        await verifySharedPresentation(mixedAdapter, result.manifest, createVerificationBudget()),
+        'verified'
+    );
+    for (const vc of credentials)
+        assert.equal(
+            await verifyCredentialTree(mixedAdapter, vc, createVerificationBudget()),
+            'verified'
+        );
+}
+console.log('PASS: v2 and mixed-version presentations preserve originals and verify.');
