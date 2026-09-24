@@ -70,6 +70,30 @@ describe('RecoveryFlowModal', () => {
         expect(screen.getByRole('button', { name: /Done/i })).toBeInTheDocument();
     });
 
+    it('hides device linking in the lost-login chooser even with a device callback', () => {
+        render(
+            <RecoveryFlowModal
+                {...defaultProps}
+                identityPhase="choose_method"
+                onRecoverWithDevice={vi.fn()}
+                availableMethods={[{ type: 'phrase', createdAt: '2026-09-06T00:00:00Z' }]}
+            />
+        );
+
+        expect(screen.queryByRole('button', { name: /sign in from another device/i })).toBeNull();
+        expect(screen.getByRole('button', { name: /phrase/i })).toBeEnabled();
+        expect(screen.queryByText('QrLoginRequester')).toBeNull();
+    });
+
+    it('keeps device linking available in ordinary recovery', () => {
+        render(<RecoveryFlowModal {...defaultProps} onRecoverWithDevice={vi.fn()} />);
+
+        const deviceButton = screen.getByRole('button', { name: /sign in from another device/i });
+        expect(deviceButton).toBeEnabled();
+        fireEvent.click(deviceButton);
+        expect(screen.getByText('QrLoginRequester')).toBeInTheDocument();
+    });
+
     it('shows a friendly error and enables retry and Back after an invalid lost-login phrase', async () => {
         const recover = vi.fn().mockRejectedValue(new Error('Invalid recovery phrase'));
         render(
