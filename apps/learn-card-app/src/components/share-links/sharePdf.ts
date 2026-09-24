@@ -33,7 +33,7 @@ export const downloadSharePdf = async (source: HTMLElement, title: string): Prom
         const width = pdf.internal.pageSize.getWidth() - margin * 2;
         const bottom = pdf.internal.pageSize.getHeight() - margin;
         let y = margin;
-        const cards = copy.querySelectorAll<HTMLElement>('section, article');
+        const cards = copy.querySelectorAll<HTMLElement>('section, article, figure');
         for (const card of cards) {
             const canvas = await html2canvas(card, {
                 scale: 2,

@@ -579,7 +579,7 @@
                 "page": "Página",
                 "pages": "Páginas",
                 "preparingPdf": "Preparando PDF…",
-        "downloadPdf": "Descargar PDF",
+                "downloadPdf": "Descargar PDF",
                 "iframeTitle": "Vista previa del PDF del currículum"
             },
             "toastTitle": {
@@ -8960,6 +8960,7 @@
         "shareWithOthers": "Compartir con otras credenciales…",
         "sharedWithYou": "compartió {{count}} credenciales contigo",
         "preparingPdf": "Preparando PDF…",
+        "downloadQrPdf": "Descargar código QR en PDF",
         "downloadPdf": "Descargar PDF",
         "sharedCount": "{{count}} credenciales compartidas",
         "limit": "Hasta 50",

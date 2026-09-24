@@ -579,7 +579,7 @@
                 "page": "صفحة",
                 "pages": "صفحات",
                 "preparingPdf": "جارٍ إعداد PDF…",
-        "downloadPdf": "تنزيل PDF",
+                "downloadPdf": "تنزيل PDF",
                 "iframeTitle": "معاينة ملف PDF للسيرة الذاتية"
             },
             "toastTitle": {
@@ -9049,6 +9049,7 @@
         "shareWithOthers": "المشاركة مع بيانات اعتماد أخرى…",
         "sharedWithYou": "شارك معك {{count}} من بيانات الاعتماد",
         "preparingPdf": "جارٍ إعداد PDF…",
+        "downloadQrPdf": "تنزيل رمز QR بصيغة PDF",
         "downloadPdf": "تنزيل PDF",
         "sharedCount": "بيانات الاعتماد المشتركة: {{count}}",
         "limit": "حتى 50",

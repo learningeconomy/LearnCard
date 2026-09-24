@@ -1,3 +1,4 @@
+import { downloadSharePdf } from './sharePdf';
 import { ShareCategoryFilter } from './ShareCategoryFilter';
 import './ShareLinkCreate.css';
 import { ShareSearchEmpty } from './ShareSearchEmpty';
@@ -12,6 +13,7 @@ import {
     checkmarkOutline,
     closeOutline,
     copyOutline,
+    downloadOutline,
 } from 'ionicons/icons';
 import type { VC } from '@learncard/types';
 import { QRCodeSVG } from 'qrcode.react';
@@ -74,6 +76,21 @@ export const ShareLinkCreate = ({
     initialSelectedUri?: string;
 }) => {
     const { initWallet } = useWallet();
+    const qrExport = useRef<HTMLDivElement>(null);
+    const [savingQr, setSavingQr] = useState(false);
+    const [qrError, setQrError] = useState(false);
+    const saveQr = async () => {
+        if (!qrExport.current || savingQr) return;
+        setSavingQr(true);
+        setQrError(false);
+        try {
+            await downloadSharePdf(qrExport.current, `${title}-qr-code`);
+        } catch {
+            setQrError(true);
+        } finally {
+            setSavingQr(false);
+        }
+    };
     const { getThemedCategory } = useTheme();
     const [categoryFilter, setCategoryFilter] = useState('');
     const [selectedOnly, setSelectedOnly] = useState(false);
@@ -798,8 +815,8 @@ export const ShareLinkCreate = ({
                         </div>
                     )}
                     {step === 'done' && (
-                        <div className="space-y-5">
-                            <div className="p-5 rounded-[20px] border border-grayscale-200">
+                        <div ref={qrExport} className="space-y-5">
+                            <section className="p-5 rounded-[20px] border border-grayscale-200">
                                 <p className="font-medium break-words">{title}</p>
                                 <p className="text-xs text-grayscale-500 mt-2">
                                     {m['shareLinks.selected']({ count: String(selected.length) })}
@@ -815,7 +832,7 @@ export const ShareLinkCreate = ({
                                         {m['shareLinks.neverExpires']()}
                                     </p>
                                 )}
-                            </div>
+                            </section>
                             <figure className="flex flex-col items-center gap-3 rounded-[20px] border border-grayscale-200 bg-white p-5">
                                 <QRCodeSVG
                                     value={link}
@@ -831,6 +848,30 @@ export const ShareLinkCreate = ({
                                 <figcaption className="text-sm text-grayscale-600 text-center">
                                     {m['shareLinks.qrHint']()}
                                 </figcaption>
+                                <button
+                                    type="button"
+                                    className={`${secondary} inline-flex items-center gap-2`}
+                                    disabled={savingQr}
+                                    onClick={() => void saveQr()}
+                                >
+                                    {savingQr ? (
+                                        <Busy>{m['shareLinks.preparingPdf']()}</Busy>
+                                    ) : (
+                                        <>
+                                            <IonIcon icon={downloadOutline} />
+                                            {m['shareLinks.downloadQrPdf']()}
+                                        </>
+                                    )}
+                                </button>
+                                {qrError && (
+                                    <p
+                                        role="alert"
+                                        data-share-export-exclude
+                                        className="text-sm text-red-700"
+                                    >
+                                        {m['shareLinks.downloadError']()}
+                                    </p>
+                                )}
                             </figure>
                             <label className="block text-xs font-medium text-grayscale-700">
                                 {m['shareLinks.privateLink']()}

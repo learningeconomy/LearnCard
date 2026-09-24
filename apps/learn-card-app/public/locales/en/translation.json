@@ -580,7 +580,7 @@
                 "page": "Page",
                 "pages": "Pages",
                 "preparingPdf": "Preparing PDF…",
-        "downloadPdf": "Download PDF",
+                "downloadPdf": "Download PDF",
                 "iframeTitle": "Resume PDF Preview"
             },
             "toastTitle": {
@@ -8966,6 +8966,7 @@
         "shareWithOthers": "Share with other credentials…",
         "sharedWithYou": "shared {{count}} credentials with you",
         "preparingPdf": "Preparing PDF…",
+        "downloadQrPdf": "Download QR code PDF",
         "downloadPdf": "Download PDF",
         "sharedCount": "{{count}} credentials shared",
         "limit": "Up to 50",

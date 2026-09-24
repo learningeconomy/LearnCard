@@ -579,7 +579,7 @@
                 "page": "Page",
                 "pages": "Pages",
                 "preparingPdf": "Préparation du PDF…",
-        "downloadPdf": "Télécharger le PDF",
+                "downloadPdf": "Télécharger le PDF",
                 "iframeTitle": "Aperçu PDF du CV"
             },
             "toastTitle": {
@@ -8960,6 +8960,7 @@
         "shareWithOthers": "Partager avec d’autres justificatifs…",
         "sharedWithYou": "a partagé {{count}} justificatifs avec vous",
         "preparingPdf": "Préparation du PDF…",
+        "downloadQrPdf": "Télécharger le code QR en PDF",
         "downloadPdf": "Télécharger le PDF",
         "sharedCount": "{{count}} justificatifs partagés",
         "limit": "Jusqu’à 50",
