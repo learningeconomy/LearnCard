@@ -6,6 +6,7 @@ import { expect, test } from './fixtures/mocked-test';
 
 import { TEST_USER_PROFILE_ID, TEST_USER_SEED } from './constants';
 import { installNetwork } from './mocks/network';
+import { mockLaunchDarkly } from './route.helpers';
 import { waitForAuthenticatedState } from './test.helpers';
 
 const contractUri =
@@ -99,6 +100,9 @@ test.describe('Sample persona @mocked', () => {
     test('adds sample credentials, shows the persistent sample state, and removes it', async ({
         page,
     }) => {
+        await mockLaunchDarkly(page, {
+            enableNewDemoFlow: { value: true },
+        });
         const trpc = await installNetwork(page);
         let hasSample = false;
 

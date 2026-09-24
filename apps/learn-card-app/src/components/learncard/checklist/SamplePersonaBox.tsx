@@ -1,4 +1,5 @@
 import React from 'react';
+import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import { ModalTypes, useConfirmation, useModal } from 'learn-card-base';
 import type { SamplePersonaConfig } from 'learn-card-base/config/tenantConfig';
@@ -168,7 +169,9 @@ const SamplePersonaBoxContent: React.FC = () => {
 };
 
 const SamplePersonaBox: React.FC = () => {
+    const flags = useFlags();
     const { samplePersonas, legacySamplePersonaContractUris } = useFeatureConfig();
+    if (flags.enableNewDemoFlow !== true) return null;
 
     if (samplePersonas.length === 0 && legacySamplePersonaContractUris.length === 0) return null;
 

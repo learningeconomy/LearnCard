@@ -28,11 +28,15 @@ const mocks = vi.hoisted(() => ({
     useConsentedContracts: vi.fn(),
     useContract: vi.fn(),
     useFeatureConfig: vi.fn(),
+    useFlags: vi.fn(),
     useGetCredentialsFromContracts: vi.fn(),
     useWithdrawConsent: vi.fn(),
     withdrawConsent: vi.fn(),
 }));
 
+vi.mock('launchdarkly-react-client-sdk', () => ({
+    useFlags: () => mocks.useFlags(),
+}));
 vi.mock('@tanstack/react-query', () => ({
     useQueryClient: () => ({
         invalidateQueries: mocks.invalidateQueries,
@@ -141,6 +145,7 @@ const currentCredential = { uri: currentCredentialUri, title: 'Current Sample Cr
 describe('SamplePersonaBox', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mocks.useFlags.mockReturnValue({ enableNewDemoFlow: true });
         mocks.useFeatureConfig.mockReturnValue({
             samplePersonas: [studentPersona],
             legacySamplePersonaContractUris: [legacyContractUri],
@@ -173,6 +178,16 @@ describe('SamplePersonaBox', () => {
             invoke: { getCredentialsForContract: mocks.getCredentialsForContract },
         });
         mocks.queueAiInsightCredentialRefresh.mockResolvedValue(undefined);
+    });
+    it('stays hidden when the new demo flow flag is disabled', () => {
+        mocks.useFlags.mockReturnValue({ enableNewDemoFlow: false });
+
+        render(<SamplePersonaBox />);
+
+        expect(
+            screen.queryByRole('button', { name: 'See an example LearnCard' })
+        ).not.toBeInTheDocument();
+        expect(mocks.useContract).not.toHaveBeenCalled();
     });
 
     it('adds the configured persona without a confirmation step', async () => {
