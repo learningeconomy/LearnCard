@@ -32,6 +32,17 @@ export class AuthSessionError extends Error {
 // Auth Provider
 // ---------------------------------------------------------------------------
 
+/** An action that the selected sign-in provider does not support. */
+export class UnsupportedSignInOperationError extends Error {
+    constructor(
+        public readonly operation: string,
+        public readonly providerType: string
+    ) {
+        super(`${operation} is not supported by ${providerType}`);
+        this.name = 'UnsupportedSignInOperationError';
+    }
+}
+
 /**
  * Auth provider identifier. Known values: 'firebase', 'supertokens', 'keycloak', 'oidc'.
  * Use any string to support custom auth providers without modifying this type.

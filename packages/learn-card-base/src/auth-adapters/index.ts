@@ -7,6 +7,11 @@
  */
 
 export { createFirebaseSignInAdapter } from './createFirebaseSignInAdapter';
+export { createKeycloakSignInAdapter } from './createKeycloakSignInAdapter';
+export type {
+    KeycloakSignInAdapter,
+    KeycloakSignInAdapterConfig,
+} from './createKeycloakSignInAdapter';
 
 export type {
     FirebaseSignInAdapterConfig,

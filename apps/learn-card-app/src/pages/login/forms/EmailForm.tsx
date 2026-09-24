@@ -12,13 +12,18 @@ const log = getLogger('email-form');
 
 import useWallet from 'learn-card-base/hooks/useWallet';
 import { useTheme } from '../../../theme/hooks/useTheme';
+import { useAnalytics, AnalyticsEvents, LAST_LOGIN_METHOD_KEY } from '@analytics';
+import type { KeycloakSignInAdapter } from 'learn-card-base';
 import {
+    authStore,
+    SocialLoginTypes,
     currentUserStore,
     getRandomBaseColor,
     redirectStore,
     usePathQuery,
     useSQLiteStorage,
     setPlatformPrivateKey,
+    useSignInAdapter,
 } from 'learn-card-base';
 import { walletStore } from 'learn-card-base/stores/walletStore';
 
@@ -36,6 +41,9 @@ import {
 import { generatePK } from 'apps/learn-card-app/src/helpers/privateKeyHelpers';
 import AppStoreDownloadButtons from '../appStoreButtons/AppStoreDownloadButtons';
 import AccessibleCodeInput from './AccessibleCodeInput';
+import { exchangeEmailCode } from '../../../auth/exchangeEmailCode';
+import { Capacitor } from '@capacitor/core';
+import { KeycloakSignInOverlay } from '../../../components/auth/KeycloakSignInOverlay';
 
 const StateValidator = z.object({
     email: z.string().regex(EMAIL_REGEX, `Missing or Invalid Email`),
@@ -92,8 +100,10 @@ const EmailForm: React.FC<EmailFormProps> = ({
     const { initWallet } = useWallet();
     const { setCurrentUser } = useSQLiteStorage();
     const { sendSignInLink, signInWithCustomFirebaseToken } = useFirebase();
+    const adapter = useSignInAdapter();
 
-    const enableMagicLinkLogin = flags?.enableMagicLinkLogin ?? false;
+    const enableMagicLinkLogin =
+        adapter.capabilities.emailLink && (flags?.enableMagicLinkLogin ?? false);
 
     const verificationEmail = redirectStore.get.email();
     const shouldVerifyCode = Boolean(query.get('verifyCode') || verificationEmail);
@@ -113,6 +123,9 @@ const EmailForm: React.FC<EmailFormProps> = ({
     const locale = useLocale();
 
     const [isResendCodeLoading, setIsResendCodeLoading] = useState<boolean>(false);
+    const [keycloakOverlayPhase, setKeycloakOverlayPhase] = useState<
+        'signing-in' | 'setting-up' | null
+    >(null);
 
     useEffect(() => {
         if (shouldVerifyCode && currentStep !== EmailFormStepsEnum.verification) {
@@ -160,22 +173,52 @@ const EmailForm: React.FC<EmailFormProps> = ({
         return false;
     };
 
+    const { track } = useAnalytics();
+
+    // useFirebase's signInWithCustomFirebaseToken swallows failures (it alerts
+    // and resolves), which left the native overlay stuck on "Setting up your
+    // account…". Call the adapter directly so failures reach this form's catch,
+    // and record the same login analytics the hook does on success.
+    const completeKeycloakNativeSignIn = async (ticket: string): Promise<void> => {
+        await (adapter as KeycloakSignInAdapter).signInWithCustomToken(ticket);
+        authStore.set.typeOfLogin(SocialLoginTypes.passwordless);
+        try {
+            localStorage.setItem(LAST_LOGIN_METHOD_KEY, SocialLoginTypes.passwordless);
+        } catch {
+            log.warn('Unable to persist the last login method');
+        }
+        void track(AnalyticsEvents.LOGIN, { method: SocialLoginTypes.passwordless });
+    };
+
     const handleVerifyCode = async () => {
         if (validateCode()) {
             try {
                 setCodeError('');
                 setIsLoading(true);
-                const response = await verifyLoginVerificationCode({
-                    email: verificationEmail as string,
-                    code: code,
-                });
+                if (adapter.providerType === 'keycloak' && Capacitor.isNativePlatform()) {
+                    setKeycloakOverlayPhase('signing-in');
+                }
+                const response = await exchangeEmailCode(
+                    adapter.providerType,
+                    {
+                        email: verificationEmail as string,
+                        code: code,
+                    },
+                    verifyLoginVerificationCode
+                );
                 if (response?.token) {
                     redirectStore.set.email(null);
-                    await signInWithCustomFirebaseToken(response?.token);
+                    if (adapter.providerType === 'keycloak' && Capacitor.isNativePlatform()) {
+                        await completeKeycloakNativeSignIn(response.token);
+                        setKeycloakOverlayPhase('setting-up');
+                    } else {
+                        await signInWithCustomFirebaseToken(response?.token);
+                    }
                 }
                 setIsLoading(false);
             } catch (e) {
                 setIsLoading(false);
+                setKeycloakOverlayPhase(null);
                 setCodeError(m['login.email.verification.error']());
             }
         }
@@ -419,74 +462,77 @@ const EmailForm: React.FC<EmailFormProps> = ({
     }
 
     return (
-        <form onSubmit={handleOnClick} className="w-full">
-            {formTitle && (
-                <IonCol size="12">
-                    <div
-                        className={
-                            formTitleClassNameOverride ?? 'w-full font-medium text-white normal'
-                        }
-                    >
-                        {formTitle}
-                    </div>
-                </IonCol>
-            )}
+        <>
+            {keycloakOverlayPhase && <KeycloakSignInOverlay phase={keycloakOverlayPhase} />}
+            <form onSubmit={handleOnClick} className="w-full">
+                {formTitle && (
+                    <IonCol size="12">
+                        <div
+                            className={
+                                formTitleClassNameOverride ?? 'w-full font-medium text-white normal'
+                            }
+                        >
+                            {formTitle}
+                        </div>
+                    </IonCol>
+                )}
 
-            {activeStep}
-            <div className="flex items-center justify-center py-[20px] w-full mx-auto">
-                <button
-                    type="submit"
-                    className={`ion-padding w-full font-bold rounded-[15px] disabled:opacity-50 ${
-                        !loginButtonBgColor ? 'bg-grayscale-900' : ''
-                    } ${!loginButtonTextColor ? 'text-white' : ''} ${buttonClassName}`}
-                    style={{
-                        ...(loginButtonBgColor ? { backgroundColor: loginButtonBgColor } : {}),
-                        ...(loginButtonTextColor ? { color: loginButtonTextColor } : {}),
-                    }}
-                    onClick={handleOnClick}
-                    disabled={disabled}
-                >
-                    {buttonTitle}
-                </button>
-            </div>
-            {currentStep === EmailFormStepsEnum.email && <AppStoreDownloadButtons />}
-            {currentStep === EmailFormStepsEnum.verification && verificationEmail && (
-                <div className="flex items-center justify-center w-full">
-                    <Countdown
-                        date={Date.now() + 30000} // 30 seconds
-                        renderer={({ seconds, completed }) =>
-                            completed ? (
-                                <button
-                                    type="button"
-                                    onClick={e => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        handleResendCode();
-                                    }}
-                                    className={
-                                        resendCodeButtonClassNameOverride ??
-                                        'text-white font-bold mt-4 border-b-white border-solid border-b-[1px]'
-                                    }
-                                >
-                                    {resendCodeButtonText}
-                                </button>
-                            ) : (
-                                <button
-                                    type="button"
-                                    disabled
-                                    className={
-                                        resendCodeButtonClassNameOverride ??
-                                        'text-white font-bold mt-4 border-b-white border-solid border-b-[1px]'
-                                    }
-                                >
-                                    {m['common.resendIn']({ seconds })}
-                                </button>
-                            )
-                        }
-                    />
+                {activeStep}
+                <div className="flex items-center justify-center py-[20px] w-full mx-auto">
+                    <button
+                        type="submit"
+                        className={`ion-padding w-full font-bold rounded-[15px] disabled:opacity-50 ${
+                            !loginButtonBgColor ? 'bg-grayscale-900' : ''
+                        } ${!loginButtonTextColor ? 'text-white' : ''} ${buttonClassName}`}
+                        style={{
+                            ...(loginButtonBgColor ? { backgroundColor: loginButtonBgColor } : {}),
+                            ...(loginButtonTextColor ? { color: loginButtonTextColor } : {}),
+                        }}
+                        onClick={handleOnClick}
+                        disabled={disabled}
+                    >
+                        {buttonTitle}
+                    </button>
                 </div>
-            )}
-        </form>
+                {currentStep === EmailFormStepsEnum.email && <AppStoreDownloadButtons />}
+                {currentStep === EmailFormStepsEnum.verification && verificationEmail && (
+                    <div className="flex items-center justify-center w-full">
+                        <Countdown
+                            date={Date.now() + 30000} // 30 seconds
+                            renderer={({ seconds, completed }) =>
+                                completed ? (
+                                    <button
+                                        type="button"
+                                        onClick={e => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            handleResendCode();
+                                        }}
+                                        className={
+                                            resendCodeButtonClassNameOverride ??
+                                            'text-white font-bold mt-4 border-b-white border-solid border-b-[1px]'
+                                        }
+                                    >
+                                        {resendCodeButtonText}
+                                    </button>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        disabled
+                                        className={
+                                            resendCodeButtonClassNameOverride ??
+                                            'text-white font-bold mt-4 border-b-white border-solid border-b-[1px]'
+                                        }
+                                    >
+                                        {m['common.resendIn']({ seconds })}
+                                    </button>
+                                )
+                            }
+                        />
+                    </div>
+                )}
+            </form>
+        </>
     );
 };
 

@@ -9,6 +9,7 @@
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
+        "provision:keycloak": "bun --conditions=development scripts/provision-keycloak-users.ts",
         "test": "vitest run --config vitest.config.ts",
         "test:watch": "vitest --config vitest.config.ts",
         "test:coverage": "vitest run --coverage --config vitest.config.ts",
@@ -49,6 +50,8 @@
     },
     "dependencies": {
         "@fastify/cors": "^11.2.0",
+        "@fastify/formbody": "^8.0.2",
+        "@fastify/rate-limit": "^10.2.0",
         "@fastify/static": "^10.1.1",
         "@learncard/core": "workspace:*",
         "@learncard/email-templates": "workspace:*",
@@ -74,6 +77,7 @@
         "firebase-admin": "13.4.0",
         "ioredis": "^5.2.2",
         "ioredis-mock": "^8.2.2",
+        "jose": "^6.2.12",
         "jsonwebtoken": "^9.0.2",
         "jwt-decode": "^3.1.2",
         "libsodium-wrappers": "^0.7.11",
