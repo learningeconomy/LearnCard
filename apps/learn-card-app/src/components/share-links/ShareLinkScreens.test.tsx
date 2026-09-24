@@ -598,3 +598,24 @@ it('searches later index pages without resolving offscreen titled credentials', 
     fireEvent.click(screen.getAllByRole('button', { name: 'Clear search' })[0]);
     expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled();
 });
+
+it('combines category and title filters while preserving selections', async () => {
+    mocks.wallet.index.LearnCloud.getPage.mockResolvedValue({
+        records: [
+            { uri: 'private:badge', title: 'Badge course', category: 'Social Badge' },
+            { uri: 'private:award', title: 'Award course', category: 'Achievement' },
+        ],
+        hasMore: false,
+    });
+    render(<ShareLinkCreate onDismiss={() => {}} />);
+    await waitFor(() => expect(screen.getAllByRole('checkbox')).toHaveLength(2));
+    await waitFor(() => expect(screen.getAllByRole('checkbox')[0]).toBeEnabled());
+    fireEvent.click(screen.getAllByRole('checkbox')[0]);
+    fireEvent.change(screen.getByLabelText('Category'), { target: { value: 'Achievement' } });
+    expect(screen.getAllByRole('checkbox')).toHaveLength(1);
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled();
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'Badge' } });
+    await waitFor(() => expect(screen.queryByRole('checkbox')).toBeNull());
+    fireEvent.change(screen.getByLabelText('Category'), { target: { value: '' } });
+    expect(screen.getByRole('checkbox')).toBeChecked();
+});

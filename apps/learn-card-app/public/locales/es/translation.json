@@ -8945,6 +8945,8 @@
         "searchLoaded": "La búsqueda incluye las credenciales cargadas. Carga más para ampliar la búsqueda.",
         "titlePlaceholder": "Ej.: Mis logros de aprendizaje",
         "notePlaceholder": "Ej.: Estas son las credenciales de mi formación reciente.",
+        "categoryFilter": "Categoría",
+        "allCategories": "Todas las categorías",
         "searchPlaceholder": "Busca por nombre de credencial…",
         "clearSearch": "Borrar búsqueda",
         "noSearchResults": "No hay credenciales coincidentes. Prueba otro nombre.",

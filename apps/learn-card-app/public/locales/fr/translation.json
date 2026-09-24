@@ -8945,6 +8945,8 @@
         "searchLoaded": "La recherche porte sur les justificatifs chargés. Chargez-en davantage pour élargir la recherche.",
         "titlePlaceholder": "Ex. : Mes réussites d’apprentissage",
         "notePlaceholder": "Ex. : Voici les justificatifs de ma récente formation.",
+        "categoryFilter": "Catégorie",
+        "allCategories": "Toutes les catégories",
         "searchPlaceholder": "Rechercher par nom de justificatif…",
         "clearSearch": "Effacer la recherche",
         "noSearchResults": "Aucun justificatif correspondant. Essayez un autre nom.",

@@ -8951,6 +8951,8 @@
         "searchLoaded": "Search covers loaded credentials. Load more to search further.",
         "titlePlaceholder": "e.g. My learning highlights",
         "notePlaceholder": "e.g. Here are the credentials from my recent training.",
+        "categoryFilter": "Category",
+        "allCategories": "All categories",
         "searchPlaceholder": "Search by credential name…",
         "clearSearch": "Clear search",
         "noSearchResults": "No matching credentials. Try another name.",

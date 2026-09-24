@@ -15,7 +15,9 @@ import {
 import type { VC } from '@learncard/types';
 import { QRCodeSVG } from 'qrcode.react';
 import { Clipboard } from '@capacitor/clipboard';
-import { useWallet } from 'learn-card-base';
+import { useWallet, type CredentialCategoryEnum } from 'learn-card-base';
+import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
+import useTheme from '../../theme/hooks/useTheme';
 import { ShareCredentialMetadata } from './ShareCredentialMetadata';
 import { isShareLinkError } from 'learn-card-base/helpers/share-links';
 import { environment } from '../../config/environment';
@@ -58,8 +60,15 @@ export const Busy = ({ children }: { children: React.ReactNode }) => (
 /** Bounded read fan-out: never more than four LearnCloud reads at once. */
 const READ_CONCURRENCY = 4;
 
+const categoryOf = (choice: CredentialChoice) =>
+    choice.category ||
+    (choice.credential && getDefaultCategoryForCredential(choice.credential)) ||
+    '';
+
 export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
     const { initWallet } = useWallet();
+    const { getThemedCategory } = useTheme();
+    const [categoryFilter, setCategoryFilter] = useState('');
     const searchInput = useRef<HTMLInputElement>(null);
     const walletRef = useRef(initWallet);
     walletRef.current = initWallet;
@@ -319,20 +328,23 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
             setLoading(false);
         }
     };
+    const categories = [...new Set(choices.map(categoryOf).filter(Boolean))];
     const matches = useMemo(
         () =>
-            choices.filter(choice =>
-                (choice.title || credentialText(choice.credential).name)
-                    .toLocaleLowerCase()
-                    .includes(settledSearch.toLocaleLowerCase())
+            choices.filter(
+                choice =>
+                    (!categoryFilter || categoryOf(choice) === categoryFilter) &&
+                    (choice.title || credentialText(choice.credential).name)
+                        .toLocaleLowerCase()
+                        .includes(settledSearch.toLocaleLowerCase())
             ),
-        [choices, settledSearch]
+        [choices, settledSearch, categoryFilter]
     );
     const filtered = useMemo(() => matches.slice(0, visibleCount), [matches, visibleCount]);
     const hasMore = matches.length > visibleCount;
     useEffect(() => {
         setVisibleCount(30);
-    }, [settledSearch]);
+    }, [settledSearch, categoryFilter]);
     useEffect(() => {
         const missing = filtered.filter(
             row => !row.credential && !attemptedReads.current.has(row.uri)
@@ -474,6 +486,28 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
                                         </button>
                                     )}
                                 </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <label
+                                    htmlFor="share-category-filter"
+                                    className="text-xs font-medium text-grayscale-700 shrink-0"
+                                >
+                                    {m['shareLinks.categoryFilter']()}
+                                </label>
+                                <select
+                                    id="share-category-filter"
+                                    value={categoryFilter}
+                                    onChange={event => setCategoryFilter(event.target.value)}
+                                    className={`min-w-0 max-w-full rounded-[20px] border px-4 py-2.5 text-sm text-grayscale-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-colors ${categoryFilter ? 'border-emerald-500 bg-emerald-50' : 'border-grayscale-300 bg-white'}`}
+                                >
+                                    <option value="">{m['shareLinks.allCategories']()}</option>
+                                    {categories.map(category => (
+                                        <option key={category} value={category}>
+                                            {getThemedCategory(category as CredentialCategoryEnum)
+                                                ?.category?.labels.plural || category}
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
                             <div className="flex justify-between text-xs text-grayscale-600">
                                 <span>
