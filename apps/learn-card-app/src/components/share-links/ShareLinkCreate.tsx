@@ -12,10 +12,8 @@ import {
 import type { VC } from '@learncard/types';
 import { QRCodeSVG } from 'qrcode.react';
 import { Clipboard } from '@capacitor/clipboard';
-import { useWallet, type CredentialCategoryEnum } from 'learn-card-base';
-import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
-import useTheme from '../../theme/hooks/useTheme';
-import { getLocale } from '../../paraglide/runtime.js';
+import { useWallet } from 'learn-card-base';
+import { ShareCredentialMetadata } from './ShareCredentialMetadata';
 import { isShareLinkError } from 'learn-card-base/helpers/share-links';
 import { environment } from '../../config/environment';
 import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
@@ -59,7 +57,6 @@ const READ_CONCURRENCY = 4;
 
 export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
     const { initWallet } = useWallet();
-    const { getThemedCategory } = useTheme();
     const walletRef = useRef(initWallet);
     walletRef.current = initWallet;
     const [choices, setChoices] = useState<CredentialChoice[]>([]);
@@ -386,27 +383,6 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
                             <div className="space-y-3">
                                 {filtered.map(choice => {
                                     const text = credentialText(choice.credential);
-                                    const category =
-                                        choice.category ||
-                                        (choice.credential &&
-                                            getDefaultCategoryForCredential(choice.credential));
-                                    const categoryLabel = category
-                                        ? getThemedCategory(category as CredentialCategoryEnum)
-                                              ?.category?.labels.plural || category
-                                        : undefined;
-                                    const issuedAt =
-                                        choice.credential?.validFrom ||
-                                        choice.credential?.issuanceDate;
-                                    const issuedDate = issuedAt ? new Date(issuedAt) : undefined;
-                                    const dateLabel =
-                                        issuedDate && !Number.isNaN(issuedDate.getTime())
-                                            ? issuedDate.toLocaleDateString(getLocale(), {
-                                                  month: 'long',
-                                                  day: 'numeric',
-                                                  year: 'numeric',
-                                                  timeZone: 'UTC',
-                                              })
-                                            : undefined;
                                     const checked = selected.includes(choice.uri);
                                     return (
                                         <label
@@ -421,18 +397,16 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
                                                 <span className="block text-sm font-medium break-words">
                                                     {text.name || m['shareLinks.credential']()}
                                                 </span>
-                                                {categoryLabel && (
-                                                    <span className="block mt-0.5 text-xs text-grayscale-500">
-                                                        {categoryLabel}
+                                                {choice.credential ? (
+                                                    <ShareCredentialMetadata
+                                                        credential={choice.credential}
+                                                        category={choice.category}
+                                                    />
+                                                ) : (
+                                                    <span className="block mt-1 text-xs text-grayscale-600">
+                                                        {m['shareLinks.loadFailed']()}
                                                     </span>
                                                 )}
-                                                <span className="block mt-1 text-xs text-grayscale-600 break-words">
-                                                    {choice.credential
-                                                        ? [text.issuer, dateLabel]
-                                                              .filter(Boolean)
-                                                              .join(' · ')
-                                                        : m['shareLinks.loadFailed']()}
-                                                </span>
                                             </span>
                                             <input
                                                 type="checkbox"

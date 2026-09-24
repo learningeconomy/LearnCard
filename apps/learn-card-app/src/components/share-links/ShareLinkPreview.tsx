@@ -1,6 +1,8 @@
+import { ShareCredentialThumbnail } from './ShareCredentialThumbnail';
+import { ShareCredentialMetadata } from './ShareCredentialMetadata';
 import React from 'react';
 import { IonIcon } from '@ionic/react';
-import { alertCircleOutline, checkmarkCircleOutline, documentTextOutline } from 'ionicons/icons';
+import { alertCircleOutline, checkmarkCircleOutline } from 'ionicons/icons';
 import type { SharePayload } from '@learncard/types';
 import * as m from '../../paraglide/messages.js';
 import { credentialText, type ProofState } from './shareLinkFlow';
@@ -121,9 +123,7 @@ export const ShareLinkPreview = ({
                         className="bg-white rounded-[20px] p-6 md:p-8 space-y-4 border border-grayscale-200"
                     >
                         <div className="flex items-start gap-4">
-                            <span className="p-3 bg-grayscale-100 rounded-xl text-grayscale-600">
-                                <IonIcon icon={documentTextOutline} className="w-6 h-6" />
-                            </span>
+                            <ShareCredentialThumbnail credential={credential} />
                             <div className="min-w-0 flex-1">
                                 <p className="text-xs text-grayscale-500 mb-1">
                                     {String(order + 1).padStart(2, '0')}
@@ -131,11 +131,7 @@ export const ShareLinkPreview = ({
                                 <h2 className="text-lg font-semibold break-words">
                                     {text.name || m['shareLinks.credential']()}
                                 </h2>
-                                {text.issuer && (
-                                    <p className="text-xs text-grayscale-600 mt-1 break-words">
-                                        {text.issuer}
-                                    </p>
-                                )}
+                                <ShareCredentialMetadata credential={credential} />
                             </div>
                         </div>
                         {text.description && (
