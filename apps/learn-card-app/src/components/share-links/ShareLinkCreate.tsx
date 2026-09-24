@@ -1,6 +1,6 @@
 import { ShareCredentialsIllustration } from './ShareCredentialsIllustration';
 import { ShareCredentialThumbnail } from './ShareCredentialThumbnail';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { IonIcon } from '@ionic/react';
 import {
     searchOutline,
@@ -63,8 +63,11 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
     walletRef.current = initWallet;
     const [choices, setChoices] = useState<CredentialChoice[]>([]);
     const [selected, setSelected] = useState<string[]>([]);
-    const [cursor, setCursor] = useState<string>();
-    const [hasMore, setHasMore] = useState(true);
+    const [visibleCount, setVisibleCount] = useState(30);
+    const [indexReady, setIndexReady] = useState(false);
+    const attemptedReads = useRef(new Set<string>());
+    const [failedReads, setFailedReads] = useState(new Set<string>());
+    const readQueue = useRef(Promise.resolve());
     const [loading, setLoading] = useState(false);
     const [step, setStep] = useState<'choose' | 'details' | 'preview' | 'done'>('choose');
     const [search, setSearch] = useState('');
@@ -90,43 +93,55 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
     const busy = useRef(false);
     const alive = useRef(true);
 
-    const load = async (pageCursor?: string) => {
+    const load = async () => {
         if (busy.current) return;
         busy.current = true;
         setLoading(true);
         setError(false);
         try {
             const wallet = shareWallet(await walletRef.current());
-            const page = await wallet.index.LearnCloud.getPage(undefined, {
-                cursor: pageCursor,
-                limit: 30,
-            });
-            if (!page || (page.hasMore && (!page.cursor || page.cursor === pageCursor)))
-                throw new Error('page');
-            const rows = await mapWithConcurrency(page.records, READ_CONCURRENCY, async record => {
-                // Internal preference records are not learner credentials.
-                if (record.id?.startsWith('__verifiable_data_')) return undefined;
+            const records: CredentialChoice[] = [];
+            let pageCursor: string | undefined;
+            const seenCursors = new Set<string>();
+            do {
+                const page = await wallet.index.LearnCloud.getPage(undefined, {
+                    cursor: pageCursor,
+                    limit: 100,
+                });
+                if (!alive.current) return;
+                if (!page || (page.hasMore && (!page.cursor || seenCursors.has(page.cursor))))
+                    throw new Error('page');
+                records.push(
+                    ...page.records.filter(record => !record.id?.startsWith('__verifiable_data_'))
+                );
+                if (!page.hasMore) break;
+                pageCursor = page.cursor;
+                seenCursors.add(pageCursor!);
+            } while (alive.current);
+            // Legacy records may predate title metadata. Resolve those once for
+            // this session so they remain searchable; titled records need no VC read.
+            const indexed = await mapWithConcurrency(records, READ_CONCURRENCY, async record => {
+                if (record.title?.trim()) return record;
                 try {
-                    return {
-                        uri: record.uri,
-                        category: record.category,
-                        credential: (await wallet.read.get(record.uri)) as VC | undefined,
-                    } satisfies CredentialChoice;
+                    const credential = (await wallet.read.get(record.uri)) as VC | undefined;
+                    return { ...record, credential, title: credentialText(credential).name };
                 } catch {
-                    return {
-                        uri: record.uri,
-                        category: record.category,
-                    } satisfies CredentialChoice;
+                    return record;
                 }
             });
             if (!alive.current) return;
-            setChoices(previous => [
-                ...new Map(
-                    [...previous, ...rows.filter(Boolean)].map(row => [row!.uri, row!])
-                ).values(),
-            ]);
-            setCursor(page.cursor);
-            setHasMore(page.hasMore);
+            setChoices(previous => {
+                const cached = new Map(previous.map(row => [row.uri, row.credential]));
+                return [
+                    ...new Map(
+                        indexed.map(row => [
+                            row.uri,
+                            { ...row, credential: row.credential ?? cached.get(row.uri) },
+                        ])
+                    ).values(),
+                ];
+            });
+            setIndexReady(true);
         } catch {
             if (alive.current) setError(true);
         } finally {
@@ -142,7 +157,7 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
         setTooLarge(false);
         try {
             const wallet = shareWallet(await walletRef.current());
-            const missing = choices.filter(choice => !choice.credential);
+            const missing = filtered.filter(choice => !choice.credential);
             const replacements = await mapWithConcurrency(missing, READ_CONCURRENCY, async row => {
                 const credential = await wallet.read.get(row.uri);
                 if (!credential) throw new Error('credential');
@@ -302,11 +317,59 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
             setLoading(false);
         }
     };
-    const filtered = choices.filter(choice =>
-        credentialText(choice.credential)
-            .name.toLocaleLowerCase()
-            .includes(settledSearch.toLocaleLowerCase())
+    const matches = useMemo(
+        () =>
+            choices.filter(choice =>
+                (choice.title || credentialText(choice.credential).name)
+                    .toLocaleLowerCase()
+                    .includes(settledSearch.toLocaleLowerCase())
+            ),
+        [choices, settledSearch]
     );
+    const filtered = useMemo(() => matches.slice(0, visibleCount), [matches, visibleCount]);
+    const hasMore = matches.length > visibleCount;
+    useEffect(() => {
+        setVisibleCount(30);
+    }, [settledSearch]);
+    useEffect(() => {
+        const missing = filtered.filter(
+            row => !row.credential && !attemptedReads.current.has(row.uri)
+        );
+        if (!missing.length || !indexReady) return;
+        missing.forEach(row => attemptedReads.current.add(row.uri));
+        readQueue.current = readQueue.current.then(async () => {
+            if (!alive.current) return;
+            try {
+                const wallet = shareWallet(await walletRef.current());
+                const resolved = await mapWithConcurrency(missing, READ_CONCURRENCY, async row => {
+                    try {
+                        return [
+                            row.uri,
+                            (await wallet.read.get(row.uri)) as VC | undefined,
+                        ] as const;
+                    } catch {
+                        return [row.uri, undefined] as const;
+                    }
+                });
+                if (!alive.current) return;
+                setFailedReads(
+                    current =>
+                        new Set([
+                            ...current,
+                            ...resolved.filter(([, credential]) => !credential).map(([uri]) => uri),
+                        ])
+                );
+                const byUri = new Map(resolved);
+                setChoices(current =>
+                    current.map(row =>
+                        byUri.get(row.uri) ? { ...row, credential: byUri.get(row.uri) } : row
+                    )
+                );
+            } catch {
+                if (alive.current) setError(true);
+            }
+        });
+    }, [filtered, indexReady]);
     const fieldsLocked = publicationStarted || loading;
     const effectiveExpiry = prepared.current?.input.expiresAt ?? resolveExpiryIso(expiryChoice);
     return (
@@ -419,8 +482,8 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
                             <p role="status" className="min-h-5 text-xs text-grayscale-500">
                                 {searchPending
                                     ? m['shareLinks.searchUpdating']()
-                                    : hasMore
-                                      ? m['shareLinks.searchLoaded']()
+                                    : !indexReady
+                                      ? m['shareLinks.loading']()
                                       : null}
                             </p>
                             <div
@@ -441,7 +504,9 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
                                             />
                                             <span className="flex-1 min-w-0">
                                                 <span className="block text-sm font-medium break-words">
-                                                    {text.name || m['shareLinks.credential']()}
+                                                    {text.name ||
+                                                        choice.title ||
+                                                        m['shareLinks.credential']()}
                                                 </span>
                                                 {choice.credential ? (
                                                     <ShareCredentialMetadata
@@ -450,7 +515,9 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
                                                     />
                                                 ) : (
                                                     <span className="block mt-1 text-xs text-grayscale-600">
-                                                        {m['shareLinks.loadFailed']()}
+                                                        {failedReads.has(choice.uri)
+                                                            ? m['shareLinks.loadFailed']()
+                                                            : m['shareLinks.loading']()}
                                                     </span>
                                                 )}
                                             </span>
@@ -484,7 +551,9 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
                                         : m['shareLinks.empty']()}
                                 </p>
                             )}
-                            {choices.some(choice => !choice.credential) && (
+                            {filtered.some(
+                                choice => !choice.credential && failedReads.has(choice.uri)
+                            ) && (
                                 <button
                                     className={secondary}
                                     disabled={loading}
@@ -501,7 +570,9 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
                                 <button
                                     className={secondary}
                                     disabled={loading}
-                                    onClick={() => void load(cursor)}
+                                    onClick={() =>
+                                        error ? void load() : setVisibleCount(count => count + 30)
+                                    }
                                 >
                                     {loading ? (
                                         <Busy>{m['shareLinks.loading']()}</Busy>

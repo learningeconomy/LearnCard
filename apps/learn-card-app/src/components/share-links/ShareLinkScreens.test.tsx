@@ -564,3 +564,37 @@ it('keeps results while typing, then filters locally and clears immediately', as
     expect(screen.getByRole('checkbox')).toBeTruthy();
     expect(screen.getByRole('searchbox')).toHaveFocus();
 });
+
+it('searches later index pages without resolving offscreen titled credentials', async () => {
+    mocks.wallet.index.LearnCloud.getPage
+        .mockResolvedValueOnce({
+            records: Array.from({ length: 30 }, (_, i) => ({
+                uri: `private:${i}`,
+                title: `Course ${i}`,
+            })),
+            hasMore: true,
+            cursor: 'next',
+        })
+        .mockResolvedValueOnce({
+            records: [{ uri: 'private:target', title: 'Hidden gem' }],
+            hasMore: false,
+        });
+    mocks.wallet.read.get.mockImplementation(async (uri: string) => ({
+        ...credential,
+        name: uri === 'private:target' ? 'Hidden gem' : uri,
+    }));
+    render(<ShareLinkCreate onDismiss={() => {}} />);
+    await waitFor(() => expect(screen.getAllByRole('checkbox')).toHaveLength(30));
+    expect(mocks.wallet.index.LearnCloud.getPage).toHaveBeenCalledWith(undefined, {
+        cursor: 'next',
+        limit: 100,
+    });
+    expect(mocks.wallet.read.get).not.toHaveBeenCalledWith('private:target');
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'Hidden gem' } });
+    await waitFor(() => expect(screen.getAllByRole('checkbox')).toHaveLength(1));
+    await waitFor(() => expect(mocks.wallet.read.get).toHaveBeenCalledWith('private:target'));
+    await waitFor(() => expect(screen.getByRole('checkbox')).toBeEnabled());
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('button', { name: 'Clear search' }));
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled();
+});

@@ -39,7 +39,7 @@ export interface ShareWallet {
                 query: undefined,
                 options: { cursor?: string; limit: number }
             ): Promise<{
-                records: { id?: string; uri: string; category?: string }[];
+                records: { id?: string; uri: string; category?: string; title?: string }[];
                 cursor?: string;
                 hasMore: boolean;
             }>;
@@ -62,7 +62,7 @@ export interface ShareWallet {
     };
 }
 export const shareWallet = (wallet: unknown): ShareWallet => wallet as ShareWallet;
-export type CredentialChoice = { uri: string; credential?: VC; category?: string };
+export type CredentialChoice = { uri: string; credential?: VC; category?: string; title?: string };
 export type PreparedShare = {
     input: CreateShareLinkInput;
     key: string;
