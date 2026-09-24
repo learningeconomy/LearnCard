@@ -221,9 +221,18 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
             limit: values.limit === undefined ? undefined : Number(values.limit),
         });
         if (summary.refused) process.exitCode = 1;
-    } catch {
+    } catch (error) {
+        // Argument errors are safe to echo; driver/HTTP errors can embed connection
+        // strings or credentials, so only their type is shown.
+        const code = (error as { code?: unknown }).code;
+        const detail =
+            typeof code === 'string' && code.startsWith('ERR_PARSE_ARGS') && error instanceof Error
+                ? error.message
+                : `${error instanceof Error ? error.name : typeof error}${
+                      typeof code === 'string' ? ` (${code})` : ''
+                  }`;
         process.stderr.write(
-            'Provisioning failed. Check arguments, service connectivity and admin permissions; rerun the dry-run before applying.\n'
+            `Provisioning failed: ${detail}\nCheck arguments, service connectivity and admin permissions; rerun the dry-run before applying.\n`
         );
         process.exitCode = 1;
     } finally {
