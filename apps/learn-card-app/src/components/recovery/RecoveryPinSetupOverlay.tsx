@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { IonIcon } from '@ionic/react';
 import { checkmarkCircleOutline } from 'ionicons/icons';
-import { Overlay, useAuthCoordinator } from 'learn-card-base';
+import { Overlay } from 'learn-card-base';
 import { validatePin } from '@learncard/sss-key-manager';
 import { RecoveryPinInput } from './RecoveryPinInput';
 import { m } from '../../paraglide/messages.js';
@@ -9,18 +9,19 @@ import { m } from '../../paraglide/messages.js';
 export type RecoveryPinSetupReason = 'first-time' | 'after-recovery';
 
 interface RecoveryPinSetupOverlayProps {
+    setPin: (pin: string) => Promise<void>;
     onComplete: () => void;
     onSkip: () => void;
     reason?: RecoveryPinSetupReason;
 }
 
 export const RecoveryPinSetupOverlay: React.FC<RecoveryPinSetupOverlayProps> = ({
+    setPin: savePin,
     onComplete,
     onSkip,
     reason = 'first-time',
 }) => {
     const afterRecovery = reason === 'after-recovery';
-    const coordinator = useAuthCoordinator();
     const [step, setStep] = useState<'enter' | 'confirm' | 'saving' | 'success'>('enter');
     const [pin, setPin] = useState('');
     const [confirmPin, setConfirmPin] = useState('');
@@ -47,8 +48,7 @@ export const RecoveryPinSetupOverlay: React.FC<RecoveryPinSetupOverlayProps> = (
         setStep('saving');
 
         try {
-            if (!coordinator.setEscrowPin) throw new Error('PIN setup is unavailable');
-            await coordinator.setEscrowPin(p);
+            await savePin(p);
             setStep('success');
         } catch (e) {
             const message = e instanceof Error ? e.message : '';

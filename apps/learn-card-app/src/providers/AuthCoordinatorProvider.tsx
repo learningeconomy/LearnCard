@@ -115,6 +115,7 @@ import {
     shouldResetWalletOnStatus,
 } from './authCoordinator.helpers';
 import { getTenantHeaders, getResolvedTenantConfig } from '../config/bootstrapTenantConfig';
+import { createRecoveryPinActions } from './recoveryPinActions';
 
 import {
     emitAuthDebugEvent,
@@ -1295,34 +1296,25 @@ const AuthSessionManager: React.FC<{
         setDeviceLinkVisible(true);
     }, []);
 
-    // Record the prompt flag when a PIN is set/removed from recovery settings
-    // (MyLearnCardModal -> AutomaticRecoveryCard), mirroring what the
-    // post-setup RecoveryPinSetupOverlay already does on its own callbacks.
-    const setEscrowPin = useCallback<AppAuthContextValue['setEscrowPin']>(
-        async pin => {
-            await coordinator.setEscrowPin(pin);
-            if (coordinator.state.status === 'ready') {
-                writeRecoveryPinPromptFlag(coordinator.state.did, 'set');
-            }
-            // A PIN is a deliberately chosen recovery secret, so it completes
-            // activation the same way a passkey or phrase does.
-            if (coordinator.needsActivation) {
-                try {
-                    await coordinator.activate();
-                } catch (error) {
-                    log.warn('escrow.pin.activate.failed', error);
-                }
-            }
-        },
-        [coordinator]
+    const { setEscrowPin, clearEscrowPin } = useMemo(
+        () =>
+            createRecoveryPinActions(
+                {
+                    runRecoverySetup: coordinator.runRecoverySetup,
+                    resetRecoverySetup: coordinator.resetRecoverySetup,
+                    setEscrowPin: coordinator.setEscrowPin,
+                    clearEscrowPin: coordinator.clearEscrowPin,
+                },
+                readyDid
+            ),
+        [
+            coordinator.runRecoverySetup,
+            coordinator.resetRecoverySetup,
+            coordinator.setEscrowPin,
+            coordinator.clearEscrowPin,
+            readyDid,
+        ]
     );
-
-    const clearEscrowPin = useCallback<AppAuthContextValue['clearEscrowPin']>(async () => {
-        await coordinator.clearEscrowPin();
-        if (coordinator.state.status === 'ready') {
-            writeRecoveryPinPromptFlag(coordinator.state.did, 'skipped');
-        }
-    }, [coordinator]);
 
     const enrichedValue: AppAuthContextValue = useMemo(
         () => ({
@@ -1689,6 +1681,7 @@ const AuthSessionManager: React.FC<{
 
             {recoveryPinSetupReason && coordinator.state.status === 'ready' && (
                 <RecoveryPinSetupOverlay
+                    setPin={setEscrowPin}
                     reason={recoveryPinSetupReason}
                     onComplete={() => {
                         if (!readyDid) return;

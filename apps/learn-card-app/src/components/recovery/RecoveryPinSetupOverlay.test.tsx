@@ -2,10 +2,10 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { RecoveryPinSetupOverlay } from './RecoveryPinSetupOverlay';
-import { useAuthCoordinator } from 'learn-card-base';
+import { createRecoveryPinActions } from '../../providers/recoveryPinActions';
+import { createRecoverySetupRunner } from '../../../../../packages/learn-card-base/src/auth-coordinator/recoverySetup';
 
 vi.mock('learn-card-base', () => ({
-    useAuthCoordinator: vi.fn(),
     Overlay: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
@@ -15,15 +15,13 @@ describe('RecoveryPinSetupOverlay', () => {
     const mockOnSkip = vi.fn();
 
     beforeEach(() => {
-        vi.clearAllMocks();
-        vi.mocked(useAuthCoordinator).mockReturnValue({
-            setEscrowPin: mockSetEscrowPin,
-        } as unknown as ReturnType<typeof useAuthCoordinator>);
+        vi.resetAllMocks();
     });
 
     it('explains why a new PIN is needed after a PIN recovery', () => {
         render(
             <RecoveryPinSetupOverlay
+                setPin={mockSetEscrowPin}
                 onComplete={mockOnComplete}
                 onSkip={mockOnSkip}
                 reason="after-recovery"
@@ -36,14 +34,26 @@ describe('RecoveryPinSetupOverlay', () => {
     });
 
     it('uses first-time copy by default', () => {
-        render(<RecoveryPinSetupOverlay onComplete={mockOnComplete} onSkip={mockOnSkip} />);
+        render(
+            <RecoveryPinSetupOverlay
+                setPin={mockSetEscrowPin}
+                onComplete={mockOnComplete}
+                onSkip={mockOnSkip}
+            />
+        );
 
         expect(screen.getByText('Set a recovery PIN')).toBeInTheDocument();
         expect(screen.queryByText(/has been retired/)).not.toBeInTheDocument();
     });
 
     it('rejects trivial PINs', () => {
-        render(<RecoveryPinSetupOverlay onComplete={mockOnComplete} onSkip={mockOnSkip} />);
+        render(
+            <RecoveryPinSetupOverlay
+                setPin={mockSetEscrowPin}
+                onComplete={mockOnComplete}
+                onSkip={mockOnSkip}
+            />
+        );
 
         const inputs = screen.getAllByLabelText(/PIN digit/);
 
@@ -55,7 +65,13 @@ describe('RecoveryPinSetupOverlay', () => {
     });
 
     it('shows mismatch error if confirm PIN is different', () => {
-        render(<RecoveryPinSetupOverlay onComplete={mockOnComplete} onSkip={mockOnSkip} />);
+        render(
+            <RecoveryPinSetupOverlay
+                setPin={mockSetEscrowPin}
+                onComplete={mockOnComplete}
+                onSkip={mockOnSkip}
+            />
+        );
 
         const inputs = screen.getAllByLabelText(/PIN digit/);
         fireEvent.paste(inputs[0], { clipboardData: { getData: () => '135790' } });
@@ -70,7 +86,13 @@ describe('RecoveryPinSetupOverlay', () => {
 
     it('calls setEscrowPin on success', async () => {
         mockSetEscrowPin.mockResolvedValueOnce(undefined);
-        render(<RecoveryPinSetupOverlay onComplete={mockOnComplete} onSkip={mockOnSkip} />);
+        render(
+            <RecoveryPinSetupOverlay
+                setPin={mockSetEscrowPin}
+                onComplete={mockOnComplete}
+                onSkip={mockOnSkip}
+            />
+        );
 
         const inputs = screen.getAllByLabelText(/PIN digit/);
         fireEvent.paste(inputs[0], { clipboardData: { getData: () => '135790' } });
@@ -90,7 +112,13 @@ describe('RecoveryPinSetupOverlay', () => {
     });
 
     it('calls onSkip when skip is clicked', () => {
-        render(<RecoveryPinSetupOverlay onComplete={mockOnComplete} onSkip={mockOnSkip} />);
+        render(
+            <RecoveryPinSetupOverlay
+                setPin={mockSetEscrowPin}
+                onComplete={mockOnComplete}
+                onSkip={mockOnSkip}
+            />
+        );
         fireEvent.click(screen.getByText('Skip for Now'));
         expect(mockOnSkip).toHaveBeenCalled();
     });
@@ -101,7 +129,13 @@ describe('RecoveryPinSetupOverlay', () => {
         'Automatic recovery is not available for this account.',
     ])('displays the safe validation message: %s', async message => {
         mockSetEscrowPin.mockRejectedValueOnce(new Error(message));
-        render(<RecoveryPinSetupOverlay onComplete={mockOnComplete} onSkip={mockOnSkip} />);
+        render(
+            <RecoveryPinSetupOverlay
+                setPin={mockSetEscrowPin}
+                onComplete={mockOnComplete}
+                onSkip={mockOnSkip}
+            />
+        );
         fireEvent.paste(screen.getAllByLabelText(/PIN digit/)[0], {
             clipboardData: { getData: () => '135790' },
         });
@@ -113,8 +147,14 @@ describe('RecoveryPinSetupOverlay', () => {
     });
 
     it('does not report success when PIN setup is unavailable', async () => {
-        vi.mocked(useAuthCoordinator).mockReturnValue({} as ReturnType<typeof useAuthCoordinator>);
-        render(<RecoveryPinSetupOverlay onComplete={mockOnComplete} onSkip={mockOnSkip} />);
+        mockSetEscrowPin.mockRejectedValueOnce(new Error('PIN setup is unavailable'));
+        render(
+            <RecoveryPinSetupOverlay
+                setPin={mockSetEscrowPin}
+                onComplete={mockOnComplete}
+                onSkip={mockOnSkip}
+            />
+        );
         fireEvent.paste(screen.getAllByLabelText(/PIN digit/)[0], {
             clipboardData: { getData: () => '135790' },
         });
@@ -123,6 +163,51 @@ describe('RecoveryPinSetupOverlay', () => {
         });
         await waitFor(() => expect(screen.getByText('Confirm your PIN')).toBeInTheDocument());
         expect(screen.queryByText('PIN set successfully')).not.toBeInTheDocument();
-        expect(mockSetEscrowPin).not.toHaveBeenCalled();
+        expect(mockSetEscrowPin).toHaveBeenCalledOnce();
     });
+
+    it.each(['first-time', 'after-recovery'] as const)(
+        '%s retries activation before showing success without saving the PIN again',
+        async reason => {
+            const activate = vi
+                .fn()
+                .mockRejectedValueOnce(new Error('offline'))
+                .mockResolvedValue(undefined);
+            const identity = {};
+            const runner = createRecoverySetupRunner(
+                () => ({ identity, needsActivation: true, activate }),
+                vi.fn()
+            );
+            const actions = createRecoveryPinActions({
+                runRecoverySetup: runner.run,
+                resetRecoverySetup: runner.reset,
+                setEscrowPin: mockSetEscrowPin,
+                clearEscrowPin: vi.fn(),
+            });
+            render(
+                <RecoveryPinSetupOverlay
+                    reason={reason}
+                    setPin={actions.setEscrowPin}
+                    onComplete={mockOnComplete}
+                    onSkip={mockOnSkip}
+                />
+            );
+            const enterPin = () =>
+                fireEvent.paste(screen.getAllByLabelText(/PIN digit/)[0], {
+                    clipboardData: { getData: () => '135790' },
+                });
+            enterPin();
+            enterPin();
+            await waitFor(() => expect(activate).toHaveBeenCalledOnce());
+            await screen.findByText('Confirm your PIN');
+            expect(screen.queryByText('PIN set successfully')).not.toBeInTheDocument();
+            expect(mockOnComplete).not.toHaveBeenCalled();
+            enterPin();
+            await screen.findByText('PIN set successfully');
+            expect(mockSetEscrowPin).toHaveBeenCalledOnce();
+            expect(activate).toHaveBeenCalledTimes(2);
+            fireEvent.click(screen.getByText('Done'));
+            expect(mockOnComplete).toHaveBeenCalledOnce();
+        }
+    );
 });
