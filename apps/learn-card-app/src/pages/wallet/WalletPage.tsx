@@ -238,7 +238,7 @@ const WalletPage: React.FC = () => {
                                                 type="button"
                                                 onClick={handleShareModal}
                                                 aria-label={m['shareLinks.share']()}
-                                                className="flex h-9 w-9 sm:w-auto sm:px-3 md:h-10 items-center justify-center gap-2 rounded-[20px] bg-white text-grayscale-900 text-sm font-medium hover:bg-grayscale-100 transition-colors focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                                className="flex h-9 w-9 sm:w-auto sm:px-3 md:h-10 items-center justify-center gap-2 rounded-[20px] bg-white text-grayscale-900 text-sm font-medium border border-transparent hover:bg-emerald-50 hover:border-emerald-200 active:bg-emerald-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                                             >
                                                 <span aria-hidden="true">
                                                     <Share className="h-5 w-5" />
