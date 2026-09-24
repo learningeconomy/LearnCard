@@ -1651,6 +1651,59 @@ describe('AuthCoordinator', () => {
             });
         });
 
+        it.each(['provisional', 'active', undefined] as const)(
+            'preserves the server activation state %s when finishing identity recovery',
+            async sssActivationState => {
+                const fetchServerKeyStatus = vi.fn().mockResolvedValue({
+                    exists: true,
+                    sssActivationState,
+                    recoveryMethods: [],
+                });
+                const { coordinator } = setup({
+                    keyDerivation: {
+                        hasPendingIdentityRecovery: vi.fn().mockReturnValue(true),
+                        completeIdentityRecovery: vi.fn().mockResolvedValue({
+                            privateKey: 'rotated-private-key',
+                            did: 'did:key:z123',
+                        }),
+                        fetchServerKeyStatus,
+                    },
+                });
+
+                await coordinator.initialize();
+                expect(fetchServerKeyStatus).toHaveBeenCalledWith('mock-token', 'firebase');
+                expect(coordinator.finishIdentityRecovery()).toMatchObject({
+                    status: 'ready',
+                    privateKey: 'rotated-private-key',
+                    did: 'did:key:z123',
+                    authSessionValid: true,
+                    sssActivationState: sssActivationState ?? 'provisional',
+                });
+            }
+        );
+
+        it('keeps a successful rebind provisional if the activation status refresh fails', async () => {
+            const { coordinator } = setup({
+                keyDerivation: {
+                    hasPendingIdentityRecovery: vi.fn().mockReturnValue(true),
+                    completeIdentityRecovery: vi.fn().mockResolvedValue({
+                        privateKey: 'rotated-private-key',
+                        did: 'did:key:z123',
+                    }),
+                    fetchServerKeyStatus: vi
+                        .fn()
+                        .mockRejectedValue(new Error('Network unavailable')),
+                },
+            });
+
+            await coordinator.initialize();
+            expect(coordinator.finishIdentityRecovery()).toMatchObject({
+                status: 'ready',
+                privateKey: 'rotated-private-key',
+                sssActivationState: 'provisional',
+            });
+        });
+
         it('returns to email entry when the one-shot recovery session was consumed', async () => {
             const recoveryMethods = [{ type: 'phrase', createdAt: new Date() }];
             const cancelIdentityRecovery = vi.fn();

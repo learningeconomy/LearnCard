@@ -90,6 +90,7 @@ export type UnifiedAuthState =
           authUser: AuthUser;
           did: string;
           privateKey: string;
+          sssActivationState?: SssActivationState | null;
       }
     | { status: 'deriving_key' }
     | {
