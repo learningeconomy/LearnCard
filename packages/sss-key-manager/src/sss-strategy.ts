@@ -479,6 +479,7 @@ const sendEmailBackupShare = async (
             relayPayload,
             confirmationCode,
             email,
+            shareVersion,
         }),
     });
 

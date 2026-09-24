@@ -1409,6 +1409,7 @@ describe('createSSSStrategy', () => {
 
             expect(emailBody.emailShare).toBeUndefined();
             expect(emailBody.relayPayload).toBeDefined();
+            expect(emailBody.shareVersion).toBe(2);
             expect(fetchCalls[0]!.body).not.toContain(remoteKey);
 
             const decrypted = await decryptEmailRelayPayload(
