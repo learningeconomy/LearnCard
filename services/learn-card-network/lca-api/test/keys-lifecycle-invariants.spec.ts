@@ -258,7 +258,7 @@ describe('P0-1 provisional SSS activation', () => {
         }
     });
 
-    it('accepts markMigrated for a legacy account whose first record was created provisional', async () => {
+    it('preserves legacy fallback when a migration without a prior record expires', async () => {
         const suffix = `${Date.now()}-${randomUUID()}`;
         const email = `legacy-no-record-${suffix}@example.com`;
         const uid = `uid-${suffix}`;
@@ -283,8 +283,36 @@ describe('P0-1 provisional SSS activation', () => {
                 authProviders: { $elemMatch: { type: 'firebase', id: uid } },
             });
 
-            expect(stored?.keyProvider).toBe('sss');
+            expect(stored?.keyProvider).toBe('web3auth');
             expect(stored?.sssActivationState).toBe('provisional');
+            expect(stored?.migratedFromWeb3Auth).toBe(false);
+            expect(stored?.provisionalCreatedAt).toBeInstanceOf(Date);
+
+            // Simulate abandoning recovery confirmation for more than 30 days.
+            const expiredAt = new Date(Date.now() - PROVISIONAL_MIGRATION_TTL_MS - 1_000);
+            await collection.updateOne(
+                { _id: stored!._id },
+                { $set: { provisionalCreatedAt: expiredAt } }
+            );
+            await caller.keys.markMigrated({ authToken: token, providerType: 'firebase' });
+            expect((await collection.findOne({ _id: stored!._id }))?.provisionalCreatedAt).toEqual(
+                expiredAt
+            );
+
+            // getAuthShare invokes the same lazy cleanup as for pre-existing Web3Auth records.
+            const result = await getClient().keys.getAuthShare({
+                authToken: token,
+                providerType: 'firebase',
+            });
+            const purged = await collection.findOne({ _id: stored!._id });
+            expect(result?.authShare).toBeNull();
+            expect(result?.keyProvider).toBe('web3auth');
+            expect(purged?.keyProvider).toBe('web3auth');
+            expect(purged?.authShare).toBeUndefined();
+            expect(purged?.sssActivationState).toBeUndefined();
+            expect(purged?.provisionalCreatedAt).toBeUndefined();
+            expect(purged?.recoveryMethods).toEqual([]);
+            expect(purged?.previousAuthShares).toEqual([]);
         } finally {
             await collection.deleteMany({ 'contactMethod.value': email });
         }

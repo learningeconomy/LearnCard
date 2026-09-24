@@ -1038,10 +1038,15 @@ export const markUserKeyMigrationProvisionalByAuthProvider = async (
     const result = await getUserKeysCollection().updateOne(
         {
             ...getAuthProviderFilter(authProvider),
-            keyProvider: 'web3auth',
+            $or: [
+                { keyProvider: 'web3auth' },
+                { keyProvider: 'sss', sssActivationState: 'provisional' },
+            ],
         },
         {
             $set: {
+                // Preserve legacy fallback until recovery enrollment activates SSS.
+                keyProvider: 'web3auth',
                 sssActivationState: 'provisional',
                 provisionalCreatedAt,
                 updatedAt: new Date(),
