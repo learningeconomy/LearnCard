@@ -10,7 +10,7 @@ import {
 import { credentialText, type ProofState } from './shareLinkFlow';
 import * as m from '../../paraglide/messages.js';
 
-const CredentialPreview = lazy(() => import('../boost/boostCMS/BoostPreview/BoostPreview'));
+const CredentialPreview = lazy(() => import('./ShareCredentialProfilePreview'));
 const CredentialBadgeNew = lazy(
     () => import('learn-card-base/components/CredentialBadge/CredentialBadgeNew')
 );
