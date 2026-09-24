@@ -6,7 +6,8 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 import { CertificateDisplayIcon } from 'learn-card-base';
 import ClrCompetencyBlock from './ClrCompetencyBlock';
 import ClrAlignmentList from './ClrAlignmentList';
-import ClrTranscriptResultsList from './ClrTranscriptResultsList';
+import ClrRelationshipChips from './ClrRelationshipChips';
+import ClrResultWithScaleList from './ClrResultWithScaleList';
 import ClrTranscriptEvidenceList, {
     type ClrEvidenceSourceSummary,
 } from './ClrTranscriptEvidenceList';
@@ -15,41 +16,47 @@ import ClrProgramCredentialCollapsible from './ClrProgramCredentialCollapsible';
 import { useModal } from 'learn-card-base';
 
 import { formatAchievementType } from './clr.helpers';
-import { formatClrDate, getLinkedCompetencies } from '../../helpers/clrRenderer.helpers';
+import {
+    formatClrDate,
+    getLinkedCompetencies,
+    getRelationshipsForRecord,
+    isRecordSuperseded,
+} from '../../helpers/clrRenderer.helpers';
 import type {
+    ClrTranscriptDisplayModel,
     ProgramDisplayModel,
-    CompetencyDisplayModel,
-    AssociationDisplayModel,
 } from '../../helpers/clrRenderer.helpers';
 import type { VC } from '@learncard/types';
 
 const ClrProgramDetailPanel: React.FC<{
     program: ProgramDisplayModel;
     boost: VC;
+    model: ClrTranscriptDisplayModel;
+    onSelectRecord?: (recordId: string) => void;
     onClose?: () => void;
     adminMode?: boolean;
-    associations?: AssociationDisplayModel[];
-    competencies?: CompetencyDisplayModel[];
     issuerName?: string;
     issuerLogo?: string;
-}> = ({
-    program,
-    boost,
-    adminMode = false,
-    associations = [],
-    competencies = [],
-    issuerName,
-    issuerLogo,
-}) => {
+}> = ({ program, boost, model, onSelectRecord, adminMode = false, issuerName, issuerLogo }) => {
     const { closeModal } = useModal();
     const [resultsOpen, setResultsOpen] = useState(true);
 
-    // Competencies linked to this program via explicit CLR associations (no heuristics).
     const programCompetencies = getLinkedCompetencies(
         program.sourceCredentialId,
-        competencies,
-        associations
+        model.competencies,
+        model.associations
     );
+    const relationships = getRelationshipsForRecord(
+        model.relationships,
+        program.sourceCredentialId
+    );
+    const superseded = isRecordSuperseded(model.relationships, program.sourceCredentialId);
+    const childIds = new Set(
+        relationships
+            .filter(relationship => relationship.kind === 'child')
+            .map(relationship => relationship.relatedRecordId)
+    );
+    const childCourses = model.courses.filter(course => childIds.has(course.sourceCredentialId));
     const evidenceSourceSummaries: Record<string, ClrEvidenceSourceSummary> = {
         [program.sourceCredentialId]: {
             kind: 'program',
@@ -61,7 +68,11 @@ const ClrProgramDetailPanel: React.FC<{
     };
 
     return (
-        <div className="space-y-5 pb-[100px] h-full bg-grayscale-100 overflow-y-scroll mt-[var(--ion-safe-area-top,0px)]">
+        <div
+            className={`space-y-5 pb-[100px] h-full bg-grayscale-100 overflow-y-scroll ${
+                superseded ? 'opacity-70' : ''
+            }`}
+        >
             {/* Header */}
             <div className="bg-white rounded-b-[30px] overflow-hidden shadow-md px-6 py-5">
                 <div className="flex items-start justify-between gap-3">
@@ -134,6 +145,15 @@ const ClrProgramDetailPanel: React.FC<{
                     )}
                 </div>
 
+                {relationships.length > 0 && (
+                    <div className="bg-white shadow-box-bottom rounded-2xl p-4">
+                        <ClrRelationshipChips
+                            relationships={relationships}
+                            onSelectRecord={onSelectRecord}
+                        />
+                    </div>
+                )}
+
                 {/* Results collapsible */}
                 {program.results.length > 0 && (
                     <div className="bg-white shadow-box-bottom rounded-2xl overflow-hidden">
@@ -152,12 +172,42 @@ const ClrProgramDetailPanel: React.FC<{
                         </button>
                         {resultsOpen && (
                             <div className="px-4 pb-4">
-                                <ClrTranscriptResultsList
+                                <ClrResultWithScaleList
                                     results={program.results}
                                     showResultType={adminMode}
                                 />
                             </div>
                         )}
+                    </div>
+                )}
+
+                {childCourses.length > 0 && (
+                    <div className="space-y-3 rounded-2xl border border-grayscale-200 bg-white p-4">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-grayscale-600">
+                            Courses in this program
+                        </p>
+                        {childCourses.map(course => (
+                            <div
+                                key={course.sourceCredentialId}
+                                className="rounded-2xl border border-grayscale-200 bg-grayscale-50 p-3"
+                            >
+                                <button
+                                    type="button"
+                                    className="mb-2 w-full text-left"
+                                    onClick={() => onSelectRecord?.(course.sourceCredentialId)}
+                                >
+                                    <p className="text-sm font-medium text-grayscale-900">
+                                        {course.name?.value ?? 'Course'}
+                                    </p>
+                                    {course.humanCode?.value && (
+                                        <p className="text-xs text-grayscale-500">
+                                            {course.humanCode.value}
+                                        </p>
+                                    )}
+                                </button>
+                                <ClrResultWithScaleList results={course.results} compact />
+                            </div>
+                        ))}
                     </div>
                 )}
 
@@ -173,6 +223,11 @@ const ClrProgramDetailPanel: React.FC<{
                                 <ClrCompetencyBlock
                                     key={c.sourceCredentialId}
                                     competency={c}
+                                    relationships={getRelationshipsForRecord(
+                                        model.relationships,
+                                        c.sourceCredentialId
+                                    )}
+                                    onSelectRecord={onSelectRecord}
                                     adminMode={adminMode}
                                 />
                             ))}

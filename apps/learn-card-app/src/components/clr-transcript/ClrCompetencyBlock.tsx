@@ -1,57 +1,46 @@
 import React from 'react';
 
-import { SkillCompetencyCard, type SkillCompetencyLevel } from 'learn-card-base';
-import type { CompetencyDisplayModel, ResultDisplayModel } from '../../helpers/clrRenderer.helpers';
-
-const scaleItemsForResult = (result: ResultDisplayModel): string[] => {
-    if (result.valueMin?.value && result.valueMax?.value) {
-        return [`${result.valueMin.value}-${result.valueMax.value}`];
-    }
-
-    if (result.valueMax?.value) {
-        return [`max ${result.valueMax.value}`];
-    }
-
-    if (result.allowedValue?.value.length) {
-        return result.allowedValue.value;
-    }
-
-    return [];
-};
+import { SkillCompetencyCard } from 'learn-card-base';
+import ClrRelationshipChips from './ClrRelationshipChips';
+import ClrResultWithScaleList from './ClrResultWithScaleList';
+import type {
+    CompetencyDisplayModel,
+    RelationshipDisplayModel,
+} from '../../helpers/clrRenderer.helpers';
 
 const ClrCompetencyBlock: React.FC<{
     competency: CompetencyDisplayModel;
+    relationships?: RelationshipDisplayModel[];
+    onSelectRecord?: (recordId: string) => void;
     adminMode?: boolean;
-}> = ({ competency, adminMode = false }) => {
+}> = ({ competency, relationships = [], onSelectRecord, adminMode = false }) => {
     const primaryAlignment = competency.alignments[0];
-    const levels: SkillCompetencyLevel[] = competency.results.map(result => ({
-        value: result.value.value,
-        label: result.label?.value,
-        scale: scaleItemsForResult(result),
-        resultType: adminMode ? result.resultType?.value : undefined,
-    }));
+    const superseded = relationships.some(relationship => relationship.kind === 'supersededBy');
 
     return (
-        <SkillCompetencyCard
-            name={competency.name?.value ?? 'Competency'}
-            frameworkName={primaryAlignment?.targetFramework?.value}
-            code={primaryAlignment?.targetCode?.value}
-            description={competency.description?.value}
-            levels={levels}
-            sourceUrl={primaryAlignment?.targetUrl?.value}
-            footer={
-                adminMode ? (
-                    <div className="border-t border-grayscale-100 pt-3">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-grayscale-500">
-                            Source credential
-                        </p>
-                        <p className="mt-1 break-all font-mono text-xs text-grayscale-400">
-                            {competency.sourceCredentialId}
-                        </p>
-                    </div>
-                ) : undefined
-            }
-        />
+        <div className={`space-y-3 ${superseded ? 'opacity-70' : ''}`}>
+            <SkillCompetencyCard
+                name={competency.name?.value ?? 'Competency'}
+                frameworkName={primaryAlignment?.targetFramework?.value}
+                code={primaryAlignment?.targetCode?.value}
+                description={competency.description?.value}
+                sourceUrl={primaryAlignment?.targetUrl?.value}
+                footer={
+                    adminMode ? (
+                        <div className="border-t border-grayscale-100 pt-3">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-grayscale-500">
+                                Source credential
+                            </p>
+                            <p className="mt-1 break-all font-mono text-xs text-grayscale-400">
+                                {competency.sourceCredentialId}
+                            </p>
+                        </div>
+                    ) : undefined
+                }
+            />
+            <ClrResultWithScaleList results={competency.results} showResultType={adminMode} />
+            <ClrRelationshipChips relationships={relationships} onSelectRecord={onSelectRecord} />
+        </div>
     );
 };
 
