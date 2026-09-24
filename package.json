@@ -111,6 +111,9 @@
         "zod-openapi": "5.4.5"
     },
     "overrides": {
+        "vitest": "4.1.11",
+        "@vitest/coverage-v8": "4.1.11",
+        "@vitest/ui": "4.1.11",
         "@parcel/watcher": "2.5.1",
         "fastify": "^5.8.5",
         "pvutils": "1.0.17",
