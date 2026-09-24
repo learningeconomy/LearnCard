@@ -424,7 +424,10 @@ export const upsertUserKey = async (
             (updateOps.$set as Record<string, unknown>).recoveryMethods = prunedMethods;
             if (!prunedMethods.some(method => method.type === 'escrow')) {
                 delete (updateOps.$set as Record<string, unknown>).escrowBlob;
-                updateOps.$unset = { escrowBlob: '' };
+                updateOps.$unset = {
+                    ...((updateOps.$unset as Record<string, unknown> | undefined) ?? {}),
+                    escrowBlob: '',
+                };
             }
         } else if (data.authShare) {
             // First auth share — no history to push
@@ -525,7 +528,10 @@ export const upsertUserKeyByAuthProvider = async (
             (updateOps.$set as Record<string, unknown>).recoveryMethods = prunedMethods;
             if (!prunedMethods.some(method => method.type === 'escrow')) {
                 delete (updateOps.$set as Record<string, unknown>).escrowBlob;
-                updateOps.$unset = { escrowBlob: '' };
+                updateOps.$unset = {
+                    ...((updateOps.$unset as Record<string, unknown> | undefined) ?? {}),
+                    escrowBlob: '',
+                };
             }
         } else if (data.authShare) {
             updateOps.$inc = { shareVersion: 1 };
@@ -1110,7 +1116,9 @@ export const completeIdentityRebind = async (
                 previousAuthShares: [],
                 recoveryMethods,
                 keyProvider: 'sss',
-                sssActivationState: 'active',
+                // The new split has no confirmed recovery method yet. SSS records
+                // are excluded from provisional migration cleanup (Web3Auth only).
+                sssActivationState: 'provisional',
                 updatedAt: now,
             },
             $unset: { provisionalCreatedAt: '', escrowBlob: '' },

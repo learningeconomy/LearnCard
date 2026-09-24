@@ -251,10 +251,13 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
         },
     ];
 
-    // Hide passkey entirely on native platforms (WebAuthn unavailable in WKWebView / Android WebView)
-    const methods = Capacitor.isNativePlatform()
-        ? allMethods.filter(m => m.id !== 'passkey')
-        : allMethods;
+    // Device linking needs an existing sign-in; recovery sessions do not support it.
+    // Native WebViews do not support WebAuthn either.
+    const methods = allMethods.filter(
+        method =>
+            !(identityPhase && method.id === 'device') &&
+            !(Capacitor.isNativePlatform() && method.id === 'passkey')
+    );
 
     const phraseWordCount = phrase.trim() ? phrase.trim().split(/\s+/).length : 0;
 

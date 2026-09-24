@@ -83,7 +83,8 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
         authProvider: contextAuthProvider,
         refreshAuthSession,
         needsActivation,
-        activate,
+        runRecoverySetup,
+        resetRecoverySetup,
     } = useAppAuth();
     const { currentLCNUser, refetch } = useGetCurrentLCNUser();
 
@@ -341,6 +342,8 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
                               return jwt;
                           };
 
+                          if (input.method !== 'passkey') resetRecoverySetup(input.method);
+
                           return keyDerivation.setupRecoveryMethod!({
                               token,
                               providerType,
@@ -381,17 +384,15 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
                         return jwt;
                     };
 
-                    await keyDerivation.confirmRecoveryMethod({
-                        token,
-                        providerType,
-                        privateKey: currentUser.privateKey!,
-                        input,
-                        signDidAuthVp: signVp,
-                    });
-
-                    if (needsActivation) {
-                        await activate();
-                    }
+                    await runRecoverySetup(input.method, () =>
+                        keyDerivation.confirmRecoveryMethod!({
+                            token,
+                            providerType,
+                            privateKey: currentUser.privateKey!,
+                            input,
+                            signDidAuthVp: signVp,
+                        })
+                    );
                 };
 
                 const requireAuth = async () => {
@@ -457,9 +458,8 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
                             setupMethod
                                 ? async () => {
                                       const authUser = await contextAuthProvider.getCurrentUser();
-                                      const result = await setupMethod(
-                                          { method: 'passkey' },
-                                          authUser
+                                      const result = await runRecoverySetup('passkey', () =>
+                                          setupMethod({ method: 'passkey' }, authUser)
                                       );
                                       return result?.method === 'passkey'
                                           ? result.credentialId

@@ -1272,6 +1272,7 @@ export const keysRouter = t.router({
                 relayPayload: EmailRelayEnvelopeValidator,
                 confirmationCode: z.string().regex(/^\d{6}$/),
                 email: z.string().email(),
+                shareVersion: z.number().int().positive().optional(),
             }).strict()
         )
         .output(z.object({ success: z.boolean() }))
@@ -1303,6 +1304,17 @@ export const keysRouter = t.router({
 
             const now = new Date();
 
+            // Older clients omit the version; preserve their current-version fallback.
+            // Versioned clients must bind the metadata to the split in the envelope.
+            const shareVersion = input.shareVersion ?? userKey.shareVersion ?? 1;
+            if (!findAuthShareByVersion(userKey, shareVersion)) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message:
+                        'Recovery share version is no longer available. Generate a new recovery key.',
+                });
+            }
+
             // lca-api deliberately cannot decrypt this payload. The isolated
             // relay verifies that its encrypted recipient matches this
             // server-verified address before sending.
@@ -1312,7 +1324,7 @@ export const keysRouter = t.router({
                 type: 'email',
                 createdAt: now,
                 confirmationStatus: 'pending',
-                shareVersion: userKey.shareVersion ?? 1,
+                shareVersion,
                 confirmationCodeHash: hashRecoveryConfirmationCode(input.confirmationCode),
                 confirmationCodeExpiresAt: new Date(
                     now.getTime() + RECOVERY_METHOD_CONFIRMATION_TTL_MS

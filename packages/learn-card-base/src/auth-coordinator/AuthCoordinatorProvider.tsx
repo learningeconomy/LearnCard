@@ -16,6 +16,7 @@ import React, {
 } from 'react';
 
 import { AuthCoordinator, createAuthCoordinator } from './AuthCoordinator';
+import { createRecoverySetupRunner, type RecoverySetupRunner } from './recoverySetup';
 
 import type {
     AuthProvider,
@@ -57,6 +58,12 @@ export interface AuthCoordinatorContextValue {
     setupNewKey: (privateKey: string, did: string) => Promise<void>;
     migrate: (privateKey: string, did: string) => Promise<void>;
     activate: () => Promise<void>;
+    /** Terminal recovery setup/confirmation plus activation, with activation-only retries. */
+    runRecoverySetup: RecoverySetupRunner['run'];
+    /** Call before generating replacement phrase, backup, or email recovery material. */
+    resetRecoverySetup: RecoverySetupRunner['reset'];
+    /** Changes only after setup AND activation succeed; consumers refresh method counts. */
+    recoverySetupRevision: number;
     setMigrationData: (data: Record<string, unknown>) => void;
     recover: (input: unknown) => Promise<void>;
     startEscrowRecovery: AuthCoordinator['startEscrowRecovery'];
@@ -194,6 +201,38 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
 }) => {
     const [state, setState] = useState<UnifiedAuthState>({ status: 'idle' });
     const coordinatorRef = useRef<AuthCoordinator | null>(null);
+    const [recoverySetupIdentity, setRecoverySetupIdentity] = useState<object>({});
+    const recoverySetupIdentityRef = useRef(recoverySetupIdentity);
+    const recoverySetupAccountRef = useRef<{
+        did: string;
+        userId?: string;
+        strategy: KeyDerivationStrategy;
+    } | null>(null);
+    const [recoverySetupRevision, setRecoverySetupRevision] = useState(0);
+    const recoverySetupRef = useRef<RecoverySetupRunner | null>(null);
+    const invalidateRecoverySetup = useCallback(() => {
+        const identity = {};
+        recoverySetupIdentityRef.current = identity;
+        setRecoverySetupIdentity(identity);
+    }, []);
+    useEffect(() => {
+        recoverySetupRef.current = createRecoverySetupRunner(
+            () => {
+                const coordinator = coordinatorRef.current;
+                const current = coordinator?.getState();
+                if (!coordinator || current?.status !== 'ready') return null;
+                return {
+                    identity: recoverySetupIdentityRef.current,
+                    needsActivation: current.sssActivationState === 'provisional',
+                    activate: () => coordinator.activate(),
+                };
+            },
+            () => setRecoverySetupRevision(revision => revision + 1)
+        );
+        return () => {
+            recoverySetupRef.current = null;
+        };
+    }, []);
 
     // Mirror of `state` readable inside the (re)creation effect without adding
     // `state` to its deps (which would recreate the coordinator on every
@@ -268,6 +307,32 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
         const handleStateChange = (newState: UnifiedAuthState) => {
             if (stale) return;
 
+            if (newState.status === 'ready') {
+                const previous = recoverySetupAccountRef.current;
+                if (
+                    !previous ||
+                    previous.did !== newState.did ||
+                    previous.strategy !== keyDerivation ||
+                    (previous.userId &&
+                        newState.authUser?.id &&
+                        previous.userId !== newState.authUser.id)
+                ) {
+                    invalidateRecoverySetup();
+                }
+                recoverySetupAccountRef.current = {
+                    did: newState.did,
+                    userId: newState.authUser?.id ?? previous?.userId,
+                    strategy: keyDerivation,
+                };
+            } else if (
+                ['idle', 'needs_setup', 'needs_migration', 'needs_recovery', 'error'].includes(
+                    newState.status
+                )
+            ) {
+                invalidateRecoverySetup();
+                recoverySetupAccountRef.current = null;
+            }
+
             setState(newState);
 
             onDebugEvent?.(
@@ -326,6 +391,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
         onDebugEvent,
         getStateEventLevel,
         extractStateDetails,
+        invalidateRecoverySetup,
     ]);
 
     const initialize = useCallback(async () => {
@@ -435,10 +501,12 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
     }, []);
 
     const logout = useCallback(async () => {
+        invalidateRecoverySetup();
+        recoverySetupAccountRef.current = null;
         if (coordinatorRef.current) {
             await coordinatorRef.current.logout();
         }
-    }, []);
+    }, [invalidateRecoverySetup]);
 
     const forgetDevice = useCallback(async () => {
         if (coordinatorRef.current) {
@@ -488,6 +556,34 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
     const authSessionValid =
         renderedState.status === 'ready' ? renderedState.authSessionValid : false;
 
+    // Modal callbacks may outlive their render (or await token acquisition before
+    // entering the runner). Bind them to the initiating session, not the account
+    // that happens to be current when that await finishes.
+    const runRecoverySetup = useCallback(
+        async <T,>(method: string, action: () => Promise<T>): Promise<T> => {
+            if (
+                !recoverySetupRef.current ||
+                recoverySetupIdentityRef.current !== recoverySetupIdentity
+            ) {
+                throw new Error('Please sign in again to set up account recovery.');
+            }
+            return recoverySetupRef.current.run(method, action);
+        },
+        [recoverySetupIdentity]
+    );
+    const resetRecoverySetup = useCallback(
+        (method: string): void => {
+            if (
+                !recoverySetupRef.current ||
+                recoverySetupIdentityRef.current !== recoverySetupIdentity
+            ) {
+                throw new Error('Please sign in again to set up account recovery.');
+            }
+            recoverySetupRef.current.reset(method);
+        },
+        [recoverySetupIdentity]
+    );
+
     const value: AuthCoordinatorContextValue = useMemo(
         () => ({
             state: renderedState,
@@ -508,6 +604,9 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             setupNewKey,
             migrate,
             activate,
+            runRecoverySetup,
+            resetRecoverySetup,
+            recoverySetupRevision,
             setMigrationData,
             recover,
             startEscrowRecovery,
@@ -547,6 +646,9 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             setupNewKey,
             migrate,
             activate,
+            runRecoverySetup,
+            resetRecoverySetup,
+            recoverySetupRevision,
             setMigrationData,
             recover,
             startEscrowRecovery,

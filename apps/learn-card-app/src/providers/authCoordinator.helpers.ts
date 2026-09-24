@@ -31,20 +31,7 @@ export const shouldResetWalletOnStatus = (status: AuthStatus): boolean =>
  * can synthesize an email entry for the primary sign-in address; only a verified
  * secondary recovery email (identified by its masked value) counts here.
  */
-export const countUserConfiguredRecoveryMethods = (
-    methods: Array<{ type: string; confirmedAt?: Date | string }>,
-    maskedRecoveryEmail?: string | null
-): number => {
-    const nonEmailMethods = methods.filter(
-        method => method.type !== 'email' && method.type !== 'escrow'
-    ).length;
-    const emailMethods = methods.filter(method => method.type === 'email');
-    const hasConfirmedRecoveryEmail = emailMethods.some(method => !!method.confirmedAt);
-    const hasExplicitRecoveryEmail =
-        hasConfirmedRecoveryEmail || (!!maskedRecoveryEmail && emailMethods.length > 0);
-
-    return nonEmailMethods + (hasExplicitRecoveryEmail ? 1 : 0);
-};
+export { countConfiguredRecoveryMethods as countUserConfiguredRecoveryMethods } from 'learn-card-base/auth-coordinator/recoverySetup';
 
 /**
  * Records a recovery method completed during the current setup session.
