@@ -18,6 +18,7 @@ import {
     ShareManifestPresentationValidator,
 } from '@learncard/types';
 import {
+    buildShareLinkUrl,
     buildShareManifest,
     buildShareRecovery,
     encryptSharePayload,
@@ -90,19 +91,35 @@ export const mapWithConcurrency = async <T, R>(
 };
 
 /**
- * Derive the canonical share host from a tenant base URL. Non-HTTPS bases
- * (e.g. a local `http://localhost:3000`) are rejected before any server state
- * can be created, since `buildShareLinkUrl` would otherwise mint an
- * unreachable `https://localhost:3000/...` link.
+ * HTTPS everywhere, with an explicit development-only exception for loopback.
+ * Keep this app adapter separate from the canonical HTTPS protocol helpers.
  */
-export const shareLinkHost = (baseUrl: string): string | undefined => {
+export const shareLinkOrigin = (baseUrl: string, development = false): string | undefined => {
     try {
         const url = new URL(baseUrl);
-        if (url.protocol !== 'https:') return undefined;
-        return url.host || undefined;
+        if (url.username || url.password) return undefined;
+        const localHttp =
+            development &&
+            url.protocol === 'http:' &&
+            ['localhost', '127.0.0.1'].includes(url.hostname);
+        if (url.protocol !== 'https:' && !localHttp) return undefined;
+        return url.origin;
     } catch {
         return undefined;
     }
+};
+
+export const buildAppShareLinkUrl = (
+    baseUrl: string,
+    id: string,
+    key: string,
+    development = false
+): string => {
+    const origin = shareLinkOrigin(baseUrl, development);
+    if (!origin) throw new Error('Unsupported share origin');
+    const url = new URL(buildShareLinkUrl(new URL(origin).host, id, key));
+    url.protocol = new URL(origin).protocol;
+    return url.href;
 };
 
 export type ExpiryChoice = '7' | '30' | '365' | 'never';

@@ -13,7 +13,8 @@ import type { VC } from '@learncard/types';
 import { QRCodeSVG } from 'qrcode.react';
 import { Clipboard } from '@capacitor/clipboard';
 import { useWallet } from 'learn-card-base';
-import { buildShareLinkUrl, isShareLinkError } from 'learn-card-base/helpers/share-links';
+import { isShareLinkError } from 'learn-card-base/helpers/share-links';
+import { environment } from '../../config/environment';
 import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
 import * as m from '../../paraglide/messages.js';
 import {
@@ -24,7 +25,8 @@ import {
     mapWithConcurrency,
     prepareShare,
     resolveExpiryIso,
-    shareLinkHost,
+    shareLinkOrigin,
+    buildAppShareLinkUrl,
     shareWallet,
     type CredentialChoice,
     type ExpiryChoice,
@@ -164,7 +166,7 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
         if (!publicationStarted) prepared.current = undefined;
     };
     const guardBase = (): string | undefined => {
-        const host = shareLinkHost(getAppBaseUrl());
+        const host = shareLinkOrigin(getAppBaseUrl(), environment.DEV);
         setUnsupportedBase(!host);
         if (!host) setError(true);
         return host;
@@ -200,7 +202,7 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
 
     const succeed = (host: string, expiresAt: string | null) => {
         const value = prepared.current!;
-        setLink(buildShareLinkUrl(host, value.input.id, value.key));
+        setLink(buildAppShareLinkUrl(host, value.input.id, value.key, environment.DEV));
         setExpiresAt(expiresAt);
         setStep('done');
     };

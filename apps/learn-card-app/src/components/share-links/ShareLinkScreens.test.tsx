@@ -282,8 +282,17 @@ describe('create screen', () => {
         await screen.findByRole('alert');
         expect(mocks.wallet.invoke.createShareLink).toHaveBeenCalledTimes(0);
     });
-    it('refuses a non-https base before creating any server state', async () => {
+    it('creates a directly usable HTTP localhost link in development', async () => {
         mocks.appBaseUrl = 'http://localhost:3000';
+        await chooseAndCreate();
+        const link = (await screen.findByLabelText('Private link')) as HTMLInputElement;
+        expect(link.value).toBe(
+            'http://localhost:3000/s/AAAAAAAAAAAAAAAAAAAAAA#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+        );
+        expect(screen.getByRole('img', { name: 'Private link QR code' })).toBeTruthy();
+    });
+    it('refuses a non-https base before creating any server state', async () => {
+        mocks.appBaseUrl = 'http://tenant.example';
         render(<ShareLinkCreate onDismiss={() => {}} />);
         fireEvent.click(await screen.findByRole('checkbox'));
         fireEvent.click(screen.getByRole('button', { name: 'Continue' }));

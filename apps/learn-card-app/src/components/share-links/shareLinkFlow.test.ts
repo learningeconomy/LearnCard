@@ -10,7 +10,8 @@ import {
     proofState,
     readShareAddress,
     resolveExpiryIso,
-    shareLinkHost,
+    shareLinkOrigin,
+    buildAppShareLinkUrl,
     shareWallet,
     verifyCredentialTree,
     verifySharedPresentation,
@@ -324,9 +325,25 @@ describe('bounded picker reads', () => {
 
 describe('link base and expiry', () => {
     it('only accepts an https tenant base', () => {
-        expect(shareLinkHost('https://learncard.app')).toBe('learncard.app');
-        expect(shareLinkHost('http://localhost:3000')).toBeUndefined();
-        expect(shareLinkHost('not a url')).toBeUndefined();
+        expect(shareLinkOrigin('https://learncard.app')).toBe('https://learncard.app');
+        expect(shareLinkOrigin('http://localhost:3000')).toBeUndefined();
+        expect(shareLinkOrigin('not a url')).toBeUndefined();
+    });
+    it('allows HTTP only for explicit loopback development, preserving the key', () => {
+        const id = 'A'.repeat(22);
+        const key = 'A'.repeat(43);
+        for (const host of ['localhost:3000', '127.0.0.1:3000']) {
+            expect(buildAppShareLinkUrl('http://' + host, id, key, true)).toBe(
+                'http://' + host + '/s/' + id + '#' + key
+            );
+            expect(shareLinkOrigin('http://' + host, false)).toBeUndefined();
+        }
+        for (const host of ['learncard.app', 'localhost.evil.test', '192.168.1.2']) {
+            expect(shareLinkOrigin('http://' + host, true)).toBeUndefined();
+            expect(() => buildAppShareLinkUrl('http://' + host, id, key, true)).toThrow();
+        }
+        expect(shareLinkOrigin('http://user@localhost:3000', true)).toBeUndefined();
+        expect(() => buildAppShareLinkUrl('http://localhost:3000', id, 'bad', true)).toThrow();
     });
     it('pins 7/30/365/never and defaults conservatively', () => {
         const now = Date.parse('2026-01-01T00:00:00.000Z');
