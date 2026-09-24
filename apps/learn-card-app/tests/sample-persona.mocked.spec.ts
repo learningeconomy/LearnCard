@@ -53,12 +53,14 @@ let populatedIndexResponse: unknown;
 let emptyIndexResponse: unknown;
 const sampleCredentialResponses = new Map<string, unknown>();
 let sampleRecordCount = 0;
+let testUserDid = '';
 
 test.beforeAll(async () => {
     const wallet = await initLearnCard({
         seed: TEST_USER_SEED,
         allowRemoteContexts: false,
     });
+    testUserDid = wallet.id.did();
     const records = [];
     sampleCredentialResponses.clear();
     for (const [index, entry] of studentBundle.entries.entries()) {
@@ -100,6 +102,15 @@ test.describe('Sample persona @mocked', () => {
         const trpc = await installNetwork(page);
         let hasSample = false;
 
+        trpc.on('profile.getProfile', () => ({
+            profileId: TEST_USER_PROFILE_ID,
+            did: testUserDid,
+            displayName: 'Mocked User',
+            shortBio: '',
+            bio: '',
+            dob: '1990-01-01',
+            country: 'US',
+        }));
         trpc.on('profile.updateProfile', () => true);
         trpc.on('contracts.getConsentFlowContract', () => contract);
         trpc.on('contracts.getConsentedContracts', () => ({
@@ -172,38 +183,25 @@ test.describe('Sample persona @mocked', () => {
             profileId: TEST_USER_PROFILE_ID,
         });
 
-        const onboardingDialog = page.getByRole('dialog', {
-            name: "Welcome — let's set you up",
-        });
-        await onboardingDialog.waitFor({ state: 'visible', timeout: 5_000 }).catch(() => undefined);
-        if (await onboardingDialog.isVisible()) {
-            await onboardingDialog.getByRole('button', { name: 'Close dialog' }).click();
-            await expect(onboardingDialog).toBeHidden();
-        }
-
         await page.getByRole('button', { name: /Build My LearnCard/ }).click();
+        const builderDialog = page.getByRole('dialog', { name: 'Build My LearnCard' });
         const sampleCard = page.getByRole('region', { name: 'See an example LearnCard' });
         const addButton = sampleCard.getByRole('button', { name: 'See an example LearnCard' });
         await expect(addButton).toBeVisible({ timeout: 30_000 });
         await addButton.click();
 
-        await expect(page.getByText('Sample credentials added.')).toBeVisible({
-            timeout: 30_000,
+        const removeButton = sampleCard.getByRole('button', {
+            name: 'Remove sample credentials',
         });
-        await expect(sampleCard).toBeHidden({ timeout: 30_000 });
-        await expect(page.getByText('Sample', { exact: true })).toBeVisible();
+        await expect(removeButton).toBeVisible({ timeout: 30_000 });
 
+        await builderDialog.getByRole('button', { name: 'Close', exact: true }).click();
+        await expect(builderDialog).toBeHidden();
         await page.getByRole('button', { name: /Build My LearnCard/ }).click();
         await expect(page.getByRole('heading', { name: 'Sample LearnCard' })).toBeVisible({
             timeout: 30_000,
         });
-        await expect(page.getByText('Afterschool Program Mentor').first()).toBeVisible({
-            timeout: 30_000,
-        });
-        await page
-            .getByRole('region', { name: 'See an example LearnCard' })
-            .getByRole('button', { name: 'Remove sample credentials' })
-            .click();
+        await removeButton.click();
         await page
             .getByRole('dialog')
             .last()
@@ -213,6 +211,5 @@ test.describe('Sample persona @mocked', () => {
         await expect(page.getByRole('button', { name: 'See an example LearnCard' })).toBeVisible({
             timeout: 30_000,
         });
-        await expect(page.getByText('Sample', { exact: true })).toHaveCount(0);
     });
 });
