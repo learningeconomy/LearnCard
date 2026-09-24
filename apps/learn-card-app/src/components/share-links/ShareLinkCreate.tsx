@@ -673,9 +673,20 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
                     )}
                     {step === 'details' && (
                         <div className="space-y-5">
-                            <p className="p-4 rounded-2xl bg-grayscale-100 text-sm">
-                                {m['shareLinks.selected']({ count: String(selected.length) })}
-                            </p>
+                            <div className="p-4 rounded-2xl bg-grayscale-100 text-sm">
+                                <p>
+                                    {m['shareLinks.selected']({ count: String(selected.length) })}
+                                </p>
+                                {selectedCategoryCount > 0 && (
+                                    <p className="mt-1 text-xs text-grayscale-600">
+                                        {selectedCategoryCount === 1
+                                            ? m['shareLinks.oneCategory']()
+                                            : m['shareLinks.categoryCount']({
+                                                  count: String(selectedCategoryCount),
+                                              })}
+                                    </p>
+                                )}
+                            </div>
                             <label className="block text-xs font-medium text-grayscale-700">
                                 {m['shareLinks.title']()}
                                 <input
