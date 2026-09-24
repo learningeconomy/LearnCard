@@ -1676,11 +1676,14 @@ describe('AuthCoordinator', () => {
             await coordinator.sendIdentityRecoveryCode('recovery@example.com');
             await coordinator.verifyIdentityRecoveryCode('123456');
 
-            const result = await coordinator.prepareIdentityRecovery({
-                method: 'phrase',
-                phrase: 'valid phrase input',
-            });
+            await expect(
+                coordinator.prepareIdentityRecovery({
+                    method: 'phrase',
+                    phrase: 'valid phrase input',
+                })
+            ).rejects.toThrow('Request a new recovery code and try again.');
 
+            const result = coordinator.getState();
             expect(result).toEqual({
                 status: 'identity_recovery',
                 phase: 'enter_email',
@@ -1711,11 +1714,14 @@ describe('AuthCoordinator', () => {
             await coordinator.sendIdentityRecoveryCode('recovery@example.com');
             await coordinator.verifyIdentityRecoveryCode('123456');
 
-            const result = await coordinator.prepareIdentityRecovery({
-                method: 'phrase',
-                phrase: 'invalid phrase input',
-            });
+            await expect(
+                coordinator.prepareIdentityRecovery({
+                    method: 'phrase',
+                    phrase: Array(25).fill('invalid').join(' '),
+                })
+            ).rejects.toThrow('Invalid recovery phrase');
 
+            const result = coordinator.getState();
             expect(result).toMatchObject({
                 status: 'identity_recovery',
                 phase: 'choose_method',

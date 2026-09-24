@@ -69,6 +69,30 @@ describe('RecoveryFlowModal', () => {
         expect(screen.getByRole('heading', { name: /Access Restored/i })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /Done/i })).toBeInTheDocument();
     });
+
+    it('shows a friendly error and enables retry and Back after an invalid lost-login phrase', async () => {
+        const recover = vi.fn().mockRejectedValue(new Error('Invalid recovery phrase'));
+        render(
+            <RecoveryFlowModal
+                {...defaultProps}
+                identityPhase="choose_method"
+                availableMethods={[{ type: 'phrase', createdAt: '2026-09-06T00:00:00Z' }]}
+                onRecoverWithPhrase={recover}
+            />
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: /phrase/i }));
+        const invalidPhrase = Array(25).fill('invalid').join(' ');
+        fireEvent.change(screen.getByRole('textbox'), { target: { value: invalidPhrase } });
+        fireEvent.click(screen.getByRole('button', { name: 'Recover Account' }));
+
+        expect(await screen.findByText(/Please check for typos/)).toBeInTheDocument();
+        expect(recover).toHaveBeenCalledWith(invalidPhrase);
+        expect(screen.getByRole('button', { name: 'Recover Account' })).toBeEnabled();
+        expect(screen.getByRole('button', { name: 'Back' })).toBeEnabled();
+        fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+        expect(screen.getByRole('button', { name: /phrase/i })).toBeEnabled();
+    });
 });
 
 const renderModal = (

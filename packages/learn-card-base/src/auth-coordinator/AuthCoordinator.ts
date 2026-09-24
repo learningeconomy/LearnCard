@@ -779,6 +779,8 @@ export class AuthCoordinator {
                     error: errorMessage,
                 });
             }
+            // Recovery forms await this call to surface errors and release their loading state.
+            throw error;
         }
 
         return this.state;
