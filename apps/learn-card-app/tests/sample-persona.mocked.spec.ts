@@ -216,5 +216,17 @@ test.describe('Sample persona @mocked', () => {
         await expect(page.getByRole('button', { name: 'See an example LearnCard' })).toBeVisible({
             timeout: 30_000,
         });
+
+        await page.unroute(/.*\.launchdarkly\..*/);
+        await mockLaunchDarkly(page, {
+            enableNewDemoFlow: { value: false },
+        });
+        await page.reload();
+        await page.getByRole('button', { name: /Build My LearnCard/ }).click();
+
+        await expect(page.getByRole('heading', { name: 'Demo School' })).toBeVisible({
+            timeout: 30_000,
+        });
+        await expect(sampleCard).toHaveCount(0);
     });
 });

@@ -14,6 +14,8 @@ import {
 } from 'learn-card-base';
 import type { SamplePersonaConfig } from 'learn-card-base/config/tenantConfig';
 
+import SyncCircleArrows from '../../svgs/SyncCircleArrows';
+import { useTheme } from '../../../theme/hooks/useTheme';
 import { getMinimumTermsForContract } from '../../../helpers/contract.helpers';
 import * as m from '../../../paraglide/messages.js';
 
@@ -34,6 +36,8 @@ const SamplePersonaAddButton: React.FC<SamplePersonaAddButtonProps> = ({
     onComplete,
     className = '',
 }) => {
+    const { colors } = useTheme();
+    const primaryColor = colors?.defaults?.primaryColor;
     const currentUser = useCurrentUser();
     const queryClient = useQueryClient();
     const { presentToast } = useToast();
@@ -114,16 +118,12 @@ const SamplePersonaAddButton: React.FC<SamplePersonaAddButtonProps> = ({
             type="button"
             onClick={() => void addPersona()}
             disabled={!contract || isLoading}
-            className={`py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${className}`}
+            className={`py-[7px] px-[20px] rounded-[30px] bg-${primaryColor} font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] text-white w-full flex gap-[10px] items-center justify-center disabled:opacity-60 max-w-[650px] ${className}`}
         >
-            {isLoading ? (
-                <>
-                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    {loadingLabel}
-                </>
-            ) : (
-                (label ?? m['passport.buildMyLearnCard.samplePersona.addAction']())
-            )}
+            {isLoading
+                ? loadingLabel
+                : (label ?? m['passport.buildMyLearnCard.samplePersona.addAction']())}
+            <SyncCircleArrows className={isLoading ? 'animate-spin-ccw' : undefined} />
         </button>
     );
 };

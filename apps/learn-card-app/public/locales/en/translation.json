@@ -261,6 +261,24 @@
                 "reviewResume": "Review Resume",
                 "reviewTranscripts": "Review Transcripts"
             },
+            "demoSchool": {
+                "title": "Demo School",
+                "description": "Connect to a sample school, sync demo badges and credentials, and explore how {{brand}} works.",
+                "sync": "Sync Demo School",
+                "delete": "Delete Demo School",
+                "connectSuccess": "You have successfully connected to the demo school.",
+                "connectError": "Unable to connect to the demo school. Please try again.",
+                "noCredentials": "No Demo credentials found. Please try again.",
+                "deletedCount": "Deleted {{count}} Demo credentials",
+                "confirmSync": "Are you sure you want to sync with the demo school? This will import multiple sample credentials, but you can easily delete them later.",
+                "confirmDelete": "Are you sure you want to delete all demo content? This action can’t be undone, but you can reload the demo content later if needed.",
+                "checking": "Checking Demo School...",
+                "connecting": "Connecting to Demo School...",
+                "syncing": "Syncing Credentials...",
+                "disconnect": "Disconnecting From Demo School...",
+                "deleting": "Deleting Demo Credentials...",
+                "delError": "Unable to delete the demo school. Please try again."
+            },
             "samplePersona": {
                 "title": "See an example LearnCard",
                 "sampleTitle": "Sample LearnCard",

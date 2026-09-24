@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const currentContractUri = 'lc:network:example:contract:student';
@@ -43,6 +43,14 @@ vi.mock('@tanstack/react-query', () => ({
         refetchQueries: mocks.refetchQueries,
     }),
 }));
+vi.mock('../../../theme/hooks/useTheme', () => ({
+    useTheme: () => ({ colors: { defaults: { primaryColor: 'emerald-700' } } }),
+}));
+
+vi.mock('./DemoSchoolBox', () => ({
+    __esModule: true,
+    default: () => <section aria-label="Demo School">Demo School</section>,
+}));
 
 vi.mock('learn-card-base/config/TenantConfigProvider', () => ({
     useFeatureConfig: () => mocks.useFeatureConfig(),
@@ -54,7 +62,12 @@ vi.mock('../../../helpers/contract.helpers', () => ({
 
 vi.mock('../../svgs/TrashBin', () => ({
     __esModule: true,
-    default: () => null,
+    default: () => <svg aria-hidden="true" data-testid="delete-demo-icon" />,
+}));
+
+vi.mock('../../svgs/SyncCircleArrows', () => ({
+    __esModule: true,
+    default: () => <svg aria-hidden="true" data-testid="sync-demo-icon" />,
 }));
 
 vi.mock('learn-card-base/svgs/CircleCheckmark', () => ({
@@ -179,11 +192,12 @@ describe('SamplePersonaBox', () => {
         });
         mocks.queueAiInsightCredentialRefresh.mockResolvedValue(undefined);
     });
-    it('stays hidden when the new demo flow flag is disabled', () => {
+    it('shows the old Demo School flow when the new demo flow flag is disabled', () => {
         mocks.useFlags.mockReturnValue({ enableNewDemoFlow: false });
 
         render(<SamplePersonaBox />);
 
+        expect(screen.getByRole('region', { name: 'Demo School' })).toBeInTheDocument();
         expect(
             screen.queryByRole('button', { name: 'See an example LearnCard' })
         ).not.toBeInTheDocument();
@@ -198,6 +212,10 @@ describe('SamplePersonaBox', () => {
             currentContractUri,
             legacyContractUri,
         ]);
+
+        const addButton = screen.getByRole('button', { name: 'See an example LearnCard' });
+        expect(addButton).toHaveClass('bg-emerald-700', 'rounded-[30px]', 'font-notoSans');
+        expect(within(addButton).getByTestId('sync-demo-icon')).toBeInTheDocument();
 
         fireEvent.click(screen.getByRole('button', { name: 'See an example LearnCard' }));
 
@@ -327,7 +345,10 @@ describe('SamplePersonaBox', () => {
         });
 
         render(<SamplePersonaBox />);
-        fireEvent.click(screen.getByRole('button', { name: 'Remove sample credentials' }));
+        const removeButton = screen.getByRole('button', { name: 'Remove sample credentials' });
+        expect(removeButton).toHaveClass('bg-rose-500', 'rounded-[30px]', 'font-notoSans');
+        expect(within(removeButton).getByTestId('delete-demo-icon')).toBeInTheDocument();
+        fireEvent.click(removeButton);
 
         await waitFor(() => expect(mocks.withdrawConsent).toHaveBeenCalledTimes(2));
         expect(mocks.withdrawConsent).toHaveBeenCalledWith(currentTermsUri);

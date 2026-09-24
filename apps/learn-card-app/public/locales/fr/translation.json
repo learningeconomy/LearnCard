@@ -261,6 +261,24 @@
                 "reviewResume": "Vérifier le CV",
                 "reviewTranscripts": "Vérifier les relevés de notes"
             },
+            "demoSchool": {
+                "title": "École de démonstration",
+                "description": "Connectez-vous à un exemple d’école, synchronisez des badges et des références de démonstration, et découvrez comment {{brand}} fonctionne.",
+                "sync": "Synchroniser l’école de démonstration",
+                "delete": "Supprimer l’école de démonstration",
+                "connectSuccess": "Vous êtes connecté à l’école de démonstration.",
+                "connectError": "Impossible de se connecter à l’école de démonstration. Veuillez réessayer.",
+                "noCredentials": "Aucune référence de démonstration trouvée. Veuillez réessayer.",
+                "deletedCount": "{{count}} références de démonstration supprimées",
+                "confirmSync": "Voulez-vous vraiment vous synchroniser avec l’école de démonstration ? Cela importera plusieurs références d’exemple, mais vous pourrez facilement les supprimer plus tard.",
+                "confirmDelete": "Voulez-vous vraiment supprimer tout le contenu de démonstration ? Cette action est irréversible, mais vous pourrez recharger le contenu de démonstration plus tard si nécessaire.",
+                "checking": "Vérification de l'école démo...",
+                "connecting": "Connexion à l'école démo...",
+                "syncing": "Synchronisation des justificatifs...",
+                "disconnect": "Déconnexion de l'école démo...",
+                "deleting": "Suppression des justificatifs démo...",
+                "delError": "Impossible de supprimer l'école démo. Veuillez réessayer."
+            },
             "samplePersona": {
                 "title": "Voir un exemple de LearnCard",
                 "sampleTitle": "LearnCard d’exemple",

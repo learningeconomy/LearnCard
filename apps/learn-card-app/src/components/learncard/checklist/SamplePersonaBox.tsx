@@ -7,8 +7,11 @@ import { useFeatureConfig } from 'learn-card-base/config/TenantConfigProvider';
 import CircleCheckmark from 'learn-card-base/svgs/CircleCheckmark';
 
 import TrashBin from '../../svgs/TrashBin';
+import SyncCircleArrows from '../../svgs/SyncCircleArrows';
 import * as m from '../../../paraglide/messages.js';
+import { useTheme } from '../../../theme/hooks/useTheme';
 import SamplePersonaAddButton from './SamplePersonaAddButton';
+import DemoSchoolBox from './DemoSchoolBox';
 import { useSamplePersonas } from './useSamplePersonas';
 
 interface PersonaPickerProps {
@@ -55,6 +58,8 @@ const PersonaPicker: React.FC<PersonaPickerProps> = ({ personas, onAdded }) => (
 );
 
 const SamplePersonaBoxContent: React.FC = () => {
+    const { colors } = useTheme();
+    const primaryColor = colors?.defaults?.primaryColor;
     const confirm = useConfirmation();
     const { newModal, closeAllModals } = useModal({
         desktop: ModalTypes.Center,
@@ -124,23 +129,20 @@ const SamplePersonaBoxContent: React.FC = () => {
                 <button
                     type="button"
                     disabled
-                    className="py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm opacity-40 cursor-not-allowed flex items-center justify-center gap-2"
+                    className={`py-[7px] px-[20px] rounded-[30px] bg-${primaryColor} font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] text-white w-full flex gap-[10px] items-center justify-center disabled:opacity-60 max-w-[650px]`}
                 >
-                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     {m['passport.buildMyLearnCard.samplePersona.checking']()}
+                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 </button>
             ) : sampleDataExists ? (
                 <button
                     type="button"
                     onClick={() => void confirmRemoval()}
                     disabled={isRemoving}
-                    className="py-3 px-4 rounded-[20px] border border-red-200 text-red-700 font-medium text-sm hover:bg-red-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className={`py-[7px] px-[20px] rounded-[30px] ${
+                        isRemoving ? 'bg-red-500' : 'bg-rose-500'
+                    } font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] text-white w-full flex gap-[10px] items-center justify-center disabled:opacity-60 max-w-[650px]`}
                 >
-                    {isRemoving ? (
-                        <span className="w-4 h-4 border-2 border-red-200 border-t-red-700 rounded-full animate-spin" />
-                    ) : (
-                        <TrashBin version="2" className="w-4 h-4" strokeWidth="2" />
-                    )}
                     {isRemoving
                         ? removalStatus === 'deleting'
                             ? m['passport.buildMyLearnCard.samplePersona.deleting']()
@@ -148,6 +150,11 @@ const SamplePersonaBoxContent: React.FC = () => {
                               ? m['passport.buildMyLearnCard.samplePersona.disconnecting']()
                               : m['passport.buildMyLearnCard.samplePersona.checking']()
                         : m['passport.buildMyLearnCard.samplePersona.removeAction']()}
+                    {isRemoving ? (
+                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                        <TrashBin version="2" className="text-white" strokeWidth="2" />
+                    )}
                 </button>
             ) : personas.length === 1 ? (
                 <SamplePersonaAddButton
@@ -159,9 +166,10 @@ const SamplePersonaBoxContent: React.FC = () => {
                 <button
                     type="button"
                     onClick={addSample}
-                    className="py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
+                    className={`py-[7px] px-[20px] rounded-[30px] bg-${primaryColor} font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] text-white w-full flex gap-[10px] items-center justify-center disabled:opacity-60 max-w-[650px]`}
                 >
                     {m['passport.buildMyLearnCard.samplePersona.chooseAction']()}
+                    <SyncCircleArrows />
                 </button>
             )}
         </section>
@@ -171,7 +179,7 @@ const SamplePersonaBoxContent: React.FC = () => {
 const SamplePersonaBox: React.FC = () => {
     const flags = useFlags();
     const { samplePersonas, legacySamplePersonaContractUris } = useFeatureConfig();
-    if (flags.enableNewDemoFlow !== true) return null;
+    if (flags.enableNewDemoFlow !== true) return <DemoSchoolBox />;
 
     if (samplePersonas.length === 0 && legacySamplePersonaContractUris.length === 0) return null;
 
