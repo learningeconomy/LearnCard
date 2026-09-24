@@ -349,4 +349,31 @@ describe('RecoverySetupModal prompt integration', () => {
 
         expect(onClose).toHaveBeenCalledOnce();
     });
+
+    it('shows the update form when clicking Change on a fully protected account', async () => {
+        renderModal('email', vi.fn(), {
+            existingMethods: [
+                { type: 'email', createdAt: '2023-01-01' },
+                { type: 'phrase', createdAt: '2023-01-01' },
+                { type: 'backup', createdAt: '2023-01-01' },
+                { type: 'passkey', createdAt: '2023-01-01' },
+            ],
+        });
+
+        expect(screen.getByText("You're fully protected.")).toBeInTheDocument();
+
+        const changeButtons = screen.getAllByRole('button', { name: 'Change' });
+
+        // Click Change on phrase (index 1)
+        fireEvent.click(changeButtons[1]);
+        expect(screen.getByRole('button', { name: 'Generate New Phrase' })).toBeInTheDocument();
+
+        // Click Cancel
+        fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+        expect(screen.getByText("You're fully protected.")).toBeInTheDocument();
+
+        // Click Change on backup (index 2)
+        fireEvent.click(changeButtons[2]);
+        expect(screen.getByRole('button', { name: 'Generate New Backup' })).toBeInTheDocument();
+    });
 });

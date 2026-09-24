@@ -579,7 +579,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                 </div>
             )}
 
-            {configuredCount < tabs.length && (
+            {(configuredCount < tabs.length || showUpdateForm) && (
                 <>
                     {/* ── Passkey Tab ───────────────────────────────────── */}
                     {activeTab === 'passkey' && (
