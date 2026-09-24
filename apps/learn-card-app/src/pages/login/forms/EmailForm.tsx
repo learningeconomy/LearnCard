@@ -12,7 +12,11 @@ const log = getLogger('email-form');
 
 import useWallet from 'learn-card-base/hooks/useWallet';
 import { useTheme } from '../../../theme/hooks/useTheme';
+import { useAnalytics, AnalyticsEvents, LAST_LOGIN_METHOD_KEY } from '@analytics';
+import type { KeycloakSignInAdapter } from 'learn-card-base';
 import {
+    authStore,
+    SocialLoginTypes,
     currentUserStore,
     getRandomBaseColor,
     redirectStore,
@@ -169,6 +173,23 @@ const EmailForm: React.FC<EmailFormProps> = ({
         return false;
     };
 
+    const { track } = useAnalytics();
+
+    // useFirebase's signInWithCustomFirebaseToken swallows failures (it alerts
+    // and resolves), which left the native overlay stuck on "Setting up your
+    // account…". Call the adapter directly so failures reach this form's catch,
+    // and record the same login analytics the hook does on success.
+    const completeKeycloakNativeSignIn = async (ticket: string): Promise<void> => {
+        await (adapter as KeycloakSignInAdapter).signInWithCustomToken(ticket);
+        authStore.set.typeOfLogin(SocialLoginTypes.passwordless);
+        try {
+            localStorage.setItem(LAST_LOGIN_METHOD_KEY, SocialLoginTypes.passwordless);
+        } catch {
+            log.warn('Unable to persist the last login method');
+        }
+        void track(AnalyticsEvents.LOGIN, { method: SocialLoginTypes.passwordless });
+    };
+
     const handleVerifyCode = async () => {
         if (validateCode()) {
             try {
@@ -187,9 +208,11 @@ const EmailForm: React.FC<EmailFormProps> = ({
                 );
                 if (response?.token) {
                     redirectStore.set.email(null);
-                    await signInWithCustomFirebaseToken(response?.token);
                     if (adapter.providerType === 'keycloak' && Capacitor.isNativePlatform()) {
+                        await completeKeycloakNativeSignIn(response.token);
                         setKeycloakOverlayPhase('setting-up');
+                    } else {
+                        await signInWithCustomFirebaseToken(response?.token);
                     }
                 }
                 setIsLoading(false);

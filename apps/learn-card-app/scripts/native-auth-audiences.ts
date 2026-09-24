@@ -56,12 +56,12 @@ export const DEFAULT_ENVIRONMENTS_DIR = resolve(APP_ROOT, 'environments');
 /**
  * Web Origins required on the Keycloak native client. Constant across
  * tenants — the token-exchange `fetch` runs from the WebView, whose origin
- * is `capacitor://localhost` on iOS and `http://localhost` on Android.
+ * is `capacitor://localhost` on iOS and `https://localhost` on Android (Capacitor's default androidScheme).
  * See infra/keycloak/README.md "Users and clients".
  */
 export const KEYCLOAK_NATIVE_WEB_ORIGINS: readonly string[] = [
     'capacitor://localhost',
-    'http://localhost',
+    'https://localhost',
 ];
 
 export interface NativeAuthRequirements {

@@ -152,7 +152,8 @@ of redirecting the webview: iOS uses an ephemeral `ASWebAuthenticationSession`
   `native.customSchemes` handling) so the OS routes the callback back to the
   app.
 - **Web Origins**: the token exchange is a `fetch` from the WebView, whose
-  origin is `capacitor://localhost` on iOS and `http://localhost` on Android.
+  origin is `capacitor://localhost` on iOS and `https://localhost` on Android
+  (Capacitor's default `androidScheme`).
   Keycloak's `+` wildcard only derives http(s) origins from redirect URIs, so
   the client's **Web Origins** must list both literally or the token endpoint
   answers `403` with no CORS header (surfaces in the app as `Load failed`).

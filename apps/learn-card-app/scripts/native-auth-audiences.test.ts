@@ -196,7 +196,7 @@ describe('deriveNativeAuthRequirements', () => {
         );
         expect(result.appleClientIds).toEqual(['com.learncard.app']);
         expect(result.keycloakRedirectUris).toEqual(['com.learncard.app://login']);
-        expect(result.keycloakWebOrigins).toEqual(['capacitor://localhost', 'http://localhost']);
+        expect(result.keycloakWebOrigins).toEqual(['capacitor://localhost', 'https://localhost']);
         expect(result.warnings).toEqual([]);
     });
 

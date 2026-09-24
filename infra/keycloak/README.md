@@ -45,7 +45,7 @@ All three users have password `password`:
 - `learncard-app`: public authorization-code client with S256 PKCE, no password grant.
   Redirect URIs cover web (`http://localhost:3000/*`) and native
   (`com.learncard.app://login`, plus legacy `capacitor://localhost/*`). Web Origins
-  list `capacitor://localhost` (iOS WebView) and `http://localhost` (Android WebView)
+  list `capacitor://localhost` (iOS WebView) and `https://localhost` (Android WebView)
   explicitly: the `+` wildcard only derives http(s) origins, and without them the
   token endpoint returns `403` with no CORS header. A production realm needs the
   same three entries with the real bundle ID.
