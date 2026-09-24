@@ -1,4 +1,6 @@
 import React, { lazy, Suspense } from 'react';
+import { IonIcon } from '@ionic/react';
+import { arrowForwardOutline } from 'ionicons/icons';
 import type { VC } from '@learncard/types';
 import { ModalTypes, useModal, type BoostCategoryOptionsEnum } from 'learn-card-base';
 import {
@@ -39,7 +41,7 @@ export const ShareCredentialVisual = ({
     return (
         <button
             type="button"
-            className="rounded-[20px] border border-grayscale-300 px-4 py-2.5 text-sm font-medium text-grayscale-700 hover:bg-grayscale-10 focus-visible:ring-2 focus-visible:ring-emerald-500"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[20px] !bg-grayscale-900 px-5 py-3 text-sm font-medium leading-none !text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
             onClick={() =>
                 newModal(
                     <Suspense fallback={<p role="status">{m['shareLinks.loading']()}</p>}>
@@ -95,7 +97,12 @@ export const ShareCredentialVisual = ({
                 )
             }
         >
-            {m['alerts.viewCredential']()}
+            <span>{m['alerts.viewCredential']()}</span>
+            <IonIcon
+                icon={arrowForwardOutline}
+                aria-hidden="true"
+                className="block h-4 w-4 shrink-0"
+            />
         </button>
     );
 };
