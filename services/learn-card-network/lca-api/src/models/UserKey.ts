@@ -88,7 +88,9 @@ export const EscrowPinSaltValidator = z
     );
 export const EscrowPinValidator = z.object({
     salt: EscrowPinSaltValidator,
+    // Legacy name: charged lifetime budget, including unresolved reservations.
     failedAttempts: z.number().int().nonnegative(),
+    verifiedFailedAttempts: z.number().int().nonnegative().optional(),
     enabledAt: z.date(),
     disabledAt: z.date().optional(),
     shareVersion: z.number().int().positive(),
@@ -101,15 +103,11 @@ export const getEscrowPinStatus = (
     userKey: MongoUserKeyType
 ): z.infer<typeof EscrowPinStatusValidator> => {
     const pin = userKey.escrowPin;
-    const enabled =
-        !!pin &&
-        !pin.disabledAt &&
-        pin.shareVersion === userKey.shareVersion &&
-        pin.failedAttempts < ESCROW_PIN_MAX_ATTEMPTS;
+    const enabled = !!pin && !pin.disabledAt && pin.shareVersion === userKey.shareVersion;
     return {
         state: !pin
             ? 'none'
-            : pin.disabledAt || pin.failedAttempts >= ESCROW_PIN_MAX_ATTEMPTS
+            : pin.disabledAt
               ? 'locked'
               : pin.shareVersion !== userKey.shareVersion
                 ? 'stale'
@@ -770,7 +768,19 @@ export const reserveEscrowPinAttempt = async (
                 ? {}
                 : { 'escrowBlob.envelope.ciphertext': expectedCiphertext }),
         },
-        { $inc: { 'escrowPin.failedAttempts': 1 }, $set: { updatedAt: new Date() } },
+        [
+            {
+                $set: {
+                    // Existing documents have only the charged counter. Snapshot their prior
+                    // failures before the first reservation using the new accounting.
+                    'escrowPin.verifiedFailedAttempts': {
+                        $ifNull: ['$escrowPin.verifiedFailedAttempts', '$escrowPin.failedAttempts'],
+                    },
+                    'escrowPin.failedAttempts': { $add: ['$escrowPin.failedAttempts', 1] },
+                    updatedAt: new Date(),
+                },
+            },
+        ],
         { returnDocument: 'after' }
     );
 
@@ -793,23 +803,48 @@ export const refundEscrowPinAttempt = async (
     );
 };
 
-export const resetEscrowPinAttempts = async (
+/** Only an enclave mismatch can advance verified failures and atomically disable a PIN. */
+export const recordEscrowPinFailure = async (
     authProvider: AuthProviderMapping,
-    shareVersion?: number,
-    expectedCiphertext?: string
-): Promise<void> => {
-    await getUserKeysCollection().updateOne(
+    shareVersion: number,
+    expectedCiphertext: string
+): Promise<MongoUserKeyType | null> =>
+    getUserKeysCollection().findOneAndUpdate(
         {
             ...getAuthProviderFilter(authProvider),
-            escrowPin: { $exists: true },
-            ...(shareVersion === undefined ? {} : { 'escrowPin.shareVersion': shareVersion }),
-            ...(expectedCiphertext === undefined
-                ? {}
-                : { 'escrowBlob.envelope.ciphertext': expectedCiphertext }),
+            shareVersion,
+            'escrowPin.shareVersion': shareVersion,
+            'escrowBlob.envelope.ciphertext': expectedCiphertext,
+            'escrowPin.disabledAt': { $exists: false },
         },
-        { $set: { 'escrowPin.failedAttempts': 0, updatedAt: new Date() } }
+        [
+            {
+                $set: {
+                    'escrowPin.verifiedFailedAttempts': {
+                        $add: ['$escrowPin.verifiedFailedAttempts', 1],
+                    },
+                    updatedAt: new Date(),
+                },
+            },
+            {
+                $set: {
+                    'escrowPin.disabledAt': {
+                        $cond: [
+                            {
+                                $gte: [
+                                    '$escrowPin.verifiedFailedAttempts',
+                                    ESCROW_PIN_MAX_ATTEMPTS,
+                                ],
+                            },
+                            '$$NOW',
+                            '$$REMOVE',
+                        ],
+                    },
+                },
+            },
+        ],
+        { returnDocument: 'after' }
     );
-};
 
 export const disableEscrowPin = async (
     authProvider: AuthProviderMapping,
@@ -820,6 +855,7 @@ export const disableEscrowPin = async (
         {
             ...getAuthProviderFilter(authProvider),
             escrowPin: { $exists: true },
+            'escrowPin.verifiedFailedAttempts': { $gte: ESCROW_PIN_MAX_ATTEMPTS },
             ...(shareVersion === undefined ? {} : { 'escrowPin.shareVersion': shareVersion }),
             ...(expectedCiphertext === undefined
                 ? {}

@@ -18,7 +18,7 @@ import {
     EscrowPinSaltValidator,
     reserveEscrowPinAttempt,
     refundEscrowPinAttempt,
-    resetEscrowPinAttempts,
+    recordEscrowPinFailure,
     disableEscrowPin,
     markClaimedEscrowHoldFailed,
     ServerEncryptedShareValidator,
@@ -407,7 +407,6 @@ export const escrowRouter = t.router({
                 input.releasePolicy === 'pin' &&
                 (!userKey.escrowPin ||
                     userKey.escrowPin.disabledAt ||
-                    userKey.escrowPin.failedAttempts >= ESCROW_PIN_MAX_ATTEMPTS ||
                     userKey.escrowPin.shareVersion !== userKey.shareVersion)
             ) {
                 throw new TRPCError({
@@ -639,10 +638,9 @@ export const escrowRouter = t.router({
                     });
                 }
                 if (current.escrowPin.failedAttempts >= ESCROW_PIN_MAX_ATTEMPTS) {
-                    await lockPin(hold, current);
                     throw new TRPCError({
                         code: 'TOO_MANY_REQUESTS',
-                        message: ESCROW_PIN_LOCKED_MESSAGE,
+                        message: pinThrottledMessage,
                     });
                 }
                 throw new TRPCError({
@@ -723,9 +721,15 @@ export const escrowRouter = t.router({
                 }
             });
             if (release.mismatch) {
+                const failed = await recordEscrowPinFailure(
+                    hold.authProvider,
+                    hold.shareVersion,
+                    expectedCiphertext
+                );
                 const attemptsRemaining =
-                    ESCROW_PIN_MAX_ATTEMPTS - reserved!.escrowPin!.failedAttempts;
-                const cancelReason = attemptsRemaining <= 0 ? 'pin-locked' : 'pin-mismatch';
+                    ESCROW_PIN_MAX_ATTEMPTS - (failed?.escrowPin?.verifiedFailedAttempts ?? 0);
+                const locked = !!failed?.escrowPin?.disabledAt;
+                const cancelReason = locked ? 'pin-locked' : 'pin-mismatch';
                 await markClaimedEscrowHoldFailed(hold._id, cancelReason, completed.completedAt!);
                 void notifyEscrowHoldEvent({
                     kind: 'cancelled',
@@ -738,7 +742,7 @@ export const escrowRouter = t.router({
                     },
                     userKey,
                 });
-                if (attemptsRemaining <= 0) {
+                if (locked) {
                     await lockPin(hold, userKey);
                     throw new TRPCError({
                         code: 'TOO_MANY_REQUESTS',
@@ -752,12 +756,8 @@ export const escrowRouter = t.router({
                 });
             }
             const { sealed } = release.result;
-            if (hold.releasePolicy === 'pin')
-                await resetEscrowPinAttempts(
-                    hold.authProvider,
-                    hold.shareVersion,
-                    userKey.escrowBlob.envelope.ciphertext
-                );
+            // A successful evaluation also consumes the lifetime budget; do not
+            // erase other requests' reservations or replenish guesses here.
             const authShare = await enclaveOperation(async () =>
                 decryptAuthShare(encryptedAuthShare, environment.SEED)
             );

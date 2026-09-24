@@ -734,7 +734,7 @@ describe('escrow PIN release', () => {
         });
     });
 
-    it('releases immediately with the correct PIN and resets attempts', async () => {
+    it('releases immediately with the correct PIN without replenishing the lifetime budget', async () => {
         await enrollPin();
         await getUserKeysCollection().updateOne(
             { 'authProviders.id': authProvider.id },
@@ -751,7 +751,7 @@ describe('escrow PIN release', () => {
         const opened = await openEscrowRelease(result.sealedShare, recipient.privateKey);
         expect(opened.holdId).toBe(hold.holdId);
         expect(opened.pinVerifier).toBeUndefined();
-        expect((await record())?.escrowPin?.failedAttempts).toBe(0);
+        expect((await record())?.escrowPin?.failedAttempts).toBe(4);
         expect((await findEscrowHoldById(hold.holdId))?.status).toBe('completed');
     });
 
@@ -772,7 +772,7 @@ describe('escrow PIN release', () => {
         const second = await startPin();
         expect(second.holdId).not.toBe(first.holdId);
         await completePin(second);
-        expect((await record())?.escrowPin?.failedAttempts).toBe(0);
+        expect((await record())?.escrowPin?.failedAttempts).toBe(2);
     });
 
     it('locks after ten mismatches and still permits delayed recovery', async () => {
@@ -834,7 +834,7 @@ describe('escrow PIN release', () => {
         expect((await record())?.escrowPin?.failedAttempts).toBe(9);
     });
 
-    it('cancels a pending PIN hold as pin-locked when no reservation remains', async () => {
+    it('throttles without disabling or cancelling when no reservation remains', async () => {
         await enrollPin();
         const hold = await startPin();
         await getUserKeysCollection().updateOne(
@@ -842,13 +842,71 @@ describe('escrow PIN release', () => {
             { $set: { 'escrowPin.failedAttempts': 10 } }
         );
         const release = vi.spyOn(getEscrowEnclave(), 'releaseEscrow');
-        await expect(completePin(hold)).rejects.toMatchObject({ code: 'TOO_MANY_REQUESTS' });
+        await expect(completePin(hold)).rejects.toMatchObject({
+            code: 'TOO_MANY_REQUESTS',
+            message: 'Please wait before trying again.',
+        });
         expect(release).not.toHaveBeenCalled();
         expect(await findEscrowHoldById(hold.holdId)).toMatchObject({
-            status: 'cancelled',
-            cancelReason: 'pin-locked',
-            cancelledBy: 'system',
+            status: 'pending',
         });
+        expect((await record())?.escrowPin?.disabledAt).toBeUndefined();
+    });
+
+    it('lets a correct tenth reservation finish while a competing completion is throttled', async () => {
+        await enrollPin();
+        await getUserKeysCollection().updateOne(
+            { 'authProviders.id': authProvider.id },
+            { $set: { 'escrowPin.failedAttempts': 9 } }
+        );
+        const waiting = await start();
+        const hold = await startPin();
+        const reserve = models.reserveEscrowPinAttempt;
+        const release = vi.spyOn(getEscrowEnclave(), 'releaseEscrow');
+        vi.spyOn(models, 'reserveEscrowPinAttempt').mockImplementationOnce(async (...args) => {
+            const reserved = await reserve(...args);
+            expect(reserved?.escrowPin?.failedAttempts).toBe(10);
+            await expect(completePin(hold)).rejects.toMatchObject({
+                code: 'TOO_MANY_REQUESTS',
+                message: 'Please wait before trying again.',
+            });
+            expect((await record())?.escrowPin?.disabledAt).toBeUndefined();
+            expect((await findEscrowHoldById(hold.holdId))?.status).toBe('pending');
+            return reserved;
+        });
+        await expect(completePin(hold)).resolves.toHaveProperty('sealedShare');
+        expect(release).toHaveBeenCalledTimes(1);
+        expect((await record())?.escrowPin).toMatchObject({
+            failedAttempts: 10,
+            verifiedFailedAttempts: 9,
+        });
+        expect((await record())?.escrowPin?.disabledAt).toBeUndefined();
+        expect((await findEscrowHoldById(waiting.holdId))?.status).toBe('pending');
+        await expect(completePin(await startPin())).rejects.toMatchObject({
+            message: 'Please wait before trying again.',
+        });
+        expect(release).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not lock on the tenth reservation mismatch while an earlier reservation is unresolved', async () => {
+        await enrollPin();
+        await getUserKeysCollection().updateOne(
+            { 'authProviders.id': authProvider.id },
+            { $set: { 'escrowPin.failedAttempts': 8 } }
+        );
+        const hold = await startPin();
+        const ciphertext = (await record())!.escrowBlob!.envelope.ciphertext;
+        await models.reserveEscrowPinAttempt(authProvider, 1, ciphertext);
+        await expect(completePin(hold, wrongProof)).rejects.toMatchObject({
+            message: 'Incorrect PIN. 1 attempts left.',
+        });
+        expect((await record())?.escrowPin?.disabledAt).toBeUndefined();
+        await models.refundEscrowPinAttempt(authProvider, 1, ciphertext);
+        expect((await record())?.escrowPin?.failedAttempts).toBe(9);
+        await expect(completePin(await startPin(), wrongProof)).rejects.toMatchObject({
+            message: 'Too many incorrect PIN attempts. You can still recover by waiting.',
+        });
+        expect((await record())?.escrowPin?.verifiedFailedAttempts).toBe(10);
         expect((await record())?.escrowPin?.disabledAt).toBeInstanceOf(Date);
     });
 
