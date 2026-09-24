@@ -1,3 +1,4 @@
+import { ShareCredentialVisual } from './ShareCredentialVisual';
 import { ShareCredentialThumbnail } from './ShareCredentialThumbnail';
 import { ShareCredentialMetadata } from './ShareCredentialMetadata';
 import React from 'react';
@@ -167,6 +168,18 @@ export const ShareLinkPreview = ({
                                     );
                                 })}
                             </div>
+                        )}
+                        {showOriginal && (
+                            <ShareCredentialVisual
+                                credential={credential}
+                                proof={proof}
+                                endorsements={endorsements.map(
+                                    item =>
+                                        payload.presentation.verifiableCredential[
+                                            item.credentialIndex
+                                        ]
+                                )}
+                            />
                         )}
                         {showOriginal && (
                             <details className="text-xs text-grayscale-600">

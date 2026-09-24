@@ -27,7 +27,11 @@ const mocks = vi.hoisted(() => ({
     appBaseUrl: 'https://tenant.example',
     intersect: undefined as undefined | ((entries: { isIntersecting: boolean }[]) => void),
 }));
-vi.mock('learn-card-base', () => ({ useWallet: () => ({ initWallet: async () => mocks.wallet }) }));
+vi.mock('learn-card-base', () => ({
+    useWallet: () => ({ initWallet: async () => mocks.wallet }),
+    ModalTypes: { FullScreen: 'fullscreen' },
+    useModal: () => ({ newModal: vi.fn(), closeModal: vi.fn() }),
+}));
 vi.mock('@capacitor/clipboard', () => ({ Clipboard: { write: vi.fn() } }));
 vi.mock('learn-card-base/helpers/walletHelpers', () => ({
     getBespokeLearnCard: () => mocks.anonymousWallet(),
@@ -52,6 +56,7 @@ vi.mock('../../theme/hooks/useTheme', () => ({
 }));
 vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
     getDefaultCategoryForCredential: () => 'Achievement',
+    unwrapBoostCredential: (credential: unknown) => credential,
     getImageUrlFromCredential: () => undefined,
 }));
 vi.mock('./sharePrivacy', () => ({

@@ -87,19 +87,22 @@ export type BoostPreviewProps = {
     isClrChildCredential?: boolean;
     issuancesSummaryComponent?: React.ReactNode;
     isPreview?: boolean;
+    /** Display an immutable shared original without account verification or edit lookups. */
+    sharedOriginal?: boolean;
 };
 
-export const useVerification = (credential: VC) => {
+export const useVerification = (credential: VC, enabled = true) => {
     const [vcVerifications, setVCVerifications] = useState<VerificationItem[]>([]);
     const { initWallet } = useWallet();
     useEffect(() => {
+        if (!enabled) return;
         const verify = async () => {
             const wallet = await initWallet();
             const verifications = await wallet?.invoke?.verifyCredential(credential, {}, true);
             setVCVerifications(prettifyVerificationItems(verifications ?? []));
         };
         verify();
-    }, []);
+    }, [credential, enabled]);
     return vcVerifications;
 };
 
@@ -184,10 +187,13 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     isClrChildCredential = false,
     issuancesSummaryComponent,
     isPreview = false,
+    sharedOriginal = false,
 }) => {
     const { track } = useAnalytics();
     const unwrappedCredential = unwrapBoostCredential(_credential);
-    const { credentialWithEdits } = useGetCredentialWithEdits(unwrappedCredential);
+    const { credentialWithEdits } = useGetCredentialWithEdits(
+        sharedOriginal ? undefined : unwrappedCredential
+    );
     const renderMethod = getSvgMustacheRenderMethod(_credential as VC);
     const selectedDisplayView = boostPreviewStore.useTracked.selectedDisplayView();
 
@@ -209,7 +215,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
         typeof credential?.issuer === 'string' ? credential.issuer : credential?.issuer?.id;
     const { data: knownDIDRegistry } = useKnownDIDRegistry(profileID);
 
-    const vcVerifications = useVerification(credential);
+    const vcVerifications = useVerification(credential, !sharedOriginal);
     const [isFront, setIsFront] = useState(true);
     const viewedCredentialIdRef = useRef<string | undefined>(undefined);
 
@@ -288,6 +294,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                 isClrChildCredential={isClrChildCredential}
                 renderMethodCredential={_credential as VC | UnsignedVC}
                 issuancesSummaryComponent={issuancesSummaryComponent}
+                hideEndorsementRequestCard={sharedOriginal}
                 isPreview={isPreview}
             />,
             {
@@ -370,7 +377,10 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     );
 
     return (
-        <IonPage>
+        <IonPage
+            className={sharedOriginal ? 'sentry-block ph-no-capture' : undefined}
+            data-html2canvas-ignore={sharedOriginal || undefined}
+        >
             <h1 className="sr-only">
                 {titleOverride ||
                     getCredentialName(credential) ||
@@ -425,6 +435,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                             isClrChildCredential={isClrChildCredential}
                             renderMethodCredential={_credential as VC | UnsignedVC}
                             issuancesSummaryComponent={issuancesSummaryComponent}
+                            hideEndorsementRequestCard={sharedOriginal}
                             isPreview={isPreview}
                         />
                     )}

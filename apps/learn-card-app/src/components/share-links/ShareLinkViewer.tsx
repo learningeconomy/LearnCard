@@ -1,3 +1,4 @@
+import { ShareCredentialsIllustration } from './ShareCredentialsIllustration';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { IonIcon, IonPage, IonHeader, IonToolbar, IonContent } from '@ionic/react';
@@ -294,6 +295,9 @@ const ShareLinkViewer = () => {
                         ) : (
                             <>
                                 <div ref={visible}>
+                                    <div className="mb-6">
+                                        <ShareCredentialsIllustration />
+                                    </div>
                                     <ShareLinkPreview
                                         payload={ready.payload}
                                         title={ready.metadata.title}
