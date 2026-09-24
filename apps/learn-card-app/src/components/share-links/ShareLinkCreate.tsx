@@ -3,6 +3,7 @@ import { ShareCredentialThumbnail } from './ShareCredentialThumbnail';
 import React, { useEffect, useRef, useState } from 'react';
 import { IonIcon } from '@ionic/react';
 import {
+    searchOutline,
     arrowBackOutline,
     arrowForwardOutline,
     checkmarkOutline,
@@ -57,6 +58,7 @@ const READ_CONCURRENCY = 4;
 
 export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
     const { initWallet } = useWallet();
+    const searchInput = useRef<HTMLInputElement>(null);
     const walletRef = useRef(initWallet);
     walletRef.current = initWallet;
     const [choices, setChoices] = useState<CredentialChoice[]>([]);
@@ -297,7 +299,7 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
     const filtered = choices.filter(choice =>
         credentialText(choice.credential)
             .name.toLocaleLowerCase()
-            .includes(search.toLocaleLowerCase())
+            .includes(search.trim().toLocaleLowerCase())
     );
     const fieldsLocked = publicationStarted || loading;
     const effectiveExpiry = prepared.current?.input.expiresAt ?? resolveExpiryIso(expiryChoice);
@@ -360,15 +362,47 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
                     )}
                     {step === 'choose' && (
                         <>
-                            <label className="block text-xs font-medium text-grayscale-700">
-                                {m['shareLinks.search']()}
-                                <input
-                                    className={`${inputClass} mt-2`}
-                                    value={search}
-                                    onChange={event => setSearch(event.target.value)}
-                                    type="search"
-                                />
-                            </label>
+                            <div>
+                                <label
+                                    htmlFor="share-credential-search"
+                                    className="block text-xs font-medium text-grayscale-700 mb-2"
+                                >
+                                    {m['shareLinks.search']()}
+                                </label>
+                                <div className="group flex items-center gap-3 rounded-xl border border-grayscale-300 bg-grayscale-10 px-3 transition-colors hover:border-grayscale-400 focus-within:border-emerald-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-emerald-500">
+                                    <IonIcon
+                                        aria-hidden="true"
+                                        icon={searchOutline}
+                                        className="h-5 w-5 shrink-0 text-grayscale-400 transition-colors group-focus-within:text-emerald-600"
+                                    />
+                                    <input
+                                        ref={searchInput}
+                                        id="share-credential-search"
+                                        className="w-full min-w-0 py-3 !border-0 !ring-0 !shadow-none !outline-none bg-transparent text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none [&::-webkit-search-cancel-button]:appearance-none"
+                                        placeholder={m['shareLinks.searchPlaceholder']()}
+                                        value={search}
+                                        onChange={event => setSearch(event.target.value)}
+                                        type="search"
+                                    />
+                                    {search && (
+                                        <button
+                                            type="button"
+                                            aria-label={m['shareLinks.clearSearch']()}
+                                            onClick={() => {
+                                                setSearch('');
+                                                searchInput.current?.focus();
+                                            }}
+                                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-grayscale-600 hover:bg-grayscale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                        >
+                                            <IonIcon
+                                                aria-hidden="true"
+                                                icon={closeOutline}
+                                                className="h-4 w-4"
+                                            />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
                             <div className="flex justify-between text-xs text-grayscale-600">
                                 <span>
                                     {m['shareLinks.selected']({ count: String(selected.length) })}
@@ -428,7 +462,9 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
                             </div>
                             {!filtered.length && !loading && (
                                 <p className="p-6 text-center text-sm text-grayscale-500">
-                                    {m['shareLinks.empty']()}
+                                    {search.trim()
+                                        ? m['shareLinks.noSearchResults']()
+                                        : m['shareLinks.empty']()}
                                 </p>
                             )}
                             {choices.some(choice => !choice.credential) && (
