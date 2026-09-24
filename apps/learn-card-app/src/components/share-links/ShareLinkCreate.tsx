@@ -1,3 +1,4 @@
+import { ShareCategoryFilter } from './ShareCategoryFilter';
 import './ShareLinkCreate.css';
 import { ShareSearchEmpty } from './ShareSearchEmpty';
 import { ShareCredentialsIllustration } from './ShareCredentialsIllustration';
@@ -6,7 +7,6 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { IonIcon } from '@ionic/react';
 import {
     searchOutline,
-    chevronDownOutline,
     arrowBackOutline,
     arrowForwardOutline,
     checkmarkOutline,
@@ -16,9 +16,8 @@ import {
 import type { VC } from '@learncard/types';
 import { QRCodeSVG } from 'qrcode.react';
 import { Clipboard } from '@capacitor/clipboard';
-import { useWallet, type CredentialCategoryEnum } from 'learn-card-base';
+import { useWallet } from 'learn-card-base';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
-import useTheme from '../../theme/hooks/useTheme';
 import { ShareCredentialMetadata } from './ShareCredentialMetadata';
 import { isShareLinkError } from 'learn-card-base/helpers/share-links';
 import { environment } from '../../config/environment';
@@ -68,7 +67,6 @@ const categoryOf = (choice: CredentialChoice) =>
 
 export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
     const { initWallet } = useWallet();
-    const { getThemedCategory } = useTheme();
     const [categoryFilter, setCategoryFilter] = useState('');
     const searchInput = useRef<HTMLInputElement>(null);
     const walletRef = useRef(initWallet);
@@ -488,36 +486,11 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
                                     )}
                                 </div>
                             </div>
-                            <div className="w-full sm:max-w-[240px]">
-                                <label
-                                    htmlFor="share-category-filter"
-                                    className="block mb-2 text-xs font-medium text-grayscale-700"
-                                >
-                                    {m['shareLinks.categoryFilter']()}
-                                </label>
-                                <div className="relative">
-                                    <select
-                                        id="share-category-filter"
-                                        value={categoryFilter}
-                                        onChange={event => setCategoryFilter(event.target.value)}
-                                        className={`w-full h-11 appearance-none bg-none rounded-xl border ps-3 pe-10 text-sm text-grayscale-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-colors ${categoryFilter ? 'border-emerald-500 bg-emerald-50' : 'border-grayscale-300 bg-white'}`}
-                                    >
-                                        <option value="">{m['shareLinks.allCategories']()}</option>
-                                        {categories.map(category => (
-                                            <option key={category} value={category}>
-                                                {getThemedCategory(
-                                                    category as CredentialCategoryEnum
-                                                )?.category?.labels.plural || category}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <IonIcon
-                                        aria-hidden="true"
-                                        icon={chevronDownOutline}
-                                        className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 h-4 w-4 text-grayscale-600"
-                                    />
-                                </div>
-                            </div>
+                            <ShareCategoryFilter
+                                value={categoryFilter}
+                                onChange={setCategoryFilter}
+                                categories={categories}
+                            />
                             <div className="flex justify-between text-xs text-grayscale-600">
                                 <span>
                                     {m['shareLinks.selected']({ count: String(selected.length) })}

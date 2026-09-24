@@ -1,3 +1,6 @@
+vi.mock('../../pages/wallet/activity-feed/activityFeed.helpers', () => ({
+    getActivityFilters: () => [],
+}));
 import React from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -45,6 +48,7 @@ vi.mock('@ionic/react', () => ({
 }));
 vi.mock('../../theme/hooks/useTheme', () => ({
     default: () => ({ getThemedCategory: () => ({ icons: {}, colors: {} }) }),
+    useTheme: () => ({ getThemedCategory: () => ({ icons: {}, colors: {} }) }),
 }));
 vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
     getDefaultCategoryForCredential: () => 'Achievement',
@@ -611,11 +615,14 @@ it('combines category and title filters while preserving selections', async () =
     await waitFor(() => expect(screen.getAllByRole('checkbox')).toHaveLength(2));
     await waitFor(() => expect(screen.getAllByRole('checkbox')[0]).toBeEnabled());
     fireEvent.click(screen.getAllByRole('checkbox')[0]);
-    fireEvent.change(screen.getByLabelText('Category'), { target: { value: 'Achievement' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Filter', exact: true }));
+    fireEvent.click(screen.getByRole('button', { name: 'Achievement', exact: true }));
+    fireEvent.click(screen.getByRole('button', { name: 'Apply Filter' }));
     expect(screen.getAllByRole('checkbox')).toHaveLength(1);
     expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled();
     fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'Badge' } });
     await waitFor(() => expect(screen.queryByRole('checkbox')).toBeNull());
-    fireEvent.change(screen.getByLabelText('Category'), { target: { value: '' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Achievement', exact: true }));
+    fireEvent.click(screen.getByRole('button', { name: 'Reset' }));
     expect(screen.getByRole('checkbox')).toBeChecked();
 });
