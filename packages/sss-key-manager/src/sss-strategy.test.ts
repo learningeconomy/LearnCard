@@ -1727,6 +1727,221 @@ describe('createSSSStrategy', () => {
     });
 
     describe('lost login identity recovery', () => {
+        const prepareRebind = async () => {
+            const privateKey = 'ab'.repeat(32);
+            const did = 'did:key:rebind-test';
+            const { shares } = await splitAndVerify(privateKey);
+            const storageId = 'sss-device-share:rebind-user';
+            const pendingId = `sss-pending-share:${storageId}`;
+            strategy.setActiveUser!('rebind-user');
+            await storage.storeDeviceShare(shares.deviceShare, storageId);
+            await storage.storeShareVersion(1, storageId);
+            let serverShare = shares.authShare;
+            let version = 1;
+            let outcome: 'lost' | 'rejected' | 'uncommitted' | 'success' = 'lost';
+            let rebindCalls = 0;
+            const postedShares: string[] = [];
+            const json = (data: unknown) => new Response(JSON.stringify(data), { status: 200 });
+            vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, init) => {
+                const path = new URL(String(url)).pathname;
+                if (path.endsWith('/recovery-session/recover')) {
+                    return json({
+                        authShare: { encryptedData: shares.authShare },
+                        primaryDid: did,
+                        rebindSessionToken: 'one-shot-token',
+                    });
+                }
+                if (path.endsWith('/keys/challenge')) return json({ challenge: 'challenge' });
+                if (path.endsWith('/keys/auth-share')) {
+                    expect(JSON.parse(String(init?.body)).authToken).toBe('new-sign-in');
+                    return json({
+                        authShare: { encryptedData: serverShare },
+                        shareVersion: version,
+                    });
+                }
+                if (path.endsWith('/recovery-session/rebind')) {
+                    rebindCalls++;
+                    const body = JSON.parse(String(init?.body));
+                    postedShares.push(body.authShare.encryptedData);
+                    if (outcome === 'rejected') {
+                        return new Response(JSON.stringify({ message: 'Rebind rejected' }), {
+                            status: 401,
+                        });
+                    }
+                    if (outcome === 'uncommitted') throw new TypeError('Reply lost');
+                    serverShare = body.authShare.encryptedData;
+                    version = 2;
+                    if (outcome === 'lost') throw new TypeError('Reply lost');
+                    return json({ shareVersion: version });
+                }
+                throw new Error(`Unexpected request: ${path}`);
+            });
+            await strategy.prepareIdentityRecovery!({
+                recoverySessionToken: 'session-token',
+                input: {
+                    method: 'email',
+                    emailShare: formatVersionedEmailShare(shares.emailShare, 1),
+                },
+                didFromPrivateKey: async key => (key === privateKey ? did : ''),
+            });
+            const params = {
+                token: 'new-sign-in',
+                providerType: 'firebase',
+                signDidAuthVp: async () => 'proof',
+            };
+            return {
+                privateKey,
+                did,
+                storageId,
+                pendingId,
+                params,
+                shares,
+                postedShares,
+                setOutcome: (value: typeof outcome) => {
+                    outcome = value;
+                },
+                getServerShare: () => serverShare,
+                getRebindCalls: () => rebindCalls,
+            };
+        };
+
+        it('reconciles a committed rebind on retry without a new split or another POST', async () => {
+            const fixture = await prepareRebind();
+            await expect(strategy.completeIdentityRecovery!(fixture.params)).rejects.toThrow(
+                'Reply lost'
+            );
+            const pending = await storage.getDeviceShare(fixture.pendingId);
+            expect(pending).toBeTruthy();
+            expect(await storage.getDeviceShare(fixture.storageId)).toBe(
+                fixture.shares.deviceShare
+            );
+            const writes = vi.mocked(storage.storeDeviceShare).mock.calls.length;
+            await expect(strategy.completeIdentityRecovery!(fixture.params)).resolves.toEqual({
+                privateKey: fixture.privateKey,
+                did: fixture.did,
+            });
+            expect(fixture.getRebindCalls()).toBe(1);
+            expect(vi.mocked(storage.storeDeviceShare).mock.calls.slice(writes)).toEqual([
+                [pending, fixture.storageId],
+            ]);
+            expect(
+                await reconstructFromShares([
+                    (await storage.getDeviceShare(fixture.storageId))!,
+                    fixture.getServerShare(),
+                ])
+            ).toBe(fixture.privateKey);
+            expect(await storage.getShareVersion(fixture.storageId)).toBe(2);
+            expect(await storage.getDeviceShare(fixture.pendingId)).toBeNull();
+            expect(strategy.hasPendingIdentityRecovery!()).toBe(false);
+        });
+
+        it('recovers a committed rebind after reload from the account-scoped pending entry', async () => {
+            const fixture = await prepareRebind();
+            await expect(strategy.completeIdentityRecovery!(fixture.params)).rejects.toThrow(
+                'Reply lost'
+            );
+            const reloaded = createSSSStrategy({ serverUrl: 'https://example.com', storage });
+            reloaded.setActiveUser!('rebind-user');
+            expect(reloaded.hasPendingIdentityRecovery!()).toBe(false);
+            await expect(
+                reloaded.reconcileShares!({
+                    ...fixture.params,
+                    expectedDid: fixture.did,
+                    didFromPrivateKey: async key => (key === fixture.privateKey ? fixture.did : ''),
+                })
+            ).resolves.toEqual({ privateKey: fixture.privateKey, did: fixture.did });
+            expect(
+                await reconstructFromShares([
+                    (await storage.getDeviceShare(fixture.storageId))!,
+                    fixture.getServerShare(),
+                ])
+            ).toBe(fixture.privateKey);
+            expect(await storage.getShareVersion(fixture.storageId)).toBe(2);
+            expect(await storage.getDeviceShare(fixture.pendingId)).toBeNull();
+            expect(fixture.getRebindCalls()).toBe(1);
+        });
+
+        it('surfaces a definitive rejection without destroying the matching active share', async () => {
+            const fixture = await prepareRebind();
+            fixture.setOutcome('rejected');
+            await expect(strategy.completeIdentityRecovery!(fixture.params)).rejects.toThrow(
+                'Rebind rejected'
+            );
+            expect(await storage.getDeviceShare(fixture.pendingId)).toBeNull();
+            expect(await storage.getShareVersion(fixture.storageId)).toBe(1);
+            expect(
+                await reconstructFromShares([
+                    (await storage.getDeviceShare(fixture.storageId))!,
+                    fixture.getServerShare(),
+                ])
+            ).toBe(fixture.privateKey);
+        });
+
+        it('retains the committed pending share when a stale retry read leads to rejection', async () => {
+            const fixture = await prepareRebind();
+            await expect(strategy.completeIdentityRecovery!(fixture.params)).rejects.toThrow(
+                'Reply lost'
+            );
+            const pending = await storage.getDeviceShare(fixture.pendingId);
+            vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+                new Response(
+                    JSON.stringify({
+                        authShare: { encryptedData: fixture.shares.authShare },
+                        shareVersion: 1,
+                    }),
+                    { status: 200 }
+                )
+            );
+            fixture.setOutcome('rejected');
+            await expect(strategy.completeIdentityRecovery!(fixture.params)).rejects.toThrow(
+                'Rebind rejected'
+            );
+            expect(await storage.getDeviceShare(fixture.pendingId)).toBe(pending);
+            await strategy.completeIdentityRecovery!(fixture.params);
+            expect(fixture.getRebindCalls()).toBe(2);
+            expect(
+                await reconstructFromShares([
+                    (await storage.getDeviceShare(fixture.storageId))!,
+                    fixture.getServerShare(),
+                ])
+            ).toBe(fixture.privateKey);
+        });
+
+        it('does not publish recovery success when cancelled during local promotion', async () => {
+            const fixture = await prepareRebind();
+            fixture.setOutcome('success');
+            vi.mocked(storage.storeShareVersion).mockImplementationOnce(async (version, id) => {
+                storage._versions.set(id ?? DEFAULT_KEY, version);
+                strategy.cancelIdentityRecovery!();
+            });
+            await expect(strategy.completeIdentityRecovery!(fixture.params)).rejects.toThrow(
+                'cancelled'
+            );
+            expect(
+                await reconstructFromShares([
+                    (await storage.getDeviceShare(fixture.storageId))!,
+                    fixture.getServerShare(),
+                ])
+            ).toBe(fixture.privateKey);
+        });
+
+        it('reuses the staged split when retrying an uncommitted request', async () => {
+            const fixture = await prepareRebind();
+            fixture.setOutcome('uncommitted');
+            await expect(strategy.completeIdentityRecovery!(fixture.params)).rejects.toThrow(
+                'Reply lost'
+            );
+            const pending = await storage.getDeviceShare(fixture.pendingId);
+            fixture.setOutcome('success');
+            await strategy.completeIdentityRecovery!(fixture.params);
+            expect(fixture.postedShares).toHaveLength(2);
+            expect(fixture.postedShares[0]).toBe(fixture.postedShares[1]);
+            expect(await storage.getDeviceShare(fixture.storageId)).toBe(pending);
+            expect(await reconstructFromShares([pending!, fixture.getServerShare()])).toBe(
+                fixture.privateKey
+            );
+        });
+
         it('rejects an invalid phrase before submitting the one-shot session token', async () => {
             const fetchSpy = vi.spyOn(globalThis, 'fetch');
 

@@ -191,6 +191,7 @@ const fetchAuthShareRaw = async (
     const response = await fetch(`${serverUrl}/keys/auth-share`, {
         method: 'POST',
         headers: buildHeaders(token, undefined, tenantId),
+        signal: requestTimeoutSignal(),
         body: JSON.stringify({
             authToken: token,
             providerType,
@@ -774,6 +775,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
               recoveryShare: string;
               authShare: string;
               rebindSessionToken: string;
+              rebind?: { shares: SSSShares; storageId: string | undefined; attempted: boolean };
           }
         | undefined;
 
@@ -2487,6 +2489,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
 
         async completeIdentityRecovery(params): Promise<RecoveryResult> {
             const storage = guardedStorage();
+            const generation = storageGeneration;
             const pending = pendingIdentityRecovery;
             const signDidAuthVp = params.signDidAuthVp;
 
@@ -2496,68 +2499,142 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             }
 
             const storageId = activeStorageId;
-            const didAuthVp = await requestFreshDidAuthVp(
-                serverUrl,
-                pending.privateKey,
-                pending.primaryDid,
-                signDidAuthVp,
-                tenantId
-            );
-            let shareVersion: number | undefined;
-            // No local rollback here. The rebind token is single-use and the server
-            // purges share history on commit, so a lost ack after a successful rebind
-            // would otherwise delete the only device share that pairs with the new
-            // auth share. Leaving the new share in place is safe: if the server really
-            // rejected, the stale-key check on next login clears it.
-            const result = await withRotationLock(() =>
-                atomicRecovery(pending.recoveryShare, pending.authShare, {
-                    storeDevice: share => storage.storeDeviceShare(share, storageId),
-                    storeAuth: async share => {
-                        const response = await postJson<{
-                            shareVersion: number;
-                            recoveryMethodsRequireConfirmation: string[];
-                        }>(
-                            `${serverUrl}/keys/recovery-session/rebind`,
-                            {
-                                recoverySessionToken: pending.rebindSessionToken,
-                                providerType: params.providerType,
-                                primaryDid: pending.primaryDid,
-                                authShare: { encryptedData: share, encryptedDek: '', iv: '' },
-                            },
-                            {
-                                ...buildHeaders('', didAuthVp, tenantId),
-                                'X-Auth-Token': params.token,
-                            }
+            const { shares, shareVersion } = await withShareUpdateLock(storage, storageId, () =>
+                withRotationLock(async () => {
+                    const assertActive = (): void => {
+                        if (
+                            activeStorageId !== storageId ||
+                            pendingIdentityRecovery !== pending ||
+                            storageGeneration !== generation
+                        ) {
+                            throw new Error('This recovery request was cancelled.');
+                        }
+                    };
+                    assertActive();
+                    const pendingId = pendingShareId(storageId);
+                    const stagedShare = await storage.getDeviceShare(pendingId);
+                    if (pending.rebind && pending.rebind.storageId !== storageId) {
+                        throw new Error('Active account changed during identity recovery');
+                    }
+                    if (stagedShare && stagedShare !== pending.rebind?.shares.deviceShare) {
+                        throw new Error(
+                            'Reconcile the pending share update before binding a sign-in'
                         );
+                    }
 
-                        shareVersion = response.shareVersion;
-                    },
+                    let shareVersion: number | undefined;
+                    const retry = pending.rebind?.attempted ?? false;
+                    if (retry && pending.rebind) {
+                        const current = await fetchAuthShareRaw(
+                            serverUrl,
+                            params.token,
+                            params.providerType,
+                            undefined,
+                            tenantId
+                        );
+                        const authShare = authShareToString(current?.authShare);
+                        // prepareIdentityRecovery already verified this key's DID.
+                        // Comparing the reconstructed key avoids trusting server DID metadata.
+                        if (authShare && current?.shareVersion != null) {
+                            const health = await verifyStoredShares(
+                                {
+                                    getDevice: async () => pending.rebind!.shares.deviceShare,
+                                    getAuth: async () => authShare,
+                                },
+                                pending.primaryDid,
+                                async key => (key === pending.privateKey ? pending.primaryDid : '')
+                            );
+                            if (health.healthy) shareVersion = current.shareVersion;
+                        }
+                    }
+
+                    assertActive();
+                    if (shareVersion === undefined) {
+                        const didAuthVp = await requestFreshDidAuthVp(
+                            serverUrl,
+                            pending.privateKey,
+                            pending.primaryDid,
+                            signDidAuthVp,
+                            tenantId
+                        );
+                        assertActive();
+                        pending.rebind ??= {
+                            shares: (await splitAndVerify(pending.privateKey)).shares,
+                            storageId,
+                            attempted: false,
+                        };
+                        const rebind = pending.rebind;
+                        await storage.storeDeviceShare(rebind.shares.deviceShare, pendingId);
+                        assertActive();
+                        rebind.attempted = true;
+                        try {
+                            const response = await postJson<{
+                                shareVersion: number;
+                                recoveryMethodsRequireConfirmation: string[];
+                            }>(
+                                `${serverUrl}/keys/recovery-session/rebind`,
+                                {
+                                    recoverySessionToken: pending.rebindSessionToken,
+                                    providerType: params.providerType,
+                                    primaryDid: pending.primaryDid,
+                                    authShare: {
+                                        encryptedData: rebind.shares.authShare,
+                                        encryptedDek: '',
+                                        iv: '',
+                                    },
+                                },
+                                {
+                                    ...buildHeaders('', didAuthVp, tenantId),
+                                    'X-Auth-Token': params.token,
+                                }
+                            );
+
+                            shareVersion = response.shareVersion;
+                        } catch (error) {
+                            // A retry's rejection does not disprove an earlier commit
+                            // (the first request may still have been in flight at the read).
+                            if (error instanceof ShareWriteRejectedError && !retry) {
+                                await storage.clearAllShares(pendingId);
+                                pending.rebind = undefined;
+                            }
+                            throw error;
+                        }
+                    }
+                    if (shareVersion === undefined || !pending.rebind) {
+                        throw new Error('Server did not confirm the new share');
+                    }
+                    assertActive();
+                    const shares = pending.rebind.shares;
+                    await storage.storeDeviceShare(shares.deviceShare, storageId);
+                    await storage.storeShareVersion(shareVersion, storageId);
+                    await storage.clearAllShares(pendingId);
+                    assertActive();
+                    lastEmailShare = shares.emailShare;
+                    lastShareVersion = shareVersion;
+                    lastServerSnapshot = {
+                        currentVersion: shareVersion,
+                        resolvedVersion: shareVersion,
+                        authShare: shares.authShare,
+                        primaryDid: pending.primaryDid,
+                    };
+                    pendingIdentityRecovery = undefined;
+                    return { shares, shareVersion };
                 })
             );
-
-            if (shareVersion === undefined) throw new Error('Server did not confirm the new share');
-
-            await storage.storeShareVersion(shareVersion, storageId);
-            lastEmailShare = result.newShares.emailShare;
-            lastShareVersion = shareVersion;
-            lastServerSnapshot = {
-                currentVersion: shareVersion,
-                resolvedVersion: shareVersion,
-                authShare: result.newShares.authShare,
-                primaryDid: pending.primaryDid,
-            };
-            pendingIdentityRecovery = undefined;
 
             await tryEnrollEscrow(
                 params.token,
                 params.providerType,
-                result.privateKey,
+                pending.privateKey,
                 pending.primaryDid,
-                result.newShares,
+                shares,
                 shareVersion,
                 signDidAuthVp
             );
-            return { privateKey: result.privateKey, did: pending.primaryDid };
+            if (activeStorageId !== storageId || storageGeneration !== generation) {
+                throw new Error('This recovery request was cancelled.');
+            }
+            return { privateKey: pending.privateKey, did: pending.primaryDid };
         },
 
         // --- Contact method management ---
