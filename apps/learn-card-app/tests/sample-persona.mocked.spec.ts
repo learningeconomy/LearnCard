@@ -184,7 +184,6 @@ test.describe('Sample persona @mocked', () => {
         });
 
         await page.getByRole('button', { name: /Build My LearnCard/ }).click();
-        const builderDialog = page.getByRole('dialog', { name: 'Build My LearnCard' });
         const sampleCard = page.getByRole('region', { name: 'See an example LearnCard' });
         const addButton = sampleCard.getByRole('button', { name: 'See an example LearnCard' });
         await expect(addButton).toBeVisible({ timeout: 30_000 });
@@ -195,8 +194,10 @@ test.describe('Sample persona @mocked', () => {
         });
         await expect(removeButton).toBeVisible({ timeout: 30_000 });
 
-        await builderDialog.getByRole('button', { name: 'Close', exact: true }).click();
-        await expect(builderDialog).toBeHidden();
+        await page.reload();
+        await expect(page.getByRole('button', { name: /Build My LearnCard/ })).toBeVisible({
+            timeout: 30_000,
+        });
         await page.getByRole('button', { name: /Build My LearnCard/ }).click();
         await expect(page.getByRole('heading', { name: 'Sample LearnCard' })).toBeVisible({
             timeout: 30_000,
