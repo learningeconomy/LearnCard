@@ -99,6 +99,9 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
         showDeviceLinkModal,
         authProvider: contextAuthProvider,
         refreshAuthSession,
+        runRecoverySetup,
+        resetRecoverySetup,
+        needsActivation,
     } = useAppAuth();
 
     const description = user?.bio ?? user?.shortBio;
@@ -399,6 +402,8 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                                   return jwt;
                               };
 
+                              if (input.method !== 'passkey') resetRecoverySetup(input.method);
+
                               return keyDerivation.setupRecoveryMethod!({
                                   token,
                                   providerType,
@@ -435,13 +440,15 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                                   return jwt;
                               };
 
-                              await keyDerivation.confirmRecoveryMethod!({
-                                  token,
-                                  providerType,
-                                  privateKey: currentUser.privateKey!,
-                                  input,
-                                  signDidAuthVp: signVp,
-                              });
+                              await runRecoverySetup(input.method, () =>
+                                  keyDerivation.confirmRecoveryMethod!({
+                                      token,
+                                      providerType,
+                                      privateKey: currentUser.privateKey!,
+                                      input,
+                                      signDidAuthVp: signVp,
+                                  })
+                              );
                           }
                         : null;
 
@@ -503,14 +510,15 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                                         : String(m.createdAt),
                             }))}
                             maskedRecoveryEmail={fetchedMaskedRecoveryEmail}
+                            isActivationPending={needsActivation}
+                            onCompleted={closeModal}
                             onSetupPasskey={
                                 setupMethod
                                     ? async () => {
                                           const authUser =
                                               await contextAuthProvider.getCurrentUser();
-                                          const result = await setupMethod(
-                                              { method: 'passkey' },
-                                              authUser
+                                          const result = await runRecoverySetup('passkey', () =>
+                                              setupMethod({ method: 'passkey' }, authUser)
                                           );
                                           return result?.method === 'passkey'
                                               ? result.credentialId
