@@ -6,6 +6,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { IonIcon } from '@ionic/react';
 import {
     searchOutline,
+    chevronDownOutline,
     arrowBackOutline,
     arrowForwardOutline,
     checkmarkOutline,
@@ -487,27 +488,35 @@ export const ShareLinkCreate = ({ onDismiss }: { onDismiss: () => void }) => {
                                     )}
                                 </div>
                             </div>
-                            <div className="flex items-center gap-3">
+                            <div className="w-full sm:max-w-[240px]">
                                 <label
                                     htmlFor="share-category-filter"
-                                    className="text-xs font-medium text-grayscale-700 shrink-0"
+                                    className="block mb-2 text-xs font-medium text-grayscale-700"
                                 >
                                     {m['shareLinks.categoryFilter']()}
                                 </label>
-                                <select
-                                    id="share-category-filter"
-                                    value={categoryFilter}
-                                    onChange={event => setCategoryFilter(event.target.value)}
-                                    className={`min-w-0 max-w-full rounded-[20px] border px-4 py-2.5 text-sm text-grayscale-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-colors ${categoryFilter ? 'border-emerald-500 bg-emerald-50' : 'border-grayscale-300 bg-white'}`}
-                                >
-                                    <option value="">{m['shareLinks.allCategories']()}</option>
-                                    {categories.map(category => (
-                                        <option key={category} value={category}>
-                                            {getThemedCategory(category as CredentialCategoryEnum)
-                                                ?.category?.labels.plural || category}
-                                        </option>
-                                    ))}
-                                </select>
+                                <div className="relative">
+                                    <select
+                                        id="share-category-filter"
+                                        value={categoryFilter}
+                                        onChange={event => setCategoryFilter(event.target.value)}
+                                        className={`w-full h-11 appearance-none bg-none rounded-xl border ps-3 pe-10 text-sm text-grayscale-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-colors ${categoryFilter ? 'border-emerald-500 bg-emerald-50' : 'border-grayscale-300 bg-white'}`}
+                                    >
+                                        <option value="">{m['shareLinks.allCategories']()}</option>
+                                        {categories.map(category => (
+                                            <option key={category} value={category}>
+                                                {getThemedCategory(
+                                                    category as CredentialCategoryEnum
+                                                )?.category?.labels.plural || category}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <IonIcon
+                                        aria-hidden="true"
+                                        icon={chevronDownOutline}
+                                        className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 h-4 w-4 text-grayscale-600"
+                                    />
+                                </div>
                             </div>
                             <div className="flex justify-between text-xs text-grayscale-600">
                                 <span>
