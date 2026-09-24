@@ -9051,6 +9051,7 @@
         "preparingPdf": "جارٍ إعداد PDF…",
         "downloadQrPdf": "تنزيل رمز QR بصيغة PDF",
         "downloadPdf": "تنزيل PDF",
+        "showQr": "عرض رمز QR",
         "sharedCount": "بيانات الاعتماد المشتركة: {{count}}",
         "limit": "حتى 50",
         "credential": "بيان اعتماد",

@@ -8962,6 +8962,7 @@
         "preparingPdf": "Preparando PDF…",
         "downloadQrPdf": "Descargar código QR en PDF",
         "downloadPdf": "Descargar PDF",
+        "showQr": "Mostrar código QR",
         "sharedCount": "{{count}} credenciales compartidas",
         "limit": "Hasta 50",
         "credential": "Credencial",

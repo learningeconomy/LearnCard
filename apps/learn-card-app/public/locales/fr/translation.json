@@ -8962,6 +8962,7 @@
         "preparingPdf": "Préparation du PDF…",
         "downloadQrPdf": "Télécharger le code QR en PDF",
         "downloadPdf": "Télécharger le PDF",
+        "showQr": "Afficher le code QR",
         "sharedCount": "{{count}} justificatifs partagés",
         "limit": "Jusqu’à 50",
         "credential": "Justificatif",

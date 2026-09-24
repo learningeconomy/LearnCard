@@ -1,3 +1,5 @@
+import { QRCodeSVG } from 'qrcode.react';
+import { useModal, ModalTypes } from 'learn-card-base';
 import LearnCardBrandMark from '../../assets/images/lca-brandmark.png';
 import LearnCardTextLogo from '../svgs/LearnCardTextLogo';
 import { ShareCredentialsIllustration } from './ShareCredentialsIllustration';
@@ -9,6 +11,7 @@ import {
     copyOutline,
     documentTextOutline,
     downloadOutline,
+    qrCodeOutline,
     lockClosedOutline,
 } from 'ionicons/icons';
 import { Clipboard } from '@capacitor/clipboard';
@@ -53,6 +56,10 @@ const ShareLinkViewer = () => {
     const [proofs, setProofs] = useState<ProofState[]>([]);
     const [holder, setHolder] = useState<ProofState>('checking');
     const [link, setLink] = useState('');
+    const { newModal, closeModal } = useModal({
+        desktop: ModalTypes.Center,
+        mobile: ModalTypes.Center,
+    });
     const [copyState, setCopyState] = useState<'idle' | 'copying' | 'copied'>('idle');
     const [downloading, setDownloading] = useState(false);
     const [pdfDownloading, setPdfDownloading] = useState(false);
@@ -387,6 +394,53 @@ const ShareLinkViewer = () => {
                                                             {downloading
                                                                 ? m['shareLinks.downloading']()
                                                                 : m['shareLinks.download']()}
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            className={secondaryButton}
+                                                            disabled={!link}
+                                                            onClick={() =>
+                                                                newModal(
+                                                                    <div
+                                                                        className="sentry-block ph-no-capture bg-white p-6 font-poppins text-grayscale-900 text-center space-y-5"
+                                                                        data-html2canvas-ignore
+                                                                    >
+                                                                        <h2 className="text-xl font-semibold break-words">
+                                                                            {ready.metadata.title}
+                                                                        </h2>
+                                                                        <QRCodeSVG
+                                                                            value={link}
+                                                                            size={256}
+                                                                            level="M"
+                                                                            includeMargin
+                                                                            bgColor="#FFFFFF"
+                                                                            fgColor="#18224E"
+                                                                            role="img"
+                                                                            aria-label={m[
+                                                                                'shareLinks.qrLabel'
+                                                                            ]()}
+                                                                            className="mx-auto h-auto max-w-full"
+                                                                        />
+                                                                        <p className="text-sm text-grayscale-600">
+                                                                            {m[
+                                                                                'shareLinks.qrHint'
+                                                                            ]()}
+                                                                        </p>
+                                                                        <button
+                                                                            type="button"
+                                                                            className="rounded-[20px] !bg-grayscale-900 !text-white px-5 py-3 text-sm font-medium"
+                                                                            onClick={closeModal}
+                                                                        >
+                                                                            {m[
+                                                                                'shareLinks.close'
+                                                                            ]()}
+                                                                        </button>
+                                                                    </div>
+                                                                )
+                                                            }
+                                                        >
+                                                            <IonIcon icon={qrCodeOutline} />
+                                                            {m['shareLinks.showQr']()}
                                                         </button>
                                                         <button
                                                             type="button"
