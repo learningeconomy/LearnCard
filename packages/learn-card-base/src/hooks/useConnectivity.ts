@@ -24,7 +24,7 @@ export const useIsSlowOrUnstable = (): boolean => {
 };
 
 /**
- * Run `callback` once each time connectivity transitions offline → online.
+ * Run `callback` once each time connectivity transitions offline → permissive (unknown/online).
  * For imperative systems that don't self-heal on reconnect (e.g. re-registering
  * push, refreshing feature flags). Data fetched through React Query recovers on
  * its own via the onlineManager bridge and does NOT need this.
@@ -39,7 +39,7 @@ export const useOnReconnect = (callback: () => void): void => {
     const prevStatus = useRef<ConnectivityStatus>(status);
 
     useEffect(() => {
-        if (prevStatus.current === 'offline' && status === 'online') cbRef.current();
+        if (prevStatus.current === 'offline' && status !== 'offline') cbRef.current();
         prevStatus.current = status;
     }, [status]);
 };

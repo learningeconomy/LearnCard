@@ -14,7 +14,8 @@
  *  - Offline retry backoff: 5s, 10s, 20s, 40s, then capped at 60s. Automatic
  *    retries pause while backgrounded; foreground resume checks immediately,
  *    then backoff resumes. There is NO idle online polling: a verified
- *    `reachable` clears every timer.
+ *    `reachable` clears network retry timers (quality expiry is local).
+ *    Inconclusive results stop after three attempts until an external trigger.
  *  - Generations supersede stale work: a late probe result can never override
  *    a newer hint, a stop, or a resume.
  *  - `connectionQuality` — advisory slow/unstable evidence. Quality never
@@ -118,10 +119,12 @@ export const createConnectivityMonitor = (
     /** Incremented whenever all outstanding probe results become stale. */
     let generation = 0;
     /** The cycle currently allowed to apply its result, if any. */
-    let activeCycle: { generation: number } | null = null;
+    let activeCycle: { generation: number; id: number } | null = null;
     let coalesceRequested = false;
     let retryTimer: unknown = null;
     let backoffIndex = 0;
+    let inconclusiveCount = 0;
+    let cycleCount = 0;
 
     /**
      * The ONE local quality-expiry timer. Quality evidence ages out inside the
@@ -137,9 +140,9 @@ export const createConnectivityMonitor = (
         reason: null,
     };
 
-    /** Bumped each time an outcome is applied; `check()` waiters key off it. */
-    let appliedOutcomeCount = 0;
-    type CheckWaiter = { seenOutcomes: number; resolve: (status: ConnectivityStatus) => void };
+    /** Wait for a cycle started after the caller requested verification. */
+    let appliedCycleId = 0;
+    type CheckWaiter = { afterCycleId: number; resolve: (status: ConnectivityStatus) => void };
     let checkWaiters: CheckWaiter[] = [];
 
     const listeners = new Set<(snapshot: ConnectivitySnapshot) => void>();
@@ -170,7 +173,7 @@ export const createConnectivityMonitor = (
         if (checkWaiters.length === 0) return;
         const remaining: CheckWaiter[] = [];
         for (const waiter of checkWaiters) {
-            if (appliedOutcomeCount > waiter.seenOutcomes || !running) waiter.resolve(status);
+            if (appliedCycleId > waiter.afterCycleId || !running) waiter.resolve(status);
             else remaining.push(waiter);
         }
         checkWaiters = remaining;
@@ -236,6 +239,8 @@ export const createConnectivityMonitor = (
     const applyOutcome = (outcome: ProbeOutcome): void => {
         switch (outcome.kind) {
             case 'reachable':
+                if (status === 'offline') quality.reset();
+                inconclusiveCount = 0;
                 backoffIndex = 0;
                 clearRetryTimer();
                 status = 'online';
@@ -249,6 +254,7 @@ export const createConnectivityMonitor = (
                 });
                 break;
             case 'unreachable':
+                inconclusiveCount = 0;
                 status = 'offline';
                 lastDiagnosticReason = `unreachable: ${outcome.reason}`;
                 quality.reportSample({ at: now(), ok: false, source: 'probe' });
@@ -257,17 +263,19 @@ export const createConnectivityMonitor = (
             case 'inconclusive':
                 // Something answered or the config is wrong — never claim
                 // offline. Drop to permissive `unknown`, keep the reason, and
-                // retry on the capped backoff (bounded, no storm).
+                // retry at most twice, then wait for an external trigger.
+                if (status === 'offline') quality.reset();
                 status = 'unknown';
                 lastDiagnosticReason = `inconclusive: ${outcome.reason}${
                     outcome.detail ? ` (${outcome.detail})` : ''
                 }`;
-                scheduleRetry();
+                inconclusiveCount += 1;
+                if (inconclusiveCount < 3) scheduleRetry();
+                else clearRetryTimer();
                 break;
             default:
                 break;
         }
-        appliedOutcomeCount += 1;
     };
 
     const startCycle = (): void => {
@@ -283,7 +291,7 @@ export const createConnectivityMonitor = (
         // rescheduled by the outcome itself.
         clearRetryTimer();
 
-        const cycle = { generation };
+        const cycle = { generation, id: ++cycleCount };
         activeCycle = cycle;
         lastCheckAt = now();
         emit();
@@ -323,6 +331,7 @@ export const createConnectivityMonitor = (
 
             activeCycle = null;
             applyOutcome(outcome);
+            appliedCycleId = cycle.id;
             emit();
             settleChecks();
             armQualityExpiryTimer();
@@ -339,6 +348,7 @@ export const createConnectivityMonitor = (
             if (running) return;
             running = true;
             generation += 1; // anything in flight from a previous run is stale
+            inconclusiveCount = 0;
             backoffIndex = 0; // a fresh lifecycle starts a fresh retry schedule
             clearRetryTimer();
             emit(); // lazy quality expiry materializes here on restart
@@ -363,12 +373,14 @@ export const createConnectivityMonitor = (
             // the background, and resume re-verifies immediately anyway.
             if (!running || !foreground) return;
 
+            inconclusiveCount = 0;
             if (connected) {
                 // Positive hint: restore service optimistically (native
                 // Wi-Fi-without-WAN must not stay locked out), cancel stale
                 // work, and verify exactly once asynchronously.
                 generation += 1;
                 clearRetryTimer();
+                if (status === 'offline') quality.reset();
                 status = 'online';
                 lastOnlineAt = now();
                 emit();
@@ -392,12 +404,13 @@ export const createConnectivityMonitor = (
         check: () => {
             if (!running || !foreground) return Promise.resolve(status);
             const waiter: CheckWaiter = {
-                seenOutcomes: appliedOutcomeCount,
+                afterCycleId: cycleCount,
                 resolve: () => undefined,
             };
             const promise = new Promise<ConnectivityStatus>(resolve => {
                 waiter.resolve = resolve;
             });
+            inconclusiveCount = 0;
             checkWaiters.push(waiter);
             startCycle();
             return promise;
@@ -422,6 +435,7 @@ export const createConnectivityMonitor = (
                 return;
             }
             if (running) {
+                inconclusiveCount = 0;
                 // Foreground: check immediately, then backoff resumes for
                 // subsequent failures. Evidence that expired while
                 // backgrounded materializes in the emit below.
@@ -434,8 +448,13 @@ export const createConnectivityMonitor = (
         },
 
         reportSample: sample => {
-            quality.reportSample({ source: 'observed', ...sample });
-            emit();
+            const current = quality.reportSample({ source: 'observed', ...sample });
+            if (
+                current.quality !== publishedQuality.quality ||
+                current.reason !== publishedQuality.reason
+            ) {
+                emit();
+            }
             armQualityExpiryTimer();
         },
 

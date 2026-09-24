@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
     CONNECTIVITY_PROBE_MARKER,
@@ -159,7 +159,7 @@ describe('probeConnectivity', () => {
                     method: 'GET',
                     cache: 'no-store',
                     credentials: 'omit',
-                    redirect: 'error',
+                    redirect: 'manual',
                 });
                 expect(init?.signal).toBeDefined();
                 return recordingFetch(input, init);
@@ -314,5 +314,52 @@ describe('probeConnectivity', () => {
         });
 
         expect(outcome.kind === 'reachable' && outcome.durationMs).toBe(123);
+    });
+});
+
+describe('redirects and deadline fallback', () => {
+    it.each([
+        { type: 'opaqueredirect', status: 0, ok: false },
+        { type: 'basic', status: 302, ok: false },
+    ])('keeps redirects inconclusive: $type', async response => {
+        const result = await probeConnectivity('https://learncard.app/connectivity.txt', {
+            fetchFn: vi.fn().mockResolvedValue(response),
+        });
+        expect(result).toMatchObject({ kind: 'inconclusive', reason: 'http-error' });
+    });
+
+    it('can verify without AbortController', async () => {
+        const response = new Response(CONNECTIVITY_PROBE_MARKER);
+        vi.stubGlobal('AbortController', undefined);
+        try {
+            const result = await probeConnectivity('https://learncard.app/connectivity.txt', {
+                fetchFn: vi.fn().mockResolvedValue(response),
+            });
+            expect(result.kind).toBe('reachable');
+        } finally {
+            vi.unstubAllGlobals();
+        }
+    });
+
+    it.each(['fetch', 'body'])('enforces the %s deadline without AbortController', async phase => {
+        const response = { ok: true, status: 200, text: () => new Promise(() => undefined) };
+        vi.stubGlobal('AbortController', undefined);
+        try {
+            const timers = createFakeTimers();
+            const pending = probeConnectivity('https://learncard.app/connectivity.txt', {
+                ...timers,
+                fetchFn: vi.fn(() =>
+                    phase === 'fetch' ? new Promise(() => undefined) : Promise.resolve(response)
+                ) as typeof fetch,
+            });
+            await flush();
+            timers.advance(CONNECTIVITY_PROBE_TIMEOUT_MS + 1);
+            await expect(pending).resolves.toMatchObject({
+                kind: 'unreachable',
+                reason: 'timeout',
+            });
+        } finally {
+            vi.unstubAllGlobals();
+        }
     });
 });

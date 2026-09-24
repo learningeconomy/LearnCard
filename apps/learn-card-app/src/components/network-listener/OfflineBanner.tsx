@@ -55,10 +55,9 @@ export const OfflineBanner: React.FC = () => {
         try {
             // Coalesced verification through the monitor — not Network.getStatus.
             const result = await requestConnectivityCheck();
-            // Only a VERIFIED-reachable result may trigger the networked-wallet
-            // rebuild; inconclusive results keep the fallback instead of
-            // spinning doomed rebuilds.
-            if (result === 'online') walletModeStore.set.requestUpgrade();
+            // Unknown stays permissive: marker misconfiguration must not block
+            // a user-requested attempt to restore the networked account.
+            if (result !== 'offline') walletModeStore.set.requestUpgrade();
         } finally {
             setTimeout(() => setReconnecting(false), 800);
         }

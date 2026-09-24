@@ -84,7 +84,7 @@ describe('OfflineBanner', () => {
         expect(screen.queryByRole('status')).not.toBeInTheDocument();
     });
 
-    it('manual retry funnels through the singleton check, guards double taps, and upgrades the wallet only on a verified-online result', async () => {
+    it('manual retry funnels through the singleton check, guards double taps, and upgrades the wallet on a verified-online result', async () => {
         vi.useFakeTimers();
         const pending = deferred<'online' | 'unknown' | 'offline'>();
         requestConnectivityCheck.mockReturnValueOnce(pending.promise);
@@ -115,11 +115,11 @@ describe('OfflineBanner', () => {
         expect(screen.queryByText('Back online')).not.toBeInTheDocument();
     });
 
-    it('an inconclusive retry result does NOT trigger the wallet upgrade', async () => {
+    it('an inconclusive retry still requests recovery for a limited account', async () => {
         vi.useFakeTimers();
         const pending = deferred<'online' | 'unknown' | 'offline'>();
         requestConnectivityCheck.mockReturnValueOnce(pending.promise);
-        setStores('offline', 'good', 'full');
+        setStores('unknown', 'good', 'offline');
         render(<OfflineBanner />);
 
         fireEvent.click(screen.getByRole('button'));
@@ -128,13 +128,13 @@ describe('OfflineBanner', () => {
             await vi.advanceTimersByTimeAsync(0);
         });
 
-        expect(walletModeStore.get.upgradeNonce()).toBe(0); // no rebuild on a guess
+        expect(walletModeStore.get.upgradeNonce()).toBeGreaterThan(0);
         expect(screen.getByText('Reconnecting…')).toBeInTheDocument(); // still limited
 
         await act(async () => {
             await vi.advanceTimersByTimeAsync(800); // reconnecting reset timer
         });
-        expect(screen.getByText("You're offline")).toBeInTheDocument();
+        expect(screen.getByText('Some features are unavailable')).toBeInTheDocument();
     });
 
     it('local-wallet fallback with a reachable network says features are unavailable — never that the internet is down', () => {

@@ -26,7 +26,7 @@
  * policy) lives in learn-card-base and is UI/framework-free.
  */
 
-import { Capacitor, type PluginListenerHandle } from '@capacitor/core';
+import { Capacitor } from '@capacitor/core';
 import { Network } from '@capacitor/network';
 import type { ConnectionStatus } from '@capacitor/network';
 import { App } from '@capacitor/app';
@@ -125,7 +125,6 @@ export interface RemovableHandle {
 
 export interface AppConnectivityAdapterDeps {
     monitor: MonitorFacade;
-    isNative: () => boolean;
     /** Register the transport hint listener. MUST be called before the snapshot. */
     addNetworkStatusListener: (handler: (connected: boolean) => void) => Promise<RemovableHandle>;
     /** The one-shot initial snapshot (`Network.getStatus`). */
@@ -318,7 +317,6 @@ export const getAppConnectivityMonitor = (): ConnectivityMonitor => {
 
 const buildAppConnectivityDeps = (monitor: ConnectivityMonitor): AppConnectivityAdapterDeps => ({
     monitor,
-    isNative: () => Capacitor.isNativePlatform(),
     addNetworkStatusListener: handler =>
         Network.addListener('networkStatusChange', (status: ConnectionStatus) => {
             handler(status.connected);

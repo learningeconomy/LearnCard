@@ -1411,3 +1411,10 @@ Field names are matched **case-insensitively as substrings**, so variants are ca
 ### ESLint
 
 `no-console: 'warn'` is enabled for `apps/learn-card-app/src/**` and `apps/scouts/src/**` via the root `.eslintrc.js` overrides block. Remaining call sites surface as warnings until migrated.
+
+## Connectivity monitor (LC-2182)
+
+- `packages/learn-card-base/src/connectivity/` owns reachability and advisory quality; the app adapter in `apps/learn-card-app/src/components/network-listener/connectivity.ts` owns platform lifecycle wiring. Never gate authentication or queries on quality; only confirmed `offline` blocks network behavior. `unknown` stays permissive, including manual account recovery.
+- Native probes target the remote HTTPS tenant domain, never the bundled WebView origin. Before native release, deploy `/connectivity.txt` with the exact marker `learncard-connectivity-v1`, `Cache-Control: no-store`, and `Access-Control-Allow-Origin: *` to every tenant host. Verify the asset from a native origin; fetch cannot distinguish missing CORS headers from network loss. Redirects/HTTP errors/wrong content remain inconclusive.
+- Offline probes retry with capped backoff. Inconclusive results stop after three attempts until a hint, focus/resume, or manual check. Verified online has no periodic network polling; a local timer expires quality evidence. Background pauses checks and recovery clears offline-era quality evidence.
+- Quality measures total request latency, including server work; it is advisory, not a bandwidth measurement. The observer supports path exclusions; add exclusions only for known long-running endpoints with product evidence rather than treating server time as proven network slowness.

@@ -15,10 +15,9 @@
  *  - Only a transport-level failure (network error or the deadline elapsing,
  *    including during the body read) may be treated as `unreachable`.
  *
- * Captive-portal caveat: because the request uses `redirect: 'error'`, a
- * captive portal redirect surfaces as a fetch TypeError — indistinguishable
- * from DNS/connectivity failure — and is classified conservatively as
- * `unreachable` rather than `inconclusive`.
+ * Redirects (including captive portals) are inconclusive. Cross-origin tenant
+ * hosting MUST provide Access-Control-Allow-Origin: *: fetch cannot distinguish
+ * a missing CORS header from a network failure, which can otherwise set offline.
  *
  * Pure module: `fetch`, timers and randomness are injectable; no browser or
  * native globals are touched at import time.
@@ -151,20 +150,14 @@ const createAbortError = (): Error => {
 
 /**
  * Read at most `maxBytes` of the response body, racing against the deadline
- * signal so a stalled body read is classified as a timeout rather than
+ * promise so a stalled body read is classified as a timeout rather than
  * hanging forever.
  */
 const readBoundedBody = async (
     response: Response,
-    signal: AbortSignal,
+    deadline: Promise<never>,
     maxBytes: number
 ): Promise<string> => {
-    const abortPromise = new Promise<never>((_, reject) => {
-        const onAbort = () => reject(createAbortError());
-        if (signal.aborted) onAbort();
-        else signal.addEventListener('abort', onAbort, { once: true });
-    });
-
     const body = response.body;
     if (body && typeof body.getReader === 'function') {
         const reader = body.getReader();
@@ -172,7 +165,7 @@ const readBoundedBody = async (
         let received = 0;
         const chunks: Uint8Array[] = [];
         while (received < maxBytes) {
-            const { done, value } = await Promise.race([reader.read(), abortPromise]);
+            const { done, value } = await Promise.race([reader.read(), deadline]);
             if (done) break;
             chunks.push(value);
             received += value.byteLength;
@@ -185,7 +178,7 @@ const readBoundedBody = async (
     }
 
     // Fallback for environments without a byte stream — still deadline-bound.
-    const text: string = await Promise.race([response.text(), abortPromise]);
+    const text: string = await Promise.race([response.text(), deadline]);
     return text.slice(0, maxBytes);
 };
 
@@ -236,20 +229,30 @@ export const probeConnectivity = async (
 
     const controller = typeof AbortController === 'function' ? new AbortController() : undefined;
     const signal = controller?.signal;
-    const handle = setTimeoutFn(() => controller?.abort(), timeoutMs);
+    let rejectDeadline!: (error: Error) => void;
+    const deadline = new Promise<never>((_, reject) => {
+        rejectDeadline = reject;
+    });
+    const handle = setTimeoutFn(() => {
+        rejectDeadline(createAbortError());
+        controller?.abort();
+    }, timeoutMs);
 
     const requestUrl = withCacheBust(validation.url.toString(), randomId());
 
     try {
-        const response = await fetchFn(requestUrl, {
-            method: 'GET',
-            cache: 'no-store',
-            credentials: 'omit',
-            redirect: 'error',
-            ...(signal ? { signal } : {}),
-        });
+        const response = await Promise.race([
+            fetchFn(requestUrl, {
+                method: 'GET',
+                cache: 'no-store',
+                credentials: 'omit',
+                redirect: 'manual',
+                ...(signal ? { signal } : {}),
+            }),
+            deadline,
+        ]);
 
-        if (!response.ok) {
+        if (response.type === 'opaqueredirect' || !response.ok) {
             // The internet works (something answered), but the endpoint is
             // wrong/misconfigured — never treat as offline.
             return {
@@ -260,7 +263,7 @@ export const probeConnectivity = async (
             };
         }
 
-        const text = await readBoundedBody(response, signal as AbortSignal, maxBytes);
+        const text = await readBoundedBody(response, deadline, maxBytes);
 
         if (signal?.aborted) {
             return { kind: 'unreachable', reason: 'timeout', durationMs: duration() };

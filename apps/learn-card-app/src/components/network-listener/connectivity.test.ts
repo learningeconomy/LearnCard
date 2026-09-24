@@ -100,7 +100,7 @@ const makeDeps = (
     overrides: Partial<AppConnectivityAdapterDeps> = {}
 ): AppConnectivityAdapterDeps => ({
     monitor: makeFakeMonitor(),
-    isNative: () => false,
+
     addNetworkStatusListener: async () => ({ remove: vi.fn() }),
     getInitialTransportState: async () => true,
     addAppStateListener: null,
@@ -433,7 +433,7 @@ describe('createAppConnectivityAdapter', () => {
         createAppConnectivityAdapter(
             makeDeps({
                 monitor,
-                isNative: () => true,
+
                 addAppStateListener: async handler => {
                     appHandlers.push(handler);
                     return { remove: vi.fn() };

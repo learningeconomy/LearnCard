@@ -536,9 +536,15 @@ describe('connectivityMonitor', () => {
             // Exactly one coalesced follow-up.
             await flush();
             expect(probeCalls).toHaveLength(2);
-            await expect(pendingCheck).resolves.toBe('offline');
+            let settled = false;
+            void pendingCheck.then(() => {
+                settled = true;
+            });
+            await flush();
+            expect(settled).toBe(false);
 
             await settleProbe(probeCalls[1], reachable());
+            await expect(pendingCheck).resolves.toBe('online');
             expect(monitor.getState().status).toBe('online');
             expect(probeCalls).toHaveLength(2);
         });
@@ -797,5 +803,71 @@ describe('connectivityMonitor', () => {
 
             connectivityStore.set.report(true);
         });
+    });
+});
+
+describe('review regressions', () => {
+    it('stops inconclusive retries after three attempts and permits a fresh manual check', async () => {
+        const { monitor, probeCalls, timers } = createHarness();
+        monitor.start();
+        for (let i = 0; i < 3; i += 1) {
+            await settleProbe(probeCalls[i], {
+                kind: 'inconclusive',
+                reason: 'http-error',
+                durationMs: 1,
+            });
+            if (i < 2) {
+                timers.advance(DEFAULT_OFFLINE_RETRY_DELAYS_MS[i]);
+                await flush();
+            }
+        }
+        timers.advance(600_000);
+        await flush();
+        expect(probeCalls).toHaveLength(3);
+        expect(monitor.getState().status).toBe('unknown');
+        const check = monitor.check();
+        expect(probeCalls).toHaveLength(4);
+        await settleProbe(probeCalls[3], reachable());
+        await expect(check).resolves.toBe('online');
+        monitor.stop();
+    });
+
+    it.each([false, true])(
+        'clears offline evidence on recovery (positive hint: %s)',
+        async hint => {
+            const { monitor, probeCalls, timers } = createHarness();
+            monitor.start();
+            for (let i = 0; i < 3; i += 1) {
+                await settleProbe(probeCalls[i], unreachable());
+                if (i < 2) {
+                    timers.advance(DEFAULT_OFFLINE_RETRY_DELAYS_MS[i]);
+                    await flush();
+                }
+            }
+            expect(monitor.getState().quality).toBe('poor');
+            if (hint) monitor.reportTransport(true);
+            else {
+                timers.advance(20_000);
+                await flush();
+            }
+            await settleProbe(probeCalls[3], reachable());
+            expect(monitor.getState().status).toBe('online');
+            expect(monitor.getState().quality).not.toBe('poor');
+            monitor.stop();
+        }
+    );
+
+    it('publishes observed samples only when quality changes', async () => {
+        const { monitor, probeCalls, states, timers } = createHarness();
+        monitor.start();
+        await settleProbe(probeCalls[0], reachable());
+        const before = states.length;
+        monitor.reportSample({ at: timers.now(), ok: true, durationMs: 100 });
+        expect(states).toHaveLength(before);
+        monitor.reportSample({ at: timers.now(), ok: true, durationMs: 100 });
+        expect(states).toHaveLength(before + 1);
+        monitor.reportSample({ at: timers.now(), ok: true, durationMs: 100 });
+        expect(states).toHaveLength(before + 1);
+        monitor.stop();
     });
 });

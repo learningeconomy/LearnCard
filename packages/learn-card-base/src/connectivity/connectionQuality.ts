@@ -138,7 +138,6 @@ export const createConnectionQualityTracker = (
                 // 'unstable' (failures win when both failure and latency are
                 // present) — pure latency evidence is 'slow'.
                 const reason: ConnectionQualityReason = failureCount > 0 ? 'unstable' : 'slow';
-                clearedToGood = false;
                 return { quality: 'poor', reason };
             }
 
@@ -150,11 +149,8 @@ export const createConnectionQualityTracker = (
             }
 
             if (trailingHealthy >= thresholds.consecutiveHealthyToClear) {
-                // Clear the warning and the evidence that produced it so a
-                // single later slow response starts fresh instead of
-                // resurrecting the old bad patch.
-                samples = [];
-                clearedToGood = true;
+                // reportSample clears this evidence when recording the healthy
+                // streak; snapshot evaluation itself never mutates history.
                 return { quality: 'good', reason: null };
             }
         }
@@ -174,7 +170,18 @@ export const createConnectionQualityTracker = (
             // failing traffic must not grow the retained array forever. The
             // evaluation below sees exactly the same live set as before.
             samples = selectLiveSamples([...samples, { ...sample }], now(), thresholds);
-            return evaluate();
+            const result = evaluate();
+            const trailing = samples.slice(-thresholds.consecutiveHealthyToClear);
+            if (
+                trailing.length === thresholds.consecutiveHealthyToClear &&
+                trailing.every(item => isHealthy(item, thresholds))
+            ) {
+                samples = [];
+                clearedToGood = true;
+            } else if (result.quality === 'poor') {
+                clearedToGood = false;
+            }
+            return result;
         },
         snapshot: evaluate,
         reset: () => {

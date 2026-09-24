@@ -256,9 +256,7 @@ export const isLikelyTransportError = (error: unknown): boolean => {
 
     if (!TRANSPORT_ERROR_MESSAGE_PATTERN.test(error.message ?? '')) return false;
 
-    // Browsers throw `TypeError` for fetch-level failures; requiring TypeError
-    // OR an explicit network-y message keeps app-bug TypeErrors
-    // ("Cannot read properties of undefined") out of the picture — they never
-    // match the narrow pattern anyway.
+    // Match the narrow network-message pattern regardless of Error subclass;
+    // unrelated TypeErrors (e.g. accessing undefined) never pass it.
     return true;
 };
