@@ -114,6 +114,7 @@ vi.mock('../../i18n/TransP', () => ({
 }));
 
 import RecoverySetupModal from './RecoverySetupModal';
+import { createRecoverySetupRunner } from '../../../../../packages/learn-card-base/src/auth-coordinator/recoverySetup';
 
 const renderModal = (
     initialMethod: 'passkey' | 'phrase' | 'backup' | 'email',
@@ -144,6 +145,29 @@ const renderModal = (
 };
 
 describe('RecoverySetupModal prompt integration', () => {
+    it('keeps passkey setup open on activation failure and retries activation only', async () => {
+        const { onCompleted, props } = renderModal('passkey');
+        const activate = vi
+            .fn()
+            .mockRejectedValueOnce(new Error('offline'))
+            .mockResolvedValue(undefined);
+        const identity = {};
+        const runner = createRecoverySetupRunner(
+            () => ({ identity, needsActivation: true, activate }),
+            vi.fn()
+        );
+        const setup = vi.fn().mockResolvedValue('credential-id');
+        vi.mocked(props.onSetupPasskey).mockImplementation(() => runner.run('passkey', setup));
+
+        fireEvent.click(screen.getByRole('button', { name: 'Set Up Passkey' }));
+        await screen.findByText('Could not finish account setup. Please try again.');
+        expect(onCompleted).not.toHaveBeenCalled();
+        fireEvent.click(screen.getByRole('button', { name: 'Set Up Passkey' }));
+        await waitFor(() => expect(onCompleted).toHaveBeenCalledWith('passkey'));
+        expect(setup).toHaveBeenCalledOnce();
+        expect(activate).toHaveBeenCalledTimes(2);
+    });
+
     afterEach(cleanup);
     it('opens on the requested passkey method and reports terminal completion', async () => {
         const { onCompleted, props } = renderModal('passkey');
