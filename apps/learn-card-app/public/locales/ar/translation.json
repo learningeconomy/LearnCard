@@ -578,7 +578,8 @@
                 "defaultName": "معاينة السيرة الذاتية",
                 "page": "صفحة",
                 "pages": "صفحات",
-                "downloadPdf": "تنزيل PDF",
+                "preparingPdf": "جارٍ إعداد PDF…",
+        "downloadPdf": "تنزيل PDF",
                 "iframeTitle": "معاينة ملف PDF للسيرة الذاتية"
             },
             "toastTitle": {
@@ -9047,6 +9048,8 @@
         "selected": "بيانات الاعتماد المحددة: {{count}}",
         "shareWithOthers": "المشاركة مع بيانات اعتماد أخرى…",
         "sharedWithYou": "شارك معك {{count}} من بيانات الاعتماد",
+        "preparingPdf": "جارٍ إعداد PDF…",
+        "downloadPdf": "تنزيل PDF",
         "sharedCount": "بيانات الاعتماد المشتركة: {{count}}",
         "limit": "حتى 50",
         "credential": "بيان اعتماد",

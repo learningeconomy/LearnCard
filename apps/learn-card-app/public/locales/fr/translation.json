@@ -578,7 +578,8 @@
                 "defaultName": "Aperçu du CV",
                 "page": "Page",
                 "pages": "Pages",
-                "downloadPdf": "Télécharger le PDF",
+                "preparingPdf": "Préparation du PDF…",
+        "downloadPdf": "Télécharger le PDF",
                 "iframeTitle": "Aperçu PDF du CV"
             },
             "toastTitle": {
@@ -8958,6 +8959,8 @@
         "selected": "{{count}} justificatifs sélectionnés",
         "shareWithOthers": "Partager avec d’autres justificatifs…",
         "sharedWithYou": "a partagé {{count}} justificatifs avec vous",
+        "preparingPdf": "Préparation du PDF…",
+        "downloadPdf": "Télécharger le PDF",
         "sharedCount": "{{count}} justificatifs partagés",
         "limit": "Jusqu’à 50",
         "credential": "Justificatif",

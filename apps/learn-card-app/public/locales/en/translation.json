@@ -579,7 +579,8 @@
                 "defaultName": "Resume Preview",
                 "page": "Page",
                 "pages": "Pages",
-                "downloadPdf": "Download PDF",
+                "preparingPdf": "Preparing PDF…",
+        "downloadPdf": "Download PDF",
                 "iframeTitle": "Resume PDF Preview"
             },
             "toastTitle": {
@@ -8964,6 +8965,8 @@
         "selected": "{{count}} credentials selected",
         "shareWithOthers": "Share with other credentials…",
         "sharedWithYou": "shared {{count}} credentials with you",
+        "preparingPdf": "Preparing PDF…",
+        "downloadPdf": "Download PDF",
         "sharedCount": "{{count}} credentials shared",
         "limit": "Up to 50",
         "credential": "Credential",

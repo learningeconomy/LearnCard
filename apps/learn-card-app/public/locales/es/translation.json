@@ -578,7 +578,8 @@
                 "defaultName": "Vista previa del currículum",
                 "page": "Página",
                 "pages": "Páginas",
-                "downloadPdf": "Descargar PDF",
+                "preparingPdf": "Preparando PDF…",
+        "downloadPdf": "Descargar PDF",
                 "iframeTitle": "Vista previa del PDF del currículum"
             },
             "toastTitle": {
@@ -8958,6 +8959,8 @@
         "selected": "{{count}} credenciales seleccionadas",
         "shareWithOthers": "Compartir con otras credenciales…",
         "sharedWithYou": "compartió {{count}} credenciales contigo",
+        "preparingPdf": "Preparando PDF…",
+        "downloadPdf": "Descargar PDF",
         "sharedCount": "{{count}} credenciales compartidas",
         "limit": "Hasta 50",
         "credential": "Credencial",

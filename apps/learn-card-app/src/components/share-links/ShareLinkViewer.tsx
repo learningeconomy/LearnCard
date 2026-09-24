@@ -29,6 +29,7 @@ import {
     type ProofState,
 } from './shareLinkFlow';
 import { ProofBadge, ShareLinkPreview } from './ShareLinkPreview';
+import { downloadSharePdf } from './sharePdf';
 import { downloadSharePresentation } from './shareDownload';
 import { enterSharePrivacy } from './sharePrivacy';
 
@@ -54,6 +55,7 @@ const ShareLinkViewer = () => {
     const [link, setLink] = useState('');
     const [copyState, setCopyState] = useState<'idle' | 'copying' | 'copied'>('idle');
     const [downloading, setDownloading] = useState(false);
+    const [pdfDownloading, setPdfDownloading] = useState(false);
     const [actionError, setActionError] = useState<'copy' | 'download'>();
     const visible = useRef<HTMLDivElement>(null);
     const acknowledged = useRef(new Set<string>());
@@ -237,6 +239,18 @@ const ShareLinkViewer = () => {
         }
     };
 
+    const downloadPdf = async () => {
+        if (!ready || !visible.current || pdfDownloading) return;
+        setPdfDownloading(true);
+        setActionError(undefined);
+        try {
+            await downloadSharePdf(visible.current, ready.metadata.title);
+        } catch {
+            setActionError('download');
+        } finally {
+            setPdfDownloading(false);
+        }
+    };
     const stateCopy = {
         loading: [m['shareLinks.opening'](), m['shareLinks.openingHint']()],
         incomplete: [m['shareLinks.incomplete'](), m['shareLinks.incompleteHint']()],
@@ -324,62 +338,83 @@ const ShareLinkViewer = () => {
                                         proofs={proofRecord}
                                         showOriginal
                                         summaryExtra={
-                                            <div className="pt-4 border-t border-grayscale-100 space-y-2">
-                                                <p className="text-xs font-medium text-grayscale-700">
-                                                    {m['shareLinks.presentationProof']()}
-                                                </p>
-                                                <ProofBadge state={holder} />
-                                                <p className="text-xs text-grayscale-500 leading-relaxed">
-                                                    {m['shareLinks.proofHint']()}
-                                                </p>
-                                            </div>
+                                            <>
+                                                <div className="pt-4 border-t border-grayscale-100 space-y-2">
+                                                    <p className="text-xs font-medium text-grayscale-700">
+                                                        {m['shareLinks.presentationProof']()}
+                                                    </p>
+                                                    <ProofBadge state={holder} />
+                                                    <p className="text-xs text-grayscale-500 leading-relaxed">
+                                                        {m['shareLinks.proofHint']()}
+                                                    </p>
+                                                </div>
+                                                <section
+                                                    data-share-export-exclude
+                                                    className="pt-4 border-t border-grayscale-100 space-y-3"
+                                                >
+                                                    <p className="text-xs text-grayscale-500 leading-relaxed">
+                                                        {m['shareLinks.downloadHint']()}
+                                                    </p>
+                                                    <div className="flex flex-wrap gap-3">
+                                                        <button
+                                                            type="button"
+                                                            className={secondaryButton}
+                                                            disabled={
+                                                                !link || copyState === 'copying'
+                                                            }
+                                                            onClick={() => void copyLink()}
+                                                        >
+                                                            <IonIcon
+                                                                icon={
+                                                                    copyState === 'copied'
+                                                                        ? checkmarkOutline
+                                                                        : copyOutline
+                                                                }
+                                                            />
+                                                            {copyState === 'copied'
+                                                                ? m['shareLinks.copied']()
+                                                                : copyState === 'copying'
+                                                                  ? m['shareLinks.copying']()
+                                                                  : m['shareLinks.copy']()}
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            className={secondaryButton}
+                                                            disabled={downloading}
+                                                            onClick={download}
+                                                        >
+                                                            <IonIcon icon={downloadOutline} />
+                                                            {downloading
+                                                                ? m['shareLinks.downloading']()
+                                                                : m['shareLinks.download']()}
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            className={secondaryButton}
+                                                            disabled={pdfDownloading}
+                                                            onClick={() => void downloadPdf()}
+                                                        >
+                                                            <IonIcon icon={downloadOutline} />
+                                                            {pdfDownloading
+                                                                ? m['shareLinks.preparingPdf']()
+                                                                : m['shareLinks.downloadPdf']()}
+                                                        </button>
+                                                    </div>
+                                                    {actionError && (
+                                                        <p
+                                                            role="alert"
+                                                            className="text-sm text-red-700"
+                                                        >
+                                                            {actionError === 'copy'
+                                                                ? m['shareLinks.copyError']()
+                                                                : m['shareLinks.downloadError']()}
+                                                        </p>
+                                                    )}
+                                                </section>
+                                            </>
                                         }
                                     />
                                 </div>
-                                <section className="bg-white rounded-[20px] p-6 md:p-8 space-y-3">
-                                    <p className="text-xs text-grayscale-500 leading-relaxed">
-                                        {m['shareLinks.downloadHint']()}
-                                    </p>
-                                    <div className="flex flex-wrap gap-3">
-                                        <button
-                                            type="button"
-                                            className={secondaryButton}
-                                            disabled={!link || copyState === 'copying'}
-                                            onClick={() => void copyLink()}
-                                        >
-                                            <IonIcon
-                                                icon={
-                                                    copyState === 'copied'
-                                                        ? checkmarkOutline
-                                                        : copyOutline
-                                                }
-                                            />
-                                            {copyState === 'copied'
-                                                ? m['shareLinks.copied']()
-                                                : copyState === 'copying'
-                                                  ? m['shareLinks.copying']()
-                                                  : m['shareLinks.copy']()}
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className={secondaryButton}
-                                            disabled={downloading}
-                                            onClick={download}
-                                        >
-                                            <IonIcon icon={downloadOutline} />
-                                            {downloading
-                                                ? m['shareLinks.downloading']()
-                                                : m['shareLinks.download']()}
-                                        </button>
-                                    </div>
-                                    {actionError && (
-                                        <p role="alert" className="text-sm text-red-700">
-                                            {actionError === 'copy'
-                                                ? m['shareLinks.copyError']()
-                                                : m['shareLinks.downloadError']()}
-                                        </p>
-                                    )}
-                                </section>
                                 <p className="text-center text-xs text-grayscale-500 px-4 leading-relaxed">
                                     {m['shareLinks.recipientHint']()}
                                 </p>
