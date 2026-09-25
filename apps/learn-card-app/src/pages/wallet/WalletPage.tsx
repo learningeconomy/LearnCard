@@ -1,5 +1,4 @@
-import React, { Suspense, useEffect } from 'react';
-import Share from '../../components/svgs/Share';
+import React, { useEffect } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import * as m from '../../paraglide/messages.js';
 import { useHistory, Link } from 'react-router-dom';
@@ -16,7 +15,6 @@ import {
     ModalTypes,
     CredentialCategoryEnum,
     newCredsStore,
-    lazyWithRetry,
     useAiFeatureGate,
     useToast,
     ToastTypeEnum,
@@ -26,7 +24,7 @@ import {
 
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
 import CapGoUpdateModal from '../../components/capGoUpdateModal/CapGoUpdateModal';
-import { IonPage, IonContent, IonRow, IonCol, IonSpinner } from '@ionic/react';
+import { IonPage, IonContent, IonRow, IonCol } from '@ionic/react';
 import WalletPageViewModeSelector from './WalletPageViewModeSelector';
 import MainHeader from '../../components/main-header/MainHeader';
 import ProfileAlertsIsland from '../../components/main-header/ProfileAlertsIsland';
@@ -37,25 +35,12 @@ import Plus from 'learn-card-base/svgs/Plus';
 import ScanIcon from 'learn-card-base/svgs/ScanIcon';
 import AddToPassportMenu from '../../components/add-to-passport/AddToPassportMenu';
 import NewCredentialsPill from '../../components/main-subheader/NewCredentialsPill';
+import PassportSharingMenu from './PassportSharingMenu';
 
 import { useTheme } from '../../theme/hooks/useTheme';
 import { chatBotStore } from '../../stores/chatBotStore';
 import { prefetchRoutes, ROUTE_PRELOAD } from '../../Routes';
 import useHeaderScrollSync from '../../hooks/useHeaderScrollSync';
-
-const ShareBoostsBundleModal = lazyWithRetry(
-    () => import('../../components/creds-bundle/ShareBoostsBundleModal')
-);
-
-const SharedBundleModalFallback: React.FC = () => (
-    <IonPage>
-        <IonContent>
-            <div className="font-poppins flex items-center justify-center min-h-[360px] p-8">
-                <IonSpinner name="crescent" className="text-grayscale-700" />
-            </div>
-        </IonContent>
-    </IonPage>
-);
 
 const WalletPage: React.FC = () => {
     const flags = useFlags();
@@ -110,21 +95,6 @@ const WalletPage: React.FC = () => {
         };
     }, []);
 
-    const handleShareModal = () => {
-        newModal(
-            <Suspense fallback={<SharedBundleModalFallback />}>
-                <ShareBoostsBundleModal
-                    onDismiss={() => closeModal()}
-                    onManage={() => {
-                        closeModal();
-                        history.push('/privacy-and-data');
-                    }}
-                />
-            </Suspense>,
-            {},
-            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
-        );
-    };
     const categoryToPath = CATEGORY_TO_ROUTE;
 
     const AI_CATEGORIES = [
@@ -240,30 +210,11 @@ const WalletPage: React.FC = () => {
                                         />
 
                                         {flags?.shareMultipleEnabled === true && (
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    type="button"
-                                                    onClick={handleShareModal}
-                                                    aria-label={m['shareLinks.share']()}
-                                                    className="flex h-9 w-9 sm:w-auto sm:px-3 md:h-10 items-center justify-center gap-2 rounded-[20px] bg-white text-grayscale-900 text-sm font-medium border border-transparent hover:bg-emerald-50 hover:border-emerald-200 active:bg-emerald-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-                                                >
-                                                    <span aria-hidden="true">
-                                                        <Share className="h-5 w-5" />
-                                                    </span>
-                                                    <span className="hidden sm:inline">
-                                                        {m['common.share']()}
-                                                    </span>
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        history.push('/privacy-and-data')
-                                                    }
-                                                    className="px-3 py-2.5 rounded-[20px] border border-white/70 text-white text-sm font-medium hover:bg-white/10 transition-colors focus-visible:ring-2 focus-visible:ring-white"
-                                                >
-                                                    {m['shareLinks.manage']()}
-                                                </button>
-                                            </div>
+                                            <PassportSharingMenu
+                                                onViewShared={() =>
+                                                    history.push('/privacy-and-data')
+                                                }
+                                            />
                                         )}
 
                                         {Capacitor.isNativePlatform() && (

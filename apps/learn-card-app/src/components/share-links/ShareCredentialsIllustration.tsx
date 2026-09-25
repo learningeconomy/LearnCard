@@ -1,13 +1,21 @@
 import React from 'react';
 import './ShareCredentialsIllustration.css';
 
+type ShareCredentialsIllustrationProps = {
+    complete?: boolean;
+    className?: string;
+};
+
 /** Decorative credential bundle, matching Passport's outlined category artwork. */
-export const ShareCredentialsIllustration = ({ complete = false }: { complete?: boolean }) => (
+export const ShareCredentialsIllustration = ({
+    complete = false,
+    className = 'h-20 w-20',
+}: ShareCredentialsIllustrationProps) => (
     <svg
         aria-hidden="true"
         focusable="false"
         viewBox="0 0 80 80"
-        className="h-20 w-20 overflow-visible text-grayscale-900"
+        className={`${className} overflow-visible text-grayscale-900`}
     >
         <path d="M40 3 69 17 77 47 56 72 24 75 4 51 9 21Z" className="fill-emerald-100" />
         <g
