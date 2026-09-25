@@ -235,6 +235,23 @@ describe('A6 escrow recovery', () => {
         expect(stored?.identityProofType).toBe('auth-token');
     });
 
+    it('persists the caller-resolved tenant id on the hold startRecovery creates', async () => {
+        await enroll();
+        const vetpassClient = appRouter.createCaller({
+            domain: 'example.com',
+            tenant: { id: 'vetpass', emailBranding: {}, resolvedVia: 'header' as const },
+        });
+        const started = await vetpassClient.escrow.startRecovery({
+            ...auth,
+            clientEphemeralPublicKey: recipient.publicKey,
+        });
+        expect((await findEscrowHoldById(started.holdId))?.tenantId).toBe('vetpass');
+        // The default caller (no X-Tenant-Id) resolves to 'learncard' (getClient's own default).
+        await owner().escrow.cancelRecovery(auth);
+        const second = await start();
+        expect((await findEscrowHoldById(second.holdId))?.tenantId).toBe('learncard');
+    });
+
     it('throttles a restart within 24 hours without changing the pending hold', async () => {
         await enroll();
         const first = await start();

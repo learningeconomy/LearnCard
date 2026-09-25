@@ -16,6 +16,7 @@ import {
 import { environment } from './src/config/environment';
 import { toServerlessApplication } from './src/helpers/serverlessApplication';
 import { ensureUserKeysIndexes, createEscrowHoldsIndexes } from './src/models';
+import { runEscrowHoldReminders } from './src/jobs/escrowHoldReminders';
 
 const startupPromise = Promise.all([
     getEmptyLearnCard(), // Load WASM in for better cold starts
@@ -126,3 +127,12 @@ export const trpcHandler = Sentry.AWSLambda.wrapHandler(
         return _trpcHandler(event, context);
     }
 );
+
+// Scheduled (EventBridge) function, not API-Gateway-triggered — same
+// startupPromise as the two handlers above connects Mongo/loads WASM the
+// same way; isWarmupEvent/OPTIONS handling doesn't apply to a schedule event.
+export const escrowHoldRemindersHandler = Sentry.AWSLambda.wrapHandler(async (): Promise<void> => {
+    await startupPromise;
+    const counts = await runEscrowHoldReminders();
+    console.log('[escrow-hold-reminders] completed', counts);
+});

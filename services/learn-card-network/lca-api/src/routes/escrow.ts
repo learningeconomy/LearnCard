@@ -524,6 +524,7 @@ export const escrowRouter = t.router({
                     resumeTokenHash: hashEscrowResumeToken(resumeToken),
                     cancelTokenHash: hashEscrowCancelToken(cancelToken),
                     requestIp: ctx.clientIp,
+                    tenantId: ctx.tenant?.id,
                 });
             } catch (error) {
                 if (

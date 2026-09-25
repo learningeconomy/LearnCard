@@ -213,6 +213,20 @@ functions:
             - httpApi: GET /docs
             - httpApi: GET /docs/{trpc+}
 
+    # Always deployed (no per-stage conditional: `schedule.enabled` needs a
+    # literal boolean, not an interpolated ESCROW_ENCLAVE_MODE env string);
+    # the handler itself no-ops when escrow is disabled for this stage/tenant.
+    escrowHoldReminders:
+        handler: lambda.escrowHoldRemindersHandler
+        timeout: 120
+        vpc:
+            securityGroupIds:
+                - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
+            subnetIds:
+                - Ref: PrivateSubnetA
+        events:
+            - schedule: rate(1 hour)
+
 resources:
     Resources:
         VPC:

@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { beforeAll, afterAll, beforeEach, describe, it, expect } from 'vitest';
 import { client } from '@mongo';
 import {
@@ -21,6 +22,8 @@ import {
     hashEscrowResumeToken,
     findPendingEscrowHoldByAuthProvider,
     findEscrowHoldById,
+    findEscrowHoldsDueForReminder,
+    claimEscrowHoldForReminder,
     recordEscrowHoldNotification,
     rotateEscrowCancelToken,
     reserveEscrowPinAttempt,
@@ -285,5 +288,52 @@ describe('escrow model invariants', () => {
         expect((await findEscrowHoldById(completedHold._id))?.cancelTokenHash).toBeUndefined();
 
         expect(await rotateEscrowCancelToken('does-not-exist')).toBeNull();
+    });
+    it('finds only pending hold-policy holds due within 24h and claims each at most once', async () => {
+        const now = new Date();
+        const hour = 60 * 60 * 1000;
+        // Each candidate needs its own authProvider: the partial unique index
+        // allows only one pending hold-policy hold per (authProvider, policy).
+        const createHoldFor = (releaseAfter: Date, releasePolicy: 'hold' | 'pin' = 'hold') =>
+            createEscrowHold({
+                authProvider: { type: 'firebase', id: `escrow-reminder-${randomUUID()}` },
+                primaryDid: 'did:key:test',
+                shareVersion: 1,
+                identityProofType: 'auth-token',
+                requestedAt: new Date(),
+                releaseAfter,
+                releasePolicy,
+                clientEphemeralPublicKey: 'public-key',
+                resumeTokenHash: hashEscrowResumeToken(generateEscrowResumeToken()),
+            });
+
+        const dueSoon = await createHoldFor(new Date(now.getTime() + 23 * hour));
+        const dueLate = await createHoldFor(new Date(now.getTime() + 25 * hour));
+        const alreadyReminded = await createHoldFor(new Date(now.getTime() + hour));
+        await recordEscrowHoldNotification(alreadyReminded._id, 'reminder');
+        const pinHold = await createHoldFor(now, 'pin');
+        const completedHold = await createHoldFor(new Date(now.getTime() + 2 * hour));
+        await completeEscrowHold(completedHold._id);
+
+        const due = await findEscrowHoldsDueForReminder(now, 200);
+        const dueIds = due.map(hold => hold._id);
+        expect(dueIds).toContain(dueSoon._id);
+        expect(dueIds).not.toContain(dueLate._id);
+        expect(dueIds).not.toContain(alreadyReminded._id);
+        expect(dueIds).not.toContain(pinHold._id);
+        expect(dueIds).not.toContain(completedHold._id);
+
+        // Two concurrent claims for the same hold: MongoDB serializes the
+        // findOneAndUpdate CAS, so exactly one observes the pre-push state.
+        const [first, second] = await Promise.all([
+            claimEscrowHoldForReminder(dueSoon._id, now),
+            claimEscrowHoldForReminder(dueSoon._id, now),
+        ]);
+        const winners = [first, second].filter((claim): claim is EscrowHold => claim !== null);
+        expect(winners).toHaveLength(1);
+        expect(winners[0]?.notifications.filter(entry => entry.kind === 'reminder')).toHaveLength(
+            1
+        );
+        expect(await claimEscrowHoldForReminder(dueSoon._id, now)).toBeNull();
     });
 });
