@@ -1749,11 +1749,6 @@ export const getRelationshipsForRecord = (
     recordId: string
 ): RelationshipDisplayModel[] => relationships[recordId] ?? [];
 
-export const isRecordSuperseded = (relationships: RelationshipGraph, recordId: string): boolean =>
-    getRelationshipsForRecord(relationships, recordId).some(
-        relationship => relationship.kind === 'supersededBy'
-    );
-
 export const selectClrTranscriptView = (
     model: ClrTranscriptDisplayModel,
     options: ViewOptions

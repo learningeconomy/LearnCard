@@ -25,7 +25,6 @@ import {
     formatClrDate,
     getLinkedCompetencies,
     getRelationshipsForRecord,
-    isRecordSuperseded,
 } from '../../helpers/clrRenderer.helpers';
 import type { VC } from '@learncard/types';
 
@@ -62,7 +61,6 @@ const ClrCourseDetailPanel: React.FC<{
         model?.associations ?? []
     );
     const relationships = getRelationshipsForRecord(model?.relationships ?? {}, id);
-    const superseded = isRecordSuperseded(model?.relationships ?? {}, id);
     const evidenceSourceSummaries: Record<string, ClrEvidenceSourceSummary> = {
         [course.sourceCredentialId]: {
             kind: 'course',
@@ -75,11 +73,7 @@ const ClrCourseDetailPanel: React.FC<{
     };
 
     return (
-        <div
-            className={`space-y-5 pb-[100px] h-full bg-grayscale-100 overflow-y-auto ${
-                superseded ? 'opacity-70' : ''
-            }`}
-        >
+        <div className="space-y-5 pb-[100px] h-full bg-grayscale-100 overflow-y-auto">
             {/* Header */}
             <div className="bg-white rounded-b-[30px] overflow-hidden shadow-md px-6 py-5">
                 <div className="flex items-start justify-between gap-3">

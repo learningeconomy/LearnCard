@@ -13,11 +13,7 @@ import ClrCourseCredentialCollapsible from './ClrCourseCredentialCollapsible';
 
 import { useModal } from 'learn-card-base';
 
-import {
-    formatClrDate,
-    getRelationshipsForRecord,
-    isRecordSuperseded,
-} from '../../helpers/clrRenderer.helpers';
+import { formatClrDate, getRelationshipsForRecord } from '../../helpers/clrRenderer.helpers';
 import { summarizeAssessment } from './clr.helpers';
 
 import type {
@@ -51,7 +47,6 @@ const ClrAssessmentDetailPanel: React.FC<{
         model.relationships,
         assessment.sourceCredentialId
     );
-    const superseded = isRecordSuperseded(model.relationships, assessment.sourceCredentialId);
 
     const evidenceSourceSummaries: Record<string, ClrEvidenceSourceSummary> = {
         [assessment.sourceCredentialId]: {
@@ -64,11 +59,7 @@ const ClrAssessmentDetailPanel: React.FC<{
     };
 
     return (
-        <div
-            className={`space-y-5 pb-[100px] h-full bg-grayscale-100 overflow-y-auto ${
-                superseded ? 'opacity-70' : ''
-            }`}
-        >
+        <div className="space-y-5 pb-[100px] h-full bg-grayscale-100 overflow-y-auto">
             <div className="bg-white rounded-b-[30px] overflow-hidden shadow-md px-6 py-5">
                 <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">

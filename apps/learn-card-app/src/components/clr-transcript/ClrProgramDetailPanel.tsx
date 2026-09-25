@@ -20,7 +20,6 @@ import {
     formatClrDate,
     getLinkedCompetencies,
     getRelationshipsForRecord,
-    isRecordSuperseded,
 } from '../../helpers/clrRenderer.helpers';
 import type {
     ClrTranscriptDisplayModel,
@@ -50,7 +49,6 @@ const ClrProgramDetailPanel: React.FC<{
         model.relationships,
         program.sourceCredentialId
     );
-    const superseded = isRecordSuperseded(model.relationships, program.sourceCredentialId);
     const childIds = new Set(
         relationships
             .filter(relationship => relationship.kind === 'child')
@@ -68,11 +66,7 @@ const ClrProgramDetailPanel: React.FC<{
     };
 
     return (
-        <div
-            className={`space-y-5 pb-[100px] h-full bg-grayscale-100 overflow-y-scroll ${
-                superseded ? 'opacity-70' : ''
-            }`}
-        >
+        <div className="space-y-5 pb-[100px] h-full bg-grayscale-100 overflow-y-scroll">
             {/* Header */}
             <div className="bg-white rounded-b-[30px] overflow-hidden shadow-md px-6 py-5">
                 <div className="flex items-start justify-between gap-3">

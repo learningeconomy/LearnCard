@@ -15,10 +15,9 @@ const ClrCompetencyBlock: React.FC<{
     adminMode?: boolean;
 }> = ({ competency, relationships = [], onSelectRecord, adminMode = false }) => {
     const primaryAlignment = competency.alignments[0];
-    const superseded = relationships.some(relationship => relationship.kind === 'supersededBy');
 
     return (
-        <div className={`space-y-3 ${superseded ? 'opacity-70' : ''}`}>
+        <div className="space-y-3">
             <SkillCompetencyCard
                 name={competency.name?.value ?? 'Competency'}
                 frameworkName={primaryAlignment?.targetFramework?.value}

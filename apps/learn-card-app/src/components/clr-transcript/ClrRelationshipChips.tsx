@@ -16,7 +16,9 @@ const ClrRelationshipChips: React.FC<{
             {relationships.map(relationship => (
                 <div
                     key={`${relationship.kind}-${relationship.relatedRecordId}`}
-                    className="inline-flex items-center rounded-full border border-grayscale-300 bg-grayscale-100 text-grayscale-700"
+                    className={`inline-flex items-center rounded-full border border-grayscale-300 bg-grayscale-100 text-grayscale-700 ${
+                        relationship.kind === 'supersededBy' ? 'opacity-60' : ''
+                    }`}
                 >
                     <button
                         type="button"
