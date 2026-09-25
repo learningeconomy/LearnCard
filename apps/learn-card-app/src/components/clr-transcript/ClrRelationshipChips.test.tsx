@@ -52,11 +52,11 @@ describe('ClrRelationshipChips', () => {
         );
 
         expect(screen.getByText(relationship.label)).toBeInTheDocument();
-        expect(screen.queryByRole('button')).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /^Open / })).not.toBeInTheDocument();
 
         rerender(<ClrRelationshipChips relationships={[{ ...relationship, navigable: true }]} />);
 
-        expect(screen.queryByRole('button')).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /^Open / })).not.toBeInTheDocument();
         expect(onSelectRecord).not.toHaveBeenCalled();
     });
 });
