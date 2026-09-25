@@ -22,8 +22,18 @@ resource "aws_sns_topic_subscription" "email" {
 data "aws_iam_policy_document" "alarm_topics" {
   for_each = aws_sns_topic.alarms
   statement {
-    sid       = "AccountAdministration"
-    actions   = ["SNS:*"]
+    sid = "AccountAdministration"
+    # Topic policies reject "SNS:*"; this is the action set of AWS's default topic policy.
+    actions = [
+      "SNS:AddPermission",
+      "SNS:DeleteTopic",
+      "SNS:GetTopicAttributes",
+      "SNS:ListSubscriptionsByTopic",
+      "SNS:Publish",
+      "SNS:RemovePermission",
+      "SNS:SetTopicAttributes",
+      "SNS:Subscribe",
+    ]
     resources = [each.value.arn]
     principals {
       type        = "AWS"
