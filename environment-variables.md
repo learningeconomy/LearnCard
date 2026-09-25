@@ -177,3 +177,52 @@ The "LearnCard" Infisical project has this folder layout:
 **Missing variables** — Compare the generated `.env` against the `.env.example` in the same directory. Any vars not in Infisical need to be added there or filled in manually.
 
 **Authentication expired** — Run `infisical login` again.
+
+## Local multi-credential sharing (LC-2187)
+
+`apps/learn-card-app/compose-local.yaml` supplies a matching local Brain/LearnCloud
+trust configuration, including LearnCloud's Redis replay store. Rebuild/recreate
+that local stack and enable the client-side LaunchDarkly flag
+`share-multiple-enabled` to exercise the sharing flow. No additional untracked
+service `.env` entries are needed for this Compose setup. These Compose values
+explicitly override the corresponding entries in service `env_file` files.
+
+For services running directly on the host, add these settings to the existing
+service `.env` files (keep the normal database, seed, and Redis configuration):
+
+**Brain** (local port 4000, `IS_OFFLINE=true`):
+
+```dotenv
+SHARE_LINK_MAINTENANCE_NAMESPACE=learncard-local
+SHARE_LINK_MAINTENANCE_ORIGIN=http://localhost:4100
+SHARE_LINK_MAINTENANCE_AUDIENCE=did:web:localhost%3A4100
+SHARE_LINK_MAINTENANCE_ALLOW_INSECURE_LOOPBACK=true
+SHARE_LINK_OWNER_API_NAMESPACE=learncard-local
+```
+
+LC-2189 also requires host-run Brain to set `SHARE_LINK_REQUEST_HASH_SECRET` to a
+stable value of at least 32 bytes (generate one with `openssl rand -hex 32`).
+The tracked local Compose stack supplies a clearly labeled development-only
+fallback instead; never use that fallback in a deployed environment.
+
+**LearnCloud** (local port 4100):
+
+```dotenv
+SHARE_CONTENT_AUDIENCE=did:web:localhost%3A4100
+SHARE_CONTENT_SERVICE_DIDS=did:web:localhost%3A4000
+SHARE_CONTENT_VERIFICATION_METHODS=did:web:localhost%3A4000#owner
+SHARE_CONTENT_NAMESPACE_BINDINGS='{"did:web:localhost%3A4000":["learncard-local"]}'
+```
+
+LearnCloud also requires `REDIS_HOST` and `REDIS_PORT` pointing to its running
+Redis replay store. Brain publishes its service signing method as `#owner` in
+`http://localhost:4000/.well-known/did.json`. If you change the ports or identities,
+update both sides together. Restart both services after changing their environment.
+A coworker whose existing `.env` files already provide matching values can simply
+rebuild/restart and test. Missing trust configuration leaves the share-content
+routes disabled; enabling the UI flag alone does not enable the backend.
+
+These are public, local-development identities, not production credentials.
+Deployed environments must explicitly provision their own HTTPS LearnCloud origin,
+audience, allowed Brain identity, exact signing method, namespace binding, and
+Redis replay store. Do not enable the insecure-loopback option there.
