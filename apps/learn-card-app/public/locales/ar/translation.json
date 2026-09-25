@@ -9173,6 +9173,8 @@
         "passcodeLabel": "رمز المرور",
         "passcodePlaceholder": "4 أحرف على الأقل",
         "passcodeShareHint": "أرسله بشكل منفصل إلى الأشخاص الذين تثق بهم.",
+        "passcodeKeepPlaceholder": "اتركه فارغاً للاحتفاظ برمز المرور الحالي",
+        "passcodeKeepHint": "أدخل رمز مرور جديداً لاستبداله، أو اترك هذا الحقل فارغاً.",
         "passcodeRequired": "أدخل رمز المرور",
         "passcodeRequiredHint": "حَمى المرسل بيانات الاعتماد هذه برمز مرور.",
         "passcodeIncorrect": "رمز المرور غير صحيح. تحقّق منه وحاول مرة أخرى.",

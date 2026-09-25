@@ -342,7 +342,8 @@ export const prepareShareUpdate = async (
     recovery: ShareRecoveryPlaintext,
     refs: string[],
     title: string,
-    note: string
+    note: string,
+    protection: Pick<UpdateShareLinkInput, 'passcode' | 'notifyOnView'> = {}
 ): Promise<PreparedShareUpdate> => {
     if (share.status !== 'active' || recovery.shareId !== share.id) throw new Error('inactive');
     if (recovery.latest.contentVersion !== share.contentVersion) throw new Error('stale');
@@ -362,6 +363,8 @@ export const prepareShareUpdate = async (
         clientRequestId: crypto.randomUUID(),
         title: title.trim(),
         note: note.trim() || null,
+        ...(protection.passcode !== undefined ? { passcode: protection.passcode } : {}),
+        ...(protection.notifyOnView !== undefined ? { notifyOnView: protection.notifyOnView } : {}),
         contentVersion,
         selectedCount: refs.length,
         envelope: revision.envelope,

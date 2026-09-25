@@ -503,6 +503,108 @@ describe('share-link coordinator update', () => {
         expect(finalizeArgs.verifiedContentHash).toBeUndefined();
     });
 
+    it('hashes, replaces, and removes passcode protection without persisting plaintext', async () => {
+        (repository.reserveReplacement as ReturnType<typeof vi.fn>).mockResolvedValue({
+            outcome: 'reserved',
+            state: 'created',
+            share: makeShare({ status: 'active', contentState: 'finalized', version: 2 }),
+            reservation: makeReservation({
+                opKind: 'update',
+                objectRef: null,
+                contentVersion: null,
+                contentHash: null,
+                contentBytes: null,
+                recoveryHash: null,
+                recoveryBytes: null,
+            }),
+        });
+
+        const coordinator = makeCoordinator(repository, client, {
+            policyResolver: {
+                resolve: vi.fn(async () => ({
+                    isMinor: false,
+                    policyResolved: true,
+                    defaultExpiryDays: 365,
+                    viewCountingEnabled: true,
+                })),
+            },
+        });
+        await coordinator.updateShareLink(
+            {
+                id: SHARE_ID,
+                expectedVersion: 2,
+                clientRequestId: CLIENT_REQUEST_ID,
+                passcode: '8642',
+                notifyOnView: true,
+            },
+            context
+        );
+
+        const protectedArgs = (repository.reserveReplacement as ReturnType<typeof vi.fn>).mock
+            .calls[0][0];
+        expect(protectedArgs.passcodeHash).toMatch(/^\$argon2id\$/);
+        expect(protectedArgs.passcodeHash).not.toContain('8642');
+        expect(protectedArgs).not.toHaveProperty('passcode');
+        expect(protectedArgs.notifyOnView).toBe(true);
+
+        await coordinator.updateShareLink(
+            {
+                id: SHARE_ID,
+                expectedVersion: 2,
+                clientRequestId: '22222222-2222-4222-8222-222222222222',
+                passcode: null,
+                notifyOnView: false,
+            },
+            context
+        );
+
+        const unprotectedArgs = (repository.reserveReplacement as ReturnType<typeof vi.fn>).mock
+            .calls[1][0];
+        expect(unprotectedArgs.passcodeHash).toBeNull();
+        expect(unprotectedArgs.notifyOnView).toBe(false);
+    });
+
+    it('suppresses an update that enables notifications under restrictive policy', async () => {
+        (repository.reserveReplacement as ReturnType<typeof vi.fn>).mockResolvedValue({
+            outcome: 'reserved',
+            state: 'created',
+            share: makeShare({ status: 'active', contentState: 'finalized', version: 2 }),
+            reservation: makeReservation({
+                opKind: 'update',
+                objectRef: null,
+                contentVersion: null,
+                contentHash: null,
+                contentBytes: null,
+                recoveryHash: null,
+                recoveryBytes: null,
+            }),
+        });
+
+        const coordinator = makeCoordinator(repository, client, {
+            policyResolver: {
+                resolve: vi.fn(async () => ({
+                    isMinor: true,
+                    policyResolved: true,
+                    defaultExpiryDays: 30,
+                    viewCountingEnabled: false,
+                })),
+            },
+        });
+        await coordinator.updateShareLink(
+            {
+                id: SHARE_ID,
+                expectedVersion: 2,
+                clientRequestId: CLIENT_REQUEST_ID,
+                notifyOnView: true,
+            },
+            context
+        );
+
+        const reserveArgs = (repository.reserveReplacement as ReturnType<typeof vi.fn>).mock
+            .calls[0][0];
+        expect(reserveArgs.notifyOnView).toBe(false);
+    });
+
     it('content update uploads and finalizes the replacement', async () => {
         (repository.reserveReplacement as ReturnType<typeof vi.fn>).mockResolvedValue({
             outcome: 'reserved',

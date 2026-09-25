@@ -9090,6 +9090,8 @@
         "passcodeLabel": "Passcode",
         "passcodePlaceholder": "At least 4 characters",
         "passcodeShareHint": "Send this separately to people you trust.",
+        "passcodeKeepPlaceholder": "Leave blank to keep current passcode",
+        "passcodeKeepHint": "Enter a new passcode to replace it, or leave this blank.",
         "passcodeRequired": "Enter the passcode",
         "passcodeRequiredHint": "The sender protected these credentials with a passcode.",
         "passcodeIncorrect": "That passcode did not work. Check it and try again.",

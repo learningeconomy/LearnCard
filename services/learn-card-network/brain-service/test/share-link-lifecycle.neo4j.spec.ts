@@ -751,6 +751,95 @@ describe('share-link lifecycle repository (Neo4j)', () => {
         expect(active.state).toBe('active');
     });
 
+    it('replaces, preserves, and removes share protection settings', async () => {
+        const created = await commitNewShare();
+        const policy: ShareLinkPolicySnapshot = {
+            isMinor: false,
+            policyResolved: true,
+            defaultExpiryDays: 365,
+            viewCountingEnabled: true,
+        };
+
+        const protect = await reserveReplacement({
+            namespace: created.namespace,
+            ownerProfileId: created.ownerProfileId,
+            clientRequestId: uuid(),
+            shareId: created.shareId,
+            expectedVersion: created.committed.version,
+            requestHash: computeShareLinkRequestHash('update', {
+                id: created.shareId,
+                passcode: 'replacement',
+                notifyOnView: true,
+            }),
+            passcodeHash: '$argon2id$replacement-hash',
+            notifyOnView: true,
+            policy,
+            leaseOwner: 'worker-1',
+            now: NOW,
+        });
+        if (protect.outcome !== 'reserved') throw new Error('expected protection reservation');
+
+        const protectedShare = await finalizeReservation({
+            ...protect.reservation,
+            now: NOW,
+        });
+        if (protectedShare.outcome !== 'finalized') throw new Error('expected protected share');
+        expect(protectedShare.share.passcodeHash).toBe('$argon2id$replacement-hash');
+        expect(protectedShare.share.notifyOnView).toBe(true);
+
+        const preserve = await reserveReplacement({
+            namespace: created.namespace,
+            ownerProfileId: created.ownerProfileId,
+            clientRequestId: uuid(),
+            shareId: created.shareId,
+            expectedVersion: protectedShare.share.version,
+            requestHash: computeShareLinkRequestHash('update', {
+                id: created.shareId,
+                title: 'Still protected',
+            }),
+            title: 'Still protected',
+            policy,
+            leaseOwner: 'worker-1',
+            now: NOW,
+        });
+        if (preserve.outcome !== 'reserved') throw new Error('expected preserve reservation');
+
+        const preservedShare = await finalizeReservation({
+            ...preserve.reservation,
+            now: NOW,
+        });
+        if (preservedShare.outcome !== 'finalized') throw new Error('expected preserved share');
+        expect(preservedShare.share.passcodeHash).toBe('$argon2id$replacement-hash');
+        expect(preservedShare.share.notifyOnView).toBe(true);
+
+        const remove = await reserveReplacement({
+            namespace: created.namespace,
+            ownerProfileId: created.ownerProfileId,
+            clientRequestId: uuid(),
+            shareId: created.shareId,
+            expectedVersion: preservedShare.share.version,
+            requestHash: computeShareLinkRequestHash('update', {
+                id: created.shareId,
+                passcode: null,
+                notifyOnView: false,
+            }),
+            passcodeHash: null,
+            notifyOnView: false,
+            policy,
+            leaseOwner: 'worker-1',
+            now: NOW,
+        });
+        if (remove.outcome !== 'reserved') throw new Error('expected removal reservation');
+
+        const unprotectedShare = await finalizeReservation({
+            ...remove.reservation,
+            now: NOW,
+        });
+        if (unprotectedShare.outcome !== 'finalized') throw new Error('expected unprotected share');
+        expect(unprotectedShare.share.passcodeHash).toBeNull();
+        expect(unprotectedShare.share.notifyOnView).toBe(false);
+    });
+
     it('claims, completes and backs off durable cleanup jobs with a fenced claim token', async () => {
         const created = await commitNewShare();
         const staged = await reserveReplacement({

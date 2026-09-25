@@ -132,11 +132,12 @@ beforeEach(() => {
         selection: [{ ref: 'private:one', order: 0 }],
         endorsements: [],
     });
-    mocks.prepareUpdate.mockResolvedValue({
+    mocks.prepareUpdate.mockImplementation(async (...args: unknown[]) => ({
         input: {
             id: 'AAAAAAAAAAAAAAAAAAAAAA',
             expectedVersion: 1,
             title: 'Learning highlights',
+            ...((args[6] ?? {}) as object),
         },
         key: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         ownerDid: 'owner',
@@ -146,7 +147,7 @@ beforeEach(() => {
             selection: [{ credentialIndex: 0 }],
             endorsements: [],
         },
-    });
+    }));
     mocks.wallet.invoke.createShareLink.mockResolvedValue({
         status: 'completed',
         share: { status: 'active', expiresAt: null },
@@ -463,6 +464,8 @@ describe('create screen', () => {
                         expiresAt: null,
                         stoppedAt: null,
                         lastViewedAt: null,
+                        passcodeProtected: true,
+                        notifyOnView: true,
                         minorPolicy: {
                             isMinor: false,
                             policyResolved: true,
@@ -475,12 +478,28 @@ describe('create screen', () => {
         );
         expect(await screen.findByRole('checkbox')).toBeChecked();
         fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+
+        const passcodeSwitch = screen.getByRole('switch', { name: /Require a passcode/ });
+        const notificationSwitch = screen.getByRole('switch', {
+            name: /Notify me when viewed/,
+        });
+        expect(passcodeSwitch).toBeChecked();
+        expect(notificationSwitch).toBeChecked();
+        fireEvent.change(screen.getByPlaceholderText('Leave blank to keep current passcode'), {
+            target: { value: '8642' },
+        });
+        fireEvent.click(notificationSwitch);
         fireEvent.click(screen.getByRole('button', { name: /Preview/ }));
         await screen.findByTestId('share-link-preview');
         fireEvent.click(screen.getByRole('button', { name: 'Update private link' }));
         await screen.findByText('Your link is updated');
         expect(mocks.wallet.invoke.updateShareLink).toHaveBeenCalledWith(
-            expect.objectContaining({ id: 'AAAAAAAAAAAAAAAAAAAAAA', expectedVersion: 1 })
+            expect.objectContaining({
+                id: 'AAAAAAAAAAAAAAAAAAAAAA',
+                expectedVersion: 1,
+                passcode: '8642',
+                notifyOnView: false,
+            })
         );
         expect(mocks.wallet.invoke.createShareLink).not.toHaveBeenCalled();
         expect((screen.getByLabelText('Private link') as HTMLInputElement).value).toBe(

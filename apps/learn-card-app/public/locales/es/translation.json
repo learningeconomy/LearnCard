@@ -9084,6 +9084,8 @@
         "passcodeLabel": "Código de acceso",
         "passcodePlaceholder": "Al menos 4 caracteres",
         "passcodeShareHint": "Envíalo por separado a las personas de confianza.",
+        "passcodeKeepPlaceholder": "Déjalo vacío para conservar el código actual",
+        "passcodeKeepHint": "Introduce un código nuevo para reemplazarlo o déjalo vacío.",
         "passcodeRequired": "Introduce el código de acceso",
         "passcodeRequiredHint": "El remitente protegió estas credenciales con un código de acceso.",
         "passcodeIncorrect": "Ese código no funcionó. Compruébalo e inténtalo de nuevo.",

@@ -9084,6 +9084,8 @@
         "passcodeLabel": "Code d’accès",
         "passcodePlaceholder": "Au moins 4 caractères",
         "passcodeShareHint": "Envoyez-le séparément aux personnes de confiance.",
+        "passcodeKeepPlaceholder": "Laissez vide pour conserver le code actuel",
+        "passcodeKeepHint": "Saisissez un nouveau code pour le remplacer, ou laissez ce champ vide.",
         "passcodeRequired": "Saisissez le code d’accès",
         "passcodeRequiredHint": "L’expéditeur a protégé ces justificatifs avec un code d’accès.",
         "passcodeIncorrect": "Ce code ne fonctionne pas. Vérifiez-le et réessayez.",

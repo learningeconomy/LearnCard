@@ -167,6 +167,9 @@ export type ReserveReplacementInput = {
     title?: string;
     note?: string | null;
     expiresAt?: string | null;
+    /** Omitted preserves the current hash; null removes passcode protection. */
+    passcodeHash?: string | null;
+    notifyOnView?: boolean;
     /**
      * Re-derived policy on every mutation so a profile that becomes managed (or
      * whose age source changes) stops accumulating views going forward.

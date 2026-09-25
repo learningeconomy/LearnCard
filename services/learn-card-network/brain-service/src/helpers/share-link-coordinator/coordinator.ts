@@ -368,6 +368,12 @@ export const createShareLinkCoordinator = (
             // so a profile that became managed stops accumulating views going
             // forward. An omitted `expiresAt` leaves the existing expiry intact.
             const policy = await policyResolver.resolve(owner.ownerProfileId);
+            const passcodeHash =
+                value.passcode === undefined
+                    ? undefined
+                    : value.passcode === null
+                      ? null
+                      : await hashSharePasscode(value.passcode);
 
             let reserved;
 
@@ -397,6 +403,10 @@ export const createShareLinkCoordinator = (
                     ...(value.title !== undefined ? { title: value.title } : {}),
                     ...(value.note !== undefined ? { note: value.note } : {}),
                     ...(value.expiresAt !== undefined ? { expiresAt: value.expiresAt } : {}),
+                    ...(passcodeHash !== undefined ? { passcodeHash } : {}),
+                    ...(value.notifyOnView !== undefined
+                        ? { notifyOnView: value.notifyOnView && policy.viewCountingEnabled }
+                        : {}),
                     policy,
                 });
             } catch (error) {

@@ -648,6 +648,9 @@ export const UpdateShareLinkInputValidator = z
         title: z.string().min(1).max(120).optional(),
         note: z.string().max(500).nullable().optional(),
         expiresAt: z.iso.datetime().nullable().optional(),
+        /** Omitted preserves the current passcode, null removes it, and a string replaces it. */
+        passcode: z.string().min(4).max(64).nullable().optional(),
+        notifyOnView: z.boolean().optional(),
         contentVersion: safeVersion.optional(),
         selectedCount: z.number().int().min(1).max(MAX_SELECTED_CREDENTIALS).optional(),
         envelope: ShareEnvelopeValidator.optional(),

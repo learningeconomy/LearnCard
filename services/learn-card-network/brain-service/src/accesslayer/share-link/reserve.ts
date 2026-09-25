@@ -663,8 +663,11 @@ const reserveReplacementForLockedShare = async (
         title: input.title ?? share.title,
         note: input.note !== undefined ? input.note : share.note,
         expiresAt: input.expiresAt !== undefined ? input.expiresAt : share.expiresAt,
-        passcodeHash: share.passcodeHash ?? null,
-        notifyOnView: share.notifyOnView === true,
+        passcodeHash:
+            input.passcodeHash !== undefined ? input.passcodeHash : (share.passcodeHash ?? null),
+        notifyOnView:
+            (input.notifyOnView !== undefined ? input.notifyOnView : share.notifyOnView === true) &&
+            (input.policy?.viewCountingEnabled ?? share.minorPolicyViewCountingEnabled),
         policy:
             input.policy ??
             ({
