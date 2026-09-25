@@ -9,10 +9,10 @@ shift 2
 strategy=recreate
 if [[ -e "$previous" ]]; then
     previous=$(realpath "$previous")
-    options=()
+    options=(run --rm)
     if [[ -n ${KC_ENV_FILE:-} ]]; then options+=(--env-file "$KC_ENV_FILE"); fi
     status=0
-    docker run --rm "${options[@]}" --mount "type=bind,src=$previous,dst=/work/prev.json,readonly" \
+    docker "${options[@]}" --mount "type=bind,src=$previous,dst=/work/prev.json,readonly" \
         "$image" update-compatibility check --optimized --file=/work/prev.json \
         --db=postgres --cache=ispn --cache-stack=jdbc-ping "$@" || status=$?
     case "$status" in
