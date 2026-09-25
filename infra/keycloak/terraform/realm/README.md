@@ -104,6 +104,10 @@ Prefix: `learncard-keycloak/<env>/` (for staging, realm is `learncard`).
 | `<realm>/apple`   | `{"client_id":"<web Services ID>","team_id":"…","key_id":"…","private_key":"<raw p8 PEM>"}`; preserve PEM newlines in JSON |
 | `<realm>/lca-api` | `{"client_secret":"<lca-api service client>","broker_client_secret":"<lca-api OIDC broker>"}`                              |
 
+`<realm>/google` and `<realm>/apple` are read only for providers listed in the
+environment's `social_providers` (default `["google", "apple"]`; staging starts with `[]`).
+To enable one: create its secret, add it to `social_providers`, and re-apply.
+
 Google and Apple OAuth consoles must permit
 `https://<public-auth-host>/realms/<realm>/broker/google/endpoint` and
 `https://<public-auth-host>/realms/<realm>/broker/apple/endpoint`, respectively.

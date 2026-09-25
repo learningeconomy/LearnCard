@@ -24,6 +24,16 @@ variable "bootstrap_admin" {
   default     = false
 }
 
+variable "social_providers" {
+  description = "Web social identity providers to create in every realm; each needs its <realm>/<provider> secret"
+  type        = list(string)
+  default     = ["google", "apple"]
+  validation {
+    condition     = alltrue([for provider in var.social_providers : contains(["google", "apple"], provider)])
+    error_message = "social_providers may contain only \"google\" and \"apple\"."
+  }
+}
+
 variable "realms" {
   description = "Generated tenant-stage inputs; explicitly pass generated/<stage>.tfvars.json"
   type = map(object({

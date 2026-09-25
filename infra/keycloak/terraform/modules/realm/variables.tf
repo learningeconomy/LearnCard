@@ -29,14 +29,28 @@ variable "lca_api_backchannel_url" {
   default     = null
 }
 
+variable "enable_google" {
+  description = "Create the web Google identity provider (requires google_client_id and google_client_secret)"
+  type        = bool
+  default     = true
+}
+
+variable "enable_apple" {
+  description = "Create the web Apple identity provider (requires apple_client_id and the apple_* secrets)"
+  type        = bool
+  default     = true
+}
+
 variable "google_client_id" {
   description = "Google web OAuth client ID (not the iOS audience)"
   type        = string
+  default     = null
 }
 
 variable "apple_client_id" {
   description = "Apple web Services ID (not the native bundle audience)"
   type        = string
+  default     = null
 }
 
 variable "secrets" {
@@ -45,10 +59,10 @@ variable "secrets" {
   type = object({
     lca_api_client_secret = string
     broker_client_secret  = string
-    google_client_secret  = string
-    apple_team_id         = string
-    apple_key_id          = string
-    apple_private_key     = string
+    google_client_secret  = optional(string)
+    apple_team_id         = optional(string)
+    apple_key_id          = optional(string)
+    apple_private_key     = optional(string)
   })
 }
 

@@ -32,6 +32,7 @@ resource "keycloak_oidc_identity_provider" "api" {
 }
 
 resource "keycloak_oidc_google_identity_provider" "google" {
+  count                         = var.enable_google ? 1 : 0
   realm                         = keycloak_realm.this.id
   alias                         = "google"
   display_name                  = "Google"
@@ -47,11 +48,18 @@ resource "keycloak_oidc_google_identity_provider" "google" {
   default_scopes                = "openid profile email"
   sync_mode                     = "IMPORT"
   depends_on                    = [keycloak_authentication_execution_config.broker]
+  lifecycle {
+    precondition {
+      condition     = var.google_client_id != null && nonsensitive(var.secrets.google_client_secret != null)
+      error_message = "enable_google requires google_client_id and secrets.google_client_secret."
+    }
+  }
 }
 
 # The social resource's documented provider_id override supports the installed
 # klausbetz provider without inventing configurable Apple endpoint URLs.
 resource "keycloak_oidc_google_identity_provider" "apple" {
+  count                         = var.enable_apple ? 1 : 0
   realm                         = keycloak_realm.this.id
   provider_id                   = "apple"
   alias                         = "apple"
@@ -72,6 +80,24 @@ resource "keycloak_oidc_google_identity_provider" "apple" {
     keyId  = var.secrets.apple_key_id
   }
   depends_on = [keycloak_authentication_execution_config.broker]
+  lifecycle {
+    precondition {
+      condition = var.apple_client_id != null && nonsensitive(alltrue([
+        for value in [var.secrets.apple_team_id, var.secrets.apple_key_id, var.secrets.apple_private_key] : value != null
+      ]))
+      error_message = "enable_apple requires apple_client_id and secrets.apple_team_id/apple_key_id/apple_private_key."
+    }
+  }
+}
+
+moved {
+  from = keycloak_oidc_google_identity_provider.google
+  to   = keycloak_oidc_google_identity_provider.google[0]
+}
+
+moved {
+  from = keycloak_oidc_google_identity_provider.apple
+  to   = keycloak_oidc_google_identity_provider.apple[0]
 }
 
 resource "keycloak_custom_identity_provider_mapper" "phone" {
