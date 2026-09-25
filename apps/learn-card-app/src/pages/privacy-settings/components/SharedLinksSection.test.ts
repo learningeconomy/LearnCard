@@ -113,6 +113,31 @@ describe('shared link actions', () => {
         expect(vm.onUpdate).toHaveBeenCalledWith(share);
     });
 
+    it('offers a fresh share instead of implying a stopped link can be reactivated', () => {
+        const stoppedShare = {
+            ...share,
+            status: 'stopped',
+            stoppedAt: '2026-09-22T12:00:00.000Z',
+        } as ShareLink;
+        const vm = viewModel({ records: [stoppedShare], filter: 'stopped' });
+        render(React.createElement(SharedLinksSection, { vm }));
+
+        expect(screen.getByText(/cannot be reactivated/i)).toBeTruthy();
+        expect(screen.queryByRole('button', { name: 'Copy link' })).toBeNull();
+        fireEvent.click(screen.getByRole('button', { name: 'Share again' }));
+
+        expect(vm.onCreateShare).toHaveBeenCalledOnce();
+    });
+
+    it('warns that stopping cannot be reversed', () => {
+        const vm = viewModel();
+        render(React.createElement(SharedLinksSection, { vm }));
+
+        fireEvent.click(screen.getByRole('button', { name: 'Stop sharing' }));
+
+        expect(screen.getByText(/cannot be reactivated/i)).toBeTruthy();
+    });
+
     it('does not render view statistics for a protected minor account', () => {
         render(
             React.createElement(SharedLinksSection, {

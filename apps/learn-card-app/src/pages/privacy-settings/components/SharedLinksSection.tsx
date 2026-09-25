@@ -170,46 +170,61 @@ const ShareLinkRow = ({ share, vm }: { share: ShareLink; vm: DataSharingSharedLi
                 )}
             </div>
 
-            <div className="mt-4 grid grid-cols-2 gap-2">
-                <button
-                    className={primaryActionClass}
-                    disabled={!canEdit || busy}
-                    onClick={() => void vm.onCopy(share)}
-                >
-                    <IonIcon icon={copyOutline} /> {m['dataShareCenter.shared.copy']()}
-                </button>
-                <button
-                    className={secondaryActionClass}
-                    disabled={!canEdit || busy}
-                    onClick={() => void showQr()}
-                >
-                    <IonIcon icon={qrCodeOutline} /> {m['dataShareCenter.shared.showQr']()}
-                </button>
-            </div>
+            {status === 'stopped' ? (
+                <div className="mt-4 rounded-2xl border border-grayscale-200 bg-grayscale-10 p-4">
+                    <p className="text-sm text-grayscale-600 leading-relaxed">
+                        {m['dataShareCenter.shared.stoppedExplanation']()}
+                    </p>
+                    <button className={`${primaryActionClass} mt-3`} onClick={vm.onCreateShare}>
+                        <IonIcon icon={addOutline} /> {m['dataShareCenter.shared.shareAgain']()}
+                    </button>
+                </div>
+            ) : (
+                <>
+                    <div className="mt-4 grid grid-cols-2 gap-2">
+                        <button
+                            className={primaryActionClass}
+                            disabled={!canEdit || busy}
+                            onClick={() => void vm.onCopy(share)}
+                        >
+                            <IonIcon icon={copyOutline} /> {m['dataShareCenter.shared.copy']()}
+                        </button>
+                        <button
+                            className={secondaryActionClass}
+                            disabled={!canEdit || busy}
+                            onClick={() => void showQr()}
+                        >
+                            <IonIcon icon={qrCodeOutline} /> {m['dataShareCenter.shared.showQr']()}
+                        </button>
+                    </div>
 
-            <div className="mt-3 flex flex-wrap items-center gap-x-4 border-t border-grayscale-100 pt-2">
-                <button
-                    className={textActionClass}
-                    disabled={!canEdit || busy}
-                    onClick={() => setPanel(panel === 'expiry' ? null : 'expiry')}
-                >
-                    <IonIcon icon={timeOutline} /> {m['dataShareCenter.shared.changeExpiry']()}
-                </button>
-                <button
-                    className={textActionClass}
-                    disabled={!canEdit || busy}
-                    onClick={() => setPanel(panel === 'update' ? null : 'update')}
-                >
-                    <IonIcon icon={createOutline} /> {m['dataShareCenter.shared.update']()}
-                </button>
-                <button
-                    className={`${textActionClass} text-red-700 hover:text-red-700 sm:ml-auto`}
-                    disabled={!canEdit || busy}
-                    onClick={() => setPanel(panel === 'stop' ? null : 'stop')}
-                >
-                    <IonIcon icon={stopCircleOutline} /> {m['dataShareCenter.shared.stop']()}
-                </button>
-            </div>
+                    <div className="mt-3 flex flex-wrap items-center gap-x-4 border-t border-grayscale-100 pt-2">
+                        <button
+                            className={textActionClass}
+                            disabled={!canEdit || busy}
+                            onClick={() => setPanel(panel === 'expiry' ? null : 'expiry')}
+                        >
+                            <IonIcon icon={timeOutline} />
+                            {m['dataShareCenter.shared.changeExpiry']()}
+                        </button>
+                        <button
+                            className={textActionClass}
+                            disabled={!canEdit || busy}
+                            onClick={() => setPanel(panel === 'update' ? null : 'update')}
+                        >
+                            <IonIcon icon={createOutline} /> {m['dataShareCenter.shared.update']()}
+                        </button>
+                        <button
+                            className={`${textActionClass} text-red-700 hover:text-red-700 sm:ml-auto`}
+                            disabled={!canEdit || busy}
+                            onClick={() => setPanel(panel === 'stop' ? null : 'stop')}
+                        >
+                            <IonIcon icon={stopCircleOutline} />
+                            {m['dataShareCenter.shared.stop']()}
+                        </button>
+                    </div>
+                </>
+            )}
 
             {panel && (
                 <div className="mt-4 rounded-2xl border border-grayscale-200 bg-grayscale-10 p-4">
