@@ -37,6 +37,7 @@ const mocks = vi.hoisted(() => ({
     decrypt: vi.fn(),
     validate: vi.fn(),
     appBaseUrl: 'https://tenant.example',
+    route: { id: 'AAAAAAAAAAAAAAAAAAAAAA' },
     intersect: undefined as undefined | ((entries: { isIntersecting: boolean }[]) => void),
 }));
 vi.mock('learn-card-base', () => ({
@@ -55,7 +56,7 @@ vi.mock('../../config/bootstrapTenantConfig', () => ({
 }));
 vi.mock('react-router-dom', () => ({
     useHistory: () => mocks.history,
-    useParams: () => ({ id: 'AAAAAAAAAAAAAAAAAAAAAA' }),
+    useParams: () => ({ id: mocks.route.id }),
     useLocation: () => ({
         pathname: window.location.pathname,
         search: window.location.search,
@@ -102,6 +103,7 @@ beforeEach(() => {
     vi.clearAllMocks();
     mocks.history.replace.mockReset();
     mocks.appBaseUrl = 'https://tenant.example';
+    mocks.route.id = 'AAAAAAAAAAAAAAAAAAAAAA';
     mocks.auth.loggedIn = false;
     sessionStorage.clear();
     mocks.wallet.id.did.mockReturnValue('owner');
@@ -749,6 +751,36 @@ describe('recipient screen', () => {
         await waitFor(() => expect(mocks.wallet.invoke.resolveShareLink).toHaveBeenCalledTimes(2));
         fireEvent.click(screen.getByRole('button', { name: 'Open credentials' }));
         await waitFor(() => expect(mocks.wallet.invoke.resolveShareLink).toHaveBeenCalledTimes(3));
+    });
+    it('does not carry a passcode into another private link', async () => {
+        mocks.wallet.invoke.resolveShareLink.mockResolvedValue({ state: 'passcode_required' });
+        const view = render(<ShareLinkViewer />);
+        await screen.findByText('Enter the passcode');
+        fireEvent.change(screen.getByLabelText(/Passcode/i), {
+            target: { value: 'first-link-passcode' },
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'Open credentials' }));
+        await waitFor(() =>
+            expect(mocks.wallet.invoke.resolveShareLink).toHaveBeenCalledWith(
+                'AAAAAAAAAAAAAAAAAAAAAA',
+                'first-link-passcode'
+            )
+        );
+
+        const nextId = `B${'A'.repeat(21)}`;
+        mocks.route.id = nextId;
+        window.history.replaceState(null, '', `/s/${nextId}#B${'A'.repeat(42)}`);
+        view.rerender(<ShareLinkViewer />);
+
+        await waitFor(() =>
+            expect(mocks.wallet.invoke.resolveShareLink).toHaveBeenCalledWith(nextId, undefined)
+        );
+        expect(
+            mocks.wallet.invoke.resolveShareLink.mock.calls.filter(
+                ([shareId]) => shareId === nextId
+            )
+        ).toEqual([[nextId, undefined]]);
+        expect(screen.getByLabelText(/Passcode/i)).toHaveValue('');
     });
     it('asks for the passcode again if it changes after metadata resolves', async () => {
         mocks.wallet.invoke.resolveShareLink

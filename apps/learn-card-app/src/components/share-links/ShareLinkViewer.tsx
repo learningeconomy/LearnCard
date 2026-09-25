@@ -77,8 +77,7 @@ const isRateLimited = (error: unknown): boolean =>
     error !== null &&
     (error as { data?: { code?: string } }).data?.code === 'TOO_MANY_REQUESTS';
 
-const ShareLinkViewer = () => {
-    const { id } = useParams<{ id: string }>();
+const ShareLinkViewerContent = ({ id }: { id: string }) => {
     const location = useLocation();
     const history = useHistory();
     const { hash } = location;
@@ -787,4 +786,12 @@ const ShareLinkViewer = () => {
         </IonPage>
     );
 };
+
+// A route-param change must discard the previous link's passcode and all other
+// private viewer state before any request for the next link can start.
+const ShareLinkViewer = () => {
+    const { id } = useParams<{ id: string }>();
+    return <ShareLinkViewerContent key={id} id={id} />;
+};
+
 export default ShareLinkViewer;

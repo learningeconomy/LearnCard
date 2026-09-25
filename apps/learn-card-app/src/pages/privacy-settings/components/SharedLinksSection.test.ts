@@ -118,6 +118,24 @@ describe('shared link filters', () => {
 });
 
 describe('shared link actions', () => {
+    it('reopens an expiry on the local day selected before UTC conversion', () => {
+        const previousTimezone = process.env.TZ;
+        process.env.TZ = 'America/New_York';
+        try {
+            const vm = viewModel({
+                records: [{ ...share, expiresAt: '2026-09-26T03:59:59.999Z' }],
+            });
+            render(React.createElement(SharedLinksSection, { vm }));
+
+            fireEvent.click(screen.getByRole('button', { name: 'Change expiry' }));
+
+            expect(screen.getByLabelText('Expiry date')).toHaveValue('2026-09-25');
+        } finally {
+            if (previousTimezone === undefined) delete process.env.TZ;
+            else process.env.TZ = previousTimezone;
+        }
+    });
+
     it('opens the share creator from New share', () => {
         const vm = viewModel();
         render(React.createElement(SharedLinksSection, { vm }));

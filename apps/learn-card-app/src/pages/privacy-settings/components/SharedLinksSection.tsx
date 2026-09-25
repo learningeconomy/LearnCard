@@ -37,12 +37,12 @@ export const getSharedLinkViewStatus = (
     return 'active';
 };
 
-const dateValue = (value: string | null): string => (value ? value.slice(0, 10) : '');
-
 export const localDateValue = (value: Date): string => {
     const pad = (part: number) => String(part).padStart(2, '0');
     return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}`;
 };
+
+const dateValue = (value: string | null): string => (value ? localDateValue(new Date(value)) : '');
 
 export const minimumExpiryDateValue = (now = new Date()): string => {
     const minimum = new Date(now);
