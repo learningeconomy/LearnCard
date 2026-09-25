@@ -1,6 +1,6 @@
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import type { ShareLink } from '@learncard/types';
 
 import type { DataSharingSharedLinksViewModel } from '../../DataSharingCenter.types';
@@ -79,6 +79,10 @@ const viewModel = (overrides: Partial<DataSharingSharedLinksViewModel> = {}) => 
 
 const seed = (vm: ReturnType<typeof viewModel>) => useSharedLinksStore.setState({ vm });
 
+/** Scopes into the "Stop sharing" confirmation region, disambiguating the
+ * confirm button from the row toggle button of the same name. */
+const stopPanel = () => screen.getByRole('region', { name: 'Stop sharing' });
+
 describe('ShareLinkDetailSheet', () => {
     it('shows the note and calls onPreview from the credential count', () => {
         const vm = viewModel();
@@ -97,7 +101,7 @@ describe('ShareLinkDetailSheet', () => {
         expect(vm.onPreview).toHaveBeenCalledWith(vm.records[0]);
     });
 
-    it('shows passcode and view stats, hiding stats when disabled or undefined', () => {
+    it('shows passcode (On/Off) and view stats, hiding stats when disabled or undefined', () => {
         const vm = viewModel();
         seed(vm);
         const { rerender } = render(
@@ -108,8 +112,19 @@ describe('ShareLinkDetailSheet', () => {
             />
         );
 
-        expect(screen.getByText('Passcode required')).toBeTruthy();
+        expect(screen.getByText('On')).toBeTruthy();
         expect(screen.getByText('Views')).toBeTruthy();
+
+        const noPasscodeVm = viewModel({ records: [share({ passcodeProtected: false })] });
+        seed(noPasscodeVm);
+        rerender(
+            <ShareLinkDetailSheet
+                shareId={noPasscodeVm.records[0].id}
+                fallback={noPasscodeVm.records[0]}
+                onClose={vi.fn()}
+            />
+        );
+        expect(screen.getByText('Off')).toBeTruthy();
 
         const noStatsVm = viewModel({ showViewStats: false });
         seed(noStatsVm);
@@ -158,7 +173,7 @@ describe('ShareLinkDetailSheet', () => {
         expect(vm.onUpdate).toHaveBeenCalledWith(vm.records[0]);
     });
 
-    it('reveals the stop warning and calls onStop when confirmed', async () => {
+    it('reveals the stop warning, focuses the title, and calls onStop when confirmed', async () => {
         const vm = viewModel();
         seed(vm);
         render(
@@ -170,16 +185,44 @@ describe('ShareLinkDetailSheet', () => {
         );
 
         fireEvent.click(screen.getByRole('button', { name: 'Stop sharing' }));
-        expect(screen.getByText(/cannot be reactivated/)).toBeTruthy();
+        const panel = stopPanel();
+        expect(within(panel).getByText(/cannot be reactivated/)).toBeTruthy();
 
-        const stopButtons = screen.getAllByRole('button', { name: 'Stop sharing' });
+        const confirmButton = within(panel).getByRole('button', { name: 'Stop sharing' });
         await act(async () => {
-            fireEvent.click(stopButtons[stopButtons.length - 1]);
+            fireEvent.click(confirmButton);
         });
         expect(vm.onStop).toHaveBeenCalledWith(vm.records[0]);
+
+        expect(screen.getByRole('heading', { name: 'Career highlights' })).toHaveFocus();
     });
 
-    it('changes expiry to the local end-of-day ISO, and rejects a too-early date', async () => {
+    it('shows the busy "Stopping…" label on the confirm button while busy', () => {
+        const vm = viewModel();
+        seed(vm);
+        render(
+            <ShareLinkDetailSheet
+                shareId={vm.records[0].id}
+                fallback={vm.records[0]}
+                onClose={vi.fn()}
+            />
+        );
+
+        // Open the panel first (the toggle is disabled once busy).
+        fireEvent.click(screen.getByRole('button', { name: 'Stop sharing' }));
+
+        act(() => {
+            useSharedLinksStore.setState({
+                vm: viewModel({ busyId: 'AAAAAAAAAAAAAAAAAAAAAA' }),
+            });
+        });
+
+        const panel = stopPanel();
+        expect(within(panel).getByRole('button', { name: 'Stopping…' })).toBeTruthy();
+        expect(within(panel).getByRole('button', { name: 'Stopping…' })).toBeDisabled();
+    });
+
+    it('changes expiry to the local end-of-day ISO, focuses the Change button, and rejects a too-early date', async () => {
         const vm = viewModel();
         seed(vm);
         render(
@@ -208,6 +251,7 @@ describe('ShareLinkDetailSheet', () => {
             vm.records[0],
             new Date(`${futureValue}T23:59:59.999`).toISOString()
         );
+        expect(screen.getByRole('button', { name: 'Change expiry' })).toHaveFocus();
 
         const past = '2000-01-01';
         fireEvent.click(screen.getByRole('button', { name: 'Change expiry' }));
@@ -217,6 +261,59 @@ describe('ShareLinkDetailSheet', () => {
 
         expect(screen.getByRole('alert')).toBeTruthy();
         expect(vm.onChangeExpiry).toHaveBeenCalledTimes(1);
+    });
+
+    it('shows the busy "Saving…" label on Save expiry while busy', () => {
+        const vm = viewModel();
+        seed(vm);
+        render(
+            <ShareLinkDetailSheet
+                shareId={vm.records[0].id}
+                fallback={vm.records[0]}
+                onClose={vi.fn()}
+            />
+        );
+
+        // Open the panel first (the toggle is disabled once busy).
+        fireEvent.click(screen.getByRole('button', { name: 'Change expiry' }));
+
+        act(() => {
+            useSharedLinksStore.setState({
+                vm: viewModel({ busyId: 'AAAAAAAAAAAAAAAAAAAAAA' }),
+            });
+        });
+
+        expect(screen.getByRole('button', { name: 'Saving…' })).toBeTruthy();
+        expect(screen.getByRole('button', { name: 'Saving…' })).toBeDisabled();
+    });
+
+    it('resets the expiry input to the real expiry after editing, collapsing, and reopening', () => {
+        const vm = viewModel({
+            records: [share({ expiresAt: '2026-10-01T12:00:00.000Z' })],
+        });
+        seed(vm);
+        render(
+            <ShareLinkDetailSheet
+                shareId={vm.records[0].id}
+                fallback={vm.records[0]}
+                onClose={vi.fn()}
+            />
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Change expiry' }));
+        const input = screen.getByLabelText('Expiry date') as HTMLInputElement;
+        expect(input.value).toBe('2026-10-01');
+
+        fireEvent.change(input, { target: { value: '2026-11-15' } });
+        expect(input.value).toBe('2026-11-15');
+
+        // Collapse without saving.
+        fireEvent.click(screen.getByRole('button', { name: 'Change expiry' }));
+        expect(screen.queryByLabelText('Expiry date')).toBeNull();
+
+        // Reopen: the edit should not have persisted.
+        fireEvent.click(screen.getByRole('button', { name: 'Change expiry' }));
+        expect((screen.getByLabelText('Expiry date') as HTMLInputElement).value).toBe('2026-10-01');
     });
 
     it('shows the stopped explanation with no Copy link, and Share again calls onCreateShare', () => {
@@ -239,6 +336,54 @@ describe('ShareLinkDetailSheet', () => {
 
         fireEvent.click(screen.getByRole('button', { name: 'Share again' }));
         expect(vm.onCreateShare).toHaveBeenCalled();
+    });
+
+    it('renders no Update contents or Stop sharing rows for a stopped link', () => {
+        const vm = viewModel({ records: [share({ status: 'stopped' })] });
+        seed(vm);
+        render(
+            <ShareLinkDetailSheet
+                shareId={vm.records[0].id}
+                fallback={vm.records[0]}
+                onClose={vi.fn()}
+            />
+        );
+
+        expect(screen.queryByRole('button', { name: 'Update contents' })).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Stop sharing' })).toBeNull();
+    });
+
+    it('shows the expired chip and keeps Change enabled', () => {
+        const vm = viewModel({
+            records: [share({ expiresAt: '2000-01-01T00:00:00.000Z' })],
+        });
+        seed(vm);
+        render(
+            <ShareLinkDetailSheet
+                shareId={vm.records[0].id}
+                fallback={vm.records[0]}
+                onClose={vi.fn()}
+            />
+        );
+
+        expect(screen.getAllByText('Expired').length).toBeGreaterThan(0);
+        expect(screen.getByRole('button', { name: 'Change expiry' })).not.toBeDisabled();
+    });
+
+    it('disables Copy, QR, and View for a non-finalized (staging) share', () => {
+        const vm = viewModel({ records: [share({ contentState: 'staging' })] });
+        seed(vm);
+        render(
+            <ShareLinkDetailSheet
+                shareId={vm.records[0].id}
+                fallback={vm.records[0]}
+                onClose={vi.fn()}
+            />
+        );
+
+        expect(screen.getByRole('button', { name: 'Copy link' })).toBeDisabled();
+        expect(screen.getByRole('button', { name: 'Show QR code' })).toBeDisabled();
+        expect(screen.getByRole('button', { name: 'View 4 credentials' })).toBeDisabled();
     });
 
     it('shows the pending banner, allows checking again, and disables Stop sharing', () => {
@@ -289,6 +434,43 @@ describe('ShareLinkDetailSheet', () => {
         expect(screen.getByText('Fallback title')).toBeTruthy();
     });
 
+    it('calls onClose when the vm transitions to null (section unmounted)', () => {
+        const vm = viewModel();
+        seed(vm);
+        const onClose = vi.fn();
+        render(
+            <ShareLinkDetailSheet
+                shareId={vm.records[0].id}
+                fallback={vm.records[0]}
+                onClose={onClose}
+            />
+        );
+
+        expect(onClose).not.toHaveBeenCalled();
+
+        act(() => {
+            useSharedLinksStore.setState({ vm: null });
+        });
+
+        expect(onClose).toHaveBeenCalled();
+    });
+
+    it('calls onClose when the close button is clicked', () => {
+        const vm = viewModel();
+        seed(vm);
+        const onClose = vi.fn();
+        render(
+            <ShareLinkDetailSheet
+                shareId={vm.records[0].id}
+                fallback={vm.records[0]}
+                onClose={onClose}
+            />
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+        expect(onClose).toHaveBeenCalled();
+    });
+
     it('loads the private URL lazily and renders the QR code', async () => {
         const vm = viewModel();
         seed(vm);
@@ -308,5 +490,28 @@ describe('ShareLinkDetailSheet', () => {
 
         expect(vm.onGetPrivateUrl).toHaveBeenCalledWith(vm.records[0]);
         expect(screen.getByRole('img', { name: 'Private link QR code' })).toBeTruthy();
+    });
+
+    it('shows an inline error inside the QR box when loading the private URL fails, without the bottom alert', async () => {
+        const vm = viewModel({
+            onGetPrivateUrl: vi.fn(async () => Promise.reject(new Error('boom'))),
+        });
+        seed(vm);
+        render(
+            <ShareLinkDetailSheet
+                shareId={vm.records[0].id}
+                fallback={vm.records[0]}
+                onClose={vi.fn()}
+            />
+        );
+
+        await act(async () => {
+            fireEvent.click(screen.getByRole('button', { name: 'Show QR code' }));
+        });
+
+        expect(screen.queryByRole('img', { name: 'Private link QR code' })).toBeNull();
+        const alerts = screen.getAllByRole('alert');
+        expect(alerts).toHaveLength(1);
+        expect(alerts[0].textContent).toMatch(/something went wrong/i);
     });
 });

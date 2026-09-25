@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
 import { IonIcon } from '@ionic/react';
 import {
     addOutline,
@@ -55,13 +55,41 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
     const vm = useSharedLinksStore(state => state.vm);
     const lastKnown = useRef(fallback);
     const live = vm?.records.find(record => record.id === shareId);
+    // Intentional render-time write: keeps the sheet showing the freshest known
+    // snapshot of this share without an extra render. It's idempotent — writing
+    // the same object reference (or an equal one) repeatedly is harmless — and
+    // it never fires when `live` is undefined, so the last-known snapshot (or
+    // the initial `fallback`) is preserved when the record drops out of view.
     if (live) lastKnown.current = live;
     const share = lastKnown.current;
 
     const [panel, setPanel] = useState<Panel | null>(null);
     const [privateUrl, setPrivateUrl] = useState('');
-    const [panelError, setPanelError] = useState(false);
+    const [errorPanel, setErrorPanel] = useState<Panel | null>(null);
     const [expiry, setExpiry] = useState(dateInputValue(share.expiresAt));
+
+    const panelRef = useRef<Panel | null>(null);
+    const qrRequestRef = useRef(0);
+    const titleRef = useRef<HTMLHeadingElement>(null);
+    const changeExpiryButtonRef = useRef<HTMLButtonElement>(null);
+    const hadVmRef = useRef(false);
+
+    const qrPanelId = useId();
+    const expiryPanelId = useId();
+    const updatePanelId = useId();
+    const stopPanelId = useId();
+    const stopWarningId = useId();
+
+    // If the section unmounts (or the store is otherwise cleared), the store's
+    // `vm` transitions to null out from under an already-open sheet. Close it
+    // rather than rendering against a stale/absent view model.
+    useEffect(() => {
+        if (vm) {
+            hadVmRef.current = true;
+        } else if (hadVmRef.current) {
+            onClose();
+        }
+    }, [vm, onClose]);
 
     if (!vm) return null;
 
@@ -73,42 +101,65 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
     const mutationsDisabled = !canEdit || busy || pending;
     const minimumExpiry = minimumExpiryDateValue();
 
+    const setPanelState = (next: Panel | null) => {
+        panelRef.current = next;
+        setPanel(next);
+    };
+
     const togglePanel = (next: Panel) => {
-        setPanelError(false);
-        setPanel(current => (current === next ? null : next));
+        setErrorPanel(null);
+        setPanelState(panel === next ? null : next);
+    };
+
+    const toggleExpiryPanel = () => {
+        if (panel !== 'expiry') setExpiry(dateInputValue(share.expiresAt));
+        togglePanel('expiry');
     };
 
     const toggleQr = async () => {
-        if (panel === 'qr') return setPanel(null);
-        togglePanel('qr');
+        if (panel === 'qr') {
+            setPanelState(null);
+            return;
+        }
+        setErrorPanel(null);
+        setPanelState('qr');
+        const requestId = ++qrRequestRef.current;
         try {
-            setPrivateUrl(await vm.onGetPrivateUrl(share));
+            const url = await vm.onGetPrivateUrl(share);
+            if (panelRef.current !== 'qr' || qrRequestRef.current !== requestId) return;
+            setPrivateUrl(url);
         } catch {
-            setPanelError(true);
+            if (panelRef.current !== 'qr' || qrRequestRef.current !== requestId) return;
+            setErrorPanel('qr');
         }
     };
 
     const saveExpiry = async () => {
-        setPanelError(false);
-        if (expiry && expiry < minimumExpiry) return setPanelError(true);
+        setErrorPanel(null);
+        if (expiry && expiry < minimumExpiry) {
+            setErrorPanel('expiry');
+            return;
+        }
         try {
             await vm.onChangeExpiry(
                 share,
                 expiry ? new Date(`${expiry}T23:59:59.999`).toISOString() : null
             );
-            setPanel(null);
+            setPanelState(null);
+            changeExpiryButtonRef.current?.focus();
         } catch {
-            setPanelError(true);
+            setErrorPanel('expiry');
         }
     };
 
     const stop = async () => {
-        setPanelError(false);
+        setErrorPanel(null);
         try {
             await vm.onStop(share);
-            setPanel(null);
+            setPanelState(null);
+            titleRef.current?.focus();
         } catch {
-            setPanelError(true);
+            setErrorPanel('stop');
         }
     };
 
@@ -124,7 +175,13 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
             </button>
 
             <header className="pe-10">
-                <h2 className="break-words text-lg font-semibold leading-snug">{share.title}</h2>
+                <h2
+                    ref={titleRef}
+                    tabIndex={-1}
+                    className="break-words text-lg font-semibold leading-snug focus:outline-none"
+                >
+                    {share.title}
+                </h2>
                 {share.note && (
                     <p className="mt-1 text-sm leading-relaxed text-grayscale-600">{share.note}</p>
                 )}
@@ -165,6 +222,7 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
                             type="button"
                             aria-label={m['dataShareCenter.shared.showQrLabel']()}
                             aria-pressed={panel === 'qr'}
+                            aria-controls={qrPanelId}
                             disabled={!canEdit || busy}
                             onClick={() => void toggleQr()}
                             className={squareButton}
@@ -184,7 +242,10 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
                         </button>
                     </div>
                     {panel === 'qr' && (
-                        <div className="mt-3 flex justify-center rounded-2xl border border-grayscale-200 bg-grayscale-10 p-4">
+                        <div
+                            id={qrPanelId}
+                            className="mt-3 flex justify-center rounded-2xl border border-grayscale-200 bg-grayscale-10 p-4"
+                        >
                             {privateUrl ? (
                                 <QRCodeSVG
                                     className="sl-qr-in"
@@ -197,11 +258,15 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
                                     role="img"
                                     aria-label={m['dataShareCenter.shared.qrLabel']()}
                                 />
-                            ) : !panelError ? (
+                            ) : errorPanel === 'qr' ? (
+                                <span role="alert" className="text-sm text-red-700">
+                                    {m['dataShareCenter.shared.actionError']()}
+                                </span>
+                            ) : (
                                 <span className="text-sm text-grayscale-600">
                                     {m['dataShareCenter.shared.loadingLink']()}
                                 </span>
-                            ) : null}
+                            )}
                         </div>
                     )}
                 </>
@@ -235,8 +300,8 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
                 </DetailRow>
                 <DetailRow label={m['dataShareCenter.shared.passcodeLabel']()}>
                     {share.passcodeProtected
-                        ? m['dataShareCenter.shared.passcodeProtected']()
-                        : m['dataShareCenter.shared.passcodeOff']()}
+                        ? m['dataShareCenter.shared.passcodeOn']()
+                        : m['dataShareCenter.shared.passcodeOffValue']()}
                 </DetailRow>
                 <DetailRow label={m['dataShareCenter.shared.createdLabel']()}>
                     {formatShortDate(share.createdAt)}
@@ -250,11 +315,13 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
                             : m['dataShareCenter.shared.neverExpires']()}
                         {status !== 'stopped' && (
                             <button
+                                ref={changeExpiryButtonRef}
                                 type="button"
                                 aria-label={m['dataShareCenter.shared.changeExpiry']()}
                                 aria-expanded={panel === 'expiry'}
+                                aria-controls={expiryPanelId}
                                 disabled={mutationsDisabled}
-                                onClick={() => togglePanel('expiry')}
+                                onClick={toggleExpiryPanel}
                                 className="text-sm font-medium text-emerald-700 hover:underline disabled:cursor-not-allowed disabled:opacity-40"
                             >
                                 {m['dataShareCenter.shared.change']()}
@@ -277,7 +344,10 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
             </dl>
 
             {panel === 'expiry' && (
-                <div className="mt-3 space-y-3 rounded-2xl border border-grayscale-200 bg-grayscale-10 p-4">
+                <div
+                    id={expiryPanelId}
+                    className="mt-3 space-y-3 rounded-2xl border border-grayscale-200 bg-grayscale-10 p-4"
+                >
                     <label className="block text-xs font-medium text-grayscale-700">
                         {m['dataShareCenter.shared.expiryDate']()}
                         <input
@@ -295,7 +365,7 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
                         <button
                             type="button"
                             className="rounded-[20px] bg-grayscale-900 px-4 py-2 text-xs font-medium text-white disabled:opacity-40"
-                            disabled={busy}
+                            disabled={busy || pending}
                             onClick={() => void saveExpiry()}
                         >
                             {busy
@@ -311,6 +381,7 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
                     <button
                         type="button"
                         aria-expanded={panel === 'update'}
+                        aria-controls={updatePanelId}
                         disabled={mutationsDisabled}
                         onClick={() => togglePanel('update')}
                         className="flex items-center justify-between rounded-xl px-1 py-3 text-sm font-medium text-grayscale-800 hover:bg-grayscale-10 disabled:cursor-not-allowed disabled:opacity-40"
@@ -326,7 +397,10 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
                         />
                     </button>
                     {panel === 'update' && (
-                        <div className="mb-2 space-y-3 rounded-2xl border border-grayscale-200 bg-grayscale-10 p-4">
+                        <div
+                            id={updatePanelId}
+                            className="mb-2 space-y-3 rounded-2xl border border-grayscale-200 bg-grayscale-10 p-4"
+                        >
                             <p className="text-sm leading-relaxed text-grayscale-700">
                                 {m['dataShareCenter.shared.updateWarning']()}
                             </p>
@@ -334,13 +408,14 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
                                 <button
                                     type="button"
                                     className={quietButton}
-                                    onClick={() => setPanel(null)}
+                                    onClick={() => setPanelState(null)}
                                 >
                                     {m['common.cancel']()}
                                 </button>
                                 <button
                                     type="button"
-                                    className="rounded-[20px] bg-grayscale-900 px-4 py-2 text-xs font-medium text-white"
+                                    className="rounded-[20px] bg-grayscale-900 px-4 py-2 text-xs font-medium text-white disabled:opacity-40"
+                                    disabled={busy || pending}
                                     onClick={() => vm.onUpdate(share)}
                                 >
                                     {m['dataShareCenter.shared.continueUpdate']()}
@@ -351,6 +426,7 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
                     <button
                         type="button"
                         aria-expanded={panel === 'stop'}
+                        aria-controls={stopPanelId}
                         disabled={mutationsDisabled}
                         onClick={() => togglePanel('stop')}
                         className="flex items-center gap-2 rounded-xl px-1 py-3 text-sm font-medium text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
@@ -359,22 +435,31 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
                         {m['dataShareCenter.shared.stop']()}
                     </button>
                     {panel === 'stop' && (
-                        <div className="space-y-3 rounded-2xl border border-red-100 bg-red-50/60 p-4">
-                            <p className="text-sm leading-relaxed text-grayscale-700">
+                        <div
+                            id={stopPanelId}
+                            role="region"
+                            aria-label={m['dataShareCenter.shared.stop']()}
+                            className="space-y-3 rounded-2xl border border-red-100 bg-red-50/60 p-4"
+                        >
+                            <p
+                                id={stopWarningId}
+                                className="text-sm leading-relaxed text-grayscale-700"
+                            >
                                 {m['dataShareCenter.shared.stopWarning']()}
                             </p>
                             <div className="flex justify-end gap-2">
                                 <button
                                     type="button"
                                     className={quietButton}
-                                    onClick={() => setPanel(null)}
+                                    onClick={() => setPanelState(null)}
                                 >
                                     {m['common.cancel']()}
                                 </button>
                                 <button
                                     type="button"
+                                    aria-describedby={stopWarningId}
                                     className="rounded-[20px] bg-red-700 px-4 py-2 text-xs font-medium text-white disabled:opacity-40"
-                                    disabled={busy}
+                                    disabled={busy || pending}
                                     onClick={() => void stop()}
                                 >
                                     {busy
@@ -387,7 +472,7 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
                 </div>
             )}
 
-            {panelError && (
+            {(panel === 'expiry' || panel === 'stop') && errorPanel === panel && (
                 <p role="alert" className="mt-3 text-sm text-red-700">
                     {m['dataShareCenter.shared.actionError']()}
                 </p>
