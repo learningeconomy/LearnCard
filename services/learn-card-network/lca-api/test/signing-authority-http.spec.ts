@@ -10,7 +10,11 @@ import {
 import { createOpenApiAwsLambdaHandler } from '@helpers/shim';
 import { appRouter } from '../src/app';
 import { getUser } from './helpers/getClient';
-import { runSeedMigrationBatch } from '../src/migrations/signingAuthoritySeeds';
+import {
+    runSeedMigrationBatch,
+    SEED_MIGRATION_RECEIPTS_COLLECTION,
+    SEED_MIGRATION_STATE_COLLECTION,
+} from '../src/migrations/signingAuthoritySeeds';
 
 let user: Awaited<ReturnType<typeof getUser>>;
 const handler = createOpenApiAwsLambdaHandler({
@@ -63,6 +67,9 @@ afterAll(async () => {
 });
 beforeEach(async () => {
     await SigningAuthorities.deleteMany({});
+    // Spec files share one database; another file may leave a migration lease or receipts behind.
+    await mongodb.collection(SEED_MIGRATION_STATE_COLLECTION).deleteMany({});
+    await mongodb.collection(SEED_MIGRATION_RECEIPTS_COLLECTION).deleteMany({});
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
 });
 afterEach(() => vi.restoreAllMocks());
