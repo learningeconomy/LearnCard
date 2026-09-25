@@ -1,8 +1,13 @@
 import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
+import { expect, userEvent, within } from '@storybook/test';
 
 import DataSharingCenterView from './DataSharingCenterView';
 import { DATA_SHARING_PERSONAS } from './dataSharing.personas';
+import type {
+    DataSharingCenterViewModel,
+    DataSharingSavedCollectionsViewModel,
+} from './DataSharingCenter.types';
 
 const meta: Meta<typeof DataSharingCenterView> = {
     title: 'Pages/PrivacySettings/DataSharingCenterView',
@@ -22,12 +27,60 @@ const meta: Meta<typeof DataSharingCenterView> = {
 export default meta;
 type Story = StoryObj<typeof DataSharingCenterView>;
 
+const sharedLinksPersona = DATA_SHARING_PERSONAS['Active learner · shared links'];
+
+const savedCollectionsPersona = (
+    overrides: Partial<DataSharingSavedCollectionsViewModel> = {}
+): DataSharingCenterViewModel => {
+    if (!sharedLinksPersona.shared) throw new Error('Shared links persona is required');
+
+    return {
+        ...sharedLinksPersona,
+        shared: {
+            ...sharedLinksPersona.shared,
+            savedCollections: {
+                ...sharedLinksPersona.shared.savedCollections,
+                ...overrides,
+            },
+        },
+    };
+};
+
+const openSavedCollections: NonNullable<Story['play']> = async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole('tab', { name: 'Saved collections' }));
+    await expect(canvas.getByRole('tab', { name: 'Saved collections' })).toHaveAttribute(
+        'aria-selected',
+        'true'
+    );
+};
+
 export const ActiveLearner: Story = {
     args: { vm: DATA_SHARING_PERSONAS['Active learner'] },
 };
 
 export const ActiveLearnerWithSharedLinks: Story = {
-    args: { vm: DATA_SHARING_PERSONAS['Active learner · shared links'] },
+    args: { vm: sharedLinksPersona },
+};
+
+export const SavedCollections: Story = {
+    args: { vm: savedCollectionsPersona() },
+    play: openSavedCollections,
+};
+
+export const SavedCollectionsEmpty: Story = {
+    args: { vm: savedCollectionsPersona({ records: [] }) },
+    play: openSavedCollections,
+};
+
+export const SavedCollectionsLoading: Story = {
+    args: { vm: savedCollectionsPersona({ records: [], isLoading: true }) },
+    play: openSavedCollections,
+};
+
+export const SavedCollectionsError: Story = {
+    args: { vm: savedCollectionsPersona({ records: [], error: true }) },
+    play: openSavedCollections,
 };
 
 export const NothingShared: Story = {
