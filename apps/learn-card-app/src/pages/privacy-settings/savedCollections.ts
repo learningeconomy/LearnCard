@@ -64,9 +64,8 @@ export const loadSavedCredentialCollections = async (
 
             return {
                 collection,
-                dedupeKey: metadata
-                    ? `share:${metadata.shareId}`
-                    : `presentation:${JSON.stringify(presentation)}`,
+                shareKey: metadata ? `share:${metadata.shareId}` : undefined,
+                presentationKey: `presentation:${JSON.stringify(presentation)}`,
             };
         } catch {
             readFailures += 1;
@@ -80,7 +79,8 @@ export const loadSavedCredentialCollections = async (
                 item
             ): item is {
                 collection: SavedCredentialCollection;
-                dedupeKey: string;
+                shareKey?: string;
+                presentationKey: string;
             } => item !== null
         )
         .sort(
@@ -89,8 +89,13 @@ export const loadSavedCredentialCollections = async (
                 new Date(a.collection.receivedAt).getTime()
         )
         .flatMap(item => {
-            if (seen.has(item.dedupeKey)) return [];
-            seen.add(item.dedupeKey);
+            if (
+                seen.has(item.presentationKey) ||
+                (item.shareKey !== undefined && seen.has(item.shareKey))
+            )
+                return [];
+            seen.add(item.presentationKey);
+            if (item.shareKey) seen.add(item.shareKey);
             return [item.collection];
         });
     if (received.length > 0 && collections.length === 0 && readFailures > 0) {

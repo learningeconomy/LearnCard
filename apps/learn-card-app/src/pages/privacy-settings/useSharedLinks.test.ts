@@ -147,6 +147,39 @@ describe('loadSavedCredentialCollections', () => {
         ]);
     });
 
+    it('prefers a contextual save over a matching legacy duplicate', async () => {
+        const savedPresentation = presentation(credential('Badge'));
+        const wallet = {
+            invoke: {
+                getReceivedPresentations: vi.fn(async () => [
+                    {
+                        uri: 'lc:network:legacy',
+                        from: 'recipient',
+                        to: 'recipient',
+                        sent: '2026-09-24T12:00:00.000Z',
+                    },
+                    {
+                        uri: 'lc:network:contextual',
+                        from: 'recipient',
+                        to: 'recipient',
+                        sent: '2026-09-25T12:00:00.000Z',
+                        metadata: {
+                            type: 'learncard.share-link.v1',
+                            shareId: 'AAAAAAAAAAAAAAAAAAAAAA',
+                            title: 'Career highlights',
+                            sharer: { profileId: 'sender', displayName: 'Alex' },
+                        },
+                    },
+                ]),
+            },
+            read: { get: vi.fn(async () => savedPresentation) },
+        } as unknown as ShareWallet;
+
+        await expect(loadSavedCredentialCollections(wallet)).resolves.toMatchObject([
+            { uri: 'lc:network:contextual', title: 'Career highlights' },
+        ]);
+    });
+
     it('keeps valid collections when one received presentation cannot be read', async () => {
         const wallet = {
             invoke: {
