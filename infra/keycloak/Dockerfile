@@ -24,6 +24,7 @@ ADD --checksum=sha256:4091dee2a1ec9e0771bef4bd46005197d86b0a2b1f25198c41738476b1
 
 ENV KC_DB=postgres \
     KC_DB_DRIVER=software.amazon.jdbc.Driver \
+    KC_FEATURES_DISABLED=twitter-broker,identity-brokering-api \
     KC_HEALTH_ENABLED=true \
     KC_METRICS_ENABLED=true \
     KC_HTTP_RELATIVE_PATH=/
