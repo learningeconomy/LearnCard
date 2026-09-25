@@ -76,7 +76,7 @@ jobs:
               with:
                   persist-credentials: false
             - name: Build optimized Keycloak image (no push)
-              run: docker build --build-arg KEYCLOAK_VERSION=26.7.4 -f infra/keycloak/Dockerfile infra/keycloak
+              run: docker build -f infra/keycloak/Dockerfile infra/keycloak
 
     # No environment here: it changes the OIDC subject from pull_request to
     # environment:keycloak-staging, which the plan role deliberately does not trust.
