@@ -60,9 +60,10 @@ export const useSharedLinks = (
     >({});
     const [filter, setFilter] = useState<SharedLinkFilter>('active');
     const [savedCollections, setSavedCollections] = useState<SavedCredentialCollection[]>([]);
-    const [savedCollectionsLoading, setSavedCollectionsLoading] = useState(false);
+    const [savedCollectionsLoading, setSavedCollectionsLoading] = useState(enabled);
     const [savedCollectionsError, setSavedCollectionsError] = useState(false);
     const savedCollectionsLoadedRef = useRef(false);
+    const savedCollectionsPromiseRef = useRef<Promise<void> | null>(null);
 
     const load = useCallback(async (pageCursor?: string): Promise<void> => {
         const append = Boolean(pageCursor);
@@ -106,18 +107,24 @@ export const useSharedLinks = (
         }
     }, []);
 
-    const loadSavedCollections = useCallback(async (): Promise<void> => {
-        setSavedCollectionsLoading(true);
-        setSavedCollectionsError(false);
-        try {
-            const wallet = shareWallet(await walletRef.current());
-            setSavedCollections(await loadSavedCredentialCollections(wallet));
-            savedCollectionsLoadedRef.current = true;
-        } catch {
-            setSavedCollectionsError(true);
-        } finally {
-            setSavedCollectionsLoading(false);
-        }
+    const loadSavedCollections = useCallback((): Promise<void> => {
+        if (savedCollectionsPromiseRef.current) return savedCollectionsPromiseRef.current;
+        const promise = (async () => {
+            setSavedCollectionsLoading(true);
+            setSavedCollectionsError(false);
+            try {
+                const wallet = shareWallet(await walletRef.current());
+                setSavedCollections(await loadSavedCredentialCollections(wallet));
+                savedCollectionsLoadedRef.current = true;
+            } catch {
+                setSavedCollectionsError(true);
+            } finally {
+                setSavedCollectionsLoading(false);
+                savedCollectionsPromiseRef.current = null;
+            }
+        })();
+        savedCollectionsPromiseRef.current = promise;
+        return promise;
     }, []);
 
     useEffect(() => {
