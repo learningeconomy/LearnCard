@@ -1,7 +1,7 @@
-//! Escrow enclave scaffold. No attestation, decryption, or release is implemented yet.
+//! Escrow enclave primitives. Attestation, release policy, and transport remain scaffolds.
 
 /// P-256 ECDH, HKDF-SHA256, and AES-GCM envelope compatibility (P1.2).
-pub mod crypto {}
+pub mod crypto;
 /// Nitro attestation and the future NsmDriver abstraction with native fakes (P1.3).
 pub mod nsm {}
 /// Attested KMS unseal and the future KmsClient abstraction (P1.4).
