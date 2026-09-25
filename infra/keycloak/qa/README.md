@@ -1,277 +1,170 @@
-# Keycloak QA & Observability
+# Keycloak operational QA
 
-Operational QA runbooks and health-check scripts for Keycloak staging and production environments.
-Maps to Appendix A (A1–A10) of `.sisyphus/plans/keycloak-aws-platform.md`.
+These are operator-run tools for [platform-plan Appendix A](../../../.sisyphus/plans/keycloak-aws-platform.md).
+They are **not evidence that a live drill passed**. Use a reviewed staging change
+window, short-lived operator credentials, AWS CLI v2, jq, curl, Bun and external
+k6. No npm dependency is added. Playwright is already declared in
+`tests/smoketests/package.json`; `signin.ts` resolves that workspace's installation.
+Install its Chromium browser before an approved live sign-in run. Never put real
+tokens/passwords in command history, reports, k6 JSON outputs, or committed files.
 
-## Files
-
-### K6 Probes & Load Tests
-
-- **`probe.js`** — Discovery probe: loops `.well-known/openid-configuration` and refresh-token grant at 5 rps.
-  Reports non-2xx counts per 10s window. Used during disruptive drills (A4–A8).
-
-    ```bash
-    k6 run infra/keycloak/qa/probe.js -e HOST=auth.staging.learncard.app
-    ```
-
-- **`load.js`** — Load test with burst scenario (500 req/min). Includes default ramping scenario (10–50 req/s).
-    ```bash
-    k6 run infra/keycloak/qa/load.js -e HOST=auth.staging.learncard.app
-    k6 run infra/keycloak/qa/load.js -e HOST=auth.staging.learncard.app --scenario burst
-    ```
-
-### Sign-In & Security Tests
-
-- **`signin.ts`** — Playwright-based authorization-code PKCE flow test. Staging-only (requires `KEYCLOAK_STAGING_REALM_LIVE=true`).
-  Tests full sign-in flow: auth endpoint → login form → code exchange → token.
-
-    ```bash
-    KEYCLOAK_STAGING_REALM_LIVE=true \
-    KEYCLOAK_TEST_USER=testuser \
-    KEYCLOAK_TEST_PASSWORD=testpass \
-    bunx playwright test infra/keycloak/qa/signin.ts
-    ```
-
-- **`prod-check.ts`** — Production security checklist (A10). Asserts via admin REST API:
-    - No bootstrap admin user
-    - All clients have `directAccessGrantsEnabled=false`
-    - `learncard-app` has PKCE S256
-    - Realm has `bruteForceProtected=true`
-    - Events enabled
-
-    Requires: `KEYCLOAK_ADMIN_URL`, `KEYCLOAK_ADMIN_USER`, `KEYCLOAK_ADMIN_PASSWORD`.
-    Exit code 1 on any assertion failure.
-
-    ```bash
-    KEYCLOAK_ADMIN_URL=https://admin.auth.learncard.app \
-    KEYCLOAK_ADMIN_USER=terraform-realm \
-    KEYCLOAK_ADMIN_PASSWORD=<secret> \
-    bunx ts-node infra/keycloak/qa/prod-check.ts
-    ```
-
-### Alarm Induction Scripts (A3)
-
-Six shell scripts to induce and verify alarms. All are **staging-only** (guard: `ENV=staging`).
-Each script includes cleanup instructions.
-
-| Script                | Alarm                               | Method                          | Cleanup           |
-| --------------------- | ----------------------------------- | ------------------------------- | ----------------- |
-| `alarm-unhealthy.sh`  | Unhealthy hosts / running < desired | Stop one task                   | ECS replaces task |
-| `alarm-5xx.sh`        | ALB 5xx                             | set-alarm-state + scale to 0    | Scale back up     |
-| `alarm-deployment.sh` | Deployment failed                   | Deploy invalid image            | Auto-rollback     |
-| `alarm-capacity.sh`   | CPU / ACU / connections             | k6 burst load                   | Stop load test    |
-| `alarm-backup.sh`     | Backup failed                       | set-alarm-state (delivery test) | Reset state       |
-| `alarm-waf.sh`        | WAF blocks spike                    | k6 burst to token endpoint      | Stop load test    |
-
-Usage:
+## Traffic tools
 
 ```bash
-./infra/keycloak/qa/alarm-unhealthy.sh staging
-./infra/keycloak/qa/alarm-5xx.sh staging
-# ... etc
+k6 run -e HOST=auth.staging.learncard.app -e DURATION_SECONDS=600 infra/keycloak/qa/probe.js
+CONFIRM_STAGING_LOAD=true SCENARIO=burst k6 run infra/keycloak/qa/load.js
 ```
 
-## Runbook Mapping (Appendix A)
+`probe.js` sends discovery at **5 requests/second**. Optional environment
+`REFRESH_TOKEN` **and** `CLIENT_ID` enable a separate single-VU refresh loop up to
+5/s; optional `CLIENT_SECRET` supports a confidential synthetic client. The single
+VU carries rotated refresh tokens forward, avoiding concurrent replay. Discovery
+continues if refresh is disabled, but that does **not** satisfy A4/A5 session-survival
+proof. Every non-2xx, including 400, is a failure. The summary prints request counts,
+non-2xx counts and failure rates in 10-second elapsed windows; per-window thresholds
+fail above 1%; dropped iterations also fail. Windows include the 30-second graceful
+shutdown so late failures are not discarded. A 200 malformed token response is a
+semantic failure in `failureRate` even though it is not a non-2xx. Use k6's JSON output only with restrictive local permissions if
+timestamps are needed to prove zero errors after recovery. `DURATION_SECONDS`
+defaults 600, range 10–3600; `REALM` defaults learncard. Bounded request timeouts
+mean a completed request is attributed to its completion window.
 
-### A1 — Cluster Formation (Phase 3)
+`load.js` selects **one** scenario with `SCENARIO` (k6 has no `--scenario` flag):
+
+- `burst`: 500 token requests/minute from the generator's IP for 5 minutes;
+  invalid synthetic refresh grants are deliberate. 400/401 before WAF blocking and
+  403 after blocking are expected; inspect `token_status` and WAF counters.
+- `capacity` (default): ramp for 1 minute, hold `RATE` requests/second (default 30)
+  for `DURATION` (default 20m), then ramp down 30s. Requires `CLIENT_ID` and
+  `REFRESH_TOKENS`, a JSON array of independent synthetic-user sessions, at least
+  one per `VUS` (default 10). Each VU rotates its own token. This exercises valid
+  refresh, not expensive password hashing; Phase 7 must additionally exercise the
+  real ticket/hop or browser sign-in mix before sizing is accepted. Invalid refresh
+  tokens are not a valid DB-capacity test. Optional `CLIENT_SECRET` is supported.
+
+All load requires `CONFIRM_STAGING_LOAD=true` and exactly the staging hostname.
+Increase rate only in a reviewed window; WAF count mode is useful for capacity
+tests so a generator's single IP is not throttled. CPU/memory alarms require max
+task count and 15 sustained minutes; request volume alone cannot guarantee them.
+
+## Synthetic sign-in (A6/A8)
+
+Run with `bun infra/keycloak/qa/signin.ts`, not the Playwright test runner. Required
+environment (inject secrets from the approved secret store, not literal CLI args):
+
+| Variable                                       | Purpose                                                            |
+| ---------------------------------------------- | ------------------------------------------------------------------ |
+| `ENV`                                          | Must be staging                                                    |
+| `KEYCLOAK_BASE_URL`                            | HTTPS staging origin, or TLS localhost tunnel to a staging restore |
+| `KEYCLOAK_CLIENT_ID`                           | Approved synthetic **public standard-flow** client                 |
+| `KEYCLOAK_REDIRECT_URI`                        | Exact registered HTTPS callback or localhost HTTP callback         |
+| `KEYCLOAK_TEST_USER`, `KEYCLOAK_TEST_PASSWORD` | Dedicated synthetic account                                        |
+| `KEYCLOAK_REALM`                               | Optional, defaults learncard                                       |
+
+The driver generates S256 PKCE and state, signs in via the Keycloak form, captures
+the callback without sending its code to an app, validates state, exchanges the
+code with a URL-encoded request, and logs out the synthetic session. Browser cleanup
+runs on failure. No direct-access/password grant, screenshots, traces or token
+logging. Required-action/MFA/social-only forms intentionally fail; provision the
+synthetic user/client through the realm workstream, never with this script.
+Production snapshot restore checks use a scratch isolated **staging test host**,
+not the production sign-in endpoint; review data-access authorization separately.
+
+## Production admin assertions (A10)
+
+Run `bun infra/keycloak/qa/prod-check.ts` from CodeBuild/private admin access with:
+
+- `KEYCLOAK_BASE_URL`: private HTTPS admin origin (no path).
+- `KEYCLOAK_CLIENT_ID`, `KEYCLOAK_CLIENT_SECRET`: master-realm service-account
+  credentials with read/query rights for master users and all managed realms.
+- `KEYCLOAK_REALMS`: comma-separated managed realms, default learncard. Supply the
+  full realm-as-code inventory; an omitted realm cannot be checked.
+- `BOOTSTRAP_ADMIN_USERNAME`: name to assert absent, default admin.
+
+Uses **client_credentials**, never an administrator password. It prints each
+assertion and exits nonzero on HTTP/schema/assertion failure: exact bootstrap-user
+lookup, paginated client inventory, every client's direct grants explicitly false,
+learncard-app present and PKCE S256, brute-force protection, saved user/admin events
+and jboss-logging listener. No state/realm mutation. Separately perform A2, IAM
+simulation against real non-Keycloak Lambda/ElastiCache ARNs in the selected account,
+and review state-bucket TLS/principal denials; the script explicitly does not claim
+to automate AWS checks.
+
+## A3 alarm induction
+
+Read each script before running with `bash infra/keycloak/qa/alarm-<name>.sh`.
+The scripts require `ENV=staging` (or positional `staging`),
+`ALLOW_DESTRUCTIVE_ALARM_TEST=yes`, and `EXPECTED_AWS_ACCOUNT_ID=281762601323`;
+each checks the caller's account before mutation. The backup delivery drill also
+requires the exact `WARNING_SNS_TOPIC_ARN` output for staging. Follow the exact
+environment checks in their headers. They use the AWS CLI only when **you run them**. Cleanup traps restore
+modified service state or remove temporary resources. A SIGKILL, machine loss, or
+expired AWS session can defeat cleanup: retain original task definition, desired
+count and autoscaling state outside the terminal and recover them manually.
+
+| Script                | Induction                                                     | Observe and cleanup                                                                       |
+| --------------------- | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `alarm-unhealthy.sh`  | Stop one service task                                         | ECS replaces it; inspect unhealthy/shortfall history and return to stable                 |
+| `alarm-5xx.sh`        | Delivery state override plus real two-minute zero-task outage | Restore original desired/scaling state; verify ELB 5xx and recovery                       |
+| `alarm-deployment.sh` | Register invalid image-digest revision and deploy             | ECS failure event to warning SNS; restore original revision and deregister drill revision |
+| `alarm-capacity.sh`   | Valid sustained refresh load                                  | CPU/ACU/connections metrics, scaling activity; stop load                                  |
+| `alarm-backup.sh`     | Temporary alarm delivery test only                            | Confirm warning SNS delivery; remove temporary alarm                                      |
+| `alarm-waf.sh`        | Token burst from one IP                                       | CountedRequests in count mode, BlockedRequests in block mode; stop load                   |
+
+**Receive the SNS email and record it yourself.** An API success is not delivered
+email. EventBridge deployment/backup rules are not CloudWatch metric alarms, so
+`describe-alarm-history` on their rule names is invalid. The temporary backup alarm
+proves the CloudWatch→SNS route only, not actual Backup→EventBridge matching;
+inspect the deployed rule against AWS's documented event payload and observe real
+job/copy events after enabling Backup. Staging Backup is normally off.
+
+Stopping one task may recover before the 2-minute unhealthy or 10-minute degraded
+window, especially with two tasks. Do not shorten production thresholds or report
+that as successful induction: record the result and use a reviewed sustained
+outage/delivery test for notification proof. WAF count mode cannot trip the
+BlockedRequests alarm; record counts first, then prove block delivery only after
+the reviewed count-to-block transition. The default burst exceeds the token limit
+(300/min) and the block threshold (100/5min) after WAF's approximate evaluation delay.
+
+## Full Appendix A / phase gate mapping
+
+| Item           | Tools and operator procedure                                                                                                                                                      | PASS / cleanup                                                                                                               |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| A1, Phase 3    | Temporarily two staging tasks; inspect latest `ISPN000094` JGroups log view                                                                                                       | Two members; restore original task count/scaling settings                                                                    |
+| A2, Phases 3/8 | curl public `/admin/` and master discovery (403), managed discovery (200); external DNS admin A/AAAA absent; disabled password grant returns 400/401 unauthorized_client          | All match; no mutation                                                                                                       |
+| A3, Phase 6    | Six scripts above                                                                                                                                                                 | Evidence for every row, SNS receipt, recovered alarms and cleanup; no live result claimed here                               |
+| A4, Phase 7    | Probe with refresh, two healthy tasks, stop one task                                                                                                                              | <=1% per 10s window, zero after 60s, pre-existing session refresh succeeds; ECS replaces task                                |
+| A5, Phase 7    | Temporarily two DB instances; probe and Aurora failover                                                                                                                           | Errors stop <=60s after failover-start; no task restart; restore one staging DB instance                                     |
+| A6, Phases 7/8 | Restore PITR or production copy to NEW scratch cluster + Serverless instance; isolate scratch task with restored DB connection; compare realm user counts via psql; run signin.ts | Counts as-of-restore match, sign-in passes, record RTO; stop scratch task, delete scratch instance then cluster after review |
+| A7, Phase 7    | Probe during compatibility-gated rolling patch deploy                                                                                                                             | Rolling gate; <=1% errors/window; one COMPLETED deployment                                                                   |
+| A8, Phase 7    | Probe during incompatible recreate deploy, then signin.ts                                                                                                                         | Snapshot exists before scale-to-zero, healthy after deploy, measured downtime; rehearse snapshot rollback through A6         |
+| A9, Phase 7    | Reviewed private-admin CLI/access-task runbook                                                                                                                                    | TLS/hostname correct, task stops on exit, CloudTrail session audit; remove temporary hosts entries                           |
+| A10, Phase 8   | prod-check.ts plus A2 and separate IAM/state-policy review                                                                                                                        | All printed assertions pass; no public admin or direct grants; non-Keycloak mutations denied                                 |
+
+The [service README](../terraform/service/README.md) owns private access setup and
+known Phase 3 prerequisites. Appendix A's scratch restore commands are a procedure,
+not a turnkey safe script: supply reviewed SG/subnets, CPU/ACU settings, distinct
+names and restored-secret wiring. Never point a live service at a scratch DB or
+reuse its cleanup commands for the source cluster. Phase 7 requires a second
+engineer to reproduce the restore and one week without unexplained alarms.
+
+## Workflow / offline checks
+
+The existing `.github/workflows/staging-health-check.yml` retains UptimeRobot and
+its triggers. Added checks always assert public admin 403 and fetch discovery's
+same-origin JWKS with nonempty keys. Discovery/JWKS failure warns until repository
+variable `KEYCLOAK_STAGING_REALM_LIVE=true`, then fails. This is not a scheduled
+production synthetic sign-in monitor (that remains a documented placeholder).
 
 ```bash
-aws ecs update-service --cluster learncard-keycloak-staging --service learncard-keycloak-staging --desired-count 2
-aws ecs wait services-stable --cluster learncard-keycloak-staging --services learncard-keycloak-staging
-aws logs filter-log-events --log-group-name /ecs/learncard-keycloak-staging --filter-pattern '"ISPN000094"'
+shellcheck infra/keycloak/qa/alarm-*.sh
+actionlint .github/workflows/staging-health-check.yml
+bun build --target=bun --external @playwright/test infra/keycloak/qa/signin.ts infra/keycloak/qa/prod-check.ts --outdir /tmp/keycloak-qa-build
+k6 inspect infra/keycloak/qa/probe.js
+CONFIRM_STAGING_LOAD=true SCENARIO=burst k6 inspect infra/keycloak/qa/load.js
 ```
 
-**PASS**: Latest JGroups view lists 2 members.
-
-### A2 — Public Admin Surface Closed (Phases 3, 8)
-
-```bash
-curl -s -o /dev/null -w '%{http_code}' https://auth.staging.learncard.app/admin/
-# Expected: 403
-
-curl -s -o /dev/null -w '%{http_code}' https://auth.staging.learncard.app/realms/master/.well-known/openid-configuration
-# Expected: 403
-
-curl -s -o /dev/null -w '%{http_code}' https://auth.staging.learncard.app/realms/learncard/.well-known/openid-configuration
-# Expected: 200
-
-dig +short admin.auth.staging.learncard.app
-# Expected: empty (no public DNS record)
-
-curl -s -o /dev/null -w '%{http_code}' -X POST https://auth.staging.learncard.app/realms/learncard/protocol/openid-connect/token \
-  -d grant_type=password -d client_id=learncard-app -d username=x -d password=y
-# Expected: 400/401 with unauthorized_client (Direct Access Grants disabled)
-```
-
-**PASS**: All checks match.
-
-### A3 — Alarm Induction (Phase 6)
-
-Use the six `alarm-*.sh` scripts. Each fires an alarm and verifies SNS delivery.
-
-```bash
-./infra/keycloak/qa/alarm-unhealthy.sh staging
-./infra/keycloak/qa/alarm-5xx.sh staging
-./infra/keycloak/qa/alarm-deployment.sh staging
-./infra/keycloak/qa/alarm-capacity.sh staging
-./infra/keycloak/qa/alarm-backup.sh staging
-./infra/keycloak/qa/alarm-waf.sh staging
-```
-
-**PASS**: Every alarm fires and delivers once; all return to OK.
-
-### A4 — Task Kill Under Load (Phase 7)
-
-```bash
-k6 run infra/keycloak/qa/probe.js -e HOST=auth.staging.learncard.app &
-PROBE_PID=$!
-
-TASK_ARN=$(aws ecs list-tasks --cluster learncard-keycloak-staging --service-name learncard-keycloak-staging --query 'taskArns[0]' --output text)
-aws ecs stop-task --cluster learncard-keycloak-staging --task "$TASK_ARN"
-
-aws ecs wait services-stable --cluster learncard-keycloak-staging --services learncard-keycloak-staging
-
-kill $PROBE_PID
-```
-
-**PASS**: Probe non-2xx ≤ 1% in any 10s window, 0 after 60s.
-
-### A5 — Aurora Failover (Phase 7)
-
-```bash
-k6 run infra/keycloak/qa/probe.js -e HOST=auth.staging.learncard.app &
-PROBE_PID=$!
-
-aws rds failover-db-cluster --db-cluster-identifier learncard-keycloak-staging
-aws rds describe-events --source-type db-cluster --source-identifier learncard-keycloak-staging --duration 30
-
-kill $PROBE_PID
-```
-
-**PASS**: Probe errors cease ≤ 60s after failover event; no task restarts.
-
-### A6 — Point-in-Time Restore (Phases 7, 8)
-
-```bash
-aws rds restore-db-cluster-to-point-in-time \
-  --source-db-cluster-identifier learncard-keycloak-staging \
-  --db-cluster-identifier learncard-keycloak-staging-restore-drill \
-  --use-latest-restorable-time \
-  --db-subnet-group-name learncard-keycloak-staging \
-  --vpc-security-group-ids <db-sg>
-
-aws rds create-db-instance \
-  --db-instance-class db.serverless \
-  --engine aurora-postgresql \
-  --db-cluster-identifier learncard-keycloak-staging-restore-drill \
-  --db-instance-identifier learncard-keycloak-staging-restore-drill-1
-
-# Run one-off task with KC_DB_URL overridden to restore endpoint
-aws ecs run-task --cluster learncard-keycloak-staging --task-definition learncard-keycloak-staging \
-  --overrides '{"containerOverrides":[{"name":"keycloak","environment":[{"name":"KC_DB_URL","value":"jdbc:postgresql://..."}]}]}'
-
-# Port-forward via access task, query DB, sign in
-psql -h localhost -U keycloak -d keycloak -c "select count(*) from user_entity where realm_id=(select id from realm where name='learncard')"
-
-# Cleanup
-aws ecs stop-task --cluster learncard-keycloak-staging --task <task-arn>
-aws rds delete-db-instance --db-instance-identifier learncard-keycloak-staging-restore-drill-1 --skip-final-snapshot
-aws rds delete-db-cluster --db-cluster-identifier learncard-keycloak-staging-restore-drill --skip-final-snapshot
-```
-
-**PASS**: Counts match; sign-in succeeds; RTO recorded.
-
-### A7 — Rolling Patch Upgrade (Phase 7)
-
-```bash
-k6 run infra/keycloak/qa/probe.js -e HOST=auth.staging.learncard.app &
-PROBE_PID=$!
-
-# Merge patch-bump PR or re-deploy current digest
-# (Workflow runs compatibility gate, applies service)
-
-kill $PROBE_PID
-```
-
-**PASS**: Gate reports `rolling`; probe non-2xx ≤ 1% per window; one deployment COMPLETED.
-
-### A8 — Recreate Upgrade (Phase 7)
-
-```bash
-k6 run infra/keycloak/qa/probe.js -e HOST=auth.staging.learncard.app &
-PROBE_PID=$!
-
-# Deploy image gate flags incompatible (next minor)
-# (Workflow runs compatibility gate, creates snapshot, scales to 0, deploys, scales up)
-
-aws rds describe-db-cluster-snapshots --db-cluster-identifier learncard-keycloak-staging
-# Should show pre-upgrade-<sha> snapshot
-
-kill $PROBE_PID
-```
-
-**PASS**: Snapshot created; service scaled to 0 → new version healthy → `.well-known` 200 → sign-in passes.
-
-### A9 — Break-Glass Admin (Phase 7)
-
-```bash
-bun run lc keycloak admin staging
-# Browser opens admin console
-# View realm, exit
-```
-
-**PASS**: Console loads over TLS without hostname errors; access task stops on exit.
-
-### A10 — Production Security Checklist (Phase 8)
-
-```bash
-KEYCLOAK_ADMIN_URL=https://admin.auth.learncard.app \
-KEYCLOAK_ADMIN_USER=terraform-realm \
-KEYCLOAK_ADMIN_PASSWORD=<secret> \
-bunx ts-node infra/keycloak/qa/prod-check.ts
-
-# Plus AWS checks:
-curl -s -o /dev/null -w '%{http_code}' https://auth.learncard.app/admin/
-# Expected: 403
-
-aws iam simulate-principal-policy \
-  --policy-source-arn arn:aws:iam::206533012615:role/learncard-keycloak-production-deploy \
-  --action-names lambda:InvokeFunction elasticache:DescribeCacheClusters \
-  --resource-arns arn:aws:lambda:us-east-1:206533012615:function:* arn:aws:elasticache:us-east-1:206533012615:cluster/*
-# Expected: implicitDeny/explicitDeny
-
-aws s3api get-bucket-policy --bucket learncard-keycloak-state-206533012615-us-east-1
-# Review: denies non-TLS and non-role principals
-```
-
-**PASS**: Script exits 0; all assertions printed; AWS checks pass.
-
-## Environment Variables
-
-| Variable                      | Purpose                                       | Example                            |
-| ----------------------------- | --------------------------------------------- | ---------------------------------- |
-| `HOST`                        | Keycloak hostname (k6 probes)                 | `auth.staging.learncard.app`       |
-| `KEYCLOAK_STAGING_REALM_LIVE` | Guard for signin.ts (staging-only)            | `true`                             |
-| `KEYCLOAK_TEST_USER`          | Test username for signin.ts                   | `testuser`                         |
-| `KEYCLOAK_TEST_PASSWORD`      | Test password for signin.ts                   | `testpass`                         |
-| `KEYCLOAK_ADMIN_URL`          | Admin API base URL (prod-check.ts)            | `https://admin.auth.learncard.app` |
-| `KEYCLOAK_ADMIN_USER`         | Admin username (prod-check.ts)                | `terraform-realm`                  |
-| `KEYCLOAK_ADMIN_PASSWORD`     | Admin password (prod-check.ts)                | `<secret>`                         |
-| `BOOTSTRAP_ADMIN_USERNAME`    | Bootstrap admin name to check (prod-check.ts) | `admin`                            |
-
-## Verification
-
-Before running drills:
-
-1. **K6 installed**: `k6 version`
-2. **Playwright installed**: `bunx playwright --version`
-3. **AWS CLI v2**: `aws --version`
-4. **Bun**: `bun --version`
-5. **Shell scripts pass shellcheck**: `shellcheck infra/keycloak/qa/alarm-*.sh`
-
-## Notes
-
-- All alarm scripts are **staging-only** by default. Remove the `ENV` guard to run in production (not recommended).
-- Probe and load tests require network access to the Keycloak host.
-- `prod-check.ts` requires valid admin credentials (from Secrets Manager or environment).
-- Alarm induction scripts clean up automatically or via manual steps documented in each script.
+Inspect/build/lint do not send traffic. Do not execute live scripts as part of
+offline verification. `k6` is an external binary and may be skipped with an explicit
+note if unavailable. Follow service README for Terraform validation and required
+SNS confirmation, WAF commissioning and cross-region recovery evidence.
