@@ -31,6 +31,23 @@ const baseUserKey = (overrides: Partial<MongoUserKeyType> = {}): MongoUserKeyTyp
 const baseHold = (overrides: Partial<EscrowHold> = {}): EscrowHold => {
     const now = new Date();
     return {
+        holdRecord: {
+            hold: {
+                holdId: 'hold-1',
+                did: 'did:key:owner',
+                shareVersion: 1,
+                blobHash: 'ab'.repeat(32),
+                enrollmentEpoch: 1,
+                releasePolicy: 'hold',
+                clientEphemeralPublicKey: 'public-key',
+                createdLo: 0,
+                createdHi: 0,
+                policyVersion: 1,
+                signature: 'test-signature',
+            },
+            holdDurationMs: 0,
+            ledgerSeq: 0,
+        },
         _id: 'hold-1',
         authProvider: { type: 'firebase', id: 'user-1' },
         primaryDid: 'did:key:owner',

@@ -6,7 +6,7 @@ import {
     EscrowPinMismatchError,
     EscrowPolicyError,
     EscrowUnavailableError,
-    type EscrowHoldForEnclave,
+    type EscrowHoldRecord,
 } from './types';
 
 const baseUrl = 'https://enclave-host.internal';
@@ -23,14 +23,22 @@ const envelope: EscrowEnvelope = {
     ciphertext: 'AA==',
 };
 
-const hold: EscrowHoldForEnclave = {
-    _id: 'hold-1',
-    status: 'pending',
-    releaseAfter: new Date(1_700_000_000_000),
-    releasePolicy: 'hold',
-    primaryDid: 'did:example:alice',
-    shareVersion: 1,
-    clientEphemeralPublicKey: 'BB==',
+const hold: EscrowHoldRecord = {
+    hold: {
+        holdId: 'hold-1',
+        did: 'did:example:alice',
+        shareVersion: 1,
+        blobHash: 'ab'.repeat(32),
+        enrollmentEpoch: 1,
+        releasePolicy: 'hold',
+        clientEphemeralPublicKey: 'BB==',
+        createdLo: 1700000000000,
+        createdHi: 1700000000000,
+        policyVersion: 1,
+        signature: 'signed-test-record',
+    },
+    holdDurationMs: 604800000,
+    ledgerSeq: 1,
 };
 
 const attestationBody = {
@@ -143,8 +151,8 @@ describe('createRemoteEnclave', () => {
             enclave.releaseEscrow({
                 envelope,
                 hold,
-                clientEphemeralPublicKey: hold.clientEphemeralPublicKey,
-                expectedDid: hold.primaryDid,
+                clientEphemeralPublicKey: hold.hold.clientEphemeralPublicKey,
+                expectedDid: hold.hold.did,
                 now: new Date(),
             })
         ).resolves.toEqual({ sealed: envelope });
@@ -153,8 +161,8 @@ describe('createRemoteEnclave', () => {
         expect(body).toEqual({
             envelope,
             hold,
-            clientEphemeralPublicKey: hold.clientEphemeralPublicKey,
-            expectedDid: hold.primaryDid,
+            clientEphemeralPublicKey: hold.hold.clientEphemeralPublicKey,
+            expectedDid: hold.hold.did,
         });
     });
 
@@ -165,8 +173,8 @@ describe('createRemoteEnclave', () => {
         await enclave.releaseEscrow({
             envelope,
             hold,
-            clientEphemeralPublicKey: hold.clientEphemeralPublicKey,
-            expectedDid: hold.primaryDid,
+            clientEphemeralPublicKey: hold.hold.clientEphemeralPublicKey,
+            expectedDid: hold.hold.did,
             pinProof: 'ab'.repeat(32),
         });
 
@@ -191,8 +199,8 @@ describe('createRemoteEnclave', () => {
                 enclave.releaseEscrow({
                     envelope,
                     hold,
-                    clientEphemeralPublicKey: hold.clientEphemeralPublicKey,
-                    expectedDid: hold.primaryDid,
+                    clientEphemeralPublicKey: hold.hold.clientEphemeralPublicKey,
+                    expectedDid: hold.hold.did,
                 })
             ).rejects.toBeInstanceOf(ErrorClass);
         }
@@ -233,4 +241,105 @@ describe('createRemoteEnclave', () => {
     it('defaults to a real HTTP transport when none is injected', () => {
         expect(() => createRemoteEnclave({ baseUrl, token, timeoutMs })).not.toThrow();
     });
+    const createInput = {
+        envelope,
+        holdId: hold.hold.holdId,
+        expectedDid: hold.hold.did,
+        expectedShareVersion: 1,
+        enrollmentEpoch: 1,
+        releasePolicy: 'hold' as const,
+        clientEphemeralPublicKey: hold.hold.clientEphemeralPublicKey,
+    };
+    const cancelInput = {
+        envelope,
+        hold,
+        expectedDid: hold.hold.did,
+        clientEphemeralPublicKey: hold.hold.clientEphemeralPublicKey,
+    };
+    it('creates an opaque full record and forwards it unchanged to cancel and release', async () => {
+        const opaque = { ...hold, extension: 'outer', hold: { ...hold.hold, extension: 'inner' } };
+        const post = vi
+            .fn()
+            .mockResolvedValueOnce(respond(200, opaque))
+            .mockResolvedValueOnce(respond(200, { ok: true }))
+            .mockResolvedValueOnce(respond(200, { sealed: envelope }));
+        const enclave = createRemoteEnclave({ baseUrl, token, timeoutMs, transport: { post } });
+        const created = await enclave.createHold(createInput);
+        expect(created).toEqual({ holdRecord: opaque });
+        const config = { headers: { Authorization: `Bearer ${token}` }, timeout: timeoutMs };
+        expect(post).toHaveBeenNthCalledWith(1, `${baseUrl}/v1/create-hold`, createInput, config);
+        await expect(
+            enclave.cancelHold({ ...cancelInput, hold: created.holdRecord })
+        ).resolves.toBeUndefined();
+        expect(post).toHaveBeenNthCalledWith(
+            2,
+            `${baseUrl}/v1/cancel-hold`,
+            { ...cancelInput, hold: opaque },
+            config
+        );
+        await enclave.releaseEscrow({ ...cancelInput, hold: created.holdRecord });
+        expect(post).toHaveBeenNthCalledWith(
+            3,
+            `${baseUrl}/v1/release`,
+            { ...cancelInput, hold: opaque },
+            config
+        );
+    });
+    for (const operation of ['createHold', 'cancelHold'] as const) {
+        const invoke = (enclave: ReturnType<typeof createRemoteEnclave>) =>
+            operation === 'createHold'
+                ? enclave.createHold(createInput)
+                : enclave.cancelHold(cancelInput);
+        it.each([
+            ['policy', EscrowPolicyError],
+            ['pinMismatch', EscrowPinMismatchError],
+            ['blob', EscrowBlobError],
+            ['unavailable', EscrowUnavailableError],
+            ['ledger', EscrowUnavailableError],
+            ['time', EscrowUnavailableError],
+        ] as const)(
+            `${operation} maps %s without leaking the remote message`,
+            async (code, ErrorClass) => {
+                const post = vi
+                    .fn()
+                    .mockResolvedValue(respond(400, { code, message: 'private remote detail' }));
+                const enclave = createRemoteEnclave({
+                    baseUrl,
+                    token,
+                    timeoutMs,
+                    transport: { post },
+                });
+                await expect(invoke(enclave)).rejects.toBeInstanceOf(ErrorClass);
+            }
+        );
+        it.each([
+            null,
+            'malformed',
+            {},
+            { ok: false },
+            { ...hold, hold: { ...hold.hold, enrollmentEpoch: 0 } },
+            { ...hold, ledgerSeq: 'bad' },
+        ])(`${operation} fails closed on invalid response %#`, async data => {
+            const post = vi.fn().mockResolvedValue(respond(200, data));
+            await expect(
+                invoke(createRemoteEnclave({ baseUrl, token, timeoutMs, transport: { post } }))
+            ).rejects.toBeInstanceOf(EscrowUnavailableError);
+        });
+        it.each(['ECONNREFUSED', 'ECONNABORTED'])(`${operation} fails closed on %s`, async code => {
+            const post = vi
+                .fn()
+                .mockRejectedValue(Object.assign(new Error('transport failed'), { code }));
+            await expect(
+                invoke(createRemoteEnclave({ baseUrl, token, timeoutMs, transport: { post } }))
+            ).rejects.toBeInstanceOf(EscrowUnavailableError);
+        });
+        it(`${operation} rejects unrecognized HTTP errors`, async () => {
+            const post = vi
+                .fn()
+                .mockResolvedValue(respond(500, { code: 'unknown', message: 'private' }));
+            await expect(
+                invoke(createRemoteEnclave({ baseUrl, token, timeoutMs, transport: { post } }))
+            ).rejects.toBeInstanceOf(EscrowUnavailableError);
+        });
+    }
 });

@@ -47,6 +47,32 @@ const verifyBlobResponseValidator = z.union([
     z.object({ ok: z.literal(false), hasPin: z.boolean(), reason: z.string() }),
 ]);
 
+// Opaque SignedHoldRecord JSON: validate shape while preserving signed extensions.
+const holdRecordValidator = z
+    .object({
+        hold: z
+            .object({
+                holdId: z.string().min(1),
+                did: z.string().min(1),
+                shareVersion: z.number().int().positive(),
+                blobHash: z.string().regex(/^[0-9a-f]{64}$/),
+                enrollmentEpoch: z.number().int().positive(),
+                releasePolicy: z.enum(['hold', 'pin']),
+                clientEphemeralPublicKey: z.string().min(1),
+                createdLo: z.number().int().nonnegative(),
+                createdHi: z.number().int().nonnegative(),
+                policyVersion: z.number().int().positive(),
+                signature: z.string().min(1),
+            })
+            .passthrough(),
+        holdDurationMs: z.number().int().nonnegative(),
+        ledgerSeq: z.number().int().nonnegative(),
+    })
+    .passthrough();
+const validatedHold = (hold: ReleaseRequest['hold']): ReleaseRequest['hold'] => {
+    if (!holdRecordValidator.safeParse(hold).success) throw new EscrowUnavailableError();
+    return hold;
+};
 const releaseResponseValidator = z.object({ sealed: envelopeValidator });
 
 const errorCodeValidator = z.enum([
@@ -134,7 +160,6 @@ export const createRemoteEnclave = (config: RemoteEnclaveConfig): EscrowEnclave 
     return {
         getAttestation: (nonce?: Uint8Array): Promise<EnclaveAttestation> =>
             call('/v1/attest', { nonce: Array.from(nonce ?? []) }, attestResponseValidator),
-
         verifyEscrowBlob: (input: VerifyEscrowBlobInput): Promise<VerifyEscrowBlobResult> =>
             call(
                 '/v1/verify-blob',
@@ -145,22 +170,46 @@ export const createRemoteEnclave = (config: RemoteEnclaveConfig): EscrowEnclave 
                 },
                 verifyBlobResponseValidator
             ),
-
-        releaseEscrow: (input: ReleaseRequest): Promise<ReleaseResult> =>
-            call(
+        createHold: async input => ({
+            holdRecord: await call(
+                '/v1/create-hold',
+                {
+                    envelope: input.envelope,
+                    holdId: input.holdId,
+                    expectedDid: input.expectedDid,
+                    expectedShareVersion: input.expectedShareVersion,
+                    enrollmentEpoch: input.enrollmentEpoch,
+                    releasePolicy: input.releasePolicy,
+                    clientEphemeralPublicKey: input.clientEphemeralPublicKey,
+                },
+                holdRecordValidator
+            ),
+        }),
+        cancelHold: async input => {
+            await call(
+                '/v1/cancel-hold',
+                {
+                    envelope: input.envelope,
+                    hold: validatedHold(input.hold),
+                    clientEphemeralPublicKey: input.clientEphemeralPublicKey,
+                    expectedDid: input.expectedDid,
+                },
+                z.object({ ok: z.literal(true) })
+            );
+        },
+        releaseEscrow: async (input: ReleaseRequest): Promise<ReleaseResult> => {
+            validatedHold(input.hold);
+            return call(
                 '/v1/release',
                 {
                     envelope: input.envelope,
-                    // P4.2: `input.hold` is still the unsigned EscrowHoldForEnclave
-                    // passthrough; swap in the enclave-signed HoldRecord once lca-api
-                    // creates one at hold-creation time. Host-supplied `input.now` is
-                    // deliberately never sent: the wire protocol is enclave-time-only.
                     hold: input.hold,
                     clientEphemeralPublicKey: input.clientEphemeralPublicKey,
                     expectedDid: input.expectedDid,
                     ...(input.pinProof !== undefined ? { pinProof: input.pinProof } : {}),
                 },
                 releaseResponseValidator
-            ),
+            );
+        },
     };
 };

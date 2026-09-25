@@ -40,6 +40,7 @@ export const getEscrowEnclave = (): EscrowEnclave => {
                 config.ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON ?? ''
             ),
             activeKeyId: config.ESCROW_ENCLAVE_ACTIVE_KEY_ID ?? '',
+            holdDurationMs: getEscrowHoldDurationMs(),
         });
         return enclave;
     }

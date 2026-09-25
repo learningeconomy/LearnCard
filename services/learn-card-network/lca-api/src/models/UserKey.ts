@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { createHash } from 'crypto';
 import type { Filter } from 'mongodb';
 import { ESCROW_PIN_MAX_ATTEMPTS } from '@learncard/sss-key-manager';
 import { EscrowPinStatusValidator as SharedEscrowPinStatusValidator } from '@learncard/types';
@@ -63,6 +64,8 @@ export const EscrowEnvelopeValidator = z
     .strict();
 
 export const EscrowBlobValidator = z.object({
+    enrollmentEpoch: z.number().int().positive(),
+    blobHash: z.string().regex(/^[0-9a-f]{64}$/),
     envelope: EscrowEnvelopeValidator,
     enclaveKeyId: z.string().regex(/^[A-Za-z0-9._-]{1,128}$/),
     enclaveMode: z.enum(['software', 'nitro']),
@@ -664,20 +667,43 @@ const getAuthProviderFilter = (authProvider: AuthProviderMapping): Filter<MongoU
 /** Persist verified escrow and its confirmed descriptor atomically. */
 export const setEscrowBlobByAuthProvider = async (
     authProvider: AuthProviderMapping,
-    blob: EscrowBlob,
+    blob: Omit<EscrowBlob, 'enrollmentEpoch' | 'blobHash'>,
     expectedShareVersion: number,
     pin?: { salt: string }
 ): Promise<MongoUserKeyType | null> => {
     const now = new Date();
-    const parsed = EscrowBlobValidator.safeParse(blob);
+    const parsed = EscrowBlobValidator.omit({ enrollmentEpoch: true, blobHash: true }).safeParse(
+        blob
+    );
     if (!parsed.success) throw new Error('Invalid escrow payload');
-    const validated = parsed.data;
+    const { version, algorithm, keyId, ephemeralPublicKey, salt, iv, ciphertext } =
+        parsed.data.envelope;
+    // policy.rs blob_hash: serde declaration order, compact JSON, not alphabetical order.
+    const blobHash = createHash('sha256')
+        .update(
+            JSON.stringify({
+                version,
+                algorithm,
+                keyId,
+                ephemeralPublicKey,
+                salt,
+                iv,
+                ciphertext,
+            })
+        )
+        .digest('hex');
+    const assembled = EscrowBlobValidator.safeParse({
+        ...parsed.data,
+        blobHash,
+        enrollmentEpoch: 1,
+    });
+    if (!assembled.success) throw new Error('Invalid escrow payload');
+    const { enrollmentEpoch: _initialEpoch, ...validated } = assembled.data;
     if (
         validated.shareVersion !== expectedShareVersion ||
         validated.enclaveKeyId !== validated.envelope.keyId
-    ) {
+    )
         return null;
-    }
     return getUserKeysCollection().findOneAndUpdate(
         {
             ...getAuthProviderFilter(authProvider),
@@ -687,7 +713,16 @@ export const setEscrowBlobByAuthProvider = async (
         [
             {
                 $set: {
-                    escrowBlob: { $literal: validated },
+                    escrowBlob: {
+                        $mergeObjects: [
+                            { $literal: validated },
+                            {
+                                enrollmentEpoch: {
+                                    $add: [{ $ifNull: ['$escrowBlob.enrollmentEpoch', 0] }, 1],
+                                },
+                            },
+                        ],
+                    },
                     escrowPin: pin
                         ? {
                               $literal: EscrowPinValidator.parse({
@@ -697,7 +732,7 @@ export const setEscrowBlobByAuthProvider = async (
                                   shareVersion: expectedShareVersion,
                               }),
                           }
-                        : '$$REMOVE',
+                        : '\u0024\u0024REMOVE',
                     updatedAt: now,
                     recoveryMethods: {
                         $concatArrays: [

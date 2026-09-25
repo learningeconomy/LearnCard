@@ -1,5 +1,5 @@
 import type { EscrowEnvelope } from '@learncard/sss-key-manager';
-import type { EscrowHold } from '../../models/EscrowHold';
+// Hold records are independent of host Mongo status and deadlines.
 
 export interface EnclaveAttestation {
     mode: 'software' | 'nitro';
@@ -9,16 +9,40 @@ export interface EnclaveAttestation {
     document: string;
     issuedAt: string;
 }
-export type EscrowHoldForEnclave = Pick<
-    EscrowHold,
-    | '_id'
-    | 'status'
-    | 'releaseAfter'
-    | 'releasePolicy'
-    | 'primaryDid'
-    | 'shareVersion'
-    | 'clientEphemeralPublicKey'
->;
+export interface EscrowHoldRecord {
+    [key: string]: unknown;
+    hold: {
+        [key: string]: unknown;
+        holdId: string;
+        did: string;
+        shareVersion: number;
+        blobHash: string;
+        enrollmentEpoch: number;
+        releasePolicy: 'hold' | 'pin';
+        clientEphemeralPublicKey: string;
+        createdLo: number;
+        createdHi: number;
+        policyVersion: number;
+        signature: string;
+    };
+    holdDurationMs: number;
+    ledgerSeq: number;
+}
+export interface EnclaveCreateHoldInput {
+    envelope: EscrowEnvelope;
+    holdId: string;
+    expectedDid: string;
+    expectedShareVersion: number;
+    enrollmentEpoch: number;
+    releasePolicy: 'hold' | 'pin';
+    clientEphemeralPublicKey: string;
+}
+export interface CancelHoldRequest {
+    envelope: EscrowEnvelope;
+    hold: EscrowHoldRecord;
+    clientEphemeralPublicKey: string;
+    expectedDid: string;
+}
 export interface VerifyEscrowBlobInput {
     envelope: EscrowEnvelope;
     expectedDid: string;
@@ -26,14 +50,8 @@ export interface VerifyEscrowBlobInput {
 }
 export type VerifyEscrowBlobResult =
     { ok: true; hasPin: boolean } | { ok: false; hasPin: boolean; reason: string };
-export interface ReleaseRequest {
-    envelope: EscrowEnvelope;
-    // P4.2: replace this unsigned passthrough with the enclave-signed HoldRecord
-    // (services/escrow-enclave-app/src/wire.rs `HoldRecord`) once lca-api creates
-    // one at hold-creation time.
-    hold: EscrowHoldForEnclave;
-    clientEphemeralPublicKey: string;
-    expectedDid: string;
+export interface ReleaseRequest extends CancelHoldRequest {
+    /** Development-only host clock; never forwarded by the remote backend. */
     now?: Date;
     pinProof?: string;
 }
@@ -46,6 +64,8 @@ export interface EscrowEnclave {
     getAttestation(nonce?: Uint8Array): Promise<EnclaveAttestation>;
     verifyEscrowBlob(input: VerifyEscrowBlobInput): Promise<VerifyEscrowBlobResult>;
     releaseEscrow(input: ReleaseRequest): Promise<ReleaseResult>;
+    createHold(input: EnclaveCreateHoldInput): Promise<{ holdRecord: EscrowHoldRecord }>;
+    cancelHold(input: CancelHoldRequest): Promise<void>;
 }
 export class EscrowPolicyError extends Error {
     constructor() {

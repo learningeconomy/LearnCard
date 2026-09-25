@@ -1,4 +1,4 @@
-import { createHash, randomBytes, randomUUID } from 'crypto';
+import { createHash, randomBytes } from 'crypto';
 import { z } from 'zod';
 import type { Collection } from 'mongodb';
 import mongodb from '@mongo';
@@ -9,7 +9,32 @@ export const ESCROW_HOLDS_COLLECTION = 'escrowholds';
 export const ESCROW_HOLD_STALE_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 export const ESCROW_HOLD_RESTART_MIN_AGE_MS = environment.ESCROW_HOLD_RESTART_MIN_AGE_MS;
 export const ESCROW_HOLD_REMINDER_WINDOW_MS = 24 * 60 * 60 * 1000;
+// Opaque JSON validated for shape, not signature authenticity. Preserve signed extensions.
+export const EscrowHoldRecordValidator = z
+    .object({
+        hold: z
+            .object({
+                holdId: z.string().min(1),
+                did: z.string().min(1),
+                shareVersion: z.number().int().positive(),
+                blobHash: z.string().regex(/^[0-9a-f]{64}$/),
+                enrollmentEpoch: z.number().int().positive(),
+                releasePolicy: z.enum(['hold', 'pin']),
+                clientEphemeralPublicKey: z.string().min(1),
+                createdLo: z.number().int().nonnegative(),
+                createdHi: z.number().int().nonnegative(),
+                policyVersion: z.number().int().positive(),
+                signature: z.string().min(1),
+            })
+            .passthrough(),
+        holdDurationMs: z.number().int().nonnegative(),
+        ledgerSeq: z.number().int().nonnegative(),
+    })
+    .passthrough();
 export const EscrowHoldValidator = z.object({
+    // Required for new holds before escrow production launch. Raw Mongo reads can
+    // still return legacy rows without it; cancellation/release must check at runtime.
+    holdRecord: EscrowHoldRecordValidator,
     _id: z.string().uuid(),
     authProvider: AuthProviderMappingValidator,
     primaryDid: z.string(),
@@ -133,7 +158,7 @@ export const createEscrowHold = async (input: CreateEscrowHoldInput): Promise<Es
     const now = new Date();
     const parsed = EscrowHoldValidator.safeParse({
         ...input,
-        _id: randomUUID(),
+        _id: input.holdRecord?.hold?.holdId,
         status: 'pending',
         notifications: [],
         createdAt: now,

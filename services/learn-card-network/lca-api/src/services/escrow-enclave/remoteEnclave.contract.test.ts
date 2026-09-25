@@ -5,7 +5,7 @@ import { createRemoteEnclave } from './remoteEnclave';
 // Runs the HTTP contract implemented in remoteEnclave.ts against a live
 // `escrow-enclave --emulate` process (services/escrow-enclave-app, P1.8).
 //
-// P1.8 (the HTTP server for the emulate binary) has not been built yet, so this
+// These smoke checks require an explicitly configured live endpoint, so this
 // suite is skipped by default. Once it exists, start it from
 // services/escrow-enclave-app with:
 //
@@ -18,6 +18,11 @@ import { createRemoteEnclave } from './remoteEnclave';
 //
 // Optionally set ESCROW_ENCLAVE_CONTRACT_TOKEN to match whatever bearer token
 // the emulate server is configured to accept.
+// P4.2 mutation contracts target the P3.3 HTTP adapter, not the raw emulator:
+// concurrent P1.8 wire::v1 requires requestId, wraps create results, and exposes
+// /v1/cancel rather than /v1/cancel-hold. A direct emulator mutation test would
+// assert a different contract. Extend here once an adapted live endpoint is available.
+// No ESCROW_ENCLAVE_CONTRACT_URL is configured here; do not assert against a stale binary.
 const contractUrl = process.env.ESCROW_ENCLAVE_CONTRACT_URL;
 
 describe.skipIf(!contractUrl)('remote enclave contract (escrow-enclave --emulate)', () => {
