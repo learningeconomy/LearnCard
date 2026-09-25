@@ -222,6 +222,70 @@ variable "log_retention_days" {
   }
 }
 
+variable "waf_block_mode" {
+  description = "Count during staging commissioning; enable blocking after reviewing a week of traffic"
+  type        = bool
+  default     = false
+}
+
+variable "waf_rate_limits" {
+  description = "Per-source-IP requests per 60 seconds, independently scoped to each auth path"
+  type        = object({ token = number, login = number, broker = number })
+  default     = { token = 300, login = 200, broker = 200 }
+  validation {
+    condition     = alltrue([for limit in values(var.waf_rate_limits) : limit >= 10 && limit <= 2000000000 && floor(limit) == limit])
+    error_message = "WAF limits must be whole numbers between 10 and 2 billion."
+  }
+}
+
+variable "alarm_emails" {
+  description = "Email subscribers to both severity topics; each subscription requires email confirmation"
+  type        = list(string)
+  default     = []
+  validation {
+    condition     = alltrue([for email in var.alarm_emails : can(regex("^[^@ ]+@[^@ ]+\\.[^@ ]+$", email))])
+    error_message = "Supply valid email addresses."
+  }
+}
+
+variable "login_error_threshold" {
+  description = "Temporary LOGIN_ERROR count per 5 minutes; tune to five times measured 7-day baseline"
+  type        = number
+  default     = 100
+}
+
+variable "waf_block_threshold" {
+  description = "Blocked requests per 5 minutes; calibrate after the count-mode observation week"
+  type        = number
+  default     = 100
+}
+
+variable "synthetic_signin_alarm_placeholder" {
+  description = "Reserved only: no synthetic alarm is provisioned until a realm and scheduled sign-in publisher exist"
+  type        = bool
+  default     = false
+  validation {
+    condition     = !var.synthetic_signin_alarm_placeholder
+    error_message = "Synthetic sign-in monitoring is not implemented; commission its publisher before enabling it."
+  }
+}
+
+variable "enable_aws_backup" {
+  description = "Enable daily Aurora snapshots and cross-region copies (off for low-cost staging)"
+  type        = bool
+  default     = false
+}
+
+variable "backup_copy_region" {
+  description = "Cross-region AWS Backup destination in the same account"
+  type        = string
+  default     = "us-west-2"
+  validation {
+    condition     = var.backup_copy_region != var.aws_region && can(regex("^[a-z]{2}-[a-z]+-[0-9]+$", var.backup_copy_region))
+    error_message = "Choose a valid region different from the source region."
+  }
+}
+
 variable "tags" {
   description = "Additional tags; required platform tags take precedence"
   type        = map(string)
