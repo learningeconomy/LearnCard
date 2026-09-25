@@ -215,8 +215,9 @@ const putAuthShare = async (
     authShare: string,
     primaryDid: string,
     didAuthVp?: string,
-    tenantId?: string
-): Promise<{ shareVersion: number }> => {
+    tenantId?: string,
+    expectedShareVersion?: number
+): Promise<{ shareVersion: number; expectedShareVersionChecked: boolean }> => {
     const response = await fetch(`${serverUrl}/keys/auth-share`, {
         method: 'PUT',
         headers: buildHeaders(token, didAuthVp, tenantId),
@@ -228,6 +229,7 @@ const putAuthShare = async (
             primaryDid,
             securityLevel: 'basic',
             sssActivationState: 'provisional',
+            expectedShareVersion,
         }),
     });
 
@@ -243,7 +245,10 @@ const putAuthShare = async (
 
     const data = await response.json();
 
-    return { shareVersion: data.shareVersion ?? 1 };
+    return {
+        shareVersion: data.shareVersion ?? 1,
+        expectedShareVersionChecked: data.expectedShareVersionChecked === true,
+    };
 };
 
 const authShareToString = (authShare: unknown): string | null => {
@@ -611,7 +616,7 @@ export const readPendingShareCandidates = async (
     return data.candidates as PendingShareCandidate[];
 };
 
-/** Clear candidates only after promotion/success, definitive rejection, or verified expiry. */
+/** Clear only an empty/resolved queue or when explicitly forgetting this device. */
 export const clearPendingShareCandidates = async (
     storage: SSSStorageFunctions,
     storageId?: string
@@ -664,11 +669,9 @@ interface CurrentShareSnapshot {
 }
 
 /**
- * Resolve against current server state before expiring anything. A failed fetch
- * changes nothing. Expiry is coupled to DID_CHALLENGE_TTL_SECS: after the nonce
- * TTL plus processing margin a nonmatching PUT can no longer become current.
- * Promotion permits clearing all candidates because the main share can recover
- * through server history if another already-authorized PUT lands later.
+ * Check current and retained history before expiry: an expired nonce does not
+ * prove a write never committed. Keep unrelated live writes even after promotion,
+ * since older servers may still commit them after this read.
  */
 export const resolvePendingShareCandidates = async (
     storage: SSSStorageFunctions,
@@ -677,7 +680,8 @@ export const resolvePendingShareCandidates = async (
     expectedDid: string,
     didFromPrivateKey: (key: string) => Promise<string>,
     assertActiveUser: () => void = () => {},
-    onPromoted?: (snapshot: CurrentShareSnapshot) => void
+    onPromoted?: (snapshot: CurrentShareSnapshot) => void,
+    fetchHistorical?: (version: number) => Promise<string | null>
 ): Promise<{ snapshot: CurrentShareSnapshot; privateKey: string | null }> => {
     const candidates = await readPendingShareCandidates(storage, storageId);
     const snapshot = await fetchCurrent();
@@ -702,15 +706,80 @@ export const resolvePendingShareCandidates = async (
             assertActiveUser();
             await storage.storeDeviceShare(candidate.share, storageId);
             await storage.storeShareVersion(currentVersion, storageId);
-            await clearPendingShareCandidates(storage, storageId);
+            await removePendingShareCandidate(storage, candidate.share, storageId);
             assertActiveUser();
             onPromoted?.(snapshot);
             return { snapshot, privateKey };
         }
     }
+    const matched = new Set<string>();
+    const history = new Map<number, string>();
+    let historyComplete = true;
+    if (candidates.length && currentVersion !== null) {
+        for (
+            let version = currentVersion - 1;
+            version >= 1 && version >= currentVersion - MAX_RECONCILIATION_HISTORY;
+            version--
+        ) {
+            if (!fetchHistorical) {
+                historyComplete = false;
+                break;
+            }
+            try {
+                const share = await fetchHistorical(version);
+                if (share) history.set(version, share);
+            } catch {
+                // An unavailable version cannot prove a candidate is dead.
+                historyComplete = false;
+            }
+            assertActiveUser();
+        }
+    }
+    const mainShare = await storage.getDeviceShare(storageId);
+    let mainHealthy = false;
+    const retainedShares = [...history.values(), ...(authShare ? [authShare] : [])];
+    if (mainShare) {
+        for (const share of retainedShares) {
+            const health = await verifyStoredShares(
+                { getDevice: async () => mainShare, getAuth: async () => share },
+                expectedDid,
+                didFromPrivateKey
+            );
+            assertActiveUser();
+            if (health.healthy) {
+                mainHealthy = true;
+                break;
+            }
+        }
+    }
+    let promoted: string | undefined;
+    for (const candidate of candidates) {
+        for (const [version, share] of history) {
+            const health = await verifyStoredShares(
+                { getDevice: async () => candidate.share, getAuth: async () => share },
+                expectedDid,
+                didFromPrivateKey
+            );
+            assertActiveUser();
+            if (!health.healthy) continue;
+            matched.add(candidate.share);
+            if (!mainHealthy && !promoted) {
+                await storage.storeDeviceShare(candidate.share, storageId);
+                await storage.storeShareVersion(version, storageId);
+                assertActiveUser();
+                onPromoted?.({ currentVersion: version, authShare: share });
+                promoted = candidate.share;
+            }
+            break;
+        }
+    }
     const live = candidates.filter(
         candidate =>
-            candidate.createdAt !== 0 && Date.now() - candidate.createdAt < PENDING_WRITE_EXPIRY_MS
+            candidate.share !== promoted &&
+            (matched.has(candidate.share) ||
+                !historyComplete ||
+                (candidate.createdAt !== 0 &&
+                    Date.now() - candidate.createdAt <= PENDING_WRITE_EXPIRY_MS))
     );
     if (live.length !== candidates.length) {
         assertActiveUser();
@@ -777,30 +846,33 @@ const persistSharesWithoutLock = async (
         }
     }
 
-    if ((await readPendingShareCandidates(storage, storageId)).length) {
-        await resolvePendingShareCandidates(
-            storage,
-            storageId,
-            async () => {
-                const data = await fetchAuthShareRaw(
-                    serverUrl,
-                    token,
-                    providerType,
-                    undefined,
-                    tenantId
-                );
-                return {
-                    currentVersion: data?.shareVersion ?? null,
-                    authShare: authShareToString(data?.authShare),
-                };
-            },
-            primaryDid,
-            didFromPrivateKey ??
-                (async key => (key === privateKey ? primaryDid : `${primaryDid}:mismatch`)),
-            assertActiveUser,
-            onPromoted
-        );
-    }
+    const { snapshot } = await resolvePendingShareCandidates(
+        storage,
+        storageId,
+        async () => {
+            const data = await fetchAuthShareRaw(
+                serverUrl,
+                token,
+                providerType,
+                undefined,
+                tenantId
+            );
+            return {
+                currentVersion: data?.shareVersion ?? null,
+                authShare: authShareToString(data?.authShare),
+            };
+        },
+        primaryDid,
+        didFromPrivateKey ??
+            (async key => (key === privateKey ? primaryDid : `${primaryDid}:mismatch`)),
+        assertActiveUser,
+        onPromoted,
+        async version =>
+            authShareToString(
+                (await fetchAuthShareRaw(serverUrl, token, providerType, version, tenantId))
+                    ?.authShare
+            )
+    );
 
     // Acquire authorization before staging: failures here cannot have committed
     // an auth-share write and must not leave an unresolved pending operation.
@@ -827,7 +899,8 @@ const persistSharesWithoutLock = async (
                 share,
                 primaryDid,
                 didAuthVp,
-                tenantId
+                tenantId,
+                snapshot.currentVersion ?? 0
             );
 
             shareVersion = result.shareVersion;
@@ -840,7 +913,7 @@ const persistSharesWithoutLock = async (
 
     await storage.storeDeviceShare(shares.deviceShare, storageId);
     await storage.storeShareVersion(shareVersion, storageId);
-    await clearPendingShareCandidates(storage, storageId);
+    await removePendingShareCandidate(storage, shares.deviceShare, storageId);
     assertActiveUser();
 
     return { shares, shareVersion };
@@ -1411,12 +1484,11 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 }
             };
             return withShareUpdateLock(storage, storageId, async () => {
-                const deviceShare = await storage.getDeviceShare(storageId);
+                let deviceShare = await storage.getDeviceShare(storageId);
                 const pending = await readPendingShareCandidates(storage, storageId);
 
                 if (!deviceShare && !pending.length) return null;
 
-                const localVersion = await storage.getShareVersion(storageId);
                 const resolution = await resolvePendingShareCandidates(
                     storage,
                     storageId,
@@ -1436,7 +1508,19 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     params.expectedDid,
                     params.didFromPrivateKey,
                     assertActiveUser,
-                    recordPromotion(params.expectedDid)
+                    recordPromotion(params.expectedDid),
+                    async version =>
+                        authShareToString(
+                            (
+                                await fetchAuthShareRaw(
+                                    serverUrl,
+                                    params.token,
+                                    params.providerType,
+                                    version,
+                                    tenantId
+                                )
+                            )?.authShare
+                        )
                 );
                 assertActiveUser();
                 if (resolution.privateKey) {
@@ -1445,6 +1529,9 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 const { currentVersion, authShare: currentAuthShare } = resolution.snapshot;
                 if (currentVersion === null && !currentAuthShare) return null;
 
+                // Resolution may have recovered a historical candidate without a main share.
+                deviceShare = await storage.getDeviceShare(storageId);
+                const localVersion = await storage.getShareVersion(storageId);
                 if (!deviceShare) return null;
                 const candidates = new Map<number, string>();
 

@@ -1319,7 +1319,7 @@ describe('createSSSStrategy', () => {
                             primaryDid: 'did:key:zCorrect',
                             recoveryMethods: [],
                             keyProvider: 'sss',
-                            // no shareVersion field
+                            shareVersion: 1, // The PUT response below omits the version.
                         }),
                         { status: 200 }
                     );
@@ -2614,7 +2614,7 @@ describe('createSSSStrategy', () => {
                 // fetchAuthShareRaw — capture the requested shareVersion
                 if (urlStr.includes('/keys/auth-share') && (init?.method ?? 'GET') === 'POST') {
                     const body = JSON.parse(init?.body as string);
-                    capturedVersion = body.shareVersion;
+                    if (body.shareVersion !== undefined) capturedVersion = body.shareVersion;
 
                     return new Response(
                         JSON.stringify({
@@ -2661,7 +2661,7 @@ describe('createSSSStrategy', () => {
 
                 if (urlStr.includes('/keys/auth-share') && (init?.method ?? 'GET') === 'POST') {
                     const body = JSON.parse(init?.body as string);
-                    capturedVersion = body.shareVersion;
+                    if (body.shareVersion !== undefined) capturedVersion = body.shareVersion;
 
                     return new Response(
                         JSON.stringify({
@@ -2873,7 +2873,8 @@ describe('createSSSStrategy', () => {
                 // fetchAuthShareRaw — capture requested shareVersion
                 if (urlStr.includes('/keys/auth-share') && method === 'POST') {
                     const body = JSON.parse(init?.body as string);
-                    authShareRequestVersion = body.shareVersion;
+                    if (body.shareVersion !== undefined)
+                        authShareRequestVersion = body.shareVersion;
 
                     return new Response(
                         JSON.stringify({
@@ -3593,7 +3594,9 @@ describe('createSSSStrategy', () => {
                 await expect(second.reconcileShares!(reconciliation)).rejects.toThrow(
                     'already in progress'
                 );
-                expect(fetchMock).toHaveBeenCalledOnce();
+                expect(
+                    fetchMock.mock.calls.filter(([, init]) => init?.method === 'PUT')
+                ).toHaveLength(1);
             } finally {
                 releaseWrite();
                 await first;
@@ -3609,7 +3612,10 @@ describe('createSSSStrategy', () => {
             async status => {
                 strategy.setActiveUser!('rejected-user');
                 await storage.storeDeviceShare('other-user-share', 'sss-device-share:other');
-                vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status }));
+                vi.spyOn(globalThis, 'fetch').mockImplementation(
+                    async (_url, init) =>
+                        new Response(null, { status: init?.method === 'PUT' ? status : 404 })
+                );
                 await expect(
                     strategy.atomicUpdateShares!({
                         token: 'token',
@@ -3687,6 +3693,161 @@ describe('createSSSStrategy', () => {
                 key === privateKey ? expectedDid : 'did:key:wrong',
         };
 
+        it('recovers an expired committed candidate from history with no main share and re-splits', async () => {
+            const rotated = await splitAndVerify(privateKey);
+            const history = new Map<number, string>();
+            let version = 0;
+            let authShare: string | null = null;
+            let puts = 0;
+            vi.spyOn(globalThis, 'fetch').mockImplementation(async (_url, init) => {
+                const body = JSON.parse(String(init?.body));
+                if (init?.method === 'PUT') {
+                    expect(body.expectedShareVersion).toBe(version);
+                    if (authShare) history.set(version, authShare);
+                    authShare = body.authShare.encryptedData;
+                    version++;
+                    if (++puts === 1) throw new TypeError('Committed but reply lost');
+                    return new Response(
+                        JSON.stringify({ shareVersion: version, expectedShareVersionChecked: true })
+                    );
+                }
+                return new Response(
+                    JSON.stringify(
+                        version
+                            ? {
+                                  authShare: body.shareVersion
+                                      ? (history.get(body.shareVersion) ?? null)
+                                      : authShare,
+                                  shareVersion: version,
+                              }
+                            : null
+                    )
+                );
+            });
+            await expect(strategy.atomicUpdateShares!(updateParams)).rejects.toMatchObject({
+                rolledBack: false,
+            });
+            expect(await storage.getDeviceShare()).toBeNull();
+            const pending = await readPendingShareCandidates(storage);
+            await writePendingShareCandidates(
+                storage,
+                pending.map(candidate => ({
+                    ...candidate,
+                    createdAt: Date.now() - PENDING_WRITE_EXPIRY_MS - 1,
+                }))
+            );
+            history.set(version, authShare!);
+            authShare = rotated.shares.authShare;
+            version++;
+            expect(await strategy.reconcileShares!(reconcileParams)).toEqual({
+                privateKey,
+                did: expectedDid,
+            });
+            expect(version).toBe(3);
+            expect(await reconstructFromShares([(await strategy.getLocalKey())!, authShare!])).toBe(
+                privateKey
+            );
+            expect(await readPendingShareCandidates(storage)).toEqual([]);
+        });
+
+        it.each([false, true])(
+            'expires unmatched candidates only with complete history (failure=%s)',
+            async failure => {
+                const pending = await splitAndVerify(privateKey);
+                const current = await splitAndVerify(privateKey);
+                const historical = await splitAndVerify(privateKey);
+                const candidates = [
+                    {
+                        share: pending.shares.deviceShare,
+                        createdAt: Date.now() - PENDING_WRITE_EXPIRY_MS - 1,
+                    },
+                ];
+                await writePendingShareCandidates(storage, candidates);
+                vi.spyOn(globalThis, 'fetch').mockImplementation(async (_url, init) => {
+                    const body = JSON.parse(String(init?.body));
+                    if (body.shareVersion && failure) throw new TypeError('History unavailable');
+                    return new Response(
+                        JSON.stringify({
+                            shareVersion: 2,
+                            authShare: body.shareVersion
+                                ? historical.shares.authShare
+                                : current.shares.authShare,
+                        })
+                    );
+                });
+                expect(await strategy.reconcileShares!(reconcileParams)).toBeNull();
+                expect(await readPendingShareCandidates(storage)).toEqual(
+                    failure ? candidates : []
+                );
+            }
+        );
+
+        it.each([false, true])(
+            'survives six delayed writes after an acknowledged seventh (CAS=%s)',
+            async cas => {
+                const delayed: Array<{ authShare: string; base: number }> = [];
+                const history = new Map<number, string>();
+                let version = 0;
+                let authShare: string | null = null;
+                const commit = (share: string, base: number): Response => {
+                    if (cas && base !== version) return new Response(null, { status: 409 });
+                    if (authShare) history.set(version, authShare);
+                    authShare = share;
+                    version++;
+                    for (const old of history.keys()) if (old < version - 5) history.delete(old);
+                    return new Response(
+                        JSON.stringify({
+                            shareVersion: version,
+                            ...(cas ? { expectedShareVersionChecked: true } : {}),
+                        })
+                    );
+                };
+                vi.spyOn(globalThis, 'fetch').mockImplementation(async (_url, init) => {
+                    const body = JSON.parse(String(init?.body));
+                    if (init?.method === 'PUT') {
+                        expect(body.expectedShareVersion).toBe(version);
+                        if (delayed.length < 6) {
+                            delayed.push({
+                                authShare: body.authShare.encryptedData,
+                                base: body.expectedShareVersion,
+                            });
+                            throw new TypeError('Request still in flight');
+                        }
+                        return commit(body.authShare.encryptedData, body.expectedShareVersion);
+                    }
+                    return new Response(
+                        JSON.stringify(
+                            version
+                                ? {
+                                      shareVersion: version,
+                                      authShare: body.shareVersion
+                                          ? (history.get(body.shareVersion) ?? null)
+                                          : authShare,
+                                  }
+                                : null
+                        )
+                    );
+                });
+                for (let i = 0; i < 6; i++)
+                    await expect(strategy.atomicUpdateShares!(updateParams)).rejects.toMatchObject({
+                        rolledBack: false,
+                    });
+                await strategy.atomicUpdateShares!(updateParams);
+                expect(await readPendingShareCandidates(storage)).toHaveLength(6);
+                for (const write of delayed)
+                    expect(commit(write.authShare, write.base).status).toBe(cas ? 409 : 200);
+                const reloaded = createSSSStrategy({
+                    serverUrl: 'http://test-server:5100/api',
+                    storage,
+                });
+                await reloaded.reconcileShares!(reconcileParams);
+                expect(
+                    await reconstructFromShares([(await reloaded.getLocalKey())!, authShare!])
+                ).toBe(privateKey);
+                expect(version).toBe(cas ? 1 : 7);
+            }
+        );
+
         it('preserves expired candidates when the current auth share has no version', async () => {
             const previous = await splitAndVerify(privateKey);
             const candidates = [{ share: previous.shares.deviceShare, createdAt: 0 }];
@@ -3710,7 +3871,7 @@ describe('createSSSStrategy', () => {
                         authShare = JSON.parse(String(init.body)).authShare.encryptedData;
                         throw new TypeError('Lost reply');
                     }
-                    strategy.setActiveUser!('account-b');
+                    if (authShare) strategy.setActiveUser!('account-b');
                     return new Response(JSON.stringify({ authShare, shareVersion: 1 }));
                 });
             await expect(strategy.atomicUpdateShares!(updateParams)).rejects.toMatchObject({
@@ -3803,7 +3964,7 @@ describe('createSSSStrategy', () => {
                 expect(
                     await reconstructFromShares([(await reloaded.getLocalKey())!, authShare!])
                 ).toBe(privateKey);
-                expect(await readPendingShareCandidates(storage)).toEqual([]);
+                expect(await readPendingShareCandidates(storage)).toHaveLength(1);
                 expect(await reloaded.getLocalShareVersion!()).toBe(version);
             }
         );
@@ -3835,7 +3996,7 @@ describe('createSSSStrategy', () => {
                 did: expectedDid,
             });
             expect(await strategy.getLocalKey()).toBe(candidates[0]!.share);
-            expect(await readPendingShareCandidates(storage)).toEqual([]);
+            expect(await readPendingShareCandidates(storage)).toEqual([candidates[1]]);
         });
 
         it.each([false, true])(
@@ -3861,7 +4022,11 @@ describe('createSSSStrategy', () => {
                 if (matching) {
                     expect(result).toEqual({ privateKey, did: expectedDid });
                     expect(await strategy.getLocalKey()).toBe(old.shares.deviceShare);
-                    expect(await readPendingShareCandidates(storage)).toEqual([]);
+                    expect(
+                        (await readPendingShareCandidates(storage)).map(
+                            candidate => candidate.share
+                        )
+                    ).toEqual([live.shares.deviceShare]);
                 } else {
                     expect(result).toBeNull();
                     expect(
@@ -4020,8 +4185,15 @@ describe('createSSSStrategy', () => {
                 await strategy.storeLocalKey(previous.shares.deviceShare);
                 await strategy.storeLocalShareVersion!(4);
 
-                vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-                    new Response(null, { status: 403, statusText: 'Forbidden' })
+                vi.spyOn(globalThis, 'fetch').mockImplementation(async (_url, init) =>
+                    init?.method === 'PUT'
+                        ? new Response(null, { status: 403, statusText: 'Forbidden' })
+                        : new Response(
+                              JSON.stringify({
+                                  authShare: previous.shares.authShare,
+                                  shareVersion: 4,
+                              })
+                          )
                 );
 
                 let thrown: unknown;

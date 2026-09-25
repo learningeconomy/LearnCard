@@ -1198,7 +1198,7 @@ const AuthSessionManager: React.FC<{
                                 );
                             } catch (e) {
                                 log.warn('Email backup share after upgrade failed (non-fatal)', e);
-                                presentToast(m['recovery.error.default'](), {
+                                presentToast(m['error.generic'](), {
                                     type: ToastTypeEnum.Error,
                                     hasDismissButton: true,
                                 });
