@@ -48,9 +48,6 @@ Copy secrets without printing them, e.g.
 flowchart TD
     PR[Pull request] --> Validate[Four roots: fmt / validate / tflint]
     PR --> Build[ARM64 build without push]
-    PR --> Identity[Trusted same-repo OIDC identity smoke]
-    Identity --> Toggle{PR plans explicitly enabled?}
-    Toggle -->|Yes| Plan[Staging network + service: counts and addresses only]
     Main[Push to main: Keycloak paths] --> ECR[Build ARM64 / immutable version-shortsha tag]
     ECR --> Digest[Staging ECR digest]
     Digest --> Gate[Keycloak compatibility check]
@@ -75,15 +72,14 @@ always human-applied. No static AWS credentials, raw plans or plan artifacts are
 
 ### Required GitHub configuration
 
-| Scope                      | Variable                              | Purpose                                                                                                                |
-| -------------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Each environment           | `AWS_DEPLOY_ROLE_ARN`                 | Bootstrap deploy OIDC role                                                                                             |
-| Each environment           | `TF_STATE_BUCKET`                     | That account's bootstrap state bucket                                                                                  |
-| Each environment           | `KEYCLOAK_BOOTSTRAP_ADMIN_SECRET_ARN` | Existing secret ARN, never its value                                                                                   |
-| Each environment, optional | `KEYCLOAK_CONTAINER_IMAGE`            | Manual service plan/apply override only, account-local `repo@sha256:...`; otherwise use running image                  |
-| Each environment, optional | `KEYCLOAK_ALLOW_MISSING_REALM`        | Default `false`; `true` temporarily allows discovery 404 **only when the realm root is absent and no realm apply ran** |
-| Repository                 | `KEYCLOAK_STAGING_PLAN_ROLE_ARN`      | Staging plan role for the non-environment PR OIDC subject                                                              |
-| Repository, optional       | `KEYCLOAK_ENABLE_PR_PLANS`            | Default off; literal `true` enables credentialed trusted-author staging plans                                          |
+| Scope                      | Variable                              | Purpose                                                                                               |
+| -------------------------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Each environment           | `AWS_DEPLOY_ROLE_ARN`                 | Bootstrap deploy OIDC role                                                                            |
+| Each environment           | `TF_STATE_BUCKET`                     | That account's bootstrap state bucket                                                                 |
+| Each environment           | `KEYCLOAK_BOOTSTRAP_ADMIN_SECRET_ARN` | Existing secret ARN, never its value                                                                  |
+| Each environment, optional | `KEYCLOAK_CONTAINER_IMAGE`            | Manual service plan/apply override only, account-local `repo@sha256:...`; otherwise use running image |
+| Repository                 | `KEYCLOAK_STAGING_PLAN_ROLE_ARN`      | Staging plan role for main-branch drift checks only                                                   |
+| Repository                 | `KEYCLOAK_PRODUCTION_PLAN_ROLE_ARN`   | Production plan role for main-branch drift checks only; set after bootstrap                           |
 
 Region is pinned to `us-east-1`. Repository URLs are discovered from
 `/learncard-keycloak/<env>/bootstrap/ecr_repository_url` and checked against account
@@ -104,26 +100,23 @@ SSM GetParameter and state bucket ListBucket. Existing state policy allowlists t
 deploy role and denies bootstrap-state access; no bucket-policy widening is needed.
 The new IAM policy name is covered by the existing bootstrap self-mutation deny.
 Production bootstrap still needs its initial human apply and ECR replication setup.
+Before running this workflow, the human-owned deploy IAM role must also grant
+`codebuild:StopBuild` on its realm project and set `max_session_duration` to at
+least 10800 seconds. The workflow requests a three-hour session/job budget, with
+a 150-minute deployment-step limit to reserve time for cleanup. Verify these IAM
+prerequisites during bootstrap; this workflow cannot update its own role.
+The script uses a softer deadline (140 minutes from deploy start or 170 minutes
+from job start, whichever is earlier) and refuses to launch CodeBuild unless
+75 minutes remain for polling, stopping, and cleanup. Earlier build/service work
+therefore cannot consume the realm runner's cancellation reserve unnoticed.
 
-### PR trust tradeoff
+### PR checks
 
-Fork PRs never receive credentials. Identity smoke checks out **no code**. Optional
-plans require same-repository PRs authored by OWNER, MEMBER or COLLABORATOR, but that
-is not sufficient isolation: Terraform providers, data sources and workflow changes
-can execute arbitrary PR code with the plan role's **account-wide ReadOnlyAccess**,
-downstream state read and state-lock writes. State/application data may be sensitive.
-The IAM `pull_request` subject cannot distinguish a fork or trusted author; workflow
-review remains mandatory. Enabling the toggle explicitly accepts that exposure.
-**The toggle is a scheduling control, not an IAM security boundary.** A repository
-writer can edit PR YAML to bypass it or add code to the retained identity-smoke job;
-the existing plan-role trust already permits that token. Keeping the toggle off
-does not revoke this inherited access. Preventing that attack requires a separate,
-human-applied redesign of plan-role trust and externally enforced approval (including
-the identity-smoke path). This pipeline does not claim to provide that isolation.
-Keep it off unless maintainers trust all code contributors covered by that condition.
-Plan output, errors and JSON stay on the ephemeral runner, are removed on exit, and
-are never uploaded. Only create/update/delete counts and up to 100 changed addresses
-appear in job summaries. No production PR plan runs.
+PRs receive no AWS credentials: they validate the Terraform roots, run offline
+checks, and build the image without pushing. Credentialed plans run only from
+main, in the drift workflow and inside protected deploy jobs. Drift plan roles
+cover network and service, never the realm root or its state. Realm operations
+use the private runner. Plan files and raw diagnostics are never uploaded.
 
 ### Promotion and manual operations
 
@@ -135,6 +128,10 @@ appear in job summaries. No production PR plan runs.
    The image's `org.opencontainers.image.revision` label must identify an ancestor
    of main; the job restores service/realm Terraform from that exact commit and
    passes it to CodeBuild. An older image is never paired with newer realm config.
+   Before any deployment mutation, the script requires non-empty realm environment
+   tfvars and generated inputs committed at that SHA and matching the restored files
+   (`keycloak-staging.tfvars.json` for staging, `production.tfvars.json` for production).
+   Missing production inputs fail before snapshots, the journal, or service changes.
    Legacy manually pushed images without that label are not promotable through
    this action; use a deliberately reviewed manual service override for recovery.
 3. The job verifies the digest exists in production ECR (replication is asynchronous;
@@ -150,11 +147,20 @@ push-triggered staging deploys skip snapshots by default. Production cannot skip
 
 Realm runs **only inside the VPC** via `learncard-keycloak-<env>-realm` CodeBuild,
 `--source-version` set to the reviewed workflow commit SHA. The pipeline polls a
-bounded 30 minutes and fails on all non-success terminal statuses. No standalone
+bounded 65 minutes (30 queued + 30 build + 5 margin) and fails on all non-success
+terminal statuses. Timeout, polling errors, and catchable script exits/signals
+stop an unfinished build and wait up to five minutes for terminal confirmation
+before service cleanup. If confirmation fails, cleanup is withheld and the job
+fails loudly: an operator must reconcile the possibly running build before any
+service recovery. Hard runner termination cannot guarantee trap execution.
+If a build-start response is lost, the script cannot prove that no build exists:
+it withholds service cleanup and requires operator reconciliation of the realm
+project. Manual workflow cancellation may forcibly kill the trap before stop
+confirmation; always verify the build's terminal status before recovery.
+No standalone
 realm dispatch is exposed until the runner supports a reviewed plan/apply contract.
-If the parallel realm root has not landed, the runner is explicitly skipped; the
-temporary 404 exception above must be enabled to finish that bootstrap deployment.
-Once the root exists, runner success and HTTP 200 are required regardless of the flag.
+Every deployment requires realm runner success and discovery HTTP 200; neither
+missing realm roots nor discovery 404 responses are accepted.
 
 ### Compatibility and recreate safety
 
@@ -226,12 +232,8 @@ covered: it can only run inside the VPC, and the runner has no plan-only mode ye
 ### Dependency automation and verification boundaries
 
 Dependabot checks only Keycloak Dockerfiles and the four Terraform roots weekly,
-grouped, with two open PRs per ecosystem; no repo-wide Actions update noise. The
-[Terraform fetcher](https://github.com/dependabot/dependabot-core/blob/main/terraform/lib/dependabot/terraform/file_fetcher.rb)
-requires `.tf`/`.hcl` configuration files. Missing `realm/` is **not guaranteed to be
-a silent skip**: it can report a missing-manifest update error until the parallel root
-lands. The requested entry stays configured in advance; no placeholder realm files
-are created here. CI validation separately warns/skips the absent root.
+grouped, with two open PRs per ecosystem; no repo-wide Actions update noise.
+CI requires all four roots: a missing root fails validation instead of skipping it.
 
 The Apple provider watcher downloads only the exact stable upstream release asset,
 hashes it, updates both pins and opens a review PR with release notes and a Keycloak

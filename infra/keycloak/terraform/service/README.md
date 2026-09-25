@@ -361,10 +361,9 @@ stopped. Never set a persistent desired count or enable Exec on Keycloak tasks.
 
 ## GitHub workflow configuration
 
-PR and dispatch run a three-root offline validation matrix plus a no-push Docker
-build. Only a separate same-repo, trusted-author PR identity smoke job gets a plan
-role OIDC token; it checks out no code and runs no Terraform. Forks remain offline.
-Credentialed PR plans and image promotion are Phase 4, not implemented here.
+PR and dispatch run a four-root offline validation matrix plus a no-push Docker
+build. PRs receive no AWS credentials. Credentialed plans run only from main in
+the drift workflow and protected deploy jobs; promotion reuses a staging digest.
 
 Set these **GitHub environment variables**, with main-only deployment branches and
 required production review/prevent-self-approval:
@@ -372,19 +371,15 @@ required production review/prevent-self-approval:
 | Variable                              | Value                                                   |
 | ------------------------------------- | ------------------------------------------------------- |
 | `AWS_DEPLOY_ROLE_ARN`                 | Bootstrap deploy role ARN                               |
-| `AWS_PLAN_ROLE_ARN`                   | Bootstrap plan role ARN (mirror described below)        |
 | `TF_STATE_BUCKET`                     | Bootstrap state bucket                                  |
 | `AWS_REGION`                          | us-east-1 (default)                                     |
 | `KEYCLOAK_CONTAINER_IMAGE`            | Service's account-local ARM64 digest URI                |
 | `KEYCLOAK_BOOTSTRAP_ADMIN_SECRET_ARN` | Service bootstrap password secret ARN, not its contents |
 
-GitHub environment jobs emit an **environment** OIDC subject, incompatible with
-the plan role's PR/main trust. Therefore mirror staging `AWS_PLAN_ROLE_ARN` into
-repository variable `KEYCLOAK_STAGING_PLAN_ROLE_ARN`; the isolated PR job has no
-environment. Until that variable is set the job is **skipped, not passed**; set it
-right after bootstrap and confirm the job runs on the next PR. This is a deliberate exception to environment-only role variables,
-not a broadening of IAM trust. Repository maintainers can change workflows: review
-is still required, and the IAM PR subject alone cannot distinguish a fork.
+Set repository variables `KEYCLOAK_STAGING_PLAN_ROLE_ARN` and
+`KEYCLOAK_PRODUCTION_PLAN_ROLE_ARN` for main-branch drift checks only. These roles
+plan network and service, never realm state. Protected environment jobs use the
+deploy role rather than the main-subject plan roles.
 
 Manual dispatch (main only) chooses `root=network|service`, `action=plan|apply` and
 environment. Both dispatch actions use the deploy role because of their environment
@@ -503,10 +498,9 @@ its DEBUG default; coordinate that setting with the realm/image owner. JSON stdo
 already flows through awslogs. Saved queries find failed logins by IP and broker
 errors. ALB logs live in S3, so no misleading CloudWatch query for ALB 5xx paths is added.
 
-`synthetic_signin_alarm_placeholder` must remain false: no scheduled publisher or
-sign-in alarm exists yet. The QA driver and discovery/JWKS workflow are not a
-5-minute production synthetic alarm. Commission that separately after the realm
-exists. Repo variable `KEYCLOAK_STAGING_REALM_LIVE=true` makes discovery/JWKS failures
+No scheduled sign-in publisher or alarm is provisioned. The QA driver and
+discovery/JWKS workflow are not a 5-minute production synthetic alarm; commission
+that separately. Repo variable `KEYCLOAK_STAGING_REALM_LIVE=true` makes discovery/JWKS failures
 fatal in the existing staging health workflow; `/admin/` must always return 403.
 
 ### Backup and live gates

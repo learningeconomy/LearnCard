@@ -264,16 +264,6 @@ variable "waf_block_threshold" {
   default     = 100
 }
 
-variable "synthetic_signin_alarm_placeholder" {
-  description = "Reserved only: no synthetic alarm is provisioned until a realm and scheduled sign-in publisher exist"
-  type        = bool
-  default     = false
-  validation {
-    condition     = !var.synthetic_signin_alarm_placeholder
-    error_message = "Synthetic sign-in monitoring is not implemented; commission its publisher before enabling it."
-  }
-}
-
 variable "enable_aws_backup" {
   description = "Enable daily Aurora snapshots and cross-region copies (off for low-cost staging)"
   type        = bool

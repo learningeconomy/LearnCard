@@ -7,9 +7,36 @@ set -euo pipefail
 : "${TF_VAR_keycloak_image:?}"
 : "${GITHUB_SHA:?}"
 release_sha=${RELEASE_SHA:-$GITHUB_SHA}
+# Leave ten minutes before the workflow's 150-minute hard step timeout. The
+# workflow also supplies an absolute job deadline to account for earlier steps.
+DEPLOY_DEADLINE_EPOCH=$(( $(date +%s) + 140 * 60 ))
+if [[ -n ${DEPLOY_JOB_DEADLINE_EPOCH:-} ]]; then
+    [[ "$DEPLOY_JOB_DEADLINE_EPOCH" =~ ^[0-9]+$ ]]
+    if (( DEPLOY_JOB_DEADLINE_EPOCH < DEPLOY_DEADLINE_EPOCH )); then
+        DEPLOY_DEADLINE_EPOCH=$DEPLOY_JOB_DEADLINE_EPOCH
+    fi
+fi
 [[ "$DEPLOY_ENVIRONMENT" == staging || "$DEPLOY_ENVIRONMENT" == production ]]
 [[ "$TF_VAR_keycloak_image" =~ @sha256:[0-9a-f]{64}$ ]]
 scripts="$PWD/infra/keycloak/scripts"
+# CodeBuild checks out release_sha, not local/uncommitted inputs or a newer main.
+# Fail before even creating the journal, taking a snapshot, or installing cleanup.
+realm_stage=keycloak-staging
+realm_label=Staging
+if [[ "$DEPLOY_ENVIRONMENT" == production ]]; then
+    realm_stage=production
+    realm_label=Production
+fi
+for input in "infra/keycloak/terraform/realm/environments/$DEPLOY_ENVIRONMENT.tfvars" \
+    "infra/keycloak/terraform/realm/generated/$realm_stage.tfvars.json"; do
+    if [[ ! -s "$input" ]] || ! GIT_MASTER=1 git show "$release_sha:$input" 2>/dev/null | cmp -s "$input" -; then
+        printf '%s realm inputs are not committed: %s (must be non-empty and match source revision %s).\n' \
+            "$realm_label" "$input" "$release_sha" >&2
+        exit 1
+    fi
+done
+# shellcheck source=infra/keycloak/scripts/realm-runner.sh
+source "$scripts/realm-runner.sh"
 root=infra/keycloak/terraform/service
 name="learncard-keycloak-$DEPLOY_ENVIRONMENT"
 prefix="keycloak/$DEPLOY_ENVIRONMENT/compat"
@@ -18,7 +45,11 @@ work=$(mktemp -d)
 stopped=false
 complete=false
 cleanup() {
-    if [[ "$stopped" == true && "$complete" != true ]]; then
+    local result=$? runner_stopped=true
+    trap - EXIT
+    trap '' INT TERM HUP
+    stop_realm_build "$work/realm-build-id" || { runner_stopped=false; result=1; }
+    if [[ "$runner_stopped" == true && "$stopped" == true && "$complete" != true ]]; then
         # No automatic rollback across a possible schema migration. Leave scaling suspended.
         aws application-autoscaling register-scalable-target --service-namespace ecs \
             --resource-id "service/$name/$name" --scalable-dimension ecs:service:DesiredCount \
@@ -29,8 +60,12 @@ cleanup() {
     fi
     rm -rf "$work"
     rm -f "$root/"{keycloak.tfplan,plan.json,plan.log,init.log,apply.log}
+    exit "$result"
 }
 trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+trap 'exit 129' HUP
 # List + get distinguishes genuinely absent objects from access/network failures.
 download_optional() {
     local key=$1 destination=$2 count
@@ -131,21 +166,7 @@ task=$(aws ecs describe-services --cluster "$name" --services "$name" --query 's
 actual=$(aws ecs describe-task-definition --task-definition "$task" \
     --query 'taskDefinition.containerDefinitions[?name==`keycloak`].image | [0]' --output text)
 [[ "$actual" == "$TF_VAR_keycloak_image" ]] || { printf 'ECS rolled back or deployed an unexpected image.\n' >&2; exit 1; }
-realm_applied=false
-if [[ -d infra/keycloak/terraform/realm ]]; then
-    build=$(aws codebuild start-build --project-name "$name-realm" --source-version "$release_sha" --query build.id --output text)
-    for ((attempt=0; attempt<120; attempt++)); do
-        status=$(aws codebuild batch-get-builds --ids "$build" --query 'builds[0].buildStatus' --output text)
-        case "$status" in
-            SUCCEEDED) realm_applied=true; break ;;
-            IN_PROGRESS) sleep 15 ;;
-            *) printf 'Realm runner failed: %s (%s). Inspect restricted CodeBuild logs.\n' "$build" "$status" >&2; exit 1 ;;
-        esac
-    done
-    [[ "$realm_applied" == true ]] || { printf 'Realm runner timed out.\n' >&2; exit 1; }
-else
-    printf '::warning::Realm root absent; skipping the private realm runner.\n'
-fi
+run_realm_build "$work/realm-build-id" "$name" "$release_sha"
 hostname=auth.staging.learncard.app
 if [[ "$DEPLOY_ENVIRONMENT" == production ]]; then hostname=auth.learncard.app; fi
 healthy=false
@@ -153,10 +174,6 @@ for ((attempt=0; attempt<30; attempt++)); do
     code=$(curl --silent --show-error --connect-timeout 10 --max-time 20 -o /dev/null -w '%{http_code}' \
         "https://$hostname/realms/learncard/.well-known/openid-configuration") || code=000
     if [[ "$code" == 200 ]]; then healthy=true; break; fi
-    if [[ "$code" == 404 && "$realm_applied" == false && ${ALLOW_MISSING_REALM:-false} == true ]]; then
-        printf '::warning::Explicit bootstrap exception: realm is not applied; discovery returned 404.\n'
-        healthy=true; break
-    fi
     sleep 10
 done
 [[ "$healthy" == true ]] || { printf 'Discovery smoke check failed.\n' >&2; exit 1; }
