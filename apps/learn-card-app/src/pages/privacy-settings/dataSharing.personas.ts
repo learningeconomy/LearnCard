@@ -244,7 +244,7 @@ const sharedLinks: DataSharingSharedLinksViewModel = {
     onFilterChange: noop,
     onRefresh: async () => undefined,
     onLoadMore: async () => undefined,
-    onCopy: async () => undefined,
+    onCopy: async () => true,
     onGetPrivateUrl: async () =>
         'https://learncard.app/s/AAAAAAAAAAAAAAAAAAAAAA#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     onChangeExpiry: async () => undefined,

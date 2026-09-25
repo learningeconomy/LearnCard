@@ -106,10 +106,6 @@ export const useSharedLinks = (
         }
     }, []);
 
-    useEffect(() => {
-        if (enabled) void load();
-    }, [enabled, load]);
-
     const loadSavedCollections = useCallback(async (): Promise<void> => {
         setSavedCollectionsLoading(true);
         setSavedCollectionsError(false);
@@ -123,6 +119,12 @@ export const useSharedLinks = (
             setSavedCollectionsLoading(false);
         }
     }, []);
+
+    useEffect(() => {
+        if (!enabled) return;
+        void load();
+        void loadSavedCollections();
+    }, [enabled, load, loadSavedCollections]);
 
     const openSavedCollections = useCallback(async (): Promise<void> => {
         if (savedCollectionsLoadedRef.current) return;
@@ -141,17 +143,19 @@ export const useSharedLinks = (
     }, []);
 
     const copy = useCallback(
-        async (share: ShareLink): Promise<void> => {
+        async (share: ShareLink): Promise<boolean> => {
             setBusyId(share.id);
             try {
                 await Clipboard.write({ string: await privateUrl(share) });
                 presentToast(m['dataShareCenter.shared.copied'](), {
                     type: ToastTypeEnum.Success,
                 });
+                return true;
             } catch {
                 presentToast(m['dataShareCenter.shared.actionError'](), {
                     type: ToastTypeEnum.Error,
                 });
+                return false;
             } finally {
                 setBusyId(null);
             }

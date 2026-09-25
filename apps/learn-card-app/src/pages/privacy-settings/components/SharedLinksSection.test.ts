@@ -69,7 +69,7 @@ const viewModel = (overrides: Partial<DataSharingSharedLinksViewModel> = {}) => 
     onFilterChange: vi.fn(),
     onRefresh: vi.fn(async () => undefined),
     onLoadMore: vi.fn(async () => undefined),
-    onCopy: vi.fn(async () => undefined),
+    onCopy: vi.fn(async () => true),
     onGetPrivateUrl: vi.fn(async () => 'https://example.com'),
     onChangeExpiry: vi.fn(async () => undefined),
     onStop: vi.fn(async () => undefined),
