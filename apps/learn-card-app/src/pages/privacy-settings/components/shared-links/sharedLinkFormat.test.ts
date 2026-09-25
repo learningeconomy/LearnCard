@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { ShareLink } from '@learncard/types';
 
 import {
+    activeCountLabel,
     avatarTint,
     calendarDaysUntil,
     expiryHint,
@@ -148,6 +149,58 @@ describe('row meta', () => {
             shareRowMeta(share(), { pending: false, showViewStats: false }, now).hint
         ).toBeNull();
     });
+
+    it('shows the stopped date and never an expiry for stopped links', () => {
+        const meta = shareRowMeta(
+            share({
+                status: 'stopped',
+                stoppedAt: '2026-09-20T00:00:00.000Z',
+                expiresAt: new Date(2026, 8, 26, 12).toISOString(),
+            }),
+            { pending: false, showViewStats: true },
+            now
+        );
+        expect(meta.hint).toEqual({
+            label: `Stopped ${new Date('2026-09-20T00:00:00.000Z').toLocaleDateString()}`,
+            tone: 'default',
+        });
+    });
+
+    it('falls back to the plain status label when a stopped link has no stoppedAt', () => {
+        const meta = shareRowMeta(
+            share({
+                status: 'stopped',
+                stoppedAt: null,
+                expiresAt: new Date(2026, 8, 26, 12).toISOString(),
+            }),
+            { pending: false, showViewStats: true },
+            now
+        );
+        expect(meta.hint).toEqual({ label: 'Stopped', tone: 'default' });
+    });
+
+    it('shows the expired date with a soon tone once a link has elapsed', () => {
+        const meta = shareRowMeta(
+            share({ status: 'active', expiresAt: '2026-09-01T00:00:00.000Z' }),
+            { pending: false, showViewStats: true },
+            now
+        );
+        expect(meta.hint).toEqual({
+            label: `Expired ${new Date('2026-09-01T00:00:00.000Z').toLocaleDateString()}`,
+            tone: 'soon',
+        });
+    });
+});
+
+describe('activeCountLabel', () => {
+    it('uses the singular form for one active link', () => {
+        expect(activeCountLabel(1)).toBe('1 active');
+    });
+
+    it('uses the plural form otherwise', () => {
+        expect(activeCountLabel(0)).toBe('0 active');
+        expect(activeCountLabel(3)).toBe('3 active');
+    });
 });
 
 describe('preview selection', () => {
@@ -178,6 +231,10 @@ describe('avatars', () => {
         expect(initialsFor('Alex Rivera')).toBe('AR');
         expect(initialsFor('acme')).toBe('A');
         expect(initialsFor('  Mary   Jane Watson ')).toBe('MW');
+    });
+
+    it('handles astral characters without splitting surrogate pairs', () => {
+        expect(initialsFor('😀 Sam')).toBe('😀S');
     });
 
     it('gives the same person the same tint every time', () => {

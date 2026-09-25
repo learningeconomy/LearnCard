@@ -8489,7 +8489,9 @@
             "viewsLabel": "Views",
             "change": "Change",
             "updateContents": "Update contents",
-            "filterLabel": "Filter links"
+            "filterLabel": "Filter links",
+            "stoppedOn": "Stopped {{date}}",
+            "activeCountOne": "{{count}} active"
         },
         "minor": {
             "eyebrow": "Protected account",

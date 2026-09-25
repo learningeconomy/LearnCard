@@ -38,6 +38,11 @@ export const credentialCountLabel = (count: number): string =>
         ? m['dataShareCenter.shared.credentialCountOne']({ count: String(count) })
         : m['dataShareCenter.shared.credentialCount']({ count: String(count) });
 
+export const activeCountLabel = (count: number): string =>
+    count === 1
+        ? m['dataShareCenter.shared.activeCountOne']({ count: String(count) })
+        : m['dataShareCenter.shared.activeCount']({ count: String(count) });
+
 export const statusLabel = (status: SharedLinkFilter): string =>
     ({
         active: m['dataShareCenter.shared.active'](),
@@ -111,24 +116,32 @@ export const shareRowMeta = (
     };
     if (pending) return { ...base, hint: null };
     const status = getSharedLinkViewStatus(share, now.getTime());
-    if (status === 'stopped' && share.stoppedAt)
+    if (status === 'stopped') {
         return {
             ...base,
             hint: {
-                label: `${statusLabel('stopped')} ${formatShortDate(share.stoppedAt)}`,
+                label: share.stoppedAt
+                    ? m['dataShareCenter.shared.stoppedOn']({
+                          date: formatShortDate(share.stoppedAt),
+                      })
+                    : statusLabel('stopped'),
                 tone: 'default',
             },
         };
-    if (status === 'expired' && share.expiresAt)
+    }
+    if (status === 'expired') {
         return {
             ...base,
             hint: {
-                label: m['dataShareCenter.shared.expiredOn']({
-                    date: formatShortDate(share.expiresAt),
-                }),
+                label: share.expiresAt
+                    ? m['dataShareCenter.shared.expiredOn']({
+                          date: formatShortDate(share.expiresAt),
+                      })
+                    : statusLabel('expired'),
                 tone: 'soon',
             },
         };
+    }
     if (share.expiresAt) {
         const expiry = expiryHint(share.expiresAt, now);
         return { ...base, hint: { label: expiry.label, tone: expiry.soon ? 'soon' : 'default' } };
@@ -163,8 +176,8 @@ export const viewAllLabel = (count: number, hasMore: boolean): string =>
 export const initialsFor = (name: string): string => {
     const words = name.trim().split(/\s+/).filter(Boolean);
     if (words.length === 0) return '';
-    const first = words[0][0] ?? '';
-    const last = words.length > 1 ? (words[words.length - 1][0] ?? '') : '';
+    const first = Array.from(words[0])[0] ?? '';
+    const last = words.length > 1 ? (Array.from(words[words.length - 1])[0] ?? '') : '';
     return `${first}${last}`.toUpperCase();
 };
 

@@ -8458,8 +8458,8 @@
             "viewAll": "Tout voir ({{count}})",
             "viewAllMore": "Tout voir ({{count}}+)",
             "noActive": "Tout est calme : rien n'est partagé pour le moment.",
-            "emptyLinksBody": "Partagez quelques attestations avec un lien privé.",
-            "receivedEmpty": "Quand quelqu'un partagera des attestations avec vous, elles apparaîtront ici.",
+            "emptyLinksBody": "Partagez quelques justificatifs avec un lien privé.",
+            "receivedEmpty": "Quand quelqu'un partagera des justificatifs avec vous, ils apparaîtront ici.",
             "receivedFrom": "De {{name}}",
             "updateInProgress": "Mise à jour en cours",
             "expiresToday": "Expire aujourd'hui",
@@ -8473,7 +8473,7 @@
             "copyLinkFor": "Copier le lien de {{title}}",
             "showQrLabel": "Afficher le code QR",
             "statusLabel": "Statut",
-            "credentialsLabel": "Attestations",
+            "credentialsLabel": "Justificatifs",
             "passcodeLabel": "Code d'accès",
             "passcodeOn": "Activé",
             "passcodeOffValue": "Désactivé",
@@ -8483,7 +8483,9 @@
             "viewsLabel": "Vues",
             "change": "Modifier",
             "updateContents": "Mettre à jour le contenu",
-            "filterLabel": "Filtrer les liens"
+            "filterLabel": "Filtrer les liens",
+            "stoppedOn": "Arrêté le {{date}}",
+            "activeCountOne": "{{count}} actif"
         },
         "minor": {
             "eyebrow": "Compte protégé",
