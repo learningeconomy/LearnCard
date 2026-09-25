@@ -1,3 +1,23 @@
+output "alarm_topic_arns" {
+  description = "Confirm each email subscription manually before relying on alert delivery"
+  value       = { for severity, topic in aws_sns_topic.alarms : severity => topic.arn }
+}
+
+output "waf_web_acl_arn" {
+  description = "Regional WAF protecting the public ALB only"
+  value       = aws_wafv2_web_acl.keycloak.arn
+}
+
+output "backup_vault_arns" {
+  description = "Empty when backups are disabled; source and cross-region destination otherwise"
+  value       = concat(aws_backup_vault.keycloak[*].arn, aws_backup_vault.copy[*].arn)
+}
+
+output "synthetic_signin_alarm_enabled" {
+  description = "Always false until the synthetic sign-in publisher and alarm are commissioned"
+  value       = var.synthetic_signin_alarm_placeholder
+}
+
 output "alb_dns_name" {
   description = "Public ALB DNS name"
   value       = aws_lb.keycloak.dns_name
