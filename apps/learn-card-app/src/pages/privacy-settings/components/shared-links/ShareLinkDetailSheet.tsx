@@ -73,6 +73,7 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
     const titleRef = useRef<HTMLHeadingElement>(null);
     const changeExpiryButtonRef = useRef<HTMLButtonElement>(null);
     const hadVmRef = useRef(false);
+    const pendingFocusRef = useRef<'change' | null>(null);
 
     const qrPanelId = useId();
     const expiryPanelId = useId();
@@ -91,11 +92,33 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
         }
     }, [vm, onClose]);
 
+    // `busy`/`pending` come from the live vm (or default to false while it's
+    // briefly null), computed before the early return so the focus effect
+    // below — which must run unconditionally — can depend on them.
+    const busy = vm?.busyId === share.id;
+    const pending = Boolean(vm?.pendingActions[share.id]);
+
+    // A successful expiry save can't focus the Change button synchronously:
+    // `busyId` on the vm is still set at that point (it's cleared by the
+    // section in a later store update), so the button is still `disabled`
+    // and `.focus()` silently no-ops. Defer the focus to this effect, which
+    // re-runs once `busy`/`pending` settle, and fall back to the heading if
+    // the button is still disabled (e.g. the change ended up pending).
+    useEffect(() => {
+        if (pendingFocusRef.current !== 'change') return;
+        if (busy) return;
+        const button = changeExpiryButtonRef.current;
+        if (button && !button.disabled) {
+            button.focus();
+        } else {
+            titleRef.current?.focus();
+        }
+        pendingFocusRef.current = null;
+    }, [panel, busy, pending]);
+
     if (!vm) return null;
 
     const status = getSharedLinkViewStatus(share);
-    const busy = vm.busyId === share.id;
-    const pending = Boolean(vm.pendingActions[share.id]);
     const finalized = share.contentState === 'finalized';
     const canEdit = status !== 'stopped' && finalized;
     const mutationsDisabled = !canEdit || busy || pending;
@@ -145,8 +168,8 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
                 share,
                 expiry ? new Date(`${expiry}T23:59:59.999`).toISOString() : null
             );
+            pendingFocusRef.current = 'change';
             setPanelState(null);
-            changeExpiryButtonRef.current?.focus();
         } catch {
             setErrorPanel('expiry');
         }
@@ -437,8 +460,7 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
                     {panel === 'stop' && (
                         <div
                             id={stopPanelId}
-                            role="region"
-                            aria-label={m['dataShareCenter.shared.stop']()}
+                            data-testid="stop-sharing-panel"
                             className="space-y-3 rounded-2xl border border-red-100 bg-red-50/60 p-4"
                         >
                             <p

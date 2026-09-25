@@ -79,9 +79,9 @@ const viewModel = (overrides: Partial<DataSharingSharedLinksViewModel> = {}) => 
 
 const seed = (vm: ReturnType<typeof viewModel>) => useSharedLinksStore.setState({ vm });
 
-/** Scopes into the "Stop sharing" confirmation region, disambiguating the
+/** Scopes into the "Stop sharing" confirmation panel, disambiguating the
  * confirm button from the row toggle button of the same name. */
-const stopPanel = () => screen.getByRole('region', { name: 'Stop sharing' });
+const stopPanel = () => screen.getByTestId('stop-sharing-panel');
 
 describe('ShareLinkDetailSheet', () => {
     it('shows the note and calls onPreview from the credential count', () => {
@@ -261,6 +261,98 @@ describe('ShareLinkDetailSheet', () => {
 
         expect(screen.getByRole('alert')).toBeTruthy();
         expect(vm.onChangeExpiry).toHaveBeenCalledTimes(1);
+    });
+
+    it('defers focus to the Change button until busyId clears after saving expiry', async () => {
+        let resolveChange: () => void = () => undefined;
+        const onChangeExpiry = vi.fn(
+            () =>
+                new Promise<void>(resolve => {
+                    resolveChange = resolve;
+                })
+        );
+        const vm = viewModel({ onChangeExpiry });
+        seed(vm);
+        render(
+            <ShareLinkDetailSheet
+                shareId={vm.records[0].id}
+                fallback={vm.records[0]}
+                onClose={vi.fn()}
+            />
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Change expiry' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Save expiry' }));
+
+        // The section marks the share busy while the mutation is in flight.
+        act(() => {
+            useSharedLinksStore.setState({
+                vm: viewModel({ onChangeExpiry, busyId: 'AAAAAAAAAAAAAAAAAAAAAA' }),
+            });
+        });
+
+        await act(async () => {
+            resolveChange();
+        });
+
+        // Still busy (the section hasn't cleared it yet): the Change button
+        // stays disabled, so focus must not have moved there yet.
+        expect(screen.getByRole('button', { name: 'Change expiry' })).not.toHaveFocus();
+
+        // The section clears busyId in a later store update.
+        act(() => {
+            useSharedLinksStore.setState({
+                vm: viewModel({ onChangeExpiry, busyId: null }),
+            });
+        });
+
+        expect(screen.getByRole('button', { name: 'Change expiry' })).toHaveFocus();
+    });
+
+    it('falls back to focusing the heading if the expiry change ends up pending', async () => {
+        let resolveChange: () => void = () => undefined;
+        const onChangeExpiry = vi.fn(
+            () =>
+                new Promise<void>(resolve => {
+                    resolveChange = resolve;
+                })
+        );
+        const vm = viewModel({ onChangeExpiry });
+        seed(vm);
+        render(
+            <ShareLinkDetailSheet
+                shareId={vm.records[0].id}
+                fallback={vm.records[0]}
+                onClose={vi.fn()}
+            />
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Change expiry' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Save expiry' }));
+
+        act(() => {
+            useSharedLinksStore.setState({
+                vm: viewModel({ onChangeExpiry, busyId: 'AAAAAAAAAAAAAAAAAAAAAA' }),
+            });
+        });
+
+        await act(async () => {
+            resolveChange();
+        });
+
+        // busyId clears, but the change is now pending confirmation — the
+        // Change button stays disabled, so focus falls back to the heading.
+        act(() => {
+            useSharedLinksStore.setState({
+                vm: viewModel({
+                    onChangeExpiry,
+                    busyId: null,
+                    pendingActions: { AAAAAAAAAAAAAAAAAAAAAA: 'expiry' },
+                }),
+            });
+        });
+
+        expect(screen.getByRole('heading', { name: 'Career highlights' })).toHaveFocus();
     });
 
     it('shows the busy "Saving…" label on Save expiry while busy', () => {
