@@ -14,4 +14,3 @@ db_connection_budget = 100
 waf_block_mode       = false
 enable_aws_backup    = false
 alarm_emails         = ["jackson@learningeconomy.io"]
-# A human must explicitly acknowledge the temporary rotation risk at first apply.
