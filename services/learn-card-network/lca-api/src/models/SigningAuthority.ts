@@ -2,6 +2,11 @@ import { z } from 'zod';
 
 export const SIGNING_AUTHORITIES_COLLECTION = 'signingauthorities';
 
+/**
+ * Encrypted seeds authenticate _id, ownerDid, name, and did (including an absent did).
+ * Never rename/backfill these fields in place: decrypt using the ORIGINAL identity, then
+ * re-encrypt for the new identity and atomically replace the metadata and envelope together.
+ */
 export const MongoSigningAuthorityValidator = z.object({
     _id: z.string().optional(),
     ownerDid: z.string(),

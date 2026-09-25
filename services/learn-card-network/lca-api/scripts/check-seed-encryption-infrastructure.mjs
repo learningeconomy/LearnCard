@@ -20,7 +20,7 @@ assert.equal(key.Properties.KeySpec, 'SYMMETRIC_DEFAULT');
 assert.equal(key.Properties.KeyUsage, 'ENCRYPT_DECRYPT');
 assert.equal(key.Properties.EnableKeyRotation, true);
 
-const roleArn = { 'Fn::GetAtt': ['IamRoleLambdaExecution', 'Arn'] };
+const roleArn = { 'Fn::GetAtt': ['SigningAuthorityExecutionRole', 'Arn'] };
 const keyArn = { 'Fn::GetAtt': ['SigningAuthoritySeedKey', 'Arn'] };
 const purpose = { StringEquals: { 'kms:EncryptionContext:purpose': 'lca-signing-authority-seed' } };
 const statements = key.Properties.KeyPolicy.Statement;
@@ -35,13 +35,15 @@ assert.deepEqual(deny.Condition, { ArnNotEquals: { 'aws:PrincipalArn': roleArn }
 assert(deny.Action.includes('kms:Decrypt'));
 assert(deny.Action.includes('kms:ReEncrypt*'));
 const admin = statements.find(statement => statement.Sid === 'AccountKeyAdministration');
+assert(admin.Action.includes('kms:DeleteAlias'));
+assert(admin.Action.includes('kms:GetKeyPolicy'));
 assert(
     !admin.Action.some(action =>
         ['kms:*', 'kms:Decrypt', 'kms:CreateGrant', 'kms:ReEncrypt*'].includes(action)
     )
 );
 const iam = resources.SigningAuthoritySeedKeyPolicy.Properties;
-assert.deepEqual(iam.Roles, [{ Ref: 'IamRoleLambdaExecution' }]);
+assert.deepEqual(iam.Roles, [{ Ref: 'SigningAuthorityExecutionRole' }]);
 assert.deepEqual(iam.PolicyDocument.Statement, [
     {
         Effect: 'Allow',
@@ -59,7 +61,12 @@ assert.equal(worker.url, undefined);
 assert.deepEqual(worker.vpc, config.functions.api.vpc);
 for (const name of ['api', 'trpc', 'seedMigration']) {
     assert(config.functions[name].dependsOn.includes('SigningAuthoritySeedKeyPolicy'));
+    assert.equal(config.functions[name].role, 'SigningAuthorityExecutionRole');
 }
+for (const name of ['swagger', 'didWeb']) {
+    assert.equal(config.functions[name].role, undefined);
+}
+assert.equal(resources.SigningAuthorityExecutionRole.Type, 'AWS::IAM::Role');
 assert.deepEqual(config.provider.environment.SA_SEED_KMS_KEY_ARN, keyArn);
 assert.equal(config.provider.environment.SA_SEED_LOCAL_KEK, undefined);
 if (packaged) {
@@ -68,6 +75,14 @@ if (packaged) {
     assert.equal(lambda.Properties.ReservedConcurrentExecutions, 1);
     assert.deepEqual(lambda.Properties.Role, roleArn);
     assert.deepEqual(lambda.Properties.Environment.Variables.SA_SEED_KMS_KEY_ARN, keyArn);
+    for (const name of ['Api', 'Trpc']) {
+        assert.deepEqual(resources[`${name}LambdaFunction`].Properties.Role, roleArn);
+    }
+    for (const name of ['Swagger', 'DidWeb']) {
+        assert.deepEqual(resources[`${name}LambdaFunction`].Properties.Role, {
+            'Fn::GetAtt': ['IamRoleLambdaExecution', 'Arn'],
+        });
+    }
     for (const resource of Object.values(resources)) {
         if (resource.Type === 'AWS::Lambda::Permission' || resource.Type === 'AWS::Lambda::Url') {
             assert(!JSON.stringify(resource).includes('SeedMigrationLambdaFunction'));

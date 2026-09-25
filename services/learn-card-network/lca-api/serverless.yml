@@ -172,6 +172,7 @@ provider:
 functions:
     trpc:
         handler: lambda.trpcHandler
+        role: SigningAuthorityExecutionRole
         dependsOn: [SigningAuthoritySeedKeyPolicy]
         vpc:
             securityGroupIds:
@@ -183,6 +184,7 @@ functions:
 
     api:
         handler: lambda.openApiHandler
+        role: SigningAuthorityExecutionRole
         dependsOn: [SigningAuthoritySeedKeyPolicy]
         vpc:
             securityGroupIds:
@@ -207,6 +209,7 @@ functions:
 
     seedMigration:
         handler: seedMigrationLambda.handler
+        role: SigningAuthorityExecutionRole
         timeout: 900
         reservedConcurrency: 1
         dependsOn: [SigningAuthoritySeedKeyPolicy]
@@ -235,6 +238,21 @@ resources:
             Value:
                 Ref: SeedMigrationLambdaFunction
     Resources:
+        # Only the two signing entry points and the migration worker assume this role.
+        # Keep KMS references out of the role itself to avoid a Role -> Key -> Role cycle.
+        SigningAuthorityExecutionRole:
+            Type: AWS::IAM::Role
+            Properties:
+                AssumeRolePolicyDocument:
+                    Version: '2012-10-17'
+                    Statement:
+                        - Effect: Allow
+                          Principal:
+                              Service: lambda.amazonaws.com
+                          Action: sts:AssumeRole
+                ManagedPolicyArns:
+                    - Fn::Sub: arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+                    - Fn::Sub: arn:${AWS::Partition}:iam::aws:policy/AWSXRayDaemonWriteAccess
         SigningAuthoritySeedKey:
             Type: AWS::KMS::Key
             DeletionPolicy: Retain
@@ -270,12 +288,13 @@ resources:
                               - kms:CancelKeyDeletion
                               - kms:CreateAlias
                               - kms:UpdateAlias
+                              - kms:DeleteAlias
                           Resource: '*'
                         - Sid: LcaApiSeedEncryption
                           Effect: Allow
                           Principal:
                               AWS:
-                                  Fn::GetAtt: [IamRoleLambdaExecution, Arn]
+                                  Fn::GetAtt: [SigningAuthorityExecutionRole, Arn]
                           Action: [kms:GenerateDataKey, kms:Decrypt]
                           Resource: '*'
                           Condition:
@@ -290,20 +309,23 @@ resources:
                           Condition:
                               ArnNotEquals:
                                   aws:PrincipalArn:
-                                      Fn::GetAtt: [IamRoleLambdaExecution, Arn]
+                                      Fn::GetAtt: [SigningAuthorityExecutionRole, Arn]
         SigningAuthoritySeedKeyAlias:
             Type: AWS::KMS::Alias
             Properties:
                 AliasName: alias/${self:service}-${self:provider.stage}-sa-seeds
                 TargetKeyId:
                     Ref: SigningAuthoritySeedKey
-        # A separate policy avoids a Role -> Key -> Role CloudFormation dependency cycle.
+        # The direct execution-role grant in the KEY policy authorizes cryptographic use.
+        # This matching IAM allow is not required by that grant; it documents the scope and
+        # provides a dependsOn deployment barrier. Keeping it separate avoids a Role -> Key
+        # -> Role CloudFormation dependency cycle. Swagger/didWeb use the generated role.
         SigningAuthoritySeedKeyPolicy:
             Type: AWS::IAM::Policy
             Properties:
                 PolicyName: ${self:service}-${self:provider.stage}-sa-seeds
                 Roles:
-                    - Ref: IamRoleLambdaExecution
+                    - Ref: SigningAuthorityExecutionRole
                 PolicyDocument:
                     Version: '2012-10-17'
                     Statement:
