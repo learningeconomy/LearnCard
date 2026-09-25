@@ -77,10 +77,20 @@ export default function load() {
     );
     statuses.add(1, { status: String(response.status) });
     if (scenario === 'capacity') {
-        failures.add(response.status !== 200);
+        let valid = false;
         if (response.status === 200) {
-            const data = response.json();
-            if (data.refresh_token) refreshToken = data.refresh_token;
+            try {
+                const data = response.json();
+                valid =
+                    typeof data.access_token === 'string' &&
+                    data.access_token.length > 0 &&
+                    typeof data.refresh_token === 'string' &&
+                    data.refresh_token.length > 0;
+                if (valid) refreshToken = data.refresh_token;
+            } catch {
+                valid = false;
+            }
         }
+        failures.add(!valid);
     }
 }
