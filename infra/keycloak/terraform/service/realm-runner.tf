@@ -85,13 +85,10 @@ data "aws_iam_policy_document" "realm_runner" {
     ], [for subnet in local.private_subnet_ids : "arn:${local.partition}:ec2:${var.aws_region}:${local.account_id}:subnet/${subnet}"])
   }
   statement {
+    # CodeBuild's VPC pre-flight calls this without an ec2:Subnet context, so a
+    # subnet condition denies every build; AWS documents it unconditioned.
     actions   = ["ec2:DeleteNetworkInterface"]
     resources = ["arn:${local.partition}:ec2:${var.aws_region}:${local.account_id}:network-interface/*"]
-    condition {
-      test     = "ArnEquals"
-      variable = "ec2:Subnet"
-      values   = [for subnet in local.private_subnet_ids : "arn:${local.partition}:ec2:${var.aws_region}:${local.account_id}:subnet/${subnet}"]
-    }
   }
   statement {
     actions = ["ssm:GetParameter", "ssm:GetParameters", "ssm:GetParametersByPath"]
