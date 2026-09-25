@@ -10,7 +10,10 @@ resource "aws_launch_template" "enclave_host" {
   update_default_version = true
 
   iam_instance_profile {
-    name = var.instance_profile_name
+    # coalesce() picks the first non-null/non-empty value: an explicit
+    # override (var.instance_profile_name) wins if set, otherwise the
+    # profile iam.tf creates for this environment.
+    name = coalesce(var.instance_profile_name, aws_iam_instance_profile.enclave_host.name)
   }
 
   enclave_options {

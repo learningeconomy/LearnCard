@@ -1,0 +1,42 @@
+# Example values for the `enclave_measurements` variable (variables.tf has
+# the full validation rules). Copy this to a real, environment-specific
+# *.tfvars file — it will be gitignored automatically (.gitignore excludes
+# *.tfvars except *.tfvars.example) — and replace every PCR value below
+# with the REAL output for that build:
+#
+#   nitro-cli build-enclave  --docker-uri <image> --output-file out.eif
+#   nitro-cli describe-eif   --eif-path out.eif        # PCR0/1/2 pre-run
+#   nitro-cli describe-enclaves                         # PCR0/1/2 running
+#
+# PCR0 = hash of the whole Enclave Image File (kernel + ramfs + app).
+# PCR1 = hash of the kernel + boot ramfs only.
+# PCR2 = hash of the application layer (everything above the kernel).
+# All three MUST be exactly 96 lowercase/uppercase hex characters (a
+# SHA384 digest) — variables.tf's regex validation rejects anything else.
+#
+# Read README.md's "Measurement rotation (N / N+1)" section before adding
+# a second or third entry, and the "Two-person key-policy change
+# procedure" section before applying any change to this file in a real
+# environment (adding/removing a tuple changes the escrow CMK's key
+# policy in kms.tf).
+
+enclave_measurements = [
+  {
+    label = "v1-2026-09-01" # currently-deployed measurement (N)
+    pcr0  = "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    pcr1  = "111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"
+    pcr2  = "222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222"
+  },
+
+  # Uncomment during a rotation window once the N+1 build's real PCRs are
+  # known (from a reproducible build per P2 — two independent builds must
+  # produce the identical PCR0 before you trust these values). Remove the
+  # N entry above only after EVERY instance in the ASG has rolled onto N+1
+  # AND no client is still pinned to N's public key.
+  # {
+  #   label = "v2-2026-10-01" # next measurement (N+1), mid-rotation
+  #   pcr0  = "333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333"
+  #   pcr1  = "444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444"
+  #   pcr2  = "555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555"
+  # },
+]

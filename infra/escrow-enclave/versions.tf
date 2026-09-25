@@ -1,12 +1,14 @@
 # =============================================================================
 # escrow-enclave — Terraform + provider requirements, backend, tags
 #
-# This module provisions ONLY the compute/network substrate for the Nitro
-# Enclave-backed escrow recovery "enclave-host" service (P3.1 of
-# .sisyphus/plans/nitro-escrow-enclave.md). IAM roles, the KMS key, S3
-# (EIF bucket + audit log), and DynamoDB (ledger) are provisioned separately
-# in P3.2 and passed into this module via variables (kms_key_arn,
-# instance_profile_name).
+# This module provisions the compute/network substrate (P3.1) AND the
+# supporting KMS/IAM/S3/DynamoDB resources (P3.2) for the Nitro
+# Enclave-backed escrow recovery "enclave-host" service — see
+# .sisyphus/plans/nitro-escrow-enclave.md. instance_profile_name remains an
+# optional override (default null) for pointing at an externally managed
+# profile instead of the one iam.tf creates; every other P3.2 resource
+# (kms.tf, iam.tf, storage.tf, ledger.tf) is created directly by this
+# module, not passed in.
 # =============================================================================
 
 terraform {

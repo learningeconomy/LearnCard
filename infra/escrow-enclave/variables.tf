@@ -1,5 +1,5 @@
 variable "aws_region" {
-  description = "AWS region to deploy the enclave-host service into. Must match the region of the KMS key (kms_key_arn) and the VPC (vpc_id)."
+  description = "AWS region to deploy the enclave-host service into. Must match the region of the VPC (vpc_id). The escrow CMK (kms.tf) and ledger tables (ledger.tf) are created in this same region/module."
   type        = string
   default     = "us-east-1"
 }
@@ -116,13 +116,104 @@ variable "enclave_image_version" {
   }
 }
 
-variable "kms_key_arn" {
-  description = "ARN of the CMK (created in P3.2) whose key policy pins kms:RecipientAttestation:PCR0/1/2 to this enclave's measurements. Passed in for now — this module does not create or manage the key."
+variable "enclave_measurements" {
+  description = <<-EOT
+    Pinned Nitro Enclave measurement tuples this environment's escrow CMK
+    key policy (kms.tf) trusts for kms:Decrypt. kms.tf generates ONE
+    key-policy statement per tuple, each conditioned on ALL THREE of that
+    tuple's PCR0/1/2 values matching simultaneously — never as independent
+    per-PCR arrays across tuples, which would allow cross-combination
+    measurements that were never actually built or published (decisions.md
+    D7).
+
+    1 entry  = a single pinned build.
+    2 entries = N (currently deployed) + N+1 (next, mid-rotation).
+    3 entries = N-1/N/N+1, only during an active rotation window; remove
+                the oldest as soon as the rotation completes.
+
+    See README.md's "Measurement rotation (N / N+1)" section and
+    escrow-measurements.tfvars.example.
+  EOT
+
+  type = list(object({
+    label = string
+    pcr0  = string
+    pcr1  = string
+    pcr2  = string
+  }))
+
+  validation {
+    condition     = length(var.enclave_measurements) >= 1 && length(var.enclave_measurements) <= 3
+    error_message = "enclave_measurements must contain 1 to 3 tuples (N, optionally N+1, and at most one extra N-1/N+2 during an active rotation window)."
+  }
+
+  validation {
+    condition = alltrue([
+      for m in var.enclave_measurements :
+      can(regex("^[0-9a-fA-F]{96}$", m.pcr0)) &&
+      can(regex("^[0-9a-fA-F]{96}$", m.pcr1)) &&
+      can(regex("^[0-9a-fA-F]{96}$", m.pcr2))
+    ])
+    error_message = "Every pcr0/pcr1/pcr2 value must be exactly 96 hex characters (a SHA384 digest, as emitted by `nitro-cli describe-eif`/`describe-enclaves`)."
+  }
+
+  validation {
+    condition     = length(distinct([for m in var.enclave_measurements : m.label])) == length(var.enclave_measurements)
+    error_message = "enclave_measurements labels must be unique — kms.tf's dynamic block keys its statements by label, so a duplicate label would silently collapse two tuples into one."
+  }
+}
+
+variable "kms_admin_role_arn" {
+  description = <<-EOT
+    ARN of the dedicated escrow-kms-admin IAM role. That role is created
+    OUTSIDE this module (e.g. a security-team-owned Terraform stack, or
+    hand-created) and only referenced here by ARN. It is the sole
+    non-root principal allowed to administer the escrow CMK's
+    lifecycle/policy/tags (kms.tf) — deliberately NOT granted kms:Decrypt
+    or kms:Encrypt. Key-policy edits additionally require an
+    MFA-authenticated session; see README.md's two-person approval
+    procedure.
+  EOT
   type        = string
 
   validation {
-    condition     = can(regex("^arn:aws[a-zA-Z-]*:kms:[a-z0-9-]+:[0-9]{12}:key/.+$", var.kms_key_arn))
-    error_message = "kms_key_arn must be a full KMS key ARN, e.g. arn:aws:kms:us-east-1:123456789012:key/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx."
+    condition     = can(regex("^arn:aws[a-zA-Z-]*:iam::[0-9]{12}:role/.+$", var.kms_admin_role_arn))
+    error_message = "kms_admin_role_arn must be a full IAM role ARN, e.g. arn:aws:iam::123456789012:role/escrow-kms-admin."
+  }
+}
+
+variable "audit_retention_days" {
+  description = <<-EOT
+    S3 Object Lock COMPLIANCE-mode default retention period, in days, for
+    the audit bucket (storage.tf). Default 2555 (~7 years). COMPLIANCE mode
+    means NO principal — including the account root and escrow-kms-admin —
+    can shorten, remove, or delete-before-expiry an object under this
+    retention once written. Choose deliberately; this is not reversible
+    per-object.
+  EOT
+  type        = number
+  default     = 2555
+
+  validation {
+    condition     = var.audit_retention_days >= 1
+    error_message = "audit_retention_days must be >= 1."
+  }
+}
+
+variable "enable_ssm" {
+  description = "Attach the AWS-managed AmazonSSMManagedInstanceCore policy to the enclave-host role, enabling Session Manager access (no SSH key/bastion needed). Off by default; enable per-environment for ops access."
+  type        = bool
+  default     = false
+}
+
+variable "ledger_monitor_sns_topic_arn" {
+  description = "ARN of an SNS topic the escrow-ledger-monitor Lambda (P7.1 — its function is not created by this module, only its IAM role) publishes chain-mismatch/divergence alarms to. Leave null to omit the sns:Publish grant, e.g. before the topic exists yet."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.ledger_monitor_sns_topic_arn == null || can(regex("^arn:aws[a-zA-Z-]*:sns:[a-z0-9-]+:[0-9]{12}:.+$", var.ledger_monitor_sns_topic_arn))
+    error_message = "ledger_monitor_sns_topic_arn must be a full SNS topic ARN, or null."
   }
 }
 
@@ -144,8 +235,17 @@ variable "roughtime_servers" {
 }
 
 variable "instance_profile_name" {
-  description = "Name of the IAM instance profile (created in P3.2) to attach to enclave-host instances. Its role may only call kms:Decrypt under the RecipientAttestation condition, plus the DynamoDB ledger + S3 audit writes needed by the P3.3 parent binary. Passed in for now — this module does not create or manage IAM."
+  description = <<-EOT
+    Optional override: name of an EXTERNALLY managed IAM instance profile to
+    attach to enclave-host instances instead of the one this module creates
+    (aws_iam_instance_profile.enclave_host in iam.tf). Leave null (the
+    default) to use the created profile — that is the normal path for every
+    real environment. An override only exists for a break-glass/staging
+    scenario using a hand-created profile before iam.tf's role exists in a
+    given account.
+  EOT
   type        = string
+  default     = null
 }
 
 variable "cloudwatch_log_kms_key_arn" {
