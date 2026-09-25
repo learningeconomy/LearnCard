@@ -81,9 +81,8 @@ export type PublicShareLinkRouterDependencies = {
     readonly policyResolver: ShareLinkPolicyResolver;
     /**
      * Optional transaction-compatible trusted eligibility source. Production
-     * omits it (no authoritative age source), so no receipt is issued or
-     * consumed. A caller that supplies one grants no authority beyond the
-     * source's own under-lock checks.
+     * rechecks persisted profile state under the share lock. An absent source
+     * remains fail-closed for tests and other compositions.
      */
     readonly eligibilitySource?: ShareViewEligibilitySource;
     readonly getSharer: (ownerProfileId: string) => Promise<PublicShareLinkSharer | null>;
@@ -680,7 +679,7 @@ const buildProductionDependencies = async (
         clientModule,
         runtimeModule,
         { ensureShareLinkConstraints },
-        { createProductionShareLinkPolicySource },
+        { createProductionShareLinkPolicySource, productionShareViewEligibilitySource },
         { getProfileByProfileId },
         { verifySharePasscode },
         passcodeAbuse,
@@ -756,6 +755,7 @@ const buildProductionDependencies = async (
             consume: receiptModule.consumeShareViewReceipt,
         },
         policyResolver,
+        eligibilitySource: productionShareViewEligibilitySource,
         verifyPasscode: verifySharePasscode,
         passcodeAttempts: {
             reserve: (shareId, sourceIp) =>

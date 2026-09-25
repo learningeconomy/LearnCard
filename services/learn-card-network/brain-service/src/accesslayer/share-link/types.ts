@@ -208,6 +208,12 @@ export type FinalizeReservationInput = {
      * reservation as defense in depth; this repository never performs network I/O.
      */
     verifiedContentHash?: string;
+    /** Production-only graph-local policy recheck under the share write lock. */
+    resolveCurrentPolicy?: (
+        tx: import('./transaction').ShareLinkTransaction,
+        ownerProfileId: string,
+        now: Date
+    ) => Promise<import('@helpers/share-link-policy/types').ShareLinkPolicySnapshot>;
     now?: Date;
     /** Maintenance-only: bounded transaction timeout for this unit. */
     transactionTimeoutMs?: number;

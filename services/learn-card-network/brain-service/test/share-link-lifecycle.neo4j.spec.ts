@@ -23,6 +23,7 @@ import {
 import { ensureShareLinkConstraints } from '../src/models/share-link-constraints';
 import { toOwnerShareLink } from '../src/helpers/share-link-owner-projection';
 import type { ShareLinkPolicySnapshot } from '../src/helpers/share-link-policy/types';
+import { resolveCurrentShareLinkPolicy } from '../src/helpers/share-link-policy/production';
 import type { ShareLinkRecord } from '../src/models/ShareLink';
 
 import {
@@ -781,6 +782,7 @@ describe('share-link lifecycle repository (Neo4j)', () => {
 
         const protectedShare = await finalizeReservation({
             ...protect.reservation,
+            resolveCurrentPolicy: async () => policy,
             now: NOW,
         });
         if (protectedShare.outcome !== 'finalized') throw new Error('expected protected share');
@@ -1186,5 +1188,81 @@ describe('share-link lifecycle repository (Neo4j)', () => {
         expect(afterReplay.minorPolicyViewCountingEnabled).toBe(false);
         expect(afterReplay.minorPolicyDefaultExpiryDays).toBe(30);
         expect(toOwnerShareLink(afterReplay).minorPolicy.viewCountingEnabled).toBe(false);
+    });
+
+    it('upgrades an unknown share on explicit edit only after a fresh persisted adult check', async () => {
+        const ownerProfileId = `policy-owner-${uuid()}`;
+        const created = await commitNewShare({ ownerProfileId });
+        expect(created.committed.minorPolicyViewCountingEnabled).toBe(false);
+
+        const adultPolicy: ShareLinkPolicySnapshot = {
+            isMinor: false,
+            policyResolved: true,
+            defaultExpiryDays: 365,
+            viewCountingEnabled: true,
+        };
+
+        await neogma.queryRunner.run('CREATE (:Profile {profileId: $profileId, dob: $dob})', {
+            profileId: ownerProfileId,
+            dob: '1990-01-01',
+        });
+
+        try {
+            const update = await reserveReplacement({
+                namespace: created.namespace,
+                ownerProfileId,
+                shareId: created.shareId,
+                expectedVersion: created.committed.version,
+                clientRequestId: uuid(),
+                requestHash: replacementHash(created.shareId, 'adult-policy-edit'),
+                notifyOnView: true,
+                leaseOwner: 'worker-1',
+                policy: adultPolicy,
+                now: NOW,
+            });
+            if (update.outcome !== 'reserved') throw new Error('expected reservation');
+
+            const finalized = await finalizeReservation({
+                ...update.reservation,
+                resolveCurrentPolicy: resolveCurrentShareLinkPolicy,
+                now: NOW,
+            });
+            expect(finalized.share.minorPolicyViewCountingEnabled).toBe(true);
+            expect(finalized.share.notifyOnView).toBe(true);
+
+            // A newly managed profile must not retain the opt-in on a later edit.
+            await neogma.queryRunner.run(
+                `MATCH (p:Profile {profileId: $profileId})
+                 CREATE (p)-[:MANAGED_BY]->(:Profile {profileId: $managerId})`,
+                { profileId: ownerProfileId, managerId: `manager-${uuid()}` }
+            );
+            const restricted = await reserveReplacement({
+                namespace: created.namespace,
+                ownerProfileId,
+                shareId: created.shareId,
+                expectedVersion: finalized.share.version,
+                clientRequestId: uuid(),
+                requestHash: replacementHash(created.shareId, 'managed-policy-edit'),
+                notifyOnView: true,
+                leaseOwner: 'worker-1',
+                policy: adultPolicy,
+                now: NOW,
+            });
+            if (restricted.outcome !== 'reserved') throw new Error('expected reservation');
+            const afterRestriction = await finalizeReservation({
+                ...restricted.reservation,
+                resolveCurrentPolicy: resolveCurrentShareLinkPolicy,
+                now: NOW,
+            });
+            expect(afterRestriction.share.minorPolicyViewCountingEnabled).toBe(false);
+            expect(afterRestriction.share.notifyOnView).toBe(false);
+        } finally {
+            await neogma.queryRunner.run(
+                `MATCH (p:Profile {profileId: $profileId})
+                 OPTIONAL MATCH (p)-[:MANAGED_BY]->(manager:Profile)
+                 DETACH DELETE p, manager`,
+                { profileId: ownerProfileId }
+            );
+        }
     });
 });
