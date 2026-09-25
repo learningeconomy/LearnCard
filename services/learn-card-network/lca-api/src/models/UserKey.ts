@@ -492,9 +492,12 @@ export const upsertUserKeyByAuthProvider = async (
     const existing = await collection.findOne(providerFilter);
 
     if (existing) {
-        const currentVersion = existing.shareVersion ?? 1;
+        const currentVersion = existing.authShare ? (existing.shareVersion ?? 1) : 0;
 
         if (expectedVersion != null && expectedVersion !== currentVersion) {
+            throw new UserKeyVersionConflictError();
+        }
+        if (data.primaryDid !== undefined && data.primaryDid !== existing.primaryDid) {
             throw new UserKeyVersionConflictError();
         }
 
@@ -506,7 +509,8 @@ export const upsertUserKeyByAuthProvider = async (
         };
 
         if (data.authShare && existing.authShare) {
-            updateOps.$inc = { shareVersion: 1 };
+            (updateOps.$set as Record<string, unknown>).shareVersion =
+                (existing.shareVersion ?? 1) + 1;
             (updateOps.$set as Record<string, unknown>).shareUpdatedAt = now;
 
             const oldEntry: PreviousAuthShare = {
@@ -534,12 +538,19 @@ export const upsertUserKeyByAuthProvider = async (
                 };
             }
         } else if (data.authShare) {
-            updateOps.$inc = { shareVersion: 1 };
+            (updateOps.$set as Record<string, unknown>).shareVersion =
+                (existing.shareVersion ?? 1) + 1;
             (updateOps.$set as Record<string, unknown>).shareUpdatedAt = now;
         }
 
         const result = await collection.findOneAndUpdate(
-            { ...providerFilter, shareVersion: expectedVersion ?? currentVersion },
+            {
+                ...providerFilter,
+                primaryDid: existing.primaryDid,
+                shareVersion: existing.shareVersion ?? null,
+                // Version 0 is a public sentinel, not necessarily the stored counter.
+                authShare: existing.authShare ?? null,
+            },
             updateOps,
             {
                 returnDocument: 'after',
@@ -549,6 +560,25 @@ export const upsertUserKeyByAuthProvider = async (
         if (!result) throw new UserKeyVersionConflictError();
 
         return result;
+    }
+
+    if (expectedVersion !== undefined && expectedVersion !== 0) {
+        throw new UserKeyVersionConflictError();
+    }
+    if (expectedVersion !== undefined) {
+        // Index migration intentionally fails open for unrelated API operations.
+        // A first-write CAS cannot: without uniqueness two inserts could win.
+        const indexes = await collection.listIndexes().toArray();
+        if (
+            !indexes.some(
+                index =>
+                    index.unique &&
+                    index.key['authProviders.type'] === 1 &&
+                    index.key['authProviders.id'] === 1
+            )
+        ) {
+            throw new UserKeyVersionConflictError();
+        }
     }
 
     const newDoc: MongoUserKeyType = {
@@ -573,7 +603,15 @@ export const upsertUserKeyByAuthProvider = async (
         updatedAt: now,
     };
 
-    await collection.insertOne(newDoc);
+    try {
+        // auth_provider_identity_unique arbitrates concurrent first writes.
+        await collection.insertOne(newDoc);
+    } catch (error) {
+        if (error && typeof error === 'object' && 'code' in error && error.code === 11000) {
+            throw new UserKeyVersionConflictError();
+        }
+        throw error;
+    }
 
     return newDoc;
 };
