@@ -40,6 +40,7 @@ class TestSkillFrameworksCreateManagedBatchRequestFrameworksInner(unittest.TestC
                 description = '',
                 image = '',
                 source_uri = '',
+                is_public = True,
                 status = 'active',
                 skills = [
                     openapi_client.models.__schema0.__schema0(

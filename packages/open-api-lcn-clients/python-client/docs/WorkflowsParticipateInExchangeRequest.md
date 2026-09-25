@@ -5,7 +5,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**verifiable_presentation** | [**StorageStoreRequestItemAnyOfAnyOf**](StorageStoreRequestItemAnyOfAnyOf.md) |  | [optional] 
+**verifiable_presentation** | [**StorageStoreRequestItemAnyOfAnyOfAnyOf**](StorageStoreRequestItemAnyOfAnyOfAnyOf.md) |  | [optional] 
 
 ## Example
 

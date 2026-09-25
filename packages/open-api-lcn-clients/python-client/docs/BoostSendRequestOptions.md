@@ -9,6 +9,8 @@ Name | Type | Description | Notes
 **webhook_url** | **str** | Webhook URL to receive claim notifications | [optional] 
 **suppress_delivery** | **bool** | If true, returns claimUrl without sending email/SMS | [optional] 
 **branding** | [**BoostSendRequestOptionsBranding**](BoostSendRequestOptionsBranding.md) |  | [optional] 
+**guardian_email** | **str** | Guardian email that must approve before student can claim | [optional] 
+**expires_in_days** | **int** | How many days the credential stays claimable in the Universal Inbox (default 30). Does not change the credential validity period. | [optional] 
 
 ## Example
 

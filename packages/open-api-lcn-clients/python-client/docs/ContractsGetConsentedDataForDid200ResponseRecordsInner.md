@@ -8,7 +8,16 @@ Name | Type | Description | Notes
 **credentials** | [**List[ContractsGetConsentedDataForDid200ResponseRecordsInnerCredentialsInner]**](ContractsGetConsentedDataForDid200ResponseRecordsInnerCredentialsInner.md) |  | 
 **personal** | **Dict[str, str]** |  | 
 **var_date** | **str** |  | 
+**created_at** | **str** |  | [optional] 
+**contract_updated_at** | **str** |  | 
+**contract_expires_at** | **str** |  | [optional] 
+**reason_for_accessing** | **str** |  | [optional] 
+**guardian** | [**ContractsGetConsentedDataForDid200ResponseRecordsInnerGuardian**](ContractsGetConsentedDataForDid200ResponseRecordsInnerGuardian.md) |  | 
 **contract_uri** | **str** |  | 
+**terms_uri** | **str** |  | 
+**status** | **str** |  | 
+**expires_at** | **str** |  | [optional] 
+**terms** | [**StorageResolve200ResponseAnyOf1**](StorageResolve200ResponseAnyOf1.md) |  | 
 
 ## Example
 

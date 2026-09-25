@@ -48,7 +48,51 @@ class TestContractsGetConsentedDataForDid200Response(unittest.TestCase):
                             'key' : ''
                             }, 
                         date = '', 
-                        contract_uri = '', )
+                        created_at = '', 
+                        contract_updated_at = '', 
+                        contract_expires_at = '', 
+                        reason_for_accessing = '', 
+                        guardian = openapi_client.models.contracts_get_consented_data_for_did_200_response_records_inner_guardian.contracts_getConsentedDataForDid_200_response_records_inner_guardian(
+                            required = True, 
+                            approved = True, 
+                            approval = openapi_client.models.contracts_get_consented_data_for_did_200_response_records_inner_guardian_approval.contracts_getConsentedDataForDid_200_response_records_inner_guardian_approval(
+                                guardian_profile_id = '', 
+                                guardian_did = '', 
+                                approved_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
+                                contract_updated_at = '', ), ), 
+                        contract_uri = '', 
+                        terms_uri = '', 
+                        status = 'live', 
+                        expires_at = '', 
+                        terms = openapi_client.models.storage_resolve_200_response_any_of_1.storage_resolve_200_response_anyOf_1(
+                            read = openapi_client.models.storage_resolve_200_response_any_of_1_read.storage_resolve_200_response_anyOf_1_read(
+                                anonymize = True, 
+                                credentials = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner_terms_read_credentials.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner_terms_read_credentials(
+                                    share_all = True, 
+                                    sharing = True, 
+                                    categories = {
+                                        'key' : openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner_terms_read_credentials_categories_value.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner_terms_read_credentials_categories_value(
+                                            sharing = True, 
+                                            shared = [
+                                                ''
+                                                ], 
+                                            share_all = True, 
+                                            share_until = '', )
+                                        }, ), 
+                                personal = {
+                                    'key' : ''
+                                    }, ), 
+                            write = openapi_client.models.storage_resolve_200_response_any_of_1_write.storage_resolve_200_response_anyOf_1_write(
+                                credentials = openapi_client.models.storage_resolve_200_response_any_of_1_write_credentials.storage_resolve_200_response_anyOf_1_write_credentials(
+                                    categories = {
+                                        'key' : True
+                                        }, ), 
+                                personal = {
+                                    'key' : True
+                                    }, ), 
+                            denied_writers = [
+                                ''
+                                ], ), )
                     ]
             )
         else:
@@ -65,7 +109,51 @@ class TestContractsGetConsentedDataForDid200Response(unittest.TestCase):
                             'key' : ''
                             }, 
                         date = '', 
-                        contract_uri = '', )
+                        created_at = '', 
+                        contract_updated_at = '', 
+                        contract_expires_at = '', 
+                        reason_for_accessing = '', 
+                        guardian = openapi_client.models.contracts_get_consented_data_for_did_200_response_records_inner_guardian.contracts_getConsentedDataForDid_200_response_records_inner_guardian(
+                            required = True, 
+                            approved = True, 
+                            approval = openapi_client.models.contracts_get_consented_data_for_did_200_response_records_inner_guardian_approval.contracts_getConsentedDataForDid_200_response_records_inner_guardian_approval(
+                                guardian_profile_id = '', 
+                                guardian_did = '', 
+                                approved_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
+                                contract_updated_at = '', ), ), 
+                        contract_uri = '', 
+                        terms_uri = '', 
+                        status = 'live', 
+                        expires_at = '', 
+                        terms = openapi_client.models.storage_resolve_200_response_any_of_1.storage_resolve_200_response_anyOf_1(
+                            read = openapi_client.models.storage_resolve_200_response_any_of_1_read.storage_resolve_200_response_anyOf_1_read(
+                                anonymize = True, 
+                                credentials = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner_terms_read_credentials.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner_terms_read_credentials(
+                                    share_all = True, 
+                                    sharing = True, 
+                                    categories = {
+                                        'key' : openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner_terms_read_credentials_categories_value.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner_terms_read_credentials_categories_value(
+                                            sharing = True, 
+                                            shared = [
+                                                ''
+                                                ], 
+                                            share_all = True, 
+                                            share_until = '', )
+                                        }, ), 
+                                personal = {
+                                    'key' : ''
+                                    }, ), 
+                            write = openapi_client.models.storage_resolve_200_response_any_of_1_write.storage_resolve_200_response_anyOf_1_write(
+                                credentials = openapi_client.models.storage_resolve_200_response_any_of_1_write_credentials.storage_resolve_200_response_anyOf_1_write_credentials(
+                                    categories = {
+                                        'key' : True
+                                        }, ), 
+                                personal = {
+                                    'key' : True
+                                    }, ), 
+                            denied_writers = [
+                                ''
+                                ], ), )
                     ],
         )
         """

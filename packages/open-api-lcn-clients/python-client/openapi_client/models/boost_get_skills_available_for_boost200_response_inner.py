@@ -23,6 +23,7 @@ from openapi_client.models.boost_get_skills_available_for_boost200_response_inne
 from openapi_client.models.boost_get_skills_available_for_boost200_response_inner_skills_inner import BoostGetSkillsAvailableForBoost200ResponseInnerSkillsInner
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class BoostGetSkillsAvailableForBoost200ResponseInner(BaseModel):
     """
@@ -34,7 +35,8 @@ class BoostGetSkillsAvailableForBoost200ResponseInner(BaseModel):
     __properties: ClassVar[List[str]] = ["framework", "skills"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -46,8 +48,7 @@ class BoostGetSkillsAvailableForBoost200ResponseInner(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -81,8 +82,7 @@ class BoostGetSkillsAvailableForBoost200ResponseInner(BaseModel):
         _items = []
         if self.skills:
             for _item_skills in self.skills:
-                if _item_skills:
-                    _items.append(_item_skills.to_dict())
+                _items.append(_item_skills.to_dict() if _item_skills is not None else None)
             _dict['skills'] = _items
         # puts key-value pairs in additional_properties in the top level
         if self.additional_properties is not None:

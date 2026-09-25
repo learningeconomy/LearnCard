@@ -20,22 +20,26 @@ import json
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from openapi_client.models.storage_resolve200_response_any_of_any_of_any_of_any_of1 import StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOf1
+from openapi_client.models.workflows_participate_in_exchange200_response_inbox_deliveries_inner import WorkflowsParticipateInExchange200ResponseInboxDeliveriesInner
 from openapi_client.models.workflows_participate_in_exchange200_response_verifiable_presentation_request import WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequest
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class WorkflowsParticipateInExchange200Response(BaseModel):
     """
     WorkflowsParticipateInExchange200Response
     """ # noqa: E501
     verifiable_presentation: Optional[StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOf1] = Field(default=None, alias="verifiablePresentation")
+    inbox_deliveries: Optional[List[WorkflowsParticipateInExchange200ResponseInboxDeliveriesInner]] = Field(default=None, alias="inboxDeliveries")
     verifiable_presentation_request: Optional[WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequest] = Field(default=None, alias="verifiablePresentationRequest")
     redirect_url: Optional[StrictStr] = Field(default=None, alias="redirectUrl")
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["verifiablePresentation", "verifiablePresentationRequest", "redirectUrl"]
+    __properties: ClassVar[List[str]] = ["verifiablePresentation", "inboxDeliveries", "verifiablePresentationRequest", "redirectUrl"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -47,8 +51,7 @@ class WorkflowsParticipateInExchange200Response(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -78,6 +81,12 @@ class WorkflowsParticipateInExchange200Response(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of verifiable_presentation
         if self.verifiable_presentation:
             _dict['verifiablePresentation'] = self.verifiable_presentation.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of each item in inbox_deliveries (list)
+        _items = []
+        if self.inbox_deliveries:
+            for _item_inbox_deliveries in self.inbox_deliveries:
+                _items.append(_item_inbox_deliveries.to_dict() if _item_inbox_deliveries is not None else None)
+            _dict['inboxDeliveries'] = _items
         # override the default output from pydantic by calling `to_dict()` of verifiable_presentation_request
         if self.verifiable_presentation_request:
             _dict['verifiablePresentationRequest'] = self.verifiable_presentation_request.to_dict()
@@ -104,6 +113,7 @@ class WorkflowsParticipateInExchange200Response(BaseModel):
 
         _obj = cls.model_validate({
             "verifiablePresentation": StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOf1.from_dict(obj["verifiablePresentation"]) if obj.get("verifiablePresentation") is not None else None,
+            "inboxDeliveries": [WorkflowsParticipateInExchange200ResponseInboxDeliveriesInner.from_dict(_item) for _item in obj["inboxDeliveries"]] if obj.get("inboxDeliveries") is not None else None,
             "verifiablePresentationRequest": WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequest.from_dict(obj["verifiablePresentationRequest"]) if obj.get("verifiablePresentationRequest") is not None else None,
             "redirectUrl": obj.get("redirectUrl")
         })

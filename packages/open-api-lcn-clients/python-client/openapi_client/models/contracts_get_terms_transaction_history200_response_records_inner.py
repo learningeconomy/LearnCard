@@ -19,9 +19,11 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.contracts_get_terms_transaction_history200_response_records_inner_terms import ContractsGetTermsTransactionHistory200ResponseRecordsInnerTerms
+from openapi_client.models.contracts_get_consented_data_for_did200_response_records_inner_guardian_approval import ContractsGetConsentedDataForDid200ResponseRecordsInnerGuardianApproval
+from openapi_client.models.storage_resolve200_response_any_of1 import StorageResolve200ResponseAnyOf1
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ContractsGetTermsTransactionHistory200ResponseRecordsInner(BaseModel):
     """
@@ -29,13 +31,14 @@ class ContractsGetTermsTransactionHistory200ResponseRecordsInner(BaseModel):
     """ # noqa: E501
     expires_at: Optional[StrictStr] = Field(default=None, alias="expiresAt")
     one_time: Optional[StrictBool] = Field(default=None, alias="oneTime")
-    terms: Optional[ContractsGetTermsTransactionHistory200ResponseRecordsInnerTerms] = None
+    terms: Optional[StorageResolve200ResponseAnyOf1] = None
+    guardian_approval: Optional[ContractsGetConsentedDataForDid200ResponseRecordsInnerGuardianApproval] = Field(default=None, alias="guardianApproval")
     id: Optional[StrictStr]
     action: StrictStr
     var_date: Optional[StrictStr] = Field(alias="date")
     uris: Optional[List[StrictStr]] = None
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["expiresAt", "oneTime", "terms", "id", "action", "date", "uris"]
+    __properties: ClassVar[List[str]] = ["expiresAt", "oneTime", "terms", "guardianApproval", "id", "action", "date", "uris"]
 
     @field_validator('action')
     def action_validate_enum(cls, value):
@@ -45,7 +48,8 @@ class ContractsGetTermsTransactionHistory200ResponseRecordsInner(BaseModel):
         return value
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -57,8 +61,7 @@ class ContractsGetTermsTransactionHistory200ResponseRecordsInner(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -88,6 +91,9 @@ class ContractsGetTermsTransactionHistory200ResponseRecordsInner(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of terms
         if self.terms:
             _dict['terms'] = self.terms.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of guardian_approval
+        if self.guardian_approval:
+            _dict['guardianApproval'] = self.guardian_approval.to_dict()
         # puts key-value pairs in additional_properties in the top level
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
@@ -122,7 +128,8 @@ class ContractsGetTermsTransactionHistory200ResponseRecordsInner(BaseModel):
         _obj = cls.model_validate({
             "expiresAt": obj.get("expiresAt"),
             "oneTime": obj.get("oneTime"),
-            "terms": ContractsGetTermsTransactionHistory200ResponseRecordsInnerTerms.from_dict(obj["terms"]) if obj.get("terms") is not None else None,
+            "terms": StorageResolve200ResponseAnyOf1.from_dict(obj["terms"]) if obj.get("terms") is not None else None,
+            "guardianApproval": ContractsGetConsentedDataForDid200ResponseRecordsInnerGuardianApproval.from_dict(obj["guardianApproval"]) if obj.get("guardianApproval") is not None else None,
             "id": obj.get("id"),
             "action": obj.get("action"),
             "date": obj.get("date"),

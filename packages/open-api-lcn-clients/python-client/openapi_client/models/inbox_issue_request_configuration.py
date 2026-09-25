@@ -18,12 +18,13 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional, Union
+from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
 from openapi_client.models.inbox_issue_request_configuration_delivery import InboxIssueRequestConfigurationDelivery
 from openapi_client.models.inbox_issue_request_configuration_signing_authority import InboxIssueRequestConfigurationSigningAuthority
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class InboxIssueRequestConfiguration(BaseModel):
     """
@@ -31,13 +32,14 @@ class InboxIssueRequestConfiguration(BaseModel):
     """ # noqa: E501
     signing_authority: Optional[InboxIssueRequestConfigurationSigningAuthority] = Field(default=None, alias="signingAuthority")
     webhook_url: Optional[StrictStr] = Field(default=None, description="The webhook URL to receive credential issuance events.", alias="webhookUrl")
-    expires_in_days: Optional[Union[Annotated[float, Field(le=365, strict=True, ge=1)], Annotated[int, Field(le=365, strict=True, ge=1)]]] = Field(default=None, description="The number of days the credential will be valid for.", alias="expiresInDays")
+    expires_in_days: Optional[Annotated[int, Field(le=720, strict=True, ge=1)]] = Field(default=None, description="How many days the encrypted inbox payload remains claimable. This does not change the credential validity period.", alias="expiresInDays")
     template_data: Optional[Dict[str, Any]] = Field(default=None, description="Template data to render into the boost credential template using Mustache syntax. Only used when boostUri is provided.", alias="templateData")
     delivery: Optional[InboxIssueRequestConfigurationDelivery] = None
     __properties: ClassVar[List[str]] = ["signingAuthority", "webhookUrl", "expiresInDays", "templateData", "delivery"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -49,8 +51,7 @@ class InboxIssueRequestConfiguration(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:

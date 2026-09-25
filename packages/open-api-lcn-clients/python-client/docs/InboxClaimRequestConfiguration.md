@@ -6,7 +6,10 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **publishable_key** | **str** |  | 
+**expires_in_days** | **int** | Inbox claim window in days. Defaults to 720; use a shorter window for sensitive records. | [optional] 
 **signing_authority_name** | **str** |  | [optional] 
+**listing_id** | **str** |  | [optional] 
+**listing_slug** | **str** |  | [optional] 
 
 ## Example
 

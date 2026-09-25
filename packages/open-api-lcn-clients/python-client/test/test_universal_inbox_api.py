@@ -26,6 +26,27 @@ class TestUniversalInboxApi(unittest.TestCase):
     def tearDown(self) -> None:
         pass
 
+    def test_federation_receive(self) -> None:
+        """Test case for federation_receive
+
+        Receive Federated Inbox Credential
+        """
+        pass
+
+    def test_inbox_approve_guardian_credential(self) -> None:
+        """Test case for inbox_approve_guardian_credential
+
+        Approve Guardian Credential
+        """
+        pass
+
+    def test_inbox_approve_guardian_credential_in_app(self) -> None:
+        """Test case for inbox_approve_guardian_credential_in_app
+
+        Approve Guardian Credential In-App
+        """
+        pass
+
     def test_inbox_approve_guardian_request(self) -> None:
         """Test case for inbox_approve_guardian_request
 
@@ -47,6 +68,13 @@ class TestUniversalInboxApi(unittest.TestCase):
         """
         pass
 
+    def test_inbox_claim_pending_guardian_links(self) -> None:
+        """Test case for inbox_claim_pending_guardian_links
+
+        Claim Pending Guardian Links
+        """
+        pass
+
     def test_inbox_finalize(self) -> None:
         """Test case for inbox_finalize
 
@@ -54,10 +82,24 @@ class TestUniversalInboxApi(unittest.TestCase):
         """
         pass
 
+    def test_inbox_get_guardian_pending_credential(self) -> None:
+        """Test case for inbox_get_guardian_pending_credential
+
+        Get Guardian Pending Credential
+        """
+        pass
+
     def test_inbox_get_inbox_credential(self) -> None:
         """Test case for inbox_get_inbox_credential
 
         Get Universal Inbox Credential Details
+        """
+        pass
+
+    def test_inbox_get_my_inbox_deliveries(self) -> None:
+        """Test case for inbox_get_my_inbox_deliveries
+
+        Recover claimed inbox deliveries
         """
         pass
 
@@ -75,10 +117,31 @@ class TestUniversalInboxApi(unittest.TestCase):
         """
         pass
 
+    def test_inbox_reject_guardian_credential(self) -> None:
+        """Test case for inbox_reject_guardian_credential
+
+        Reject Guardian Credential
+        """
+        pass
+
+    def test_inbox_reject_guardian_credential_in_app(self) -> None:
+        """Test case for inbox_reject_guardian_credential_in_app
+
+        Reject Guardian Credential In-App
+        """
+        pass
+
     def test_inbox_send_guardian_approval_email(self) -> None:
         """Test case for inbox_send_guardian_approval_email
 
         Send Guardian Approval Email
+        """
+        pass
+
+    def test_inbox_send_guardian_challenge(self) -> None:
+        """Test case for inbox_send_guardian_challenge
+
+        Send Guardian OTP Challenge
         """
         pass
 

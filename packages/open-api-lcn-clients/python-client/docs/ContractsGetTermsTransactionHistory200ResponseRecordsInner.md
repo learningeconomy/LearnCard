@@ -7,7 +7,8 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **expires_at** | **str** |  | [optional] 
 **one_time** | **bool** |  | [optional] 
-**terms** | [**ContractsGetTermsTransactionHistory200ResponseRecordsInnerTerms**](ContractsGetTermsTransactionHistory200ResponseRecordsInnerTerms.md) |  | [optional] 
+**terms** | [**StorageResolve200ResponseAnyOf1**](StorageResolve200ResponseAnyOf1.md) |  | [optional] 
+**guardian_approval** | [**ContractsGetConsentedDataForDid200ResponseRecordsInnerGuardianApproval**](ContractsGetConsentedDataForDid200ResponseRecordsInnerGuardianApproval.md) |  | [optional] 
 **id** | **str** |  | 
 **action** | **str** |  | 
 **var_date** | **str** |  | 
