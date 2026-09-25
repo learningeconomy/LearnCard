@@ -7,7 +7,7 @@ const CredentialStackGlyph: React.FC<{ count: number }> = ({ count }) => {
         <svg
             aria-hidden="true"
             focusable="false"
-            viewBox="0 0 14 12"
+            viewBox="-0.5 -0.5 15 13"
             className="inline-block h-3 w-3.5 shrink-0 align-[-1px]"
         >
             {Array.from({ length: layers }, (_, index) => {

@@ -26,12 +26,19 @@ const CopyIconButton: React.FC<CopyIconButtonProps> = ({
 }) => {
     const [copied, setCopied] = useState(false);
     const timer = useRef<ReturnType<typeof setTimeout>>();
+    const mounted = useRef(true);
 
-    useEffect(() => () => clearTimeout(timer.current), []);
+    useEffect(
+        () => () => {
+            mounted.current = false;
+            clearTimeout(timer.current);
+        },
+        []
+    );
 
     const handleClick = async (event: React.MouseEvent) => {
         event.stopPropagation();
-        if (!(await onCopy())) return;
+        if (!(await onCopy()) || !mounted.current) return;
         if (Capacitor.isNativePlatform())
             void Haptics.impact({ style: ImpactStyle.Light }).catch(() => undefined);
         setCopied(true);
