@@ -27,8 +27,12 @@ def main():
     version = tag.removeprefix('v')
     paths = [Path('infra/keycloak/Dockerfile'), Path('infra/keycloak/Dockerfile.dev')]
     contents = [path.read_text() for path in paths]
-    pins = [re.search(r'/releases/download/([^/]+)/apple-identity-provider-([\d.]+)\.jar',
-                      content).group(2) for content in contents]
+    pins = []
+    for content in contents:
+        match = re.search(r'/releases/download/([^/]+)/apple-identity-provider-([\d.]+)\.jar', content)
+        if match is None:
+            raise ValueError('Dockerfile is missing the expected Apple provider pin')
+        pins.append(match.group(2))
     if len(set(pins)) != 1:
         raise ValueError('Dockerfile provider pins disagree; repair manually')
     if tuple(map(int, version.split('.'))) <= tuple(map(int, pins[0].split('.'))):
