@@ -613,22 +613,6 @@ export const upsertUserKeyByAuthProvider = async (
     if (expectedVersion !== undefined && expectedVersion !== 0) {
         throw new UserKeyVersionConflictError();
     }
-    if (expectedVersion !== undefined) {
-        // Index migration intentionally fails open for unrelated API operations.
-        // A first-write CAS cannot: without uniqueness two inserts could win.
-        const indexes = await collection.listIndexes().toArray();
-        if (
-            !indexes.some(
-                index =>
-                    index.unique &&
-                    index.key['authProviders.type'] === 1 &&
-                    index.key['authProviders.id'] === 1
-            )
-        ) {
-            throw new UserKeyVersionConflictError();
-        }
-    }
-
     const newDoc: MongoUserKeyType = {
         contactMethod,
         authProviders: [authProvider],

@@ -1684,7 +1684,9 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             // doesn't (e.g. account created before versioning was added), backfill
             // it so QR device-link transfers always include the version.
             if (
+                // Version 0 means "no auth share yet" and must never be pinned locally.
                 serverVersion != null &&
+                serverVersion > 0 &&
                 localVersion == null &&
                 !(await readPendingShareCandidates(storage, activeStorageId)).length
             ) {

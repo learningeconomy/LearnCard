@@ -239,25 +239,28 @@ describe('share version concurrency', () => {
         }
     });
 
-    it('fails closed for first-write CAS when provider uniqueness is unavailable', async () => {
+    it('keeps first writes available when provider uniqueness is unavailable', async () => {
         const uid = randomUUID();
         const collection = getUserKeysCollection();
         await collection.dropIndex('auth_provider_identity_unique');
         try {
-            const write = () =>
+            await expect(
                 upsertUserKeyByAuthProvider(
                     { type: 'email', value: `no-index-${uid}@example.com` },
                     { type: 'firebase', id: uid },
                     { authShare: { encryptedData: 'new', encryptedDek: '', iv: '' } },
                     0
-                );
-            const results = await Promise.allSettled([write(), write()]);
-            for (const result of results) {
-                expect(result.status === 'rejected' && result.reason).toBeInstanceOf(
-                    UserKeyVersionConflictError
-                );
-            }
-            expect(await collection.countDocuments({ 'authProviders.id': uid })).toBe(0);
+                )
+            ).resolves.toMatchObject({ shareVersion: 1 });
+            await expect(
+                upsertUserKeyByAuthProvider(
+                    { type: 'email', value: `no-index-${uid}@example.com` },
+                    { type: 'firebase', id: uid },
+                    { authShare: { encryptedData: 'stale', encryptedDek: '', iv: '' } },
+                    0
+                )
+            ).rejects.toBeInstanceOf(UserKeyVersionConflictError);
+            expect(await collection.countDocuments({ 'authProviders.id': uid })).toBe(1);
         } finally {
             await collection.deleteMany({ 'authProviders.id': uid });
             await createUserKeysIndexes();

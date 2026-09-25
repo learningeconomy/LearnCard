@@ -799,7 +799,8 @@ export const keysRouter = t.router({
                         sssActivationState: shouldRemainProvisional ? 'provisional' : 'active',
                         ...(provisionalCreatedAt ? { provisionalCreatedAt } : {}),
                     },
-                    input.expectedShareVersion ?? currentVersion
+                    // Legacy clients keep server-observed CAS; first inserts stay unconditional.
+                    input.expectedShareVersion ?? (existing ? currentVersion : undefined)
                 );
             } catch (error) {
                 if (error instanceof UserKeyVersionConflictError) {
