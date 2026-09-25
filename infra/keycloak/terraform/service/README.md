@@ -314,4 +314,133 @@ actual ARM64 images, IAM role creation/deletion and boundary enforcement, both
 target registrations and access logs, autoscaling, CodeBuild source/ENI/secret/
 backend access, ECS Exec managed-agent readiness and cleanup. Offline checks
 cannot establish any of these. No real users until the rotation spike and these
-gates pass. WAF, alarms, backup copy and live drills remain later phases.
+gates pass. Phase 6 resources below are implemented; their live delivery and restore
+gates remain unverified until applied and drilled.
+
+## Phase 6: protection, notification and recovery
+
+Apply the human-owned bootstrap additions **before** applying this service root.
+`infra/aws/bootstrap/deploy-observability.tf` adds saved-query and WAF log-delivery
+APIs (these lack resource-level IAM authorization), `backup-storage:MountCapsule`,
+and AWS Backup managed-key access/grants for vault creation. It also grants
+creation/management of a destination CMK only with matching Project, Environment
+and `Purpose=keycloak-backup-copy` tags. Existing policies
+already cover WAF association/logging, named SNS topics/subscriptions, Events,
+CloudWatch alarms/metric filters, cross-region vaults, and PassRole to Backup.
+`deploy-observability_override.tf` uses Terraform's documented override-file
+semantics to replace only the existing boundary's **policy**, preserving its ARN
+and every original statement. Copy **both new files** into the operational
+bootstrap directory. The extension applies only to the `${name}-backup` principal:
+generated `awsbackup:job-*` Aurora snapshots, source-vault copying, and AWS-managed
+RDS/Backup encryption keys. AWS controls snapshot names, so these are an explicit
+exception to our naming prefix. Explicit boundary denials prevent copying, deleting
+or retagging snapshots with foreign Project/Environment values. RDS has no
+tag-on-create discriminator: **untagged AWS-generated snapshots remain a shared-account
+namespace exception**, not complete tag isolation. Audit that exception before
+production; only the Backup service may assume this role. No runtime role gets SNS
+or log-policy administration.
+This bootstrap is already live in staging and must be reviewed/applied by a human;
+service CI cannot update its own permissions ceiling.
+
+### WAF
+
+The public ALB alone has a REGIONAL ACL with AWS Common, KnownBadInputs and
+AmazonIpReputationList groups. Three independent source-IP rate rules match token,
+login-actions and broker URI paths under every realm; paths are URL-decoded and
+normalized. `waf_rate_limits` defaults to **300 / 200 / 200 per 60 seconds**.
+These are commissioning values, not measured capacity or a hard requests/second
+limit; shared NAT addresses can contain many legitimate users.
+
+`waf_block_mode=false` in staging counts managed groups (`override_action count`)
+and rate rules; production uses `true` (managed `none`, rate `block`). Review at
+least one week of counts and login behavior before switching staging to block or
+accepting production thresholds. Review false positives, especially query/body
+size restrictions and broker callbacks. No rule exceptions are silently enabled.
+Logs go to `aws-waf-logs-learncard-keycloak-<env>` for **7 days**. Authorization,
+Cookie and query strings are redacted; request sampling is disabled because log
+redaction does not apply to samples. Logs still contain IPs/paths: restrict access.
+
+### Alert routes and thresholds
+
+`${name}-critical` and `${name}-warning` both subscribe `alarm_emails`; committed
+tfvars set `jackson@learningeconomy.io` in both accounts. **Click Confirm Subscription
+in each SNS email** (two per environment). Terraform cannot confirm it for you.
+Check SNS Subscriptions: status must be Confirmed, not PendingConfirmation, then
+run an A3 delivery test and record receipt. Unconfirmed subscriptions cannot be
+deleted normally by Terraform. Staging routes **every** alarm/event to warning;
+production sends user-outage alarms to critical. Metric recoveries also notify.
+CloudWatch has a source/account-restricted publish grant. EventBridge has a separate
+SNS publish grant without conditions, as required by its SNS target integration.
+
+| Suffix / event                        | Condition                                                                          | Production severity |
+| ------------------------------------- | ---------------------------------------------------------------------------------- | ------------------- |
+| `public-5xx`                          | Target + ALB 5xx >2% in a 5-minute bucket, >=50 attempted requests                 | critical            |
+| `unhealthy`                           | Public TG minimum healthy hosts <1, 2 consecutive minutes                          | critical            |
+| `degraded`                            | Healthy hosts <minimum tasks for 10 minutes (staging 1, production 2)              | warning             |
+| `running-shortfall`                   | Container Insights desired minus running >0 for 10 minutes                         | warning             |
+| `deployment-failed`                   | ECS SERVICE_DEPLOYMENT_FAILED for this service, EventBridge                        | warning             |
+| `slow-signin`                         | Public TG response time p95 >1.5s, 15 consecutive minutes                          | warning             |
+| `cpu`, `memory`                       | Average >80% for 15 minutes while running >=maximum tasks                          | warning             |
+| `db-capacity`                         | Maximum cluster instance ACU >=90% of max for 15 minutes (3.6 / 14.4)              | warning             |
+| `db-connections`                      | Maximum instance connections >80% of `db_connection_budget`, 5 minutes (80 / 1600) | warning             |
+| `db-replica-lag`                      | Maximum AuroraReplicaLag >1000ms for 10 minutes; only with >1 instance             | warning             |
+| `db-failover`                         | Cluster RDS failover category, EventBridge                                         | warning             |
+| `backup-failed`, `backup-copy-failed` | Backup FAILED/EXPIRED or copy FAILED for this cluster                              | warning             |
+| `login-errors`                        | >`login_error_threshold` (100) LOGIN_ERRORs per 5 minutes                          | warning             |
+| `waf-blocks`                          | >`waf_block_threshold` (100) BlockedRequests per 5 minutes                         | warning             |
+| `acm-renewal`, `acm-action-required`  | AWS Health ACM renewal codes; scoped ACM action-required events                    | warning             |
+| Budget (bootstrap-owned)              | 80% / 100% monthly budget, existing email route                                    | warning             |
+
+The 5xx denominator adds ELB failures to RequestCount because ALB RequestCount
+omits requests rejected before target selection; an all-503 outage must not evade
+the 50-request guard. Healthy-host missing data breaches (including a zero-task
+outage); idle traffic/capacity/event-derived metrics use notBreaching. Low-sample
+p95 is ignored. There is deliberately no per-restart or individual-4xx alarm.
+`BlockedRequests` stays quiet in count mode; inspect per-rate-rule CountedRequests
+instead. CPU/memory are service averages, not single-task restart detectors.
+
+Login errors use a **static commissioning threshold**, not a claimed 7-day trained
+baseline. After seven days, set it to five times the measured comparable 5-minute
+baseline. Keycloak 26.7.4's `JBossLoggingEventListenerProvider` emits
+`type=LOGIN_ERROR` (optionally quoted) **inside JSON `message`**, with
+`loggerName=org.keycloak.events`. The filter matches both quote forms. Realm-as-code
+must enable `jboss-logging` and saved user/admin events; this root never edits realms.
+Successful/admin event logging may need listener success log level INFO rather than
+its DEBUG default; coordinate that setting with the realm/image owner. JSON stdout
+already flows through awslogs. Saved queries find failed logins by IP and broker
+errors. ALB logs live in S3, so no misleading CloudWatch query for ALB 5xx paths is added.
+
+`synthetic_signin_alarm_placeholder` must remain false: no scheduled publisher or
+sign-in alarm exists yet. The QA driver and discovery/JWKS workflow are not a
+5-minute production synthetic alarm. Commission that separately after the realm
+exists. Repo variable `KEYCLOAK_STAGING_REALM_LIVE=true` makes discovery/JWKS failures
+fatal in the existing staging health workflow; `/admin/` must always return 403.
+
+### Backup and live gates
+
+`enable_aws_backup=false` in staging, true in production. Daily **07:00 UTC**
+snapshots (60-minute start window, 180-minute completion window) select only this
+Aurora cluster and retain **35 days** locally and in `backup_copy_region` (default
+**us-west-2**) via `aws.backup_copy`. The source vault uses AWS-managed encryption;
+Aurora snapshots inherit the source database key. The destination uses a dedicated,
+rotating customer-managed KMS key: `alias/aws/backup` is **not compatible** with
+Aurora cross-region copies. That key has `prevent_destroy` and a 30-day deletion
+window; disabling backups after creation requires a reviewed key-retirement change.
+Both vaults refuse forced deletion of recovery points. Same-account cross-region copies are
+supported; this is not cross-account protection or immutable Vault Lock. Custom
+source DB keys require a separately reviewed key-policy/IAM change. PITR remains 14 days
+and production deletion protection remains unchanged. Do not disable the plan
+until retained recovery points and vault retirement have been reviewed.
+
+After apply, inspect backup and copy job success, list recovery points in **both**
+regions, and perform A6 restore/sign-in from a copied snapshot. An existing vault
+alone proves nothing. Confirm the backup window does not conflict with actual RDS
+maintenance/automated-backup windows. Verify IAM with real job execution; Terraform
+validate cannot establish service authorization. Run [QA scripts](../../qa/README.md)
+for A3 and record SNS receipt, original state, cleanup and alarm recovery. These
+live checks, count-to-block rollout and production readiness remain human gates.
+
+Provider arguments were checked against [AWS provider v6.66.0 resource docs](https://github.com/hashicorp/terraform-provider-aws/tree/v6.66.0/website/docs/r),
+[Backup EventBridge payloads](https://docs.aws.amazon.com/aws-backup/latest/devguide/eventbridge.html),
+[ACM events](https://docs.aws.amazon.com/acm/latest/userguide/supported-events.html), and
+[Keycloak's versioned event logger](https://github.com/keycloak/keycloak/blob/26.7.4/services/src/main/java/org/keycloak/events/log/JBossLoggingEventListenerProvider.java).
