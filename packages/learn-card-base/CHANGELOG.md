@@ -1,5 +1,40 @@
 # learn-card-base
 
+## 0.5.0
+
+### Minor Changes
+
+- [#1587](https://github.com/learningeconomy/LearnCard/pull/1587) [`3174c09b97fde6f7b5251390245038cf6b7ea9ba`](https://github.com/learningeconomy/LearnCard/commit/3174c09b97fde6f7b5251390245038cf6b7ea9ba) Thanks [@Custard7](https://github.com/Custard7)! - Route all sign-in flows through the provider-agnostic `SignInAdapter` and gate Firebase initialization on the configured auth provider.
+
+    - `SignInAdapter` gains `capabilities` and a complete method set (email link, phone OTP with adapter-held state and native event subscriptions, Google/Apple with a `reauthenticate` intent, custom token, OIDC credential, profile update, session persistence, delete account). The Firebase implementation moves the phone flow into `createFirebasePhoneAuth` and preloads `firebase/auth` at construction so social popups are not blocked by a cold chunk load.
+    - New `registerAuthProviderInitializer` / `initializeAuthProvider` in the provider registry: an app registers per-provider bootstrap and only the initializer matching `authProvider` runs.
+    - Both apps replace every direct `firebase/auth` and `@capacitor-firebase/authentication` call with adapter calls, drop `firebaseAuthStore` in favour of `authUserStore`, and move Firebase bootstrap into `src/auth/firebaseProviderInit.ts`. No behavior change for Firebase tenants; a tenant on another provider never initializes Firebase (`initializeApp` is gated behind the registered provider initializer).
+
+### Patch Changes
+
+- [#1585](https://github.com/learningeconomy/LearnCard/pull/1585) [`0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e`](https://github.com/learningeconomy/LearnCard/commit/0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e) Thanks [@goblincore](https://github.com/goblincore)! - Wait for direct sign-in wallet initialization before deciding whether onboarding is required. Preserve the developer account-switch handoff across remounts until sign-in succeeds.
+
+- [#1600](https://github.com/learningeconomy/LearnCard/pull/1600) [`3aa4f5553ef92bc8a36a4bba50eeeba280d57441`](https://github.com/learningeconomy/LearnCard/commit/3aa4f5553ef92bc8a36a4bba50eeeba280d57441) Thanks [@smurflo2](https://github.com/smurflo2)! - fix: [LC-2085] Display accepted endorsements on their original credentials.
+
+- [#1585](https://github.com/learningeconomy/LearnCard/pull/1585) [`0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e`](https://github.com/learningeconomy/LearnCard/commit/0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e) Thanks [@goblincore](https://github.com/goblincore)! - Honor delegated boost issuance permissions for managed refresh delivery. Expire saved post-login destinations after 30 minutes, discard legacy untimed destinations, and clear superseded claim redirects during sign-in.
+
+- [#1585](https://github.com/learningeconomy/LearnCard/pull/1585) [`0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e`](https://github.com/learningeconomy/LearnCard/commit/0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e) Thanks [@goblincore](https://github.com/goblincore)! - Recognize initialized demo and seed sessions in the profile gate while the identity-provider coordinator is idle. Keep incomplete, persisted-only, and recovery sessions blocked, and let the login page finish onboarding before redirecting demo users.
+
+- [#1537](https://github.com/learningeconomy/LearnCard/pull/1537) [`e6f4524139f98b2ffb705a3e28df1f450fd3afe7`](https://github.com/learningeconomy/LearnCard/commit/e6f4524139f98b2ffb705a3e28df1f450fd3afe7) Thanks [@smurflo2](https://github.com/smurflo2)! - Improve keyboard and screen reader accessibility across shared form controls, dialogs, onboarding, and credential flows.
+
+- [#1572](https://github.com/learningeconomy/LearnCard/pull/1572) [`2e0bce4bb25b412c9c8f82fecc2894e2f5f693b4`](https://github.com/learningeconomy/LearnCard/commit/2e0bce4bb25b412c9c8f82fecc2894e2f5f693b4) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-2109] & LC-2168 Various Updates to Transcripts
+
+- [#1611](https://github.com/learningeconomy/LearnCard/pull/1611) [`13e5c733a7ffe3967b3b749fdd25de9e1201a313`](https://github.com/learningeconomy/LearnCard/commit/13e5c733a7ffe3967b3b749fdd25de9e1201a313) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-2197] Remove deprecated Admin Tools
+
+- Updated dependencies [[`2991bd32b03e26736239dd8e586e2f720d9bcd45`](https://github.com/learningeconomy/LearnCard/commit/2991bd32b03e26736239dd8e586e2f720d9bcd45), [`59d2c92fa58ce1b864e0bf4e2aa60c85d3f8a9a4`](https://github.com/learningeconomy/LearnCard/commit/59d2c92fa58ce1b864e0bf4e2aa60c85d3f8a9a4), [`0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e`](https://github.com/learningeconomy/LearnCard/commit/0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e), [`3174c09b97fde6f7b5251390245038cf6b7ea9ba`](https://github.com/learningeconomy/LearnCard/commit/3174c09b97fde6f7b5251390245038cf6b7ea9ba), [`928e587378b3674766cf58a8bbe1cbd4d66d3a9f`](https://github.com/learningeconomy/LearnCard/commit/928e587378b3674766cf58a8bbe1cbd4d66d3a9f), [`928e587378b3674766cf58a8bbe1cbd4d66d3a9f`](https://github.com/learningeconomy/LearnCard/commit/928e587378b3674766cf58a8bbe1cbd4d66d3a9f)]:
+    - @learncard/types@5.21.0
+    - @learncard/lca-api-plugin@2.0.6
+    - @learncard/helpers@1.6.0
+    - @learncard/learn-card-plugin@1.2.36
+    - @learncard/ler-rs-plugin@0.1.27
+    - @learncard/render-method-plugin@8.0.0
+    - @learncard/sss-key-manager@0.1.24
+
 ## 0.4.9
 
 ### Patch Changes

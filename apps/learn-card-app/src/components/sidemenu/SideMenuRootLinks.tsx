@@ -7,7 +7,6 @@ import * as m from '../../paraglide/messages.js';
 
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import {
-    currentUserStore,
     ToastTypeEnum,
     useAiFeatureGate,
     useGetCurrentLCNUser,
@@ -75,8 +74,6 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
 
     const flags = useFlags();
     const { isMobile } = useDeviceTypeByWidth();
-    const parentLDFlags = currentUserStore.use.parentLDFlags();
-    const hasAdminAccess = flags.enableAdminTools || parentLDFlags?.enableAdminTools;
     const learnCardAssistantEnabled = environment.DEV || Boolean(flags.enableLearnCardAssistant);
     const { isAiEnabled, reason } = useAiFeatureGate();
     const { presentToast } = useToast();
@@ -125,14 +122,13 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
     const shadeColor = '#E2E3E9'; // default shade color
 
     const isPathActive = (tab: string) => {
-        const isAdminToolsActive = tab === '/admin-tools' && activeTab.startsWith(tab);
         const isPassportActive =
             tab === '/passport' &&
             ['/passport', '/wallet', '/home'].some(
                 prefix => activeTab === prefix || activeTab.startsWith(prefix + '/')
             );
 
-        if (tab === activeTab || isAdminToolsActive || isPassportActive) return true;
+        if (tab === activeTab || isPassportActive) return true;
         return false;
     };
 
@@ -166,7 +162,6 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
             ? numeral(Number(notificationsUnreadCount)).format('0.0a')
             : notificationsUnreadCount;
     const rootLinks = walletLink?.map(link => {
-        if (link.id === SideMenuLinksEnum.adminTools && !hasAdminAccess) return null;
         if (link.path === '/ai/assistant' && !learnCardAssistantEnabled) return null;
         if (link.path === '/dashboard' && !dashboardAsHome) return null;
         // Alerts lives in the header island on desktop; only show it in the
