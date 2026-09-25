@@ -226,3 +226,53 @@ These are public, local-development identities, not production credentials.
 Deployed environments must explicitly provision their own HTTPS LearnCloud origin,
 audience, allowed Brain identity, exact signing method, namespace binding, and
 Redis replay store. Do not enable the insecure-loopback option there.
+
+### GitHub deployment configuration
+
+The `.github/workflows/deploy.yml` deployment steps pass the following GitHub
+**environment variables** to Serverless, which installs them as Lambda runtime
+environment variables. They are public configuration, not new secrets. Existing
+`SEED` / `LEARN_CLOUD_SEED` secrets remain unchanged; LearnCloud's Serverless stack
+already supplies its Redis endpoint.
+
+LC-2189 separately requires a private, stable 32+ byte GitHub Actions secret named
+`SHARE_LINK_REQUEST_HASH_SECRET` for Brain. Generate it once with
+`openssl rand -hex 32`; the Brain deployment workflow forwards it to Lambda.
+Do not put it in the public variables below or use the local Compose fallback.
+
+Configure each matching pair of GitHub environments independently:
+
+| Stage                | Brain environment                    | LearnCloud environment               |
+| -------------------- | ------------------------------------ | ------------------------------------ |
+| LearnCard staging    | `learn-cloud-network-api-staging`    | `learn-cloud-storage-api-staging`    |
+| LearnCard production | `learn-cloud-network-api-production` | `learn-cloud-storage-api-production` |
+| ScoutPass staging    | `scout-network-api-staging`          | `scout-storage-api-staging`          |
+| ScoutPass production | `scout-network-api-production`       | `scout-storage-api-production`       |
+
+In the Brain environment, add:
+
+| Variable                           | Value                                                                              |
+| ---------------------------------- | ---------------------------------------------------------------------------------- |
+| `SHARE_LINK_MAINTENANCE_NAMESPACE` | A stable namespace, e.g. `learncard` (or `scouts` for ScoutPass)                   |
+| `SHARE_LINK_MAINTENANCE_ORIGIN`    | That stage's HTTPS LearnCloud origin, e.g. `https://<cloud-host>`; no `/trpc` path |
+| `SHARE_LINK_MAINTENANCE_AUDIENCE`  | `did:web:<cloud-host>`                                                             |
+
+In the matching LearnCloud environment, add:
+
+| Variable                             | Value                                                                                                                    |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| `SHARE_CONTENT_AUDIENCE`             | Same value as Brain's audience                                                                                           |
+| `SHARE_CONTENT_SERVICE_DIDS`         | `did:web:<brain-host>` (the deployed Brain service identity)                                                             |
+| `SHARE_CONTENT_VERIFICATION_METHODS` | The exact signing method from Brain's `https://<brain-host>/.well-known/did.json`, normally `did:web:<brain-host>#owner` |
+| `SHARE_CONTENT_NAMESPACE_BINDINGS`   | JSON mapping that Brain DID to its namespace, e.g. `{"did:web:<brain-host>":["learncard"]}`                              |
+
+Replace the host placeholders with the deployed domains; do not paste placeholders
+or local identities into GitHub. Store the JSON as raw JSON without surrounding
+shell quotes. Keep the namespace stable after creating links. The deploy workflow
+forces insecure loopback off. The owner API inherits the maintenance namespace,
+so no separate owner namespace variable is required.
+
+Redeploy both services after setting the variables (rebuilding the frontend alone
+will not update Lambda configuration), then enable `share-multiple-enabled` in
+LaunchDarkly. Check create/open/revoke in the target environment, including opening
+a copied link in a signed-out browser. Missing values keep sharing disabled.
