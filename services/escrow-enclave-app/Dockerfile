@@ -221,9 +221,9 @@ COPY --from=builder --chown=65532:65532 --chmod=0444 \
     /etc/ssl/certs/ca-certificates.crt \
     /etc/ssl/certs/ca-certificates.crt
 
-# Standard env var several TLS stacks (OpenSSL directly, and libraries that
-# fall back to it) honor for locating the CA bundle when there is no OS
-# trust-store convention to discover (as there isn't in FROM scratch).
+# Smithy's current hyper 1 / rustls 0.23 / AWS-LC client loads native roots via
+# rustls-native-certs, which honors SSL_CERT_FILE (no bundled webpki-roots).
+# This measured Alpine CA bundle remains the KMS trust store, per D11.
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
 USER 65532:65532

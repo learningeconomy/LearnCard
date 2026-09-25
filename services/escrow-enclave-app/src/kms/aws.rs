@@ -37,19 +37,7 @@ impl AwsKmsClient {
         {
             return Err(KmsError::Configuration);
         }
-        let endpoint = std::env::var("ESCROW_KMS_ENDPOINT")
-            .unwrap_or_else(|_| format!("https://kms.{region}.amazonaws.com:8000"));
-        // An arbitrary parent-controlled TLS endpoint would receive first-boot plaintext.
-        // Permit only the regional AWS hostname, with direct 443 or forwarded 8000.
-        if ![
-            format!("https://kms.{region}.amazonaws.com:8000"),
-            format!("https://kms.{region}.amazonaws.com"),
-            format!("https://kms.{region}.amazonaws.com:443"),
-        ]
-        .contains(&endpoint)
-        {
-            return Err(KmsError::Configuration);
-        }
+        let endpoint = kms_endpoint(region, std::env::var("ESCROW_KMS_ENDPOINT").ok().as_deref())?;
         let provider = aws_sdk_kms::config::Credentials::new(
             credentials.access_key_id.clone(),
             credentials.secret_access_key.clone(),
@@ -68,6 +56,23 @@ impl AwsKmsClient {
             key_id,
         })
     }
+}
+
+fn kms_endpoint(region: &str, endpoint: Option<&str>) -> Result<String, KmsError> {
+    let forwarded = format!("https://kms.{region}.amazonaws.com:8000");
+    let endpoint = endpoint.unwrap_or(&forwarded);
+    // DNS (/etc/hosts) changes only the TCP destination, never the TLS identity.
+    // An arbitrary endpoint would receive first-boot plaintext; require AWS SNI.
+    if ![
+        forwarded.as_str(),
+        &format!("https://kms.{region}.amazonaws.com"),
+        &format!("https://kms.{region}.amazonaws.com:443"),
+    ]
+    .contains(&endpoint)
+    {
+        return Err(KmsError::Configuration);
+    }
+    Ok(endpoint.to_owned())
 }
 
 fn recipient_output(
@@ -142,6 +147,35 @@ impl KmsClient for AwsKmsClient {
 mod tests {
     use super::*;
     use aws_sdk_kms::operation::decrypt::DecryptOutput;
+
+    #[test]
+    fn endpoint_preserves_regional_tls_identity() {
+        assert_eq!(
+            kms_endpoint("us-east-1", None).unwrap(),
+            "https://kms.us-east-1.amazonaws.com:8000"
+        );
+        for port in ["", ":443", ":8000"] {
+            let endpoint = format!("https://kms.us-east-1.amazonaws.com{port}");
+            assert_eq!(
+                kms_endpoint("us-east-1", Some(&endpoint)).unwrap(),
+                endpoint
+            );
+        }
+        for endpoint in [
+            "https://127.0.0.1:8000",
+            "https://localhost:8000",
+            "http://kms.us-east-1.amazonaws.com:8000",
+            "https://kms.us-west-2.amazonaws.com:8000",
+            "https://kms.us-east-1.amazonaws.com.attacker.test:8000",
+            "https://kms.us-east-1.amazonaws.com@127.0.0.1:8000",
+            "https://kms.us-east-1.amazonaws.com:8001",
+        ] {
+            assert!(matches!(
+                kms_endpoint("us-east-1", Some(endpoint)),
+                Err(KmsError::Configuration)
+            ));
+        }
+    }
 
     #[test]
     fn plaintext_response_is_never_accepted() {

@@ -50,7 +50,9 @@ aws-nitro-enclaves-nsm-api = { version = "~0.5.2", optional = true }
 aws-nitro-enclaves-cose = { version = "~0.5.2", optional = true }
 # Newer AWS minor releases require Rust 1.94.1; resolver 3 also respects transitive MSRVs.
 aws-config = { version = "~1.8.18", optional = true, default-features = false, features = ["rt-tokio", "default-https-client"] }
-aws-sdk-kms = { version = "~1.111.0", optional = true }
+# The SDK's default `rustls` feature also enables legacy hyper 0.14 / rustls 0.21.
+# Select only the current hyper 1 / rustls 0.23 / AWS-LC HTTPS client.
+aws-sdk-kms = { version = "~1.111.0", optional = true, default-features = false, features = ["rt-tokio", "default-https-client"] }
 rsa = { version = "~0.9.10", features = ["sha2"] }
 cms = { version = "~0.2.3", features = ["std"] }
 # Also enables AES-GCM's underlying key-schedule wiping in the default build.
