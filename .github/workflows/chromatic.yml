@@ -96,6 +96,10 @@ jobs:
         needs: changes
         if: needs.changes.outputs.learn-card-app == 'true'
         runs-on: ubuntu-latest
+        env:
+            # Chromatic retains Vite's completed bundle and dependency graph together while
+            # producing TurboSnap stats. Keep this larger cap scoped to the app Storybook job.
+            NODE_OPTIONS: '--max_old_space_size=12288'
         steps:
             - name: Checkout Repo
               uses: actions/checkout@v7
