@@ -82,7 +82,7 @@ export type DataSharingSharedLinksViewModel = {
     hasMore: boolean;
     error: boolean;
     busyId: string | null;
-    pendingAction: PendingSharedLinkAction | null;
+    pendingActions: Record<string, PendingSharedLinkAction['action']>;
     showViewStats: boolean;
     savedCollections: DataSharingSavedCollectionsViewModel;
     onFilterChange: (filter: SharedLinkFilter) => void;

@@ -77,6 +77,7 @@ export const brainServiceEnvironmentShape = {
     SKILL_SEMANTIC_SEARCH_RATE_LIMIT_PER_MIN: optionalEnvironmentPort,
     BITSTRING_STATUS_LIST_SIZE: optionalEnvironmentPort,
     CREDENTIAL_REFRESH_DIGEST_SECRET: optionalEnvironmentString,
+    SHARE_LINK_REQUEST_HASH_SECRET: optionalEnvironmentString,
     CREDENTIAL_REFRESH_ENABLED: optionalEnvironmentBoolean.default(false),
     CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS: credentialRefreshNotificationWindowHours,
     IS_OFFLINE: optionalEnvironmentBoolean.default(false),
@@ -207,6 +208,19 @@ export type CredentialRefreshRuntimeEnvironment = z.output<
 export const getCredentialRefreshRuntimeEnvironment = (): CredentialRefreshRuntimeEnvironment =>
     parseEnvironment(credentialRefreshRuntimeEnvironmentSchema, process.env, {
         project: 'brain-service credential refresh',
+        source: 'process environment',
+        examplePath: 'services/learn-card-network/brain-service/.env.example',
+    });
+
+const shareLinkRequestHashRuntimeEnvironmentSchema = z.object({
+    NODE_ENV: brainServiceEnvironmentShape.NODE_ENV,
+    SHARE_LINK_REQUEST_HASH_SECRET: brainServiceEnvironmentShape.SHARE_LINK_REQUEST_HASH_SECRET,
+});
+
+/** Reads the dedicated fingerprint secret at call time for enabled share-link APIs. */
+export const getShareLinkRequestHashRuntimeEnvironment = () =>
+    parseEnvironment(shareLinkRequestHashRuntimeEnvironmentSchema, process.env, {
+        project: 'brain-service share links',
         source: 'process environment',
         examplePath: 'services/learn-card-network/brain-service/.env.example',
     });

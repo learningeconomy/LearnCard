@@ -56,7 +56,7 @@ const viewModel = (overrides: Partial<DataSharingSharedLinksViewModel> = {}) => 
     hasMore: false,
     error: false,
     busyId: null,
-    pendingAction: null,
+    pendingActions: {},
     showViewStats: true,
     savedCollections: {
         records: [savedCollection],
@@ -223,13 +223,28 @@ describe('shared link actions', () => {
     });
 
     it('keeps a pending change visible and lets the owner retry it', () => {
-        const vm = viewModel({ pendingAction: { shareId: share.id, action: 'stop' } });
+        const vm = viewModel({ pendingActions: { [share.id]: 'stop' } });
         render(React.createElement(SharedLinksSection, { vm }));
 
         expect(screen.getByText(/still processing/i)).toBeTruthy();
         fireEvent.click(screen.getByRole('button', { name: 'Check again' }));
         expect(vm.onCheckPending).toHaveBeenCalledWith(share);
         expect(screen.getByRole('button', { name: 'Stop sharing' })).toBeDisabled();
+    });
+
+    it('keeps separate recovery controls for two pending shares', () => {
+        const second = { ...share, id: 'BBBBBBBBBBBBBBBBBBBBBB', title: 'Second share' };
+        const vm = viewModel({
+            records: [share, second],
+            pendingActions: { [share.id]: 'stop', [second.id]: 'expiry' },
+        });
+        render(React.createElement(SharedLinksSection, { vm }));
+
+        expect(screen.getAllByRole('button', { name: 'Check again' })).toHaveLength(2);
+        fireEvent.click(screen.getAllByRole('button', { name: 'Check again' })[1]);
+        expect(vm.onCheckPending).toHaveBeenCalledWith(second);
+        fireEvent.click(screen.getAllByRole('button', { name: 'Check again' })[0]);
+        expect(vm.onCheckPending).toHaveBeenCalledWith(share);
     });
 
     it('explains that more pages may contain links for the selected filter', () => {

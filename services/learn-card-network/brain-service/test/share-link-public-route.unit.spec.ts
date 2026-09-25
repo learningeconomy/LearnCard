@@ -135,6 +135,7 @@ const makeDependencies = (
         lookupContext?: NonNullable<PublicShareLinkRouterDependencies['receipts']['lookupContext']>;
         consume?: PublicShareLinkRouterDependencies['receipts']['consume'];
         verifyPasscode?: NonNullable<PublicShareLinkRouterDependencies['verifyPasscode']>;
+        passcodeAttempts?: NonNullable<PublicShareLinkRouterDependencies['passcodeAttempts']>;
         notifyView?: NonNullable<PublicShareLinkRouterDependencies['notifyView']>;
         getSharer?: (ownerProfileId: string) => Promise<PublicShareLinkSharer | null>;
         enforceRateLimit?: PublicShareLinkRouterDependencies['enforceRateLimit'];
@@ -158,6 +159,10 @@ const makeDependencies = (
         },
         policyResolver: ineligiblePolicy,
         getSharer: vi.fn(async () => sharer),
+        passcodeAttempts: {
+            canAttempt: vi.fn(async () => true),
+            recordFailure: vi.fn(async () => undefined),
+        },
         enforceRateLimit: vi.fn(async () => undefined),
         contentUrlFor: (shareId: string) => `/share-links/${shareId}/content`,
         newReceipt: () => RECEIPT,
@@ -185,13 +190,14 @@ const makeDependencies = (
         ...(overrides.enforceRateLimit ? { enforceRateLimit: overrides.enforceRateLimit } : {}),
         ...(overrides.newReceipt ? { newReceipt: overrides.newReceipt } : {}),
         ...(overrides.verifyPasscode ? { verifyPasscode: overrides.verifyPasscode } : {}),
+        ...(overrides.passcodeAttempts ? { passcodeAttempts: overrides.passcodeAttempts } : {}),
         ...(overrides.notifyView ? { notifyView: overrides.notifyView } : {}),
     };
 };
 
 const makeCaller = (
     dependencies: PublicShareLinkRouterDependencies | null,
-    options: { getDependenciesError?: Error } = {}
+    options: { getDependenciesError?: Error; sourceIp?: string } = {}
 ) => {
     const router = createPublicShareLinksRouter(async () => {
         if (options.getDependenciesError) throw options.getDependenciesError;
@@ -201,7 +207,7 @@ const makeCaller = (
     return router.createCaller({
         domain: 'network.example.com',
         tenant: { id: 'default' },
-        sourceIp: '203.0.113.7',
+        sourceIp: options.sourceIp ?? '203.0.113.7',
     } as never);
 };
 
@@ -285,6 +291,99 @@ describe('public share-link resolve', () => {
             id: SHARE_ID,
         });
         expect(verifyPasscode).toHaveBeenCalledWith('$argon2id$stored', '2468');
+    });
+
+    it('skips Argon2 for unprotected shares', async () => {
+        const verifyPasscode = vi.fn(async () => false);
+        const dependencies = makeDependencies({ verifyPasscode });
+        await expect(makeCaller(dependencies).resolve({ id: SHARE_ID })).resolves.toMatchObject({
+            state: 'active',
+        });
+        await expect(makeCaller(dependencies).content({ id: SHARE_ID })).resolves.toHaveProperty(
+            'envelope'
+        );
+        expect(verifyPasscode).not.toHaveBeenCalled();
+    });
+
+    it('requires a passcode before revealing protected lifecycle state', async () => {
+        const verifyPasscode = vi.fn(async (_hash: string, value: string) => value === '2468');
+        for (const record of [
+            shareRecord({ passcodeHash: 'stored' }),
+            shareRecord({ passcodeHash: 'stored', expiresAt: '2026-09-20T00:00:00.000Z' }),
+            shareRecord({
+                passcodeHash: 'stored',
+                status: 'stopped',
+                stoppedAt: '2026-09-20T00:00:00.000Z',
+            }),
+        ]) {
+            const caller = makeCaller(
+                makeDependencies({ getShareLink: async () => record, verifyPasscode })
+            );
+            await expect(caller.resolve({ id: SHARE_ID })).resolves.toEqual({
+                state: 'passcode_required',
+                id: SHARE_ID,
+            });
+            await expect(caller.resolve({ id: SHARE_ID, passcode: 'wrong' })).resolves.toEqual({
+                state: 'passcode_required',
+                id: SHARE_ID,
+            });
+            await expect(caller.resolve({ id: SHARE_ID, passcode: '2468' })).resolves.toMatchObject(
+                {
+                    state:
+                        record.status === 'stopped'
+                            ? 'stopped'
+                            : record.expiresAt
+                              ? 'expired'
+                              : 'active',
+                }
+            );
+        }
+        const missing = makeCaller(
+            makeDependencies({ getShareLink: async () => null, verifyPasscode })
+        );
+        verifyPasscode.mockClear();
+        await expect(missing.resolve({ id: SHARE_ID, passcode: '2468' })).resolves.toEqual({
+            state: 'not_found',
+            id: SHARE_ID,
+        });
+        expect(verifyPasscode).not.toHaveBeenCalled();
+    });
+
+    it('shares the failed-attempt budget across source addresses and both endpoints', async () => {
+        let failures = 0;
+        const passcodeAttempts = {
+            canAttempt: vi.fn(async () => failures < 2),
+            recordFailure: vi.fn(async () => {
+                failures += 1;
+            }),
+        };
+        const verifyPasscode = vi.fn(async (_hash: string, value: string) => value === '2468');
+        const dependencies = makeDependencies({
+            getShareLink: async () => shareRecord({ passcodeHash: 'stored' }),
+            passcodeAttempts,
+            verifyPasscode,
+        });
+        await makeCaller(dependencies, { sourceIp: '203.0.113.1' }).resolve({
+            id: SHARE_ID,
+            passcode: 'wrong',
+        });
+        await expect(
+            makeCaller(dependencies, { sourceIp: '203.0.113.2' }).content({
+                id: SHARE_ID,
+                passcode: 'wrong',
+            })
+        ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        await expect(
+            makeCaller(dependencies, { sourceIp: '203.0.113.3' }).resolve({
+                id: SHARE_ID,
+                passcode: '2468',
+            })
+        ).resolves.toEqual({ state: 'passcode_required', id: SHARE_ID });
+        expect(verifyPasscode).toHaveBeenCalledTimes(2);
+        failures = 0; // the short window has elapsed
+        await expect(
+            makeCaller(dependencies).resolve({ id: SHARE_ID, passcode: '2468' })
+        ).resolves.toMatchObject({ state: 'active' });
     });
 
     it('reports stopped and expired without exposing internals', async () => {
@@ -571,6 +670,7 @@ describe('public share-link acknowledgeView', () => {
         await makeCaller(dependencies).acknowledgeView({ receipt: RECEIPT });
 
         expect(notifyView).toHaveBeenCalledWith({
+            shareId: SHARE_ID,
             ownerProfileId: 'owner-1',
             title: 'Shared credentials',
             selectedCount: 2,

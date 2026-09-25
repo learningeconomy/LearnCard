@@ -43,7 +43,9 @@ export const useSharedLinks = (
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [error, setError] = useState(false);
     const [busyId, setBusyId] = useState<string | null>(null);
-    const [pendingOperation, setPendingOperation] = useState<PendingOwnerOperation | null>(null);
+    const [pendingOperations, setPendingOperations] = useState<
+        Record<string, PendingOwnerOperation>
+    >({});
     const [filter, setFilter] = useState<SharedLinkFilter>('active');
     const [savedCollections, setSavedCollections] = useState<SavedCredentialCollection[]>([]);
     const [savedCollectionsLoading, setSavedCollectionsLoading] = useState(false);
@@ -145,11 +147,18 @@ export const useSharedLinks = (
         ): ShareLink | undefined => {
             const outcome = classifySharePublication(result);
             if (outcome.status === 'pending') {
-                setPendingOperation({ ...outcome.operation, shareId, action });
+                setPendingOperations(current => ({
+                    ...current,
+                    [shareId]: { ...outcome.operation, shareId, action },
+                }));
                 return undefined;
             }
             if (outcome.status === 'abandoned') throw new Error('operation');
-            setPendingOperation(current => (current?.shareId === shareId ? null : current));
+            setPendingOperations(current => {
+                const next = { ...current };
+                delete next[shareId];
+                return next;
+            });
             replaceRecord(outcome.share);
             return outcome.share;
         },
@@ -229,7 +238,8 @@ export const useSharedLinks = (
 
     const checkPending = useCallback(
         async (share: ShareLink): Promise<void> => {
-            if (!pendingOperation || pendingOperation.shareId !== share.id) return;
+            const pendingOperation = pendingOperations[share.id];
+            if (!pendingOperation) return;
             setBusyId(share.id);
             try {
                 const wallet = shareWallet(await walletRef.current());
@@ -250,7 +260,8 @@ export const useSharedLinks = (
                     { type: ToastTypeEnum.Success }
                 );
             } catch {
-                setPendingOperation(null);
+                // A transport failure does not settle the durable operation.
+                // Keep this share's recovery handle available for another check.
                 await load();
                 presentToast(m['dataShareCenter.shared.actionError'](), {
                     type: ToastTypeEnum.Error,
@@ -259,7 +270,7 @@ export const useSharedLinks = (
                 setBusyId(null);
             }
         },
-        [load, pendingOperation, presentToast, settleMutation]
+        [load, pendingOperations, presentToast, settleMutation]
     );
 
     if (!enabled) return null;
@@ -272,9 +283,12 @@ export const useSharedLinks = (
         hasMore,
         error,
         busyId,
-        pendingAction: pendingOperation
-            ? { shareId: pendingOperation.shareId, action: pendingOperation.action }
-            : null,
+        pendingActions: Object.fromEntries(
+            Object.entries(pendingOperations).map(([shareId, operation]) => [
+                shareId,
+                operation.action,
+            ])
+        ),
         showViewStats,
         savedCollections: {
             records: savedCollections,

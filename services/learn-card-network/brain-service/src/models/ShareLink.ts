@@ -112,7 +112,8 @@ export const ShareLink = ModelFactory<ShareLinkProperties, Record<string, never>
             viewCount: { type: 'number', required: true },
             lastViewedAt: { type: 'string', required: false },
             passcodeHash: { type: 'string', required: false },
-            notifyOnView: { type: 'boolean', required: true },
+            // LC-2187 records created before opt-in alerts may omit this field.
+            notifyOnView: { type: 'boolean', required: false },
             minorPolicyIsMinor: { type: 'boolean', required: false },
             minorPolicyResolved: { type: 'boolean', required: true },
             minorPolicyDefaultExpiryDays: { type: 'number', required: true },

@@ -28,6 +28,8 @@ const mocks = vi.hoisted(() => ({
         },
     },
     auth: { loggedIn: false },
+    history: { push: vi.fn(), replace: vi.fn() },
+    redirect: { authRedirect: vi.fn() },
     anonymousWallet: vi.fn(),
     prepare: vi.fn(),
     prepareUpdate: vi.fn(),
@@ -38,6 +40,7 @@ const mocks = vi.hoisted(() => ({
     intersect: undefined as undefined | ((entries: { isIntersecting: boolean }[]) => void),
 }));
 vi.mock('learn-card-base', () => ({
+    redirectStore: { set: { authRedirect: mocks.redirect.authRedirect } },
     useIsLoggedIn: () => mocks.auth.loggedIn,
     useWallet: () => ({ initWallet: async () => mocks.wallet }),
     ModalTypes: { FullScreen: 'fullscreen' },
@@ -51,6 +54,7 @@ vi.mock('../../config/bootstrapTenantConfig', () => ({
     getAppBaseUrl: () => mocks.appBaseUrl,
 }));
 vi.mock('react-router-dom', () => ({
+    useHistory: () => mocks.history,
     useParams: () => ({ id: 'AAAAAAAAAAAAAAAAAAAAAA' }),
     useLocation: () => ({
         pathname: window.location.pathname,
@@ -96,6 +100,7 @@ import ShareLinkViewer from './ShareLinkViewer';
 const credential = { name: 'Community leadership', issuer: { name: 'Learning Collective' } };
 beforeEach(() => {
     vi.clearAllMocks();
+    mocks.history.replace.mockReset();
     mocks.appBaseUrl = 'https://tenant.example';
     mocks.auth.loggedIn = false;
     sessionStorage.clear();
@@ -111,8 +116,13 @@ beforeEach(() => {
         hasMore: false,
     });
     mocks.wallet.read.get.mockResolvedValue(credential);
-    mocks.prepare.mockResolvedValue({
-        input: { id: 'AAAAAAAAAAAAAAAAAAAAAA', title: 'Learning highlights', expiresAt: null },
+    mocks.prepare.mockImplementation(async (...args: unknown[]) => ({
+        input: {
+            id: 'AAAAAAAAAAAAAAAAAAAAAA',
+            title: 'Learning highlights',
+            expiresAt: null,
+            ...((args[5] ?? {}) as object),
+        },
         key: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         ownerDid: 'owner',
         payload: {
@@ -121,7 +131,7 @@ beforeEach(() => {
             selection: [{ credentialIndex: 0 }],
             endorsements: [],
         },
-    });
+    }));
     mocks.recovery.mockResolvedValue({
         protocol: 'lc-share-recovery/v1',
         shareId: 'AAAAAAAAAAAAAAAAAAAAAA',
@@ -631,16 +641,43 @@ describe('recipient screen', () => {
         render(<ShareLinkViewer />);
         await screen.findByText('Community leadership');
 
-        const link = screen.getByRole('link', { name: 'Sign in to save' });
-        expect(link.getAttribute('href')).toContain('/login?redirectTo=');
-        expect(decodeURIComponent(link.getAttribute('href') ?? '')).toContain(
-            `/s/AAAAAAAAAAAAAAAAAAAAAA#${'A'.repeat(43)}`
+        fireEvent.click(screen.getByRole('button', { name: 'Sign in to save' }));
+        expect(mocks.history.push).toHaveBeenCalledWith('/login');
+        expect(mocks.redirect.authRedirect).toHaveBeenCalledWith('/s/AAAAAAAAAAAAAAAAAAAAAA');
+        expect(JSON.stringify(mocks.history.push.mock.calls)).not.toContain('A'.repeat(43));
+        expect(JSON.stringify(mocks.redirect.authRedirect.mock.calls)).not.toContain(
+            'A'.repeat(43)
         );
-        link.addEventListener('click', event => event.preventDefault(), { once: true });
-        fireEvent.click(link);
+        expect(localStorage.getItem('redirectStore') ?? '').not.toContain('A'.repeat(43));
+        expect(sessionStorage.getItem('learncard:share-link:private-return')).toContain(
+            'A'.repeat(43)
+        );
         expect(sessionStorage.getItem('learncard:share-link:save-after-sign-in')).toBe(
             'AAAAAAAAAAAAAAAAAAAAAA'
         );
+    });
+
+    it('restores the fragment in the tab after login and resumes the pending save', async () => {
+        const key = 'A'.repeat(43);
+        sessionStorage.setItem('learncard:share-link:save-after-sign-in', 'AAAAAAAAAAAAAAAAAAAAAA');
+        sessionStorage.setItem(
+            'learncard:share-link:private-return',
+            JSON.stringify({ id: 'AAAAAAAAAAAAAAAAAAAAAA', hash: `#${key}` })
+        );
+        window.history.replaceState(null, '', '/s/AAAAAAAAAAAAAAAAAAAAAA');
+        mocks.auth.loggedIn = true;
+        mocks.history.replace.mockImplementation(({ pathname, hash }) => {
+            window.history.replaceState(null, '', `${pathname}${hash}`);
+        });
+        const view = render(<ShareLinkViewer />);
+        expect(mocks.history.replace).toHaveBeenCalledWith({
+            pathname: '/s/AAAAAAAAAAAAAAAAAAAAAA',
+            hash: `#${key}`,
+        });
+        view.rerender(<ShareLinkViewer />);
+        await screen.findByRole('button', { name: 'Saved to LearnCard' });
+        expect(mocks.wallet.invoke.sendPresentation).toHaveBeenCalledTimes(1);
+        expect(sessionStorage.getItem('learncard:share-link:private-return')).toBeNull();
     });
 
     it('completes a pending save automatically after sign-in returns to the share', async () => {
@@ -670,6 +707,38 @@ describe('recipient screen', () => {
         render(<ShareLinkViewer />);
         await screen.findByText('This link is incomplete');
         expect(mocks.wallet.invoke.resolveShareLink).not.toHaveBeenCalled();
+    });
+    it('retries the same passcode when the recipient submits it again', async () => {
+        mocks.wallet.invoke.resolveShareLink.mockResolvedValue({ state: 'passcode_required' });
+        render(<ShareLinkViewer />);
+        await screen.findByText('Enter the passcode');
+        fireEvent.change(screen.getByLabelText(/Passcode/i), { target: { value: '2468' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Open credentials' }));
+        await waitFor(() => expect(mocks.wallet.invoke.resolveShareLink).toHaveBeenCalledTimes(2));
+        fireEvent.click(screen.getByRole('button', { name: 'Open credentials' }));
+        await waitFor(() => expect(mocks.wallet.invoke.resolveShareLink).toHaveBeenCalledTimes(3));
+    });
+    it('asks for the passcode again if it changes after metadata resolves', async () => {
+        mocks.wallet.invoke.resolveShareLink
+            .mockResolvedValueOnce({ state: 'passcode_required' })
+            .mockResolvedValueOnce({
+                state: 'active',
+                contentVersion: 1,
+                selectedCount: 1,
+                title: 'Learning highlights',
+                sharer: { displayName: 'Alex' },
+                expiresAt: null,
+            })
+            .mockResolvedValue({ state: 'passcode_required' });
+        mocks.wallet.invoke.getShareLinkContent.mockRejectedValueOnce({
+            data: { code: 'UNAUTHORIZED' },
+        });
+        render(<ShareLinkViewer />);
+        await screen.findByText('Enter the passcode');
+        fireEvent.change(screen.getByLabelText(/Passcode/), { target: { value: '2468' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Open credentials' }));
+        await screen.findByText('That passcode did not work. Check it and try again.');
+        expect(screen.queryByText('Connection issue')).toBeNull();
     });
     it.each(['expired', 'stopped', 'not_found'])(
         'does not decrypt or acknowledge %s',

@@ -1,10 +1,10 @@
 import { QRCodeSVG } from 'qrcode.react';
-import { useIsLoggedIn, useModal, useWallet, ModalTypes } from 'learn-card-base';
+import { useIsLoggedIn, useModal, useWallet, ModalTypes, redirectStore } from 'learn-card-base';
 import LearnCardBrandMark from '../../assets/images/lca-brandmark.png';
 import LearnCardTextLogo from '../svgs/LearnCardTextLogo';
 import { ShareCredentialsIllustration } from './ShareCredentialsIllustration';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useParams, useLocation } from 'react-router-dom';
+import { useParams, useLocation, useHistory } from 'react-router-dom';
 import { IonIcon, IonPage, IonHeader, IonToolbar, IonContent } from '@ionic/react';
 import {
     checkmarkOutline,
@@ -59,10 +59,21 @@ const secondaryButton =
     'inline-flex items-center justify-center gap-2 px-3 py-3 rounded-[20px] border border-grayscale-300 text-grayscale-700 text-sm font-medium hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed';
 
 const SAVE_AFTER_SIGN_IN_KEY = 'learncard:share-link:save-after-sign-in';
+const PRIVATE_RETURN_KEY = 'learncard:share-link:private-return';
+
+const isPasscodeRejection = (error: unknown): boolean => {
+    if (typeof error !== 'object' || error === null) return false;
+    const candidate = error as { data?: { code?: string }; message?: string };
+    return (
+        candidate.data?.code === 'UNAUTHORIZED' ||
+        candidate.message?.includes('share-link passcode required') === true
+    );
+};
 
 const ShareLinkViewer = () => {
     const { id } = useParams<{ id: string }>();
     const location = useLocation();
+    const history = useHistory();
     const { hash } = location;
     const isLoggedIn = useIsLoggedIn();
     const { initWallet } = useWallet();
@@ -100,6 +111,24 @@ const ShareLinkViewer = () => {
         setLink('');
         setCopyState('idle');
         setActionError(undefined);
+        if (!hash && id) {
+            try {
+                const saved = JSON.parse(sessionStorage.getItem(PRIVATE_RETURN_KEY) ?? 'null');
+                sessionStorage.removeItem(PRIVATE_RETURN_KEY);
+                if (
+                    saved?.id === id &&
+                    typeof saved.hash === 'string' &&
+                    readShareAddress(id, saved.hash)
+                ) {
+                    history.replace({ pathname: location.pathname, hash: saved.hash });
+                    return () => {
+                        cancelled = true;
+                    };
+                }
+            } catch {
+                // A private return is optional; a malformed entry cannot grant access.
+            }
+        }
         const address = readShareAddress(id, hash);
         if (!address) {
             setState('incomplete');
@@ -122,7 +151,7 @@ const ShareLinkViewer = () => {
                 const metadata = await wallet.invoke.resolveShareLink(id, submittedPasscode);
                 if (cancelled) return;
                 if (metadata.state === 'passcode_required') {
-                    setPasscodeError(Boolean(submittedPasscode));
+                    setPasscodeError(previous => previous || Boolean(submittedPasscode));
                     setState('passcode_required');
                     return;
                 }
@@ -130,7 +159,18 @@ const ShareLinkViewer = () => {
                     setState(metadata.state);
                     return;
                 }
-                const content = await wallet.invoke.getShareLinkContent(id, submittedPasscode);
+                let content: Awaited<ReturnType<typeof wallet.invoke.getShareLinkContent>>;
+                try {
+                    content = await wallet.invoke.getShareLinkContent(id, submittedPasscode);
+                } catch (error) {
+                    if (!cancelled && submittedPasscode && isPasscodeRejection(error)) {
+                        setPasscodeError(true);
+                        setSubmittedPasscode(undefined);
+                        setState('passcode_required');
+                        return;
+                    }
+                    throw error;
+                }
                 if (cancelled) return;
                 try {
                     if (content.id !== id || content.contentVersion !== metadata.contentVersion)
@@ -189,7 +229,7 @@ const ShareLinkViewer = () => {
             cancelled = true;
             budget?.cancel();
         };
-    }, [id, hash, attempt, submittedPasscode]);
+    }, [id, hash, attempt, submittedPasscode, history, location.pathname]);
 
     useEffect(() => {
         if (state !== 'ready' || !ready || !visible.current) return;
@@ -369,9 +409,6 @@ const ShareLinkViewer = () => {
         }
     }, [id, isLoggedIn, ready, saveState, saveToLearnCard]);
 
-    const signInRedirect = `/login?redirectTo=${encodeURIComponent(
-        `${location.pathname}${location.search}${location.hash}`
-    )}`;
     const stateCopy = {
         loading: [m['shareLinks.opening'](), m['shareLinks.openingHint']()],
         passcode_required: [
@@ -447,6 +484,7 @@ const ShareLinkViewer = () => {
                                             if (passcode.length < 4) return;
                                             setPasscodeError(false);
                                             setSubmittedPasscode(passcode);
+                                            setAttempt(value => value + 1);
                                         }}
                                     >
                                         <label className="block text-xs font-medium text-grayscale-700">
@@ -541,8 +579,8 @@ const ShareLinkViewer = () => {
                                                                     ]()}
                                                         </button>
                                                     ) : (
-                                                        <a
-                                                            href={signInRedirect}
+                                                        <button
+                                                            type="button"
                                                             onClick={() => {
                                                                 if (!id) return;
                                                                 try {
@@ -550,15 +588,24 @@ const ShareLinkViewer = () => {
                                                                         SAVE_AFTER_SIGN_IN_KEY,
                                                                         id
                                                                     );
+                                                                    sessionStorage.setItem(
+                                                                        PRIVATE_RETURN_KEY,
+                                                                        JSON.stringify({ id, hash })
+                                                                    );
                                                                 } catch {
-                                                                    // The redirect still preserves the share; the
-                                                                    // recipient can save manually after sign-in.
+                                                                    // Storage may be unavailable in hardened browsers.
                                                                 }
+                                                                // The persisted auth redirect contains only the public
+                                                                // route. The decryption key stays in this tab's session.
+                                                                redirectStore.set.authRedirect(
+                                                                    location.pathname
+                                                                );
+                                                                history.push('/login');
                                                             }}
                                                             className="block w-full rounded-[20px] bg-grayscale-900 px-5 py-3 text-center text-sm font-medium text-white transition-opacity hover:opacity-90"
                                                         >
                                                             {m['shareLinks.signInToSave']()}
-                                                        </a>
+                                                        </button>
                                                     )}
                                                     {saveState === 'error' && (
                                                         <p

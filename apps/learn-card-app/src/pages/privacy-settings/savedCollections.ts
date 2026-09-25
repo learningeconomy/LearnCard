@@ -1,34 +1,18 @@
 import { VPValidator } from '@learncard/types';
 
 import {
+    mapWithConcurrency,
     parseSavedShareLinkMetadata,
     type ShareWallet,
 } from '../../components/share-links/shareLinkFlow';
 import type { SavedCredentialCollection } from './DataSharingCenter.types';
-
-const hydrateWithConcurrency = async <T, R>(
-    items: T[],
-    concurrency: number,
-    hydrate: (item: T) => Promise<R>
-): Promise<R[]> => {
-    const results = new Array<R>(items.length);
-    let nextIndex = 0;
-    const worker = async (): Promise<void> => {
-        while (nextIndex < items.length) {
-            const index = nextIndex++;
-            results[index] = await hydrate(items[index]);
-        }
-    };
-    await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, () => worker()));
-    return results;
-};
 
 export const loadSavedCredentialCollections = async (
     wallet: ShareWallet
 ): Promise<SavedCredentialCollection[]> => {
     const received = await wallet.invoke.getReceivedPresentations();
     let readFailures = 0;
-    const hydrated = await hydrateWithConcurrency(received, 4, async item => {
+    const hydrated = await mapWithConcurrency(received, 4, async item => {
         try {
             const rawPresentation = await wallet.read.get(item.uri);
             const parsed = VPValidator.safeParse(rawPresentation);
@@ -74,15 +58,7 @@ export const loadSavedCredentialCollections = async (
     });
     const seen = new Set<string>();
     const collections = hydrated
-        .filter(
-            (
-                item
-            ): item is {
-                collection: SavedCredentialCollection;
-                shareKey?: string;
-                presentationKey: string;
-            } => item !== null
-        )
+        .filter((item): item is NonNullable<typeof item> => item !== null)
         .sort(
             (a, b) =>
                 new Date(b.collection.receivedAt).getTime() -

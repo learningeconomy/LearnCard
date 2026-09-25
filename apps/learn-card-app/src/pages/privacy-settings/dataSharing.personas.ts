@@ -212,7 +212,7 @@ const sharedLinks: DataSharingSharedLinksViewModel = {
     hasMore: false,
     error: false,
     busyId: null,
-    pendingAction: null,
+    pendingActions: {},
     showViewStats: true,
     savedCollections: {
         records: [

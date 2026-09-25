@@ -1,4 +1,5 @@
 import { TRPCError } from '@trpc/server';
+import { environment } from '@environment';
 
 import {
     CreateShareLinkInputValidator,
@@ -30,6 +31,7 @@ import {
 } from '@helpers/share-link-owner/diagnostics';
 import { createShareLinkPolicyResolver } from '@helpers/share-link-policy/resolver';
 import { ShareLinkCoordinatorError } from '@helpers/share-link-coordinator';
+import { getShareLinkRequestHashSecret } from '@helpers/share-link-lifecycle';
 import type {
     RecoveryRunnerDependencies,
     ShareLinkCoordinator,
@@ -41,6 +43,15 @@ import type {
     ListShareLinksResult,
     ShareLinkListCursor,
 } from '@accesslayer/share-link/types';
+
+// Enabled production deployments fail at route registration rather than first
+// owner write if their dedicated fingerprint key is missing or too short.
+if (
+    environment.NODE_ENV === 'production' &&
+    resolveShareLinkOwnerApiConfig(process.env).status === 'enabled'
+) {
+    getShareLinkRequestHashSecret();
+}
 
 /**
  * LC-2187 owner share-link APIs (D1).
@@ -573,6 +584,8 @@ export const getProductionDependencies =
 const buildProductionDependencies = async (
     config: Extract<ShareLinkOwnerApiConfigResolution, { status: 'enabled' }>
 ): Promise<ShareLinkRouterDependencies> => {
+    // Validate before accepting owner operations, not on the first write.
+    getShareLinkRequestHashSecret();
     const [
         { getServerDidWebDID },
         { createDidWebLearnCardTokenSigner },

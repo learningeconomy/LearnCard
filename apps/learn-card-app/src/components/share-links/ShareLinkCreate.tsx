@@ -1190,26 +1190,7 @@ export const ShareLinkCreate = ({
                         <button
                             className={primary}
                             disabled={loading || !prepared.current || passcodeIsInvalid}
-                            onClick={() => {
-                                if (
-                                    !editShare &&
-                                    prepared.current &&
-                                    (passcodeEnabled || notifyOnView)
-                                ) {
-                                    const draft = prepared.current as PreparedShare;
-                                    const { passcode: _oldPasscode, ...withoutPasscode } =
-                                        draft.input;
-                                    prepared.current = {
-                                        ...draft,
-                                        input: {
-                                            ...withoutPasscode,
-                                            ...(passcodeEnabled ? { passcode } : {}),
-                                            notifyOnView,
-                                        },
-                                    };
-                                }
-                                void publish();
-                            }}
+                            onClick={() => void publish()}
                         >
                             {loading ? (
                                 <Busy>

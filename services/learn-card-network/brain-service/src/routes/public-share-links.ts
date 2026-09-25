@@ -88,7 +88,12 @@ export type PublicShareLinkRouterDependencies = {
     readonly eligibilitySource?: ShareViewEligibilitySource;
     readonly getSharer: (ownerProfileId: string) => Promise<PublicShareLinkSharer | null>;
     readonly verifyPasscode?: (passcodeHash: string, passcode: string) => Promise<boolean>;
+    readonly passcodeAttempts?: {
+        canAttempt: (shareId: string, sourceIp?: string) => Promise<boolean>;
+        recordFailure: (shareId: string, sourceIp?: string) => Promise<void>;
+    };
     readonly notifyView?: (input: {
+        shareId: string;
         ownerProfileId: string;
         title: string;
         selectedCount: number;
@@ -164,11 +169,20 @@ const PUBLIC_ACK_PATH = '/public/share-links/acknowledge-view' as const;
 const passcodeAccepted = async (
     record: ShareLinkRecord,
     passcode: string | undefined,
-    verifyPasscode: PublicShareLinkRouterDependencies['verifyPasscode']
+    dependencies: PublicShareLinkRouterDependencies,
+    sourceIp?: string
 ): Promise<boolean> => {
     if (record.passcodeHash == null) return true;
-    if (!passcode || !verifyPasscode) return false;
-    return verifyPasscode(record.passcodeHash, passcode);
+    if (!passcode || !dependencies.verifyPasscode || !dependencies.passcodeAttempts) return false;
+    try {
+        if (!(await dependencies.passcodeAttempts.canAttempt(record.id, sourceIp))) return false;
+        const accepted = await dependencies.verifyPasscode(record.passcodeHash, passcode);
+        if (!accepted) await dependencies.passcodeAttempts.recordFailure(record.id, sourceIp);
+        return accepted;
+    } catch {
+        dependencies.reportFailure('passcode_guard');
+        return false;
+    }
 };
 
 /**
@@ -248,6 +262,18 @@ export const createPublicShareLinksRouter = (
                 }
                 const classification = classifyPublicShare(record, dependencies.now());
 
+                if (classification.state === 'not_found') {
+                    return { state: 'not_found' as const, id: input.id };
+                }
+                // Even lifecycle timestamps are private until a protected link
+                // has been unlocked. Missing records never enter Argon2.
+                if (
+                    record &&
+                    !(await passcodeAccepted(record, input.passcode, dependencies, ctx.sourceIp))
+                ) {
+                    return { state: 'passcode_required' as const, id: input.id };
+                }
+
                 if (classification.state === 'expired') {
                     return {
                         state: 'expired' as const,
@@ -262,20 +288,6 @@ export const createPublicShareLinksRouter = (
                         stoppedAt: classification.stoppedAt,
                     };
                 }
-                if (classification.state === 'not_found') {
-                    return { state: 'not_found' as const, id: input.id };
-                }
-
-                if (
-                    !(await passcodeAccepted(
-                        classification.record,
-                        input.passcode,
-                        dependencies.verifyPasscode
-                    ))
-                ) {
-                    return { state: 'passcode_required' as const, id: input.id };
-                }
-
                 let sharer: PublicShareLinkSharer | null;
                 try {
                     sharer = await dependencies.getSharer(classification.record.ownerProfileId);
@@ -394,7 +406,7 @@ export const createPublicShareLinksRouter = (
 
                 const first = await readActiveShare();
 
-                if (!(await passcodeAccepted(first, input.passcode, dependencies.verifyPasscode))) {
+                if (!(await passcodeAccepted(first, input.passcode, dependencies, ctx.sourceIp))) {
                     throw new TRPCError({
                         code: 'UNAUTHORIZED',
                         message: 'share-link passcode required',
@@ -593,6 +605,7 @@ export const createPublicShareLinksRouter = (
                             share.lastViewedAt
                         ) {
                             await dependencies.notifyView({
+                                shareId: share.id,
                                 ownerProfileId: share.ownerProfileId,
                                 title: share.title,
                                 selectedCount: share.selectedCount,
@@ -652,9 +665,13 @@ const buildProductionDependencies = async (
         { createProductionShareLinkPolicySource },
         { getProfileByProfileId },
         { verifySharePasscode },
+        passcodeAbuse,
         { addNotificationToQueue },
         receiptModule,
         { getShareLink },
+        { claimShareViewNotification },
+        { getNotificationMessage },
+        { resolveRecipientLocale },
     ] = await Promise.all([
         import('@helpers/learnCard.helpers'),
         import('@helpers/share-content-client/adapters'),
@@ -664,9 +681,13 @@ const buildProductionDependencies = async (
         import('@helpers/share-link-policy/production'),
         import('@accesslayer/profile/read'),
         import('@helpers/share-link-passcode'),
+        import('@helpers/share-link-passcode-abuse'),
         import('@helpers/notifications.helpers'),
         import('@accesslayer/share-link/receipt'),
         import('@accesslayer/share-link/read'),
+        import('@helpers/share-link-view-notification'),
+        import('@helpers/notificationMessages'),
+        import('@helpers/getRecipientLocale.helpers'),
     ]);
 
     const clientConfig = clientModule.resolveShareContentClientConfig({
@@ -718,7 +739,14 @@ const buildProductionDependencies = async (
         },
         policyResolver,
         verifyPasscode: verifySharePasscode,
+        passcodeAttempts: {
+            canAttempt: (shareId, sourceIp) =>
+                passcodeAbuse.canAttemptSharePasscode(config.namespace, shareId, sourceIp),
+            recordFailure: (shareId, sourceIp) =>
+                passcodeAbuse.recordFailedSharePasscode(config.namespace, shareId, sourceIp),
+        },
         notifyView: async notification => {
+            if (!(await claimShareViewNotification(config.namespace, notification.shareId))) return;
             const profile = await getProfileByProfileId(notification.ownerProfileId);
             if (!profile) return;
             await addNotificationToQueue({
@@ -728,10 +756,10 @@ const buildProductionDependencies = async (
                     did: getServerDidWebDID(),
                     displayName: 'LearnCard',
                 },
-                message: {
-                    title: 'Share viewed',
-                    body: `Your share “${notification.title} (${notification.selectedCount})” was viewed.`,
-                },
+                message: getNotificationMessage('shareViewed', resolveRecipientLocale(profile), {
+                    title: notification.title,
+                    count: String(notification.selectedCount),
+                }),
                 data: {
                     metadata: {
                         shareView: {

@@ -85,8 +85,8 @@ const ShareLinkRow = ({ share, vm }: { share: ShareLink; vm: DataSharingSharedLi
     const [panelError, setPanelError] = useState(false);
     const [expiry, setExpiry] = useState(dateValue(share.expiresAt));
     const busy = vm.busyId === share.id;
-    const pending = vm.pendingAction?.shareId === share.id;
-    const mutationsBlocked = vm.pendingAction !== null;
+    const pending = Boolean(vm.pendingActions[share.id]);
+    const mutationsBlocked = pending;
     const minimumExpiry = minimumExpiryDateValue();
     const canEdit = status !== 'stopped' && share.contentState === 'finalized';
     const canPreview = status !== 'stopped' && share.contentState === 'finalized';
