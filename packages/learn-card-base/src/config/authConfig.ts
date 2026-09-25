@@ -5,6 +5,7 @@
 
 import type { AuthProviderType } from '../auth-coordinator/types';
 import type { TenantConfig } from './tenantConfig';
+import { tenantKeycloakConfigSchema, type TenantKeycloakConfig } from './tenantConfigSchema';
 
 export interface AuthConfig {
     /** Which auth provider to use (open string matching providerRegistry factories) */
@@ -139,6 +140,12 @@ export const getSSSConfig = (): SSSConfig => {
         enableEmailBackupShare: (sss.enableEmailBackupShare as boolean) ?? true,
         requireEmailForPhoneUsers: (sss.requireEmailForPhoneUsers as boolean) ?? true,
     };
+};
+
+/** Read the validated Keycloak block supplied by the tenant, when configured. */
+export const getKeycloakConfig = (): TenantKeycloakConfig | undefined => {
+    const { keycloak } = getAuthConfig().providerConfig;
+    return keycloak ? tenantKeycloakConfigSchema.parse(keycloak) : undefined;
 };
 
 /**
