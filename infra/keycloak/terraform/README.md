@@ -22,6 +22,26 @@ migration. Read the service runbook's unresolved rotation and live private-acces
 gates before deployment, and the realm runbook's local hostname proof. Production
 user cutover remains a separate workstream.
 
+## lca-api wiring
+
+`deploy.yml` passes these from lca-api's GitHub environment (the `lca_api_env` of the
+deployment matrix). All unset = Keycloak sign-in disabled, identical to before.
+
+| Kind           | Name                                                 | Staging value                                                                                                   |
+| -------------- | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| var            | `KEYCLOAK_ISSUERS`                                   | `https://auth.staging.learncard.app/realms/learncard`                                                           |
+| var            | `KEYCLOAK_AUDIENCES`                                 | `learncard-app`                                                                                                 |
+| var            | `OIDC_ISSUER`                                        | lca-api's public origin, e.g. `https://staging.api.learncard.app` (must equal the realm's `lca_api_issuer_url`) |
+| var            | `OIDC_CLIENT_ID`                                     | `keycloak-broker`                                                                                               |
+| var            | `GOOGLE_OAUTH_CLIENT_IDS` / `APPLE_OAUTH_CLIENT_IDS` | output of `bun run lc auth-audiences <tenants…> <stage>`                                                        |
+| var (optional) | `OIDC_REDIRECT_URIS`                                 | leave unset; derived as `<issuer>/broker/lca-api/endpoint`                                                      |
+| var (optional) | `KEYCLOAK_JWKS_URL_OVERRIDES`                        | leave unset outside local compose                                                                               |
+| secret         | `OIDC_CLIENT_SECRET`                                 | `broker_client_secret` from Secrets Manager `learncard-keycloak/<env>/<realm>/lca-api`                          |
+| secret         | `OIDC_SIGNING_KEY_JWK`                               | RS256 private JWK (`kid`, `alg`) from `learncard-keycloak/<env>/<realm>/lca-api-oidc-signing-jwk`               |
+
+Copy secrets without printing them, e.g.
+`aws secretsmanager get-secret-value --secret-id learncard-keycloak/staging/learncard/lca-api --query SecretString --output text | jq -r .broker_client_secret | gh secret set OIDC_CLIENT_SECRET --env <lca-api staging env>`.
+
 ## CI/CD
 
 ```mermaid
