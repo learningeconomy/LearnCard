@@ -132,6 +132,11 @@ provider:
     environment:
         LAMBDA_STAGE: ${opt:stage, "dev"}
         SEED: ${env:SEED, ''}
+        SA_SEED_KMS_KEY_ARN:
+            Fn::GetAtt: [SigningAuthoritySeedKey, Arn]
+        # First deployment upgrades readers only. Enable writes after every reader is compatible.
+        SA_SEED_ENCRYPT_WRITES: ${param:saSeedEncryptWrites, env:SA_SEED_ENCRYPT_WRITES, 'false'}
+        SA_SEED_ALLOW_LEGACY_READ: ${param:saSeedAllowLegacyRead, env:SA_SEED_ALLOW_LEGACY_READ, 'true'}
         DOMAIN_NAME: ${env:DOMAIN_NAME, ''}
         OPENAI_API_KEY: ${env:OPENAI_API_KEY, ''}
         METABASE_SECRET_KEY: ${env:METABASE_SECRET_KEY, ''}
@@ -167,6 +172,7 @@ provider:
 functions:
     trpc:
         handler: lambda.trpcHandler
+        dependsOn: [SigningAuthoritySeedKeyPolicy]
         vpc:
             securityGroupIds:
                 - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
@@ -177,6 +183,7 @@ functions:
 
     api:
         handler: lambda.openApiHandler
+        dependsOn: [SigningAuthoritySeedKeyPolicy]
         vpc:
             securityGroupIds:
                 - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
@@ -198,6 +205,18 @@ functions:
         url:
             cors: true
 
+    seedMigration:
+        handler: seedMigrationLambda.handler
+        timeout: 900
+        reservedConcurrency: 1
+        dependsOn: [SigningAuthoritySeedKeyPolicy]
+        # IAM invoke only: intentionally no events, schedule, or function URL.
+        vpc:
+            securityGroupIds:
+                - Fn::GetAtt: [ServerlessSecurityGroup, GroupId]
+            subnetIds:
+                - Ref: PrivateSubnetA
+
     swagger:
         handler: lambda.swaggerUiHandler
         package:
@@ -208,7 +227,93 @@ functions:
             - httpApi: GET /docs/{trpc+}
 
 resources:
+    Outputs:
+        SigningAuthoritySeedKeyArn:
+            Value:
+                Fn::GetAtt: [SigningAuthoritySeedKey, Arn]
+        SigningAuthoritySeedMigrationFunctionName:
+            Value:
+                Ref: SeedMigrationLambdaFunction
     Resources:
+        SigningAuthoritySeedKey:
+            Type: AWS::KMS::Key
+            DeletionPolicy: Retain
+            UpdateReplacePolicy: Retain
+            Properties:
+                Description: Envelope encryption for hosted signing-authority seeds
+                KeySpec: SYMMETRIC_DEFAULT
+                KeyUsage: ENCRYPT_DECRYPT
+                EnableKeyRotation: true
+                PendingWindowInDays: 30
+                KeyPolicy:
+                    Version: '2012-10-17'
+                    Statement:
+                        - Sid: AccountKeyAdministration
+                          Effect: Allow
+                          Principal:
+                              AWS:
+                                  Fn::Sub: arn:${AWS::Partition}:iam::${AWS::AccountId}:root
+                          Action:
+                              - kms:DescribeKey
+                              - kms:GetKeyPolicy
+                              - kms:PutKeyPolicy
+                              - kms:ListResourceTags
+                              - kms:TagResource
+                              - kms:UntagResource
+                              - kms:GetKeyRotationStatus
+                              - kms:EnableKeyRotation
+                              - kms:DisableKeyRotation
+                              - kms:UpdateKeyDescription
+                              - kms:EnableKey
+                              - kms:DisableKey
+                              - kms:ScheduleKeyDeletion
+                              - kms:CancelKeyDeletion
+                              - kms:CreateAlias
+                              - kms:UpdateAlias
+                          Resource: '*'
+                        - Sid: LcaApiSeedEncryption
+                          Effect: Allow
+                          Principal:
+                              AWS:
+                                  Fn::GetAtt: [IamRoleLambdaExecution, Arn]
+                          Action: [kms:GenerateDataKey, kms:Decrypt]
+                          Resource: '*'
+                          Condition:
+                              StringEquals:
+                                  kms:EncryptionContext:purpose: lca-signing-authority-seed
+                        - Sid: DenyOtherCryptographicPrincipals
+                          Effect: Deny
+                          Principal: '*'
+                          Action:
+                              [kms:Decrypt, 'kms:ReEncrypt*', 'kms:GenerateDataKey*', kms:Encrypt]
+                          Resource: '*'
+                          Condition:
+                              ArnNotEquals:
+                                  aws:PrincipalArn:
+                                      Fn::GetAtt: [IamRoleLambdaExecution, Arn]
+        SigningAuthoritySeedKeyAlias:
+            Type: AWS::KMS::Alias
+            Properties:
+                AliasName: alias/${self:service}-${self:provider.stage}-sa-seeds
+                TargetKeyId:
+                    Ref: SigningAuthoritySeedKey
+        # A separate policy avoids a Role -> Key -> Role CloudFormation dependency cycle.
+        SigningAuthoritySeedKeyPolicy:
+            Type: AWS::IAM::Policy
+            Properties:
+                PolicyName: ${self:service}-${self:provider.stage}-sa-seeds
+                Roles:
+                    - Ref: IamRoleLambdaExecution
+                PolicyDocument:
+                    Version: '2012-10-17'
+                    Statement:
+                        - Effect: Allow
+                          Action: [kms:GenerateDataKey, kms:Decrypt]
+                          Resource:
+                              Fn::GetAtt: [SigningAuthoritySeedKey, Arn]
+                          Condition:
+                              StringEquals:
+                                  kms:EncryptionContext:purpose: lca-signing-authority-seed
         VPC:
             Type: AWS::EC2::VPC
             Properties:

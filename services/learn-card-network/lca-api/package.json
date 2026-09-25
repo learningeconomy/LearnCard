@@ -9,6 +9,8 @@
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
+        "migrate:sa-seeds": "node scripts/migrate-signing-authority-seeds.mjs",
+        "check:sa-infra": "node scripts/check-seed-encryption-infrastructure.mjs",
         "test": "vitest run --config vitest.config.ts",
         "test:watch": "vitest --config vitest.config.ts",
         "test:coverage": "vitest run --coverage --config vitest.config.ts",
@@ -22,7 +24,7 @@
         "start-p-5000": "PORT=5000 serverless offline --httpPort 5000 --websocketPort 5001 --lambdaPort 5002 --albPort 5003 --config serverless-local.yml",
         "dev": "bun --conditions=development --watch src/docker-entry.ts",
         "start:docker": "bun --conditions=development src/docker-entry.ts",
-        "serverless-deploy": "node ../../../scripts/prepare-didkit-native-layer.cjs && serverless deploy",
+        "serverless-deploy": "node scripts/check-seed-encryption-infrastructure.mjs && node ../../../scripts/prepare-didkit-native-layer.cjs && serverless deploy",
         "serverless-deploy-scouts": "serverless deploy --config serverless-scouts.yml"
     },
     "keywords": [],
