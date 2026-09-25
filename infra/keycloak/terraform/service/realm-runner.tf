@@ -91,6 +91,23 @@ data "aws_iam_policy_document" "realm_runner" {
     resources = ["*"]
   }
   statement {
+    sid       = "NoForeignEniDeletion"
+    effect    = "Deny"
+    actions   = ["ec2:DeleteNetworkInterface"]
+    resources = ["*"]
+    # Present only on real deletions; the context-free pre-flight is unaffected.
+    condition {
+      test     = "Null"
+      variable = "ec2:Vpc"
+      values   = ["false"]
+    }
+    condition {
+      test     = "ArnNotEquals"
+      variable = "ec2:Vpc"
+      values   = ["arn:${local.partition}:ec2:${var.aws_region}:${local.account_id}:vpc/${local.network.vpc_id}"]
+    }
+  }
+  statement {
     actions = ["ssm:GetParameter", "ssm:GetParameters", "ssm:GetParametersByPath"]
     resources = [
       "arn:${local.partition}:ssm:${var.aws_region}:${local.account_id}:parameter${local.ssm_prefix}/network/*",

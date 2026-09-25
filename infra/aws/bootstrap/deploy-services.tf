@@ -55,7 +55,7 @@ data "aws_iam_policy_document" "deploy_services" {
   # companion guard policy protects supported existing-resource mutations.
   statement {
     sid       = "ServiceControlPlanes"
-    actions   = ["elasticloadbalancing:*", "acm:RequestCertificate", "acm:DescribeCertificate", "acm:ListCertificates", "acm:ListTagsForCertificate", "acm:AddTagsToCertificate", "acm:RemoveTagsFromCertificate", "acm:DeleteCertificate", "wafv2:*", "application-autoscaling:*"]
+    actions   = ["elasticloadbalancing:*", "acm:RequestCertificate", "acm:DescribeCertificate", "acm:ListCertificates", "acm:ListTagsForCertificate", "acm:AddTagsToCertificate", "acm:RemoveTagsFromCertificate", "acm:DeleteCertificate"]
     resources = ["*"]
   }
   statement {
@@ -88,6 +88,57 @@ data "aws_iam_policy_document" "deploy_services" {
     sid       = "EnvironmentSecrets"
     actions   = ["secretsmanager:*"]
     resources = local.secret_arns
+  }
+  statement {
+    sid       = "KeycloakDatabaseSecret"
+    actions   = ["secretsmanager:*"]
+    resources = [local.rds_secret_arn]
+    condition {
+      test     = "StringEquals"
+      variable = local.rds_secret_owner
+      values   = [local.rds_cluster_arn]
+    }
+  }
+  # CreateDBCluster (managed master password) creates and tags the secret before
+  # RDS's ownership tag exists. Every existing RDS secret carries that tag.
+  statement {
+    sid       = "KeycloakDatabaseSecretCreation"
+    actions   = ["secretsmanager:CreateSecret", "secretsmanager:TagResource"]
+    resources = [local.rds_secret_arn]
+    condition {
+      test     = "Null"
+      variable = local.rds_secret_owner
+      values   = ["true"]
+    }
+  }
+  statement {
+    sid       = "WafDiscovery"
+    actions   = ["wafv2:Get*", "wafv2:List*", "wafv2:Describe*", "wafv2:CheckCapacity"]
+    resources = ["*"]
+  }
+  statement {
+    sid     = "KeycloakWebAcl"
+    actions = ["wafv2:*"]
+    resources = [
+      "arn:${local.partition}:wafv2:${local.regional_arn}:regional/webacl/${local.name}*/*",
+      "arn:${local.partition}:wafv2:${local.regional_arn}:regional/managedruleset/*/*",
+      "arn:${local.partition}:elasticloadbalancing:${local.regional_arn}:loadbalancer/app/${local.name}/*",
+    ]
+  }
+  statement {
+    sid       = "AutoscalingDiscovery"
+    actions   = ["application-autoscaling:Describe*", "application-autoscaling:ListTagsForResource"]
+    resources = ["*"]
+  }
+  statement {
+    sid       = "EcsAutoscaling"
+    actions   = ["application-autoscaling:*"]
+    resources = ["arn:${local.partition}:application-autoscaling:${local.regional_arn}:scalable-target/*"]
+    condition {
+      test     = "StringEquals"
+      variable = "application-autoscaling:service-namespace"
+      values   = ["ecs"]
+    }
   }
   statement {
     sid       = "AlbAccessLogBuckets"

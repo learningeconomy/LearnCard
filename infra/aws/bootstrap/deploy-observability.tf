@@ -156,7 +156,6 @@ data "aws_iam_policy_document" "observability_workload_boundary" {
   dynamic "statement" {
     for_each = { Project = "learncard-keycloak", Environment = var.environment }
     content {
-      sid       = "RejectForeignBackupSnapshot${statement.key}"
       effect    = "Deny"
       actions   = ["rds:AddTagsToResource", "rds:CopyDBClusterSnapshot", "rds:DeleteDBClusterSnapshot"]
       resources = ["arn:${local.partition}:rds:*:${local.account_id}:cluster-snapshot:awsbackup:job-*"]
@@ -173,7 +172,6 @@ data "aws_iam_policy_document" "observability_workload_boundary" {
     }
   }
   statement {
-    sid       = "BackupCopyKeyUse"
     actions   = ["kms:DescribeKey", "kms:Decrypt", "kms:GenerateDataKey*", "kms:ReEncrypt*", "kms:CreateGrant"]
     resources = ["arn:${local.partition}:kms:*:${local.account_id}:key/*"]
     condition {
@@ -198,7 +196,6 @@ data "aws_iam_policy_document" "observability_workload_boundary" {
     }
   }
   statement {
-    sid       = "BackupGeneratedSnapshots"
     actions   = ["rds:CreateDBClusterSnapshot", "rds:CopyDBClusterSnapshot", "rds:DeleteDBClusterSnapshot", "rds:AddTagsToResource"]
     resources = ["arn:${local.partition}:rds:*:${local.account_id}:cluster-snapshot:awsbackup:job-*"]
     condition {
@@ -208,7 +205,6 @@ data "aws_iam_policy_document" "observability_workload_boundary" {
     }
   }
   statement {
-    sid       = "BackupSourceVaultCopy"
     actions   = ["backup:CopyFromBackupVault", "backup:DescribeBackupVault"]
     resources = ["arn:${local.partition}:backup:*:${local.account_id}:backup-vault:${local.name}-*"]
     condition {
@@ -218,7 +214,6 @@ data "aws_iam_policy_document" "observability_workload_boundary" {
     }
   }
   statement {
-    sid       = "BackupManagedKeyUse"
     actions   = ["kms:Decrypt", "kms:GenerateDataKey*", "kms:ReEncrypt*"]
     resources = ["arn:${local.partition}:kms:*:${local.account_id}:key/*"]
     condition {
@@ -238,7 +233,6 @@ data "aws_iam_policy_document" "observability_workload_boundary" {
     }
   }
   statement {
-    sid       = "BackupDescribeManagedKeys"
     actions   = ["kms:DescribeKey"]
     resources = ["arn:${local.partition}:kms:*:${local.account_id}:key/*"]
     condition {
@@ -253,7 +247,6 @@ data "aws_iam_policy_document" "observability_workload_boundary" {
     }
   }
   statement {
-    sid       = "BackupManagedKeyGrant"
     actions   = ["kms:CreateGrant"]
     resources = ["arn:${local.partition}:kms:*:${local.account_id}:key/*"]
     condition {

@@ -11,8 +11,9 @@ data "aws_iam_policy_document" "workload_boundary" {
     }
   }
   statement {
-    actions   = ["logs:CreateLogStream", "logs:PutLogEvents", "logs:DescribeLogStreams"]
-    resources = ["arn:${local.partition}:logs:${local.regional_arn}:log-group:/ecs/${local.name}*", "arn:${local.partition}:logs:${local.regional_arn}:log-group:/aws/codebuild/${local.name}*", "arn:${local.partition}:logs:${local.regional_arn}:log-group:/aws/vpc-flow-log/${local.name}*"]
+    actions = ["logs:CreateLogStream", "logs:PutLogEvents", "logs:DescribeLogStreams"]
+    # /ecs/, /aws/codebuild/ and /aws/vpc-flow-log/ groups, all project-named.
+    resources = ["arn:${local.partition}:logs:${local.regional_arn}:log-group:/*${local.name}*"]
   }
   statement {
     actions   = ["logs:DescribeLogGroups", "ecr:GetAuthorizationToken", "ec2:Describe*", "cloudwatch:PutMetricData"]
@@ -25,6 +26,15 @@ data "aws_iam_policy_document" "workload_boundary" {
   statement {
     actions   = ["secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret"]
     resources = local.secret_arns
+  }
+  statement {
+    actions   = ["secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret"]
+    resources = [local.rds_secret_arn]
+    condition {
+      test     = "StringEquals"
+      variable = local.rds_secret_owner
+      values   = [local.rds_cluster_arn]
+    }
   }
   # A boundary also caps grants from the AWS-managed key policy, so secret reads
   # need decrypt here. Limited to that key, and only when called by Secrets Manager.
@@ -59,10 +69,15 @@ data "aws_iam_policy_document" "workload_boundary" {
     resources = ["${aws_s3_bucket.state.arn}/keycloak/${var.environment}/realm.tfstate.tflock"]
   }
   statement {
-    # CodeBuild's VPC pre-flight checks DeleteNetworkInterface against "*"; the
-    # realm-runner role policy is the only workload policy that grants it.
+    # CodeBuild's VPC pre-flight checks DeleteNetworkInterface against "*". Only the
+    # realm runner may hold it; its role policy denies ENIs outside the Keycloak VPC.
     actions   = ["ec2:DeleteNetworkInterface"]
     resources = ["*"]
+    condition {
+      test     = "ArnEquals"
+      variable = "aws:PrincipalArn"
+      values   = ["${local.iam_prefix}:role/${local.name}-realm-runner"]
+    }
   }
   statement {
     actions   = ["ec2:CreateNetworkInterface", "ec2:DeleteNetworkInterface", "ec2:CreateNetworkInterfacePermission"]

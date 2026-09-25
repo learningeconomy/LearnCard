@@ -15,6 +15,40 @@ locals {
 }
 
 data "aws_iam_policy_document" "deploy_guards" {
+  # Scalable-target ARNs are random IDs, so ownership is the Project tag Terraform
+  # sets. Register/Tag also create new (untagged) targets, so they deny only a
+  # foreign tag; the remaining gap is untagged foreign ECS targets (README).
+  statement {
+    sid    = "AutoscalingOnlyKeycloakTargets"
+    effect = "Deny"
+    actions = [
+      "application-autoscaling:DeregisterScalableTarget", "application-autoscaling:PutScalingPolicy",
+      "application-autoscaling:DeleteScalingPolicy", "application-autoscaling:PutScheduledAction",
+      "application-autoscaling:DeleteScheduledAction", "application-autoscaling:UntagResource",
+    ]
+    resources = ["*"]
+    condition {
+      test     = "StringNotEquals"
+      variable = "aws:ResourceTag/Project"
+      values   = ["learncard-keycloak"]
+    }
+  }
+  statement {
+    sid       = "AutoscalingNoForeignTargetUpdates"
+    effect    = "Deny"
+    actions   = ["application-autoscaling:RegisterScalableTarget", "application-autoscaling:TagResource"]
+    resources = ["*"]
+    condition {
+      test     = "Null"
+      variable = "aws:ResourceTag/Project"
+      values   = ["false"]
+    }
+    condition {
+      test     = "StringNotEquals"
+      variable = "aws:ResourceTag/Project"
+      values   = ["learncard-keycloak"]
+    }
+  }
   statement {
     sid       = "NeverEnableExecOnServices"
     effect    = "Deny"

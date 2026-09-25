@@ -40,6 +40,16 @@ locals {
   regional_arn = "${var.aws_region}:${local.account_id}"
   ssm_prefix   = "/learncard-keycloak/${var.environment}"
   state_keys   = [for root in ["network", "service", "realm"] : "keycloak/${var.environment}/${root}.tfstate"]
-  secret_arns  = ["arn:${local.partition}:secretsmanager:${local.regional_arn}:secret:learncard-keycloak/${var.environment}/*", "arn:${local.partition}:secretsmanager:${local.regional_arn}:secret:rds!*"]
-  boundary_arn = "${local.iam_prefix}:policy/${local.name}-workload-boundary"
+  # Realm state holds automation and IdP secrets: never readable by the plan role.
+  plan_state_keys = {
+    deploy = local.state_keys
+    plan   = [for root in ["network", "service"] : "keycloak/${var.environment}/${root}.tfstate"]
+  }
+  secret_arns = ["arn:${local.partition}:secretsmanager:${local.regional_arn}:secret:learncard-keycloak/${var.environment}/*"]
+  # RDS-managed secrets share the rds! prefix account-wide. Ownership comes from the
+  # AWS-reserved tag RDS sets (users cannot write aws:* tags).
+  rds_secret_arn   = "arn:${local.partition}:secretsmanager:${local.regional_arn}:secret:rds!*"
+  rds_cluster_arn  = "arn:${local.partition}:rds:${local.regional_arn}:cluster:${local.name}"
+  rds_secret_owner = "aws:ResourceTag/aws:rds:primaryDBClusterArn"
+  boundary_arn     = "${local.iam_prefix}:policy/${local.name}-workload-boundary"
 }
