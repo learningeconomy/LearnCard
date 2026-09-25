@@ -8925,5 +8925,16 @@
             "invalid": "Certaines informations de ce justificatif ne sont pas encore valides. Veuillez les vérifier et réessayer.",
             "generic": "Une erreur s'est produite lors de l'émission de votre justificatif. Veuillez réessayer."
         }
+    },
+    "connectivity": {
+        "offlineTitle": "Vous êtes hors ligne",
+        "offlineBody": "La connexion sera possible dès votre retour en ligne.",
+        "limitedTitle": "Certaines fonctionnalités sont indisponibles",
+        "reconnect": "Reconnecter",
+        "reconnecting": "Reconnexion…",
+        "backOnline": "De nouveau en ligne",
+        "slowUnstable": "La connexion semble lente ou instable. Certaines actions peuvent prendre plus de temps.",
+        "tryAgain": "Réessayer",
+        "checking": "Vérification..."
     }
 }

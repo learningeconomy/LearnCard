@@ -8925,5 +8925,16 @@
             "invalid": "Algunos datos de esta credencial aún no son válidos. Revísalos e inténtalo de nuevo.",
             "generic": "Algo salió mal al emitir tu credencial. Inténtalo de nuevo."
         }
+    },
+    "connectivity": {
+        "offlineTitle": "Estás sin conexión",
+        "offlineBody": "Podrás iniciar sesión cuando vuelvas a tener conexión.",
+        "limitedTitle": "Algunas funciones no están disponibles",
+        "reconnect": "Reconectar",
+        "reconnecting": "Reconectando…",
+        "backOnline": "Conexión restablecida",
+        "slowUnstable": "La conexión parece lenta o inestable. Algunas acciones pueden tardar más.",
+        "tryAgain": "Intentar de nuevo",
+        "checking": "Verificando..."
     }
 }

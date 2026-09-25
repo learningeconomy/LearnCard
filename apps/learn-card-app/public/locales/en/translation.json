@@ -8931,5 +8931,16 @@
             "invalid": "Some details on this credential aren't valid yet. Please review and try again.",
             "generic": "Something went wrong issuing your credential. Please try again."
         }
+    },
+    "connectivity": {
+        "offlineTitle": "You're offline",
+        "offlineBody": "Sign in works once you're back online.",
+        "limitedTitle": "Some features are unavailable",
+        "reconnect": "Reconnect",
+        "reconnecting": "Reconnecting…",
+        "backOnline": "Back online",
+        "slowUnstable": "Connection seems slow or unstable. Some actions may take longer.",
+        "tryAgain": "Try Again",
+        "checking": "Checking..."
     }
 }
