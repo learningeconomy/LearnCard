@@ -1,116 +1,123 @@
-/**
- * Playwright-based sign-in test for Keycloak staging.
- * Uses authorization-code flow with PKCE.
- * Staging-only: requires KEYCLOAK_STAGING_REALM_LIVE env var.
- *
- * Usage:
- *   KEYCLOAK_STAGING_REALM_LIVE=true \
- *   KEYCLOAK_TEST_USER=testuser \
- *   KEYCLOAK_TEST_PASSWORD=testpass \
- *   bunx playwright test infra/keycloak/qa/signin.ts
- */
+import { createRequire } from 'node:module';
+import { createHash, randomBytes } from 'node:crypto';
+import type { chromium as Chromium } from '@playwright/test';
+import { required, secureUrl, record, requestJson } from './support';
 
-import { test, expect, chromium } from '@playwright/test';
-
-const host = process.env.HOST || 'auth.staging.learncard.app';
-const protocol = 'https';
-const baseUrl = `${protocol}://${host}`;
-const realm = 'learncard';
-const clientId = 'learncard-app';
-const redirectUri = 'http://localhost:3000/callback';
-
-// Staging-only guard
-test.beforeAll((): void => {
-    if (process.env.KEYCLOAK_STAGING_REALM_LIVE !== 'true') {
-        throw new Error(
-            'KEYCLOAK_STAGING_REALM_LIVE must be set to "true" to run staging sign-in tests'
-        );
+/** Staging synthetic user only; no password grant or realm mutations. */
+export const signIn = async (): Promise<void> => {
+    if (required('ENV') !== 'staging') throw new Error('Sign-in driver is staging-only');
+    const base = secureUrl(required('KEYCLOAK_BASE_URL'));
+    const allowedHost = new URL(base).hostname;
+    if (
+        allowedHost !== 'auth.staging.learncard.app' &&
+        allowedHost !== 'localhost' &&
+        allowedHost !== '127.0.0.1'
+    ) {
+        throw new Error('Use staging or a TLS localhost tunnel to a staging restore');
     }
-});
-
-test('authorization-code PKCE flow', async (): Promise<void> => {
+    const clientId = required('KEYCLOAK_CLIENT_ID');
+    const username = required('KEYCLOAK_TEST_USER');
+    const password = required('KEYCLOAK_TEST_PASSWORD');
+    const callback = new URL(required('KEYCLOAK_REDIRECT_URI'));
+    if (
+        callback.search ||
+        callback.hash ||
+        callback.username ||
+        callback.password ||
+        (callback.protocol !== 'https:' &&
+            !(
+                callback.protocol === 'http:' &&
+                ['localhost', '127.0.0.1'].includes(callback.hostname)
+            ))
+    ) {
+        throw new Error('Use an approved HTTPS callback or localhost HTTP callback');
+    }
+    const realm = encodeURIComponent(process.env.KEYCLOAK_REALM ?? 'learncard');
+    const verifier = randomBytes(32).toString('base64url');
+    const state = randomBytes(32).toString('base64url');
+    const challenge = createHash('sha256').update(verifier).digest('base64url');
+    const auth = new URL(`${base}/realms/${realm}/protocol/openid-connect/auth`);
+    auth.search = new URLSearchParams({
+        client_id: clientId,
+        redirect_uri: callback.href,
+        response_type: 'code',
+        scope: 'openid',
+        code_challenge: challenge,
+        code_challenge_method: 'S256',
+        state,
+    }).toString();
+    // Resolve the already-declared smoketests dependency; do not add a root dependency.
+    const require = createRequire(
+        new URL('../../../tests/smoketests/package.json', import.meta.url)
+    );
+    const { chromium } = require('@playwright/test') as { chromium: typeof Chromium };
     const browser = await chromium.launch();
-    const context = await browser.newContext();
-    const page = await context.newPage();
-
     try {
-        // Step 1: Generate PKCE challenge
-        const codeVerifier = generateCodeVerifier();
-        const codeChallenge = await generateCodeChallenge(codeVerifier);
-
-        // Step 2: Redirect to authorization endpoint
-        const authUrl = new URL(`${baseUrl}/realms/${realm}/protocol/openid-connect/auth`);
-        authUrl.searchParams.set('client_id', clientId);
-        authUrl.searchParams.set('redirect_uri', redirectUri);
-        authUrl.searchParams.set('response_type', 'code');
-        authUrl.searchParams.set('scope', 'openid profile email');
-        authUrl.searchParams.set('code_challenge', codeChallenge);
-        authUrl.searchParams.set('code_challenge_method', 'S256');
-
-        await page.goto(authUrl.toString());
-
-        // Step 3: Fill login form
-        const testUser = process.env.KEYCLOAK_TEST_USER || 'testuser';
-        const testPassword = process.env.KEYCLOAK_TEST_PASSWORD || 'testpass';
-
-        await page.fill('input[name="username"]', testUser);
-        await page.fill('input[name="password"]', testPassword);
-        await page.click('button[type="submit"]');
-
-        // Step 4: Wait for redirect with authorization code
-        await page.waitForURL(/code=/, { timeout: 10000 });
-        const redirectUrl = page.url();
-        const url = new URL(redirectUrl);
-        const code = url.searchParams.get('code');
-
-        expect(code).toBeTruthy();
-
-        // Step 5: Exchange code for token
-        const tokenUrl = `${baseUrl}/realms/${realm}/protocol/openid-connect/token`;
-        const tokenResponse = await page.request.post(tokenUrl, {
-            data: {
-                grant_type: 'authorization_code',
-                client_id: clientId,
-                code: code!,
-                redirect_uri: redirectUri,
-                code_verifier: codeVerifier,
-            },
-        });
-
-        expect(tokenResponse.status()).toBe(200);
-        const tokenData = (await tokenResponse.json()) as {
-            access_token: string;
-            token_type: string;
-        };
-        expect(tokenData.access_token).toBeTruthy();
-        expect(tokenData.token_type).toBe('Bearer');
+        const context = await browser.newContext({ serviceWorkers: 'block' });
+        const page = await context.newPage();
+        page.setDefaultTimeout(20000);
+        await page.route(
+            url => url.origin === callback.origin && url.pathname === callback.pathname,
+            route =>
+                route.fulfill({
+                    status: 200,
+                    contentType: 'text/plain',
+                    body: 'Synthetic callback captured',
+                })
+        );
+        await page.goto(auth.href);
+        await page.locator('input[name="username"]').fill(username);
+        await page.locator('input[name="password"]').fill(password);
+        await Promise.all([
+            page.waitForURL(
+                url => url.origin === callback.origin && url.pathname === callback.pathname
+            ),
+            page.locator('#kc-login').click(),
+        ]);
+        const result = new URL(page.url());
+        const code = result.searchParams.get('code');
+        if (!code || result.searchParams.get('state') !== state || result.searchParams.has('error'))
+            throw new Error('Invalid authorization callback');
+        const tokens = record(
+            await requestJson(`${base}/realms/${realm}/protocol/openid-connect/token`, {
+                method: 'POST',
+                body: new URLSearchParams({
+                    grant_type: 'authorization_code',
+                    client_id: clientId,
+                    code,
+                    redirect_uri: callback.href,
+                    code_verifier: verifier,
+                }),
+            })
+        );
+        if (typeof tokens.access_token !== 'string' || !tokens.access_token)
+            throw new Error('No access token returned');
+        // End the synthetic session; never emit tokens/cookies or browser traces.
+        if (typeof tokens.refresh_token === 'string') {
+            const logout = await fetch(`${base}/realms/${realm}/protocol/openid-connect/logout`, {
+                method: 'POST',
+                body: new URLSearchParams({
+                    client_id: clientId,
+                    refresh_token: tokens.refresh_token,
+                }),
+                redirect: 'error',
+                signal: AbortSignal.timeout(20000),
+            });
+            if (!logout.ok)
+                throw new Error(`Synthetic session cleanup failed: HTTP ${logout.status}`);
+        }
+        process.stdout.write('PASS authorization-code + PKCE S256 sign-in and session cleanup\n');
     } finally {
-        await context.close();
         await browser.close();
     }
-});
+};
 
-/**
- * Generate a random code verifier for PKCE.
- */
-function generateCodeVerifier(): string {
-    const array = new Uint8Array(32);
-    crypto.getRandomValues(array);
-    return btoa(String.fromCharCode(...Array.from(array)))
-        .replace(/\+/g, '-')
-        .replace(/\//g, '_')
-        .replace(/=/g, '');
-}
-
-/**
- * Generate code challenge from verifier (S256).
- */
-async function generateCodeChallenge(verifier: string): Promise<string> {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(verifier);
-    const hash = await crypto.subtle.digest('SHA-256', data);
-    return btoa(String.fromCharCode(...Array.from(new Uint8Array(hash))))
-        .replace(/\+/g, '-')
-        .replace(/\//g, '_')
-        .replace(/=/g, '');
+if (import.meta.main) {
+    signIn().catch((): void => {
+        // Playwright errors may include callback URLs containing authorization codes.
+        process.stderr.write(
+            'FAIL synthetic sign-in; check configuration, login form and staging availability (details suppressed)\n'
+        );
+        process.exitCode = 1;
+    });
 }

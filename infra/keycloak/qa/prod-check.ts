@@ -1,158 +1,100 @@
-/**
- * Production security checklist (A10).
- * Asserts via Keycloak admin REST API:
- * - No bootstrap admin user
- * - All clients have directAccessGrantsEnabled=false
- * - learncard-app has PKCE S256
- * - Realm has bruteForceProtected=true
- * - Events enabled
- *
- * Requires: KEYCLOAK_ADMIN_URL, KEYCLOAK_ADMIN_USER, KEYCLOAK_ADMIN_PASSWORD
- * Exit code 1 on any assertion failure.
- */
+import { required, record, secureUrl, requestJson } from './support';
 
-import { strict as assert } from 'assert';
-
-const adminUrl = process.env.KEYCLOAK_ADMIN_URL || 'https://admin.auth.learncard.app';
-const adminUser = process.env.KEYCLOAK_ADMIN_USER || 'terraform-realm';
-const adminPassword = process.env.KEYCLOAK_ADMIN_PASSWORD || '';
-const realm = 'learncard';
-const bootstrapAdminUsername = process.env.BOOTSTRAP_ADMIN_USERNAME || 'admin';
-
-let accessToken: string;
-
-/**
- * Obtain admin access token via password grant.
- */
-async function getAdminToken(): Promise<string> {
-    const tokenUrl = `${adminUrl}/realms/master/protocol/openid-connect/token`;
-    const response = await fetch(tokenUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-            grant_type: 'password',
-            client_id: 'admin-cli',
-            username: adminUser,
-            password: adminPassword,
-        }).toString(),
-    });
-
-    if (!response.ok) {
-        throw new Error(`Failed to get admin token: ${response.status} ${response.statusText}`);
-    }
-
-    const data = (await response.json()) as { access_token: string };
-    return data.access_token;
-}
-
-/**
- * Make authenticated admin API call.
- */
-async function adminApi(path: string): Promise<unknown> {
-    const response = await fetch(`${adminUrl}/admin/realms${path}`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-    });
-
-    if (!response.ok) {
-        throw new Error(`Admin API error: ${response.status} ${response.statusText}`);
-    }
-
-    return response.json();
-}
-
-/**
- * A10.1: No bootstrap admin user in master realm.
- */
-async function checkNoBootstrapAdmin(): Promise<void> {
-    console.log('A10.1: Checking no bootstrap admin user...');
-    const users = (await adminApi('/master/users')) as Array<{ username: string }>;
-    const bootstrapExists = users.some(u => u.username === bootstrapAdminUsername);
-    assert(!bootstrapExists, `Bootstrap admin user "${bootstrapAdminUsername}" still exists`);
-    console.log('  PASS: No bootstrap admin user');
-}
-
-/**
- * A10.2: All clients have directAccessGrantsEnabled=false.
- */
-async function checkDirectAccessGrantsDisabled(): Promise<void> {
-    console.log('A10.2: Checking directAccessGrantsEnabled=false on all clients...');
-    const clients = (await adminApi(`/${realm}/clients`)) as Array<{
-        clientId: string;
-        directAccessGrantsEnabled?: boolean;
-    }>;
-
-    for (const client of clients) {
-        const enabled = client.directAccessGrantsEnabled ?? false;
-        assert(!enabled, `Client "${client.clientId}" has directAccessGrantsEnabled=true`);
-    }
-    console.log(`  PASS: All ${clients.length} clients have directAccessGrantsEnabled=false`);
-}
-
-/**
- * A10.3: learncard-app has PKCE S256.
- */
-async function checkPkceS256(): Promise<void> {
-    console.log('A10.3: Checking learncard-app PKCE S256...');
-    const clients = (await adminApi(`/${realm}/clients`)) as Array<{
-        clientId: string;
-        id: string;
-    }>;
-
-    const learnCardApp = clients.find(c => c.clientId === 'learncard-app');
-    assert(learnCardApp, 'learncard-app client not found');
-
-    const client = (await adminApi(`/${realm}/clients/${learnCardApp.id}`)) as {
-        attributes?: { 'pkce.code.challenge.method'?: string };
+/** Read-only A10 checks, using a master-realm service account over private TLS. */
+export const checkProduction = async (): Promise<void> => {
+    const base = secureUrl(required('KEYCLOAK_BASE_URL'));
+    const clientId = required('KEYCLOAK_CLIENT_ID');
+    const clientSecret = required('KEYCLOAK_CLIENT_SECRET');
+    const realms = (process.env.KEYCLOAK_REALMS ?? 'learncard')
+        .split(',')
+        .map(value => value.trim());
+    if (realms.some(value => !value || value === 'master'))
+        throw new Error('Specify managed non-master realms');
+    const token = record(
+        await requestJson(`${base}/realms/master/protocol/openid-connect/token`, {
+            method: 'POST',
+            body: new URLSearchParams({
+                grant_type: 'client_credentials',
+                client_id: clientId,
+                client_secret: clientSecret,
+            }),
+        })
+    );
+    if (typeof token.access_token !== 'string' || !token.access_token)
+        throw new Error('Missing access token');
+    const admin = async (path: string): Promise<unknown> =>
+        requestJson(`${base}/admin/realms/${path}`, {
+            headers: { Authorization: `Bearer ${token.access_token}` },
+        });
+    let failures = 0;
+    const assertCheck = (condition: boolean, label: string): void => {
+        process.stdout.write(`${condition ? 'PASS' : 'FAIL'} ${label}\n`);
+        if (!condition) failures += 1;
     };
-
-    const pkceMethod = client.attributes?.['pkce.code.challenge.method'];
-    assert(pkceMethod === 'S256', `learncard-app PKCE method is "${pkceMethod}", expected "S256"`);
-    console.log('  PASS: learncard-app has PKCE S256');
-}
-
-/**
- * A10.4: Realm has bruteForceProtected=true.
- */
-async function checkBruteForceProtection(): Promise<void> {
-    console.log('A10.4: Checking realm bruteForceProtected=true...');
-    const realmData = (await adminApi(`/${realm}`)) as { bruteForceProtected?: boolean };
-    assert(realmData.bruteForceProtected === true, 'Realm bruteForceProtected is not true');
-    console.log('  PASS: Realm has bruteForceProtected=true');
-}
-
-/**
- * A10.5: Events enabled.
- */
-async function checkEventsEnabled(): Promise<void> {
-    console.log('A10.5: Checking events enabled...');
-    const realmData = (await adminApi(`/${realm}`)) as { eventsEnabled?: boolean };
-    assert(realmData.eventsEnabled === true, 'Realm eventsEnabled is not true');
-    console.log('  PASS: Events enabled');
-}
-
-/**
- * Main.
- */
-async function main(): Promise<void> {
-    try {
-        console.log(`Production security checklist (A10) for realm "${realm}"`);
-        console.log(`Admin URL: ${adminUrl}\n`);
-
-        accessToken = await getAdminToken();
-        console.log('Authenticated as admin\n');
-
-        await checkNoBootstrapAdmin();
-        await checkDirectAccessGrantsDisabled();
-        await checkPkceS256();
-        await checkBruteForceProtection();
-        await checkEventsEnabled();
-
-        console.log('\nAll assertions passed.');
-        process.exit(0);
-    } catch (error) {
-        console.error('\nAssertion failed:', error instanceof Error ? error.message : error);
-        process.exit(1);
+    const username = process.env.BOOTSTRAP_ADMIN_USERNAME ?? 'admin';
+    const users = await admin(
+        `master/users?${new URLSearchParams({ username, exact: 'true', max: '1' })}`
+    );
+    if (!Array.isArray(users)) throw new Error('Invalid users response');
+    assertCheck(users.length === 0, 'master: bootstrap administrator absent');
+    for (const realm of realms) {
+        const path = encodeURIComponent(realm);
+        const configuration = record(await admin(path));
+        assertCheck(
+            configuration.bruteForceProtected === true,
+            `${realm}: brute-force protection enabled`
+        );
+        const events = record(await admin(`${path}/events/config`));
+        assertCheck(events.eventsEnabled === true, `${realm}: user events saved`);
+        assertCheck(events.adminEventsEnabled === true, `${realm}: admin events saved`);
+        assertCheck(
+            Array.isArray(events.eventsListeners) &&
+                events.eventsListeners.includes('jboss-logging'),
+            `${realm}: event logger enabled`
+        );
+        let foundApp = false;
+        let count = 0;
+        // Paginate explicitly: never silently check only the first client page.
+        for (let first = 0; ; first += 100) {
+            const clients = await admin(`${path}/clients?first=${first}&max=100`);
+            if (!Array.isArray(clients)) throw new Error('Invalid clients response');
+            for (const value of clients) {
+                const client = record(value);
+                if (typeof client.id !== 'string' || typeof client.clientId !== 'string')
+                    throw new Error('Invalid client');
+                const detail = record(
+                    await admin(`${path}/clients/${encodeURIComponent(client.id)}`)
+                );
+                assertCheck(
+                    detail.directAccessGrantsEnabled === false,
+                    `${realm}/${client.clientId}: password grant disabled`
+                );
+                if (client.clientId === 'learncard-app') {
+                    foundApp = true;
+                    const attributes = record(detail.attributes ?? {});
+                    assertCheck(
+                        attributes['pkce.code.challenge.method'] === 'S256',
+                        `${realm}/learncard-app: PKCE S256 enforced`
+                    );
+                }
+                count += 1;
+            }
+            if (clients.length < 100) break;
+        }
+        assertCheck(count > 0, `${realm}: client inventory is not empty`);
+        assertCheck(foundApp, `${realm}: learncard-app exists`);
     }
-}
+    process.stdout.write(
+        'AWS IAM/state-policy and public-surface checks remain separate A2/A10 gates.\n'
+    );
+    if (failures > 0) throw new Error(`${failures} security assertions failed`);
+};
 
-main();
+if (import.meta.main) {
+    checkProduction().catch((error: unknown): void => {
+        process.stderr.write(
+            `${error instanceof Error ? error.message : 'Security check failed'}\n`
+        );
+        process.exitCode = 1;
+    });
+}
