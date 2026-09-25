@@ -68,7 +68,7 @@ jobs:
                     fi
                   fi
 
-                  echo "### Checking: $GROUP_NAME (ID: $GROUP_ID)" >> $GITHUB_STEP_SUMMARY
+                  echo "### Checking: $GROUP_NAME (ID: $GROUP_ID)" >> "$GITHUB_STEP_SUMMARY"
 
                   echo "Querying UptimeRobot for DOWN monitors in \"$GROUP_NAME\" (ID: $GROUP_ID)..."
 
@@ -90,16 +90,16 @@ jobs:
 
                   if [ "$DOWN_COUNT" = "0" ]; then
                     echo "✅ All monitors in \"$GROUP_NAME\" are UP"
-                    echo "Result: All monitors UP" >> $GITHUB_STEP_SUMMARY
+                    echo "Result: All monitors UP" >> "$GITHUB_STEP_SUMMARY"
                   else
                     echo "::error::$DOWN_COUNT monitor(s) in \"$GROUP_NAME\" are DOWN"
 
                     # List the down monitors for visibility
                     echo "$RESPONSE" | jq -r '.data[] | "  - \(.name) (ID: \(.id)) — down since \(.downDatetime)"' 2>/dev/null || true
 
-                    echo "" >> $GITHUB_STEP_SUMMARY
-                    echo "**$DOWN_COUNT monitor(s) DOWN:**" >> $GITHUB_STEP_SUMMARY
-                    echo "$RESPONSE" | jq -r '.data[] | "- \(.name) (ID: \(.id))"' >> $GITHUB_STEP_SUMMARY 2>/dev/null || true
+                    echo "" >> "$GITHUB_STEP_SUMMARY"
+                    echo "**$DOWN_COUNT monitor(s) DOWN:**" >> "$GITHUB_STEP_SUMMARY"
+                    echo "$RESPONSE" | jq -r '.data[] | "- \(.name) (ID: \(.id))"' >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
 
                     exit 1
                   fi
