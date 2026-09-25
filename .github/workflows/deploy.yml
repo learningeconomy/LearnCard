@@ -478,6 +478,11 @@ jobs:
                   CREDENTIAL_REFRESH_ENABLED: ${{ vars.CREDENTIAL_REFRESH_ENABLED || 'false' }}
                   CREDENTIAL_REFRESH_DIGEST_SECRET: ${{ secrets.CREDENTIAL_REFRESH_DIGEST_SECRET }}
                   CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS: ${{ vars.CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS || '24' }}
+                  # LC-2187: public service trust configuration, provisioned per environment.
+                  SHARE_LINK_MAINTENANCE_NAMESPACE: ${{ vars.SHARE_LINK_MAINTENANCE_NAMESPACE }}
+                  SHARE_LINK_MAINTENANCE_ORIGIN: ${{ vars.SHARE_LINK_MAINTENANCE_ORIGIN }}
+                  SHARE_LINK_MAINTENANCE_AUDIENCE: ${{ vars.SHARE_LINK_MAINTENANCE_AUDIENCE }}
+                  SHARE_LINK_MAINTENANCE_ALLOW_INSECURE_LOOPBACK: 'false'
                   SEED: ${{ secrets.SEED }}
                   DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
                   NOTIFICATIONS_SERVICE_WEBHOOK_URL: ${{ secrets.NOTIFICATIONS_SERVICE_WEBHOOK_URL }}
@@ -601,6 +606,11 @@ jobs:
                   LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
                   LEARN_CLOUD_MONGO_URI: ${{ secrets.LEARN_CLOUD_MONGO_URI }}
                   LEARN_CLOUD_MONGO_DB_NAME: ${{ secrets.LEARN_CLOUD_MONGO_DB_NAME }}
+                  # LC-2187: must match this environment's Brain service configuration.
+                  SHARE_CONTENT_AUDIENCE: ${{ vars.SHARE_CONTENT_AUDIENCE }}
+                  SHARE_CONTENT_SERVICE_DIDS: ${{ vars.SHARE_CONTENT_SERVICE_DIDS }}
+                  SHARE_CONTENT_VERIFICATION_METHODS: ${{ vars.SHARE_CONTENT_VERIFICATION_METHODS }}
+                  SHARE_CONTENT_NAMESPACE_BINDINGS: ${{ vars.SHARE_CONTENT_NAMESPACE_BINDINGS }}
                   XAPI_ENDPOINT: ${{ secrets.XAPI_ENDPOINT }}
                   XAPI_USERNAME: ${{ secrets.XAPI_USERNAME }}
                   XAPI_PASSWORD: ${{ secrets.XAPI_PASSWORD }}
