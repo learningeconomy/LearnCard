@@ -102,6 +102,14 @@ if [[ "$strategy" == recreate ]]; then
     aws ecs update-service --cluster "$name" --service "$name" --desired-count 0 >/dev/null
     aws ecs wait services-stable --cluster "$name" --services "$name"
     # Stability at desired=0 alone is not proof that draining tasks have exited.
+    # Re-list AFTER scale-down, including desired STOPPED: those tasks can still
+    # have lastStatus RUNNING/DEACTIVATING and database connections. Also catches
+    # replacements launched between our original listing and the scale-down.
+    for desired_status in RUNNING STOPPED; do
+        remaining=$(aws ecs list-tasks --cluster "$name" --service-name "$name" \
+            --desired-status "$desired_status" --query taskArns --output json)
+        old_tasks=$(jq -cn --argjson old "$old_tasks" --argjson remaining "$remaining" '$old + $remaining | unique')
+    done
     while IFS= read -r old_task; do
         aws ecs wait tasks-stopped --cluster "$name" --tasks "$old_task"
     done < <(jq -r '.[]' <<< "$old_tasks")
