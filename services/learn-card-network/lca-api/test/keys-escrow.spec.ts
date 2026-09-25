@@ -1002,14 +1002,14 @@ describe('escrow PIN release', () => {
             });
         }
 
-        await vi.waitFor(() => {
+        await vi.waitFor(async () => {
             expect(capturedToken).toMatch(/^[0-9a-f]{64}$/);
-        });
-        // The lockout notice is still recorded on the (now dead) PIN hold, not activeHold.
-        expect(await findEscrowHoldById(lockingHoldId)).toMatchObject({
-            notifications: expect.arrayContaining([
-                expect.objectContaining({ kind: 'pin-locked' }),
-            ]),
+            // The lockout notice is still recorded on the (now dead) PIN hold, not activeHold.
+            expect(await findEscrowHoldById(lockingHoldId)).toMatchObject({
+                notifications: expect.arrayContaining([
+                    expect.objectContaining({ kind: 'pin-locked' }),
+                ]),
+            });
         });
         expect((await findEscrowHoldById(activeHold.holdId))?.notifications ?? []).not.toEqual(
             expect.arrayContaining([expect.objectContaining({ kind: 'pin-locked' })])
