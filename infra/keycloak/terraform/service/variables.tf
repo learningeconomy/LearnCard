@@ -141,12 +141,12 @@ variable "db_pool_size" {
   default     = 10
   validation {
     condition     = floor(var.db_pool_size) == var.db_pool_size && var.db_pool_size >= 1 && var.db_pool_size * var.max_task_count * 2 < var.db_connection_budget * 0.7
-    error_message = "Pool must be a positive integer; pools at 200% of maximum tasks must stay below 70% of the tested connection budget."
+    error_message = "Pool must be a positive integer; pools at 200% of maximum tasks must stay below 70% of the connection budget."
   }
 }
 
 variable "db_connection_budget" {
-  description = "Conservative max_connections budget to confirm at minimum ACU in Phase 3/PD-8 load testing"
+  description = "Connection budget at or below Aurora's max_connections, which Serverless v2 derives from maximum ACU and holds fixed while scaling; confirm after apply"
   type        = number
   default     = 100
   validation {

@@ -10,5 +10,5 @@ db_min_capacity      = 2
 db_max_capacity      = 16
 db_instance_count    = 2
 db_pool_size         = 10
-db_connection_budget = 200
+db_connection_budget = 2000
 # A human must explicitly acknowledge the temporary rotation risk at first apply.

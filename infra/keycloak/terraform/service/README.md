@@ -87,20 +87,25 @@ No remote-state chain or manual network-ID inputs. `inputs.tf` reads
 `admin_certificate_arn`, `auth_hostname`, `admin_hostname`. Subnet values are
 StringLists. It also reads bootstrap `workload_boundary_arn` and `state_bucket_name`.
 
-| Setting                        | Staging            | Production         |
-| ------------------------------ | ------------------ | ------------------ |
-| Task CPU / MiB                 | 1024 / 2048, ARM64 | 2048 / 4096, ARM64 |
-| Initial / min / max tasks      | 1 / 1 / 2          | 2 / 2 / 6          |
-| CPU target                     | 55%                | 55%                |
-| Aurora instances               | 1                  | 2 in distinct AZs  |
-| Per-instance ACUs              | 0.5–4              | 2–16               |
-| Fixed DB pool per task         | 10                 | 10                 |
-| Conservative connection budget | 100                | 200                |
+| Setting                   | Staging            | Production         |
+| ------------------------- | ------------------ | ------------------ |
+| Task CPU / MiB            | 1024 / 2048, ARM64 | 2048 / 4096, ARM64 |
+| Initial / min / max tasks | 1 / 1 / 2          | 2 / 2 / 6          |
+| CPU target                | 55%                | 55%                |
+| Aurora instances          | 1                  | 2 in distinct AZs  |
+| Per-instance ACUs         | 0.5–4              | 2–16               |
+| Fixed DB pool per task    | 10                 | 10                 |
+| Connection budget         | 100                | 2000               |
 
 Pool initial/min/max are equal; validation includes **200% rolling surge** at max
-tasks and requires the sum below 70% of the configured connection budget. That
-budget is an assumption, not an AWS-discovered value: verify `max_connections` at
-minimum ACU under load and adjust before production. JVM heap remains at upstream
+tasks and requires the sum below 70% of the configured connection budget. Aurora
+Serverless v2 derives `max_connections` from the **maximum** ACU and holds it fixed
+while scaling ([AWS defaults](https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/aurora-serverless-v2.setting-capacity.html#aurora-serverless-v2.max-connections):
+PostgreSQL 823 at 4 ACU, 3,360 at 16 ACU). The budget stays below that default,
+leaving room for admin and RDS-internal connections. Confirm with
+`SHOW max_connections` after apply; changing max ACU needs an instance reboot to
+update it. Actual use is pool × tasks (at most 120 during a production deploy),
+not the budget, so memory at minimum ACU is unaffected. JVM heap remains at upstream
 container-aware defaults. Scaling owns desired count after creation; Terraform
 ignores its drift. Change min/max for durable sizing changes, not `desired_count`.
 
