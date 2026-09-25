@@ -85,10 +85,10 @@ data "aws_iam_policy_document" "realm_runner" {
     ], [for subnet in local.private_subnet_ids : "arn:${local.partition}:ec2:${var.aws_region}:${local.account_id}:subnet/${subnet}"])
   }
   statement {
-    # CodeBuild's VPC pre-flight calls this without an ec2:Subnet context, so a
-    # subnet condition denies every build; AWS documents it unconditioned.
+    # CodeBuild's VPC pre-flight authorizes this action against "*" (no ENI ARN or
+    # ec2:Subnet context), so anything narrower fails every build at QUEUED.
     actions   = ["ec2:DeleteNetworkInterface"]
-    resources = ["arn:${local.partition}:ec2:${var.aws_region}:${local.account_id}:network-interface/*"]
+    resources = ["*"]
   }
   statement {
     actions = ["ssm:GetParameter", "ssm:GetParameters", "ssm:GetParametersByPath"]

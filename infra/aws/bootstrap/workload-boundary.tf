@@ -59,6 +59,12 @@ data "aws_iam_policy_document" "workload_boundary" {
     resources = ["${aws_s3_bucket.state.arn}/keycloak/${var.environment}/realm.tfstate.tflock"]
   }
   statement {
+    # CodeBuild's VPC pre-flight checks DeleteNetworkInterface against "*"; the
+    # realm-runner role policy is the only workload policy that grants it.
+    actions   = ["ec2:DeleteNetworkInterface"]
+    resources = ["*"]
+  }
+  statement {
     actions   = ["ec2:CreateNetworkInterface", "ec2:DeleteNetworkInterface", "ec2:CreateNetworkInterfacePermission"]
     resources = ["arn:${local.partition}:ec2:${local.regional_arn}:network-interface/*", "arn:${local.partition}:ec2:${local.regional_arn}:subnet/*", "arn:${local.partition}:ec2:${local.regional_arn}:security-group/*"]
   }
