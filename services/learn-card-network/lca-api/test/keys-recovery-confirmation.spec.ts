@@ -77,7 +77,7 @@ afterAll(async () => {
 
 describe('P0-2 two-phase recovery enrollment', () => {
     it.each([1, 2, undefined])(
-        'records the envelope version %s after another device rotates',
+        'requires the current envelope version and confirms recovery after version %s is sent',
         async shareVersion => {
             const suffix = randomUUID();
             const email = `version-${suffix}@example.com`;
@@ -98,21 +98,49 @@ describe('P0-2 two-phase recovery enrollment', () => {
             await collection.insertOne(userKey);
 
             try {
-                await getClient({ did, isChallengeValid: true }).keys.sendEmailBackup({
+                const caller = getClient({ did, isChallengeValid: true });
+                const auth = {
                     authToken: makeMockToken(email, uid),
                     providerType: 'firebase',
+                };
+                const request = {
+                    ...auth,
                     relayPayload: makeRelayPayload(),
                     confirmationCode: '123456',
                     email: recoveryEmail,
                     shareVersion,
+                };
+
+                if (shareVersion === 1) {
+                    await expect(caller.keys.sendEmailBackup(request)).rejects.toMatchObject({
+                        code: 'CONFLICT',
+                        message: 'Key material changed; please retry',
+                    });
+                    expect(relaySpy).not.toHaveBeenCalled();
+                    const rejected = await collection.findOne({ 'contactMethod.value': email });
+                    expect(rejected?.recoveryMethods).toEqual([]);
+                    request.shareVersion = 2;
+                }
+
+                await expect(caller.keys.sendEmailBackup(request)).resolves.toEqual({
+                    success: true,
                 });
                 const stored = await collection.findOne({ 'contactMethod.value': email });
                 expect(stored?.recoveryMethods[0]).toMatchObject({
                     type: 'email',
-                    shareVersion: shareVersion ?? 2,
+                    shareVersion: 2,
                     confirmationStatus: 'pending',
                 });
                 expect(relaySpy).toHaveBeenCalledOnce();
+                await expect(
+                    caller.keys.confirmRecoveryMethod({ ...auth, type: 'email', code: '123456' })
+                ).resolves.toEqual({ success: true });
+                const confirmed = await collection.findOne({ 'contactMethod.value': email });
+                expect(confirmed?.recoveryMethods[0]).toMatchObject({
+                    type: 'email',
+                    shareVersion: 2,
+                    confirmationStatus: 'confirmed',
+                });
             } finally {
                 relaySpy.mockRestore();
                 await collection.deleteMany({ 'contactMethod.value': email });
@@ -144,12 +172,66 @@ describe('P0-2 two-phase recovery enrollment', () => {
                         email: recoveryEmail,
                         shareVersion,
                     })
-                ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+                ).rejects.toMatchObject({
+                    code:
+                        shareVersion > 0 && Number.isInteger(shareVersion)
+                            ? 'CONFLICT'
+                            : 'BAD_REQUEST',
+                });
                 expect(relaySpy).not.toHaveBeenCalled();
                 const stored = await collection.findOne({ 'contactMethod.value': email });
                 expect(stored?.recoveryMethods).toEqual([]);
             } finally {
                 relaySpy.mockRestore();
+                await collection.deleteMany({ 'contactMethod.value': email });
+            }
+        }
+    );
+
+    it.each(['passkey', 'backup', 'phrase', 'email'] as const)(
+        'rejects retained versions for %s recovery setup before writing a pending method',
+        async type => {
+            const suffix = randomUUID();
+            const email = `setup-version-${suffix}@example.com`;
+            const uid = `uid-${suffix}`;
+            const did = `did:key:z${suffix}`;
+            const collection = getUserKeysCollection();
+            const userKey = makeUserKey(email, uid, did);
+            userKey.previousAuthShares = [
+                { authShare: userKey.authShare!, shareVersion: 1, createdAt: new Date() },
+            ];
+            userKey.shareVersion = 2;
+            await collection.insertOne(userKey);
+            const caller = getClient({ did, isChallengeValid: true });
+            const auth = { authToken: makeMockToken(email, uid), providerType: 'firebase' };
+
+            try {
+                await expect(
+                    caller.keys.addRecoveryMethod({ ...auth, type, shareVersion: 1 })
+                ).rejects.toMatchObject({
+                    code: 'CONFLICT',
+                    message: 'Key material changed; please retry',
+                });
+                const rejected = await collection.findOne({ 'contactMethod.value': email });
+                expect(rejected?.recoveryMethods).toEqual([]);
+
+                // Email confirmation needs the code metadata supplied by sendEmailBackup.
+                if (type !== 'email') {
+                    for (const shareVersion of [2, undefined]) {
+                        const credentialId =
+                            type === 'passkey' ? `credential-${suffix}` : undefined;
+                        await caller.keys.addRecoveryMethod({
+                            ...auth,
+                            type,
+                            shareVersion,
+                            credentialId,
+                        });
+                        await expect(
+                            caller.keys.confirmRecoveryMethod({ ...auth, type, credentialId })
+                        ).resolves.toEqual({ success: true });
+                    }
+                }
+            } finally {
                 await collection.deleteMany({ 'contactMethod.value': email });
             }
         }
