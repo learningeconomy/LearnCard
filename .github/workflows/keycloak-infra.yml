@@ -86,6 +86,8 @@ jobs:
                   persist-credentials: false
             - name: Test compatibility exit-code contract without credentials
               run: bash infra/keycloak/scripts/test-compat-gate.sh
+            - name: Test deployment safety without credentials
+              run: bash infra/keycloak/scripts/test-deploy-image.sh
             - uses: docker/setup-qemu-action@v3
             - uses: docker/setup-buildx-action@v3
             - name: Build optimized ARM64 image (no push)

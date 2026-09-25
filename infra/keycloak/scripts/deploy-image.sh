@@ -10,6 +10,22 @@ release_sha=${RELEASE_SHA:-$GITHUB_SHA}
 [[ "$DEPLOY_ENVIRONMENT" == staging || "$DEPLOY_ENVIRONMENT" == production ]]
 [[ "$TF_VAR_keycloak_image" =~ @sha256:[0-9a-f]{64}$ ]]
 scripts="$PWD/infra/keycloak/scripts"
+# CodeBuild checks out release_sha, not local/uncommitted inputs or a newer main.
+# Fail before even creating the journal, taking a snapshot, or installing cleanup.
+realm_stage=keycloak-staging
+realm_label=Staging
+if [[ "$DEPLOY_ENVIRONMENT" == production ]]; then
+    realm_stage=production
+    realm_label=Production
+fi
+for input in "infra/keycloak/terraform/realm/environments/$DEPLOY_ENVIRONMENT.tfvars" \
+    "infra/keycloak/terraform/realm/generated/$realm_stage.tfvars.json"; do
+    if [[ ! -s "$input" ]] || ! GIT_MASTER=1 git show "$release_sha:$input" 2>/dev/null | cmp -s "$input" -; then
+        printf '%s realm inputs are not committed: %s (must be non-empty and match source revision %s).\n' \
+            "$realm_label" "$input" "$release_sha" >&2
+        exit 1
+    fi
+done
 root=infra/keycloak/terraform/service
 name="learncard-keycloak-$DEPLOY_ENVIRONMENT"
 prefix="keycloak/$DEPLOY_ENVIRONMENT/compat"

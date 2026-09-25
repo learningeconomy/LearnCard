@@ -120,6 +120,10 @@ use the private runner. Plan files and raw diagnostics are never uploaded.
    The image's `org.opencontainers.image.revision` label must identify an ancestor
    of main; the job restores service/realm Terraform from that exact commit and
    passes it to CodeBuild. An older image is never paired with newer realm config.
+   Before any deployment mutation, the script requires non-empty realm environment
+   tfvars and generated inputs committed at that SHA and matching the restored files
+   (`keycloak-staging.tfvars.json` for staging, `production.tfvars.json` for production).
+   Missing production inputs fail before snapshots, the journal, or service changes.
    Legacy manually pushed images without that label are not promotable through
    this action; use a deliberately reviewed manual service override for recovery.
 3. The job verifies the digest exists in production ECR (replication is asynchronous;
