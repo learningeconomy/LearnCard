@@ -95,6 +95,12 @@ can execute arbitrary PR code with the plan role's **account-wide ReadOnlyAccess
 downstream state read and state-lock writes. State/application data may be sensitive.
 The IAM `pull_request` subject cannot distinguish a fork or trusted author; workflow
 review remains mandatory. Enabling the toggle explicitly accepts that exposure.
+**The toggle is a scheduling control, not an IAM security boundary.** A repository
+writer can edit PR YAML to bypass it or add code to the retained identity-smoke job;
+the existing plan-role trust already permits that token. Keeping the toggle off
+does not revoke this inherited access. Preventing that attack requires a separate,
+human-applied redesign of plan-role trust and externally enforced approval (including
+the identity-smoke path). This pipeline does not claim to provide that isolation.
 Keep it off unless maintainers trust all code contributors covered by that condition.
 Plan output, errors and JSON stay on the ephemeral runner, are removed on exit, and
 are never uploaded. Only create/update/delete counts and up to 100 changed addresses

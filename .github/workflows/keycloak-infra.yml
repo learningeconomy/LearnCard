@@ -121,6 +121,9 @@ jobs:
     # account ReadOnlyAccess + state read (and lock writes). A trusted author is
     # not proof of safe code. The IAM PR subject itself cannot distinguish forks.
     # Review workflow/provider changes and accept that exposure before enabling.
+    # This toggle controls scheduling, NOT authorization: a repository writer can
+    # edit PR YAML, including the retained identity-smoke job. Removing that inherited
+    # risk requires a separately approved IAM trust/approval redesign of the plan role.
     pr-plan:
         if: >-
             github.event_name == 'pull_request' &&
