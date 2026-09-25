@@ -1,0 +1,114 @@
+#!/bin/bash
+set -euo pipefail
+
+exec > >(tee /var/log/escrow-enclave-user-data.log) 2>&1
+echo "[user-data] escrow-enclave-host bootstrap starting"
+
+REGION="${aws_region}"
+ENCLAVE_CPU_COUNT="${enclave_cpu_count}"
+ENCLAVE_MEMORY_MIB="${enclave_memory_mib}"
+EIF_S3_URI="${eif_s3_uri}"
+ENCLAVE_IMAGE_VERSION="${enclave_image_version}"
+ROUGHTIME_SERVERS="${roughtime_servers_csv}"
+KMS_ENDPOINT="kms.$REGION.amazonaws.com"
+
+# 1) Nitro Enclaves CLI. AL2023 ships AWS CLI v2 pre-installed, so only the
+#    enclave tooling needs to be added.
+dnf install -y aws-nitro-enclaves-cli aws-nitro-enclaves-cli-devel
+usermod -aG ne ec2-user 2>/dev/null || true
+
+# 2) Allocator: reserve CPU/memory exclusively for the enclave. The parent
+#    keeps the rest of this instance_type's vCPUs/RAM (must be >= *.xlarge —
+#    see decisions.md D1 — for the OS, vsock-proxy, and the supervisor below).
+mkdir -p /etc/nitro_enclaves
+cat > /etc/nitro_enclaves/allocator.yaml <<ALLOCATOR_EOF
+---
+memory_mib: $ENCLAVE_MEMORY_MIB
+cpu_count: $ENCLAVE_CPU_COUNT
+ALLOCATOR_EOF
+
+systemctl daemon-reload
+systemctl enable nitro-enclaves-allocator.service
+systemctl restart nitro-enclaves-allocator.service
+
+# 3) vsock-proxy allowlist: the enclave's ONLY network path is
+#    vsock -> this proxy -> KMS. No S3, no DynamoDB, no Roughtime here by
+#    design — those are brokered by the escrow-enclave-host parent binary
+#    (step 5), which the enclave does not trust for policy decisions
+#    (decisions.md D2/D3).
+cat > /etc/nitro_enclaves/vsock-proxy.yaml <<PROXY_EOF
+allowlist:
+  - {address: $KMS_ENDPOINT, port: 443}
+PROXY_EOF
+
+cat > /etc/systemd/system/vsock-proxy.service <<PROXY_UNIT_EOF
+[Unit]
+Description=vsock-proxy - enclave-only egress to AWS KMS ($KMS_ENDPOINT:443)
+After=network-online.target nitro-enclaves-allocator.service
+Wants=network-online.target
+Requires=nitro-enclaves-allocator.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/vsock-proxy 8000 $KMS_ENDPOINT 443 --config /etc/nitro_enclaves/vsock-proxy.yaml
+Restart=always
+RestartSec=2
+User=root
+
+[Install]
+WantedBy=multi-user.target
+PROXY_UNIT_EOF
+
+# 4) Fetch the enclave image (.eif) built + PCR-measured in P2.
+mkdir -p /opt/escrow-enclave-host/eif /opt/escrow-enclave-host/bin
+aws s3 cp "$EIF_S3_URI" "/opt/escrow-enclave-host/eif/escrow-enclave-$ENCLAVE_IMAGE_VERSION.eif" --region "$REGION"
+ln -sf "/opt/escrow-enclave-host/eif/escrow-enclave-$ENCLAVE_IMAGE_VERSION.eif" /opt/escrow-enclave-host/eif/current.eif
+
+# SECURITY: never add --debug-mode to a `nitro-cli run-enclave` invocation
+# anywhere on this host (including manual/interactive use). Debug mode zeroes
+# out PCR0/PCR1/PCR2 in the attestation document, which (a) can never satisfy
+# the KMS key policy's RecipientAttestation PCR conditions (decisions.md D7)
+# and (b) would let a debug enclave impersonate any pinned measurement to a
+# client that fails to reject the all-zero PCR case. Non-debug mode only, in
+# every environment this launch template is used for, including staging.
+
+# 5) escrow-enclave-host parent process — PLACEHOLDER unit. The binary ships
+#    in P3.3 and is responsible for: nitro-cli run-enclave supervision +
+#    health, the vsock<->HTTPS bridge to lca-api, DynamoDB ledger HeadStore
+#    writes, the S3 Object Lock audit writer, the Roughtime UDP relay
+#    (transport only — the enclave verifies Roughtime signatures itself; the
+#    relay is untrusted, decisions.md D2), and GET /health on port 8444 for
+#    the NLB. Enabled but not started here: the binary doesn't exist until
+#    P3.3 deploys it, and a bare `systemctl start` against a missing
+#    ExecStart would just crash-loop noisily in the meantime.
+cat > /etc/systemd/system/escrow-enclave-host.service <<HOST_UNIT_EOF
+[Unit]
+Description=escrow-enclave-host parent process (Nitro Enclave supervisor)
+After=network-online.target vsock-proxy.service nitro-enclaves-allocator.service
+Wants=network-online.target
+Requires=vsock-proxy.service nitro-enclaves-allocator.service
+
+[Service]
+Type=simple
+ExecStart=/opt/escrow-enclave-host/bin/escrow-enclave-host
+Restart=always
+RestartSec=2
+User=root
+Environment=AWS_REGION=$REGION
+Environment=ESCROW_ENCLAVE_CPU_COUNT=$ENCLAVE_CPU_COUNT
+Environment=ESCROW_ENCLAVE_MEMORY_MIB=$ENCLAVE_MEMORY_MIB
+Environment=ESCROW_ENCLAVE_EIF_PATH=/opt/escrow-enclave-host/eif/current.eif
+Environment=ESCROW_ENCLAVE_IMAGE_VERSION=$ENCLAVE_IMAGE_VERSION
+Environment=ESCROW_ROUGHTIME_SERVERS=$ROUGHTIME_SERVERS
+Environment=ESCROW_ENCLAVE_HEALTH_PORT=8444
+
+[Install]
+WantedBy=multi-user.target
+HOST_UNIT_EOF
+
+systemctl daemon-reload
+systemctl enable vsock-proxy.service
+systemctl start vsock-proxy.service
+systemctl enable escrow-enclave-host.service
+
+echo "[user-data] escrow-enclave-host bootstrap complete"
