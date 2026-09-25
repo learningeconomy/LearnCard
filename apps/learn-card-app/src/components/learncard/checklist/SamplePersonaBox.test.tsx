@@ -81,7 +81,7 @@ vi.mock('../../../paraglide/messages.js', () => ({
     'passport.buildMyLearnCard.samplePersona.sampleTitle': () => 'Sample LearnCard',
     'passport.buildMyLearnCard.samplePersona.description': () => 'Sample description',
     'passport.buildMyLearnCard.samplePersona.removeDescription': () => 'Remove description',
-    'passport.buildMyLearnCard.samplePersona.addAction': () => 'See an example LearnCard',
+    'passport.buildMyLearnCard.samplePersona.addAction': () => 'Sync My School',
     'passport.buildMyLearnCard.samplePersona.addPersonaAction': ({
         persona,
     }: {
@@ -198,9 +198,7 @@ describe('SamplePersonaBox', () => {
         render(<SamplePersonaBox />);
 
         expect(screen.getByRole('region', { name: 'Demo School' })).toBeInTheDocument();
-        expect(
-            screen.queryByRole('button', { name: 'See an example LearnCard' })
-        ).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'Sync My School' })).not.toBeInTheDocument();
         expect(mocks.useContract).not.toHaveBeenCalled();
     });
 
@@ -213,11 +211,11 @@ describe('SamplePersonaBox', () => {
             legacyContractUri,
         ]);
 
-        const addButton = screen.getByRole('button', { name: 'See an example LearnCard' });
+        const addButton = screen.getByRole('button', { name: 'Sync My School' });
         expect(addButton).toHaveClass('bg-emerald-700', 'rounded-[30px]', 'font-notoSans');
         expect(within(addButton).getByTestId('sync-demo-icon')).toBeInTheDocument();
 
-        fireEvent.click(screen.getByRole('button', { name: 'See an example LearnCard' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Sync My School' }));
 
         await waitFor(() => expect(mocks.fetchNewContractCredentials).toHaveBeenCalledOnce());
         expect(mocks.confirm).not.toHaveBeenCalled();
@@ -245,7 +243,7 @@ describe('SamplePersonaBox', () => {
         });
 
         render(<SamplePersonaBox />);
-        fireEvent.click(screen.getByRole('button', { name: 'See an example LearnCard' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Sync My School' }));
 
         await waitFor(() =>
             expect(mocks.getCredentialsForContract).toHaveBeenCalledWith(currentTermsUri, {
@@ -265,7 +263,7 @@ describe('SamplePersonaBox', () => {
         });
 
         render(<SamplePersonaBox />);
-        fireEvent.click(screen.getByRole('button', { name: 'See an example LearnCard' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Sync My School' }));
 
         await waitFor(() =>
             expect(mocks.presentToast).toHaveBeenCalledWith('Add incomplete', {
@@ -291,7 +289,7 @@ describe('SamplePersonaBox', () => {
         });
 
         render(<SamplePersonaBox />);
-        fireEvent.click(screen.getByRole('button', { name: 'See an example LearnCard' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Sync My School' }));
 
         await waitFor(() =>
             expect(mocks.presentToast).toHaveBeenCalledWith('Add failed', {
@@ -313,7 +311,7 @@ describe('SamplePersonaBox', () => {
         mocks.getCredentialsForContract.mockResolvedValueOnce({ records: [] });
 
         render(<SamplePersonaBox />);
-        fireEvent.click(screen.getByRole('button', { name: 'See an example LearnCard' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Sync My School' }));
 
         await waitFor(() =>
             expect(mocks.getCredentialsForContract).toHaveBeenCalledWith(currentTermsUri, {

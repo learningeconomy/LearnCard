@@ -284,7 +284,7 @@
                 "sampleTitle": "LearnCard de ejemplo",
                 "description": "Añade un ejemplo de estudiante listo para explorar registros, habilidades y opciones para compartir.",
                 "removeDescription": "Estos registros de ejemplo se mantienen separados de los tuyos y puedes eliminarlos cuando quieras.",
-                "addAction": "Ver un LearnCard de ejemplo",
+                "addAction": "Sincronizar mi escuela",
                 "addPersonaAction": "Añadir ejemplo de {{persona}}",
                 "addSuccess": "Credenciales de ejemplo añadidas.",
                 "addError": "No pudimos añadir las credenciales de ejemplo. Inténtalo de nuevo.",

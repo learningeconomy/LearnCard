@@ -284,7 +284,7 @@
                 "sampleTitle": "LearnCard d’exemple",
                 "description": "Ajoutez un exemple d’élève prêt à l’emploi pour explorer les dossiers, les compétences et le partage.",
                 "removeDescription": "Ces dossiers d’exemple restent séparés des vôtres et peuvent être supprimés à tout moment.",
-                "addAction": "Voir un exemple de LearnCard",
+                "addAction": "Synchroniser mon école",
                 "addPersonaAction": "Ajouter l’exemple {{persona}}",
                 "addSuccess": "Références d’exemple ajoutées.",
                 "addError": "Impossible d’ajouter les références d’exemple. Veuillez réessayer.",

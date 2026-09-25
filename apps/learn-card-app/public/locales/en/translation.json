@@ -284,7 +284,7 @@
                 "sampleTitle": "Sample LearnCard",
                 "description": "Add a ready-made student example to explore records, skills, and sharing.",
                 "removeDescription": "These sample records stay separate from your own and can be removed at any time.",
-                "addAction": "See an example LearnCard",
+                "addAction": "Sync My School",
                 "addPersonaAction": "Add {{persona}} example",
                 "addSuccess": "Sample credentials added.",
                 "addError": "We couldn’t add the sample credentials. Please try again.",

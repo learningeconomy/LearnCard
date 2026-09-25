@@ -189,7 +189,7 @@ test.describe('Sample persona @mocked', () => {
 
         await page.getByRole('button', { name: /Build My LearnCard/ }).click();
         const sampleCard = page.getByRole('region', { name: 'See an example LearnCard' });
-        const addButton = sampleCard.getByRole('button', { name: 'See an example LearnCard' });
+        const addButton = sampleCard.getByRole('button', { name: 'Sync My School' });
         await expect(addButton).toBeVisible({ timeout: 30_000 });
         await addButton.click();
 
@@ -213,7 +213,7 @@ test.describe('Sample persona @mocked', () => {
             .getByRole('button', { name: 'Remove sample credentials' })
             .click();
 
-        await expect(page.getByRole('button', { name: 'See an example LearnCard' })).toBeVisible({
+        await expect(page.getByRole('button', { name: 'Sync My School' })).toBeVisible({
             timeout: 30_000,
         });
 
