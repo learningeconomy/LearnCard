@@ -6,8 +6,8 @@ use serde::{Deserialize, Serialize};
 use tokio::{task::JoinSet, time::timeout};
 
 mod protocol;
-#[cfg(target_os = "linux")]
-mod relay;
+#[cfg(any(target_os = "linux", feature = "fake-time"))]
+pub mod relay;
 pub mod servers;
 #[cfg(target_os = "linux")]
 pub use relay::VsockRoughtimeTransport;

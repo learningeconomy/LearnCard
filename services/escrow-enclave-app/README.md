@@ -496,6 +496,14 @@ cargo run --features fake-nsm,fake-kms,fake-time,fake-ledger -- --emulate 127.0.
 
 Then from `services/learn-card-network/lca-api`:
 
+For the full lifecycle contract, first create a **disposable local JSON file**
+containing `{}`. Set `ESCROW_ENCLAVE_EMULATE_FIXTURE` to its absolute path in
+both the emulator and test environments before starting either process. The test
+atomically installs a fake enrollment and restores the file afterward; never
+point it at a shared developer fixture. Without this setting the lifecycle test
+fails rather than silently skipping mutations. Use the same bearer token in
+`ESCROW_ENCLAVE_EMULATE_TOKEN` and `ESCROW_ENCLAVE_CONTRACT_TOKEN`.
+
 ```sh
 ESCROW_ENCLAVE_CONTRACT_URL=http://127.0.0.1:8443 bunx vitest run src/services/escrow-enclave/remoteEnclave.contract.test.ts
 ```
@@ -641,11 +649,14 @@ fake replies use `mode:software` and a publicly known test CA.
 
 ### HTTP translation (parent / optional emulator listener)
 
-`POST /v1/attest`, `/v1/verify-blob`, `/v1/create-hold`, `/v1/release`, `/v1/cancel`,
+`POST /v1/attest`, `/v1/verify-blob`, `/v1/create-hold`, `/v1/release`, `/v1/cancel-hold`,
 and `/v1/health` carry the table's fields **without `method`**. The parent adds
-the discriminator when forwarding and removes it on replies. This matches P4.1
-except that release requires the complete signed hold and `requestId` (P4.2),
-never the old unsigned host record. All emulator calls require bearer auth,
+the discriminator when forwarding and removes it on replies. Both HTTP adapters
+implement P4.2: create returns the bare complete `SignedHoldRecord`, cancel returns
+`{ok:true}`, and mutations receive a fresh random request ID when omitted. Explicit
+request IDs are preserved; the framed enclave protocol still requires them. The
+emulator retains `/v1/cancel` as a path alias. Neither adapter retries releases or
+accepts unsigned host records. All emulator calls require bearer auth,
 HTTP/1.1 and exactly one Content-Length. Headers are bounded to 8192 bytes and
 bodies to 256 KiB. Chunking, duplicate lengths/auth headers and Expect are refused;
 connections close after one response. Unknown paths return 404; oversized bodies
@@ -679,7 +690,13 @@ the established time relay 5001 / KMS byte relay 8000. P3.3 must implement:
 Each storage exchange is timed out at ten seconds; boot KMS and persistence at
 60 seconds. No retries or fabricated empty chains on storage failures. The
 transport must be coordinated with P3.3 before staging; hardware/parent
-interoperability is not established by the emulator tests.
+interoperability now has native coverage in the host crate's `parent_interop.rs`:
+the production client codecs run against `Services` with in-memory persistence.
+The socket address-family binding, real AWS storage/pagination, and Nitro boot
+remain staging obligations. `http_interop.rs` additionally drives the host router
+through loopback framing into the real enclave actor and policy, including an
+advanced fake-clock delayed release. The live TypeScript contract opens PIN
+releases with the SDK and checks cancellation, wrong PIN, and terminal replay.
 
 The envelope/verify/release field names match lca-api's escrow-enclave types,
 but `hold` intentionally replaces the **unsigned** `EscrowHoldForEnclave` with

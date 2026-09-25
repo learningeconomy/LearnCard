@@ -344,6 +344,22 @@ impl HeadStore for AwsStore {
 }
 
 /// Fixed object key configured by operator, never selected by a caller.
+#[async_trait::async_trait]
+pub trait SealedStorage: Send + Sync {
+    async fn load_for_boot(&self, allow_first_boot: bool) -> Result<Option<Vec<u8>>>;
+    async fn save_new(&self, bytes: Vec<u8>) -> Result<()>;
+}
+
+#[async_trait::async_trait]
+impl SealedStorage for SealedStore {
+    async fn load_for_boot(&self, allow_first_boot: bool) -> Result<Option<Vec<u8>>> {
+        SealedStore::load_for_boot(self, allow_first_boot).await
+    }
+    async fn save_new(&self, bytes: Vec<u8>) -> Result<()> {
+        SealedStore::save_new(self, bytes).await
+    }
+}
+
 pub struct SealedStore {
     pub s3: aws_sdk_s3::Client,
     pub bucket: String,

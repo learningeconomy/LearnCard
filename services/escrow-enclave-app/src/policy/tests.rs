@@ -203,10 +203,7 @@ async fn derives_the_attestation_key_verifies_enrollment_and_enforces_release_po
             has_pin: false
         })
     );
-    assert_eq!(
-        p.verify_blob(&f.envelope, "did:key:wrong", 1).unwrap().ok,
-        false
-    );
+    assert!(!p.verify_blob(&f.envelope, "did:key:wrong", 1).unwrap().ok);
     assert!(!p.verify_blob(&f.envelope, "did:key:test", 2).unwrap().ok);
     let hold = p
         .create_hold(f.create("test-hold", ReleasePolicy::Hold))

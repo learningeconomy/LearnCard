@@ -56,6 +56,13 @@ calls; each complete body/bridge operation has a 10-second timeout.
 Connection admission occurs before TLS: 128 HTTPS / 16 health connections, each
 with a hard 60-second lifetime (including handshake and slow headers).
 
+Cross-component tests link the enclave crate as a **dev-dependency only** with its
+four fake features. `tests/parent_interop.rs` drives the production enclave parent
+codecs and relay client against this host's real services over bounded duplex
+streams and local UDP. `tests/http_interop.rs` drives this host's HTTP router into
+the real enclave actor over TCP loopback, including PIN and advanced-clock holds.
+These do not exercise real AWS pagination, TLS handshakes, or Linux vsock admission.
+
 Golden tests deserialize/reserialize shared JSON fixtures through the independent
 host types and test-only inclusion of enclave `wire::v1` (no Cargo path dependency).
 The policy wrapper's DTO is reproduced in the test harness to avoid linking enclave
@@ -198,3 +205,10 @@ RustSec currently reports the S3 SDK's transitive `lru 0.16.4` as informational
 0.18.2 is outside this Rust-1.93-compatible SDK's dependency range. No ignore is
 used. The reported exploit requires catch-unwind after a panicking key Drop;
 production uses panic=abort. Track the SDK update rather than hiding the warning.
+
+With the cross-component dev-dependency, plain `cargo audit` also scans the enclave's
+`rsa 0.9.10` and **fails** on RUSTSEC-2023-0071 (no fixed upgrade available).
+RSA is not a production host dependency. No advisory ignore was added or inherited
+from the enclave; the required host audit gate remains blocked pending an explicit
+decision on auditing this dev-only graph. A passing production-only dependency
+claim must not be substituted for the requested whole-lockfile audit result.

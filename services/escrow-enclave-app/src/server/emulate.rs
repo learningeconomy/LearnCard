@@ -14,7 +14,7 @@ use std::{
     time::SystemTime,
 };
 
-pub(super) struct Clock(pub AtomicU64);
+pub struct Clock(pub AtomicU64);
 impl TimeSource for Clock {
     fn now(&self, floor: Option<u64>) -> TimeFuture<'_, TimeEvidence> {
         Box::pin(async move {
@@ -43,9 +43,7 @@ impl TimeSource for Clock {
 
 /// Only explicit test fixtures may register enrollment; never trusts createHold.
 #[derive(Default)]
-#[cfg(test)]
-pub(super) struct Enrollments(pub std::sync::Mutex<BTreeMap<String, CurrentEnrollment>>);
-#[cfg(test)]
+pub struct Enrollments(pub std::sync::Mutex<BTreeMap<String, CurrentEnrollment>>);
 impl EnrollmentSource for Enrollments {
     fn current<'a>(&'a self, tenant: &'a str, did: &'a str) -> EnrollmentFuture<'a> {
         Box::pin(async move {

@@ -51,7 +51,7 @@ pub(super) async fn read(stream: &mut dyn Socket, token: &str) -> io::Result<Req
         Some("/v1/verify-blob") => "verifyBlob",
         Some("/v1/create-hold") => "createHold",
         Some("/v1/release") => "release",
-        Some("/v1/cancel") => "cancel",
+        Some("/v1/cancel" | "/v1/cancel-hold") => "cancel",
         Some("/v1/health") => "health",
         _ => return reject(stream, 404).await,
     };
@@ -112,7 +112,28 @@ pub(super) async fn read(stream: &mut dyn Socket, token: &str) -> io::Result<Req
     } else {
         ","
     };
-    let tagged = Zeroizing::new(format!("{{\"method\":\"{method}\"{separator}{rest}"));
+    // P4.2 HTTP callers omit operation IDs. Preserve explicit IDs and generate a
+    // fresh random ID otherwise, exactly as the host adapter does. Keep original
+    // JSON bytes for typed decoding so duplicate fields are still rejected.
+    let id = if matches!(method, "createHold" | "release" | "cancel") {
+        #[derive(serde::Deserialize)]
+        struct OperationId<'a> {
+            #[serde(rename = "requestId", borrow)]
+            request_id: Option<&'a str>,
+        }
+        let value: OperationId<'_> = serde_json::from_str(body).map_err(|_| invalid())?;
+        if value.request_id.is_none() {
+            format!(
+                ",\"requestId\":\"{}\"",
+                hex::encode(rand::random::<[u8; 16]>())
+            )
+        } else {
+            String::new()
+        }
+    } else {
+        String::new()
+    };
+    let tagged = Zeroizing::new(format!("{{\"method\":\"{method}\"{id}{separator}{rest}"));
     match serde_json::from_str(&tagged) {
         Ok(request) => Ok(request),
         Err(_) => reject(stream, 400).await,
@@ -127,8 +148,16 @@ pub(super) async fn respond(stream: &mut dyn Socket, response: Response) -> io::
         Response::Error { .. } => 403,
         _ => 200,
     };
+    let create = matches!(&response, Response::CreateHold { .. });
+    let cancel = matches!(&response, Response::Cancel { cancelled: true });
     let mut value = serde_json::to_value(response).map_err(|_| invalid())?;
     value.as_object_mut().ok_or_else(invalid)?.remove("method");
+    if create {
+        value = value.get_mut("hold").ok_or_else(invalid)?.take();
+    }
+    if cancel {
+        value = serde_json::json!({"ok":true});
+    }
     send(
         stream,
         status,

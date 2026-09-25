@@ -1,7 +1,7 @@
 //! P1.8 parent protocol: framed JSON requests, operation-specific bounded replies.
 use crate::{
     framing::{self, invalid},
-    storage::{AppendError, HeadStore, SealedStore},
+    storage::{AppendError, HeadStore, SealedStorage, SealedStore},
 };
 use aws_credential_types::provider::{ProvideCredentials, SharedCredentialsProvider};
 use base64::{Engine, engine::general_purpose::STANDARD};
@@ -15,13 +15,13 @@ use std::{
 use tokio::io::{AsyncRead, AsyncWrite, AsyncWriteExt};
 use zeroize::Zeroizing;
 
-pub struct Boot {
+pub struct Boot<S = SealedStore> {
     pub credentials: SharedCredentialsProvider,
-    pub sealed: SealedStore,
+    pub sealed: S,
     pub key_id: String,
     pub allow_first_boot: bool,
 }
-impl Boot {
+impl<S: SealedStorage> Boot<S> {
     async fn response(&self, key_id: &str) -> io::Result<Vec<u8>> {
         if key_id != self.key_id {
             return Err(invalid());
@@ -61,9 +61,9 @@ enum Request {
     Boot { key_id: String },
     PersistKey { key_id: String, sealed: String },
 }
-pub struct Services {
+pub struct Services<S = SealedStore> {
     pub store: Arc<dyn HeadStore>,
-    pub boot: Arc<Boot>,
+    pub boot: Arc<Boot<S>>,
 }
 /// Binary chain response: count first, then individually length-prefixed CBOR.
 pub async fn write_chain<S: AsyncWrite + Unpin>(
@@ -79,8 +79,8 @@ pub async fn write_chain<S: AsyncWrite + Unpin>(
     }
     stream.flush().await
 }
-impl Services {
-    pub async fn serve<S: AsyncRead + AsyncWrite + Unpin>(&self, stream: &mut S) -> io::Result<()> {
+impl<S: SealedStorage> Services<S> {
+    pub async fn serve<T: AsyncRead + AsyncWrite + Unpin>(&self, stream: &mut T) -> io::Result<()> {
         tokio::time::timeout(Duration::from_secs(10), async {
             let bytes = framing::read(stream, 32768).await?;
             let request: Request = serde_json::from_slice(&bytes).map_err(|_| invalid())?;

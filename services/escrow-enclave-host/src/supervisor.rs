@@ -132,6 +132,22 @@ impl Supervisor {
     }
 }
 
+pub async fn run(mut supervisor: Supervisor) -> io::Result<()> {
+    loop {
+        let result = supervisor.tick().await;
+        match result {
+            Ok(true) => {
+                tokio::time::sleep(supervisor.backoff()).await;
+            }
+            Ok(false) => tokio::time::sleep(Duration::from_secs(5)).await,
+            Err(_) => {
+                Event::SupervisorUnavailable.log();
+                tokio::time::sleep(supervisor.backoff()).await;
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -191,21 +207,5 @@ mod tests {
         assert_eq!(s.backoff().as_secs(), 60);
         assert!(s.tick().await.is_err());
         assert!(!s.ready.load(Ordering::Acquire));
-    }
-}
-
-pub async fn run(mut supervisor: Supervisor) -> io::Result<()> {
-    loop {
-        let result = supervisor.tick().await;
-        match result {
-            Ok(true) => {
-                tokio::time::sleep(supervisor.backoff()).await;
-            }
-            Ok(false) => tokio::time::sleep(Duration::from_secs(5)).await,
-            Err(_) => {
-                Event::SupervisorUnavailable.log();
-                tokio::time::sleep(supervisor.backoff()).await;
-            }
-        }
     }
 }

@@ -27,10 +27,13 @@ use zeroize::{Zeroize, Zeroizing};
         feature = "fake-ledger"
     )
 ))]
-mod emulate;
+pub mod emulate;
 mod http;
-#[cfg(all(target_os = "linux", feature = "nitro", feature = "kms"))]
-mod parent;
+#[cfg(any(
+    feature = "fake-ledger",
+    all(target_os = "linux", feature = "nitro", feature = "kms")
+))]
+pub mod parent;
 #[cfg(test)]
 mod tests;
 
