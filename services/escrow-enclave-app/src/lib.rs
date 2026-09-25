@@ -10,24 +10,25 @@ pub mod ledger;
 pub mod nsm;
 /// Signed hold creation, blob validation, and hold/PIN release decisions (P1.7).
 pub mod policy;
+/// Identical JSON transport over Linux vsock or local emulation TCP (P1.8).
+pub mod server;
 /// Signed Roughtime intervals and the future TimeSource abstraction (P1.5).
 pub mod time;
-/// Identical JSON transport over Linux vsock or local emulation TCP (P1.8).
-pub mod server {}
 pub mod wire;
 
 /// Requested transport; the scaffold does not bind either endpoint.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Transport {
-    Vsock { port: u32 },
-    Emulate { address: std::net::SocketAddr },
+    Vsock {
+        port: u32,
+    },
+    Emulate {
+        address: std::net::SocketAddr,
+        http_address: Option<std::net::SocketAddr>,
+    },
 }
 
 /// Log the requested transport and exit successfully without starting a server.
 pub async fn run(transport: Transport) -> std::io::Result<()> {
-    tracing::warn!(
-        ?transport,
-        "escrow enclave not yet implemented; no listener started"
-    );
-    Ok(())
+    server::run(transport).await
 }

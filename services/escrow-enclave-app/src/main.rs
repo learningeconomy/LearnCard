@@ -3,12 +3,34 @@ use std::{error::Error, io};
 
 fn parse_args(args: impl IntoIterator<Item = String>) -> io::Result<Transport> {
     let mut args = args.into_iter();
-    match (args.next().as_deref(), args.next(), args.next()) {
-        (None, None, None) => Ok(Transport::Vsock { port: 5000 }),
-        (Some("--emulate"), Some(address), None) => address
-            .parse()
-            .map(|address| Transport::Emulate { address })
-            .map_err(|error| io::Error::new(io::ErrorKind::InvalidInput, error)),
+    let invalid = || {
+        io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "usage: escrow-enclave [--emulate <ip:port> [--emulate-http <ip:port>]]",
+        )
+    };
+    match (args.next().as_deref(), args.next()) {
+        (None, None) => Ok(Transport::Vsock { port: 5000 }),
+        (Some("--emulate"), Some(address)) => {
+            let address = address.parse().map_err(|_| invalid())?;
+            let http_address = match args.next().as_deref() {
+                None => None,
+                Some("--emulate-http") => Some(
+                    args.next()
+                        .ok_or_else(invalid)?
+                        .parse()
+                        .map_err(|_| invalid())?,
+                ),
+                _ => return Err(invalid()),
+            };
+            if args.next().is_some() {
+                return Err(invalid());
+            }
+            Ok(Transport::Emulate {
+                address,
+                http_address,
+            })
+        }
         _ => Err(io::Error::new(
             io::ErrorKind::InvalidInput,
             "usage: escrow-enclave [--emulate <ip:port>]",
@@ -37,7 +59,8 @@ mod tests {
         assert_eq!(
             parse_args(["--emulate".into(), "127.0.0.1:5000".into()]).unwrap(),
             Transport::Emulate {
-                address: "127.0.0.1:5000".parse().unwrap()
+                address: "127.0.0.1:5000".parse().unwrap(),
+                http_address: None,
             }
         );
     }

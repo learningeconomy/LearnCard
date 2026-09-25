@@ -3,6 +3,99 @@
 
 use serde::{Deserialize, Serialize};
 
+/// Policy-complete transport. Original scaffold DTOs below remain for source
+/// compatibility; the server accepts exclusively this v1 protocol.
+pub mod v1 {
+    use super::*;
+    use crate::policy::SignedHoldRecord;
+
+    #[derive(Clone, Serialize, Deserialize)]
+    #[serde(
+        tag = "method",
+        rename_all = "camelCase",
+        rename_all_fields = "camelCase",
+        deny_unknown_fields
+    )]
+    pub enum Request {
+        Attest {
+            #[serde(with = "serde_bytes")]
+            nonce: Vec<u8>,
+        },
+        VerifyBlob {
+            envelope: EscrowEnvelope,
+            expected_did: String,
+            expected_share_version: u32,
+        },
+        CreateHold {
+            envelope: EscrowEnvelope,
+            hold_id: String,
+            request_id: String,
+            expected_did: String,
+            expected_share_version: u32,
+            enrollment_epoch: u64,
+            release_policy: ReleasePolicy,
+            client_ephemeral_public_key: String,
+        },
+        Release {
+            envelope: EscrowEnvelope,
+            hold: SignedHoldRecord,
+            request_id: String,
+            client_ephemeral_public_key: String,
+            expected_did: String,
+            #[serde(default, skip_serializing_if = "Option::is_none")]
+            pin_proof: Option<String>,
+        },
+        Cancel {
+            envelope: EscrowEnvelope,
+            hold: SignedHoldRecord,
+            request_id: String,
+            client_ephemeral_public_key: String,
+            expected_did: String,
+        },
+        Health,
+    }
+
+    #[derive(Debug, Serialize, Deserialize)]
+    #[serde(
+        tag = "method",
+        rename_all = "camelCase",
+        rename_all_fields = "camelCase",
+        deny_unknown_fields
+    )]
+    pub enum Response {
+        Attest {
+            mode: AttestationMode,
+            key_id: String,
+            public_key: String,
+            measurements: Measurements,
+            document: String,
+            issued_at: String,
+        },
+        VerifyBlob {
+            ok: bool,
+            has_pin: bool,
+            #[serde(default, skip_serializing_if = "Option::is_none")]
+            reason: Option<String>,
+        },
+        CreateHold {
+            hold: SignedHoldRecord,
+        },
+        Release {
+            sealed: EscrowEnvelope,
+        },
+        Cancel {
+            cancelled: bool,
+        },
+        Health {
+            ok: bool,
+        },
+        Error {
+            code: ErrorCode,
+            message: String,
+        },
+    }
+}
+
 /// Client-compatible encrypted envelope; algorithm/version checks belong to crypto.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]

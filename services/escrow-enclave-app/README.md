@@ -428,6 +428,14 @@ signatures, chain, nonce or freshness. It is not a production KMS substitute.
 
 ### KMS transport and credentials
 
+The SDK enables only `rt-tokio` and `default-https-client`, not its legacy
+`rustls` feature: hyper 1.x, rustls 0.23 and AWS-LC handle HTTPS. Certificate
+validation uses rustls-webpki with **native CA roots**, not bundled
+`webpki-roots`. Smithy loads these through `rustls-native-certs`, honoring
+`SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt` in the Dockerfile. Thus the
+Alpine CA bundle baked into the measured image remains the trust store (D11);
+local development uses the platform trust store unless explicitly overridden.
+
 `AwsKmsClient` (`kms` feature) requires explicit temporary parent STS credentials
 and a region; it never uses IMDS or an environment credential chain. Reconstruct
 the client with refreshed credentials per boot/request; never log these values.
@@ -479,18 +487,74 @@ keys are never written. Normal tests are read-only. Use the manifest's frozen
 
 ## Local development
 
-From this directory:
+From this directory (explicit host-trusted test drivers, never production):
 
 ```sh
-cargo run -- --emulate 127.0.0.1:5000
-cargo run                         # selects vsock port 5000; still only a stub
+export ESCROW_ENCLAVE_EMULATE_TOKEN=contract-test-token
+cargo run --features fake-nsm,fake-kms,fake-time,fake-ledger -- --emulate 127.0.0.1:5000 --emulate-http 127.0.0.1:8443
+```
+
+Then from `services/learn-card-network/lca-api`:
+
+```sh
+ESCROW_ENCLAVE_CONTRACT_URL=http://127.0.0.1:8443 bunx vitest run src/services/escrow-enclave/remoteEnclave.contract.test.ts
+```
+
+The contract test defaults to `contract-test-token`; set
+`ESCROW_ENCLAVE_CONTRACT_TOKEN` if you choose a different token. Runtime lca-api
+uses `ESCROW_ENCLAVE_REMOTE_URL` and `ESCROW_ENCLAVE_REMOTE_TOKEN` instead.
+Both emulator listeners require loopback addresses. HTTP is optional and requires
+a nonempty `ESCROW_ENCLAVE_EMULATE_TOKEN`; there is no default bearer credential.
+Emulation requires **all four** fake features, generates an ephemeral escrow key
+via fake KMS seal/unseal, and reports **`mode: software`**, never Nitro evidence.
+The production `--features nitro,kms` binary refuses `--emulate` before binding.
+
+The CLI emulator supports attestation and blob verification without enrollment.
+It deliberately does **not** invent enrollment ownership/currentness from a blob
+or a create-hold request. For local recovery flows, set
+`ESCROW_ENCLAVE_EMULATE_FIXTURE=/absolute/path/to/fixture.json` before launch.
+This **fake-only**, at-most-64-KiB local file is re-read for enrollment/time:
+
+```json
+{
+    "nowMs": 1700000000000,
+    "enrollments": {
+        "did:key:test": {
+            "epoch": 1,
+            "shareVersion": 1,
+            "blobHash": "<64 lowercase hex characters>"
+        }
+    }
+}
+```
+
+After encrypting a blob to the running emulator's attested key, put its
+canonical envelope hash (field order documented above) and DID/version/epoch
+in the fixture. Use atomic file replacement between operations. Omit `nowMs`
+to use advancing host wall time; move it forward by **604800000** to test the
+unchanged seven-day policy. Fake attestation timestamps always use current host
+time. Absent enrollment entries fail closed. Fixture authority is host-trusted
+test data, **never a production enrollment protocol**. Wire tests separately
+provision an in-memory fake authority/clock and exercise the same signed policy.
+
+```sh
 cargo fmt --check
 cargo clippy -- -D warnings
 cargo test
-cargo check
-cargo check --features nitro
-cargo check --features kms
+cargo clippy --features fake-ledger,fake-time,fake-kms,fake-nsm -- -D warnings
+cargo check --features nitro,kms
 ```
+
+Production startup defaults to vsock port 5000 on Linux. It supervises the KMS
+TLS byte forwarder, reads NSM measurements, constructs production Roughtime,
+fetches boot material from CID 3:5002, seals/unseals, derives the policy ledger
+key, and only then binds. Startup configuration is `ESCROW_TENANT`,
+`ESCROW_KEY_ID`, `ESCROW_KMS_REGION`, `ESCROW_KMS_KEY_ARN`. Missing sealed material
+fails closed unless the measured launch configuration explicitly permits first
+boot with `ESCROW_ALLOW_FIRST_BOOT=true`; disable it after provisioning.
+Production remains **blocked** on independently authenticated fresh enrollment
+(D14) and the existing `verified-roughtime-keys` review gate. The default Docker
+feature set cannot pass that time gate. No parent enrollment claims are trusted.
 
 Rust is pinned to 1.93.0, including rustfmt, clippy, and the Linux musl target.
 Default features are empty. `tokio-vsock` is Linux-only; emulation is intended for
@@ -514,24 +578,42 @@ NX targets (from the repository root): `bunx nx build escrow-enclave-app`,
 
 ## Wire contract
 
-`src/wire.rs` fixes JSON DTOs only; framing, request IDs, transport limits, and
-handlers are deferred to P1.8. Objects have a `method` discriminator. Operation
-names and fields are camelCase; unknown fields are rejected. This is not JSON-RPC
-2.0. For example: `{"method":"attest","nonce":[0,1,255]}`.
+The server exclusively accepts `wire::v1::{Request,Response}`. The original
+top-level scaffold DTOs are retained unchanged for additive source compatibility;
+they are **not accepted as legacy policy messages**. The v1 namespace is a Rust
+name, not an additional JSON wrapper/version field.
 
-| Method                  | Request fields (besides `method`)                                                                                           | Response fields                                                      |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| `attest`                | `nonce` (JSON byte array)                                                                                                   | `mode`, `keyId`, `publicKey`, `measurements`, `document`, `issuedAt` |
-| `createHold`            | `envelope`, `holdId`, `expectedDid`, `expectedShareVersion`, `enrollmentEpoch`, `releasePolicy`, `clientEphemeralPublicKey` | `hold` (signed record)                                               |
-| `verifyBlob`            | `envelope`, `expectedDid`, `expectedShareVersion`                                                                           | `ok`, `hasPin`, optional `reason` (on failure)                       |
-| `release`               | `envelope`, `hold`, `clientEphemeralPublicKey`, `expectedDid`, optional `pinProof`                                          | `sealed` (envelope)                                                  |
-| `health`                | none                                                                                                                        | `ok`                                                                 |
-| `error` (response only) | —                                                                                                                           | `code`, safe `message`                                               |
+On enclave vsock port **5000** (TCP `--emulate` uses identical bytes), each
+connection carries exactly one request and response, each framed as **u32
+big-endian JSON byte length followed by UTF-8 JSON**, length 1–262144 bytes.
+Length is checked before allocation. No newline delimiter, pooling, pipelining,
+retry, or JSON-RPC 2.0 IDs. Objects have a camelCase `method` discriminator;
+unknown and duplicate typed fields are rejected. Example JSON payload:
+`{"method":"attest","nonce":[0,1,255]}`. Malformed/oversized framed input closes
+only that connection; operation failures return `method: error` and sanitized
+`code`/`message`. One policy actor serializes all operations and retains its
+ledger after every error/timeout. At most **32** socket tasks across both
+listeners; an absolute ten-second deadline covers read, actor queueing, policy,
+and write. Expired queued requests are dropped without policy execution. This
+cannot undo a release already committed before the caller loses its response;
+callers must not retry releases. Async deadlines cannot preempt synchronous NSM
+or cryptographic calls. Framed emulator TCP is host-trusted and unauthenticated;
+the HTTP bearer is not protection from other local processes.
+
+| Method                  | Request fields (besides `method`)                                                                                                        | Response fields                                                      |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `attest`                | `nonce` (JSON byte array)                                                                                                                | `mode`, `keyId`, `publicKey`, `measurements`, `document`, `issuedAt` |
+| `createHold`            | `envelope`, `holdId`, `requestId`, `expectedDid`, `expectedShareVersion`, `enrollmentEpoch`, `releasePolicy`, `clientEphemeralPublicKey` | `hold` (`SignedHoldRecord` wrapper)                                  |
+| `verifyBlob`            | `envelope`, `expectedDid`, `expectedShareVersion`                                                                                        | `ok`, `hasPin`, optional `reason` (on failure)                       |
+| `release`               | `envelope`, `hold` (`SignedHoldRecord`), `requestId`, `clientEphemeralPublicKey`, `expectedDid`, optional `pinProof`                     | `sealed` (envelope)                                                  |
+| `cancel`                | `envelope`, `hold` (`SignedHoldRecord`), `requestId`, `clientEphemeralPublicKey`, `expectedDid`                                          | `cancelled` (boolean)                                                |
+| `health`                | none                                                                                                                                     | `ok`                                                                 |
+| `error` (response only) | —                                                                                                                                        | `code`, safe `message`                                               |
 
 Error codes: `policy`, `pinMismatch`, `blob`, `unavailable`, `ledger`, `time`.
 DTO deserialization is **not** signature, algorithm, range, or policy validation.
 All integers crossing JavaScript must remain within its safe-integer range;
-positive versions and input size limits must be enforced by the future handlers.
+positive versions and policy input bounds are enforced by handlers/policy.
 
 `EscrowEnvelope` mirrors the SDK: `version`, `algorithm`, `keyId`,
 `ephemeralPublicKey`, `salt`, `iv`, `ciphertext`. Binary fields are standard base64;
@@ -544,7 +626,60 @@ Client release keys and attested escrow public keys are base64 SPKI. Attestation
 `clientEphemeralPublicKey`, `createdLo`, `createdHi` (Unix milliseconds),
 `policyVersion`, and `signature` (base64). The enclave must derive blob hashes,
 time intervals and policy versions rather than accept them from the parent.
-Canonical signed bytes/signature encoding are deferred to P1.6/P1.7.
+The complete `SignedHoldRecord` is `{hold: HoldRecord, holdDurationMs, ledgerSeq}`;
+all three are mandatory, and `createHold` returns `{method:"createHold",hold:
+{hold: {...},holdDurationMs:604800000,ledgerSeq:0}}`. See Release policy above for
+the exact signed commitment. `requestId` is mandatory for mutations, bounded to
+112 ASCII identifier bytes by policy; it never enables release replay.
+
+Attestation binds escrow SPKI bytes in NSM `user_data`, caller nonce in `nonce`,
+and the distinct **65-byte uncompressed SEC1 P-256 ledger public key** in NSM
+`public_key`. Monitors must extract that key only after validating attestation,
+measurement allowlists, freshness and nonce. `issuedAt` is formatted from the
+NSM timestamp, not used to authorize release. Hardware replies use `mode:nitro`;
+fake replies use `mode:software` and a publicly known test CA.
+
+### HTTP translation (parent / optional emulator listener)
+
+`POST /v1/attest`, `/v1/verify-blob`, `/v1/create-hold`, `/v1/release`, `/v1/cancel`,
+and `/v1/health` carry the table's fields **without `method`**. The parent adds
+the discriminator when forwarding and removes it on replies. This matches P4.1
+except that release requires the complete signed hold and `requestId` (P4.2),
+never the old unsigned host record. All emulator calls require bearer auth,
+HTTP/1.1 and exactly one Content-Length. Headers are bounded to 8192 bytes and
+bodies to 256 KiB. Chunking, duplicate lengths/auth headers and Expect are refused;
+connections close after one response. Unknown paths return 404; oversized bodies
+413; missing/incorrect bearer 401. Operation error JSON is `{code,message}`:
+503 for unavailable/ledger/time, 403 for other policy errors. Successful replies
+are 200, including `{ok:false,hasPin,reason}` for identity/version mismatch.
+
+### Boot and HeadStore parent protocol (proposed P3.3 integration)
+
+CID **3**, port **5002**, one connection per operation; requests use the same
+length-prefixed bounded JSON framing. This is separate from client port 5000 and
+the established time relay 5001 / KMS byte relay 8000. P3.3 must implement:
+
+- `{"method":"boot","keyId":"..."}` → framed JSON
+  `{sealed:base64|null,accessKeyId,secretAccessKey,sessionToken}` with temporary
+  STS credentials. Ciphertext encoded length ≤24000. No secrets are logged.
+- `{"method":"persistKey","keyId":"...","sealed":"base64"}` → one byte
+  **0** only after durable create-if-absent persistence; anything else fails boot.
+  Never overwrite an existing key. Concurrent first boots must lose closed,
+  restart, and load the winner. A malicious parent acknowledgment is not proof
+  of durability; operational supervision/monitoring is still required.
+- `{"method":"getChain","chainId":"..."}` → raw **u32 BE record count**
+  (0–64), followed by count records, each **u32 BE length + raw canonical CBOR**
+  (1–8192 bytes). No JSON/base64 array; limits checked before allocation, total
+  record bytes at most 524288. The strict ledger decoder checks every record.
+- `{"method":"append","chainId":"...","record":"base64 canonical CBOR"}`
+  → one byte **0 success / 1 conflict / 2 unavailable**. Every other byte/EOF is
+  unavailable. Apply the existing HeadStore conditional transaction and audit
+  obligations above; the enclave independently reads back and authenticates.
+
+Each storage exchange is timed out at ten seconds; boot KMS and persistence at
+60 seconds. No retries or fabricated empty chains on storage failures. The
+transport must be coordinated with P3.3 before staging; hardware/parent
+interoperability is not established by the emulator tests.
 
 The envelope/verify/release field names match lca-api's escrow-enclave types,
 but `hold` intentionally replaces the **unsigned** `EscrowHoldForEnclave` with
