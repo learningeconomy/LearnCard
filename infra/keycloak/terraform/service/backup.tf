@@ -74,7 +74,11 @@ resource "aws_iam_role_policy" "backup" {
         Resource = [aws_backup_vault.keycloak[0].arn, aws_backup_vault.copy[0].arn]
       },
       {
-        Effect   = "Allow", Action = ["kms:DescribeKey", "kms:Decrypt", "kms:GenerateDataKey*", "kms:ReEncrypt*"],
+        Effect    = "Allow", Action = ["kms:DescribeKey"], Resource = "arn:${local.partition}:kms:*:${local.account_id}:key/*",
+        Condition = { "ForAnyValue:StringEquals" = { "kms:ResourceAliases" = ["alias/aws/rds", "alias/aws/backup"] } }
+      },
+      {
+        Effect   = "Allow", Action = ["kms:Decrypt", "kms:GenerateDataKey*", "kms:ReEncrypt*"],
         Resource = "arn:${local.partition}:kms:*:${local.account_id}:key/*",
         Condition = {
           "ForAnyValue:StringEquals" = { "kms:ResourceAliases" = ["alias/aws/rds", "alias/aws/backup"] },

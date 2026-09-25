@@ -96,7 +96,7 @@ data "aws_iam_policy_document" "deploy_observability" {
   }
   statement {
     sid       = "BackupVaultManagedKey"
-    actions   = ["kms:DescribeKey", "kms:GenerateDataKey", "kms:Decrypt"]
+    actions   = ["kms:GenerateDataKey", "kms:Decrypt"]
     resources = ["arn:${local.partition}:kms:*:${local.account_id}:key/*"]
     condition {
       test     = "ForAnyValue:StringEquals"
@@ -107,6 +107,16 @@ data "aws_iam_policy_document" "deploy_observability" {
       test     = "StringLike"
       variable = "kms:ViaService"
       values   = ["backup.*.amazonaws.com"]
+    }
+  }
+  statement {
+    sid       = "DescribeBackupVaultKey"
+    actions   = ["kms:DescribeKey"]
+    resources = ["arn:${local.partition}:kms:*:${local.account_id}:key/*"]
+    condition {
+      test     = "ForAnyValue:StringEquals"
+      variable = "kms:ResourceAliases"
+      values   = ["alias/aws/backup"]
     }
   }
   statement {
@@ -209,7 +219,7 @@ data "aws_iam_policy_document" "observability_workload_boundary" {
   }
   statement {
     sid       = "BackupManagedKeyUse"
-    actions   = ["kms:DescribeKey", "kms:Decrypt", "kms:GenerateDataKey*", "kms:ReEncrypt*"]
+    actions   = ["kms:Decrypt", "kms:GenerateDataKey*", "kms:ReEncrypt*"]
     resources = ["arn:${local.partition}:kms:*:${local.account_id}:key/*"]
     condition {
       test     = "ArnEquals"
@@ -225,6 +235,21 @@ data "aws_iam_policy_document" "observability_workload_boundary" {
       test     = "StringLike"
       variable = "kms:ViaService"
       values   = ["rds.*.amazonaws.com", "backup.*.amazonaws.com"]
+    }
+  }
+  statement {
+    sid       = "BackupDescribeManagedKeys"
+    actions   = ["kms:DescribeKey"]
+    resources = ["arn:${local.partition}:kms:*:${local.account_id}:key/*"]
+    condition {
+      test     = "ArnEquals"
+      variable = "aws:PrincipalArn"
+      values   = ["${local.iam_prefix}:role/${local.name}-backup"]
+    }
+    condition {
+      test     = "ForAnyValue:StringEquals"
+      variable = "kms:ResourceAliases"
+      values   = ["alias/aws/rds", "alias/aws/backup"]
     }
   }
   statement {
