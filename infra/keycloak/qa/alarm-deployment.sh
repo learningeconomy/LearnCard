@@ -57,7 +57,9 @@ INPUT=$(jq --arg image "${INVALID_IMAGE}" '
   del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities,
       .registeredAt, .registeredBy, .deregisteredAt)' <<< "${DEFINITION}")
 printf 'Recovery revision: %s\n' "${ORIGINAL}"
-NEW_ARN=$(aws ecs register-task-definition --cli-input-json "${INPUT}" --query taskDefinition.taskDefinitionArn --output text)
+NEW_ARN=$(aws ecs register-task-definition --cli-input-json "${INPUT}" \
+  --tags key=Project,value=learncard-keycloak key=Environment,value=staging key=ManagedBy,value=qa-drill \
+  --query taskDefinition.taskDefinitionArn --output text)
 [[ "${NEW_ARN}" == arn:*:ecs:*:*:task-definition/*:* ]] || { echo 'ERROR: registration did not return an ARN; inspect task definitions manually.' >&2; NEW_ARN=""; exit 1; }
 printf 'Drill revision: %s\n' "${NEW_ARN}"
 RESTORE_SERVICE=true

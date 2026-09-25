@@ -41,7 +41,8 @@ aws cloudwatch put-metric-alarm --alarm-name "${ALARM}" \
   --namespace "${P}/QA" --metric-name BackupDeliveryDrill \
   --statistic Sum --period 60 --evaluation-periods 1 --threshold 0 \
   --comparison-operator GreaterThanThreshold --treat-missing-data notBreaching \
-  --actions-enabled --alarm-actions "${WARNING_SNS_TOPIC_ARN}"
+  --actions-enabled --alarm-actions "${WARNING_SNS_TOPIC_ARN}" \
+  --tags Key=Project,Value=learncard-keycloak Key=Environment,Value=staging Key=ManagedBy,Value=qa-drill
 aws cloudwatch set-alarm-state --alarm-name "${ALARM}" --state-value ALARM \
   --state-reason 'A3 delivery-only drill; no backup job was failed'
 printf '%s\n' 'Verify the notification at the warning SNS destination. This is NOT a Backup or EventBridge end-to-end test.'
