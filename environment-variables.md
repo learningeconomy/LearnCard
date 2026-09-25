@@ -232,29 +232,29 @@ already supplies its Redis endpoint.
 
 Configure each matching pair of GitHub environments independently:
 
-| Stage | Brain environment | LearnCloud environment |
-| --- | --- | --- |
-| LearnCard staging | `learn-cloud-network-api-staging` | `learn-cloud-storage-api-staging` |
+| Stage                | Brain environment                    | LearnCloud environment               |
+| -------------------- | ------------------------------------ | ------------------------------------ |
+| LearnCard staging    | `learn-cloud-network-api-staging`    | `learn-cloud-storage-api-staging`    |
 | LearnCard production | `learn-cloud-network-api-production` | `learn-cloud-storage-api-production` |
-| ScoutPass staging | `scout-network-api-staging` | `scout-storage-api-staging` |
-| ScoutPass production | `scout-network-api-production` | `scout-storage-api-production` |
+| ScoutPass staging    | `scout-network-api-staging`          | `scout-storage-api-staging`          |
+| ScoutPass production | `scout-network-api-production`       | `scout-storage-api-production`       |
 
 In the Brain environment, add:
 
-| Variable | Value |
-| --- | --- |
-| `SHARE_LINK_MAINTENANCE_NAMESPACE` | A stable namespace, e.g. `learncard` (or `scouts` for ScoutPass) |
-| `SHARE_LINK_MAINTENANCE_ORIGIN` | That stage's HTTPS LearnCloud origin, e.g. `https://<cloud-host>`; no `/trpc` path |
-| `SHARE_LINK_MAINTENANCE_AUDIENCE` | `did:web:<cloud-host>` |
+| Variable                           | Value                                                                              |
+| ---------------------------------- | ---------------------------------------------------------------------------------- |
+| `SHARE_LINK_MAINTENANCE_NAMESPACE` | A stable namespace, e.g. `learncard` (or `scouts` for ScoutPass)                   |
+| `SHARE_LINK_MAINTENANCE_ORIGIN`    | That stage's HTTPS LearnCloud origin, e.g. `https://<cloud-host>`; no `/trpc` path |
+| `SHARE_LINK_MAINTENANCE_AUDIENCE`  | `did:web:<cloud-host>`                                                             |
 
 In the matching LearnCloud environment, add:
 
-| Variable | Value |
-| --- | --- |
-| `SHARE_CONTENT_AUDIENCE` | Same value as Brain's audience |
-| `SHARE_CONTENT_SERVICE_DIDS` | `did:web:<brain-host>` (the deployed Brain service identity) |
+| Variable                             | Value                                                                                                                    |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| `SHARE_CONTENT_AUDIENCE`             | Same value as Brain's audience                                                                                           |
+| `SHARE_CONTENT_SERVICE_DIDS`         | `did:web:<brain-host>` (the deployed Brain service identity)                                                             |
 | `SHARE_CONTENT_VERIFICATION_METHODS` | The exact signing method from Brain's `https://<brain-host>/.well-known/did.json`, normally `did:web:<brain-host>#owner` |
-| `SHARE_CONTENT_NAMESPACE_BINDINGS` | JSON mapping that Brain DID to its namespace, e.g. `{"did:web:<brain-host>":["learncard"]}` |
+| `SHARE_CONTENT_NAMESPACE_BINDINGS`   | JSON mapping that Brain DID to its namespace, e.g. `{"did:web:<brain-host>":["learncard"]}`                              |
 
 Replace the host placeholders with the deployed domains; do not paste placeholders
 or local identities into GitHub. Store the JSON as raw JSON without surrounding
