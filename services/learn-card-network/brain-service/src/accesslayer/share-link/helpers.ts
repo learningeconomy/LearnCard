@@ -113,6 +113,8 @@ export const toShareLinkRecord = (props: Record<string, unknown>): ShareLinkReco
     stoppedAt: asNullableString(props.stoppedAt),
     viewCount: asNumber(props.viewCount, 0),
     lastViewedAt: asNullableString(props.lastViewedAt),
+    passcodeHash: asNullableString(props.passcodeHash),
+    notifyOnView: asBoolean(props.notifyOnView, false),
     minorPolicyIsMinor: asNullableBoolean(props.minorPolicyIsMinor),
     minorPolicyResolved: asBoolean(props.minorPolicyResolved, false),
     minorPolicyDefaultExpiryDays: asNumber(props.minorPolicyDefaultExpiryDays, 30),
@@ -143,6 +145,8 @@ export const toShareLinkReservationRecord = (
     note: asNullableString(props.note),
     expiresAt: asNullableString(props.expiresAt),
     selectedCount: asNumber(props.selectedCount, 1),
+    passcodeHash: asNullableString(props.passcodeHash),
+    notifyOnView: asBoolean(props.notifyOnView, false),
     policy: {
         isMinor: asNullableBoolean(props.policyIsMinor),
         policyResolved: asBoolean(props.policyResolved, false),

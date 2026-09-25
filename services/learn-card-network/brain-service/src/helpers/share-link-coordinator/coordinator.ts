@@ -18,6 +18,7 @@ import {
     resolveShareLinkExpiry,
 } from '@helpers/share-link-policy/resolver';
 import type { ShareLinkPolicyResolver } from '@helpers/share-link-policy/types';
+import { hashSharePasscode } from '@helpers/share-link-passcode';
 
 import { isShareLinkRepositoryError } from '../../accesslayer/share-link/errors';
 import type { ShareLinkReservationRecord } from '../../accesslayer/share-link';
@@ -316,6 +317,7 @@ export const createShareLinkCoordinator = (
             );
             const policy = await policyResolver.resolve(owner.ownerProfileId);
             const effectiveExpiresAt = resolveShareLinkExpiry(policy, value.expiresAt, now());
+            const passcodeHash = value.passcode ? await hashSharePasscode(value.passcode) : null;
 
             let reserved;
 
@@ -329,6 +331,10 @@ export const createShareLinkCoordinator = (
                     note: value.note ?? null,
                     expiresAt: effectiveExpiresAt,
                     selectedCount: value.selectedCount,
+                    passcodeHash,
+                    // Notification consent cannot override the same trusted
+                    // policy that disables view counting for minors/unknown age.
+                    notifyOnView: value.notifyOnView && policy.viewCountingEnabled,
                     content,
                     requestHash,
                     policy,

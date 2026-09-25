@@ -339,8 +339,8 @@ export type LearnCardNetworkPluginMethods = {
      * guarded ciphertext envelope plus a uniformly shaped opaque receipt;
      * `acknowledgeShareLinkView` always resolves to `{ ok: true }`.
      */
-    resolveShareLink: (id: string) => Promise<ShareLinkPublicState>;
-    getShareLinkContent: (id: string) => Promise<ShareLinkPublicContentView>;
+    resolveShareLink: (id: string, passcode?: string) => Promise<ShareLinkPublicState>;
+    getShareLinkContent: (id: string, passcode?: string) => Promise<ShareLinkPublicContentView>;
     acknowledgeShareLinkView: (receipt: string) => Promise<AcknowledgeViewOutput>;
 
     blockProfile: (profileId: string) => Promise<boolean>;

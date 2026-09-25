@@ -14,6 +14,8 @@ import {
     closeOutline,
     copyOutline,
     downloadOutline,
+    lockClosedOutline,
+    notificationsOutline,
 } from 'ionicons/icons';
 import type { ShareLink, ShareRecoveryPlaintext, VC } from '@learncard/types';
 import { QRCodeSVG } from 'qrcode.react';
@@ -138,6 +140,9 @@ export const ShareLinkCreate = ({
     const [link, setLink] = useState('');
     const [expiresAt, setExpiresAt] = useState<string | null>(null);
     const [expiryChoice, setExpiryChoice] = useState<ExpiryChoice>(DEFAULT_EXPIRY_CHOICE);
+    const [passcodeEnabled, setPasscodeEnabled] = useState(false);
+    const [passcode, setPasscode] = useState('');
+    const [notifyOnView, setNotifyOnView] = useState(false);
     const [copied, setCopied] = useState(false);
     const [publicationStarted, setPublicationStarted] = useState(false);
     const prepared = useRef<PreparedShare | PreparedShareUpdate>();
@@ -298,7 +303,17 @@ export const ShareLinkCreate = ({
                       title,
                       note
                   )
-                : await prepareShare(wallet, selected, title, note, resolveExpiryIso(expiryChoice));
+                : await prepareShare(
+                      wallet,
+                      selected,
+                      title,
+                      note,
+                      resolveExpiryIso(expiryChoice),
+                      {
+                          ...(passcodeEnabled ? { passcode } : {}),
+                          notifyOnView,
+                      }
+                  );
             if (!alive.current) return;
             setStep('preview');
         } catch (cause) {
@@ -875,6 +890,79 @@ export const ShareLinkCreate = ({
                             <p className="text-xs text-grayscale-600 leading-relaxed">
                                 {m['shareLinks.privacyHint']()}
                             </p>
+                            {!editShare && (
+                                <section className="rounded-[20px] border border-grayscale-200 p-5 space-y-4">
+                                    <div className="flex gap-3">
+                                        <IonIcon
+                                            icon={lockClosedOutline}
+                                            className="mt-0.5 text-grayscale-600 shrink-0"
+                                        />
+                                        <label className="flex-1 cursor-pointer">
+                                            <span className="flex items-center justify-between gap-4">
+                                                <span className="text-sm font-medium text-grayscale-900">
+                                                    {m['shareLinks.passcodeTitle']()}
+                                                </span>
+                                                <input
+                                                    type="checkbox"
+                                                    className="h-5 w-5 accent-emerald-600"
+                                                    checked={passcodeEnabled}
+                                                    disabled={fieldsLocked}
+                                                    onChange={event => {
+                                                        setPasscodeEnabled(event.target.checked);
+                                                    }}
+                                                />
+                                            </span>
+                                            <span className="block mt-1 text-xs text-grayscale-600 leading-relaxed">
+                                                {m['shareLinks.passcodeHint']()}
+                                            </span>
+                                        </label>
+                                    </div>
+                                    {passcodeEnabled && (
+                                        <label className="block text-xs font-medium text-grayscale-700">
+                                            {m['shareLinks.passcodeLabel']()}
+                                            <input
+                                                type="password"
+                                                minLength={4}
+                                                maxLength={64}
+                                                autoComplete="new-password"
+                                                disabled={fieldsLocked}
+                                                className={`${inputClass} mt-2`}
+                                                value={passcode}
+                                                onChange={event => setPasscode(event.target.value)}
+                                                placeholder={m['shareLinks.passcodePlaceholder']()}
+                                            />
+                                            <span className="block mt-1.5 text-xs font-normal text-grayscale-500">
+                                                {m['shareLinks.passcodeShareHint']()}
+                                            </span>
+                                        </label>
+                                    )}
+                                    <div className="border-t border-grayscale-100 pt-4 flex gap-3">
+                                        <IonIcon
+                                            icon={notificationsOutline}
+                                            className="mt-0.5 text-grayscale-600 shrink-0"
+                                        />
+                                        <label className="flex-1 cursor-pointer">
+                                            <span className="flex items-center justify-between gap-4">
+                                                <span className="text-sm font-medium text-grayscale-900">
+                                                    {m['shareLinks.viewNotificationsTitle']()}
+                                                </span>
+                                                <input
+                                                    type="checkbox"
+                                                    className="h-5 w-5 accent-emerald-600"
+                                                    checked={notifyOnView}
+                                                    disabled={fieldsLocked}
+                                                    onChange={event =>
+                                                        setNotifyOnView(event.target.checked)
+                                                    }
+                                                />
+                                            </span>
+                                            <span className="block mt-1 text-xs text-grayscale-600 leading-relaxed">
+                                                {m['shareLinks.viewNotificationsHint']()}
+                                            </span>
+                                        </label>
+                                    </div>
+                                </section>
+                            )}
                             {pending && (
                                 <p
                                     role="status"
@@ -1052,8 +1140,31 @@ export const ShareLinkCreate = ({
                     {step === 'preview' && (
                         <button
                             className={primary}
-                            disabled={loading || !prepared.current}
-                            onClick={() => void publish()}
+                            disabled={
+                                loading ||
+                                !prepared.current ||
+                                (passcodeEnabled && passcode.length < 4)
+                            }
+                            onClick={() => {
+                                if (
+                                    !editShare &&
+                                    prepared.current &&
+                                    (passcodeEnabled || notifyOnView)
+                                ) {
+                                    const draft = prepared.current as PreparedShare;
+                                    const { passcode: _oldPasscode, ...withoutPasscode } =
+                                        draft.input;
+                                    prepared.current = {
+                                        ...draft,
+                                        input: {
+                                            ...withoutPasscode,
+                                            ...(passcodeEnabled ? { passcode } : {}),
+                                            notifyOnView,
+                                        },
+                                    };
+                                }
+                                void publish();
+                            }}
                         >
                             {loading ? (
                                 <Busy>

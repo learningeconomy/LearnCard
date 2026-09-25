@@ -68,9 +68,11 @@ export interface ShareWallet {
         retryShareLinkOperation(
             input: ShareLinkOperationKeyInput
         ): Promise<ShareLinkOwnerStatusOutput>;
-        resolveShareLink(id: string): Promise<ShareLinkPublicState>;
-        getShareLinkContent(id: string): Promise<ShareLinkPublicContentView>;
+        resolveShareLink(id: string, passcode?: string): Promise<ShareLinkPublicState>;
+        getShareLinkContent(id: string, passcode?: string): Promise<ShareLinkPublicContentView>;
         acknowledgeShareLinkView(receipt: string): Promise<{ ok: true }>;
+        sendPresentation(profileId: string, vp: VP, encrypt?: boolean): Promise<string>;
+        acceptPresentation(uri: string): Promise<boolean>;
         verifyPresentation(vp: VP, options: { proofPurpose: string }): Promise<VerificationCheck>;
         verifyCredential(vc: VC): Promise<VerificationCheck>;
     };
@@ -299,7 +301,8 @@ export const prepareShare = async (
     refs: string[],
     title: string,
     note: string,
-    expiresAt?: string | null
+    expiresAt?: string | null,
+    options: { passcode?: string; notifyOnView?: boolean } = {}
 ): Promise<PreparedShare> => {
     const profile = await wallet.invoke.getProfile();
     if (!profile) throw new Error('profile');
@@ -320,6 +323,8 @@ export const prepareShare = async (
         title: title.trim(),
         ...(note.trim() ? { note: note.trim() } : {}),
         ...(expiresAt !== undefined ? { expiresAt } : {}),
+        ...(options.passcode ? { passcode: options.passcode } : {}),
+        notifyOnView: options.notifyOnView ?? false,
         selectedCount: refs.length,
         contentVersion: 1,
         envelope: revision.envelope,

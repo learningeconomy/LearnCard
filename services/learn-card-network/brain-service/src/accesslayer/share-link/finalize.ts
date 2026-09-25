@@ -195,6 +195,8 @@ export const finalizeReservation = async (
                         note: reservation.note,
                         expiresAt: reservation.expiresAt,
                         selectedCount: reservation.selectedCount,
+                        passcodeHash: reservation.passcodeHash,
+                        notifyOnView: reservation.notifyOnView,
                         minorPolicyIsMinor: effectivePolicy.isMinor,
                         minorPolicyResolved: effectivePolicy.policyResolved,
                         minorPolicyDefaultExpiryDays: effectivePolicy.defaultExpiryDays,

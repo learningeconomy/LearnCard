@@ -1190,10 +1190,12 @@ export async function getLearnCardNetworkPlugin(
 
             // Anonymous public methods: deliberately NO `ensureUser()`. A viewer
             // has no account and must not need one.
-            resolveShareLink: async (_learnCard, id) =>
-                client.publicShareLinks.resolve.query({ id }),
-            getShareLinkContent: async (_learnCard, id) =>
-                client.publicShareLinks.content.query({ id }),
+            // POST keeps an optional passcode in the request body and out of URLs,
+            // access logs, browser history and referrers.
+            resolveShareLink: async (_learnCard, id, passcode) =>
+                client.publicShareLinks.resolve.mutate({ id, passcode }),
+            getShareLinkContent: async (_learnCard, id, passcode) =>
+                client.publicShareLinks.content.mutate({ id, passcode }),
             acknowledgeShareLinkView: async (_learnCard, receipt) =>
                 client.publicShareLinks.acknowledgeView.mutate({ receipt }),
 

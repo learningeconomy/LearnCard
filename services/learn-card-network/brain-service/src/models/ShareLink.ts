@@ -56,6 +56,9 @@ export type ShareLinkRecord = {
     stoppedAt: string | null;
     viewCount: number;
     lastViewedAt: string | null;
+    /** Argon2id PHC string. Plaintext passcodes are never persisted. */
+    passcodeHash?: string | null;
+    notifyOnView?: boolean;
     minorPolicyIsMinor: boolean | null;
     minorPolicyResolved: boolean;
     minorPolicyDefaultExpiryDays: number;
@@ -108,6 +111,8 @@ export const ShareLink = ModelFactory<ShareLinkProperties, Record<string, never>
             stoppedAt: { type: 'string', required: false },
             viewCount: { type: 'number', required: true },
             lastViewedAt: { type: 'string', required: false },
+            passcodeHash: { type: 'string', required: false },
+            notifyOnView: { type: 'boolean', required: true },
             minorPolicyIsMinor: { type: 'boolean', required: false },
             minorPolicyResolved: { type: 'boolean', required: true },
             minorPolicyDefaultExpiryDays: { type: 'number', required: true },

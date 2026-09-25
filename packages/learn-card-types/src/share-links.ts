@@ -599,6 +599,8 @@ export const ShareLinkValidator = z.object({
     stoppedAt: z.iso.datetime().nullable(),
     lastViewedAt: z.iso.datetime().nullable(),
     viewCount: z.number().int().min(0).optional(),
+    passcodeProtected: z.boolean(),
+    notifyOnView: z.boolean(),
     minorPolicy: z.object({
         isMinor: z.boolean().nullable(),
         policyResolved: z.boolean(),
@@ -623,6 +625,8 @@ export const CreateShareLinkInputValidator = z
         title: z.string().min(1).max(120),
         note: z.string().max(500).optional(),
         expiresAt: z.iso.datetime().nullable().optional(),
+        passcode: z.string().min(4).max(64).optional(),
+        notifyOnView: z.boolean().default(false),
         selectedCount: z.number().int().min(1).max(MAX_SELECTED_CREDENTIALS),
         contentVersion: z.literal(1),
         envelope: ShareEnvelopeValidator,
@@ -725,11 +729,23 @@ export const ShareLinkOwnerRecoveryOutputValidator = z
     .strict();
 export type ShareLinkOwnerRecoveryOutput = z.infer<typeof ShareLinkOwnerRecoveryOutputValidator>;
 
-export const ResolveShareLinkInputValidator = z.object({ id: ShareLinkIdValidator }).strict();
+export const ResolveShareLinkInputValidator = z
+    .object({
+        id: ShareLinkIdValidator,
+        /** Sent only in a POST body; it must never be placed in a share URL. */
+        passcode: z.string().min(4).max(64).optional(),
+    })
+    .strict();
 export type ResolveShareLinkInput = z.infer<typeof ResolveShareLinkInputValidator>;
 
 /** Public state. No `isMinor`, `policyResolved`, thresholds or count policy. */
 export const ShareLinkPublicStateValidator = z.discriminatedUnion('state', [
+    z
+        .object({
+            state: z.literal('passcode_required'),
+            id: ShareLinkIdValidator,
+        })
+        .strict(),
     z
         .object({
             state: z.literal('active'),

@@ -9076,6 +9076,24 @@
         "updated": "Votre lien est à jour",
         "updating": "Mise à jour de votre lien…",
         "update": "Mettre à jour le lien privé",
-        "manage": "Partagés"
+        "manage": "Partagés",
+        "passcodeTitle": "Exiger un code d’accès",
+        "passcodeHint": "Les destinataires le saisissent avant d’ouvrir les justificatifs. Il n’est jamais inclus dans le lien.",
+        "passcodeLabel": "Code d’accès",
+        "passcodePlaceholder": "Au moins 4 caractères",
+        "passcodeShareHint": "Envoyez-le séparément aux personnes de confiance.",
+        "passcodeRequired": "Saisissez le code d’accès",
+        "passcodeRequiredHint": "L’expéditeur a protégé ces justificatifs avec un code d’accès.",
+        "passcodeIncorrect": "Ce code ne fonctionne pas. Vérifiez-le et réessayez.",
+        "unlock": "Ouvrir les justificatifs",
+        "unlocking": "Ouverture…",
+        "viewNotificationsTitle": "M’avertir lors de la consultation",
+        "viewNotificationsHint": "Recevez une notification privée avec le nombre et l’heure. Désactivé par défaut.",
+        "saveToLearnCard": "Enregistrer dans LearnCard",
+        "savingToLearnCard": "Enregistrement…",
+        "savedToLearnCard": "Enregistré dans LearnCard",
+        "saveError": "Impossible d’enregistrer ces justificatifs. Réessayez.",
+        "signInToSave": "Se connecter pour enregistrer",
+        "saveHint": "Conservez cette collection signée dans vos éléments reçus."
     }
 }

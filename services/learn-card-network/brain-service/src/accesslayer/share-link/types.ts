@@ -76,6 +76,8 @@ export type ShareLinkReservationRecord = {
     note: string | null;
     expiresAt: string | null;
     selectedCount: number;
+    passcodeHash: string | null;
+    notifyOnView: boolean;
     /**
      * Coherent policy snapshot derived server-side at reservation time and
      * applied to the share at finalize under the same lock. Re-derived on every
@@ -128,6 +130,8 @@ export type ReserveCreateInput = {
     note?: string | null;
     expiresAt?: string | null;
     selectedCount: number;
+    passcodeHash?: string | null;
+    notifyOnView?: boolean;
     content: ShareContentBinding;
     /** Canonical hash of the full validated create request. */
     requestHash: string;

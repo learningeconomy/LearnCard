@@ -20,8 +20,12 @@ const mocks = vi.hoisted(() => ({
             acknowledgeShareLinkView: vi.fn(),
             verifyPresentation: vi.fn(),
             verifyCredential: vi.fn(),
+            getProfile: vi.fn(),
+            sendPresentation: vi.fn(),
+            acceptPresentation: vi.fn(),
         },
     },
+    auth: { loggedIn: false },
     anonymousWallet: vi.fn(),
     prepare: vi.fn(),
     prepareUpdate: vi.fn(),
@@ -32,6 +36,7 @@ const mocks = vi.hoisted(() => ({
     intersect: undefined as undefined | ((entries: { isIntersecting: boolean }[]) => void),
 }));
 vi.mock('learn-card-base', () => ({
+    useIsLoggedIn: () => mocks.auth.loggedIn,
     useWallet: () => ({ initWallet: async () => mocks.wallet }),
     ModalTypes: { FullScreen: 'fullscreen' },
     useModal: () => ({ newModal: vi.fn(), closeModal: vi.fn() }),
@@ -45,7 +50,11 @@ vi.mock('../../config/bootstrapTenantConfig', () => ({
 }));
 vi.mock('react-router-dom', () => ({
     useParams: () => ({ id: 'AAAAAAAAAAAAAAAAAAAAAA' }),
-    useLocation: () => ({ hash: window.location.hash }),
+    useLocation: () => ({
+        pathname: window.location.pathname,
+        search: window.location.search,
+        hash: window.location.hash,
+    }),
 }));
 vi.mock('@ionic/react', () => ({
     IonIcon: () => null,
@@ -86,6 +95,8 @@ const credential = { name: 'Community leadership', issuer: { name: 'Learning Col
 beforeEach(() => {
     vi.clearAllMocks();
     mocks.appBaseUrl = 'https://tenant.example';
+    mocks.auth.loggedIn = false;
+    sessionStorage.clear();
     mocks.wallet.id.did.mockReturnValue('owner');
     mocks.anonymousWallet.mockResolvedValue(mocks.wallet);
     window.history.replaceState(
@@ -169,6 +180,9 @@ beforeEach(() => {
         warnings: [],
         errors: [],
     });
+    mocks.wallet.invoke.getProfile.mockResolvedValue({ profileId: 'recipient-1' });
+    mocks.wallet.invoke.sendPresentation.mockResolvedValue('lc:network:presentation:one');
+    mocks.wallet.invoke.acceptPresentation.mockResolvedValue(true);
     vi.mocked(Clipboard.write).mockResolvedValue(undefined);
     mocks.decrypt.mockResolvedValue({});
     mocks.validate.mockReturnValue({
@@ -266,6 +280,25 @@ describe('create screen', () => {
         expect(qr.querySelectorAll('path')[1].getAttribute('d')).toBe(
             expected.container.querySelectorAll('path')[1].getAttribute('d')
         );
+    });
+    it('keeps passcode and view notifications off until the owner opts in on review', async () => {
+        await chooseAndPreview();
+        expect(screen.getByRole('checkbox', { name: /Require a passcode/ })).not.toBeChecked();
+        expect(screen.getByRole('checkbox', { name: /Notify me when viewed/ })).not.toBeChecked();
+
+        fireEvent.click(screen.getByRole('checkbox', { name: /Require a passcode/ }));
+        fireEvent.change(screen.getByPlaceholderText('At least 4 characters'), {
+            target: { value: '2468' },
+        });
+        fireEvent.click(screen.getByRole('checkbox', { name: /Notify me when viewed/ }));
+        fireEvent.click(screen.getByRole('button', { name: 'Create private link' }));
+
+        await screen.findByText('Your link is ready');
+        expect(mocks.wallet.invoke.createShareLink).toHaveBeenCalledWith(
+            expect.objectContaining({ passcode: '2468', notifyOnView: true })
+        );
+        const published = mocks.wallet.invoke.createShareLink.mock.calls[0][0];
+        expect(JSON.stringify(published)).not.toContain('#2468');
     });
     it('reuses encrypted input after a lost response', async () => {
         mocks.wallet.invoke.createShareLink.mockRejectedValueOnce(new Error('lost response'));
@@ -436,6 +469,89 @@ describe('create screen', () => {
     });
 });
 describe('recipient screen', () => {
+    it('prompts for a protected share and sends the passcode only when unlocking', async () => {
+        mocks.wallet.invoke.resolveShareLink.mockImplementation(
+            async (_id: string, passcode?: string) =>
+                passcode === '2468'
+                    ? {
+                          state: 'active',
+                          contentVersion: 1,
+                          selectedCount: 1,
+                          title: 'Learning highlights',
+                          sharer: { displayName: 'Alex' },
+                          expiresAt: null,
+                      }
+                    : { state: 'passcode_required' }
+        );
+        render(<ShareLinkViewer />);
+
+        await screen.findByText('Enter the passcode');
+        expect(mocks.wallet.invoke.getShareLinkContent).not.toHaveBeenCalled();
+        fireEvent.change(screen.getByLabelText('Passcode'), { target: { value: '2468' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Open credentials' }));
+
+        await screen.findByText('Community leadership');
+        expect(mocks.wallet.invoke.resolveShareLink).toHaveBeenLastCalledWith(
+            'AAAAAAAAAAAAAAAAAAAAAA',
+            '2468'
+        );
+        expect(mocks.wallet.invoke.getShareLinkContent).toHaveBeenCalledWith(
+            'AAAAAAAAAAAAAAAAAAAAAA',
+            '2468'
+        );
+        expect(window.location.href).not.toContain('2468');
+    });
+
+    it('saves the signed presentation through send and accept for a logged-in recipient', async () => {
+        mocks.auth.loggedIn = true;
+        render(<ShareLinkViewer />);
+        await screen.findByText('Community leadership');
+
+        fireEvent.click(screen.getByRole('button', { name: 'Save to LearnCard' }));
+
+        await screen.findByRole('button', { name: 'Saved to LearnCard' });
+        expect(mocks.wallet.invoke.sendPresentation).toHaveBeenCalledWith(
+            'recipient-1',
+            expect.objectContaining({ verifiableCredential: [credential] }),
+            true
+        );
+        expect(mocks.wallet.invoke.acceptPresentation).toHaveBeenCalledWith(
+            'lc:network:presentation:one'
+        );
+    });
+
+    it('preserves the complete share through sign-in when the recipient is logged out', async () => {
+        render(<ShareLinkViewer />);
+        await screen.findByText('Community leadership');
+
+        const link = screen.getByRole('link', { name: 'Sign in to save' });
+        expect(link.getAttribute('href')).toContain('/login?redirectTo=');
+        expect(decodeURIComponent(link.getAttribute('href') ?? '')).toContain(
+            `/s/AAAAAAAAAAAAAAAAAAAAAA#${'A'.repeat(43)}`
+        );
+        link.addEventListener('click', event => event.preventDefault(), { once: true });
+        fireEvent.click(link);
+        expect(sessionStorage.getItem('learncard:share-link:save-after-sign-in')).toBe(
+            'AAAAAAAAAAAAAAAAAAAAAA'
+        );
+    });
+
+    it('completes a pending save automatically after sign-in returns to the share', async () => {
+        sessionStorage.setItem('learncard:share-link:save-after-sign-in', 'AAAAAAAAAAAAAAAAAAAAAA');
+        mocks.auth.loggedIn = true;
+        render(<ShareLinkViewer />);
+
+        await screen.findByRole('button', { name: 'Saved to LearnCard' });
+        expect(mocks.wallet.invoke.sendPresentation).toHaveBeenCalledWith(
+            'recipient-1',
+            expect.objectContaining({ verifiableCredential: [credential] }),
+            true
+        );
+        expect(mocks.wallet.invoke.acceptPresentation).toHaveBeenCalledWith(
+            'lc:network:presentation:one'
+        );
+        expect(sessionStorage.getItem('learncard:share-link:save-after-sign-in')).toBeNull();
+    });
     it('does not request content without a key', async () => {
         window.history.replaceState(null, '', '/s/AAAAAAAAAAAAAAAAAAAAAA');
         render(<ShareLinkViewer />);

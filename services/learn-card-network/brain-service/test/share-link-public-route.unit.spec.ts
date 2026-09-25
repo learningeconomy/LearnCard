@@ -132,7 +132,10 @@ const makeDependencies = (
         policyResolver?: ShareLinkPolicyResolver;
         persist?: PublicShareLinkRouterDependencies['receipts']['persist'];
         lookupOwner?: PublicShareLinkRouterDependencies['receipts']['lookupOwner'];
+        lookupContext?: NonNullable<PublicShareLinkRouterDependencies['receipts']['lookupContext']>;
         consume?: PublicShareLinkRouterDependencies['receipts']['consume'];
+        verifyPasscode?: NonNullable<PublicShareLinkRouterDependencies['verifyPasscode']>;
+        notifyView?: NonNullable<PublicShareLinkRouterDependencies['notifyView']>;
         getSharer?: (ownerProfileId: string) => Promise<PublicShareLinkSharer | null>;
         enforceRateLimit?: PublicShareLinkRouterDependencies['enforceRateLimit'];
         newReceipt?: () => string;
@@ -174,12 +177,15 @@ const makeDependencies = (
             ...base.receipts,
             ...(overrides.persist ? { persist: overrides.persist } : {}),
             ...(overrides.lookupOwner ? { lookupOwner: overrides.lookupOwner } : {}),
+            ...(overrides.lookupContext ? { lookupContext: overrides.lookupContext } : {}),
             ...(overrides.consume ? { consume: overrides.consume } : {}),
         },
         ...(overrides.policyResolver ? { policyResolver: overrides.policyResolver } : {}),
         ...(overrides.getSharer ? { getSharer: overrides.getSharer } : {}),
         ...(overrides.enforceRateLimit ? { enforceRateLimit: overrides.enforceRateLimit } : {}),
         ...(overrides.newReceipt ? { newReceipt: overrides.newReceipt } : {}),
+        ...(overrides.verifyPasscode ? { verifyPasscode: overrides.verifyPasscode } : {}),
+        ...(overrides.notifyView ? { notifyView: overrides.notifyView } : {}),
     };
 };
 
@@ -254,6 +260,31 @@ describe('public share-link resolve', () => {
 
         expect(dependencies.receipts.persist).not.toHaveBeenCalled();
         expect(dependencies.receipts.consume).not.toHaveBeenCalled();
+    });
+
+    it('requires and verifies a passcode without exposing the stored hash', async () => {
+        const verifyPasscode = vi.fn(
+            async (_hash: string, passcode: string) => passcode === '2468'
+        );
+        const dependencies = makeDependencies({
+            getShareLink: async () => shareRecord({ passcodeHash: '$argon2id$stored' }),
+            verifyPasscode,
+        });
+        const caller = makeCaller(dependencies);
+
+        await expect(caller.resolve({ id: SHARE_ID })).resolves.toEqual({
+            state: 'passcode_required',
+            id: SHARE_ID,
+        });
+        await expect(caller.resolve({ id: SHARE_ID, passcode: '1111' })).resolves.toEqual({
+            state: 'passcode_required',
+            id: SHARE_ID,
+        });
+        await expect(caller.resolve({ id: SHARE_ID, passcode: '2468' })).resolves.toMatchObject({
+            state: 'active',
+            id: SHARE_ID,
+        });
+        expect(verifyPasscode).toHaveBeenCalledWith('$argon2id$stored', '2468');
     });
 
     it('reports stopped and expired without exposing internals', async () => {
@@ -347,6 +378,28 @@ describe('public share-link resolve', () => {
 });
 
 describe('public share-link content', () => {
+    it('enforces the passcode before fetching protected content', async () => {
+        const fetchContent = vi.fn(async () => ({
+            ok: true as const,
+            value: contentProjection(shareRecord()),
+        }));
+        const dependencies = makeDependencies({
+            getShareLink: async () => shareRecord({ passcodeHash: '$argon2id$stored' }),
+            fetchContent,
+            verifyPasscode: async (_hash, passcode) => passcode === '2468',
+        });
+        const caller = makeCaller(dependencies);
+
+        await expect(caller.content({ id: SHARE_ID })).rejects.toMatchObject({
+            code: 'UNAUTHORIZED',
+        });
+        expect(fetchContent).not.toHaveBeenCalled();
+
+        await expect(caller.content({ id: SHARE_ID, passcode: '2468' })).resolves.toMatchObject({
+            id: SHARE_ID,
+            envelope,
+        });
+    });
     it('withholds content when revoked during the awaited policy lookup', async () => {
         let revoked = false;
         const dependencies = makeDependencies({
@@ -497,6 +550,37 @@ describe('public share-link content', () => {
 });
 
 describe('public share-link acknowledgeView', () => {
+    it('sends an opted-in adult notification with count and time only', async () => {
+        const notifyView = vi.fn(async () => undefined);
+        const viewedAt = '2026-09-21T00:00:02.000Z';
+        const dependencies = makeDependencies({
+            policyResolver: eligiblePolicy,
+            lookupContext: vi.fn(async () => ({ ownerProfileId: 'owner-1', shareId: SHARE_ID })),
+            getShareLink: async () =>
+                shareRecord({
+                    notifyOnView: true,
+                    viewCount: 4,
+                    lastViewedAt: viewedAt,
+                    minorPolicyIsMinor: false,
+                    minorPolicyResolved: true,
+                    minorPolicyViewCountingEnabled: true,
+                }),
+            notifyView,
+        });
+
+        await makeCaller(dependencies).acknowledgeView({ receipt: RECEIPT });
+
+        expect(notifyView).toHaveBeenCalledWith({
+            ownerProfileId: 'owner-1',
+            title: 'Shared credentials',
+            selectedCount: 2,
+            viewCount: 4,
+            viewedAt,
+        });
+        expect(notifyView.mock.calls[0][0]).not.toHaveProperty('ip');
+        expect(notifyView.mock.calls[0][0]).not.toHaveProperty('device');
+        expect(notifyView.mock.calls[0][0]).not.toHaveProperty('location');
+    });
     it('always returns the uniform { ok: true } and never exposes eligibility', async () => {
         const consumed = makeDependencies({ consume: vi.fn(async () => 'consumed') });
         await expect(makeCaller(consumed).acknowledgeView({ receipt: RECEIPT })).resolves.toEqual({

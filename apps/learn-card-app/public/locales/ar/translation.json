@@ -9165,6 +9165,24 @@
         "updated": "تم تحديث رابطك",
         "updating": "جارٍ تحديث رابطك…",
         "update": "تحديث الرابط الخاص",
-        "manage": "المشاركات"
+        "manage": "المشاركات",
+        "passcodeTitle": "طلب رمز مرور",
+        "passcodeHint": "يدخله المستلمون قبل فتح بيانات الاعتماد. لا يتم تضمينه في الرابط أبداً.",
+        "passcodeLabel": "رمز المرور",
+        "passcodePlaceholder": "4 أحرف على الأقل",
+        "passcodeShareHint": "أرسله بشكل منفصل إلى الأشخاص الذين تثق بهم.",
+        "passcodeRequired": "أدخل رمز المرور",
+        "passcodeRequiredHint": "حَمى المرسل بيانات الاعتماد هذه برمز مرور.",
+        "passcodeIncorrect": "رمز المرور غير صحيح. تحقّق منه وحاول مرة أخرى.",
+        "unlock": "فتح بيانات الاعتماد",
+        "unlocking": "جارٍ الفتح…",
+        "viewNotificationsTitle": "إشعاري عند العرض",
+        "viewNotificationsHint": "تلقي إشعار خاص بعدد المشاهدات ووقتها. متوقف افتراضياً.",
+        "saveToLearnCard": "حفظ في LearnCard",
+        "savingToLearnCard": "جارٍ الحفظ…",
+        "savedToLearnCard": "تم الحفظ في LearnCard",
+        "saveError": "تعذر حفظ بيانات الاعتماد. حاول مرة أخرى.",
+        "signInToSave": "تسجيل الدخول للحفظ",
+        "saveHint": "احتفظ بهذه المجموعة الموقعة ضمن العناصر المستلمة."
     }
 }

@@ -9082,6 +9082,24 @@
         "updated": "Your link is updated",
         "updating": "Updating your link…",
         "update": "Update private link",
-        "manage": "Shared"
+        "manage": "Shared",
+        "passcodeTitle": "Require a passcode",
+        "passcodeHint": "Recipients enter it before the credentials open. It is never included in the link.",
+        "passcodeLabel": "Passcode",
+        "passcodePlaceholder": "At least 4 characters",
+        "passcodeShareHint": "Send this separately to people you trust.",
+        "passcodeRequired": "Enter the passcode",
+        "passcodeRequiredHint": "The sender protected these credentials with a passcode.",
+        "passcodeIncorrect": "That passcode did not work. Check it and try again.",
+        "unlock": "Open credentials",
+        "unlocking": "Opening…",
+        "viewNotificationsTitle": "Notify me when viewed",
+        "viewNotificationsHint": "Get a private notification with the view count and time. Off by default.",
+        "saveToLearnCard": "Save to LearnCard",
+        "savingToLearnCard": "Saving…",
+        "savedToLearnCard": "Saved to LearnCard",
+        "saveError": "Could not save these credentials. Please try again.",
+        "signInToSave": "Sign in to save",
+        "saveHint": "Keep this signed collection with your received items."
     }
 }

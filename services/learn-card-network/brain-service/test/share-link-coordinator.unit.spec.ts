@@ -45,6 +45,7 @@ const createRequest = () => ({
     clientRequestId: CLIENT_REQUEST_ID,
     title: 'Shared credentials',
     selectedCount: 1,
+    notifyOnView: false,
     contentVersion: 1,
     envelope,
     ownerEncryptedRecovery: recovery,
@@ -104,6 +105,8 @@ const makeReservation = (
     note: null,
     expiresAt: null,
     selectedCount: 1,
+    passcodeHash: null,
+    notifyOnView: false,
     generation: 1,
     leaseOwner: 'worker-1',
     leaseExpiresAt: '2099-01-01T00:00:00.000Z',
@@ -230,6 +233,61 @@ describe('share-link coordinator create', () => {
             .calls[0][0];
         expect(finalizeArgs.verifiedContentHash).toBe(payloadHash);
         expect(finalizeArgs.objectRef).toBe(OBJECT_REF);
+    });
+
+    it('hashes a passcode before persistence and keeps notification opt-in explicit', async () => {
+        (repository.reserveCreate as ReturnType<typeof vi.fn>).mockResolvedValue({
+            outcome: 'reserved',
+            state: 'created',
+            share: makeShare(),
+            reservation: makeReservation(),
+        });
+
+        const coordinator = makeCoordinator(repository, client, {
+            policyResolver: {
+                resolve: vi.fn(async () => ({
+                    isMinor: false,
+                    policyResolved: true,
+                    defaultExpiryDays: 365,
+                    viewCountingEnabled: true,
+                })),
+            },
+        });
+        await coordinator.createShareLink(
+            { ...createRequest(), passcode: '2468', notifyOnView: true },
+            context
+        );
+
+        const reserveArgs = (repository.reserveCreate as ReturnType<typeof vi.fn>).mock.calls[0][0];
+        expect(reserveArgs.passcodeHash).toMatch(/^\$argon2id\$/);
+        expect(reserveArgs.passcodeHash).not.toContain('2468');
+        expect(reserveArgs).not.toHaveProperty('passcode');
+        expect(reserveArgs.notifyOnView).toBe(true);
+    });
+
+    it('suppresses view notifications when the trusted policy disables view counting', async () => {
+        (repository.reserveCreate as ReturnType<typeof vi.fn>).mockResolvedValue({
+            outcome: 'reserved',
+            state: 'created',
+            share: makeShare(),
+            reservation: makeReservation(),
+        });
+
+        const coordinator = makeCoordinator(repository, client, {
+            policyResolver: {
+                resolve: vi.fn(async () => ({
+                    isMinor: true,
+                    policyResolved: true,
+                    defaultExpiryDays: 30,
+                    viewCountingEnabled: false,
+                })),
+            },
+        });
+        await coordinator.createShareLink({ ...createRequest(), notifyOnView: true }, context);
+
+        const reserveArgs = (repository.reserveCreate as ReturnType<typeof vi.fn>).mock.calls[0][0];
+        expect(reserveArgs.notifyOnView).toBe(false);
+        expect(reserveArgs.policy.defaultExpiryDays).toBe(30);
     });
 
     it('drives a resumed in-flight create to the same reserved object', async () => {
