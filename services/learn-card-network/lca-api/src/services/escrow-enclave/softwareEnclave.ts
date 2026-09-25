@@ -34,7 +34,7 @@ export class SoftwareEnclave implements EscrowEnclave {
         if (!this.privateKeys.has(this.activeKeyId)) throw new EscrowUnavailableError();
     }
 
-    async getAttestation(): Promise<EnclaveAttestation> {
+    async getAttestation(_nonce?: Uint8Array): Promise<EnclaveAttestation> {
         try {
             const subtle = globalThis.crypto.subtle;
             const key = await subtle.importKey(

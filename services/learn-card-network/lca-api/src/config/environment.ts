@@ -37,6 +37,11 @@ export const lcaApiEnvironmentShape = {
     ESCROW_ENCLAVE_MODE: optionalEnvironmentString.pipe(z.enum(['software', 'remote']).optional()),
     ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON: optionalEnvironmentString,
     ESCROW_ENCLAVE_ACTIVE_KEY_ID: optionalEnvironmentString,
+    ESCROW_ENCLAVE_REMOTE_URL: optionalEnvironmentUrl,
+    ESCROW_ENCLAVE_REMOTE_TOKEN: optionalEnvironmentString,
+    ESCROW_ENCLAVE_REMOTE_TIMEOUT_MS: optionalEnvironmentString
+        .transform(value => (value === undefined ? 10_000 : Number(value)))
+        .pipe(z.number().int().positive().max(30_000)),
     ESCROW_HOLD_DURATION_MS: optionalEnvironmentString
         .transform(value => (value === undefined ? 604_800_000 : Number(value)))
         .pipe(z.number().int().positive().max(Number.MAX_SAFE_INTEGER)),
@@ -84,6 +89,31 @@ export const lcaApiEnvironmentSchema = z
                         'Software escrow requires a valid nonempty key ID to private key JSON map',
                 });
             }
+        }
+        // Format-only: absence at 'remote' mode is intentionally NOT a parse-time
+        // failure. getEscrowEnclave() fails closed per-request instead, so a
+        // misconfigured remote backend degrades that one feature rather than
+        // crashing the whole service at boot (see escrow-enclave/index.ts).
+        if (environment.ESCROW_ENCLAVE_REMOTE_URL) {
+            const { protocol, hostname } = new URL(environment.ESCROW_ENCLAVE_REMOTE_URL);
+            const isLocalhost = ['localhost', '127.0.0.1', '::1'].includes(hostname);
+            if (protocol !== 'https:' && environment.NODE_ENV !== 'test' && !isLocalhost) {
+                context.addIssue({
+                    code: 'custom',
+                    path: ['ESCROW_ENCLAVE_REMOTE_URL'],
+                    message: 'Must use https:// outside tests or localhost',
+                });
+            }
+        }
+        if (
+            environment.ESCROW_ENCLAVE_REMOTE_TOKEN &&
+            environment.ESCROW_ENCLAVE_REMOTE_TOKEN.length < 32
+        ) {
+            context.addIssue({
+                code: 'custom',
+                path: ['ESCROW_ENCLAVE_REMOTE_TOKEN'],
+                message: 'Must be at least 32 characters',
+            });
         }
         if (
             environment.NODE_ENV === 'production' &&

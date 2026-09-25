@@ -28,6 +28,9 @@ export type VerifyEscrowBlobResult =
     { ok: true; hasPin: boolean } | { ok: false; hasPin: boolean; reason: string };
 export interface ReleaseRequest {
     envelope: EscrowEnvelope;
+    // P4.2: replace this unsigned passthrough with the enclave-signed HoldRecord
+    // (services/escrow-enclave-app/src/wire.rs `HoldRecord`) once lca-api creates
+    // one at hold-creation time.
     hold: EscrowHoldForEnclave;
     clientEphemeralPublicKey: string;
     expectedDid: string;
@@ -38,7 +41,9 @@ export interface ReleaseResult {
     sealed: EscrowEnvelope;
 }
 export interface EscrowEnclave {
-    getAttestation(): Promise<EnclaveAttestation>;
+    /** `nonce` binds a nitro attestation to one client-generated challenge (64 hex chars,
+     * decoded to bytes); the software backend has no freshness story and ignores it. */
+    getAttestation(nonce?: Uint8Array): Promise<EnclaveAttestation>;
     verifyEscrowBlob(input: VerifyEscrowBlobInput): Promise<VerifyEscrowBlobResult>;
     releaseEscrow(input: ReleaseRequest): Promise<ReleaseResult>;
 }

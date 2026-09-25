@@ -156,6 +156,46 @@ describe('A6 escrow recovery', () => {
             expect(document.paths?.[path]?.[method]).toBeDefined();
     });
 
+    it('passes a hex-decoded nonce through to the enclave', async () => {
+        const spy = vi.spyOn(getEscrowEnclave(), 'getAttestation');
+        const nonceHex = 'ab'.repeat(32);
+
+        await getClient().escrow.getAttestation({ nonce: nonceHex });
+
+        expect(spy).toHaveBeenCalledWith(Uint8Array.from(Buffer.from(nonceHex, 'hex')));
+    });
+
+    it('rejects attestation without a nonce when the mode is remote', async () => {
+        process.env.ESCROW_ENCLAVE_MODE = 'remote';
+        process.env.ESCROW_ENCLAVE_REMOTE_URL = 'http://localhost:5999';
+        process.env.ESCROW_ENCLAVE_REMOTE_TOKEN = 'r'.repeat(32);
+        __setEscrowEnclaveForTests(undefined);
+        try {
+            await expect(getClient().escrow.getAttestation({})).rejects.toMatchObject({
+                code: 'BAD_REQUEST',
+            });
+        } finally {
+            delete process.env.ESCROW_ENCLAVE_REMOTE_URL;
+            delete process.env.ESCROW_ENCLAVE_REMOTE_TOKEN;
+            process.env.ESCROW_ENCLAVE_MODE = 'software';
+            __setEscrowEnclaveForTests(undefined);
+        }
+    });
+
+    it('disables the escrow router when remote mode is missing its URL/token', async () => {
+        process.env.ESCROW_ENCLAVE_MODE = 'remote';
+        __setEscrowEnclaveForTests(undefined);
+        try {
+            await expect(getClient().escrow.getAttestation({})).rejects.toMatchObject({
+                code: 'PRECONDITION_FAILED',
+                message: 'Escrow recovery is not available.',
+            });
+        } finally {
+            process.env.ESCROW_ENCLAVE_MODE = 'software';
+            __setEscrowEnclaveForTests(undefined);
+        }
+    });
+
     it('2: stores the verified blob and a confirmed version-matched descriptor atomically', async () => {
         await expect(enroll()).resolves.toEqual({ success: true, shareVersion: 1 });
         const stored = await record();

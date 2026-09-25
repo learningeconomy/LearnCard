@@ -60,6 +60,7 @@ import {
     getEscrowEnclave,
     getEscrowHoldDurationMs,
     getEscrowHoldRestartMinAgeMs,
+    isEscrowRemoteMode,
     notifyEscrowHoldEvent,
     EscrowPolicyError,
     EscrowBlobError,
@@ -268,7 +269,16 @@ const statusInput = z
 export const escrowRouter = t.router({
     getAttestation: openRoute
         .meta({ openapi: { method: 'GET', path: '/keys/escrow/attestation', tags: ['Keys'] } })
-        .input(z.object({}).strict())
+        .input(
+            z
+                .object({
+                    nonce: z
+                        .string()
+                        .regex(/^[0-9a-f]{64}$/i)
+                        .optional(),
+                })
+                .strict()
+        )
         .output(
             z.object({
                 attestation: z.object({
@@ -282,10 +292,24 @@ export const escrowRouter = t.router({
                 holdDurationMs: z.number(),
             })
         )
-        .query(async () => ({
-            attestation: await enclaveOperation(() => getEscrowEnclave().getAttestation()),
-            holdDurationMs: getEscrowHoldDurationMs(),
-        })),
+        .query(async ({ input }) => {
+            // Nitro attestation is only meaningful bound to a fresh client nonce
+            // (sss-key-manager always sends one: GET .../attestation?nonce=<64 hex>);
+            // the software backend has no freshness story and never required one.
+            if (isEscrowRemoteMode() && !input.nonce) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'A nonce is required for attestation.',
+                });
+            }
+            const nonce = input.nonce
+                ? Uint8Array.from(Buffer.from(input.nonce, 'hex'))
+                : undefined;
+            return {
+                attestation: await enclaveOperation(() => getEscrowEnclave().getAttestation(nonce)),
+                holdDurationMs: getEscrowHoldDurationMs(),
+            };
+        }),
 
     enroll: didAndChallengeRoute
         .meta({ openapi: { method: 'POST', path: '/keys/escrow', tags: ['Keys'] } })
@@ -792,6 +816,8 @@ export const escrowRouter = t.router({
                     return {
                         result: await getEscrowEnclave().releaseEscrow({
                             envelope: (reserved ?? userKey).escrowBlob!.envelope,
+                            // P4.2: swap this unsigned passthrough for the enclave-signed
+                            // HoldRecord once lca-api creates one at hold-creation time.
                             hold,
                             clientEphemeralPublicKey: hold.clientEphemeralPublicKey,
                             expectedDid: userKey.primaryDid,
