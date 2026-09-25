@@ -459,6 +459,19 @@ jobs:
                     exit 1
                   fi
 
+            - name: Validate share-link request hash secret
+              env:
+                  SHARE_LINK_REQUEST_HASH_SECRET: ${{ secrets.SHARE_LINK_REQUEST_HASH_SECRET }}
+              run: |
+                  # Disabled share-link environments do not need this secret.
+                  if [[ -n "$SHARE_LINK_REQUEST_HASH_SECRET" ]]; then
+                    secret_bytes=$(printf '%s' "$SHARE_LINK_REQUEST_HASH_SECRET" | wc -c | tr -d '[:space:]')
+                    if (( secret_bytes < 32 )); then
+                      echo "::error::SHARE_LINK_REQUEST_HASH_SECRET must contain at least 32 bytes."
+                      exit 1
+                    fi
+                  fi
+
             - name: Deploy Brain Service Lambda
               run: bunx nx serverless-deploy network-brain-service --stage ${{ vars.SERVERLESS_STAGE }} --region ${{ vars.SERVERLESS_REGION }}
               env:
@@ -478,6 +491,7 @@ jobs:
                   CREDENTIAL_REFRESH_ENABLED: ${{ vars.CREDENTIAL_REFRESH_ENABLED || 'false' }}
                   CREDENTIAL_REFRESH_DIGEST_SECRET: ${{ secrets.CREDENTIAL_REFRESH_DIGEST_SECRET }}
                   CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS: ${{ vars.CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS || '24' }}
+                  SHARE_LINK_REQUEST_HASH_SECRET: ${{ secrets.SHARE_LINK_REQUEST_HASH_SECRET }}
                   SEED: ${{ secrets.SEED }}
                   DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
                   NOTIFICATIONS_SERVICE_WEBHOOK_URL: ${{ secrets.NOTIFICATIONS_SERVICE_WEBHOOK_URL }}
