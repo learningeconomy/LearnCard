@@ -25,6 +25,7 @@
 - [Go to Production](how-to-guides/go-to-production.md)
     - [Generate API Tokens](how-to-guides/deploy-infrastructure/generate-api-tokens.md)
     - [Test Safely: Staging & Mock Recipients](how-to-guides/deploy-infrastructure/test-safely.md)
+    - [Encrypt Hosted Signing-Authority Seeds](how-to-guides/deploy-infrastructure/signing-authority-seed-encryption.md)
     - [Get Listed as a Trusted Issuer](how-to-guides/verify-my-issuer.md)
 
 ## 🧠 Understand

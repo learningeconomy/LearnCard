@@ -714,6 +714,9 @@ jobs:
                   MONGO_URI: ${{ secrets.MONGO_URI }}
                   MONGO_DB_NAME: ${{ secrets.MONGO_DB_NAME }}
                   SCOUTS_SSO_CLIENT_SECRET: ${{ secrets.SCOUTS_SSO_CLIENT_SECRET }}
+                  # Compatibility first; advance these per environment using the seed-encryption runbook.
+                  SA_SEED_ENCRYPT_WRITES: ${{ vars.SA_SEED_ENCRYPT_WRITES || 'false' }}
+                  SA_SEED_ALLOW_LEGACY_READ: ${{ vars.SA_SEED_ALLOW_LEGACY_READ || 'true' }}
                   LEARN_CLOUD_URL: ${{ secrets.LEARN_CLOUD_URL }}
                   SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
                   SENTRY_ENV: ${{ secrets.SENTRY_ENV }}
