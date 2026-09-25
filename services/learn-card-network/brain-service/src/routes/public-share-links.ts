@@ -178,8 +178,12 @@ const passcodeAccepted = async (
         if (!(await dependencies.passcodeAttempts.reserve(record.id, sourceIp))) return 'try_later';
         const accepted = await dependencies.verifyPasscode(record.passcodeHash, passcode);
         return accepted ? 'accepted' : 'rejected';
-    } catch {
-        dependencies.reportFailure('passcode_guard');
+    } catch (error) {
+        dependencies.reportFailure(
+            error instanceof Error && error.name === 'SharePasscodeCapacityError'
+                ? 'passcode_capacity'
+                : 'passcode_guard'
+        );
         return 'try_later';
     }
 };

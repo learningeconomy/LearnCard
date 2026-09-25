@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ShareLinkPolicyResolver } from '@helpers/share-link-policy/types';
 import type { ShareLinkRecord } from '../src/models/ShareLink';
+import { SharePasscodeCapacityError } from '../src/helpers/share-link-passcode';
 import type {
     PublicShareLinkRouterDependencies,
     PublicShareLinkSharer,
@@ -290,6 +291,20 @@ describe('public share-link resolve', () => {
             id: SHARE_ID,
         });
         expect(verifyPasscode).toHaveBeenCalledWith('$argon2id$stored', '2468');
+    });
+
+    it('reports local capacity separately from a passcode guard failure', async () => {
+        const dependencies = makeDependencies({
+            getShareLink: async () => shareRecord({ passcodeHash: '$argon2id$stored' }),
+            verifyPasscode: async () => {
+                throw new SharePasscodeCapacityError();
+            },
+        });
+        await expect(
+            makeCaller(dependencies).resolve({ id: SHARE_ID, passcode: '2468' })
+        ).resolves.toEqual({ state: 'try_later', id: SHARE_ID });
+        expect(dependencies.reportFailure).toHaveBeenCalledWith('passcode_capacity');
+        expect(dependencies.reportFailure).not.toHaveBeenCalledWith('passcode_guard');
     });
 
     it('skips Argon2 for unprotected shares', async () => {

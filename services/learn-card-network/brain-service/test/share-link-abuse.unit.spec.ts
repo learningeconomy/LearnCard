@@ -23,6 +23,7 @@ describe('share-link abuse windows', () => {
             expect(await reserveSharePasscodeAttempt('ns', 'share', 'source-a')).toBe(true);
         }
         expect(await reserveSharePasscodeAttempt('ns', 'share', 'source-a')).toBe(false);
+        expect(store.get('share-link-passcode-attempt:ns:share')).toBe(6);
         expect(await reserveSharePasscodeAttempt('ns', 'share', 'source-b')).toBe(true);
         for (let index = 0; index < 17; index++) {
             await reserveSharePasscodeAttempt('ns', 'share', `rotating-${index}`);
@@ -30,6 +31,17 @@ describe('share-link abuse windows', () => {
         expect(await reserveSharePasscodeAttempt('ns', 'share', 'fresh-source')).toBe(false);
         store.clear(); // Redis expiry at the end of the one-minute window.
         expect(await reserveSharePasscodeAttempt('ns', 'share', 'source-a')).toBe(true);
+    });
+
+    it('does not let one over-limit source consume the shared budget', async () => {
+        const attempts = await Promise.all(
+            Array.from({ length: 30 }, () =>
+                reserveSharePasscodeAttempt('ns', 'single-source', 'source-a')
+            )
+        );
+        expect(attempts.filter(Boolean)).toHaveLength(6);
+        expect(store.get('share-link-passcode-attempt:ns:single-source')).toBe(6);
+        expect(await reserveSharePasscodeAttempt('ns', 'single-source', 'source-b')).toBe(true);
     });
 
     it('admits at most 24 concurrent verifications across rotated sources', async () => {

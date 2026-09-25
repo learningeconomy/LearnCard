@@ -5,6 +5,8 @@ import { environment } from '@environment';
 // an attacker can deny access to a legitimate recipient. Per-source limits
 // preserve capacity for other recipients until the shared budget is exhausted.
 const WINDOW_SECONDS = 60;
+// A successful recipient view checks the passcode at resolve and content, so
+// it spends two attempts. Keep that in mind before lowering these budgets.
 const SHARE_ATTEMPT_LIMIT = 24;
 const SOURCE_ATTEMPT_LIMIT = 6;
 
@@ -25,8 +27,10 @@ export const reserveSharePasscodeAttempt = async (
     // Reserve before Argon2. Redis INCR is atomic across Lambda instances, so
     // simultaneous guesses cannot all read a stale budget. Count successful
     // attempts too; no cross-key refund race and no stored submitted value.
-    const shareCount = await cache.incr(shareKey, WINDOW_SECONDS);
-    if (shareCount === undefined || shareCount > SHARE_ATTEMPT_LIMIT) return false;
     const sourceCount = await cache.incr(sourceKey, WINDOW_SECONDS);
-    return sourceCount !== undefined && sourceCount <= SOURCE_ATTEMPT_LIMIT;
+    if (sourceCount === undefined || sourceCount > SOURCE_ATTEMPT_LIMIT) return false;
+    // Rejected requests from this source never consume another recipient's
+    // share-wide budget. Both reservations still precede Argon2.
+    const shareCount = await cache.incr(shareKey, WINDOW_SECONDS);
+    return shareCount !== undefined && shareCount <= SHARE_ATTEMPT_LIMIT;
 };

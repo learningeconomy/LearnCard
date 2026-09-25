@@ -12,6 +12,7 @@ let activeVerifications = 0;
 export class SharePasscodeCapacityError extends Error {
     constructor() {
         super('share passcode verification capacity exhausted');
+        this.name = 'SharePasscodeCapacityError';
     }
 }
 
