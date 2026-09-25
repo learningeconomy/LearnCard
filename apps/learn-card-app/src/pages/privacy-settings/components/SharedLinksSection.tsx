@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { IonIcon } from '@ionic/react';
 import {
     addOutline,
+    bookmarkOutline,
     calendarOutline,
     copyOutline,
     createOutline,
@@ -17,10 +18,15 @@ import type { ShareLink } from '@learncard/types';
 import { QRCodeSVG } from 'qrcode.react';
 
 import * as m from '../../../paraglide/messages.js';
-import type { DataSharingSharedLinksViewModel, SharedLinkFilter } from '../DataSharingCenter.types';
+import type {
+    DataSharingSharedLinksViewModel,
+    SavedCredentialCollection,
+    SharedLinkFilter,
+} from '../DataSharingCenter.types';
 import GlassCard from './GlassCard';
 
 type RowPanel = 'qr' | 'expiry' | 'update' | 'stop';
+type SharedSectionView = 'my-shares' | 'saved-collections';
 
 export const getSharedLinkViewStatus = (
     share: Pick<ShareLink, 'status' | 'expiresAt'>,
@@ -350,15 +356,59 @@ const ShareLinkRow = ({ share, vm }: { share: ShareLink; vm: DataSharingSharedLi
     );
 };
 
+const SavedCollectionRow = ({
+    collection,
+    onPreview,
+}: {
+    collection: SavedCredentialCollection;
+    onPreview: (collection: SavedCredentialCollection) => void;
+}) => (
+    <article className="border-b border-grayscale-100 p-5 last:border-b-0">
+        <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+                <h4 className="font-medium text-grayscale-900">
+                    {m['dataShareCenter.shared.savedCollectionTitle']()}
+                </h4>
+                <p className="mt-1 text-xs text-grayscale-600">
+                    {m['dataShareCenter.shared.credentialCount']({
+                        count: String(collection.credentialCount),
+                    })}
+                </p>
+            </div>
+            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-grayscale-100 px-2.5 py-1.5 text-xs text-grayscale-600">
+                <IonIcon icon={calendarOutline} />
+                {m['dataShareCenter.shared.savedOn']({
+                    date: new Date(collection.receivedAt).toLocaleDateString(),
+                })}
+            </span>
+        </div>
+        <button
+            type="button"
+            className={`${secondaryActionClass} mt-4`}
+            onClick={() => onPreview(collection)}
+        >
+            <IonIcon icon={eyeOutline} /> {m['dataShareCenter.shared.viewCollection']()}
+        </button>
+    </article>
+);
+
 const SharedLinksSection: React.FC<{ vm: DataSharingSharedLinksViewModel; delay?: number }> = ({
     vm,
     delay = 0,
 }) => {
+    const [view, setView] = useState<SharedSectionView>('my-shares');
     const filtered = useMemo(
         () => vm.records.filter(record => getSharedLinkViewStatus(record) === vm.filter),
         [vm.filter, vm.records]
     );
     const filters: SharedLinkFilter[] = ['active', 'expired', 'stopped'];
+    const saved = vm.savedCollections;
+    const selectView = (next: SharedSectionView) => {
+        setView(next);
+        if (next === 'saved-collections') void saved.onOpen();
+    };
+    const refresh = view === 'saved-collections' ? saved.onRefresh : vm.onRefresh;
+    const refreshing = view === 'saved-collections' ? saved.isLoading : vm.isLoading;
 
     return (
         <div
@@ -378,8 +428,8 @@ const SharedLinksSection: React.FC<{ vm: DataSharingSharedLinksViewModel; delay?
                     <button
                         aria-label={m['dataShareCenter.shared.refresh']()}
                         className="inline-flex items-center gap-1.5 rounded-[20px] border border-grayscale-300 bg-white px-3 py-2 text-xs font-medium text-grayscale-700 transition-colors hover:bg-grayscale-10 disabled:opacity-40"
-                        disabled={vm.isLoading}
-                        onClick={() => void vm.onRefresh()}
+                        disabled={refreshing}
+                        onClick={() => void refresh()}
                     >
                         <IonIcon icon={refreshOutline} />
                         <span className="hidden sm:inline">
@@ -395,25 +445,95 @@ const SharedLinksSection: React.FC<{ vm: DataSharingSharedLinksViewModel; delay?
                 </div>
             </div>
 
-            <div className="mb-3 flex flex-wrap gap-2" role="group">
-                {filters.map(filter => (
-                    <button
-                        key={filter}
-                        aria-pressed={vm.filter === filter}
-                        className={
-                            vm.filter === filter
-                                ? 'py-2.5 px-3 rounded-full bg-grayscale-900 text-white font-medium text-sm'
-                                : 'py-2.5 px-3 rounded-full bg-grayscale-100 text-grayscale-700 hover:bg-grayscale-200 font-medium text-sm'
-                        }
-                        onClick={() => vm.onFilterChange(filter)}
-                    >
-                        {statusLabel(filter)}
-                    </button>
-                ))}
+            <div
+                className="mb-3 grid grid-cols-2 gap-1 rounded-[20px] bg-grayscale-100 p-1"
+                role="tablist"
+                aria-label={m['dataShareCenter.shared.collectionTabsLabel']()}
+            >
+                <button
+                    type="button"
+                    role="tab"
+                    aria-selected={view === 'my-shares'}
+                    onClick={() => selectView('my-shares')}
+                    className={
+                        view === 'my-shares'
+                            ? 'rounded-[20px] bg-white px-4 py-2.5 text-sm font-medium text-grayscale-900 shadow-sm'
+                            : 'rounded-[20px] px-4 py-2.5 text-sm font-medium text-grayscale-600 transition-colors hover:text-grayscale-900'
+                    }
+                >
+                    {m['dataShareCenter.shared.myShares']()}
+                </button>
+                <button
+                    type="button"
+                    role="tab"
+                    aria-selected={view === 'saved-collections'}
+                    onClick={() => selectView('saved-collections')}
+                    className={
+                        view === 'saved-collections'
+                            ? 'rounded-[20px] bg-white px-4 py-2.5 text-sm font-medium text-grayscale-900 shadow-sm'
+                            : 'rounded-[20px] px-4 py-2.5 text-sm font-medium text-grayscale-600 transition-colors hover:text-grayscale-900'
+                    }
+                >
+                    <span className="inline-flex items-center justify-center gap-1.5">
+                        <IonIcon icon={bookmarkOutline} />
+                        {m['dataShareCenter.shared.savedCollections']()}
+                    </span>
+                </button>
             </div>
 
+            {view === 'my-shares' && (
+                <div className="mb-3 flex flex-wrap gap-2" role="group">
+                    {filters.map(filter => (
+                        <button
+                            key={filter}
+                            aria-pressed={vm.filter === filter}
+                            className={
+                                vm.filter === filter
+                                    ? 'py-2.5 px-3 rounded-full bg-grayscale-900 text-white font-medium text-sm'
+                                    : 'py-2.5 px-3 rounded-full bg-grayscale-100 text-grayscale-700 hover:bg-grayscale-200 font-medium text-sm'
+                            }
+                            onClick={() => vm.onFilterChange(filter)}
+                        >
+                            {statusLabel(filter)}
+                        </button>
+                    ))}
+                </div>
+            )}
+
             <GlassCard className="overflow-hidden">
-                {vm.isLoading ? (
+                {view === 'saved-collections' ? (
+                    saved.isLoading ? (
+                        <div role="status" className="p-8 text-center text-sm text-grayscale-600">
+                            {m['dataShareCenter.shared.savedLoading']()}
+                        </div>
+                    ) : saved.error ? (
+                        <div className="space-y-3 p-8 text-center">
+                            <p className="text-sm text-red-700">
+                                {m['dataShareCenter.shared.savedLoadError']()}
+                            </p>
+                            <button className={actionClass} onClick={() => void saved.onRefresh()}>
+                                {m['shareLinks.retry']()}
+                            </button>
+                        </div>
+                    ) : saved.records.length === 0 ? (
+                        <div className="space-y-2 p-8 text-center">
+                            <p className="font-medium text-grayscale-900">
+                                {m['dataShareCenter.shared.savedEmptyTitle']()}
+                            </p>
+                            <p className="text-sm text-grayscale-600">
+                                {m['dataShareCenter.shared.savedEmptyBody']()}
+                            </p>
+                        </div>
+                    ) : (
+                        saved.records.map(collection => (
+                            <SavedCollectionRow
+                                key={collection.uri}
+                                collection={collection}
+                                onPreview={saved.onPreview}
+                            />
+                        ))
+                    )
+                ) : vm.isLoading ? (
                     <div role="status" className="p-8 text-center text-sm text-grayscale-600">
                         {m['dataShareCenter.shared.loading']()}
                     </div>
@@ -450,7 +570,7 @@ const SharedLinksSection: React.FC<{ vm: DataSharingSharedLinksViewModel; delay?
                 )}
             </GlassCard>
 
-            {vm.hasMore && (
+            {view === 'my-shares' && vm.hasMore && (
                 <button
                     className={`${actionClass} mt-3 w-full justify-center`}
                     disabled={vm.isLoadingMore}

@@ -2,6 +2,7 @@ import type {
     AllowConnectionRequestsEnum,
     ProfileVisibilityEnum,
     ShareLink,
+    VP,
 } from '@learncard/types';
 
 import type { ConsentedContract } from '../../components/data-sharing/consentSummary';
@@ -44,6 +45,22 @@ export type DataSharingDiagnosticsViewModel = {
 
 export type SharedLinkFilter = 'active' | 'expired' | 'stopped';
 
+export type SavedCredentialCollection = {
+    uri: string;
+    receivedAt: string;
+    presentation: VP;
+    credentialCount: number;
+};
+
+export type DataSharingSavedCollectionsViewModel = {
+    records: SavedCredentialCollection[];
+    isLoading: boolean;
+    error: boolean;
+    onOpen: () => Promise<void>;
+    onRefresh: () => Promise<void>;
+    onPreview: (collection: SavedCredentialCollection) => void;
+};
+
 export type DataSharingSharedLinksViewModel = {
     records: ShareLink[];
     filter: SharedLinkFilter;
@@ -53,6 +70,7 @@ export type DataSharingSharedLinksViewModel = {
     error: boolean;
     busyId: string | null;
     showViewStats: boolean;
+    savedCollections: DataSharingSavedCollectionsViewModel;
     onFilterChange: (filter: SharedLinkFilter) => void;
     onRefresh: () => Promise<void>;
     onLoadMore: () => Promise<void>;

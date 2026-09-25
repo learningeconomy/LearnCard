@@ -22,6 +22,7 @@ import {
     type ShareLinkPublicContentView,
     type ListShareLinksInput,
     type PaginatedShareLinks,
+    type SentCredentialInfo,
     ShareManifestPresentationValidator,
 } from '@learncard/types';
 import {
@@ -75,6 +76,7 @@ export interface ShareWallet {
         acknowledgeShareLinkView(receipt: string): Promise<{ ok: true }>;
         sendPresentation(profileId: string, vp: VP, encrypt?: boolean): Promise<string>;
         acceptPresentation(uri: string): Promise<boolean>;
+        getReceivedPresentations(): Promise<SentCredentialInfo[]>;
         verifyPresentation(vp: VP, options: { proofPurpose: string }): Promise<VerificationCheck>;
         verifyCredential(vc: VC): Promise<VerificationCheck>;
     };

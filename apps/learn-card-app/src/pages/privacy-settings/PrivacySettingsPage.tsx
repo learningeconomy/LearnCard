@@ -32,11 +32,13 @@ import { useLocale } from '../../i18n';
 import DataSharingCenterView from './DataSharingCenterView';
 import ShareLinkCreate from '../../components/share-links/ShareLinkCreate';
 import ShareLinkOwnerPreview from '../../components/share-links/ShareLinkOwnerPreview';
+import SavedCollectionPreview from '../../components/share-links/SavedCollectionPreview';
 import { useSharedLinks } from './useSharedLinks';
 import type {
     ConnectionRequestsValue,
     DataSharingCenterViewModel,
     ProfileVisibilityValue,
+    SavedCredentialCollection,
 } from './DataSharingCenter.types';
 
 type PrivacySettingsProfile = {
@@ -105,6 +107,17 @@ const PrivacySettingsPage: React.FC = () => {
         [closeModal, newModal]
     );
 
+    const handlePreviewSavedCollection = useCallback(
+        (collection: SavedCredentialCollection) => {
+            newModal(
+                <SavedCollectionPreview collection={collection} onDismiss={() => closeModal()} />,
+                {},
+                { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+            );
+        },
+        [closeModal, newModal]
+    );
+
     const ageGate = getAiFeatureAgeGateState({
         profileType,
         dob: currentLCNUser?.dob,
@@ -115,6 +128,7 @@ const PrivacySettingsPage: React.FC = () => {
         flags?.shareMultipleEnabled === true,
         !isMinor,
         handlePreviewShare,
+        handlePreviewSavedCollection,
         handleUpdateShare,
         handleCreateShare
     );

@@ -7,7 +7,12 @@ import { ToastTypeEnum, useToast, useWallet } from 'learn-card-base';
 import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
 import { readShareRecovery, shareWallet } from '../../components/share-links/shareLinkFlow';
 import * as m from '../../paraglide/messages.js';
-import type { DataSharingSharedLinksViewModel, SharedLinkFilter } from './DataSharingCenter.types';
+import { loadSavedCredentialCollections } from './savedCollections';
+import type {
+    DataSharingSharedLinksViewModel,
+    SavedCredentialCollection,
+    SharedLinkFilter,
+} from './DataSharingCenter.types';
 
 const PAGE_SIZE = 25;
 
@@ -28,6 +33,7 @@ export const useSharedLinks = (
     enabled: boolean,
     showViewStats: boolean,
     onPreview: (share: ShareLink) => void,
+    onPreviewSavedCollection: (collection: SavedCredentialCollection) => void,
     onUpdate: (share: ShareLink) => void,
     onCreateShare: () => void
 ): DataSharingSharedLinksViewModel | null => {
@@ -43,6 +49,10 @@ export const useSharedLinks = (
     const [error, setError] = useState(false);
     const [busyId, setBusyId] = useState<string | null>(null);
     const [filter, setFilter] = useState<SharedLinkFilter>('active');
+    const [savedCollections, setSavedCollections] = useState<SavedCredentialCollection[]>([]);
+    const [savedCollectionsLoading, setSavedCollectionsLoading] = useState(false);
+    const [savedCollectionsError, setSavedCollectionsError] = useState(false);
+    const savedCollectionsLoadedRef = useRef(false);
 
     const load = useCallback(async (pageCursor?: string): Promise<void> => {
         const append = Boolean(pageCursor);
@@ -77,6 +87,25 @@ export const useSharedLinks = (
     useEffect(() => {
         if (enabled) void load();
     }, [enabled, load]);
+
+    const loadSavedCollections = useCallback(async (): Promise<void> => {
+        setSavedCollectionsLoading(true);
+        setSavedCollectionsError(false);
+        try {
+            const wallet = shareWallet(await walletRef.current());
+            setSavedCollections(await loadSavedCredentialCollections(wallet));
+            savedCollectionsLoadedRef.current = true;
+        } catch {
+            setSavedCollectionsError(true);
+        } finally {
+            setSavedCollectionsLoading(false);
+        }
+    }, []);
+
+    const openSavedCollections = useCallback(async (): Promise<void> => {
+        if (savedCollectionsLoadedRef.current) return;
+        await loadSavedCollections();
+    }, [loadSavedCollections]);
 
     const privateUrl = useCallback(async (share: ShareLink): Promise<string> => {
         const wallet = shareWallet(await walletRef.current());
@@ -177,6 +206,14 @@ export const useSharedLinks = (
         error,
         busyId,
         showViewStats,
+        savedCollections: {
+            records: savedCollections,
+            isLoading: savedCollectionsLoading,
+            error: savedCollectionsError,
+            onOpen: openSavedCollections,
+            onRefresh: loadSavedCollections,
+            onPreview: onPreviewSavedCollection,
+        },
         onFilterChange: setFilter,
         onRefresh: () => load(),
         onLoadMore: () => (cursor ? load(cursor) : Promise.resolve()),

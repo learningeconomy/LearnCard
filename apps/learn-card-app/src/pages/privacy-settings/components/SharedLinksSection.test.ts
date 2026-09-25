@@ -1,7 +1,7 @@
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import type { ShareLink } from '@learncard/types';
+import type { ShareLink, VP } from '@learncard/types';
 
 import type { DataSharingSharedLinksViewModel } from '../DataSharingCenter.types';
 import SharedLinksSection, { getSharedLinkViewStatus } from './SharedLinksSection';
@@ -28,6 +28,18 @@ const share = {
     notifyOnView: false,
 } as ShareLink;
 
+const savedCollection = {
+    uri: 'lc:network:localhost%3A4000:pres:one',
+    receivedAt: '2026-09-24T16:00:00.000Z',
+    credentialCount: 2,
+    presentation: {
+        '@context': ['https://www.w3.org/2018/credentials/v1'],
+        type: ['VerifiablePresentation'],
+        verifiableCredential: [{}, {}],
+        proof: { type: 'Ed25519Signature2020' },
+    } as unknown as VP,
+};
+
 const viewModel = (overrides: Partial<DataSharingSharedLinksViewModel> = {}) => ({
     records: [share],
     filter: 'active' as const,
@@ -37,6 +49,14 @@ const viewModel = (overrides: Partial<DataSharingSharedLinksViewModel> = {}) => 
     error: false,
     busyId: null,
     showViewStats: true,
+    savedCollections: {
+        records: [savedCollection],
+        isLoading: false,
+        error: false,
+        onOpen: vi.fn(async () => undefined),
+        onRefresh: vi.fn(async () => undefined),
+        onPreview: vi.fn(),
+    },
     onFilterChange: vi.fn(),
     onRefresh: vi.fn(async () => undefined),
     onLoadMore: vi.fn(async () => undefined),
@@ -111,6 +131,19 @@ describe('shared link actions', () => {
         fireEvent.click(screen.getByRole('button', { name: 'View 4 credentials' }));
 
         expect(vm.onPreview).toHaveBeenCalledWith(describedShare);
+    });
+
+    it('opens saved collections and previews a received presentation', () => {
+        const vm = viewModel();
+        render(React.createElement(SharedLinksSection, { vm }));
+
+        fireEvent.click(screen.getByRole('tab', { name: 'Saved collections' }));
+
+        expect(vm.savedCollections.onOpen).toHaveBeenCalledOnce();
+        expect(screen.getByText('Saved credential collection')).toBeTruthy();
+        expect(screen.getByText('2 credentials')).toBeTruthy();
+        fireEvent.click(screen.getByRole('button', { name: 'View collection' }));
+        expect(vm.savedCollections.onPreview).toHaveBeenCalledWith(savedCollection);
     });
 
     it('confirms that an update keeps the same link before opening the editor', () => {

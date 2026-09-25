@@ -32,6 +32,8 @@ export interface ShareLinkPreviewProps {
     summaryIllustration?: React.ReactNode;
     /** Opt in to the raw original credential disclosure for each selected member. */
     showOriginal?: boolean;
+    /** Saved collections are durable records rather than expiring public links. */
+    showExpiry?: boolean;
     className?: string;
 }
 
@@ -78,6 +80,7 @@ export const ShareLinkPreview = ({
     summaryExtra,
     summaryIllustration,
     showOriginal = false,
+    showExpiry = true,
     className = '',
 }: ShareLinkPreviewProps) => (
     <div className={`space-y-5 ${className}`} data-testid="share-link-preview">
@@ -159,15 +162,16 @@ export const ShareLinkPreview = ({
                         count: String(payload.selection.length),
                     })}
                 </span>
-                {expiresAt ? (
-                    <span>
-                        {m['shareLinks.expires']({
-                            date: new Date(expiresAt).toLocaleDateString(),
-                        })}
-                    </span>
-                ) : (
-                    <span>{m['shareLinks.neverExpires']()}</span>
-                )}
+                {showExpiry &&
+                    (expiresAt ? (
+                        <span>
+                            {m['shareLinks.expires']({
+                                date: new Date(expiresAt).toLocaleDateString(),
+                            })}
+                        </span>
+                    ) : (
+                        <span>{m['shareLinks.neverExpires']()}</span>
+                    ))}
             </div>
             {summaryExtra}
         </section>

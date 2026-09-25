@@ -2,6 +2,7 @@ import {
     AllowConnectionRequestsEnum,
     ProfileVisibilityEnum,
     type ShareLink,
+    type VP,
 } from '@learncard/types';
 
 import type { ConsentedContract } from '../../components/data-sharing/consentSummary';
@@ -212,6 +213,26 @@ const sharedLinks: DataSharingSharedLinksViewModel = {
     error: false,
     busyId: null,
     showViewStats: true,
+    savedCollections: {
+        records: [
+            {
+                uri: 'lc:network:localhost%3A4000:pres:saved-collection',
+                receivedAt: '2026-09-21T14:30:00.000Z',
+                credentialCount: 3,
+                presentation: {
+                    '@context': ['https://www.w3.org/2018/credentials/v1'],
+                    type: ['VerifiablePresentation'],
+                    verifiableCredential: [{}, {}, {}],
+                    proof: { type: 'Ed25519Signature2020' },
+                } as unknown as VP,
+            },
+        ],
+        isLoading: false,
+        error: false,
+        onOpen: async () => undefined,
+        onRefresh: async () => undefined,
+        onPreview: noop,
+    },
     onFilterChange: noop,
     onRefresh: async () => undefined,
     onLoadMore: async () => undefined,
