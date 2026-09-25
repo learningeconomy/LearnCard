@@ -91,6 +91,11 @@ const createMemoryStorage = (): SSSStorageFunctions & {
             return store.has(id ?? DEFAULT_KEY);
         }),
 
+        deleteDeviceShare: vi.fn(async (id?: string) => {
+            store.delete(id ?? DEFAULT_KEY);
+            versions.delete(id ?? DEFAULT_KEY);
+        }),
+
         clearAllShares: vi.fn(async (id?: string) => {
             if (id) {
                 store.delete(id);
@@ -662,6 +667,23 @@ describe('createSSSStrategy', () => {
             expect(await strategy.getLocalKey()).toBeNull();
         });
 
+        it('preserves unresolved unscoped candidates while removing only the stale main share and version', async () => {
+            await strategy.storeLocalKey('stale-main');
+            await strategy.storeLocalShareVersion!(4);
+            await writePendingShareCandidates(storage, [
+                { share: 'unresolved-device-share', createdAt: Date.now() },
+            ]);
+
+            await strategy.clearLocalKeys({ preservePending: true });
+
+            expect(await storage.getDeviceShare()).toBeNull();
+            expect(await strategy.getLocalShareVersion!()).toBeNull();
+            expect(await readPendingShareCandidates(storage)).toEqual([
+                { share: 'unresolved-device-share', createdAt: expect.any(Number) },
+            ]);
+            expect(await strategy.getLocalKey()).toBe('unresolved-device-share');
+        });
+
         it('delegates to the injected storage with undefined id when no active user', async () => {
             await strategy.storeLocalKey('delegated-share');
 
@@ -758,6 +780,40 @@ describe('createSSSStrategy', () => {
             strategy.setActiveUser!('user-a');
             expect(await strategy.hasLocalKey()).toBe(true);
             expect(await strategy.getLocalKey()).toBe('share-a');
+        });
+
+        it('preserves only the active account pending candidates on automatic cleanup', async () => {
+            strategy.setActiveUser!('user-a');
+            await strategy.storeLocalKey('stale-a');
+            await strategy.storeLocalShareVersion!(2);
+            const pendingA = [{ share: 'pending-a', createdAt: Date.now() }];
+            await writePendingShareCandidates(storage, pendingA, 'sss-device-share:user-a');
+
+            strategy.setActiveUser!('user-b');
+            await strategy.storeLocalKey('share-b');
+            await strategy.storeLocalShareVersion!(3);
+            const pendingB = [{ share: 'pending-b', createdAt: Date.now() }];
+            await writePendingShareCandidates(storage, pendingB, 'sss-device-share:user-b');
+
+            strategy.setActiveUser!('user-a');
+            await strategy.clearLocalKeys({ preservePending: true });
+            expect(await storage.getDeviceShare('sss-device-share:user-a')).toBeNull();
+            expect(await strategy.getLocalShareVersion!()).toBeNull();
+            expect(await strategy.getLocalKey()).toBe('pending-a');
+            expect(await readPendingShareCandidates(storage, 'sss-device-share:user-a')).toEqual(
+                pendingA
+            );
+            expect(await readPendingShareCandidates(storage, 'sss-device-share:user-b')).toEqual(
+                pendingB
+            );
+
+            await strategy.clearLocalKeys();
+            expect(await readPendingShareCandidates(storage, 'sss-device-share:user-a')).toEqual(
+                []
+            );
+            strategy.setActiveUser!('user-b');
+            expect(await strategy.getLocalKey()).toBe('share-b');
+            expect(await strategy.getLocalShareVersion!()).toBe(3);
         });
     });
 
@@ -2903,6 +2959,46 @@ describe('createSSSStrategy', () => {
     describe('production lifecycle atomicity and reconciliation', () => {
         const privateKey = '1234567890abcdef'.repeat(4);
         const expectedDid = 'did:key:zAtomicOwner';
+
+        it('does not clear or cancel an in-flight pending write during automatic cleanup', async () => {
+            strategy.setActiveUser!('account-a');
+            let signalPut!: () => void;
+            let finishPut!: () => void;
+            const putStarted = new Promise<void>(resolve => {
+                signalPut = resolve;
+            });
+            const putFinished = new Promise<void>(resolve => {
+                finishPut = resolve;
+            });
+            vi.spyOn(globalThis, 'fetch').mockImplementation(async (_url, init) => {
+                if (init?.method === 'PUT') {
+                    signalPut();
+                    await putFinished;
+                    return new Response(
+                        JSON.stringify({ shareVersion: 1, expectedShareVersionChecked: true })
+                    );
+                }
+                return new Response(JSON.stringify({ authShare: null, shareVersion: 0 }));
+            });
+            const update = strategy.atomicUpdateShares!({
+                token: 'token',
+                providerType: 'firebase',
+                privateKey,
+                did: expectedDid,
+            });
+            await putStarted;
+            const pending = await readPendingShareCandidates(storage, 'sss-device-share:account-a');
+            expect(pending).toHaveLength(1);
+            await expect(strategy.clearLocalKeys({ preservePending: true })).rejects.toMatchObject({
+                rolledBack: false,
+            });
+            expect(await readPendingShareCandidates(storage, 'sss-device-share:account-a')).toEqual(
+                pending
+            );
+            finishPut();
+            await update;
+            expect(await strategy.getLocalKey()).toBe(pending[0]!.share);
+        });
 
         it('does not promote an old account pending share after an account switch', async () => {
             strategy.setActiveUser!('account-a');
