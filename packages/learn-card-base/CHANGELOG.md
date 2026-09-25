@@ -1,5 +1,13 @@
 # learn-card-base
 
+## 0.5.1
+
+### Patch Changes
+
+- [#1601](https://github.com/learningeconomy/LearnCard/pull/1601) [`3850da277fe17d421bc055cef3cac65616b7626d`](https://github.com/learningeconomy/LearnCard/commit/3850da277fe17d421bc055cef3cac65616b7626d) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-2207] Limit wrong code attempts on email login verification
+
+- [#1614](https://github.com/learningeconomy/LearnCard/pull/1614) [`ae10525fbd0ef284aabe1b03d12db147a1922f2c`](https://github.com/learningeconomy/LearnCard/commit/ae10525fbd0ef284aabe1b03d12db147a1922f2c) Thanks [@smurflo2](https://github.com/smurflo2)! - feat: [LC-2191] Replace Demo School with standards-pure sample personas, including plain OBv3 ConsentFlow issuance without proprietary `boostId` fields.
+
 ## 0.5.0
 
 ### Minor Changes

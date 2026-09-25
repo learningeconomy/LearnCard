@@ -1,5 +1,11 @@
 # @welibraryos/lca-api-service
 
+## 1.3.3
+
+### Patch Changes
+
+- [#1601](https://github.com/learningeconomy/LearnCard/pull/1601) [`3850da277fe17d421bc055cef3cac65616b7626d`](https://github.com/learningeconomy/LearnCard/commit/3850da277fe17d421bc055cef3cac65616b7626d) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-2207] Limit wrong code attempts on email login verification
+
 ## 1.3.2
 
 ### Patch Changes

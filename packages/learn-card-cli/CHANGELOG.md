@@ -1,5 +1,12 @@
 # @learncard/cli
 
+## 3.6.1
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/network-brain-client@2.5.58
+
 ## 3.6.0
 
 ### Minor Changes

@@ -1,6 +1,6 @@
 {
     "name": "@learncard/network-brain-client",
-    "version": "2.5.57",
+    "version": "2.5.58",
     "description": "",
     "type": "module",
     "main": "./dist/index.cjs",

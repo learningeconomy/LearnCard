@@ -1,5 +1,14 @@
 # @learncard/network-brain-service
 
+## 3.19.1
+
+### Patch Changes
+
+- [#1614](https://github.com/learningeconomy/LearnCard/pull/1614) [`ae10525fbd0ef284aabe1b03d12db147a1922f2c`](https://github.com/learningeconomy/LearnCard/commit/ae10525fbd0ef284aabe1b03d12db147a1922f2c) Thanks [@smurflo2](https://github.com/smurflo2)! - feat: [LC-2191] Replace Demo School with standards-pure sample personas, including plain OBv3 ConsentFlow issuance without proprietary `boostId` fields.
+
+- Updated dependencies [[`0e9dd47f4451d776ad1787d0a35dbd54141b9fe3`](https://github.com/learningeconomy/LearnCard/commit/0e9dd47f4451d776ad1787d0a35dbd54141b9fe3), [`ae10525fbd0ef284aabe1b03d12db147a1922f2c`](https://github.com/learningeconomy/LearnCard/commit/ae10525fbd0ef284aabe1b03d12db147a1922f2c)]:
+    - @learncard/credential-library@2.0.5
+
 ## 3.19.0
 
 ### Minor Changes
