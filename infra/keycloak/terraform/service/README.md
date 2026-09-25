@@ -255,10 +255,26 @@ fi
 TARGET="ecs:${CLUSTER}_${TASK_ARN##*/}_${RUNTIME_ID}"
 # Temporarily add `127.0.0.1 <ADMIN_HOST>` to /etc/hosts manually (use printed name).
 printf 'Hosts entry: 127.0.0.1 %s\nOpen: https://%s:%s/admin/\n' "$ADMIN_HOST" "$ADMIN_HOST" "$LOCAL_PORT"
+# The relay listens on the task's own port, so use AWS-StartPortForwardingSession.
+# AWS-StartPortForwardingSessionToRemoteHost rejects 127.0.0.1 ("forbidden").
 aws ssm start-session --target "$TARGET" \
-  --document-name AWS-StartPortForwardingSessionToRemoteHost \
-  --parameters "{\"host\":[\"127.0.0.1\"],\"portNumber\":[\"8443\"],\"localPortNumber\":[\"$LOCAL_PORT\"]}"
+  --document-name AWS-StartPortForwardingSession \
+  --parameters "{\"portNumber\":[\"8443\"],\"localPortNumber\":[\"$LOCAL_PORT\"]}"
 ```
+
+Without `sudo` for `/etc/hosts`, keep TLS verification on and map the name per tool:
+`curl --resolve "$ADMIN_HOST:$LOCAL_PORT:127.0.0.1" …`, or run a script in Docker with
+`--add-host "$ADMIN_HOST:host-gateway"` (Docker Desktop reaches the host's forwarded port).
+The plugin is `session-manager-plugin`; its pkg can be unpacked with `pkgutil --expand-full`
+into a user directory when the installer cannot run as root.
+
+**Verified on staging (2026-09-25):** admin console and admin REST load over verified TLS
+through this forward with `KC_HOSTNAME_ADMIN` on :8443, so no bastion is needed.
+
+**Secret hygiene:** store `learncard-keycloak/<env>/bootstrap-admin` **without a trailing
+newline** (e.g. `openssl rand -base64 36 | tr -d '\n/+='`, never piped through `cut`/`head`,
+which append one). ECS injects the string verbatim, so a stray newline becomes part of the
+Keycloak password while `bootstrap-realm.ts` and the AWS CLI trim it.
 
 This uses the [documented ECS Session Manager target format](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-sessions-start.html#sessions-remote-port-forwarding-ecs-task).
 The remote loopback relay preserves TLS/SNI to the internal ALB. Exit the shell
