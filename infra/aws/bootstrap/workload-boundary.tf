@@ -77,6 +77,7 @@ data "aws_iam_policy_document" "workload_boundary" {
 }
 
 resource "aws_iam_policy" "workload_boundary" {
-  name   = "${local.name}-workload-boundary"
-  policy = data.aws_iam_policy_document.workload_boundary.json
+  name = "${local.name}-workload-boundary"
+  # Base ceiling plus Backup-role-only additions (deploy-observability.tf).
+  policy = data.aws_iam_policy_document.observability_workload_boundary.json
 }

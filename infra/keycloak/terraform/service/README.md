@@ -327,10 +327,10 @@ creation/management of a destination CMK only with matching Project, Environment
 and `Purpose=keycloak-backup-copy` tags. Existing policies
 already cover WAF association/logging, named SNS topics/subscriptions, Events,
 CloudWatch alarms/metric filters, cross-region vaults, and PassRole to Backup.
-`deploy-observability_override.tf` uses Terraform's documented override-file
-semantics to replace only the existing boundary's **policy**, preserving its ARN
-and every original statement. Copy **both new files** into the operational
-bootstrap directory. The extension applies only to the `${name}-backup` principal:
+The workload boundary policy (`workload-boundary.tf`) now renders the merged
+document from `deploy-observability.tf`, preserving its ARN and every original
+statement. Copy the updated bootstrap files into the operational bootstrap
+directory before re-applying. The extension applies only to the `${name}-backup` principal:
 generated `awsbackup:job-*` Aurora snapshots, source-vault copying, and AWS-managed
 RDS/Backup encryption keys. AWS controls snapshot names, so these are an explicit
 exception to our naming prefix. Explicit boundary denials prevent copying, deleting
