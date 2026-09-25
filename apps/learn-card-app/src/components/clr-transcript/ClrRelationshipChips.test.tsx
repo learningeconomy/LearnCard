@@ -26,6 +26,11 @@ describe('ClrRelationshipChips', () => {
         const unlocks = screen.getByRole('button', {
             name: 'Open Applied Systems Design: Unlocks Applied Systems Design',
         });
+        const superseded = screen.getByRole('button', {
+            name: 'Open Applied Systems Design: Superseded by Applied Systems Design',
+        });
+        expect(unlocks.parentElement).not.toHaveClass('opacity-60');
+        expect(superseded.parentElement).toHaveClass('opacity-60');
         expect(screen.queryByText('precedes')).not.toBeInTheDocument();
 
         fireEvent.click(unlocks);
