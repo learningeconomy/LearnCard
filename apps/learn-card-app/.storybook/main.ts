@@ -80,6 +80,10 @@ const config: StorybookConfig = {
                 }),
             ],
             build: {
+                // Chromatic consumes the emitted files and dependency stats, not Vite's
+                // informational gzip report. Computing compressed sizes for this large
+                // Storybook creates an avoidable memory spike after bundling completes.
+                reportCompressedSize: false,
                 rollupOptions: {
                     // Fail the Storybook (Chromatic) build on missing Paraglide keys.
                     onwarn: paraglideMissingKeyOnWarn,
@@ -107,6 +111,10 @@ const config: StorybookConfig = {
                     ),
                     'apps/learn-card-app': path.resolve(__dirname, '..'),
                     '@analytics': path.resolve(__dirname, '../src/analytics'),
+                    // The optional Streamdown code plugin imports Shiki's complete language
+                    // registry. Current stories do not render AI code blocks, so preserve the
+                    // production renderer while excluding those unused grammars from Storybook.
+                    '@streamdown/code': path.resolve(__dirname, './stubs/streamdownCodePlugin.ts'),
                 },
                 dedupe: ['react', 'react-dom', 'react-router', 'react-router-dom', 'history'],
             },
