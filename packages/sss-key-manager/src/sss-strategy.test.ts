@@ -148,6 +148,7 @@ describe('escrow strategy', () => {
     let releasePolicy: 'hold' | 'pin';
     let consumed: boolean;
     let burned: string[];
+    let escrowStale: 'mode-mismatch' | 'key-rotated' | undefined;
     const hold = () => ({
         holdId: holdNumber <= 1 ? 'escrow-hold' : `escrow-hold-${holdNumber}`,
         status: cancelled ? 'cancelled' : 'pending',
@@ -178,6 +179,7 @@ describe('escrow strategy', () => {
         releasePolicy = 'hold';
         consumed = false;
         burned = [];
+        escrowStale = undefined;
         config = {
             serverUrl: 'https://test.example/api',
             storage,
@@ -213,6 +215,7 @@ describe('escrow strategy', () => {
                         attemptsRemaining,
                         ...(pinSalt ? { salt: pinSalt } : {}),
                     },
+                    ...(escrowStale ? { escrowStale } : {}),
                 });
             }
             if (path === '/keys/recovery' || path === '/keys/recovery/confirm')
@@ -254,6 +257,7 @@ describe('escrow strategy', () => {
                 blob = await decryptEscrowBlob(body.envelope, enclaveKeys.privateKey);
                 pinSalt = body.pinSalt;
                 attemptsRemaining = 10;
+                escrowStale = undefined;
                 expect(blob.did).toBe(did);
                 expect(blob.shareVersion).toBe(version);
                 expect(
@@ -558,6 +562,77 @@ describe('escrow strategy', () => {
             reason: 'disabled',
         });
         expect(calls).toHaveLength(0);
+    });
+    it('getEscrowEnrollmentState reports stale with a reason when the server flags the blob', async () => {
+        await strategy.ensureEscrowEnrollment!(params);
+        escrowStale = 'mode-mismatch';
+        expect(await strategy.getEscrowEnrollmentState!(params)).toMatchObject({
+            state: 'stale',
+            staleReason: 'mode-mismatch',
+        });
+        escrowStale = 'key-rotated';
+        expect(await strategy.getEscrowEnrollmentState!(params)).toMatchObject({
+            state: 'stale',
+            staleReason: 'key-rotated',
+        });
+    });
+    it('does not trigger the stale-repair path when the server reports no staleness', async () => {
+        await strategy.ensureEscrowEnrollment!(params);
+        calls = [];
+        await expect(strategy.ensureEscrowEnrollment!(params)).resolves.toEqual({
+            enrolled: true,
+            changed: false,
+        });
+        expect(calls.some(call => call.path === '/keys/escrow/attestation')).toBe(false);
+    });
+    it('rotates a stale enrollment through the normal rotation path, at most once per session', async () => {
+        await strategy.ensureEscrowEnrollment!(params);
+        escrowStale = 'mode-mismatch';
+        await expect(strategy.ensureEscrowEnrollment!(params)).resolves.toEqual({
+            enrolled: true,
+            changed: true,
+            shareVersion: 3,
+        });
+        expect(version).toBe(3);
+        expect(blob?.shareVersion).toBe(3);
+        // A real re-enroll clears server-side staleness (the mock's '/keys/escrow'
+        // handler already reset it); force it stale again so this assertion proves
+        // the session-scoped rate limit — not the mock's own healing — stops the retry.
+        escrowStale = 'mode-mismatch';
+        calls = [];
+        await expect(strategy.ensureEscrowEnrollment!(params)).resolves.toEqual({
+            enrolled: true,
+            changed: false,
+        });
+        expect(calls.some(call => call.path === '/keys/escrow/attestation')).toBe(false);
+        expect(version).toBe(3);
+        // A fresh strategy instance (the next app session) attempts the repair again.
+        const nextSession = createSSSStrategy(config);
+        await expect(nextSession.ensureEscrowEnrollment!(params)).resolves.toEqual({
+            enrolled: true,
+            changed: true,
+            shareVersion: 4,
+        });
+        expect(version).toBe(4);
+    });
+    it('swallows a failed automatic stale-blob repair instead of throwing to the caller', async () => {
+        await strategy.ensureEscrowEnrollment!(params);
+        escrowStale = 'key-rotated';
+        attestationFailure = true;
+        await expect(strategy.ensureEscrowEnrollment!(params)).resolves.toEqual({
+            enrolled: true,
+            changed: false,
+        });
+        expect(version).toBe(2);
+        expect(config.onEscrowError).toHaveBeenCalledOnce();
+        vi.mocked(config.onEscrowError!).mockClear();
+        // Still rate-limited to one attempt this session, even though it failed.
+        await expect(strategy.ensureEscrowEnrollment!(params)).resolves.toEqual({
+            enrolled: true,
+            changed: false,
+        });
+        expect(config.onEscrowError).not.toHaveBeenCalled();
+        expect(version).toBe(2);
     });
     it('requires DID verification before attempting PIN recovery', async () => {
         await expect(

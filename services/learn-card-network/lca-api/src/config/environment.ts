@@ -39,6 +39,11 @@ export const lcaApiEnvironmentShape = {
     ESCROW_ENCLAVE_ACTIVE_KEY_ID: optionalEnvironmentString,
     ESCROW_ENCLAVE_REMOTE_URL: optionalEnvironmentUrl,
     ESCROW_ENCLAVE_REMOTE_TOKEN: optionalEnvironmentString,
+    /** Operator-flipped, manual-only kill switch (P7.1). When true, startRecovery/completeRecovery
+     *  refuse with a friendly message; hold cancellation and notifications keep working. Never
+     *  auto-flipped by the escrow-ledger-monitor — a compromised monitor must not be able to
+     *  silently DoS recovery. See services/escrow-ledger-monitor/README.md. */
+    ESCROW_RELEASE_KILL_SWITCH: optionalEnvironmentBoolean,
     ESCROW_ENCLAVE_REMOTE_TIMEOUT_MS: optionalEnvironmentString
         .transform(value => (value === undefined ? 10_000 : Number(value)))
         .pipe(z.number().int().positive().max(30_000)),
@@ -165,6 +170,13 @@ export const parseLcaApiEnvironment = (
         }
     );
 };
+
+// Read live from process.env (not the frozen `environment` snapshot below) so an
+// operator's flip takes effect on the next request without a full restart, and so
+// tests can toggle it per-case. The escrow-ledger-monitor must never set this itself
+// — see services/escrow-ledger-monitor/README.md.
+export const isEscrowReleaseKillSwitchEnabled = (): boolean =>
+    process.env.ESCROW_RELEASE_KILL_SWITCH === 'true';
 
 /** Parse configuration without exposing secret values in validation errors. */
 export const parseEscrowPrivateKeys = (serialized: string): Record<string, string> => {

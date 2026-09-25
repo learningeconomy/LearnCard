@@ -9,7 +9,7 @@ import {
     escrowPinMismatchMessage,
 } from '@learncard/types';
 import cache from '@cache';
-import { environment } from '@environment';
+import { environment, isEscrowReleaseKillSwitchEnabled } from '@environment';
 import { t, openRoute, didAndChallengeRoute, type Context } from '@routes';
 import { createRecoverySession } from '@cache/recoverySessions';
 import { decryptAuthShare } from '@helpers/shareEncryption.helpers';
@@ -62,6 +62,8 @@ import {
     getEscrowHoldDurationMs,
     getEscrowHoldRestartMinAgeMs,
     isEscrowRemoteMode,
+    activeEscrowClientMode,
+    getEnclaveAttestationIdentity,
     notifyEscrowHoldEvent,
     EscrowPolicyError,
     EscrowBlobError,
@@ -93,7 +95,9 @@ const cancelHoldInEnclave = async (hold: EscrowHold, userKey: MongoUserKeyType):
     }
 };
 const unavailableMessage = 'Automatic recovery is not available for this account.';
+const killSwitchMessage = 'Automatic recovery is temporarily unavailable. Please try again later.';
 const invalidMessage = 'This recovery request is no longer valid.';
+const staleEscrowMessage = 'Automatic recovery needs to be set up again on a signed-in device.';
 // Keep throttling distinct: clients reserve the locked message for lifetime PIN exhaustion.
 const pinThrottledMessage = 'Please wait before trying again.';
 
@@ -227,7 +231,11 @@ const hasConfirmedEscrow = (userKey: MongoUserKeyType, version: number): boolean
     );
 
 /** Never propagate enclave internals (or cryptographic payloads) into tRPC errors. */
-const enclaveOperation = async <T>(operation: () => Promise<T>, enrolling = false): Promise<T> => {
+const enclaveOperation = async <T>(
+    operation: () => Promise<T>,
+    enrolling = false,
+    policyMessage = invalidMessage
+): Promise<T> => {
     try {
         return await operation();
     } catch (error) {
@@ -238,7 +246,7 @@ const enclaveOperation = async <T>(operation: () => Promise<T>, enrolling = fals
             });
         }
         if (error instanceof EscrowPolicyError) {
-            throw new TRPCError({ code: 'FORBIDDEN', message: invalidMessage });
+            throw new TRPCError({ code: 'FORBIDDEN', message: policyMessage });
         }
         if (enrolling && error instanceof EscrowBlobError) {
             throw new TRPCError({
@@ -252,6 +260,26 @@ const enclaveOperation = async <T>(operation: () => Promise<T>, enrolling = fals
         });
     }
 };
+
+// A stored blob is stale when it was sealed for a different enclave backend
+// (P6 software<->nitro migration/rollback) or a since-rotated enclave key
+// (measurement rotation). Never forward a stale blob to createHold/releaseEscrow.
+const assertFreshEscrowBlob = (blob: {
+    enclaveMode: 'software' | 'nitro';
+    enclaveKeyId: string;
+}): Promise<void> =>
+    enclaveOperation(
+        async () => {
+            if (blob.enclaveMode !== activeEscrowClientMode()) throw new EscrowPolicyError();
+            // Fail-closed identity lookup: uses a warm cache when available,
+            // otherwise makes a real (normally-timed-out) enclave call and lets
+            // failure propagate — never treats an unreachable enclave as fresh.
+            const identity = await getEnclaveAttestationIdentity();
+            if (blob.enclaveKeyId !== identity.keyId) throw new EscrowPolicyError();
+        },
+        false,
+        staleEscrowMessage
+    );
 
 // Strict objects with exclusive proof fields also remain compatible with OpenAPI's
 // object-only parameter generation (unlike a top-level Zod union).
@@ -477,6 +505,12 @@ export const escrowRouter = t.router({
                 })
         )
         .mutation(async ({ input, ctx }) => {
+            if (isEscrowReleaseKillSwitchEnabled()) {
+                throw new TRPCError({
+                    code: 'PRECONDITION_FAILED',
+                    message: killSwitchMessage,
+                });
+            }
             let authProvider: AuthProviderMapping;
             if (input.releasePolicy === 'pin') await limitPinCompletion(ctx.clientIp, 'start');
             if (input.recoverySessionToken !== undefined) {
@@ -503,6 +537,7 @@ export const escrowRouter = t.router({
             ) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: unavailableMessage });
             }
+            await assertFreshEscrowBlob(userKey.escrowBlob);
             const now = new Date();
             if (
                 input.releasePolicy === 'pin' &&
@@ -740,6 +775,12 @@ export const escrowRouter = t.router({
             })
         )
         .mutation(async ({ input, ctx }) => {
+            if (isEscrowReleaseKillSwitchEnabled()) {
+                throw new TRPCError({
+                    code: 'PRECONDITION_FAILED',
+                    message: killSwitchMessage,
+                });
+            }
             if (input.pinProof !== undefined) await limitPinCompletion(ctx.clientIp);
             const hold = await findEscrowHoldById(input.holdId);
             if (!hold || !resumeTokenMatches(hold, input.resumeToken)) {
@@ -776,6 +817,7 @@ export const escrowRouter = t.router({
             ) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: invalidMessage });
             }
+            await assertFreshEscrowBlob(userKey.escrowBlob);
             const encryptedAuthShare = findAuthShareByVersion(userKey, hold.shareVersion);
             if (!encryptedAuthShare || !environment.SEED) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: invalidMessage });

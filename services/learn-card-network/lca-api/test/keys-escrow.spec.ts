@@ -40,11 +40,15 @@ import {
 import { appRouter } from '../src/app';
 import {
     __setEscrowEnclaveForTests,
+    __resetEscrowAttestationCacheForTests,
     getEscrowEnclave,
+    getEscrowBlobStaleReason,
     EscrowPolicyError,
     EscrowBlobError,
     EscrowPinMismatchError,
     EscrowUnavailableError,
+    type EscrowEnclave,
+    type EnclaveAttestation,
 } from '../src/services/escrow-enclave';
 import { getClient, getUser } from './helpers/getClient';
 
@@ -1680,6 +1684,255 @@ describe('escrow PIN release', () => {
         expect(redactSecretFields({ pinProof, nested: { pinVerifier: pinProof } })).toEqual({
             pinProof: '[Redacted]',
             nested: { pinVerifier: '[Redacted]' },
+        });
+    });
+});
+
+describe('P7.1 ESCROW_RELEASE_KILL_SWITCH', () => {
+    afterEach(() => {
+        delete process.env.ESCROW_RELEASE_KILL_SWITCH;
+    });
+
+    it('refuses startRecovery with a friendly message and creates no hold', async () => {
+        await enroll();
+        process.env.ESCROW_RELEASE_KILL_SWITCH = 'true';
+        await expect(start()).rejects.toMatchObject({
+            code: 'PRECONDITION_FAILED',
+            message: 'Automatic recovery is temporarily unavailable. Please try again later.',
+        });
+        expect(
+            await getEscrowHoldsCollection().countDocuments({ 'authProvider.id': authProvider.id })
+        ).toBe(0);
+    });
+
+    it('refuses completeRecovery on an existing pending hold, which stays pending', async () => {
+        setDuration(1);
+        await enroll();
+        const started = await start();
+        await new Promise(resolve => setTimeout(resolve, 5));
+        process.env.ESCROW_RELEASE_KILL_SWITCH = 'true';
+        await expect(getClient().escrow.completeRecovery(resume(started))).rejects.toMatchObject({
+            code: 'PRECONDITION_FAILED',
+            message: 'Automatic recovery is temporarily unavailable. Please try again later.',
+        });
+        expect(await findEscrowHoldById(started.holdId)).toMatchObject({ status: 'pending' });
+    });
+
+    it('still allows cancelRecoveryByLink while the kill switch is on', async () => {
+        await enroll();
+        const started = await start();
+        const stored = await findEscrowHoldById(started.holdId);
+        const token = generateEscrowCancelToken();
+        await getEscrowHoldsCollection().updateOne(
+            { _id: started.holdId },
+            { $set: { cancelTokenHash: hashEscrowCancelToken(token) } }
+        );
+        process.env.ESCROW_RELEASE_KILL_SWITCH = 'true';
+        await expect(
+            getClient().escrow.cancelRecoveryByLink({ holdId: started.holdId, token })
+        ).resolves.toEqual({ cancelled: true });
+        expect(await findEscrowHoldById(stored!._id)).toMatchObject({ status: 'cancelled' });
+    });
+});
+
+describe('P6.1 escrow enclave-mode staleness', () => {
+    const staleMessage = 'Automatic recovery needs to be set up again on a signed-in device.';
+
+    // Delegates every real crypto operation to the currently-active (real)
+    // enclave, only relabeling the attestation fields under test — lets these
+    // tests exercise the mode/keyId comparison without a real remote backend.
+    const withAttestationOverrides = (
+        base: EscrowEnclave,
+        overrides: Partial<EnclaveAttestation>
+    ): EscrowEnclave => ({
+        getAttestation: async nonce => ({ ...(await base.getAttestation(nonce)), ...overrides }),
+        verifyEscrowBlob: input => base.verifyEscrowBlob(input),
+        releaseEscrow: input => base.releaseEscrow(input),
+        createHold: input => base.createHold(input),
+        cancelHold: input => base.cancelHold(input),
+    });
+
+    afterEach(() => {
+        delete process.env.ESCROW_ENCLAVE_REMOTE_URL;
+        delete process.env.ESCROW_ENCLAVE_REMOTE_TOKEN;
+        process.env.ESCROW_ENCLAVE_MODE = 'software';
+        __setEscrowEnclaveForTests(undefined);
+    });
+
+    it('startRecovery refuses a software blob once the server is in remote (nitro) mode, and status reports it', async () => {
+        await enroll();
+        const base = getEscrowEnclave();
+        process.env.ESCROW_ENCLAVE_MODE = 'remote';
+        process.env.ESCROW_ENCLAVE_REMOTE_URL = 'http://localhost:5999';
+        process.env.ESCROW_ENCLAVE_REMOTE_TOKEN = 'r'.repeat(32);
+        __setEscrowEnclaveForTests(withAttestationOverrides(base, { mode: 'nitro' }));
+        await expect(start()).rejects.toMatchObject({ code: 'FORBIDDEN', message: staleMessage });
+        expect(
+            await getEscrowHoldsCollection().countDocuments({ 'authProvider.id': authProvider.id })
+        ).toBe(0);
+        expect((await owner().keys.getAuthShare(auth))?.escrowStale).toBe('mode-mismatch');
+    });
+
+    it('completeRecovery refuses a software blob once the server is in remote (nitro) mode', async () => {
+        setDuration(1);
+        await enroll();
+        const started = await start();
+        await new Promise(resolve => setTimeout(resolve, 5));
+        const base = getEscrowEnclave();
+        process.env.ESCROW_ENCLAVE_MODE = 'remote';
+        process.env.ESCROW_ENCLAVE_REMOTE_URL = 'http://localhost:5999';
+        process.env.ESCROW_ENCLAVE_REMOTE_TOKEN = 'r'.repeat(32);
+        __setEscrowEnclaveForTests(withAttestationOverrides(base, { mode: 'nitro' }));
+        await expect(getClient().escrow.completeRecovery(resume(started))).rejects.toMatchObject({
+            code: 'FORBIDDEN',
+            message: staleMessage,
+        });
+        expect(await findEscrowHoldById(started.holdId)).toMatchObject({ status: 'pending' });
+    });
+
+    it('refuses recovery for a nitro blob if the server rolls back to software mode', async () => {
+        const base = getEscrowEnclave();
+        process.env.ESCROW_ENCLAVE_MODE = 'remote';
+        process.env.ESCROW_ENCLAVE_REMOTE_URL = 'http://localhost:5999';
+        process.env.ESCROW_ENCLAVE_REMOTE_TOKEN = 'r'.repeat(32);
+        __setEscrowEnclaveForTests(withAttestationOverrides(base, { mode: 'nitro' }));
+        await enroll(); // stores enclaveMode: 'nitro'
+        delete process.env.ESCROW_ENCLAVE_REMOTE_URL;
+        delete process.env.ESCROW_ENCLAVE_REMOTE_TOKEN;
+        process.env.ESCROW_ENCLAVE_MODE = 'software';
+        __setEscrowEnclaveForTests(undefined); // roll back to the real software backend
+        await expect(start()).rejects.toMatchObject({ code: 'FORBIDDEN', message: staleMessage });
+        expect((await owner().keys.getAuthShare(auth))?.escrowStale).toBe('mode-mismatch');
+    });
+
+    it('reports key-rotated and refuses recovery when the enclave key id changes within the same mode', async () => {
+        setDuration(1);
+        await enroll();
+        const started = await start();
+        await new Promise(resolve => setTimeout(resolve, 5));
+        const base = getEscrowEnclave();
+        __setEscrowEnclaveForTests(
+            withAttestationOverrides(base, { keyId: 'rotated-software-key' })
+        );
+        // First check after the swap is the only one that should ever reach the
+        // enclave — startRecovery's fetch warms the cache; completeRecovery and
+        // getAuthShare below must reuse it (see the getAttestation call-count
+        // assertion at the end).
+        const spy = vi.spyOn(getEscrowEnclave(), 'getAttestation');
+        await expect(
+            getClient().escrow.startRecovery({
+                ...auth,
+                clientEphemeralPublicKey: recipient.publicKey,
+            })
+        ).rejects.toMatchObject({ code: 'FORBIDDEN', message: staleMessage });
+        await expect(getClient().escrow.completeRecovery(resume(started))).rejects.toMatchObject({
+            code: 'FORBIDDEN',
+            message: staleMessage,
+        });
+        expect((await owner().keys.getAuthShare(auth))?.escrowStale).toBe('key-rotated');
+        expect(spy).toHaveBeenCalledTimes(1);
+    });
+
+    it('reports no staleness and completes recovery normally for a blob matching the active enclave', async () => {
+        setDuration(1);
+        await enroll();
+        expect((await owner().keys.getAuthShare(auth))?.escrowStale).toBeUndefined();
+        const started = await start();
+        await new Promise(resolve => setTimeout(resolve, 5));
+        await expect(getClient().escrow.completeRecovery(resume(started))).resolves.toBeDefined();
+    });
+
+    describe('attestation cache (P6.1 fix round 1 — login must never wait on the enclave)', () => {
+        const hangingEnclave: EscrowEnclave = {
+            getAttestation: () => new Promise(() => {}),
+            verifyEscrowBlob: () => {
+                throw new Error('not used in this test');
+            },
+            releaseEscrow: () => {
+                throw new Error('not used in this test');
+            },
+            createHold: () => {
+                throw new Error('not used in this test');
+            },
+            cancelHold: () => {
+                throw new Error('not used in this test');
+            },
+        };
+
+        it('mode-mismatch never touches the enclave, even with a permanently-hanging attestation call', async () => {
+            __setEscrowEnclaveForTests(hangingEnclave); // clears the cache too
+            const startedAt = Date.now();
+            const reason = await getEscrowBlobStaleReason({
+                enclaveMode: 'nitro',
+                enclaveKeyId: 'whatever',
+            });
+            expect(Date.now() - startedAt).toBeLessThan(100);
+            expect(reason).toBe('mode-mismatch');
+        });
+
+        it('returns within the status budget instead of waiting on a hanging enclave when the mode matches', async () => {
+            __setEscrowEnclaveForTests(hangingEnclave); // clears the cache too
+            const startedAt = Date.now();
+            const reason = await getEscrowBlobStaleReason({
+                enclaveMode: 'software',
+                enclaveKeyId: 'whatever',
+            });
+            // Comfortably under ESCROW_ENCLAVE_REMOTE_TIMEOUT_MS's 10s default —
+            // proves the status path never awaits the hanging call directly.
+            expect(Date.now() - startedAt).toBeLessThan(1000);
+            expect(reason).toBeUndefined();
+        });
+
+        it('detects key-rotated purely from a warm cache, with no second attestation fetch', async () => {
+            await enroll();
+            const base = getEscrowEnclave();
+            __setEscrowEnclaveForTests(withAttestationOverrides(base, { keyId: 'rotated' })); // clears the cache too
+            const blob = { enclaveMode: 'software' as const, enclaveKeyId: keyId };
+            // Cold cache: fetches once and warms it with the rotated identity.
+            expect(await getEscrowBlobStaleReason(blob)).toBe('key-rotated');
+            const spy = vi.spyOn(getEscrowEnclave(), 'getAttestation');
+            // Warm cache: must answer from memory, no second fetch.
+            expect(await getEscrowBlobStaleReason(blob)).toBe('key-rotated');
+            expect(spy).not.toHaveBeenCalled();
+        });
+
+        it('single-flights concurrent cold-cache status checks into exactly one attestation fetch', async () => {
+            await enroll();
+            __resetEscrowAttestationCacheForTests();
+            const spy = vi.spyOn(getEscrowEnclave(), 'getAttestation');
+            const blob = { enclaveMode: 'software' as const, enclaveKeyId: keyId };
+            const results = await Promise.all(
+                Array.from({ length: 5 }, () => getEscrowBlobStaleReason(blob))
+            );
+            expect(spy).toHaveBeenCalledTimes(1);
+            expect(results.every(reason => reason === undefined)).toBe(true);
+        });
+
+        it('enforcement still refuses when the enclave is unreachable against a cold cache (never treats failure as fresh)', async () => {
+            await enroll();
+            __setEscrowEnclaveForTests({
+                getAttestation: async () => {
+                    throw new EscrowUnavailableError();
+                },
+                verifyEscrowBlob: () => {
+                    throw new Error('not used in this test');
+                },
+                releaseEscrow: () => {
+                    throw new Error('not used in this test');
+                },
+                createHold: () => {
+                    throw new Error('not used in this test');
+                },
+                cancelHold: () => {
+                    throw new Error('not used in this test');
+                },
+            }); // clears the cache too
+            await expect(start()).rejects.toMatchObject({ code: 'PRECONDITION_FAILED' });
+            expect(
+                await getEscrowHoldsCollection().countDocuments({
+                    'authProvider.id': authProvider.id,
+                })
+            ).toBe(0);
         });
     });
 });

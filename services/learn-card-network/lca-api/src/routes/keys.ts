@@ -12,6 +12,7 @@ import type { TenantBranding } from '@learncard/email-templates';
 
 import { t, openRoute, didRoute, didAndChallengeRoute } from '@routes';
 import { getDeliveryService, getFrom } from '../services/delivery';
+import { getEscrowBlobStaleReason } from '../services/escrow-enclave';
 import { verifyAuthToken, getContactMethodFromUser, AuthProviderType } from '@helpers/auth.helpers';
 import { encryptAuthShare, decryptAuthShare } from '@helpers/shareEncryption.helpers';
 import { maskEmail } from '@helpers/maskEmail';
@@ -636,6 +637,7 @@ export const keysRouter = t.router({
                     maskedRecoveryEmail: z.string().nullable(),
                     escrowOptedOut: z.boolean(),
                     escrowPin: EscrowPinStatusValidator,
+                    escrowStale: z.enum(['mode-mismatch', 'key-rotated']).optional(),
                     sssActivationState: z.enum(['provisional', 'active']),
                 })
                 .nullable()
@@ -709,6 +711,9 @@ export const keysRouter = t.router({
                 sssActivationState: getSssActivationState(userKey),
                 escrowOptedOut: Boolean(userKey.escrowOptedOutAt),
                 escrowPin: getEscrowPinStatus(userKey),
+                escrowStale: userKey.escrowBlob
+                    ? await getEscrowBlobStaleReason(userKey.escrowBlob)
+                    : undefined,
             };
         }),
 

@@ -23,6 +23,7 @@ export {
     type DidAuthVpSigner,
     type EscrowEnrollmentOptions,
     type EscrowEnrollmentState,
+    type EscrowBlobStaleReason,
     type EscrowPinStatus,
 } from '@learncard/types';
 
