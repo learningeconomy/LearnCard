@@ -1,0 +1,321 @@
+name: Escrow Enclave EIF
+
+# Plan: .sisyphus/plans/nitro-escrow-enclave.md P2.2. See
+# services/escrow-enclave-app/README.md ("Reproducible build") and
+# security/README.md for the full pipeline this workflow implements.
+on:
+    pull_request:
+        paths:
+            - 'services/escrow-enclave-app/**'
+            - '.github/workflows/escrow-enclave-eif.yml'
+    push:
+        branches:
+            - main
+        # Tag pushes bypass `paths` entirely (GitHub does not evaluate path
+        # filters for tag pushes), so this also fires on every
+        # escrow-enclave-v* tag regardless of which files changed.
+        tags:
+            - 'escrow-enclave-v*'
+        paths:
+            - 'services/escrow-enclave-app/**'
+            - '.github/workflows/escrow-enclave-eif.yml'
+    workflow_dispatch:
+
+# Default: read-only. Jobs below grant only the extra scope they need
+# (`eif` adds id-token for cosign keyless; `publish-measurements` adds
+# contents/pull-requests to open its PR).
+permissions:
+    contents: read
+
+env:
+    MONGOMS_DISABLE_POSTINSTALL: '1'
+    CARGO_AUDIT_VERSION: '0.22.2'
+
+jobs:
+    # ---------------------------------------------------------------------
+    # Native test/lint/audit gate. Runs on every PR and push that touches
+    # this crate (or this workflow file), plus workflow_dispatch. No Nitro
+    # tooling required — this is plain `cargo` on a GitHub-hosted runner.
+    # ---------------------------------------------------------------------
+    test:
+        name: test
+        runs-on: ubuntu-latest
+        defaults:
+            run:
+                working-directory: services/escrow-enclave-app
+        steps:
+            - name: Checkout
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+              # No submodules: escrow-enclave-app has zero git dependencies
+              # (`grep -c '^source = "git"' Cargo.lock` => 0) and its only
+              # `path = ...` entries are its own src/main.rs / src/lib.rs —
+              # unlike lib/didkit and lib/ssi, this crate has no path deps
+              # into repo submodules. See notepad issues.md "P2.2 report".
+
+            - name: Setup Rust (1.93.0 + rustfmt/clippy, per rust-toolchain.toml)
+              uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master
+              # Pinned to `master`, not a per-version branch: dtolnay/rust-toolchain's
+              # own README requires pinning a SHA that's in master's history (other
+              # branches, e.g. `1.93.0`, are NOT ancestors of master and can be
+              # garbage-collected — confirmed via `gh api .../compare/master...1.93.0`
+              # returning "diverged" for this repo). master's README explicitly
+              # recommends this exact pattern: pin @master, pass `toolchain:` as an
+              # explicit input.
+              with:
+                  toolchain: 1.93.0
+                  components: rustfmt, clippy
+
+            # Mirrors .github/workflows/didkit-plugin-node-prebuilds.yml's cargo
+            # cache shape (same action, same registry/git-db path categories,
+            # keyed on hashFiles(Cargo.lock)), adapted to this crate's own
+            # target dir (there is no root Cargo workspace) and this job's
+            # single ubuntu-latest runner (no cross-compile matrix, so
+            # `runner.os` replaces didkit's `matrix.settings.target` prefix).
+            # Also caches the RustSec advisory-db clone `cargo audit` needs,
+            # so repeat runs only `git pull` it instead of a fresh clone.
+            - name: Cache cargo
+              uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+              with:
+                  path: |
+                      ~/.cargo/registry/index/
+                      ~/.cargo/registry/cache/
+                      ~/.cargo/git/db/
+                      ~/.cargo/advisory-db
+                      services/escrow-enclave-app/target/
+                  key: ${{ runner.os }}-cargo-escrow-enclave-app-${{ hashFiles('services/escrow-enclave-app/Cargo.lock') }}
+
+            # cargo-audit is a separate installed binary, not part of the
+            # crate's own Cargo.lock — cache it by its own pinned version so
+            # a hit skips a ~45s source build entirely.
+            - name: Cache cargo-audit binary
+              id: cargo-audit-cache
+              uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+              with:
+                  path: ~/.cargo/bin/cargo-audit
+                  key: ${{ runner.os }}-cargo-audit-bin-${{ env.CARGO_AUDIT_VERSION }}
+
+            - name: Install cargo-audit (pinned)
+              if: steps.cargo-audit-cache.outputs.cache-hit != 'true'
+              run: cargo install cargo-audit --version "${CARGO_AUDIT_VERSION}" --locked
+
+            - name: cargo fmt --check
+              run: cargo fmt --check
+
+            - name: cargo clippy (default features)
+              run: cargo clippy -- -D warnings
+
+            - name: cargo clippy (fake-* features)
+              run: cargo clippy --features fake-ledger,fake-time,fake-kms,fake-nsm -- -D warnings
+
+            - name: cargo test
+              run: cargo test
+
+            - name: cargo check (nitro,kms)
+              run: cargo check --features nitro,kms
+
+            # Only RUSTSEC-2023-0071 (the `rsa` crate's Marvin timing-sidechannel
+            # advisory) is authorized to be ignored, per notepad decisions.md D11
+            # ("not exploitable as an oracle here" — CMS blob only ever arrives
+            # inside the enclave's own TLS session to KMS, never host-supplied).
+            # No other ignores are authorized without a new, explicit decision.
+            #
+            # KNOWN GAP (see notepad problems.md / issues.md "P2.2 report"): as
+            # of 2026-09-25, `cargo audit` ALSO reports RUSTSEC-2026-0258 (h2
+            # 0.3.27), RUSTSEC-2026-0104/0098/0099 (rustls-webpki 0.101.7) — all
+            # transitively pulled in by aws-nitro-enclaves-{cose,nsm-api}'s older
+            # hyper/rustls stack (`nitro` feature) — plus an "unmaintained"
+            # WARNING for serde_cbor (same two crates). None of these are
+            # covered by D11's single sanctioned ignore, so THIS STEP IS
+            # EXPECTED TO FAIL until a follow-up task either upgrades those
+            # dependencies or gets explicit sign-off to add more `--ignore`
+            # flags. Deliberately NOT silenced here: this task's scope forbids
+            # editing Cargo.toml/Cargo.lock, and unilaterally adding more
+            # ignores to a security-critical enclave's CI gate is exactly the
+            # kind of decision that belongs in decisions.md, not a drive-by
+            # workflow edit.
+            - name: cargo audit (D11 rsa/Marvin ignore only)
+              run: cargo audit --ignore RUSTSEC-2023-0071
+
+    # ---------------------------------------------------------------------
+    # Reproducible EIF build + PCR measurement + keyless signing.
+    #
+    # GitHub-hosted runners cannot run this job: `nitro-cli build-enclave`
+    # requires the Nitro Enclaves kernel driver, which only exists on a
+    # Nitro-capable EC2 instance type with the enclave option enabled — see
+    # security/README.md for the exact self-hosted runner requirements
+    # (AL2023, pinned aws-nitro-enclaves-cli, docker, jq).
+    #
+    # Restricted to push (main or an escrow-enclave-v* tag) and
+    # workflow_dispatch — NEVER pull_request, including same-repo PRs: this
+    # runs on a self-hosted runner, and self-hosted runners must never
+    # execute untrusted/PR-supplied code (GitHub's own hardening guidance).
+    # `success() &&` is required in the `if:` below because providing any
+    # custom `if:` expression replaces (rather than ANDs with) the implicit
+    # `needs`-success check GitHub would otherwise apply.
+    # ---------------------------------------------------------------------
+    eif:
+        name: eif
+        needs: test
+        if: success() && github.event_name != 'pull_request'
+        runs-on: [self-hosted, linux, x64, nitro-enclaves]
+        permissions:
+            contents: read
+            id-token: write # cosign keyless signing (GitHub OIDC -> Fulcio/Rekor); granted on this job only.
+        steps:
+            - name: Checkout
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+            - name: Build EIF (build-a)
+              run: |
+                  set -euo pipefail
+                  services/escrow-enclave-app/scripts/build-eif.sh \
+                      --out "${GITHUB_WORKSPACE}/build-a" \
+                      --source-date-epoch "$(git log -1 --format=%ct)"
+
+            - name: Build EIF (build-b)
+              run: |
+                  set -euo pipefail
+                  services/escrow-enclave-app/scripts/build-eif.sh \
+                      --out "${GITHUB_WORKSPACE}/build-b" \
+                      --source-date-epoch "$(git log -1 --format=%ct)"
+
+            - name: Verify PCR0/1/2 reproducibility (build-a vs build-b)
+              run: |
+                  services/escrow-enclave-app/scripts/verify-measurements.sh \
+                      "${GITHUB_WORKSPACE}/build-a/measurements.json" \
+                      "${GITHUB_WORKSPACE}/build-b/measurements.json"
+
+            # Re-load explicitly from build-a's own image.tar (rather than
+            # trusting whatever the local Docker daemon currently has tagged)
+            # so this step verifiably checks build-a specifically, per this
+            # task's spec — the prior step already proved build-b is
+            # byte-identical, but this keeps the provenance unambiguous.
+            - name: Extract binary from build-a/image.tar
+              run: |
+                  set -euo pipefail
+                  docker load -i "${GITHUB_WORKSPACE}/build-a/image.tar"
+                  image_tag="$(jq -r '.imageTag' "${GITHUB_WORKSPACE}/build-a/measurements.json")"
+                  container_id="$(docker create "${image_tag}")"
+                  docker cp "${container_id}:/escrow-enclave" "${GITHUB_WORKSPACE}/build-a/escrow-enclave-binary"
+                  docker rm "${container_id}" >/dev/null
+
+            - name: Check binary for leaked host build paths
+              run: |
+                  services/escrow-enclave-app/scripts/check-binary-paths.sh \
+                      "${GITHUB_WORKSPACE}/build-a/escrow-enclave-binary"
+
+            # `gitCommit` (git sha) is already present via build-a's own
+            # measurements.json (from build-eif.sh); this adds the two
+            # fields that script has no way to know about itself.
+            - name: Produce escrow-measurements.json
+              run: |
+                  set -euo pipefail
+                  nitro_cli_version="$(nitro-cli --version)"
+                  jq \
+                      --arg nitroCliVersion "${nitro_cli_version}" \
+                      --arg workflowRunId "${GITHUB_RUN_ID}" \
+                      '. + {nitroCliVersion: $nitroCliVersion, workflowRunId: $workflowRunId}' \
+                      "${GITHUB_WORKSPACE}/build-a/measurements.json" \
+                      >"${GITHUB_WORKSPACE}/escrow-measurements.json"
+
+            - name: Build signing manifest (SHA-256 of EIF + measurements)
+              run: |
+                  set -euo pipefail
+                  eif_sha256="$(sha256sum "${GITHUB_WORKSPACE}/build-a/escrow-enclave.eif" | cut -d' ' -f1)"
+                  measurements_sha256="$(sha256sum "${GITHUB_WORKSPACE}/escrow-measurements.json" | cut -d' ' -f1)"
+                  jq -n \
+                      --arg eifSha256 "${eif_sha256}" \
+                      --arg measurementsSha256 "${measurements_sha256}" \
+                      --arg gitSha "${GITHUB_SHA}" \
+                      --arg workflowRunId "${GITHUB_RUN_ID}" \
+                      '{eifSha256: $eifSha256, measurementsSha256: $measurementsSha256, gitSha: $gitSha, workflowRunId: $workflowRunId}' \
+                      >"${GITHUB_WORKSPACE}/manifest.json"
+
+            # KNOWN RISK (see security/README.md "Known risks"): this
+            # action's own README states "self-hosted runners may not
+            # work". Our self-hosted runner is a repo-controlled AL2023 EC2
+            # instance (not a generic third-party runner), so it may well
+            # work, but this has NOT been exercised end-to-end — no Nitro
+            # hardware is available outside CI. If this step fails on the
+            # first real run, the documented fallback is a manually
+            # installed, checksum-verified `cosign` binary (see
+            # security/README.md) rather than silently dropping signing.
+            - name: Install cosign
+              uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+              with:
+                  cosign-release: 'v3.1.3'
+
+            - name: Sign manifest (cosign keyless, GitHub OIDC)
+              run: |
+                  cosign sign-blob --yes \
+                      --output-signature "${GITHUB_WORKSPACE}/manifest.json.sig" \
+                      --output-certificate "${GITHUB_WORKSPACE}/manifest.json.pem" \
+                      "${GITHUB_WORKSPACE}/manifest.json"
+
+            - name: Upload EIF + measurements + manifest + signature
+              uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+              with:
+                  name: escrow-enclave-eif-${{ github.run_id }}-${{ github.run_attempt }}
+                  retention-days: 90
+                  if-no-files-found: error
+                  path: |
+                      ${{ github.workspace }}/build-a/escrow-enclave.eif
+                      ${{ github.workspace }}/escrow-measurements.json
+                      ${{ github.workspace }}/manifest.json
+                      ${{ github.workspace }}/manifest.json.sig
+                      ${{ github.workspace }}/manifest.json.pem
+
+    # ---------------------------------------------------------------------
+    # On a release tag only: publish the verified measurements into the
+    # repo via PR (never a direct push — notepad decisions.md D10 requires
+    # two-person review on measurement changes, since a wrong/malicious
+    # PCR tuple lets an attacker's enclave image pass client pinning).
+    # ---------------------------------------------------------------------
+    publish-measurements:
+        name: publish-measurements
+        needs: eif
+        if: success() && startsWith(github.ref, 'refs/tags/escrow-enclave-v')
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+            pull-requests: write
+        steps:
+            - name: Checkout
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+            - name: Download EIF artifacts
+              uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+              with:
+                  name: escrow-enclave-eif-${{ github.run_id }}-${{ github.run_attempt }}
+                  path: downloaded-artifacts
+
+            - name: Copy measurements into security/escrow-measurements/
+              run: |
+                  set -euo pipefail
+                  mkdir -p security/escrow-measurements
+                  cp downloaded-artifacts/escrow-measurements.json \
+                      "security/escrow-measurements/${GITHUB_REF_NAME}.json"
+
+            - name: Open PR with new measurements
+              uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+              with:
+                  base: main
+                  branch: escrow-measurements/${{ github.ref_name }}
+                  add-paths: security/escrow-measurements/**
+                  commit-message: 'chore(security): publish escrow enclave measurements for ${{ github.ref_name }}'
+                  title: 'security: escrow enclave measurements for ${{ github.ref_name }}'
+                  labels: security
+                  body: |
+                      Automated PR from `.github/workflows/escrow-enclave-eif.yml` (`publish-measurements` job).
+
+                      Adds `security/escrow-measurements/${{ github.ref_name }}.json`, produced by a
+                      reproducible double-build (PCR0/1/2 verified identical between two independent
+                      `nitro-cli build-enclave` runs) of `services/escrow-enclave-app` at commit
+                      `${{ github.sha }}`, workflow run `${{ github.run_id }}`.
+
+                      **Per notepad decision D10, measurement changes need two-person review before
+                      merge — do not self-approve.** See `security/README.md` for how these PCRs flow
+                      into `infra/escrow-enclave` tfvars (`enclave_measurements`) and tenant
+                      `escrowEnclaveMeasurements`, and for the N / N+1 rotation procedure (never remove
+                      the previous measurement until every enclave instance and every client rollout
+                      has moved to the new one).
