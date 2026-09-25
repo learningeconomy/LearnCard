@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2016 # Literal Markdown and JMESPath backticks, not substitutions.
 set -euo pipefail
 # AWS calls occur only in the protected environment job, never in local validation.
 : "${DEPLOY_ENVIRONMENT:?}"
@@ -18,6 +19,10 @@ complete=false
 cleanup() {
     if [[ "$stopped" == true && "$complete" != true ]]; then
         # No automatic rollback across a possible schema migration. Leave scaling suspended.
+        aws application-autoscaling register-scalable-target --service-namespace ecs \
+            --resource-id "service/$name/$name" --scalable-dimension ecs:service:DesiredCount \
+            --min-capacity 0 --max-capacity "$maximum" \
+            --suspended-state DynamicScalingInSuspended=true,DynamicScalingOutSuspended=true,ScheduledScalingSuspended=true >/dev/null || true
         aws ecs update-service --cluster "$name" --service "$name" --desired-count 0 >/dev/null || true
         printf '::error::Deployment failed; service stopped, autoscaling suspended. Follow snapshot recovery runbook.\n'
     fi
@@ -83,8 +88,13 @@ if [[ "$strategy" == recreate ]]; then
         --min-capacity 0 --max-capacity "$maximum" \
         --suspended-state DynamicScalingInSuspended=true,DynamicScalingOutSuspended=true,ScheduledScalingSuspended=true >/dev/null
     stopped=true
+    old_tasks=$(aws ecs list-tasks --cluster "$name" --service-name "$name" --query taskArns --output json)
     aws ecs update-service --cluster "$name" --service "$name" --desired-count 0 >/dev/null
     aws ecs wait services-stable --cluster "$name" --services "$name"
+    # Stability at desired=0 alone is not proof that draining tasks have exited.
+    while IFS= read -r old_task; do
+        aws ecs wait tasks-stopped --cluster "$name" --tasks "$old_task"
+    done < <(jq -r '.[]' <<< "$old_tasks")
     aws ecs describe-services --cluster "$name" --services "$name" | \
         jq -e '.services[0] | .runningCount == 0 and .pendingCount == 0 and .desiredCount == 0' >/dev/null
 fi

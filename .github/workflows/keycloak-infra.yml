@@ -265,7 +265,7 @@ jobs:
                       if [[ -z "$image" ]]; then
                           name="learncard-keycloak-$DEPLOY_ENVIRONMENT"
                           task=$(aws ecs describe-services --cluster "$name" --services "$name" --query 'services[0].taskDefinition' --output text)
-                          image=$(aws ecs describe-task-definition --task-definition "$task" --query 'taskDefinition.containerDefinitions[?name==`keycloak`].image | [0]' --output text)
+                          image=$(aws ecs describe-task-definition --task-definition "$task" | jq -er '.taskDefinition.containerDefinitions[] | select(.name=="keycloak") | .image')
                       fi
                   else
                       exit 0

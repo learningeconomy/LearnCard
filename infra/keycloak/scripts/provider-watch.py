@@ -67,7 +67,7 @@ def main():
     body = (f'Provider release: {release["html_url"]}\n\nSHA-256: `{checksum}`\n\n'
             '- [ ] Confirm compatibility with Keycloak 26.x minor.\n'
             '- [ ] Build both images and test Apple sign-in before merging.\n'
-            '- [ ] Run required CI (token-created PRs do not automatically trigger workflows).\n\n'
+            '- [ ] Approve/run required CI for this token-created PR before merging.\n\n'
             '## Upstream release notes (untrusted release content)\n\n' + (release['body'] or 'No notes supplied.'))
     subprocess.run(['gh', 'pr', 'create', '--repo', repo, '--base', 'main', '--head', branch,
                     '--title', title, '--body', body], check=True)
