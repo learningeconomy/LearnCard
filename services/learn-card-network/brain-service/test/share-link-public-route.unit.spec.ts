@@ -160,8 +160,7 @@ const makeDependencies = (
         policyResolver: ineligiblePolicy,
         getSharer: vi.fn(async () => sharer),
         passcodeAttempts: {
-            canAttempt: vi.fn(async () => true),
-            recordFailure: vi.fn(async () => undefined),
+            reserve: vi.fn(async () => true),
         },
         enforceRateLimit: vi.fn(async () => undefined),
         contentUrlFor: (shareId: string) => `/share-links/${shareId}/content`,
@@ -350,12 +349,9 @@ describe('public share-link resolve', () => {
     });
 
     it('shares the failed-attempt budget across source addresses and both endpoints', async () => {
-        let failures = 0;
+        let attempts = 0;
         const passcodeAttempts = {
-            canAttempt: vi.fn(async () => failures < 2),
-            recordFailure: vi.fn(async () => {
-                failures += 1;
-            }),
+            reserve: vi.fn(async () => ++attempts <= 2),
         };
         const verifyPasscode = vi.fn(async (_hash: string, value: string) => value === '2468');
         const dependencies = makeDependencies({
@@ -378,9 +374,9 @@ describe('public share-link resolve', () => {
                 id: SHARE_ID,
                 passcode: '2468',
             })
-        ).resolves.toEqual({ state: 'passcode_required', id: SHARE_ID });
+        ).resolves.toEqual({ state: 'try_later', id: SHARE_ID });
         expect(verifyPasscode).toHaveBeenCalledTimes(2);
-        failures = 0; // the short window has elapsed
+        attempts = 0; // the short window has elapsed
         await expect(
             makeCaller(dependencies).resolve({ id: SHARE_ID, passcode: '2468' })
         ).resolves.toMatchObject({ state: 'active' });

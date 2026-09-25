@@ -22,7 +22,19 @@ import type {
 
 const PAGE_SIZE = 25;
 
-type PendingOwnerOperation = PendingSharedLinkAction & ShareLinkOperationKeyInput;
+type PendingOwnerOperation = PendingSharedLinkAction &
+    ShareLinkOperationKeyInput & { baseVersion: number };
+
+const isTransientOwnerError = (error: unknown): boolean => {
+    if (typeof error !== 'object' || error === null) return true;
+    const code = (error as { data?: { code?: string } }).data?.code;
+    return (
+        !code ||
+        ['TIMEOUT', 'INTERNAL_SERVER_ERROR', 'SERVICE_UNAVAILABLE', 'TOO_MANY_REQUESTS'].includes(
+            code
+        )
+    );
+};
 
 export const useSharedLinks = (
     enabled: boolean,
@@ -72,6 +84,18 @@ export const useSharedLinks = (
                       ]
                     : page.records
             );
+            setPendingOperations(current => {
+                const next = { ...current };
+                for (const record of page.records) {
+                    const pending = next[record.id];
+                    if (
+                        pending &&
+                        (record.version > pending.baseVersion || record.status === 'stopped')
+                    )
+                        delete next[record.id];
+                }
+                return next;
+            });
             setCursor(page.cursor);
             setHasMore(page.hasMore);
         } catch {
@@ -143,17 +167,25 @@ export const useSharedLinks = (
         (
             result: Parameters<typeof classifySharePublication>[0],
             shareId: string,
-            action: PendingSharedLinkAction['action']
+            action: PendingSharedLinkAction['action'],
+            baseVersion: number
         ): ShareLink | undefined => {
             const outcome = classifySharePublication(result);
             if (outcome.status === 'pending') {
                 setPendingOperations(current => ({
                     ...current,
-                    [shareId]: { ...outcome.operation, shareId, action },
+                    [shareId]: { ...outcome.operation, shareId, action, baseVersion },
                 }));
                 return undefined;
             }
-            if (outcome.status === 'abandoned') throw new Error('operation');
+            if (outcome.status === 'abandoned') {
+                setPendingOperations(current => {
+                    const next = { ...current };
+                    delete next[shareId];
+                    return next;
+                });
+                throw new Error('operation');
+            }
             setPendingOperations(current => {
                 const next = { ...current };
                 delete next[shareId];
@@ -178,7 +210,8 @@ export const useSharedLinks = (
                         expiresAt,
                     }),
                     share.id,
-                    'expiry'
+                    'expiry',
+                    share.version
                 );
                 presentToast(
                     updated
@@ -213,7 +246,8 @@ export const useSharedLinks = (
                         clientRequestId: crypto.randomUUID(),
                     }),
                     share.id,
-                    'stop'
+                    'stop',
+                    share.version
                 );
                 presentToast(
                     stopped
@@ -249,7 +283,8 @@ export const useSharedLinks = (
                         operationId: pendingOperation.operationId,
                     }),
                     share.id,
-                    pendingOperation.action
+                    pendingOperation.action,
+                    pendingOperation.baseVersion
                 );
                 presentToast(
                     !updated
@@ -259,9 +294,18 @@ export const useSharedLinks = (
                           : m['dataShareCenter.shared.expirySaved'](),
                     { type: ToastTypeEnum.Success }
                 );
-            } catch {
-                // A transport failure does not settle the durable operation.
-                // Keep this share's recovery handle available for another check.
+            } catch (failure) {
+                // Only transport/service uncertainty preserves the handle.
+                if (
+                    !isTransientOwnerError(failure) ||
+                    (failure as Error)?.message === 'operation'
+                ) {
+                    setPendingOperations(current => {
+                        const next = { ...current };
+                        delete next[share.id];
+                        return next;
+                    });
+                }
                 await load();
                 presentToast(m['dataShareCenter.shared.actionError'](), {
                     type: ToastTypeEnum.Error,

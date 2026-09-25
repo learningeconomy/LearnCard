@@ -16,6 +16,10 @@ import { getPresentationOwner } from '@accesslayer/presentation/relationships/re
 import { deletePresentation } from '@accesslayer/presentation/delete';
 import { isRelationshipBlocked } from '@helpers/connection.helpers';
 import { getProfileIdFromString } from '@helpers/did.helpers';
+import {
+    assertPresentationMetadataRecipient,
+    PresentationMetadataValidator,
+} from '@helpers/presentation-metadata';
 
 export const presentationsRouter = t.router({
     sendPresentation: profileRoute
@@ -35,7 +39,7 @@ export const presentationsRouter = t.router({
             z.object({
                 profileId: z.string(),
                 presentation: VPValidator.or(JWEValidator),
-                metadata: z.record(z.string(), z.unknown()).optional(),
+                metadata: PresentationMetadataValidator.optional(),
             })
         )
         .output(z.string())
@@ -57,6 +61,12 @@ export const presentationsRouter = t.router({
                     message: 'Profile not found. Are you sure this person exists?',
                 });
             }
+
+            assertPresentationMetadataRecipient(
+                metadata,
+                profile.profileId,
+                targetProfile.profileId
+            );
 
             return sendPresentation(profile, targetProfile, presentation, ctx.domain, metadata);
         }),

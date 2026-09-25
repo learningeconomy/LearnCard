@@ -140,7 +140,18 @@ export const parseSavedShareLinkMetadata = (value: unknown): SavedShareLinkMetad
     )
         return undefined;
 
-    return metadata as SavedShareLinkMetadata;
+    // Avatars in relationship metadata are untrusted remote URLs. Older saves
+    // may contain them, but never load one from this listing.
+    return {
+        type: SAVED_SHARE_METADATA_TYPE,
+        shareId: metadata.shareId as string,
+        title: metadata.title as string,
+        ...(metadata.note ? { note: metadata.note as string } : {}),
+        sharer: {
+            profileId: sharerRecord.profileId as string,
+            displayName: sharerRecord.displayName as string,
+        },
+    };
 };
 
 /** Bounded, order-preserving fan-out so a picker never opens unbounded reads. */

@@ -323,8 +323,8 @@ describe('create screen', () => {
         fireEvent.click(passcodeSwitch);
         expect(passcodeSwitch).toBeChecked();
         expect(passcodeSwitch.firstElementChild?.className).toContain('translate-x-5');
-        fireEvent.change(screen.getByPlaceholderText('At least 4 characters'), {
-            target: { value: '2468' },
+        fireEvent.change(screen.getByPlaceholderText('At least 8 characters'), {
+            target: { value: '24682468' },
         });
         fireEvent.click(notificationSwitch);
         expect(notificationSwitch).toBeChecked();
@@ -335,10 +335,10 @@ describe('create screen', () => {
 
         await screen.findByText('Your link is ready');
         expect(mocks.wallet.invoke.createShareLink).toHaveBeenCalledWith(
-            expect.objectContaining({ passcode: '2468', notifyOnView: true })
+            expect.objectContaining({ passcode: '24682468', notifyOnView: true })
         );
         const published = mocks.wallet.invoke.createShareLink.mock.calls[0][0];
-        expect(JSON.stringify(published)).not.toContain('#2468');
+        expect(JSON.stringify(published)).not.toContain('#24682468');
     });
     it('reuses encrypted input after a lost response', async () => {
         mocks.wallet.invoke.createShareLink.mockRejectedValueOnce(new Error('lost response'));
@@ -505,7 +505,7 @@ describe('create screen', () => {
         expect(passcodeSwitch).toBeChecked();
         expect(notificationSwitch).toBeChecked();
         fireEvent.change(screen.getByPlaceholderText('Leave blank to keep current passcode'), {
-            target: { value: '8642' },
+            target: { value: '86428642' },
         });
         fireEvent.click(notificationSwitch);
         fireEvent.click(screen.getByRole('button', { name: /Preview/ }));
@@ -516,7 +516,7 @@ describe('create screen', () => {
             expect.objectContaining({
                 id: 'AAAAAAAAAAAAAAAAAAAAAA',
                 expectedVersion: 1,
-                passcode: '8642',
+                passcode: '86428642',
                 notifyOnView: false,
             })
         );
@@ -527,6 +527,18 @@ describe('create screen', () => {
     });
 });
 describe('recipient screen', () => {
+    it('shows a neutral retry state when passcode verification is unavailable', async () => {
+        mocks.wallet.invoke.resolveShareLink.mockResolvedValue({ state: 'try_later' });
+        render(<ShareLinkViewer />);
+        await screen.findByText('Please wait a moment');
+        expect(
+            screen.getByText("We couldn't check the passcode right now. Try again shortly.")
+        ).toBeInTheDocument();
+        expect(
+            screen.queryByText('That passcode did not work. Check it and try again.')
+        ).toBeNull();
+        expect(mocks.wallet.invoke.getShareLinkContent).not.toHaveBeenCalled();
+    });
     it('prompts for a protected share and sends the passcode only when unlocking', async () => {
         mocks.wallet.invoke.resolveShareLink.mockImplementation(
             async (_id: string, passcode?: string) =>
@@ -648,7 +660,9 @@ describe('recipient screen', () => {
         expect(JSON.stringify(mocks.redirect.authRedirect.mock.calls)).not.toContain(
             'A'.repeat(43)
         );
-        expect(localStorage.getItem('redirectStore') ?? '').not.toContain('A'.repeat(43));
+        // Node 25 exposes an unusable localStorage shim without --localstorage-file.
+        if (typeof localStorage.getItem === 'function')
+            expect(localStorage.getItem('redirectStore') ?? '').not.toContain('A'.repeat(43));
         expect(sessionStorage.getItem('learncard:share-link:private-return')).toContain(
             'A'.repeat(43)
         );
@@ -662,7 +676,7 @@ describe('recipient screen', () => {
         sessionStorage.setItem('learncard:share-link:save-after-sign-in', 'AAAAAAAAAAAAAAAAAAAAAA');
         sessionStorage.setItem(
             'learncard:share-link:private-return',
-            JSON.stringify({ id: 'AAAAAAAAAAAAAAAAAAAAAA', hash: `#${key}` })
+            JSON.stringify({ id: 'AAAAAAAAAAAAAAAAAAAAAA', hash: `#${key}`, createdAt: Date.now() })
         );
         window.history.replaceState(null, '', '/s/AAAAAAAAAAAAAAAAAAAAAA');
         mocks.auth.loggedIn = true;
@@ -707,6 +721,24 @@ describe('recipient screen', () => {
         render(<ShareLinkViewer />);
         await screen.findByText('This link is incomplete');
         expect(mocks.wallet.invoke.resolveShareLink).not.toHaveBeenCalled();
+    });
+    it('expires a saved private return key and keeps another share pending', async () => {
+        const saved = { id: 'B'.repeat(22), hash: `#${'A'.repeat(43)}`, createdAt: Date.now() };
+        sessionStorage.setItem('learncard:share-link:private-return', JSON.stringify(saved));
+        window.history.replaceState(null, '', '/s/AAAAAAAAAAAAAAAAAAAAAA');
+        const first = render(<ShareLinkViewer />);
+        await screen.findByText('This link is incomplete');
+        expect(sessionStorage.getItem('learncard:share-link:private-return')).toBe(
+            JSON.stringify(saved)
+        );
+        first.unmount();
+        sessionStorage.setItem(
+            'learncard:share-link:private-return',
+            JSON.stringify({ ...saved, createdAt: Date.now() - 16 * 60 * 1000 })
+        );
+        render(<ShareLinkViewer />);
+        await screen.findByText('This link is incomplete');
+        expect(sessionStorage.getItem('learncard:share-link:private-return')).toBeNull();
     });
     it('retries the same passcode when the recipient submits it again', async () => {
         mocks.wallet.invoke.resolveShareLink.mockResolvedValue({ state: 'passcode_required' });

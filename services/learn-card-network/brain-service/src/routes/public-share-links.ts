@@ -89,8 +89,7 @@ export type PublicShareLinkRouterDependencies = {
     readonly getSharer: (ownerProfileId: string) => Promise<PublicShareLinkSharer | null>;
     readonly verifyPasscode?: (passcodeHash: string, passcode: string) => Promise<boolean>;
     readonly passcodeAttempts?: {
-        canAttempt: (shareId: string, sourceIp?: string) => Promise<boolean>;
-        recordFailure: (shareId: string, sourceIp?: string) => Promise<void>;
+        reserve: (shareId: string, sourceIp?: string) => Promise<boolean>;
     };
     readonly notifyView?: (input: {
         shareId: string;
@@ -171,17 +170,17 @@ const passcodeAccepted = async (
     passcode: string | undefined,
     dependencies: PublicShareLinkRouterDependencies,
     sourceIp?: string
-): Promise<boolean> => {
-    if (record.passcodeHash == null) return true;
-    if (!passcode || !dependencies.verifyPasscode || !dependencies.passcodeAttempts) return false;
+): Promise<'accepted' | 'rejected' | 'try_later'> => {
+    if (record.passcodeHash == null) return 'accepted';
+    if (!passcode) return 'rejected';
+    if (!dependencies.verifyPasscode || !dependencies.passcodeAttempts) return 'try_later';
     try {
-        if (!(await dependencies.passcodeAttempts.canAttempt(record.id, sourceIp))) return false;
+        if (!(await dependencies.passcodeAttempts.reserve(record.id, sourceIp))) return 'try_later';
         const accepted = await dependencies.verifyPasscode(record.passcodeHash, passcode);
-        if (!accepted) await dependencies.passcodeAttempts.recordFailure(record.id, sourceIp);
-        return accepted;
+        return accepted ? 'accepted' : 'rejected';
     } catch {
         dependencies.reportFailure('passcode_guard');
-        return false;
+        return 'try_later';
     }
 };
 
@@ -267,11 +266,17 @@ export const createPublicShareLinksRouter = (
                 }
                 // Even lifecycle timestamps are private until a protected link
                 // has been unlocked. Missing records never enter Argon2.
-                if (
-                    record &&
-                    !(await passcodeAccepted(record, input.passcode, dependencies, ctx.sourceIp))
-                ) {
-                    return { state: 'passcode_required' as const, id: input.id };
+                if (record) {
+                    const access = await passcodeAccepted(
+                        record,
+                        input.passcode,
+                        dependencies,
+                        ctx.sourceIp
+                    );
+                    if (access === 'rejected')
+                        return { state: 'passcode_required' as const, id: input.id };
+                    if (access === 'try_later')
+                        return { state: 'try_later' as const, id: input.id };
                 }
 
                 if (classification.state === 'expired') {
@@ -406,7 +411,16 @@ export const createPublicShareLinksRouter = (
 
                 const first = await readActiveShare();
 
-                if (!(await passcodeAccepted(first, input.passcode, dependencies, ctx.sourceIp))) {
+                const access = await passcodeAccepted(
+                    first,
+                    input.passcode,
+                    dependencies,
+                    ctx.sourceIp
+                );
+                if (access === 'try_later') {
+                    throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'try again later' });
+                }
+                if (access === 'rejected') {
                     throw new TRPCError({
                         code: 'UNAUTHORIZED',
                         message: 'share-link passcode required',
@@ -740,12 +754,12 @@ const buildProductionDependencies = async (
         policyResolver,
         verifyPasscode: verifySharePasscode,
         passcodeAttempts: {
-            canAttempt: (shareId, sourceIp) =>
-                passcodeAbuse.canAttemptSharePasscode(config.namespace, shareId, sourceIp),
-            recordFailure: (shareId, sourceIp) =>
-                passcodeAbuse.recordFailedSharePasscode(config.namespace, shareId, sourceIp),
+            reserve: (shareId, sourceIp) =>
+                passcodeAbuse.reserveSharePasscodeAttempt(config.namespace, shareId, sourceIp),
         },
         notifyView: async notification => {
+            // Best effort: claim before enqueue to avoid duplicate alerts under
+            // concurrent views. A queue outage may suppress one window.
             if (!(await claimShareViewNotification(config.namespace, notification.shareId))) return;
             const profile = await getProfileByProfileId(notification.ownerProfileId);
             if (!profile) return;

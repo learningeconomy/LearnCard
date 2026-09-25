@@ -1,5 +1,4 @@
 import { TRPCError } from '@trpc/server';
-import { environment } from '@environment';
 
 import {
     CreateShareLinkInputValidator,
@@ -43,15 +42,6 @@ import type {
     ListShareLinksResult,
     ShareLinkListCursor,
 } from '@accesslayer/share-link/types';
-
-// Enabled production deployments fail at route registration rather than first
-// owner write if their dedicated fingerprint key is missing or too short.
-if (
-    environment.NODE_ENV === 'production' &&
-    resolveShareLinkOwnerApiConfig(process.env).status === 'enabled'
-) {
-    getShareLinkRequestHashSecret();
-}
 
 /**
  * LC-2187 owner share-link APIs (D1).

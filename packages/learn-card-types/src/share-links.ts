@@ -625,7 +625,7 @@ export const CreateShareLinkInputValidator = z
         title: z.string().min(1).max(120),
         note: z.string().max(500).optional(),
         expiresAt: z.iso.datetime().nullable().optional(),
-        passcode: z.string().min(4).max(64).optional(),
+        passcode: z.string().min(8).max(64).optional(),
         notifyOnView: z.boolean().default(false),
         selectedCount: z.number().int().min(1).max(MAX_SELECTED_CREDENTIALS),
         contentVersion: z.literal(1),
@@ -649,7 +649,7 @@ export const UpdateShareLinkInputValidator = z
         note: z.string().max(500).nullable().optional(),
         expiresAt: z.iso.datetime().nullable().optional(),
         /** Omitted preserves the current passcode, null removes it, and a string replaces it. */
-        passcode: z.string().min(4).max(64).nullable().optional(),
+        passcode: z.string().min(8).max(64).nullable().optional(),
         notifyOnView: z.boolean().optional(),
         contentVersion: safeVersion.optional(),
         selectedCount: z.number().int().min(1).max(MAX_SELECTED_CREDENTIALS).optional(),
@@ -759,6 +759,7 @@ export const ShareLinkPublicStateValidator = z.discriminatedUnion('state', [
             id: ShareLinkIdValidator,
         })
         .strict(),
+    z.object({ state: z.literal('try_later'), id: ShareLinkIdValidator }).strict(),
     z
         .object({
             state: z.literal('active'),

@@ -47,6 +47,7 @@ type Ready = {
 type ViewState =
     | 'loading'
     | 'passcode_required'
+    | 'try_later'
     | 'incomplete'
     | 'expired'
     | 'stopped'
@@ -60,6 +61,7 @@ const secondaryButton =
 
 const SAVE_AFTER_SIGN_IN_KEY = 'learncard:share-link:save-after-sign-in';
 const PRIVATE_RETURN_KEY = 'learncard:share-link:private-return';
+const PRIVATE_RETURN_TTL_MS = 15 * 60 * 1000;
 
 const isPasscodeRejection = (error: unknown): boolean => {
     if (typeof error !== 'object' || error === null) return false;
@@ -69,6 +71,11 @@ const isPasscodeRejection = (error: unknown): boolean => {
         candidate.message?.includes('share-link passcode required') === true
     );
 };
+
+const isRateLimited = (error: unknown): boolean =>
+    typeof error === 'object' &&
+    error !== null &&
+    (error as { data?: { code?: string } }).data?.code === 'TOO_MANY_REQUESTS';
 
 const ShareLinkViewer = () => {
     const { id } = useParams<{ id: string }>();
@@ -114,17 +121,25 @@ const ShareLinkViewer = () => {
         if (!hash && id) {
             try {
                 const saved = JSON.parse(sessionStorage.getItem(PRIVATE_RETURN_KEY) ?? 'null');
-                sessionStorage.removeItem(PRIVATE_RETURN_KEY);
                 if (
                     saved?.id === id &&
                     typeof saved.hash === 'string' &&
+                    typeof saved.createdAt === 'number' &&
+                    Date.now() - saved.createdAt <= PRIVATE_RETURN_TTL_MS &&
                     readShareAddress(id, saved.hash)
                 ) {
+                    sessionStorage.removeItem(PRIVATE_RETURN_KEY);
                     history.replace({ pathname: location.pathname, hash: saved.hash });
                     return () => {
                         cancelled = true;
                     };
                 }
+                if (
+                    saved?.id === id ||
+                    typeof saved?.createdAt !== 'number' ||
+                    Date.now() - saved.createdAt > PRIVATE_RETURN_TTL_MS
+                )
+                    sessionStorage.removeItem(PRIVATE_RETURN_KEY);
             } catch {
                 // A private return is optional; a malformed entry cannot grant access.
             }
@@ -155,6 +170,10 @@ const ShareLinkViewer = () => {
                     setState('passcode_required');
                     return;
                 }
+                if (metadata.state === 'try_later') {
+                    setState('try_later');
+                    return;
+                }
                 if (metadata.state !== 'active') {
                     setState(metadata.state);
                     return;
@@ -163,6 +182,10 @@ const ShareLinkViewer = () => {
                 try {
                     content = await wallet.invoke.getShareLinkContent(id, submittedPasscode);
                 } catch (error) {
+                    if (!cancelled && isRateLimited(error)) {
+                        setState('try_later');
+                        return;
+                    }
                     if (!cancelled && submittedPasscode && isPasscodeRejection(error)) {
                         setPasscodeError(true);
                         setSubmittedPasscode(undefined);
@@ -331,6 +354,7 @@ const ShareLinkViewer = () => {
             const wallet = shareWallet(await initWallet());
             const alreadySaved = (await wallet.invoke.getReceivedPresentations()).some(
                 item =>
+                    item.from === item.to &&
                     parseSavedShareLinkMetadata(item.metadata)?.shareId === ready.payload.shareId
             );
             if (alreadySaved) {
@@ -339,6 +363,7 @@ const ShareLinkViewer = () => {
             }
             const pendingSave = (await wallet.invoke.getIncomingPresentations()).find(
                 item =>
+                    item.from === item.to &&
                     parseSavedShareLinkMetadata(item.metadata)?.shareId === ready.payload.shareId
             );
             if (pendingSave) {
@@ -356,9 +381,6 @@ const ShareLinkViewer = () => {
                 sharer: {
                     profileId: ready.payload.sharer.profileId,
                     displayName: ready.metadata.sharer.displayName,
-                    ...(ready.metadata.sharer.avatar
-                        ? { avatar: ready.metadata.sharer.avatar }
-                        : {}),
                 },
             };
             const uri = await wallet.invoke.sendPresentation(
@@ -384,8 +406,9 @@ const ShareLinkViewer = () => {
                     !cancelled &&
                     received.some(
                         item =>
+                            item.from === item.to &&
                             parseSavedShareLinkMetadata(item.metadata)?.shareId ===
-                            ready.payload.shareId
+                                ready.payload.shareId
                     )
                 )
                     setSaveState('saved');
@@ -415,6 +438,7 @@ const ShareLinkViewer = () => {
             m['shareLinks.passcodeRequired'](),
             m['shareLinks.passcodeRequiredHint'](),
         ],
+        try_later: [m['shareLinks.tryLater'](), m['shareLinks.tryLaterHint']()],
         incomplete: [m['shareLinks.incomplete'](), m['shareLinks.incompleteHint']()],
         expired: [m['shareLinks.expired'](), m['shareLinks.askNew']()],
         stopped: [m['shareLinks.stopped'](), m['shareLinks.askNew']()],
@@ -476,6 +500,15 @@ const ShareLinkViewer = () => {
                                         className="mx-auto h-5 w-5 rounded-full border-2 border-grayscale-300 border-t-grayscale-900 animate-spin"
                                     />
                                 )}
+                                {state === 'try_later' && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setAttempt(value => value + 1)}
+                                        className={secondaryButton}
+                                    >
+                                        {m['shareLinks.retry']()}
+                                    </button>
+                                )}
                                 {state === 'passcode_required' && (
                                     <form
                                         className="mx-auto max-w-sm space-y-4 text-left"
@@ -501,7 +534,7 @@ const ShareLinkViewer = () => {
                                                     setPasscodeError(false);
                                                 }}
                                                 className="mt-2 w-full rounded-xl border border-grayscale-300 bg-white px-4 py-3 text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                                placeholder={m['shareLinks.passcodePlaceholder']()}
+                                                placeholder={m['shareLinks.passcodeLabel']()}
                                             />
                                         </label>
                                         {passcodeError && (
@@ -590,7 +623,11 @@ const ShareLinkViewer = () => {
                                                                     );
                                                                     sessionStorage.setItem(
                                                                         PRIVATE_RETURN_KEY,
-                                                                        JSON.stringify({ id, hash })
+                                                                        JSON.stringify({
+                                                                            id,
+                                                                            hash,
+                                                                            createdAt: Date.now(),
+                                                                        })
                                                                     );
                                                                 } catch {
                                                                     // Storage may be unavailable in hardened browsers.

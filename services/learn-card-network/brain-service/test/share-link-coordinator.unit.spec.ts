@@ -254,13 +254,13 @@ describe('share-link coordinator create', () => {
             },
         });
         await coordinator.createShareLink(
-            { ...createRequest(), passcode: '2468', notifyOnView: true },
+            { ...createRequest(), passcode: '24682468', notifyOnView: true },
             context
         );
 
         const reserveArgs = (repository.reserveCreate as ReturnType<typeof vi.fn>).mock.calls[0][0];
         expect(reserveArgs.passcodeHash).toMatch(/^\$argon2id\$/);
-        expect(reserveArgs.passcodeHash).not.toContain('2468');
+        expect(reserveArgs.passcodeHash).not.toContain('24682468');
         expect(reserveArgs).not.toHaveProperty('passcode');
         expect(reserveArgs.notifyOnView).toBe(true);
     });
@@ -534,7 +534,7 @@ describe('share-link coordinator update', () => {
                 id: SHARE_ID,
                 expectedVersion: 2,
                 clientRequestId: CLIENT_REQUEST_ID,
-                passcode: '8642',
+                passcode: '86428642',
                 notifyOnView: true,
             },
             context
@@ -543,7 +543,7 @@ describe('share-link coordinator update', () => {
         const protectedArgs = (repository.reserveReplacement as ReturnType<typeof vi.fn>).mock
             .calls[0][0];
         expect(protectedArgs.passcodeHash).toMatch(/^\$argon2id\$/);
-        expect(protectedArgs.passcodeHash).not.toContain('8642');
+        expect(protectedArgs.passcodeHash).not.toContain('86428642');
         expect(protectedArgs).not.toHaveProperty('passcode');
         expect(protectedArgs.notifyOnView).toBe(true);
 

@@ -32,8 +32,8 @@ export const verifySharePasscode = async (
     passcodeHash: string,
     passcode: string
 ): Promise<boolean> => {
-    // Capacity is not a wrong guess: the caller fails closed without recording
-    // a failed attempt against the share's short abuse window.
+    // Local defense for long-lived workers; Lambda's cross-instance budget is
+    // reserved in Redis before this function runs. Capacity is not a wrong code.
     if (activeVerifications >= MAX_CONCURRENT_VERIFICATIONS) throw new SharePasscodeCapacityError();
     activeVerifications += 1;
     try {

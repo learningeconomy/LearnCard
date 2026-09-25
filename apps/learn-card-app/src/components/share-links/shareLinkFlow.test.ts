@@ -170,7 +170,7 @@ describe('share publication boundary', () => {
             ['private:credential'],
             'Updated title',
             '',
-            { passcode: '8642', notifyOnView: false }
+            { passcode: '86428642', notifyOnView: false }
         );
 
         expect(updated.key).toBe(key);
@@ -180,7 +180,7 @@ describe('share publication boundary', () => {
             contentVersion: 3,
             title: 'Updated title',
             note: null,
-            passcode: '8642',
+            passcode: '86428642',
             notifyOnView: false,
         });
         const payload = (await decryptSharePayload({

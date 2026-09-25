@@ -152,7 +152,7 @@ export const ShareLinkCreate = ({
     const alive = useRef(true);
     const passcodeIsInvalid =
         passcodeEnabled &&
-        passcode.length < 4 &&
+        passcode.length < 8 &&
         (!editShare?.passcodeProtected || passcode.length > 0);
 
     const load = async () => {
@@ -850,7 +850,7 @@ export const ShareLinkCreate = ({
                                         {m['shareLinks.passcodeLabel']()}
                                         <input
                                             type="password"
-                                            minLength={4}
+                                            minLength={8}
                                             maxLength={64}
                                             autoComplete="new-password"
                                             disabled={fieldsLocked}

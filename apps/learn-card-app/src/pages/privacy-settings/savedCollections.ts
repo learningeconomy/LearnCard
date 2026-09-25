@@ -30,7 +30,10 @@ export const loadSavedCredentialCollections = async (
                   ? [rawCredentials]
                   : [];
 
-            const metadata = parseSavedShareLinkMetadata(item.metadata);
+            // Only a recipient's own send/accept can carry collection labels.
+            // Metadata from an unrelated sender is not signed VP content.
+            const metadata =
+                item.from === item.to ? parseSavedShareLinkMetadata(item.metadata) : undefined;
             const collection = {
                 uri: item.uri,
                 ...(metadata

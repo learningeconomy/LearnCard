@@ -12,28 +12,33 @@ vi.mock('@cache', () => ({
     },
 }));
 
-import {
-    canAttemptSharePasscode,
-    recordFailedSharePasscode,
-} from '../src/helpers/share-link-passcode-abuse';
+import { reserveSharePasscodeAttempt } from '../src/helpers/share-link-passcode-abuse';
 import { claimShareViewNotification } from '../src/helpers/share-link-view-notification';
 
 beforeEach(() => store.clear());
 
 describe('share-link abuse windows', () => {
-    it('bounds failures per source and across rotating source addresses, then recovers', async () => {
+    it('bounds attempts per source and across rotating source addresses, then recovers', async () => {
         for (let index = 0; index < 6; index++) {
-            expect(await canAttemptSharePasscode('ns', 'share', 'source-a')).toBe(true);
-            await recordFailedSharePasscode('ns', 'share', 'source-a');
+            expect(await reserveSharePasscodeAttempt('ns', 'share', 'source-a')).toBe(true);
         }
-        expect(await canAttemptSharePasscode('ns', 'share', 'source-a')).toBe(false);
-        expect(await canAttemptSharePasscode('ns', 'share', 'source-b')).toBe(true);
-        for (let index = 0; index < 18; index++) {
-            await recordFailedSharePasscode('ns', 'share', `rotating-${index}`);
+        expect(await reserveSharePasscodeAttempt('ns', 'share', 'source-a')).toBe(false);
+        expect(await reserveSharePasscodeAttempt('ns', 'share', 'source-b')).toBe(true);
+        for (let index = 0; index < 17; index++) {
+            await reserveSharePasscodeAttempt('ns', 'share', `rotating-${index}`);
         }
-        expect(await canAttemptSharePasscode('ns', 'share', 'fresh-source')).toBe(false);
+        expect(await reserveSharePasscodeAttempt('ns', 'share', 'fresh-source')).toBe(false);
         store.clear(); // Redis expiry at the end of the one-minute window.
-        expect(await canAttemptSharePasscode('ns', 'share', 'source-a')).toBe(true);
+        expect(await reserveSharePasscodeAttempt('ns', 'share', 'source-a')).toBe(true);
+    });
+
+    it('admits at most 24 concurrent verifications across rotated sources', async () => {
+        const admitted = await Promise.all(
+            Array.from({ length: 50 }, (_, index) =>
+                reserveSharePasscodeAttempt('ns', 'burst', `source-${index}`)
+            )
+        );
+        expect(admitted.filter(Boolean)).toHaveLength(24);
     });
 
     it('atomically claims only one owner notification per share window', async () => {

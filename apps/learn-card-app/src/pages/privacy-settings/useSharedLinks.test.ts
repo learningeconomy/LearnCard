@@ -30,6 +30,39 @@ const presentation = (...credentials: VC[]): VP => ({
 });
 
 describe('loadSavedCredentialCollections', () => {
+    it('does not trust display labels from a presentation sent by another profile', async () => {
+        const wallet = {
+            invoke: {
+                getReceivedPresentations: vi.fn(async () => [
+                    {
+                        uri: 'lc:network:spoofed',
+                        from: 'attacker',
+                        to: 'recipient',
+                        sent: '2026-09-25T12:00:00.000Z',
+                        received: '2026-09-25T12:01:00.000Z',
+                        metadata: {
+                            type: 'learncard.share-link.v1',
+                            shareId: 'A'.repeat(22),
+                            title: 'Harvard Registrar',
+                            sharer: {
+                                profileId: 'harvard',
+                                displayName: 'Harvard Registrar',
+                                avatar: 'https://attacker/pixel.png',
+                            },
+                        },
+                    },
+                ]),
+            },
+            read: { get: vi.fn(async () => presentation(credential('Badge'))) },
+        } as unknown as ShareWallet;
+
+        await expect(loadSavedCredentialCollections(wallet)).resolves.toMatchObject([
+            { uri: 'lc:network:spoofed', credentialCount: 1 },
+        ]);
+        const [collection] = await loadSavedCredentialCollections(wallet);
+        expect(collection.title).toBeUndefined();
+        expect(collection.sharer).toBeUndefined();
+    });
     it('hydrates received presentations and sorts the newest collection first', async () => {
         const wallet = {
             invoke: {
