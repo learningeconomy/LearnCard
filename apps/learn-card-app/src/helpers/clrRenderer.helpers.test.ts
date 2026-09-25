@@ -13,12 +13,43 @@ import { obv3StandaloneFullCourse } from '../../../../packages/credential-librar
 
 import {
     ClrTranscriptSurface,
+    getLinkedCompetencies,
     isStandaloneCourseCredential,
     normalizeClrTranscriptDisplayModel,
     parseCreditsFromDescription,
     selectClrTranscriptView,
 } from './clrRenderer.helpers';
 import { getClrTranscriptKind } from '../components/clr-transcript/clrKind.helpers';
+
+type MutableRelationshipFixture = {
+    credentialSubject: {
+        verifiableCredential: Array<{
+            id?: string;
+            type?: string[];
+            credentialSubject: {
+                id?: string;
+                type?: string[];
+                achievement: {
+                    id?: string;
+                    type?: string[];
+                    achievementType?: string;
+                    name?: string;
+                };
+            };
+        }>;
+        association: Array<{
+            type?: string[];
+            associationType: string;
+            sourceId: string;
+            targetId: string;
+        }>;
+    };
+};
+
+const cloneRelationshipFixture = (): MutableRelationshipFixture =>
+    structuredClone(
+        clrAchievementIdAssociations.credential
+    ) as unknown as MutableRelationshipFixture;
 
 describe('normalizeClrTranscriptDisplayModel', () => {
     it('maps CLR shell and structured transcript fields (university fixture)', () => {
@@ -580,6 +611,103 @@ describe('normalizeClrTranscriptDisplayModel', () => {
             );
         });
 
+        it('assigns unique fallback IDs to nested credentials without IDs', () => {
+            const credential = cloneRelationshipFixture();
+            credential.credentialSubject.verifiableCredential
+                .filter(nested => nested.credentialSubject.achievement.achievementType === 'Course')
+                .forEach(nested => {
+                    delete nested.id;
+                });
+
+            const model = normalizeClrTranscriptDisplayModel(
+                credential as unknown as Record<string, unknown>
+            );
+            const courseIds = model.courses.map(course => course.sourceCredentialId);
+
+            expect(new Set(courseIds)).toHaveProperty('size', courseIds.length);
+            expect(courseIds.every(id => id.startsWith('nested-unknown-'))).toBe(true);
+        });
+
+        it('warns when multiple records share an Achievement ID alias', () => {
+            const credential = cloneRelationshipFixture();
+            const nestedCredentials = credential.credentialSubject.verifiableCredential;
+            const foundation = nestedCredentials.find(
+                nested =>
+                    nested.credentialSubject.achievement.name === 'Foundations of Systems Thinking'
+            )!;
+            const advanced = nestedCredentials.find(
+                nested => nested.credentialSubject.achievement.name === 'Applied Systems Design'
+            )!;
+            advanced.credentialSubject.achievement.id = foundation.credentialSubject.achievement.id;
+
+            const model = normalizeClrTranscriptDisplayModel(
+                credential as unknown as Record<string, unknown>
+            );
+
+            expect(model.warnings).toEqual(
+                expect.arrayContaining([
+                    expect.objectContaining({
+                        code: 'AMBIGUOUS_RECORD',
+                        sourceCredentialId: advanced.id,
+                        sourcePath: 'achievement.id',
+                    }),
+                ])
+            );
+        });
+
+        it('marks relationships to unsupported record types as non-navigable', () => {
+            const credential = cloneRelationshipFixture();
+            const foundation = credential.credentialSubject.verifiableCredential.find(
+                nested =>
+                    nested.credentialSubject.achievement.name === 'Foundations of Systems Thinking'
+            )!;
+            credential.credentialSubject.verifiableCredential.push({
+                id: 'urn:uuid:relationship-award',
+                type: ['VerifiableCredential', 'AchievementCredential'],
+                credentialSubject: {
+                    achievement: {
+                        id: 'urn:achievement:relationship-award',
+                        type: ['Achievement'],
+                        achievementType: 'Award',
+                        name: 'Systems Thinking Award',
+                    },
+                },
+            });
+            credential.credentialSubject.association.push({
+                type: ['Association'],
+                associationType: 'isRelatedTo',
+                sourceId: foundation.credentialSubject.achievement.id!,
+                targetId: 'urn:achievement:relationship-award',
+            });
+
+            const model = normalizeClrTranscriptDisplayModel(
+                credential as unknown as Record<string, unknown>
+            );
+            const normalizedFoundation = model.courses.find(
+                course => course.name?.value === 'Foundations of Systems Thinking'
+            )!;
+            const awardRelationship = model.relationships[
+                normalizedFoundation.sourceCredentialId
+            ]?.find(relationship => relationship.relatedRecordName === 'Systems Thinking Award');
+
+            expect(awardRelationship?.navigable).toBe(false);
+        });
+
+        it('ignores inherited object properties as competency relationship types', () => {
+            const model = normalizeClrTranscriptDisplayModel(
+                clrAchievementIdAssociations.credential as unknown as Record<string, unknown>
+            );
+            const relationship = model.associations.find(
+                association => association.associationType === 'isRelatedTo'
+            )!;
+
+            expect(
+                getLinkedCompetencies(relationship.sourceRecordId!, model.competencies, [
+                    { ...relationship, associationType: 'constructor' },
+                ])
+            ).toEqual([]);
+        });
+
         it('warns and preserves a plain value when a result description link is broken', () => {
             const credential = structuredClone(
                 clrAchievementIdAssociations.credential
@@ -608,6 +736,7 @@ describe('normalizeClrTranscriptDisplayModel', () => {
             expect(result.value.value).toBe('Advanced');
             expect(result.label).toBeUndefined();
             expect(result.resultDescriptionResolved).toBe(false);
+            expect(result.alignments).toEqual([]);
             expect(
                 model.warnings.some(warning => warning.code === 'UNRESOLVED_RESULT_DESCRIPTION')
             ).toBe(true);

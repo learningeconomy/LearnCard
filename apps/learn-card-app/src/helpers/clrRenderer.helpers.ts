@@ -236,6 +236,7 @@ export type RelationshipDisplayModel = {
     relatedRecordId: string;
     relatedRecordName: string;
     label: string;
+    navigable: boolean;
     source: SourceMappedField<string>;
 };
 
@@ -669,9 +670,9 @@ const mapResults = (
                 ? resultDescriptionById.get(resultDescriptionId)
                 : undefined;
             const resultDescription = resultDescriptionEntry?.value;
-            const descriptionPath = `achievement.resultDescription[${
-                resultDescriptionEntry?.index ?? 0
-            }]`;
+            const descriptionPath = resultDescriptionEntry
+                ? `achievement.resultDescription[${resultDescriptionEntry.index}]`
+                : undefined;
 
             if (resultDescriptionId && !resultDescription) {
                 warnings.push({
@@ -709,7 +710,7 @@ const mapResults = (
                       )
                     : undefined,
                 resultType:
-                    typeof resultDescription?.resultType === 'string'
+                    descriptionPath && typeof resultDescription?.resultType === 'string'
                         ? asMapped(
                               resultDescription.resultType,
                               `${descriptionPath}.resultType`,
@@ -718,7 +719,7 @@ const mapResults = (
                           )
                         : undefined,
                 label:
-                    typeof resultDescription?.name === 'string'
+                    descriptionPath && typeof resultDescription?.name === 'string'
                         ? asMapped(
                               resultDescription.name,
                               `${descriptionPath}.name`,
@@ -727,7 +728,7 @@ const mapResults = (
                           )
                         : undefined,
                 valueMax:
-                    typeof resultDescription?.valueMax === 'string'
+                    descriptionPath && typeof resultDescription?.valueMax === 'string'
                         ? asMapped(
                               resultDescription.valueMax,
                               `${descriptionPath}.valueMax`,
@@ -736,7 +737,7 @@ const mapResults = (
                           )
                         : undefined,
                 valueMin:
-                    typeof resultDescription?.valueMin === 'string'
+                    descriptionPath && typeof resultDescription?.valueMin === 'string'
                         ? asMapped(
                               resultDescription.valueMin,
                               `${descriptionPath}.valueMin`,
@@ -745,6 +746,7 @@ const mapResults = (
                           )
                         : undefined,
                 allowedValue:
+                    descriptionPath &&
                     Array.isArray(resultDescription?.allowedValue) &&
                     (resultDescription.allowedValue as unknown[]).every(v => typeof v === 'string')
                         ? asMapped(
@@ -754,22 +756,24 @@ const mapResults = (
                               sourceCredentialId
                           )
                         : undefined,
-                requiredValue: requiredValue
-                    ? asMapped(
-                          requiredValue,
-                          `${descriptionPath}.requiredValue`,
-                          'resultDescription.requiredValue',
-                          sourceCredentialId
-                      )
-                    : undefined,
-                requiredLevel: requiredLevel
-                    ? asMapped(
-                          requiredLevel,
-                          `${descriptionPath}.requiredLevel`,
-                          'resultDescription.requiredLevel',
-                          sourceCredentialId
-                      )
-                    : undefined,
+                requiredValue:
+                    descriptionPath && requiredValue
+                        ? asMapped(
+                              requiredValue,
+                              `${descriptionPath}.requiredValue`,
+                              'resultDescription.requiredValue',
+                              sourceCredentialId
+                          )
+                        : undefined,
+                requiredLevel:
+                    descriptionPath && requiredLevel
+                        ? asMapped(
+                              requiredLevel,
+                              `${descriptionPath}.requiredLevel`,
+                              'resultDescription.requiredLevel',
+                              sourceCredentialId
+                          )
+                        : undefined,
                 status:
                     entry.value !== undefined && typeof entry.status === 'string'
                         ? asMapped(
@@ -780,11 +784,13 @@ const mapResults = (
                           )
                         : undefined,
                 alignments: [
-                    ...collectAlignments(
-                        resultDescription?.alignment,
-                        sourceCredentialId,
-                        `${descriptionPath}.alignment`
-                    ),
+                    ...(descriptionPath
+                        ? collectAlignments(
+                              resultDescription?.alignment,
+                              sourceCredentialId,
+                              `${descriptionPath}.alignment`
+                          )
+                        : []),
                     ...collectAlignments(
                         entry.alignment,
                         sourceCredentialId,
@@ -864,7 +870,8 @@ const resolveAchievedLevel = (
 
 const classifyRecord = (
     nestedCredential: Record<string, unknown>,
-    warnings: DisplayWarning[]
+    warnings: DisplayWarning[],
+    fallbackId: string
 ): {
     course?: CourseDisplayModel;
     program?: ProgramDisplayModel;
@@ -876,8 +883,7 @@ const classifyRecord = (
     evidence: EvidenceDisplayModel[];
 } => {
     // Strict no-guessing path: classification is based only on explicit CLR/OB fields.
-    const nestedId =
-        typeof nestedCredential.id === 'string' ? nestedCredential.id : 'nested-unknown';
+    const nestedId = typeof nestedCredential.id === 'string' ? nestedCredential.id : fallbackId;
     const nestedSubject = getSingleCredentialSubject(nestedCredential) ?? {};
     const achievement = (nestedSubject.achievement ?? {}) as Record<string, unknown>;
     const achievementId = typeof achievement.id === 'string' ? achievement.id : undefined;
@@ -1178,7 +1184,10 @@ type RecordIdentity = {
     name: string;
 };
 
-const buildRelationshipGraph = (associations: AssociationDisplayModel[]): RelationshipGraph => {
+const buildRelationshipGraph = (
+    associations: AssociationDisplayModel[],
+    navigableRecordIds: Set<string>
+): RelationshipGraph => {
     const relationshipsByRecordId = new Map<string, RelationshipDisplayModel[]>();
     const seen = new Set<string>();
 
@@ -1202,6 +1211,7 @@ const buildRelationshipGraph = (associations: AssociationDisplayModel[]): Relati
             recordId,
             relatedRecordId,
             relatedRecordName,
+            navigable: navigableRecordIds.has(relatedRecordId),
             label: `${labelPrefix} ${relatedRecordName}`,
             source: association.source,
         });
@@ -1330,28 +1340,51 @@ export const normalizeClrTranscriptDisplayModel = (
     const evidence: EvidenceDisplayModel[] = [];
 
     let explicitGpa: SourceMappedField<string | number | boolean> | undefined;
+    const academicRecordEntries = academicRecords.map((nestedCredential, index) => ({
+        nestedCredential,
+        recordId:
+            typeof nestedCredential.id === 'string'
+                ? nestedCredential.id
+                : `nested-unknown-${index}`,
+    }));
 
     // Resolve associations through either nested credential IDs or Achievement IDs.
     const recordIdentityById = new Map<string, RecordIdentity>();
-    for (const nestedCredential of academicRecords) {
-        const nestedCredentialId =
-            typeof nestedCredential.id === 'string' ? nestedCredential.id : undefined;
-        if (!nestedCredentialId) continue;
+    const registerRecordAlias = (
+        alias: string,
+        identity: RecordIdentity,
+        sourcePath: 'id' | 'achievement.id'
+    ): void => {
+        const existing = recordIdentityById.get(alias);
+        if (existing && existing.recordId !== identity.recordId) {
+            warnings.push({
+                code: 'AMBIGUOUS_RECORD',
+                message: `Record alias ${alias} resolves to multiple records; associations use ${existing.name}.`,
+                severity: 'warning',
+                sourceCredentialId: identity.recordId,
+                sourcePath,
+            });
+            return;
+        }
 
+        recordIdentityById.set(alias, identity);
+    };
+
+    for (const { nestedCredential, recordId } of academicRecordEntries) {
         const nestedSubject = getSingleCredentialSubject(nestedCredential) ?? {};
         const nestedAchievement = (nestedSubject.achievement ?? {}) as Record<string, unknown>;
         const achievementId =
             typeof nestedAchievement.id === 'string' ? nestedAchievement.id : undefined;
         const identity: RecordIdentity = {
-            recordId: nestedCredentialId,
+            recordId,
             name:
                 (typeof nestedAchievement.name === 'string' ? nestedAchievement.name : undefined) ??
                 (typeof nestedCredential.name === 'string' ? nestedCredential.name : undefined) ??
-                nestedCredentialId,
+                recordId,
         };
 
-        recordIdentityById.set(nestedCredentialId, identity);
-        if (achievementId) recordIdentityById.set(achievementId, identity);
+        registerRecordAlias(recordId, identity, 'id');
+        if (achievementId) registerRecordAlias(achievementId, identity, 'achievement.id');
     }
 
     // Top-level CLR evidence belongs to the transcript as a whole (e.g. the sealed
@@ -1369,8 +1402,8 @@ export const normalizeClrTranscriptDisplayModel = (
         );
     }
 
-    for (const nestedCredential of academicRecords) {
-        const normalized = classifyRecord(nestedCredential, warnings);
+    for (const { nestedCredential, recordId } of academicRecordEntries) {
+        const normalized = classifyRecord(nestedCredential, warnings, recordId);
         if (normalized.course) courses.push(normalized.course);
         if (normalized.program) programs.push(normalized.program);
         if (normalized.competency) competencies.push(normalized.competency);
@@ -1380,6 +1413,11 @@ export const normalizeClrTranscriptDisplayModel = (
         if (!explicitGpa && normalized.gpa) explicitGpa = normalized.gpa;
         evidence.push(...normalized.evidence);
     }
+    const navigableRecordIds = new Set(
+        [...courses, ...programs, ...assessments, ...competencies].map(
+            record => record.sourceCredentialId
+        )
+    );
 
     const associations: AssociationDisplayModel[] = asArray<Record<string, unknown>>(
         credentialSubject.association as Record<string, unknown>[]
@@ -1415,7 +1453,7 @@ export const normalizeClrTranscriptDisplayModel = (
             },
         ];
     });
-    const relationships = buildRelationshipGraph(associations);
+    const relationships = buildRelationshipGraph(associations, navigableRecordIds);
 
     const partial = rawCredential.partial === true;
     if (partial) {
@@ -1705,7 +1743,7 @@ export const getLinkedCompetencies = (
 ): CompetencyDisplayModel[] => {
     const linkedIds = new Set<string>();
     for (const association of associations) {
-        if (!COMPETENCY_LINK_TYPES[association.associationType]) continue;
+        if (!Object.hasOwn(COMPETENCY_LINK_TYPES, association.associationType)) continue;
         const sourceId = association.sourceRecordId ?? association.sourceId;
         const targetId = association.targetRecordId ?? association.targetId;
         if (sourceId === recordId) linkedIds.add(targetId);
