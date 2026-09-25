@@ -9,10 +9,10 @@ SSM, never `terraform_remote_state`.
 | [Account bootstrap](../../aws/bootstrap/README.md) | Human-admin state bucket, OIDC roles/boundary, ECR, budgets          |
 | [Network](network/README.md)                       | VPC, subnets, NAT, flow logs, delegated zones and certificates       |
 | [Service](service/README.md)                       | ARM64 ECS, Aurora, public/private ALBs, realm runner and access task |
-| `realm/` (PR B, not yet present)                   | Keycloak realms/clients/IdPs, applied privately through CodeBuild    |
+| [Realm](realm/README.md)                           | Keycloak realms/clients/IdPs, applied privately through CodeBuild    |
 
 First apply: **bootstrap → network (certificate wait off) → GoDaddy NS delegation →
-network re-apply (certificate wait on) → service → realm when PR B lands**.
+network re-apply (certificate wait on) → service → realm → automation bootstrap**.
 Use separate directories and account sessions for staging and production.
 
 Terraform >= 1.10 with S3-native locking; CI pins 1.15.8. All AWS roots use provider
