@@ -107,6 +107,11 @@ appear in job summaries. No production PR plan runs.
 2. Copy its digest from the deployment summary. Dispatch **Keycloak Infrastructure**
    from main with `action=promote`, `environment=production`, `digest=sha256:<64 hex>`.
    `root` is ignored for promotion. Approve the production environment deployment.
+   The image's `org.opencontainers.image.revision` label must identify an ancestor
+   of main; the job restores service/realm Terraform from that exact commit and
+   passes it to CodeBuild. An older image is never paired with newer realm config.
+   Legacy manually pushed images without that label are not promotable through
+   this action; use a deliberately reviewed manual service override for recovery.
 3. The job verifies the digest exists in production ECR (replication is asynchronous;
    a missing digest fails before mutation). It never rebuilds or accepts mutable tags.
    Verify that the approved digest is from the successful staging run; replica presence
@@ -149,6 +154,9 @@ inspect cache XML content, so custom cache configuration changes still need revi
 Metadata is generated before mutation to catch CLI problems, then persisted only
 after successful service/realm/smoke using that exact image and checked configuration.
 
+Recreate refuses a plan that also changes the autoscaling target: apply sizing
+changes separately with a compatible image first. This prevents Terraform from
+raising the minimum during the zero-capacity window or undoing new sizing later.
 Recreate snapshots production Aurora and waits for availability, suspends dynamic
 and scheduled scaling, temporarily sets min capacity to zero, scales ECS to zero,
 and waits for old tasks to **stop**, not merely for service stability. Terraform

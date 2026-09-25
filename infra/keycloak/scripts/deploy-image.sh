@@ -6,6 +6,7 @@ set -euo pipefail
 : "${TF_STATE_BUCKET:?}"
 : "${TF_VAR_keycloak_image:?}"
 : "${GITHUB_SHA:?}"
+release_sha=${RELEASE_SHA:-$GITHUB_SHA}
 [[ "$DEPLOY_ENVIRONMENT" == staging || "$DEPLOY_ENVIRONMENT" == production ]]
 [[ "$TF_VAR_keycloak_image" =~ @sha256:[0-9a-f]{64}$ ]]
 scripts="$PWD/infra/keycloak/scripts"
@@ -58,6 +59,15 @@ export KC_ENV_FILE="$work/runtime.env"
 docker pull "$TF_VAR_keycloak_image" >/dev/null
 GITHUB_OUTPUT="$work/gate" bash "$scripts/compat-gate.sh" "$work/prev.json" "$TF_VAR_keycloak_image"
 strategy=$(cut -d= -f2 "$work/gate")
+if [[ "$strategy" == recreate ]]; then
+    # A saved plan changing the scalable target can reintroduce a positive min
+    # during apply, before our controlled restart. Require sizing as a separate
+    # compatible deployment rather than racing Terraform's target registration.
+    jq -e '[.resource_changes[] | select(.address == "aws_appautoscaling_target.keycloak") |
+        .change.actions] == [["no-op"]]' "$root/plan.json" >/dev/null || {
+        printf 'Recreate requires unchanged autoscaling target; apply sizing separately first.\n' >&2; exit 1;
+    }
+fi
 # Generate before mutation too: an invalid candidate must not stop a healthy service.
 bash "$scripts/compat-metadata.sh" "$TF_VAR_keycloak_image" "$work/metadata.json"
 aws ecs describe-services --cluster "$name" --services "$name" >"$work/service.json"
@@ -74,7 +84,7 @@ if [[ "$strategy" == recreate ]]; then
     fi
 fi
 # Durable journal prevents a retry from trusting stale metadata after partial apply.
-jq -n --arg image "$TF_VAR_keycloak_image" --arg sha "$GITHUB_SHA" --arg strategy "$strategy" \
+jq -n --arg image "$TF_VAR_keycloak_image" --arg sha "$release_sha" --arg strategy "$strategy" \
     '{status:"pending",image:$image,sha:$sha,strategy:$strategy}' >"$work/deployment.json"
 aws s3 cp "$work/deployment.json" "s3://$TF_STATE_BUCKET/$prefix/deployment.json" --only-show-errors
 if [[ "$strategy" == recreate ]]; then
@@ -115,7 +125,7 @@ actual=$(aws ecs describe-task-definition --task-definition "$task" \
 [[ "$actual" == "$TF_VAR_keycloak_image" ]] || { printf 'ECS rolled back or deployed an unexpected image.\n' >&2; exit 1; }
 realm_applied=false
 if [[ -d infra/keycloak/terraform/realm ]]; then
-    build=$(aws codebuild start-build --project-name "$name-realm" --source-version "$GITHUB_SHA" --query build.id --output text)
+    build=$(aws codebuild start-build --project-name "$name-realm" --source-version "$release_sha" --query build.id --output text)
     for ((attempt=0; attempt<120; attempt++)); do
         status=$(aws codebuild batch-get-builds --ids "$build" --query 'builds[0].buildStatus' --output text)
         case "$status" in

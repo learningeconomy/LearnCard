@@ -84,6 +84,8 @@ jobs:
             - uses: actions/checkout@v7
               with:
                   persist-credentials: false
+            - name: Test compatibility exit-code contract without credentials
+              run: bash infra/keycloak/scripts/test-compat-gate.sh
             - uses: docker/setup-qemu-action@v3
             - uses: docker/setup-buildx-action@v3
             - name: Build optimized ARM64 image (no push)
@@ -202,6 +204,7 @@ jobs:
             - uses: actions/checkout@v7
               with:
                   persist-credentials: false
+                  fetch-depth: 0
             - name: Validate dispatch configuration
               run: |
                   : "${TF_STATE_BUCKET:?Set environment TF_STATE_BUCKET}"
@@ -250,6 +253,7 @@ jobs:
                   provenance: false
                   push: true
                   tags: ${{ steps.image.outputs.repository }}:${{ steps.image.outputs.tag }}
+                  labels: org.opencontainers.image.revision=${{ github.sha }}
             - name: Resolve deployment image (promotion never rebuilds)
               id: candidate
               env:
@@ -273,6 +277,16 @@ jobs:
                   [[ "$image" == "$REPOSITORY@"* && "$image" =~ @sha256:[0-9a-f]{64}$ ]]
                   aws ecr describe-images --repository-name learncard/keycloak --image-ids "imageDigest=${image##*@}" >/dev/null
                   echo "TF_VAR_keycloak_image=$image" >> "$GITHUB_ENV"
+                  if [[ "$MANUAL_ACTION" == promote ]]; then
+                      docker pull "$image" >/dev/null
+                      release_sha=$(docker image inspect "$image" --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}')
+                      [[ "$release_sha" =~ ^[0-9a-f]{40}$ ]]
+                      # Bind service and realm configuration to the image's main
+                      # commit, not whichever newer commit triggered promotion.
+                      GIT_MASTER=1 git merge-base --is-ancestor "$release_sha" HEAD
+                      GIT_MASTER=1 git restore --source="$release_sha" --worktree -- infra/keycloak/terraform
+                      echo "RELEASE_SHA=$release_sha" >> "$GITHUB_ENV"
+                  fi
             - name: Gate, deploy service, apply private realm, smoke and persist metadata
               if: github.event_name == 'push' || inputs.action == 'promote' || (inputs.action == 'apply' && inputs.root == 'service')
               run: bash infra/keycloak/scripts/deploy-image.sh
