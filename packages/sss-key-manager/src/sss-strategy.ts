@@ -45,6 +45,7 @@ import {
     getDeviceShare as defaultGetDeviceShare,
     hasDeviceShare as defaultHasDeviceShare,
     clearAllShares as defaultClearAllShares,
+    deleteDeviceShare as defaultDeleteDeviceShare,
     storeShareVersion as defaultStoreShareVersion,
     getShareVersion as defaultGetShareVersion,
 } from './storage';
@@ -64,6 +65,7 @@ import {
 } from './recovery-phrase';
 
 const SSS_DB_NAME = 'lcb-sss-keys';
+const DEFAULT_DEVICE_SHARE_ID = 'sss-device-share';
 const MAX_RECONCILIATION_HISTORY = 5;
 
 export interface SSSStorageFunctions {
@@ -71,6 +73,7 @@ export interface SSSStorageFunctions {
     getDeviceShare: (id?: string) => Promise<string | null>;
     hasDeviceShare: (id?: string) => Promise<boolean>;
     clearAllShares: (id?: string) => Promise<void>;
+    deleteDeviceShare: (id?: string) => Promise<void>;
     storeShareVersion: (version: number, id?: string) => Promise<void>;
     getShareVersion: (id?: string) => Promise<number | null>;
 }
@@ -112,6 +115,7 @@ const defaultStorage: SSSStorageFunctions = {
     getDeviceShare: defaultGetDeviceShare,
     hasDeviceShare: defaultHasDeviceShare,
     clearAllShares: defaultClearAllShares,
+    deleteDeviceShare: defaultDeleteDeviceShare,
     storeShareVersion: defaultStoreShareVersion,
     getShareVersion: defaultGetShareVersion,
 };
@@ -501,7 +505,7 @@ interface PersistedShareUpdate {
 // Reuse the storage abstraction's encrypted, per-ID entries. No new methods are
 // required of custom stores, and adaptive storage retains its session-only mode.
 const pendingShareId = (storageId?: string): string =>
-    `sss-pending-share:${storageId ?? 'sss-device-share'}`;
+    `sss-pending-share:${storageId ?? DEFAULT_DEVICE_SHARE_ID}`;
 
 /** DID_CHALLENGE_TTL_SECS (5 minutes) plus a processing margin for auth-share PUTs. */
 export const PENDING_WRITE_EXPIRY_MS = 10 * 60 * 1000;
@@ -1029,10 +1033,18 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             return storage.storeDeviceShare(key, activeStorageId);
         },
 
-        async clearLocalKeys(): Promise<void> {
+        async clearLocalKeys(options?: { preservePending?: boolean }): Promise<void> {
             const storageId = activeStorageId;
-            await clearPendingShareCandidates(storage, storageId);
-            return storage.clearAllShares(storageId);
+            if (!options?.preservePending) {
+                await clearPendingShareCandidates(storage, storageId);
+                return storage.clearAllShares(storageId);
+            }
+
+            // Do not race an in-flight write/reconciliation or erase its pending
+            // candidate. An unscoped clearAllShares() would wipe the entire DB.
+            return withShareUpdateLock(storage, storageId, () =>
+                storage.deleteDeviceShare(storageId)
+            );
         },
 
         async splitKey(privateKey: string): Promise<{ localKey: string; remoteKey: string }> {

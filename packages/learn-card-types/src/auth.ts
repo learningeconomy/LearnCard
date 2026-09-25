@@ -379,8 +379,8 @@ export interface KeyDerivationStrategy<
     /** Store a local key component */
     storeLocalKey(key: string): Promise<void>;
 
-    /** Clear all local key data */
-    clearLocalKeys(): Promise<void>;
+    /** Clear local key data; automatic stale-key cleanup may retain unresolved writes. */
+    clearLocalKeys(options?: { preservePending?: boolean }): Promise<void>;
 
     /** Split a private key into shares/components */
     splitKey(privateKey: string): Promise<{ localKey: string; remoteKey: string }>;
