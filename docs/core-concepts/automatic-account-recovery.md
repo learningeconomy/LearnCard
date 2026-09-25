@@ -51,6 +51,8 @@ sequenceDiagram
     end
 ```
 
+Until a second independent time source is in place, waiting-period releases are refused entirely rather than proceed on an unverified wait — the system fails closed.
+
 ## What is Attestation?
 
 To ensure the hardware enclave is actually running the correct, unmodified code, LearnCard uses a process called **attestation**.
@@ -80,5 +82,6 @@ While the enclave provides strong security, it is not magic. There are specific 
 
 - **Rollback Detection**: The system detects if an attacker tries to roll back the enclave's memory to an older state (to reset the PIN counter, for example), but it cannot prevent it in all scenarios. If a rollback is detected, the system fails closed and refuses to release the key. The PIN attempt budget is only as strong as this rollback detection.
 - **Time Sources**: The enclave relies on external time servers to measure the 7-day waiting period. It requires at least two agreeing signed sources and fails closed otherwise. Time intervals describe signed processing events, not an authenticated upper bound on receipt time.
+- **Enrollment Verification**: Production release also awaits a reviewed way for the secure environment to confirm the current enrollment.
 
 For a comprehensive technical breakdown of the threat model, cryptographic guarantees, and known limitations, please review the [Security Review Packet](https://github.com/learningeconomy/LearnCard/blob/main/services/escrow-enclave-app/SECURITY.md).

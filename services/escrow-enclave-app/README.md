@@ -1,11 +1,16 @@
 # Escrow enclave application
 
-Rust scaffold for LearnCard's attested escrow recovery service (P1.1). **Not a
-working enclave or recovery server:** both launch modes log "not yet implemented"
-and exit successfully without binding a socket. Crypto primitives (P1.2) and NSM
-drivers (P1.3) and the release decision core (P1.7) exist, but server and
-authenticated current-enrollment integration remain unimplemented.
-Do not deploy this scaffold for recovery.
+Rust crate implementing LearnCard's attested escrow recovery service. `src/server/`
+binds vsock port 5000 in production and serves the versioned wire protocol described
+below (attestation, hold creation, PIN/delay release, cancellation); `--emulate`
+instead runs a local TCP listener behind the `fake-nsm`/`fake-kms`/`fake-time`/
+`fake-ledger` features, for development and contract tests only. Production traffic
+is still blocked, however: the Nitro binary wires in a placeholder `EnrollmentSource`
+(`UnavailableEnrollment`, `src/server/parent/nitro.rs`) that unconditionally refuses,
+so every mutating operation (create/release/cancel a hold) fails closed with
+`Unavailable` until an authenticated, fresh enrollment source is integrated — see
+SECURITY.md's Open Items / Launch Blockers for the remaining gates. Do not point
+production recovery traffic at this build yet.
 
 ## Target architecture
 

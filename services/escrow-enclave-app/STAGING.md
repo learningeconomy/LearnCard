@@ -5,8 +5,8 @@ verifying it end-to-end. It complements `README.md` (threat model, wire contract
 development) and `../../infra/escrow-enclave/README.md` (Terraform reference) — it does not repeat
 either in full.
 
-> **Two launch blockers below (Roughtime, D10) are OPEN as of this writing.** Steps 6 and 7 cannot
-> succeed until the Roughtime blocker is resolved. Read "Open launch blockers" before starting.
+> **Three launch blockers below (Roughtime, Enrollment, D10) are OPEN as of this writing.** Steps 6 and 7 cannot
+> succeed until the Roughtime and Enrollment blockers are resolved. Read "Open launch blockers" before starting.
 
 ## 1. Terraform apply order
 
@@ -88,10 +88,10 @@ Enclave** is **UNVERIFIED** — this could not be tested during development (no 
 
 ## 6. Run the e2e spec against staging
 
-> **Blocked by the open Roughtime item below** — every release attempt will fail closed with
-> `InsufficientSources` until a second production-grade time source is provisioned. Steps in this
-> section can be rehearsed (attestation, enrollment, PIN release, early-hold-refusal, tamper
-> refusal) but the hold-release path itself cannot succeed end-to-end yet.
+> **Blocked by the open Roughtime and Enrollment items below** — every release attempt will fail closed with
+> `InsufficientSources` (Roughtime) and every mutating operation (create/release/cancel) will fail closed with
+> `Unavailable` (Enrollment). Steps in this section can be rehearsed for attestation and enrollment verification,
+> but the hold-release path itself cannot succeed end-to-end yet.
 
 ```sh
 ESCROW_E2E=1 \
@@ -116,7 +116,7 @@ fixture file mechanism exists against a real enclave) — see step 7 for the rea
 ## 7. Manual 7-day soak (the real hold-duration test)
 
 Since staging cannot fast-forward time, the actual 7-day wait must be exercised manually once
-Roughtime is resolved:
+Roughtime and Enrollment are resolved:
 
 1. Day 0: run just the "enroll, hold" portion of the e2e spec (or an equivalent one-off script)
    against staging, and record the returned `holdId`/`resumeToken`.
@@ -178,6 +178,10 @@ destroying the CMK or ledger storage is not.
 
 These are launch-blocking, not "nice to have later" — call them out explicitly whenever staging
 verification is attempted, don't bury them in a footnote.
+
+### Authenticated EnrollmentSource (blocks steps 6 and 7)
+
+The production enclave currently wires in `UnavailableEnrollment`, so every mutating operation (create hold, release, cancel) fails closed with `Unavailable`. A protocol design and separate security review are required to independently authenticate the current enrollment. Nothing can be released in production without it.
 
 ### Second production-grade Roughtime source (blocks steps 6 and 7)
 

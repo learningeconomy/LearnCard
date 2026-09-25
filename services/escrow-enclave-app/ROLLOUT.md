@@ -34,7 +34,7 @@ without a single real user being auto-enrolled — this is the intended
 
 ## Launch blockers — DO NOT roll out beyond internal until these are resolved
 
-Per the open launch blockers in [SECURITY.md](SECURITY.md#open-items--launch-blockers), two items remain open:
+Per the open launch blockers in [SECURITY.md](SECURITY.md#open-items--launch-blockers), three items remain open:
 
 1. **No second production-grade Roughtime time source.** The enclave's 7-day
    hold timer requires ≥2 independent signed time sources; today only one
@@ -44,7 +44,12 @@ Per the open launch blockers in [SECURITY.md](SECURITY.md#open-items--launch-blo
    decision (add more Roughtime operators, run LearnCard-operated servers in
    separate accounts, or accept a documented weaker model) before any real
    user can complete a hold-based release in production.
-2. **D10 residual risk: `escrow-kms-admin` can rewrite the KMS key policy.**
+2. **No authenticated EnrollmentSource.** The production enclave currently wires
+   in `UnavailableEnrollment`, so every mutating operation (create hold, release,
+   cancel) fails closed with `Unavailable`. A protocol design and separate security
+   review are required to independently authenticate the current enrollment.
+   Nothing can be released in production without it.
+3. **D10 residual risk: `escrow-kms-admin` can rewrite the KMS key policy.**
    An MFA-authenticated admin session can still add an unattested `kms:Decrypt`
    Allow, fully bypassing the attestation gate. Mitigated (CODEOWNERS
    two-person review, `DenyPutKeyPolicyWithoutMFA`, a CloudTrail alarm — see
@@ -52,13 +57,13 @@ Per the open launch blockers in [SECURITY.md](SECURITY.md#open-items--launch-blo
    (or adopt the immutable-key-policy alternative documented in
    `infra/escrow-enclave/README.md`) before rollout proceeds past internal.
 
-**Gate:** stage 1 (internal allowlist) may proceed once both items have an
+**Gate:** stage 1 (internal allowlist) may proceed once all items have an
 explicit, documented decision from security/product — even a "we accept this
-risk" sign-off counts as resolved. Stages 2+ (1% and above, i.e. any real,
-non-internal user) must not start until both are actually fixed or the
-Roughtime item specifically is closed (D10 is a residual, security-accepted
-risk by design; the Roughtime item is a hard functional blocker — recovery
-literally cannot complete without it).
+risk" sign-off counts as resolved for D10. Stages 2+ (1% and above, i.e. any real,
+non-internal user) must not start until all are actually fixed or the
+Roughtime and Enrollment items specifically are closed (D10 is a residual, security-accepted
+risk by design; the Roughtime and Enrollment items are hard functional blockers — recovery
+literally cannot complete without them).
 
 ## Computing an allowlist hash for an internal tester
 

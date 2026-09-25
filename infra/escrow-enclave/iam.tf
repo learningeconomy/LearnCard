@@ -80,7 +80,7 @@ data "aws_iam_policy_document" "enclave_host_permissions" {
 
   # Audit bucket: PutObject only, restricted to the audit/* key prefix that
   # decisions.md D3 already specifies for ledger audit records
-  # (audit/<tenant>/<holdId>/<seq>-<hash>.cbor). No DeleteObject and no
+  # (audit/<tenant>/<chainId>/<seq>-<hash>.cbor). No DeleteObject and no
   # unrestricted PutObject — Object Lock COMPLIANCE mode (storage.tf) is the
   # primary immutability control, this is defense in depth on top of it.
   statement {

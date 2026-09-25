@@ -150,10 +150,16 @@ COPY src ./src
 # the binary's remaining strings (panic messages, `Location::caller()`
 # data, etc.), only that it *attempts* to scrub the common ones.
 #
-# [profile.release] settings: Cargo.toml (as of this task) has no
-# `[profile.release]` section at all, so per task P2.1 instructions these
-# are passed via CARGO_PROFILE_RELEASE_* env instead of editing Cargo.toml
-# (which is out of scope / owned by a concurrently-working agent):
+# [profile.release] settings: Cargo.toml now declares `[profile.release]`
+# with `panic = "abort"` (matching escrow-enclave-host/escrow-ledger-monitor).
+# LTO/STRIP/DEBUG/CODEGEN_UNITS remain env-only, not in Cargo.toml: this
+# crate's chosen values (fat LTO, STRIP=symbols, DEBUG=false) don't match the
+# sibling crates' `lto = "thin"` / `strip = true` shorthand, and an env var
+# here wins over a differing Cargo.toml value at build time regardless —
+# duplicating a different-looking value in the source would make it
+# misleading about what the measured build actually does, so these four
+# stay env-only (belt and braces alongside the explicit RUSTFLAGS
+# `-C codegen-units=1` above):
 #   LTO=true        — fat LTO + codegen-units=1 is the standard
 #                      maximally-deterministic (least codegen parallelism)
 #                      release configuration.
@@ -171,9 +177,9 @@ COPY src ./src
 #                      keep the process alive" patterns will NOT work in
 #                      this release binary — a panic in any single
 #                      connection handler kills the whole enclave process.
-#                      If that turns out to be undesirable once server.rs
+#                      If that turns out to be undesirable now that server.rs
 #                      exists, revisit this choice explicitly; don't let it
-#                      silently constrain P1.8's design.
+#                      silently constrain its design.
 RUN set -eux; \
     export RUSTFLAGS="-C target-feature=+crt-static --remap-path-prefix=$HOME=/ --remap-path-prefix=$PWD=/build --remap-path-prefix=${CARGO_HOME}=/cargo --remap-path-prefix=${RUSTUP_HOME}=/rustup -C codegen-units=1"; \
     export CARGO_INCREMENTAL=0; \

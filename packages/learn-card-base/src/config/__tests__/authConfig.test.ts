@@ -163,7 +163,7 @@ describe('authConfig', () => {
         );
     });
 
-    it('keeps software mode working outside of a production build (local/staging)', () => {
+    it('keeps software mode working outside a production-mode build (local dev)', () => {
         setAuthConfigOverrides({
             tenantId: 'learncard',
             providerConfig: {
