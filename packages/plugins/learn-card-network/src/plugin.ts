@@ -1182,6 +1182,11 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.shareLinks.getRecovery.query({ id });
             },
+            getShareLinkOwnerContent: async (_learnCard, id) => {
+                await ensureUser();
+
+                return client.shareLinks.getContent.query({ id });
+            },
             listShareLinks: async (_learnCard, input) => {
                 await ensureUser();
 

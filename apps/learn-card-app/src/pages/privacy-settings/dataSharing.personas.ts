@@ -220,6 +220,7 @@ const sharedLinks: DataSharingSharedLinksViewModel = {
         'https://learncard.app/s/AAAAAAAAAAAAAAAAAAAAAA#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     onChangeExpiry: async () => undefined,
     onStop: async () => undefined,
+    onPreview: noop,
     onUpdate: noop,
     onCreateShare: noop,
 };

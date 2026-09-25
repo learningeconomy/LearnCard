@@ -5,6 +5,7 @@ import {
     ListShareLinksInputValidator,
     PaginatedShareLinksValidator,
     ShareLinkOwnerCommitOutputValidator,
+    ShareLinkOwnerContentOutputValidator,
     ShareLinkOwnerRecoveryOutputValidator,
     ShareLinkOwnerStatusOutputValidator,
     ShareLinkOperationKeyInputValidator,
@@ -490,6 +491,39 @@ export const createShareLinksRouter = (
                 if (!parsed.success) notFound();
 
                 return { recovery: parsed.data };
+            }),
+
+        getContent: profileRouteWithoutInputCapture
+            .meta({
+                openapi: openapi(
+                    'GET',
+                    '/share-links/{id}/content',
+                    'Get encrypted share content (owner only)'
+                ),
+                requiredScope: AUTH_GRANT_SHARE_LINKS_READ_SCOPE,
+            })
+            .input(ShareLinkOperationKeyInputValidator.pick({ id: true }))
+            .output(ShareLinkOwnerContentOutputValidator)
+            .query(async ({ ctx, input }) => {
+                const dependencies = await resolve();
+                const result = await runCoordinated(() =>
+                    dependencies.coordinator.fetchShareContent(
+                        input.id,
+                        {
+                            namespace: dependencies.namespace,
+                            ownerProfileId: ctx.user.profile.profileId,
+                        },
+                        { allowExpired: true }
+                    )
+                );
+
+                if (!result.ok) notFound();
+
+                return ShareLinkOwnerContentOutputValidator.parse({
+                    id: input.id,
+                    contentVersion: result.value.contentVersion,
+                    envelope: result.value.envelope,
+                });
             }),
     });
 };

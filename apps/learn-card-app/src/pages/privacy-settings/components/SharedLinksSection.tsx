@@ -64,6 +64,7 @@ const ShareLinkRow = ({ share, vm }: { share: ShareLink; vm: DataSharingSharedLi
     const [expiry, setExpiry] = useState(dateValue(share.expiresAt));
     const busy = vm.busyId === share.id;
     const canEdit = status !== 'stopped' && share.contentState === 'finalized';
+    const canPreview = status !== 'stopped' && share.contentState === 'finalized';
 
     const showQr = async () => {
         if (panel === 'qr') {
@@ -107,11 +108,32 @@ const ShareLinkRow = ({ share, vm }: { share: ShareLink; vm: DataSharingSharedLi
             <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
                     <h4 className="font-medium text-grayscale-900 break-words">{share.title}</h4>
-                    <p className="mt-1 text-xs text-grayscale-600">
-                        {m['dataShareCenter.shared.credentialCount']({
-                            count: String(share.selectedCount),
-                        })}
-                    </p>
+                    {share.note && (
+                        <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-grayscale-600">
+                            {share.note}
+                        </p>
+                    )}
+                    {canPreview ? (
+                        <button
+                            type="button"
+                            aria-label={m['dataShareCenter.shared.viewCredentials']({
+                                count: String(share.selectedCount),
+                            })}
+                            onClick={() => vm.onPreview(share)}
+                            className="mt-1 inline-flex items-center gap-1.5 text-xs font-medium text-grayscale-600 underline decoration-grayscale-300 underline-offset-4 transition-colors hover:text-grayscale-900"
+                        >
+                            <IonIcon icon={eyeOutline} />
+                            {m['dataShareCenter.shared.credentialCount']({
+                                count: String(share.selectedCount),
+                            })}
+                        </button>
+                    ) : (
+                        <p className="mt-1 text-xs text-grayscale-600">
+                            {m['dataShareCenter.shared.credentialCount']({
+                                count: String(share.selectedCount),
+                            })}
+                        </p>
+                    )}
                 </div>
                 <span
                     className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${statusClass(status)}`}

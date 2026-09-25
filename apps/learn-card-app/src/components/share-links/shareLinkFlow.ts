@@ -15,6 +15,7 @@ import {
     type ShareOwnerRecovery,
     type ShareLink,
     type ShareLinkOwnerCommitOutput,
+    type ShareLinkOwnerContentOutput,
     type ShareLinkOwnerStatusOutput,
     type ShareLinkOperationKeyInput,
     type ShareLinkPublicState,
@@ -64,6 +65,7 @@ export interface ShareWallet {
             clientRequestId?: string;
         }): Promise<ShareLinkOwnerCommitOutput>;
         getShareLinkRecovery(id: string): Promise<{ recovery: ShareOwnerRecovery }>;
+        getShareLinkOwnerContent(id: string): Promise<ShareLinkOwnerContentOutput>;
         listShareLinks(input: ListShareLinksInput): Promise<PaginatedShareLinks>;
         retryShareLinkOperation(
             input: ShareLinkOperationKeyInput

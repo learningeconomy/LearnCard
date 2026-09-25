@@ -138,7 +138,9 @@ export const ShareLinkPreview = ({
                                 {m['shareLinks.sharedBy']({ name: sharerName })}
                             </p>
                         ))}
-                    <h1 className="text-2xl md:text-3xl font-semibold break-words">{title}</h1>
+                    <h1 className="break-words text-2xl font-semibold text-grayscale-900 md:text-3xl">
+                        {title}
+                    </h1>
                 </div>
                 {summaryIllustration && (
                     <div className="shrink-0 [&>svg]:h-16 [&>svg]:w-16 sm:[&>svg]:h-20 sm:[&>svg]:w-20">
@@ -185,7 +187,7 @@ export const ShareLinkPreview = ({
                         <div className="flex items-center gap-4">
                             <ShareCredentialThumbnail credential={credential} />
                             <div className="min-w-0 flex-1">
-                                <h2 className="text-lg font-semibold break-words">
+                                <h2 className="break-words text-lg font-semibold text-grayscale-900">
                                     {text.name || m['shareLinks.credential']()}
                                 </h2>
                                 <ShareCredentialMetadata credential={credential} />

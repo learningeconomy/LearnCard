@@ -17,6 +17,7 @@ import {
     PaginatedShareLinks,
     ShareLinkOperationKeyInput,
     ShareLinkOwnerCommitOutput,
+    ShareLinkOwnerContentOutput,
     ShareLinkOwnerStatusOutput,
     ShareLinkOwnerRecoveryOutput,
     ShareLinkPublicState,
@@ -322,6 +323,7 @@ export type LearnCardNetworkPluginMethods = {
         input: ShareLinkOperationKeyInput
     ) => Promise<ShareLinkOwnerStatusOutput>;
     getShareLinkRecovery: (id: string) => Promise<ShareLinkOwnerRecoveryOutput>;
+    getShareLinkOwnerContent: (id: string) => Promise<ShareLinkOwnerContentOutput>;
 
     /**
      * Bounded, newest-first owner share list. Scope (namespace/owner) is derived

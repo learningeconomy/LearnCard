@@ -748,6 +748,37 @@ describe('share-link coordinator revoke and reads', () => {
         expect(getArgs.objectId).toBe(OBJECT_REF);
         expect(getArgs.contentVersion).toBe(2);
     });
+
+    it('allows an authenticated owner read to retain expired content semantics', async () => {
+        const repository = makeRepository();
+        const client = makeClient();
+        const current = {
+            state: 'active',
+            shareId: SHARE_ID,
+            namespace: NAMESPACE,
+            ownerProfileId: OWNER,
+            version: 5,
+            contentVersion: 2,
+            objectRef: OBJECT_REF,
+            operationId: OPERATION_ID,
+        };
+        (repository.getCurrentShareContent as ReturnType<typeof vi.fn>).mockResolvedValue(current);
+        (client.get as ReturnType<typeof vi.fn>).mockResolvedValue({ ok: true, value: {} });
+
+        await makeCoordinator(repository, client).fetchShareContent(SHARE_ID, context, {
+            allowExpired: true,
+        });
+
+        expect(repository.getCurrentShareContent).toHaveBeenCalledTimes(2);
+        expect(repository.getCurrentShareContent).toHaveBeenNthCalledWith(
+            1,
+            expect.objectContaining({ allowExpired: true })
+        );
+        expect(repository.getCurrentShareContent).toHaveBeenNthCalledWith(
+            2,
+            expect.objectContaining({ allowExpired: true })
+        );
+    });
 });
 
 describe('share-link coordinator resumable pending operations', () => {

@@ -609,13 +609,14 @@ export const createShareLinkCoordinator = (
             });
         },
 
-        fetchShareContent: async (shareId, context) => {
+        fetchShareContent: async (shareId, context, options = {}) => {
             const owner = parseOwnerContext(context);
             const current = await repository.getCurrentShareContent({
                 shareId,
                 namespace: owner.namespace,
                 ownerProfileId: owner.ownerProfileId,
                 now: now(),
+                allowExpired: options.allowExpired,
             });
 
             if (current.state !== 'active') {
@@ -644,6 +645,7 @@ export const createShareLinkCoordinator = (
                 namespace: owner.namespace,
                 ownerProfileId: owner.ownerProfileId,
                 now: now(),
+                allowExpired: options.allowExpired,
             });
             if (
                 latest.state !== 'active' ||

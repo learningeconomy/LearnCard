@@ -27,6 +27,7 @@ const completedShare = async (
 export const useSharedLinks = (
     enabled: boolean,
     showViewStats: boolean,
+    onPreview: (share: ShareLink) => void,
     onUpdate: (share: ShareLink) => void,
     onCreateShare: () => void
 ): DataSharingSharedLinksViewModel | null => {
@@ -183,6 +184,7 @@ export const useSharedLinks = (
         onGetPrivateUrl: privateUrl,
         onChangeExpiry: changeExpiry,
         onStop: stop,
+        onPreview,
         onUpdate,
         onCreateShare,
     };

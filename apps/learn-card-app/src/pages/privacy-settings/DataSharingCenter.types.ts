@@ -60,6 +60,7 @@ export type DataSharingSharedLinksViewModel = {
     onGetPrivateUrl: (share: ShareLink) => Promise<string>;
     onChangeExpiry: (share: ShareLink, expiresAt: string | null) => Promise<void>;
     onStop: (share: ShareLink) => Promise<void>;
+    onPreview: (share: ShareLink) => void;
     onUpdate: (share: ShareLink) => void;
     onCreateShare: () => void;
 };

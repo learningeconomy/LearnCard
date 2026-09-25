@@ -732,6 +732,16 @@ export const ShareLinkOwnerRecoveryOutputValidator = z
     .strict();
 export type ShareLinkOwnerRecoveryOutput = z.infer<typeof ShareLinkOwnerRecoveryOutputValidator>;
 
+/** Authenticated owner-only ciphertext response; never includes a view receipt or storage refs. */
+export const ShareLinkOwnerContentOutputValidator = z
+    .object({
+        id: ShareLinkIdValidator,
+        contentVersion: safeVersion,
+        envelope: ShareEnvelopeValidator,
+    })
+    .strict();
+export type ShareLinkOwnerContentOutput = z.infer<typeof ShareLinkOwnerContentOutputValidator>;
+
 export const ResolveShareLinkInputValidator = z
     .object({
         id: ShareLinkIdValidator,

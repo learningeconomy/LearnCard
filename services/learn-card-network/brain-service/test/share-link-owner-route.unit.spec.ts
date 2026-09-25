@@ -79,6 +79,20 @@ const envelope = {
     ct: Buffer.alloc(32, 2).toString('base64url'),
 };
 const recovery = { protected: 'p', iv: 'i', ciphertext: 'c', tag: 't' };
+const contentProjection = {
+    kind: 'active' as const,
+    namespace: NAME,
+    ownerProfileId: OWNER_PROFILE.profileId,
+    shareId: SHARE_ID,
+    contentVersion: 1,
+    objectId: 'internal-object-ref',
+    operationId: OPERATION_ID,
+    contentHash: 'a'.repeat(64),
+    payloadHash: 'b'.repeat(64),
+    envelope,
+    ciphertextBytes: 64,
+    createdAt: '2026-09-20T00:00:00.000Z',
+};
 
 const createInput = () => ({
     id: SHARE_ID,
@@ -135,7 +149,7 @@ const baseCoordinator = (): ShareLinkCoordinator => ({
     abandonPendingOperation: vi.fn(),
     getShareLink: vi.fn(async () => shareRecord()),
     getActiveShareContent: vi.fn(),
-    fetchShareContent: vi.fn(),
+    fetchShareContent: vi.fn(async () => ({ ok: true as const, value: contentProjection })),
     readOwnerRecovery: vi.fn(async () => ({
         ok: true as const,
         value: { ownerEncryptedRecovery: recovery },
@@ -459,6 +473,39 @@ describe('share-link owner route boundary', () => {
         const caller = makeCaller(makeDependencies());
 
         await expect(caller.getRecovery({ id: SHARE_ID })).resolves.toEqual({ recovery });
+    });
+
+    it('returns only owner ciphertext fields and allows retained expired content', async () => {
+        const dependencies = makeDependencies();
+        const caller = makeCaller(dependencies);
+
+        await expect(caller.getContent({ id: SHARE_ID })).resolves.toEqual({
+            id: SHARE_ID,
+            contentVersion: 1,
+            envelope,
+        });
+        expect(dependencies.coordinator.fetchShareContent).toHaveBeenCalledWith(
+            SHARE_ID,
+            { namespace: NAME, ownerProfileId: OWNER_PROFILE.profileId },
+            { allowExpired: true }
+        );
+    });
+
+    it('fails closed when owner content is stopped or missing', async () => {
+        const caller = makeCaller(
+            makeDependencies({
+                coordinator: {
+                    fetchShareContent: vi.fn(async () => ({
+                        ok: false as const,
+                        error: 'NOT_FOUND' as const,
+                    })),
+                },
+            })
+        );
+
+        await expect(caller.getContent({ id: SHARE_ID })).rejects.toMatchObject({
+            code: 'NOT_FOUND',
+        });
     });
     it('fails closed on a malformed stored recovery', async () => {
         const dependencies = makeDependencies({

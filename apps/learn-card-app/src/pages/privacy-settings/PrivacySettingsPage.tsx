@@ -31,6 +31,7 @@ import * as m from '../../paraglide/messages.js';
 import { useLocale } from '../../i18n';
 import DataSharingCenterView from './DataSharingCenterView';
 import ShareLinkCreate from '../../components/share-links/ShareLinkCreate';
+import ShareLinkOwnerPreview from '../../components/share-links/ShareLinkOwnerPreview';
 import { useSharedLinks } from './useSharedLinks';
 import type {
     ConnectionRequestsValue,
@@ -93,6 +94,17 @@ const PrivacySettingsPage: React.FC = () => {
         );
     }, [closeModal, newModal]);
 
+    const handlePreviewShare = useCallback(
+        (share: ShareLink) => {
+            newModal(
+                <ShareLinkOwnerPreview share={share} onDismiss={() => closeModal()} />,
+                {},
+                { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+            );
+        },
+        [closeModal, newModal]
+    );
+
     const ageGate = getAiFeatureAgeGateState({
         profileType,
         dob: currentLCNUser?.dob,
@@ -102,6 +114,7 @@ const PrivacySettingsPage: React.FC = () => {
     const shared = useSharedLinks(
         flags?.shareMultipleEnabled === true,
         !isMinor,
+        handlePreviewShare,
         handleUpdateShare,
         handleCreateShare
     );

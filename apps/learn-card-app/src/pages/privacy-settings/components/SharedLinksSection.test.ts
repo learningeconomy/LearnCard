@@ -44,6 +44,7 @@ const viewModel = (overrides: Partial<DataSharingSharedLinksViewModel> = {}) => 
     onGetPrivateUrl: vi.fn(async () => 'https://example.com'),
     onChangeExpiry: vi.fn(async () => undefined),
     onStop: vi.fn(async () => undefined),
+    onPreview: vi.fn(),
     onUpdate: vi.fn(),
     onCreateShare: vi.fn(),
     ...overrides,
@@ -101,6 +102,17 @@ describe('shared link actions', () => {
         expect(screen.getByText('Passcode off')).toBeTruthy();
     });
 
+    it('shows the description and opens the credential preview from the count', () => {
+        const describedShare = { ...share, note: 'For the fall internship application.' };
+        const vm = viewModel({ records: [describedShare] });
+        render(React.createElement(SharedLinksSection, { vm }));
+
+        expect(screen.getByText('For the fall internship application.')).toBeTruthy();
+        fireEvent.click(screen.getByRole('button', { name: 'View 4 credentials' }));
+
+        expect(vm.onPreview).toHaveBeenCalledWith(describedShare);
+    });
+
     it('confirms that an update keeps the same link before opening the editor', () => {
         const vm = viewModel();
         render(React.createElement(SharedLinksSection, { vm }));
@@ -124,6 +136,7 @@ describe('shared link actions', () => {
 
         expect(screen.getByText(/cannot be reactivated/i)).toBeTruthy();
         expect(screen.queryByRole('button', { name: 'Copy link' })).toBeNull();
+        expect(screen.queryByRole('button', { name: 'View 4 credentials' })).toBeNull();
         fireEvent.click(screen.getByRole('button', { name: 'Share again' }));
 
         expect(vm.onCreateShare).toHaveBeenCalledOnce();
