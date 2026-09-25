@@ -146,7 +146,11 @@ export const deriveRealmInputs = (
 export const writeRealmInputs = (inputs: RealmInputsFile, path: string, check: boolean): void => {
     const content = `${JSON.stringify(inputs, null, 4)}\n`;
     if (check) {
-        if (!existsSync(path) || readFileSync(path, 'utf8') !== content) {
+        // Pre-commit formats JSON arrays. Compare data, not formatter whitespace.
+        if (
+            !existsSync(path) ||
+            JSON.stringify(JSON.parse(readFileSync(path, 'utf8'))) !== JSON.stringify(inputs)
+        ) {
             throw new Error(
                 `Stale realm inputs: ${path}. Run lc keycloak realm-inputs for this stage.`
             );
