@@ -18,7 +18,7 @@ Use separate directories and account sessions for staging and production.
 Terraform >= 1.10 with S3-native locking; CI pins 1.15.8. All AWS roots use provider
 6.x and committed three-platform lockfiles. There are no DynamoDB lock tables.
 The old flat root was never applied; its service files were moved without a state
-migration. Read the service runbook's unresolved rotation and live private-access
+migration. Read the service runbook's staging rotation drill and live private-access
 gates before deployment, and the realm runbook's local hostname proof. Production
 user cutover remains a separate workstream.
 
@@ -75,16 +75,15 @@ always human-applied. No static AWS credentials, raw plans or plan artifacts are
 
 ### Required GitHub configuration
 
-| Scope                      | Variable                                 | Purpose                                                                                                                |
-| -------------------------- | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Each environment           | `AWS_DEPLOY_ROLE_ARN`                    | Bootstrap deploy OIDC role                                                                                             |
-| Each environment           | `TF_STATE_BUCKET`                        | That account's bootstrap state bucket                                                                                  |
-| Each environment           | `KEYCLOAK_BOOTSTRAP_ADMIN_SECRET_ARN`    | Existing secret ARN, never its value                                                                                   |
-| Each environment           | `KEYCLOAK_DB_ROTATION_RISK_ACKNOWLEDGED` | Explicit `true` after reviewing the service runbook's unresolved rotation risk                                         |
-| Each environment, optional | `KEYCLOAK_CONTAINER_IMAGE`               | Manual service plan/apply override only, account-local `repo@sha256:...`; otherwise use running image                  |
-| Each environment, optional | `KEYCLOAK_ALLOW_MISSING_REALM`           | Default `false`; `true` temporarily allows discovery 404 **only when the realm root is absent and no realm apply ran** |
-| Repository                 | `KEYCLOAK_STAGING_PLAN_ROLE_ARN`         | Staging plan role for the non-environment PR OIDC subject                                                              |
-| Repository, optional       | `KEYCLOAK_ENABLE_PR_PLANS`               | Default off; literal `true` enables credentialed trusted-author staging plans                                          |
+| Scope                      | Variable                              | Purpose                                                                                                                |
+| -------------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Each environment           | `AWS_DEPLOY_ROLE_ARN`                 | Bootstrap deploy OIDC role                                                                                             |
+| Each environment           | `TF_STATE_BUCKET`                     | That account's bootstrap state bucket                                                                                  |
+| Each environment           | `KEYCLOAK_BOOTSTRAP_ADMIN_SECRET_ARN` | Existing secret ARN, never its value                                                                                   |
+| Each environment, optional | `KEYCLOAK_CONTAINER_IMAGE`            | Manual service plan/apply override only, account-local `repo@sha256:...`; otherwise use running image                  |
+| Each environment, optional | `KEYCLOAK_ALLOW_MISSING_REALM`        | Default `false`; `true` temporarily allows discovery 404 **only when the realm root is absent and no realm apply ran** |
+| Repository                 | `KEYCLOAK_STAGING_PLAN_ROLE_ARN`      | Staging plan role for the non-environment PR OIDC subject                                                              |
+| Repository, optional       | `KEYCLOAK_ENABLE_PR_PLANS`            | Default off; literal `true` enables credentialed trusted-author staging plans                                          |
 
 Region is pinned to `us-east-1`. Repository URLs are discovered from
 `/learncard-keycloak/<env>/bootstrap/ecr_repository_url` and checked against account

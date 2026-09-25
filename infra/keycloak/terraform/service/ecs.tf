@@ -31,7 +31,7 @@ resource "aws_iam_role_policy" "secrets" {
       {
         Effect   = "Allow"
         Action   = "secretsmanager:GetSecretValue"
-        Resource = [local.db_master_secret_arn, var.bootstrap_admin_password_secret_arn]
+        Resource = var.bootstrap_admin_password_secret_arn
       },
       {
         Effect   = "Allow"
@@ -50,7 +50,34 @@ resource "aws_iam_role" "task" {
   name                 = "${local.name}-task"
   assume_role_policy   = local.ecs_assume_role_policy
   permissions_boundary = local.workload_boundary
-  # Keycloak itself needs no AWS API permissions.
+}
+
+# The JDBC plugin uses the ECS task credential provider, not the execution role.
+# RDS uses the AWS-managed Secrets Manager key (no CMK configured in rds.tf).
+resource "aws_iam_role_policy" "database_secret" {
+  name = "keycloak-database-secret"
+  role = aws_iam_role.task.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = "secretsmanager:GetSecretValue"
+        Resource = local.db_master_secret_arn
+      },
+      {
+        Effect   = "Allow"
+        Action   = "kms:Decrypt"
+        Resource = aws_rds_cluster.keycloak.master_user_secret[0].kms_key_id
+        Condition = {
+          StringEquals = {
+            "kms:ViaService"                  = "secretsmanager.${var.aws_region}.amazonaws.com"
+            "kms:EncryptionContext:SecretARN" = local.db_master_secret_arn
+          }
+        }
+      }
+    ]
+  })
 }
 
 resource "aws_ecs_cluster" "keycloak" {
@@ -84,9 +111,9 @@ resource "aws_ecs_task_definition" "keycloak" {
       { containerPort = 9000, hostPort = 9000, protocol = "tcp" }
     ]
     environment = [for name, value in {
-      KC_DB_URL      = "jdbc:postgresql://${aws_rds_cluster.keycloak.endpoint}:5432/keycloak?sslmode=require"
-      KC_DB_USERNAME = "keycloak"
-      KC_HOSTNAME    = "https://${local.network.auth_hostname}"
+      # Plugin supplies both username and password from the RDS-managed JSON.
+      KC_DB_URL   = "jdbc:aws-wrapper:postgresql://${aws_rds_cluster.keycloak.endpoint}:5432/keycloak?sslmode=require&wrapperPlugins=failover2,efm2,awsSecretsManager&secretsManagerSecretId=${local.db_master_secret_arn}&secretsManagerRegion=${var.aws_region}"
+      KC_HOSTNAME = "https://${local.network.auth_hostname}"
       # TODO(keycloak-aws-platform.md PD-4, Phase 3 spike): verify forwarded-port
       # hostname v2 behavior; fallback is an SSM-only t4g.nano bastion, not public admin.
       KC_HOSTNAME_ADMIN           = "https://${local.network.admin_hostname}:${var.admin_forward_port}"
@@ -103,8 +130,6 @@ resource "aws_ecs_task_definition" "keycloak" {
       KC_HTTP_MANAGEMENT_SCHEME   = "http"
     } : { name = name, value = value }]
     secrets = [
-      # RDS-managed secret is JSON ({"username","password"}); select the password key.
-      { name = "KC_DB_PASSWORD", valueFrom = "${local.db_master_secret_arn}:password::" },
       { name = "KC_BOOTSTRAP_ADMIN_PASSWORD", valueFrom = var.bootstrap_admin_password_secret_arn }
     ]
     # The upstream 26.7.4 health guide prescribes Bash /dev/tcp: no curl is
@@ -171,6 +196,7 @@ resource "aws_ecs_service" "keycloak" {
     aws_vpc_security_group_egress_rule.https,
     aws_iam_role_policy_attachment.execution,
     aws_iam_role_policy.secrets,
+    aws_iam_role_policy.database_secret,
     aws_rds_cluster_instance.keycloak,
     aws_secretsmanager_secret_rotation.database
   ]

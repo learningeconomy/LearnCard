@@ -41,13 +41,11 @@ variables, **not secret values or fabricated image digests in committed tfvars**
   replicated production registry copy, not staging's URL.
 - `TF_VAR_bootstrap_admin_password_secret_arn`: existing plain-string password
   secret under `learncard-keycloak/<env>/`, same account/region. The ECS execution
-  role reads only this ARN and the RDS-managed DB secret. Terraform never reads
-  their values. Use the AWS-managed Secrets Manager key: the execution role,
+  role reads only this ARN; the JDBC plugin reads the RDS-managed DB secret using
+  the task role. Terraform never reads their values. Use the AWS-managed Secrets Manager key: the execution role,
   realm runner and workload boundary allow `kms:Decrypt` only for
   `alias/aws/secretsmanager` via Secrets Manager. Custom KMS keys need
   explicitly reviewed permissions first.
-- `TF_VAR_db_rotation_risk_acknowledged=true`: explicit acceptance of the temporary
-  rotation limitation below. Defaults false and blocks provisioning otherwise.
 - `TF_STATE_BUCKET`: selected account's bootstrap output. Use a short-lived deploy
   session; no keys in backend config. Independently verify backend account/key:
   provider account validation does not validate the backend's location.
@@ -63,8 +61,6 @@ read -r -p 'Bootstrap state bucket: ' TF_STATE_BUCKET
 read -r -p 'ARM64 ECR image URI with digest: ' TF_VAR_keycloak_image
 read -r -p 'Bootstrap administrator password secret ARN: ' TF_VAR_bootstrap_admin_password_secret_arn
 export TF_VAR_keycloak_image TF_VAR_bootstrap_admin_password_secret_arn
-# Only after accepting and scheduling the rotation mitigation work below:
-export TF_VAR_db_rotation_risk_acknowledged=true
 terraform init -reconfigure \
   -backend-config="bucket=$TF_STATE_BUCKET" \
   -backend-config="key=keycloak/$ENVIRONMENT/service.tfstate" \
@@ -141,26 +137,108 @@ The `admin_api_url` parameter is the machine base URL on 443; `admin_url` is the
 human console URL including the forwarded port and `/admin/`. PR B must use the
 former for its provider. The runner has scoped SSM read permissions for discovery.
 
-## Temporary database rotation risk — not solved
+## Database credentials and rotation
 
-**TODO (platform plan Phase 3, “spike first”):** test the AWS JDBC wrapper's Secrets
-Manager/failover plugins with the optimized image, or implement a coordinated
-rotation-and-forced-redeployment pipeline. Neither is implemented here. The DB
-user remains the RDS-managed master user, not a separate least-privilege owner.
+The production image installs AWS Advanced JDBC Wrapper **4.4.0** and its Secrets
+Manager dependencies before `kc.sh build`. `KC_DB_DRIVER=software.amazon.jdbc.Driver`
+is a persisted **build-time** option in 26.7.4. The
+[versioned Keycloak Aurora guide](https://github.com/keycloak/keycloak/blob/26.7.4/docs/guides/server/db.adoc#preparing-for-amazon-aurora-postgresql)
+requires the wrapper URL and a failover plugin. The ECS URL is:
 
-ECS injects the password only at task startup. After automatic or manual rotation,
-new pooled connections from running tasks can fail until tasks restart. We set
-managed rotation (no Lambda) to **`rate(999 days)`**, with `rotate_immediately=false`,
-after Aurora instances exist. This delays risk; it does not remove it or make a
-999-day credential lifetime a production security recommendation. AWS's
-[schedule guide](https://docs.aws.amazon.com/secretsmanager/latest/userguide/rotate-secrets_schedule.html)
-says rate intervals max at 999 days, while the
-[API](https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_RotationRulesType.html)
-allows 1000 for `AutomaticallyAfterDays`; 999 is the longest unambiguous documented
-rate expression. Confirm the managed-secret schedule after apply. `false` can
-still trigger a rotation test, and manual rotations remain possible. Resolve the
-spike before admitting production users; force a fresh ECS deployment immediately
-after any rotation and verify new connections. Do not print/read passwords for this.
+```text
+jdbc:aws-wrapper:postgresql://<cluster endpoint>:5432/keycloak?sslmode=require&wrapperPlugins=failover2,efm2,awsSecretsManager&secretsManagerSecretId=<master secret ARN>&secretsManagerRegion=us-east-1
+```
+
+`failover2` maintains writer connections; `efm2` monitors connection health.
+[`awsSecretsManager`](https://github.com/aws/aws-advanced-jdbc-wrapper/blob/4.4.0/docs/using-the-jdbc-driver/using-plugins/UsingTheAwsSecretsManagerPlugin.md)
+supplies **both** `username` and `password` from the RDS-managed secret JSON.
+Neither `KC_DB_USERNAME` nor `KC_DB_PASSWORD` is injected. It resolves credentials
+when opening physical connections, caches them for 870 seconds by default, and
+re-fetches/retries once on an authentication failure with cached credentials.
+This removes the requirement to restart tasks after rotation. It does **not**
+promise uninterrupted requests: during the gap between the database password
+change and promotion of `AWSCURRENT`, new connections can temporarily fail.
+Existing authenticated connections continue working; later connection attempts
+recover after promotion. Failover can also interrupt an in-flight transaction.
+The staging drill must measure recovery, not merely check existing sessions.
+
+Managed rotation is **30 days** by default (`db_secret_rotation_days`, 1–365),
+with `rotate_immediately=false` (AWS may still test rotation). No rotation Lambda
+or forced ECS deployment is required. The DB user is still the RDS-managed master
+user named `keycloak`; a separate least-privilege owner is not introduced here.
+Fixed pool initial/min/max values are unchanged. JGroups `jdbc-ping` uses the
+same wrapped datasource; local production startup verifies discovery and health.
+
+The **task role** now grants `GetSecretValue` on exactly the master secret ARN and
+`kms:Decrypt` on its key, restricted by Secrets Manager `ViaService` and that
+secret's encryption context. RDS currently uses `alias/aws/secretsmanager`, not a
+CMK. The **execution role** retains only bootstrap-admin secret injection.
+**No bootstrap change is needed:** `workload-boundary.tf` and `deploy-services.tf`
+already use `local.secret_arns`, whose account/region-local `rds!*` exception
+includes `rds!cluster-*`; the existing boundary permits the managed key via
+Secrets Manager. Introducing a CMK later also requires a reviewed boundary/key
+policy change. Task HTTPS egress through NAT provides Secrets Manager access.
+
+Both images disable `twitter-broker,identity-brokering-api` using **unversioned**
+feature names, as required by 26.7.4. The latter disables external-token retrieval
+(`/broker/<alias>/token`), not OIDC/Google/Apple login or callbacks. These realms
+do not store external tokens. Local Terraform parity and broker authorization
+redirects were tested with both features disabled. Dev keeps its original driver.
+
+### Appendix: staging rollout and rotation drill (operator only)
+
+1. Publish the reviewed ARM64 image and deploy it **together with** this service
+   task definition/IAM change via the protected Keycloak Infrastructure pipeline.
+   Do not apply the wrapper URL with the old image, or use an old manual image
+   override. Let PD-7's compatibility CLI choose rolling or recreate; never bypass
+   a recreate decision. No resource replacement or schema change is requested by
+   the JDBC change itself. Wait for the new revision and both target groups to
+   become healthy before any manual rotation. Keep the bootstrap-admin secret.
+2. Remove the obsolete rotation-risk GitHub environment variable and any old
+   shell/tfvars acceptance override. No new GitHub variable is required. Inspect
+   the applied 30-day schedule. Use a short-lived staging operator session:
+
+    ```bash
+    export AWS_REGION=us-east-1
+    NAME=learncard-keycloak-staging
+    test "$(aws sts get-caller-identity --query Account --output text)" = 281762601323
+    aws ecs wait services-stable --cluster "$NAME" --services "$NAME"
+    SECRET_ARN=$(aws rds describe-db-clusters --db-cluster-identifier "$NAME" \
+      --query 'DBClusters[0].MasterUserSecret.SecretArn' --output text)
+    aws secretsmanager describe-secret --secret-id "$SECRET_ARN" \
+      --query '{RotationEnabled:RotationEnabled,Rules:RotationRules,Last:LastRotatedDate}'
+    BEFORE=$(aws ecs list-tasks --cluster "$NAME" --service-name "$NAME" \
+      --query 'sort(taskArns)' --output json)
+    aws secretsmanager rotate-secret --secret-id "$SECRET_ARN"
+    ```
+
+3. Wait for rotation completion (`LastRotatedDate` advances and `AWSCURRENT` moves,
+   inspecting metadata only). Continuously exercise discovery and fresh test-user
+   sign-in/token refresh, observe both ALB target groups' readiness and restricted
+   logs for credential/authentication errors. Do **not** restart or force-deploy.
+   Discovery alone and old pooled connections are insufficient proof: in a
+   scheduled staging window, have a DB operator terminate one identified idle
+   **application** backend after rotation (never RDS/internal sessions), then prove
+   its replacement succeeds while sign-in and readiness recover. Record times,
+   connection replacement, error duration, and the same task IDs before/after.
+
+    ```bash
+    curl --fail --silent --show-error \
+      https://auth.staging.learncard.app/realms/learncard/.well-known/openid-configuration >/dev/null
+    aws secretsmanager describe-secret --secret-id "$SECRET_ARN" \
+      --query '{Last:LastRotatedDate,Versions:VersionIdsToStages}'
+    AFTER=$(aws ecs list-tasks --cluster "$NAME" --service-name "$NAME" \
+      --query 'sort(taskArns)' --output json)
+    test "$BEFORE" = "$AFTER"
+    ```
+
+4. Block production rollout if connections do not recover without task replacement.
+   Check task-role authorization, NAT/Secrets Manager reachability and secret
+   version promotion; never log secret contents. Do not roll back just the image:
+   an old image also needs the old URL/credential injection configuration. Live
+   IAM, Aurora failover and real rotation remain staging gates, not local-test claims.
+
+Dependency inventory, pinning and local evidence: [JDBC runtime](../../jdbc/README.md).
 
 ## Private realm runner
 
@@ -291,15 +369,14 @@ Credentialed PR plans and image promotion are Phase 4, not implemented here.
 Set these **GitHub environment variables**, with main-only deployment branches and
 required production review/prevent-self-approval:
 
-| Variable                                 | Value                                                   |
-| ---------------------------------------- | ------------------------------------------------------- |
-| `AWS_DEPLOY_ROLE_ARN`                    | Bootstrap deploy role ARN                               |
-| `AWS_PLAN_ROLE_ARN`                      | Bootstrap plan role ARN (mirror described below)        |
-| `TF_STATE_BUCKET`                        | Bootstrap state bucket                                  |
-| `AWS_REGION`                             | us-east-1 (default)                                     |
-| `KEYCLOAK_CONTAINER_IMAGE`               | Service's account-local ARM64 digest URI                |
-| `KEYCLOAK_BOOTSTRAP_ADMIN_SECRET_ARN`    | Service bootstrap password secret ARN, not its contents |
-| `KEYCLOAK_DB_ROTATION_RISK_ACKNOWLEDGED` | Explicit `true` only after reviewing the temporary risk |
+| Variable                              | Value                                                   |
+| ------------------------------------- | ------------------------------------------------------- |
+| `AWS_DEPLOY_ROLE_ARN`                 | Bootstrap deploy role ARN                               |
+| `AWS_PLAN_ROLE_ARN`                   | Bootstrap plan role ARN (mirror described below)        |
+| `TF_STATE_BUCKET`                     | Bootstrap state bucket                                  |
+| `AWS_REGION`                          | us-east-1 (default)                                     |
+| `KEYCLOAK_CONTAINER_IMAGE`            | Service's account-local ARM64 digest URI                |
+| `KEYCLOAK_BOOTSTRAP_ADMIN_SECRET_ARN` | Service bootstrap password secret ARN, not its contents |
 
 GitHub environment jobs emit an **environment** OIDC subject, incompatible with
 the plan role's PR/main trust. Therefore mirror staging `AWS_PLAN_ROLE_ARN` into
@@ -329,7 +406,7 @@ the port forward. Also verify Aurora orderability/secret schedule, pool budget,
 actual ARM64 images, IAM role creation/deletion and boundary enforcement, both
 target registrations and access logs, autoscaling, CodeBuild source/ENI/secret/
 backend access, ECS Exec managed-agent readiness and cleanup. Offline checks
-cannot establish any of these. No real users until the rotation spike and these
+cannot establish any of these. No real users until the staging rotation drill and these
 gates pass. Phase 6 resources below are implemented; their live delivery and restore
 gates remain unverified until applied and drilled.
 
