@@ -289,14 +289,26 @@ describe('create screen', () => {
             target: { value: 'Learning highlights' },
         });
 
-        expect(screen.getByRole('switch', { name: /Require a passcode/ })).not.toBeChecked();
-        expect(screen.getByRole('switch', { name: /Notify me when viewed/ })).not.toBeChecked();
+        const passcodeSwitch = screen.getByRole('switch', { name: /Require a passcode/ });
+        const notificationSwitch = screen.getByRole('switch', {
+            name: /Notify me when viewed/,
+        });
+        expect(passcodeSwitch).not.toBeChecked();
+        expect(notificationSwitch).not.toBeChecked();
+        expect(passcodeSwitch.firstElementChild?.className).toContain('left-0.5');
+        expect(passcodeSwitch.firstElementChild?.className).toContain('translate-x-0');
+        expect(notificationSwitch.firstElementChild?.className).toContain('left-0.5');
+        expect(notificationSwitch.firstElementChild?.className).toContain('translate-x-0');
 
-        fireEvent.click(screen.getByRole('switch', { name: /Require a passcode/ }));
+        fireEvent.click(passcodeSwitch);
+        expect(passcodeSwitch).toBeChecked();
+        expect(passcodeSwitch.firstElementChild?.className).toContain('translate-x-5');
         fireEvent.change(screen.getByPlaceholderText('At least 4 characters'), {
             target: { value: '2468' },
         });
-        fireEvent.click(screen.getByRole('switch', { name: /Notify me when viewed/ }));
+        fireEvent.click(notificationSwitch);
+        expect(notificationSwitch).toBeChecked();
+        expect(notificationSwitch.firstElementChild?.className).toContain('translate-x-5');
         fireEvent.click(screen.getByRole('button', { name: /Preview/ }));
         await screen.findByTestId('share-link-preview');
         fireEvent.click(screen.getByRole('button', { name: 'Create private link' }));

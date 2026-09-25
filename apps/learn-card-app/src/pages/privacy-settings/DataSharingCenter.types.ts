@@ -61,7 +61,7 @@ export type DataSharingSharedLinksViewModel = {
     onChangeExpiry: (share: ShareLink, expiresAt: string | null) => Promise<void>;
     onStop: (share: ShareLink) => Promise<void>;
     onUpdate: (share: ShareLink) => void;
-    onOpenPassport: () => void;
+    onCreateShare: () => void;
 };
 
 export type DataSharingCenterViewModel = {

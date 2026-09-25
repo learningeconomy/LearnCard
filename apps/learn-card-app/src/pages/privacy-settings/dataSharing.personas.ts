@@ -221,7 +221,7 @@ const sharedLinks: DataSharingSharedLinksViewModel = {
     onChangeExpiry: async () => undefined,
     onStop: async () => undefined,
     onUpdate: noop,
-    onOpenPassport: noop,
+    onCreateShare: noop,
 };
 
 export const DATA_SHARING_PERSONAS: Record<string, DataSharingCenterViewModel> = {

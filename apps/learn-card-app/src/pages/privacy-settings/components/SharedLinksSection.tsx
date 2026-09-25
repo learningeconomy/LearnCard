@@ -351,7 +351,7 @@ const SharedLinksSection: React.FC<{ vm: DataSharingSharedLinksViewModel; delay?
                     </button>
                     <button
                         className="inline-flex items-center gap-1.5 rounded-[20px] bg-grayscale-900 px-3 py-2 text-xs font-medium text-white transition-opacity hover:opacity-90"
-                        onClick={vm.onOpenPassport}
+                        onClick={vm.onCreateShare}
                     >
                         <IonIcon icon={addOutline} /> {m['dataShareCenter.shared.newShare']()}
                     </button>
@@ -399,9 +399,9 @@ const SharedLinksSection: React.FC<{ vm: DataSharingSharedLinksViewModel; delay?
                         </p>
                         <button
                             className="px-4 py-2.5 rounded-[20px] bg-grayscale-900 text-white text-sm font-medium"
-                            onClick={vm.onOpenPassport}
+                            onClick={vm.onCreateShare}
                         >
-                            {m['dataShareCenter.shared.openPassport']()}
+                            {m['dataShareCenter.shared.newShare']()}
                         </button>
                     </div>
                 ) : filtered.length === 0 ? (

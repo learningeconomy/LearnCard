@@ -28,7 +28,7 @@ export const useSharedLinks = (
     enabled: boolean,
     showViewStats: boolean,
     onUpdate: (share: ShareLink) => void,
-    onOpenPassport: () => void
+    onCreateShare: () => void
 ): DataSharingSharedLinksViewModel | null => {
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
@@ -184,6 +184,6 @@ export const useSharedLinks = (
         onChangeExpiry: changeExpiry,
         onStop: stop,
         onUpdate,
-        onOpenPassport,
+        onCreateShare,
     };
 };

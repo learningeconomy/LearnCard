@@ -2,7 +2,6 @@ import React, { useCallback, useMemo, useRef, useState } from 'react';
 
 import { IonContent, IonPage } from '@ionic/react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
-import { useHistory } from 'react-router-dom';
 import {
     AllowConnectionRequestsEnum,
     ProfileVisibilityEnum,
@@ -48,7 +47,6 @@ type PrivacySettingsProfile = {
 
 const PrivacySettingsPage: React.FC = () => {
     const flags = useFlags();
-    const history = useHistory();
     const { newModal, closeModal } = useModal({
         desktop: ModalTypes.FullScreen,
         mobile: ModalTypes.FullScreen,
@@ -83,6 +81,18 @@ const PrivacySettingsPage: React.FC = () => {
         [closeModal, newModal]
     );
 
+    const handleCreateShare = useCallback(() => {
+        newModal(
+            <ShareLinkCreate
+                onDismiss={() => closeModal()}
+                onManage={() => closeModal()}
+                onComplete={() => refreshSharedRef.current?.()}
+            />,
+            {},
+            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+        );
+    }, [closeModal, newModal]);
+
     const ageGate = getAiFeatureAgeGateState({
         profileType,
         dob: currentLCNUser?.dob,
@@ -93,7 +103,7 @@ const PrivacySettingsPage: React.FC = () => {
         flags?.shareMultipleEnabled === true,
         !isMinor,
         handleUpdateShare,
-        () => history.push('/wallet')
+        handleCreateShare
     );
     refreshSharedRef.current = shared?.onRefresh ?? null;
 

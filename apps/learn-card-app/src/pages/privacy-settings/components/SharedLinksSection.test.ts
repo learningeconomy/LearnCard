@@ -45,7 +45,7 @@ const viewModel = (overrides: Partial<DataSharingSharedLinksViewModel> = {}) => 
     onChangeExpiry: vi.fn(async () => undefined),
     onStop: vi.fn(async () => undefined),
     onUpdate: vi.fn(),
-    onOpenPassport: vi.fn(),
+    onCreateShare: vi.fn(),
     ...overrides,
 });
 
@@ -82,6 +82,15 @@ describe('shared link filters', () => {
 });
 
 describe('shared link actions', () => {
+    it('opens the share creator from New share', () => {
+        const vm = viewModel();
+        render(React.createElement(SharedLinksSection, { vm }));
+
+        fireEvent.click(screen.getByRole('button', { name: 'New share' }));
+
+        expect(vm.onCreateShare).toHaveBeenCalledOnce();
+    });
+
     it('surfaces passcode protection on every shared-link card', () => {
         const vm = viewModel({
             records: [share, { ...share, id: 'BBBBBBBBBBBBBBBBBBBBBB', passcodeProtected: false }],
