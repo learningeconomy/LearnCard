@@ -3,8 +3,7 @@
 #
 # This module provisions the compute/network substrate (P3.1) AND the
 # supporting KMS/IAM/S3/DynamoDB resources (P3.2) for the Nitro
-# Enclave-backed escrow recovery "enclave-host" service — see
-# .sisyphus/plans/nitro-escrow-enclave.md. instance_profile_name remains an
+# Enclave-backed escrow recovery "enclave-host" service. instance_profile_name remains an
 # optional override (default null) for pointing at an externally managed
 # profile instead of the one iam.tf creates; every other P3.2 resource
 # (kms.tf, iam.tf, storage.tf, ledger.tf) is created directly by this

@@ -838,9 +838,7 @@ same-day reproducibility; it does not by itself prove "rebuild from this
 tag a year later still matches." Pin exact `apk add pkg=version` strings if
 that stronger guarantee becomes a requirement — this task's local
 environment (no Linux, no `nitro-cli`) could not exercise a real build to
-determine current exact `apk` version strings; see
-`.sisyphus/notepads/nitro-escrow-enclave/issues.md`, "P2.1 report", for
-what was and wasn't verified locally.
+determine current exact `apk` version strings.
 
 ### Flowing measurements into Terraform / tenant config
 

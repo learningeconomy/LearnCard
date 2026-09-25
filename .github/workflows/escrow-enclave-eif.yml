@@ -1,6 +1,6 @@
 name: Escrow Enclave EIF
 
-# Plan: .sisyphus/plans/nitro-escrow-enclave.md P2.2. See
+# P2.2 EIF pipeline. See
 # services/escrow-enclave-app/README.md ("Reproducible build") and
 # security/README.md for the full pipeline this workflow implements.
 on:

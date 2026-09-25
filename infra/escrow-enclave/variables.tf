@@ -41,7 +41,7 @@ variable "instance_type" {
     the instance exclusively for the enclave, so the parent OS + vsock-proxy
     + escrow-enclave-host supervisor need vCPUs left over on top of that. A
     2-vCPU instance (e.g. m6i.large) cannot host a 2-vCPU enclave — see
-    .sisyphus/notepads/nitro-escrow-enclave/decisions.md D1.
+    services/escrow-enclave-app/SECURITY.md#design-decisions D1.
   EOT
   type        = string
   default     = "m6i.xlarge"

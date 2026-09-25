@@ -40,6 +40,7 @@
 - [Identity & Trust](core-concepts/identities-and-keys/decentralized-identifiers-dids.md)
     - [Seed Phrases](core-concepts/identities-and-keys/seed-phrases.md)
     - [Key Management (SSS)](core-concepts/identities-and-keys/key-management-sss.md)
+    - [Automatic Account Recovery](core-concepts/automatic-account-recovery.md)
     - [Network Profiles](core-concepts/identities-and-keys/network-profiles.md)
     - [Signing Authorities](core-concepts/identities-and-keys/signing-authorities.md)
     - [Trust Registries](core-concepts/identities-and-keys/trust-registries.md)

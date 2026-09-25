@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 #
 # services/escrow-enclave-app/Dockerfile — reproducible build for the Nitro
-# Enclave image (plan P2.1, .sisyphus/plans/nitro-escrow-enclave.md).
+# Enclave image (plan P2.1).
 #
 # Two stages:
 #   1. `builder` — fully static (musl + crt-static) release binary.
@@ -35,8 +35,8 @@
 # (aws-lc-sys, ring, openssl-sys). Cross-compiling those from a glibc host
 # is possible but materially more fragile — this exact gap (missing
 # x86_64-linux-musl-gcc) is what blocked local verification of this
-# Dockerfile's `cargo build` line on this macOS machine; see
-# .sisyphus/notepads/nitro-escrow-enclave/issues.md "P2.1 report".
+# Dockerfile's `cargo build` line on this macOS machine.
+# See "Reproducible build" in README.md.
 # ---------------------------------------------------------------------------
 FROM rust:1.93.0-alpine3.22@sha256:6ca5114023863359da03cec9dbe28fdd2c3de5596330e40daab0847d05ea8a1a AS builder
 

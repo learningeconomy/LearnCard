@@ -219,7 +219,7 @@ Mitigations, layered (none of them eliminate the risk on their own):
   detected even if it bypassed (or was never subject to) the PR review
   above. **Not implemented by this module** — TODO, tracked as P7.1
   (`escrow-ledger-monitor`'s alarm wiring; see
-  `.sisyphus/plans/nitro-escrow-enclave.md`).
+  `services/escrow-enclave-app/SECURITY.md#design-decisions`).
 
 **Alternative not adopted here (requires explicit sign-off): an immutable
 key policy.** Remove `kms:PutKeyPolicy` for every principal, including
@@ -241,8 +241,8 @@ It is the correct choice if a future security review judges
 MFA-authenticated-admin-rewrite risk unacceptable even with two-person PR
 review; that decision requires explicit sign-off, not a silent default.
 
-See `.sisyphus/notepads/nitro-escrow-enclave/decisions.md` D10 for the
-decision record.
+See [Design Decisions](../../services/escrow-enclave-app/SECURITY.md#design-decisions)
+D10 for the decision record.
 
 ## Records overwrite detection
 

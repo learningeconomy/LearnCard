@@ -25,8 +25,8 @@ PCR0/PCR1/PCR2 (SHA384, lowercase hex) plus provenance:
 }
 ```
 
-These files are **never pushed to `main` directly**. Per notepad decision D10
-(`.sisyphus/notepads/nitro-escrow-enclave/decisions.md`), a wrong or
+These files are **never pushed to `main` directly**. Per [Design Decision
+D10](../services/escrow-enclave-app/SECURITY.md#design-decisions), a wrong or
 malicious PCR tuple would let an attacker's enclave image pass client-side
 attestation pinning — the same two-person-review bar this repo already
 applies to the Terraform KMS key policy (`infra/escrow-enclave/README.md`,
@@ -107,8 +107,7 @@ result. Only `push` (to `main` or an `escrow-enclave-v*` tag) and
 ## Known risks / open items
 
 These are genuine, currently-unresolved gaps discovered while wiring this
-workflow — flagged here (and in
-`.sisyphus/notepads/nitro-escrow-enclave/{problems,issues}.md`) rather than
+workflow — flagged here rather than
 silently worked around, since fixing several of them is out of this task's
 scope (no edits to `Cargo.toml`/`Cargo.lock`/`Dockerfile`/build scripts).
 
@@ -165,9 +164,7 @@ scope (no edits to `Cargo.toml`/`Cargo.lock`/`Dockerfile`/build scripts).
 ## What was verified where
 
 Verified on the machine that authored this workflow (no Nitro hardware, no
-`nitro-cli`, no Docker daemon running — see
-`.sisyphus/notepads/nitro-escrow-enclave/issues.md`, "P2.2 report", for full
-command output):
+`nitro-cli`, no Docker daemon running):
 
 - The workflow YAML parses (`js-yaml`) and is `actionlint`-clean except for
   one expected, non-actionable finding: `nitro-enclaves` is flagged as an

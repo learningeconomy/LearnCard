@@ -2,8 +2,7 @@
 
 This runbook governs turning on **automatic** escrow recovery enrollment for real
 tenants, stage by stage. It is operator-facing, not implementation documentation —
-see `packages/learn-card-base/src/config/escrowRollout.ts` for the code and
-`.sisyphus/plans/nitro-escrow-enclave.md` for the full project plan.
+see `packages/learn-card-base/src/config/escrowRollout.ts` for the code.
 
 ## What this controls (and what it doesn't)
 
@@ -35,7 +34,7 @@ without a single real user being auto-enrolled — this is the intended
 
 ## Launch blockers — DO NOT roll out beyond internal until these are resolved
 
-Per `.sisyphus/notepads/nitro-escrow-enclave/problems.md`, two items remain open:
+Per the open launch blockers in [SECURITY.md](SECURITY.md#open-items--launch-blockers), two items remain open:
 
 1. **No second production-grade Roughtime time source.** The enclave's 7-day
    hold timer requires ≥2 independent signed time sources; today only one
