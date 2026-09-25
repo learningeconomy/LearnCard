@@ -76,8 +76,6 @@ jobs:
                   export TF_VAR_keycloak_image TF_VAR_bootstrap_admin_password_secret_arn
                   TF_VAR_keycloak_image=$(jq -er '.taskDefinition.containerDefinitions[] | select(.name=="keycloak") | .image' <<< "$definition")
                   TF_VAR_bootstrap_admin_password_secret_arn=$(jq -er '.taskDefinition.containerDefinitions[] | select(.name=="keycloak") | .secrets[] | select(.name=="KC_BOOTSTRAP_ADMIN_PASSWORD") | .valueFrom' <<< "$definition")
-                  # Plan only; this does not authorize apply or remove the rotation risk.
-                  export TF_VAR_db_rotation_risk_acknowledged=true
                   bash infra/keycloak/scripts/terraform-plan.sh service
             - name: Remove confidential local plans and logs
               if: always()
