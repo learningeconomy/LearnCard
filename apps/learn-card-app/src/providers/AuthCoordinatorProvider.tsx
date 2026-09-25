@@ -116,6 +116,7 @@ import {
 } from './authCoordinator.helpers';
 import { getTenantHeaders, getResolvedTenantConfig } from '../config/bootstrapTenantConfig';
 import { createRecoveryPinActions } from './recoveryPinActions';
+import { runPasskeyRecoverySetup } from './passkeyRecoverySetup';
 
 import {
     emitAuthDebugEvent,
@@ -1886,18 +1887,10 @@ const AuthSessionManager: React.FC<{
                                 onCompleted={completeRecoverySetup}
                                 onSetupPasskey={async () => {
                                     const authUser = await authProvider.getCurrentUser();
-                                    const result = await coordinator.runRecoverySetup(
-                                        'passkey',
+                                    return runPasskeyRecoverySetup(
+                                        coordinator.runRecoverySetup,
                                         () => setupMethod({ method: 'passkey' }, authUser)
                                     );
-
-                                    // Passkey setup confirms server-side in one step, so it
-                                    // never reaches confirmMethod; activate here instead.
-                                    if (coordinator.needsActivation) {
-                                        await coordinator.activate();
-                                    }
-
-                                    return result.method === 'passkey' ? result.credentialId : '';
                                 }}
                                 onGeneratePhrase={async () => {
                                     const authUser = await authProvider.getCurrentUser();
