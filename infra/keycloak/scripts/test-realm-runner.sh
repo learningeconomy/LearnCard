@@ -9,7 +9,12 @@ cat >"$work/bin/aws" <<'MOCK'
 #!/usr/bin/env bash
 printf '%s\n' "$*" >>"$TEST_WORK/calls"
 case "$1 $2" in
-    'codebuild start-build') printf 'offline:build-id\n' ;;
+    'codebuild start-build')
+        case "$SCENARIO" in
+            start-error) exit 43 ;;
+            start-signal) kill -TERM "$TEST_DEPLOY_PID"; exit 43 ;;
+        esac
+        printf 'offline:build-id\n' ;;
     'codebuild stop-build')
         cp "$TEST_WORK/clock" "$TEST_WORK/stop-time"
         touch "$TEST_WORK/stopping"
@@ -49,6 +54,8 @@ source "$SCRIPTS/realm-runner.sh"
 export TEST_DEPLOY_PID=$$
 name=offline
 release_sha=reviewed-sha
+DEPLOY_DEADLINE_EPOCH=10000
+if [[ "$SCENARIO" == insufficient-time ]]; then DEPLOY_DEADLINE_EPOCH=4499; fi
 cleanup() {
     result=$?
     trap - EXIT
@@ -67,7 +74,7 @@ run_realm_build "$TEST_WORK/build-id" "$name" "$release_sha"
 HARNESS
 chmod +x "$work/bin/"*
 export PATH="$work/bin:$PATH" SCRIPTS="$scripts"
-for scenario in success failed timeout poll-error unknown signal stop-error interrupted-id; do
+for scenario in success failed timeout poll-error unknown signal stop-error interrupted-id start-error start-signal insufficient-time; do
     export SCENARIO=$scenario TEST_WORK="$work/$scenario"
     mkdir "$TEST_WORK"
     printf '0\n' >"$TEST_WORK/clock"
@@ -80,12 +87,18 @@ for scenario in success failed timeout poll-error unknown signal stop-error inte
         [[ "$result" != 0 ]] || exit 1
     fi
     case "$scenario" in
+        insufficient-time)
+            if grep -q 'codebuild start-build' "$TEST_WORK/calls"; then exit 1; fi
+            grep -q 'Insufficient deployment time' "$TEST_WORK/log" ;;
+        start-error|start-signal)
+            grep -q 'start outcome unknown' "$TEST_WORK/log"
+            if grep -q '^cleanup$' "$TEST_WORK/calls"; then exit 1; fi ;;
         success|failed)
-            ! grep -q 'codebuild stop-build' "$TEST_WORK/calls" ;;
+            if grep -q 'codebuild stop-build' "$TEST_WORK/calls"; then exit 1; fi ;;
         stop-error)
             grep -q 'may still be running' "$TEST_WORK/log"
-            ! grep -q '^cleanup$' "$TEST_WORK/calls"
-            [[ $(<"$TEST_WORK/clock") -le 4320 ]] ;;
+            if grep -q '^cleanup$' "$TEST_WORK/calls"; then exit 1; fi
+            [[ $(<"$TEST_WORK/clock") -le 4380 ]] ;;
         *)
             grep -q 'codebuild stop-build --id offline:build-id' "$TEST_WORK/calls"
             [[ $(tail -n 2 "$TEST_WORK/calls") == $'terminal\ncleanup' ]] ;;

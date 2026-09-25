@@ -105,6 +105,10 @@ Before running this workflow, the human-owned deploy IAM role must also grant
 least 10800 seconds. The workflow requests a three-hour session/job budget, with
 a 150-minute deployment-step limit to reserve time for cleanup. Verify these IAM
 prerequisites during bootstrap; this workflow cannot update its own role.
+The script uses a softer deadline (140 minutes from deploy start or 170 minutes
+from job start, whichever is earlier) and refuses to launch CodeBuild unless
+75 minutes remain for polling, stopping, and cleanup. Earlier build/service work
+therefore cannot consume the realm runner's cancellation reserve unnoticed.
 
 ### PR checks
 
@@ -149,6 +153,10 @@ stop an unfinished build and wait up to five minutes for terminal confirmation
 before service cleanup. If confirmation fails, cleanup is withheld and the job
 fails loudly: an operator must reconcile the possibly running build before any
 service recovery. Hard runner termination cannot guarantee trap execution.
+If a build-start response is lost, the script cannot prove that no build exists:
+it withholds service cleanup and requires operator reconciliation of the realm
+project. Manual workflow cancellation may forcibly kill the trap before stop
+confirmation; always verify the build's terminal status before recovery.
 No standalone
 realm dispatch is exposed until the runner supports a reviewed plan/apply contract.
 Every deployment requires realm runner success and discovery HTTP 200; neither

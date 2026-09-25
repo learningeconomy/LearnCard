@@ -2,6 +2,7 @@
 # Sourced by deploy-image.sh; status only, never build logs or environment values.
 realm_build=
 realm_finished=false
+realm_start_attempted=false
 
 realm_build_status() {
     AWS_MAX_ATTEMPTS=1 aws codebuild batch-get-builds --ids "$realm_build" \
@@ -11,9 +12,16 @@ realm_build_status() {
 
 run_realm_build() {
     local id_file=$1 name=$2 release_sha=$3 deadline status
+    # Admission control, not a runner cancellation timeout: allow the entire
+    # queue/build/poll window plus stop confirmation and service cleanup reserve.
+    if (( $(date +%s) + 75 * 60 > DEPLOY_DEADLINE_EPOCH )); then
+        printf 'Insufficient deployment time remaining for realm runner and cleanup; refusing to start a build.\n' >&2
+        return 1
+    fi
     # Write directly so the EXIT trap can recover the ID even on interruption.
-    aws codebuild start-build --project-name "$name-realm" --source-version "$release_sha" \
-        --query build.id --output text >"$id_file"
+    realm_start_attempted=true
+    AWS_MAX_ATTEMPTS=1 aws codebuild start-build --project-name "$name-realm" --source-version "$release_sha" \
+        --query build.id --output text --cli-connect-timeout 5 --cli-read-timeout 10 >"$id_file"
     realm_build=$(<"$id_file")
     [[ -n "$realm_build" && "$realm_build" != None ]] || return 1
     printf 'Realm runner started: %s\n' "$realm_build"
@@ -38,6 +46,10 @@ run_realm_build() {
 stop_realm_build() {
     local id_file=$1 deadline status
     if [[ -z "$realm_build" && -s "$id_file" ]]; then realm_build=$(<"$id_file"); fi
+    if [[ "$realm_start_attempted" == true && ( -z "$realm_build" || "$realm_build" == None ) ]]; then
+        printf '::error::Realm build start outcome unknown; a build may still be running. Service cleanup withheld; operator must reconcile the realm project before recovery.\n' >&2
+        return 1
+    fi
     [[ -n "$realm_build" && "$realm_build" != None && "$realm_finished" != true ]] || return 0
     printf 'Stopping unfinished realm runner: %s\n' "$realm_build" >&2
     deadline=$(( $(date +%s) + 5 * 60 ))

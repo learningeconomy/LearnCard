@@ -7,6 +7,15 @@ set -euo pipefail
 : "${TF_VAR_keycloak_image:?}"
 : "${GITHUB_SHA:?}"
 release_sha=${RELEASE_SHA:-$GITHUB_SHA}
+# Leave ten minutes before the workflow's 150-minute hard step timeout. The
+# workflow also supplies an absolute job deadline to account for earlier steps.
+DEPLOY_DEADLINE_EPOCH=$(( $(date +%s) + 140 * 60 ))
+if [[ -n ${DEPLOY_JOB_DEADLINE_EPOCH:-} ]]; then
+    [[ "$DEPLOY_JOB_DEADLINE_EPOCH" =~ ^[0-9]+$ ]]
+    if (( DEPLOY_JOB_DEADLINE_EPOCH < DEPLOY_DEADLINE_EPOCH )); then
+        DEPLOY_DEADLINE_EPOCH=$DEPLOY_JOB_DEADLINE_EPOCH
+    fi
+fi
 [[ "$DEPLOY_ENVIRONMENT" == staging || "$DEPLOY_ENVIRONMENT" == production ]]
 [[ "$TF_VAR_keycloak_image" =~ @sha256:[0-9a-f]{64}$ ]]
 scripts="$PWD/infra/keycloak/scripts"

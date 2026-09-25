@@ -14,13 +14,28 @@ printf '%s\n' "$*" >>"$AWS_CALLS"
 [[ ${FULL_DEPLOY:-false} == true ]] || exit 42
 case "$1 $2" in
     's3api list-objects-v2') printf '{}\n' ;;
-    's3 cp'|'ecs wait') ;;
+    's3 cp'|'ecs wait'|'rds create-db-cluster-snapshot'|'rds wait'|'application-autoscaling register-scalable-target') ;;
+    'application-autoscaling describe-scalable-targets')
+        printf '{"ScalableTargets":[{"MinCapacity":1,"MaxCapacity":2,"SuspendedState":{}}]}\n' ;;
+    'ecs list-tasks') printf '[]\n' ;;
+    'ecs update-service')
+        if [[ "$*" == *'--desired-count 0'* ]]; then touch "$TEST_STATE/zero"
+        elif [[ "$*" == *'--desired-count 1'* ]]; then rm -f "$TEST_STATE/zero"; fi ;;
     'ecs describe-services')
         if [[ "$*" == *--query* ]]; then printf 'offline-task\n'
+        elif [[ -e "$TEST_STATE/zero" ]]; then printf '{"services":[{"desiredCount":0,"runningCount":0,"pendingCount":0}]}\n'
         else printf '{"services":[{"desiredCount":1}]}\n'; fi ;;
     'ecs describe-task-definition') printf '%s\n' "$TF_VAR_keycloak_image" ;;
-    'codebuild start-build') printf 'offline:build-id\n' ;;
-    'codebuild batch-get-builds') printf '%s\n' "$BUILD_STATUS" ;;
+    'codebuild start-build')
+        [[ "$SCENARIO" != recreate-unknown-start ]] || exit 43
+        printf 'offline:build-id\n' ;;
+    'codebuild stop-build') touch "$TEST_STATE/stopping" ;;
+    'codebuild batch-get-builds')
+        if [[ -e "$TEST_STATE/stopping" ]]; then
+            printf 'terminal\n' >>"$AWS_CALLS"
+            printf 'STOPPED\n'
+        elif [[ "$SCENARIO" == recreate-poll-error ]]; then exit 43
+        else printf '%s\n' "$BUILD_STATUS"; fi ;;
     *) exit 99 ;;
 esac
 MOCK
@@ -48,6 +63,7 @@ prepare_inputs() {
     cp "$environment_file" "$COMMITTED/$environment_file"
     cp "$generated_file" "$COMMITTED/$generated_file"
     : >"$AWS_CALLS"
+    rm -f "$work/zero" "$work/stopping"
 }
 
 reject_inputs() {
@@ -82,11 +98,11 @@ done
 mkdir -p infra/keycloak/terraform/service
 cat >infra/keycloak/scripts/terraform-plan.sh <<'MOCK'
 #!/usr/bin/env bash
-printf '%s\n' '{"resource_changes":[{"address":"aws_ecs_task_definition.keycloak","change":{"after":{"container_definitions":"[{\"name\":\"keycloak\",\"environment\":[{\"name\":\"KC_DB\",\"value\":\"postgres\"}]}]"}}}]}' >infra/keycloak/terraform/service/plan.json
+printf '%s\n' '{"resource_changes":[{"address":"aws_ecs_task_definition.keycloak","change":{"after":{"container_definitions":"[{\"name\":\"keycloak\",\"environment\":[{\"name\":\"KC_DB\",\"value\":\"postgres\"}]}]"}}},{"address":"aws_appautoscaling_target.keycloak","change":{"actions":["no-op"]}}]}' >infra/keycloak/terraform/service/plan.json
 MOCK
 cat >infra/keycloak/scripts/compat-gate.sh <<'MOCK'
 #!/usr/bin/env bash
-printf 'strategy=rolling\n' >"$GITHUB_OUTPUT"
+printf 'strategy=%s\n' "$STRATEGY" >"$GITHUB_OUTPUT"
 MOCK
 cat >infra/keycloak/scripts/compat-metadata.sh <<'MOCK'
 #!/usr/bin/env bash
@@ -100,13 +116,14 @@ cat >"$work/bin/curl" <<'MOCK'
 printf '%s\n' "$SMOKE_STATUS"
 MOCK
 chmod +x "$work/bin/"*
-export FULL_DEPLOY=true
-for scenario in success discovery-404 realm-failure; do
+export FULL_DEPLOY=true TEST_STATE="$work"
+for scenario in success discovery-404 realm-failure recreate-poll-error recreate-unknown-start; do
     prepare_inputs
-    export BUILD_STATUS=SUCCEEDED SMOKE_STATUS=200
+    export BUILD_STATUS=SUCCEEDED SMOKE_STATUS=200 STRATEGY=rolling SCENARIO=$scenario
     case "$scenario" in
         discovery-404) export SMOKE_STATUS=404 ;;
         realm-failure) export BUILD_STATUS=FAILED ;;
+        recreate-*) export STRATEGY=recreate ;;
     esac
     result=0
     bash "$work/deploy-image.sh" >"$work/log" 2>&1 || result=$?
@@ -118,5 +135,15 @@ for scenario in success discovery-404 realm-failure; do
         [[ "$result" != 0 ]] || exit 1
         if grep -q '/complete.json ' "$AWS_CALLS"; then exit 1; fi
     fi
+    case "$scenario" in
+        recreate-poll-error)
+            # The real deployment EXIT trap must confirm terminal before stopping ECS.
+            grep -q '^terminal$' "$AWS_CALLS"
+            [[ $(tail -n 1 "$AWS_CALLS") == 'ecs update-service '*'--desired-count 0' ]] || exit 1
+            [[ -e "$TEST_STATE/zero" ]] || exit 1 ;;
+        recreate-unknown-start)
+            grep -q 'start outcome unknown' "$work/log"
+            [[ ! -e "$TEST_STATE/zero" ]] || exit 1 ;;
+    esac
     printf 'PASS: deployment %s requires successful realm apply and discovery HTTP 200\n' "$scenario"
 done

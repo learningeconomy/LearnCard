@@ -118,6 +118,8 @@ jobs:
             MANUAL_ROOT: ${{ inputs.root }}
             MANUAL_ACTION: ${{ inputs.action }}
         steps:
+            - name: Reserve job time for realm cancellation and cleanup
+              run: echo "DEPLOY_JOB_DEADLINE_EPOCH=$(( $(date +%s) + 170 * 60 ))" >> "$GITHUB_ENV"
             - uses: actions/checkout@v7
               with:
                   persist-credentials: false
@@ -207,7 +209,8 @@ jobs:
                   fi
             - name: Gate, deploy service, apply private realm, smoke and persist metadata
               if: github.event_name == 'push' || inputs.action == 'promote' || (inputs.action == 'apply' && inputs.root == 'service')
-              # Reserve time for stop-build confirmation and cleanup before job expiry.
+              # The script admits builds only when its softer deadline has room
+              # for the full lifecycle; this hard timeout is a last resort.
               timeout-minutes: 150
               run: bash infra/keycloak/scripts/deploy-image.sh
             - name: Manual infrastructure plan
