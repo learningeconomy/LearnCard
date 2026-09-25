@@ -27,18 +27,73 @@ const createMockAuthToken = (userId: string, email: string) => {
 
 /**
  * Seed a recovery email verification code directly into Redis.
- * Key pattern: `recovery_email_code:{contactMethod.type}:{contactMethod.value}`
+ * Key pattern: `recovery_email_code:{authProvider.type}:{authProvider.id}`
  * Value: JSON.stringify({ code, email })
  */
 const seedRecoveryEmailCode = async (
-    contactEmail: string,
+    userId: string,
     code: string,
     recoveryEmail: string
 ): Promise<void> => {
-    const cacheKey = `${RECOVERY_EMAIL_CODE_PREFIX}email:${contactEmail}`;
+    const cacheKey = `${RECOVERY_EMAIL_CODE_PREFIX}firebase:${userId}`;
 
     await redis.set(cacheKey, JSON.stringify({ code, email: recoveryEmail }), 'EX', 900);
 };
+
+type TestLearnCard = Awaited<ReturnType<typeof getLearnCard>>;
+
+/**
+ * Sensitive key routes require a single-use DID-Auth challenge. Seed one the
+ * way lca-api's challenge cache stores it, then sign a fresh VP bound to it.
+ */
+const createChallengeHeaders = async (
+    learnCard: TestLearnCard
+): Promise<Record<string, string>> => {
+    const challenge = crypto.randomUUID();
+    await redis.set(`challenge|${learnCard.id.did()}|${challenge}`, 'valid', 'EX', 300);
+
+    const vpJwt = await learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt', challenge });
+    if (typeof vpJwt !== 'string') throw new Error('Failed to create DID-Auth VP');
+
+    return {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${vpJwt}`,
+    };
+};
+
+const storeAuthShare = async (
+    learnCard: TestLearnCard,
+    authToken: string,
+    encryptedData: string
+): Promise<void> => {
+    const response = await fetch(`${LCA_API_URL}/api/keys/auth-share`, {
+        method: 'PUT',
+        headers: await createChallengeHeaders(learnCard),
+        body: JSON.stringify({
+            authToken,
+            providerType: 'firebase',
+            authShare: { encryptedData, encryptedDek: `${encryptedData}-dek`, iv: 'test-iv' },
+            primaryDid: learnCard.id.did(),
+        }),
+    });
+
+    expect(response.status).toEqual(200);
+};
+
+/** Well-formed but undeliverable envelope; these tests stop before relay delivery. */
+const relayPayload = {
+    version: 1,
+    algorithm: 'P-256-HKDF-SHA256-AES-256-GCM',
+    keyId: 'e2e-test-key',
+    ephemeralPublicKey: 'e2e-ephemeral-public-key',
+    salt: 'e2e-salt',
+    iv: 'e2e-iv',
+    ciphertext: 'e2e-ciphertext',
+};
+
+afterAll(async () => {
+    await redis.quit();
+});
 
 describe('Recovery Email Verification & Email Backup', () => {
     const uniqueId = Date.now();
@@ -48,42 +103,14 @@ describe('Recovery Email Verification & Email Backup', () => {
     const otpCode = '654321';
 
     let authToken: string;
-    let didAuthHeaders: Record<string, string>;
+    let learnCard: TestLearnCard;
+    const didAuthHeaders = () => createChallengeHeaders(learnCard);
 
     beforeAll(async () => {
         authToken = createMockAuthToken(userId, loginEmail);
+        learnCard = await getLearnCard('d'.repeat(64));
 
-        const learnCard = await getLearnCard('d'.repeat(64));
-        const vpJwt = await learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt' });
-
-        if (typeof vpJwt !== 'string') throw new Error('Failed to create DID-Auth VP');
-
-        didAuthHeaders = {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${vpJwt}`,
-        };
-
-        // Create a UserKey for this user
-        const storeRes = await fetch(`${LCA_API_URL}/api/keys/auth-share`, {
-            method: 'PUT',
-            headers: didAuthHeaders,
-            body: JSON.stringify({
-                authToken,
-                providerType: 'firebase',
-                authShare: {
-                    encryptedData: 'recovery-test-auth-share',
-                    encryptedDek: 'recovery-test-dek',
-                    iv: 'recovery-test-iv',
-                },
-                primaryDid: `did:key:z6MkRecFull${uniqueId}`,
-            }),
-        });
-
-        expect(storeRes.status).toEqual(200);
-    });
-
-    afterAll(async () => {
-        await redis.quit();
+        await storeAuthShare(learnCard, authToken, 'recovery-test-auth-share');
     });
 
     // ── addRecoveryEmail ────────────────────────────────────────────
@@ -106,7 +133,7 @@ describe('Recovery Email Verification & Email Backup', () => {
         test('rejects when recovery email matches login email', async () => {
             const response = await fetch(`${LCA_API_URL}/api/keys/recovery-email/add`, {
                 method: 'POST',
-                headers: didAuthHeaders,
+                headers: await didAuthHeaders(),
                 body: JSON.stringify({
                     authToken,
                     providerType: 'firebase',
@@ -123,7 +150,7 @@ describe('Recovery Email Verification & Email Backup', () => {
         test('rejects invalid email format', async () => {
             const response = await fetch(`${LCA_API_URL}/api/keys/recovery-email/add`, {
                 method: 'POST',
-                headers: didAuthHeaders,
+                headers: await didAuthHeaders(),
                 body: JSON.stringify({
                     authToken,
                     providerType: 'firebase',
@@ -137,7 +164,7 @@ describe('Recovery Email Verification & Email Backup', () => {
         test('succeeds with a valid different email', async () => {
             const response = await fetch(`${LCA_API_URL}/api/keys/recovery-email/add`, {
                 method: 'POST',
-                headers: didAuthHeaders,
+                headers: await didAuthHeaders(),
                 body: JSON.stringify({
                     authToken,
                     providerType: 'firebase',
@@ -171,11 +198,11 @@ describe('Recovery Email Verification & Email Backup', () => {
 
         test('rejects wrong verification code', async () => {
             // Seed a known code so there IS a pending verification
-            await seedRecoveryEmailCode(loginEmail, otpCode, recoveryEmail);
+            await seedRecoveryEmailCode(userId, otpCode, recoveryEmail);
 
             const response = await fetch(`${LCA_API_URL}/api/keys/recovery-email/verify`, {
                 method: 'POST',
-                headers: didAuthHeaders,
+                headers: await didAuthHeaders(),
                 body: JSON.stringify({
                     authToken,
                     providerType: 'firebase',
@@ -191,11 +218,11 @@ describe('Recovery Email Verification & Email Backup', () => {
 
         test('succeeds with correct verification code', async () => {
             // Re-seed the code (previous test didn't consume it, but re-seed to be safe)
-            await seedRecoveryEmailCode(loginEmail, otpCode, recoveryEmail);
+            await seedRecoveryEmailCode(userId, otpCode, recoveryEmail);
 
             const response = await fetch(`${LCA_API_URL}/api/keys/recovery-email/verify`, {
                 method: 'POST',
-                headers: didAuthHeaders,
+                headers: await didAuthHeaders(),
                 body: JSON.stringify({
                     authToken,
                     providerType: 'firebase',
@@ -215,7 +242,7 @@ describe('Recovery Email Verification & Email Backup', () => {
         test('code is consumed after successful verification', async () => {
             const response = await fetch(`${LCA_API_URL}/api/keys/recovery-email/verify`, {
                 method: 'POST',
-                headers: didAuthHeaders,
+                headers: await didAuthHeaders(),
                 body: JSON.stringify({
                     authToken,
                     providerType: 'firebase',
@@ -293,90 +320,81 @@ describe('Recovery Email Verification & Email Backup', () => {
     // ── sendEmailBackup ─────────────────────────────────────────────
 
     describe('sendEmailBackup', () => {
-        test('rejects when neither email nor useRecoveryEmail is provided', async () => {
+        const backupInput = (overrides: Record<string, unknown> = {}) => ({
+            authToken,
+            providerType: 'firebase',
+            relayPayload,
+            confirmationCode: '123456',
+            email: recoveryEmail,
+            ...overrides,
+        });
+
+        test('requires DID auth (rejects without VP)', async () => {
             const response = await fetch(`${LCA_API_URL}/api/keys/email-backup`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(backupInput()),
+            });
+
+            expect(response.status).toEqual(401);
+        });
+
+        test('rejects the legacy plaintext share payload', async () => {
+            const response = await fetch(`${LCA_API_URL}/api/keys/email-backup`, {
+                method: 'POST',
+                headers: await didAuthHeaders(),
                 body: JSON.stringify({
                     authToken,
                     providerType: 'firebase',
-                    emailShare: 'test-share-data',
+                    emailShare: 'plaintext-share-data',
+                    email: recoveryEmail,
                 }),
+            });
+
+            expect(response.status).toEqual(400);
+        });
+
+        test('rejects a target other than the verified recovery email', async () => {
+            const response = await fetch(`${LCA_API_URL}/api/keys/email-backup`, {
+                method: 'POST',
+                headers: await didAuthHeaders(),
+                body: JSON.stringify(backupInput({ email: 'someone-else@example.com' })),
             });
 
             expect(response.status).toEqual(400);
 
             const data = await response.json();
-            expect(data.message).toContain('email address or useRecoveryEmail');
+            expect(data.message).toContain('Use the verified recovery email');
         });
 
-        test('succeeds with explicit email address', async () => {
+        test('rejects a stale share version before delivery', async () => {
             const response = await fetch(`${LCA_API_URL}/api/keys/email-backup`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    authToken,
-                    providerType: 'firebase',
-                    emailShare: 'backup-share-data-explicit',
-                    email: 'explicit-target@example.com',
-                }),
+                headers: await didAuthHeaders(),
+                body: JSON.stringify(backupInput({ shareVersion: 99 })),
             });
 
-            expect(response.status).toEqual(200);
-
-            const data = await response.json();
-            expect(data.success).toBe(true);
+            expect(response.status).toEqual(409);
         });
 
-        test('succeeds with useRecoveryEmail after verified recovery email', async () => {
-            const response = await fetch(`${LCA_API_URL}/api/keys/email-backup`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    authToken,
-                    providerType: 'firebase',
-                    emailShare: 'backup-share-data-recovery',
-                    useRecoveryEmail: true,
-                }),
-            });
-
-            expect(response.status).toEqual(200);
-
-            const data = await response.json();
-            expect(data.success).toBe(true);
-        });
-
-        test('rejects useRecoveryEmail for user without verified recovery email', async () => {
+        test('rejects a user without a verified recovery email', async () => {
             const noRecoveryToken = createMockAuthToken(
                 `no-recovery-${uniqueId}`,
                 `no-recovery-${uniqueId}@example.com`
             );
+            const noRecoveryLearnCard = await getLearnCard('f'.repeat(64));
 
-            // Create a UserKey for this user (no recovery email)
-            await fetch(`${LCA_API_URL}/api/keys/auth-share`, {
-                method: 'PUT',
-                headers: didAuthHeaders,
-                body: JSON.stringify({
-                    authToken: noRecoveryToken,
-                    providerType: 'firebase',
-                    authShare: {
-                        encryptedData: 'no-recovery-share',
-                        encryptedDek: 'no-recovery-dek',
-                        iv: 'no-recovery-iv',
-                    },
-                    primaryDid: `did:key:z6MkNoRecovery${uniqueId}`,
-                }),
-            });
+            await storeAuthShare(noRecoveryLearnCard, noRecoveryToken, 'no-recovery-share');
 
             const response = await fetch(`${LCA_API_URL}/api/keys/email-backup`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    authToken: noRecoveryToken,
-                    providerType: 'firebase',
-                    emailShare: 'backup-share-data',
-                    useRecoveryEmail: true,
-                }),
+                headers: await createChallengeHeaders(noRecoveryLearnCard),
+                body: JSON.stringify(
+                    backupInput({
+                        authToken: noRecoveryToken,
+                        email: 'no-recovery-target@example.com',
+                    })
+                ),
             });
 
             expect(response.status).toEqual(400);
@@ -395,68 +413,15 @@ describe('getAuthShare with shareVersion (version negotiation)', () => {
     const email = `version-${uniqueId}@example.com`;
 
     let authToken: string;
-    let didAuthHeaders: Record<string, string>;
 
     beforeAll(async () => {
         authToken = createMockAuthToken(userId, email);
-
         const learnCard = await getLearnCard('e'.repeat(64));
-        const vpJwt = await learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt' });
 
-        if (typeof vpJwt !== 'string') throw new Error('Failed to create DID-Auth VP');
-
-        didAuthHeaders = {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${vpJwt}`,
-        };
-
-        // Store v1 auth share
-        await fetch(`${LCA_API_URL}/api/keys/auth-share`, {
-            method: 'PUT',
-            headers: didAuthHeaders,
-            body: JSON.stringify({
-                authToken,
-                providerType: 'firebase',
-                authShare: {
-                    encryptedData: 'v1-share-data',
-                    encryptedDek: 'v1-dek',
-                    iv: 'v1-iv',
-                },
-                primaryDid: `did:key:z6MkVersion${uniqueId}`,
-            }),
-        });
-
-        // Store v2 auth share (overwrites — server bumps shareVersion)
-        await fetch(`${LCA_API_URL}/api/keys/auth-share`, {
-            method: 'PUT',
-            headers: didAuthHeaders,
-            body: JSON.stringify({
-                authToken,
-                providerType: 'firebase',
-                authShare: {
-                    encryptedData: 'v2-share-data',
-                    encryptedDek: 'v2-dek',
-                    iv: 'v2-iv',
-                },
-                primaryDid: `did:key:z6MkVersion${uniqueId}`,
-            }),
-        });
-
-        // Store v3 auth share (current)
-        await fetch(`${LCA_API_URL}/api/keys/auth-share`, {
-            method: 'PUT',
-            headers: didAuthHeaders,
-            body: JSON.stringify({
-                authToken,
-                providerType: 'firebase',
-                authShare: {
-                    encryptedData: 'v3-share-data',
-                    encryptedDek: 'v3-dek',
-                    iv: 'v3-iv',
-                },
-                primaryDid: `did:key:z6MkVersion${uniqueId}`,
-            }),
-        });
+        // Each write bumps shareVersion and retains the previous share in history.
+        await storeAuthShare(learnCard, authToken, 'v1-share-data');
+        await storeAuthShare(learnCard, authToken, 'v2-share-data');
+        await storeAuthShare(learnCard, authToken, 'v3-share-data');
     });
 
     test('default getAuthShare returns current (v3) share', async () => {
