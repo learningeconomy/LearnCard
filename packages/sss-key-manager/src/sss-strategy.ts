@@ -565,6 +565,160 @@ export const withRotationLock = <T>(operation: () => Promise<T>): Promise<T> => 
 const pendingShareId = (storageId?: string): string =>
     `sss-pending-share:${storageId ?? 'sss-device-share'}`;
 
+/** DID_CHALLENGE_TTL_SECS (5 minutes) plus a processing margin for auth-share PUTs. */
+export const PENDING_WRITE_EXPIRY_MS = 10 * 60 * 1000;
+const MAX_PENDING_SHARE_CANDIDATES = 8;
+
+export interface PendingShareCandidate {
+    share: string;
+    createdAt: number;
+}
+
+/**
+ * Read device-only candidates from independent splits; never persist an auth,
+ * recovery, or email share here (two shares from one split reveal the key).
+ * Legacy raw shares have unknown age, but must still be checked before expiry.
+ * Mutating helpers must run under the account's share-update lock.
+ */
+export const readPendingShareCandidates = async (
+    storage: SSSStorageFunctions,
+    storageId?: string
+): Promise<PendingShareCandidate[]> => {
+    const raw = await storage.getDeviceShare(pendingShareId(storageId));
+    if (!raw) return [];
+    if (!raw.trimStart().startsWith('{')) return [{ share: raw, createdAt: 0 }];
+    const data: unknown = JSON.parse(raw);
+    if (
+        !data ||
+        typeof data !== 'object' ||
+        !('v' in data) ||
+        data.v !== 1 ||
+        !('candidates' in data) ||
+        !Array.isArray(data.candidates) ||
+        !data.candidates.every(
+            (candidate: unknown) =>
+                candidate !== null &&
+                typeof candidate === 'object' &&
+                'share' in candidate &&
+                typeof candidate.share === 'string' &&
+                'createdAt' in candidate &&
+                typeof candidate.createdAt === 'number' &&
+                Number.isFinite(candidate.createdAt) &&
+                candidate.createdAt >= 0
+        )
+    )
+        throw new Error('Invalid pending share candidates');
+    return data.candidates as PendingShareCandidate[];
+};
+
+/** Clear candidates only after promotion/success, definitive rejection, or verified expiry. */
+export const clearPendingShareCandidates = async (
+    storage: SSSStorageFunctions,
+    storageId?: string
+): Promise<void> => storage.clearAllShares(pendingShareId(storageId));
+
+/** Persist the versioned device-only queue without storing another share of any split. */
+export const writePendingShareCandidates = async (
+    storage: SSSStorageFunctions,
+    candidates: PendingShareCandidate[],
+    storageId?: string
+): Promise<void> => {
+    if (!candidates.length) return clearPendingShareCandidates(storage, storageId);
+    await storage.storeDeviceShare(JSON.stringify({ v: 1, candidates }), pendingShareId(storageId));
+};
+
+/** Append a candidate; never evict a live write to make room for another one. */
+export const addPendingShareCandidate = async (
+    storage: SSSStorageFunctions,
+    candidate: PendingShareCandidate,
+    storageId?: string
+): Promise<void> => {
+    const candidates = await readPendingShareCandidates(storage, storageId);
+    if (candidates.length >= MAX_PENDING_SHARE_CANDIDATES) {
+        throw new AtomicUpdateError(
+            'Reconcile the pending share update before writing new shares',
+            'store_device',
+            false
+        );
+    }
+    await writePendingShareCandidates(storage, [...candidates, candidate], storageId);
+};
+
+/** Roll back only the definitively rejected operation, preserving earlier in-flight writes. */
+export const removePendingShareCandidate = async (
+    storage: SSSStorageFunctions,
+    share: string,
+    storageId?: string
+): Promise<void> => {
+    const candidates = await readPendingShareCandidates(storage, storageId);
+    await writePendingShareCandidates(
+        storage,
+        candidates.filter(candidate => candidate.share !== share),
+        storageId
+    );
+};
+
+interface CurrentShareSnapshot {
+    currentVersion: number | null;
+    authShare: string | null;
+}
+
+/**
+ * Resolve against current server state before expiring anything. A failed fetch
+ * changes nothing. Expiry is coupled to DID_CHALLENGE_TTL_SECS: after the nonce
+ * TTL plus processing margin a nonmatching PUT can no longer become current.
+ * Promotion permits clearing all candidates because the main share can recover
+ * through server history if another already-authorized PUT lands later.
+ */
+export const resolvePendingShareCandidates = async (
+    storage: SSSStorageFunctions,
+    storageId: string | undefined,
+    fetchCurrent: () => Promise<CurrentShareSnapshot>,
+    expectedDid: string,
+    didFromPrivateKey: (key: string) => Promise<string>,
+    assertActiveUser: () => void = () => {},
+    onPromoted?: (snapshot: CurrentShareSnapshot) => void
+): Promise<{ snapshot: CurrentShareSnapshot; privateKey: string | null }> => {
+    const candidates = await readPendingShareCandidates(storage, storageId);
+    const snapshot = await fetchCurrent();
+    assertActiveUser();
+    const { authShare, currentVersion } = snapshot;
+    if (
+        authShare &&
+        (currentVersion === null || !Number.isInteger(currentVersion) || currentVersion < 1)
+    ) {
+        throw new Error('Current auth share is missing a valid share version');
+    }
+    if (authShare && currentVersion !== null) {
+        for (const candidate of candidates) {
+            const health = await verifyStoredShares(
+                { getDevice: async () => candidate.share, getAuth: async () => authShare },
+                expectedDid,
+                didFromPrivateKey
+            );
+            assertActiveUser();
+            if (!health.healthy) continue;
+            const privateKey = await reconstructFromShares([candidate.share, authShare]);
+            assertActiveUser();
+            await storage.storeDeviceShare(candidate.share, storageId);
+            await storage.storeShareVersion(currentVersion, storageId);
+            await clearPendingShareCandidates(storage, storageId);
+            assertActiveUser();
+            onPromoted?.(snapshot);
+            return { snapshot, privateKey };
+        }
+    }
+    const live = candidates.filter(
+        candidate =>
+            candidate.createdAt !== 0 && Date.now() - candidate.createdAt < PENDING_WRITE_EXPIRY_MS
+    );
+    if (live.length !== candidates.length) {
+        assertActiveUser();
+        await writePendingShareCandidates(storage, live, storageId);
+    }
+    return { snapshot, privateKey: null };
+};
+
 const activeShareUpdates = new WeakMap<SSSStorageFunctions, Set<string>>();
 const shareUpdateStorageOwners = new WeakMap<SSSStorageFunctions, SSSStorageFunctions>();
 
@@ -608,7 +762,9 @@ const persistSharesWithoutLock = async (
     storageId?: string,
     didFromPrivateKey?: (pk: string) => Promise<string>,
     signDidAuthVp?: DidAuthVpSigner,
-    tenantId?: string
+    tenantId?: string,
+    onPromoted?: (snapshot: CurrentShareSnapshot) => void,
+    assertActiveUser: () => void = () => {}
 ): Promise<PersistedShareUpdate> => {
     // Defensive DID check — refuse to rotate if the key is wrong
     if (primaryDid && didFromPrivateKey) {
@@ -621,12 +777,28 @@ const persistSharesWithoutLock = async (
         }
     }
 
-    const pendingId = pendingShareId(storageId);
-    if (await storage.getDeviceShare(pendingId)) {
-        throw new AtomicUpdateError(
-            'Reconcile the pending share update before writing new shares',
-            'store_device',
-            false
+    if ((await readPendingShareCandidates(storage, storageId)).length) {
+        await resolvePendingShareCandidates(
+            storage,
+            storageId,
+            async () => {
+                const data = await fetchAuthShareRaw(
+                    serverUrl,
+                    token,
+                    providerType,
+                    undefined,
+                    tenantId
+                );
+                return {
+                    currentVersion: data?.shareVersion ?? null,
+                    authShare: authShareToString(data?.authShare),
+                };
+            },
+            primaryDid,
+            didFromPrivateKey ??
+                (async key => (key === privateKey ? primaryDid : `${primaryDid}:mismatch`)),
+            assertActiveUser,
+            onPromoted
         );
     }
 
@@ -635,12 +807,19 @@ const persistSharesWithoutLock = async (
     const didAuthVp = signDidAuthVp
         ? await requestFreshDidAuthVp(serverUrl, privateKey, primaryDid, signDidAuthVp, tenantId)
         : undefined;
+    assertActiveUser();
     let shareVersion: number | undefined;
+    let stagedShare = '';
 
     const shares = await atomicShareUpdate(privateKey, {
-        storeDevice: share => storage.storeDeviceShare(share, pendingId),
-        clearDevice: () => storage.clearAllShares(pendingId),
+        storeDevice: async share => {
+            assertActiveUser();
+            stagedShare = share;
+            await addPendingShareCandidate(storage, { share, createdAt: Date.now() }, storageId);
+        },
+        clearDevice: () => removePendingShareCandidate(storage, stagedShare, storageId),
         storeAuth: async share => {
+            assertActiveUser();
             const result = await putAuthShare(
                 serverUrl,
                 token,
@@ -661,7 +840,8 @@ const persistSharesWithoutLock = async (
 
     await storage.storeDeviceShare(shares.deviceShare, storageId);
     await storage.storeShareVersion(shareVersion, storageId);
-    await storage.clearAllShares(pendingId);
+    await clearPendingShareCandidates(storage, storageId);
+    assertActiveUser();
 
     return { shares, shareVersion };
 };
@@ -1053,6 +1233,32 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         return { enrolled: true, changed: true, shareVersion };
     };
 
+    const recordPromotion =
+        (primaryDid: string) =>
+        (snapshot: CurrentShareSnapshot): void => {
+            // A device-only candidate cannot supply the email share of its split.
+            lastEmailShare = undefined;
+            lastShareVersion = snapshot.currentVersion ?? undefined;
+            lastServerSnapshot = {
+                ...snapshot,
+                resolvedVersion: snapshot.currentVersion,
+                primaryDid,
+            };
+        };
+
+    const captureActiveUserGuard = (): (() => void) => {
+        const storageId = activeStorageId;
+        return () => {
+            if (activeStorageId !== storageId) {
+                throw new AtomicUpdateError(
+                    'Active account changed during share update',
+                    'verify_stored',
+                    false
+                );
+            }
+        };
+    };
+
     return {
         name: 'sss',
 
@@ -1077,7 +1283,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
 
         async hasLocalKey(): Promise<boolean> {
             if (await storage.hasDeviceShare(activeStorageId)) return true;
-            if (await storage.hasDeviceShare(pendingShareId(activeStorageId))) return true;
+            if ((await readPendingShareCandidates(storage, activeStorageId)).length) return true;
 
             // Fallback: check legacy unscoped key for shares stored before per-user scoping
             if (activeStorageId) {
@@ -1093,8 +1299,8 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
 
             if (scoped) return scoped;
 
-            const pending = await storage.getDeviceShare(pendingShareId(activeStorageId));
-            if (pending) return pending;
+            const pending = await readPendingShareCandidates(storage, activeStorageId);
+            if (pending.length) return pending[pending.length - 1]!.share;
 
             // Fallback: try legacy unscoped key and auto-migrate if found
             if (activeStorageId) {
@@ -1119,7 +1325,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             const storageId = activeStorageId;
             storageGeneration++;
             await Promise.allSettled(localWrites);
-            await storage.clearAllShares(pendingShareId(storageId));
+            await clearPendingShareCandidates(storage, storageId);
             return storage.clearAllShares(storageId);
         },
 
@@ -1177,7 +1383,9 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 activeStorageId,
                 undefined,
                 params.signDidAuthVp,
-                tenantId
+                tenantId,
+                recordPromotion(params.did),
+                captureActiveUserGuard()
             );
 
             lastEmailShare = result.shares.emailShare;
@@ -1204,58 +1412,38 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             };
             return withShareUpdateLock(storage, storageId, async () => {
                 const deviceShare = await storage.getDeviceShare(storageId);
-                const pendingId = pendingShareId(storageId);
-                const pendingShare = await storage.getDeviceShare(pendingId);
+                const pending = await readPendingShareCandidates(storage, storageId);
 
-                if (!deviceShare && !pendingShare) return null;
+                if (!deviceShare && !pending.length) return null;
 
                 const localVersion = await storage.getShareVersion(storageId);
-                const currentData = await fetchAuthShareRaw(
-                    serverUrl,
-                    params.token,
-                    params.providerType,
-                    undefined,
-                    tenantId
-                );
-
-                assertActiveUser();
-                if (!currentData) return null;
-
-                const currentVersion = currentData.shareVersion ?? null;
-                const currentAuthShare = authShareToString(currentData.authShare);
-
-                // Try the pending share against CURRENT server state first. Never
-                // depend on history (a fresh account has none), or discard it on a
-                // failed read/mismatch: the original request may still be in flight.
-                if (pendingShare && currentVersion !== null && currentAuthShare) {
-                    const health = await verifyStoredShares(
-                        {
-                            getDevice: async () => pendingShare,
-                            getAuth: async () => currentAuthShare,
-                        },
-                        params.expectedDid,
-                        params.didFromPrivateKey
-                    );
-                    assertActiveUser();
-                    if (health.healthy) {
-                        const privateKey = await reconstructFromShares([
-                            pendingShare,
-                            currentAuthShare,
-                        ]);
-                        await storage.storeDeviceShare(pendingShare, storageId);
-                        await storage.storeShareVersion(currentVersion, storageId);
-                        await storage.clearAllShares(pendingId);
-                        assertActiveUser();
-                        lastShareVersion = currentVersion;
-                        lastServerSnapshot = {
-                            currentVersion,
-                            resolvedVersion: currentVersion,
-                            authShare: currentAuthShare,
-                            primaryDid: params.expectedDid,
+                const resolution = await resolvePendingShareCandidates(
+                    storage,
+                    storageId,
+                    async () => {
+                        const data = await fetchAuthShareRaw(
+                            serverUrl,
+                            params.token,
+                            params.providerType,
+                            undefined,
+                            tenantId
+                        );
+                        return {
+                            currentVersion: data?.shareVersion ?? null,
+                            authShare: authShareToString(data?.authShare),
                         };
-                        return { privateKey, did: params.expectedDid };
-                    }
+                    },
+                    params.expectedDid,
+                    params.didFromPrivateKey,
+                    assertActiveUser,
+                    recordPromotion(params.expectedDid)
+                );
+                assertActiveUser();
+                if (resolution.privateKey) {
+                    return { privateKey: resolution.privateKey, did: params.expectedDid };
                 }
+                const { currentVersion, authShare: currentAuthShare } = resolution.snapshot;
+                if (currentVersion === null && !currentAuthShare) return null;
 
                 if (!deviceShare) return null;
                 const candidates = new Map<number, string>();
@@ -1270,7 +1458,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     lastServerSnapshot?.resolvedVersion ?? null,
                     lastServerSnapshot?.authShare ?? null
                 );
-                addCandidate(currentVersion, authShareToString(currentData.authShare));
+                addCandidate(currentVersion, currentAuthShare);
 
                 const versionsToTry = new Set<number>();
                 if (localVersion !== null) versionsToTry.add(localVersion);
@@ -1345,7 +1533,9 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                         storageId,
                         params.didFromPrivateKey,
                         params.signDidAuthVp,
-                        tenantId
+                        tenantId,
+                        recordPromotion(params.expectedDid),
+                        assertActiveUser
                     );
 
                     assertActiveUser();
@@ -1409,7 +1599,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             if (
                 serverVersion != null &&
                 localVersion == null &&
-                !(await storage.getDeviceShare(pendingShareId(activeStorageId)))
+                !(await readPendingShareCandidates(storage, activeStorageId)).length
             ) {
                 storage
                     .storeShareVersion(serverVersion, activeStorageId)
@@ -1909,7 +2099,9 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 activeStorageId,
                 didFromPrivateKey,
                 signDidAuthVp,
-                tenantId
+                tenantId,
+                recordPromotion(primaryDid),
+                captureActiveUserGuard()
             );
 
             lastEmailShare = shares.emailShare;
@@ -2010,7 +2202,9 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 activeStorageId,
                 undefined,
                 signDidAuthVp,
-                tenantId
+                tenantId,
+                recordPromotion(primaryDid),
+                captureActiveUserGuard()
             );
 
             lastEmailShare = shares.emailShare;
@@ -2511,12 +2705,15 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                         }
                     };
                     assertActive();
-                    const pendingId = pendingShareId(storageId);
-                    const stagedShare = await storage.getDeviceShare(pendingId);
+                    const candidates = await readPendingShareCandidates(storage, storageId);
                     if (pending.rebind && pending.rebind.storageId !== storageId) {
                         throw new Error('Active account changed during identity recovery');
                     }
-                    if (stagedShare && stagedShare !== pending.rebind?.shares.deviceShare) {
+                    if (
+                        candidates.some(
+                            candidate => candidate.share !== pending.rebind?.shares.deviceShare
+                        )
+                    ) {
                         throw new Error(
                             'Reconcile the pending share update before binding a sign-in'
                         );
@@ -2564,7 +2761,17 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                             attempted: false,
                         };
                         const rebind = pending.rebind;
-                        await storage.storeDeviceShare(rebind.shares.deviceShare, pendingId);
+                        if (
+                            !candidates.some(
+                                candidate => candidate.share === rebind.shares.deviceShare
+                            )
+                        ) {
+                            await addPendingShareCandidate(
+                                storage,
+                                { share: rebind.shares.deviceShare, createdAt: Date.now() },
+                                storageId
+                            );
+                        }
                         assertActive();
                         rebind.attempted = true;
                         try {
@@ -2594,7 +2801,11 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                             // A retry's rejection does not disprove an earlier commit
                             // (the first request may still have been in flight at the read).
                             if (error instanceof ShareWriteRejectedError && !retry) {
-                                await storage.clearAllShares(pendingId);
+                                await removePendingShareCandidate(
+                                    storage,
+                                    rebind.shares.deviceShare,
+                                    storageId
+                                );
                                 pending.rebind = undefined;
                             }
                             throw error;
@@ -2607,7 +2818,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     const shares = pending.rebind.shares;
                     await storage.storeDeviceShare(shares.deviceShare, storageId);
                     await storage.storeShareVersion(shareVersion, storageId);
-                    await storage.clearAllShares(pendingId);
+                    await clearPendingShareCandidates(storage, storageId);
                     assertActive();
                     lastEmailShare = shares.emailShare;
                     lastShareVersion = shareVersion;
