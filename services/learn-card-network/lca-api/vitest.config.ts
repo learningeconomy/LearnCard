@@ -2,6 +2,6 @@ import { createVitestConfig, nodePreset } from '../../../vitest.shared';
 
 export default createVitestConfig(nodePreset, {
     test: {
-        include: ['src/**/*.test.ts'],
+        include: ['src/**/*.test.ts', 'scripts/**/*.test.ts'],
     },
 });
