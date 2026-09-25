@@ -1,25 +1,42 @@
 #!/bin/bash
-# A3: Induce unhealthy hosts alarm by stopping one task.
-# Staging-only guard. Cleanup: ECS replaces task automatically.
-
+# A3: stop one service task; wait for replacement on success, failure or interruption.
 set -euo pipefail
+ENV="${1:-${ENV:-}}"
+[[ "${ENV}" == staging ]] || { echo 'ERROR: explicitly select staging.' >&2; exit 1; }
+[[ "${ALLOW_DESTRUCTIVE_ALARM_TEST:-}" == yes ]] || { echo 'ERROR: set ALLOW_DESTRUCTIVE_ALARM_TEST=yes to consent to disruption.' >&2; exit 1; }
+[[ "${EXPECTED_AWS_ACCOUNT_ID:-}" =~ ^[0-9]{12}$ ]] || { echo 'ERROR: provide EXPECTED_AWS_ACCOUNT_ID (12 digits).' >&2; exit 1; }
+export AWS_PAGER=""
+ACTUAL_ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
+[[ "${ACTUAL_ACCOUNT}" == "${EXPECTED_AWS_ACCOUNT_ID}" ]] || { echo 'ERROR: AWS account mismatch.' >&2; exit 1; }
 
-ENV="${1:-staging}"
-if [[ "$ENV" != "staging" ]]; then
-  echo "ERROR: This alarm test is staging-only. Use ENV=staging or remove the guard for production."
-  exit 1
-fi
+P=learncard-keycloak-staging
+TASK_ARN=""
+WAIT_FOR_REPLACEMENT=false
+cleanup() {
+  local status=$?
+  trap - EXIT
+  trap '' INT TERM
+  if [[ "${WAIT_FOR_REPLACEMENT}" == true ]]; then
+    # Wait for the stopped task first: an immediate service waiter can see stale counts.
+    if ! aws ecs wait tasks-stopped --cluster "${P}" --tasks "${TASK_ARN}"; then
+      echo "ERROR: task ${TASK_ARN} has not stopped; inspect the service." >&2
+      status=1
+    fi
+    if ! aws ecs wait services-stable --cluster "${P}" --services "${P}"; then
+      echo "ERROR: ${P} did not recover; investigate replacement task health." >&2
+      status=1
+    fi
+  fi
+  exit "$status"
+}
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
-P="learncard-keycloak-$ENV"
-
-echo "Stopping one task in $P..."
-TASK_ARN=$(aws ecs list-tasks --cluster "$P" --service-name "$P" --query 'taskArns[0]' --output text)
-if [[ -z "$TASK_ARN" || "$TASK_ARN" == "None" ]]; then
-  echo "ERROR: No tasks found in $P"
-  exit 1
-fi
-
-aws ecs stop-task --cluster "$P" --task "$TASK_ARN" --reason "A3 alarm drill"
-echo "Task stopped: $TASK_ARN"
-echo "Alarm should fire within 5 minutes. Check: aws cloudwatch describe-alarm-history --alarm-name $P-unhealthy"
-echo "Cleanup: ECS will replace the task automatically."
+aws ecs wait services-stable --cluster "${P}" --services "${P}"
+TASK_ARN=$(aws ecs list-tasks --cluster "${P}" --service-name "${P}" --desired-status RUNNING --query 'taskArns[0]' --output text)
+[[ "${TASK_ARN}" == arn:*:ecs:*:*:task/* ]] || { echo 'ERROR: no running service task found.' >&2; exit 1; }
+WAIT_FOR_REPLACEMENT=true
+aws ecs stop-task --cluster "${P}" --task "${TASK_ARN}" --reason 'A3 staging alarm drill' >/dev/null
+printf '%s\n' 'Waiting for ECS replacement. A quick replacement or remaining healthy tasks may prevent an alarm; do not claim a pass without evidence.'
+printf 'Inspect %s-unhealthy and %s-degraded alarm history, running/desired metrics and SNS delivery after recovery.\n' "${P}" "${P}"
