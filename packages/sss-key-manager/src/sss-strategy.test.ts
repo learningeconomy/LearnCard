@@ -531,7 +531,7 @@ describe('escrow strategy', () => {
         await strategy.setupRecoveryMethod!({ ...params, input: { method: 'phrase' } });
         expect(config.onEscrowError).toHaveBeenCalledWith(
             expect.objectContaining({
-                message: 'Nitro attestation verification is not implemented yet',
+                message: 'Escrow attestation mode mismatch',
             })
         );
     });

@@ -63,6 +63,19 @@ protected write.
 
 ## Security Model
 
+### Nitro attestation trust policy
+
+Nitro enrollment verifies a nonce-bound COSE ES384 document, the certificate chain against a
+pinned root DER SHA-256 (AWS Nitro Root G1 by default), and one complete PCR0/1/2 tuple.
+Configure `pinnedMeasurements: [{ pcr0, pcr1, pcr2, imageSha384? }]` with 48-byte hex PCRs.
+Legacy `{ imageSha384 }` entries remain type-compatible but **never match**; they cannot authorize
+enrollment. `rootCertificateSha256` is an explicit trust-anchor override (test roots must never be
+used in production). `maxAgeMs` defaults to 300000; future timestamps allow at most 60 seconds skew.
+The escrow P-256 SPKI comes only from signed `user_data`, not the NSM `public_key` used for KMS.
+`verifyEnclaveAttestation(attestation, policy, nonce)` requires the expected 32-byte nonce in Nitro
+mode. The strategy sends a fresh hex nonce on each attestation GET; software mode ignores the nonce
+and continues to require a pinned public key.
+
 - **Device Share**: Encrypted with non-extractable AES-GCM key stored in IndexedDB
 - **Auth Share**: Server-side envelope encryption (DEK + KMS-encrypted DEK)
 - **Recovery Share**: Password-based uses Argon2id KDF with secure parameters

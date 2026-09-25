@@ -876,11 +876,16 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
 
     const fetchVerifiedEnclaveKey = async (): Promise<{ publicKey: string; keyId: string }> => {
         if (!config.escrow?.enabled) throw new Error('Escrow enrollment is disabled');
-        const { attestation } = await escrowRequest<{ attestation: unknown }>('/attestation', {
-            method: 'GET',
-            headers: buildHeaders('', undefined, tenantId),
-        });
-        return verifyEnclaveAttestation(attestation, config.escrow.attestation);
+        const nonce = crypto.getRandomValues(new Uint8Array(32));
+        const nonceHex = Array.from(nonce, byte => byte.toString(16).padStart(2, '0')).join('');
+        const { attestation } = await escrowRequest<{ attestation: unknown }>(
+            `/attestation?nonce=${nonceHex}`,
+            {
+                method: 'GET',
+                headers: buildHeaders('', undefined, tenantId),
+            }
+        );
+        return verifyEnclaveAttestation(attestation, config.escrow.attestation, nonce);
     };
 
     const enrollEscrow = async (

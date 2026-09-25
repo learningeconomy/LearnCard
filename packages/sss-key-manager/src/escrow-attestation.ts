@@ -1,5 +1,6 @@
 import { base64ToBuffer, bufferToBase64 } from './crypto';
 import type { EscrowAttestationPolicy } from './types';
+import { NitroAttestationError, verifyNitroAttestationDocument } from './escrow-nitro-attestation';
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
     typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -19,7 +20,8 @@ const normalizePublicKey = (value: string): string => {
 /** Parse untrusted attestation data and enforce an explicit enclave trust policy. */
 export const verifyEnclaveAttestation = async (
     attestation: unknown,
-    policy: EscrowAttestationPolicy
+    policy: EscrowAttestationPolicy,
+    nonce?: Uint8Array
 ): Promise<{ publicKey: string; keyId: string; mode: 'software' | 'nitro' }> => {
     const fields = ['mode', 'keyId', 'publicKey', 'measurements', 'document', 'issuedAt'];
     if (
@@ -45,6 +47,26 @@ export const verifyEnclaveAttestation = async (
     ) {
         throw new Error('Invalid escrow attestation');
     }
+    if (attestation.mode !== policy.mode) throw new Error('Escrow attestation mode mismatch');
+    if (policy.mode === 'nitro') {
+        if (!nonce) throw new NitroAttestationError('nonce');
+        const verified = await verifyNitroAttestationDocument(attestation.document, {
+            expectedNonce: nonce,
+            policy,
+        });
+        try {
+            if (normalizePublicKey(attestation.publicKey) !== verified.escrowPublicKeySpkiB64) {
+                throw new NitroAttestationError('user-data');
+            }
+        } catch {
+            throw new NitroAttestationError('user-data');
+        }
+        return {
+            publicKey: verified.escrowPublicKeySpkiB64,
+            keyId: attestation.keyId,
+            mode: 'nitro',
+        };
+    }
     const publicKey = normalizePublicKey(attestation.publicKey);
     await crypto.subtle.importKey(
         'spki',
@@ -53,10 +75,6 @@ export const verifyEnclaveAttestation = async (
         false,
         []
     );
-    if (policy.mode === 'nitro') {
-        throw new Error('Nitro attestation verification is not implemented yet');
-    }
-    if (attestation.mode !== policy.mode) throw new Error('Escrow attestation mode mismatch');
     if (!policy.pinnedPublicKeys.some(pin => normalizePublicKey(pin) === publicKey)) {
         throw new Error('Escrow attestation public key is not trusted');
     }

@@ -48,7 +48,7 @@ describe('verifyEnclaveAttestation', () => {
                     { ...attestation(), mode },
                     { mode: 'nitro', pinnedMeasurements: [] }
                 )
-            ).rejects.toThrow('Nitro attestation verification is not implemented yet');
+            ).rejects.toThrow(mode === 'software' ? 'mode mismatch' : 'nonce');
         }
     );
     it.each([

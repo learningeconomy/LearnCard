@@ -71,7 +71,17 @@ export type RecoveryMethodType = 'passkey' | 'backup' | 'phrase' | 'email' | 'es
 /** Trust policy for the enclave that receives recovery material. */
 export type EscrowAttestationPolicy =
     | { mode: 'software'; pinnedPublicKeys: string[] }
-    | { mode: 'nitro'; pinnedMeasurements: { imageSha384: string }[]; rootCertificatePem?: string };
+    | {
+          mode: 'nitro';
+          /** Legacy image-only pins remain assignable but never match an attestation. */
+          pinnedMeasurements: (
+              | { pcr0: string; pcr1: string; pcr2: string; imageSha384?: string }
+              | { imageSha384: string; pcr0?: string; pcr1?: string; pcr2?: string }
+          )[];
+          rootCertificateSha256?: string;
+          /** Maximum age in milliseconds; defaults to five minutes. */
+          maxAgeMs?: number;
+      };
 
 /** Public status of an escrow recovery waiting period. */
 export interface EscrowHoldStatus {
