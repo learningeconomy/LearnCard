@@ -36,4 +36,8 @@ if len(changes) > 100:
 with open(os.environ.get('GITHUB_STEP_SUMMARY', os.devnull), 'a') as destination:
     destination.write(summary + '\n')
 print(', '.join(f'{k}: {v}' for k,v in counts.items()))
+# Callers (e.g. the drift check) branch on the change count, never on plan content.
+if os.environ.get('GITHUB_OUTPUT'):
+    with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+        output.write(f"{sys.argv[2].replace('/', '_')}_changes={len(changes)}\n")
 PY

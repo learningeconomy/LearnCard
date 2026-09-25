@@ -194,6 +194,16 @@ complete journal. If schema state is uncertain, restore the snapshot first. S3
 versioning preserves prior metadata/journal versions for investigation (90-day expiry).
 Retain rollback images separately if they could age out of ECR's 30-image policy.
 
+### Drift detection
+
+`keycloak-drift.yml` runs nightly (and on dispatch) from `main` with each
+environment's **plan role**: repository variables `KEYCLOAK_STAGING_PLAN_ROLE_ARN`
+and, once production is bootstrapped, `KEYCLOAK_PRODUCTION_PLAN_ROLE_ARN` (unset → skipped).
+It plans network and service against the running image, then opens or comments on a
+`keycloak-drift` issue when any change is planned and closes it on a clean run. Drift
+means either out-of-band edits or merged-but-unapplied code. The realm root is not
+covered: it can only run inside the VPC, and the runner has no plan-only mode yet.
+
 ### Dependency automation and verification boundaries
 
 Dependabot checks only Keycloak Dockerfiles and the four Terraform roots weekly,
