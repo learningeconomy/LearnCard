@@ -42,6 +42,7 @@ import {
     mergeAudiences,
     type NativeAuthRequirements,
 } from './native-auth-audiences';
+import { runRealmInputs } from './keycloak-realm-inputs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -2393,6 +2394,20 @@ const handleShortcuts = async (): Promise<boolean> => {
         case 'validate':
             runValidators();
             return true;
+
+        case 'keycloak': {
+            rl.close();
+            try {
+                if (arg !== 'realm-inputs') {
+                    throw new Error('Usage: lc keycloak realm-inputs [stage] [--check]');
+                }
+                runRealmInputs(args.slice(2));
+            } catch (error) {
+                process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
+                process.exitCode = 1;
+            }
+            return true;
+        }
 
         case 'auth-audiences': {
             // bun run lc auth-audiences [tenant…] [stage]
