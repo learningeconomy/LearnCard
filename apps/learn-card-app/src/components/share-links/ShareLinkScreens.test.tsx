@@ -282,7 +282,13 @@ describe('create screen', () => {
         );
     });
     it('keeps passcode and view notifications off until the owner opts in on review', async () => {
-        await chooseAndPreview();
+        render(<ShareLinkCreate onDismiss={() => {}} />);
+        fireEvent.click(await screen.findByRole('checkbox'));
+        fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+        fireEvent.change(screen.getByLabelText('Title'), {
+            target: { value: 'Learning highlights' },
+        });
+
         expect(screen.getByRole('checkbox', { name: /Require a passcode/ })).not.toBeChecked();
         expect(screen.getByRole('checkbox', { name: /Notify me when viewed/ })).not.toBeChecked();
 
@@ -291,6 +297,8 @@ describe('create screen', () => {
             target: { value: '2468' },
         });
         fireEvent.click(screen.getByRole('checkbox', { name: /Notify me when viewed/ }));
+        fireEvent.click(screen.getByRole('button', { name: /Preview/ }));
+        await screen.findByTestId('share-link-preview');
         fireEvent.click(screen.getByRole('button', { name: 'Create private link' }));
 
         await screen.findByText('Your link is ready');

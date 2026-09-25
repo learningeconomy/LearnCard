@@ -870,26 +870,6 @@ export const ShareLinkCreate = ({
                                     </p>
                                 </fieldset>
                             )}
-                            <p className="text-xs text-grayscale-600 leading-relaxed">
-                                {m['shareLinks.privacyHint']()}
-                            </p>
-                        </div>
-                    )}
-                    {step === 'preview' && prepared.current && (
-                        <div className="space-y-5">
-                            <ShareLinkPreview
-                                heading={m['shareLinks.previewHeading']()}
-                                title={prepared.current.input.title}
-                                note={prepared.current.input.note}
-                                sharerName={prepared.current.payload.sharer.displayName}
-                                expiresAt={
-                                    editShare?.expiresAt ?? prepared.current.input.expiresAt ?? null
-                                }
-                                payload={prepared.current.payload}
-                            />
-                            <p className="text-xs text-grayscale-600 leading-relaxed">
-                                {m['shareLinks.privacyHint']()}
-                            </p>
                             {!editShare && (
                                 <section className="rounded-[20px] border border-grayscale-200 p-5 space-y-4">
                                     <div className="flex gap-3">
@@ -908,6 +888,7 @@ export const ShareLinkCreate = ({
                                                     checked={passcodeEnabled}
                                                     disabled={fieldsLocked}
                                                     onChange={event => {
+                                                        invalidateDraft();
                                                         setPasscodeEnabled(event.target.checked);
                                                     }}
                                                 />
@@ -928,7 +909,10 @@ export const ShareLinkCreate = ({
                                                 disabled={fieldsLocked}
                                                 className={`${inputClass} mt-2`}
                                                 value={passcode}
-                                                onChange={event => setPasscode(event.target.value)}
+                                                onChange={event => {
+                                                    invalidateDraft();
+                                                    setPasscode(event.target.value);
+                                                }}
                                                 placeholder={m['shareLinks.passcodePlaceholder']()}
                                             />
                                             <span className="block mt-1.5 text-xs font-normal text-grayscale-500">
@@ -951,9 +935,10 @@ export const ShareLinkCreate = ({
                                                     className="h-5 w-5 accent-emerald-600"
                                                     checked={notifyOnView}
                                                     disabled={fieldsLocked}
-                                                    onChange={event =>
-                                                        setNotifyOnView(event.target.checked)
-                                                    }
+                                                    onChange={event => {
+                                                        invalidateDraft();
+                                                        setNotifyOnView(event.target.checked);
+                                                    }}
                                                 />
                                             </span>
                                             <span className="block mt-1 text-xs text-grayscale-600 leading-relaxed">
@@ -963,6 +948,26 @@ export const ShareLinkCreate = ({
                                     </div>
                                 </section>
                             )}
+                            <p className="text-xs text-grayscale-600 leading-relaxed">
+                                {m['shareLinks.privacyHint']()}
+                            </p>
+                        </div>
+                    )}
+                    {step === 'preview' && prepared.current && (
+                        <div className="space-y-5">
+                            <ShareLinkPreview
+                                heading={m['shareLinks.previewHeading']()}
+                                title={prepared.current.input.title}
+                                note={prepared.current.input.note}
+                                sharerName={prepared.current.payload.sharer.displayName}
+                                expiresAt={
+                                    editShare?.expiresAt ?? prepared.current.input.expiresAt ?? null
+                                }
+                                payload={prepared.current.payload}
+                            />
+                            <p className="text-xs text-grayscale-600 leading-relaxed">
+                                {m['shareLinks.privacyHint']()}
+                            </p>
                             {pending && (
                                 <p
                                     role="status"
