@@ -9,7 +9,7 @@ shift 2
 strategy=recreate
 if [[ -e "$previous" ]]; then
     previous=$(realpath "$previous")
-    options=(run --rm)
+    options=(run --rm --user "$(id -u):$(id -g)")
     if [[ -n ${KC_ENV_FILE:-} ]]; then options+=(--env-file "$KC_ENV_FILE"); fi
     status=0
     docker "${options[@]}" --mount "type=bind,src=$previous,dst=/work/prev.json,readonly" \
