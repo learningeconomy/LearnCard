@@ -2,6 +2,15 @@
 # policy. In particular there is no IAM, STS AssumeRole, or deployment permission.
 data "aws_iam_policy_document" "workload_boundary" {
   statement {
+    actions   = ["ssmmessages:CreateControlChannel", "ssmmessages:CreateDataChannel", "ssmmessages:OpenControlChannel", "ssmmessages:OpenDataChannel"]
+    resources = ["*"]
+    condition {
+      test     = "ArnEquals"
+      variable = "aws:PrincipalArn"
+      values   = ["${local.iam_prefix}:role/${local.name}-access-task"]
+    }
+  }
+  statement {
     actions   = ["logs:CreateLogStream", "logs:PutLogEvents", "logs:DescribeLogStreams"]
     resources = ["arn:${local.partition}:logs:${local.regional_arn}:log-group:/ecs/${local.name}*", "arn:${local.partition}:logs:${local.regional_arn}:log-group:/aws/codebuild/${local.name}*", "arn:${local.partition}:logs:${local.regional_arn}:log-group:/aws/vpc-flow-log/${local.name}*"]
   }

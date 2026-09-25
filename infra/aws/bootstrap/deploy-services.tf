@@ -19,6 +19,18 @@ data "aws_iam_policy_document" "deploy_network" {
 
 data "aws_iam_policy_document" "deploy_services" {
   statement {
+    sid       = "DescribeManagedSecretKey"
+    actions   = ["kms:DescribeKey"]
+    resources = ["arn:${local.partition}:kms:${local.regional_arn}:key/*"]
+    # Alias conditions avoid resolving a not-yet-created AWS-managed key during
+    # bootstrap. No decrypt or grant-management permission is added.
+    condition {
+      test     = "ForAnyValue:StringEquals"
+      variable = "kms:ResourceAliases"
+      values   = ["alias/aws/secretsmanager"]
+    }
+  }
+  statement {
     sid       = "NamedDatabaseResources"
     actions   = ["rds:*"]
     resources = ["arn:${local.partition}:rds:${local.regional_arn}:*:${local.name}*"]
@@ -34,8 +46,9 @@ data "aws_iam_policy_document" "deploy_services" {
     ]
   }
   statement {
-    sid       = "ContainerAndDatabaseDiscovery"
-    actions   = ["ecs:List*", "ecs:Describe*", "ecs:RegisterTaskDefinition", "rds:Describe*", "rds:ListTagsForResource"]
+    sid = "ContainerAndDatabaseDiscovery"
+    # ECS registration/deregistration do not support resource-level authorization.
+    actions   = ["ecs:List*", "ecs:Describe*", "ecs:RegisterTaskDefinition", "ecs:DeregisterTaskDefinition", "rds:Describe*", "rds:ListTagsForResource"]
     resources = ["*"]
   }
   # These control planes have create/list calls with no resource ARN. The

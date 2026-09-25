@@ -11,12 +11,48 @@ locals {
       "ec2:DeleteVpcEndpoints", "ec2:ModifyVpcEndpoint"
     ]
     rds                  = ["rds:ModifyDB*", "rds:DeleteDB*", "rds:RebootDBInstance", "rds:StartDB*", "rds:StopDB*", "rds:FailoverDBCluster", "rds:RemoveTagsFromResource"]
-    ecs                  = ["ecs:UpdateService", "ecs:DeleteService", "ecs:DeleteCluster", "ecs:UpdateCluster", "ecs:UpdateClusterSettings", "ecs:PutClusterCapacityProviders", "ecs:StopTask", "ecs:ExecuteCommand", "ecs:DeregisterTaskDefinition", "ecs:DeleteTaskDefinitions", "ecs:UntagResource"]
+    ecs                  = ["ecs:UpdateService", "ecs:DeleteService", "ecs:DeleteCluster", "ecs:UpdateCluster", "ecs:UpdateClusterSettings", "ecs:PutClusterCapacityProviders", "ecs:StopTask", "ecs:ExecuteCommand", "ecs:DeleteTaskDefinitions", "ecs:UntagResource"]
     elasticloadbalancing = ["elasticloadbalancing:Delete*", "elasticloadbalancing:Modify*", "elasticloadbalancing:Set*", "elasticloadbalancing:RegisterTargets", "elasticloadbalancing:DeregisterTargets", "elasticloadbalancing:RemoveTags"]
   }
 }
 
 data "aws_iam_policy_document" "deploy_guards" {
+  statement {
+    sid       = "NeverEnableExecOnServices"
+    effect    = "Deny"
+    actions   = ["ecs:CreateService", "ecs:UpdateService"]
+    resources = ["*"]
+    condition {
+      test     = "Bool"
+      variable = "ecs:enable-execute-command"
+      values   = ["true"]
+    }
+  }
+  statement {
+    sid     = "ExecOnlyForAccessTaskRuns"
+    effect  = "Deny"
+    actions = ["ecs:RunTask"]
+    not_resources = [
+      "arn:${local.partition}:ecs:${local.regional_arn}:task-definition/${local.name}-access:*",
+      "arn:${local.partition}:ecs:${local.regional_arn}:cluster/${local.name}"
+    ]
+    condition {
+      test     = "Bool"
+      variable = "ecs:enable-execute-command"
+      values   = ["true"]
+    }
+  }
+  statement {
+    sid       = "NoExecIntoKeycloakContainer"
+    effect    = "Deny"
+    actions   = ["ecs:ExecuteCommand"]
+    resources = ["*"]
+    condition {
+      test     = "StringNotEquals"
+      variable = "ecs:container-name"
+      values   = ["access"]
+    }
+  }
   statement {
     sid       = "NoEcsTagTakeover"
     effect    = "Deny"

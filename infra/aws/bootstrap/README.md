@@ -145,19 +145,33 @@ Every output is also a `String` parameter at
   states and write/delete only `.tflock`; deploy may also write state. Neither has
   permission to delete current state objects. State remains confidential: realm
   secrets may eventually be present in it. Only allowlisted human admin roles and
-  the plan/deploy roles plus the future `${name}-realm` CodeBuild role can access
+  the plan/deploy roles plus the `${name}-realm-runner` CodeBuild role can access
   this bucket; the latter's boundary limits it to realm state. Bootstrap must run
   using one of those human roles, not an IAM user. Keep the admin ARN list available
   for later maintenance and add replacement admins before removing old ones.
   This bucket restriction is not an organization-wide SCP.
+- Phase 3 aligns the state principal to `${name}-realm-runner` and allows SSM
+  message channels in the workload boundary **only** for `${name}-access-task`.
+  Deploy is denied enabling ECS Exec on services or non-access task definitions;
+  `ExecuteCommand` is denied for containers other than `access`. Human break-glass
+  operators need separate reviewed `ssm:StartSession` permissions; the deploy role
+  does not receive account-wide Session Manager access.
+- Phase 3 also grants `kms:DescribeKey` only for this region/account's key with
+  alias `aws/secretsmanager`, required to create an RDS-managed master secret.
+  No decrypt or grant-management actions are added. ECS task-definition
+  registration **and deregistration** require wildcard resources and do not expose
+  Project resource tags; deregistration is therefore an explicit account-wide
+  exception, removed from the tag-deny list so Terraform can replace old revisions.
+  IAM simulation must include this documented shared-account lifecycle limitation.
 - Plan trust: this repo's `pull_request` or `ref:refs/heads/main`, audience STS.
   AWS-managed ReadOnlyAccess is intentionally account-wide, including discovery
   and potentially application data. Do not grant OIDC tokens to unreviewed fork
   code or upload plans publicly. Review the managed policy as AWS changes it.
 - Deploy trust: **only** `environment:keycloak-<env>`, audience STS. Configure
   GitHub environments manually, main-only deployment branches, production required
-  reviewers, and prevent self-approval. The existing workflow is NOT converted
-  here; Phase 3 owns CI changes.
+  reviewers, and prevent self-approval. `keycloak-infra.yml` now uses OIDC and
+  validates all three roots. Bootstrap remains human-owned; CI deploys only
+  network/service. See the service runbook for GitHub variable setup.
 - Deploy can create roles only with the exact workload boundary, and can attach
   or inline policies only on bounded roles. Boundary removal is denied. Own plan/
   deploy roles, all deploy policies and the boundary cannot be mutated or passed.
@@ -210,5 +224,5 @@ Resource arguments follow the [AWS provider resource documentation](https://gith
 for S3 bucket/versioning/encryption/public-access/policy/lifecycle, IAM OIDC/role/
 policy/attachments, ECR repository/lifecycle/replication/registry policy, Budgets
 and SSM. [S3 backend locking](https://developer.hashicorp.com/terraform/language/backend/s3#state-locking)
-requires Terraform >= 1.10. The original flat root still uses AWS `~> 5.0`; aligning
-it and adding downstream roots to CI belongs to Phase 3.
+requires Terraform >= 1.10. All three roots now use AWS `~> 6.0`; the former flat
+root is `infra/keycloak/terraform/service`. CI and the realm runner pin Terraform 1.15.8.

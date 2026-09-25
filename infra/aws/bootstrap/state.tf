@@ -49,7 +49,7 @@ data "aws_iam_policy_document" "state_bucket" {
       values = concat(var.state_administrator_arns, [
         "${local.iam_prefix}:role/${local.name}-plan",
         "${local.iam_prefix}:role/${local.name}-deploy",
-        "${local.iam_prefix}:role/${local.name}-realm"
+        "${local.iam_prefix}:role/${local.name}-realm-runner"
       ])
     }
   }
