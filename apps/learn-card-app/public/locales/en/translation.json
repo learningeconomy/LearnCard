@@ -8397,6 +8397,7 @@
             "myShares": "My shares",
             "savedCollections": "Saved collections",
             "savedCollectionTitle": "Saved credential collection",
+            "savedFrom": "Shared by {{name}}",
             "savedOn": "Saved {{date}}",
             "viewCollection": "View collection",
             "savedLoading": "Loading saved collections…",

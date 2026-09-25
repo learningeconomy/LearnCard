@@ -1,6 +1,9 @@
 import { VPValidator } from '@learncard/types';
 
-import type { ShareWallet } from '../../components/share-links/shareLinkFlow';
+import {
+    parseSavedShareLinkMetadata,
+    type ShareWallet,
+} from '../../components/share-links/shareLinkFlow';
 import type { SavedCredentialCollection } from './DataSharingCenter.types';
 
 const hydrateWithConcurrency = async <T, R>(
@@ -43,20 +46,53 @@ export const loadSavedCredentialCollections = async (
                   ? [rawCredentials]
                   : [];
 
-            return {
+            const metadata = parseSavedShareLinkMetadata(item.metadata);
+            const collection = {
                 uri: item.uri,
+                ...(metadata
+                    ? {
+                          shareId: metadata.shareId,
+                          title: metadata.title,
+                          ...(metadata.note ? { note: metadata.note } : {}),
+                          sharer: metadata.sharer,
+                      }
+                    : {}),
                 receivedAt: item.received ?? item.sent,
                 presentation: { ...presentation, verifiableCredential: credentials },
                 credentialCount: credentials.length,
             } satisfies SavedCredentialCollection;
+
+            return {
+                collection,
+                dedupeKey: metadata
+                    ? `share:${metadata.shareId}`
+                    : `presentation:${JSON.stringify(presentation)}`,
+            };
         } catch {
             readFailures += 1;
             return null;
         }
     });
+    const seen = new Set<string>();
     const collections = hydrated
-        .filter((item): item is SavedCredentialCollection => item !== null)
-        .sort((a, b) => new Date(b.receivedAt).getTime() - new Date(a.receivedAt).getTime());
+        .filter(
+            (
+                item
+            ): item is {
+                collection: SavedCredentialCollection;
+                dedupeKey: string;
+            } => item !== null
+        )
+        .sort(
+            (a, b) =>
+                new Date(b.collection.receivedAt).getTime() -
+                new Date(a.collection.receivedAt).getTime()
+        )
+        .flatMap(item => {
+            if (seen.has(item.dedupeKey)) return [];
+            seen.add(item.dedupeKey);
+            return [item.collection];
+        });
     if (received.length > 0 && collections.length === 0 && readFailures > 0) {
         throw new Error('saved-collections');
     }

@@ -8391,6 +8391,7 @@
             "myShares": "Mes partages",
             "savedCollections": "Collections enregistrées",
             "savedCollectionTitle": "Collection de justificatifs enregistrée",
+            "savedFrom": "Partagée par {{name}}",
             "savedOn": "Enregistrée le {{date}}",
             "viewCollection": "Voir la collection",
             "savedLoading": "Chargement des collections enregistrées…",

@@ -34,6 +34,10 @@ const share = {
 
 const savedCollection = {
     uri: 'lc:network:localhost%3A4000:pres:one',
+    shareId: 'AAAAAAAAAAAAAAAAAAAAAA',
+    title: 'Career highlights',
+    note: 'Selected credentials for applications',
+    sharer: { profileId: 'sender', displayName: 'Alex Rivera' },
     receivedAt: '2026-09-24T16:00:00.000Z',
     credentialCount: 2,
     presentation: {
@@ -151,7 +155,9 @@ describe('shared link actions', () => {
         fireEvent.click(screen.getByRole('tab', { name: 'Saved collections' }));
 
         expect(vm.savedCollections.onOpen).toHaveBeenCalledOnce();
-        expect(screen.getByText('Saved credential collection')).toBeTruthy();
+        expect(screen.getByText('Career highlights')).toBeTruthy();
+        expect(screen.getByText('Selected credentials for applications')).toBeTruthy();
+        expect(screen.getByText('Shared by Alex Rivera')).toBeTruthy();
         expect(screen.getByText('2 credentials')).toBeTruthy();
         fireEvent.click(screen.getByRole('button', { name: 'View collection' }));
         expect(vm.savedCollections.onPreview).toHaveBeenCalledWith(savedCollection);

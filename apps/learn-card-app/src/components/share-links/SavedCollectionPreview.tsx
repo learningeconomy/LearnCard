@@ -49,7 +49,13 @@ export const SavedCollectionPreview = ({ collection, onDismiss }: SavedCollectio
                 <div className="mx-auto w-full max-w-4xl">
                     <ShareLinkPreview
                         payload={payload}
-                        title={m['dataShareCenter.shared.savedCollectionTitle']()}
+                        title={
+                            collection.title ?? m['dataShareCenter.shared.savedCollectionTitle']()
+                        }
+                        note={collection.note}
+                        sharerName={collection.sharer?.displayName}
+                        sharerAvatar={collection.sharer?.avatar}
+                        sharedAt={collection.receivedAt}
                         showExpiry={false}
                         summaryExtra={
                             <div className="flex items-center gap-1.5 border-t border-grayscale-100 pt-4 text-xs text-grayscale-500">

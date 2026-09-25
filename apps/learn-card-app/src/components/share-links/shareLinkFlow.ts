@@ -74,9 +74,15 @@ export interface ShareWallet {
         resolveShareLink(id: string, passcode?: string): Promise<ShareLinkPublicState>;
         getShareLinkContent(id: string, passcode?: string): Promise<ShareLinkPublicContentView>;
         acknowledgeShareLinkView(receipt: string): Promise<{ ok: true }>;
-        sendPresentation(profileId: string, vp: VP, encrypt?: boolean): Promise<string>;
+        sendPresentation(
+            profileId: string,
+            vp: VP,
+            metadataOrEncrypt?: Record<string, unknown> | boolean,
+            encrypt?: boolean
+        ): Promise<string>;
         acceptPresentation(uri: string): Promise<boolean>;
         getReceivedPresentations(): Promise<SentCredentialInfo[]>;
+        getIncomingPresentations(): Promise<SentCredentialInfo[]>;
         verifyPresentation(vp: VP, options: { proofPurpose: string }): Promise<VerificationCheck>;
         verifyCredential(vc: VC): Promise<VerificationCheck>;
     };
@@ -98,6 +104,44 @@ export type PreparedShareUpdate = {
     payload: SharePayload;
 };
 export type ProofState = 'checking' | 'verified' | 'failed' | 'unavailable';
+
+export const SAVED_SHARE_METADATA_TYPE = 'learncard.share-link.v1' as const;
+
+export type SavedShareLinkMetadata = {
+    type: typeof SAVED_SHARE_METADATA_TYPE;
+    shareId: string;
+    title: string;
+    note?: string;
+    sharer: {
+        profileId: string;
+        displayName: string;
+        avatar?: string;
+    };
+};
+
+const boundedString = (value: unknown, max: number): value is string =>
+    typeof value === 'string' && value.length > 0 && value.length <= max;
+
+/** Parse presentation relationship metadata without trusting it as signed content. */
+export const parseSavedShareLinkMetadata = (value: unknown): SavedShareLinkMetadata | undefined => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+    const metadata = value as Record<string, unknown>;
+    const sharer = metadata.sharer;
+    if (!sharer || typeof sharer !== 'object' || Array.isArray(sharer)) return undefined;
+    const sharerRecord = sharer as Record<string, unknown>;
+    if (
+        metadata.type !== SAVED_SHARE_METADATA_TYPE ||
+        !ShareLinkIdValidator.safeParse(metadata.shareId).success ||
+        !boundedString(metadata.title, 120) ||
+        (metadata.note !== undefined && !boundedString(metadata.note, 500)) ||
+        !boundedString(sharerRecord.profileId, 128) ||
+        !boundedString(sharerRecord.displayName, 120) ||
+        (sharerRecord.avatar !== undefined && !boundedString(sharerRecord.avatar, 2048))
+    )
+        return undefined;
+
+    return metadata as SavedShareLinkMetadata;
+};
 
 /** Bounded, order-preserving fan-out so a picker never opens unbounded reads. */
 export const mapWithConcurrency = async <T, R>(

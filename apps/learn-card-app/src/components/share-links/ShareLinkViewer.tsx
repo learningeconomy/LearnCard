@@ -26,7 +26,9 @@ import {
 import * as m from '../../paraglide/messages.js';
 import {
     createVerificationBudget,
+    parseSavedShareLinkMetadata,
     readShareAddress,
+    SAVED_SHARE_METADATA_TYPE,
     shareWallet,
     verifyCredentialTree,
     verifySharedPresentation,
@@ -287,11 +289,42 @@ const ShareLinkViewer = () => {
         setSaveState('saving');
         try {
             const wallet = shareWallet(await initWallet());
+            const alreadySaved = (await wallet.invoke.getReceivedPresentations()).some(
+                item =>
+                    parseSavedShareLinkMetadata(item.metadata)?.shareId === ready.payload.shareId
+            );
+            if (alreadySaved) {
+                setSaveState('saved');
+                return;
+            }
+            const pendingSave = (await wallet.invoke.getIncomingPresentations()).find(
+                item =>
+                    parseSavedShareLinkMetadata(item.metadata)?.shareId === ready.payload.shareId
+            );
+            if (pendingSave) {
+                await wallet.invoke.acceptPresentation(pendingSave.uri);
+                setSaveState('saved');
+                return;
+            }
             const profile = await wallet.invoke.getProfile();
             if (!profile?.profileId) throw new Error('profile');
+            const savedMetadata = {
+                type: SAVED_SHARE_METADATA_TYPE,
+                shareId: ready.payload.shareId,
+                title: ready.metadata.title,
+                ...(ready.metadata.note ? { note: ready.metadata.note } : {}),
+                sharer: {
+                    profileId: ready.payload.sharer.profileId,
+                    displayName: ready.metadata.sharer.displayName,
+                    ...(ready.metadata.sharer.avatar
+                        ? { avatar: ready.metadata.sharer.avatar }
+                        : {}),
+                },
+            };
             const uri = await wallet.invoke.sendPresentation(
                 profile.profileId,
                 ready.payload.presentation,
+                savedMetadata,
                 true
             );
             await wallet.invoke.acceptPresentation(uri);
@@ -299,6 +332,28 @@ const ShareLinkViewer = () => {
         } catch {
             setSaveState('error');
         }
+    }, [initWallet, isLoggedIn, ready, saveState]);
+
+    useEffect(() => {
+        if (!ready || !isLoggedIn || saveState !== 'idle') return;
+        let cancelled = false;
+        void initWallet()
+            .then(wallet => shareWallet(wallet).invoke.getReceivedPresentations())
+            .then(received => {
+                if (
+                    !cancelled &&
+                    received.some(
+                        item =>
+                            parseSavedShareLinkMetadata(item.metadata)?.shareId ===
+                            ready.payload.shareId
+                    )
+                )
+                    setSaveState('saved');
+            })
+            .catch(() => undefined);
+        return () => {
+            cancelled = true;
+        };
     }, [initWallet, isLoggedIn, ready, saveState]);
 
     useEffect(() => {

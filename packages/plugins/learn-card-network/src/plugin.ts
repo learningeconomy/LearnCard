@@ -1348,13 +1348,19 @@ export async function getLearnCardNetworkPlugin(
                 return client.credential.deleteCredential.mutate({ uri });
             },
 
-            sendPresentation: async (_learnCard, profileId, vp, encrypt = true) => {
+            sendPresentation: async (_learnCard, profileId, vp, metadataOrEncrypt, encrypt) => {
                 await ensureUser();
 
-                if (!encrypt) {
+                const metadata =
+                    typeof metadataOrEncrypt === 'object' ? metadataOrEncrypt : undefined;
+                const shouldEncrypt =
+                    typeof metadataOrEncrypt === 'boolean' ? metadataOrEncrypt : (encrypt ?? true);
+
+                if (!shouldEncrypt) {
                     return client.presentation.sendPresentation.mutate({
                         profileId,
                         presentation: vp,
+                        metadata,
                     });
                 }
 
@@ -1368,7 +1374,11 @@ export async function getLearnCardNetworkPlugin(
                     target.did,
                 ]);
 
-                return client.presentation.sendPresentation.mutate({ profileId, presentation });
+                return client.presentation.sendPresentation.mutate({
+                    profileId,
+                    presentation,
+                    metadata,
+                });
             },
             acceptPresentation: async (_learnCard, uri) => {
                 await ensureUser();

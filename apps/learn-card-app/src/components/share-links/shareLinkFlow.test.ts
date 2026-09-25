@@ -6,6 +6,7 @@ import {
     classifySharePublication,
     createVerificationBudget,
     mapWithConcurrency,
+    parseSavedShareLinkMetadata,
     prepareShare,
     prepareShareUpdate,
     proofState,
@@ -207,6 +208,24 @@ it('rejects an oversized selection before it can be sent', async () => {
 });
 
 describe('recipient validation', () => {
+    it('accepts only bounded saved-share display metadata', () => {
+        const metadata = {
+            type: 'learncard.share-link.v1',
+            shareId: 'A'.repeat(22),
+            title: 'Career highlights',
+            note: 'Selected credentials for applications',
+            sharer: { profileId: 'alex', displayName: 'Alex' },
+        };
+
+        expect(parseSavedShareLinkMetadata(metadata)).toEqual(metadata);
+        expect(
+            parseSavedShareLinkMetadata({ ...metadata, shareId: 'not-a-share-id' })
+        ).toBeUndefined();
+        expect(
+            parseSavedShareLinkMetadata({ ...metadata, title: 'x'.repeat(121) })
+        ).toBeUndefined();
+    });
+
     it('requires a canonical complete fragment before any request', () => {
         expect(readShareAddress('A'.repeat(22), '')).toBeUndefined();
         expect(readShareAddress('A'.repeat(22), '#' + 'A'.repeat(42) + 'B')).toBeUndefined();

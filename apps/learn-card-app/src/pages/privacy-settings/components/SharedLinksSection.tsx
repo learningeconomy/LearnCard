@@ -403,8 +403,20 @@ const SavedCollectionRow = ({
         <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
                 <h4 className="font-medium text-grayscale-900">
-                    {m['dataShareCenter.shared.savedCollectionTitle']()}
+                    {collection.title ?? m['dataShareCenter.shared.savedCollectionTitle']()}
                 </h4>
+                {collection.note && (
+                    <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-grayscale-600">
+                        {collection.note}
+                    </p>
+                )}
+                {collection.sharer && (
+                    <p className="mt-1 text-xs text-grayscale-500">
+                        {m['dataShareCenter.shared.savedFrom']({
+                            name: collection.sharer.displayName,
+                        })}
+                    </p>
+                )}
                 <p className="mt-1 text-xs text-grayscale-600">
                     {credentialCountLabel(collection.credentialCount)}
                 </p>

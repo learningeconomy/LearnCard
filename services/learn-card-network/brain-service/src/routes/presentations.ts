@@ -31,11 +31,17 @@ export const presentationsRouter = t.router({
             },
             requiredScope: 'presentations:write',
         })
-        .input(z.object({ profileId: z.string(), presentation: VPValidator.or(JWEValidator) }))
+        .input(
+            z.object({
+                profileId: z.string(),
+                presentation: VPValidator.or(JWEValidator),
+                metadata: z.record(z.string(), z.unknown()).optional(),
+            })
+        )
         .output(z.string())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { profileId, presentation } = input;
+            const { profileId, presentation, metadata } = input;
 
             const resolvedProfileId = await getProfileIdFromString(profileId, ctx.domain);
             if (!resolvedProfileId) {
@@ -52,7 +58,7 @@ export const presentationsRouter = t.router({
                 });
             }
 
-            return sendPresentation(profile, targetProfile, presentation, ctx.domain);
+            return sendPresentation(profile, targetProfile, presentation, ctx.domain, metadata);
         }),
 
     acceptPresentation: profileRoute

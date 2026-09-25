@@ -218,6 +218,13 @@ const sharedLinks: DataSharingSharedLinksViewModel = {
         records: [
             {
                 uri: 'lc:network:localhost%3A4000:pres:saved-collection',
+                shareId: 'AAAAAAAAAAAAAAAAAAAAAA',
+                title: 'Career highlights',
+                note: 'Selected credentials for applications',
+                sharer: {
+                    profileId: 'mister-localhost',
+                    displayName: 'Mister Localhost',
+                },
                 receivedAt: '2026-09-21T14:30:00.000Z',
                 credentialCount: 3,
                 presentation: {

@@ -8480,6 +8480,7 @@
             "myShares": "مشاركاتي",
             "savedCollections": "المجموعات المحفوظة",
             "savedCollectionTitle": "مجموعة بيانات اعتماد محفوظة",
+            "savedFrom": "تمت المشاركة بواسطة {{name}}",
             "savedOn": "تم الحفظ في {{date}}",
             "viewCollection": "عرض المجموعة",
             "savedLoading": "جارٍ تحميل المجموعات المحفوظة…",

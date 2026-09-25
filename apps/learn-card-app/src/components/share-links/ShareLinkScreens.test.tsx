@@ -21,6 +21,8 @@ const mocks = vi.hoisted(() => ({
             verifyPresentation: vi.fn(),
             verifyCredential: vi.fn(),
             getProfile: vi.fn(),
+            getReceivedPresentations: vi.fn(),
+            getIncomingPresentations: vi.fn(),
             sendPresentation: vi.fn(),
             acceptPresentation: vi.fn(),
         },
@@ -182,6 +184,8 @@ beforeEach(() => {
         errors: [],
     });
     mocks.wallet.invoke.getProfile.mockResolvedValue({ profileId: 'recipient-1' });
+    mocks.wallet.invoke.getReceivedPresentations.mockResolvedValue([]);
+    mocks.wallet.invoke.getIncomingPresentations.mockResolvedValue([]);
     mocks.wallet.invoke.sendPresentation.mockResolvedValue('lc:network:presentation:one');
     mocks.wallet.invoke.acceptPresentation.mockResolvedValue(true);
     vi.mocked(Clipboard.write).mockResolvedValue(undefined);
@@ -189,6 +193,11 @@ beforeEach(() => {
     mocks.validate.mockReturnValue({
         ok: true,
         manifest: {
+            protocol: 'lc-share/v1',
+            shareId: 'AAAAAAAAAAAAAAAAAAAAAA',
+            contentVersion: 1,
+            createdAt: '2026-09-24T12:00:00.000Z',
+            sharer: { displayName: 'Alex', profileId: 'owner' },
             presentation: { verifiableCredential: [credential] },
             selection: [{ credentialIndex: 0 }],
             endorsements: [],
@@ -552,11 +561,70 @@ describe('recipient screen', () => {
         expect(mocks.wallet.invoke.sendPresentation).toHaveBeenCalledWith(
             'recipient-1',
             expect.objectContaining({ verifiableCredential: [credential] }),
+            {
+                type: 'learncard.share-link.v1',
+                shareId: 'AAAAAAAAAAAAAAAAAAAAAA',
+                title: 'Learning highlights',
+                sharer: { displayName: 'Alex', profileId: 'owner' },
+            },
             true
         );
         expect(mocks.wallet.invoke.acceptPresentation).toHaveBeenCalledWith(
             'lc:network:presentation:one'
         );
+    });
+
+    it('shows an existing saved share without creating a duplicate presentation', async () => {
+        mocks.auth.loggedIn = true;
+        mocks.wallet.invoke.getReceivedPresentations.mockResolvedValue([
+            {
+                uri: 'lc:network:presentation:existing',
+                from: 'recipient-1',
+                to: 'recipient-1',
+                sent: '2026-09-24T12:00:00.000Z',
+                received: '2026-09-24T12:00:01.000Z',
+                metadata: {
+                    type: 'learncard.share-link.v1',
+                    shareId: 'AAAAAAAAAAAAAAAAAAAAAA',
+                    title: 'Learning highlights',
+                    sharer: { displayName: 'Alex', profileId: 'owner' },
+                },
+            },
+        ]);
+
+        render(<ShareLinkViewer />);
+
+        await screen.findByRole('button', { name: 'Saved to LearnCard' });
+        expect(mocks.wallet.invoke.sendPresentation).not.toHaveBeenCalled();
+        expect(mocks.wallet.invoke.acceptPresentation).not.toHaveBeenCalled();
+    });
+
+    it('resumes an interrupted save instead of sending the presentation again', async () => {
+        mocks.auth.loggedIn = true;
+        mocks.wallet.invoke.getIncomingPresentations.mockResolvedValue([
+            {
+                uri: 'lc:network:presentation:pending',
+                from: 'recipient-1',
+                to: 'recipient-1',
+                sent: '2026-09-24T12:00:00.000Z',
+                metadata: {
+                    type: 'learncard.share-link.v1',
+                    shareId: 'AAAAAAAAAAAAAAAAAAAAAA',
+                    title: 'Learning highlights',
+                    sharer: { displayName: 'Alex', profileId: 'owner' },
+                },
+            },
+        ]);
+        render(<ShareLinkViewer />);
+        await screen.findByText('Community leadership');
+
+        fireEvent.click(screen.getByRole('button', { name: 'Save to LearnCard' }));
+
+        await screen.findByRole('button', { name: 'Saved to LearnCard' });
+        expect(mocks.wallet.invoke.acceptPresentation).toHaveBeenCalledWith(
+            'lc:network:presentation:pending'
+        );
+        expect(mocks.wallet.invoke.sendPresentation).not.toHaveBeenCalled();
     });
 
     it('preserves the complete share through sign-in when the recipient is logged out', async () => {
@@ -584,6 +652,12 @@ describe('recipient screen', () => {
         expect(mocks.wallet.invoke.sendPresentation).toHaveBeenCalledWith(
             'recipient-1',
             expect.objectContaining({ verifiableCredential: [credential] }),
+            {
+                type: 'learncard.share-link.v1',
+                shareId: 'AAAAAAAAAAAAAAAAAAAAAA',
+                title: 'Learning highlights',
+                sharer: { displayName: 'Alex', profileId: 'owner' },
+            },
             true
         );
         expect(mocks.wallet.invoke.acceptPresentation).toHaveBeenCalledWith(

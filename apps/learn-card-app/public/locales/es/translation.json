@@ -8391,6 +8391,7 @@
             "myShares": "Mis enlaces",
             "savedCollections": "Colecciones guardadas",
             "savedCollectionTitle": "Colección de credenciales guardada",
+            "savedFrom": "Compartida por {{name}}",
             "savedOn": "Guardada el {{date}}",
             "viewCollection": "Ver colección",
             "savedLoading": "Cargando colecciones guardadas…",

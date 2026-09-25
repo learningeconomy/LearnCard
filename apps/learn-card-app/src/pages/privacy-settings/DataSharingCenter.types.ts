@@ -52,6 +52,14 @@ export type PendingSharedLinkAction = {
 
 export type SavedCredentialCollection = {
     uri: string;
+    shareId?: string;
+    title?: string;
+    note?: string;
+    sharer?: {
+        profileId: string;
+        displayName: string;
+        avatar?: string;
+    };
     receivedAt: string;
     presentation: VP;
     credentialCount: number;
