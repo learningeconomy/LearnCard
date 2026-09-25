@@ -7,25 +7,25 @@ import SeedPhraseModal from './SeedPhraseModal';
 import { useCurrentUser, useModal, ModalTypes } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
-import { auth } from '../../firebase/firebase';
+import { useSignInAdapter } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
 import { TransP } from '../../i18n/TransP';
 
-const ExportSeedPhraseModal: React.FC<{}> = () => {
+const ExportSeedPhraseModal: React.FC = () => {
     const { newModal, closeModal } = useModal({
         desktop: ModalTypes.Cancel,
         mobile: ModalTypes.Cancel,
     });
     const brandingConfig = useBrandingConfig();
-    const firebaseAuth = auth();
-    const currentFirebaseUser = firebaseAuth.currentUser;
+    const adapter = useSignInAdapter();
+    const currentFirebaseUser = adapter.getCurrentUser();
     const currentUser = useCurrentUser();
 
     const [phrase, setPhrase] = useState<string>(
-        currentFirebaseUser?.email ?? currentFirebaseUser?.phoneNumber ?? currentUser?.email ?? ''
+        currentFirebaseUser?.email ?? currentFirebaseUser?.phone ?? currentUser?.email ?? ''
     );
     const [confirmationPhrase, setConfirmationPhrase] = useState<string>();
-    const placeholderSource = currentFirebaseUser?.phoneNumber
+    const placeholderSource = currentFirebaseUser?.phone
         ? m['profile.export.phonePlaceholder']()
         : m['profile.export.emailPlaceholder']();
     const canExportPhrase = phrase === confirmationPhrase;

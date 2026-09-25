@@ -13,6 +13,7 @@
 		FEEDBAC10000000000000001 /* MyViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEEDBAC10000000000000002 /* MyViewController.swift */; };
 		FEEDBAC10000000000000003 /* ScreenshotObserverPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEEDBAC10000000000000004 /* ScreenshotObserverPlugin.swift */; };
 		FEEDBAC10000000000000005 /* ShakeObserverPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEEDBAC10000000000000006 /* ShakeObserverPlugin.swift */; };
+		FEEDBAC10000000000000007 /* WebAuthSessionPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEEDBAC10000000000000008 /* WebAuthSessionPlugin.swift */; };
 		504EC30D1FED79650016851F /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC30B1FED79650016851F /* Main.storyboard */; };
 		504EC30F1FED79650016851F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 504EC30E1FED79650016851F /* Assets.xcassets */; };
 		504EC3121FED79650016851F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC3101FED79650016851F /* LaunchScreen.storyboard */; };
@@ -29,6 +30,7 @@
 		FEEDBAC10000000000000002 /* MyViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyViewController.swift; sourceTree = "<group>"; };
 		FEEDBAC10000000000000004 /* ScreenshotObserverPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotObserverPlugin.swift; sourceTree = "<group>"; };
 		FEEDBAC10000000000000006 /* ShakeObserverPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShakeObserverPlugin.swift; sourceTree = "<group>"; };
+		FEEDBAC10000000000000008 /* WebAuthSessionPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebAuthSessionPlugin.swift; sourceTree = "<group>"; };
 		504EC30C1FED79650016851F /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		504EC30E1FED79650016851F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		504EC3111FED79650016851F /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
@@ -87,6 +89,7 @@
 				FEEDBAC10000000000000002 /* MyViewController.swift */,
 				FEEDBAC10000000000000004 /* ScreenshotObserverPlugin.swift */,
 				FEEDBAC10000000000000006 /* ShakeObserverPlugin.swift */,
+				FEEDBAC10000000000000008 /* WebAuthSessionPlugin.swift */,
 				504EC30B1FED79650016851F /* Main.storyboard */,
 				504EC30E1FED79650016851F /* Assets.xcassets */,
 				504EC3101FED79650016851F /* LaunchScreen.storyboard */,
@@ -224,6 +227,7 @@
 				FEEDBAC10000000000000001 /* MyViewController.swift in Sources */,
 				FEEDBAC10000000000000003 /* ScreenshotObserverPlugin.swift in Sources */,
 				FEEDBAC10000000000000005 /* ShakeObserverPlugin.swift in Sources */,
+				FEEDBAC10000000000000007 /* WebAuthSessionPlugin.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

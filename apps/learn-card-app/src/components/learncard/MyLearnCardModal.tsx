@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { getLogger } from 'learn-card-base';
@@ -66,6 +66,7 @@ type MyLearnCardModalProps = {
     hideLogout?: boolean;
     hideEdit?: boolean;
     hideShare?: boolean;
+    resumeRecovery?: boolean;
 };
 
 const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
@@ -75,8 +76,10 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
     hideLogout = false,
     hideEdit = false,
     hideShare = false,
+    resumeRecovery = false,
 }) => {
     const flags = useFlags();
+    const resumedRecovery = useRef(false);
     const [user, setUser] = useState(_user);
 
     const { initWallet } = useWallet();
@@ -99,6 +102,11 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
         showDeviceLinkModal,
         authProvider: contextAuthProvider,
         refreshAuthSession,
+        disableEscrowRecovery,
+        enableEscrowRecovery,
+        getEscrowEnrollmentState,
+        setEscrowPin,
+        clearEscrowPin,
     } = useAppAuth();
 
     const description = user?.bio ?? user?.shortBio;
@@ -164,6 +172,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
     };
 
     const rows: {
+        id?: string;
         Icon: React.FC;
         title: string;
         iconVersion?: string;
@@ -297,6 +306,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
         if (capabilities.recovery) {
             rows.push({
+                id: 'account-recovery',
                 title: m['profile.menu.accountRecovery'](),
                 Icon: ShieldCheck,
                 caretText: '',
@@ -308,7 +318,11 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
                     const showReAuth = () => {
                         newModal(
-                            <ReAuthOverlay onSuccess={closeModal} onCancel={closeModal} />,
+                            <ReAuthOverlay
+                                resumeAction="account-recovery"
+                                onSuccess={closeModal}
+                                onCancel={closeModal}
+                            />,
                             { sectionClassName: '!max-w-[480px]' },
                             { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
                         );
@@ -362,7 +376,12 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
                     const setupMethod = canSetup
                         ? async (
-                              input: { method: string; password?: string; did?: string },
+                              input: {
+                                  method: string;
+                                  password?: string;
+                                  did?: string;
+                                  email?: string;
+                              },
                               authUser?: unknown
                           ) => {
                               let token: string;
@@ -377,10 +396,16 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
                               const providerType = contextAuthProvider.getProviderType();
 
-                              const signVp = async (pk: string): Promise<string> => {
+                              const signVp = async (
+                                  pk: string,
+                                  challenge?: string
+                              ): Promise<string> => {
                                   const lc = await getSigningLearnCard(pk);
 
-                                  const jwt = await lc.invoke.getDidAuthVp({ proofFormat: 'jwt' });
+                                  const jwt = await lc.invoke.getDidAuthVp({
+                                      proofFormat: 'jwt',
+                                      challenge,
+                                  });
 
                                   if (!jwt || typeof jwt !== 'string')
                                       throw new Error('Failed to sign DID-Auth VP');
@@ -396,6 +421,39 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                                   authUser:
                                       (authUser as import('@learncard/sss-key-manager').AuthUser) ??
                                       undefined,
+                                  signDidAuthVp: signVp,
+                              });
+                          }
+                        : null;
+
+                    const confirmMethod = keyDerivation.confirmRecoveryMethod
+                        ? async (
+                              input: import('@learncard/sss-key-manager').RecoveryConfirmationInput
+                          ) => {
+                              const token = await contextAuthProvider.getIdToken();
+                              const providerType = contextAuthProvider.getProviderType();
+                              const signVp = async (
+                                  privateKey: string,
+                                  challenge?: string
+                              ): Promise<string> => {
+                                  const lc = await getSigningLearnCard(privateKey);
+                                  const jwt = await lc.invoke.getDidAuthVp({
+                                      proofFormat: 'jwt',
+                                      challenge,
+                                  });
+
+                                  if (!jwt || typeof jwt !== 'string') {
+                                      throw new Error('Failed to sign DID-Auth VP');
+                                  }
+
+                                  return jwt;
+                              };
+
+                              await keyDerivation.confirmRecoveryMethod!({
+                                  token,
+                                  providerType,
+                                  privateKey: currentUser.privateKey!,
+                                  input,
                                   signDidAuthVp: signVp,
                               });
                           }
@@ -417,19 +475,45 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
                     const getDidAuthHeaders = async (): Promise<Record<string, string>> => {
                         const lc = await getSigningLearnCard(currentUser.privateKey!);
-                        const vpJwt = await lc.invoke.getDidAuthVp({ proofFormat: 'jwt' });
+                        const did = lc.id.did();
+                        const signVp = async (
+                            privateKey: string,
+                            challenge?: string
+                        ): Promise<string> => {
+                            const signingLc = await getSigningLearnCard(privateKey);
+                            const jwt = await signingLc.invoke.getDidAuthVp({
+                                proofFormat: 'jwt',
+                                challenge,
+                            });
+
+                            if (!jwt || typeof jwt !== 'string') {
+                                throw new Error('Failed to sign DID-Auth VP');
+                            }
+
+                            return jwt;
+                        };
+                        const vpJwt = keyDerivation.getFreshDidAuthVp
+                            ? await keyDerivation.getFreshDidAuthVp(
+                                  currentUser.privateKey!,
+                                  did,
+                                  signVp
+                              )
+                            : await signVp(currentUser.privateKey!);
 
                         return {
                             'Content-Type': 'application/json',
-                            ...(vpJwt && typeof vpJwt === 'string'
-                                ? { Authorization: `Bearer ${vpJwt}` }
-                                : {}),
+                            Authorization: `Bearer ${vpJwt}`,
                             ...getTenantHeaders(),
                         };
                     };
 
                     newModal(
                         <RecoverySetupModal
+                            onGetEscrowEnrollmentState={getEscrowEnrollmentState}
+                            onDisableEscrowRecovery={disableEscrowRecovery}
+                            onEnableEscrowRecovery={enableEscrowRecovery}
+                            onSetEscrowPin={setEscrowPin}
+                            onClearEscrowPin={clearEscrowPin}
                             existingMethods={existingMethods.map(m => ({
                                 type: m.type,
                                 createdAt:
@@ -462,8 +546,21 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                                               { method: 'phrase' },
                                               authUser
                                           );
-                                          return result?.method === 'phrase' ? result.phrase : '';
+                                          if (result?.method !== 'phrase') {
+                                              throw new Error('Could not generate recovery words.');
+                                          }
+
+                                          return {
+                                              phrase: result.phrase,
+                                              challengeWordIndices: result.challengeWordIndices,
+                                          };
                                       }
+                                    : requireAuth
+                            }
+                            onConfirmPhrase={
+                                confirmMethod
+                                    ? challengeWords =>
+                                          confirmMethod({ method: 'phrase', challengeWords })
                                     : requireAuth
                             }
                             onSetupBackup={
@@ -483,6 +580,16 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                                               ? JSON.stringify(result.backupFile, null, 2)
                                               : '';
                                       }
+                                    : requireAuth
+                            }
+                            onConfirmBackup={
+                                confirmMethod
+                                    ? (fileContents, password) =>
+                                          confirmMethod({
+                                              method: 'backup',
+                                              fileContents,
+                                              password,
+                                          })
                                     : requireAuth
                             }
                             onAddRecoveryEmail={async (email: string) => {
@@ -521,11 +628,16 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                             }}
                             onSetupEmailRecovery={
                                 setupMethod
-                                    ? async () => {
+                                    ? async email => {
                                           const authUser =
                                               await contextAuthProvider.getCurrentUser();
-                                          await setupMethod({ method: 'email' }, authUser);
+                                          await setupMethod({ method: 'email', email }, authUser);
                                       }
+                                    : requireAuth
+                            }
+                            onConfirmEmailRecovery={
+                                confirmMethod
+                                    ? code => confirmMethod({ method: 'email', code })
                                     : requireAuth
                             }
                             onClose={closeModal}
@@ -616,6 +728,16 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
     if (!isWallpaperFaded) {
         backgroundStyles.backgroundColor = wallpaperBackgroundColor;
     }
+
+    useEffect(() => {
+        if (!resumeRecovery || resumedRecovery.current || !currentUser?.privateKey) return;
+        const recoveryRow = rows.find(row => row.id === 'account-recovery');
+        if (!recoveryRow?.onClick) return;
+        resumedRecovery.current = true;
+        void Promise.resolve(recoveryRow.onClick()).catch(() => {
+            log.warn('Unable to reopen account recovery');
+        });
+    }, [resumeRecovery, currentUser?.privateKey, rows]);
 
     if (isLoggingOut) {
         return <LogoutLoadingPage />;

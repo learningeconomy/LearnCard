@@ -15,38 +15,39 @@ const log = getLogger('re-auth-overlay');
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Capacitor } from '@capacitor/core';
-import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
-import {
-    signInWithPopup,
-    signInWithCredential,
-    signOut as firebaseSignOut,
-    GoogleAuthProvider,
-    OAuthProvider,
-} from 'firebase/auth';
 import { IonIcon } from '@ionic/react';
 import { alertCircleOutline, checkmarkCircleOutline } from 'ionicons/icons';
 
-import { authStore, SocialLoginTypes, firebaseAuthStore, currentUserStore } from 'learn-card-base';
+import { authStore, SocialLoginTypes, useSignInAdapter, currentUserStore } from 'learn-card-base';
 
-import { auth } from '../../firebase/firebase';
 import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
 
 import AppleIcon from 'learn-card-base/assets/images/apple-logo.svg';
 import GoogleIcon from 'learn-card-base/assets/images/google-G-logo.svg';
+import { KeycloakReAuthForm } from './KeycloakReAuthForm';
+import type { ReauthAction } from '../../auth/keycloakReauth';
+import type { RecoverySetupType } from '../recovery/RecoverySetupModal';
 
 type ReAuthState = 'refreshing' | 'needs_reauth' | 'reauthing' | 'success' | 'error';
 
 interface ReAuthOverlayProps {
     onSuccess: () => void;
     onCancel: () => void;
+    resumeAction?: ReauthAction;
+    resumeMethod?: RecoverySetupType;
 }
 
 const UID_MISMATCH_ERROR =
     'You signed in with a different account. Please try again with the correct account.';
 
-const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({ onSuccess, onCancel }) => {
+const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({
+    onSuccess,
+    onCancel,
+    resumeAction = 'recovery-setup',
+    resumeMethod,
+}) => {
     const { refreshAuthSession } = useAppAuth();
+    const adapter = useSignInAdapter();
 
     const [state, setState] = useState<ReAuthState>('refreshing');
     const [error, setError] = useState<string | null>(null);
@@ -87,46 +88,14 @@ const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({ onSuccess, onCancel }) =>
         setError(null);
 
         try {
-            const firebaseAuth = auth();
-
-            let newUid: string | undefined;
-
-            if (Capacitor.isNativePlatform()) {
-                const result = await FirebaseAuthentication.signInWithGoogle();
-                const { user } = await FirebaseAuthentication.getCurrentUser();
-
-                if (result.user && user) {
-                    newUid = user.uid;
-
-                    authStore.set.typeOfLogin(SocialLoginTypes.google);
-                    firebaseAuthStore.set.firebaseAuth(FirebaseAuthentication);
-
-                    // Also sign in on the web layer
-                    try {
-                        const credential = GoogleAuthProvider.credential(
-                            result.credential?.idToken
-                        );
-
-                        await signInWithCredential(firebaseAuth, credential);
-                    } catch (e) {
-                        log.warn('ReAuth: web-layer credential sync failed', e);
-                    }
-                }
-            } else {
-                const provider = new GoogleAuthProvider();
-                const result = await signInWithPopup(firebaseAuth, provider);
-
-                if (result?.user) {
-                    newUid = result.user.uid;
-
-                    authStore.set.typeOfLogin(SocialLoginTypes.google);
-                }
-            }
+            const user = await adapter.signInWithGoogle({ intent: 'reauthenticate' });
+            const newUid = user.id;
+            authStore.set.typeOfLogin(SocialLoginTypes.google);
 
             // UID mismatch guard — reject if a different account was used
             if (expectedUidRef.current && newUid && newUid !== expectedUidRef.current) {
                 log.warn('ReAuth: UID mismatch', { expected: expectedUidRef.current, got: newUid });
-                await firebaseSignOut(firebaseAuth);
+                await adapter.signOut();
                 setError(UID_MISMATCH_ERROR);
                 setState('error');
                 return;
@@ -157,46 +126,14 @@ const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({ onSuccess, onCancel }) =>
         setError(null);
 
         try {
-            const firebaseAuth = auth();
-
-            let newUid: string | undefined;
-
-            if (Capacitor.isNativePlatform()) {
-                const result = await FirebaseAuthentication.signInWithApple({
-                    skipNativeAuth: true,
-                });
-
-                const provider = new OAuthProvider('apple.com');
-                const credential = provider.credential({
-                    idToken: result.credential?.idToken,
-                    rawNonce: result.credential?.nonce,
-                });
-
-                await signInWithCredential(firebaseAuth, credential);
-
-                const user = firebaseAuth.currentUser;
-
-                if (user) {
-                    newUid = user.uid;
-
-                    authStore.set.typeOfLogin(SocialLoginTypes.apple);
-                    firebaseAuthStore.set.firebaseAuth(FirebaseAuthentication);
-                }
-            } else {
-                const provider = new OAuthProvider('apple.com');
-                const result = await signInWithPopup(firebaseAuth, provider);
-
-                if (result?.user) {
-                    newUid = result.user.uid;
-
-                    authStore.set.typeOfLogin(SocialLoginTypes.apple);
-                }
-            }
+            const user = await adapter.signInWithApple({ intent: 'reauthenticate' });
+            const newUid = user.id;
+            authStore.set.typeOfLogin(SocialLoginTypes.apple);
 
             // UID mismatch guard — reject if a different account was used
             if (expectedUidRef.current && newUid && newUid !== expectedUidRef.current) {
                 log.warn('ReAuth: UID mismatch', { expected: expectedUidRef.current, got: newUid });
-                await firebaseSignOut(firebaseAuth);
+                await adapter.signOut();
                 setError(UID_MISMATCH_ERROR);
                 setState('error');
                 return;
@@ -249,8 +186,19 @@ const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({ onSuccess, onCancel }) =>
     }
 
     // --- Determine which re-auth buttons to show ---
-    const isGoogle = loginType === SocialLoginTypes.google;
-    const isApple = loginType === SocialLoginTypes.apple;
+    if (adapter.providerType === 'keycloak') {
+        return (
+            <KeycloakReAuthForm
+                action={resumeAction}
+                initialMethod={resumeMethod}
+                onCancel={onCancel}
+                onComplete={onSuccess}
+            />
+        );
+    }
+
+    const isGoogle = adapter.capabilities.google && loginType === SocialLoginTypes.google;
+    const isApple = adapter.capabilities.apple && loginType === SocialLoginTypes.apple;
     const hasSocialReAuth = isGoogle || isApple;
 
     return (

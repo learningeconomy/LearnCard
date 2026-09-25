@@ -221,6 +221,12 @@ services:
             KEYCLOAK_ISSUERS: http://localhost:8081/realms/learncard
             KEYCLOAK_AUDIENCES: learncard-app
             KEYCLOAK_JWKS_URL_OVERRIDES: http://localhost:8081/realms/learncard=http://keycloak:8080/realms/learncard/protocol/openid-connect/certs
+            OIDC_ISSUER: http://localhost:5100
+            OIDC_CLIENT_ID: keycloak-broker
+            OIDC_CLIENT_SECRET: dev-only-broker-secret # Public local-development placeholder
+            # Set by `bun run lc dev` from the tenant's native Firebase files + bundle ID (see `lc auth-audiences`).
+            GOOGLE_OAUTH_CLIENT_IDS: ${GOOGLE_OAUTH_CLIENT_IDS:-}
+            APPLE_OAUTH_CLIENT_IDS: ${APPLE_OAUTH_CLIENT_IDS:-}
 
     ai-agent:
         image: learncard-monorepo-local
@@ -404,7 +410,10 @@ services:
             LRSQL_ALLOW_ALL_ORIGINS: true
 
     keycloak:
-        image: quay.io/keycloak/keycloak:26.7.4
+        image: learncard-keycloak-dev
+        build:
+            context: ../../infra/keycloak
+            dockerfile: Dockerfile.dev
         command: start-dev --import-realm
         environment:
             KC_BOOTSTRAP_ADMIN_USERNAME: admin
@@ -412,13 +421,24 @@ services:
             KC_HEALTH_ENABLED: 'true'
             KC_HOSTNAME: http://localhost:8081
             KC_HTTP_ENABLED: 'true'
+            # Web Google/Apple brokering (infra/keycloak/README.md#google-and-apple-web).
+            # Dev placeholder defaults let the realm import with zero setup; only override
+            # in apps/learn-card-app/.env with real values to test an actual provider.
+            GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-dev-google-client-id.apps.googleusercontent.com}
+            GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-dev-google-client-secret}
+            APPLE_SERVICE_ID: ${APPLE_SERVICE_ID:-com.learncard.dev.signin}
+            APPLE_TEAM_ID: ${APPLE_TEAM_ID:-dev-apple-team-id}
+            APPLE_KEY_ID: ${APPLE_KEY_ID:-dev-apple-key-id}
+            APPLE_P8_CONTENT: ${APPLE_P8_CONTENT:-dev-placeholder-not-a-real-key}
         ports:
             - '8081:8080'
         networks:
             - learn-card
+        extra_hosts:
+            - 'host.docker.internal:host-gateway'
         volumes:
             - ../../infra/keycloak/realms/learncard-dev-realm.json:/opt/keycloak/data/import/learncard-realm.json:ro
-            - keycloak-data:/opt/keycloak/data/h2
+            - keycloak-data:/opt/keycloak/data
         healthcheck:
             test:
                 [

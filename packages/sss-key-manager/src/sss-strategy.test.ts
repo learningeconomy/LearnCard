@@ -15,25 +15,56 @@
  * - Custom storage injection
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest';
 
 import {
     createSSSStrategy,
     formatVersionedEmailShare,
+    IdentityRecoverySessionConsumedError,
     parseVersionedEmailShare,
+    selectRecoveryPhraseChallengeIndices,
+    withRotationLock,
 } from './sss-strategy';
 import { reconstructFromShares } from './sss';
-import { splitAndVerify } from './atomic-operations';
+import { AtomicUpdateError, splitAndVerify, verifyStoredShares } from './atomic-operations';
 import { shareToRecoveryPhrase, recoveryPhraseToShare } from './recovery-phrase';
+import { bufferToBase64 } from './crypto';
+import { decryptEmailRelayPayload, type EmailRelayEnvelope } from './email-relay-crypto';
 
 import type { SSSStorageFunctions } from './sss-strategy';
 import type { SSSKeyDerivationStrategy } from './types';
+import type { EscrowBlobPlaintext, EscrowReleasePlaintext } from './escrow-crypto';
+import { generateEscrowKeyPair, decryptEscrowBlob, sealEscrowRelease } from './escrow-crypto';
+import * as passkey from './passkey';
+import { derivePinProof } from './escrow-pin';
 
 // ---------------------------------------------------------------------------
 // In-memory storage mock
 // ---------------------------------------------------------------------------
 
 const DEFAULT_KEY = 'device';
+const TEST_RELAY_KEY_ID = 'sss-strategy-test-key';
+let testRelayPublicKey = '';
+let testRelayPrivateKey = '';
+
+beforeAll(async () => {
+    const keyPair = await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, [
+        'deriveBits',
+    ]);
+    const [publicKey, privateKey] = await Promise.all([
+        crypto.subtle.exportKey('spki', keyPair.publicKey),
+        crypto.subtle.exportKey('pkcs8', keyPair.privateKey),
+    ]);
+
+    testRelayPublicKey = bufferToBase64(publicKey);
+    testRelayPrivateKey = bufferToBase64(privateKey);
+});
+
+const getTestRelayConfig = () => ({
+    escrowRelayPublicKey: testRelayPublicKey,
+    escrowRelayKeyId: TEST_RELAY_KEY_ID,
+    emailBranding: { brandName: 'Test LearnCard', fromDomain: 'example.com' },
+});
 
 const createMemoryStorage = (): SSSStorageFunctions & {
     _store: Map<string, string>;
@@ -82,6 +113,760 @@ const createMemoryStorage = (): SSSStorageFunctions & {
 // Tests
 // ---------------------------------------------------------------------------
 
+describe('escrow strategy', () => {
+    let optedOut: boolean;
+    let optOutStatus: number;
+    const privateKey = 'a'.repeat(64);
+    const did = 'did:key:escrow-test';
+    const token = 'provider-secret';
+    const providerType = 'firebase';
+    const signDidAuthVp = async (_key: string, challenge?: string): Promise<string> =>
+        challenge ? `vp-${challenge}` : 'bootstrap';
+    const params = { token, providerType, privateKey, signDidAuthVp };
+    let storage: ReturnType<typeof createMemoryStorage>;
+    let strategy: SSSKeyDerivationStrategy;
+    let config: Parameters<typeof createSSSStrategy>[0];
+    let version: number;
+    let authShare: string;
+    let blob: EscrowBlobPlaintext | undefined;
+    let enclaveKeys: Awaited<ReturnType<typeof generateEscrowKeyPair>>;
+    let clientPublicKey: string;
+    let holdStarted: boolean;
+    let cancelled: boolean;
+    let attestationFailure: boolean;
+    let overrides: Partial<EscrowReleasePlaintext>;
+    let methods: Array<{
+        type: string;
+        createdAt: string;
+        confirmedAt?: string;
+        shareVersion: number;
+    }>;
+    let calls: Array<{ path: string; init?: RequestInit }>;
+    let pinSalt: string | undefined;
+    let attemptsRemaining: number;
+    let holdNumber: number;
+    let releasePolicy: 'hold' | 'pin';
+    let consumed: boolean;
+    let burned: string[];
+    const hold = () => ({
+        holdId: holdNumber <= 1 ? 'escrow-hold' : `escrow-hold-${holdNumber}`,
+        status: cancelled ? 'cancelled' : 'pending',
+        releasePolicy,
+        requestedAt: '2026-01-01T00:00:00.000Z',
+        releaseAfter: '2026-01-08T00:00:00.000Z',
+    });
+    const json = (value: unknown): Response => new Response(JSON.stringify(value), { status: 200 });
+
+    beforeEach(async () => {
+        optedOut = false;
+        optOutStatus = 200;
+        storage = createMemoryStorage();
+        enclaveKeys = await generateEscrowKeyPair();
+        version = 1;
+        authShare = (await splitAndVerify(privateKey)).shares.authShare;
+        blob = undefined;
+        clientPublicKey = '';
+        holdStarted = false;
+        cancelled = false;
+        attestationFailure = false;
+        overrides = {};
+        methods = [];
+        calls = [];
+        pinSalt = undefined;
+        attemptsRemaining = 10;
+        holdNumber = 0;
+        releasePolicy = 'hold';
+        consumed = false;
+        burned = [];
+        config = {
+            serverUrl: 'https://test.example/api',
+            storage,
+            tenantId: 'test-tenant',
+            escrow: {
+                enabled: true,
+                attestation: { mode: 'software', pinnedPublicKeys: [enclaveKeys.publicKey] },
+            },
+            onEscrowError: vi.fn(),
+        };
+        strategy = createSSSStrategy(config);
+        vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, init) => {
+            const parsed = new URL(String(url));
+            const path = parsed.pathname.replace('/api', '');
+            calls.push({ path, init });
+            const body = JSON.parse(String(init?.body ?? '{}'));
+            if (path === '/keys/challenge') return json({ challenge: String(calls.length) });
+            if (path === '/keys/auth-share') {
+                if (init?.method === 'PUT') {
+                    authShare = body.authShare.encryptedData;
+                    version++;
+                    pinSalt = undefined;
+                    return json({ shareVersion: version });
+                }
+                return json({
+                    primaryDid: did,
+                    authShare: { encryptedData: authShare, encryptedDek: '', iv: '' },
+                    shareVersion: version,
+                    recoveryMethods: methods,
+                    escrowOptedOut: optedOut,
+                    escrowPin: {
+                        enabled: !!pinSalt && attemptsRemaining > 0,
+                        attemptsRemaining,
+                        ...(pinSalt ? { salt: pinSalt } : {}),
+                    },
+                });
+            }
+            if (path === '/keys/recovery' || path === '/keys/recovery/confirm')
+                return json({ success: true });
+            if (path === '/keys/escrow/attestation') {
+                if (attestationFailure) return new Response(null, { status: 503 });
+                return json({
+                    attestation: {
+                        mode: 'software',
+                        keyId: 'test',
+                        publicKey: enclaveKeys.publicKey,
+                        measurements: {},
+                        document: 'e30=',
+                        issuedAt: new Date().toISOString(),
+                    },
+                    holdDurationMs: 604800000,
+                });
+            }
+            if (
+                path === '/keys/escrow/opt-in' ||
+                (path === '/keys/escrow' && init?.method === 'DELETE')
+            ) {
+                expect(new Headers(init?.headers).get('Authorization')).toMatch(/^Bearer vp-/);
+                expect(new Headers(init?.headers).get('X-Tenant-Id')).toBe('test-tenant');
+                if (init?.method === 'DELETE') {
+                    expect(body).toEqual({ authToken: token, providerType, optOut: true });
+                    if (optOutStatus !== 200)
+                        return new Response('sensitive server response', { status: optOutStatus });
+                    optedOut = true;
+                    methods = [];
+                } else {
+                    expect(body).toEqual({ authToken: token, providerType });
+                    optedOut = false;
+                }
+                return json({ success: true });
+            }
+            if (path === '/keys/escrow') {
+                expect(new Headers(init?.headers).get('Authorization')).toMatch(/^Bearer vp-/);
+                blob = await decryptEscrowBlob(body.envelope, enclaveKeys.privateKey);
+                pinSalt = body.pinSalt;
+                attemptsRemaining = 10;
+                expect(blob.did).toBe(did);
+                expect(blob.shareVersion).toBe(version);
+                expect(
+                    (await reconstructFromShares([blob.recoveryShare, authShare])) === privateKey
+                ).toBe(true);
+                methods = [
+                    {
+                        type: 'escrow',
+                        createdAt: new Date().toISOString(),
+                        confirmedAt: new Date().toISOString(),
+                        shareVersion: version,
+                    },
+                ];
+                return json({ success: true, shareVersion: version });
+            }
+            if (path === '/keys/escrow/recover') {
+                const requested = body.releasePolicy ?? 'hold';
+                if (holdStarted && !consumed && !cancelled) {
+                    if (requested === 'hold' && releasePolicy === 'hold')
+                        return json({ ...hold(), resumeToken: null });
+                    burned.push(hold().holdId);
+                }
+                holdNumber++;
+                consumed = false;
+                cancelled = false;
+                releasePolicy = requested;
+                clientPublicKey = body.clientEphemeralPublicKey;
+                holdStarted = true;
+                return json({ ...hold(), resumeToken: 'resume-secret', pinSalt });
+            }
+            if (path === '/keys/escrow/status') {
+                if (!parsed.searchParams.has('holdId')) {
+                    expect(parsed.searchParams.has('authToken')).toBe(false);
+                    expect(new Headers(init?.headers).get('X-Auth-Token') === token).toBe(true);
+                }
+                return json({ hold: holdStarted ? hold() : null });
+            }
+            if (path === '/keys/escrow/cancel') {
+                expect(new Headers(init?.headers).get('Authorization')).toMatch(/^Bearer vp-/);
+                const wasCancelled = cancelled;
+                cancelled = true;
+                return json({ success: true, cancelled: !wasCancelled });
+            }
+            if (path === '/keys/escrow/complete') {
+                if (!blob) throw new Error('Test enrollment missing');
+                if (consumed || body.holdId !== hold().holdId)
+                    return new Response(null, { status: 403 });
+                consumed = true;
+                if (releasePolicy === 'pin' && body.pinProof !== blob.pinVerifier) {
+                    attemptsRemaining--;
+                    burned.push(hold().holdId);
+                    cancelled = true;
+                    return new Response(
+                        JSON.stringify({
+                            message:
+                                attemptsRemaining <= 0
+                                    ? 'Too many incorrect PIN attempts. You can still recover by waiting.'
+                                    : `Incorrect PIN. ${attemptsRemaining} attempts left.`,
+                        }),
+                        { status: attemptsRemaining <= 0 ? 429 : 403 }
+                    );
+                }
+                return json({
+                    sealedShare: await sealEscrowRelease(
+                        { ...blob, holdId: hold().holdId, ...overrides },
+                        clientPublicKey
+                    ),
+                    primaryDid: did,
+                    shareVersion: blob.shareVersion,
+                    authShare: { encryptedData: authShare, encryptedDek: '', iv: '' },
+                    rebindSessionToken: 'rebind-secret',
+                });
+            }
+            if (path === '/keys/recovery-session/rebind') {
+                expect(body.recoverySessionToken === 'rebind-secret').toBe(true);
+                expect(new Headers(init?.headers).get('X-Auth-Token') === token).toBe(true);
+                authShare = body.authShare.encryptedData;
+                version++;
+                return json({ shareVersion: version, recoveryMethodsRequireConfirmation: [] });
+            }
+            throw new Error('Unexpected test request');
+        });
+    });
+    afterEach(() => vi.restoreAllMocks());
+
+    it('serializes concurrent rotations so device and server shares stay paired', async () => {
+        const order: string[] = [];
+        let releaseFirst!: () => void;
+        const gate = new Promise<void>(resolve => {
+            releaseFirst = resolve;
+        });
+        const first = withRotationLock(async () => {
+            order.push('first:start');
+            await gate;
+            order.push('first:end');
+        });
+        const second = withRotationLock(async () => {
+            order.push('second:start');
+            order.push('second:end');
+        });
+        await Promise.resolve();
+        expect(order).toEqual(['first:start']);
+        releaseFirst();
+        await Promise.all([first, second]);
+        expect(order).toEqual(['first:start', 'first:end', 'second:start', 'second:end']);
+    });
+
+    it('keeps the lock usable after a rotation rejects', async () => {
+        await expect(withRotationLock(() => Promise.reject(new Error('boom')))).rejects.toThrow(
+            'boom'
+        );
+        await expect(withRotationLock(async () => 'ok')).resolves.toBe('ok');
+    });
+
+    it('concurrent enrollment repairs share one rotation', async () => {
+        const results = await Promise.all([
+            strategy.ensureEscrowEnrollment!(params),
+            strategy.ensureEscrowEnrollment!(params),
+            strategy.ensureEscrowEnrollment!(params),
+        ]);
+        expect(results).toEqual(Array(3).fill({ enrolled: true, changed: true, shareVersion: 2 }));
+        expect(version).toBe(2);
+        expect(calls.filter(call => call.path === '/keys/escrow').length).toBe(1);
+    });
+
+    it('retries a failed escrow post with the same shares instead of rotating again', async () => {
+        const original = vi.mocked(globalThis.fetch).getMockImplementation()!;
+        let failPost = true;
+        vi.spyOn(globalThis, 'fetch').mockImplementation((url, init) => {
+            const path = new URL(String(url)).pathname.replace('/api', '');
+            if (failPost && path === '/keys/escrow' && init?.method === 'POST') {
+                return Promise.resolve(new Response(null, { status: 503 }));
+            }
+            return original(url, init);
+        });
+        await expect(strategy.ensureEscrowEnrollment!(params)).rejects.toMatchObject({
+            status: 503,
+        });
+        expect(version).toBe(2);
+        expect(blob).toBeUndefined();
+        failPost = false;
+        await expect(strategy.ensureEscrowEnrollment!(params)).resolves.toEqual({
+            enrolled: true,
+            changed: true,
+            shareVersion: 2,
+        });
+        expect(version).toBe(2);
+        expect(blob?.shareVersion).toBe(2);
+    });
+
+    it('opts out with a fresh owner proof', async () => {
+        await strategy.disableEscrowRecovery!(params);
+        expect(optedOut).toBe(true);
+        expect(await strategy.getEscrowEnrollmentState!(params)).toMatchObject({
+            state: 'opted-out',
+        });
+    });
+
+    it('does not rotate or enroll during repeated repairs after opt-out', async () => {
+        await strategy.disableEscrowRecovery!(params);
+        calls = [];
+        for (let attempt = 0; attempt < 7; attempt++) {
+            await expect(strategy.ensureEscrowEnrollment!(params)).resolves.toEqual({
+                enrolled: false,
+                reason: 'opted-out',
+            });
+        }
+        expect(version).toBe(1);
+        expect(
+            calls.every(call => call.path === '/keys/auth-share' && call.init?.method === 'POST')
+        ).toBe(true);
+        expect(blob).toBeUndefined();
+    });
+
+    it('sanitizes malformed successful responses', async () => {
+        const originalFetch = vi.mocked(globalThis.fetch).getMockImplementation()!;
+        vi.spyOn(globalThis, 'fetch').mockImplementation((url, init) =>
+            init?.method === 'DELETE'
+                ? Promise.resolve(new Response('sensitive response', { status: 200 }))
+                : originalFetch(url, init)
+        );
+        await expect(strategy.disableEscrowRecovery!(params)).rejects.toMatchObject({
+            name: 'EscrowRequestError',
+            status: 200,
+            message: 'Escrow request failed',
+        });
+    });
+
+    it('exposes the precondition status without exposing the response body', async () => {
+        optOutStatus = 412;
+        await expect(strategy.disableEscrowRecovery!(params)).rejects.toMatchObject({
+            name: 'EscrowRequestError',
+            status: 412,
+            message: 'Escrow request failed',
+        });
+        expect(optedOut).toBe(false);
+    });
+
+    it('opts in then enrolls and reports the current enrollment state', async () => {
+        optedOut = true;
+        await expect(strategy.enableEscrowRecovery!(params)).resolves.toEqual({
+            enrolled: true,
+            changed: true,
+            shareVersion: 2,
+        });
+        expect(blob).toBeDefined();
+        expect(calls.findIndex(call => call.path === '/keys/escrow/opt-in')).toBeLessThan(
+            calls.findIndex(call => call.path === '/keys/escrow')
+        );
+        expect(await strategy.getEscrowEnrollmentState!(params)).toMatchObject({
+            state: 'enrolled',
+        });
+        methods[0].shareVersion = 1;
+        expect(await strategy.getEscrowEnrollmentState!(params)).toMatchObject({
+            state: 'not-enrolled',
+        });
+        methods[0].shareVersion = version;
+        methods[0].confirmedAt = undefined;
+        expect(await strategy.getEscrowEnrollmentState!(params)).toMatchObject({
+            state: 'not-enrolled',
+        });
+    });
+
+    it('reports missing and disabled enrollment without unnecessary requests', async () => {
+        expect(await strategy.getEscrowEnrollmentState!(params)).toMatchObject({
+            state: 'not-enrolled',
+        });
+        const disabled = createSSSStrategy({ ...config, escrow: undefined });
+        calls = [];
+        expect(await disabled.getEscrowEnrollmentState!(params)).toEqual({ state: 'disabled' });
+        expect(calls).toHaveLength(0);
+    });
+
+    it.each(['phrase', 'passkey'] as const)(
+        'enrolls after %s setup only when enabled',
+        async method => {
+            vi.spyOn(passkey, 'isWebAuthnSupported').mockReturnValue(true);
+            vi.spyOn(passkey, 'createPasskeyCredential').mockResolvedValue({
+                credentialId: 'test-credential',
+                publicKey: 'test-public-key',
+            });
+            vi.spyOn(passkey, 'encryptShareWithPasskey').mockResolvedValue({
+                credentialId: 'test-credential',
+                encryptedData: 'encrypted',
+                iv: 'iv',
+            });
+            await strategy.setupRecoveryMethod!({ ...params, input: { method } });
+            expect(blob).toBeDefined();
+            expect(calls.findIndex(call => call.path === '/keys/escrow')).toBeGreaterThan(
+                calls.findIndex(call => call.path === '/keys/recovery')
+            );
+            config.escrow!.enabled = false;
+            calls = [];
+            await strategy.setupRecoveryMethod!({ ...params, input: { method } });
+            expect(calls.some(call => call.path.startsWith('/keys/escrow'))).toBe(false);
+        }
+    );
+    it('keeps rotation successful and reports enrollment fetch failures', async () => {
+        attestationFailure = true;
+        await expect(
+            strategy.setupRecoveryMethod!({ ...params, input: { method: 'phrase' } })
+        ).resolves.toMatchObject({ method: 'phrase' });
+        expect(version).toBe(2);
+        expect(config.onEscrowError).toHaveBeenCalledOnce();
+    });
+    it('fails closed for explicit enrollment with an untrusted attestation', async () => {
+        config.escrow = { enabled: true, attestation: { mode: 'software', pinnedPublicKeys: [] } };
+        await expect(
+            strategy.setupRecoveryMethod!({ ...params, input: { method: 'escrow' } })
+        ).rejects.toThrow('not trusted');
+        expect(blob).toBeUndefined();
+    });
+    it('reports nitro verification failures without failing phrase setup', async () => {
+        config.escrow = { enabled: true, attestation: { mode: 'nitro', pinnedMeasurements: [] } };
+        await strategy.setupRecoveryMethod!({ ...params, input: { method: 'phrase' } });
+        expect(config.onEscrowError).toHaveBeenCalledWith(
+            expect.objectContaining({
+                message: 'Nitro attestation verification is not implemented yet',
+            })
+        );
+    });
+    it('ensure skips current, rotates stale, and makes no requests when disabled', async () => {
+        await expect(strategy.ensureEscrowEnrollment!(params)).resolves.toEqual({
+            enrolled: true,
+            changed: true,
+            shareVersion: 2,
+        });
+        await expect(strategy.ensureEscrowEnrollment!(params)).resolves.toEqual({
+            enrolled: true,
+            changed: false,
+        });
+        version++;
+        await expect(strategy.ensureEscrowEnrollment!(params)).resolves.toEqual({
+            enrolled: true,
+            changed: true,
+            shareVersion: 4,
+        });
+        config.escrow!.enabled = false;
+        calls = [];
+        await expect(strategy.ensureEscrowEnrollment!(params)).resolves.toEqual({
+            enrolled: false,
+            reason: 'disabled',
+        });
+        expect(calls).toHaveLength(0);
+    });
+    it('requires DID verification before attempting PIN recovery', async () => {
+        await expect(
+            strategy.executeRecovery({
+                token,
+                providerType,
+                input: { method: 'escrow-pin', pin: '135790' },
+            })
+        ).rejects.toThrow('DID verification is required');
+        expect(calls).toHaveLength(0);
+        expect(storage.storeDeviceShare).not.toHaveBeenCalled();
+        expect(storage.storeShareVersion).not.toHaveBeenCalled();
+        expect(storage.clearAllShares).not.toHaveBeenCalled();
+        expect(strategy.hasPendingIdentityRecovery!()).toBe(false);
+    });
+    const recoverPin = (pin = '135790') =>
+        strategy.executeRecovery({
+            ...params,
+            input: { method: 'escrow-pin', pin },
+            didFromPrivateKey: async key => (key === privateKey ? did : ''),
+        });
+
+    it('seals the PIN verifier, preserves current enrollment, and forcibly changes/clears PINs', async () => {
+        await strategy.ensureEscrowEnrollment!({ ...params, options: { pin: '135790' } });
+        expect(blob?.pinVerifier).toBe(await derivePinProof('135790', pinSalt!));
+        expect(await strategy.getEscrowEnrollmentState!(params)).toMatchObject({
+            state: 'enrolled',
+            escrowPin: { enabled: true, salt: pinSalt, attemptsRemaining: 10 },
+        });
+        await strategy.ensureEscrowEnrollment!(params);
+        expect(version).toBe(2);
+        const previousSalt = pinSalt;
+        await strategy.setEscrowPin!({ ...params, pin: '246802' });
+        expect(version).toBe(3);
+        expect(pinSalt).not.toBe(previousSalt);
+        expect(blob?.pinVerifier).toBe(await derivePinProof('246802', pinSalt!));
+        await strategy.clearEscrowPin!(params);
+        expect(version).toBe(4);
+        expect(pinSalt).toBeUndefined();
+        expect(blob?.pinVerifier).toBeUndefined();
+    });
+
+    it.each(['set', 'clear'])('rejects %s PIN when disabled without opting in', async action => {
+        config.escrow!.enabled = false;
+        await expect(
+            action === 'set'
+                ? strategy.setEscrowPin!({ ...params, pin: '135790' })
+                : strategy.clearEscrowPin!(params)
+        ).rejects.toThrow('Automatic recovery is not available for this account.');
+        expect(calls).toHaveLength(0);
+    });
+
+    it.each(['set', 'clear'])(
+        'rejects %s PIN for opted-out accounts without opting in',
+        async action => {
+            vi.spyOn(strategy, 'fetchServerKeyStatus').mockResolvedValue({
+                exists: true,
+                needsMigration: false,
+                primaryDid: did,
+                recoveryMethods: [],
+                escrowOptedOut: true,
+            });
+            await expect(
+                action === 'set'
+                    ? strategy.setEscrowPin!({ ...params, pin: '135790' })
+                    : strategy.clearEscrowPin!(params)
+            ).rejects.toThrow('Automatic recovery is not available for this account.');
+            expect(calls).toHaveLength(0);
+        }
+    );
+
+    it('maps unavailable PIN policy to a typed error', async () => {
+        vi.mocked(fetch).mockResolvedValue(
+            new Response(
+                JSON.stringify({
+                    message: 'PIN recovery is not available for this account.',
+                }),
+                { status: 403 }
+            )
+        );
+        await expect(recoverPin()).rejects.toMatchObject({ name: 'EscrowPinUnavailableError' });
+    });
+
+    it.each(['123', '111111'])('rejects invalid enrollment PIN %s without rotating', async pin => {
+        await expect(
+            strategy.ensureEscrowEnrollment!({ ...params, options: { pin } })
+        ).rejects.toThrow(/PIN/);
+        expect(version).toBe(1);
+        expect(calls).toHaveLength(0);
+    });
+
+    it('recovers with a PIN and rotates to hold-only material', async () => {
+        await strategy.setEscrowPin!({ ...params, pin: '135790' });
+        const recovered = await recoverPin();
+        expect(recovered).toEqual({ privateKey, did });
+        expect(version).toBe(3);
+        expect(blob?.pinVerifier).toBeUndefined();
+        expect(await reconstructFromShares([(await storage.getDeviceShare())!, authShare])).toBe(
+            privateKey
+        );
+    });
+
+    it('burns a wrong PIN hold and uses a fresh hold and key for the next call', async () => {
+        await strategy.setEscrowPin!({ ...params, pin: '135790' });
+        vi.mocked(storage.storeDeviceShare).mockClear();
+        vi.mocked(storage.storeShareVersion).mockClear();
+        await expect(recoverPin('246802')).rejects.toMatchObject({
+            name: 'EscrowPinMismatchError',
+            attemptsRemaining: 9,
+        });
+        expect(burned).toEqual(['escrow-hold']);
+        expect(storage.storeDeviceShare).not.toHaveBeenCalled();
+        expect(storage.storeShareVersion).not.toHaveBeenCalled();
+        await expect(recoverPin()).resolves.toEqual({ privateKey, did });
+        const starts = calls.filter(call => call.path === '/keys/escrow/recover');
+        const completes = calls.filter(call => call.path === '/keys/escrow/complete');
+        expect(starts).toHaveLength(2);
+        expect(completes.map(call => JSON.parse(String(call.init?.body)).holdId)).toEqual([
+            'escrow-hold',
+            'escrow-hold-2',
+        ]);
+        expect(JSON.parse(String(starts[0].init?.body)).clientEphemeralPublicKey).not.toBe(
+            JSON.parse(String(starts[1].init?.body)).clientEphemeralPublicKey
+        );
+    });
+
+    it('maps exhaustion to a locked error without retrying', async () => {
+        await strategy.setEscrowPin!({ ...params, pin: '135790' });
+        attemptsRemaining = 1;
+        await expect(recoverPin('246802')).rejects.toMatchObject({ name: 'EscrowPinLockedError' });
+        expect(calls.filter(call => call.path === '/keys/escrow/complete')).toHaveLength(1);
+    });
+
+    it('maps IP throttling to a retryable error and uses a fresh hold on the next call', async () => {
+        await strategy.setEscrowPin!({ ...params, pin: '135790' });
+        const original = vi.mocked(fetch).getMockImplementation()!;
+        const completeIds: string[] = [];
+        vi.mocked(fetch).mockImplementation((url, init) => {
+            if (String(url).endsWith('/complete')) {
+                completeIds.push(JSON.parse(String(init?.body)).holdId);
+                return Promise.resolve(
+                    new Response(
+                        JSON.stringify({
+                            message: 'Please wait before trying again.',
+                        }),
+                        { status: 429 }
+                    )
+                );
+            }
+            return original(url, init);
+        });
+        await expect(recoverPin()).rejects.toMatchObject({ name: 'EscrowPinThrottledError' });
+        expect(completeIds).toHaveLength(1);
+        await expect(recoverPin()).rejects.toMatchObject({ name: 'EscrowPinThrottledError' });
+        expect(completeIds).toEqual(['escrow-hold', 'escrow-hold-2']);
+    });
+
+    it.each([
+        ['Incorrect PIN.', 0],
+        ['Incorrect PIN. nope attempts left.', 0],
+        ['Incorrect PIN. 9007199254740992 attempts left.', 0],
+        ['Incorrect PIN. 10 attempts left.', 0],
+        ['Incorrect PIN. -1 attempts left.', 0],
+        ['Incorrect PIN. 1.5 attempts left.', 0],
+        ['Incorrect PIN. 9 attempts left.', 9],
+        ['Incorrect PIN. 0 attempts left.', 0],
+    ])('bounds remaining attempts in %s', async (message, expected) => {
+        await strategy.setEscrowPin!({ ...params, pin: '135790' });
+        const original = vi.mocked(fetch).getMockImplementation()!;
+        vi.mocked(fetch).mockImplementation((url, init) =>
+            String(url).endsWith('/complete')
+                ? Promise.resolve(new Response(JSON.stringify({ message }), { status: 403 }))
+                : original(url, init)
+        );
+        await expect(recoverPin()).rejects.toMatchObject({
+            name: 'EscrowPinMismatchError',
+            attemptsRemaining: expected,
+        });
+    });
+
+    it.each([{ did: 'did:key:other' }, { holdId: 'other' }, { shareVersion: 99 }])(
+        'rejects PIN release binding mismatch %j',
+        async mismatch => {
+            await strategy.setEscrowPin!({ ...params, pin: '135790' });
+            overrides = mismatch;
+            await expect(recoverPin()).rejects.toThrow('does not match');
+            expect(version).toBe(2);
+        }
+    );
+
+    it.each([true, false])('forwards only an enabled restart flag (%s)', async restart => {
+        await strategy.ensureEscrowEnrollment!(params);
+        await strategy.startEscrowRecovery!({ token, providerType, options: { restart } });
+        const call = vi.mocked(fetch).mock.calls.find(([url]) => String(url).endsWith('/recover'));
+        const body = JSON.parse(String(call?.[1]?.body));
+        if (restart) expect(body.restart).toBe(true);
+        else expect(body).not.toHaveProperty('restart');
+    });
+
+    it.each(['2026-09-17T00:00:00.000Z', undefined])(
+        'maps restart throttling with retry time %s',
+        async retryAfter => {
+            vi.mocked(fetch).mockResolvedValueOnce(
+                new Response(
+                    JSON.stringify({
+                        message: retryAfter
+                            ? `A recovery request was started recently. Try again after ${retryAfter}.`
+                            : 'Please wait.',
+                    }),
+                    { status: 429 }
+                )
+            );
+            await expect(
+                strategy.startEscrowRecovery!({ token, providerType, options: { restart: true } })
+            ).rejects.toMatchObject({ name: 'EscrowHoldRestartThrottledError', retryAfter });
+        }
+    );
+
+    it('supersedes a pending hold for each PIN attempt and supports hold fallback', async () => {
+        await strategy.setEscrowPin!({ ...params, pin: '135790' });
+        const first = await strategy.startEscrowRecovery!({ token, providerType });
+        const second = await strategy.startEscrowRecovery!({
+            token,
+            providerType,
+            options: { releasePolicy: 'pin' },
+        });
+        const third = await strategy.startEscrowRecovery!({
+            token,
+            providerType,
+            options: { releasePolicy: 'pin' },
+        });
+        const fallback = await strategy.startEscrowRecovery!({ token, providerType });
+        expect(burned).toEqual([first.holdId, second.holdId, third.holdId]);
+        expect(fallback.releasePolicy).toBe('hold');
+        expect(fallback.resumeToken).toBeTruthy();
+    });
+
+    it('round trips real crypto, rebinds and persists a new device share', async () => {
+        await strategy.ensureEscrowEnrollment!(params);
+        const previous = await storage.getDeviceShare();
+        const start = await strategy.startEscrowRecovery!({ token, providerType });
+        const recovered = await strategy.executeRecovery({
+            ...params,
+            input: { method: 'escrow', ...start, resumeToken: start.resumeToken! },
+            didFromPrivateKey: async key => (key === privateKey ? did : ''),
+        });
+        expect(recovered.privateKey === privateKey).toBe(true);
+        expect((await storage.getDeviceShare()) === previous).toBe(false);
+        expect(
+            (await reconstructFromShares([(await storage.getDeviceShare())!, authShare])) ===
+                privateKey
+        ).toBe(true);
+        expect(version).toBe(3);
+        expect(blob?.shareVersion).toBe(3);
+        expect(strategy.hasPendingIdentityRecovery!()).toBe(false);
+        expect(calls.some(call => call.path === '/keys/recovery-session/rebind')).toBe(true);
+    });
+    it('keeps the OTP-style pending state until a replacement login completes rebind', async () => {
+        await strategy.ensureEscrowEnrollment!(params);
+        const start = await strategy.startEscrowRecovery!({
+            recoverySessionToken: 'otp-session',
+            tenantId: 'other-tenant',
+        });
+        await strategy.executeRecovery({
+            token: '',
+            providerType,
+            input: { method: 'escrow', ...start, resumeToken: start.resumeToken! },
+            didFromPrivateKey: async () => did,
+        });
+        expect(strategy.hasPendingIdentityRecovery!()).toBe(true);
+        expect(version).toBe(2);
+        await strategy.completeIdentityRecovery!(params);
+        expect(version).toBe(3);
+        expect(strategy.hasPendingIdentityRecovery!()).toBe(false);
+    });
+    it.each([{ did: 'did:key:other' }, { holdId: 'wrong-hold' }, { shareVersion: 999 }])(
+        'rejects release binding mismatch %j',
+        async mismatch => {
+            await strategy.ensureEscrowEnrollment!(params);
+            const start = await strategy.startEscrowRecovery!({ token, providerType });
+            overrides = mismatch;
+            await expect(
+                strategy.executeRecovery({
+                    ...params,
+                    input: { method: 'escrow', ...start, resumeToken: start.resumeToken! },
+                    didFromPrivateKey: async () => did,
+                })
+            ).rejects.toThrow('does not match');
+            expect(version).toBe(2);
+            expect(strategy.hasPendingIdentityRecovery!()).toBe(false);
+        }
+    );
+    it('supports both status proofs, existing holds and fresh-proof cancellation', async () => {
+        expect(await strategy.getEscrowRecoveryStatus!({ token, providerType })).toBeNull();
+        const first = await strategy.startEscrowRecovery!({ token, providerType });
+        const again = await strategy.startEscrowRecovery!({ token, providerType });
+        expect(again.resumeToken).toBeNull();
+        expect(again.clientEphemeralPrivateKey).toBeTruthy();
+        expect(
+            await strategy.getEscrowRecoveryStatus!({
+                holdId: first.holdId,
+                resumeToken: first.resumeToken!,
+            })
+        ).toEqual(hold());
+        expect(await strategy.getEscrowRecoveryStatus!({ token, providerType })).toEqual(hold());
+        await expect(strategy.cancelEscrowRecovery!(params)).resolves.toEqual({ cancelled: true });
+    });
+});
+
 describe('createSSSStrategy', () => {
     let strategy: SSSKeyDerivationStrategy;
     let storage: ReturnType<typeof createMemoryStorage>;
@@ -125,8 +910,10 @@ describe('createSSSStrategy', () => {
 
         it('has optional methods', () => {
             expect(typeof strategy.markMigrated).toBe('function');
+            expect(typeof strategy.activate).toBe('function');
             expect(typeof strategy.verifyKeys).toBe('function');
             expect(typeof strategy.setupRecoveryMethod).toBe('function');
+            expect(typeof strategy.confirmRecoveryMethod).toBe('function');
             expect(typeof strategy.getAvailableRecoveryMethods).toBe('function');
             expect(typeof strategy.setActiveUser).toBe('function');
             expect(typeof strategy.getLocalShareVersion).toBe('function');
@@ -493,6 +1280,12 @@ describe('createSSSStrategy', () => {
                     );
                 }
 
+                if (urlStr.includes('/keys/auth-share') && method === 'PUT') {
+                    return new Response(JSON.stringify({ success: true, shareVersion: 43 }), {
+                        status: 200,
+                    });
+                }
+
                 return new Response(null, { status: 200 });
             });
 
@@ -503,7 +1296,7 @@ describe('createSSSStrategy', () => {
                 didFromPrivateKey: async () => 'did:key:zCorrect',
             });
 
-            expect(storage.storeShareVersion).toHaveBeenCalledWith(42, undefined);
+            expect(storage.storeShareVersion).toHaveBeenCalledWith(43, undefined);
         });
 
         it('defaults to shareVersion 1 when server response omits it', async () => {
@@ -529,7 +1322,13 @@ describe('createSSSStrategy', () => {
                     );
                 }
 
-                return new Response(null, { status: 200 });
+                if (urlStr.includes('/keys/auth-share') && method === 'PUT') {
+                    return new Response(JSON.stringify({ success: true }), { status: 200 });
+                }
+
+                return new Response(JSON.stringify({ success: true, shareVersion: 2 }), {
+                    status: 200,
+                });
             });
 
             await strategy.executeRecovery({
@@ -588,6 +1387,7 @@ describe('createSSSStrategy', () => {
             expect(status.needsMigration).toBe(false);
             expect(status.primaryDid).toBeNull();
             expect(status.authShare).toBeNull();
+            expect(status.sssActivationState).toBeNull();
         });
 
         it('parses server response with string authShare', async () => {
@@ -611,6 +1411,7 @@ describe('createSSSStrategy', () => {
             expect(status.authShare).toBe('raw-auth-share-string');
             expect(status.recoveryMethods).toHaveLength(1);
             expect(status.shareVersion).toBeNull(); // no shareVersion in response
+            expect(status.sssActivationState).toBe('active');
         });
 
         it('parses server response with object authShare (encrypted envelope)', async () => {
@@ -689,6 +1490,10 @@ describe('createSSSStrategy', () => {
 
             // shareVersion should be persisted locally
             expect(storage.storeShareVersion).toHaveBeenCalledWith(3, undefined);
+
+            const requestBody = JSON.parse(fetchSpy.mock.calls[0]![1]?.body as string);
+            expect(requestBody.sssActivationState).toBe('provisional');
+            expect(requestBody.sssActivationState).not.toBe('active');
         });
 
         it('throws on server error', async () => {
@@ -729,6 +1534,34 @@ describe('createSSSStrategy', () => {
 
             await expect(strategy.markMigrated!('token', 'firebase')).rejects.toThrow(
                 'Failed to mark migrated'
+            );
+        });
+    });
+
+    describe('activate', () => {
+        it('sends POST to /keys/activate', async () => {
+            const fetchSpy = vi
+                .spyOn(globalThis, 'fetch')
+                .mockResolvedValueOnce(new Response(null, { status: 200 }));
+
+            await strategy.activate!('token', 'firebase', 'did-auth-vp');
+
+            expect(fetchSpy).toHaveBeenCalledWith(
+                'http://test-server:5100/api/keys/activate',
+                expect.objectContaining({
+                    method: 'POST',
+                    headers: expect.objectContaining({ Authorization: 'Bearer did-auth-vp' }),
+                })
+            );
+        });
+
+        it('throws on server error', async () => {
+            vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+                new Response(null, { status: 409, statusText: 'Conflict' })
+            );
+
+            await expect(strategy.activate!('token', 'firebase')).rejects.toThrow(
+                'Failed to activate SSS key'
             );
         });
     });
@@ -790,6 +1623,12 @@ describe('createSSSStrategy', () => {
                     );
                 }
 
+                if (urlStr.includes('/keys/auth-share') && method === 'PUT') {
+                    return new Response(JSON.stringify({ success: true, shareVersion: 2 }), {
+                        status: 200,
+                    });
+                }
+
                 return new Response(null, { status: 200 });
             });
 
@@ -835,20 +1674,19 @@ describe('createSSSStrategy', () => {
             expect(result.privateKey).toBe(originalKey);
             expect(result.did).toBe('did:key:zCorrect');
 
-            // No rotateShares — recovery share is stored as device share directly,
-            // so no PUT to /keys/auth-share (preserves existing recovery methods).
+            // Recovery rotates through atomicRecovery so device + auth advance together.
             const putCalls = fetchCalls.filter(
                 c => c.url.includes('/keys/auth-share') && c.method === 'PUT'
             );
 
-            expect(putCalls).toHaveLength(0);
+            expect(putCalls).toHaveLength(1);
 
-            // Verify the recovery share is now the device share and can reconstruct
+            // Verify the fresh device share reconstructs with the fresh auth share.
             const storedDevice = await strategy.getLocalKey();
-            expect(storedDevice).toBe(localKey);
+            const storedAuth = JSON.parse(putCalls[0]!.body).authShare.encryptedData;
+            expect(await strategy.reconstructKey(storedDevice!, storedAuth)).toBe(originalKey);
 
-            // Verify shareVersion was stored (server returned shareVersion: 1)
-            expect(storage.storeShareVersion).toHaveBeenCalledWith(1, undefined);
+            expect(storage.storeShareVersion).toHaveBeenCalledWith(2, undefined);
         });
 
         it('retry after stale share still works (server not corrupted)', async () => {
@@ -879,12 +1717,80 @@ describe('createSSSStrategy', () => {
             expect(result.privateKey).toBe(originalKey);
             expect(result.did).toBe('did:key:zCorrect');
 
-            // No PUT calls at all — recovery no longer rotates shares
+            // Only the successful retry rotates shares; the stale attempt never writes.
             const putCalls = fetchCalls.filter(
                 c => c.url.includes('/keys/auth-share') && c.method === 'PUT'
             );
 
-            expect(putCalls).toHaveLength(0);
+            expect(putCalls).toHaveLength(1);
+        });
+    });
+
+    describe('lost login identity recovery', () => {
+        it('rejects an invalid phrase before submitting the one-shot session token', async () => {
+            const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+            await expect(
+                strategy.prepareIdentityRecovery!({
+                    recoverySessionToken: 'recovery-session-token',
+                    input: { method: 'phrase', phrase: 'not a valid recovery phrase' },
+                    didFromPrivateKey: async () => 'did:key:zExpected',
+                })
+            ).rejects.toThrow('Invalid recovery phrase');
+
+            expect(fetchSpy).not.toHaveBeenCalled();
+        });
+
+        it('marks failures after session submission as consumed', async () => {
+            vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+                new Response(JSON.stringify({ message: 'Recovery session expired' }), {
+                    status: 401,
+                    statusText: 'Unauthorized',
+                })
+            );
+
+            await expect(
+                strategy.prepareIdentityRecovery!({
+                    recoverySessionToken: 'recovery-session-token',
+                    input: { method: 'email', emailShare: '0001deadbeef' },
+                    didFromPrivateKey: async () => 'did:key:zExpected',
+                })
+            ).rejects.toBeInstanceOf(IdentityRecoverySessionConsumedError);
+        });
+
+        it('hard-fails a DID mismatch before retaining rebind state or rotating shares', async () => {
+            const originalKey = 'e1f2a3b4c5d6'.padEnd(64, '0');
+            const { localKey, remoteKey } = await strategy.splitKey(originalKey);
+            const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+                new Response(
+                    JSON.stringify({
+                        authShare: { encryptedData: remoteKey, encryptedDek: '', iv: '' },
+                        primaryDid: 'did:key:zExpected',
+                        shareVersion: 1,
+                        rebindSessionToken: 'rebind-session-token',
+                    }),
+                    { status: 200 }
+                )
+            );
+
+            await expect(
+                strategy.prepareIdentityRecovery!({
+                    recoverySessionToken: 'recovery-session-token',
+                    input: {
+                        method: 'email',
+                        emailShare: formatVersionedEmailShare(localKey, 1),
+                    },
+                    didFromPrivateKey: async () => 'did:key:zWrong',
+                })
+            ).rejects.toThrow('Recovery produced an incorrect key');
+
+            expect(strategy.hasPendingIdentityRecovery!()).toBe(false);
+            expect(storage.storeDeviceShare).not.toHaveBeenCalled();
+            expect(
+                fetchSpy.mock.calls.some(([url]) =>
+                    String(url).includes('/recovery-session/rebind')
+                )
+            ).toBe(false);
         });
     });
 
@@ -948,9 +1854,8 @@ describe('createSSSStrategy', () => {
         it('full flow: v2 device share from another device reconstructs with v2 auth share from server', async () => {
             // --- Setup: split a key to get a real v2 device/auth pair ---
             const originalKey = 'deadbeef1234'.padEnd(64, '0');
-            const { localKey: v2DeviceShare, remoteKey: v2AuthShare } = await strategy.splitKey(
-                originalKey
-            );
+            const { localKey: v2DeviceShare, remoteKey: v2AuthShare } =
+                await strategy.splitKey(originalKey);
 
             // --- Simulate: Device A receives v2 share via QR recovery ---
             strategy.setActiveUser!('recovering-user');
@@ -1041,9 +1946,8 @@ describe('createSSSStrategy', () => {
             // 3. coordinator.initialize() → fetchServerKeyStatus sends v2
 
             const originalKey = 'cafe0123babe'.padEnd(64, '0');
-            const { localKey: v2DeviceShare, remoteKey: v2AuthShare } = await strategy.splitKey(
-                originalKey
-            );
+            const { localKey: v2DeviceShare, remoteKey: v2AuthShare } =
+                await strategy.splitKey(originalKey);
 
             strategy.setActiveUser!('device-recovery-user');
             await strategy.storeLocalKey(v2DeviceShare);
@@ -1099,6 +2003,7 @@ describe('createSSSStrategy', () => {
                 serverUrl: 'http://test-server:5100/api',
                 storage: emailStorage,
                 enableEmailBackupShare: true,
+                ...getTestRelayConfig(),
             });
         });
 
@@ -1118,12 +2023,14 @@ describe('createSSSStrategy', () => {
 
             await emailStrategy.storeAuthShare('token', 'firebase', remoteKey, 'did:key:z1');
 
-            // Step 2: Send email backup — capture the emailShare from the fetch body
-            let capturedPayload: string | undefined;
+            // Step 2: Send email backup — capture and decrypt as the test relay.
+            let capturedEnvelope: EmailRelayEnvelope | undefined;
+            let capturedConfirmationCode: string | undefined;
 
             vi.spyOn(globalThis, 'fetch').mockImplementationOnce(async (_url, init) => {
                 const body = JSON.parse(init?.body as string);
-                capturedPayload = body.emailShare;
+                capturedEnvelope = body.relayPayload;
+                capturedConfirmationCode = body.confirmationCode;
 
                 return new Response(null, { status: 200 });
             });
@@ -1135,12 +2042,17 @@ describe('createSSSStrategy', () => {
                 'user@test.com'
             );
 
-            expect(capturedPayload).toBeDefined();
+            expect(capturedEnvelope).toBeDefined();
+            const decrypted = await decryptEmailRelayPayload(capturedEnvelope, testRelayPrivateKey);
+            const capturedPayload = decrypted.recoveryKey;
+
+            expect(decrypted.targetEmail).toBe('user@test.com');
+            expect(decrypted.confirmationCode).toBe(capturedConfirmationCode);
             // New format: 4-char hex prefix (e.g. "0005" for version 5)
-            expect(capturedPayload!.slice(0, 4)).toBe('0005');
+            expect(capturedPayload.slice(0, 4)).toBe('0005');
 
             // Strip 4-char version prefix for reconstruction
-            const rawShare = capturedPayload!.slice(4);
+            const rawShare = capturedPayload.slice(4);
 
             // Step 3: Reconstruct from email share + auth share
             const reconstructed = await reconstructFromShares([rawShare, remoteKey]);
@@ -1164,12 +2076,12 @@ describe('createSSSStrategy', () => {
 
             await emailStrategy.storeAuthShare('token', 'firebase', remoteKey, 'did:key:z1');
 
-            // Capture the email share
-            let capturedPayload: string | undefined;
+            // Capture the encrypted relay payload.
+            let capturedEnvelope: EmailRelayEnvelope | undefined;
 
             vi.spyOn(globalThis, 'fetch').mockImplementationOnce(async (_url, init) => {
                 const body = JSON.parse(init?.body as string);
-                capturedPayload = body.emailShare;
+                capturedEnvelope = body.relayPayload;
 
                 return new Response(null, { status: 200 });
             });
@@ -1181,8 +2093,9 @@ describe('createSSSStrategy', () => {
                 'user@test.com'
             );
 
+            const decrypted = await decryptEmailRelayPayload(capturedEnvelope, testRelayPrivateKey);
             // Strip 4-char hex version prefix
-            const rawShare = capturedPayload!.slice(4);
+            const rawShare = decrypted.recoveryKey.slice(4);
 
             // The raw email share must NOT equal the device or auth shares
             // (it's a distinct share from the same split)
@@ -1246,18 +2159,25 @@ describe('createSSSStrategy', () => {
                 'user@test.com'
             );
 
-            // Only one fetch call should have been made — to the email relay
+            // Only one fetch call should have been made — to the lca-api relay proxy.
             expect(fetchCalls).toHaveLength(1);
             expect(fetchCalls[0]!.url).toBe('http://test-server:5100/api/keys/email-backup');
 
-            // The email share must NOT appear in any auth-share or recovery endpoint calls
+            // The email share must not appear in the lca-api-visible request.
             const emailBody = JSON.parse(fetchCalls[0]!.body);
-            const emailPayload = emailBody.emailShare;
 
-            expect(emailPayload).toBeDefined();
-            // 4-char hex version prefix (version 2 = "0002")
-            expect(emailPayload.slice(0, 4)).toBe('0002');
-            expect(emailPayload).not.toBe(remoteKey);
+            expect(emailBody.emailShare).toBeUndefined();
+            expect(emailBody.relayPayload).toBeDefined();
+            expect(fetchCalls[0]!.body).not.toContain(remoteKey);
+
+            const decrypted = await decryptEmailRelayPayload(
+                emailBody.relayPayload,
+                testRelayPrivateKey
+            );
+
+            expect(decrypted.recoveryKey.slice(0, 4)).toBe('0002');
+            expect(decrypted.recoveryKey).not.toBe(remoteKey);
+            expect(fetchCalls[0]!.body).not.toContain(decrypted.recoveryKey);
 
             // No calls to storage endpoints
             const storageCalls = fetchCalls.filter(
@@ -1267,7 +2187,7 @@ describe('createSSSStrategy', () => {
             expect(storageCalls).toHaveLength(0);
         });
 
-        it('setupRecoveryMethod re-sends email backup share', async () => {
+        it('setupRecoveryMethod does not silently send a share to the login email', async () => {
             const originalKey = 'c3d4e5f6a1b2'.padEnd(64, '0');
 
             // Split the key first (initial setup)
@@ -1320,25 +2240,11 @@ describe('createSSSStrategy', () => {
                 authUser: { id: 'user-1', providerType: 'firebase', email: 'user@test.com' },
             });
 
-            // Verify email backup share was re-sent
+            // Recovery enrollment is explicit and receipt-confirmed. Rotating
+            // another method must never silently target the login email.
             const emailBackupCall = fetchCalls.find(c => c.url.includes('/keys/email-backup'));
 
-            expect(emailBackupCall).toBeDefined();
-
-            // Verify the re-sent email share + new auth share can reconstruct the key
-            const emailBody = JSON.parse(emailBackupCall!.body);
-            const putAuthCall = fetchCalls.find(
-                c => c.url.includes('/keys/auth-share') && c.body && JSON.parse(c.body).authShare
-            );
-            // putAuthShare wraps as { encryptedData: share, encryptedDek: '', iv: '' }
-            const newAuthShare = JSON.parse(putAuthCall!.body).authShare.encryptedData;
-
-            // Strip 4-char hex version prefix from the emailed share
-            const rawEmailShare = emailBody.emailShare.slice(4);
-
-            const reconstructed = await reconstructFromShares([rawEmailShare, newAuthShare]);
-
-            expect(reconstructed).toBe(originalKey);
+            expect(emailBackupCall).toBeUndefined();
         });
 
         it('emailed share includes the shareVersion prefix from storeAuthShare', async () => {
@@ -1356,12 +2262,12 @@ describe('createSSSStrategy', () => {
 
             await emailStrategy.storeAuthShare('token', 'firebase', 'auth-share', 'did:key:z1');
 
-            // Capture email payload
-            let capturedPayload: string | undefined;
+            // Capture encrypted email payload
+            let capturedEnvelope: EmailRelayEnvelope | undefined;
 
             vi.spyOn(globalThis, 'fetch').mockImplementationOnce(async (_url, init) => {
                 const body = JSON.parse(init?.body as string);
-                capturedPayload = body.emailShare;
+                capturedEnvelope = body.relayPayload;
 
                 return new Response(null, { status: 200 });
             });
@@ -1373,11 +2279,13 @@ describe('createSSSStrategy', () => {
                 'user@test.com'
             );
 
+            const decrypted = await decryptEmailRelayPayload(capturedEnvelope, testRelayPrivateKey);
+
             // New format: 4-char hex prefix (version 7 = "0007")
-            expect(capturedPayload!.slice(0, 4)).toBe('0007');
+            expect(decrypted.recoveryKey.slice(0, 4)).toBe('0007');
         });
 
-        it('setupRecoveryMethod re-sends email share with shareVersion prefix', async () => {
+        it('setupRecoveryMethod does not auto-send email when another method rotates shares', async () => {
             const originalKey = 'f6a1b2c3d4e5'.padEnd(64, '0');
 
             await emailStrategy.splitKey(originalKey);
@@ -1424,13 +2332,7 @@ describe('createSSSStrategy', () => {
 
             const emailCall = fetchCalls.find(c => c.url.includes('/keys/email-backup'));
 
-            expect(emailCall).toBeDefined();
-
-            const emailPayload = JSON.parse(emailCall!.body).emailShare;
-
-            // Should use the version from putAuthShare (5), not fetchAuthShareRaw (4)
-            // New format: 4-char hex prefix "0005"
-            expect(emailPayload.slice(0, 4)).toBe('0005');
+            expect(emailCall).toBeUndefined();
         });
 
         it('email recovery with versioned share fetches matching auth share version', async () => {
@@ -1449,7 +2351,7 @@ describe('createSSSStrategy', () => {
                 const urlStr = typeof url === 'string' ? url : url.toString();
 
                 // fetchAuthShareRaw — capture the requested shareVersion
-                if (urlStr.includes('/keys/auth-share')) {
+                if (urlStr.includes('/keys/auth-share') && (init?.method ?? 'GET') === 'POST') {
                     const body = JSON.parse(init?.body as string);
                     capturedVersion = body.shareVersion;
 
@@ -1462,6 +2364,12 @@ describe('createSSSStrategy', () => {
                         }),
                         { status: 200 }
                     );
+                }
+
+                if (urlStr.includes('/keys/auth-share')) {
+                    return new Response(JSON.stringify({ success: true, shareVersion: 3 }), {
+                        status: 200,
+                    });
                 }
 
                 return new Response(JSON.stringify({ success: true }), { status: 200 });
@@ -1490,7 +2398,7 @@ describe('createSSSStrategy', () => {
             vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, init) => {
                 const urlStr = typeof url === 'string' ? url : url.toString();
 
-                if (urlStr.includes('/keys/auth-share')) {
+                if (urlStr.includes('/keys/auth-share') && (init?.method ?? 'GET') === 'POST') {
                     const body = JSON.parse(init?.body as string);
                     capturedVersion = body.shareVersion;
 
@@ -1503,6 +2411,12 @@ describe('createSSSStrategy', () => {
                         }),
                         { status: 200 }
                     );
+                }
+
+                if (urlStr.includes('/keys/auth-share')) {
+                    return new Response(JSON.stringify({ success: true, shareVersion: 256 }), {
+                        status: 200,
+                    });
                 }
 
                 return new Response(JSON.stringify({ success: true }), { status: 200 });
@@ -1582,6 +2496,85 @@ describe('createSSSStrategy', () => {
             expect(recoveryBody.shareVersion).toBe(6);
             // Phrase should NOT have an encryptedShare — the user holds the phrase
             expect(recoveryBody.encryptedShare).toBeUndefined();
+        });
+
+        it('keeps phrase enrollment pending after wrong challenge words and allows retry', async () => {
+            const originalKey = 'abababababab'.padEnd(64, '0');
+            const fetchCalls: { url: string; method: string }[] = [];
+
+            vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, init) => {
+                const urlStr = typeof url === 'string' ? url : url.toString();
+                const method = (init?.method ?? 'GET').toUpperCase();
+
+                fetchCalls.push({ url: urlStr, method });
+
+                if (urlStr.includes('/keys/auth-share') && method === 'POST') {
+                    return new Response(
+                        JSON.stringify({
+                            authShare: 'existing',
+                            primaryDid: 'did:key:z1',
+                            recoveryMethods: [],
+                            shareVersion: 1,
+                        }),
+                        { status: 200 }
+                    );
+                }
+
+                if (urlStr.includes('/keys/auth-share') && method === 'PUT') {
+                    return new Response(JSON.stringify({ success: true, shareVersion: 2 }), {
+                        status: 200,
+                    });
+                }
+
+                return new Response(JSON.stringify({ success: true }), { status: 200 });
+            });
+
+            const result = await emailStrategy.setupRecoveryMethod!({
+                token: 'token',
+                providerType: 'firebase',
+                privateKey: originalKey,
+                input: { method: 'phrase' },
+            });
+
+            expect(result.method).toBe('phrase');
+            if (result.method !== 'phrase') throw new Error('Expected phrase setup result');
+
+            const confirmationsBefore = fetchCalls.filter(call =>
+                call.url.endsWith('/keys/recovery/confirm')
+            ).length;
+
+            await expect(
+                emailStrategy.confirmRecoveryMethod!({
+                    token: 'token',
+                    providerType: 'firebase',
+                    privateKey: originalKey,
+                    input: {
+                        method: 'phrase',
+                        challengeWords: result.challengeWordIndices.map(() => 'wrong'),
+                    },
+                })
+            ).rejects.toThrow('do not match');
+            expect(
+                fetchCalls.filter(call => call.url.endsWith('/keys/recovery/confirm'))
+            ).toHaveLength(confirmationsBefore);
+
+            const phraseWords = result.phrase.split(/\s+/);
+            await expect(
+                emailStrategy.confirmRecoveryMethod!({
+                    token: 'token',
+                    providerType: 'firebase',
+                    privateKey: originalKey,
+                    input: {
+                        method: 'phrase',
+                        challengeWords: result.challengeWordIndices.map(
+                            index => phraseWords[index]!
+                        ),
+                    },
+                })
+            ).resolves.toBeUndefined();
+            expect(
+                fetchCalls.filter(call => call.url.endsWith('/keys/recovery/confirm'))
+            ).toHaveLength(confirmationsBefore + 1);
         });
 
         it('phrase recovery fetches shareVersion from server to get correct auth share', async () => {
@@ -1719,6 +2712,154 @@ describe('createSSSStrategy', () => {
             // No encryptedShare on the server record — the backup file is self-contained
             expect(recoveryBody.encryptedShare).toBeUndefined();
         });
+
+        it('decrypts and checksum-verifies a just-written backup before confirming it', async () => {
+            const originalKey = 'cdcdcdcdcdcd'.padEnd(64, '0');
+            const fetchCalls: string[] = [];
+
+            vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, init) => {
+                const urlStr = typeof url === 'string' ? url : url.toString();
+                const method = (init?.method ?? 'GET').toUpperCase();
+
+                fetchCalls.push(urlStr);
+
+                if (urlStr.includes('/keys/auth-share') && method === 'POST') {
+                    return new Response(
+                        JSON.stringify({
+                            authShare: 'existing',
+                            primaryDid: 'did:key:z1',
+                            recoveryMethods: [],
+                            shareVersion: 1,
+                        }),
+                        { status: 200 }
+                    );
+                }
+
+                if (urlStr.includes('/keys/auth-share') && method === 'PUT') {
+                    return new Response(JSON.stringify({ success: true, shareVersion: 2 }), {
+                        status: 200,
+                    });
+                }
+
+                return new Response(JSON.stringify({ success: true }), { status: 200 });
+            });
+
+            const result = await emailStrategy.setupRecoveryMethod!({
+                token: 'token',
+                providerType: 'firebase',
+                privateKey: originalKey,
+                input: { method: 'backup', password: 'correct-password', did: 'did:key:z1' },
+            });
+
+            if (result.method !== 'backup') throw new Error('Expected backup setup result');
+
+            await expect(
+                emailStrategy.confirmRecoveryMethod!({
+                    token: 'token',
+                    providerType: 'firebase',
+                    privateKey: originalKey,
+                    input: {
+                        method: 'backup',
+                        fileContents: JSON.stringify(result.backupFile),
+                        password: 'wrong-password',
+                    },
+                })
+            ).rejects.toThrow('Incorrect password');
+            expect(fetchCalls.filter(url => url.endsWith('/keys/recovery/confirm'))).toHaveLength(
+                0
+            );
+
+            await expect(
+                emailStrategy.confirmRecoveryMethod!({
+                    token: 'token',
+                    providerType: 'firebase',
+                    privateKey: originalKey,
+                    input: {
+                        method: 'backup',
+                        fileContents: JSON.stringify(result.backupFile),
+                        password: 'correct-password',
+                    },
+                })
+            ).resolves.toBeUndefined();
+            expect(fetchCalls.filter(url => url.endsWith('/keys/recovery/confirm'))).toHaveLength(
+                1
+            );
+        });
+    });
+
+    describe('confirmed recovery-method availability', () => {
+        it('does not synthesize email availability when the feature flag is enabled', async () => {
+            const flaggedStrategy = createSSSStrategy({
+                serverUrl: 'http://test-server:5100/api',
+                storage: createMemoryStorage(),
+                enableEmailBackupShare: true,
+            });
+
+            vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+                new Response(
+                    JSON.stringify({
+                        authShare: 'auth-share',
+                        primaryDid: 'did:key:z1',
+                        keyProvider: 'sss',
+                        shareVersion: 1,
+                        recoveryMethods: [],
+                        sssActivationState: 'provisional',
+                    }),
+                    { status: 200 }
+                )
+            );
+
+            await expect(
+                flaggedStrategy.getAvailableRecoveryMethods!('token', 'firebase')
+            ).resolves.toEqual([]);
+        });
+
+        it('excludes pending records while preserving confirmed and active legacy records', async () => {
+            const confirmedAt = new Date().toISOString();
+            const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+            fetchSpy.mockResolvedValueOnce(
+                new Response(
+                    JSON.stringify({
+                        recoveryMethods: [
+                            {
+                                type: 'phrase',
+                                createdAt: new Date().toISOString(),
+                                confirmationStatus: 'pending',
+                            },
+                            {
+                                type: 'backup',
+                                createdAt: new Date().toISOString(),
+                                confirmedAt,
+                            },
+                        ],
+                        sssActivationState: 'provisional',
+                    }),
+                    { status: 200 }
+                )
+            );
+
+            const provisionalMethods = await strategy.getAvailableRecoveryMethods!(
+                'token',
+                'firebase'
+            );
+
+            expect(provisionalMethods.map(method => method.type)).toEqual(['backup']);
+
+            fetchSpy.mockResolvedValueOnce(
+                new Response(
+                    JSON.stringify({
+                        recoveryMethods: [{ type: 'phrase', createdAt: new Date().toISOString() }],
+                        sssActivationState: 'active',
+                    }),
+                    { status: 200 }
+                )
+            );
+
+            await expect(
+                strategy.getAvailableRecoveryMethods!('token', 'firebase')
+            ).resolves.toHaveLength(1);
+        });
     });
 
     // -----------------------------------------------------------------------
@@ -1726,11 +2867,12 @@ describe('createSSSStrategy', () => {
     // -----------------------------------------------------------------------
 
     describe('email routing — recovery email vs primary', () => {
-        it('setupRecoveryMethod("email") sends ONLY to recovery email, never to primary', async () => {
+        it('setupRecoveryMethod("email") binds ciphertext to the verified recovery email', async () => {
             const strat = createSSSStrategy({
                 serverUrl: 'http://test-server:5100/api',
                 storage: createMemoryStorage(),
                 enableEmailBackupShare: true,
+                ...getTestRelayConfig(),
             });
 
             const originalKey = 'e1e2e3e4e5e6'.padEnd(64, '0');
@@ -1772,28 +2914,34 @@ describe('createSSSStrategy', () => {
                 token: 'token',
                 providerType: 'firebase',
                 privateKey: originalKey,
-                input: { method: 'email' },
+                input: { method: 'email', email: 'recovery@test.com' },
                 authUser: { id: 'user-1', providerType: 'firebase', email: 'primary@test.com' },
             });
 
             const emailBackupCalls = fetchCalls.filter(c => c.url.includes('/keys/email-backup'));
 
-            // Should be exactly ONE call — to the recovery email endpoint
+            // Should be exactly one call with no raw recovery share.
             expect(emailBackupCalls).toHaveLength(1);
 
             const body = JSON.parse(emailBackupCalls[0]!.body);
+            const decrypted = await decryptEmailRelayPayload(
+                body.relayPayload,
+                testRelayPrivateKey
+            );
 
-            // Must use useRecoveryEmail (server-side routing), NOT an explicit email
-            expect(body.useRecoveryEmail).toBe(true);
-            expect(body.email).toBeUndefined();
+            expect(body.emailShare).toBeUndefined();
+            expect(body.email).toBe('recovery@test.com');
+            expect(decrypted.targetEmail).toBe('recovery@test.com');
+            expect(decrypted.confirmationCode).toBe(body.confirmationCode);
         });
 
-        it('setupRecoveryMethod("phrase") does NOT send to primary when recovery email is configured', async () => {
+        it('setupRecoveryMethod("phrase") does not auto-send email after rotating shares', async () => {
             // Create a strategy and prime hasRecoveryEmail via fetchServerKeyStatus
             const stratWithRecovery = createSSSStrategy({
                 serverUrl: 'http://test-server:5100/api',
                 storage: createMemoryStorage(),
                 enableEmailBackupShare: true,
+                ...getTestRelayConfig(),
             });
 
             const originalKey = 'f1f2f3f4f5f6'.padEnd(64, '0');
@@ -1861,20 +3009,15 @@ describe('createSSSStrategy', () => {
 
             const emailBackupCalls = fetchCalls.filter(c => c.url.includes('/keys/email-backup'));
 
-            // Should re-send exactly once — to the recovery email
-            expect(emailBackupCalls).toHaveLength(1);
-
-            const body = JSON.parse(emailBackupCalls[0]!.body);
-
-            expect(body.useRecoveryEmail).toBe(true);
-            expect(body.email).toBeUndefined();
+            expect(emailBackupCalls).toHaveLength(0);
         });
 
-        it('sendEmailBackupShare routes to recovery email when one is configured', async () => {
+        it('sendEmailBackupShare cryptographically binds the explicit recipient', async () => {
             const stratWithRecovery = createSSSStrategy({
                 serverUrl: 'http://test-server:5100/api',
                 storage: createMemoryStorage(),
                 enableEmailBackupShare: true,
+                ...getTestRelayConfig(),
             });
 
             const originalKey = 'd1d2d3d4d5d6'.padEnd(64, '0');
@@ -1927,10 +3070,15 @@ describe('createSSSStrategy', () => {
                 'primary@test.com'
             );
 
-            // Should route to recovery email, not primary
+            const decrypted = await decryptEmailRelayPayload(
+                capturedBody!.relayPayload,
+                testRelayPrivateKey
+            );
+
             expect(capturedBody).toBeDefined();
-            expect(capturedBody!.useRecoveryEmail).toBe(true);
-            expect(capturedBody!.email).toBeUndefined();
+            expect(capturedBody!.useRecoveryEmail).toBeUndefined();
+            expect(capturedBody!.email).toBe('primary@test.com');
+            expect(decrypted.targetEmail).toBe('primary@test.com');
         });
 
         it('sendEmailBackupShare routes to primary email when no recovery email is configured', async () => {
@@ -1938,6 +3086,7 @@ describe('createSSSStrategy', () => {
                 serverUrl: 'http://test-server:5100/api',
                 storage: createMemoryStorage(),
                 enableEmailBackupShare: true,
+                ...getTestRelayConfig(),
             });
 
             const originalKey = 'a2b3c4d5e6f7'.padEnd(64, '0');
@@ -1980,6 +3129,7 @@ describe('createSSSStrategy', () => {
                 serverUrl: 'http://test-server:5100/api',
                 enableEmailBackupShare: true,
                 storage,
+                ...getTestRelayConfig(),
             });
 
             strat.setActiveUser!('user-with-recovery');
@@ -2039,9 +3189,258 @@ describe('createSSSStrategy', () => {
         });
     });
 
+    describe('production lifecycle atomicity and reconciliation', () => {
+        const privateKey = '1234567890abcdef'.repeat(4);
+        const expectedDid = 'did:key:zAtomicOwner';
+
+        it.each(['initial setup', 'Web3Auth migration'])(
+            '%s restores the previous device share when the server write fails',
+            async () => {
+                const previous = await splitAndVerify(privateKey);
+
+                await strategy.storeLocalKey(previous.shares.deviceShare);
+                await strategy.storeLocalShareVersion!(4);
+
+                vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+                    new Response(null, { status: 503, statusText: 'Unavailable' })
+                );
+
+                let thrown: unknown;
+                try {
+                    await strategy.atomicUpdateShares!({
+                        token: 'token',
+                        providerType: 'firebase',
+                        privateKey,
+                        did: expectedDid,
+                    });
+                } catch (error) {
+                    thrown = error;
+                }
+
+                expect(thrown).toBeInstanceOf(AtomicUpdateError);
+                expect((thrown as AtomicUpdateError).rolledBack).toBe(true);
+                expect(await strategy.getLocalKey()).toBe(previous.shares.deviceShare);
+                expect(await strategy.getLocalShareVersion!()).toBe(4);
+            }
+        );
+
+        it('setupRecoveryMethod restores the previous device share when auth-share rotation fails', async () => {
+            const previous = await splitAndVerify(privateKey);
+
+            await strategy.storeLocalKey(previous.shares.deviceShare);
+            await strategy.storeLocalShareVersion!(7);
+
+            vi.spyOn(globalThis, 'fetch').mockImplementation(async (_url, init) => {
+                const method = (init?.method ?? 'GET').toUpperCase();
+
+                if (method === 'POST') {
+                    return new Response(
+                        JSON.stringify({
+                            authShare: previous.shares.authShare,
+                            primaryDid: expectedDid,
+                            recoveryMethods: [],
+                            keyProvider: 'sss',
+                            shareVersion: 7,
+                        }),
+                        { status: 200 }
+                    );
+                }
+
+                return new Response(null, { status: 503, statusText: 'Unavailable' });
+            });
+
+            let thrown: unknown;
+            try {
+                await strategy.setupRecoveryMethod!({
+                    token: 'token',
+                    providerType: 'firebase',
+                    privateKey,
+                    input: { method: 'phrase' },
+                });
+            } catch (error) {
+                thrown = error;
+            }
+
+            expect(thrown).toBeInstanceOf(AtomicUpdateError);
+            expect((thrown as AtomicUpdateError).rolledBack).toBe(true);
+            expect(await strategy.getLocalKey()).toBe(previous.shares.deviceShare);
+            expect(await strategy.getLocalShareVersion!()).toBe(7);
+        });
+
+        it('executeRecovery uses atomicRecovery and restores the previous device share on rotation failure', async () => {
+            const recoverySource = await splitAndVerify(privateKey);
+            const previousDevice = 'previous-device-share';
+
+            await strategy.storeLocalKey(previousDevice);
+            await strategy.storeLocalShareVersion!(2);
+
+            vi.spyOn(globalThis, 'fetch').mockImplementation(async (_url, init) => {
+                const method = (init?.method ?? 'GET').toUpperCase();
+
+                if (method === 'POST') {
+                    return new Response(
+                        JSON.stringify({
+                            authShare: recoverySource.shares.authShare,
+                            primaryDid: expectedDid,
+                            recoveryMethods: [],
+                            keyProvider: 'sss',
+                            shareVersion: 2,
+                        }),
+                        { status: 200 }
+                    );
+                }
+
+                return new Response(null, { status: 503, statusText: 'Unavailable' });
+            });
+
+            let thrown: unknown;
+            try {
+                await strategy.executeRecovery({
+                    token: 'token',
+                    providerType: 'firebase',
+                    input: {
+                        method: 'email',
+                        emailShare: `0002${recoverySource.shares.emailShare}`,
+                    },
+                    didFromPrivateKey: async key =>
+                        key === privateKey ? expectedDid : 'did:key:zWrong',
+                });
+            } catch (error) {
+                thrown = error;
+            }
+
+            expect(thrown).toBeInstanceOf(AtomicUpdateError);
+            expect((thrown as AtomicUpdateError).rolledBack).toBe(true);
+            expect(await strategy.getLocalKey()).toBe(previousDevice);
+            expect(await strategy.getLocalShareVersion!()).toBe(2);
+        });
+
+        it('repairs an ack-lost server commit on the next login', async () => {
+            const versionOne = await splitAndVerify(privateKey);
+            const server = {
+                currentAuthShare: versionOne.shares.authShare,
+                previousAuthShares: new Map<number, string>(),
+                version: 1,
+                loseNextAck: true,
+            };
+
+            await strategy.storeLocalKey(versionOne.shares.deviceShare);
+            await strategy.storeLocalShareVersion!(1);
+
+            vi.spyOn(globalThis, 'fetch').mockImplementation(async (_url, init) => {
+                const method = (init?.method ?? 'GET').toUpperCase();
+                const body = init?.body ? JSON.parse(String(init.body)) : {};
+
+                if (method === 'PUT') {
+                    server.previousAuthShares.set(server.version, server.currentAuthShare);
+                    server.currentAuthShare = body.authShare.encryptedData;
+                    server.version += 1;
+
+                    if (server.loseNextAck) {
+                        server.loseNextAck = false;
+                        throw new Error('Connection closed after commit');
+                    }
+
+                    return new Response(
+                        JSON.stringify({ success: true, shareVersion: server.version }),
+                        { status: 200 }
+                    );
+                }
+
+                const requestedVersion = body.shareVersion as number | undefined;
+                const authShare = requestedVersion
+                    ? requestedVersion === server.version
+                        ? server.currentAuthShare
+                        : (server.previousAuthShares.get(requestedVersion) ?? null)
+                    : server.currentAuthShare;
+
+                return new Response(
+                    JSON.stringify({
+                        authShare,
+                        primaryDid: expectedDid,
+                        recoveryMethods: [],
+                        keyProvider: 'sss',
+                        shareVersion: server.version,
+                    }),
+                    { status: 200 }
+                );
+            });
+
+            await expect(
+                strategy.atomicUpdateShares!({
+                    token: 'token',
+                    providerType: 'firebase',
+                    privateKey,
+                    did: expectedDid,
+                })
+            ).rejects.toMatchObject({ rolledBack: true });
+
+            expect(await strategy.getLocalKey()).toBe(versionOne.shares.deviceShare);
+            expect(await strategy.getLocalShareVersion!()).toBe(1);
+            expect(server.version).toBe(2);
+
+            const status = await strategy.fetchServerKeyStatus('token', 'firebase');
+            const localShare = await strategy.getLocalKey();
+            const preRepairHealth = await verifyStoredShares(
+                {
+                    getDevice: async () => localShare,
+                    getAuth: async () => status.authShare,
+                },
+                expectedDid,
+                async key => (key === privateKey ? expectedDid : 'did:key:zWrong')
+            );
+
+            expect(preRepairHealth.healthy).toBe(true);
+            expect(status.shareVersion).toBe(2);
+            expect(await strategy.getLocalShareVersion!()).toBe(1);
+
+            const reconciled = await strategy.reconcileShares!({
+                token: 'token',
+                providerType: 'firebase',
+                expectedDid,
+                didFromPrivateKey: async key =>
+                    key === privateKey ? expectedDid : 'did:key:zWrong',
+            });
+
+            expect(reconciled).toEqual({ privateKey, did: expectedDid });
+            expect(server.version).toBe(3);
+            expect(await strategy.getLocalShareVersion!()).toBe(3);
+
+            const repairedDevice = await strategy.getLocalKey();
+            const repairedHealth = await verifyStoredShares(
+                {
+                    getDevice: async () => repairedDevice,
+                    getAuth: async () => server.currentAuthShare,
+                },
+                expectedDid,
+                async key => (key === privateKey ? expectedDid : 'did:key:zWrong')
+            );
+
+            expect(repairedHealth.healthy).toBe(true);
+        });
+    });
+
     // -----------------------------------------------------------------------
     // Versioned email share format edge cases
     // -----------------------------------------------------------------------
+
+    describe('selectRecoveryPhraseChallengeIndices', () => {
+        it('rejects values in the partial tail before accepting uniform-range values', () => {
+            const randomValues = [0xffff_ffff, 3, 7, 9];
+            const getRandomValues = vi
+                .spyOn(crypto, 'getRandomValues')
+                .mockImplementation(array => {
+                    (array as Uint32Array)[0] = randomValues.shift()!;
+                    return array;
+                });
+
+            const indices = selectRecoveryPhraseChallengeIndices(10, 3);
+
+            expect(indices).toEqual([3, 7, 9]);
+            expect(indices.every(index => index >= 0 && index < 10)).toBe(true);
+            expect(getRandomValues.mock.calls.length).toBeGreaterThan(3);
+        });
+    });
 
     describe('formatVersionedEmailShare / parseVersionedEmailShare', () => {
         it('round-trip: format then parse recovers the original share and version', () => {

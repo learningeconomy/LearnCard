@@ -5,3 +5,5 @@ export * from './SigningAuthority';
 export * from './Pins';
 export * from './Preferences';
 export * from './UserKey';
+export * from './EscrowHold';
+export * from './AuthSubject';

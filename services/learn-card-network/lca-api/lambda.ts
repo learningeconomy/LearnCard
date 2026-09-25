@@ -5,6 +5,7 @@ import * as Sentry from '@sentry/serverless';
 
 import app from './src/openapi';
 import didWebApp from './src/dids';
+import { app as oidcApp } from './src/oidc';
 import { appRouter, createContext } from './src/app';
 import { getEmptyLearnCard } from './src/helpers/learnCard.helpers';
 import { createOpenApiAwsLambdaHandler } from './src/helpers/shim';
@@ -15,8 +16,13 @@ import {
 } from './src/helpers/sentry.helpers';
 import { environment } from './src/config/environment';
 import { toServerlessApplication } from './src/helpers/serverlessApplication';
+import { ensureUserKeysIndexes, createEscrowHoldsIndexes } from './src/models';
 
-const promise = getEmptyLearnCard(); // Load WASM in for better cold starts
+const startupPromise = Promise.all([
+    getEmptyLearnCard(), // Load WASM in for better cold starts
+    ensureUserKeysIndexes(),
+    createEscrowHoldsIndexes(),
+]);
 
 const isWarmupEvent = (event: APIGatewayProxyEventV2): boolean =>
     'source' in event && event.source === 'serverless-plugin-warmup';
@@ -39,6 +45,7 @@ export const swaggerUiHandler = serverlessHttp(toServerlessApplication(app), {
     basePath: '/docs',
 });
 export const didWebHandler = serverlessHttp(toServerlessApplication(didWebApp));
+export const oidcHandler = serverlessHttp(toServerlessApplication(oidcApp));
 
 export const _openApiHandler = createOpenApiAwsLambdaHandler({
     router: appRouter,
@@ -72,7 +79,7 @@ export const _trpcHandler = awsLambdaRequestHandler({
 
 export const openApiHandler = Sentry.AWSLambda.wrapHandler(
     async (event: APIGatewayProxyEventV2, context: Context): Promise<APIGatewayProxyResultV2> => {
-        await promise;
+        await startupPromise;
 
         if (isWarmupEvent(event)) {
             console.log('[Warmup] Initializing LearnCard...');
@@ -98,7 +105,7 @@ export const openApiHandler = Sentry.AWSLambda.wrapHandler(
 
 export const trpcHandler = Sentry.AWSLambda.wrapHandler(
     async (event: APIGatewayProxyEventV2, context: Context): Promise<APIGatewayProxyResultV2> => {
-        await promise;
+        await startupPromise;
 
         if (isWarmupEvent(event)) {
             console.log('[Warmup] Initializing LearnCard...');

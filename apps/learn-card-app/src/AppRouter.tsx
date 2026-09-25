@@ -48,6 +48,9 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import endorsementsRequestStore from './stores/endorsementsRequestStore';
 import { useFirebase } from './hooks/useFirebase';
+import { useKeycloakRedirect } from './auth/useKeycloakRedirect';
+import { assertCurrentKeycloakReauth } from './auth/keycloakReauth';
+import MyLearnCardModal from './components/learncard/MyLearnCardModal';
 import { useSentryIdentify } from './constants/sentry';
 
 import { Modals, getLogger } from 'learn-card-base';
@@ -187,6 +190,7 @@ const AppRouter: React.FC = () => {
     const seed = params.seed;
     const pin = params.pin;
     const endorsementRequest = params.endorsementRequest;
+    const endorsementCredentialId = params.credentialId;
     const draftEndorsementRequest = endorsementsRequestStore.useTracked.endorsementRequest();
 
     // Insights Consent
@@ -219,6 +223,18 @@ const AppRouter: React.FC = () => {
         location.pathname.includes('/app-store');
 
     const { newModal } = useModal();
+    const { refreshAuthSession, openRecoverySetup, authProvider } = useAppAuth();
+    const isKeycloak = useKeycloakRedirect(async intent => {
+        assertCurrentKeycloakReauth(intent, (await authProvider?.getCurrentUser())?.id);
+        if (!(await refreshAuthSession())) throw new Error('Session could not be restored');
+        assertCurrentKeycloakReauth(intent, (await authProvider?.getCurrentUser())?.id);
+        history.replace(intent.returnTo);
+        if (intent.action === 'account-recovery') {
+            newModal(<MyLearnCardModal branding={BrandingEnum.learncard} resumeRecovery />);
+        } else {
+            openRecoverySetup({ initialMethod: intent.initialMethod });
+        }
+    }, walletReady);
 
     useEffect(() => {
         if (isInsightsConsent && contract) {
@@ -297,6 +313,10 @@ const AppRouter: React.FC = () => {
                 uri: boostUri as string,
                 seed: seed as string,
                 pin: pin as string,
+                credentialId:
+                    typeof endorsementCredentialId === 'string'
+                        ? endorsementCredentialId
+                        : undefined,
             });
             newModal(
                 <ViewSharedBoost
@@ -307,7 +327,7 @@ const AppRouter: React.FC = () => {
                 { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
             );
         }
-    }, [boostUri, seed, pin, endorsementRequest, newModal]);
+    }, [boostUri, seed, pin, endorsementRequest, endorsementCredentialId, newModal]);
 
     useEffect(() => {
         // Skip entirely if this is a fresh endorsement link click - the first useEffect handles it
@@ -430,7 +450,7 @@ const AppRouter: React.FC = () => {
     }, [saved_email]);
 
     useEffect(() => {
-        if (!saved_email) {
+        if (!saved_email && !isKeycloak) {
             verifyAppleLogin();
         }
     }, []);

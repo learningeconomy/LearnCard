@@ -27,13 +27,18 @@
             "directAccessGrantsEnabled": false,
             "implicitFlowEnabled": false,
             "serviceAccountsEnabled": false,
-            "redirectUris": ["http://localhost:3000/*", "capacitor://localhost/*"],
-            "webOrigins": ["+"],
+            "redirectUris": [
+                "http://localhost:3000/*",
+                "capacitor://localhost/*",
+                "com.learncard.app://login"
+            ],
+            "webOrigins": ["+", "capacitor://localhost", "https://localhost"],
             "attributes": {
                 "pkce.code.challenge.method": "S256",
                 "post.logout.redirect.uris": "http://localhost:3000/*##capacitor://localhost/*"
             },
             "defaultClientScopes": ["profile", "email", "roles", "web-origins", "basic"],
+            "optionalClientScopes": ["phone"],
             "protocolMappers": [
                 {
                     "name": "phone_number",
@@ -65,7 +70,7 @@
         },
         {
             "clientId": "lca-api",
-            "description": "Dev fixture placeholder; never use this secret outside local/CI",
+            "description": "Dev fixture placeholder secret; never use outside local/CI",
             "protocol": "openid-connect",
             "enabled": true,
             "publicClient": false,
@@ -142,6 +147,328 @@
             "email": "dev-unverified@example.com",
             "emailVerified": false,
             "credentials": [{ "type": "password", "value": "password", "temporary": false }]
+        }
+    ],
+    "authenticationFlows": [
+        {
+            "alias": "Account verification options",
+            "description": "Method with which to verify the existing account",
+            "providerId": "basic-flow",
+            "topLevel": false,
+            "builtIn": true,
+            "authenticationExecutions": [
+                {
+                    "authenticator": "idp-email-verification",
+                    "authenticatorFlow": false,
+                    "requirement": "ALTERNATIVE",
+                    "priority": 10,
+                    "autheticatorFlow": false,
+                    "userSetupAllowed": false
+                },
+                {
+                    "authenticatorFlow": true,
+                    "requirement": "ALTERNATIVE",
+                    "priority": 20,
+                    "autheticatorFlow": true,
+                    "flowAlias": "Verify Existing Account by Re-authentication",
+                    "userSetupAllowed": false
+                }
+            ]
+        },
+        {
+            "alias": "First Broker Login - Conditional Organization",
+            "description": "Flow to determine if the authenticator that adds organization members is to be used",
+            "providerId": "basic-flow",
+            "topLevel": false,
+            "builtIn": true,
+            "authenticationExecutions": [
+                {
+                    "authenticator": "conditional-user-configured",
+                    "authenticatorFlow": false,
+                    "requirement": "REQUIRED",
+                    "priority": 10,
+                    "autheticatorFlow": false,
+                    "userSetupAllowed": false
+                },
+                {
+                    "authenticator": "idp-add-organization-member",
+                    "authenticatorFlow": false,
+                    "requirement": "REQUIRED",
+                    "priority": 20,
+                    "autheticatorFlow": false,
+                    "userSetupAllowed": false
+                }
+            ]
+        },
+        {
+            "alias": "First broker login - Conditional 2FA",
+            "description": "Flow to determine if any 2FA is required for the authentication",
+            "providerId": "basic-flow",
+            "topLevel": false,
+            "builtIn": true,
+            "authenticationExecutions": [
+                {
+                    "authenticator": "conditional-user-configured",
+                    "authenticatorFlow": false,
+                    "requirement": "REQUIRED",
+                    "priority": 10,
+                    "autheticatorFlow": false,
+                    "userSetupAllowed": false
+                },
+                {
+                    "authenticatorConfig": "first-broker-login-conditional-credential",
+                    "authenticator": "conditional-credential",
+                    "authenticatorFlow": false,
+                    "requirement": "REQUIRED",
+                    "priority": 20,
+                    "autheticatorFlow": false,
+                    "userSetupAllowed": false
+                },
+                {
+                    "authenticator": "auth-otp-form",
+                    "authenticatorFlow": false,
+                    "requirement": "ALTERNATIVE",
+                    "priority": 30,
+                    "autheticatorFlow": false,
+                    "userSetupAllowed": false
+                },
+                {
+                    "authenticator": "webauthn-authenticator",
+                    "authenticatorFlow": false,
+                    "requirement": "DISABLED",
+                    "priority": 40,
+                    "autheticatorFlow": false,
+                    "userSetupAllowed": false
+                },
+                {
+                    "authenticator": "auth-recovery-authn-code-form",
+                    "authenticatorFlow": false,
+                    "requirement": "DISABLED",
+                    "priority": 50,
+                    "autheticatorFlow": false,
+                    "userSetupAllowed": false
+                }
+            ]
+        },
+        {
+            "alias": "Handle Existing Account",
+            "description": "Handle what to do if there is existing account with same email/username like authenticated identity provider",
+            "providerId": "basic-flow",
+            "topLevel": false,
+            "builtIn": true,
+            "authenticationExecutions": [
+                {
+                    "authenticator": "idp-confirm-link",
+                    "authenticatorFlow": false,
+                    "requirement": "REQUIRED",
+                    "priority": 10,
+                    "autheticatorFlow": false,
+                    "userSetupAllowed": false
+                },
+                {
+                    "authenticatorFlow": true,
+                    "requirement": "REQUIRED",
+                    "priority": 20,
+                    "autheticatorFlow": true,
+                    "flowAlias": "Account verification options",
+                    "userSetupAllowed": false
+                }
+            ]
+        },
+        {
+            "alias": "User creation or linking",
+            "description": "Flow for the existing/non-existing user alternatives",
+            "providerId": "basic-flow",
+            "topLevel": false,
+            "builtIn": true,
+            "authenticationExecutions": [
+                {
+                    "authenticatorConfig": "create unique user config",
+                    "authenticator": "idp-create-user-if-unique",
+                    "authenticatorFlow": false,
+                    "requirement": "ALTERNATIVE",
+                    "priority": 10,
+                    "autheticatorFlow": false,
+                    "userSetupAllowed": false
+                },
+                {
+                    "authenticatorFlow": true,
+                    "requirement": "ALTERNATIVE",
+                    "priority": 20,
+                    "autheticatorFlow": true,
+                    "flowAlias": "Handle Existing Account",
+                    "userSetupAllowed": false
+                }
+            ]
+        },
+        {
+            "alias": "Verify Existing Account by Re-authentication",
+            "description": "Reauthentication of existing account",
+            "providerId": "basic-flow",
+            "topLevel": false,
+            "builtIn": true,
+            "authenticationExecutions": [
+                {
+                    "authenticator": "idp-username-password-form",
+                    "authenticatorFlow": false,
+                    "requirement": "REQUIRED",
+                    "priority": 10,
+                    "autheticatorFlow": false,
+                    "userSetupAllowed": false
+                },
+                {
+                    "authenticatorFlow": true,
+                    "requirement": "CONDITIONAL",
+                    "priority": 20,
+                    "autheticatorFlow": true,
+                    "flowAlias": "First broker login - Conditional 2FA",
+                    "userSetupAllowed": false
+                }
+            ]
+        },
+        {
+            "alias": "first broker login",
+            "description": "Actions taken after first broker login with identity provider account, which is not yet linked to any Keycloak account",
+            "providerId": "basic-flow",
+            "topLevel": true,
+            "builtIn": true,
+            "authenticationExecutions": [
+                {
+                    "authenticatorConfig": "review profile config",
+                    "authenticator": "idp-review-profile",
+                    "authenticatorFlow": false,
+                    "requirement": "REQUIRED",
+                    "priority": 10,
+                    "autheticatorFlow": false,
+                    "userSetupAllowed": false
+                },
+                {
+                    "authenticatorFlow": true,
+                    "requirement": "REQUIRED",
+                    "priority": 20,
+                    "autheticatorFlow": true,
+                    "flowAlias": "User creation or linking",
+                    "userSetupAllowed": false
+                },
+                {
+                    "authenticatorFlow": true,
+                    "requirement": "CONDITIONAL",
+                    "priority": 60,
+                    "autheticatorFlow": true,
+                    "flowAlias": "First Broker Login - Conditional Organization",
+                    "userSetupAllowed": false
+                }
+            ]
+        }
+    ],
+    "authenticatorConfig": [
+        {
+            "alias": "create unique user config",
+            "config": {
+                "require.password.update.after.registration": "false"
+            }
+        },
+        {
+            "alias": "first-broker-login-conditional-credential",
+            "config": {
+                "credentials": "webauthn-passwordless"
+            }
+        },
+        {
+            "alias": "review profile config",
+            "config": {
+                "update.profile.on.first.login": "off"
+            }
+        }
+    ],
+    "identityProviders": [
+        {
+            "alias": "lca-api",
+            "displayName": "LearnCard",
+            "providerId": "oidc",
+            "enabled": true,
+            "trustEmail": true,
+            "storeToken": false,
+            "addReadTokenRoleOnCreate": false,
+            "hideOnLogin": true,
+            "linkOnly": false,
+            "firstBrokerLoginFlowAlias": "first broker login",
+            "config": {
+                "clientId": "keycloak-broker",
+                "clientSecret": "dev-only-broker-secret",
+                "clientAuthMethod": "client_secret_basic",
+                "issuer": "http://localhost:5100",
+                "authorizationUrl": "http://localhost:5100/oidc/authorize",
+                "tokenUrl": "http://host.docker.internal:5100/oidc/token",
+                "jwksUrl": "http://host.docker.internal:5100/oidc/jwks",
+                "userInfoUrl": "http://host.docker.internal:5100/oidc/userinfo",
+                "useJwksUrl": "true",
+                "validateSignature": "true",
+                "defaultScope": "openid email profile phone",
+                "loginHint": "true",
+                "pkceEnabled": "false",
+                "syncMode": "IMPORT"
+            }
+        },
+        {
+            "alias": "google",
+            "displayName": "Google",
+            "providerId": "google",
+            "enabled": true,
+            "trustEmail": false,
+            "storeToken": false,
+            "addReadTokenRoleOnCreate": false,
+            "hideOnLogin": false,
+            "linkOnly": false,
+            "firstBrokerLoginFlowAlias": "first broker login",
+            "config": {
+                "clientId": "${GOOGLE_CLIENT_ID}",
+                "clientSecret": "${GOOGLE_CLIENT_SECRET}",
+                "defaultScope": "openid profile email",
+                "syncMode": "IMPORT"
+            }
+        },
+        {
+            "alias": "apple",
+            "displayName": "Apple",
+            "providerId": "apple",
+            "enabled": true,
+            "trustEmail": false,
+            "storeToken": false,
+            "addReadTokenRoleOnCreate": false,
+            "hideOnLogin": false,
+            "linkOnly": false,
+            "firstBrokerLoginFlowAlias": "first broker login",
+            "config": {
+                "clientId": "${APPLE_SERVICE_ID}",
+                "clientSecret": "${APPLE_P8_CONTENT}",
+                "teamId": "${APPLE_TEAM_ID}",
+                "keyId": "${APPLE_KEY_ID}",
+                "defaultScope": "name%20email",
+                "syncMode": "IMPORT"
+            }
+        }
+    ],
+    "identityProviderMappers": [
+        {
+            "name": "phone_number",
+            "identityProviderAlias": "lca-api",
+            "identityProviderMapper": "oidc-user-attribute-idp-mapper",
+            "config": {
+                "claim": "phone_number",
+                "user.attribute": "phone_number",
+                "syncMode": "INHERIT"
+            }
+        },
+        {
+            "name": "phone_number_verified",
+            "identityProviderAlias": "lca-api",
+            "identityProviderMapper": "oidc-user-attribute-idp-mapper",
+            "config": {
+                "claim": "phone_number_verified",
+                "user.attribute": "phone_number_verified",
+                "syncMode": "INHERIT"
+            }
         }
     ]
 }

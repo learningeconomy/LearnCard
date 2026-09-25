@@ -1,9 +1,48 @@
 import { describe, it, expect } from 'vitest';
 
-import { tenantConfigSchema, parseTenantConfig } from '../tenantConfigSchema';
+import {
+    tenantConfigSchema,
+    tenantAuthConfigSchema,
+    parseTenantConfig,
+} from '../tenantConfigSchema';
 import { DEFAULT_LEARNCARD_TENANT_CONFIG } from '../tenantDefaults';
 
 describe('tenantConfigSchema', () => {
+    it('accepts Keycloak with default scopes', () => {
+        const auth = tenantAuthConfigSchema.parse({
+            provider: 'keycloak',
+            sss: {},
+            keycloak: {
+                serverUrl: 'https://auth.example.org',
+                realm: 'learncard',
+                clientId: 'app',
+            },
+        });
+        expect(auth.keycloak?.scopes).toEqual(['openid', 'profile', 'email', 'phone']);
+    });
+
+    it('requires the Keycloak block for the Keycloak provider', () => {
+        const result = tenantAuthConfigSchema.safeParse({ provider: 'keycloak', sss: {} });
+        expect(result.success).toBe(false);
+        expect(result.error?.issues).toContainEqual(
+            expect.objectContaining({ path: ['keycloak'] })
+        );
+    });
+
+    it('preserves unknown Keycloak config keys', () => {
+        const auth = tenantAuthConfigSchema.parse({
+            provider: 'keycloak',
+            sss: {},
+            keycloak: {
+                serverUrl: 'https://auth.example.org',
+                realm: 'learncard',
+                clientId: 'app',
+                future: true,
+            },
+        });
+        expect(auth.keycloak?.future).toBe(true);
+    });
+
     it('validates the default config successfully', () => {
         const result = tenantConfigSchema.safeParse(DEFAULT_LEARNCARD_TENANT_CONFIG);
 
@@ -88,6 +127,11 @@ describe('tenantConfigSchema', () => {
         expect(result.auth.provider).toBe('firebase');
         expect(result.auth.keyDerivation).toBe('sss');
         expect(result.auth.sss?.enableEmailBackupShare).toBe(true);
+        expect(result.auth.sss?.escrowRelayPublicKey).toBe('');
+        expect(result.auth.sss?.escrowRelayKeyId).toBe('');
+        expect(result.auth.sss?.escrowEnclaveMode).toBe('off');
+        expect(result.auth.sss?.escrowEnclavePublicKeys).toEqual([]);
+        expect(result.auth.sss?.escrowEnclaveMeasurements).toEqual([]);
         expect(result.auth.sss?.requireEmailForPhoneUsers).toBe(true);
         expect(result.branding.defaultTheme).toBe('colorful');
         expect(result.branding.loginRedirectPath).toBe('/waitingsofa?loginCompleted=true');

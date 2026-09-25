@@ -53,6 +53,9 @@ import {
     AuthGrantType,
     AuthGrantQuery,
     IssueInboxCredentialType,
+    IssueInboxCredentialBatch,
+    InboxBatchReceipt,
+    InboxBatchStatus,
     InboxCredentialType,
     PaginatedInboxCredentialsType,
     PaginatedSkillFrameworksType,
@@ -724,6 +727,27 @@ export type LearnCardNetworkPluginMethods = {
     revokeAuthGrant: (id: string) => Promise<boolean>;
     getAPITokenForAuthGrant: (id: string) => Promise<string>;
 
+    /** Queue 1–100 credentials; workers may start up to a minute later. Use sendCredentialViaInbox for immediate single issuance. */
+    sendCredentialsViaInbox: (batch: IssueInboxCredentialBatch) => Promise<InboxBatchReceipt>;
+    /** Explicit batch alias for sendCredentialsViaInbox. Returns a durable receipt. */
+    sendCredentialBatchViaInbox: (batch: IssueInboxCredentialBatch) => Promise<InboxBatchReceipt>;
+    /** Ordered results and disjoint success/failure/unconfirmed counts. `done` includes unconfirmed outcomes.
+     * @see https://docs.learncard.com/sdks/learncard-network/universal-inbox-api
+     */
+    getInboxCredentialBatch: (batchId: string) => Promise<InboxBatchStatus>;
+    /** Poll until done with bounded backoff. Abort/timeout stops waiting, not processing. */
+    waitForInboxCredentialBatch: (
+        batchId: string,
+        options?: WaitForInboxCredentialBatchOptions
+    ) => Promise<InboxBatchStatus>;
+    /** Submit once and wait; persist the receipt with onSubmitted for recovery after timeout. */
+    sendCredentialsViaInboxAndWait: (
+        batch: IssueInboxCredentialBatch,
+        options?: WaitForInboxCredentialBatchOptions & {
+            onSubmitted?: (receipt: InboxBatchReceipt) => void | Promise<void>;
+        }
+    ) => Promise<InboxBatchStatus>;
+    /** Issue one credential synchronously, without waiting for the batch dispatcher. */
     sendCredentialViaInbox: (
         issueInboxCredential: IssueInboxCredentialType
     ) => Promise<IssueInboxCredentialResponseType>;
@@ -1033,3 +1057,12 @@ export type TrustedBoostRegistryEntry = {
     url: string;
     did: string;
 };
+
+export interface WaitForInboxCredentialBatchOptions {
+    /** Overall polling deadline; defaults to ten minutes. */
+    timeoutMs?: number;
+    /** Initial interval; increases by 1.5x up to ten seconds (or this interval if larger). */
+    intervalMs?: number;
+    signal?: AbortSignal;
+    onProgress?: (status: InboxBatchStatus) => void;
+}

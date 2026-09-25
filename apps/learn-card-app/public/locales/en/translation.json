@@ -1393,7 +1393,18 @@
             "guardianEmailed": "We've emailed your guardian to approve your account. You can start exploring now — some features unlock once they confirm.",
             "ready": "Your {{brand}} is ready.",
             "whoAreYou": "Who are you? (Optional)",
-            "explore": "Explore {{brand}}"
+            "explore": "Explore {{brand}}",
+            "pin": {
+                "title": "Add a recovery PIN",
+                "body": "If you ever lose this device, a 6-digit PIN gets you back in within seconds.",
+                "confirmTitle": "Confirm your PIN",
+                "confirmBody": "Enter the same 6 digits again.",
+                "saving": "Saving your PIN…",
+                "success": "You're protected",
+                "skip": "Skip for now",
+                "startOver": "Start over",
+                "hint": "You can change or remove it anytime in Settings."
+            }
         }
     },
     "profile": {
@@ -1804,6 +1815,7 @@
         "syncMyData": "Sync My Data",
         "shareOneTimeOnly": "Share One Time Only",
         "customDuration": "Custom Duration",
+        "shareDuration": "Share duration",
         "noCredentials": "No Credentials",
         "fetchingCredentials": "Fetching your credentials...",
         "shareAll": "Share all",
@@ -1841,6 +1853,25 @@
         }
     },
     "recovery": {
+        "automatic": {
+            "title": "Automatic recovery",
+            "on": "On — your account can be restored after a 7-day waiting period.",
+            "off": "Off",
+            "notOn": "Not turned on",
+            "turningOn": "Turning on...",
+            "turningOff": "Turning off...",
+            "updating": "Updating...",
+            "turnOn": "Turn on",
+            "turnOff": "Turn off",
+            "warning": "Without automatic recovery, losing every device and every recovery method means losing your account.",
+            "precondition": "Set up another recovery method first.",
+            "restoreWait": "Restore after a 7-day wait"
+        },
+        "error.invalidPhrase": "Those words don't match your recovery phrase. Check them and try again.",
+        "error.invalidPassword": "Incorrect password or the file couldn't be read. Please try again.",
+        "error.invalidCode": "That code is incorrect or has expired. Request a new one and try again.",
+        "error.network": "Connection issue. Please check your internet and try again.",
+        "error.default": "Something went wrong. Please try again.",
         "prompt": {
             "openAria": "Set up a way to sign back in",
             "snoozeAria": "Remind me in 7 days",
@@ -1852,13 +1883,30 @@
                 "title": "This session ends when you close the tab",
                 "body": "Set up a way to sign back in, or you'll lose access to your account."
             },
+            "activation": {
+                "title": "Finish securing your account",
+                "body": "Your account isn't fully protected until you add a way to sign back in."
+            },
             "success": {
                 "title": "You're covered",
                 "body": "You can sign back in from any device."
             },
             "action": {
-                "passkey": "Use Face ID or Touch ID",
-                "phrase": "Get a recovery phrase"
+                "passkeyApple": "Use Face ID or Touch ID",
+                "passkeyWindows": "Use Windows Hello",
+                "passkeyAndroid": "Use fingerprint or face unlock",
+                "passkeyGeneric": "Use a passkey",
+                "phrase": "Save a recovery phrase"
+            },
+            "pinFirst": {
+                "title": "Finish securing your account",
+                "body": "Add a recovery PIN — it gets you back in within seconds if you lose this device.",
+                "action": "Set a 6-digit PIN",
+                "secondary": "Or add a passkey or recovery phrase"
+            },
+            "backup": {
+                "title": "Add a backup way in",
+                "body": "Your PIN works on any device. A passkey or recovery phrase covers you if you forget it."
             }
         },
         "accountRecovery": "Account Recovery",
@@ -1898,6 +1946,9 @@
         "method.phraseSaved": "Phrase is saved",
         "method.setEmail": "Email Recovery Key",
         "noPasskey": "No passkey found on this device.",
+        "preparingSecureLink": "Preparing secure link...",
+        "deviceLinkUnavailable": "This device can’t link your account.",
+        "verifyingSession": "Verifying session...",
         "protectAccount": "Protect Your Account",
         "recommendTwo": "We recommend setting up at least two recovery methods.",
         "recoverAccount": "Recover Account",
@@ -1958,6 +2009,11 @@
         "yourRecoveryPhrase": "Your Recovery Phrase",
         "copied": "Copied!",
         "savedSomewhereSafe": "I've Saved It Somewhere Safe",
+        "verifyPhraseTitle": "Confirm Your Recovery Phrase",
+        "verifyPhraseDescription": "Enter the requested words to confirm you saved your phrase.",
+        "wordNumber": "Word {{number}}",
+        "confirmPhrase": "Confirm Recovery Phrase",
+        "phraseWordsMismatch": "Those words don't match. Check your phrase and try again.",
         "backupDescription": "Generate an encrypted backup file protected by a password. Store it somewhere safe — you'll need both the file and the password to recover.",
         "backupPassword": "Backup Password",
         "confirmPassword": "Confirm Password",
@@ -1969,6 +2025,9 @@
         },
         "backupReady": "Backup file ready",
         "backupReadyDesc": "Download this file and store it somewhere safe. You'll need it along with your backup password to recover.",
+        "reenterPassword": "Re-enter Backup Password",
+        "verifyBackupDescription": "We'll check the downloaded file before confirming this recovery method.",
+        "verifyBackup": "Verify Backup File",
         "passwordsDontMatch": "Passwords don't match.",
         "recommended": "Recommended",
         "emailDescription": "Add a personal email (different from your login) as a recovery destination. A recovery key will be sent there.",
@@ -1981,6 +2040,8 @@
         "emailKeyDescription": "We'll send a recovery key to this email. If you ever lose access, just check your inbox and paste the key to recover.",
         "recoveryKeySentTitle": "Recovery key sent",
         "recoveryKeySentDesc": "Check your inbox at {{email}}. Keep that email safe — you'll need the recovery key if you ever lose access.",
+        "recoveryConfirmationCodeSent": "Enter the confirmation code sent with your recovery key to {{email}}.",
+        "confirmRecoveryKey": "Confirm Recovery Key",
         "method": {
             "activeCount": "{{count}} recovery {{state}} active",
             "singular": "method",
@@ -2026,7 +2087,68 @@
         "anotherDeviceDesc": "Scan a code from a signed-in device",
         "emailRecoveryLabel": "Email Recovery Key",
         "phraseEnter25": "Enter your 25-word phrase",
-        "wordsCount": "{{count}} / 25 words"
+        "wordsCount": "{{count}} / 25 words",
+        "identity": {
+            "lostSchoolLogin": "I lost access to my school email or login",
+            "title": "Restore Your Account",
+            "emailDescription": "Enter the personal recovery email you verified earlier.",
+            "recoveryEmailLabel": "Recovery Email",
+            "recoveryEmailPlaceholder": "you@example.com",
+            "sendCode": "Send Recovery Code",
+            "sendingCode": "Sending code...",
+            "checkEmail": "Check Your Email",
+            "codeDescription": "Enter the 6-digit code sent to your recovery email.",
+            "codeLabel": "Recovery Code",
+            "verifyCode": "Verify Code",
+            "chooseMethod": "Verify Your Account",
+            "chooseMethodDescription": "Choose a recovery method to confirm this account is yours.",
+            "keyVerified": "Account Verified",
+            "newLoginDescription": "Now sign in with a new email or login to reconnect your account.",
+            "continueToLogin": "Continue to Sign In",
+            "signInPrompt": "Sign in with your new login",
+            "signInPromptDescription": "We’ll reconnect your existing account after you sign in.",
+            "successTitle": "Access Restored",
+            "successDescription": "Your account is connected to your new login. Set up recovery again to keep it protected.",
+            "tooManyAttempts": "Too many incorrect attempts. Try again later.",
+            "invalidCode": "That code is incorrect or expired. Request a new code and try again.",
+            "invalidRecoveryMethod": "That recovery method could not verify your account. Try another method."
+        },
+        "pin": {
+            "setPin": "Set a recovery PIN",
+            "setPinDesc": "Set a 6-digit PIN for instant recovery.",
+            "confirmPin": "Confirm your PIN",
+            "confirmPinDesc": "Enter your PIN again to confirm.",
+            "saving": "Saving PIN...",
+            "success": "PIN set successfully",
+            "trivial": "Choose a PIN that's harder to guess.",
+            "mismatch": "PINs don't match.",
+            "saveFailed": "Failed to save PIN. Please try again.",
+            "enterPin": "Enter a 6-digit PIN",
+            "removeConfirm": "Are you sure you want to remove your recovery PIN? You will only be able to recover your account by waiting 7 days.",
+            "removing": "Removing...",
+            "remove": "Remove PIN",
+            "resetBanner": "Your recovery PIN was reset — ",
+            "setAgain": "set it again",
+            "doYouHave": "Do you have a recovery PIN?",
+            "enterForInstant": "Enter your 6-digit PIN for instant recovery.",
+            "dontHave": "I don't have a PIN",
+            "incorrect": "Incorrect PIN. {{attempts}} attempts left.",
+            "locked": "Too many attempts. You can still recover by waiting 7 days.",
+            "throttled": "Too many tries right now. Wait a minute and try again.",
+            "title": "Recovery PIN",
+            "instantRecoveryOn": "Instant recovery: On",
+            "notSet": "Not set",
+            "change": "Change",
+            "afterRecovery": {
+                "title": "Set a new recovery PIN",
+                "body": "The PIN you just used has been retired — each PIN works once, so your account stays protected. Choose a new one to keep instant recovery ready.",
+                "hint": "Same rules as before: 6 digits, nothing obvious."
+            }
+        },
+        "addWayBackIn": "Add a way back in",
+        "addAnotherMethod": "Add another method",
+        "fullyProtected": "You're fully protected.",
+        "added": "Added"
     },
     "alerts": {
         "accepted": "Accepted",
@@ -2869,6 +2991,7 @@
             "experience": "New Experience",
             "assistance": "New Assistance",
             "portfolio": "New Portfolio",
+            "badge": "New Badge",
             "boost": "New Boost",
             "achievement": "New Achievement",
             "skill": "New Skill",
@@ -3700,6 +3823,9 @@
             "upload": "Upload",
             "change": "Change {{type}}"
         },
+        "activity": {
+            "title": "Endorsement of {{name}}"
+        },
         "request": {
             "header": {
                 "title": "Endorsement Request",
@@ -3714,7 +3840,8 @@
                 "messagePlaceholder": "Message...",
                 "emailPlaceholder": "Email",
                 "sendEmail": "Send Email Request",
-                "sending": "Sending..."
+                "sending": "Sending...",
+                "linkGenerationFailed": "Unable to create this link. Please try again."
             },
             "success": {
                 "title": "Request Sent!",

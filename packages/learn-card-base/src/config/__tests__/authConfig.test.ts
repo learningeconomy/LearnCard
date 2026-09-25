@@ -1,19 +1,37 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
     clearAuthConfigOverrides,
     getAuthConfig,
     getConfigCapabilities,
+    getKeycloakConfig,
     getSSSConfig,
+    getEscrowStrategyConfig,
     isEmailBackupShareEnabled,
     setAuthConfigFromTenant,
     setAuthConfigOverrides,
     shouldUseSSS,
 } from '../authConfig';
 import { DEFAULT_LEARNCARD_TENANT_CONFIG } from '../tenantDefaults';
+import { tenantKeycloakConfigSchema } from '../tenantConfigSchema';
 
 describe('authConfig', () => {
     beforeEach(() => clearAuthConfigOverrides());
+    afterEach(() => vi.unstubAllEnvs());
+
+    it('uses enclave environment fallbacks only when tenant values are absent', () => {
+        vi.stubEnv('VITE_ESCROW_ENCLAVE_MODE', 'software');
+        vi.stubEnv('VITE_ESCROW_ENCLAVE_PUBLIC_KEYS', ' first, second , ');
+        expect(getSSSConfig()).toMatchObject({
+            escrowEnclaveMode: 'software',
+            escrowEnclavePublicKeys: ['first', 'second'],
+        });
+        setAuthConfigOverrides({
+            providerConfig: { sss: { escrowEnclaveMode: 'off', escrowEnclavePublicKeys: [] } },
+        });
+        expect(getEscrowStrategyConfig(getSSSConfig())).toBeUndefined();
+        expect(getSSSConfig().escrowEnclavePublicKeys).toEqual([]);
+    });
 
     it('uses deterministic isolated-consumer defaults', () => {
         expect(getAuthConfig()).toMatchObject({
@@ -22,8 +40,54 @@ describe('authConfig', () => {
         });
         expect(getSSSConfig()).toEqual({
             serverUrl: 'http://localhost:5100/api',
+            escrowRelayPublicKey: '',
+            escrowRelayKeyId: '',
+            escrowEnclaveMode: 'off',
+            escrowEnclavePublicKeys: [],
+            escrowEnclaveMeasurements: [],
             enableEmailBackupShare: true,
             requireEmailForPhoneUsers: true,
+        });
+    });
+
+    it('reads the pinned escrow relay key from tenant SSS config', () => {
+        setAuthConfigOverrides({
+            providerConfig: {
+                sss: { escrowRelayPublicKey: 'relay-public-key', escrowRelayKeyId: '2026-09' },
+            },
+        });
+
+        expect(getSSSConfig()).toMatchObject({
+            escrowRelayPublicKey: 'relay-public-key',
+            escrowRelayKeyId: '2026-09',
+        });
+    });
+
+    it('maps explicit enclave policies and leaves escrow disabled by default', () => {
+        expect(getEscrowStrategyConfig(getSSSConfig())).toBeUndefined();
+        setAuthConfigOverrides({
+            providerConfig: {
+                sss: {
+                    escrowEnclaveMode: 'software',
+                    escrowEnclavePublicKeys: ['dev-key'],
+                },
+            },
+        });
+        expect(getEscrowStrategyConfig(getSSSConfig())).toEqual({
+            enabled: true,
+            attestation: { mode: 'software', pinnedPublicKeys: ['dev-key'] },
+        });
+        setAuthConfigOverrides({
+            providerConfig: {
+                sss: {
+                    escrowEnclaveMode: 'nitro',
+                    escrowEnclaveMeasurements: [{ imageSha384: 'measurement' }],
+                },
+            },
+        });
+        expect(getEscrowStrategyConfig(getSSSConfig())).toEqual({
+            enabled: true,
+            attestation: { mode: 'nitro', pinnedMeasurements: [{ imageSha384: 'measurement' }] },
         });
     });
 
@@ -63,9 +127,11 @@ describe('authConfig', () => {
                     verifierId: 'tenant-verifier',
                     rpcTarget: 'https://rpc.example.com',
                 },
-                keycloak: {
-                    issuer: 'https://keycloak.example.com',
-                },
+                keycloak: tenantKeycloakConfigSchema.parse({
+                    serverUrl: 'https://keycloak.example.com',
+                    realm: 'learncard',
+                    clientId: 'app',
+                }),
             },
         });
 
@@ -86,8 +152,16 @@ describe('authConfig', () => {
             rpcTarget: 'https://rpc.example.com',
         });
         expect(config.providerConfig.keycloak).toEqual({
-            issuer: 'https://keycloak.example.com',
+            serverUrl: 'https://keycloak.example.com',
+            realm: 'learncard',
+            clientId: 'app',
+            scopes: ['openid', 'profile', 'email', 'phone'],
         });
+        expect(getKeycloakConfig()).toEqual(config.providerConfig.keycloak);
+    });
+
+    it('leaves Keycloak config absent for other tenants', () => {
+        expect(getKeycloakConfig()).toBeUndefined();
     });
 
     it('clears host overrides back to deterministic defaults', () => {

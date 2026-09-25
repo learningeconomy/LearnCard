@@ -43,18 +43,33 @@ When the device share is lost (new device, cleared storage), the private key is 
 
 Three methods are supported. Each encrypts the **recovery share** differently.
 
-| Method | Storage | User Input | Encryption |
-|---|---|---|---|
-| **Passkey** | Server (encrypted recovery share) | Biometric/FIDO2 auth | WebAuthn PRF → AES-GCM |
-| **Phrase** | User writes down 25 words | 25-word mnemonic | Direct encoding (`shareToRecoveryPhrase`) |
-| **Backup File** | User downloads `.json` file | File + password | `encryptWithPassword` (Argon2id KDF → AES-GCM) |
+| Method          | Storage                           | User Input           | Encryption                                     |
+| --------------- | --------------------------------- | -------------------- | ---------------------------------------------- |
+| **Passkey**     | Server (encrypted recovery share) | Biometric/FIDO2 auth | WebAuthn PRF → AES-GCM                         |
+| **Phrase**      | User writes down 25 words         | 25-word mnemonic     | Direct encoding (`shareToRecoveryPhrase`)      |
+| **Backup File** | User downloads `.json` file       | File + password      | `encryptWithPassword` (Argon2id KDF → AES-GCM) |
+
+### Email recovery relay and residual risk
+
+For email recovery, the client encrypts the versioned recovery share, target email, tenant
+branding, and a client-generated confirmation code to a pinned relay public key using ephemeral
+P-256 ECDH, HKDF-SHA-256, and AES-256-GCM. `lca-api` proxies only the authenticated ciphertext
+and records the pending method after the isolated relay reports synchronous Postmark acceptance;
+it never receives the share. The confirmation code is also sent separately to `lca-api` so the
+existing HMAC hash, expiry, and attempt-limit checks remain authoritative. This means a compromised
+`lca-api` can interfere with enrollment metadata or the code lifecycle, but cannot decrypt or
+redirect the recovery share because the recipient is authenticated inside the ciphertext.
+
+The relay is still a **transient share holder while decrypting**, and Postmark plus the recipient's
+mailbox retain the plaintext email. Email recovery is therefore a bridge, not enclave-grade escrow;
+it should be retired when enclave-backed recovery is available.
 
 ### Server endpoints for recovery
 
-| Endpoint | Method | Description |
-|---|---|---|
-| `GET /keys/recovery?type=<type>&providerType=<p>&authToken=<t>` | GET | Fetch encrypted recovery share |
-| `POST /keys/recovery` | POST | Store new encrypted recovery share |
+| Endpoint                                                                                 | Method | Description                        |
+| ---------------------------------------------------------------------------------------- | ------ | ---------------------------------- |
+| `GET /keys/recovery?type=<type>&providerType=<p>` (auth token via `X-Auth-Token` header) | GET    | Fetch encrypted recovery share     |
+| `POST /keys/recovery`                                                                    | POST   | Store new encrypted recovery share |
 
 ---
 
@@ -66,8 +81,8 @@ After a new user completes first-time setup (`needs_setup` → `ready`), the LCA
 
 1. A `sawNeedsSetupRef` tracks whether the coordinator passed through `needs_setup`
 2. Once the wallet initializes (`ready` + wallet created), check:
-   - Did the coordinator pass through `needs_setup`?
-   - Does the user have 0 recovery methods?
+    - Did the coordinator pass through `needs_setup`?
+    - Does the user have 0 recovery methods?
 3. If both true → show `RecoverySetupModal`
 
 ### `useRecoverySetup` hook
@@ -109,10 +124,10 @@ sequenceDiagram
 
 ```ts
 const {
-    getRecoveryMethods,      // (authProvider) => Promise<RecoveryMethodInfo[]>
-    addPasskeyRecovery,      // (authProvider, privateKey) => Promise<string> (credentialId)
-    generateRecoveryPhrase,  // (privateKey, authProvider?) => Promise<string> (25 words)
-    exportBackup,            // (privateKey, password, did) => Promise<BackupFile>
+    getRecoveryMethods, // (authProvider) => Promise<RecoveryMethodInfo[]>
+    addPasskeyRecovery, // (authProvider, privateKey) => Promise<string> (credentialId)
+    generateRecoveryPhrase, // (privateKey, authProvider?) => Promise<string> (25 words)
+    exportBackup, // (privateKey, password, did) => Promise<BackupFile>
 } = useRecoverySetup({ serverUrl });
 ```
 
@@ -179,13 +194,115 @@ sequenceDiagram
 
 ```ts
 const {
-    recoverWithPasskey,   // (authProvider, credentialId) => Promise<string>
-    recoverWithPhrase,    // (authProvider, phrase) => Promise<string>
-    recoverWithBackup,    // (authProvider, fileContents, password) => Promise<string>
-    connecting,           // boolean — loading state
-    error,                // string | null — last error
+    recoverWithPasskey, // (authProvider, credentialId) => Promise<string>
+    recoverWithPhrase, // (authProvider, phrase) => Promise<string>
+    recoverWithBackup, // (authProvider, fileContents, password) => Promise<string>
+    connecting, // boolean — loading state
+    error, // string | null — last error
 } = useRecoveryMethods({ serverUrl });
 ```
+
+---
+
+## Escrow hold restart
+
+If the original browser or resume secrets are lost, call `coordinator.startEscrowRecovery({ restart: true })`.
+Restart cancels the old hold as superseded and returns new resume secrets with a full waiting period.
+The pending hold must be at least 24 hours old (configurable with `ESCROW_HOLD_RESTART_MIN_AGE_MS`).
+Earlier attempts throw `EscrowHoldRestartThrottledError`, with `retryAfter` when available; ordinary starts still reuse the existing hold.
+
+## Recovery PIN
+
+An **optional** fast path layered on top of escrow recovery. Escrow already seals a recovery
+share to the enclave for every user; the PIN doesn't add a second custodial share — it adds a
+second _release policy_ (`pin`) on that same sealed blob, alongside the default 7-day `hold`
+policy. A user with a PIN can recover **immediately**; a user without one falls back to the
+delay-gated hold, unchanged.
+
+PINs are **6–12 digits**. Trivial patterns are rejected client-side (`normalizePin`/`validatePin`
+in `@learncard/sss-key-manager`'s `escrow-pin.ts`): all-same-digit, ascending/descending runs, and
+a short denylist (`123456`, `000000`, etc.).
+
+### Setup, change, and remove
+
+Setting or changing a PIN **rotates the escrow share** — the client never persists the plaintext
+recovery share, so it can't re-seal the old one with a new PIN verifier baked in.
+
+```ts
+// Set a PIN for the first time, or change the existing one (both rotate).
+await coordinator.setEscrowPin('482913');
+
+// Remove the PIN. Escrow recovery still works via the 7-day hold.
+await coordinator.clearEscrowPin();
+```
+
+Both require `state.status === 'ready'` and throw otherwise. After either call, `coordinator`
+re-fetches enrollment so `state.escrowPin` (an `EscrowPinStatus`) reflects the new `enabled` /
+`attemptsRemaining` values on the next render.
+
+### Recovering with a PIN
+
+Each call to `recover({ method: 'escrow-pin', pin })` is **one attempt against a fresh hold** —
+the server always supersedes any pending `pin` hold with a new one per attempt, and a failed
+`/complete` burns the hold it was called on. The UI is expected to loop on mismatch rather than
+retry the same call:
+
+```ts
+try {
+    await coordinator.recover({ method: 'escrow-pin', pin: userEnteredPin });
+    // state transitions to 'ready'
+} catch (e) {
+    if (e.name === 'EscrowPinMismatchError') {
+        // e.attemptsRemaining — show "Incorrect PIN. N attempts left."
+    } else if (e.name === 'EscrowPinLockedError') {
+        // PIN disabled after 10 lifetime failed attempts — fall through to
+        // the existing 7-day hold flow (recover({ method: 'escrow' })).
+    }
+}
+```
+
+(`EscrowPinMismatchError` / `EscrowPinLockedError` classes are exported from
+`@learncard/sss-key-manager` for `instanceof` checks; `EscrowRecoveryPanel` checks `err.name`
+since the error may cross a serialization boundary.)
+
+```mermaid
+sequenceDiagram
+    participant UI as EscrowRecoveryPanel
+    participant AC as AuthCoordinator
+    participant Server as SSS Server / Enclave
+
+    UI->>AC: recover({ method: 'escrow-pin', pin })
+    AC->>Server: startEscrowRecovery({ releasePolicy: 'pin' })
+    Server-->>AC: fresh hold + resumeToken + pinSalt
+    AC->>Server: complete(holdId, resumeToken, pinProof)
+
+    alt Correct PIN
+        Server-->>AC: recovery share released
+        AC->>AC: reconstruct + re-split + store new shares
+        AC-->>UI: state: ready
+    else Incorrect PIN
+        Server-->>AC: EscrowPinMismatchError(attemptsRemaining)
+        Note over Server: hold burned — next attempt is a new hold
+        AC-->>UI: throw EscrowPinMismatchError
+    else 10th incorrect PIN
+        Server-->>AC: EscrowPinLockedError
+        Note over Server: PIN disabled; 7-day hold still available
+        AC-->>UI: throw EscrowPinLockedError
+    end
+```
+
+### Forgotten PIN
+
+"I don't have a PIN" (or a locked-out PIN) falls back to the existing 7-day hold —
+`recover({ method: 'escrow' })` — which supersedes any pending `pin` hold on the server.
+
+### PIN reset after forced rotation
+
+A rotation triggered for another reason (identity recovery, email-link completion, automatic
+repair) can't preserve an in-memory-only PIN, so the server-side PIN is cleared as a side effect.
+The coordinator surfaces this as `state.escrowPin.enabled === false` after the rotation; apps
+should treat that as a nudge to prompt the user to set their PIN again (see LCA's
+`AuthCoordinatorProvider` for the reset-banner pattern).
 
 ---
 
@@ -244,6 +361,7 @@ graph TD
 ### Key invariant
 
 After **every** recovery, the shares are **re-split** and **re-stored**. This means:
+
 - The device share on the new device is fresh (not the old one)
 - The auth share on the server is fresh
 - Old shares are effectively invalidated
@@ -287,6 +405,7 @@ const methods = [
 ### When shown
 
 Shown as a **dismissible prompt** for first-time users who:
+
 1. Went through `needs_setup` → `ready` (tracked via `sawNeedsSetupRef`)
 2. Have **zero** configured recovery methods
 
@@ -302,19 +421,19 @@ Shown as a **dismissible prompt** for first-time users who:
 
 All cryptographic operations come from `@learncard/sss-key-manager`:
 
-| Function | Package Path | Description |
-|---|---|---|
-| `splitAndVerify` | `atomic-operations.ts` | Split private key into 3 shares with verification |
-| `reconstructFromShares` | `sss.ts` | Reconstruct from any 2 shares |
-| `encryptWithPassword` | `crypto.ts` | Argon2id KDF → AES-GCM encryption |
-| `decryptWithPassword` | `crypto.ts` | Reverse of above |
-| `createPasskeyCredential` | `passkey.ts` | WebAuthn credential creation |
-| `encryptShareWithPasskey` | `passkey.ts` | PRF-derived key → AES-GCM |
-| `decryptShareWithPasskey` | `passkey.ts` | Reverse of above |
-| `shareToRecoveryPhrase` | `recovery-phrase.ts` | Encode share as 25-word mnemonic |
-| `recoveryPhraseToShare` | `recovery-phrase.ts` | Decode mnemonic back to share |
-| `storeDeviceShare` | `storage.ts` | Persist to IndexedDB (`lcb-sss-keys`) |
-| `getDeviceShare` | `storage.ts` | Retrieve from IndexedDB |
+| Function                  | Package Path           | Description                                       |
+| ------------------------- | ---------------------- | ------------------------------------------------- |
+| `splitAndVerify`          | `atomic-operations.ts` | Split private key into 3 shares with verification |
+| `reconstructFromShares`   | `sss.ts`               | Reconstruct from any 2 shares                     |
+| `encryptWithPassword`     | `crypto.ts`            | Argon2id KDF → AES-GCM encryption                 |
+| `decryptWithPassword`     | `crypto.ts`            | Reverse of above                                  |
+| `createPasskeyCredential` | `passkey.ts`           | WebAuthn credential creation                      |
+| `encryptShareWithPasskey` | `passkey.ts`           | PRF-derived key → AES-GCM                         |
+| `decryptShareWithPasskey` | `passkey.ts`           | Reverse of above                                  |
+| `shareToRecoveryPhrase`   | `recovery-phrase.ts`   | Encode share as 25-word mnemonic                  |
+| `recoveryPhraseToShare`   | `recovery-phrase.ts`   | Decode mnemonic back to share                     |
+| `storeDeviceShare`        | `storage.ts`           | Persist to IndexedDB (`lcb-sss-keys`)             |
+| `getDeviceShare`          | `storage.ts`           | Retrieve from IndexedDB                           |
 
 ---
 

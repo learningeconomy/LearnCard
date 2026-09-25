@@ -1,0 +1,15 @@
+# Local/CI Keycloak image: adds the Apple social identity provider extension on top
+# of the stock image so `start-dev --import-realm` can bring up the `apple` IdP
+# alongside the built-in `google` one. No `kc.sh build` here: start-dev builds
+# automatically on boot, and this image is never used with `start --optimized`.
+ARG KEYCLOAK_VERSION=26.7.4
+FROM quay.io/keycloak/keycloak:${KEYCLOAK_VERSION}
+
+# Apple Identity Provider for Keycloak (https://github.com/klausbetz/apple-identity-provider-keycloak)
+# v1.17.0 is the first release compatible with Keycloak >= 26.5. Pin by digest so a
+# compromised/rotated release asset fails the build instead of silently changing behavior;
+# bump both the version and the checksum together (see infra/keycloak/README.md).
+ADD --checksum=sha256:4091dee2a1ec9e0771bef4bd46005197d86b0a2b1f25198c41738476b1d102bb \
+    --chown=keycloak:keycloak \
+    https://github.com/klausbetz/apple-identity-provider-keycloak/releases/download/1.17.0/apple-identity-provider-1.17.0.jar \
+    /opt/keycloak/providers/apple-identity-provider-1.17.0.jar

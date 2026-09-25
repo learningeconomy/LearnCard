@@ -34,7 +34,14 @@ import { readdirSync, existsSync, readFileSync, writeFileSync, statSync } from '
 import { resolve, dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { spawn, execSync, execFileSync } from 'child_process';
-import { networkInterfaces } from 'os';
+import { homedir, networkInterfaces } from 'os';
+
+import {
+    buildAudiencesEnvPrefix,
+    deriveNativeAuthRequirements,
+    mergeAudiences,
+    type NativeAuthRequirements,
+} from './native-auth-audiences';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -511,6 +518,24 @@ const startDev = async (
     const localAiEnv = useLocalAi ? ' LOCAL_AIP=1' : '';
     const dockerUidEnv = 'LOCAL_UID=$(id -u) LOCAL_GID=$(id -g)';
 
+    // Native Google/Apple sign-in audiences + Keycloak client requirements,
+    // derived from this tenant's own config + Firebase asset files (see
+    // native-auth-audiences.ts) instead of the old compose-local.yaml
+    // hardcoded LearnCard defaults. Only Docker-backed modes start the `api`
+    // service that reads them.
+    const nativeAuthRequirements = usesDocker
+        ? deriveNativeAuthRequirements(tenantId, stageId === 'production' ? undefined : stageId)
+        : undefined;
+    const audiencesEnv = nativeAuthRequirements
+        ? buildAudiencesEnvPrefix(mergeAudiences([nativeAuthRequirements]))
+        : '';
+
+    if (nativeAuthRequirements?.warnings.length) {
+        for (const warning of nativeAuthRequirements.warnings) {
+            log.info(yellow(`⚠ ${warning}`));
+        }
+    }
+
     if (useLocalAi) {
         let localAiIsReachable = false;
 
@@ -545,7 +570,7 @@ const startDev = async (
 
         case 'services':
             runCommand(
-                `${dockerUidEnv} docker compose -f compose-local.yaml up${buildFlag} --scale app=0`,
+                `${dockerUidEnv}${audiencesEnv} docker compose -f compose-local.yaml up${buildFlag} --scale app=0`,
                 `Starting Docker services (no app)${noBuild ? ' — skipping rebuild' : ''}`,
                 `bun run lc dev ${tenantId}${stageArg} services${fastArg}`
             );
@@ -554,7 +579,7 @@ const startDev = async (
         case 'full':
         default:
             runCommand(
-                `${dockerUidEnv}${localAiEnv} TENANT=${tenantId} STAGE=${stageId} docker compose -f compose-local.yaml up${buildFlag}`,
+                `${dockerUidEnv}${localAiEnv}${audiencesEnv} TENANT=${tenantId} STAGE=${stageId} docker compose -f compose-local.yaml up${buildFlag}`,
                 `Starting ${displayName}${stageLabel} — full stack${
                     noBuild ? ' (skipping rebuild)' : ''
                 }${useLocalAi ? ' + local AI' : ''}`,
@@ -607,10 +632,97 @@ const pickTenantAndPrepare = async () => {
 
 const runValidators = () => {
     runCommand(
-        'bun scripts/validate-tenant-configs.ts && bun scripts/validate-theme-schemas.ts',
-        'Validating all tenant configs + theme schemas',
+        'bun scripts/validate-tenant-configs.ts && bun scripts/validate-theme-schemas.ts && bun scripts/validate-native-auth.ts',
+        'Validating all tenant configs + theme schemas + native auth wiring',
         'bun run lc validate'
     );
+};
+
+/**
+ * Client IDs are public, but the logger's secret scrubber redacts long tokens,
+ * which would blank the exact values this command exists to print.
+ */
+const printRaw = (line: string): void => {
+    process.stdout.write(`${line}\n`);
+};
+
+const printAuthAudiencesForTenant = (req: NativeAuthRequirements): void => {
+    printRaw('');
+    printRaw(bold(`  ${req.tenantId}`));
+    printRaw(`    Bundle ID:            ${req.bundleId ? cyan(req.bundleId) : dim('(none)')}`);
+    printRaw(
+        `    Google — iOS:         ${
+            req.googleIosClientId ? cyan(req.googleIosClientId) : dim('(none)')
+        }`
+    );
+    printRaw(
+        `    Google — Android-web: ${
+            req.googleAndroidWebClientIds.length > 0
+                ? cyan(req.googleAndroidWebClientIds.join(', '))
+                : dim('(none)')
+        }`
+    );
+    printRaw(
+        `    Apple:                ${
+            req.appleClientIds.length > 0 ? cyan(req.appleClientIds.join(', ')) : dim('(none)')
+        }`
+    );
+    printRaw(`    Keycloak redirect URIs: ${req.keycloakRedirectUris.join(', ') || dim('(none)')}`);
+    printRaw(`    Keycloak web origins:   ${req.keycloakWebOrigins.join(', ')}`);
+
+    for (const warning of req.warnings) {
+        printRaw(`    ${yellow('⚠')} ${warning}`);
+    }
+};
+
+/**
+ * `bun run lc auth-audiences [tenant…] [stage]` — derives native Google/Apple
+ * sign-in audiences + Keycloak native client requirements per tenant (see
+ * native-auth-audiences.ts) and prints combined CSV env lines ready to paste
+ * into an lca-api deployment. GOOGLE_OAUTH_CLIENT_IDS / APPLE_OAUTH_CLIENT_IDS
+ * remain server-controlled — see
+ * services/learn-card-network/lca-api/src/helpers/social-token.helpers.ts.
+ */
+const runAuthAudiences = (args: string[]): void => {
+    const knownTenants = discoverTenants();
+    const stageArg = args.find(a => asStage(a));
+    const tenantArgs = args.filter(a => a !== stageArg);
+    const tenants = tenantArgs.length > 0 ? tenantArgs : knownTenants;
+
+    const unknown = tenants.filter(t => !knownTenants.includes(t));
+
+    if (unknown.length > 0) {
+        log.error(red(`❌ Unknown tenant(s): ${unknown.join(', ')}`));
+        log.error(dim(`   Available: ${knownTenants.join(', ')}`));
+        rl.close();
+        process.exit(1);
+    }
+
+    const stage = stageArg === 'production' ? undefined : stageArg;
+
+    printRaw('');
+    printRaw(bold(`🔐 Native auth audiences${stage ? ` (${stage})` : ''}`));
+
+    const allRequirements = tenants.map(tenantId => deriveNativeAuthRequirements(tenantId, stage));
+
+    for (const req of allRequirements) {
+        printAuthAudiencesForTenant(req);
+    }
+
+    const merged = mergeAudiences(allRequirements);
+
+    printRaw('');
+    printRaw(
+        bold(
+            '  Combined (paste into the lca-api deployment env — union across tenants sharing it):'
+        )
+    );
+    printRaw('');
+    printRaw(`GOOGLE_OAUTH_CLIENT_IDS=${merged.google}`);
+    printRaw(`APPLE_OAUTH_CLIENT_IDS=${merged.apple}`);
+    printRaw('');
+
+    rl.close();
 };
 
 const generateAssets = async () => {
@@ -653,7 +765,7 @@ const generateAssets = async () => {
         log.info(
             `  ${cyan('1')}  ${bold(
                 'Fill missing'
-            )} — only generate assets that don\'t exist yet ${dim('(safe)')}`
+            )} — only generate assets that don't exist yet ${dim('(safe)')}`
         );
         log.info(
             `  ${cyan('2')}  ${bold(
@@ -1072,6 +1184,38 @@ const patchPlatformJsonsForLiveReload = (serverUrl: string): void => {
  * shows automatically. But `vite build` always produces a production bundle where
  * `DEV` is false, so we must explicitly enable the widget via env var for non-prod stages.
  */
+/**
+ * Non-production native builds must not take Capgo OTA updates: with
+ * `autoUpdate: true` the app downloads the production channel's web bundle on
+ * launch and runs it instead of the local build — including production's
+ * tenant-config.json, so a stage like `keycloak-local` silently talks to prod.
+ */
+const disableCapgoAutoUpdateForStage = (stageId: string): void => {
+    if (stageId === 'production') return;
+
+    const platformPaths = [
+        resolve(APP_ROOT, 'ios/App/App/capacitor.config.json'),
+        resolve(APP_ROOT, 'android/app/src/main/assets/capacitor.config.json'),
+    ];
+
+    for (const jsonPath of platformPaths) {
+        if (!existsSync(jsonPath)) continue;
+
+        try {
+            const raw = JSON.parse(readFileSync(jsonPath, 'utf-8'));
+            if (!raw.plugins?.CapacitorUpdater) continue;
+
+            raw.plugins.CapacitorUpdater.autoUpdate = false;
+            writeFileSync(jsonPath, JSON.stringify(raw, null, 2) + '\n', 'utf-8');
+            log.info(
+                `   ${green('✓')} ${jsonPath.replace(`${APP_ROOT}/`, '')} → Capgo autoUpdate=false (${stageId})`
+            );
+        } catch (err) {
+            log.warn(`   ⚠️  Failed to disable Capgo autoUpdate in ${jsonPath}:`, err);
+        }
+    }
+};
+
 const setNativeBuildEnv = (stageId: string): void => {
     const isProduction = stageId === 'production';
 
@@ -1079,6 +1223,13 @@ const setNativeBuildEnv = (stageId: string): void => {
 };
 
 const VITE_BUILD_COMMAND = 'NODE_OPTIONS="--max-old-space-size=16608" npx vite build';
+
+/**
+ * Pinned to the same version CI uses (.github/workflows/capgo-upload.yml). `@latest`
+ * (8.51.x) started requiring a capacitor config in the cwd for `bundle upload`, which
+ * broke local uploads run from the monorepo root.
+ */
+const CAPGO_CLI = '@capgo/cli@8.50.3';
 
 const execBlocking = (cmd: string, label: string, cwd: string = APP_ROOT): void => {
     log.info('');
@@ -1152,6 +1303,7 @@ const nativeSync = async (tenantId?: string, stageId?: string) => {
         `bun scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
         'Patching native projects with tenant config'
     );
+    disableCapgoAutoUpdateForStage(stageId);
 
     log.info('');
     log.info(green('✅ Native sync complete.'));
@@ -1162,6 +1314,117 @@ const nativeSync = async (tenantId?: string, stageId?: string) => {
     );
     log.info('');
 
+    rl.close();
+};
+
+const NO_ADB_REVERSE_FLAG = '--no-adb-reverse';
+const adbReverseDisabled = process.argv.includes(NO_ADB_REVERSE_FLAG);
+
+/** Ports of every `localhost` URL in the generated tenant config (none for production configs). */
+const localhostPortsFromTenantConfig = (): number[] => {
+    const configPath = resolve(APP_ROOT, 'public/tenant-config.json');
+    if (!existsSync(configPath)) return [];
+
+    const ports = new Set<number>();
+    const visit = (value: unknown): void => {
+        if (typeof value === 'string') {
+            const match = /^https?:\/\/(?:localhost|127\.0\.0\.1):(\d+)/.exec(value);
+            if (match) ports.add(Number(match[1]));
+        } else if (Array.isArray(value)) {
+            value.forEach(visit);
+        } else if (value && typeof value === 'object') {
+            Object.values(value).forEach(visit);
+        }
+    };
+
+    try {
+        visit(JSON.parse(readFileSync(configPath, 'utf-8')));
+    } catch (err) {
+        log.warn('   ⚠️  Could not read public/tenant-config.json for adb reverse:', err);
+    }
+
+    return [...ports].sort((a, b) => a - b);
+};
+
+const resolveAdbPath = (): string | undefined => {
+    const sdkRoots = [
+        process.env.ANDROID_HOME,
+        process.env.ANDROID_SDK_ROOT,
+        join(homedir(), 'Library/Android/sdk'),
+    ].filter((root): root is string => !!root);
+
+    for (const root of sdkRoots) {
+        const candidate = join(root, 'platform-tools', 'adb');
+        if (existsSync(candidate)) return candidate;
+    }
+
+    try {
+        return execSync('command -v adb', { stdio: 'pipe' }).toString().trim() || undefined;
+    } catch {
+        return undefined;
+    }
+};
+
+/**
+ * `localhost` inside an Android emulator is the emulator itself, so local
+ * stages (Keycloak :8081, lca-api :5100, bridge page :3000, …) are unreachable
+ * without `adb reverse`. With `waitForDevice`, a background poller applies the
+ * forwards once an emulator/device connects (up to 10 minutes), since the
+ * emulator usually starts after the IDE opens. Forwards reset when the
+ * emulator restarts — re-run `bun run lc native reverse`.
+ */
+const setupAdbReverse = (waitForDevice: boolean): void => {
+    const ports = localhostPortsFromTenantConfig();
+    if (ports.length === 0) return;
+
+    log.info('');
+    log.info(green('▶ Forwarding emulator localhost → this machine (adb reverse)'));
+    log.info(dim(`   Ports: ${ports.join(', ')}  (skip with ${NO_ADB_REVERSE_FLAG})`));
+
+    const adb = resolveAdbPath();
+    const manual = ports.map(port => `adb reverse tcp:${port} tcp:${port}`).join(' && ');
+
+    if (!adb) {
+        log.warn(yellow(`   adb not found (set ANDROID_HOME). Run manually: ${manual}`));
+        return;
+    }
+
+    const quotedAdb = `'${adb.replace(/'/g, `'\\''`)}'`;
+    const reverses = ports.map(port => `${quotedAdb} reverse tcp:${port} tcp:${port}`).join(' && ');
+
+    if (waitForDevice) {
+        const poller = [
+            'i=0',
+            'while [ $i -lt 120 ]; do',
+            `  if [ "$(${quotedAdb} get-state 2>/dev/null)" = device ]; then ${reverses}; exit $?; fi`,
+            '  i=$((i+1)); sleep 5',
+            'done',
+        ].join('\n');
+        spawn('sh', ['-c', poller], { detached: true, stdio: 'ignore' }).unref();
+        log.info(
+            dim(
+                '   Applied as soon as an emulator/device connects. After an emulator restart: bun run lc native reverse'
+            )
+        );
+        return;
+    }
+
+    try {
+        execSync(reverses, { stdio: 'pipe' });
+        log.info(`   ${green('✓')} Forwarded ${ports.join(', ')}`);
+    } catch (err) {
+        log.warn(
+            yellow('   No emulator/device connected (or more than one)? Start one, then re-run.'),
+            err
+        );
+    }
+};
+
+const nativeReverse = (): void => {
+    setupAdbReverse(false);
+    if (localhostPortsFromTenantConfig().length === 0) {
+        log.info(dim('   No localhost URLs in public/tenant-config.json — nothing to forward.'));
+    }
     rl.close();
 };
 
@@ -1200,7 +1463,10 @@ const nativeOpen = async (platform?: Platform, tenantId?: string, stageId?: stri
             `bun scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
             'Patching native projects with tenant config'
         );
+        disableCapgoAutoUpdateForStage(stageId);
     }
+
+    if (platform === 'android' && !adbReverseDisabled) setupAdbReverse(true);
 
     rl.close();
 
@@ -1247,6 +1513,9 @@ const nativeRun = async (tenantId?: string, platform?: Platform) => {
         `bun scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
         'Patching native projects with tenant config'
     );
+    disableCapgoAutoUpdateForStage('local');
+
+    if (platform === 'android' && !adbReverseDisabled) setupAdbReverse(true);
 
     const runFlag = platform === 'android' ? ' --target' : '';
 
@@ -1259,15 +1528,21 @@ const nativeRun = async (tenantId?: string, platform?: Platform) => {
     );
 };
 
-const nativeDev = async (tenantId?: string, platform?: Platform) => {
+const nativeDev = async (tenantId?: string, platform?: Platform, stageId?: string) => {
     if (!tenantId) {
         tenantId = await pickTenant();
+    }
+
+    if (!stageId) {
+        stageId = await pickStage(tenantId);
     }
 
     if (!platform) {
         platform = await pickPlatform();
     }
 
+    const stageFlag = stageId === 'production' ? '' : ` --stage ${stageId}`;
+    const stageArg = stageId === 'local' ? '' : ` ${stageId}`;
     const displayName = getTenantDisplayName(tenantId);
     const lanIp = getLanIp();
 
@@ -1282,7 +1557,7 @@ const nativeDev = async (tenantId?: string, platform?: Platform) => {
     const serverUrl = `http://${lanIp}:${vitePort}`;
 
     log.info('');
-    log.info(bold(`📱 Native live-reload: ${displayName} → ${platform}`));
+    log.info(bold(`📱 Native live-reload: ${displayName} (${stageId}) → ${platform}`));
     log.info(`   LAN IP:     ${cyan(lanIp)}`);
     log.info(`   Server URL:  ${cyan(serverUrl)}`);
     log.info('');
@@ -1305,7 +1580,7 @@ const nativeDev = async (tenantId?: string, platform?: Platform) => {
     // which drops the live-reload `server` block and restores Capgo
     // `autoUpdate: true`. Step 5 below re-applies both directly.
     execBlocking(
-        `bun scripts/prepare-native-config.ts ${tenantId} --stage local`,
+        `bun scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
         'Step 4/6 — Patching native projects with tenant config'
     );
 
@@ -1327,9 +1602,12 @@ const nativeDev = async (tenantId?: string, platform?: Platform) => {
     log.info(`   load from ${bold(serverUrl)} with live-reload.`);
     log.info('');
     log.info(dim('   Press Ctrl+C to stop the Vite dev server.'));
+    log.info(dim(`   Shortcut: bun run lc native dev ${tenantId}${stageArg} ${platform}`));
     log.info('');
 
     rl.close();
+
+    setNativeBuildEnv(stageId);
 
     // Open the native IDE in background, then start vite in foreground
     const openCmd = platform === 'ios' ? 'bunx cap open ios' : 'bunx cap open android';
@@ -1718,11 +1996,11 @@ const capgoPreview = async (tenantId?: string, stageId?: string, channelArg?: st
 
     log.info('');
     log.info(green('▶ Step 3/4 — Ensuring Capgo channel exists'));
-    log.info(dim(`  $ bunx @capgo/cli@latest channel add ${channel} ${appId}`));
+    log.info(dim(`  $ bunx ${CAPGO_CLI} channel add ${channel} ${appId}`));
 
     try {
-        execFileSync('bunx', ['@capgo/cli@latest', 'channel', 'add', channel, appId], {
-            cwd: MONOREPO_ROOT,
+        execFileSync('bunx', [CAPGO_CLI, 'channel', 'add', channel, appId], {
+            cwd: APP_ROOT,
             stdio: 'pipe',
             env: { ...process.env, CAPGO_TOKEN: token },
         });
@@ -1744,40 +2022,31 @@ const capgoPreview = async (tenantId?: string, stageId?: string, channelArg?: st
     execFileBlocking(
         'bunx',
         [
-            '@capgo/cli@latest',
+            CAPGO_CLI,
             'bundle',
             'upload',
             appId,
             '--delta',
             '--path',
-            'apps/learn-card-app/build',
+            resolve(APP_ROOT, 'build'),
             '--channel',
             channel,
             '--bundle',
             bundleVersion,
             '--package-json',
-            'apps/learn-card-app/package.json',
+            resolve(APP_ROOT, 'package.json'),
             '--node-modules',
-            'node_modules',
+            resolve(MONOREPO_ROOT, 'node_modules'),
         ],
         'Step 4/4 — Uploading bundle to Capgo',
-        MONOREPO_ROOT
+        APP_ROOT
     );
 
     execFileBlocking(
         'bunx',
-        [
-            '@capgo/cli@latest',
-            'channel',
-            'set',
-            channel,
-            '--bundle',
-            bundleVersion,
-            '--self-assign',
-            appId,
-        ],
+        [CAPGO_CLI, 'channel', 'set', channel, '--bundle', bundleVersion, '--self-assign', appId],
         'Setting channel default (self-assign)',
-        MONOREPO_ROOT
+        APP_ROOT
     );
 
     log.info('');
@@ -1842,7 +2111,7 @@ const nativeMenu = async () => {
     log.info('');
     log.info(
         dim(
-            '  Or run directly: bun run lc native dev|sync|open|run|build|capgo [tenant] [stage] [ios|android] [beta|release|appetize]'
+            '  Or run directly: bun run lc native dev|sync|open|run|build|capgo|reverse [tenant] [stage] [ios|android] [beta|release|appetize]'
         )
     );
     log.info('');
@@ -1899,11 +2168,22 @@ const handleNativeShortcut = async (args: string[]): Promise<boolean> => {
 
     switch (subcommand) {
         case 'dev': {
-            // bun run lc native dev [tenant] [ios|android]
-            const platform = asPlatform(arg2) ?? asPlatform(arg1);
-            const tenant = arg1 && !asPlatform(arg1) ? arg1 : undefined;
+            // bun run lc native dev [tenant] [stage] [ios|android]
+            const allArgs = [arg1, arg2, args[3]];
 
-            await nativeDev(tenant, platform);
+            const platform = allArgs.reduce<Platform | undefined>(
+                (found, a) => found ?? asPlatform(a),
+                undefined
+            );
+
+            const stage = allArgs.reduce<string | undefined>(
+                (found, a) => found ?? asStage(a),
+                undefined
+            );
+
+            const tenant = allArgs.find(a => a && !asPlatform(a) && !asStage(a));
+
+            await nativeDev(tenant, platform, stage);
             return true;
         }
 
@@ -1919,6 +2199,12 @@ const handleNativeShortcut = async (args: string[]): Promise<boolean> => {
             const tenant = allArgs.find(a => a && !asPlatform(a) && !asStage(a));
 
             await nativeSync(tenant, stage);
+            return true;
+        }
+
+        case 'reverse': {
+            // bun run lc native reverse — re-apply adb reverse (e.g. after an emulator restart)
+            nativeReverse();
             return true;
         }
 
@@ -1992,7 +2278,7 @@ const handleNativeShortcut = async (args: string[]): Promise<boolean> => {
 // ---------------------------------------------------------------------------
 
 const handleShortcuts = async (): Promise<boolean> => {
-    const args = process.argv.slice(2);
+    const args = process.argv.slice(2).filter(a => a !== NO_ADB_REVERSE_FLAG);
     const command = args[0];
     const arg = args[1];
     const arg2 = args[2];
@@ -2107,6 +2393,12 @@ const handleShortcuts = async (): Promise<boolean> => {
         case 'validate':
             runValidators();
             return true;
+
+        case 'auth-audiences': {
+            // bun run lc auth-audiences [tenant…] [stage]
+            runAuthAudiences(args.slice(1));
+            return true;
+        }
 
         case 'generate': {
             // bun run lc generate <tenant> <logo> [--bg ...] [--name ...] etc.
@@ -2323,8 +2615,18 @@ const printHelp = () => {
         )}`
     );
     log.info(
+        `  ${cyan('bun run lc native reverse')}             ${dim(
+            'Re-apply adb reverse for local stages (after an emulator restart)'
+        )}`
+    );
+    log.info(
         `  ${cyan('bun run lc capgo [tenant] [stage] [channel]')} ${dim(
             'Local OTA build → PR/Beta channel (default: prod config)'
+        )}`
+    );
+    log.info(
+        `  ${cyan('bun run lc auth-audiences [tenant…] [stage]')} ${dim(
+            'Native Google/Apple + Keycloak client requirements per tenant'
         )}`
     );
     log.info('');
