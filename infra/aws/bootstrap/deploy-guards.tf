@@ -6,9 +6,7 @@ locals {
       "ec2:DeleteVpc", "ec2:ModifyVpcAttribute", "ec2:DeleteSubnet", "ec2:ModifySubnetAttribute",
       "ec2:DeleteRouteTable", "ec2:CreateRoute", "ec2:DeleteRoute", "ec2:ReplaceRoute",
       "ec2:DeleteInternetGateway", "ec2:AttachInternetGateway", "ec2:DetachInternetGateway", "ec2:DeleteNatGateway", "ec2:ReleaseAddress",
-      "ec2:DeleteSecurityGroup", "ec2:AuthorizeSecurityGroupIngress", "ec2:AuthorizeSecurityGroupEgress",
-      "ec2:RevokeSecurityGroupIngress", "ec2:RevokeSecurityGroupEgress", "ec2:ModifySecurityGroupRules",
-      "ec2:DeleteVpcEndpoints", "ec2:ModifyVpcEndpoint"
+      "ec2:DeleteSecurityGroup", "ec2:DeleteVpcEndpoints", "ec2:ModifyVpcEndpoint"
     ]
     rds                  = ["rds:ModifyDB*", "rds:DeleteDB*", "rds:RebootDBInstance", "rds:StartDB*", "rds:StopDB*", "rds:FailoverDBCluster", "rds:RemoveTagsFromResource"]
     ecs                  = ["ecs:UpdateService", "ecs:DeleteService", "ecs:DeleteCluster", "ecs:UpdateCluster", "ecs:UpdateClusterSettings", "ecs:PutClusterCapacityProviders", "ecs:StopTask", "ecs:ExecuteCommand", "ecs:DeleteTaskDefinitions", "ecs:UntagResource"]
@@ -98,6 +96,23 @@ data "aws_iam_policy_document" "deploy_guards" {
         variable = "aws:ResourceTag/Project"
         values   = ["learncard-keycloak"]
       }
+    }
+  }
+  # Rule mutations also authorize the security-group-rule resource, which is
+  # untagged for AWS's default egress rule and for rules still being created.
+  # Evaluate the Project tag on the parent group only.
+  statement {
+    sid    = "SecurityGroupRulesOnlyOnProjectGroups"
+    effect = "Deny"
+    actions = [
+      "ec2:AuthorizeSecurityGroupIngress", "ec2:AuthorizeSecurityGroupEgress",
+      "ec2:RevokeSecurityGroupIngress", "ec2:RevokeSecurityGroupEgress", "ec2:ModifySecurityGroupRules"
+    ]
+    resources = ["arn:${local.partition}:ec2:*:*:security-group/*"]
+    condition {
+      test     = "StringNotEquals"
+      variable = "aws:ResourceTag/Project"
+      values   = ["learncard-keycloak"]
     }
   }
   # EC2 exposes CreateAction only during tag-on-create authorization. Existing

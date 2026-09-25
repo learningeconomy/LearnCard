@@ -190,6 +190,8 @@ Every output is also a `String` parameter at
   Supported EC2/RDS/ECS/ELB existing-resource mutations require
   `aws:ResourceTag/Project=learncard-keycloak`, including rejecting missing tags.
   EC2/ECS/ELB tagging distinguishes tag-on-create from takeover of an existing resource.
+  Security-group rule changes check the parent group's tag only: the rule resource
+  itself is untagged for AWS's default egress rule and during rule creation.
   RDS lacks that discriminator: its tagging allow is name-scoped, and foreign
   existing Project values are rejected, but initially untagged resources within
   the reserved RDS name prefix can be tagged. Audit that namespace before rollout.
