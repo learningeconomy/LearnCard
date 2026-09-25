@@ -2,8 +2,11 @@
 # of the stock image so `start-dev --import-realm` can bring up the `apple` IdP
 # alongside the built-in `google` one. No `kc.sh build` here: start-dev builds
 # automatically on boot, and this image is never used with `start --optimized`.
-ARG KEYCLOAK_VERSION=26.7.4
-FROM quay.io/keycloak/keycloak:${KEYCLOAK_VERSION}
+FROM quay.io/keycloak/keycloak:26.7.4
+
+# Only legacy external-token retrieval is disabled, not broker login/callbacks.
+# Keycloak 26.7.4 requires unversioned names for features-disabled.
+ENV KC_FEATURES_DISABLED=twitter-broker,identity-brokering-api
 
 # Apple Identity Provider for Keycloak (https://github.com/klausbetz/apple-identity-provider-keycloak)
 # v1.17.0 is the first release compatible with Keycloak >= 26.5. Pin by digest so a

@@ -1,120 +1,228 @@
 name: Keycloak Infrastructure
-
 on:
     pull_request:
         paths:
-            - 'infra/keycloak/terraform/**'
-            - 'infra/keycloak/Dockerfile'
+            - 'infra/aws/bootstrap/**'
+            - 'infra/keycloak/**'
+            - '.github/workflows/keycloak-infra.yml'
+    push:
+        branches: [main]
+        paths:
+            - 'infra/keycloak/**'
             - '.github/workflows/keycloak-infra.yml'
     workflow_dispatch:
         inputs:
             environment:
-                description: GitHub deployment environment
-                required: true
+                description: Target environment (promote requires production)
+                default: staging
                 type: choice
-                options:
-                    - keycloak-staging
-                    - keycloak-production
+                options: [staging, production]
+            root:
+                description: Manual Terraform root (realm runs privately after image deploy)
+                default: service
+                type: choice
+                options: [network, service]
             action:
-                description: Plan or apply the reviewed infrastructure
-                required: true
+                description: Manual plan/apply or promote a staging digest to production
                 default: plan
                 type: choice
-                options:
-                    - plan
-                    - apply
-
+                options: [plan, apply, promote]
+            digest:
+                description: 'For promote: sha256 digest from a successful staging deployment'
+                type: string
+            snapshot_staging:
+                description: Snapshot staging before a recreate (production always snapshots)
+                default: false
+                type: boolean
 permissions:
     contents: read
-
 env:
     TF_IN_AUTOMATION: 'true'
     TF_INPUT: 'false'
-
 jobs:
     validate:
         runs-on: ubuntu-latest
-        defaults:
-            run:
-                working-directory: infra/keycloak/terraform
+        strategy:
+            fail-fast: false
+            matrix:
+                root:
+                    - infra/aws/bootstrap
+                    - infra/keycloak/terraform/network
+                    - infra/keycloak/terraform/service
+                    - infra/keycloak/terraform/realm
         steps:
             - uses: actions/checkout@v7
+              with:
+                  persist-credentials: false
             - uses: hashicorp/setup-terraform@v3
               with:
-                  terraform_version: '1.9.8'
-            - run: terraform fmt -check -recursive
-            - run: terraform init -backend=false
-            - run: terraform validate
+                  terraform_version: '1.15.8'
             - uses: terraform-linters/setup-tflint@v4
               with:
                   tflint_version: v0.55.1
-            - name: Lint Terraform (blocking)
-              run: tflint --init && tflint
-            - name: Build optimized Keycloak image (no push)
-              working-directory: .
-              run: docker build --build-arg KEYCLOAK_VERSION=26.7.4 -f infra/keycloak/Dockerfile infra/keycloak
+            - name: Validate and lint root
+              working-directory: ${{ matrix.root }}
+              run: |
+                  terraform fmt -check -recursive
+                  terraform init -backend=false
+                  terraform validate
+                  tflint --init && tflint
 
-    deploy:
-        if: github.event_name == 'workflow_dispatch'
-        needs: validate
+    build-image:
         runs-on: ubuntu-latest
-        environment: ${{ inputs.environment }}
-        concurrency:
-            group: keycloak-infra-${{ inputs.environment }}
-            cancel-in-progress: false
-        defaults:
-            run:
-                working-directory: infra/keycloak/terraform
-        env:
-            DEPLOY_ENVIRONMENT: ${{ inputs.environment == 'keycloak-production' && 'production' || 'staging' }}
-            AWS_REGION: ${{ vars.AWS_REGION || secrets.AWS_REGION }}
-            TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET || secrets.TF_STATE_BUCKET }}
-            TF_STATE_TABLE: ${{ vars.TF_STATE_TABLE || secrets.TF_STATE_TABLE }}
         steps:
             - uses: actions/checkout@v7
+              with:
+                  persist-credentials: false
+            - name: Test compatibility exit-code contract without credentials
+              run: bash infra/keycloak/scripts/test-compat-gate.sh
+            - name: Test deployment safety without credentials
+              run: |
+                  bash infra/keycloak/scripts/test-deploy-image.sh
+                  bash infra/keycloak/scripts/test-realm-runner.sh
+            - uses: docker/setup-qemu-action@v3
+            - uses: docker/setup-buildx-action@v3
+            - name: Build optimized ARM64 image (no push)
+              uses: docker/build-push-action@v6
+              with:
+                  context: infra/keycloak
+                  file: infra/keycloak/Dockerfile
+                  platforms: linux/arm64
+                  provenance: false
+                  push: false
+
+    # Enforce main-only branches on BOTH GitHub environments. Production requires
+    # independent approval/prevent-self-approval. Never deploy arbitrary PR SHAs.
+    deploy:
+        if: >-
+            github.ref == 'refs/heads/main' &&
+            (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+        needs: [validate, build-image]
+        runs-on: ubuntu-latest
+        timeout-minutes: 180
+        environment: keycloak-${{ github.event_name == 'push' && 'staging' || inputs.environment }}
+        concurrency:
+            group: keycloak-infra-${{ github.event_name == 'push' && 'staging' || inputs.environment }}
+            cancel-in-progress: false
+        permissions:
+            contents: read
+            id-token: write
+        env:
+            DEPLOY_ENVIRONMENT: ${{ github.event_name == 'push' && 'staging' || inputs.environment }}
+            AWS_REGION: us-east-1
+            TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+            TF_VAR_bootstrap_admin_password_secret_arn: ${{ vars.KEYCLOAK_BOOTSTRAP_ADMIN_SECRET_ARN }}
+            SNAPSHOT_STAGING: ${{ inputs.snapshot_staging || 'false' }}
+            MANUAL_IMAGE: ${{ vars.KEYCLOAK_CONTAINER_IMAGE }}
+            REQUESTED_DIGEST: ${{ inputs.digest }}
+            MANUAL_ROOT: ${{ inputs.root }}
+            MANUAL_ACTION: ${{ inputs.action }}
+        steps:
+            - name: Reserve job time for realm cancellation and cleanup
+              run: echo "DEPLOY_JOB_DEADLINE_EPOCH=$(( $(date +%s) + 170 * 60 ))" >> "$GITHUB_ENV"
+            - uses: actions/checkout@v7
+              with:
+                  persist-credentials: false
+                  fetch-depth: 0
+            - name: Validate dispatch configuration
+              run: |
+                  : "${TF_STATE_BUCKET:?Set environment TF_STATE_BUCKET}"
+                  if [[ "$MANUAL_ACTION" == promote ]]; then
+                      [[ "$DEPLOY_ENVIRONMENT" == production && "$REQUESTED_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+                  fi
             - uses: hashicorp/setup-terraform@v3
               with:
-                  terraform_version: '1.9.8'
-            - name: Check backend configuration
-              run: |
-                  : "${AWS_REGION:?Set AWS_REGION in the GitHub environment}"
-                  : "${TF_STATE_BUCKET:?Set TF_STATE_BUCKET in the GitHub environment}"
-                  : "${TF_STATE_TABLE:?Set TF_STATE_TABLE in the GitHub environment}"
-            - name: Configure AWS credentials
-              uses: aws-actions/configure-aws-credentials@v5
+                  terraform_version: '1.15.8'
+                  terraform_wrapper: false
+            - uses: aws-actions/configure-aws-credentials@v5
               with:
-                  aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-                  aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-                  aws-region: ${{ env.AWS_REGION }}
-            - name: Load environment variables file
-              env:
-                  TFVARS: ${{ secrets.TF_VARS }}
+                  role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+                  aws-region: us-east-1
+                  role-duration-seconds: 10800
+                  unset-current-credentials: true
+            - uses: docker/setup-qemu-action@v3
+            - uses: docker/setup-buildx-action@v3
+            - name: Resolve account-local repository and immutable tag
+              id: image
               run: |
-                  umask 077
-                  if [[ -n "$TFVARS" ]]; then
-                      printf '%s\n' "$TFVARS" > "environments/${DEPLOY_ENVIRONMENT}.tfvars"
+                  repository=$(aws ssm get-parameter --name "/learncard-keycloak/$DEPLOY_ENVIRONMENT/bootstrap/ecr_repository_url" --query Parameter.Value --output text)
+                  account=281762601323
+                  if [[ "$DEPLOY_ENVIRONMENT" == production ]]; then account=206533012615; fi
+                  [[ "$repository" == "$account.dkr.ecr.us-east-1.amazonaws.com/learncard/keycloak" ]]
+                  echo "repository=$repository" >> "$GITHUB_OUTPUT"
+                  version=$(python3 -c 'import re; print(re.search(r"^FROM quay.io/keycloak/keycloak:([0-9.]+)", open("infra/keycloak/Dockerfile").read(), re.M)[1])')
+                  echo "tag=$version-${GITHUB_SHA:0:12}" >> "$GITHUB_OUTPUT"
+                  aws ecr get-login-password | docker login --username AWS --password-stdin "${repository%%/*}"
+            - name: Reuse immutable image on rerun
+              if: github.event_name == 'push'
+              id: existing
+              env:
+                  TAG: ${{ steps.image.outputs.tag }}
+              run: |
+                  # List succeeds even when tag is absent; API failures are not cache misses.
+                  digest=$(aws ecr list-images --repository-name learncard/keycloak --filter tagStatus=TAGGED --output json | jq -r --arg tag "$TAG" '.imageIds[] | select(.imageTag==$tag) | .imageDigest')
+                  echo "digest=$digest" >> "$GITHUB_OUTPUT"
+            - name: Publish staging ARM64 image
+              if: github.event_name == 'push' && steps.existing.outputs.digest == ''
+              id: build
+              uses: docker/build-push-action@v6
+              with:
+                  context: infra/keycloak
+                  file: infra/keycloak/Dockerfile
+                  platforms: linux/arm64
+                  provenance: false
+                  push: true
+                  tags: ${{ steps.image.outputs.repository }}:${{ steps.image.outputs.tag }}
+                  labels: org.opencontainers.image.revision=${{ github.sha }}
+            - name: Resolve deployment image (promotion never rebuilds)
+              id: candidate
+              env:
+                  REPOSITORY: ${{ steps.image.outputs.repository }}
+                  BUILT_DIGEST: ${{ steps.build.outputs.digest || steps.existing.outputs.digest }}
+              run: |
+                  if [[ "$GITHUB_EVENT_NAME" == push ]]; then
+                      image="$REPOSITORY@$BUILT_DIGEST"
+                  elif [[ "$MANUAL_ACTION" == promote ]]; then
+                      image="$REPOSITORY@$REQUESTED_DIGEST"
+                  elif [[ "$MANUAL_ROOT" == service ]]; then
+                      image="$MANUAL_IMAGE"
+                      if [[ -z "$image" ]]; then
+                          name="learncard-keycloak-$DEPLOY_ENVIRONMENT"
+                          task=$(aws ecs describe-services --cluster "$name" --services "$name" --query 'services[0].taskDefinition' --output text)
+                          image=$(aws ecs describe-task-definition --task-definition "$task" | jq -er '.taskDefinition.containerDefinitions[] | select(.name=="keycloak") | .image')
+                      fi
+                  else
+                      exit 0
                   fi
-                  test -s "environments/${DEPLOY_ENVIRONMENT}.tfvars" || {
-                      echo 'Supply the non-example tfvars file or the TF_VARS environment secret.'
+                  [[ "$image" == "$REPOSITORY@"* && "$image" =~ @sha256:[0-9a-f]{64}$ ]]
+                  aws ecr describe-images --repository-name learncard/keycloak --image-ids "imageDigest=${image##*@}" >/dev/null
+                  echo "TF_VAR_keycloak_image=$image" >> "$GITHUB_ENV"
+                  if [[ "$MANUAL_ACTION" == promote ]]; then
+                      docker pull "$image" >/dev/null
+                      release_sha=$(docker image inspect "$image" --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}')
+                      [[ "$release_sha" =~ ^[0-9a-f]{40}$ ]]
+                      # Bind service and realm configuration to the image's main
+                      # commit, not whichever newer commit triggered promotion.
+                      GIT_MASTER=1 git merge-base --is-ancestor "$release_sha" HEAD
+                      GIT_MASTER=1 git restore --source="$release_sha" --worktree -- infra/keycloak/terraform
+                      echo "RELEASE_SHA=$release_sha" >> "$GITHUB_ENV"
+                  fi
+            - name: Gate, deploy service, apply private realm, smoke and persist metadata
+              if: github.event_name == 'push' || inputs.action == 'promote' || (inputs.action == 'apply' && inputs.root == 'service')
+              # The script admits builds only when its softer deadline has room
+              # for the full lifecycle; this hard timeout is a last resort.
+              timeout-minutes: 150
+              run: bash infra/keycloak/scripts/deploy-image.sh
+            - name: Manual infrastructure plan
+              if: github.event_name == 'workflow_dispatch' && (inputs.action == 'plan' || (inputs.action == 'apply' && inputs.root == 'network'))
+              run: bash infra/keycloak/scripts/terraform-plan.sh "$MANUAL_ROOT"
+            - name: Manual network apply
+              if: github.event_name == 'workflow_dispatch' && inputs.action == 'apply' && inputs.root == 'network'
+              run: |
+                  terraform -chdir=infra/keycloak/terraform/network apply -lock-timeout=5m -auto-approve keycloak.tfplan >infra/keycloak/terraform/network/apply.log 2>&1 || {
+                      echo '::error::Network apply failed; raw diagnostics withheld.'
                       exit 1
                   }
-            - name: Initialize remote state
-              run: |
-                  terraform init \
-                      -backend-config="bucket=${TF_STATE_BUCKET}" \
-                      -backend-config="key=keycloak/${DEPLOY_ENVIRONMENT}/terraform.tfstate" \
-                      -backend-config="region=${AWS_REGION}" \
-                      -backend-config="dynamodb_table=${TF_STATE_TABLE}"
-            - name: Plan
-              run: |
-                  terraform plan -lock-timeout=5m \
-                      -var-file="environments/${DEPLOY_ENVIRONMENT}.tfvars" \
-                      -var="environment=${DEPLOY_ENVIRONMENT}" \
-                      -var="aws_region=${AWS_REGION}" \
-                      -out=keycloak.tfplan
-            - name: Apply saved plan
-              if: inputs.action == 'apply'
-              run: terraform apply -lock-timeout=5m -auto-approve keycloak.tfplan
-            - name: Remove sensitive local artifacts
+            - name: Remove confidential local plans and logs
               if: always()
-              run: rm -f keycloak.tfplan "environments/${DEPLOY_ENVIRONMENT}.tfvars"
+              run: rm -f infra/keycloak/terraform/{network,service}/{keycloak.tfplan,plan.json,plan.log,init.log,apply.log}

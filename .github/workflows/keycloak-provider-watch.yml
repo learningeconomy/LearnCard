@@ -1,0 +1,25 @@
+name: Keycloak Apple provider watch
+on:
+    schedule:
+        - cron: '23 9 * * 1'
+    workflow_dispatch:
+permissions:
+    contents: read
+concurrency:
+    group: keycloak-provider-watch
+    cancel-in-progress: false
+jobs:
+    update:
+        if: github.ref == 'refs/heads/main'
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+            pull-requests: write
+        steps:
+            - uses: actions/checkout@v7
+              with:
+                  persist-credentials: false
+            - name: Propose checksum-pinned provider update
+              env:
+                  GH_TOKEN: ${{ github.token }}
+              run: python3 infra/keycloak/scripts/provider-watch.py

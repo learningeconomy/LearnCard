@@ -1,0 +1,38 @@
+version: 0.2
+env:
+    shell: bash
+phases:
+    install:
+        commands:
+            - |
+                set -euo pipefail
+                case "${DEPLOY_ENVIRONMENT}" in
+                    staging) REALM_STAGE=keycloak-staging ;;
+                    production) REALM_STAGE=production ;;
+                    *) echo 'Unknown deployment environment' >&2; exit 1 ;;
+                esac
+                export REALM_STAGE
+                test -s "infra/keycloak/terraform/realm/environments/${DEPLOY_ENVIRONMENT}.tfvars"
+                test -s "infra/keycloak/terraform/realm/generated/${REALM_STAGE}.tfvars.json" || {
+                    echo "Missing reviewed realm inputs for ${REALM_STAGE}; generate and commit before deployment." >&2
+                    exit 1
+                }
+                curl --fail --silent --show-error --location -o /tmp/terraform.zip https://releases.hashicorp.com/terraform/1.15.8/terraform_1.15.8_linux_amd64.zip
+                curl --fail --silent --show-error --location -o /tmp/terraform_SHA256SUMS https://releases.hashicorp.com/terraform/1.15.8/terraform_1.15.8_SHA256SUMS
+                EXPECTED=$(awk '$2 == "terraform_1.15.8_linux_amd64.zip" {print $1}' /tmp/terraform_SHA256SUMS)
+                test "${#EXPECTED}" -eq 64
+                printf '%s  /tmp/terraform.zip\n' "$EXPECTED" | sha256sum -c -
+                unzip -o /tmp/terraform.zip -d /usr/local/bin
+    build:
+        commands:
+            - |
+                set -euo pipefail
+                umask 077
+                terraform -chdir=infra/keycloak/terraform/realm init -input=false \
+                    -backend-config="bucket=${TF_STATE_BUCKET}" \
+                    -backend-config="key=keycloak/${DEPLOY_ENVIRONMENT}/realm.tfstate" \
+                    -backend-config="region=${AWS_DEFAULT_REGION}" \
+                    -backend-config=use_lockfile=true -backend-config=encrypt=true
+                terraform -chdir=infra/keycloak/terraform/realm apply -input=false -auto-approve \
+                    -lock-timeout=5m -var-file="environments/${DEPLOY_ENVIRONMENT}.tfvars" \
+                    -var-file="generated/${REALM_STAGE}.tfvars.json"

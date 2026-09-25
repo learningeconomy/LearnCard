@@ -1,254 +1,249 @@
-# Keycloak AWS infrastructure
+# Keycloak Terraform roots
 
-Flat Terraform root for ECS Fargate, an HTTPS Application Load Balancer, and Aurora
-PostgreSQL Serverless v2. Requires Terraform >= 1.6 and AWS provider `~> 5.0`, matching
-the provider convention in `preview/infra`. CI uses Terraform **1.9.8**.
+Each directory is an independent root with its own state and committed environment
+tfvars. Do not run Terraform in this index directory. Cross-root discovery uses
+SSM, never `terraform_remote_state`.
 
-Clustering: `jdbc-ping` uses PostgreSQL for member discovery only. Cache transport
-and failure detection still run task-to-task on TCP 7800 and 57800
-([docs](https://www.keycloak.org/server/caching#network-ports)); `network.tf`
-opens both from the task security group to itself and nowhere else.
+| Root                                               | Ownership                                                            |
+| -------------------------------------------------- | -------------------------------------------------------------------- |
+| [Account bootstrap](../../aws/bootstrap/README.md) | Human-admin state bucket, OIDC roles/boundary, ECR, budgets          |
+| [Network](network/README.md)                       | VPC, subnets, NAT, flow logs, delegated zones and certificates       |
+| [Service](service/README.md)                       | ARM64 ECS, Aurora, public/private ALBs, realm runner and access task |
+| [Realm](realm/README.md)                           | Keycloak realms/clients/IdPs, applied privately through CodeBuild    |
 
-```text
-Internet / operators
-        |
-        v
-Route 53: auth + auth-admin
-        |
-        v
-Public subnets (2+ AZs)
-  ALB: 80 -> HTTPS 443 (ACM)
-    | application :8080         | readiness :9000 (no public listener)
-    +---------------------------+
-        |
-        v
-Private subnets (2+ AZs)
-  ECS Fargate / Keycloak --optimized
-    |   | logs -> CloudWatch
-    |   + secrets <- ECS execution role <- Secrets Manager
-    |
-    + PostgreSQL :5432 -> Aurora writer + production failover instance
-    |
-    + NAT / private AWS endpoints -> ECR, Logs, Secrets Manager, IdPs
-    |
-    + task <-> task :7800 (JGroups) / :57800 (FD_SOCK)
+First apply: **bootstrap → network (certificate wait off) → GoDaddy NS delegation →
+network re-apply (certificate wait on) → service → realm → automation bootstrap**.
+Use separate directories and account sessions for staging and production.
+
+Terraform >= 1.10 with S3-native locking; CI pins 1.15.8. All AWS roots use provider
+6.x and committed three-platform lockfiles. There are no DynamoDB lock tables.
+The old flat root was never applied; its service files were moved without a state
+migration. Read the service runbook's staging rotation drill and live private-access
+gates before deployment, and the realm runbook's local hostname proof. Production
+user cutover remains a separate workstream.
+
+## lca-api wiring
+
+`deploy.yml` passes these from lca-api's GitHub environment (the `lca_api_env` of the
+deployment matrix). All unset = Keycloak sign-in disabled, identical to before.
+
+| Kind           | Name                                                 | Staging value                                                                                                   |
+| -------------- | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| var            | `KEYCLOAK_ISSUERS`                                   | `https://auth.staging.learncard.app/realms/learncard`                                                           |
+| var            | `KEYCLOAK_AUDIENCES`                                 | `learncard-app`                                                                                                 |
+| var            | `OIDC_ISSUER`                                        | lca-api's public origin, e.g. `https://staging.api.learncard.app` (must equal the realm's `lca_api_issuer_url`) |
+| var            | `OIDC_CLIENT_ID`                                     | `keycloak-broker`                                                                                               |
+| var            | `GOOGLE_OAUTH_CLIENT_IDS` / `APPLE_OAUTH_CLIENT_IDS` | output of `bun run lc auth-audiences <tenants…> <stage>`                                                        |
+| var (optional) | `OIDC_REDIRECT_URIS`                                 | leave unset; derived as `<issuer>/broker/lca-api/endpoint`                                                      |
+| var (optional) | `KEYCLOAK_JWKS_URL_OVERRIDES`                        | leave unset outside local compose                                                                               |
+| secret         | `OIDC_CLIENT_SECRET`                                 | `broker_client_secret` from Secrets Manager `learncard-keycloak/<env>/<realm>/lca-api`                          |
+| secret         | `OIDC_SIGNING_KEY_JWK`                               | RS256 private JWK (`kid`, `alg`) from `learncard-keycloak/<env>/<realm>/lca-api-oidc-signing-jwk`               |
+
+Copy secrets without printing them, e.g.
+`aws secretsmanager get-secret-value --secret-id learncard-keycloak/staging/learncard/lca-api --query SecretString --output text | jq -r .broker_client_secret | gh secret set OIDC_CLIENT_SECRET --env <lca-api staging env>`.
+
+## CI/CD
+
+```mermaid
+flowchart TD
+    PR[Pull request] --> Validate[Four roots: fmt / validate / tflint]
+    PR --> Build[ARM64 build without push]
+    Main[Push to main: Keycloak paths] --> ECR[Build ARM64 / immutable version-shortsha tag]
+    ECR --> Digest[Staging ECR digest]
+    Digest --> Gate[Keycloak compatibility check]
+    Promote[Dispatch promote + digest / production approval] --> Replica[Verify production ECR replica]
+    Replica --> Gate
+    Gate -->|Rolling| Apply[Apply service with repo@digest]
+    Gate -->|Recreate| Snapshot[Production: Aurora snapshot / wait available]
+    Snapshot --> Stop[Suspend scaling / zero tasks / wait old tasks stopped]
+    Stop --> Apply
+    Apply --> Restore[Restore capacity explicitly if recreate]
+    Restore --> Realm[Private CodeBuild realm runner at reviewed SHA]
+    Realm --> Smoke[Discovery HTTP 200]
+    Smoke --> Metadata[Persist compatibility metadata / complete journal]
 ```
 
-## Prerequisites and ownership
+The pipeline runs only from `main`. Configure **main-only deployment branches** on
+both `keycloak-staging` and `keycloak-production`; require independent production
+reviewers and prevent self-approval. Jobs serialize network/service/image operations
+per environment with no cancellation of a running deployment. GitHub concurrency
+can replace older _pending_ jobs; this is not a FIFO release queue. Bootstrap is
+always human-applied. No static AWS credentials, raw plans or plan artifacts are used.
 
-Provision these outside this root, separately for staging and production:
+### Required GitHub configuration
 
-1. An existing VPC with DNS enabled, public subnets in at least two AZs with an
-   internet gateway, and private subnets in at least two AZs. Private tasks need
-   outbound NAT for external IdPs, or equivalent controlled egress. Without NAT,
-   provide ECR API/DKR, S3, CloudWatch Logs and Secrets Manager endpoints with
-   appropriate policies and HTTPS ingress; endpoints alone do not reach IdPs.
-   Ensure network ACLs allow return traffic. This root does not create routes.
-2. A validated **regional** ACM certificate covering both distinct hostnames,
-   and their public Route 53 zone. Never use the ALB DNS name as the issuer.
-3. An ECR repository with immutable tags, scanning, retention policies, and a
-   Linux **amd64** image built from `infra/keycloak/Dockerfile`. Set `keycloak_image`
-   to its full tagged URI; there is no stock-image or `latest` fallback. The image
-   must be accessible to the execution role (cross-account ECR also needs a
-   repository policy). `keycloak_version` is a descriptive tag only.
-4. One Secrets Manager secret created **out of band**, in the deployment region:
-   the temporary bootstrap administrator password. It must be a **plain string,
-   not a JSON object**, with no trailing newline. The database master password is
-   **RDS-managed** (`manage_master_user_password`): Aurora generates it, stores it
-   in Secrets Manager and rotates it; Terraform only references the secret ARN and
-   ECS reads the `password` key from it. The execution role can read only these two
-   ARNs. This root assumes the AWS-managed `aws/secretsmanager` encryption key;
-   customer-managed secret keys require an explicitly reviewed scoped `kms:Decrypt`
-   grant and key policy before use. No passwords belong in tfvars or image layers.
-5. An S3 state bucket with block-public-access, versioning, enforced encryption
-   (prefer default SSE-KMS), TLS-only access and narrowly scoped IAM; and a DynamoDB
-   lock table with a string partition key named `LockID`. They must exist before
-   init. The deploy identity needs state/lock access, KMS access if applicable,
-   database secret read access, and AWS resource provisioning/IAM pass-role rights.
+| Scope                      | Variable                              | Purpose                                                                                               |
+| -------------------------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Each environment           | `AWS_DEPLOY_ROLE_ARN`                 | Bootstrap deploy OIDC role                                                                            |
+| Each environment           | `TF_STATE_BUCKET`                     | That account's bootstrap state bucket                                                                 |
+| Each environment           | `KEYCLOAK_BOOTSTRAP_ADMIN_SECRET_ARN` | Existing secret ARN, never its value                                                                  |
+| Each environment, optional | `KEYCLOAK_CONTAINER_IMAGE`            | Manual service plan/apply override only, account-local `repo@sha256:...`; otherwise use running image |
+| Repository                 | `KEYCLOAK_STAGING_PLAN_ROLE_ARN`      | Staging plan role for main-branch drift checks only                                                   |
+| Repository                 | `KEYCLOAK_PRODUCTION_PLAN_ROLE_ARN`   | Production plan role for main-branch drift checks only; set after bootstrap                           |
 
-**State is still sensitive:** no password values are stored in state (the
-database password is RDS-managed and the bootstrap secret is injected by ECS, not
-fetched by Terraform), but state contains endpoints, ARNs and network layout.
-Restrict state, bucket versions, local backups, plan files, and CI log access. Do
-not upload saved plans as public artifacts. Use separate backend keys and credentials per environment.
+Region is pinned to `us-east-1`. Repository URLs are discovered from
+`/learncard-keycloak/<env>/bootstrap/ecr_repository_url` and checked against account
+281762601323 (staging) / 206533012615 (production). Automated deployments derive the
+image digest directly from the build, not `KEYCLOAK_CONTAINER_IMAGE`. Tags are
+`<Keycloak-version>-<12-character-source-sha>` and immutable; reruns reuse that tag.
+ARM64 builds use QEMU/buildx, `provenance: false`, and no production rebuild.
 
-Realm/client/IdP configuration is **not in this root**. After the server is healthy,
-the separate Keycloak Terraform provider layer owns it under AD-8/AD-9. Do not
-import local/CI realm fixtures into production. Realm policies (PKCE, disabling
-direct grants and self-registration, brute-force detection) belong in that layer
-and are required before go-live. After initial setup, establish permanent secured
-administrator access and delete the temporary bootstrap account. Changing its
-secret does not reset an existing administrator password.
+**Human bootstrap re-apply required before enabling this pipeline:** the new
+`infra/aws/bootstrap/deploy-pipeline.tf` attaches a protected `*-deploy-pipeline`
+policy. It adds `s3:GetObject`, `s3:PutObject` for exactly
+`keycloak/<env>/compat/{metadata.json,deployment.json}`, and `logs:GetLogEvents`,
+`logs:DescribeLogStreams`, `logs:FilterLogEvents` for the realm log group/streams.
+Existing policy already grants ECR push only in staging, ECR describe/pull in both,
+CodeBuild StartBuild/BatchGetBuilds, named RDS CreateDBClusterSnapshot and discovery,
+ECS UpdateService/Describe/List/waits, application-autoscaling registration/discovery,
+SSM GetParameter and state bucket ListBucket. Existing state policy allowlists the
+deploy role and denies bootstrap-state access; no bucket-policy widening is needed.
+The new IAM policy name is covered by the existing bootstrap self-mutation deny.
+Production bootstrap still needs its initial human apply and ECR replication setup.
+Before running this workflow, the human-owned deploy IAM role must also grant
+`codebuild:StopBuild` on its realm project and set `max_session_duration` to at
+least 10800 seconds. The workflow requests a three-hour session/job budget, with
+a 150-minute deployment-step limit to reserve time for cleanup. Verify these IAM
+prerequisites during bootstrap; this workflow cannot update its own role.
+The script uses a softer deadline (140 minutes from deploy start or 170 minutes
+from job start, whichever is earlier) and refuses to launch CodeBuild unless
+75 minutes remain for polling, stopping, and cleanup. Earlier build/service work
+therefore cannot consume the realm runner's cancellation reserve unnoticed.
 
-## Image and configuration
+### PR checks
 
-[`all-config` for 26.7.4](https://www.keycloak.org/server/all-config) marks `db`,
-`health-enabled`, `metrics-enabled`, and `http-relative-path` as **build options**.
-They are baked by `kc.sh build`; `start --optimized` cannot change them. In contrast,
-`cache` and `cache-stack` are **runtime options** in this version and are explicitly
-set to `ispn` and `jdbc-ping` in the ECS task. This intentionally corrects the
-AD-9 build-option list. No build options are passed in the task environment.
+PRs receive no AWS credentials: they validate the Terraform roots, run offline
+checks, and build the image without pushing. Credentialed plans run only from
+main, in the drift workflow and inside protected deploy jobs. Drift plan roles
+cover network and service, never the realm root or its state. Realm operations
+use the private runner. Plan files and raw diagnostics are never uploaded.
 
-From the repository root, after authenticating Docker to your ECR registry:
+### Promotion and manual operations
 
-```bash
-docker build --platform linux/amd64 --build-arg KEYCLOAK_VERSION=26.7.4 \
-  -t "$KEYCLOAK_IMAGE" -f infra/keycloak/Dockerfile infra/keycloak
-docker push "$KEYCLOAK_IMAGE"
-```
+1. Merge reviewed Keycloak changes to main; wait for staging service, realm runner,
+   discovery smoke, and metadata/journal persistence to succeed.
+2. Copy its digest from the deployment summary. Dispatch **Keycloak Infrastructure**
+   from main with `action=promote`, `environment=production`, `digest=sha256:<64 hex>`.
+   `root` is ignored for promotion. Approve the production environment deployment.
+   The image's `org.opencontainers.image.revision` label must identify an ancestor
+   of main; the job restores service/realm Terraform from that exact commit and
+   passes it to CodeBuild. An older image is never paired with newer realm config.
+   Before any deployment mutation, the script requires non-empty realm environment
+   tfvars and generated inputs committed at that SHA and matching the restored files
+   (`keycloak-staging.tfvars.json` for staging, `production.tfvars.json` for production).
+   Missing production inputs fail before snapshots, the journal, or service changes.
+   Legacy manually pushed images without that label are not promotable through
+   this action; use a deliberately reviewed manual service override for recovery.
+3. The job verifies the digest exists in production ECR (replication is asynchronous;
+   a missing digest fails before mutation). It never rebuilds or accepts mutable tags.
+   Verify that the approved digest is from the successful staging run; replica presence
+   alone is not a staging-health attestation.
 
-The validation workflow builds but **does not push**. Image publishing is an
-explicit prerequisite; dispatching infrastructure deployment never overwrites a
-tag. The container uses Keycloak's non-root upstream runtime. Database connections
-add `sslmode=require` to the JDBC URL so credentials are not sent in cleartext;
-this encrypts transport but does not validate the database's certificate identity.
-For verified TLS, add the RDS CA trust material and `verify-full` as a separately
-tested image/config change.
+Manual `action=plan|apply`, `root=network|service` remains available on main. Service
+apply goes through the same compatibility gate and smoke checks, including when the
+image stays unchanged. Network apply uses its same-job saved plan. For an optional
+staging recreate snapshot, dispatch service apply with `snapshot_staging=true`;
+push-triggered staging deploys skip snapshots by default. Production cannot skip.
 
-## Initialize, plan, apply
+Realm runs **only inside the VPC** via `learncard-keycloak-<env>-realm` CodeBuild,
+`--source-version` set to the reviewed workflow commit SHA. The pipeline polls a
+bounded 65 minutes (30 queued + 30 build + 5 margin) and fails on all non-success
+terminal statuses. Timeout, polling errors, and catchable script exits/signals
+stop an unfinished build and wait up to five minutes for terminal confirmation
+before service cleanup. If confirmation fails, cleanup is withheld and the job
+fails loudly: an operator must reconcile the possibly running build before any
+service recovery. Hard runner termination cannot guarantee trap execution.
+If a build-start response is lost, the script cannot prove that no build exists:
+it withholds service cleanup and requires operator reconciliation of the realm
+project. Manual workflow cancellation may forcibly kill the trap before stop
+confirmation; always verify the build's terminal status before recovery.
+No standalone
+realm dispatch is exposed until the runner supports a reviewed plan/apply contract.
+Every deployment requires realm runner success and discovery HTTP 200; neither
+missing realm roots nor discovery 404 responses are accepted.
 
-1. Complete the prerequisites above.
-2. Copy `environments/staging.tfvars.example` to `environments/staging.tfvars` (or
-   production equivalents). Replace every placeholder, especially source CIDRs.
-   Production must use **at least two tasks**; the root enforces this and places
-   its two Aurora instances in different AZs. Staging gets one DB instance.
-3. Initialize the selected backend; all location values are supplied at init:
+### Compatibility and recreate safety
 
-```bash
-# From infra/keycloak/terraform; set these shell variables first.
-terraform init -reconfigure \
-  -backend-config="bucket=$TF_STATE_BUCKET" \
-  -backend-config="key=keycloak/staging/terraform.tfstate" \
-  -backend-config="region=$AWS_REGION" \
-  -backend-config="dynamodb_table=$TF_STATE_TABLE"
-terraform fmt -check -recursive
-terraform validate
-tflint --init && tflint
-terraform plan -var-file=environments/staging.tfvars -out=keycloak.tfplan
-terraform apply keycloak.tfplan
-```
+The [26.7.4 compatibility CLI](https://github.com/keycloak/keycloak/blob/26.7.4/docs/guides/server/update-compatibility.adoc)
+is authoritative; do not infer compatibility by parsing versions or metadata fields.
+`scripts/compat-gate.sh PREVIOUS_JSON IMAGE [start options...]` runs the **new image**
+with `update-compatibility check --optimized --file=/work/prev.json`:
 
-Use a separate working directory per environment, or explicitly reinitialize with
-`-reconfigure` and the correct key when switching. Never migrate staging state into
-the production key. `backend.tf` sets `encrypt = true`; DynamoDB locking is retained
-for Terraform 1.9 compatibility. Commit the generated provider lockfile for
-repeatable provider selection; use `terraform init -upgrade` only in reviewed PRs.
+- Exit `0`: `strategy=rolling`.
+- Exit `3` (incompatible) or `4` (rolling feature disabled): `strategy=recreate`.
+- Any other exit (including `1` corrupted metadata, `2` invalid CLI, Docker errors):
+  fail without deployment. An absent object is first deployment → recreate;
+  access/network errors are **not** treated as absent metadata.
 
-Terraform creates security groups, logs/IAM, ALB rules and database instances before
-starting the service; the service waits for steady state. DNS aliases are created
-in the same apply, so do not cut over an existing issuer without a migration plan.
-After a healthy deployment, configure realms separately and verify issuer URLs,
-login/logout, admin isolation from allowed/disallowed networks, ALB readiness,
-restart/failover behavior, and backup restoration before enabling real traffic.
+Both metadata generation and checking use postgres, ispn and jdbc-ping, all non-secret
+environment options from the candidate ECS task in the saved Terraform plan, and the
+image's baked build options/features (`--optimized`). No feature override is invented:
+future feature changes must be baked into that same image. `KC_ENV_FILE` supplies the
+task environment to both scripts. The CLI considers cache stack/config/mTLS/remote
+cache, database vendor/schema/host/port/name and selected feature changes; it does not
+inspect cache XML content, so custom cache configuration changes still need review.
+Metadata is generated before mutation to catch CLI problems, then persisted only
+after successful service/realm/smoke using that exact image and checked configuration.
 
-### Aurora version and operations
+Recreate refuses a plan that also changes the autoscaling target: apply sizing
+changes separately with a compatible image first. This prevents Terraform from
+raising the minimum during the zero-capacity window or undoing new sizing later.
+Recreate snapshots production Aurora and waits for availability, suspends dynamic
+and scheduled scaling, temporarily sets min capacity to zero, scales ECS to zero,
+and waits for old tasks to **stop**, not merely for service stability. Terraform
+ignores desired count, so the script explicitly restores the previous positive count.
+It disables circuit-breaker rollback while starting the new revision, verifies the
+service's actual image, and restores the previous scaling bounds/suspension state and
+normal circuit breaker only after health succeeds. No service Terraform changes are
+required. This deployment path assumes the foundation service already exists; first
+network/service provisioning remains the human runbook's responsibility.
 
-Pinned engine: **Aurora PostgreSQL 16.14**, listed in the
-[AWS release calendar](https://docs.aws.amazon.com/AmazonRDS/latest/AuroraPostgreSQLReleaseNotes/aurorapostgresql-release-calendar.html)
-(August 21, 2026). Availability varies by region. Before deployment, confirm
-Serverless v2 orderability in the target region:
+### Failure recovery and rollback
 
-```bash
-aws rds describe-orderable-db-instance-options \
-  --region "$AWS_REGION" --engine aurora-postgresql --engine-version 16.14 \
-  --db-instance-class db.serverless \
-  --query 'OrderableDBInstanceOptions[].{Version:EngineVersion,AZs:AvailabilityZones[].Name}'
-```
+The S3 `deployment.json` journal is marked pending **before** mutation. An incomplete
+journal blocks later deployments, even if an old metadata object remains. Do not
+blindly rerun or mark it complete. After a failed recreate the pipeline attempts to
+stop tasks and leave scaling suspended; a killed runner or AWS outage can prevent
+cleanup, so an operator must verify capacity, autoscaling and task revisions.
 
-An empty result means do not apply: select a supported, security-reviewed 16.x
-release in `rds.tf`. ACU limits are **per instance** (two instances cost more than
-one). The root conservatively accepts 0.5-128 ACUs and never auto-pauses. Minor
-upgrades are deliberate (`auto_minor_version_upgrade = false`); assign an owner
-for timely security patches. Changes are not applied immediately to Aurora.
+For a rolling-compatible rollback, redeploy the previous retained digest through
+manual service apply (set the optional image override), or production promotion.
+For **recreate/schema rollback**, restoring only the image is unsafe: stop all tasks,
+restore the pre-upgrade Aurora snapshot into a new cluster, reconcile the service
+Terraform/database endpoint and secrets through the human recovery procedure, then
+deploy the previous digest. Do not restore an old image against an upgraded schema.
+Before unblocking the journal, privately verify the actual database/image/config,
+restore intended capacity/scaling bounds from the prior deployment and committed
+tfvars, run the realm and smoke checks, regenerate matching metadata, and write a
+complete journal. If schema state is uncertain, restore the snapshot first. S3
+versioning preserves prior metadata/journal versions for investigation (90-day expiry).
+ECR never expires tagged images, so deployed and rollback digests stay pullable.
 
-Backups/PITR default to 14 days; practice restores rather than relying on realm
-exports. Production deletion protection defaults on and a final snapshot is
-required on deletion. The final name is `<prefix>-production-final`; if reusing a
-destroyed stack name, preserve/copy any old final snapshot under another name and
-resolve the name collision before the next teardown. Staging skips the final
-snapshot. Deletion protection must be explicitly disabled in a reviewed apply
-before any planned production teardown.
+### Drift detection
 
-### ALB and management surface
+`keycloak-drift.yml` runs nightly (and on dispatch) from `main` with each
+environment's **plan role**: repository variables `KEYCLOAK_STAGING_PLAN_ROLE_ARN`
+and, once production is bootstrapped, `KEYCLOAK_PRODUCTION_PLAN_ROLE_ARN` (unset → skipped).
+It plans network and service against the running image, then opens or comments on a
+`keycloak-drift` issue when any change is planned and closes it on a clean run. Drift
+means either out-of-band edits or merged-but-unapplied code. The realm root is not
+covered: it can only run inside the VPC, and the runner has no plan-only mode yet.
 
-- Only 80 and 443 are internet-facing; 80 redirects to HTTPS with 301.
-- Priority 10 forwards `/admin` and `/admin/*` only on the admin hostname and,
-  when set, allowed source CIDRs. Priority 11 accommodates a third CIDR without
-  exceeding ALB's five match-evaluation limit.
-- Priority 20 returns plain-text 403 for those admin paths otherwise, including
-  requests on the public hostname and disallowed sources on the admin hostname.
-- Priority 30 forwards other admin-host paths for console assets (`/resources/*`)
-  and authentication (`/realms/master/*`), with the same CIDR restriction. Priority
-  40 denies the remaining admin-host requests when a CIDR allowlist is configured;
-  otherwise the default forward would bypass the source restriction.
-- `admin_allowed_cidrs = []` **allows every source on the admin host**; it does not
-  bypass Keycloak authentication. Set operator/VPN egress IPv4 CIDRs in production
-  (up to three). This restricts the admin **host**, not public realm authentication
-  endpoints; `KC_HOSTNAME_ADMIN` alone is not an access-control mechanism.
-- Target-group stickiness uses a one-day ALB cookie. Readiness is
-  `HTTP :9000/health/ready`, not the login page. The task SG allows 9000 **only from
-  the ALB SG** because the management server owns readiness; there is no listener
-  or route exposing management health/metrics to public clients. External metrics
-  scraping needs its own reviewed private access design.
-- Logs use `/ecs/<name_prefix>-<environment>` rather than `/ecs/<name_prefix>` to
-  avoid staging/production collisions in a shared account. The output is canonical.
+### Dependency automation and verification boundaries
 
-## GitHub Actions
+Dependabot checks only Keycloak Dockerfiles and the four Terraform roots weekly,
+grouped, with two open PRs per ecosystem; no repo-wide Actions update noise.
+CI requires all four roots: a missing root fails validation instead of skipping it.
 
-`.github/workflows/keycloak-infra.yml` validates changed infrastructure/image files
-on PRs with format, backend-free initialization, validation, **blocking TFLint**,
-and a pinned-version Docker build. The same checks gate manual deployment.
+The Apple provider watcher downloads only the exact stable upstream release asset,
+hashes it, updates both pins and opens a review PR with release notes and a Keycloak
+26.x-minor compatibility checklist. It never executes a downloaded jar or release
+notes and never auto-merges. Enable GitHub's setting allowing Actions to create PRs;
+approve/run required CI for token-created PRs before merging.
 
-Create GitHub environments `keycloak-staging` and `keycloak-production`, with
-required reviewers and trusted deployment-branch restrictions (especially for
-production). Verify clustering and failover on staging before the first production
-apply. Configure each environment:
-
-| Name                    | Kind               | Purpose                                                      |
-| ----------------------- | ------------------ | ------------------------------------------------------------ |
-| `AWS_ACCESS_KEY_ID`     | Secret             | Scoped deploy identity, matching `deploy.yml`                |
-| `AWS_SECRET_ACCESS_KEY` | Secret             | Deploy identity secret                                       |
-| `AWS_REGION`            | Variable or secret | Resource and backend region                                  |
-| `TF_STATE_BUCKET`       | Variable or secret | Existing state bucket                                        |
-| `TF_STATE_TABLE`        | Variable or secret | Existing DynamoDB lock table                                 |
-| `TF_VARS`               | Optional secret    | Complete environment tfvars content, without password values |
-
-Non-example `environments/staging.tfvars` / `production.tfvars` must be supplied
-later: either deliberately commit reviewed non-secret configuration (these paths
-are ignored by default, so intentional tracking is required), or put the entire
-file contents in the corresponding environment's `TF_VARS` secret. The workflow
-fails rather than deploying examples. `TF_VARS` takes precedence over a committed
-file; backend region and environment are also enforced as CLI variable overrides
-to prevent accidentally using production sizing/name in the staging state.
-
-Dispatch `plan` to review changes, then `apply` through environment approval. Apply
-creates a fresh plan and applies that exact saved plan within the same job; it does
-not reuse a previous dispatch's plan. Plans contain secrets and are not uploaded.
-Per-environment concurrency and DynamoDB locking prevent simultaneous applies.
-No AWS credentials are exposed to PR validation. No automatic push deployments.
-
-## Upgrade / rollback runbook
-
-1. Read Keycloak upgrade notes and test the upgrade against a restored staging DB.
-2. Snapshot Aurora and wait until the snapshot is **available**. Record the old image
-   URI, config, DB version, snapshot identifier and restore procedure.
-3. Build and push a new immutable image tag with the new exact Keycloak version.
-   Update the Dockerfile default, workflow build argument, `keycloak_image`, and
-   descriptive `keycloak_version` together in a reviewed change.
-4. Plan/apply staging, verify auth and failover, then approve production. Use rolling
-   deployment only where Keycloak explicitly supports mixed versions for that
-   patch stream; incompatible migrations require a maintenance window with old
-   tasks stopped before new code accesses the database.
-5. **Database migrations are NOT rollback-safe.** ECS circuit-breaker rollback only
-   rolls back task definitions, not schema or data. Never assume it makes version
-   upgrades reversible. Recovery may require stopping all tasks, restoring the
-   pre-upgrade snapshot to a new cluster, reconciling Terraform and the database
-   endpoint, then starting the old image. Writes since the snapshot may be lost.
-
-Secret rotation is also coordinated: the DB password is rotated by RDS in Secrets
-Manager, but a running container keeps the value it started with. After a rotation
-(or when enabling automatic rotation), force a new ECS deployment so tasks re-read
-the secret. Never set the master password manually outside RDS. Configure alerts for ALB unhealthy targets/5xx, ECS deployment
-failures, DB capacity/connections and backup failures in the organization's
-monitoring stack before go-live; this root enables Container Insights and logs but
-does not define organization-specific alert destinations.
+Offline checks: actionlint for both workflows, shellcheck for scripts, ARM64 Docker
+build and same-/different-version compatibility tests, bootstrap fmt/validate/tflint.
+Real CI must still verify OIDC and IAM authorization, ECR replication, actual Aurora
+snapshot waits, ECS drain/recreate and autoscaling restoration, CodeBuild VPC/admin
+access, realm deployment, discovery smoke and S3 persistence. Local checks cannot
+prove these, nor replace the service runbook's rotation and production-readiness gates.
