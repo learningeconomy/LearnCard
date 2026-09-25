@@ -26,6 +26,7 @@ const NotificationsPage = lazyWithRetry(
     () => import('./pages/notificationsPage/NotificationsPage')
 );
 const LoginPage = lazyWithRetry(() => import('./pages/login/LoginPage'));
+const CancelRecoveryPage = lazyWithRetry(() => import('./pages/recovery/CancelRecoveryPage'));
 const AchievementsPage = lazyWithRetry(() => import('./pages/achievements/AchievementsPage'));
 
 const IdsPage = lazyWithRetry(() => import('./pages/ids/IdsPage'));
@@ -205,6 +206,7 @@ export const Routes: React.FC = () => {
             >
                 <GenericErrorBoundary>
                     <Switch location={background || location}>
+                        <SentryRoute exact path="/recovery/cancel" component={CancelRecoveryPage} />
                         <SentryRoute exact path="/login" component={LoginPage} />
                         <SentryRoute
                             exact

@@ -2111,6 +2111,36 @@
             "invalidCode": "Ce code est incorrect ou a expiré. Demandez un nouveau code et réessayez.",
             "invalidRecoveryMethod": "Cette méthode n’a pas permis de vérifier votre compte. Essayez-en une autre."
         },
+        "cancel": {
+            "invalidLink": {
+                "title": "This link isn't valid",
+                "body": "Open the most recent email we sent, or sign in to check on your account.",
+                "signIn": "Sign In"
+            },
+            "confirm": {
+                "title": "Cancel account recovery?",
+                "body": "Someone asked to recover your account. If this wasn't you, cancel it now.",
+                "cancelBtn": "Cancel Recovery",
+                "notNowBtn": "Not now",
+                "cancelling": "Cancelling..."
+            },
+            "success": {
+                "title": "Recovery cancelled. Your account is safe.",
+                "body": "We recommend signing in and reviewing your recovery options.",
+                "doneBtn": "Open LearnCard"
+            },
+            "expired": {
+                "title": "Link expired",
+                "body": "This link has expired or was already used. If you still see a recovery in progress, sign in to cancel it.",
+                "signInBtn": "Sign In"
+            },
+            "error": {
+                "network": "Connection issue. Please check your internet and try again.",
+                "tooMany": "Too many attempts. Please wait a minute and try again.",
+                "generic": "Something went wrong. Please try again.",
+                "tryAgainBtn": "Try Again"
+            }
+        },
         "automatic": {
             "restoreWait": "Restaurer après un délai de 7 jours"
         },
