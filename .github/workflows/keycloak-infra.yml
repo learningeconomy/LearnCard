@@ -87,7 +87,9 @@ jobs:
             - name: Test compatibility exit-code contract without credentials
               run: bash infra/keycloak/scripts/test-compat-gate.sh
             - name: Test deployment safety without credentials
-              run: bash infra/keycloak/scripts/test-deploy-image.sh
+              run: |
+                  bash infra/keycloak/scripts/test-deploy-image.sh
+                  bash infra/keycloak/scripts/test-realm-runner.sh
             - uses: docker/setup-qemu-action@v3
             - uses: docker/setup-buildx-action@v3
             - name: Build optimized ARM64 image (no push)
@@ -107,7 +109,7 @@ jobs:
             (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
         needs: [validate, build-image]
         runs-on: ubuntu-latest
-        timeout-minutes: 120
+        timeout-minutes: 180
         environment: keycloak-${{ github.event_name == 'push' && 'staging' || inputs.environment }}
         concurrency:
             group: keycloak-infra-${{ github.event_name == 'push' && 'staging' || inputs.environment }}
@@ -145,6 +147,7 @@ jobs:
               with:
                   role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
                   aws-region: us-east-1
+                  role-duration-seconds: 10800
                   unset-current-credentials: true
             - uses: docker/setup-qemu-action@v3
             - uses: docker/setup-buildx-action@v3
@@ -215,6 +218,8 @@ jobs:
                   fi
             - name: Gate, deploy service, apply private realm, smoke and persist metadata
               if: github.event_name == 'push' || inputs.action == 'promote' || (inputs.action == 'apply' && inputs.root == 'service')
+              # Reserve time for stop-build confirmation and cleanup before job expiry.
+              timeout-minutes: 150
               run: bash infra/keycloak/scripts/deploy-image.sh
             - name: Manual infrastructure plan
               if: github.event_name == 'workflow_dispatch' && (inputs.action == 'plan' || (inputs.action == 'apply' && inputs.root == 'network'))

@@ -26,6 +26,8 @@ for input in "infra/keycloak/terraform/realm/environments/$DEPLOY_ENVIRONMENT.tf
         exit 1
     fi
 done
+# shellcheck source=infra/keycloak/scripts/realm-runner.sh
+source "$scripts/realm-runner.sh"
 root=infra/keycloak/terraform/service
 name="learncard-keycloak-$DEPLOY_ENVIRONMENT"
 prefix="keycloak/$DEPLOY_ENVIRONMENT/compat"
@@ -34,7 +36,11 @@ work=$(mktemp -d)
 stopped=false
 complete=false
 cleanup() {
-    if [[ "$stopped" == true && "$complete" != true ]]; then
+    local result=$? runner_stopped=true
+    trap - EXIT
+    trap '' INT TERM HUP
+    stop_realm_build "$work/realm-build-id" || { runner_stopped=false; result=1; }
+    if [[ "$runner_stopped" == true && "$stopped" == true && "$complete" != true ]]; then
         # No automatic rollback across a possible schema migration. Leave scaling suspended.
         aws application-autoscaling register-scalable-target --service-namespace ecs \
             --resource-id "service/$name/$name" --scalable-dimension ecs:service:DesiredCount \
@@ -45,8 +51,12 @@ cleanup() {
     fi
     rm -rf "$work"
     rm -f "$root/"{keycloak.tfplan,plan.json,plan.log,init.log,apply.log}
+    exit "$result"
 }
 trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+trap 'exit 129' HUP
 # List + get distinguishes genuinely absent objects from access/network failures.
 download_optional() {
     local key=$1 destination=$2 count
@@ -149,16 +159,8 @@ actual=$(aws ecs describe-task-definition --task-definition "$task" \
 [[ "$actual" == "$TF_VAR_keycloak_image" ]] || { printf 'ECS rolled back or deployed an unexpected image.\n' >&2; exit 1; }
 realm_applied=false
 if [[ -d infra/keycloak/terraform/realm ]]; then
-    build=$(aws codebuild start-build --project-name "$name-realm" --source-version "$release_sha" --query build.id --output text)
-    for ((attempt=0; attempt<120; attempt++)); do
-        status=$(aws codebuild batch-get-builds --ids "$build" --query 'builds[0].buildStatus' --output text)
-        case "$status" in
-            SUCCEEDED) realm_applied=true; break ;;
-            IN_PROGRESS) sleep 15 ;;
-            *) printf 'Realm runner failed: %s (%s). Inspect restricted CodeBuild logs.\n' "$build" "$status" >&2; exit 1 ;;
-        esac
-    done
-    [[ "$realm_applied" == true ]] || { printf 'Realm runner timed out.\n' >&2; exit 1; }
+    run_realm_build "$work/realm-build-id" "$name" "$release_sha"
+    realm_applied=true
 else
     printf '::warning::Realm root absent; skipping the private realm runner.\n'
 fi

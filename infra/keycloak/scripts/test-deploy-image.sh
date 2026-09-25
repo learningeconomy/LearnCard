@@ -5,6 +5,8 @@ scripts=$(cd "$(dirname "$0")" && pwd)
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 mkdir -p "$work/bin" "$work/repo/infra/keycloak/terraform/realm/"{environments,generated}
+mkdir -p "$work/repo/infra/keycloak/scripts"
+cp "$scripts/realm-runner.sh" "$work/repo/infra/keycloak/scripts/"
 cp "$scripts/deploy-image.sh" "$work/deploy-image.sh"
 cat >"$work/bin/aws" <<'MOCK'
 #!/usr/bin/env bash

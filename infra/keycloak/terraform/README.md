@@ -101,6 +101,11 @@ SSM GetParameter and state bucket ListBucket. Existing state policy allowlists t
 deploy role and denies bootstrap-state access; no bucket-policy widening is needed.
 The new IAM policy name is covered by the existing bootstrap self-mutation deny.
 Production bootstrap still needs its initial human apply and ECR replication setup.
+Before running this workflow, the human-owned deploy IAM role must also grant
+`codebuild:StopBuild` on its realm project and set `max_session_duration` to at
+least 10800 seconds. The workflow requests a three-hour session/job budget, with
+a 150-minute deployment-step limit to reserve time for cleanup. Verify these IAM
+prerequisites during bootstrap; this workflow cannot update its own role.
 
 ### PR checks
 
@@ -139,7 +144,13 @@ push-triggered staging deploys skip snapshots by default. Production cannot skip
 
 Realm runs **only inside the VPC** via `learncard-keycloak-<env>-realm` CodeBuild,
 `--source-version` set to the reviewed workflow commit SHA. The pipeline polls a
-bounded 30 minutes and fails on all non-success terminal statuses. No standalone
+bounded 65 minutes (30 queued + 30 build + 5 margin) and fails on all non-success
+terminal statuses. Timeout, polling errors, and catchable script exits/signals
+stop an unfinished build and wait up to five minutes for terminal confirmation
+before service cleanup. If confirmation fails, cleanup is withheld and the job
+fails loudly: an operator must reconcile the possibly running build before any
+service recovery. Hard runner termination cannot guarantee trap execution.
+No standalone
 realm dispatch is exposed until the runner supports a reviewed plan/apply contract.
 If the parallel realm root has not landed, the runner is explicitly skipped; the
 temporary 404 exception above must be enabled to finish that bootstrap deployment.
