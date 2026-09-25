@@ -5,6 +5,9 @@ on:
         paths:
             - 'services/learn-card-network/lca-api/**'
             - 'infra/keycloak/**'
+            - 'apps/learn-card-app/scripts/keycloak-realm-inputs*'
+            - 'apps/learn-card-app/scripts/native-auth-audiences*'
+            - 'apps/learn-card-app/environments/**'
             - '.github/workflows/auth-integration.yml'
     workflow_dispatch:
 
@@ -116,5 +119,102 @@ jobs:
               uses: actions/upload-artifact@v4
               with:
                   name: lca-api-auth-integration-logs
+                  path: ${{ runner.temp }}/lca-api.log
+                  retention-days: 1
+
+    keycloak-realm-tests:
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        services:
+            redis:
+                image: redis:7
+                ports: ['6381:6379']
+                options: >-
+                    --health-cmd "redis-cli ping"
+                    --health-interval 5s --health-timeout 3s --health-retries 12
+            mongodb:
+                image: mongo:7
+                ports: ['27017:27017']
+                options: >-
+                    --health-cmd "mongosh --quiet --eval 'db.adminCommand({ping:1}).ok'"
+                    --health-interval 5s --health-timeout 3s --health-retries 12
+        env:
+            PORT: '5100'
+            SEED: c
+            IS_E2E_TEST: 'true'
+            MONGO_URI: mongodb://localhost:27017/?directConnection=true
+            MONGO_DB_NAME: lca-api
+            REDIS_HOST: localhost
+            REDIS_PORT: '6381'
+            OIDC_ISSUER: http://localhost:5100
+            OIDC_CLIENT_ID: keycloak-broker
+            OIDC_CLIENT_SECRET: dev-only-broker-secret
+            KEYCLOAK_ISSUERS: http://localhost:8081/realms/learncard
+            KEYCLOAK_AUDIENCES: learncard-app,ci-tests
+            KEYCLOAK_ADMIN_URL: http://localhost:8081
+            KEYCLOAK_ADMIN_USERNAME: admin
+            KEYCLOAK_ADMIN_PASSWORD: admin
+            KEYCLOAK_INTEGRATION: 'true'
+            KEYCLOAK_ROUNDTRIP: 'true'
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v7
+            - name: Use Composite Setup Action
+              uses: ./.github/actions/setup
+            - name: Check tenant realm inputs
+              working-directory: apps/learn-card-app
+              run: |
+                  bun test scripts/keycloak-realm-inputs.test.ts
+                  bun run lc keycloak realm-inputs keycloak-staging --check
+            - name: Set up Terraform
+              uses: hashicorp/setup-terraform@v3
+              with:
+                  terraform_version: 1.15.8
+                  terraform_wrapper: false
+            - name: Build and start empty Keycloak (no fixture import)
+              run: |
+                  docker build -f infra/keycloak/Dockerfile.dev -t learncard-keycloak-dev infra/keycloak
+                  docker run -d --name keycloak -p 8081:8080 -p 9000:9000 \
+                    --add-host=host.docker.internal:host-gateway \
+                    -e KC_BOOTSTRAP_ADMIN_USERNAME=admin -e KC_BOOTSTRAP_ADMIN_PASSWORD=admin \
+                    -e KC_HEALTH_ENABLED=true -e KC_HOSTNAME=http://localhost:8081 \
+                    learncard-keycloak-dev start-dev
+                  curl --fail --silent --show-error --retry 40 --retry-delay 3 \
+                    --retry-all-errors --retry-max-time 120 --max-time 3 \
+                    http://localhost:9000/health/ready || { docker logs keycloak; exit 1; }
+            - name: Apply reusable module and dev-only overlay
+              working-directory: infra/keycloak/terraform/realm/local
+              run: |
+                  terraform init -backend=false -input=false -lockfile=readonly
+                  terraform validate
+                  terraform apply -auto-approve -input=false
+                  terraform plan -detailed-exitcode -input=false
+            - name: Start lca-api
+              working-directory: services/learn-card-network/lca-api
+              run: bun --conditions=development src/docker-entry.ts > "$RUNNER_TEMP/lca-api.log" 2>&1 &
+            - name: Wait for lca-api discovery
+              run: |
+                  curl --fail --silent --show-error --retry 60 --retry-delay 1 \
+                    --retry-all-errors --retry-max-time 57 --max-time 3 \
+                    http://localhost:5100/.well-known/openid-configuration
+            - name: Verify login tickets and real tokens
+              working-directory: services/learn-card-network/lca-api
+              run: >-
+                  bunx vitest run test/oidc.integration.spec.ts
+                  test/keycloak-verify.integration.spec.ts
+            - name: Verify broker round-trip and Firebase-era migration
+              working-directory: services/learn-card-network/lca-api
+              run: >-
+                  bunx vitest run -c vitest.integration.config.ts
+                  test/keycloak-broker-roundtrip.integration.spec.ts
+                  test/keycloak-migration.integration.spec.ts
+            - name: Keycloak logs on failure
+              if: ${{ always() && failure() }}
+              run: docker logs keycloak
+            - name: Upload API logs on failure
+              if: ${{ always() && failure() }}
+              uses: actions/upload-artifact@v4
+              with:
+                  name: lca-api-realm-integration-logs
                   path: ${{ runner.temp }}/lca-api.log
                   retention-days: 1

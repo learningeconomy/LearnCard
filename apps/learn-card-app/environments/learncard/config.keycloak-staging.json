@@ -1,0 +1,29 @@
+{
+    "_comment": "Opt-in Keycloak staging. Stage overlays merge directly over config.json, not config.staging.json.",
+    "domain": "staging.learncard.ai",
+    "apis": {
+        "brainService": "https://staging.network.learncard.com/trpc",
+        "brainServiceApi": "https://staging.network.learncard.com/api",
+        "cloudService": "https://staging.cloud.learncard.com/trpc",
+        "lcaApi": "https://staging.api.learncard.app/trpc",
+        "xapi": "https://staging.network.learncard.com/xapi",
+        "aiAgentService": "https://agent-staging.learncard.ai"
+    },
+    "features": { "analytics": false, "useSeededSkillFrameworks": true },
+    "observability": {
+        "sentryEnv": "staging",
+        "launchDarklyClientId": "6a07749c1380120a8213715a",
+        "userflowToken": "ct_w53eaxhevvf2vejzrecekeq3nu"
+    },
+    "auth": {
+        "provider": "keycloak",
+        "keycloak": {
+            "serverUrl": "https://auth.staging.learncard.app",
+            "realm": "learncard",
+            "clientId": "learncard-app",
+            "authBridgeUrl": "https://staging.learncard.ai/auth/continue.html"
+        },
+        "keyDerivation": "sss",
+        "sss": { "serverUrl": "https://staging.api.learncard.app/api" }
+    }
+}

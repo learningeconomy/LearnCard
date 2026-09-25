@@ -125,7 +125,7 @@ resource "aws_iam_role_policy" "realm_runner" {
 
 resource "aws_codebuild_project" "realm" {
   name                   = "${local.name}-realm"
-  description            = "Private realm Terraform runner; fails until PR B supplies the realm root"
+  description            = "Private realm Terraform runner; reviewed generated tenant inputs and Secrets Manager credentials"
   service_role           = aws_iam_role.realm_runner.arn
   build_timeout          = 30
   queued_timeout         = 30

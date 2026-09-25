@@ -9,18 +9,18 @@ SSM, never `terraform_remote_state`.
 | [Account bootstrap](../../aws/bootstrap/README.md) | Human-admin state bucket, OIDC roles/boundary, ECR, budgets          |
 | [Network](network/README.md)                       | VPC, subnets, NAT, flow logs, delegated zones and certificates       |
 | [Service](service/README.md)                       | ARM64 ECS, Aurora, public/private ALBs, realm runner and access task |
-| `realm/` (PR B, not yet present)                   | Keycloak realms/clients/IdPs, applied privately through CodeBuild    |
+| [Realm](realm/README.md)                           | Keycloak realms/clients/IdPs, applied privately through CodeBuild    |
 
 First apply: **bootstrap → network (certificate wait off) → GoDaddy NS delegation →
-network re-apply (certificate wait on) → service → realm when PR B lands**.
+network re-apply (certificate wait on) → service → realm → automation bootstrap**.
 Use separate directories and account sessions for staging and production.
 
 Terraform >= 1.10 with S3-native locking; CI pins 1.15.8. All AWS roots use provider
 6.x and committed three-platform lockfiles. There are no DynamoDB lock tables.
 The old flat root was never applied; its service files were moved without a state
-migration. Read the service runbook's unresolved rotation and private-admin spikes
-before deployment. No image promotion, realm implementation, or production cutover
-was included in the foundation; the pipeline below adds image promotion.
+migration. Read the service runbook's unresolved rotation and live private-access
+gates before deployment, and the realm runbook's local hostname proof. Production
+user cutover remains a separate workstream.
 
 ## CI/CD
 
