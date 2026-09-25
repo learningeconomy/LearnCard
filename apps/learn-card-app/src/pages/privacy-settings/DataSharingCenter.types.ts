@@ -45,6 +45,11 @@ export type DataSharingDiagnosticsViewModel = {
 
 export type SharedLinkFilter = 'active' | 'expired' | 'stopped';
 
+export type PendingSharedLinkAction = {
+    shareId: string;
+    action: 'expiry' | 'stop';
+};
+
 export type SavedCredentialCollection = {
     uri: string;
     receivedAt: string;
@@ -69,6 +74,7 @@ export type DataSharingSharedLinksViewModel = {
     hasMore: boolean;
     error: boolean;
     busyId: string | null;
+    pendingAction: PendingSharedLinkAction | null;
     showViewStats: boolean;
     savedCollections: DataSharingSavedCollectionsViewModel;
     onFilterChange: (filter: SharedLinkFilter) => void;
@@ -78,6 +84,7 @@ export type DataSharingSharedLinksViewModel = {
     onGetPrivateUrl: (share: ShareLink) => Promise<string>;
     onChangeExpiry: (share: ShareLink, expiresAt: string | null) => Promise<void>;
     onStop: (share: ShareLink) => Promise<void>;
+    onCheckPending: (share: ShareLink) => Promise<void>;
     onPreview: (share: ShareLink) => void;
     onUpdate: (share: ShareLink) => void;
     onCreateShare: () => void;

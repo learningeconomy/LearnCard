@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 
-import { IonContent, IonPage } from '@ionic/react';
+import { IonContent, IonPage, useIonViewWillEnter } from '@ionic/react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import {
     AllowConnectionRequestsEnum,
@@ -67,6 +67,12 @@ const PrivacySettingsPage: React.FC = () => {
     const { handleAiToggle } = useAiConsentToggle();
     const [savingField, setSavingField] = useState<string | null>(null);
     const refreshSharedRef = useRef<(() => Promise<void>) | null>(null);
+    const hasEnteredRef = useRef(false);
+
+    useIonViewWillEnter(() => {
+        if (hasEnteredRef.current) void refreshSharedRef.current?.();
+        else hasEnteredRef.current = true;
+    });
 
     const handleUpdateShare = useCallback(
         (share: ShareLink) => {
@@ -74,7 +80,6 @@ const PrivacySettingsPage: React.FC = () => {
                 <ShareLinkCreate
                     editShare={share}
                     onDismiss={() => closeModal()}
-                    onManage={() => closeModal()}
                     onComplete={() => refreshSharedRef.current?.()}
                 />,
                 {},

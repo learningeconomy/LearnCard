@@ -8410,6 +8410,7 @@
             "expired": "Expired",
             "stopped": "Stopped",
             "credentialCount": "{{count}} credentials",
+            "credentialCountOne": "{{count}} credential",
             "viewCredentials": "View {{count}} credentials",
             "previewEyebrow": "Private link",
             "previewTitle": "Shared credential preview",
@@ -8446,10 +8447,14 @@
             "emptyBody": "Create a private link from your Passport and it will appear here.",
             "openPassport": "Open Passport",
             "emptyFilter": "No links match this filter.",
+            "emptyFilterMore": "No loaded links match this filter. Load more to keep looking.",
             "loadMore": "Load more",
             "copied": "Link copied",
             "expirySaved": "Expiry updated",
             "stoppedToast": "Sharing stopped",
+            "changePending": "This change is still processing. Check again in a moment.",
+            "checkAgain": "Check again",
+            "checking": "Checking…",
             "actionError": "Something went wrong. Please try again."
         },
         "minor": {

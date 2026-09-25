@@ -4,7 +4,11 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { ShareLink, VP } from '@learncard/types';
 
 import type { DataSharingSharedLinksViewModel } from '../DataSharingCenter.types';
-import SharedLinksSection, { getSharedLinkViewStatus } from './SharedLinksSection';
+import SharedLinksSection, {
+    getSharedLinkViewStatus,
+    localDateValue,
+    minimumExpiryDateValue,
+} from './SharedLinksSection';
 
 vi.mock('@ionic/react', () => ({ IonIcon: () => null }));
 
@@ -48,6 +52,7 @@ const viewModel = (overrides: Partial<DataSharingSharedLinksViewModel> = {}) => 
     hasMore: false,
     error: false,
     busyId: null,
+    pendingAction: null,
     showViewStats: true,
     savedCollections: {
         records: [savedCollection],
@@ -64,6 +69,7 @@ const viewModel = (overrides: Partial<DataSharingSharedLinksViewModel> = {}) => 
     onGetPrivateUrl: vi.fn(async () => 'https://example.com'),
     onChangeExpiry: vi.fn(async () => undefined),
     onStop: vi.fn(async () => undefined),
+    onCheckPending: vi.fn(async () => undefined),
     onPreview: vi.fn(),
     onUpdate: vi.fn(),
     onCreateShare: vi.fn(),
@@ -99,6 +105,11 @@ describe('shared link filters', () => {
             )
         ).toBe('active');
         expect(getSharedLinkViewStatus({ status: 'active', expiresAt: null }, now)).toBe('active');
+    });
+
+    it('formats date inputs in local time', () => {
+        expect(localDateValue(new Date(2026, 8, 25, 0, 30))).toBe('2026-09-25');
+        expect(minimumExpiryDateValue(new Date(2026, 8, 25, 23, 30))).toBe('2026-09-26');
     });
 });
 
@@ -191,5 +202,40 @@ describe('shared link actions', () => {
             })
         );
         expect(screen.queryByText(/Viewed 12 times/)).toBeNull();
+    });
+
+    it('does not invent view statistics when the server omits them', () => {
+        const withoutViewData = { ...share, viewCount: undefined, lastViewedAt: null } as ShareLink;
+        render(
+            React.createElement(SharedLinksSection, {
+                vm: viewModel({ records: [withoutViewData], showViewStats: true }),
+            })
+        );
+
+        expect(screen.queryByText(/Viewed/)).toBeNull();
+        expect(screen.queryByText('Not viewed yet')).toBeNull();
+    });
+
+    it('keeps a pending change visible and lets the owner retry it', () => {
+        const vm = viewModel({ pendingAction: { shareId: share.id, action: 'stop' } });
+        render(React.createElement(SharedLinksSection, { vm }));
+
+        expect(screen.getByText(/still processing/i)).toBeTruthy();
+        fireEvent.click(screen.getByRole('button', { name: 'Check again' }));
+        expect(vm.onCheckPending).toHaveBeenCalledWith(share);
+        expect(screen.getByRole('button', { name: 'Stop sharing' })).toBeDisabled();
+    });
+
+    it('explains that more pages may contain links for the selected filter', () => {
+        render(
+            React.createElement(SharedLinksSection, {
+                vm: viewModel({
+                    records: [{ ...share, status: 'stopped' } as ShareLink],
+                    hasMore: true,
+                }),
+            })
+        );
+
+        expect(screen.getByText(/Load more to keep looking/i)).toBeTruthy();
     });
 });

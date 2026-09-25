@@ -35,6 +35,7 @@ vi.mock('@ionic/react', () => ({
 }));
 
 vi.mock('../../paraglide/messages.js', () => ({
+    'common.share': () => 'Share',
     'shareLinks.sharing': () => 'Sharing',
     'shareLinks.sharingHint': () => 'Choose what you want to do.',
     'shareLinks.share': () => 'Share credentials',
@@ -56,7 +57,7 @@ describe('PassportSharingMenu', () => {
     it('opens a desktop menu and launches the share flow', () => {
         render(<PassportSharingMenu onViewShared={vi.fn()} />);
 
-        fireEvent.click(screen.getByRole('button', { name: 'Sharing' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Share' }));
         fireEvent.click(screen.getByRole('menuitem', { name: /Share credentials/i }));
 
         expect(mocks.newModal).toHaveBeenCalledOnce();
@@ -70,7 +71,7 @@ describe('PassportSharingMenu', () => {
         const onViewShared = vi.fn();
         render(<PassportSharingMenu onViewShared={onViewShared} />);
 
-        fireEvent.click(screen.getByRole('button', { name: 'Sharing' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Share' }));
         fireEvent.click(screen.getByRole('menuitem', { name: /View shared credentials/i }));
 
         expect(onViewShared).toHaveBeenCalledOnce();
@@ -81,7 +82,7 @@ describe('PassportSharingMenu', () => {
         mocks.isMobile = true;
         render(<PassportSharingMenu onViewShared={vi.fn()} />);
 
-        fireEvent.click(screen.getByRole('button', { name: 'Sharing' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Share' }));
 
         expect(mocks.newModal).toHaveBeenCalledOnce();
         expect(mocks.newModal.mock.calls[0][2]).toEqual({

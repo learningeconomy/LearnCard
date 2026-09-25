@@ -8493,6 +8493,7 @@
             "expired": "منتهية",
             "stopped": "متوقفة",
             "credentialCount": "{{count}} من بيانات الاعتماد",
+            "credentialCountOne": "بيان اعتماد واحد",
             "viewCredentials": "عرض {{count}} من بيانات الاعتماد",
             "previewEyebrow": "رابط خاص",
             "previewTitle": "معاينة بيانات الاعتماد المشتركة",
@@ -8529,10 +8530,14 @@
             "emptyBody": "أنشئ رابطًا خاصًا من جوازك وسيظهر هنا.",
             "openPassport": "فتح الجواز",
             "emptyFilter": "لا توجد روابط مطابقة لهذا الفلتر.",
+            "emptyFilterMore": "لا توجد روابط محمّلة مطابقة. حمّل المزيد لمتابعة البحث.",
             "loadMore": "تحميل المزيد",
             "copied": "تم نسخ الرابط",
             "expirySaved": "تم تحديث الانتهاء",
             "stoppedToast": "تم إيقاف المشاركة",
+            "changePending": "لا يزال هذا التغيير قيد المعالجة. تحقّق مرة أخرى بعد قليل.",
+            "checkAgain": "تحقّق مرة أخرى",
+            "checking": "جارٍ التحقّق…",
             "actionError": "حدث خطأ ما. حاول مجددًا."
         },
         "minor": {

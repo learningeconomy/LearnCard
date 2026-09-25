@@ -1,33 +1,28 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Clipboard } from '@capacitor/clipboard';
-import type { ShareLink, ShareLinkOwnerCommitOutput } from '@learncard/types';
-import { buildShareLinkUrl } from 'learn-card-base/helpers/share-links';
+import type { ShareLink, ShareLinkOperationKeyInput } from '@learncard/types';
 import { ToastTypeEnum, useToast, useWallet } from 'learn-card-base';
 
 import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
-import { readShareRecovery, shareWallet } from '../../components/share-links/shareLinkFlow';
+import { environment } from '../../config/environment';
+import {
+    buildAppShareLinkUrl,
+    classifySharePublication,
+    readShareRecovery,
+    shareWallet,
+} from '../../components/share-links/shareLinkFlow';
 import * as m from '../../paraglide/messages.js';
 import { loadSavedCredentialCollections } from './savedCollections';
 import type {
     DataSharingSharedLinksViewModel,
+    PendingSharedLinkAction,
     SavedCredentialCollection,
     SharedLinkFilter,
 } from './DataSharingCenter.types';
 
 const PAGE_SIZE = 25;
 
-const completedShare = async (
-    result: ShareLinkOwnerCommitOutput,
-    wallet: ReturnType<typeof shareWallet>
-): Promise<ShareLink> => {
-    if (result.status === 'completed') return result.share;
-    const retried = await wallet.invoke.retryShareLinkOperation({
-        id: result.id,
-        operationId: result.operationId,
-    });
-    if (retried.status !== 'completed') throw new Error('pending');
-    return retried.share;
-};
+type PendingOwnerOperation = PendingSharedLinkAction & ShareLinkOperationKeyInput;
 
 export const useSharedLinks = (
     enabled: boolean,
@@ -48,6 +43,7 @@ export const useSharedLinks = (
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [error, setError] = useState(false);
     const [busyId, setBusyId] = useState<string | null>(null);
+    const [pendingOperation, setPendingOperation] = useState<PendingOwnerOperation | null>(null);
     const [filter, setFilter] = useState<SharedLinkFilter>('active');
     const [savedCollections, setSavedCollections] = useState<SavedCredentialCollection[]>([]);
     const [savedCollectionsLoading, setSavedCollectionsLoading] = useState(false);
@@ -110,7 +106,12 @@ export const useSharedLinks = (
     const privateUrl = useCallback(async (share: ShareLink): Promise<string> => {
         const wallet = shareWallet(await walletRef.current());
         const recovery = await readShareRecovery(wallet, share);
-        return buildShareLinkUrl(new URL(getAppBaseUrl()).host, share.id, recovery.latest.key);
+        return buildAppShareLinkUrl(
+            getAppBaseUrl(),
+            share.id,
+            recovery.latest.key,
+            environment.DEV
+        );
     }, []);
 
     const copy = useCallback(
@@ -136,25 +137,50 @@ export const useSharedLinks = (
         setRecords(current => current.map(record => (record.id === share.id ? share : record)));
     }, []);
 
+    const settleMutation = useCallback(
+        (
+            result: Parameters<typeof classifySharePublication>[0],
+            shareId: string,
+            action: PendingSharedLinkAction['action']
+        ): ShareLink | undefined => {
+            const outcome = classifySharePublication(result);
+            if (outcome.status === 'pending') {
+                setPendingOperation({ ...outcome.operation, shareId, action });
+                return undefined;
+            }
+            if (outcome.status === 'abandoned') throw new Error('operation');
+            setPendingOperation(current => (current?.shareId === shareId ? null : current));
+            replaceRecord(outcome.share);
+            return outcome.share;
+        },
+        [replaceRecord]
+    );
+
     const changeExpiry = useCallback(
         async (share: ShareLink, expiresAt: string | null): Promise<void> => {
             setBusyId(share.id);
             try {
                 const wallet = shareWallet(await walletRef.current());
-                const updated = await completedShare(
+                const updated = settleMutation(
                     await wallet.invoke.updateShareLink({
                         id: share.id,
                         expectedVersion: share.version,
                         clientRequestId: crypto.randomUUID(),
                         expiresAt,
                     }),
-                    wallet
+                    share.id,
+                    'expiry'
                 );
-                replaceRecord(updated);
-                presentToast(m['dataShareCenter.shared.expirySaved'](), {
-                    type: ToastTypeEnum.Success,
-                });
+                presentToast(
+                    updated
+                        ? m['dataShareCenter.shared.expirySaved']()
+                        : m['dataShareCenter.shared.changePending'](),
+                    {
+                        type: ToastTypeEnum.Success,
+                    }
+                );
             } catch {
+                await load();
                 presentToast(m['dataShareCenter.shared.actionError'](), {
                     type: ToastTypeEnum.Error,
                 });
@@ -163,7 +189,7 @@ export const useSharedLinks = (
                 setBusyId(null);
             }
         },
-        [presentToast, replaceRecord]
+        [load, presentToast, settleMutation]
     );
 
     const stop = useCallback(
@@ -171,19 +197,25 @@ export const useSharedLinks = (
             setBusyId(share.id);
             try {
                 const wallet = shareWallet(await walletRef.current());
-                const stopped = await completedShare(
+                const stopped = settleMutation(
                     await wallet.invoke.revokeShareLink({
                         id: share.id,
                         expectedVersion: share.version,
                         clientRequestId: crypto.randomUUID(),
                     }),
-                    wallet
+                    share.id,
+                    'stop'
                 );
-                replaceRecord(stopped);
-                presentToast(m['dataShareCenter.shared.stoppedToast'](), {
-                    type: ToastTypeEnum.Success,
-                });
+                presentToast(
+                    stopped
+                        ? m['dataShareCenter.shared.stoppedToast']()
+                        : m['dataShareCenter.shared.changePending'](),
+                    {
+                        type: ToastTypeEnum.Success,
+                    }
+                );
             } catch {
+                await load();
                 presentToast(m['dataShareCenter.shared.actionError'](), {
                     type: ToastTypeEnum.Error,
                 });
@@ -192,7 +224,42 @@ export const useSharedLinks = (
                 setBusyId(null);
             }
         },
-        [presentToast, replaceRecord]
+        [load, presentToast, settleMutation]
+    );
+
+    const checkPending = useCallback(
+        async (share: ShareLink): Promise<void> => {
+            if (!pendingOperation || pendingOperation.shareId !== share.id) return;
+            setBusyId(share.id);
+            try {
+                const wallet = shareWallet(await walletRef.current());
+                const updated = settleMutation(
+                    await wallet.invoke.retryShareLinkOperation({
+                        id: pendingOperation.id,
+                        operationId: pendingOperation.operationId,
+                    }),
+                    share.id,
+                    pendingOperation.action
+                );
+                presentToast(
+                    !updated
+                        ? m['dataShareCenter.shared.changePending']()
+                        : pendingOperation.action === 'stop'
+                          ? m['dataShareCenter.shared.stoppedToast']()
+                          : m['dataShareCenter.shared.expirySaved'](),
+                    { type: ToastTypeEnum.Success }
+                );
+            } catch {
+                setPendingOperation(null);
+                await load();
+                presentToast(m['dataShareCenter.shared.actionError'](), {
+                    type: ToastTypeEnum.Error,
+                });
+            } finally {
+                setBusyId(null);
+            }
+        },
+        [load, pendingOperation, presentToast, settleMutation]
     );
 
     if (!enabled) return null;
@@ -205,6 +272,9 @@ export const useSharedLinks = (
         hasMore,
         error,
         busyId,
+        pendingAction: pendingOperation
+            ? { shareId: pendingOperation.shareId, action: pendingOperation.action }
+            : null,
         showViewStats,
         savedCollections: {
             records: savedCollections,
@@ -221,6 +291,7 @@ export const useSharedLinks = (
         onGetPrivateUrl: privateUrl,
         onChangeExpiry: changeExpiry,
         onStop: stop,
+        onCheckPending: checkPending,
         onPreview,
         onUpdate,
         onCreateShare,

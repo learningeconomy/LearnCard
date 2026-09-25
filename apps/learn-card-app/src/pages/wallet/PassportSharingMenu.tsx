@@ -155,13 +155,13 @@ const PassportSharingMenu: React.FC<PassportSharingMenuProps> = ({ onViewShared 
             <button
                 type="button"
                 onClick={openMenu}
-                aria-label={m['shareLinks.sharing']()}
+                aria-label={m['common.share']()}
                 aria-haspopup="menu"
                 aria-expanded={isMobile ? undefined : popoverOpen}
                 className="flex h-10 items-center justify-center gap-2 rounded-[20px] border border-grayscale-200 bg-white py-1 pl-1.5 pr-3 text-sm font-medium text-grayscale-900 shadow-sm transition-colors hover:border-emerald-200 hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
             >
                 <ShareCredentialsIllustration className="h-8 w-8" />
-                <span className="hidden sm:inline">{m['shareLinks.sharing']()}</span>
+                <span className="hidden sm:inline">{m['common.share']()}</span>
                 <IonIcon
                     icon={chevronDownOutline}
                     className="hidden text-sm text-grayscale-600 sm:block"

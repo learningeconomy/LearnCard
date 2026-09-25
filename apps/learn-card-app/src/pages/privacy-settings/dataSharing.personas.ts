@@ -212,6 +212,7 @@ const sharedLinks: DataSharingSharedLinksViewModel = {
     hasMore: false,
     error: false,
     busyId: null,
+    pendingAction: null,
     showViewStats: true,
     savedCollections: {
         records: [
@@ -241,6 +242,7 @@ const sharedLinks: DataSharingSharedLinksViewModel = {
         'https://learncard.app/s/AAAAAAAAAAAAAAAAAAAAAA#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     onChangeExpiry: async () => undefined,
     onStop: async () => undefined,
+    onCheckPending: async () => undefined,
     onPreview: noop,
     onUpdate: noop,
     onCreateShare: noop,

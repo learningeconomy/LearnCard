@@ -39,6 +39,22 @@ export const getSharedLinkViewStatus = (
 
 const dateValue = (value: string | null): string => (value ? value.slice(0, 10) : '');
 
+export const localDateValue = (value: Date): string => {
+    const pad = (part: number) => String(part).padStart(2, '0');
+    return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}`;
+};
+
+export const minimumExpiryDateValue = (now = new Date()): string => {
+    const minimum = new Date(now);
+    minimum.setDate(minimum.getDate() + 1);
+    return localDateValue(minimum);
+};
+
+const credentialCountLabel = (count: number): string =>
+    count === 1
+        ? m['dataShareCenter.shared.credentialCountOne']({ count: String(count) })
+        : m['dataShareCenter.shared.credentialCount']({ count: String(count) });
+
 const statusLabel = (status: SharedLinkFilter): string =>
     ({
         active: m['dataShareCenter.shared.active'](),
@@ -69,6 +85,9 @@ const ShareLinkRow = ({ share, vm }: { share: ShareLink; vm: DataSharingSharedLi
     const [panelError, setPanelError] = useState(false);
     const [expiry, setExpiry] = useState(dateValue(share.expiresAt));
     const busy = vm.busyId === share.id;
+    const pending = vm.pendingAction?.shareId === share.id;
+    const mutationsBlocked = vm.pendingAction !== null;
+    const minimumExpiry = minimumExpiryDateValue();
     const canEdit = status !== 'stopped' && share.contentState === 'finalized';
     const canPreview = status !== 'stopped' && share.contentState === 'finalized';
 
@@ -88,6 +107,10 @@ const ShareLinkRow = ({ share, vm }: { share: ShareLink; vm: DataSharingSharedLi
 
     const saveExpiry = async () => {
         setPanelError(false);
+        if (expiry && expiry < minimumExpiry) {
+            setPanelError(true);
+            return;
+        }
         try {
             await vm.onChangeExpiry(
                 share,
@@ -129,15 +152,11 @@ const ShareLinkRow = ({ share, vm }: { share: ShareLink; vm: DataSharingSharedLi
                             className="mt-1 inline-flex items-center gap-1.5 text-xs font-medium text-grayscale-600 underline decoration-grayscale-300 underline-offset-4 transition-colors hover:text-grayscale-900"
                         >
                             <IonIcon icon={eyeOutline} />
-                            {m['dataShareCenter.shared.credentialCount']({
-                                count: String(share.selectedCount),
-                            })}
+                            {credentialCountLabel(share.selectedCount)}
                         </button>
                     ) : (
                         <p className="mt-1 text-xs text-grayscale-600">
-                            {m['dataShareCenter.shared.credentialCount']({
-                                count: String(share.selectedCount),
-                            })}
+                            {credentialCountLabel(share.selectedCount)}
                         </p>
                     )}
                 </div>
@@ -198,6 +217,25 @@ const ShareLinkRow = ({ share, vm }: { share: ShareLink; vm: DataSharingSharedLi
                 )}
             </div>
 
+            {pending && (
+                <div className="mt-4 rounded-2xl border border-amber-100 bg-amber-50 p-4">
+                    <p className="text-sm leading-relaxed text-amber-900">
+                        {m['dataShareCenter.shared.changePending']()}
+                    </p>
+                    <button
+                        type="button"
+                        className={`${actionClass} mt-3 border-amber-200 bg-white text-amber-900`}
+                        disabled={busy}
+                        onClick={() => void vm.onCheckPending(share)}
+                    >
+                        <IonIcon icon={refreshOutline} />
+                        {busy
+                            ? m['dataShareCenter.shared.checking']()
+                            : m['dataShareCenter.shared.checkAgain']()}
+                    </button>
+                </div>
+            )}
+
             {status === 'stopped' ? (
                 <div className="mt-4 rounded-2xl border border-grayscale-200 bg-grayscale-10 p-4">
                     <p className="text-sm text-grayscale-600 leading-relaxed">
@@ -229,7 +267,7 @@ const ShareLinkRow = ({ share, vm }: { share: ShareLink; vm: DataSharingSharedLi
                     <div className="mt-3 flex flex-wrap items-center gap-x-4 border-t border-grayscale-100 pt-2">
                         <button
                             className={textActionClass}
-                            disabled={!canEdit || busy}
+                            disabled={!canEdit || busy || mutationsBlocked}
                             onClick={() => setPanel(panel === 'expiry' ? null : 'expiry')}
                         >
                             <IonIcon icon={timeOutline} />
@@ -237,14 +275,14 @@ const ShareLinkRow = ({ share, vm }: { share: ShareLink; vm: DataSharingSharedLi
                         </button>
                         <button
                             className={textActionClass}
-                            disabled={!canEdit || busy}
+                            disabled={!canEdit || busy || mutationsBlocked}
                             onClick={() => setPanel(panel === 'update' ? null : 'update')}
                         >
                             <IonIcon icon={createOutline} /> {m['dataShareCenter.shared.update']()}
                         </button>
                         <button
                             className={`${textActionClass} text-red-700 hover:text-red-700 sm:ml-auto`}
-                            disabled={!canEdit || busy}
+                            disabled={!canEdit || busy || mutationsBlocked}
                             onClick={() => setPanel(panel === 'stop' ? null : 'stop')}
                         >
                             <IonIcon icon={stopCircleOutline} />
@@ -282,9 +320,7 @@ const ShareLinkRow = ({ share, vm }: { share: ShareLink; vm: DataSharingSharedLi
                                 {m['dataShareCenter.shared.expiryDate']()}
                                 <input
                                     type="date"
-                                    min={new Date(Date.now() + 86_400_000)
-                                        .toISOString()
-                                        .slice(0, 10)}
+                                    min={minimumExpiry}
                                     value={expiry}
                                     onChange={event => setExpiry(event.target.value)}
                                     className="mt-1.5 w-full rounded-xl border border-grayscale-300 bg-white px-4 py-3 text-sm text-grayscale-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-500"
@@ -370,9 +406,7 @@ const SavedCollectionRow = ({
                     {m['dataShareCenter.shared.savedCollectionTitle']()}
                 </h4>
                 <p className="mt-1 text-xs text-grayscale-600">
-                    {m['dataShareCenter.shared.credentialCount']({
-                        count: String(collection.credentialCount),
-                    })}
+                    {credentialCountLabel(collection.credentialCount)}
                 </p>
             </div>
             <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-grayscale-100 px-2.5 py-1.5 text-xs text-grayscale-600">
@@ -563,10 +597,14 @@ const SharedLinksSection: React.FC<{ vm: DataSharingSharedLinksViewModel; delay?
                     </div>
                 ) : filtered.length === 0 ? (
                     <p className="p-8 text-center text-sm text-grayscale-600">
-                        {m['dataShareCenter.shared.emptyFilter']()}
+                        {vm.hasMore
+                            ? m['dataShareCenter.shared.emptyFilterMore']()
+                            : m['dataShareCenter.shared.emptyFilter']()}
                     </p>
                 ) : (
-                    filtered.map(share => <ShareLinkRow key={share.id} share={share} vm={vm} />)
+                    filtered.map(share => (
+                        <ShareLinkRow key={`${share.id}:${share.version}`} share={share} vm={vm} />
+                    ))
                 )}
             </GlassCard>
 

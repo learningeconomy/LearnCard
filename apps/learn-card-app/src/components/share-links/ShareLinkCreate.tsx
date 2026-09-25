@@ -169,17 +169,27 @@ export const ShareLinkCreate = ({
                 const refs = [...recovery.selection]
                     .sort((a, b) => a.order - b.order)
                     .map(item => item.ref);
-                for (const uri of refs) {
+                const hydratedRows = await mapWithConcurrency(refs, READ_CONCURRENCY, async uri => {
                     try {
-                        editRows.push({
+                        return {
                             uri,
                             credential: (await wallet.read.get(uri)) as VC | undefined,
-                        });
+                        };
                     } catch {
-                        editRows.push({ uri });
+                        return { uri };
                     }
+                });
+                editRows.push(...hydratedRows);
+                if (alive.current) {
+                    const availableRefs = hydratedRows
+                        .filter(row => row.credential)
+                        .map(row => row.uri);
+                    const missingRefs = hydratedRows
+                        .filter(row => !row.credential)
+                        .map(row => row.uri);
+                    setSelected(availableRefs);
+                    setFailedReads(new Set(missingRefs));
                 }
-                if (alive.current) setSelected(refs);
             }
             const records: CredentialChoice[] = [];
             let pageCursor: string | undefined;
@@ -347,7 +357,9 @@ export const ShareLinkCreate = ({
         setLink(buildAppShareLinkUrl(host, value.input.id, value.key, environment.DEV));
         setExpiresAt(expiresAt);
         setStep('done');
-        void onComplete?.();
+        void Promise.resolve()
+            .then(() => onComplete?.())
+            .catch(() => undefined);
     };
 
     const publishPrepared = (wallet: ShareWallet) =>

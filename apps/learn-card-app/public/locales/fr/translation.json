@@ -8404,6 +8404,7 @@
             "expired": "Expirés",
             "stopped": "Arrêtés",
             "credentialCount": "{{count}} justificatifs",
+            "credentialCountOne": "{{count}} justificatif",
             "viewCredentials": "Voir {{count}} justificatifs",
             "previewEyebrow": "Lien privé",
             "previewTitle": "Aperçu des justificatifs partagés",
@@ -8440,10 +8441,14 @@
             "emptyBody": "Créez un lien privé depuis votre Passeport et il apparaîtra ici.",
             "openPassport": "Ouvrir le Passeport",
             "emptyFilter": "Aucun lien ne correspond à ce filtre.",
+            "emptyFilterMore": "Aucun lien chargé ne correspond. Affichez-en plus pour poursuivre.",
             "loadMore": "Afficher plus",
             "copied": "Lien copié",
             "expirySaved": "Expiration mise à jour",
             "stoppedToast": "Partage arrêté",
+            "changePending": "Cette modification est toujours en cours. Vérifiez à nouveau dans un instant.",
+            "checkAgain": "Vérifier à nouveau",
+            "checking": "Vérification…",
             "actionError": "Un problème est survenu. Réessayez."
         },
         "minor": {

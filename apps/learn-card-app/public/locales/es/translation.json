@@ -8404,6 +8404,7 @@
             "expired": "Caducados",
             "stopped": "Detenidos",
             "credentialCount": "{{count}} credenciales",
+            "credentialCountOne": "{{count}} credencial",
             "viewCredentials": "Ver {{count}} credenciales",
             "previewEyebrow": "Enlace privado",
             "previewTitle": "Vista previa de credenciales compartidas",
@@ -8440,10 +8441,14 @@
             "emptyBody": "Crea un enlace privado desde tu Pasaporte y aparecerá aquí.",
             "openPassport": "Abrir Pasaporte",
             "emptyFilter": "Ningún enlace coincide con este filtro.",
+            "emptyFilterMore": "Ningún enlace cargado coincide. Carga más para seguir buscando.",
             "loadMore": "Cargar más",
             "copied": "Enlace copiado",
             "expirySaved": "Caducidad actualizada",
             "stoppedToast": "Se dejó de compartir",
+            "changePending": "Este cambio aún se está procesando. Vuelve a comprobarlo en un momento.",
+            "checkAgain": "Comprobar de nuevo",
+            "checking": "Comprobando…",
             "actionError": "Algo salió mal. Inténtalo de nuevo."
         },
         "minor": {
