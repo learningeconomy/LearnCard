@@ -1,57 +1,138 @@
-name: Keycloak Staging Health Check
+name: Service Health Check
 
 on:
-    schedule:
-        - cron: '*/5 * * * *' # Every 5 minutes
+    pull_request:
+        types: [opened, synchronize, reopened]
     workflow_dispatch:
+        inputs:
+            group_id:
+                description: 'UptimeRobot monitor group ID to check'
+                required: false
+                default: '15487'
+                type: string
+            group_name:
+                description: 'Display name for the monitor group (auto-resolved from API if empty)'
+                required: false
+                type: string
+    workflow_call:
+        inputs:
+            group_id:
+                description: 'UptimeRobot monitor group ID to check'
+                required: false
+                default: '15487'
+                type: string
+            group_name:
+                description: 'Display name for the monitor group (auto-resolved from API if empty)'
+                required: false
+                type: string
+        secrets:
+            UPTIMEROBOT_API_KEY:
+                required: true
 
-permissions:
-    contents: read
+env:
+    UPTIMEROBOT_GROUP_ID: ${{ inputs.group_id || '15487' }}
 
 jobs:
     health-check:
+        name: UpTime Health Check
+        if: github.head_ref == 'changeset-release/main' || github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call'
         runs-on: ubuntu-latest
-        timeout-minutes: 10
         steps:
-            - uses: actions/checkout@v4
-
-            - name: Setup Bun
-              uses: oven-sh/setup-bun@v1
-
-            - name: Setup K6
+            - name: Resolve group name and check monitors
+              env:
+                  UPTIMEROBOT_API_KEY: ${{ secrets.UPTIMEROBOT_API_KEY }}
+                  INPUT_GROUP_NAME: ${{ inputs.group_name }}
               run: |
-                  sudo apt-get update
-                  sudo apt-get install -y k6
-
-            - name: Check JWKS discovery
-              id: jwks
-              continue-on-error: true
-              run: |
-                  curl -sf https://auth.staging.learncard.app/realms/learncard/.well-known/openid-configuration > /dev/null
-                  echo "jwks_status=success" >> "$GITHUB_OUTPUT"
-
-            - name: JWKS discovery warning
-              if: steps.jwks.outcome == 'failure' && env.KEYCLOAK_STAGING_REALM_LIVE != 'true'
-              run: |
-                  echo "::warning::JWKS discovery failed. Set KEYCLOAK_STAGING_REALM_LIVE=true to enable staging checks."
-
-            - name: Run probe (5 min)
-              if: env.KEYCLOAK_STAGING_REALM_LIVE == 'true'
-              run: |
-                  k6 run infra/keycloak/qa/probe.js -e HOST=auth.staging.learncard.app --duration 5m --vus 5
-
-            - name: Admin 403 check
-              run: |
-                  STATUS=$(curl -s -o /dev/null -w '%{http_code}' https://auth.staging.learncard.app/admin/)
-                  if [[ "$STATUS" != "403" ]]; then
-                    echo "::error::Admin endpoint returned $STATUS, expected 403"
+                  if [ -z "$UPTIMEROBOT_API_KEY" ]; then
+                    echo "::error::UPTIMEROBOT_API_KEY secret is not set"
                     exit 1
                   fi
-                  echo "Admin endpoint correctly returns 403"
 
-            - name: Report results
+                  GROUP_ID="${UPTIMEROBOT_GROUP_ID}"
+
+                  # Resolve group name: use input if provided, otherwise fetch from API
+                  if [ -n "$INPUT_GROUP_NAME" ]; then
+                    GROUP_NAME="$INPUT_GROUP_NAME"
+                  else
+                    echo "Resolving group name for ID $GROUP_ID..."
+
+                    GROUPS_RESPONSE=$(curl -s -f -X GET \
+                      "https://api.uptimerobot.com/v3/monitor-groups" \
+                      -H 'accept: application/json' \
+                      -H "authorization: Bearer ${UPTIMEROBOT_API_KEY}")
+
+                    GROUP_NAME=$(echo "$GROUPS_RESPONSE" | jq -r --arg gid "$GROUP_ID" '.data[] | select(.id == ($gid | tonumber)) | .name' 2>/dev/null)
+
+                    if [ -z "$GROUP_NAME" ] || [ "$GROUP_NAME" = "null" ]; then
+                      GROUP_NAME="Group $GROUP_ID"
+                    fi
+                  fi
+
+                  echo "### Checking: $GROUP_NAME (ID: $GROUP_ID)" >> $GITHUB_STEP_SUMMARY
+
+                  echo "Querying UptimeRobot for DOWN monitors in \"$GROUP_NAME\" (ID: $GROUP_ID)..."
+
+                  RESPONSE=$(curl -s -f -X GET \
+                    "https://api.uptimerobot.com/v3/monitors?limit=50&groupId=${GROUP_ID}&status=DOWN" \
+                    -H 'accept: application/json' \
+                    -H "authorization: Bearer ${UPTIMEROBOT_API_KEY}")
+
+                  CURL_EXIT=$?
+                  if [ $CURL_EXIT -ne 0 ]; then
+                    echo "::error::UptimeRobot API request failed (curl exit code: $CURL_EXIT)"
+                    exit 1
+                  fi
+
+                  echo "Response: $RESPONSE"
+
+                  # Check if data array is empty (no monitors down)
+                  DOWN_COUNT=$(echo "$RESPONSE" | jq '.data | length')
+
+                  if [ "$DOWN_COUNT" = "0" ]; then
+                    echo "✅ All monitors in \"$GROUP_NAME\" are UP"
+                    echo "Result: All monitors UP" >> $GITHUB_STEP_SUMMARY
+                  else
+                    echo "::error::$DOWN_COUNT monitor(s) in \"$GROUP_NAME\" are DOWN"
+
+                    # List the down monitors for visibility
+                    echo "$RESPONSE" | jq -r '.data[] | "  - \(.name) (ID: \(.id)) — down since \(.downDatetime)"' 2>/dev/null || true
+
+                    echo "" >> $GITHUB_STEP_SUMMARY
+                    echo "**$DOWN_COUNT monitor(s) DOWN:**" >> $GITHUB_STEP_SUMMARY
+                    echo "$RESPONSE" | jq -r '.data[] | "- \(.name) (ID: \(.id))"' >> $GITHUB_STEP_SUMMARY 2>/dev/null || true
+
+                    exit 1
+                  fi
+
+            - name: Check Keycloak public admin isolation
               if: always()
               run: |
-                  echo "Health check completed at $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
-                  echo "JWKS: ${{ steps.jwks.outputs.jwks_status }}"
-                  echo "Admin: 403 OK"
+                  set -euo pipefail
+                  status=$(curl --silent --show-error --max-time 20 --output /dev/null --write-out '%{http_code}' \
+                    https://auth.staging.learncard.app/admin/)
+                  [[ "$status" == 403 ]] || { echo "::error::Keycloak /admin/ must return 403 (got $status)"; exit 1; }
+
+            - name: Check Keycloak discovery and JWKS
+              if: always()
+              env:
+                  REALM_LIVE: ${{ vars.KEYCLOAK_STAGING_REALM_LIVE }}
+              run: |
+                  set -euo pipefail
+                  check_oidc() {
+                    local discovery jwks_uri jwks
+                    discovery=$(curl --fail --silent --show-error --max-time 20 \
+                      https://auth.staging.learncard.app/realms/learncard/.well-known/openid-configuration) || return 1
+                    jwks_uri=$(jq -er 'select(.issuer == "https://auth.staging.learncard.app/realms/learncard") | .jwks_uri | select(type == "string")' <<< "$discovery") || return 1
+                    # Never follow a discovery response to an arbitrary origin.
+                    [[ "$jwks_uri" == https://auth.staging.learncard.app/realms/learncard/protocol/openid-connect/certs ]] || return 1
+                    jwks=$(curl --fail --silent --show-error --max-time 20 "$jwks_uri") || return 1
+                    jq -e '.keys | type == "array" and length > 0' <<< "$jwks" >/dev/null
+                  }
+                  if check_oidc; then
+                    echo 'Keycloak discovery and JWKS passed' >> "$GITHUB_STEP_SUMMARY"
+                  elif [[ "$REALM_LIVE" == true ]]; then
+                    echo '::error::Keycloak discovery/JWKS failed for the commissioned staging realm'
+                    exit 1
+                  else
+                    echo '::warning::Keycloak discovery/JWKS unavailable; set repo variable KEYCLOAK_STAGING_REALM_LIVE=true after realm commissioning'
+                  fi
