@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import NewNotificationsList from './NewNotificationsList';
@@ -64,7 +64,7 @@ const notification = (id: string, body: string, connectionPrompt?: unknown): Tes
         message: { body },
         data: connectionPrompt === undefined ? {} : { metadata: { connectionPrompt } },
         sent: '2026-08-20T12:00:00.000Z',
-    } as TestNotification);
+    }) as TestNotification;
 
 describe('NewNotificationsList connection prompt delivery', () => {
     beforeEach(() => {
@@ -104,5 +104,63 @@ describe('NewNotificationsList connection prompt delivery', () => {
         expect(
             screen.getAllByTestId('rendered-notification').map(node => node.textContent)
         ).toEqual(['First prompt', 'Legacy boost accepted', 'Malformed prompt', 'Other prompt']);
+    });
+
+    it('hides presentation notifications created by saving to the same profile', async () => {
+        const setIsEmptyState = vi.fn();
+        state.notifications = [
+            {
+                _id: 'self-presentation',
+                type: 'PRESENTATION_RECEIVED',
+                read: false,
+                archived: false,
+                from: { did: 'did:key:viewer', profileId: 'viewer', displayName: 'Viewer' },
+                to: { did: 'did:key:viewer', profileId: 'viewer' },
+                message: { body: 'Viewer has sent you a presentation!' },
+                data: { vpUris: ['lc:network:localhost/presentation:self'] },
+                sent: '2026-09-25T12:00:00.000Z',
+            } as TestNotification,
+        ];
+
+        render(
+            <NewNotificationsList
+                options={{ limit: 30, sort: 'REVERSE_CHRONOLOGICAL' }}
+                filter={{ archived: false }}
+                isEmptyState={false}
+                setIsEmptyState={setIsEmptyState}
+            />
+        );
+
+        expect(screen.queryByTestId('rendered-notification')).not.toBeInTheDocument();
+        await waitFor(() => expect(setIsEmptyState).toHaveBeenCalledWith(true));
+    });
+
+    it('keeps presentation notifications sent by another profile', () => {
+        state.notifications = [
+            {
+                _id: 'external-presentation',
+                type: 'PRESENTATION_RECEIVED',
+                read: false,
+                archived: false,
+                from: { did: 'did:key:alice', profileId: 'alice', displayName: 'Alice' },
+                to: { did: 'did:key:viewer', profileId: 'viewer' },
+                message: { body: 'Alice has sent you a presentation!' },
+                data: { vpUris: ['lc:network:localhost/presentation:external'] },
+                sent: '2026-09-25T12:00:00.000Z',
+            } as TestNotification,
+        ];
+
+        render(
+            <NewNotificationsList
+                options={{ limit: 30, sort: 'REVERSE_CHRONOLOGICAL' }}
+                filter={{ archived: false }}
+                isEmptyState={false}
+                setIsEmptyState={vi.fn()}
+            />
+        );
+
+        expect(screen.getByTestId('rendered-notification')).toHaveTextContent(
+            'Alice has sent you a presentation!'
+        );
     });
 });

@@ -32,15 +32,20 @@ export const sendPresentation = async (
 
     const uri = getPresentationUri(presentationInstance.id, domain);
 
-    await addNotificationToQueue({
-        type: LCNNotificationTypeEnumValidator.enum.PRESENTATION_RECEIVED,
-        to,
-        from,
-        message: getNotificationMessage('presentationReceived', resolveRecipientLocale(to), {
-            from: from.displayName,
-        }),
-        data: { vpUris: [uri] },
-    });
+    // Saving a shared collection reuses the presentation send/accept pipeline by
+    // sending it to the current profile. Keep that storage behavior without
+    // creating a meaningless "you sent this to yourself" recipient alert.
+    if (from.profileId !== to.profileId) {
+        await addNotificationToQueue({
+            type: LCNNotificationTypeEnumValidator.enum.PRESENTATION_RECEIVED,
+            to,
+            from,
+            message: getNotificationMessage('presentationReceived', resolveRecipientLocale(to), {
+                from: from.displayName,
+            }),
+            data: { vpUris: [uri] },
+        });
+    }
 
     return uri;
 };

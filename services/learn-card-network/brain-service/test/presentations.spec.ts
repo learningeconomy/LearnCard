@@ -2,6 +2,9 @@ import { vi } from 'vitest';
 import { getClient, getUser } from './helpers/getClient';
 import { testVp, sendPresentation } from './helpers/send';
 import { Profile, Credential, Presentation } from '@models';
+import * as Notifications from '@helpers/notifications.helpers';
+import { addNotificationToQueueSpy } from './helpers/spies';
+import { LCNNotificationTypeEnumValidator } from '@learncard/types';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
@@ -13,6 +16,10 @@ describe('Presentations', () => {
         userA = await getUser();
         userB = await getUser('b'.repeat(64));
         userC = await getUser('c'.repeat(64));
+
+        vi.spyOn(Notifications, 'addNotificationToQueue').mockImplementation(
+            addNotificationToQueueSpy
+        );
     });
 
     describe('sendPresentation', () => {
@@ -22,6 +29,8 @@ describe('Presentations', () => {
             await Presentation.delete({ detach: true, where: {} });
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
             await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+
+            addNotificationToQueueSpy.mockReset();
         });
 
         afterAll(async () => {
@@ -52,6 +61,25 @@ describe('Presentations', () => {
                     presentation: testVp,
                 })
             ).resolves.not.toThrow();
+
+            expect(addNotificationToQueueSpy).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    type: LCNNotificationTypeEnumValidator.enum.PRESENTATION_RECEIVED,
+                    to: expect.objectContaining({ profileId: 'userb' }),
+                    from: expect.objectContaining({ profileId: 'usera' }),
+                })
+            );
+        });
+
+        it('should not notify a profile when it sends a presentation to itself', async () => {
+            await expect(
+                userA.clients.fullAuth.presentation.sendPresentation({
+                    profileId: 'usera',
+                    presentation: testVp,
+                })
+            ).resolves.not.toThrow();
+
+            expect(addNotificationToQueueSpy).not.toHaveBeenCalled();
         });
 
         it('should allow sending a presentation to did:web', async () => {

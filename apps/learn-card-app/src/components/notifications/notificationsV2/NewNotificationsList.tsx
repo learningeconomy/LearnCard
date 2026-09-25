@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 
 import { useLoadingLine } from 'apps/learn-card-app/src/stores/loadingStore';
 import { useGetUserNotifications } from 'learn-card-base';
@@ -29,6 +29,22 @@ type NewNotificationsListProps = {
     setIsEmptyState: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
+const isSelfPresentationNotification = (notification: NotificationType): boolean => {
+    if (notification.type !== 'PRESENTATION_RECEIVED') return false;
+
+    const { from, to } = notification;
+    const recipientIds = new Set(
+        [to.profileId, to.did].filter((id): id is string => typeof id === 'string')
+    );
+
+    if (typeof from === 'string') return recipientIds.has(from);
+
+    return Boolean(
+        (from.profileId && to.profileId && from.profileId === to.profileId) ||
+        (from.did && to.did && from.did === to.did)
+    );
+};
+
 const NewNotificationsList: React.FC<NewNotificationsListProps> = ({
     options,
     filter,
@@ -43,18 +59,22 @@ const NewNotificationsList: React.FC<NewNotificationsListProps> = ({
 
     const { data, isLoading, refetch, isFetching } = useGetUserNotifications(options, filter);
 
+    const visibleNotifications = useMemo(() => {
+        const flatNotifications = (data?.pages?.flatMap(group => group?.notifications ?? []) ??
+            []) as NotificationType[];
+
+        return deduplicateConnectionPromptNotifications(flatNotifications).filter(
+            notification => !isSelfPresentationNotification(notification)
+        );
+    }, [data]);
+
     useEffect(() => {
         if (!isLoading && data) {
-            const isEmptyState = data?.pages?.[0]?.notifications?.length === 0;
-            setIsEmptyState(isEmptyState);
+            setIsEmptyState(visibleNotifications.length === 0);
         }
-    }, [data, isLoading, setIsEmptyState]);
+    }, [data, isLoading, setIsEmptyState, visibleNotifications.length]);
 
     useLoadingLine(isLoading || isFetching);
-
-    const flatNotifications = (data?.pages?.flatMap(group => group?.notifications ?? []) ??
-        []) as NotificationType[];
-    const visibleNotifications = deduplicateConnectionPromptNotifications(flatNotifications);
 
     const listItems = buildNotificationListItems(visibleNotifications);
 
