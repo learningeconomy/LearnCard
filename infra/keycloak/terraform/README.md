@@ -18,6 +18,6 @@ Use separate directories and account sessions for staging and production.
 Terraform >= 1.10 with S3-native locking; CI pins 1.15.8. All AWS roots use provider
 6.x and committed three-platform lockfiles. There are no DynamoDB lock tables.
 The old flat root was never applied; its service files were moved without a state
-migration. Read the service runbook's unresolved rotation and private-admin spikes
-before deployment. No image promotion, realm implementation, or production cutover
-is included in this foundation.
+migration. Read the service runbook's unresolved rotation and live private-access
+gates before deployment, and the realm runbook's local hostname proof. Image
+promotion and production user cutover remain separate workstreams.
