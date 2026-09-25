@@ -23,11 +23,71 @@ uses `mode: nitro`. Planned production topology is an ASG across at least two AZ
 with an internal NLB and at least `m6i.xlarge` parents (two enclave vCPUs plus two
 remaining for the parent).
 
-Implemented primitives: `crypto` (P1.2), `nsm`/`NsmDriver` (P1.3).
-Future modules: `kms`/`KmsClient` (P1.4),
+Implemented primitives: `crypto` (P1.2), `nsm`/`NsmDriver` (P1.3),
+`kms`/`KmsClient` (P1.4). Future modules:
 `time`/`TimeSource` (P1.5), `ledger`/`HeadStore` (P1.6), `policy` (P1.7), and
 `server` (P1.8). Native trait-based fakes will exercise the same policy logic;
-the NSM trait and fake are available now, while the other drivers remain planned.
+the NSM and KMS traits and fakes are available now, while the other drivers remain planned.
+
+## KMS sealing primitives (P1.4)
+
+`RecipientKey::generate()` creates a boot-local RSA-2048 key (zeroized on drop).
+On subsequent boots, `unseal_or_generate_escrow_key` attests its SPKI in NSM
+`public_key`, a fresh 32-byte nonce in `nonce`, and the logical key ID in `user_data`.
+This boot attestation is separate from client-facing attestation, whose `user_data`
+must contain the escrow P-256 SPKI. KMS `Decrypt` returns only
+`CiphertextForRecipient`; any plaintext field, even empty, fails closed.
+The always-compiled CMS parser uses `cms 0.2.3` / `der 0.7`, requires a single
+RSA-OAEP recipient (SHA-256, MGF1-SHA-256, empty label), and opens AES-256-CBC
+with PKCS#7 padding. Unsupported OIDs/parameters and malformed DER are rejected.
+CMS CBC has no independent integrity: only feed it responses from authenticated
+KMS TLS, not an unauthenticated parent-provided CMS value.
+
+First boot generates the existing P-256 escrow pair and seals its binary PKCS#8
+with `Encrypt`, using `{purpose: "escrow-enclave-key", keyId: <logical-id>}` on both
+paths. A failed unseal never regenerates a replacement. The caller must persist
+the returned new ciphertext via the parent **before serving the key**. Persistence,
+missing-blob/rollback policy, credential wire DTOs, refresh, and startup supervision
+belong to P1.8/P3.3; this library does not silently wire them into the stub server.
+The KMS CMK ARN in `AwsKmsClient::new` is distinct from the logical escrow key ID.
+
+`KmsClient` returns explicit boxed `Send` futures: native `async fn` in traits
+is not dyn-compatible in Rust 1.93, so no `async-trait` dependency is needed.
+`FakeKmsClient` is test-only or explicit `fake-kms` (default off); it authenticates
+its sealed blobs with AES-GCM and emits actual DER CMS to exercise the real parser.
+It checks parsed attestation public-key equality and optional PCR0 pins, **not**
+signatures, chain, nonce or freshness. It is not a production KMS substitute.
+
+### KMS transport and credentials
+
+`AwsKmsClient` (`kms` feature) requires explicit temporary parent STS credentials
+and a region; it never uses IMDS or an environment credential chain. Reconstruct
+the client with refreshed credentials per boot/request; never log these values.
+Its default endpoint is `https://kms.<region>.amazonaws.com:8000`.
+The enclave image **must** map that exact hostname to `127.0.0.1` in `/etc/hosts`
+and supervise `kms::vsock_forward::run()` (Linux + `kms`) before KMS calls:
+
+```text
+SDK -- TLS (AWS hostname/SNI verified) --> 127.0.0.1:8000
+    -- opaque TCP-to-vsock --> CID 3:8000
+    -- parent vsock-proxy --> kms.<region>.amazonaws.com:443
+```
+
+Do **not** use `https://127.0.0.1:8000`: KMS certificates do not cover loopback;
+never disable TLS certificate verification to work around that. The forwarder
+has a fixed destination, at most 16 active connections, and a 60-second connection
+lifetime. Dropping its future aborts its child tasks. `ESCROW_KMS_ENDPOINT` can
+select only that regional hostname with port 8000, port 443, or no explicit port;
+other hosts and HTTP fail closed so first-boot plaintext cannot be redirected.
+The direct 443 options are for non-enclave environments; this setup currently
+assumes the standard `amazonaws.com` partition, not China/FIPS endpoints.
+
+Private key, CEK and application plaintext buffers zeroize on drop, including CBC
+error paths, and RSA decrypt uses blinding. AWS SDK request/HTTP/parser allocations
+are SDK-owned and **do not promise zeroization**; complete memory erasure is not
+claimed. The SDK necessarily copies first-boot PKCS#8 into its Encrypt request.
+RSA dependency timing advisories and real AWS-generated CMS interoperability still
+require the planned security review/staging enclave test before deployment.
 
 ## NSM attestation primitives
 

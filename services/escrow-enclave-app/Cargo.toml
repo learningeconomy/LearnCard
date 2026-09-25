@@ -17,9 +17,10 @@ path = "src/lib.rs"
 
 [features]
 default = []
-fake-nsm = ["dep:p384", "dep:x509-cert", "dep:der", "sha2/oid"]
+fake-nsm = ["dep:p384", "dep:x509-cert", "sha2/oid"]
+fake-kms = []
 nitro = ["dep:aws-nitro-enclaves-nsm-api", "dep:aws-nitro-enclaves-cose"]
-kms = ["dep:aws-config", "dep:aws-sdk-kms", "dep:rsa", "dep:cbc", "dep:der"]
+kms = ["dep:aws-config", "dep:aws-sdk-kms"]
 
 [dependencies]
 tokio = { version = "~1.53.1", features = ["rt-multi-thread", "net", "io-util", "macros", "time"] }
@@ -46,11 +47,12 @@ aws-nitro-enclaves-cose = { version = "~0.5.2", optional = true }
 # Newer AWS minor releases require Rust 1.94.1; resolver 3 also respects transitive MSRVs.
 aws-config = { version = "~1.8.18", optional = true, default-features = false, features = ["rt-tokio", "default-https-client"] }
 aws-sdk-kms = { version = "~1.111.0", optional = true }
-rsa = { version = "~0.9.10", optional = true, features = ["sha2"] }
+rsa = { version = "~0.9.10", features = ["sha2"] }
+cms = { version = "~0.2.3", features = ["std"] }
 # Also enables AES-GCM's underlying key-schedule wiping in the default build.
 aes = { version = "~0.8.4", features = ["zeroize"] }
-cbc = { version = "~0.1.2", optional = true, features = ["alloc", "zeroize"] }
-der = { version = "~0.7.10", optional = true, features = ["alloc", "derive", "oid"] }
+cbc = { version = "~0.1.2", features = ["alloc", "zeroize"] }
+der = { version = "~0.7.10", features = ["alloc", "derive", "oid"] }
 p384 = { version = "~0.13.1", optional = true, features = ["ecdsa", "pkcs8"] }
 x509-cert = { version = "~0.2.5", optional = true, features = ["builder"] }
 
