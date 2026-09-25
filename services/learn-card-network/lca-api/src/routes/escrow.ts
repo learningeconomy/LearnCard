@@ -9,7 +9,7 @@ import {
 } from '@learncard/types';
 import cache from '@cache';
 import { environment } from '@environment';
-import { t, openRoute, didAndChallengeRoute } from '@routes';
+import { t, openRoute, didAndChallengeRoute, type Context } from '@routes';
 import { createRecoverySession } from '@cache/recoverySessions';
 import { decryptAuthShare } from '@helpers/shareEncryption.helpers';
 import {
@@ -102,7 +102,11 @@ const limitCancelLinkAttempts = async (clientIp: string | undefined): Promise<vo
         });
 };
 
-const lockPin = async (hold: EscrowHold, userKey: MongoUserKeyType): Promise<void> => {
+const lockPin = async (
+    hold: EscrowHold,
+    userKey: MongoUserKeyType,
+    tenant: Context['tenant']
+): Promise<void> => {
     const disabled = await disableEscrowPin(
         hold.authProvider,
         hold.shareVersion,
@@ -110,14 +114,26 @@ const lockPin = async (hold: EscrowHold, userKey: MongoUserKeyType): Promise<voi
     );
     // Always burn this request, but never disable/cancel a replacement enrollment.
     const cancelled = await cancelEscrowHold(hold._id, 'system', 'pin-locked');
-    if (cancelled) void notifyEscrowHoldEvent({ kind: 'cancelled', hold: cancelled, userKey });
+    if (cancelled)
+        void notifyEscrowHoldEvent({ kind: 'cancelled', hold: cancelled, userKey, tenant });
     if (!disabled) return;
+    // The pin-locked notice's cancel link must point at the account's still-open
+    // waiting-period hold (if any) — `hold` itself is already terminal by this
+    // point, so a link rooted there could never authorize a cancel.
+    let activeHold: EscrowHold | undefined;
+    for (const provider of userKey.authProviders) {
+        activeHold = (await findPendingEscrowHoldByAuthProvider(provider, 'hold')) ?? undefined;
+        if (activeHold) break;
+    }
+    // One lockout notice per lock event, not per cancelled hold below — the PIN
+    // capability is account-wide, not per-hold.
+    void notifyEscrowHoldEvent({ kind: 'pin-locked', hold, userKey, tenant, activeHold });
     for (const provider of userKey.authProviders) {
         const pending = await findPendingEscrowHoldByAuthProvider(provider, 'pin');
         if (pending?.releasePolicy === 'pin' && pending.shareVersion === hold.shareVersion) {
             const cancelled = await cancelEscrowHold(pending._id, 'system', 'pin-locked');
             if (cancelled)
-                void notifyEscrowHoldEvent({ kind: 'cancelled', hold: cancelled, userKey });
+                void notifyEscrowHoldEvent({ kind: 'cancelled', hold: cancelled, userKey, tenant });
         }
     }
 };
@@ -372,7 +388,12 @@ export const escrowRouter = t.router({
                 const pending = await findPendingEscrowHoldByAuthProvider(authProvider, policy);
                 const cancelled = pending && (await cancelEscrowHold(pending._id, 'did'));
                 if (cancelled)
-                    void notifyEscrowHoldEvent({ kind: 'cancelled', hold: cancelled, userKey });
+                    void notifyEscrowHoldEvent({
+                        kind: 'cancelled',
+                        hold: cancelled,
+                        userKey,
+                        tenant: ctx.tenant,
+                    });
             }
             return { success: true as const };
         }),
@@ -478,6 +499,7 @@ export const escrowRouter = t.router({
                         hold: cancelled,
                         userKey,
                         reason: 'superseded',
+                        tenant: ctx.tenant,
                     });
             }
             const resumeToken = generateEscrowResumeToken();
@@ -536,7 +558,13 @@ export const escrowRouter = t.router({
                     message: 'Recovery could not be started.',
                 });
             }
-            void notifyEscrowHoldEvent({ kind: 'started', hold, userKey, cancelToken });
+            void notifyEscrowHoldEvent({
+                kind: 'started',
+                hold,
+                userKey,
+                cancelToken,
+                tenant: ctx.tenant,
+            });
             return {
                 ...serializeHold(hold),
                 status: 'pending' as const,
@@ -576,7 +604,13 @@ export const escrowRouter = t.router({
             assertDidOwner(userKey, ctx.user.did);
             const pending = await findPendingEscrowHoldByAuthProvider(authProvider, 'hold');
             const hold = pending && (await cancelEscrowHold(pending._id, 'did'));
-            if (hold) void notifyEscrowHoldEvent({ kind: 'cancelled', hold, userKey });
+            if (hold)
+                void notifyEscrowHoldEvent({
+                    kind: 'cancelled',
+                    hold,
+                    userKey,
+                    tenant: ctx.tenant,
+                });
             return { success: true as const, cancelled: Boolean(hold) };
         }),
 
@@ -604,7 +638,12 @@ export const escrowRouter = t.router({
                 cancelled.authProvider.id
             );
             if (userKey)
-                void notifyEscrowHoldEvent({ kind: 'cancelled', hold: cancelled, userKey });
+                void notifyEscrowHoldEvent({
+                    kind: 'cancelled',
+                    hold: cancelled,
+                    userKey,
+                    tenant: ctx.tenant,
+                });
             return { cancelled: true };
         }),
 
@@ -800,9 +839,10 @@ export const escrowRouter = t.router({
                         cancelledAt: new Date(),
                     },
                     userKey,
+                    tenant: ctx.tenant,
                 });
                 if (locked) {
-                    await lockPin(hold, userKey);
+                    await lockPin(hold, userKey, ctx.tenant);
                     throw new TRPCError({
                         code: 'TOO_MANY_REQUESTS',
                         message: ESCROW_PIN_LOCKED_MESSAGE,
@@ -824,7 +864,12 @@ export const escrowRouter = t.router({
                 scope: 'rebind',
                 authProvider: hold.authProvider,
             });
-            void notifyEscrowHoldEvent({ kind: 'completed', hold: completed, userKey });
+            void notifyEscrowHoldEvent({
+                kind: 'completed',
+                hold: completed,
+                userKey,
+                tenant: ctx.tenant,
+            });
             return {
                 sealedShare: sealed,
                 authShare,

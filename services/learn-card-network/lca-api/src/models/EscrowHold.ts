@@ -32,7 +32,7 @@ export const EscrowHoldValidator = z.object({
     notifications: z
         .array(
             z.object({
-                kind: z.enum(['started', 'cancelled', 'completed']),
+                kind: z.enum(['started', 'reminder', 'completed', 'cancelled', 'pin-locked']),
                 sentAt: z.date(),
             })
         )
@@ -257,4 +257,33 @@ export const recordEscrowHoldNotification = async (
         { _id: holdId },
         { $push: { notifications: { kind, sentAt: now } }, $set: { updatedAt: now } }
     );
+};
+
+/**
+ * Issues a fresh single-use cancel token for a hold and returns its plaintext.
+ * Only 'started' emails carry the original plaintext token (it is never
+ * persisted); 'reminder' and 'pin-locked' notifications call this instead to
+ * mint a new one. This intentionally invalidates any previously issued
+ * cancel link for the hold (the old hash is overwritten), so only the most
+ * recently sent email's link still works. Hashing matches
+ * `hashEscrowCancelToken` in `@helpers/escrowCancelToken` exactly (plain
+ * SHA-256, no key) so links rotated here still verify there; duplicated
+ * in-line rather than imported to avoid a models→helpers dependency.
+ * Requires the hold to still be `pending` — matching `cancelTokenMatches`'s
+ * own precondition — so a cancelled/completed hold's hash is left
+ * untouched; no `cancelTokenUsedAt` unset is needed because a pending hold
+ * can never have one set (it's only ever written atomically alongside the
+ * `status` transition away from pending, in `cancelEscrowHoldByCancelToken`).
+ * Returns null if no pending hold matches.
+ */
+export const rotateEscrowCancelToken = async (holdId: string): Promise<string | null> => {
+    const token = randomBytes(32).toString('hex');
+    const cancelTokenHash = createHash('sha256').update(token).digest('hex');
+    const now = new Date();
+    const result = await getEscrowHoldsCollection().findOneAndUpdate(
+        { _id: holdId, status: 'pending' },
+        { $set: { cancelTokenHash, updatedAt: now } },
+        { returnDocument: 'after' }
+    );
+    return result ? token : null;
 };

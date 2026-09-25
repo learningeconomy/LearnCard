@@ -238,6 +238,11 @@ describe('A6 escrow recovery', () => {
     it('throttles a restart within 24 hours without changing the pending hold', async () => {
         await enroll();
         const first = await start();
+        // The 'started' notification write is fire-and-forget; wait for it to
+        // land so this snapshot is stable before comparing against it below.
+        await vi.waitFor(async () => {
+            expect((await findEscrowHoldById(first.holdId))?.notifications).toHaveLength(1);
+        });
         const before = await findEscrowHoldById(first.holdId);
         await expect(
             getClient().escrow.startRecovery({
@@ -881,8 +886,10 @@ describe('escrow PIN release', () => {
 
     it('locks after ten mismatches and still permits delayed recovery', async () => {
         await enrollPin();
+        let lockingHoldId = '';
         for (let attempt = 1; attempt <= 10; attempt++) {
             const hold = await startPin();
+            lockingHoldId = hold.holdId;
             await expect(completePin(hold, wrongProof)).rejects.toMatchObject({
                 code: attempt === 10 ? 'TOO_MANY_REQUESTS' : 'FORBIDDEN',
                 message:
@@ -900,10 +907,66 @@ describe('escrow PIN release', () => {
             failedAttempts: 10,
             disabledAt: expect.any(Date),
         });
+        // notifyEscrowHoldEvent is fired-and-forgotten (`void`) so the lockout's
+        // own request can't be blocked/failed by notification delivery; poll
+        // until its background Mongo write of the 'pin-locked' record lands.
+        await vi.waitFor(async () => {
+            expect(await findEscrowHoldById(lockingHoldId)).toMatchObject({
+                notifications: expect.arrayContaining([
+                    expect.objectContaining({ kind: 'pin-locked' }),
+                ]),
+            });
+        });
         await expect(startPin()).rejects.toMatchObject({ code: 'FORBIDDEN' });
         const fallback = await start();
         expect(fallback.releasePolicy).toBe('hold');
         expect(fallback).not.toHaveProperty('pinSalt');
+    });
+
+    it('links a PIN lockout to a concurrent waiting-period hold, and its rotated link actually cancels that hold', async () => {
+        await enrollPin();
+        // A delayed-recovery hold started alongside the PIN one — the path
+        // that's still available once the PIN gets locked.
+        const activeHold = await start();
+        let capturedToken: string | null = null;
+        const originalRotate = models.rotateEscrowCancelToken;
+        vi.spyOn(models, 'rotateEscrowCancelToken').mockImplementation(async holdId => {
+            const token = await originalRotate(holdId);
+            if (holdId === activeHold.holdId) capturedToken = token;
+            return token;
+        });
+
+        let lockingHoldId = '';
+        for (let attempt = 1; attempt <= 10; attempt++) {
+            const hold = await startPin();
+            lockingHoldId = hold.holdId;
+            await expect(completePin(hold, wrongProof)).rejects.toMatchObject({
+                code: attempt === 10 ? 'TOO_MANY_REQUESTS' : 'FORBIDDEN',
+            });
+        }
+
+        await vi.waitFor(() => {
+            expect(capturedToken).toMatch(/^[0-9a-f]{64}$/);
+        });
+        // The lockout notice is still recorded on the (now dead) PIN hold, not activeHold.
+        expect(await findEscrowHoldById(lockingHoldId)).toMatchObject({
+            notifications: expect.arrayContaining([
+                expect.objectContaining({ kind: 'pin-locked' }),
+            ]),
+        });
+        expect((await findEscrowHoldById(activeHold.holdId))?.notifications ?? []).not.toEqual(
+            expect.arrayContaining([expect.objectContaining({ kind: 'pin-locked' })])
+        );
+
+        // The token rotated for the pin-locked email is the one that actually
+        // cancels the waiting-period hold via the public cancel-link route.
+        expect(
+            await getClient().escrow.cancelRecoveryByLink({
+                holdId: activeHold.holdId,
+                token: capturedToken!,
+            })
+        ).toEqual({ cancelled: true });
+        expect((await findEscrowHoldById(activeHold.holdId))?.status).toBe('cancelled');
     });
 
     it('uses a distinct IP throttle message without consuming a PIN attempt', async () => {

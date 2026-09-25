@@ -22,6 +22,7 @@ import {
     findPendingEscrowHoldByAuthProvider,
     findEscrowHoldById,
     recordEscrowHoldNotification,
+    rotateEscrowCancelToken,
     reserveEscrowPinAttempt,
     refundEscrowPinAttempt,
     type EscrowBlob,
@@ -250,5 +251,39 @@ describe('escrow model invariants', () => {
         await expect(
             recordEscrowHoldNotification('does-not-exist', 'completed')
         ).resolves.toBeUndefined();
+    });
+    it('rotates the cancel token only for pending holds, leaving terminal holds untouched', async () => {
+        const originalHash = 'a'.repeat(64);
+        const hold = await createEscrowHold({
+            authProvider: provider,
+            primaryDid: 'did:key:test',
+            shareVersion: 1,
+            identityProofType: 'auth-token',
+            requestedAt: new Date(),
+            releaseAfter: new Date(),
+            releasePolicy: 'hold',
+            clientEphemeralPublicKey: 'public-key',
+            resumeTokenHash: hashEscrowResumeToken(generateEscrowResumeToken()),
+            cancelTokenHash: originalHash,
+        });
+
+        const token = await rotateEscrowCancelToken(hold._id);
+        expect(token).toMatch(/^[0-9a-f]{64}$/);
+        const rotated = await findEscrowHoldById(hold._id);
+        expect(rotated?.cancelTokenHash).toMatch(/^[0-9a-f]{64}$/);
+        expect(rotated?.cancelTokenHash).not.toBe(originalHash);
+
+        // Cancelling burns the pending-only precondition: further rotation is a no-op.
+        const cancelled = await cancelEscrowHold(hold._id, 'did');
+        const hashAfterCancel = cancelled?.cancelTokenHash;
+        expect(await rotateEscrowCancelToken(hold._id)).toBeNull();
+        expect((await findEscrowHoldById(hold._id))?.cancelTokenHash).toBe(hashAfterCancel);
+
+        const completedHold = await createHold();
+        await completeEscrowHold(completedHold._id);
+        expect(await rotateEscrowCancelToken(completedHold._id)).toBeNull();
+        expect((await findEscrowHoldById(completedHold._id))?.cancelTokenHash).toBeUndefined();
+
+        expect(await rotateEscrowCancelToken('does-not-exist')).toBeNull();
     });
 });
