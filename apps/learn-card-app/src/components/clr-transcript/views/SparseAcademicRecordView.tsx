@@ -1,6 +1,6 @@
 import React from 'react';
 
-import ClrTranscriptResultsList from '../ClrTranscriptResultsList';
+import ClrResultWithScaleList from '../ClrResultWithScaleList';
 import ClrAwardsSection from '../ClrAwardsSection';
 
 import { formatClrDate } from '../../../helpers/clrRenderer.helpers';
@@ -46,7 +46,7 @@ const SparseAcademicRecordView: React.FC<{
                                         {assessment.description.value}
                                     </p>
                                 )}
-                                <ClrTranscriptResultsList
+                                <ClrResultWithScaleList
                                     results={assessment.results}
                                     showResultType={showSource}
                                 />

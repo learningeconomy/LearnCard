@@ -19,7 +19,8 @@ export type DisplayWarningCode =
     | 'NESTED_UNSIGNED_CREDENTIALS'
     | 'AMBIGUOUS_RECORD'
     | 'LARGE_INLINE_EVIDENCE'
-    | 'PARTIAL_CLR';
+    | 'PARTIAL_CLR'
+    | 'UNRESOLVED_RESULT_DESCRIPTION';
 
 /** Warning entry surfaced to admin/debug views for missing, ambiguous, or risky data conditions. */
 export type DisplayWarning = {
@@ -59,12 +60,20 @@ export type ResultDisplayModel = {
     valueMax?: SourceMappedField<string>;
     valueMin?: SourceMappedField<string>;
     allowedValue?: SourceMappedField<string[]>;
+    requiredValue?: SourceMappedField<string>;
+    requiredLevel?: SourceMappedField<string>;
     /** `Result.status` (for example `Completed`), when present alongside a value. */
     status?: SourceMappedField<string>;
     /** Ordered rubric levels declared on the result description, if it is rubric-based. */
     rubricLevels?: RubricLevelDisplayModel[];
     /** The rubric level the learner achieved, resolved from `Result.achievedLevel` or `Result.value`. */
     achievedLevel?: RubricLevelDisplayModel;
+    /** The minimum passing rubric level, resolved from `ResultDescription.requiredLevel`. */
+    requiredRubricLevel?: RubricLevelDisplayModel;
+    /** Alignments declared by either the Result or its resolved ResultDescription. */
+    alignments: AlignmentDisplayModel[];
+    /** False only when an explicit Result.resultDescription reference could not be resolved. */
+    resultDescriptionResolved: boolean;
 };
 
 /** Normalized evidence metadata with inline payload safety flags. */
@@ -111,6 +120,7 @@ export type CourseDisplayModel = {
     validUntil?: SourceMappedField<string>;
     achievementType: SourceMappedField<'Course'>;
     sourceCredentialId: string;
+    achievementId?: string;
     results: ResultDisplayModel[];
     /** Framework competency links declared on this achievement via `achievement.alignment`. */
     alignments: AlignmentDisplayModel[];
@@ -127,6 +137,7 @@ export type ProgramDisplayModel = {
     achievementType: SourceMappedField<string>;
     sourceCredentialId: string;
     results: ResultDisplayModel[];
+    achievementId?: string;
     /** Framework competency links declared on this achievement via `achievement.alignment`. */
     alignments: AlignmentDisplayModel[];
     /** Evidence/attachments scoped to this specific program/degree credential. */
@@ -141,6 +152,7 @@ export type CompetencyDisplayModel = {
     achievementType: SourceMappedField<'Competency'>;
     sourceCredentialId: string;
     results: ResultDisplayModel[];
+    achievementId?: string;
     /** Framework competency links declared on this achievement via `achievement.alignment`. */
     alignments: AlignmentDisplayModel[];
     /** Evidence/attachments scoped to this specific competency credential. */
@@ -155,6 +167,7 @@ export type AssessmentDisplayModel = {
     earnedAt?: SourceMappedField<string>;
     sourceCredentialId: string;
     results: ResultDisplayModel[];
+    achievementId?: string;
     /** Framework competency links declared on this achievement via `achievement.alignment`. */
     alignments: AlignmentDisplayModel[];
     /** Evidence/attachments scoped to this assessment credential. */
@@ -172,6 +185,7 @@ export type AwardDisplayModel = {
     validUntil?: SourceMappedField<string>;
     sourceCredentialId: string;
     results: ResultDisplayModel[];
+    achievementId?: string;
     /** Framework competency links declared on this achievement via `achievement.alignment`. */
     alignments: AlignmentDisplayModel[];
     /** Evidence/attachments scoped to this award credential. */
@@ -186,20 +200,47 @@ export type OtherAcademicRecordModel = {
     description?: SourceMappedField<string>;
     earnedAt?: SourceMappedField<string>;
     sourceCredentialId: string;
+    achievementId?: string;
     reason:
         'unsupportedAchievementType' | 'ambiguous' | 'missingAchievement' | 'notTranscriptSpecific';
 };
 
-/** A single resolved association between two credentials in this CLR. */
+/** A single resolved association between two records in this CLR. */
 export type AssociationDisplayModel = {
     associationType: string;
     sourceId: string;
     targetId: string;
-    /** Resolved name of the source credential (from its name or achievement.name). */
+    /** Canonical nested credential IDs after resolving credential and Achievement ID aliases. */
+    sourceRecordId?: string;
+    targetRecordId?: string;
     sourceName?: string;
-    /** Resolved name of the target credential (from its name or achievement.name). */
     targetName?: string;
+    source: SourceMappedField<string>;
 };
+
+export type RelationshipKind =
+    | 'parent'
+    | 'child'
+    | 'prerequisite'
+    | 'unlock'
+    | 'peer'
+    | 'equivalent'
+    | 'supersededBy'
+    | 'replacement'
+    | 'related';
+
+/** A directional, human-readable relationship from one record to another. */
+export type RelationshipDisplayModel = {
+    kind: RelationshipKind;
+    recordId: string;
+    relatedRecordId: string;
+    relatedRecordName: string;
+    label: string;
+    navigable: boolean;
+    source: SourceMappedField<string>;
+};
+
+export type RelationshipGraph = Record<string, RelationshipDisplayModel[]>;
 
 /** Normalized issuer address for display, with provenance. */
 export type IssuerAddressDisplayModel = {
@@ -252,6 +293,7 @@ export type ClrTranscriptDisplayModel = {
     otherRecords: OtherAcademicRecordModel[];
     evidence: EvidenceDisplayModel[];
     associations: AssociationDisplayModel[];
+    relationships: RelationshipGraph;
     warnings: DisplayWarning[];
     quality: {
         level: 'rich' | 'usable' | 'sparse' | 'poor';
@@ -605,13 +647,18 @@ const collectAlignments = (
     );
 };
 
+type IndexedResultDescription = {
+    value: Record<string, unknown>;
+    index: number;
+};
+
 const mapResults = (
     result: unknown,
-    resultDescriptionById: Map<string, Record<string, unknown>>,
+    resultDescriptionById: Map<string, IndexedResultDescription>,
     sourceCredentialId: string,
-    basePath: string
+    basePath: string,
+    warnings: DisplayWarning[]
 ): ResultDisplayModel[] => {
-    // ResultDescription drives semantic meaning (for example GPA), so we resolve by explicit IDs only.
     return asArray<Record<string, unknown>>(result as Record<string, unknown>[]).flatMap(
         (entry, index) => {
             const value = entry.value ?? entry.status;
@@ -619,16 +666,39 @@ const mapResults = (
 
             const resultDescriptionId =
                 typeof entry.resultDescription === 'string' ? entry.resultDescription : undefined;
-
-            const resultDescription = resultDescriptionId
+            const resultDescriptionEntry = resultDescriptionId
                 ? resultDescriptionById.get(resultDescriptionId)
                 : undefined;
+            const resultDescription = resultDescriptionEntry?.value;
+            const descriptionPath = resultDescriptionEntry
+                ? `achievement.resultDescription[${resultDescriptionEntry.index}]`
+                : undefined;
+
+            if (resultDescriptionId && !resultDescription) {
+                warnings.push({
+                    code: 'UNRESOLVED_RESULT_DESCRIPTION',
+                    message: `Result description ${resultDescriptionId} could not be resolved.`,
+                    severity: 'warning',
+                    sourceCredentialId,
+                    sourcePath: `${basePath}[${index}].resultDescription`,
+                });
+            }
+
+            const requiredValue =
+                typeof resultDescription?.requiredValue === 'string' ||
+                typeof resultDescription?.requiredValue === 'number'
+                    ? String(resultDescription.requiredValue)
+                    : undefined;
+            const requiredLevel =
+                typeof resultDescription?.requiredLevel === 'string'
+                    ? resultDescription.requiredLevel
+                    : undefined;
 
             const mapped: ResultDisplayModel = {
                 value: asMapped(
                     value as string | number | boolean,
                     `${basePath}[${index}].${entry.value === undefined ? 'status' : 'value'}`,
-                    'result.value',
+                    entry.value === undefined ? 'result.status' : 'result.value',
                     sourceCredentialId
                 ),
                 resultDescriptionId: resultDescriptionId
@@ -640,48 +710,67 @@ const mapResults = (
                       )
                     : undefined,
                 resultType:
-                    typeof resultDescription?.resultType === 'string'
+                    descriptionPath && typeof resultDescription?.resultType === 'string'
                         ? asMapped(
                               resultDescription.resultType,
-                              `achievement.resultDescription[${index}].resultType`,
+                              `${descriptionPath}.resultType`,
                               'resultDescription.resultType',
                               sourceCredentialId
                           )
                         : undefined,
                 label:
-                    typeof resultDescription?.name === 'string'
+                    descriptionPath && typeof resultDescription?.name === 'string'
                         ? asMapped(
                               resultDescription.name,
-                              `achievement.resultDescription[${index}].name`,
+                              `${descriptionPath}.name`,
                               'resultDescription.name',
                               sourceCredentialId
                           )
                         : undefined,
                 valueMax:
-                    typeof resultDescription?.valueMax === 'string'
+                    descriptionPath && typeof resultDescription?.valueMax === 'string'
                         ? asMapped(
                               resultDescription.valueMax,
-                              `achievement.resultDescription[${index}].valueMax`,
+                              `${descriptionPath}.valueMax`,
                               'resultDescription.valueMax',
                               sourceCredentialId
                           )
                         : undefined,
                 valueMin:
-                    typeof resultDescription?.valueMin === 'string'
+                    descriptionPath && typeof resultDescription?.valueMin === 'string'
                         ? asMapped(
                               resultDescription.valueMin,
-                              `achievement.resultDescription[${index}].valueMin`,
+                              `${descriptionPath}.valueMin`,
                               'resultDescription.valueMin',
                               sourceCredentialId
                           )
                         : undefined,
                 allowedValue:
+                    descriptionPath &&
                     Array.isArray(resultDescription?.allowedValue) &&
                     (resultDescription.allowedValue as unknown[]).every(v => typeof v === 'string')
                         ? asMapped(
                               resultDescription.allowedValue as string[],
-                              `achievement.resultDescription[${index}].allowedValue`,
+                              `${descriptionPath}.allowedValue`,
                               'resultDescription.allowedValue',
+                              sourceCredentialId
+                          )
+                        : undefined,
+                requiredValue:
+                    descriptionPath && requiredValue
+                        ? asMapped(
+                              requiredValue,
+                              `${descriptionPath}.requiredValue`,
+                              'resultDescription.requiredValue',
+                              sourceCredentialId
+                          )
+                        : undefined,
+                requiredLevel:
+                    descriptionPath && requiredLevel
+                        ? asMapped(
+                              requiredLevel,
+                              `${descriptionPath}.requiredLevel`,
+                              'resultDescription.requiredLevel',
                               sourceCredentialId
                           )
                         : undefined,
@@ -694,12 +783,36 @@ const mapResults = (
                               sourceCredentialId
                           )
                         : undefined,
+                alignments: [
+                    ...(descriptionPath
+                        ? collectAlignments(
+                              resultDescription?.alignment,
+                              sourceCredentialId,
+                              `${descriptionPath}.alignment`
+                          )
+                        : []),
+                    ...collectAlignments(
+                        entry.alignment,
+                        sourceCredentialId,
+                        `${basePath}[${index}].alignment`
+                    ),
+                ],
+                resultDescriptionResolved:
+                    resultDescriptionId === undefined || resultDescription !== undefined,
             };
 
             const rubricLevels = mapRubricLevels(resultDescription?.rubricCriterionLevel);
             if (rubricLevels.length > 0) {
                 mapped.rubricLevels = rubricLevels;
                 mapped.achievedLevel = resolveAchievedLevel(rubricLevels, entry, value);
+                mapped.requiredRubricLevel = requiredLevel
+                    ? rubricLevels.find(
+                          level =>
+                              level.id === requiredLevel ||
+                              level.name === requiredLevel ||
+                              level.level === requiredLevel
+                      )
+                    : undefined;
             }
 
             return [mapped];
@@ -757,7 +870,8 @@ const resolveAchievedLevel = (
 
 const classifyRecord = (
     nestedCredential: Record<string, unknown>,
-    warnings: DisplayWarning[]
+    warnings: DisplayWarning[],
+    fallbackId: string
 ): {
     course?: CourseDisplayModel;
     program?: ProgramDisplayModel;
@@ -769,10 +883,10 @@ const classifyRecord = (
     evidence: EvidenceDisplayModel[];
 } => {
     // Strict no-guessing path: classification is based only on explicit CLR/OB fields.
-    const nestedId =
-        typeof nestedCredential.id === 'string' ? nestedCredential.id : 'nested-unknown';
+    const nestedId = typeof nestedCredential.id === 'string' ? nestedCredential.id : fallbackId;
     const nestedSubject = getSingleCredentialSubject(nestedCredential) ?? {};
     const achievement = (nestedSubject.achievement ?? {}) as Record<string, unknown>;
+    const achievementId = typeof achievement.id === 'string' ? achievement.id : undefined;
     const achievementType =
         typeof achievement.achievementType === 'string' ? achievement.achievementType : undefined;
 
@@ -782,15 +896,16 @@ const classifyRecord = (
 
     const resultDescriptionById = new Map(
         resultDescriptions
-            .map(rd => [rd.id, rd] as const)
-            .filter(([id]) => typeof id === 'string') as Array<[string, Record<string, unknown>]>
+            .map((value, index) => [value.id, { value, index }] as const)
+            .filter(([id]) => typeof id === 'string') as Array<[string, IndexedResultDescription]>
     );
 
     const results = mapResults(
         nestedSubject.result,
         resultDescriptionById,
         nestedId,
-        'credentialSubject.result'
+        'credentialSubject.result',
+        warnings
     );
     const evidence = [
         ...collectEvidence(nestedCredential.evidence, nestedId, 'evidence', warnings),
@@ -922,6 +1037,7 @@ const classifyRecord = (
                     nestedId
                 ),
                 sourceCredentialId: nestedId,
+                achievementId,
                 results,
                 alignments,
                 evidence,
@@ -944,6 +1060,7 @@ const classifyRecord = (
                     nestedId
                 ),
                 sourceCredentialId: nestedId,
+                achievementId,
                 results,
                 alignments,
                 evidence,
@@ -967,6 +1084,7 @@ const classifyRecord = (
                     nestedId
                 ),
                 sourceCredentialId: nestedId,
+                achievementId,
                 results,
                 alignments,
                 evidence,
@@ -992,6 +1110,7 @@ const classifyRecord = (
                 ),
                 earnedAt,
                 sourceCredentialId: nestedId,
+                achievementId,
                 results,
                 alignments,
                 evidence,
@@ -1027,6 +1146,7 @@ const classifyRecord = (
                 earnedAt,
                 validUntil,
                 sourceCredentialId: nestedId,
+                achievementId,
                 results,
                 alignments,
                 evidence,
@@ -1051,11 +1171,140 @@ const classifyRecord = (
             description: achievementDescription,
             earnedAt,
             sourceCredentialId: nestedId,
+            achievementId,
             reason: achievementType ? 'unsupportedAchievementType' : 'missingAchievement',
         },
         gpa: hasGpaResult?.value,
         evidence,
     };
+};
+
+type RecordIdentity = {
+    recordId: string;
+    name: string;
+};
+
+const buildRelationshipGraph = (
+    associations: AssociationDisplayModel[],
+    navigableRecordIds: Set<string>
+): RelationshipGraph => {
+    const relationshipsByRecordId = new Map<string, RelationshipDisplayModel[]>();
+    const seen = new Set<string>();
+
+    const add = (
+        association: AssociationDisplayModel,
+        recordId: string | undefined,
+        relatedRecordId: string | undefined,
+        relatedRecordName: string | undefined,
+        kind: RelationshipKind,
+        labelPrefix: string
+    ): void => {
+        if (!recordId || !relatedRecordId || !relatedRecordName) return;
+
+        const dedupeKey = `${recordId}\u0000${kind}\u0000${relatedRecordId}`;
+        if (seen.has(dedupeKey)) return;
+        seen.add(dedupeKey);
+
+        const relationships = relationshipsByRecordId.get(recordId) ?? [];
+        relationships.push({
+            kind,
+            recordId,
+            relatedRecordId,
+            relatedRecordName,
+            navigable: navigableRecordIds.has(relatedRecordId),
+            label: `${labelPrefix} ${relatedRecordName}`,
+            source: association.source,
+        });
+        relationshipsByRecordId.set(recordId, relationships);
+    };
+
+    for (const association of associations) {
+        const { associationType, sourceRecordId, targetRecordId, sourceName, targetName } =
+            association;
+
+        switch (associationType) {
+            case 'isChildOf':
+            case 'isPartOf':
+                add(association, sourceRecordId, targetRecordId, targetName, 'parent', 'Part of');
+                add(association, targetRecordId, sourceRecordId, sourceName, 'child', 'Includes');
+                break;
+            case 'isParentOf':
+                add(association, sourceRecordId, targetRecordId, targetName, 'child', 'Includes');
+                add(association, targetRecordId, sourceRecordId, sourceName, 'parent', 'Part of');
+                break;
+            case 'precedes':
+                add(association, sourceRecordId, targetRecordId, targetName, 'unlock', 'Unlocks');
+                add(
+                    association,
+                    targetRecordId,
+                    sourceRecordId,
+                    sourceName,
+                    'prerequisite',
+                    'Requires'
+                );
+                break;
+            case 'isPeerOf':
+                add(
+                    association,
+                    sourceRecordId,
+                    targetRecordId,
+                    targetName,
+                    'peer',
+                    'Taken alongside'
+                );
+                add(
+                    association,
+                    targetRecordId,
+                    sourceRecordId,
+                    sourceName,
+                    'peer',
+                    'Taken alongside'
+                );
+                break;
+            case 'exactMatchOf':
+                add(
+                    association,
+                    sourceRecordId,
+                    targetRecordId,
+                    targetName,
+                    'equivalent',
+                    'Equivalent to'
+                );
+                add(
+                    association,
+                    targetRecordId,
+                    sourceRecordId,
+                    sourceName,
+                    'equivalent',
+                    'Equivalent to'
+                );
+                break;
+            case 'replacedBy':
+                add(
+                    association,
+                    sourceRecordId,
+                    targetRecordId,
+                    targetName,
+                    'supersededBy',
+                    'Superseded by'
+                );
+                add(
+                    association,
+                    targetRecordId,
+                    sourceRecordId,
+                    sourceName,
+                    'replacement',
+                    'Replaces'
+                );
+                break;
+            case 'isRelatedTo':
+                add(association, sourceRecordId, targetRecordId, targetName, 'related', 'Related');
+                add(association, targetRecordId, sourceRecordId, sourceName, 'related', 'Related');
+                break;
+        }
+    }
+
+    return Object.fromEntries(relationshipsByRecordId);
 };
 
 export const normalizeClrTranscriptDisplayModel = (
@@ -1091,19 +1340,51 @@ export const normalizeClrTranscriptDisplayModel = (
     const evidence: EvidenceDisplayModel[] = [];
 
     let explicitGpa: SourceMappedField<string | number | boolean> | undefined;
+    const academicRecordEntries = academicRecords.map((nestedCredential, index) => ({
+        nestedCredential,
+        recordId:
+            typeof nestedCredential.id === 'string'
+                ? nestedCredential.id
+                : `nested-unknown-${index}`,
+    }));
 
-    // Build id → display name map for association resolution.
-    const credentialNameById = new Map<string, string>();
-    for (const nc of academicRecords) {
-        const ncId = typeof nc.id === 'string' ? nc.id : undefined;
-        if (!ncId) continue;
-        const ncSubject = (nc.credentialSubject ?? {}) as Record<string, unknown>;
-        const ncAchievement = (ncSubject.achievement ?? {}) as Record<string, unknown>;
-        const name =
-            (typeof nc.name === 'string' ? nc.name : undefined) ??
-            (typeof ncAchievement.name === 'string' ? ncAchievement.name : undefined) ??
-            ncId;
-        credentialNameById.set(ncId, name);
+    // Resolve associations through either nested credential IDs or Achievement IDs.
+    const recordIdentityById = new Map<string, RecordIdentity>();
+    const registerRecordAlias = (
+        alias: string,
+        identity: RecordIdentity,
+        sourcePath: 'id' | 'achievement.id'
+    ): void => {
+        const existing = recordIdentityById.get(alias);
+        if (existing && existing.recordId !== identity.recordId) {
+            warnings.push({
+                code: 'AMBIGUOUS_RECORD',
+                message: `Record alias ${alias} resolves to multiple records; associations use ${existing.name}.`,
+                severity: 'warning',
+                sourceCredentialId: identity.recordId,
+                sourcePath,
+            });
+            return;
+        }
+
+        recordIdentityById.set(alias, identity);
+    };
+
+    for (const { nestedCredential, recordId } of academicRecordEntries) {
+        const nestedSubject = getSingleCredentialSubject(nestedCredential) ?? {};
+        const nestedAchievement = (nestedSubject.achievement ?? {}) as Record<string, unknown>;
+        const achievementId =
+            typeof nestedAchievement.id === 'string' ? nestedAchievement.id : undefined;
+        const identity: RecordIdentity = {
+            recordId,
+            name:
+                (typeof nestedAchievement.name === 'string' ? nestedAchievement.name : undefined) ??
+                (typeof nestedCredential.name === 'string' ? nestedCredential.name : undefined) ??
+                recordId,
+        };
+
+        registerRecordAlias(recordId, identity, 'id');
+        if (achievementId) registerRecordAlias(achievementId, identity, 'achievement.id');
     }
 
     // Top-level CLR evidence belongs to the transcript as a whole (e.g. the sealed
@@ -1121,8 +1402,8 @@ export const normalizeClrTranscriptDisplayModel = (
         );
     }
 
-    for (const nestedCredential of academicRecords) {
-        const normalized = classifyRecord(nestedCredential, warnings);
+    for (const { nestedCredential, recordId } of academicRecordEntries) {
+        const normalized = classifyRecord(nestedCredential, warnings, recordId);
         if (normalized.course) courses.push(normalized.course);
         if (normalized.program) programs.push(normalized.program);
         if (normalized.competency) competencies.push(normalized.competency);
@@ -1132,25 +1413,47 @@ export const normalizeClrTranscriptDisplayModel = (
         if (!explicitGpa && normalized.gpa) explicitGpa = normalized.gpa;
         evidence.push(...normalized.evidence);
     }
+    const navigableRecordIds = new Set(
+        [...courses, ...programs, ...assessments, ...competencies].map(
+            record => record.sourceCredentialId
+        )
+    );
 
     const associations: AssociationDisplayModel[] = asArray<Record<string, unknown>>(
         credentialSubject.association as Record<string, unknown>[]
-    ).flatMap(assoc => {
+    ).flatMap((association, index) => {
         const associationType =
-            typeof assoc.associationType === 'string' ? assoc.associationType : undefined;
-        const targetId = typeof assoc.targetId === 'string' ? assoc.targetId : undefined;
-        if (!associationType || !targetId) return [];
-        const sourceId = typeof assoc.sourceId === 'string' ? assoc.sourceId : '';
+            typeof association.associationType === 'string'
+                ? association.associationType
+                : undefined;
+        const sourceId =
+            typeof association.sourceId === 'string' ? association.sourceId : undefined;
+        const targetId =
+            typeof association.targetId === 'string' ? association.targetId : undefined;
+        if (!associationType || !sourceId || !targetId) return [];
+
+        const sourceIdentity = recordIdentityById.get(sourceId);
+        const targetIdentity = recordIdentityById.get(targetId);
+
         return [
             {
                 associationType,
                 sourceId,
                 targetId,
-                sourceName: credentialNameById.get(sourceId),
-                targetName: credentialNameById.get(targetId),
+                sourceRecordId: sourceIdentity?.recordId,
+                targetRecordId: targetIdentity?.recordId,
+                sourceName: sourceIdentity?.name,
+                targetName: targetIdentity?.name,
+                source: asMapped(
+                    associationType,
+                    `credentialSubject.association[${index}].associationType`,
+                    'association.associationType',
+                    credentialId
+                ),
             },
         ];
     });
+    const relationships = buildRelationshipGraph(associations, navigableRecordIds);
 
     const partial = rawCredential.partial === true;
     if (partial) {
@@ -1397,6 +1700,7 @@ export const normalizeClrTranscriptDisplayModel = (
         otherRecords,
         evidence,
         associations,
+        relationships,
         warnings,
         quality: {
             level: qualityLevel,
@@ -1422,14 +1726,15 @@ export const normalizeClrTranscriptDisplayModel = (
 };
 
 /**
- * Resolves the competencies linked to a given record (course/program/competency) using
- * only explicit CLR `association[]` edges — no heuristics, no fuzzy framework-code matching.
- *
- * A competency C is considered linked to record R when an association exists in either
- * direction between them with a recognized linking type (`isRelatedTo`, `isChildOf`,
- * `isParentOf`, `isPartOf`). The competency may be the source or the target of the edge.
+ * Resolves competencies linked by explicit CLR association edges. Association aliases
+ * are canonicalized during normalization, so either credential IDs or Achievement IDs work.
  */
-const COMPETENCY_LINK_TYPES = new Set(['isRelatedTo', 'isChildOf', 'isParentOf', 'isPartOf']);
+const COMPETENCY_LINK_TYPES: Record<string, true> = {
+    isRelatedTo: true,
+    isChildOf: true,
+    isParentOf: true,
+    isPartOf: true,
+};
 
 export const getLinkedCompetencies = (
     recordId: string,
@@ -1437,13 +1742,67 @@ export const getLinkedCompetencies = (
     associations: AssociationDisplayModel[]
 ): CompetencyDisplayModel[] => {
     const linkedIds = new Set<string>();
-    for (const assoc of associations) {
-        if (!COMPETENCY_LINK_TYPES.has(assoc.associationType)) continue;
-        if (assoc.sourceId === recordId) linkedIds.add(assoc.targetId);
-        else if (assoc.targetId === recordId) linkedIds.add(assoc.sourceId);
+    for (const association of associations) {
+        if (!Object.hasOwn(COMPETENCY_LINK_TYPES, association.associationType)) continue;
+        const sourceId = association.sourceRecordId ?? association.sourceId;
+        const targetId = association.targetRecordId ?? association.targetId;
+        if (sourceId === recordId) linkedIds.add(targetId);
+        else if (targetId === recordId) linkedIds.add(sourceId);
     }
-    return competencies.filter(c => linkedIds.has(c.sourceCredentialId));
+    return competencies.filter(competency => linkedIds.has(competency.sourceCredentialId));
 };
+
+export type ClrNavigableRecord =
+    | { kind: 'course'; record: CourseDisplayModel }
+    | { kind: 'program'; record: ProgramDisplayModel }
+    | { kind: 'assessment'; record: AssessmentDisplayModel }
+    | { kind: 'competency'; record: CompetencyDisplayModel };
+
+const recordHasId = (
+    record: { sourceCredentialId: string; achievementId?: string },
+    id: string
+): boolean => record.sourceCredentialId === id || record.achievementId === id;
+
+export const findClrRecordById = (
+    model: ClrTranscriptDisplayModel,
+    id: string
+): ClrNavigableRecord | undefined => {
+    const course = model.courses.find(record => recordHasId(record, id));
+    if (course) return { kind: 'course', record: course };
+
+    const program = model.programs.find(record => recordHasId(record, id));
+    if (program) return { kind: 'program', record: program };
+
+    const assessment = model.assessments.find(record => recordHasId(record, id));
+    if (assessment) return { kind: 'assessment', record: assessment };
+
+    const competency = model.competencies.find(record => recordHasId(record, id));
+    if (competency) return { kind: 'competency', record: competency };
+
+    return undefined;
+};
+
+export type ClrRecordNavigator = {
+    selectRecord: (recordId: string) => void;
+    openRecord: (selected: ClrNavigableRecord) => void;
+};
+
+export const createClrRecordSelection = (
+    model: ClrTranscriptDisplayModel,
+    onOpenRecord: (selected: ClrNavigableRecord) => void
+): ClrRecordNavigator => {
+    const selectRecord = (recordId: string): void => {
+        const selected = findClrRecordById(model, recordId);
+        if (selected) onOpenRecord(selected);
+    };
+
+    return { selectRecord, openRecord: onOpenRecord };
+};
+
+export const getRelationshipsForRecord = (
+    relationships: RelationshipGraph,
+    recordId: string
+): RelationshipDisplayModel[] => relationships[recordId] ?? [];
 
 export const selectClrTranscriptView = (
     model: ClrTranscriptDisplayModel,

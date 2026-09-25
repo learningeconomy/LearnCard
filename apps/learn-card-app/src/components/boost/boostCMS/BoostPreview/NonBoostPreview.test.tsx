@@ -108,6 +108,10 @@ vi.mock('./BoostMediaPreview', () => ({
 }));
 vi.mock('../../../clr-transcript/surfaces/ClrTranscriptFullPage', () => ({
     default: () => null,
+    createClrRecordNavigator: () => ({
+        selectRecord: vi.fn(),
+        openRecord: vi.fn(),
+    }),
 }));
 vi.mock('../../../clr-transcript/ClrCourseDetailPanel', () => ({
     default: () => <div>CLR course detail</div>,

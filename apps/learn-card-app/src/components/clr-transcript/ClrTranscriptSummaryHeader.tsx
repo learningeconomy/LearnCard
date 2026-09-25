@@ -25,7 +25,8 @@ const ClrTranscriptSummaryHeader: React.FC<{
     boost: VC;
     boostUri?: string;
     adminMode?: boolean;
-}> = ({ model, boost, boostUri, adminMode = false }) => {
+    onSelectRecord?: (recordId: string) => void;
+}> = ({ model, boost, boostUri, adminMode = false, onSelectRecord }) => {
     const { newModal } = useModal({ desktop: ModalTypes.Right, mobile: ModalTypes.Right });
     const learner = useClrLearnerIdentity(model.header.learnerName?.value);
     const issuerLogo = getClrIssuerLogo(model);
@@ -65,10 +66,8 @@ const ClrTranscriptSummaryHeader: React.FC<{
     const openCompetenciesModal = () => {
         newModal(
             <ClrCompetencyDetailPanel
-                competencies={model.competencies}
-                courses={model.courses}
-                programs={model.programs}
-                associations={model.associations}
+                model={model}
+                onSelectRecord={onSelectRecord}
                 adminMode={adminMode}
             />
         );
@@ -103,7 +102,7 @@ const ClrTranscriptSummaryHeader: React.FC<{
                     </p>
                     <div className="border-t border-grayscale-200 my-2" />
                     {model.header.issuerName?.value && (
-                        <p className="text-sm font-bold uppercase text-blue-900 tracking-wide">
+                        <p className="text-sm font-bold uppercase text-grayscale-900 tracking-wide">
                             {model.header.issuerName.value}
                         </p>
                     )}

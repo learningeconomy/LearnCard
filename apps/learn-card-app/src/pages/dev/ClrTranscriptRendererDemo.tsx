@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { IonItem, IonLabel, IonList, IonPopover } from '@ionic/react';
+import type { VC } from '@learncard/types';
 
 import {
     clrUniversityTranscript,
@@ -8,6 +9,7 @@ import {
     clrMinimal,
     clrWestbridgeFull,
     clrCompetencyAligned,
+    clrAchievementIdAssociations,
 } from '@learncard/credential-library';
 
 import {
@@ -28,6 +30,7 @@ const FIXTURES = {
     greatPlains: clrGreatPlainsFull.credential as Record<string, unknown>,
     minimal: clrMinimal.credential as Record<string, unknown>,
     competencyAligned: clrCompetencyAligned.credential as Record<string, unknown>,
+    relationships: clrAchievementIdAssociations.credential as Record<string, unknown>,
 };
 
 const FIXTURE_LABELS: Record<string, string> = {
@@ -37,6 +40,7 @@ const FIXTURE_LABELS: Record<string, string> = {
     greatPlains: 'Great Plains',
     minimal: 'Minimal',
     competencyAligned: 'Competency Aligned',
+    relationships: 'Relationships and Scales',
 };
 
 const VIEWER_LABELS: Record<string, string> = {
@@ -209,7 +213,7 @@ const ClrTranscriptRendererDemo = () => {
                 {surface === ClrTranscriptSurface.Card && (
                     <ClrTranscriptCard
                         model={currentModel}
-                        boost={FIXTURES[fixture] as any}
+                        boost={FIXTURES[fixture] as unknown as VC}
                         onViewDetails={() => setSurface(ClrTranscriptSurface.Full)}
                     />
                 )}
@@ -219,7 +223,7 @@ const ClrTranscriptRendererDemo = () => {
                 {surface === ClrTranscriptSurface.Full && (
                     <ClrTranscriptFullPage
                         model={currentModel}
-                        boost={FIXTURES[fixture] as any}
+                        boost={FIXTURES[fixture] as unknown as VC}
                         options={{ viewer, surface }}
                     />
                 )}

@@ -85,16 +85,6 @@ export const gradeColor = (grade: string): string => {
     return 'text-grayscale-600';
 };
 
-/** Maps grade bands to a matching background and border treatment. */
-export const gradeColorBackground = (grade: string): string => {
-    if (['A+', 'A', 'A-'].includes(grade)) return 'bg-emerald-100 border-emerald-400';
-    if (['B+', 'B', 'B-'].includes(grade)) return 'bg-sky-100 border-sky-300';
-    if (['C+', 'C', 'C-'].includes(grade)) return 'bg-yellow-200 border-yellow-400';
-    if (['D+', 'D', 'D-'].includes(grade)) return 'bg-orange-200 border-orange-400';
-    if (grade === 'F') return 'bg-spice-100 border-spice-400';
-    return 'bg-emerald-100 border-emerald-400';
-};
-
 /** Converts an ISO date into a coarse academic term label for grouping. */
 const deriveDisplayTerm = (isoDate: string): string => {
     const d = new Date(isoDate);
