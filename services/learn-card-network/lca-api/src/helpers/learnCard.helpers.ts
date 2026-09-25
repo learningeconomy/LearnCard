@@ -8,6 +8,11 @@ import type { EmptyLearnCard, LearnCardFromSeed, DidWebLearnCardFromSeed } from 
 
 import { getSigningAuthorityForDid } from '@accesslayer/signing-authority/read';
 import { getLRUCache } from '@cache/in-memory-lru';
+import {
+    decryptSigningAuthoritySeed,
+    getSeedCacheFingerprint,
+    logSeedEncryptionFailure,
+} from '@helpers/seedEncryption.helpers';
 
 const cloud = environment.LEARN_CLOUD_URL
     ? { url: environment.LEARN_CLOUD_URL }
@@ -16,11 +21,11 @@ const cloud = environment.LEARN_CLOUD_URL
 let emptyLearnCard: EmptyLearnCard['returnValue'];
 let learnCard: LearnCardFromSeed['returnValue'];
 
-const saCardsCache = getLRUCache<
-    LearnCardFromSeed['returnValue'] | DidWebLearnCardFromSeed['returnValue']
->();
+const saCardsCache = getLRUCache<{
+    fingerprint: string;
+    card: LearnCardFromSeed['returnValue'] | DidWebLearnCardFromSeed['returnValue'];
+}>();
 const didWebCardsCache = getLRUCache<DidWebLearnCardFromSeed['returnValue']>();
-const ephemeralCardsCache = getLRUCache<LearnCardFromSeed['returnValue']>();
 
 // The DIDKit WASM is copied next to the compiled handler at build time (see
 // esbuildPlugins.cjs). The Lambda bundle's node_modules layout doesn't match what
@@ -116,22 +121,22 @@ export const getSigningAuthorityLearnCard = async (
 
     const sa = await getSigningAuthorityForDid(ownerDID, name);
 
-    if (!sa?.seed) {
-        console.error('[LCA getSigningAuthorityLearnCard] SA not found or has no seed:', {
-            ownerDID,
-            name,
-            saFound: !!sa,
-            hasSeed: !!sa?.seed,
-        });
+    if (!sa) {
         throw new Error(`No signing authority found for ownerDID="${ownerDID}" name="${name}"`);
     }
-    const cacheKey = `${sa.seed}|${ownerDID}`;
-
-    const cachedValue = saCardsCache.get(cacheKey);
-
-    if (cachedValue) {
-        console.log('[LCA getSigningAuthorityLearnCard] Using cached SA LearnCard');
-        return cachedValue;
+    const cacheKey = `${ownerDID}|${name}`;
+    let fingerprint: string;
+    let seed: string;
+    try {
+        // Validate the envelope before accepting a cache hit. The database lookup remains
+        // on the warm path so deletion/recreation or modification cannot reuse an old key.
+        fingerprint = getSeedCacheFingerprint(sa);
+        const cachedValue = saCardsCache.get(cacheKey);
+        if (cachedValue?.fingerprint === fingerprint) return cachedValue.card;
+        seed = await decryptSigningAuthoritySeed(sa);
+    } catch (error) {
+        logSeedEncryptionFailure(error, 'decrypt', sa);
+        throw error;
     }
 
     console.log('[LCA getSigningAuthorityLearnCard] Initializing SA LearnCard:', {
@@ -142,19 +147,19 @@ export const getSigningAuthorityLearnCard = async (
     const saLearnCard = ownerDID.startsWith('did:web:')
         ? await initLearnCard({
               didkit: await getDidKitInit(),
-              seed: sa.seed,
+              seed,
               didWeb: ownerDID,
               cloud,
               allowRemoteContexts: true,
           })
         : await initLearnCard({
               didkit: await getDidKitInit(),
-              seed: sa.seed,
+              seed,
               cloud,
               allowRemoteContexts: true,
           });
 
-    saCardsCache.add(cacheKey, saLearnCard);
+    saCardsCache.add(cacheKey, { fingerprint, card: saLearnCard });
 
     return saLearnCard;
 };
@@ -196,17 +201,10 @@ export const getDidWebLearnCard = async (
 export const getEphemeralLearnCard = async (
     seed: string
 ): Promise<LearnCardFromSeed['returnValue']> => {
-    const cachedValue = ephemeralCardsCache.get(seed);
-
-    if (cachedValue) return cachedValue;
-
-    const ephemeralLearnCard = await initLearnCard({
+    // Creation is a one-shot operation; do not retain its seed in a cache key.
+    return initLearnCard({
         didkit: await getDidKitInit(),
         seed,
         cloud,
     });
-
-    ephemeralCardsCache.add(seed, ephemeralLearnCard);
-
-    return ephemeralLearnCard;
 };

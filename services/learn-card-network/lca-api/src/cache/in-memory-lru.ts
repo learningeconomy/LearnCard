@@ -18,6 +18,7 @@ export const getLRUCache = <T>(limit = 50) => {
     };
 
     const add = (key: string, value: T) => {
+        items = items.filter(item => item.key !== key);
         items.unshift({ key, value, timestamp: Date.now() });
 
         items = items.slice(0, limit);

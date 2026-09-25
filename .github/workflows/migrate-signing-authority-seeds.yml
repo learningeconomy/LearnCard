@@ -1,0 +1,149 @@
+name: Migrate Signing Authority Seeds
+run-name: Migrate signing-authority seeds (${{ inputs.target-environment }} / ${{ inputs.phase }})
+
+on:
+    workflow_dispatch:
+        inputs:
+            target-environment:
+                description: LCA API deployment environment
+                required: true
+                type: choice
+                options:
+                    - learn-card-app-api-staging
+                    - scout-app-api-staging
+                    - learn-card-app-api-production
+                    - scout-app-api-production
+            phase:
+                description: Migration phase to run
+                required: true
+                default: dry-run
+                type: choice
+                options:
+                    - dry-run
+                    - prepare
+                    - verify
+                    - purge
+            batch-size:
+                description: Records processed by each Lambda invocation (1-100)
+                required: true
+                default: 50
+                type: number
+
+permissions:
+    contents: read
+
+concurrency:
+    group: signing-authority-seed-migration-${{ inputs.target-environment }}
+    cancel-in-progress: false
+
+jobs:
+    migrate:
+        name: ${{ inputs.phase }} (${{ inputs.target-environment }})
+        runs-on: ubuntu-latest
+        timeout-minutes: 180
+        environment: ${{ inputs.target-environment }}
+        env:
+            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            AWS_DEFAULT_REGION: ${{ vars.SERVERLESS_REGION }}
+            SERVERLESS_SERVICE_NAME: ${{ vars.SERVERLESS_SERVICE_NAME }}
+            SERVERLESS_STAGE: ${{ vars.SERVERLESS_STAGE }}
+            MIGRATION_PHASE: ${{ inputs.phase }}
+            MIGRATION_BATCH_SIZE: ${{ inputs.batch-size }}
+        steps:
+            - name: Require the main branch
+              run: |
+                  if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
+                    echo "::error::Run migrations only from the main branch."
+                    exit 1
+                  fi
+
+            - name: Validate inputs and environment
+              run: |
+                  if [[ -z "$SERVERLESS_SERVICE_NAME" || -z "$SERVERLESS_STAGE" || -z "$AWS_DEFAULT_REGION" ]]; then
+                    echo "::error::The selected GitHub Environment must define SERVERLESS_SERVICE_NAME, SERVERLESS_STAGE, and SERVERLESS_REGION."
+                    exit 1
+                  fi
+
+                  if ! [[ "$MIGRATION_BATCH_SIZE" =~ ^[0-9]+$ ]] || (( MIGRATION_BATCH_SIZE < 1 || MIGRATION_BATCH_SIZE > 100 )); then
+                    echo "::error::Batch size must be an integer from 1 through 100."
+                    exit 1
+                  fi
+
+            - name: Checkout repository
+              uses: actions/checkout@v7
+
+            - name: Set up Bun
+              uses: oven-sh/setup-bun@v2
+              with:
+                  bun-version: 1.3.14
+
+            - name: Find the deployed migration Lambda
+              id: deployment
+              run: |
+                  STACK_NAME="${SERVERLESS_SERVICE_NAME}-${SERVERLESS_STAGE}"
+                  FUNCTION_NAME="$(aws cloudformation describe-stacks \
+                    --stack-name "$STACK_NAME" \
+                    --region "$AWS_DEFAULT_REGION" \
+                    --query "Stacks[0].Outputs[?OutputKey=='SigningAuthoritySeedMigrationFunctionName'].OutputValue | [0]" \
+                    --output text)"
+
+                  if [[ -z "$FUNCTION_NAME" || "$FUNCTION_NAME" == "None" ]]; then
+                    echo "::error::The stack does not expose SigningAuthoritySeedMigrationFunctionName. Deploy the encryption-capable release first."
+                    exit 1
+                  fi
+
+                  echo "function-name=$FUNCTION_NAME" >> "$GITHUB_OUTPUT"
+                  echo "stack-name=$STACK_NAME" >> "$GITHUB_OUTPUT"
+
+            # The Lambda enforces encrypted writes before any mutating phase.
+            - name: Run migration phase
+              working-directory: services/learn-card-network/lca-api
+              env:
+                  MIGRATION_FUNCTION: ${{ steps.deployment.outputs.function-name }}
+              run: |
+                  set -o pipefail
+                  bun run migrate:sa-seeds -- \
+                    --function-name "$MIGRATION_FUNCTION" \
+                    --region "$AWS_DEFAULT_REGION" \
+                    --phase "$MIGRATION_PHASE" \
+                    --batch-size "$MIGRATION_BATCH_SIZE" \
+                    | tee "$RUNNER_TEMP/signing-authority-seed-migration.jsonl"
+
+            - name: Publish migration summary
+              if: always()
+              env:
+                  MIGRATION_FUNCTION: ${{ steps.deployment.outputs.function-name }}
+                  STACK_NAME: ${{ steps.deployment.outputs.stack-name }}
+              run: |
+                  {
+                    echo "## Signing-authority seed migration"
+                    echo
+                    echo "| Field | Value |"
+                    echo "| --- | --- |"
+                    echo "| Environment | \`${{ inputs.target-environment }}\` |"
+                    echo "| Stack | \`${STACK_NAME:-unresolved}\` |"
+                    echo "| Function | \`${MIGRATION_FUNCTION:-unresolved}\` |"
+                    echo "| Phase | \`$MIGRATION_PHASE\` |"
+                    echo "| Batch size | \`$MIGRATION_BATCH_SIZE\` |"
+                  } >> "$GITHUB_STEP_SUMMARY"
+
+                  RESULT_FILE="$RUNNER_TEMP/signing-authority-seed-migration.jsonl"
+                  if [[ -s "$RESULT_FILE" ]] && LAST_RESULT="$(tail -n 1 "$RESULT_FILE")" && jq -e . >/dev/null 2>&1 <<< "$LAST_RESULT"; then
+                    {
+                      echo
+                      echo "### Final batch"
+                      echo
+                      echo 'Counts are the last full reconciliation snapshot unless `countsReconciled` is true.'
+                      jq -r '"Counts reconciled in this batch: `\(.countsReconciled)`"' <<< "$LAST_RESULT"
+                      echo
+                      echo "| Done | Processed | Total | Encrypted | Legacy only | Malformed | Plaintext remaining |"
+                      echo "| --- | ---: | ---: | ---: | ---: | ---: | ---: |"
+                      jq -r '"| `\(.done)` | \(.processed) | \(.counts.total) | \(.counts.encrypted) | \(.counts.legacyOnly) | \(.counts.malformed) | \(.counts.plaintextRemaining) |"' <<< "$LAST_RESULT"
+                    } >> "$GITHUB_STEP_SUMMARY"
+                  else
+                    {
+                      echo
+                      echo "The workflow did not receive a completed migration result. Check the failed step logs."
+                    } >> "$GITHUB_STEP_SUMMARY"
+                  fi

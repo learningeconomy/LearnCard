@@ -116,6 +116,10 @@ services:
 
     api:
         image: learncard-monorepo-local
+        env_file:
+            - path: ../../services/learn-card-network/lca-api/compose.env
+            - path: ../../services/learn-card-network/lca-api/.env
+              required: false
         command: sh -c "cd services/learn-card-network/lca-api && bun run start:docker"
         container_name: 'lcn-api-service'
         expose:

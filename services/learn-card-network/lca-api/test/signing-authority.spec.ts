@@ -2,6 +2,7 @@ import { vi } from 'vitest';
 
 import { getClient, getUser } from './helpers/getClient';
 import { SigningAuthorities } from '@accesslayer/signing-authority';
+import { createSigningAuthorityForDID } from '@accesslayer/signing-authority/create';
 
 /**
  * More info on Signing Authorities:
@@ -63,6 +64,16 @@ describe('Signing Authority', () => {
             did: expect.stringMatching(/^did:/),
             endpoint: expect.stringContaining('/api'),
         });
+        const stored = await SigningAuthorities.findOne({ _id: signingAuthority._id });
+        expect(stored).not.toHaveProperty('seed');
+        expect(stored).toMatchObject({
+            encryptedSeed: expect.any(String),
+            encryptedDek: expect.any(String),
+            keyVersion: 'local-v1',
+        });
+        for (const field of ['seed', 'encryptedSeed', 'encryptedDek', 'keyVersion']) {
+            expect(signingAuthority).not.toHaveProperty(field);
+        }
     });
 
     it('should prevent creating a signing authority with the same name', async () => {
@@ -75,9 +86,38 @@ describe('Signing Authority', () => {
         ).rejects.toThrow();
     });
 
+    it('logs the Mongo code for a duplicate insert without exposing keys or duplicate values', async () => {
+        await SigningAuthorities.createIndex({ ownerDid: 1, name: 1 }, { unique: true });
+        const logger = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        const name = 'private-duplicate-name';
+        const owner = userA.learnCard.id.did();
+        try {
+            expect(await createSigningAuthorityForDID(owner, name)).toEqual(expect.any(String));
+            expect(await createSigningAuthorityForDID(owner, name)).toBe(false);
+            expect(logger).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    operation: 'create',
+                    errorName: 'MongoServerError',
+                    mongoCode: 11000,
+                })
+            );
+            const logs = JSON.stringify(logger.mock.calls);
+            expect(logs).not.toContain('e'.repeat(64));
+            expect(logs).not.toContain(name);
+            expect(logs).not.toContain(owner);
+        } finally {
+            logger.mockRestore();
+        }
+    });
+
     it('should allow you to retrieve your signing authorities after creation', async () => {
         await userA.clients.fullAuth.signingAuthority.createSigningAuthority({ name: 'mysa' });
         const sas = await userA.clients.fullAuth.signingAuthority.signingAuthorities();
+        for (const authority of sas) {
+            for (const field of ['seed', 'encryptedSeed', 'encryptedDek', 'keyVersion']) {
+                expect(authority).not.toHaveProperty(field);
+            }
+        }
         if (sas && sas[0]) {
             expect(sas[0].name).toBe('mysa');
             expect(sas[0].ownerDid).toBe(userA.learnCard.id.did());
