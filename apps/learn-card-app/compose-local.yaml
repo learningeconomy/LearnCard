@@ -114,6 +114,13 @@ services:
             # Zero-cost in hot paths when unset; toggle off by unsetting.
             LC_PERF_LOG: '1'
             DOMAIN_NAME: 'localhost%3A4000'
+            # LC-2187 local-only trust pair; keep in sync with cloud below.
+            # localhost resolves through host-gateway to the published cloud port.
+            SHARE_LINK_MAINTENANCE_NAMESPACE: learncard-local
+            SHARE_LINK_MAINTENANCE_ORIGIN: http://localhost:4100
+            SHARE_LINK_MAINTENANCE_AUDIENCE: did:web:localhost%3A4100
+            SHARE_LINK_MAINTENANCE_ALLOW_INSECURE_LOOPBACK: 'true'
+            SHARE_LINK_OWNER_API_NAMESPACE: learncard-local
             CREDENTIAL_REFRESH_ENABLED: 'true'
             CREDENTIAL_REFRESH_DIGEST_SECRET: ${CREDENTIAL_REFRESH_DIGEST_SECRET:-local-only-credential-refresh-digest-secret}
             # Trust proof-of-login presentations signed by this stack's LCA API.
@@ -166,6 +173,11 @@ services:
             IS_OFFLINE: true
             PORT: 4100
             LEARN_CLOUD_SEED: b
+            # Only the local Brain service's exact signing method is authorized.
+            SHARE_CONTENT_AUDIENCE: did:web:localhost%3A4100
+            SHARE_CONTENT_SERVICE_DIDS: did:web:localhost%3A4000
+            SHARE_CONTENT_VERIFICATION_METHODS: did:web:localhost%3A4000#owner
+            SHARE_CONTENT_NAMESPACE_BINDINGS: '{"did:web:localhost%3A4000":["learncard-local"]}'
             SKIP_DIDKIT_NAPI: '1'
             CHOKIDAR_USEPOLLING: 'true'
             CHOKIDAR_INTERVAL: '1000'
