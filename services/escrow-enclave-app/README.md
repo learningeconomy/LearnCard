@@ -507,3 +507,96 @@ tuples. TCP emulation is host-trusted, never a production security substitute.
       dependency advisories (including RSA side channels) are reviewed before use.
 - [ ] Reproducible EIF/PCR builds, measurement rotation, notifications and external
       security review pass before any production rollout.
+
+## Reproducible build
+
+`Dockerfile` + `scripts/build-eif.sh` (P2.1) turn this crate into a Nitro
+Enclave Image File (`.eif`) plus its PCR0/1/2 measurements, reproducibly.
+
+### How to build
+
+```sh
+services/escrow-enclave-app/scripts/build-eif.sh --out /tmp/escrow-eif-out
+```
+
+This requires **Amazon Linux with `aws-nitro-enclaves-cli` and a running
+Docker daemon** — `nitro-cli` is Linux-only and needs the Nitro Enclaves
+kernel driver, so this only runs in CI (or a Nitro-capable EC2 instance),
+never on a developer laptop. `--source-date-epoch` defaults to
+`git log -1 --format=%ct`; pass it explicitly to reproduce a specific
+commit's build later. Output: `escrow-enclave.eif`, `measurements.json`
+(`{pcr0, pcr1, pcr2, imageTag, sourceDateEpoch, gitCommit, eifSha256}`), the
+built `image.tar`, and raw `nitro-cli` logs.
+
+`scripts/verify-measurements.sh <a.json> <b.json>` compares two
+`measurements.json` files' `pcr0`/`pcr1`/`pcr2` and exits non-zero on any
+mismatch — this is what P2.2's CI double-build gate runs to prove
+reproducibility before trusting a published measurement.
+
+Builder choice: kaniko (`--reproducible`, `--no-push`, `--tar-path`) over
+`docker buildx build --output type=docker,rewrite-timestamp=true`. Both are
+viable (notepad decisions.md D8 mentions kaniko as the primary option); this
+task picked kaniko because (a) it matches the plan's own phrasing and D8,
+and (b) `nitro-cli build-enclave` needs a Docker daemon on the build host
+regardless (to load the image `--docker-uri` references), so buildx's
+"needs a daemon anyway" isn't actually a point in its favor here — kaniko
+still buys an unprivileged, single-purpose container for the
+Rust/C-toolchain compile step itself. kaniko's `--reproducible` has a
+[known open gap](https://github.com/GoogleContainerTools/kaniko/issues/2304)
+around fully normalizing copied-file mtimes, so the Dockerfile does **not**
+rely on it alone: it explicitly `touch -d "@$SOURCE_DATE_EPOCH"`s the two
+files that end up in the final image before they're copied out.
+
+### What makes PCR0/1/2 change
+
+- **PCR0** (enclave image file): any change to the Docker image's
+  filesystem contents — source code, `Cargo.lock` (dependency versions),
+  the pinned Rust base image digest, installed `apk` packages, or file
+  mtimes if they aren't normalized. This is why the Dockerfile pins the
+  base image by digest and normalizes mtimes explicitly rather than trusting
+  `--reproducible` alone.
+- **PCR1** (Linux kernel + bootstrap/init ramfs): comes from `nitro-cli`
+  itself, not from this Dockerfile — **pin the exact
+  `aws-nitro-enclaves-cli` package version in the CI runner/AMI**. Two
+  otherwise-identical Docker images built with two different `nitro-cli`
+  versions will produce different PCR1 (and thus a different overall
+  attestation) even though PCR0 (the image content) matches.
+- **PCR2** (application layer, in-order measurement of the user
+  application without the boot ramfs): follows PCR0's inputs closely for a
+  single-binary image like this one.
+
+A residual, currently-open reproducibility gap: pinning the base image's
+digest pins Alpine's filesystem, but `apk add` still resolves against the
+_live_ `v3.22` package repository at build time. A security backport to
+`build-base`/`openssl-dev`/etc. within the `v3.22` branch could change
+PCR0 on a rebuild months later even with an unchanged Dockerfile and
+Cargo.lock. The P2.2 CI gate (build twice, diff PCR0, same run) proves
+same-day reproducibility; it does not by itself prove "rebuild from this
+tag a year later still matches." Pin exact `apk add pkg=version` strings if
+that stronger guarantee becomes a requirement — this task's local
+environment (no Linux, no `nitro-cli`) could not exercise a real build to
+determine current exact `apk` version strings; see
+`.sisyphus/notepads/nitro-escrow-enclave/issues.md`, "P2.1 report", for
+what was and wasn't verified locally.
+
+### Flowing measurements into Terraform / tenant config
+
+1. CI (P2.2) runs `build-eif.sh` twice, diffs with `verify-measurements.sh`,
+   and on success commits `measurements.json` (renamed
+   `escrow-measurements.json`) to the repo root's `security/` directory and
+   uploads the `.eif` to the artifacts S3 bucket
+   (`infra/escrow-enclave`'s `storage.tf`).
+2. `infra/escrow-enclave`'s `enclave_measurements` Terraform variable takes
+   `{label, pcr0, pcr1, pcr2}` tuples (see `variables.tf`) — copy
+   `measurements.json`'s `pcr0`/`pcr1`/`pcr2` in directly (they're already
+   the required lowercase-hex SHA384 strings) under a new `label` (e.g. the
+   `gitCommit` short SHA or a semver tag), following the **N / N+1
+   measurement rotation** procedure in `infra/escrow-enclave/README.md`.
+3. The same three PCR values become one entry in the tenant config's
+   `escrowEnclaveMeasurements: {pcr0, pcr1, pcr2, imageSha384?}[]` array
+   (see decisions.md D6, `learn-card-base`'s tenant schema) — clients pin
+   against this allowlist when verifying a Nitro attestation document, so
+   the Terraform key-policy update and the tenant-config/SDK release must
+   roll out together, both following the N/N+1 overlap window (never remove
+   the old measurement from either side until every instance and every
+   client rollout has moved to the new one).
