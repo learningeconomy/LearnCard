@@ -802,13 +802,22 @@ export const keysRouter = t.router({
 
             assertDidOwner(userKey, ctx.user.did);
 
+            // Confirmation only accepts pending methods at the current version.
+            const shareVersion = userKey.shareVersion ?? 1;
+            if (input.shareVersion !== undefined && input.shareVersion !== shareVersion) {
+                throw new TRPCError({
+                    code: 'CONFLICT',
+                    message: 'Key material changed; please retry',
+                });
+            }
+
             await addRecoveryMethodToUserKeyByAuthProvider(authProvider, {
                 type: input.type,
                 createdAt: new Date(),
                 confirmationStatus: 'pending',
                 credentialId: input.credentialId,
                 encryptedShare: input.encryptedShare,
-                shareVersion: input.shareVersion ?? userKey.shareVersion ?? 1,
+                shareVersion,
             });
 
             return { success: true };
@@ -1307,13 +1316,12 @@ export const keysRouter = t.router({
             const now = new Date();
 
             // Older clients omit the version; preserve their current-version fallback.
-            // Versioned clients must bind the metadata to the split in the envelope.
-            const shareVersion = input.shareVersion ?? userKey.shareVersion ?? 1;
-            if (!findAuthShareByVersion(userKey, shareVersion)) {
+            // Even retained historical versions cannot be confirmed for new recovery setup.
+            const shareVersion = userKey.shareVersion ?? 1;
+            if (input.shareVersion !== undefined && input.shareVersion !== shareVersion) {
                 throw new TRPCError({
-                    code: 'BAD_REQUEST',
-                    message:
-                        'Recovery share version is no longer available. Generate a new recovery key.',
+                    code: 'CONFLICT',
+                    message: 'Key material changed; please retry',
                 });
             }
 
