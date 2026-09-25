@@ -156,6 +156,22 @@ export interface AuthCoordinatorConfig {
     clearPendingEscrowRecovery?: () => Promise<void>;
 
     /**
+     * Optional: gate AUTOMATIC escrow enrollment for a specific user (staged
+     * rollout). Called with the user's DID before `refreshEscrow` invokes the
+     * strategy's `ensureEscrowEnrollment`; returning `false` skips that call
+     * for this account this cycle. A rejected promise is treated as `false`
+     * (fail closed — never silently auto-enroll on a broken gate).
+     *
+     * Only the automatic-enrollment call is gated: reads
+     * (`getEscrowEnrollmentState`, `getEscrowRecoveryStatus`) and explicit
+     * user actions (`enableEscrowRecovery`, recovery execution) are never
+     * gated, so already-enrolled users keep working even when this returns
+     * `false`. Defaults to always-allowed when omitted, which preserves
+     * existing behavior for any consumer that doesn't configure a rollout.
+     */
+    isEscrowEnrollmentAllowed?: (userKey: string) => Promise<boolean>;
+
+    /**
      * Optional: threshold (in ms) for detecting legacy accounts that need migration.
      *
      * When `fetchServerKeyStatus` returns `exists: false` but the auth user's

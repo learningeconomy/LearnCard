@@ -623,6 +623,165 @@ describe('AuthCoordinator', () => {
             );
         });
 
+        describe('staged rollout gate (isEscrowEnrollmentAllowed)', () => {
+            it('calls ensureEscrowEnrollment with the DID when the gate allows it (no status prefetch available)', async () => {
+                const ensureEscrowEnrollment = vi
+                    .fn()
+                    .mockResolvedValue({ enrolled: true, changed: true, shareVersion: 2 });
+                const isEscrowEnrollmentAllowed = vi.fn().mockResolvedValue(true);
+                const { coordinator } = setup({
+                    keyDerivation: { ensureEscrowEnrollment },
+                    config: { signDidAuthVp: vi.fn(), isEscrowEnrollmentAllowed },
+                });
+                await coordinator.initialize();
+                await vi.waitFor(() => expect(ensureEscrowEnrollment).toHaveBeenCalledTimes(1));
+                expect(isEscrowEnrollmentAllowed).toHaveBeenCalledWith('did:key:z123');
+            });
+
+            it('skips ensureEscrowEnrollment for a user outside the rollout, without prompting (no status prefetch available)', async () => {
+                const ensureEscrowEnrollment = vi.fn().mockResolvedValue({ enrolled: true });
+                const isEscrowEnrollmentAllowed = vi.fn().mockResolvedValue(false);
+                const { coordinator } = setup({
+                    keyDerivation: { ensureEscrowEnrollment },
+                    config: { signDidAuthVp: vi.fn(), isEscrowEnrollmentAllowed },
+                });
+                await coordinator.initialize();
+                await vi.waitFor(() => expect(isEscrowEnrollmentAllowed).toHaveBeenCalledTimes(1));
+                expect(ensureEscrowEnrollment).not.toHaveBeenCalled();
+                expect(coordinator.getState().status).toBe('ready');
+            });
+
+            it('calls ensureEscrowEnrollment for a not-enrolled user inside the rollout (status prefetched)', async () => {
+                const ensureEscrowEnrollment = vi
+                    .fn()
+                    .mockResolvedValue({ enrolled: true, changed: true, shareVersion: 1 });
+                const isEscrowEnrollmentAllowed = vi.fn().mockResolvedValue(true);
+                const getEscrowEnrollmentState = vi
+                    .fn()
+                    .mockResolvedValue({ state: 'not-enrolled' });
+                const { coordinator } = setup({
+                    keyDerivation: { ensureEscrowEnrollment, getEscrowEnrollmentState },
+                    config: { signDidAuthVp: vi.fn(), isEscrowEnrollmentAllowed },
+                });
+                await coordinator.initialize();
+                await vi.waitFor(() => expect(ensureEscrowEnrollment).toHaveBeenCalledTimes(1));
+                expect(isEscrowEnrollmentAllowed).toHaveBeenCalledWith('did:key:z123');
+            });
+
+            it('skips ensureEscrowEnrollment for a not-enrolled user outside the rollout, publishing the prefetched status without a second round-trip', async () => {
+                const ensureEscrowEnrollment = vi.fn().mockResolvedValue({ enrolled: true });
+                const isEscrowEnrollmentAllowed = vi.fn().mockResolvedValue(false);
+                const getEscrowEnrollmentState = vi
+                    .fn()
+                    .mockResolvedValue({ state: 'not-enrolled' });
+                const { coordinator } = setup({
+                    keyDerivation: { ensureEscrowEnrollment, getEscrowEnrollmentState },
+                    config: { signDidAuthVp: vi.fn(), isEscrowEnrollmentAllowed },
+                });
+                await coordinator.initialize();
+                await vi.waitFor(() => expect(isEscrowEnrollmentAllowed).toHaveBeenCalledTimes(1));
+                expect(ensureEscrowEnrollment).not.toHaveBeenCalled();
+                await vi.waitFor(() =>
+                    expect(coordinator.getState()).toMatchObject({
+                        escrowEnrollment: 'not-enrolled',
+                    })
+                );
+                // Only the ONE prefetch read — the gate's own lookup already proved the status,
+                // so refreshEscrow must not fetch it again to publish it.
+                expect(getEscrowEnrollmentState).toHaveBeenCalledTimes(1);
+            });
+
+            it.each(['enrolled', 'stale'] as const)(
+                'always attempts ensureEscrowEnrollment for an already-%s user, bypassing the rollout gate entirely',
+                async state => {
+                    const ensureEscrowEnrollment = vi
+                        .fn()
+                        .mockResolvedValue({ enrolled: true, changed: false });
+                    const isEscrowEnrollmentAllowed = vi.fn().mockResolvedValue(false);
+                    const getEscrowEnrollmentState = vi.fn().mockResolvedValue({ state });
+                    const getEscrowRecoveryStatus = vi.fn().mockResolvedValue(null);
+                    const { coordinator } = setup({
+                        keyDerivation: {
+                            ensureEscrowEnrollment,
+                            getEscrowEnrollmentState,
+                            getEscrowRecoveryStatus,
+                        },
+                        config: { signDidAuthVp: vi.fn(), isEscrowEnrollmentAllowed },
+                    });
+                    await coordinator.initialize();
+
+                    // Share-version rotation re-seal and P6.1's stale-blob repair both depend on
+                    // this call actually running for an account that already has escrow
+                    // material — a lowered (or zero) rollout percent must never block it. The
+                    // gate doesn't even need to consult the rollout predicate for this status.
+                    await vi.waitFor(() => expect(ensureEscrowEnrollment).toHaveBeenCalledTimes(1));
+                    expect(isEscrowEnrollmentAllowed).not.toHaveBeenCalled();
+
+                    // Recovery execution and hold discovery are separate code paths from the
+                    // automatic-enrollment gate and keep working regardless of rollout bucket.
+                    await coordinator.cancelEscrowRecovery().catch(() => {});
+                    expect(getEscrowRecoveryStatus).toHaveBeenCalled();
+                }
+            );
+
+            it.each(['opted-out', 'disabled'] as const)(
+                'always attempts ensureEscrowEnrollment for a %s user, same as before the rollout gate existed',
+                async state => {
+                    const ensureEscrowEnrollment = vi
+                        .fn()
+                        .mockResolvedValue({ enrolled: false, reason: state });
+                    const isEscrowEnrollmentAllowed = vi.fn().mockResolvedValue(false);
+                    const getEscrowEnrollmentState = vi.fn().mockResolvedValue({ state });
+                    const { coordinator } = setup({
+                        keyDerivation: { ensureEscrowEnrollment, getEscrowEnrollmentState },
+                        config: { signDidAuthVp: vi.fn(), isEscrowEnrollmentAllowed },
+                    });
+                    await coordinator.initialize();
+                    await vi.waitFor(() => expect(ensureEscrowEnrollment).toHaveBeenCalledTimes(1));
+                    expect(isEscrowEnrollmentAllowed).not.toHaveBeenCalled();
+                }
+            );
+
+            it('falls back to the rollout gate when the enrollment-state lookup fails, without logging the userKey', async () => {
+                const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+                const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+                const ensureEscrowEnrollment = vi.fn().mockResolvedValue({ enrolled: true });
+                const isEscrowEnrollmentAllowed = vi.fn().mockResolvedValue(false);
+                const getEscrowEnrollmentState = vi.fn().mockRejectedValue(new Error('offline'));
+                const { coordinator } = setup({
+                    keyDerivation: { ensureEscrowEnrollment, getEscrowEnrollmentState },
+                    config: { signDidAuthVp: vi.fn(), isEscrowEnrollmentAllowed },
+                });
+                await coordinator.initialize();
+                await vi.waitFor(() => expect(isEscrowEnrollmentAllowed).toHaveBeenCalledTimes(1));
+                expect(ensureEscrowEnrollment).not.toHaveBeenCalled();
+
+                const userKey = 'did:key:z123';
+                for (const spy of [...errorSpy.mock.calls, ...warnSpy.mock.calls]) {
+                    expect(JSON.stringify(spy)).not.toContain(userKey);
+                }
+            });
+
+            it('fails closed and does not log the userKey when the gate predicate itself rejects', async () => {
+                const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+                const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+                const ensureEscrowEnrollment = vi.fn().mockResolvedValue({ enrolled: true });
+                const isEscrowEnrollmentAllowed = vi.fn().mockRejectedValue(new Error('offline'));
+                const { coordinator } = setup({
+                    keyDerivation: { ensureEscrowEnrollment },
+                    config: { signDidAuthVp: vi.fn(), isEscrowEnrollmentAllowed },
+                });
+                await coordinator.initialize();
+                await vi.waitFor(() => expect(isEscrowEnrollmentAllowed).toHaveBeenCalledTimes(1));
+                expect(ensureEscrowEnrollment).not.toHaveBeenCalled();
+
+                const userKey = 'did:key:z123';
+                for (const spy of [...errorSpy.mock.calls, ...warnSpy.mock.calls]) {
+                    expect(JSON.stringify(spy)).not.toContain(userKey);
+                }
+            });
+        });
+
         it('carries server PIN availability into needs_recovery', async () => {
             const escrowPin = { enabled: true, attemptsRemaining: 8 };
             const { coordinator } = setup({

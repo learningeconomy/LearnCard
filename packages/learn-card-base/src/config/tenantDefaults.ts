@@ -105,6 +105,8 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
         launchPadQuickActions: true,
         dashboardHome: false,
         useSeededSkillFrameworks: false,
+        escrowRolloutPercent: 0,
+        escrowRolloutAllowlist: [],
     },
 
     observability: {

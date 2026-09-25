@@ -17,6 +17,8 @@ import React, {
 
 import { AuthCoordinator, createAuthCoordinator } from './AuthCoordinator';
 import { createRecoverySetupRunner, type RecoverySetupRunner } from './recoverySetup';
+import { getAuthConfig } from '../config/authConfig';
+import { isEscrowRolloutEnabledFor } from '../config/escrowRollout';
 
 import type {
     AuthProvider,
@@ -355,6 +357,8 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             onLogout,
             clearPendingEscrowRecovery,
             legacyAccountThresholdMs,
+            isEscrowEnrollmentAllowed: userKey =>
+                isEscrowRolloutEnabledFor({ tenantId: getAuthConfig().tenantId, userKey }),
         });
 
         coordinatorRef.current = coordinator;

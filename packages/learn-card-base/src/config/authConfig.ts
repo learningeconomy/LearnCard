@@ -38,6 +38,12 @@ export interface AuthConfig {
 
     /** The active tenant's id, used by the escrow production guard (see `isProductionTenant`). */
     tenantId?: string;
+
+    /** Staged rollout percentage (0-100) for automatic escrow enrollment. See `escrowRollout.ts`. */
+    escrowRolloutPercent?: number;
+
+    /** SHA-256 hex hashes of allowlisted stable user identifiers. See `escrowRollout.ts`. */
+    escrowRolloutAllowlist?: string[];
 }
 
 type NitroEscrowPolicy = Extract<EscrowAttestationPolicy, { mode: 'nitro' }>;
@@ -129,6 +135,8 @@ export const setAuthConfigFromTenant = (tenant: TenantConfig): void => {
         keyDerivation: tenant.auth.keyDerivation,
         providerConfig,
         tenantId: tenant.tenantId,
+        escrowRolloutPercent: tenant.features.escrowRolloutPercent,
+        escrowRolloutAllowlist: tenant.features.escrowRolloutAllowlist,
     };
 };
 
@@ -187,6 +195,8 @@ export const getAuthConfig = (): AuthConfig => {
         keyDerivation: _authConfigOverrides?.keyDerivation ?? 'sss',
         providerConfig,
         tenantId: _authConfigOverrides?.tenantId,
+        escrowRolloutPercent: _authConfigOverrides?.escrowRolloutPercent ?? 0,
+        escrowRolloutAllowlist: _authConfigOverrides?.escrowRolloutAllowlist ?? [],
     };
 };
 

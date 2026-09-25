@@ -268,6 +268,32 @@ export const tenantFeatureConfigSchema = z
          * set `true` in the `config.local.json` / `config.staging.json` overlays.
          */
         useSeededSkillFrameworks: z.boolean().default(false),
+
+        /**
+         * Staged rollout percentage (0-100) for AUTOMATIC escrow recovery enrollment.
+         *
+         * This narrows WHO gets silently auto-enrolled by `AuthCoordinator`'s background
+         * `ensureEscrowEnrollment` call (see `config/escrowRollout.ts`). It does NOT gate
+         * whether escrow exists for the tenant at all — `auth.sss.escrowEnclaveMode` is
+         * the on/off switch for that — and it never affects users who are already
+         * enrolled, nor a user who explicitly opts in via `enableEscrowRecovery()`.
+         * Defaults to 0 so escrow stays internal-only until a tenant explicitly stages
+         * a rollout (see the P7.3 runbook at `services/escrow-enclave-app/ROLLOUT.md`).
+         */
+        escrowRolloutPercent: z.number().int().min(0).max(100).default(0),
+
+        /**
+         * Allowlist of internal testers for automatic escrow enrollment, independent of
+         * `escrowRolloutPercent` (an allowlisted user is enrolled at 0% too).
+         *
+         * Entries are lowercase hex SHA-256 hashes of the user's stable identifier
+         * (their primary DID) — NEVER raw emails/DIDs. Compute one with:
+         *   printf '%s' '<did>' | shasum -a 256 | cut -d' ' -f1
+         * See `isEscrowRolloutEnabledFor` in `config/escrowRollout.ts`.
+         */
+        escrowRolloutAllowlist: z
+            .array(z.string().regex(/^[0-9a-f]{64}$/i, 'Expected a 64-character hex SHA-256 hash'))
+            .default([]),
     })
     .passthrough();
 

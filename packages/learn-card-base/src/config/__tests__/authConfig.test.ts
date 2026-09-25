@@ -42,6 +42,8 @@ describe('authConfig', () => {
         expect(getAuthConfig()).toMatchObject({
             authProvider: 'firebase',
             keyDerivation: 'sss',
+            escrowRolloutPercent: 0,
+            escrowRolloutAllowlist: [],
         });
         expect(getSSSConfig()).toEqual({
             serverUrl: 'http://localhost:5100/api',
@@ -274,6 +276,8 @@ describe('authConfig', () => {
         expect(config.authProvider).toBe('firebase');
         expect(config.keyDerivation).toBe('web3auth');
         expect(config.tenantId).toBe('learncard');
+        expect(config.escrowRolloutPercent).toBe(0);
+        expect(config.escrowRolloutAllowlist).toEqual([]);
         expect(config.providerConfig.sss).toMatchObject({
             serverUrl: 'https://tenant.example.com/trpc',
             enableEmailBackupShare: false,
@@ -288,6 +292,23 @@ describe('authConfig', () => {
         });
         expect(config.providerConfig.keycloak).toEqual({
             issuer: 'https://keycloak.example.com',
+        });
+    });
+
+    it('bridges a non-default escrow rollout percent and allowlist from tenant features', () => {
+        const allowlistHash = 'b'.repeat(64);
+        setAuthConfigFromTenant({
+            ...DEFAULT_LEARNCARD_TENANT_CONFIG,
+            features: {
+                ...DEFAULT_LEARNCARD_TENANT_CONFIG.features,
+                escrowRolloutPercent: 10,
+                escrowRolloutAllowlist: [allowlistHash],
+            },
+        });
+
+        expect(getAuthConfig()).toMatchObject({
+            escrowRolloutPercent: 10,
+            escrowRolloutAllowlist: [allowlistHash],
         });
     });
 
