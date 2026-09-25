@@ -3,6 +3,7 @@
 /// P-256 ECDH, HKDF-SHA256, and AES-GCM envelope compatibility (P1.2).
 pub mod crypto;
 /// Attested KMS unseal and the future KmsClient abstraction (P1.4).
+#[cfg(feature = "enclave-runtime")]
 pub mod kms;
 /// Signed, hash-chained state transitions and the future HeadStore abstraction (P1.6).
 pub mod ledger;
@@ -11,6 +12,7 @@ pub mod nsm;
 /// Signed hold creation, blob validation, and hold/PIN release decisions (P1.7).
 pub mod policy;
 /// Identical JSON transport over Linux vsock or local emulation TCP (P1.8).
+#[cfg(feature = "enclave-runtime")]
 pub mod server;
 /// Signed Roughtime intervals and the future TimeSource abstraction (P1.5).
 pub mod time;
@@ -29,6 +31,7 @@ pub enum Transport {
 }
 
 /// Log the requested transport and exit successfully without starting a server.
+#[cfg(feature = "enclave-runtime")]
 pub async fn run(transport: Transport) -> std::io::Result<()> {
     server::run(transport).await
 }

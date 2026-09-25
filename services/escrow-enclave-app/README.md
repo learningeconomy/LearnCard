@@ -565,7 +565,9 @@ Production remains **blocked** on independently authenticated fresh enrollment
 feature set cannot pass that time gate. No parent enrollment claims are trusted.
 
 Rust is pinned to 1.93.0, including rustfmt, clippy, and the Linux musl target.
-Default features are empty. `tokio-vsock` is Linux-only; emulation is intended for
+Default features include `enclave-runtime`, preserving KMS/CMS and server support.
+Verifier-only consumers can disable defaults to exclude recipient RSA and transports;
+`kms`, `nitro`, and `fake-kms` explicitly enable the runtime. `tokio-vsock` is Linux-only; emulation is intended for
 macOS/native testing. `nitro` adds NSM and COSE dependencies (COSE's default backend
 requires OpenSSL development libraries); `kms` adds AWS configuration/KMS and CMS
 unwrapping primitives. Compilation does not imply access to `/dev/nsm` or AWS.

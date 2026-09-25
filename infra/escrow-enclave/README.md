@@ -1,5 +1,18 @@
 # infra/escrow-enclave
 
+## P7.1 monitor addition
+
+`monitor.tf` now provisions the independent monitor Lambda, records-stream mapping,
+15-minute full audit sweep, SQS failure queue, SNS/email notifications, integrity,
+rate, delivery-health and heartbeat alarms, dashboard, and CloudTrail KMS-governance
+EventBridge rule. This supersedes the historical P3.2 "monitor not implemented"
+and CloudTrail TODO statements below. Supply `monitor_zip_path` (Linux x86_64
+bootstrap ZIP), `monitor_tenant`, and `monitor_public_key_parameter_name`.
+Provision the attestation-verified public key in a security-owned SSM String
+parameter and enable an independent CloudTrail management-event trail first.
+See [the monitor runbook](../../services/escrow-ledger-monitor/README.md) for
+build, configuration, limitations, and the **manual-only** API release kill switch.
+
 Terraform for the escrow-recovery Nitro Enclave stack: the **enclave-host**
 EC2/ASG/NLB substrate (P3.1) plus its supporting KMS key, IAM roles, S3
 buckets, and DynamoDB anti-replay ledger (P3.2). lca-api stays on Lambda;

@@ -11,19 +11,22 @@ license = "MIT"
 [[bin]]
 name = "escrow-enclave"
 path = "src/main.rs"
+required-features = ["enclave-runtime"]
 
 [lib]
 path = "src/lib.rs"
 
 [features]
-default = []
+default = ["enclave-runtime"]
+# Preserve the default enclave; verifier consumers can omit recipient RSA and transports.
+enclave-runtime = ["dep:rsa", "dep:cms", "dep:cbc"]
 fake-nsm = ["dep:p384", "dep:x509-cert", "sha2/oid"]
-fake-kms = []
+fake-kms = ["enclave-runtime"]
 fake-time = []
 fake-ledger = []
 verified-roughtime-keys = []
-nitro = ["dep:aws-nitro-enclaves-nsm-api", "dep:aws-nitro-enclaves-cose"]
-kms = ["dep:aws-config", "dep:aws-sdk-kms"]
+nitro = ["enclave-runtime", "dep:aws-nitro-enclaves-nsm-api", "dep:aws-nitro-enclaves-cose"]
+kms = ["enclave-runtime", "dep:aws-config", "dep:aws-sdk-kms"]
 
 [dependencies]
 tokio = { version = "~1.53.1", features = ["rt-multi-thread", "net", "io-util", "macros", "time"] }
@@ -53,11 +56,11 @@ aws-config = { version = "~1.8.18", optional = true, default-features = false, f
 # The SDK's default `rustls` feature also enables legacy hyper 0.14 / rustls 0.21.
 # Select only the current hyper 1 / rustls 0.23 / AWS-LC HTTPS client.
 aws-sdk-kms = { version = "~1.111.0", optional = true, default-features = false, features = ["rt-tokio", "default-https-client"] }
-rsa = { version = "~0.9.10", features = ["sha2"] }
-cms = { version = "~0.2.3", features = ["std"] }
+rsa = { version = "~0.9.10", optional = true, features = ["sha2"] }
+cms = { version = "~0.2.3", optional = true, features = ["std"] }
 # Also enables AES-GCM's underlying key-schedule wiping in the default build.
 aes = { version = "~0.8.4", features = ["zeroize"] }
-cbc = { version = "~0.1.2", features = ["alloc", "zeroize"] }
+cbc = { version = "~0.1.2", optional = true, features = ["alloc", "zeroize"] }
 der = { version = "~0.7.10", features = ["alloc", "derive", "oid"] }
 p384 = { version = "~0.13.1", optional = true, features = ["ecdsa", "pkcs8"] }
 x509-cert = { version = "~0.2.5", optional = true, features = ["builder"] }
