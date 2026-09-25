@@ -3,7 +3,7 @@
 Rust scaffold for LearnCard's attested escrow recovery service (P1.1). **Not a
 working enclave or recovery server:** both launch modes log "not yet implemented"
 and exit successfully without binding a socket. Crypto primitives (P1.2) and NSM
-drivers (P1.3) exist, but policy, ledger, and server integration remain unimplemented.
+drivers (P1.3) exist, but policy and server integration remain unimplemented.
 Do not deploy this scaffold for recovery.
 
 ## Target architecture
@@ -24,10 +24,180 @@ with an internal NLB and at least `m6i.xlarge` parents (two enclave vCPUs plus t
 remaining for the parent).
 
 Implemented primitives: `crypto` (P1.2), `nsm`/`NsmDriver` (P1.3),
-`kms`/`KmsClient` (P1.4), `time`/`TimeSource` (P1.5). Future modules:
-`ledger`/`HeadStore` (P1.6), `policy` (P1.7), and
+`kms`/`KmsClient` (P1.4), `time`/`TimeSource` (P1.5),
+`ledger`/`HeadStore` (P1.6). Future modules: `policy` (P1.7) and
 `server` (P1.8). Native trait-based fakes will exercise the same policy logic;
 the NSM, KMS and time traits and fakes are available now.
+
+## Ledger (P1.6)
+
+`Ledger` signs and verifies bounded **enrollment-wide** chains. Every event carries
+a hold ID; `Released` and `Cancelled` are terminal for that hold, not for other
+holds in the enrollment. This deliberately replaces separate per-hold chains:
+otherwise a parent could reset the PIN budget simply by creating another hold.
+`ChainState` derives all hold states and the shared ten-reservation lifetime budget.
+Sequence starts at zero **per enrollment chain**, with an all-zero genesis link.
+At most 64 records are accepted; exhaustion fails closed, never compacts/resets.
+
+### Identity and schema
+
+Policy constructs `Enrollment::new(tenant, decrypted_did, epoch, blob_hash)` from
+authenticated inputs. `enrollment_id = SHA-256(UTF-8 decrypted DID)`; the chain ID
+is lowercase SHA-256 hex of `"learncard-ledger-chain-v1\0" || tenant_byte_length
+(u64 big-endian) || tenant || enrollment_id || epoch (u64 big-endian)`. Blob hash
+is NOT in the chain ID: a changed blob in the same epoch fails binding validation
+rather than creating a fresh budget. Authenticating the tenant/current epoch and
+hashing the actual envelope are P1.7 responsibilities, not claims about host DTOs.
+
+The wire record is a CBOR map with these **integer keys**, not JSON field names:
+
+| Key | Field           | CBOR value                                                                |
+| --- | --------------- | ------------------------------------------------------------------------- |
+| 0   | version         | unsigned integer, 1                                                       |
+| 1   | tenant          | identifier text                                                           |
+| 2   | holdId          | identifier text                                                           |
+| 3   | enrollmentEpoch | unsigned integer                                                          |
+| 4   | blobHash        | 32-byte byte string                                                       |
+| 5   | seq             | unsigned integer, 0–63                                                    |
+| 6   | prevHash        | 32-byte byte string                                                       |
+| 7   | event           | array `[code]`, or `[1, attempt_no]`                                      |
+| 8   | requestId       | identifier text                                                           |
+| 9   | measurement     | SHA-256 of the attested PCR tuple, 32-byte byte string                    |
+| 10  | keyId           | identifier text                                                           |
+| 11  | timeEvidence    | `[lo_ms, hi_ms, [[server_id, midpoint_ms, radius_ms, response_hash], …]]` |
+| 12  | payloadHash     | 32-byte byte string                                                       |
+| 13  | policyVersion   | unsigned integer, 1                                                       |
+| 14  | enrollmentId    | 32-byte byte string                                                       |
+| 15  | sig             | 64-byte byte string, ECDSA P-256 `r                                       |     | s`, low-S |
+
+Event codes: 0 HoldCreated, 1 PinAttemptReserved, 2 PinAttemptFailed,
+3 PinAttemptSucceeded, 4 Released, 5 Cancelled, 6 PinLocked. Attempt numbers
+are 1–10 globally across the chain. Reservation 10 immediately sets `locked`,
+even without a subsequent PinLocked/result record; its one comparison may still
+succeed. PinLocked is an optional explicit audit event, not the security boundary.
+
+Canonical rules: definite lengths, shortest unsigned-integer/length encodings,
+ascending integer map keys (also deterministic encoded-key order), no unknown or
+duplicate keys, tags, negative integers, floats, null, indefinite containers or
+trailing bytes. Identifier text is 1–128 ASCII `[A-Za-z0-9._-]` bytes. Time sources
+are 2–16 entries sorted uniquely by server ID, with 32-byte response hashes.
+The fixed-schema decoder checks lengths **before** allocation and has no recursive
+descent over arbitrary input. Records are capped at 8192 bytes. `decode` validates
+canonical structure only; `verify_chain` must also authenticate signatures/state.
+
+`record_hash = SHA-256(canonical CBOR with key 15 omitted)` (15-entry map).
+Sign/verify uses this digest directly, not SHA-256 of the digest. The hash excludes
+the signature; low-S encoding eliminates the alternative ECDSA signature form.
+`verify_chain` verifies every signature, tenant/identity/epoch/blob binding,
+sequence/link, request transition and non-decreasing time lower bound. It verifies
+enclave attestations of time verification, **not** original Roughtime datagrams.
+Only pass fresh `TimeSource` evidence to signing APIs; interval structure alone
+does not establish trusted time. A lower bound before the head is refused even
+if the interval's upper bound overlaps the head.
+
+### Signing keys and operation commitments
+
+`Ledger::new` decodes the unsealed escrow PKCS#8 and uses the 32-byte P-256 scalar
+as HKDF-SHA256 input. Salt: `learncard-escrow-ledger-v1`; signing info:
+`ecdsa-p256-signing-key\0 || counter_u32_be` (counter starts at zero; rejection
+sample a valid P-256 scalar). The key survives reboots/measurement upgrades while
+the escrow key remains the same; it is distinct from ECDH and release keys.
+The monitor must obtain `public_key()` (SEC1 P-256 encoding) through a validated
+attestation binding, and pin its key ID and permitted measurements. **Key derivation
+alone is not attestation**: P1.8 must publish that binding; the existing wire DTO is
+unchanged. Measurement is SHA-256 of `PCR0 || PCR1 || PCR2` in raw 48-byte form;
+startup must compute it from NSM, never accept it from the parent. The verifier
+accepts measurement changes under the same signing key; monitor allowlisting is
+separate. `policyVersion=1` is the only currently supported interpretation.
+
+`Operation.payload_hash` must commit to the full canonical request, including
+tenant, identity, epoch, blob, hold, request ID, client recipient and PIN proof
+where applicable. For PIN requests use `pin_payload_hash(canonical_request)`:
+it derives a secret commitment key with HKDF info `pin-payload-commitment`, then
+HKDFs the request using that secret as salt and info `learncard-pin-request-v1`.
+Do NOT publish an unkeyed PIN/proof hash (an offline dictionary oracle).
+The policy layer must canonicalize and bound these request bytes (8192 maximum).
+
+### Reserve → verify → commit API
+
+1. Keep **one Ledger per escrow key for the entire enclave lifetime**, serialized
+   behind the server's lock. Its `&mut self` APIs serialize local operations.
+   Never recreate it on failure, use multiple instances for one key, or evict
+   high-water marks. At 4096 tracked enrollment chains it fails closed.
+2. `transition(store, enrollment, operation, event)` permits HoldCreated,
+   Released, Cancelled and PinLocked only. P1.7 authorizes these actions, including
+   delayed release and recipient binding; this ledger does not authorize release.
+3. `verify_pin(store, enrollment, operation, compare)` loads/verifies the chain,
+   appends a reservation and reads it back before invoking the synchronous
+   constant-time comparison closure. The closure must have **no release or IO
+   side effects**. Result append/readback completes before `Compared` is returned.
+4. Every reservation consumes its attempt even after a crash, cancellation or
+   missing result. A repeated request returns `Duplicate { result }`, never calls
+   the closure, and never grants a new comparison. An abandoned reservation has
+   `result: None` forever; use a **new** request ID (and spend another attempt).
+   Same ID with a different hold/payload/event is rejected. Reservation and its
+   single result intentionally share the request ID. Non-PIN exact duplicates
+   return the existing record without an append, even if the hold is now terminal.
+5. A head is remembered **before** signed bytes leave the enclave. Failed,
+   conflicting, cancelled or lying appends cannot make it sign a local fork.
+   Conflict/Unavailable propagate; there is no automatic retry on an older head.
+   If that signed record was not persisted, the chain stays fail-closed in this
+   process until the exact signed history is restored. Do not restart to clear it.
+   No comparison resumes from a persisted-but-ambiguous reservation.
+
+`observe` checks that the chain contains the previously observed/signed record
+at its original sequence, not merely that its new sequence is larger. Therefore
+both truncation and a longer fork are rejected. Pure `verify_chain` has no memory;
+production callers use the stateful APIs, not that pure monitor helper alone.
+
+### HeadStore / P3.3 parent obligations
+
+`HeadStore: Send + Sync` uses boxed Send futures, matching KMS/time drivers:
+`get_chain(chain_id) -> Vec<LedgerRecord>` and
+`append(chain_id, record) -> Result<(), AppendError::{Conflict, Unavailable}>`.
+The transport adapter is deferred to P1.8/P3.3. It must cap responses at 64
+records / 524288 total record bytes **before allocation**, and use the strict
+record decoder. Do not deserialize unbounded JSON arrays directly into this trait.
+
+- Partition records and heads by the enrollment chain ID (e.g. `ENROLL#<chainId>`),
+  not by hold ID. Record SK is `SEQ#<zero-padded seq>`; fetch the full ordered chain.
+- DynamoDB `TransactWriteItems`: Put the record with `attribute_not_exists(pk)`
+  for that composite record key, and update the head only if its hash equals
+  `prevHash` **and** its sequence is `seq - 1`. Genesis requires no existing head.
+  Transaction failure is Conflict; transport/unknown outcome is Unavailable.
+  A duplicate persisted record can be reconciled by exact bytes, never overwritten.
+- Audit the canonical signed bytes in Object Lock storage at
+  `audit/<tenant>/<chainId>/<seq>-<record_hash_lowercase_hex>.cbor`. The independent
+  monitor verifies pinned signatures/measurements, all links/transitions, unique
+  requests, budget, current enrollment and DynamoDB/S3 divergence. Alarm on any
+  records-table MODIFY/REMOVE (`NEW_AND_OLD_IMAGES`) and conflicting successor or
+  missing audit record; activate the API release kill switch. Monitor heads too.
+- Ledger re-reads and verifies after append; a success response alone is untrusted.
+  This detects a parent omitting the write from its presented view, **not durable
+  persistence**. An adversarial parent can return signed bytes held only in RAM.
+  IAM does not enforce the transaction shape, and independent replicas do not
+  coordinate their high-water marks. The monitor and D3 limitation still apply.
+
+### Guarantees vs non-guarantees
+
+| Threat                                                                          | Prevention / detection boundary                                                                                   |
+| ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Forged/modified record, reordered chain, dropped middle                         | Prevented from being accepted by signature, sequence and link verification                                        |
+| Cross-tenant/identity/epoch/blob or nonexistent-hold transplant                 | Prevented by expected binding and hold state machine                                                              |
+| New hold resets PIN counter                                                     | Prevented within a presented enrollment history; all holds share one budget                                       |
+| Crash/abort avoids consuming a reserved attempt                                 | Prevented for retained history; reservation alone spends it, duplicate never compares                             |
+| Truncation or fork after this instance saw/signed a fresher head                | Prevented in that instance by non-evicting high-water marks                                                       |
+| Records after Released/Cancelled                                                | Prevented for that hold; other holds remain independent                                                           |
+| Backwards time                                                                  | Prevented relative to signed head lower bound; authenticity requires enclave TimeSource integration               |
+| Old valid head after restart / parallel enclave fork                            | **Detection only**, if fresher history is observable to independent monitor; no strict global replay-proof budget |
+| Parent acknowledges but never durably stores/audits a record                    | Not provably prevented by readback; detection requires an independent observation/audit path                      |
+| Parent suppresses all evidence, pauses enclave, denies storage/time             | No availability or bounded detection-latency guarantee                                                            |
+| Unauthorized delayed release, stale current epoch, attestation key distribution | P1.7/P1.8 integration obligations, not implemented here                                                           |
+
+Strict rollback prevention needs quorum replicas / an independent live freshness
+authority (D3 option B, deferred). Audit storage is not a live freshness oracle.
+`fake-ledger` exposes `FakeHeadStore` only for tests/explicit emulation; it provides
+conditional append semantics and intentional history replacement for attacks.
 
 ## Authenticated time (P1.5)
 

@@ -4,12 +4,12 @@
 pub mod crypto;
 /// Attested KMS unseal and the future KmsClient abstraction (P1.4).
 pub mod kms;
+/// Signed, hash-chained state transitions and the future HeadStore abstraction (P1.6).
+pub mod ledger;
 /// Nitro attestation drivers and explicitly unverified document parsing (P1.3).
 pub mod nsm;
 /// Signed Roughtime intervals and the future TimeSource abstraction (P1.5).
 pub mod time;
-/// Signed, hash-chained state transitions and the future HeadStore abstraction (P1.6).
-pub mod ledger {}
 /// Signed hold creation, blob validation, and hold/PIN release decisions (P1.7).
 pub mod policy {}
 /// Identical JSON transport over Linux vsock or local emulation TCP (P1.8).
