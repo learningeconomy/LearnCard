@@ -8,22 +8,63 @@ Each authority uses a separate 256-bit data-encryption key. AWS Key Management S
 
 `encryptedSeed` is base64 of a 12-byte initialization vector, the encrypted UTF-8 seed, and a 16-byte authentication tag. `encryptedDek` is the KMS ciphertext blob in production. The record ID and a digest of the owner/name/DID are authenticated with both the seed and its data key. Moving an envelope to another record fails authentication.
 
-| Variable                    | Purpose                                                                                                 |
-| --------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `SA_SEED_KMS_KEY_ARN`       | Full KMS key ARN, supplied by CloudFormation in AWS. Aliases are not accepted.                          |
-| `SA_SEED_LOCAL_KEK`         | 32-byte hex key for offline/test environments only. Never an automatic fallback after a KMS error.      |
-| `SA_SEED_ENCRYPT_WRITES`    | Temporary rollout control. Application default: `true`; initial Serverless deployment default: `false`. |
-| `SA_SEED_ALLOW_LEGACY_READ` | Temporary rollout control. Application default: `false`; initial Serverless deployment default: `true`. |
+| Variable                    | Purpose                                                                                                        |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `SA_SEED_KMS_KEY_ARN`       | Full KMS key ARN, supplied by CloudFormation in AWS. Aliases are not accepted.                                 |
+| `SA_SEED_LOCAL_KEK`         | 32-byte hex key for offline/test environments only. Never an automatic fallback after a KMS error.             |
+| `SA_SEED_ENCRYPT_WRITES`    | Temporary rollout control. Offline development: `false`; online/test: `true`; initial AWS deployment: `false`. |
+| `SA_SEED_ALLOW_LEGACY_READ` | Temporary rollout control. Offline development: `true`; online/test: `false`; initial AWS deployment: `true`.  |
 
 `kms-v1` and `local-v1` identify envelope formats, not individual versions of automatically rotated KMS key material. Retain the same CMK ARN; automatic KMS rotation does not require rewriting documents. Replacing the CMK is a separate operation and is not supported by changing the environment variable alone.
 
-Offline development requires `IS_OFFLINE=true` and a persistent local key. Generate one using:
+Offline development (`IS_OFFLINE=true`, outside `NODE_ENV=test`) preserves plaintext writes and legacy reads by default. No local encryption key is needed for this mode. Encryption is opt-in: generate a local key using:
 
 ```sh
 openssl rand -hex 32
 ```
 
-Store the result as `SA_SEED_LOCAL_KEK` in your local environment and retain it for as long as that database exists. Unit tests and disposable Docker previews use a fixed test-only value. Do not copy that value into a persistent deployment. An offline process configured with a KMS ARN still uses KMS and will not downgrade to the local provider.
+Store the result as `SA_SEED_LOCAL_KEK`, set `SA_SEED_ENCRYPT_WRITES=true`, and retain the key for as long as that database exists. Keep `SA_SEED_ALLOW_LEGACY_READ=true` until existing plaintext records are migrated. Unit tests and disposable Docker test/preview stacks explicitly exercise encryption with a fixed test-only key. Do not copy that value into a persistent deployment. An offline process configured with a KMS ARN still uses KMS for encryption and will not downgrade to the local provider.
+
+Disabling encrypted writes later affects only new records. Existing encrypted records still need their original KEK to sign; without it, signing fails closed. Turning off encrypted writes never converts existing ciphertext back into plaintext.
+
+## Existing local Docker databases
+
+The app Compose configurations (`apps/learn-card-app/compose.yaml`, `apps/learn-card-app/compose-local.yaml`, and `apps/scouts/compose-local.yaml`) load `lca-api/compose.env` before the optional service `.env` files. These local-only defaults disable encrypted writes and allow legacy plaintext reads, without supplying a KEK. This lets a missing or older `.env` start successfully and keeps existing plaintext authorities usable. Online/test defaults and AWS configuration are unchanged.
+
+Values explicitly set in `services/learn-card-network/lca-api/.env` override these defaults; ScoutPass also loads `.env.scouts` last. In particular, an existing custom KEK and explicit encryption opt-in are preserved. To test encryption, set `SA_SEED_ENCRYPT_WRITES=true` and supply a unique `SA_SEED_LOCAL_KEK`. If an older `.env` explicitly disables legacy reads but your database still has plaintext records, set `SA_SEED_ALLOW_LEGACY_READ=true` until migration is complete. Once records are encrypted, keep their original key; changing it does not re-encrypt existing records.
+
+Recreate the `api` container after editing environment values (`docker compose -f apps/learn-card-app/compose-local.yaml up -d --force-recreate api` from the repository root). A container restart alone does not reload Compose environment settings.
+
+The operator CLI invokes AWS Lambda, but the migration worker can also run directly inside the local API container, using the same database, KEK, and rollout flags as the service. With all local writers using `SA_SEED_ENCRYPT_WRITES=true`, run this from the repository root:
+
+```sh
+docker compose -f apps/learn-card-app/compose-local.yaml exec -T \
+  -e SA_MIGRATION_PHASE=dry-run \
+  -w /app/services/learn-card-network/lca-api api bun -e '
+import { environment } from "./src/config/environment";
+import { client, mongodb } from "./src/mongo";
+import { runSeedMigrationBatch, SeedMigrationError } from "./src/migrations/signingAuthoritySeeds";
+
+try {
+    let result;
+    do {
+        result = await runSeedMigrationBatch(
+            mongodb,
+            { phase: process.env.SA_MIGRATION_PHASE, batchSize: 50 },
+            { encryptedWritesEnabled: environment.SA_SEED_ENCRYPT_WRITES }
+        );
+        if (!result.done && result.processed === 0) throw new Error("No progress");
+    } while (!result.done);
+} catch (error) {
+    console.error(error instanceof SeedMigrationError ? error.category : "operation_failed");
+    process.exitCode = 1;
+} finally {
+    await client.close();
+}
+'
+```
+
+Repeat the command with `SA_MIGRATION_PHASE=prepare`, then `verify`, then `purge`, reviewing the logged counts after each phase. Substitute the ScoutPass Compose path when using that stack. These commands change the selected local database; no AWS deployment is needed. After purge, confirm `plaintextRemaining=0`, `encrypted=total`, and `malformed=0`. Local envelopes use `local-v1`, so use that version for the direct MongoDB checks below. Finally set `SA_SEED_ALLOW_LEGACY_READ=false` in the service `.env`, recreate the API container, and test signing again after the cache has cleared.
 
 ## Infrastructure and permissions
 

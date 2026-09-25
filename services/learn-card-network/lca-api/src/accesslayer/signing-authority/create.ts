@@ -15,7 +15,7 @@ export const createSigningAuthorityForDID = async (
     try {
         const did = (await getEphemeralLearnCard(seed)).id.did();
         const identity = { _id, ownerDid, did, name };
-        // The plaintext branch exists only for the first, reader-compatible deployment.
+        // Plaintext writes support the compatibility deployment and offline opt-in defaults.
         const secret = environment.SA_SEED_ENCRYPT_WRITES
             ? await seedEncryption.encrypt(seed, identity)
             : { seed };

@@ -38,9 +38,9 @@ provider:
     environment:
         LAMBDA_STAGE: ${opt:stage, "dev"}
         SEED: ${env:SEED}
-        SA_SEED_LOCAL_KEK: ${env:SA_SEED_LOCAL_KEK}
-        SA_SEED_ENCRYPT_WRITES: ${env:SA_SEED_ENCRYPT_WRITES, 'true'}
-        SA_SEED_ALLOW_LEGACY_READ: ${env:SA_SEED_ALLOW_LEGACY_READ, 'false'}
+        SA_SEED_LOCAL_KEK: ${env:SA_SEED_LOCAL_KEK, ''}
+        SA_SEED_ENCRYPT_WRITES: ${env:SA_SEED_ENCRYPT_WRITES, 'false'}
+        SA_SEED_ALLOW_LEGACY_READ: ${env:SA_SEED_ALLOW_LEGACY_READ, 'true'}
         DOMAIN_NAME: ${env:DOMAIN_NAME}
         OPENAI_API_KEY: ${env:OPENAI_API_KEY}
         METABASE_SECRET_KEY: ${env:METABASE_SECRET_KEY}

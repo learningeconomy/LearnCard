@@ -17,9 +17,9 @@ export const lcaApiEnvironmentShape = {
     SEED: requiredEnvironmentString,
     SA_SEED_KMS_KEY_ARN: optionalEnvironmentString,
     SA_SEED_LOCAL_KEK: optionalEnvironmentString,
-    // Temporary rollout controls. Application defaults are ciphertext-only.
-    SA_SEED_ENCRYPT_WRITES: optionalEnvironmentBoolean.default(true),
-    SA_SEED_ALLOW_LEGACY_READ: optionalEnvironmentBoolean.default(false),
+    // Defaults depend on offline/test mode and are resolved below.
+    SA_SEED_ENCRYPT_WRITES: optionalEnvironmentBoolean,
+    SA_SEED_ALLOW_LEGACY_READ: optionalEnvironmentBoolean,
     MONGO_URI: requiredEnvironmentString,
     MONGO_DB_NAME: requiredEnvironmentString,
     DOMAIN_NAME: optionalEnvironmentString,
@@ -54,6 +54,14 @@ export const lcaApiEnvironmentShape = {
 
 export const lcaApiEnvironmentSchema = z
     .object(lcaApiEnvironmentShape)
+    .transform(environment => {
+        const legacyLocalDefaults = environment.IS_OFFLINE && environment.NODE_ENV !== 'test';
+        return {
+            ...environment,
+            SA_SEED_ENCRYPT_WRITES: environment.SA_SEED_ENCRYPT_WRITES ?? !legacyLocalDefaults,
+            SA_SEED_ALLOW_LEGACY_READ: environment.SA_SEED_ALLOW_LEGACY_READ ?? legacyLocalDefaults,
+        };
+    })
     .superRefine((environment, context) => {
         if (environment.SA_SEED_KMS_KEY_ARN) {
             if (
@@ -73,7 +81,10 @@ export const lcaApiEnvironmentSchema = z
                 path: ['SA_SEED_KMS_KEY_ARN'],
                 message: 'Required outside offline/test environments',
             });
-        } else if (!/^[a-fA-F0-9]{64}$/.test(environment.SA_SEED_LOCAL_KEK ?? '')) {
+        } else if (
+            (environment.SA_SEED_ENCRYPT_WRITES || environment.SA_SEED_LOCAL_KEK !== undefined) &&
+            !/^[a-fA-F0-9]{64}$/.test(environment.SA_SEED_LOCAL_KEK ?? '')
+        ) {
             context.addIssue({
                 code: 'custom',
                 path: ['SA_SEED_LOCAL_KEK'],

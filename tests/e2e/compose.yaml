@@ -159,6 +159,9 @@ services:
             SEED: d
             # Disposable test database only.
             SA_SEED_LOCAL_KEK: ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+            # Explicitly exercise encrypted signing in the disposable test stack.
+            SA_SEED_ENCRYPT_WRITES: 'true'
+            SA_SEED_ALLOW_LEGACY_READ: 'false'
             AUTHORIZED_DIDS: did:web:localhost%3A4000
             MONGO_URI: ${LCA_API_MONGO_URI:-mongodb://mongodb:27017?ssl=false&replicaSet=rs0}
             MONGO_DB_NAME: ${LCA_API_MONGO_DB_NAME:-lca-api-e2e}

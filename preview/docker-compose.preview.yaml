@@ -158,6 +158,9 @@ services:
             SEED: d
             # Disposable preview database only.
             SA_SEED_LOCAL_KEK: ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+            # Explicitly exercise encrypted signing in the disposable preview stack.
+            SA_SEED_ENCRYPT_WRITES: 'true'
+            SA_SEED_ALLOW_LEGACY_READ: 'false'
             AUTHORIZED_DIDS: did:web:${PREVIEW_DOMAIN:-localhost%3A4000}:brain
             MONGO_URI: mongodb://mongodb:27017?ssl=false&replicaSet=rs0
             MONGO_DB_NAME: lca-api
