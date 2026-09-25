@@ -55,10 +55,6 @@ resource "aws_rds_cluster" "keycloak" {
 
   lifecycle {
     precondition {
-      condition     = var.db_rotation_risk_acknowledged
-      error_message = "Acknowledge the Phase 3 spike-first rotation risk explicitly; ECS credentials remain stale until tasks restart after rotation."
-    }
-    precondition {
       condition     = var.db_max_capacity >= var.db_min_capacity
       error_message = "Maximum database capacity must be at least the minimum capacity."
     }
@@ -83,15 +79,12 @@ resource "aws_rds_cluster_instance" "keycloak" {
   monitoring_interval                   = 0
 }
 
-# TODO(keycloak-aws-platform.md Phase 3 "spike first"): replace this temporary
-# delay with the tested JDBC-wrapper or coordinated-rotation/restart solution.
-# API accepts 1000 days, but AWS's rate-expression guide caps at 999. Use the
-# longest unambiguous documented schedule; this does not solve stale credentials.
+# The JDBC Secrets Manager plugin refreshes credentials after authentication failure.
 resource "aws_secretsmanager_secret_rotation" "database" {
   secret_id          = local.db_master_secret_arn
   rotate_immediately = false
   rotation_rules {
-    schedule_expression = "rate(999 days)"
+    automatically_after_days = var.db_secret_rotation_days
   }
   # Aurora finalizes the managed rotation setup when an instance is available.
   depends_on = [aws_rds_cluster_instance.keycloak]

@@ -155,10 +155,14 @@ variable "db_connection_budget" {
   }
 }
 
-variable "db_rotation_risk_acknowledged" {
-  description = "Acknowledges Phase 3 spike-first remains open: ECS retains startup DB credentials across RDS secret rotation"
-  type        = bool
-  default     = false
+variable "db_secret_rotation_days" {
+  description = "RDS-managed master secret rotation interval; JDBC resolves credentials at connection time"
+  type        = number
+  default     = 30
+  validation {
+    condition     = floor(var.db_secret_rotation_days) == var.db_secret_rotation_days && var.db_secret_rotation_days >= 1 && var.db_secret_rotation_days <= 365
+    error_message = "Use 1-365 whole days for database secret rotation."
+  }
 }
 
 variable "db_backup_retention_days" {
