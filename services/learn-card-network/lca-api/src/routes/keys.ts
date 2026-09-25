@@ -694,7 +694,8 @@ export const keysRouter = t.router({
                 securityLevel: userKey.securityLevel ?? 'basic',
                 recoveryMethods,
                 keyProvider: userKey.keyProvider ?? 'sss',
-                shareVersion: userKey.shareVersion ?? 1,
+                // No auth material has observable version 0, just like a missing record.
+                shareVersion: userKey.authShare ? (userKey.shareVersion ?? 1) : 0,
                 maskedRecoveryEmail: userKey.recoveryEmail
                     ? maskEmail(userKey.recoveryEmail)
                     : null,
@@ -719,9 +720,16 @@ export const keysRouter = t.router({
                 securityLevel: z.enum(['basic', 'enhanced', 'advanced']).optional(),
                 keyProvider: z.enum(['web3auth', 'sss']).optional(),
                 sssActivationState: z.literal('provisional').optional(),
+                expectedShareVersion: z.number().int().min(0).optional(),
             })
         )
-        .output(z.object({ success: z.boolean(), shareVersion: z.number() }))
+        .output(
+            z.object({
+                success: z.boolean(),
+                shareVersion: z.number(),
+                expectedShareVersionChecked: z.boolean(),
+            })
+        )
         .mutation(async ({ ctx, input }) => {
             const authenticatedDid = ctx.user.did;
 
@@ -736,6 +744,18 @@ export const keysRouter = t.router({
             const existing = await findUserKeyByAuthProvider(authProvider.type, authProvider.id);
 
             if (existing) assertDidOwner(existing, authenticatedDid);
+
+            // Match getAuthShare: null (no record) and authShare-less records mean 0.
+            const currentVersion = existing?.authShare ? (existing.shareVersion ?? 1) : 0;
+            if (
+                input.expectedShareVersion !== undefined &&
+                input.expectedShareVersion !== currentVersion
+            ) {
+                throw new TRPCError({
+                    code: 'CONFLICT',
+                    message: 'Key material changed; please retry',
+                });
+            }
 
             const isMigration = existing?.keyProvider === 'web3auth';
             const shouldRemainProvisional =
@@ -770,7 +790,7 @@ export const keysRouter = t.router({
                         sssActivationState: shouldRemainProvisional ? 'provisional' : 'active',
                         ...(provisionalCreatedAt ? { provisionalCreatedAt } : {}),
                     },
-                    existing ? (existing.shareVersion ?? 1) : undefined
+                    input.expectedShareVersion ?? currentVersion
                 );
             } catch (error) {
                 if (error instanceof UserKeyVersionConflictError) {
@@ -783,7 +803,11 @@ export const keysRouter = t.router({
                 throw error;
             }
 
-            return { success: true, shareVersion: updatedDoc.shareVersion ?? 1 };
+            return {
+                success: true,
+                shareVersion: updatedDoc.shareVersion ?? 1,
+                expectedShareVersionChecked: input.expectedShareVersion !== undefined,
+            };
         }),
 
     addRecoveryMethod: didAndChallengeRoute
