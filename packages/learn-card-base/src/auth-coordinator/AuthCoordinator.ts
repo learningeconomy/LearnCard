@@ -781,7 +781,7 @@ export class AuthCoordinator {
                         privateKey = reconciled.privateKey;
                     } else {
                         log.warn('DID mismatch - stale local key detected');
-                        await this.keyDerivation.clearLocalKeys();
+                        await this.keyDerivation.clearLocalKeys({ preservePending: true });
 
                         this.setState({
                             status: 'needs_recovery',

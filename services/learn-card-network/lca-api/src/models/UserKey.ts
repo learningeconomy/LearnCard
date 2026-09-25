@@ -330,6 +330,44 @@ export const createUserKeysIndexes = async (): Promise<void> => {
     );
 };
 
+/** First writes require database-enforced provider uniqueness, not a process-local check. */
+const ensureProviderIdentityUniqueForInsert = async (): Promise<void> => {
+    const hasUniqueIndex = async (): Promise<boolean> => {
+        const indexes = await getUserKeysCollection()
+            .listIndexes()
+            .toArray()
+            .catch((error: unknown) => {
+                if (getMongoErrorCode(error) === 26) return [];
+                throw error;
+            });
+
+        return indexes.some(index => {
+            const keys = Object.keys(index.key ?? {});
+            return (
+                index.unique === true &&
+                !index.sparse &&
+                !index.partialFilterExpression &&
+                keys.length === 2 &&
+                index.key?.['authProviders.type'] === 1 &&
+                index.key?.['authProviders.id'] === 1
+            );
+        });
+    };
+
+    try {
+        if (await hasUniqueIndex()) return;
+
+        // The migration drops a legacy non-unique index before creating the unique one.
+        // It logs and tolerates legacy duplicates, so verify the index actually exists.
+        await createUserKeysIndexes();
+        if (await hasUniqueIndex()) return;
+    } catch (error) {
+        console.error('[UserKey indexes] provider uniqueness unavailable for first write.', error);
+    }
+
+    throw new UserKeyVersionConflictError();
+};
+
 let userKeysIndexesPromise: Promise<void> | undefined;
 
 /** Runs the production index migration at most once per warm process. */
@@ -597,7 +635,14 @@ export const upsertUserKeyByAuthProvider = async (
                 primaryDid: existing.primaryDid,
                 shareVersion: existing.shareVersion ?? null,
                 // Version 0 is a public sentinel, not necessarily the stored counter.
-                authShare: existing.authShare ?? null,
+                ...(existing.authShare
+                    ? { authShare: existing.authShare }
+                    : {
+                          $or: [
+                              { authShare: { $exists: false } },
+                              { authShare: { $type: 'null' } },
+                          ],
+                      }),
             },
             updateOps,
             {
@@ -613,6 +658,7 @@ export const upsertUserKeyByAuthProvider = async (
     if (expectedVersion !== undefined && expectedVersion !== 0) {
         throw new UserKeyVersionConflictError();
     }
+    await ensureProviderIdentityUniqueForInsert();
     const newDoc: MongoUserKeyType = {
         contactMethod,
         authProviders: [authProvider],

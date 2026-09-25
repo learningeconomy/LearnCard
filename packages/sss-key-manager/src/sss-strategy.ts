@@ -69,6 +69,7 @@ import {
     getDeviceShare as defaultGetDeviceShare,
     hasDeviceShare as defaultHasDeviceShare,
     clearAllShares as defaultClearAllShares,
+    deleteDeviceShare as defaultDeleteDeviceShare,
     storeShareVersion as defaultStoreShareVersion,
     getShareVersion as defaultGetShareVersion,
 } from './storage';
@@ -88,6 +89,7 @@ import {
 } from './recovery-phrase';
 
 const SSS_DB_NAME = 'lcb-sss-keys';
+const DEFAULT_DEVICE_SHARE_ID = 'sss-device-share';
 const MAX_RECONCILIATION_HISTORY = 5;
 
 export interface SSSStorageFunctions {
@@ -95,6 +97,7 @@ export interface SSSStorageFunctions {
     getDeviceShare: (id?: string) => Promise<string | null>;
     hasDeviceShare: (id?: string) => Promise<boolean>;
     clearAllShares: (id?: string) => Promise<void>;
+    deleteDeviceShare: (id?: string) => Promise<void>;
     storeShareVersion: (version: number, id?: string) => Promise<void>;
     getShareVersion: (id?: string) => Promise<number | null>;
 }
@@ -142,6 +145,7 @@ const defaultStorage: SSSStorageFunctions = {
     getDeviceShare: defaultGetDeviceShare,
     hasDeviceShare: defaultHasDeviceShare,
     clearAllShares: defaultClearAllShares,
+    deleteDeviceShare: defaultDeleteDeviceShare,
     storeShareVersion: defaultStoreShareVersion,
     getShareVersion: defaultGetShareVersion,
 };
@@ -568,7 +572,7 @@ export const withRotationLock = <T>(operation: () => Promise<T>): Promise<T> => 
 // Reuse the storage abstraction's encrypted, per-ID entries. No new methods are
 // required of custom stores, and adaptive storage retains its session-only mode.
 const pendingShareId = (storageId?: string): string =>
-    `sss-pending-share:${storageId ?? 'sss-device-share'}`;
+    `sss-pending-share:${storageId ?? DEFAULT_DEVICE_SHARE_ID}`;
 
 /** DID_CHALLENGE_TTL_SECS (5 minutes) plus a processing margin for auth-share PUTs. */
 export const PENDING_WRITE_EXPIRY_MS = 10 * 60 * 1000;
@@ -976,6 +980,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             storeDeviceShare: (share, id) => write(() => storage.storeDeviceShare(share, id)),
             storeShareVersion: (version, id) => write(() => storage.storeShareVersion(version, id)),
             clearAllShares: id => write(() => storage.clearAllShares(id)),
+            deleteDeviceShare: id => write(() => storage.deleteDeviceShare(id)),
         };
         // Every request wrapper must share the underlying store's pending-slot lock.
         shareUpdateStorageOwners.set(guarded, storage);
@@ -1394,8 +1399,17 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             return storage.storeDeviceShare(key, activeStorageId);
         },
 
-        async clearLocalKeys(): Promise<void> {
+        async clearLocalKeys(options?: { preservePending?: boolean }): Promise<void> {
             const storageId = activeStorageId;
+            if (options?.preservePending) {
+                const storage = guardedStorage();
+                // Retain unresolved candidates without racing another share update
+                // or invalidating its generation. Never wipe unscoped storage here.
+                return withShareUpdateLock(storage, storageId, () =>
+                    storage.deleteDeviceShare(storageId)
+                );
+            }
+
             storageGeneration++;
             await Promise.allSettled(localWrites);
             await clearPendingShareCandidates(storage, storageId);

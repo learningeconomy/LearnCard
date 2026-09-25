@@ -187,11 +187,16 @@ describe('share version concurrency', () => {
                 providerType: 'firebase' as const,
             };
             const key = makeUserKey(email, uid, learnCard.id.did());
-            if (bsonNull) key.authShare = undefined;
-            else delete key.authShare;
             const collection = getUserKeysCollection();
             await collection.insertOne(key);
+            await collection.updateOne(
+                { 'authProviders.id': uid },
+                bsonNull ? [{ $set: { authShare: null } }] : { $unset: { authShare: '' } }
+            );
             try {
+                const stored = await collection.findOne({ 'authProviders.id': uid });
+                if (bsonNull) expect(stored?.authShare).toBeNull();
+                else expect(stored?.authShare).toBeUndefined();
                 expect(await caller.keys.getAuthShare(auth)).toMatchObject({
                     shareVersion: 0,
                     authShare: null,
@@ -204,6 +209,14 @@ describe('share version concurrency', () => {
                         expectedShareVersion: 0,
                     })
                 ).toMatchObject({ shareVersion: 2, expectedShareVersionChecked: true });
+                await expect(
+                    caller.keys.storeAuthShare({
+                        ...auth,
+                        primaryDid: key.primaryDid,
+                        authShare: { encryptedData: 'stale', encryptedDek: '', iv: '' },
+                        expectedShareVersion: 0,
+                    })
+                ).rejects.toMatchObject({ code: 'CONFLICT' });
             } finally {
                 await collection.deleteMany({ 'authProviders.id': uid });
             }
@@ -239,30 +252,93 @@ describe('share version concurrency', () => {
         }
     });
 
-    it('keeps first writes available when provider uniqueness is unavailable', async () => {
+    it('recreates a missing provider index before concurrent first writes can succeed', async () => {
         const uid = randomUUID();
         const collection = getUserKeysCollection();
+        const provider = { type: 'firebase' as const, id: uid };
         await collection.dropIndex('auth_provider_identity_unique');
         try {
-            await expect(
+            const results = await Promise.allSettled([
                 upsertUserKeyByAuthProvider(
-                    { type: 'email', value: `no-index-${uid}@example.com` },
-                    { type: 'firebase', id: uid },
-                    { authShare: { encryptedData: 'new', encryptedDek: '', iv: '' } },
+                    { type: 'email', value: `first-${uid}@example.com` },
+                    provider,
+                    { primaryDid: `did:example:first-${uid}` },
                     0
+                ),
+                upsertUserKeyByAuthProvider(
+                    { type: 'email', value: `second-${uid}@example.com` },
+                    provider,
+                    { primaryDid: `did:example:second-${uid}` },
+                    0
+                ),
+            ]);
+            expect(results.filter(result => result.status === 'fulfilled')).toHaveLength(1);
+            const rejected = results.find(result => result.status === 'rejected');
+            expect(rejected?.status === 'rejected' && rejected.reason).toBeInstanceOf(
+                UserKeyVersionConflictError
+            );
+            expect(await collection.countDocuments({ 'authProviders.id': uid })).toBe(1);
+            const indexes = await collection.listIndexes().toArray();
+            expect(
+                indexes.some(
+                    index =>
+                        index.unique === true &&
+                        index.key?.['authProviders.type'] === 1 &&
+                        index.key?.['authProviders.id'] === 1
                 )
-            ).resolves.toMatchObject({ shareVersion: 1 });
+            ).toBe(true);
+        } finally {
+            await collection.deleteMany({ 'authProviders.id': uid });
+            await createUserKeysIndexes();
+        }
+    });
+
+    it('fails first writes closed when legacy duplicate providers prevent index creation, but still updates existing records', async () => {
+        const suffix = randomUUID();
+        const duplicateUid = `duplicate-${suffix}`;
+        const newUid = `blocked-${suffix}`;
+        const collection = getUserKeysCollection();
+        const existing = makeUserKey(
+            `duplicate-a-${suffix}@example.com`,
+            duplicateUid,
+            `did:example:original-${suffix}`
+        );
+        const duplicate = makeUserKey(
+            `duplicate-b-${suffix}@example.com`,
+            duplicateUid,
+            `did:example:other-${suffix}`
+        );
+        await collection.dropIndex('auth_provider_identity_unique');
+        try {
+            await collection.insertMany([existing, duplicate]);
             await expect(
                 upsertUserKeyByAuthProvider(
-                    { type: 'email', value: `no-index-${uid}@example.com` },
-                    { type: 'firebase', id: uid },
-                    { authShare: { encryptedData: 'stale', encryptedDek: '', iv: '' } },
+                    { type: 'email', value: `blocked-${suffix}@example.com` },
+                    { type: 'firebase', id: newUid },
+                    { primaryDid: `did:example:new-${suffix}` },
                     0
                 )
             ).rejects.toBeInstanceOf(UserKeyVersionConflictError);
-            expect(await collection.countDocuments({ 'authProviders.id': uid })).toBe(1);
+            expect(await collection.countDocuments({ 'authProviders.id': newUid })).toBe(0);
+            expect(
+                (await collection.listIndexes().toArray()).some(
+                    index =>
+                        index.unique === true &&
+                        index.key?.['authProviders.type'] === 1 &&
+                        index.key?.['authProviders.id'] === 1
+                )
+            ).toBe(false);
+            const updated = await upsertUserKeyByAuthProvider(
+                existing.contactMethod,
+                { type: 'firebase', id: duplicateUid },
+                { authShare: { encryptedData: 'updated', encryptedDek: 'dek', iv: 'iv' } },
+                1
+            );
+            expect(updated.primaryDid).toBe(existing.primaryDid);
+            expect(updated.shareVersion).toBe(2);
+            expect(updated.previousAuthShares.map(share => share.shareVersion)).toEqual([1]);
         } finally {
-            await collection.deleteMany({ 'authProviders.id': uid });
+            await collection.deleteMany({ 'authProviders.id': { $in: [duplicateUid, newUid] } });
             await createUserKeysIndexes();
         }
     });
