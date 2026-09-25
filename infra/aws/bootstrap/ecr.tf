@@ -8,15 +8,12 @@ resource "aws_ecr_repository" "keycloak" {
 
 resource "aws_ecr_lifecycle_policy" "keycloak" {
   repository = aws_ecr_repository.keycloak.name
+  # No tagged-image expiry: production can run an old digest long after newer ones are
+  # replicated, and a count-based rule would delete it. Add retention only with the
+  # deployed and rollback digests explicitly protected.
   policy = jsonencode({ rules = [
     {
       rulePriority = 1
-      description  = "Keep the last 30 tagged images"
-      selection    = { tagStatus = "tagged", tagPatternList = ["*"], countType = "imageCountMoreThan", countNumber = 30 }
-      action       = { type = "expire" }
-    },
-    {
-      rulePriority = 2
       description  = "Expire untagged images after seven days"
       selection    = { tagStatus = "untagged", countType = "sinceImagePushed", countUnit = "days", countNumber = 7 }
       action       = { type = "expire" }

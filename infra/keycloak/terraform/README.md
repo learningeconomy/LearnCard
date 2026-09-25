@@ -212,7 +212,7 @@ restore intended capacity/scaling bounds from the prior deployment and committed
 tfvars, run the realm and smoke checks, regenerate matching metadata, and write a
 complete journal. If schema state is uncertain, restore the snapshot first. S3
 versioning preserves prior metadata/journal versions for investigation (90-day expiry).
-Retain rollback images separately if they could age out of ECR's 30-image policy.
+ECR never expires tagged images, so deployed and rollback digests stay pullable.
 
 ### Drift detection
 

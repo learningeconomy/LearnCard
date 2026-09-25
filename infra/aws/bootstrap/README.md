@@ -212,8 +212,8 @@ Every output is also a `String` parameter at
 - Production cannot push images; staging replication preserves digests. Replication
   only covers new pushes after configuration and is asynchronous. Repository
   settings/lifecycle do not replicate, so both accounts manage them. Retention is
-  30 tagged images / 7-day untagged; retain external release artifacts if a running
-  digest could age out. Verify the destination digest before promotion.
+  no tagged-image expiry (running and rollback digests stay pullable) and 7-day
+  untagged expiry. Verify the destination digest before promotion.
 
 ## Offline checks and references
 

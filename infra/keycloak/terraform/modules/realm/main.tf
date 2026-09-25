@@ -1,6 +1,11 @@
 # Behavior source: realms/learncard-dev-realm.json on Keycloak 26.7.4.
 # Lifetimes are the server defaults used when the fixture omits them.
 resource "keycloak_realm" "this" {
+  # Deleting a realm deletes its users. Removing a realm from the generated inputs must
+  # fail the apply; retire a realm through a separate, reviewed procedure.
+  lifecycle {
+    prevent_destroy = true
+  }
   realm                                = var.realm
   enabled                              = true
   registration_allowed                 = false
