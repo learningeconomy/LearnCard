@@ -8493,7 +8493,7 @@
             "expired": "منتهية",
             "stopped": "متوقفة",
             "credentialCount": "{{count}} من بيانات الاعتماد",
-            "credentialCountOne": "بيان اعتماد واحد",
+            "credentialCountOne": "{{count}} بيان اعتماد",
             "viewCredentials": "عرض {{count}} من بيانات الاعتماد",
             "previewEyebrow": "رابط خاص",
             "previewTitle": "معاينة بيانات الاعتماد المشتركة",
