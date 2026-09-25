@@ -138,6 +138,34 @@ const TEMPLATE_FIXTURES: { [K in TemplateId]: TemplateDataMap[K] } = {
         credential: { name: 'Introduction to Biology' },
     },
     'account-sign-in-changed': {},
+
+    'escrow-hold-started': {
+        requestedAt: 'September 25, 2026, 3:00 PM',
+        releaseAfter: 'October 2, 2026, 3:00 PM',
+        cancelUrl: 'https://learncard.app/recovery/cancel?token=abc123',
+        deviceHint: 'Chrome on Windows',
+    },
+
+    'escrow-hold-reminder': {
+        releaseAfter: 'October 2, 2026, 3:00 PM',
+        cancelUrl: 'https://learncard.app/recovery/cancel?token=abc123',
+    },
+
+    'escrow-hold-released': {
+        completedAt: 'October 2, 2026, 3:00 PM',
+        supportUrl: 'https://learncard.app/support',
+    },
+
+    'escrow-hold-cancelled': {
+        cancelledAt: 'September 26, 2026, 9:15 AM',
+        reason: 'user',
+    },
+
+    'escrow-pin-locked': {
+        lockedAt: 'September 25, 2026, 3:00 PM',
+        releaseAfter: 'October 2, 2026, 3:00 PM',
+        cancelUrl: 'https://learncard.app/recovery/cancel?token=abc123',
+    },
 };
 
 const ALL_TEMPLATE_IDS = Object.keys(TEMPLATE_FIXTURES) as TemplateId[];
@@ -383,6 +411,169 @@ describe('renderEmail — credential-updated', () => {
         expect(html).toContain('VetPass');
         expect(html).toContain('#1B5E20');
         expect(html).toContain('support@vetpass.app');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Escrow hold lifecycle (nitro-escrow-enclave, P5.1) — plain-language recovery
+// notifications. No user-facing jargon: never render "wallet", "DID",
+// "share", "enclave", "escrow", "SSS", or "key derivation".
+// ---------------------------------------------------------------------------
+
+describe('renderEmail — escrow hold lifecycle', () => {
+    const JARGON = ['wallet', 'DID', 'share', 'enclave', 'escrow', 'SSS', 'key derivation'];
+
+    const assertNoJargon = (text: string) => {
+        const lower = text.toLowerCase();
+        for (const word of JARGON) {
+            expect(lower).not.toContain(word.toLowerCase());
+        }
+    };
+
+    it('escrow-hold-started includes the cancel URL, both dates, and the device hint', async () => {
+        const data = TEMPLATE_FIXTURES['escrow-hold-started'];
+        const { html, text, subject } = await renderEmail(
+            'escrow-hold-started',
+            DEFAULT_BRANDING,
+            data
+        );
+
+        expect(html).toContain(data.cancelUrl);
+        expect(html).toContain(data.requestedAt);
+        expect(html).toContain(data.releaseAfter);
+        expect(html).toContain(data.deviceHint);
+        expect(subject).toBe('Account recovery started');
+        assertNoJargon(html);
+        assertNoJargon(text);
+        assertNoJargon(subject);
+    });
+
+    it('escrow-hold-started renders without the optional device hint', async () => {
+        const { html } = await renderEmail('escrow-hold-started', DEFAULT_BRANDING, {
+            requestedAt: 'September 25, 2026, 3:00 PM',
+            releaseAfter: 'October 2, 2026, 3:00 PM',
+            cancelUrl: 'https://learncard.app/recovery/cancel?token=xyz',
+        });
+
+        expect(html).toContain('https://learncard.app/recovery/cancel?token=xyz');
+        expect(html).not.toContain('undefined');
+    });
+
+    it('escrow-hold-reminder includes the cancel URL and the release date', async () => {
+        const data = TEMPLATE_FIXTURES['escrow-hold-reminder'];
+        const { html, text, subject } = await renderEmail(
+            'escrow-hold-reminder',
+            DEFAULT_BRANDING,
+            data
+        );
+
+        expect(html).toContain(data.cancelUrl);
+        expect(html).toContain(data.releaseAfter);
+        expect(subject).toBe('Recovery completes tomorrow');
+        assertNoJargon(html);
+        assertNoJargon(text);
+        assertNoJargon(subject);
+    });
+
+    it('escrow-hold-released includes the completion date and the support link when provided', async () => {
+        const data = TEMPLATE_FIXTURES['escrow-hold-released'];
+        const { html, text, subject } = await renderEmail(
+            'escrow-hold-released',
+            DEFAULT_BRANDING,
+            data
+        );
+
+        expect(html).toContain(data.completedAt);
+        expect(html).toContain(data.supportUrl);
+        expect(subject).toBe('Your account was recovered');
+        assertNoJargon(html);
+        assertNoJargon(text);
+        assertNoJargon(subject);
+    });
+
+    it('escrow-hold-released renders without the optional support link', async () => {
+        const { html } = await renderEmail('escrow-hold-released', DEFAULT_BRANDING, {
+            completedAt: 'October 2, 2026, 3:00 PM',
+        });
+
+        expect(html).toContain('October 2, 2026, 3:00 PM');
+        expect(html).not.toContain('undefined');
+    });
+
+    it.each([
+        ['user', 'cancelled this request'],
+        ['superseded', 'newer recovery request'],
+        ['pin-locked', 'incorrect PIN attempts'],
+        ['release-failed', 'could not be completed'],
+    ] as const)('escrow-hold-cancelled renders reason "%s"', async (reason, expectedSnippet) => {
+        const { html, subject } = await renderEmail('escrow-hold-cancelled', DEFAULT_BRANDING, {
+            cancelledAt: 'September 26, 2026, 9:15 AM',
+            reason,
+        });
+
+        expect(html).toContain('September 26, 2026, 9:15 AM');
+        expect(html).toContain(expectedSnippet);
+        expect(subject).toBe('Recovery request cancelled');
+        assertNoJargon(html);
+    });
+
+    it('escrow-hold-cancelled renders a generic message when reason is omitted', async () => {
+        const { html } = await renderEmail('escrow-hold-cancelled', DEFAULT_BRANDING, {
+            cancelledAt: 'September 26, 2026, 9:15 AM',
+        });
+
+        expect(html).toContain('No further action is needed');
+    });
+
+    it('escrow-pin-locked includes the locked date, release date, and cancel URL when a hold is pending', async () => {
+        const data = TEMPLATE_FIXTURES['escrow-pin-locked'];
+        const { html, text, subject } = await renderEmail(
+            'escrow-pin-locked',
+            DEFAULT_BRANDING,
+            data
+        );
+
+        expect(html).toContain(data.lockedAt);
+        expect(html).toContain(data.releaseAfter);
+        expect(html).toContain(data.cancelUrl);
+        expect(subject).toBe('Recovery PIN locked');
+        assertNoJargon(html);
+        assertNoJargon(text);
+        assertNoJargon(subject);
+    });
+
+    it('escrow-pin-locked renders generic fallback copy with no button when no hold is pending', async () => {
+        const { html } = await renderEmail('escrow-pin-locked', DEFAULT_BRANDING, {
+            lockedAt: 'September 25, 2026, 3:00 PM',
+        });
+
+        expect(html).toContain('September 25, 2026, 3:00 PM');
+        expect(html).toContain('waiting-period recovery is still available');
+        expect(html).not.toContain('undefined');
+    });
+
+    it('all escrow hold templates include the "This wasn\'t me" cancel CTA when a cancel URL is present', async () => {
+        const started = await renderEmail(
+            'escrow-hold-started',
+            DEFAULT_BRANDING,
+            TEMPLATE_FIXTURES['escrow-hold-started']
+        );
+        const reminder = await renderEmail(
+            'escrow-hold-reminder',
+            DEFAULT_BRANDING,
+            TEMPLATE_FIXTURES['escrow-hold-reminder']
+        );
+        const pinLocked = await renderEmail(
+            'escrow-pin-locked',
+            DEFAULT_BRANDING,
+            TEMPLATE_FIXTURES['escrow-pin-locked']
+        );
+
+        // Plain text output has no HTML entity escaping, so the apostrophe is literal.
+        for (const { text } of [started, reminder, pinLocked]) {
+            expect(text).toContain("This wasn't me");
+            expect(text).toContain('Cancel recovery');
+        }
     });
 });
 
