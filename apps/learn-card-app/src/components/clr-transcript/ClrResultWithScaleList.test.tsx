@@ -89,4 +89,34 @@ describe('ClrResultWithScaleList', () => {
 
         expect(screen.getByText('Scale: maximum 10')).toBeInTheDocument();
     });
+
+    it('falls back to readable bounds when a numeric scale cannot be plotted', () => {
+        const invalidScale: ResultDisplayModel = {
+            value: {
+                value: 'not scored',
+                sourcePath: 'credentialSubject.result[0].value',
+                specField: 'result.value',
+                directlyMapped: true,
+            },
+            valueMin: {
+                value: '10',
+                sourcePath: 'achievement.resultDescription[0].valueMin',
+                specField: 'resultDescription.valueMin',
+                directlyMapped: true,
+            },
+            valueMax: {
+                value: '5',
+                sourcePath: 'achievement.resultDescription[0].valueMax',
+                specField: 'resultDescription.valueMax',
+                directlyMapped: true,
+            },
+            alignments: [],
+            resultDescriptionResolved: true,
+        };
+
+        render(<ClrResultWithScaleList results={[invalidScale]} />);
+
+        expect(screen.getByText('not scored')).toBeInTheDocument();
+        expect(screen.getByText('Scale: 10–5')).toBeInTheDocument();
+    });
 });

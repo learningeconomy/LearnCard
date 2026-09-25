@@ -34,6 +34,9 @@ const ResultAlignment: React.FC<{ alignment: AlignmentDisplayModel }> = ({ align
     );
 };
 
+const isStatusResult = (result: ResultDisplayModel): boolean =>
+    result.resultType?.value === 'Status' || result.value.sourcePath.endsWith('.status');
+
 const RubricScale: React.FC<{
     levels: RubricLevelDisplayModel[];
     achieved?: RubricLevelDisplayModel;
@@ -138,7 +141,11 @@ const NumericScale: React.FC<{
         !Number.isFinite(numericValue) ||
         numericMax <= numericMin
     ) {
-        return null;
+        return (
+            <p className="text-xs text-grayscale-500">
+                Scale: {min}–{max}
+            </p>
+        );
     }
 
     const position = Math.min(
@@ -185,10 +192,7 @@ const NumericScale: React.FC<{
 
 const ResultScale: React.FC<{ result: ResultDisplayModel }> = ({ result }) => {
     const value = String(result.value.value);
-    const isStatus =
-        result.resultType?.value === 'Status' || result.value.sourcePath.endsWith('.status');
-
-    if (isStatus) {
+    if (isStatusResult(result)) {
         return (
             <span className="inline-flex rounded-full border border-grayscale-300 bg-grayscale-100 px-3 py-1 text-xs font-medium text-grayscale-700">
                 {value}
@@ -231,11 +235,9 @@ const ResultScale: React.FC<{ result: ResultDisplayModel }> = ({ result }) => {
         return (
             <p className="text-xs text-grayscale-500">
                 Scale:{' '}
-                {result.valueMin && result.valueMax
-                    ? `${result.valueMin.value}–${result.valueMax.value}`
-                    : result.valueMax
-                      ? `maximum ${result.valueMax.value}`
-                      : `minimum ${result.valueMin?.value}`}
+                {result.valueMax
+                    ? `maximum ${result.valueMax.value}`
+                    : `minimum ${result.valueMin?.value}`}
             </p>
         );
     }
@@ -256,7 +258,7 @@ const ClrResultWithScaleList: React.FC<{
         <div className="space-y-2">
             {results.map((result, index) => (
                 <div
-                    key={result.resultDescriptionId?.value ?? index}
+                    key={`${result.resultDescriptionId?.value ?? 'result'}-${index}`}
                     className={`rounded-2xl border border-grayscale-200 bg-white ${
                         compact ? 'p-3' : 'p-4'
                     }`}
@@ -271,10 +273,7 @@ const ClrResultWithScaleList: React.FC<{
                                     </span>
                                 )}
                             </p>
-                            {!(
-                                result.resultType?.value === 'Status' ||
-                                result.value.sourcePath.endsWith('.status')
-                            ) && (
+                            {!isStatusResult(result) && (
                                 <p className="mt-0.5 text-lg font-semibold text-grayscale-900">
                                     {String(result.value.value)}
                                 </p>
