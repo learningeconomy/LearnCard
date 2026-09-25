@@ -25,7 +25,8 @@ provider `~> 6.0` (exact version in the committed three-platform lockfile).
   so its repository and replication permission exist before the first staging push.
 - Activate the **Project** user-defined cost allocation tag in Billing (payer
   account if using consolidated billing). Budget filtering is
-  `Project$learncard-keycloak`; activation/reporting can take a day. Untagged and
+  `user:Project$learncard-keycloak` (Budgets requires the `user:` prefix for
+  user-defined tags); activation/reporting can take a day. Untagged and
   non-taggable charges are not covered by this budget. Alerts do not cap spend.
 - Reserve the `learncard-keycloak-<env>-*` IAM namespace for these roots. Audit any
   pre-existing roles/policies under it before granting deployment access.

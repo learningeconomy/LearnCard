@@ -4,9 +4,11 @@ resource "aws_budgets_budget" "keycloak" {
   limit_amount = tostring(coalesce(var.monthly_budget_usd, var.environment == "staging" ? 300 : 1000))
   limit_unit   = "USD"
   time_unit    = "MONTHLY"
+  # Budgets matches user-defined cost allocation tags only with the `user:`
+  # prefix; the unprefixed form is accepted but silently matches no spend.
   cost_filter {
     name   = "TagKeyValue"
-    values = ["Project$learncard-keycloak"]
+    values = ["user:Project$learncard-keycloak"]
   }
   dynamic "notification" {
     for_each = [80, 100]
