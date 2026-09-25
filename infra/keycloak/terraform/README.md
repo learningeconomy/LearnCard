@@ -48,9 +48,6 @@ Copy secrets without printing them, e.g.
 flowchart TD
     PR[Pull request] --> Validate[Four roots: fmt / validate / tflint]
     PR --> Build[ARM64 build without push]
-    PR --> Identity[Trusted same-repo OIDC identity smoke]
-    Identity --> Toggle{PR plans explicitly enabled?}
-    Toggle -->|Yes| Plan[Staging network + service: counts and addresses only]
     Main[Push to main: Keycloak paths] --> ECR[Build ARM64 / immutable version-shortsha tag]
     ECR --> Digest[Staging ECR digest]
     Digest --> Gate[Keycloak compatibility check]
@@ -82,8 +79,8 @@ always human-applied. No static AWS credentials, raw plans or plan artifacts are
 | Each environment           | `KEYCLOAK_BOOTSTRAP_ADMIN_SECRET_ARN` | Existing secret ARN, never its value                                                                                   |
 | Each environment, optional | `KEYCLOAK_CONTAINER_IMAGE`            | Manual service plan/apply override only, account-local `repo@sha256:...`; otherwise use running image                  |
 | Each environment, optional | `KEYCLOAK_ALLOW_MISSING_REALM`        | Default `false`; `true` temporarily allows discovery 404 **only when the realm root is absent and no realm apply ran** |
-| Repository                 | `KEYCLOAK_STAGING_PLAN_ROLE_ARN`      | Staging plan role for the non-environment PR OIDC subject                                                              |
-| Repository, optional       | `KEYCLOAK_ENABLE_PR_PLANS`            | Default off; literal `true` enables credentialed trusted-author staging plans                                          |
+| Repository                 | `KEYCLOAK_STAGING_PLAN_ROLE_ARN`      | Staging plan role for main-branch drift checks only                                                                    |
+| Repository                 | `KEYCLOAK_PRODUCTION_PLAN_ROLE_ARN`   | Production plan role for main-branch drift checks only; set after bootstrap                                            |
 
 Region is pinned to `us-east-1`. Repository URLs are discovered from
 `/learncard-keycloak/<env>/bootstrap/ecr_repository_url` and checked against account
@@ -105,25 +102,13 @@ deploy role and denies bootstrap-state access; no bucket-policy widening is need
 The new IAM policy name is covered by the existing bootstrap self-mutation deny.
 Production bootstrap still needs its initial human apply and ECR replication setup.
 
-### PR trust tradeoff
+### PR checks
 
-Fork PRs never receive credentials. Identity smoke checks out **no code**. Optional
-plans require same-repository PRs authored by OWNER, MEMBER or COLLABORATOR, but that
-is not sufficient isolation: Terraform providers, data sources and workflow changes
-can execute arbitrary PR code with the plan role's **account-wide ReadOnlyAccess**,
-downstream state read and state-lock writes. State/application data may be sensitive.
-The IAM `pull_request` subject cannot distinguish a fork or trusted author; workflow
-review remains mandatory. Enabling the toggle explicitly accepts that exposure.
-**The toggle is a scheduling control, not an IAM security boundary.** A repository
-writer can edit PR YAML to bypass it or add code to the retained identity-smoke job;
-the existing plan-role trust already permits that token. Keeping the toggle off
-does not revoke this inherited access. Preventing that attack requires a separate,
-human-applied redesign of plan-role trust and externally enforced approval (including
-the identity-smoke path). This pipeline does not claim to provide that isolation.
-Keep it off unless maintainers trust all code contributors covered by that condition.
-Plan output, errors and JSON stay on the ephemeral runner, are removed on exit, and
-are never uploaded. Only create/update/delete counts and up to 100 changed addresses
-appear in job summaries. No production PR plan runs.
+PRs receive no AWS credentials: they validate the Terraform roots, run offline
+checks, and build the image without pushing. Credentialed plans run only from
+main, in the drift workflow and inside protected deploy jobs. Drift plan roles
+cover network and service, never the realm root or its state. Realm operations
+use the private runner. Plan files and raw diagnostics are never uploaded.
 
 ### Promotion and manual operations
 
