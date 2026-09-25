@@ -1,5 +1,17 @@
 # @learncard/credential-library
 
+## 2.0.5
+
+### Patch Changes
+
+- [#1610](https://github.com/learningeconomy/LearnCard/pull/1610) [`0e9dd47f4451d776ad1787d0a35dbd54141b9fe3`](https://github.com/learningeconomy/LearnCard/commit/0e9dd47f4451d776ad1787d0a35dbd54141b9fe3) Thanks [@gerardopar](https://github.com/gerardopar)! - Add synthetic unsigned CLR fixtures for employment, training providers, military
+  training, professional organizations, licensing/regulatory records, and mixed
+  career collections. Register and export the fixtures, document their display
+  coverage and signing boundaries, and add reference-integrity and field-coverage
+  tests without changing the renderer or existing fixtures.
+
+- [#1614](https://github.com/learningeconomy/LearnCard/pull/1614) [`ae10525fbd0ef284aabe1b03d12db147a1922f2c`](https://github.com/learningeconomy/LearnCard/commit/ae10525fbd0ef284aabe1b03d12db147a1922f2c) Thanks [@smurflo2](https://github.com/smurflo2)! - feat: [LC-2191] Replace Demo School with standards-pure sample personas, including plain OBv3 ConsentFlow issuance without proprietary `boostId` fields.
+
 ## 2.0.4
 
 ### Patch Changes
