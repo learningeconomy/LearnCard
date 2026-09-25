@@ -2,29 +2,51 @@ resource "aws_lb" "keycloak" {
   name                       = local.name
   internal                   = false
   load_balancer_type         = "application"
-  subnets                    = var.public_subnet_ids
-  security_groups            = [aws_security_group.alb.id]
+  subnets                    = local.public_subnet_ids
+  security_groups            = [aws_security_group.keycloak["alb"].id]
   drop_invalid_header_fields = true
-
+  access_logs {
+    bucket  = aws_s3_bucket.alb_logs.bucket
+    prefix  = "public"
+    enabled = true
+  }
+  depends_on = [aws_s3_bucket_policy.alb_logs]
   lifecycle {
     precondition {
-      condition     = alltrue([for subnet in data.aws_subnet.public : subnet.vpc_id == var.vpc_id]) && length(toset([for subnet in data.aws_subnet.public : subnet.availability_zone])) >= 2
-      error_message = "Public subnets must be in the selected VPC and span at least two availability zones."
+      condition     = alltrue([for subnet in data.aws_subnet.public : subnet.vpc_id == local.network.vpc_id]) && length(toset([for subnet in data.aws_subnet.public : subnet.availability_zone])) >= 2
+      error_message = "Public subnets must be in the network VPC and span at least two AZs."
     }
     precondition {
-      condition     = var.hostname != var.admin_hostname
-      error_message = "Public and admin hostnames must be different."
+      condition     = local.network.auth_hostname != local.network.admin_hostname
+      error_message = "Public and private admin hostnames must differ."
     }
   }
 }
 
+resource "aws_lb" "admin" {
+  # ALB names have a 32-character limit; the full production prefix plus admin
+  # exceeds it. IAM role, bucket and SG names retain the full environment name.
+  name                       = "learncard-keycloak-${var.environment == "production" ? "prod" : "stg"}-admin"
+  internal                   = true
+  load_balancer_type         = "application"
+  subnets                    = local.private_subnet_ids
+  security_groups            = [aws_security_group.keycloak["admin-alb"].id]
+  drop_invalid_header_fields = true
+  access_logs {
+    bucket  = aws_s3_bucket.alb_logs.bucket
+    prefix  = "admin"
+    enabled = true
+  }
+  depends_on = [aws_s3_bucket_policy.alb_logs]
+}
+
 resource "aws_lb_target_group" "keycloak" {
-  name        = local.name
+  for_each    = toset(["public", "admin"])
+  name        = "lc-kc-${var.environment}-${each.key}"
   vpc_id      = data.aws_vpc.selected.id
   target_type = "ip"
   protocol    = "HTTP"
   port        = 8080
-
   stickiness {
     type            = "lb_cookie"
     enabled         = true
@@ -59,106 +81,81 @@ resource "aws_lb_listener" "https" {
   load_balancer_arn = aws_lb.keycloak.arn
   port              = 443
   protocol          = "HTTPS"
-  certificate_arn   = var.acm_certificate_arn
+  certificate_arn   = local.network.auth_certificate_arn
   ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
   default_action {
+    type = "fixed-response"
+    fixed_response {
+      content_type = "text/plain"
+      status_code  = "404"
+    }
+  }
+}
+
+resource "aws_lb_listener_certificate" "additional" {
+  for_each        = toset(var.additional_certificate_arns)
+  listener_arn    = aws_lb_listener.https.arn
+  certificate_arn = each.value
+}
+
+resource "aws_lb_listener_rule" "deny_admin" {
+  for_each     = { admin = ["/admin*"], master = ["/realms/master", "/realms/master/*"] }
+  listener_arn = aws_lb_listener.https.arn
+  priority     = each.key == "admin" ? 10 : 20
+  action {
+    type = "fixed-response"
+    fixed_response {
+      content_type = "text/plain"
+      status_code  = "403"
+      message_body = "Forbidden"
+    }
+  }
+  condition {
+    path_pattern { values = each.value }
+  }
+}
+
+resource "aws_lb_listener_rule" "public" {
+  listener_arn = aws_lb_listener.https.arn
+  priority     = 100
+  action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.keycloak.arn
+    target_group_arn = aws_lb_target_group.keycloak["public"].arn
+  }
+  condition {
+    path_pattern { values = ["/realms/*", "/resources/*", "/.well-known/*"] }
+  }
+}
+
+resource "aws_lb_listener" "admin" {
+  load_balancer_arn = aws_lb.admin.arn
+  port              = 443
+  protocol          = "HTTPS"
+  certificate_arn   = local.network.admin_certificate_arn
+  ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
+  default_action {
+    type = "fixed-response"
+    fixed_response {
+      content_type = "text/plain"
+      status_code  = "404"
+    }
   }
 }
 
 resource "aws_lb_listener_rule" "admin" {
-  listener_arn = aws_lb_listener.https.arn
-  priority     = 10
+  # Split conditions to respect ALB's three values per condition limit.
+  for_each = {
+    admin     = { priority = 10, paths = ["/admin", "/admin/*"] }
+    master    = { priority = 20, paths = ["/realms/master", "/realms/master/*"] }
+    resources = { priority = 30, paths = ["/resources/*"] }
+  }
+  listener_arn = aws_lb_listener.admin.arn
+  priority     = each.value.priority
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.keycloak.arn
+    target_group_arn = aws_lb_target_group.keycloak["admin"].arn
   }
   condition {
-    host_header { values = [var.admin_hostname] }
-  }
-  condition {
-    # Include the bare path as well as its descendants.
-    path_pattern { values = ["/admin", "/admin/*"] }
-  }
-  # Split CIDRs into individual rules to stay below ALB's five total match
-  # evaluations per rule (host + two paths + up to two source IPs).
-  dynamic "condition" {
-    for_each = length(var.admin_allowed_cidrs) > 0 ? [true] : []
-    content {
-      source_ip { values = slice(var.admin_allowed_cidrs, 0, min(2, length(var.admin_allowed_cidrs))) }
-    }
-  }
-}
-
-resource "aws_lb_listener_rule" "admin_extra_cidr" {
-  count        = length(var.admin_allowed_cidrs) > 2 ? 1 : 0
-  listener_arn = aws_lb_listener.https.arn
-  priority     = 11
-  action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.keycloak.arn
-  }
-  condition {
-    host_header { values = [var.admin_hostname] }
-  }
-  condition {
-    path_pattern { values = ["/admin", "/admin/*"] }
-  }
-  condition {
-    source_ip { values = [var.admin_allowed_cidrs[2]] }
-  }
-}
-
-resource "aws_lb_listener_rule" "deny_admin_elsewhere" {
-  listener_arn = aws_lb_listener.https.arn
-  priority     = 20
-  action {
-    type = "fixed-response"
-    fixed_response {
-      content_type = "text/plain"
-      status_code  = "403"
-      message_body = "Forbidden"
-    }
-  }
-  condition {
-    path_pattern { values = ["/admin", "/admin/*"] }
-  }
-}
-
-resource "aws_lb_listener_rule" "admin_assets" {
-  listener_arn = aws_lb_listener.https.arn
-  priority     = 30
-  action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.keycloak.arn
-  }
-  condition {
-    host_header { values = [var.admin_hostname] }
-  }
-  dynamic "condition" {
-    for_each = length(var.admin_allowed_cidrs) > 0 ? [true] : []
-    content {
-      source_ip { values = var.admin_allowed_cidrs }
-    }
-  }
-}
-
-# Without this catch-all denial, the listener default would bypass the CIDR
-# restriction for admin-host assets and master realm authentication endpoints.
-resource "aws_lb_listener_rule" "deny_admin_host" {
-  count        = length(var.admin_allowed_cidrs) > 0 ? 1 : 0
-  listener_arn = aws_lb_listener.https.arn
-  priority     = 40
-  action {
-    type = "fixed-response"
-    fixed_response {
-      content_type = "text/plain"
-      status_code  = "403"
-      message_body = "Forbidden"
-    }
-  }
-  condition {
-    host_header { values = [var.admin_hostname] }
+    path_pattern { values = each.value.paths }
   }
 }

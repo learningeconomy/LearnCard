@@ -1,103 +1,75 @@
 data "aws_vpc" "selected" {
-  id = var.vpc_id
+  id = local.network.vpc_id
 }
 
 data "aws_subnet" "private" {
-  for_each = toset(var.private_subnet_ids)
+  for_each = toset(local.private_subnet_ids)
   id       = each.value
 }
 
 data "aws_subnet" "public" {
-  for_each = toset(var.public_subnet_ids)
+  for_each = toset(local.public_subnet_ids)
   id       = each.value
 }
 
-resource "aws_security_group" "alb" {
-  name        = "${local.name}-alb"
-  description = "Public HTTPS and HTTP redirect for Keycloak"
+resource "aws_security_group" "keycloak" {
+  for_each    = toset(["alb", "admin-alb", "tasks", "db", "realm-runner", "access"])
+  name        = "${local.name}-${each.value}"
+  description = "Keycloak ${each.value}; rules managed separately"
   vpc_id      = data.aws_vpc.selected.id
-
-  ingress {
-    description = "HTTP redirect"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  ingress {
-    description = "HTTPS"
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  # Outbound target traffic is scoped to the tasks SG below.
 }
 
-resource "aws_security_group" "tasks" {
-  name        = "${local.name}-tasks"
-  description = "Keycloak HTTP and management health checks from ALB only"
-  vpc_id      = data.aws_vpc.selected.id
+resource "aws_vpc_security_group_ingress_rule" "public" {
+  for_each          = toset(["80", "443"])
+  security_group_id = aws_security_group.keycloak["alb"].id
+  cidr_ipv4         = "0.0.0.0/0"
+  ip_protocol       = "tcp"
+  from_port         = tonumber(each.value)
+  to_port           = tonumber(each.value)
+}
 
-  ingress {
-    description     = "Application requests from ALB"
-    from_port       = 8080
-    to_port         = 8080
-    protocol        = "tcp"
-    security_groups = [aws_security_group.alb.id]
-  }
-  ingress {
-    # Readiness is on the management interface, not application port 8080.
-    # This is health-check-only reachability: there is no ALB listener on 9000.
-    description     = "Management readiness probes from ALB"
-    from_port       = 9000
-    to_port         = 9000
-    protocol        = "tcp"
-    security_groups = [aws_security_group.alb.id]
-  }
-  egress {
-    description = "Database, AWS APIs and external identity providers through private subnet egress"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+locals {
+  private_connections = {
+    public_http  = { source = "alb", target = "tasks", port = 8080 }
+    public_ready = { source = "alb", target = "tasks", port = 9000 }
+    admin_http   = { source = "admin-alb", target = "tasks", port = 8080 }
+    admin_ready  = { source = "admin-alb", target = "tasks", port = 9000 }
+    runner_admin = { source = "realm-runner", target = "admin-alb", port = 443 }
+    access_admin = { source = "access", target = "admin-alb", port = 443 }
+    database     = { source = "tasks", target = "db", port = 5432 }
+    # jdbc-ping discovers peers in PostgreSQL; cache traffic still uses JGroups.
+    jgroups = { source = "tasks", target = "tasks", port = 7800 }
+    failure = { source = "tasks", target = "tasks", port = 57800 }
   }
 }
 
-# Infinispan clustering: jdbc-ping uses PostgreSQL for member *discovery* only.
-# JGroups still carries cache traffic task-to-task over TCP 7800 and runs failure
-# detection (FD_SOCK) on TCP 57800. Both are private, task-SG-to-task-SG only.
-# https://www.keycloak.org/server/caching#network-ports
-resource "aws_vpc_security_group_ingress_rule" "tasks_jgroups" {
-  for_each                     = toset(["7800", "57800"])
-  security_group_id            = aws_security_group.tasks.id
-  referenced_security_group_id = aws_security_group.tasks.id
-  description                  = "JGroups cluster transport between Keycloak tasks on ${each.value}"
+resource "aws_vpc_security_group_ingress_rule" "private" {
+  for_each                     = local.private_connections
+  security_group_id            = aws_security_group.keycloak[each.value.target].id
+  referenced_security_group_id = aws_security_group.keycloak[each.value.source].id
+  description                  = each.key
   ip_protocol                  = "tcp"
-  from_port                    = tonumber(each.value)
-  to_port                      = tonumber(each.value)
+  from_port                    = each.value.port
+  to_port                      = each.value.port
 }
 
-resource "aws_vpc_security_group_egress_rule" "alb_tasks" {
-  for_each                     = toset(["8080", "9000"])
-  security_group_id            = aws_security_group.alb.id
-  referenced_security_group_id = aws_security_group.tasks.id
-  description                  = "Keycloak target traffic on ${each.value}"
+resource "aws_vpc_security_group_egress_rule" "private" {
+  # Runner/access already have HTTPS egress for GitHub, AWS APIs and the admin ALB.
+  for_each                     = { for key, connection in local.private_connections : key => connection if connection.port != 443 }
+  security_group_id            = aws_security_group.keycloak[each.value.source].id
+  referenced_security_group_id = aws_security_group.keycloak[each.value.target].id
+  description                  = each.key
   ip_protocol                  = "tcp"
-  from_port                    = tonumber(each.value)
-  to_port                      = tonumber(each.value)
+  from_port                    = each.value.port
+  to_port                      = each.value.port
 }
 
-resource "aws_security_group" "db" {
-  name        = "${local.name}-db"
-  description = "PostgreSQL from Keycloak tasks only"
-  vpc_id      = data.aws_vpc.selected.id
-
-  ingress {
-    description     = "PostgreSQL from tasks"
-    from_port       = 5432
-    to_port         = 5432
-    protocol        = "tcp"
-    security_groups = [aws_security_group.tasks.id]
-  }
+resource "aws_vpc_security_group_egress_rule" "https" {
+  for_each          = toset(["tasks", "realm-runner", "access"])
+  security_group_id = aws_security_group.keycloak[each.key].id
+  description       = "HTTPS to AWS APIs, image/source registries and identity providers via NAT"
+  cidr_ipv4         = "0.0.0.0/0"
+  ip_protocol       = "tcp"
+  from_port         = 443
+  to_port           = 443
 }

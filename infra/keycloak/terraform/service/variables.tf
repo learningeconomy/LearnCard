@@ -1,10 +1,15 @@
 variable "aws_region" {
-  description = "AWS region for resources and the regional ACM certificate"
+  description = "AWS region matching the network root"
   type        = string
+  default     = "us-east-1"
+  validation {
+    condition     = var.aws_region == "us-east-1"
+    error_message = "This platform is commissioned in us-east-1; review all regional dependencies before expanding."
+  }
 }
 
 variable "environment" {
-  description = "Deployment environment (staging or production)"
+  description = "Deployment environment"
   type        = string
   validation {
     condition     = contains(["staging", "production"], var.environment)
@@ -12,165 +17,213 @@ variable "environment" {
   }
 }
 
-variable "name_prefix" {
-  description = "Resource name prefix; environment is appended (use a distinct prefix per stack)"
+variable "expected_account_id" {
+  description = "Expected account from environment tfvars; provider allowlist rejects wrong credentials"
   type        = string
-  default     = "learncard-keycloak"
   validation {
-    condition     = can(regex("^[a-z][a-z0-9-]{0,18}[a-z0-9]$", var.name_prefix)) && !strcontains(var.name_prefix, "--") && !startswith(var.name_prefix, "internal-")
-    error_message = "Use 2-20 lowercase letters, digits or hyphens, starting with a letter and ending with a letter or digit; consecutive hyphens and the internal- prefix are not allowed."
+    condition     = can(regex("^[0-9]{12}$", var.expected_account_id))
+    error_message = "Provide a 12-digit AWS account ID."
   }
-}
-
-variable "vpc_id" {
-  description = "Existing VPC with DNS support and outbound access for private tasks"
-  type        = string
-}
-
-variable "private_subnet_ids" {
-  description = "Private task and database subnets spanning at least two availability zones"
-  type        = list(string)
-  validation {
-    condition     = length(toset(var.private_subnet_ids)) >= 2
-    error_message = "Provide at least two distinct private subnets."
-  }
-}
-
-variable "public_subnet_ids" {
-  description = "Public ALB subnets spanning at least two availability zones, routed to an internet gateway"
-  type        = list(string)
-  validation {
-    condition     = length(toset(var.public_subnet_ids)) >= 2
-    error_message = "Provide at least two distinct public subnets."
-  }
-}
-
-variable "acm_certificate_arn" {
-  description = "Issued ACM certificate ARN in aws_region covering both hostnames"
-  type        = string
-}
-
-variable "route53_zone_id" {
-  description = "Public Route 53 hosted zone ID containing both hostnames"
-  type        = string
-}
-
-variable "hostname" {
-  description = "Public Keycloak DNS name without scheme or path (e.g., auth.learncard.app)"
-  type        = string
-}
-
-variable "admin_hostname" {
-  description = "Separate admin DNS name without scheme or path (e.g., auth-admin.learncard.app)"
-  type        = string
 }
 
 variable "keycloak_image" {
-  description = "Full private ECR image URI with an immutable non-latest tag, built from infra/keycloak/Dockerfile"
+  description = "Account-local learncard/keycloak ECR image digest, containing the optimized Linux ARM64 build"
   type        = string
   validation {
-    condition     = can(regex("^[0-9]{12}\\.dkr\\.ecr\\.[a-z0-9-]+\\.amazonaws\\.com(\\.cn)?/.+:[A-Za-z0-9_][A-Za-z0-9_.-]*$", var.keycloak_image)) && !endswith(var.keycloak_image, ":latest")
-    error_message = "Provide a private ECR image URI with a pinned tag other than latest."
+    condition     = can(regex("^${var.expected_account_id}\\.dkr\\.ecr\\.${var.aws_region}\\.amazonaws\\.com/learncard/keycloak@sha256:[a-f0-9]{64}$", var.keycloak_image))
+    error_message = "Supply the account-local learncard/keycloak image pinned by sha256 digest, not a tag."
   }
 }
 
 variable "keycloak_version" {
-  description = "Keycloak version for descriptive tags only; does not select or build the image"
+  description = "Descriptive image version; must match the selected digest (does not build an image)"
   type        = string
   default     = "26.7.4"
+  validation {
+    condition     = can(regex("^26\\.[0-9]+\\.[0-9]+$", var.keycloak_version))
+    error_message = "This platform targets a pinned Keycloak 26.x release."
+  }
 }
 
 variable "desired_count" {
-  description = "Desired Fargate task count; production requires at least two after the clustering networking blocker is resolved"
+  description = "Initial count; Application Auto Scaling owns it after creation"
+  type        = number
+  default     = 1
+  validation {
+    condition     = floor(var.desired_count) == var.desired_count && var.desired_count >= var.min_task_count && var.desired_count <= var.max_task_count
+    error_message = "Initial task count must be an integer within autoscaling bounds."
+  }
+}
+
+variable "min_task_count" {
+  description = "Autoscaling floor; production requires at least two"
+  type        = number
+  default     = 1
+  validation {
+    condition     = floor(var.min_task_count) == var.min_task_count && var.min_task_count >= (var.environment == "production" ? 2 : 1)
+    error_message = "Minimum tasks must be a positive integer (at least two in production)."
+  }
+}
+
+variable "max_task_count" {
+  description = "Autoscaling ceiling; included in database pool budgeting"
   type        = number
   default     = 2
   validation {
-    condition     = var.desired_count >= 1 && floor(var.desired_count) == var.desired_count
-    error_message = "Desired count must be a positive integer."
+    condition     = floor(var.max_task_count) == var.max_task_count && var.max_task_count >= var.min_task_count && var.max_task_count <= 20
+    error_message = "Maximum tasks must be an integer from the minimum count through 20."
+  }
+}
+
+variable "cpu_target_percent" {
+  description = "ECS average CPU target tracking percentage"
+  type        = number
+  default     = 55
+  validation {
+    condition     = var.cpu_target_percent >= 20 && var.cpu_target_percent <= 80
+    error_message = "Choose a CPU target between 20 and 80 percent."
   }
 }
 
 variable "task_cpu" {
-  description = "Fargate task CPU units; must form a supported pair with task_memory"
+  description = "Fargate CPU units (baseline staging 1024, production 2048)"
   type        = number
   default     = 1024
+  validation {
+    condition     = contains([1024, 2048], var.task_cpu)
+    error_message = "Use 1024 or 2048 CPU units for the reviewed sizing baseline."
+  }
 }
 
 variable "task_memory" {
-  description = "Fargate task memory in MiB; must form a supported pair with task_cpu"
+  description = "Fargate memory in MiB; at least 2 GiB per vCPU"
   type        = number
   default     = 2048
+  validation {
+    condition     = var.task_memory >= var.task_cpu * 2 && var.task_memory <= var.task_cpu * 8 && var.task_memory % 1024 == 0
+    error_message = "Use a supported 1-GiB increment between 2 and 8 GiB per vCPU."
+  }
 }
 
 variable "db_min_capacity" {
-  description = "Minimum Aurora Serverless v2 capacity in ACUs (no auto-pause)"
+  description = "Minimum per-instance Serverless v2 ACUs; production floor is 2"
   type        = number
   default     = 0.5
   validation {
-    condition     = var.db_min_capacity >= 0.5 && var.db_min_capacity <= 128 && floor(var.db_min_capacity * 2) == var.db_min_capacity * 2
-    error_message = "Minimum capacity must be 0.5-128 ACUs in increments of 0.5."
+    condition     = var.db_min_capacity >= (var.environment == "production" ? 2 : 0.5) && var.db_min_capacity <= 128 && floor(var.db_min_capacity * 2) == var.db_min_capacity * 2
+    error_message = "Use half-ACU increments up to 128; minimum 0.5 staging / 2 production."
   }
 }
 
 variable "db_max_capacity" {
-  description = "Maximum Aurora Serverless v2 capacity in ACUs per instance"
+  description = "Maximum per-instance Serverless v2 ACUs"
   type        = number
   default     = 4
   validation {
-    condition     = var.db_max_capacity >= 0.5 && var.db_max_capacity <= 128 && floor(var.db_max_capacity * 2) == var.db_max_capacity * 2
-    error_message = "Maximum capacity must be 0.5-128 ACUs in increments of 0.5."
+    condition     = var.db_max_capacity >= var.db_min_capacity && var.db_max_capacity <= 128 && floor(var.db_max_capacity * 2) == var.db_max_capacity * 2
+    error_message = "Maximum must be >= minimum, in half-ACU increments, up to 128."
   }
 }
 
+variable "db_instance_count" {
+  description = "Serverless writer plus optional failover readers in distinct AZs"
+  type        = number
+  default     = 1
+  validation {
+    condition     = contains([1, 2, 3], var.db_instance_count) && (var.environment != "production" || var.db_instance_count >= 2)
+    error_message = "Choose 1-3 instances; production requires at least two."
+  }
+}
+
+variable "db_pool_size" {
+  description = "Fixed initial/min/max connections per task; include 200% rolling surge in capacity testing"
+  type        = number
+  default     = 10
+  validation {
+    condition     = floor(var.db_pool_size) == var.db_pool_size && var.db_pool_size >= 1 && var.db_pool_size * var.max_task_count * 2 < var.db_connection_budget * 0.7
+    error_message = "Pool must be a positive integer; pools at 200% of maximum tasks must stay below 70% of the tested connection budget."
+  }
+}
+
+variable "db_connection_budget" {
+  description = "Conservative max_connections budget to confirm at minimum ACU in Phase 3/PD-8 load testing"
+  type        = number
+  default     = 100
+  validation {
+    condition     = floor(var.db_connection_budget) == var.db_connection_budget && var.db_connection_budget >= 10
+    error_message = "Provide an integer connection budget of at least ten."
+  }
+}
+
+variable "db_rotation_risk_acknowledged" {
+  description = "Acknowledges Phase 3 spike-first remains open: ECS retains startup DB credentials across RDS secret rotation"
+  type        = bool
+  default     = false
+}
+
 variable "db_backup_retention_days" {
-  description = "Aurora automated backup and point-in-time recovery retention in days"
+  description = "Aurora PITR retention"
   type        = number
   default     = 14
   validation {
-    condition     = var.db_backup_retention_days >= 1 && var.db_backup_retention_days <= 35 && floor(var.db_backup_retention_days) == var.db_backup_retention_days
-    error_message = "Backup retention must be an integer from 1 to 35 days."
+    condition     = floor(var.db_backup_retention_days) == var.db_backup_retention_days && var.db_backup_retention_days >= 1 && var.db_backup_retention_days <= 35
+    error_message = "Use 1-35 whole days."
   }
 }
 
 variable "db_deletion_protection" {
-  description = "Protect Aurora against accidental deletion; disable explicitly before planned teardown"
+  description = "Disable only for reviewed teardown"
   type        = bool
   default     = true
 }
 
 variable "bootstrap_admin_password_secret_arn" {
-  description = "Secrets Manager ARN containing the bootstrap admin password as a plain string, encrypted with the AWS-managed Secrets Manager key"
+  description = "Existing same-account, same-region plain-string bootstrap password secret; never read into Terraform"
   type        = string
+  validation {
+    condition     = can(regex("^arn:aws:secretsmanager:${var.aws_region}:${var.expected_account_id}:secret:learncard-keycloak/${var.environment}/.+$", var.bootstrap_admin_password_secret_arn))
+    error_message = "Use a secret ARN within learncard-keycloak/<environment>/ in this account and region."
+  }
 }
 
 variable "bootstrap_admin_username" {
-  description = "Temporary bootstrap administrator username; provision a permanent administrator and remove the temporary account after setup"
+  description = "Temporary administrator; delete after the realm automation identity is established"
   type        = string
   default     = "admin"
 }
 
-variable "log_retention_days" {
-  description = "CloudWatch log retention in days"
+variable "admin_forward_port" {
+  description = "Advertised break-glass HTTPS port; PD-4 hostname/forwarding spike must verify this before use"
   type        = number
-  default     = 30
+  default     = 8443
   validation {
-    condition     = contains([1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1096, 1827, 2192, 2557, 2922, 3288, 3653], var.log_retention_days)
-    error_message = "Choose a supported nonzero CloudWatch retention period."
+    condition     = floor(var.admin_forward_port) == var.admin_forward_port && var.admin_forward_port >= 1024 && var.admin_forward_port <= 65535
+    error_message = "Choose an unprivileged integer port from 1024 to 65535."
   }
 }
 
-variable "admin_allowed_cidrs" {
-  description = "Up to three IPv4 CIDRs allowed on the admin hostname; empty allows all sources (authentication is still required)"
+variable "additional_certificate_arns" {
+  description = "Additional regional ACM SNI certificates for future branded auth domains"
   type        = list(string)
   default     = []
   validation {
-    condition     = length(var.admin_allowed_cidrs) <= 3 && alltrue([for cidr in var.admin_allowed_cidrs : can(cidrnetmask(cidr))])
-    error_message = "Provide at most three valid IPv4 CIDRs (ALB condition limit)."
+    condition     = length(var.additional_certificate_arns) <= 24 && alltrue([for arn in var.additional_certificate_arns : can(regex("^arn:aws:acm:${var.aws_region}:${var.expected_account_id}:certificate/.+$", arn))])
+    error_message = "Supply at most 24 ACM certificate ARNs in this region/account."
+  }
+}
+
+variable "log_retention_days" {
+  description = "CloudWatch retention"
+  type        = number
+  default     = 30
+  validation {
+    condition     = contains([7, 14, 30, 60, 90, 180, 365], var.log_retention_days)
+    error_message = "Use a reviewed retention of 7,14,30,60,90,180 or 365 days."
   }
 }
 
 variable "tags" {
-  description = "Additional AWS tags; required Project, ManagedBy, Environment and KeycloakVersion tags take precedence"
+  description = "Additional tags; required platform tags take precedence"
   type        = map(string)
   default     = {}
 }

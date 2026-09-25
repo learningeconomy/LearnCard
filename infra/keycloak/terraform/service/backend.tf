@@ -1,6 +1,7 @@
 terraform {
-  # Supply bucket, key, region and dynamodb_table using -backend-config at init.
+  # Supply bucket, key=keycloak/<env>/service.tfstate and region at init.
   backend "s3" {
-    encrypt = true
+    encrypt      = true
+    use_lockfile = true
   }
 }

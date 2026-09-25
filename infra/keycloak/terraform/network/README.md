@@ -7,7 +7,7 @@ address records, realm configuration or Serverless resources are managed here.
 
 Terraform >= 1.10; AWS provider `~> 6.0`; VPC module pinned to **6.7.3** (requires
 AWS >= 6.28). The committed lockfile covers Linux amd64/arm64 and macOS arm64.
-The old flat root remains on AWS `~> 5.0` until Phase 3.
+The former flat root now lives in `../service` and also uses AWS `~> 6.0`.
 
 ## Prerequisites
 
@@ -87,8 +87,8 @@ waits for ACM issuance; verify both certificates show ISSUED in the console.
 Leave validation CNAMEs in place for automatic renewals.
 
 Public DNS contains only zone NS/SOA and ACM validation CNAMEs at this phase.
-The private zone `admin.<auth-host>` is attached only to this VPC; Phase 3 adds
-its internal ALB alias. The public auth alias is also deferred to Phase 3.
+The private zone `admin.<auth-host>` is attached only to this VPC; the service root
+owns its internal ALB alias and the public auth alias.
 Public certificates expose the admin hostname in certificate transparency; private
 DNS/reachability, not secrecy of the hostname, is the security boundary.
 
@@ -153,7 +153,8 @@ terraform providers lock -platform=linux_amd64 -platform=linux_arm64 -platform=d
 
 Offline checks do not test IAM authorization, DNS propagation, quota availability
 or live provisioning. The first human staging apply must verify those; no cloud
-apply is part of this change. Follow-up CI integration belongs to Phase 3.
+apply is part of this change. `keycloak-infra.yml` validates all three roots and
+supports manual network/service deployment via OIDC; first delegation is human-run.
 
 Argument references: [VPC 6.7.3](https://github.com/terraform-aws-modules/terraform-aws-vpc/tree/v6.7.3),
 [AWS 6.66.0 resources](https://github.com/hashicorp/terraform-provider-aws/tree/v6.66.0/website/docs/r)
