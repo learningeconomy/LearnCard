@@ -19,6 +19,8 @@ path = "src/lib.rs"
 default = []
 fake-nsm = ["dep:p384", "dep:x509-cert", "sha2/oid"]
 fake-kms = []
+fake-time = []
+verified-roughtime-keys = []
 nitro = ["dep:aws-nitro-enclaves-nsm-api", "dep:aws-nitro-enclaves-cose"]
 kms = ["dep:aws-config", "dep:aws-sdk-kms"]
 
@@ -41,6 +43,7 @@ tracing = "~0.1.44"
 tracing-subscriber = "~0.3.23"
 base64 = "~0.23.1"
 hex = "~0.4.3"
+ed25519-dalek = "~2.2.0"
 subtle = "~2.6.1"
 aws-nitro-enclaves-nsm-api = { version = "~0.5.2", optional = true }
 aws-nitro-enclaves-cose = { version = "~0.5.2", optional = true }

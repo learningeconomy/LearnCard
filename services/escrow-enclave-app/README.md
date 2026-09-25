@@ -24,10 +24,99 @@ with an internal NLB and at least `m6i.xlarge` parents (two enclave vCPUs plus t
 remaining for the parent).
 
 Implemented primitives: `crypto` (P1.2), `nsm`/`NsmDriver` (P1.3),
-`kms`/`KmsClient` (P1.4). Future modules:
-`time`/`TimeSource` (P1.5), `ledger`/`HeadStore` (P1.6), `policy` (P1.7), and
+`kms`/`KmsClient` (P1.4), `time`/`TimeSource` (P1.5). Future modules:
+`ledger`/`HeadStore` (P1.6), `policy` (P1.7), and
 `server` (P1.8). Native trait-based fakes will exercise the same policy logic;
-the NSM and KMS traits and fakes are available now, while the other drivers remain planned.
+the NSM, KMS and time traits and fakes are available now.
+
+## Authenticated time (P1.5)
+
+`RoughtimeTimeSource::new` requires 2–16 distinct pins, a minimum of two
+successful responses, and an explicit radius cap (`production`: 10 seconds).
+All queries run concurrently with two-second per-source timeouts. Every valid
+source participates in the intersection; no majority/outlier exclusion occurs.
+Missing/invalid replies count as unavailable; insufficient sources, disjoint
+intervals, or an intersection wholly before the supplied ledger floor fail closed.
+The caller supplies the authenticated ledger head floor; this module does not
+store or authenticate it. Cancellation drops the JoinSet and aborts its queries.
+
+Verification is a bounded pure-Rust implementation using `ed25519-dalek 2.2.0`
+strict verification and existing SHA-512/SHA-256 primitives. It verifies both
+context-prefixed signatures, delegation bounds, nonce Merkle inclusion (including
+unused index bits), exact field sizes, framing, and checked timestamp arithmetic.
+Parsers accept at most 1024-byte datagrams and 32 tags per nested message; recursion
+is fixed to CERT/DELE/SREP. Legacy microseconds round outward to milliseconds.
+The evidence hash is SHA-256 of the received datagram, not a replayable standalone
+proof; later ledger signing authenticates the enclave's verification result.
+
+### Protocol and pin provenance
+
+- Cloudflare's [published service](https://developers.cloudflare.com/time-services/roughtime/usage/)
+  supplies key `0GD7c3yP8xEc4Zl2zeuN2SlLvDVVocjsPSL8/Rl/7zg=`.
+  Its [ecosystem description](https://github.com/cloudflare/roughtime/blob/master/ecosystem.md)
+  identifies draft-08 support; its [Go protocol source](https://github.com/cloudflare/roughtime/blob/master/protocol/protocol.go)
+  defines the implemented `0x80000008` format: 32-byte nonce, truncated SHA-512
+  nonce leaves, seconds, outer VER/NONC, ROUGHTIM framing, and the delegation
+  context ending `signature--\0`. This is a documented deployment selection,
+  **not a live UDP interoperability claim**.
+- Google's [original published server list](https://roughtime.googlesource.com/roughtime/+/dd529367052d2d4e723407525887310fe866ddd8/roughtime-servers.json)
+  supplies historical sandbox key `etPaaIxcBMY1oUeGpwvPMCJMwlRVNxv51KK/tktoJTQ=`.
+  Legacy Google format uses 64-byte nonces/SHA-512 hashes, microseconds, PAD-FF,
+  no ROUGHTIM framing and the same signature contexts. Current sandbox key and
+  availability are unconfirmed (Cloudflare's ecosystem lists it unreachable).
+- Latest [IETF draft-19](https://datatracker.ietf.org/doc/html/draft-ietf-ntp-roughtime-19)
+  uses `0x8000000c`, full-request-packet leaves, TYPE/VERS and a different
+  delegation context. **Not supported and never silently negotiated/downgraded.**
+  Current roughenough's request-packet verifier cannot substitute for draft-08
+  or Google legacy; using it without compatibility handling would reject them.
+
+`production()` returns `Configuration` unless the build explicitly enables
+`verified-roughtime-keys`. This is a release-review gate, not automatic verification:
+verify Google's current pin/service and both endpoints' actual interoperability
+before enabling it. Pins are never fetched dynamically. Neither beta service is
+an uptime guarantee; unavailable Google means recovery fails closed. Custom pins
+must represent independently operated authorities (distinct keys alone do not
+establish organizational independence).
+
+`TimeSource` and `RoughtimeTransport` use boxed Send futures, like `KmsClient`, for
+dyn compatibility on Rust 1.93; callers still use `.now(...).await` and
+`.exchange(...).await`. `fake-time` enables configurable in-memory time and relay
+drivers; default builds exclude them. Tests construct signed real-format messages
+with test keys and never contact external time services.
+
+### Time semantics and integration limits
+
+Intervals describe signed **server processing events**, not a provable upper
+bound on time at receipt. An untrusted parent can delay packets or pause execution;
+the local two-second timer is only a resource bound, not an authenticated delay
+bound. Delayed evidence's lower bound stays conservative for release, but a future
+hold-creation policy must not claim an exact real seven-day minimum solely from
+these upper bounds without resolving this delay threat. No local clock value is
+used to advance trusted time. Concurrent intersection is application policy, not
+the IETF sequential nonce-chaining/malfeasance-report algorithm. Retry/backoff and
+rate limiting belong to the caller/parent integration, not an automatic loop here.
+
+## Wire: time relay
+
+Linux `VsockRoughtimeTransport` connects to fixed parent CID **3**, port **5001**.
+One connection carries one request and one response:
+
+1. Enclave → parent: **u32 big-endian byte length**, then UTF-8 JSON
+   `{"server_id":"cloudflare","payload":[82,79,...]}`. `payload` is the complete
+   opaque UDP datagram as a JSON byte array. JSON is capped at 8192 bytes,
+   server ID at 128 bytes, datagram at 1024 bytes.
+2. Parent → enclave: **u32 big-endian byte length**, then the **raw UDP response
+   bytes**, NOT JSON. Length must be 1–1024; reject before allocation. Failure is
+   signaled by closing the connection (zero length is also rejected).
+3. Both sides close; no pooling, multiplexing, request IDs, or retries. The enclave
+   bounds the complete connect/write/read exchange to two seconds.
+
+P3.3 parent must hardcode `cloudflare` → `roughtime.cloudflare.com:2003` and
+`google` → `roughtime.sandbox.google.com:2002`, reject unknown IDs (never accept an
+arbitrary destination), bound UDP receives and reject oversized/truncated datagrams,
+and relay bytes unchanged. Roughtime's internal draft-08 length is **little-endian**
+after `ROUGHTIM`, unlike the outer relay's big-endian lengths. Parent authentication
+is not a time trust boundary: every response is independently enclave-verified.
 
 ## KMS sealing primitives (P1.4)
 

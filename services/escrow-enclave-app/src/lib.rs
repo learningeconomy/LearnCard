@@ -7,7 +7,7 @@ pub mod kms;
 /// Nitro attestation drivers and explicitly unverified document parsing (P1.3).
 pub mod nsm;
 /// Signed Roughtime intervals and the future TimeSource abstraction (P1.5).
-pub mod time {}
+pub mod time;
 /// Signed, hash-chained state transitions and the future HeadStore abstraction (P1.6).
 pub mod ledger {}
 /// Signed hold creation, blob validation, and hold/PIN release decisions (P1.7).
