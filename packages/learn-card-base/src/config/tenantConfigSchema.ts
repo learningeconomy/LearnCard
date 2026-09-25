@@ -55,6 +55,40 @@ export const tenantFirebaseConfigSchema = z
     })
     .passthrough();
 
+/** 96 hex chars = 48-byte SHA-384 digest (both Nitro PCRs and imageSha384 use this length). */
+const hex96 = z.string().regex(/^[0-9a-fA-F]{96}$/, 'Expected a 96-character hex string (SHA-384)');
+
+/**
+ * Nitro measurement pin. Two accepted shapes:
+ *  - A full PCR0/1/2 tuple (the only shape that can ever match an attestation —
+ *    see `verifyNitroAttestationDocument` in `@learncard/sss-key-manager`).
+ *  - A legacy image-only pin (`{ imageSha384 }`), kept for backward compatibility with
+ *    existing configs. These are accepted by the schema but map to NO nitro pins:
+ *    `sss-key-manager` treats image-only pins as never-matching (see P4.3 / 7db56e2e5).
+ */
+const pcrTupleMeasurementSchema = z
+    .object({
+        pcr0: hex96,
+        pcr1: hex96,
+        pcr2: hex96,
+        imageSha384: hex96.optional(),
+    })
+    .passthrough();
+
+const legacyImageOnlyMeasurementSchema = z
+    .object({
+        imageSha384: hex96,
+        pcr0: hex96.optional(),
+        pcr1: hex96.optional(),
+        pcr2: hex96.optional(),
+    })
+    .passthrough();
+
+const escrowEnclaveMeasurementSchema = z.union([
+    pcrTupleMeasurementSchema,
+    legacyImageOnlyMeasurementSchema,
+]);
+
 export const tenantSSSConfigSchema = z
     .object({
         serverUrl: urlOrPlaceholder().default('https://api.learncard.app/trpc'),
@@ -62,7 +96,14 @@ export const tenantSSSConfigSchema = z
         escrowRelayKeyId: z.string().default(''),
         escrowEnclaveMode: z.enum(['off', 'software', 'nitro']).default('off'),
         escrowEnclavePublicKeys: z.array(z.string()).default([]),
-        escrowEnclaveMeasurements: z.array(z.object({ imageSha384: z.string() })).default([]),
+        escrowEnclaveMeasurements: z.array(escrowEnclaveMeasurementSchema).default([]),
+        /** SHA-256 (hex) of the pinned Nitro root certificate DER. Overrides the AWS default root. */
+        escrowEnclaveRootSha256: z
+            .string()
+            .regex(/^[0-9a-f]{64}$/i, 'Expected a 64-character hex SHA-256 hash')
+            .optional(),
+        /** Max attestation age in ms. Nitro policy default is 300000 (5 min) when unset. */
+        escrowEnclaveMaxAgeMs: z.number().int().positive().max(3_600_000).optional(),
         enableEmailBackupShare: z.boolean().default(true),
         requireEmailForPhoneUsers: z.boolean().default(true),
     })
