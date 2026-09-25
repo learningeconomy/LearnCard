@@ -8,6 +8,7 @@ import { getDeliveryService, getFrom } from '../services/delivery';
 import { IssueEndpointValidator } from 'types/credentials';
 import { t, authorizedDidRoute, openRoute } from '@routes';
 import { getSigningAuthorityLearnCard } from '@helpers/learnCard.helpers';
+import { SeedEncryptionError } from '@helpers/seedEncryption.helpers';
 import {
     encryptCredentialForRecipients,
     resolveRecipientEncrypters,
@@ -142,6 +143,13 @@ export const credentialsRouter = t.router({
                 return issuedCredential;
             } catch (error) {
                 if (error instanceof TRPCError) throw error;
+                if (error instanceof SeedEncryptionError) {
+                    // The helper has already logged sanitized metadata. Do not expose KMS details.
+                    throw new TRPCError({
+                        code: 'INTERNAL_SERVER_ERROR',
+                        message: 'Signing authority key is unavailable. Please try again.',
+                    });
+                }
                 const errMsg = error instanceof Error ? error.message : String(error);
                 const errStack = error instanceof Error ? error.stack : undefined;
                 console.error('[LCA /credentials/issue] Failed:', {

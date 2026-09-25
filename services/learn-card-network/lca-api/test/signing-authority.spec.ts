@@ -63,6 +63,16 @@ describe('Signing Authority', () => {
             did: expect.stringMatching(/^did:/),
             endpoint: expect.stringContaining('/api'),
         });
+        const stored = await SigningAuthorities.findOne({ _id: signingAuthority._id });
+        expect(stored).not.toHaveProperty('seed');
+        expect(stored).toMatchObject({
+            encryptedSeed: expect.any(String),
+            encryptedDek: expect.any(String),
+            keyVersion: 'local-v1',
+        });
+        for (const field of ['seed', 'encryptedSeed', 'encryptedDek', 'keyVersion']) {
+            expect(signingAuthority).not.toHaveProperty(field);
+        }
     });
 
     it('should prevent creating a signing authority with the same name', async () => {
@@ -78,6 +88,11 @@ describe('Signing Authority', () => {
     it('should allow you to retrieve your signing authorities after creation', async () => {
         await userA.clients.fullAuth.signingAuthority.createSigningAuthority({ name: 'mysa' });
         const sas = await userA.clients.fullAuth.signingAuthority.signingAuthorities();
+        for (const authority of sas) {
+            for (const field of ['seed', 'encryptedSeed', 'encryptedDek', 'keyVersion']) {
+                expect(authority).not.toHaveProperty(field);
+            }
+        }
         if (sas && sas[0]) {
             expect(sas[0].name).toBe('mysa');
             expect(sas[0].ownerDid).toBe(userA.learnCard.id.did());

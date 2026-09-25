@@ -95,6 +95,8 @@ describe('Credentials', () => {
             })
         );
         expect(proof).toBeDefined();
+        const verification = await userA.learnCard.invoke.verifyCredential(signedVc);
+        expect(verification.errors).toHaveLength(0);
     });
 
     it('rejects an unresolvable encryption recipient as BAD_REQUEST', async () => {

@@ -157,6 +157,8 @@ services:
             IS_OFFLINE: true
             IS_E2E_TEST: true
             SEED: d
+            # Disposable test database only.
+            SA_SEED_LOCAL_KEK: ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
             AUTHORIZED_DIDS: did:web:localhost%3A4000
             MONGO_URI: ${LCA_API_MONGO_URI:-mongodb://mongodb:27017?ssl=false&replicaSet=rs0}
             MONGO_DB_NAME: ${LCA_API_MONGO_DB_NAME:-lca-api-e2e}
