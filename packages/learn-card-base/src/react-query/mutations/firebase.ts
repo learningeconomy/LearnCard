@@ -146,7 +146,7 @@ export const useVerifyLoginVerificationCode = () => {
     const [presentAlert] = useIonAlert();
 
     return useMutation<
-        { success: boolean; token?: string; message?: string },
+        { success: boolean; token?: string; error?: string },
         Error,
         { email: string; code: string }
     >({
@@ -163,17 +163,20 @@ export const useVerifyLoginVerificationCode = () => {
         onSuccess: data => {
             if (!data?.success) {
                 log.error(data);
-                presentAlert({
-                    header: 'Error',
-                    message: data?.message || 'Failed to verify login verification code',
-                    buttons: [
-                        {
-                            text: 'Dismiss',
-                            role: 'cancel',
-                        },
-                    ],
-                });
-                return;
+                // Rate limit errors are shown inline in EmailForm, not as popup
+                const isRateLimitError = data?.error?.includes('Too many attempts');
+                if (!isRateLimitError) {
+                    presentAlert({
+                        header: 'Error',
+                        message: data?.error || 'Failed to verify login verification code',
+                        buttons: [
+                            {
+                                text: 'Dismiss',
+                                role: 'cancel',
+                            },
+                        ],
+                    });
+                }
             }
         },
     });
