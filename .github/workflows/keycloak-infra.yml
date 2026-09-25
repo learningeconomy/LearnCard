@@ -86,20 +86,18 @@ jobs:
     # downloads artifacts, or runs Terraform. Credentialed PR plans are Phase 4.
     # Same-repo maintainers are a trust boundary, not a substitute for reviewing
     # workflow changes: the IAM pull_request subject cannot distinguish forks.
+    # Skipped until bootstrap is applied and KEYCLOAK_STAGING_PLAN_ROLE_ARN is set.
     pr-plan-role:
         if: >-
             github.event_name == 'pull_request' &&
             github.event.pull_request.head.repo.full_name == github.repository &&
-            contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.pull_request.author_association)
+            contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.pull_request.author_association) &&
+            vars.KEYCLOAK_STAGING_PLAN_ROLE_ARN != ''
         needs: [validate, build-image]
         runs-on: ubuntu-latest
         permissions:
             id-token: write
         steps:
-            - name: Check repository plan-role mirror
-              env:
-                  PLAN_ROLE_ARN: ${{ vars.KEYCLOAK_STAGING_PLAN_ROLE_ARN }}
-              run: ': "${PLAN_ROLE_ARN:?Set repository variable KEYCLOAK_STAGING_PLAN_ROLE_ARN}"'
             - name: Verify staging plan-role OIDC authentication (no PR code)
               uses: aws-actions/configure-aws-credentials@v5
               with:

@@ -283,7 +283,8 @@ required production review/prevent-self-approval:
 GitHub environment jobs emit an **environment** OIDC subject, incompatible with
 the plan role's PR/main trust. Therefore mirror staging `AWS_PLAN_ROLE_ARN` into
 repository variable `KEYCLOAK_STAGING_PLAN_ROLE_ARN`; the isolated PR job has no
-environment. This is a deliberate exception to environment-only role variables,
+environment. Until that variable is set the job is **skipped, not passed**; set it
+right after bootstrap and confirm the job runs on the next PR. This is a deliberate exception to environment-only role variables,
 not a broadening of IAM trust. Repository maintainers can change workflows: review
 is still required, and the IAM PR subject alone cannot distinguish a fork.
 
