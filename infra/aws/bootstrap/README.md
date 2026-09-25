@@ -164,10 +164,13 @@ Every output is also a `String` parameter at
   Project resource tags; deregistration is therefore an explicit account-wide
   exception, removed from the tag-deny list so Terraform can replace old revisions.
   IAM simulation must include this documented shared-account lifecycle limitation.
-- Plan trust: this repo's `pull_request` or `ref:refs/heads/main`, audience STS.
-  AWS-managed ReadOnlyAccess is intentionally account-wide, including discovery
-  and potentially application data. Do not grant OIDC tokens to unreviewed fork
-  code or upload plans publicly. Review the managed policy as AWS changes it.
+- Plan trust: **only** `ref:refs/heads/main`, audience STS. A `pull_request`
+  subject would let any repository writer assume it from PR-controlled YAML, so
+  PRs get no AWS credentials. The role has ReadOnlyAccess for configuration
+  discovery plus `${name}-plan-data-denies`: no object reads outside the network
+  and service states (never realm state), no parameters outside
+  `/learncard-keycloak/<env>/`, and no secret values, KMS decrypt, log contents or
+  table/queue/function data.
 - Deploy trust: **only** `environment:keycloak-<env>`, audience STS. Configure
   GitHub environments manually, main-only deployment branches, production required
   reviewers, and prevent self-approval. `keycloak-infra.yml` now uses OIDC and
@@ -206,8 +209,19 @@ Every output is also a `String` parameter at
   are granted. Before using OIDC, a human must run IAM policy simulation and a
   staging smoke apply, including denials against existing non-Keycloak resources,
   untagged resources and bootstrap IAM. Offline validate/lint cannot prove this.
-- SSM and secret names are environment-scoped; RDS-managed `rds!*` secrets use
-  generated identifiers and are an explicit account-local exception. ALB log
+- SSM and secret names are environment-scoped. RDS-managed `rds!*` secrets use
+  generated names, so both deploy and the workload boundary require the AWS-set,
+  user-immutable tag `aws:rds:primaryDBClusterArn` to equal this environment's
+  cluster; creation is allowed only while that tag is absent (new secrets).
+- WAF mutations are limited to web ACLs named `${name}*` and this environment's
+  public ALB. Autoscaling is ECS-only; existing targets must carry
+  `Project=learncard-keycloak`. **Residual gap:** scalable-target ARNs are random
+  IDs, so `RegisterScalableTarget`/`TagResource` cannot be denied for an
+  _untagged_ foreign ECS target. Keep other teams' ECS targets tagged.
+- The wildcard `ec2:DeleteNetworkInterface` (CodeBuild VPC pre-flight) is limited
+  to `${name}-realm-runner`, whose role policy denies ENIs outside the Keycloak VPC.
+- Size: the workload boundary is ~6,000 of IAM's 6,144-character managed-policy
+  limit. New workload permissions need a second boundary or trimming, not appends. ALB log
   buckets must use `${name}-alb-logs-*`. Never repurpose namespaced resources.
 - Production cannot push images; staging replication preserves digests. Replication
   only covers new pushes after configuration and is asynchronous. Repository
