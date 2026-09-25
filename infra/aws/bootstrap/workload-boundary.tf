@@ -26,6 +26,22 @@ data "aws_iam_policy_document" "workload_boundary" {
     actions   = ["secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret"]
     resources = local.secret_arns
   }
+  # A boundary also caps grants from the AWS-managed key policy, so secret reads
+  # need decrypt here. Limited to that key, and only when called by Secrets Manager.
+  statement {
+    actions   = ["kms:Decrypt"]
+    resources = ["arn:${local.partition}:kms:${local.regional_arn}:key/*"]
+    condition {
+      test     = "StringEquals"
+      variable = "kms:ViaService"
+      values   = ["secretsmanager.${var.aws_region}.amazonaws.com"]
+    }
+    condition {
+      test     = "ForAnyValue:StringEquals"
+      variable = "kms:ResourceAliases"
+      values   = ["alias/aws/secretsmanager"]
+    }
+  }
   statement {
     actions   = ["ssm:GetParameter", "ssm:GetParameters", "ssm:GetParametersByPath"]
     resources = ["arn:${local.partition}:ssm:${local.regional_arn}:parameter${local.ssm_prefix}/*"]

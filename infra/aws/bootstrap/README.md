@@ -178,6 +178,8 @@ Every output is also a `String` parameter at
   deploy roles, all deploy policies and the boundary cannot be mutated or passed.
   The boundary permits only runtime logging, ECR pulls, environment secrets/SSM,
   realm state, CodeBuild ENIs and named RDS backup operations, not IAM or AssumeRole.
+  Secret reads also need `kms:Decrypt` in the boundary even with the AWS-managed
+  key; it is limited to `alias/aws/secretsmanager` via Secrets Manager only.
   Workload identity policies must narrow this ceiling further (notably ENI subnet/
   SG permissions). Namespaces must not contain pre-existing privileged policies
   attached to unrelated roles. Backup expansion/enhanced monitoring in later

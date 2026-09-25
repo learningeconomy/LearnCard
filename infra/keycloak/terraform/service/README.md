@@ -42,7 +42,9 @@ variables, **not secret values or fabricated image digests in committed tfvars**
 - `TF_VAR_bootstrap_admin_password_secret_arn`: existing plain-string password
   secret under `learncard-keycloak/<env>/`, same account/region. The ECS execution
   role reads only this ARN and the RDS-managed DB secret. Terraform never reads
-  their values. Use the AWS-managed Secrets Manager key; custom KMS keys need
+  their values. Use the AWS-managed Secrets Manager key: the execution role,
+  realm runner and workload boundary allow `kms:Decrypt` only for
+  `alias/aws/secretsmanager` via Secrets Manager. Custom KMS keys need
   explicitly reviewed permissions first.
 - `TF_VAR_db_rotation_risk_acknowledged=true`: explicit acceptance of the temporary
   rotation limitation below. Defaults false and blocks provisioning otherwise.

@@ -27,11 +27,22 @@ resource "aws_iam_role_policy" "secrets" {
   role = aws_iam_role.execution.id
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      Effect   = "Allow"
-      Action   = "secretsmanager:GetSecretValue"
-      Resource = [local.db_master_secret_arn, var.bootstrap_admin_password_secret_arn]
-    }]
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = "secretsmanager:GetSecretValue"
+        Resource = [local.db_master_secret_arn, var.bootstrap_admin_password_secret_arn]
+      },
+      {
+        Effect   = "Allow"
+        Action   = "kms:Decrypt"
+        Resource = "arn:${local.partition}:kms:${var.aws_region}:${local.account_id}:key/*"
+        Condition = {
+          StringEquals               = { "kms:ViaService" = "secretsmanager.${var.aws_region}.amazonaws.com" }
+          "ForAnyValue:StringEquals" = { "kms:ResourceAliases" = "alias/aws/secretsmanager" }
+        }
+      }
+    ]
   })
 }
 

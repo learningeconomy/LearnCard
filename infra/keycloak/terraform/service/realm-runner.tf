@@ -60,6 +60,20 @@ data "aws_iam_policy_document" "realm_runner" {
     resources = ["arn:${local.partition}:secretsmanager:${var.aws_region}:${local.account_id}:secret:learncard-keycloak/${var.environment}/*"]
   }
   statement {
+    actions   = ["kms:Decrypt"]
+    resources = ["arn:${local.partition}:kms:${var.aws_region}:${local.account_id}:key/*"]
+    condition {
+      test     = "StringEquals"
+      variable = "kms:ViaService"
+      values   = ["secretsmanager.${var.aws_region}.amazonaws.com"]
+    }
+    condition {
+      test     = "ForAnyValue:StringEquals"
+      variable = "kms:ResourceAliases"
+      values   = ["alias/aws/secretsmanager"]
+    }
+  }
+  statement {
     actions   = ["ec2:DescribeNetworkInterfaces", "ec2:DescribeSubnets", "ec2:DescribeSecurityGroups", "ec2:DescribeDhcpOptions", "ec2:DescribeVpcs"]
     resources = ["*"]
   }
