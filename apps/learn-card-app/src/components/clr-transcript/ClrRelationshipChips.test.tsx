@@ -37,4 +37,26 @@ describe('ClrRelationshipChips', () => {
 
         expect(onSelectRecord).toHaveBeenCalledWith('urn:uuid:relationship-advanced-credential');
     });
+
+    it('renders a static chip when the related record cannot be opened', () => {
+        const foundation = model.courses.find(
+            course => course.name?.value === 'Foundations of Systems Thinking'
+        )!;
+        const relationship = {
+            ...model.relationships[foundation.sourceCredentialId][0]!,
+            navigable: false,
+        };
+        const onSelectRecord = vi.fn();
+        const { rerender } = render(
+            <ClrRelationshipChips relationships={[relationship]} onSelectRecord={onSelectRecord} />
+        );
+
+        expect(screen.getByText(relationship.label)).toBeInTheDocument();
+        expect(screen.queryByRole('button')).not.toBeInTheDocument();
+
+        rerender(<ClrRelationshipChips relationships={[{ ...relationship, navigable: true }]} />);
+
+        expect(screen.queryByRole('button')).not.toBeInTheDocument();
+        expect(onSelectRecord).not.toHaveBeenCalled();
+    });
 });

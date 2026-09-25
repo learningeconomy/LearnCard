@@ -1782,6 +1782,23 @@ export const findClrRecordById = (
     return undefined;
 };
 
+export type ClrRecordNavigator = {
+    selectRecord: (recordId: string) => void;
+    openRecord: (selected: ClrNavigableRecord) => void;
+};
+
+export const createClrRecordSelection = (
+    model: ClrTranscriptDisplayModel,
+    onOpenRecord: (selected: ClrNavigableRecord) => void
+): ClrRecordNavigator => {
+    const selectRecord = (recordId: string): void => {
+        const selected = findClrRecordById(model, recordId);
+        if (selected) onOpenRecord(selected);
+    };
+
+    return { selectRecord, openRecord: onOpenRecord };
+};
+
 export const getRelationshipsForRecord = (
     relationships: RelationshipGraph,
     recordId: string

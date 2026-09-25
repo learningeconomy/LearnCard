@@ -279,19 +279,24 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     const hasClrEvidence = clrEvidence.length > 0;
     const standaloneCourse = isStandaloneCourse ? clrModel?.courses[0] : undefined;
     const showsCoursePanel = Boolean(standaloneCourse && clrModel);
-    const handleSelectClrRecord = clrModel
-        ? createClrRecordNavigator({
-              model: clrModel,
-              boost: clrCredential,
-              adminMode: false,
-              openPanel: panel => {
-                  newModal(panel, undefined, {
-                      desktop: ModalTypes.Right,
-                      mobile: ModalTypes.Right,
-                  });
-              },
-          })
-        : undefined;
+    const clrRecordNavigator = useMemo(
+        () =>
+            clrModel
+                ? createClrRecordNavigator({
+                      model: clrModel,
+                      boost: clrCredential,
+                      adminMode: false,
+                      openPanel: panel => {
+                          newModal(panel, undefined, {
+                              desktop: ModalTypes.Right,
+                              mobile: ModalTypes.Right,
+                          });
+                      },
+                  })
+                : undefined,
+        [clrCredential, clrModel, newModal]
+    );
+    const handleSelectClrRecord = clrRecordNavigator?.selectRecord;
     let previewWrapperPaddingClass = '';
     let previewContentPaddingClass = '';
 

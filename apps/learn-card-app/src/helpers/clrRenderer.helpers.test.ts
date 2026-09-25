@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { VC } from '@learncard/types';
 
 import { clrUniversityTranscript } from '../../../../packages/credential-library/src/fixtures/clr/university-transcript';
@@ -13,6 +13,7 @@ import { obv3StandaloneFullCourse } from '../../../../packages/credential-librar
 
 import {
     ClrTranscriptSurface,
+    createClrRecordSelection,
     getLinkedCompetencies,
     isStandaloneCourseCredential,
     normalizeClrTranscriptDisplayModel,
@@ -764,6 +765,28 @@ describe('normalizeClrTranscriptDisplayModel', () => {
                     course.results.some(result => result.allowedValue?.value.length)
                 )
             ).toBe(true);
+        });
+    });
+});
+
+describe('createClrRecordSelection', () => {
+    it('opens a directly selected record without resolving its ID again', () => {
+        const model = normalizeClrTranscriptDisplayModel(
+            clrAchievementIdAssociations.credential as unknown as Record<string, unknown>
+        );
+        const [firstCourse, selectedCourse] = model.courses;
+        const ambiguousCourse = {
+            ...selectedCourse!,
+            sourceCredentialId: firstCourse!.sourceCredentialId,
+        };
+        const onOpenRecord = vi.fn();
+        const navigator = createClrRecordSelection(model, onOpenRecord);
+
+        navigator.openRecord({ kind: 'course', record: ambiguousCourse });
+
+        expect(onOpenRecord).toHaveBeenCalledWith({
+            kind: 'course',
+            record: ambiguousCourse,
         });
     });
 });

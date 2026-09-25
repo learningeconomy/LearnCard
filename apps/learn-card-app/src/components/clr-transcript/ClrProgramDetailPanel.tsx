@@ -32,7 +32,6 @@ const ClrProgramDetailPanel: React.FC<{
     boost: VC;
     model: ClrTranscriptDisplayModel;
     onSelectRecord?: (recordId: string) => void;
-    onClose?: () => void;
     adminMode?: boolean;
     issuerName?: string;
     issuerLogo?: string;
@@ -180,16 +179,9 @@ const ClrProgramDetailPanel: React.FC<{
                         <p className="text-xs font-semibold uppercase tracking-wide text-grayscale-600">
                             Courses in this program
                         </p>
-                        {childCourses.map(course => (
-                            <div
-                                key={course.sourceCredentialId}
-                                className="rounded-2xl border border-grayscale-200 bg-grayscale-50 p-3"
-                            >
-                                <button
-                                    type="button"
-                                    className="mb-2 w-full text-left"
-                                    onClick={() => onSelectRecord?.(course.sourceCredentialId)}
-                                >
+                        {childCourses.map(course => {
+                            const courseLabel = (
+                                <>
                                     <p className="text-sm font-medium text-grayscale-900">
                                         {course.name?.value ?? 'Course'}
                                     </p>
@@ -198,10 +190,31 @@ const ClrProgramDetailPanel: React.FC<{
                                             {course.humanCode.value}
                                         </p>
                                     )}
-                                </button>
-                                <ClrResultWithScaleList results={course.results} compact />
-                            </div>
-                        ))}
+                                </>
+                            );
+
+                            return (
+                                <div
+                                    key={course.sourceCredentialId}
+                                    className="rounded-2xl border border-grayscale-200 bg-grayscale-50 p-3"
+                                >
+                                    {onSelectRecord ? (
+                                        <button
+                                            type="button"
+                                            className="mb-2 w-full text-left"
+                                            onClick={() =>
+                                                onSelectRecord(course.sourceCredentialId)
+                                            }
+                                        >
+                                            {courseLabel}
+                                        </button>
+                                    ) : (
+                                        <div className="mb-2">{courseLabel}</div>
+                                    )}
+                                    <ClrResultWithScaleList results={course.results} compact />
+                                </div>
+                            );
+                        })}
                     </div>
                 )}
 

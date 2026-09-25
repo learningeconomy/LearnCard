@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 
 import ClrCourseSection from '../ClrCourseSection';
 import ClrAssessmentSection from '../ClrAssessmentSection';
@@ -21,9 +21,13 @@ import type {
     AssessmentDisplayModel,
     CourseDisplayModel,
     ProgramDisplayModel,
+    ClrRecordNavigator,
     ClrTranscriptDisplayModel,
 } from '../../../helpers/clrRenderer.helpers';
-import { findClrRecordById, selectClrTranscriptView } from '../../../helpers/clrRenderer.helpers';
+import {
+    createClrRecordSelection,
+    selectClrTranscriptView,
+} from '../../../helpers/clrRenderer.helpers';
 
 import type { VC } from '@learncard/types';
 import { getClrIssuerLogo } from '../clrKind.helpers';
@@ -40,13 +44,9 @@ export const createClrRecordNavigator = ({
     boost,
     adminMode,
     openPanel,
-}: ClrRecordNavigatorOptions): ((recordId: string) => void) => {
+}: ClrRecordNavigatorOptions): ClrRecordNavigator => {
     const issuerLogo = getClrIssuerLogo(model);
-
-    const selectRecord = (recordId: string): void => {
-        const selected = findClrRecordById(model, recordId);
-        if (!selected) return;
-
+    const navigator = createClrRecordSelection(model, selected => {
         switch (selected.kind) {
             case 'course':
                 openPanel(
@@ -54,7 +54,7 @@ export const createClrRecordNavigator = ({
                         course={selected.record}
                         boost={boost}
                         model={model}
-                        onSelectRecord={selectRecord}
+                        onSelectRecord={navigator.selectRecord}
                         adminMode={adminMode}
                         issuerName={model.header.issuerName?.value}
                         issuerLogo={issuerLogo}
@@ -67,7 +67,7 @@ export const createClrRecordNavigator = ({
                         program={selected.record}
                         boost={boost}
                         model={model}
-                        onSelectRecord={selectRecord}
+                        onSelectRecord={navigator.selectRecord}
                         adminMode={adminMode}
                         issuerName={model.header.issuerName?.value}
                         issuerLogo={issuerLogo}
@@ -80,7 +80,7 @@ export const createClrRecordNavigator = ({
                         assessment={selected.record}
                         boost={boost}
                         model={model}
-                        onSelectRecord={selectRecord}
+                        onSelectRecord={navigator.selectRecord}
                         adminMode={adminMode}
                         issuerName={model.header.issuerName?.value}
                         issuerLogo={issuerLogo}
@@ -92,15 +92,15 @@ export const createClrRecordNavigator = ({
                     <ClrCompetencyDetailPanel
                         model={model}
                         initialCompetencyId={selected.record.sourceCredentialId}
-                        onSelectRecord={selectRecord}
+                        onSelectRecord={navigator.selectRecord}
                         adminMode={adminMode}
                     />
                 );
                 break;
         }
-    };
+    });
 
-    return selectRecord;
+    return navigator;
 };
 
 const ClrTranscriptFullPage: React.FC<{
@@ -114,25 +114,30 @@ const ClrTranscriptFullPage: React.FC<{
 
     const selectedView = selectClrTranscriptView(model, options);
     const issuerLogo = getClrIssuerLogo(model);
-    const handleSelectRecord = createClrRecordNavigator({
-        model,
-        boost,
-        adminMode,
-        openPanel: panel => {
-            newModal(panel);
-        },
-    });
+    const recordNavigator = useMemo(
+        () =>
+            createClrRecordNavigator({
+                model,
+                boost,
+                adminMode,
+                openPanel: panel => {
+                    newModal(panel);
+                },
+            }),
+        [adminMode, boost, model, newModal]
+    );
+    const handleSelectRecord = recordNavigator.selectRecord;
 
     const handleSelectProgram = (program: ProgramDisplayModel): void => {
-        handleSelectRecord(program.sourceCredentialId);
+        recordNavigator.openRecord({ kind: 'program', record: program });
     };
 
     const handleSelectAssessment = (assessment: AssessmentDisplayModel): void => {
-        handleSelectRecord(assessment.sourceCredentialId);
+        recordNavigator.openRecord({ kind: 'assessment', record: assessment });
     };
 
     const handleSelectCourse = (course: CourseDisplayModel): void => {
-        handleSelectRecord(course.sourceCredentialId);
+        recordNavigator.openRecord({ kind: 'course', record: course });
     };
 
     return (

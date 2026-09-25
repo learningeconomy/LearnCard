@@ -11,7 +11,6 @@ import ClrProvenanceTable from './ClrProvenanceTable';
 import ClrTranscriptEvidenceList, {
     type ClrEvidenceSourceSummary,
 } from './ClrTranscriptEvidenceList';
-import { CertificateDisplayIcon } from 'learn-card-base';
 import { StudiesIcon } from 'learn-card-base/svgs/wallet/StudiesIcon';
 import ClrCourseCredentialCollapsible from './ClrCourseCredentialCollapsible';
 
