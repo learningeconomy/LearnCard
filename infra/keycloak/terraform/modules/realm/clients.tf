@@ -50,5 +50,5 @@ resource "keycloak_openid_user_attribute_protocol_mapper" "phone" {
   add_to_id_token            = true
   add_to_access_token        = true
   add_to_userinfo            = true
-  add_to_token_introspection = false
+  add_to_token_introspection = true
 }

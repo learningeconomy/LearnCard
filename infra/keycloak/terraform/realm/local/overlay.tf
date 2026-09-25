@@ -45,5 +45,6 @@ resource "keycloak_generic_protocol_mapper" "ci" {
   name            = each.key
   protocol        = each.value.protocol
   protocol_mapper = each.value.protocolMapper
-  config          = each.value.config
+  # Keycloak 26.7.4 inserts this default when importing the fixture too.
+  config = merge(each.value.config, { "introspection.token.claim" = "true" })
 }
