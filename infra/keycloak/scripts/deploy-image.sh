@@ -157,13 +157,7 @@ task=$(aws ecs describe-services --cluster "$name" --services "$name" --query 's
 actual=$(aws ecs describe-task-definition --task-definition "$task" \
     --query 'taskDefinition.containerDefinitions[?name==`keycloak`].image | [0]' --output text)
 [[ "$actual" == "$TF_VAR_keycloak_image" ]] || { printf 'ECS rolled back or deployed an unexpected image.\n' >&2; exit 1; }
-realm_applied=false
-if [[ -d infra/keycloak/terraform/realm ]]; then
-    run_realm_build "$work/realm-build-id" "$name" "$release_sha"
-    realm_applied=true
-else
-    printf '::warning::Realm root absent; skipping the private realm runner.\n'
-fi
+run_realm_build "$work/realm-build-id" "$name" "$release_sha"
 hostname=auth.staging.learncard.app
 if [[ "$DEPLOY_ENVIRONMENT" == production ]]; then hostname=auth.learncard.app; fi
 healthy=false
@@ -171,10 +165,6 @@ for ((attempt=0; attempt<30; attempt++)); do
     code=$(curl --silent --show-error --connect-timeout 10 --max-time 20 -o /dev/null -w '%{http_code}' \
         "https://$hostname/realms/learncard/.well-known/openid-configuration") || code=000
     if [[ "$code" == 200 ]]; then healthy=true; break; fi
-    if [[ "$code" == 404 && "$realm_applied" == false && ${ALLOW_MISSING_REALM:-false} == true ]]; then
-        printf '::warning::Explicit bootstrap exception: realm is not applied; discovery returned 404.\n'
-        healthy=true; break
-    fi
     sleep 10
 done
 [[ "$healthy" == true ]] || { printf 'Discovery smoke check failed.\n' >&2; exit 1; }

@@ -54,15 +54,6 @@ jobs:
             - uses: actions/checkout@v7
               with:
                   persist-credentials: false
-            - id: root
-              env:
-                  ROOT: ${{ matrix.root }}
-              run: |
-                  if [[ -d "$ROOT" ]]; then
-                      echo 'exists=true' >> "$GITHUB_OUTPUT"
-                  else
-                      echo "::warning::$ROOT has not landed yet; validation skipped."
-                  fi
             - uses: hashicorp/setup-terraform@v3
               with:
                   terraform_version: '1.15.8'
@@ -70,7 +61,6 @@ jobs:
               with:
                   tflint_version: v0.55.1
             - name: Validate and lint root
-              if: steps.root.outputs.exists == 'true'
               working-directory: ${{ matrix.root }}
               run: |
                   terraform fmt -check -recursive
@@ -122,7 +112,6 @@ jobs:
             AWS_REGION: us-east-1
             TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
             TF_VAR_bootstrap_admin_password_secret_arn: ${{ vars.KEYCLOAK_BOOTSTRAP_ADMIN_SECRET_ARN }}
-            ALLOW_MISSING_REALM: ${{ vars.KEYCLOAK_ALLOW_MISSING_REALM || 'false' }}
             SNAPSHOT_STAGING: ${{ inputs.snapshot_staging || 'false' }}
             MANUAL_IMAGE: ${{ vars.KEYCLOAK_CONTAINER_IMAGE }}
             REQUESTED_DIGEST: ${{ inputs.digest }}

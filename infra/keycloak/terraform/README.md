@@ -72,15 +72,14 @@ always human-applied. No static AWS credentials, raw plans or plan artifacts are
 
 ### Required GitHub configuration
 
-| Scope                      | Variable                              | Purpose                                                                                                                |
-| -------------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Each environment           | `AWS_DEPLOY_ROLE_ARN`                 | Bootstrap deploy OIDC role                                                                                             |
-| Each environment           | `TF_STATE_BUCKET`                     | That account's bootstrap state bucket                                                                                  |
-| Each environment           | `KEYCLOAK_BOOTSTRAP_ADMIN_SECRET_ARN` | Existing secret ARN, never its value                                                                                   |
-| Each environment, optional | `KEYCLOAK_CONTAINER_IMAGE`            | Manual service plan/apply override only, account-local `repo@sha256:...`; otherwise use running image                  |
-| Each environment, optional | `KEYCLOAK_ALLOW_MISSING_REALM`        | Default `false`; `true` temporarily allows discovery 404 **only when the realm root is absent and no realm apply ran** |
-| Repository                 | `KEYCLOAK_STAGING_PLAN_ROLE_ARN`      | Staging plan role for main-branch drift checks only                                                                    |
-| Repository                 | `KEYCLOAK_PRODUCTION_PLAN_ROLE_ARN`   | Production plan role for main-branch drift checks only; set after bootstrap                                            |
+| Scope                      | Variable                              | Purpose                                                                                               |
+| -------------------------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Each environment           | `AWS_DEPLOY_ROLE_ARN`                 | Bootstrap deploy OIDC role                                                                            |
+| Each environment           | `TF_STATE_BUCKET`                     | That account's bootstrap state bucket                                                                 |
+| Each environment           | `KEYCLOAK_BOOTSTRAP_ADMIN_SECRET_ARN` | Existing secret ARN, never its value                                                                  |
+| Each environment, optional | `KEYCLOAK_CONTAINER_IMAGE`            | Manual service plan/apply override only, account-local `repo@sha256:...`; otherwise use running image |
+| Repository                 | `KEYCLOAK_STAGING_PLAN_ROLE_ARN`      | Staging plan role for main-branch drift checks only                                                   |
+| Repository                 | `KEYCLOAK_PRODUCTION_PLAN_ROLE_ARN`   | Production plan role for main-branch drift checks only; set after bootstrap                           |
 
 Region is pinned to `us-east-1`. Repository URLs are discovered from
 `/learncard-keycloak/<env>/bootstrap/ecr_repository_url` and checked against account
@@ -152,9 +151,8 @@ fails loudly: an operator must reconcile the possibly running build before any
 service recovery. Hard runner termination cannot guarantee trap execution.
 No standalone
 realm dispatch is exposed until the runner supports a reviewed plan/apply contract.
-If the parallel realm root has not landed, the runner is explicitly skipped; the
-temporary 404 exception above must be enabled to finish that bootstrap deployment.
-Once the root exists, runner success and HTTP 200 are required regardless of the flag.
+Every deployment requires realm runner success and discovery HTTP 200; neither
+missing realm roots nor discovery 404 responses are accepted.
 
 ### Compatibility and recreate safety
 
@@ -226,12 +224,8 @@ covered: it can only run inside the VPC, and the runner has no plan-only mode ye
 ### Dependency automation and verification boundaries
 
 Dependabot checks only Keycloak Dockerfiles and the four Terraform roots weekly,
-grouped, with two open PRs per ecosystem; no repo-wide Actions update noise. The
-[Terraform fetcher](https://github.com/dependabot/dependabot-core/blob/main/terraform/lib/dependabot/terraform/file_fetcher.rb)
-requires `.tf`/`.hcl` configuration files. Missing `realm/` is **not guaranteed to be
-a silent skip**: it can report a missing-manifest update error until the parallel root
-lands. The requested entry stays configured in advance; no placeholder realm files
-are created here. CI validation separately warns/skips the absent root.
+grouped, with two open PRs per ecosystem; no repo-wide Actions update noise.
+CI requires all four roots: a missing root fails validation instead of skipping it.
 
 The Apple provider watcher downloads only the exact stable upstream release asset,
 hashes it, updates both pins and opens a review PR with release notes and a Keycloak
