@@ -1,0 +1,185 @@
+import React, { useMemo, useRef } from 'react';
+import { IonIcon } from '@ionic/react';
+import { addOutline, arrowBack, refreshOutline } from 'ionicons/icons';
+import type { ShareLink } from '@learncard/types';
+
+import * as m from '../../../../paraglide/messages.js';
+import '../../dataSharingCenter.scss';
+import type { SharedLinkFilter } from '../../DataSharingCenter.types';
+import { ListShell, MessageRow, QuietTextButton, SkeletonRows } from './ListCard';
+import ShareLinkRow from './ShareLinkRow';
+import { useSharedLinksStore } from './sharedLinksStore';
+import { getSharedLinkViewStatus, sortNewestFirst, statusLabel } from './sharedLinkFormat';
+
+export const SheetChrome: React.FC<{
+    title: string;
+    onClose: () => void;
+    refreshing: boolean;
+    onRefresh: () => void;
+    action?: React.ReactNode;
+    children: React.ReactNode;
+}> = ({ title, onClose, refreshing, onRefresh, action, children }) => (
+    <div className="ds-content-bg min-h-full w-full">
+        <div className="mx-auto w-full max-w-[820px] px-5 pb-14 pt-[max(16px,calc(env(safe-area-inset-top)+8px))]">
+            <div className="mb-4 flex items-center gap-2">
+                <button
+                    type="button"
+                    aria-label={m['common.back']()}
+                    onClick={onClose}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full text-xl text-grayscale-700 hover:bg-white/70"
+                >
+                    <IonIcon icon={arrowBack} aria-hidden="true" className="rtl:-scale-x-100" />
+                </button>
+                <h2 className="flex-1 truncate text-lg font-semibold text-grayscale-900">
+                    {title}
+                </h2>
+                <button
+                    type="button"
+                    aria-label={m['dataShareCenter.shared.refresh']()}
+                    disabled={refreshing}
+                    onClick={onRefresh}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full text-lg text-grayscale-600 hover:bg-white/70 disabled:opacity-60"
+                >
+                    <IonIcon
+                        icon={refreshOutline}
+                        aria-hidden="true"
+                        className={refreshing ? 'motion-safe:animate-spin' : undefined}
+                    />
+                </button>
+                {action}
+            </div>
+            {children}
+        </div>
+    </div>
+);
+
+const FILTERS: SharedLinkFilter[] = ['active', 'expired', 'stopped'];
+
+const SharedLinksAllSheet: React.FC<{
+    onClose: () => void;
+    onOpenShare: (share: ShareLink) => void;
+}> = ({ onClose, onOpenShare }) => {
+    const vm = useSharedLinksStore(state => state.vm);
+    const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+    const counts = useMemo(() => {
+        const next: Record<SharedLinkFilter, number> = { active: 0, expired: 0, stopped: 0 };
+        for (const record of vm?.records ?? []) next[getSharedLinkViewStatus(record)] += 1;
+        return next;
+    }, [vm?.records]);
+    const filtered = useMemo(
+        () =>
+            sortNewestFirst(
+                (vm?.records ?? []).filter(record => getSharedLinkViewStatus(record) === vm?.filter)
+            ),
+        [vm?.filter, vm?.records]
+    );
+
+    if (!vm) return null;
+
+    const handleTabKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
+        if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+        event.preventDefault();
+        const direction = event.key === 'ArrowRight' ? 1 : -1;
+        const nextIndex = (index + direction + FILTERS.length) % FILTERS.length;
+        const nextFilter = FILTERS[nextIndex];
+        vm.onFilterChange(nextFilter);
+        tabRefs.current[nextIndex]?.focus();
+    };
+
+    return (
+        <SheetChrome
+            title={m['dataShareCenter.shared.yourLinks']()}
+            onClose={onClose}
+            refreshing={vm.isLoading}
+            onRefresh={() => void vm.onRefresh()}
+            action={
+                <QuietTextButton icon={addOutline} onClick={vm.onCreateShare}>
+                    {m['dataShareCenter.shared.newLink']()}
+                </QuietTextButton>
+            }
+        >
+            <div
+                role="tablist"
+                aria-label={m['dataShareCenter.shared.filterLabel']()}
+                className="mb-3 grid grid-cols-3 gap-1 rounded-[20px] bg-white/70 p-1 ring-1 ring-grayscale-900/[0.06]"
+            >
+                {FILTERS.map((filter, index) => (
+                    <button
+                        key={filter}
+                        ref={element => {
+                            tabRefs.current[index] = element;
+                        }}
+                        type="button"
+                        role="tab"
+                        aria-selected={vm.filter === filter}
+                        tabIndex={vm.filter === filter ? 0 : -1}
+                        onClick={() => vm.onFilterChange(filter)}
+                        onKeyDown={event => handleTabKeyDown(event, index)}
+                        className={`rounded-[16px] px-3 py-2 text-sm font-medium transition-colors ${vm.filter === filter ? 'bg-grayscale-900 text-white' : 'text-grayscale-600 hover:text-grayscale-900'}`}
+                    >
+                        {statusLabel(filter)}
+                        <span
+                            className={`ms-1.5 text-xs ${vm.filter === filter ? 'text-white/70' : 'text-grayscale-400'}`}
+                        >
+                            {counts[filter]}
+                        </span>
+                    </button>
+                ))}
+            </div>
+
+            <ListShell label={statusLabel(vm.filter)}>
+                {vm.isLoading && vm.records.length === 0 ? (
+                    <SkeletonRows count={5} />
+                ) : vm.error ? (
+                    <MessageRow
+                        tone="error"
+                        action={
+                            <button
+                                type="button"
+                                className="text-sm font-medium text-grayscale-700 underline"
+                                onClick={() => void vm.onRefresh()}
+                            >
+                                {m['shareLinks.retry']()}
+                            </button>
+                        }
+                    >
+                        {m['dataShareCenter.shared.loadError']()}
+                    </MessageRow>
+                ) : filtered.length === 0 ? (
+                    <MessageRow>
+                        {vm.hasMore
+                            ? m['dataShareCenter.shared.emptyFilterMore']()
+                            : m['dataShareCenter.shared.emptyFilter']()}
+                    </MessageRow>
+                ) : (
+                    filtered.map(share => (
+                        <ShareLinkRow
+                            key={`${share.id}:${share.version}`}
+                            share={share}
+                            pending={Boolean(vm.pendingActions[share.id])}
+                            busy={vm.busyId === share.id}
+                            showViewStats={vm.showViewStats}
+                            onOpen={onOpenShare}
+                            onCopy={vm.onCopy}
+                        />
+                    ))
+                )}
+            </ListShell>
+
+            {vm.hasMore && (
+                <button
+                    type="button"
+                    disabled={vm.isLoadingMore}
+                    onClick={() => void vm.onLoadMore()}
+                    className="mt-3 w-full rounded-[20px] border border-grayscale-300 bg-white/80 px-4 py-2.5 text-sm font-medium text-grayscale-700 hover:bg-white disabled:opacity-40"
+                >
+                    {vm.isLoadingMore
+                        ? m['dataShareCenter.shared.loading']()
+                        : m['dataShareCenter.shared.loadMore']()}
+                </button>
+            )}
+        </SheetChrome>
+    );
+};
+
+export default SharedLinksAllSheet;
