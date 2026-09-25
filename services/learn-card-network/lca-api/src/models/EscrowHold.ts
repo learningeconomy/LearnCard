@@ -24,6 +24,11 @@ export const EscrowHoldValidator = z.object({
     completedAt: z.date().optional(),
     clientEphemeralPublicKey: z.string().min(1).max(512),
     resumeTokenHash: z.string().regex(/^[0-9a-f]{64}$/),
+    cancelTokenHash: z
+        .string()
+        .regex(/^[0-9a-f]{64}$/)
+        .optional(),
+    cancelTokenUsedAt: z.date().optional(),
     notifications: z
         .array(
             z.object({
@@ -48,6 +53,7 @@ export type CreateEscrowHoldInput = Omit<
     | 'cancelledBy'
     | 'completedAt'
     | 'cancelReason'
+    | 'cancelTokenUsedAt'
 >;
 
 export const getEscrowHoldsCollection = (): Collection<EscrowHold> =>
@@ -209,3 +215,15 @@ export const markClaimedEscrowHoldFailed = async (
 export const hashEscrowResumeToken = (token: string): string =>
     createHash('sha256').update(token).digest('hex');
 export const generateEscrowResumeToken = (): string => randomBytes(32).toString('hex');
+
+/** Appends a delivery record; a missing holdId is a no-op rather than a throw. */
+export const recordEscrowHoldNotification = async (
+    holdId: string,
+    kind: EscrowHold['notifications'][number]['kind']
+): Promise<void> => {
+    const now = new Date();
+    await getEscrowHoldsCollection().updateOne(
+        { _id: holdId },
+        { $push: { notifications: { kind, sentAt: now } }, $set: { updatedAt: now } }
+    );
+};

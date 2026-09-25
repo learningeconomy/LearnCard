@@ -6,6 +6,8 @@ export interface EscrowHoldEvent {
     hold: EscrowHold;
     userKey: MongoUserKeyType;
     reason?: 'superseded';
+    /** Plaintext single-use cancel-link token for 'started' events. Never log this. */
+    cancelToken?: string;
 }
 
 /** Placeholder for notification fan-out. Never log the supplied account or hold. */

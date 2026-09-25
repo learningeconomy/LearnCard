@@ -19,6 +19,8 @@ import {
     generateEscrowResumeToken,
     hashEscrowResumeToken,
     findPendingEscrowHoldByAuthProvider,
+    findEscrowHoldById,
+    recordEscrowHoldNotification,
     reserveEscrowPinAttempt,
     refundEscrowPinAttempt,
     type EscrowBlob,
@@ -206,5 +208,21 @@ describe('escrow model invariants', () => {
         expect(generateEscrowResumeToken()).not.toBe(token);
         expect(hashEscrowResumeToken(token)).toMatch(/^[0-9a-f]{64}$/);
         expect(hashEscrowResumeToken(token)).not.toBe(token);
+    });
+    it('records notifications by appending to the array without disturbing other fields', async () => {
+        const hold = await createHold();
+        await recordEscrowHoldNotification(hold._id, 'started');
+        let stored = await findEscrowHoldById(hold._id);
+        expect(stored?.notifications).toHaveLength(1);
+        expect(stored?.notifications[0]).toMatchObject({ kind: 'started' });
+        expect(stored?.notifications[0].sentAt).toBeInstanceOf(Date);
+        expect(stored?.status).toBe('pending');
+        await recordEscrowHoldNotification(hold._id, 'cancelled');
+        stored = await findEscrowHoldById(hold._id);
+        expect(stored?.notifications.map(entry => entry.kind)).toEqual(['started', 'cancelled']);
+        // A missing hold id is a no-op, never a throw.
+        await expect(
+            recordEscrowHoldNotification('does-not-exist', 'completed')
+        ).resolves.toBeUndefined();
     });
 });

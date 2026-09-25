@@ -229,6 +229,7 @@ describe('A6 escrow recovery', () => {
         expect(stored?.resumeTokenHash === hashEscrowResumeToken(resume(first).resumeToken)).toBe(
             true
         );
+        expect(stored?.cancelTokenHash).toMatch(/^[0-9a-f]{64}$/);
         expect(stored?.identityProofType).toBe('auth-token');
     });
 

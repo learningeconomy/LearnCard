@@ -12,6 +12,7 @@ import { environment } from '@environment';
 import { t, openRoute, didAndChallengeRoute } from '@routes';
 import { createRecoverySession } from '@cache/recoverySessions';
 import { decryptAuthShare } from '@helpers/shareEncryption.helpers';
+import { generateEscrowCancelToken, hashEscrowCancelToken } from '@helpers/escrowCancelToken';
 import {
     EscrowEnvelopeValidator,
     EscrowBlobValidator,
@@ -455,6 +456,7 @@ export const escrowRouter = t.router({
                     });
             }
             const resumeToken = generateEscrowResumeToken();
+            const cancelToken = generateEscrowCancelToken();
             let hold: EscrowHold;
             try {
                 hold = await createEscrowHold({
@@ -473,6 +475,7 @@ export const escrowRouter = t.router({
                     releasePolicy: input.releasePolicy,
                     clientEphemeralPublicKey: input.clientEphemeralPublicKey,
                     resumeTokenHash: hashEscrowResumeToken(resumeToken),
+                    cancelTokenHash: hashEscrowCancelToken(cancelToken),
                     requestIp: ctx.clientIp,
                 });
             } catch (error) {
@@ -508,7 +511,7 @@ export const escrowRouter = t.router({
                     message: 'Recovery could not be started.',
                 });
             }
-            void notifyEscrowHoldEvent({ kind: 'started', hold, userKey });
+            void notifyEscrowHoldEvent({ kind: 'started', hold, userKey, cancelToken });
             return {
                 ...serializeHold(hold),
                 status: 'pending' as const,
