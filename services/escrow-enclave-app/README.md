@@ -3,7 +3,8 @@
 Rust scaffold for LearnCard's attested escrow recovery service (P1.1). **Not a
 working enclave or recovery server:** both launch modes log "not yet implemented"
 and exit successfully without binding a socket. Crypto primitives (P1.2) and NSM
-drivers (P1.3) exist, but policy and server integration remain unimplemented.
+drivers (P1.3) and the release decision core (P1.7) exist, but server and
+authenticated current-enrollment integration remain unimplemented.
 Do not deploy this scaffold for recovery.
 
 ## Target architecture
@@ -25,8 +26,8 @@ remaining for the parent).
 
 Implemented primitives: `crypto` (P1.2), `nsm`/`NsmDriver` (P1.3),
 `kms`/`KmsClient` (P1.4), `time`/`TimeSource` (P1.5),
-`ledger`/`HeadStore` (P1.6). Future modules: `policy` (P1.7) and
-`server` (P1.8). Native trait-based fakes will exercise the same policy logic;
+`ledger`/`HeadStore` (P1.6), `policy` (P1.7). Future module:
+`server` (P1.8). Native trait-based fakes exercise the same policy logic;
 the NSM, KMS and time traits and fakes are available now.
 
 ## Ledger (P1.6)
@@ -198,6 +199,114 @@ Strict rollback prevention needs quorum replicas / an independent live freshness
 authority (D3 option B, deferred). Audit storage is not a live freshness oracle.
 `fake-ledger` exposes `FakeHeadStore` only for tests/explicit emulation; it provides
 conditional append semantics and intentional history replacement for attacks.
+
+## Release policy
+
+`Policy` owns the unsealed keys and one non-evicting `Ledger`. Keep one instance
+per key for the entire process lifetime, under the server's serialized lock;
+never rebuild it after an ambiguous write. Its `HeadStore`, `TimeSource` and
+`EnrollmentSource` drivers are injected; the tests use fakes, not a separate
+software policy. No server implementation or transport adapter is included.
+
+### Current enrollment is a required trust boundary
+
+**Production integration is blocked until an authenticated, fresh
+`EnrollmentSource` exists.** `current(tenant, decrypted_did)` must independently
+authenticate the current `{epoch, share_version, blob_hash}` and serialize
+rotation with policy operations. Missing/unavailable authority must refuse the
+operation. There is deliberately no default or host-Mongo implementation.
+Do not implement this trait by returning the request's epoch, trusting a host
+database response, or verifying only the signature of a replayable snapshot.
+Possession of an encrypted blob proves neither DID ownership nor that it is the
+latest enrollment: anyone knows the public encryption key. An independent live
+authority/quorum or a separately reviewed authenticated enrollment protocol is
+needed; that protocol is not supplied by the committed crypto/time/ledger APIs.
+The tenant passed to `Policy::new` is enclave startup configuration, not a host
+request parameter. Measurement must likewise come from verified NSM startup.
+
+### Operations and decisions
+
+| Operation      | Required checks                                                                                                                          | Persisted result before returning                                                                                                                                   |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `verify_blob`  | Authenticated envelope/key ID, positive u32 version; compare decrypted DID/version to expectations                                       | None; `{ok, has_pin}`, or `Blob` for invalid ciphertext/key/plaintext                                                                                               |
+| `create_hold`  | Identity/version, current authenticated enrollment, valid recipient SPKI, unique hold, PIN verifier present for PIN policy, trusted time | `HoldCreated`, then authenticated full-chain readback                                                                                                               |
+| `release_hold` | All signed hold fields and current blob/epoch match; live, uncancelled/unreleased hold; trusted `lo >= createdHi + 604800000`            | `Released` + readback, **then** seal to the signed recipient                                                                                                        |
+| `release_pin`  | Same bindings/live hold; PIN policy, verifier and proof present; enrollment budget available                                             | Reserve + readback → fixed-size `subtle` comparison → success/failure + readback; success adds `Released` + readback before sealing; tenth failure adds `PinLocked` |
+| `cancel_hold`  | Same authenticated hold/current enrollment; live hold                                                                                    | `Cancelled` + readback; subsequent release refused                                                                                                                  |
+
+`release` dispatches on the signed policy. A PIN hold never becomes a delayed
+hold, even after seven days; a delayed hold ignores any PIN proof. The duration
+is a compile-time constant, with **no environment/host/test override**. Tests
+advance fake authenticated intervals instead. Every time addition uses checked
+arithmetic; times/epochs remain within JavaScript's safe integer range. Time
+must not move the ledger lower bound backwards even for overlapping intervals.
+Roughtime's signed processing-time/delayed-delivery limitation described below
+still applies: this comparison is not proof of seven real days since receipt.
+
+All holds in an enrollment share ten lifetime reservations. Success does not
+reset the budget; only authenticated rotation to a new epoch starts a new one.
+Malformed bounded proofs consume an attempt and produce `PinMismatch`; absent
+proofs produce `Policy`, oversized proofs are rejected before allocation, and
+locked requests do not compare. PIN request commitments are secret-keyed via
+the ledger API, never public dictionary hashes. Releases explicitly strip and
+zeroize the verifier before invoking crypto; it never appears in the sealed
+client plaintext or error detail. Errors are only `wire::ErrorCode`: `Policy`,
+`PinMismatch`, `Blob`, `Unavailable`, `Ledger`, `Time`. Storage Conflict and
+Unavailable both map to `Unavailable`; all time-source errors map to `Time`.
+
+### Signed hold format and P1.8 wire integration
+
+Without changing the existing `wire.rs` scaffold, policy introduces
+`SignedHoldRecord { hold: wire::HoldRecord, holdDurationMs, ledgerSeq }` (camelCase
+JSON). P1.8/P4.2 must adapt their DTOs to carry this whole object, plus bounded
+request IDs and cancellation. The old `wire::Request` is **not yet a complete
+policy transport contract**. Do not discard the two new signed fields or accept
+legacy unsigned `status`, `now`, `releaseAfter`, duration or counter inputs.
+
+The hold's `signature` is standard base64 of the existing ledger's 64-byte low-S
+P-256 signature on the `HoldCreated` record at `ledgerSeq`. That record's signed
+`payloadHash` is SHA-256 of compact UTF-8 JSON of this fixed-order array:
+
+```text
+["learncard-hold-v1", tenant, holdId, sha256Hex(UTF8(did)), shareVersion,
+ blobHash, enrollmentEpoch, releasePolicy, clientEphemeralPublicKey,
+ createdLo, createdHi, holdDurationMs, policyVersion, ledgerSeq]
+```
+
+This is a commitment inside the canonical-CBOR signed ledger record, **not** an
+ECDSA signature directly over the array. Verification authenticates the entire
+current chain, requires that exact record/signature/commitment/time/hold match,
+and checks terminal state. A standalone signature or signed old chain is not
+sufficient. P1.8 must attest the ledger public key; a parent-supplied public key
+is not trusted. `blobHash` is lowercase SHA-256 hex of compact serde JSON of the
+authenticated `EscrowEnvelope`, in its declared field order: version, algorithm,
+keyId, ephemeralPublicKey, salt, iv, ciphertext. JSON host key order is irrelevant.
+Identifiers are bounded ASCII; policy reserves prefix space (112 bytes maximum)
+within the ledger's 128-byte identifiers. Create/PIN/release/cancel/lock operation IDs
+are domain-prefixed and commitments bind the signed hold hash and caller ID.
+
+### Idempotency decision: refuse release replay
+
+Once `Released` is observed, **every retry is refused**, including an identical
+request, after reboot, or after the host lost the response. No second append or
+seal occurs. This deliberately favors a simple terminal authorization boundary
+over availability: a crash after append/readback but before returning ciphertext
+burns the hold. The client must start a new hold (and a new wait or PIN attempt);
+the enrollment PIN budget is not restored. Operators must not delete history or
+restart to clear high-water marks. Host adapters must not silently retry releases.
+Creating an existing hold and cancelling a terminal hold are also refused.
+
+A PIN request whose reservation was persisted before a crash permanently spends
+that attempt; the same request ID never compares again. Duplicate failures or
+successes are refused **before computing any proof-dependent commitment**: the
+ledger's distinct duplicate/mismatched-payload errors must not become an unmetered
+proof-equality oracle. A success without its subsequent `Released` record is
+not resumable. Use a new hold if that success stranded the old hold. Ledger D3
+limitations are unchanged: fresh boot/parallel-instance stale-history replay is
+not globally prevented, readback cannot prove durable storage, and suppressed
+cancellation never reaches this decision core. Cancellation intent authentication
+belongs to the caller; a malicious parent can already deny service. Real
+durability/audit and independent monitor/kill-switch integration remain required.
 
 ## Authenticated time (P1.5)
 

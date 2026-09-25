@@ -1,4 +1,4 @@
-//! Escrow enclave primitives. Attestation, release policy, and transport remain scaffolds.
+//! Escrow enclave primitives and decision core. Production driver/transport integration is pending.
 
 /// P-256 ECDH, HKDF-SHA256, and AES-GCM envelope compatibility (P1.2).
 pub mod crypto;
@@ -8,10 +8,10 @@ pub mod kms;
 pub mod ledger;
 /// Nitro attestation drivers and explicitly unverified document parsing (P1.3).
 pub mod nsm;
+/// Signed hold creation, blob validation, and hold/PIN release decisions (P1.7).
+pub mod policy;
 /// Signed Roughtime intervals and the future TimeSource abstraction (P1.5).
 pub mod time;
-/// Signed hold creation, blob validation, and hold/PIN release decisions (P1.7).
-pub mod policy {}
 /// Identical JSON transport over Linux vsock or local emulation TCP (P1.8).
 pub mod server {}
 pub mod wire;
