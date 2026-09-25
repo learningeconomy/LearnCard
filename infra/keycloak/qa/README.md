@@ -154,7 +154,7 @@ The existing `.github/workflows/staging-health-check.yml` retains UptimeRobot an
 its triggers. Added checks always assert public admin 403 and fetch discovery's
 same-origin JWKS with nonempty keys. Discovery/JWKS failure warns until repository
 variable `KEYCLOAK_STAGING_REALM_LIVE=true`, then fails. This is not a scheduled
-production synthetic sign-in monitor (that remains a documented placeholder).
+production synthetic sign-in monitor; no scheduled publisher or alarm is provisioned.
 
 ```bash
 shellcheck infra/keycloak/qa/alarm-*.sh

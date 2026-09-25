@@ -13,11 +13,6 @@ output "backup_vault_arns" {
   value       = concat(aws_backup_vault.keycloak[*].arn, aws_backup_vault.copy[*].arn)
 }
 
-output "synthetic_signin_alarm_enabled" {
-  description = "Always false until the synthetic sign-in publisher and alarm are commissioned"
-  value       = var.synthetic_signin_alarm_placeholder
-}
-
 output "alb_dns_name" {
   description = "Public ALB DNS name"
   value       = aws_lb.keycloak.dns_name

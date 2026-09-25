@@ -498,10 +498,9 @@ its DEBUG default; coordinate that setting with the realm/image owner. JSON stdo
 already flows through awslogs. Saved queries find failed logins by IP and broker
 errors. ALB logs live in S3, so no misleading CloudWatch query for ALB 5xx paths is added.
 
-`synthetic_signin_alarm_placeholder` must remain false: no scheduled publisher or
-sign-in alarm exists yet. The QA driver and discovery/JWKS workflow are not a
-5-minute production synthetic alarm. Commission that separately after the realm
-exists. Repo variable `KEYCLOAK_STAGING_REALM_LIVE=true` makes discovery/JWKS failures
+No scheduled sign-in publisher or alarm is provisioned. The QA driver and
+discovery/JWKS workflow are not a 5-minute production synthetic alarm; commission
+that separately. Repo variable `KEYCLOAK_STAGING_REALM_LIVE=true` makes discovery/JWKS failures
 fatal in the existing staging health workflow; `/admin/` must always return 403.
 
 ### Backup and live gates
