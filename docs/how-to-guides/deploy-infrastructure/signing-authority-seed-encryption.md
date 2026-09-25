@@ -53,7 +53,7 @@ try {
             { phase: process.env.SA_MIGRATION_PHASE, batchSize: 50 },
             { encryptedWritesEnabled: environment.SA_SEED_ENCRYPT_WRITES }
         );
-        if (!result.done && result.processed === 0) throw new Error("No progress");
+        if (!result.done && result.processed === 0 && !result.rescanRequired) throw new Error("No progress");
     } while (!result.done);
 } catch (error) {
     console.error(error instanceof SeedMigrationError ? error.category : "operation_failed");
@@ -110,11 +110,13 @@ bun run migrate:sa-seeds --function-name "$SA_MIGRATION_FUNCTION" --region "$SA_
 
 Use `--batch-size 1` through `100` to adjust load, or `--one-batch` to stop after one invocation. The default batch size is 50. The operator script requires AWS CLI v2 and uses its normal credential/profile configuration. It invokes synchronously with a timeout suitable for the 15-minute function.
 
+Review the production `dry-run` total before `prepare`. For large collections, measure a few bounded batches in staging to choose a batch size and maintenance window. Full count reconciliation runs at phase start and at the end of an ordered scan, not after every batch. Intermediate results contain the last reconciliation snapshot with `countsReconciled: false`; use `processed` for batch progress. A completed phase always returns fresh counts with `countsReconciled: true`.
+
 - **Prepare:** conditionally adds ciphertext to legacy records, retaining the original seed. Reads the persisted envelope back and verifies it decrypts to exactly the original seed. Rerunning does not replace completed envelopes.
-- **Verify:** decrypts all records, compares any retained plaintext, and writes ciphertext-only receipts into `signingauthorityseedverification`. Receipts are matched against current document values, so new or changed documents remain pending. A completed pass records its counts and verification epoch in `signingauthorityseedmigration`.
+- **Verify:** decrypts all records, compares any retained plaintext, and writes ciphertext-only receipts into `signingauthorityseedverification`. An indexed BSON ID checkpoint bounds each batch. At the end of the scan, a full comparison against current records catches new or changed documents behind the checkpoint; `rescanRequired: true` resets the scan and the CLI continues automatically. A completed pass records its reconciled counts and verification epoch in `signingauthorityseedmigration`.
 - **Purge:** requires that completed verification epoch and `encrypted == total`, with no malformed or legacy-only rows. Rechecks the receipt and decrypts every retained seed before a conditional `$unset`. A changed record blocks deletion and requires another verification pass. New encrypted-only authorities can continue to be created.
 
-Each batch logs `total`, `encrypted`, `legacyOnly`, `malformed`, `plaintextRemaining`, and its processed count. Any failure exits nonzero and closes the purge gate. Correct the underlying error, rerun `verify`, then resume `purge`. Never bypass the gate by manually editing its state document. An invocation killed by a timeout can leave a lease for up to 16 minutes; wait for expiry and rerun. Ordinary interrupted client invocations may still be executing in Lambda.
+Each batch logs `total`, `encrypted`, `legacyOnly`, `malformed`, `plaintextRemaining`, `countsReconciled`, and its processed count. The purge gate is cleared before processing and restored only by a completed verification or a successful purge batch. On failure, correct the underlying error, rerun `verify`, then resume `purge`. Never bypass the gate by manually editing its state document. Failed failure-checkpoint or lease-release writes are logged separately without replacing the original error. If releasing the lease fails, even after a successful batch, or an invocation is killed by a timeout, wait up to 16 minutes for expiry before retrying. Ordinary interrupted client invocations may still be executing in Lambda.
 
 Direct MongoDB checks after purge:
 

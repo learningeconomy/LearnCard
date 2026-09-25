@@ -21,6 +21,10 @@ export interface SeedMigrationResult {
     done: boolean;
     processed: number;
     counts: SeedMigrationCounts;
+    /** False for an intermediate batch: counts are the last full reconciliation snapshot. */
+    countsReconciled: boolean;
+    /** A final sweep found work inserted/changed behind the saved cursor. */
+    rescanRequired?: boolean;
 }
 
 /** Read the historical Mongo shape without coercing BSON IDs or changing metadata. */
@@ -43,9 +47,11 @@ export interface SeedMigrationState {
     processed?: number;
     counts?: SeedMigrationCounts;
     updatedAt?: Date;
+    /** Last processed BSON ID, scoped to phase/epoch; final reconciliation rechecks earlier IDs. */
+    cursor?: string | ObjectId;
 }
 
-/** Ciphertext-only receipt: exact comparisons make changed rows pending again without a cursor. */
+/** Ciphertext-only receipt: exact comparisons make changed rows pending during the final sweep. */
 export interface SeedMigrationReceipt extends EncryptedSigningAuthoritySeed {
     _id: string | ObjectId;
     epoch: string;

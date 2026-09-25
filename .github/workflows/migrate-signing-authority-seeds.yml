@@ -134,6 +134,9 @@ jobs:
                       echo
                       echo "### Final batch"
                       echo
+                      echo 'Counts are the last full reconciliation snapshot unless `countsReconciled` is true.'
+                      jq -r '"Counts reconciled in this batch: `\(.countsReconciled)`"' <<< "$LAST_RESULT"
+                      echo
                       echo "| Done | Processed | Total | Encrypted | Legacy only | Malformed | Plaintext remaining |"
                       echo "| --- | ---: | ---: | ---: | ---: | ---: | ---: |"
                       jq -r '"| `\(.done)` | \(.processed) | \(.counts.total) | \(.counts.encrypted) | \(.counts.legacyOnly) | \(.counts.malformed) | \(.counts.plaintextRemaining) |"' <<< "$LAST_RESULT"

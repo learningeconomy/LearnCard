@@ -83,13 +83,19 @@ try {
         }
         console.log(JSON.stringify(result));
         done = result.done === true;
-        if (!done && result.processed === 0) {
+        if (!done && result.processed === 0 && !result.rescanRequired) {
             console.error('No progress in this batch. Inspect the function logs before retrying.');
             process.exitCode = 1;
             break;
         }
     } while (!done && !values['one-batch']);
-} catch {
+} catch (error) {
+    // CLI diagnostics describe invocation/auth/transport failures. Never print the whole
+    // exec error: stdout and the Lambda response are handled separately above.
+    if (typeof error.stderr === 'string' || Buffer.isBuffer(error.stderr)) {
+        const diagnostic = error.stderr.toString().trim();
+        if (diagnostic) console.error(diagnostic);
+    }
     console.error(
         'AWS invocation failed. Check your credentials, region, and function name; rerun to resume.'
     );

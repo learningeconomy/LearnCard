@@ -1,4 +1,4 @@
-import { ObjectId } from 'mongodb';
+import { Collection, ObjectId } from 'mongodb';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { client, mongodb } from '@mongo';
 import { SIGNING_AUTHORITIES_COLLECTION } from '@models';
@@ -227,5 +227,143 @@ describe('signing-authority seed migration', () => {
         );
         await finish('verify');
         await finish('purge');
+    });
+
+    it('reconciles only at scan boundaries and resumes across string and BSON IDs', async () => {
+        await authorities.insertMany([
+            legacy('a'),
+            legacy('b'),
+            legacy(new ObjectId()),
+            legacy(new ObjectId()),
+        ]);
+        const aggregate = vi.spyOn(Collection.prototype, 'aggregate');
+        for (const phase of ['prepare', 'verify', 'purge'] as const) {
+            aggregate.mockClear();
+            const first = await batch(phase);
+            expect(first).toMatchObject({ done: false, processed: 1, countsReconciled: false });
+            expect(
+                await mongodb.collection(SEED_MIGRATION_STATE_COLLECTION).findOne({})
+            ).toHaveProperty('cursor', 'a');
+            let result = first;
+            while (!result.done) result = await batch(phase);
+            expect(result.countsReconciled).toBe(true);
+            const pipelines = aggregate.mock.calls.map(([pipeline]) => pipeline!);
+            expect(pipelines.filter(pipeline => pipeline[0]?.$group)).toHaveLength(2);
+            expect(pipelines.filter(pipeline => pipeline[0]?.$lookup)).toHaveLength(
+                phase === 'verify' ? 1 : 0
+            );
+        }
+        expect(await countSeedMigrationDocuments(mongodb)).toMatchObject({
+            total: 4,
+            encrypted: 4,
+            plaintextRemaining: 0,
+        });
+    });
+
+    it('rechecks inserts and modified envelopes behind the verification cursor', async () => {
+        await authorities.insertMany([legacy('b'), legacy('c')]);
+        await finish('prepare');
+        await batch('verify');
+        await insertEncrypted('a');
+        const changed = { ...legacy('b'), name: 'renamed' };
+        await authorities.updateOne(
+            { _id: 'b' },
+            {
+                $set: {
+                    name: changed.name,
+                    ...(await seedEncryption.encrypt(seed, getSeedIdentity(changed))),
+                },
+            }
+        );
+        await batch('verify');
+        expect(await batch('verify')).toMatchObject({
+            done: false,
+            processed: 0,
+            countsReconciled: true,
+            rescanRequired: true,
+        });
+        expect(
+            await mongodb.collection(SEED_MIGRATION_STATE_COLLECTION).findOne({})
+        ).not.toHaveProperty('verifiedEpoch');
+        await finish('verify');
+        expect(
+            await mongodb
+                .collection(SEED_MIGRATION_RECEIPTS_COLLECTION)
+                .findOne({ _id: 'b' } as never)
+        ).toHaveProperty('name', 'renamed');
+        await finish('purge');
+        expect(await authorities.countDocuments({ seed: { $exists: true } })).toBe(0);
+    });
+
+    it('resumes after yielding to the invocation time budget', async () => {
+        await authorities.insertMany([legacy('a'), legacy('b')]);
+        const remainingTime = vi.fn().mockReturnValueOnce(60_000).mockReturnValue(10_000);
+        expect(
+            await runSeedMigrationBatch(
+                mongodb,
+                { phase: 'prepare', batchSize: 10 },
+                { encryptedWritesEnabled: true, remainingTime }
+            )
+        ).toMatchObject({ done: false, processed: 1, countsReconciled: false });
+        expect(
+            await mongodb.collection(SEED_MIGRATION_STATE_COLLECTION).findOne({})
+        ).toHaveProperty('cursor', 'a');
+        await finish('prepare');
+        await finish('verify');
+        await finish('purge');
+        expect(await authorities.countDocuments({ seed: { $exists: true } })).toBe(0);
+    });
+
+    it.each(['checkpoint', 'lease', 'both'])(
+        'preserves the original failure when %s cleanup fails',
+        async failing => {
+            await authorities.insertOne(legacy());
+            await finish('prepare');
+            await finish('verify');
+            vi.spyOn(seedEncryption, 'decrypt').mockRejectedValueOnce(
+                new SeedEncryptionError('kms_unavailable', 'request-123')
+            );
+            const updateOne = Collection.prototype.updateOne;
+            vi.spyOn(Collection.prototype, 'updateOne').mockImplementation(function (...args) {
+                const update = args[1];
+                if (
+                    this.collectionName === SEED_MIGRATION_STATE_COLLECTION &&
+                    ((failing !== 'lease' && update.$set?.status === 'failed') ||
+                        (failing !== 'checkpoint' && update.$unset?.leaseOwner !== undefined))
+                ) {
+                    throw new Error(seed);
+                }
+                return updateOne.apply(this, args);
+            });
+            await expect(batch('purge')).rejects.toMatchObject({ category: 'kms_unavailable' });
+            const state = await mongodb.collection(SEED_MIGRATION_STATE_COLLECTION).findOne({});
+            expect(state).not.toHaveProperty('verifiedEpoch');
+            expect(await authorities.countDocuments({ seed: { $exists: true } })).toBe(1);
+            expect(console.error).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    category: 'kms_unavailable',
+                    awsRequestId: 'request-123',
+                })
+            );
+            expect(JSON.stringify(vi.mocked(console.error).mock.calls)).not.toContain(seed);
+        }
+    );
+
+    it('logs a failed lease release without replacing a successful batch result', async () => {
+        await authorities.insertOne(legacy());
+        const updateOne = Collection.prototype.updateOne;
+        vi.spyOn(Collection.prototype, 'updateOne').mockImplementation(function (...args) {
+            if (
+                this.collectionName === SEED_MIGRATION_STATE_COLLECTION &&
+                args[1].$unset?.leaseOwner !== undefined
+            )
+                throw new Error(seed);
+            return updateOne.apply(this, args);
+        });
+        await expect(batch('prepare')).resolves.toMatchObject({ processed: 1 });
+        expect(console.error).toHaveBeenCalledWith(
+            expect.objectContaining({ operation: 'migration_lease_release' })
+        );
+        await expect(batch('prepare')).rejects.toMatchObject({ category: 'worker_busy' });
     });
 });

@@ -120,8 +120,8 @@ const receiptFor = (
     did: record.did ?? null,
 });
 
-// Query receipts against the CURRENT document, not an offset or a caller-supplied cursor.
-// Inserts before a cursor, restarts, or document changes therefore cannot skip verification.
+// Compare receipts with CURRENT documents. The final full sweep catches inserts and changes
+// behind the batch cursor before granting permission to purge.
 const pendingVerification = (epoch: string): Document[] => [
     {
         $lookup: {
@@ -158,6 +158,17 @@ const pendingVerification = (epoch: string): Document[] => [
     { $project: { _verification: 0 } },
 ];
 
+/** Mongo comparisons are type-bracketed; strings sort before historical ObjectId IDs. */
+const afterCursor = (
+    cursor?: MigrationSigningAuthority['_id']
+): Filter<MigrationSigningAuthority> => {
+    if (cursor === undefined) return {};
+    if (typeof cursor === 'string') {
+        return { $or: [{ _id: { $gt: cursor } }, { _id: { $type: 'objectId' } }] };
+    }
+    return { _id: { $gt: cursor } };
+};
+
 /**
  * Process one idempotent batch. The caller repeats until done. No seed is returned or checkpointed.
  * All writes use majority acknowledgement; purge requires a completed verification epoch.
@@ -184,6 +195,7 @@ export const runSeedMigrationBatch = async (
             done: true,
             processed: 0,
             counts: await countSeedMigrationDocuments(db),
+            countsReconciled: true,
         };
         console.info({ event: 'signing_authority_seed_migration', ...result });
         return result;
@@ -221,7 +233,8 @@ export const runSeedMigrationBatch = async (
     let current: MigrationSigningAuthority | undefined;
     let processed = 0;
     try {
-        const countsBefore = await countSeedMigrationDocuments(db);
+        const resuming = state.phase === phase && state.status === 'running' && !!state.counts;
+        const countsBefore = resuming ? state.counts! : await countSeedMigrationDocuments(db);
         if (countsBefore.malformed) throw new SeedMigrationError('malformed_records');
         if (
             phase === 'purge' &&
@@ -238,14 +251,18 @@ export const runSeedMigrationBatch = async (
         const checkpoint: Partial<SeedMigrationState> = {
             phase,
             status: 'running',
+            counts: countsBefore,
             updatedAt: new Date(),
         };
+        let cursor = resuming ? state.cursor : undefined;
         if (phase === 'verify') checkpoint.epoch = epoch;
         await states.updateOne(
             lease,
             {
                 $set: checkpoint,
-                ...(phase !== 'purge' ? { $unset: { verifiedEpoch: '' } } : {}),
+                // A killed worker or failed checkpoint write must not leave purge authorized.
+                // A successful purge batch restores its epoch so the next batch can resume.
+                $unset: { verifiedEpoch: '', ...(!resuming ? { cursor: '' } : {}) },
             },
             { writeConcern }
         );
@@ -254,16 +271,20 @@ export const runSeedMigrationBatch = async (
             phase === 'verify'
                 ? await authorities
                       .aggregate<MigrationSigningAuthority>([
+                          { $match: afterCursor(cursor) },
+                          { $sort: { _id: 1 } },
                           ...pendingVerification(epoch),
                           { $limit: batchSize },
                       ])
                       .toArray()
                 : await authorities
-                      .find(
-                          phase === 'prepare'
+                      .find({
+                          ...afterCursor(cursor),
+                          ...(phase === 'prepare'
                               ? { keyVersion: { $exists: false } }
-                              : { seed: { $exists: true } }
-                      )
+                              : { seed: { $exists: true } }),
+                      })
+                      .sort({ _id: 1 })
                       .limit(batchSize)
                       .toArray();
 
@@ -315,22 +336,32 @@ export const runSeedMigrationBatch = async (
                 if (updated.matchedCount !== 1) throw new SeedMigrationError('document_changed');
             }
             processed += 1;
+            cursor = record._id;
         }
 
-        const counts = await countSeedMigrationDocuments(db);
-        const pending =
-            phase === 'verify'
-                ? Boolean(
-                      await authorities
-                          .aggregate([...pendingVerification(epoch), { $limit: 1 }])
-                          .next()
-                  )
-                : phase === 'prepare'
-                  ? counts.legacyOnly > 0
-                  : counts.plaintextRemaining > 0;
-        const done = !pending;
-        if (counts.malformed || (phase !== 'prepare' && counts.encrypted !== counts.total)) {
-            throw new SeedMigrationError('reconciliation_failed');
+        // Avoid collection-wide reconciliation on every batch. Reconcile after exhausting
+        // the ordered scan; an interrupted/time-limited batch continues at its last success.
+        const countsReconciled = processed === records.length && records.length < batchSize;
+        let counts = countsBefore;
+        let done = false;
+        let rescanRequired = false;
+        if (countsReconciled) {
+            counts = await countSeedMigrationDocuments(db);
+            if (counts.malformed || (phase !== 'prepare' && counts.encrypted !== counts.total)) {
+                throw new SeedMigrationError('reconciliation_failed');
+            }
+            if (phase === 'verify') {
+                rescanRequired = Boolean(
+                    await authorities
+                        .aggregate([...pendingVerification(epoch), { $limit: 1 }])
+                        .next()
+                );
+            } else {
+                rescanRequired =
+                    phase === 'prepare' ? counts.legacyOnly > 0 : counts.plaintextRemaining > 0;
+            }
+            done = !rescanRequired;
+            cursor = undefined;
         }
         await states.updateOne(
             lease,
@@ -339,38 +370,61 @@ export const runSeedMigrationBatch = async (
                     counts,
                     status: done ? 'complete' : 'running',
                     updatedAt: new Date(),
-                    ...(phase === 'verify' && done ? { verifiedEpoch: epoch } : {}),
+                    ...(cursor !== undefined ? { cursor } : {}),
+                    ...((phase === 'verify' && done) || phase === 'purge'
+                        ? { verifiedEpoch: epoch }
+                        : {}),
                 },
                 $inc: { processed },
+                ...(cursor === undefined ? { $unset: { cursor: '' } } : {}),
             },
             { writeConcern }
         );
-        const result = { phase, done, processed, counts };
+        const result = { phase, done, processed, counts, countsReconciled, rescanRequired };
         console.info({ event: 'signing_authority_seed_migration', ...result });
         return result;
     } catch (error) {
         // Clear the purge gate even after partial success; rerun verify before continuing purge.
-        await states.updateOne(
-            lease,
-            {
-                $set: { status: 'failed', updatedAt: new Date() },
-                $unset: { verifiedEpoch: '' },
-            },
-            { writeConcern }
-        );
-        logSeedEncryptionFailure(error, `migration_${phase}`, current);
-        throw new SeedMigrationError(
+        const failure = new SeedMigrationError(
             error instanceof SeedMigrationError
                 ? error.category
                 : error instanceof SeedEncryptionError
                   ? error.category
                   : 'operation_failed'
         );
+        try {
+            await states.updateOne(
+                lease,
+                {
+                    $set: { status: 'failed', updatedAt: new Date() },
+                    $unset: { verifiedEpoch: '', cursor: '' },
+                },
+                { writeConcern }
+            );
+        } catch (checkpointError) {
+            logSeedEncryptionFailure(checkpointError, 'migration_failure_checkpoint', current);
+        }
+        if (error instanceof SeedMigrationError) {
+            console.error({
+                event: 'signing_authority_seed_migration_failure',
+                operation: `migration_${phase}`,
+                recordId: current?._id.toString(),
+                category: failure.category,
+            });
+        } else {
+            logSeedEncryptionFailure(error, `migration_${phase}`, current);
+        }
+        throw failure;
     } finally {
-        await states.updateOne(
-            lease,
-            { $unset: { leaseOwner: '', leaseExpiresAt: '' } },
-            { writeConcern }
-        );
+        try {
+            await states.updateOne(
+                lease,
+                { $unset: { leaseOwner: '', leaseExpiresAt: '' } },
+                { writeConcern }
+            );
+        } catch (releaseError) {
+            // Preserve the operation's result/error. The lease expires after 16 minutes.
+            logSeedEncryptionFailure(releaseError, 'migration_lease_release', current);
+        }
     }
 };
