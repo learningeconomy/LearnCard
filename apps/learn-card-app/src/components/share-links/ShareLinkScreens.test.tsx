@@ -289,14 +289,14 @@ describe('create screen', () => {
             target: { value: 'Learning highlights' },
         });
 
-        expect(screen.getByRole('checkbox', { name: /Require a passcode/ })).not.toBeChecked();
-        expect(screen.getByRole('checkbox', { name: /Notify me when viewed/ })).not.toBeChecked();
+        expect(screen.getByRole('switch', { name: /Require a passcode/ })).not.toBeChecked();
+        expect(screen.getByRole('switch', { name: /Notify me when viewed/ })).not.toBeChecked();
 
-        fireEvent.click(screen.getByRole('checkbox', { name: /Require a passcode/ }));
+        fireEvent.click(screen.getByRole('switch', { name: /Require a passcode/ }));
         fireEvent.change(screen.getByPlaceholderText('At least 4 characters'), {
             target: { value: '2468' },
         });
-        fireEvent.click(screen.getByRole('checkbox', { name: /Notify me when viewed/ }));
+        fireEvent.click(screen.getByRole('switch', { name: /Notify me when viewed/ }));
         fireEvent.click(screen.getByRole('button', { name: /Preview/ }));
         await screen.findByTestId('share-link-preview');
         fireEvent.click(screen.getByRole('button', { name: 'Create private link' }));

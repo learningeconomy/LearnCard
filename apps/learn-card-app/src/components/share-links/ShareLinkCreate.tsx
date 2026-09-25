@@ -787,6 +787,100 @@ export const ShareLinkCreate = ({
                                     </p>
                                 )}
                             </div>
+                            {!editShare && (
+                                <section className="rounded-[20px] border border-grayscale-200 p-5 space-y-4">
+                                    <div className="flex gap-3">
+                                        <IonIcon
+                                            icon={lockClosedOutline}
+                                            className="mt-0.5 text-grayscale-600 shrink-0"
+                                        />
+                                        <div className="flex-1">
+                                            <span className="flex items-center justify-between gap-4">
+                                                <span className="text-sm font-medium text-grayscale-900">
+                                                    {m['shareLinks.passcodeTitle']()}
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    role="switch"
+                                                    aria-label={m['shareLinks.passcodeTitle']()}
+                                                    aria-checked={passcodeEnabled}
+                                                    disabled={fieldsLocked}
+                                                    className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${passcodeEnabled ? 'bg-emerald-600' : 'bg-grayscale-300'}`}
+                                                    onClick={() => {
+                                                        invalidateDraft();
+                                                        setPasscodeEnabled(enabled => !enabled);
+                                                    }}
+                                                >
+                                                    <span
+                                                        aria-hidden="true"
+                                                        className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${passcodeEnabled ? 'translate-x-5' : 'translate-x-0.5'}`}
+                                                    />
+                                                </button>
+                                            </span>
+                                            <span className="block mt-1 text-xs text-grayscale-600 leading-relaxed">
+                                                {m['shareLinks.passcodeHint']()}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    {passcodeEnabled && (
+                                        <label className="block text-xs font-medium text-grayscale-700">
+                                            {m['shareLinks.passcodeLabel']()}
+                                            <input
+                                                type="password"
+                                                minLength={4}
+                                                maxLength={64}
+                                                autoComplete="new-password"
+                                                disabled={fieldsLocked}
+                                                className={`${inputClass} mt-2`}
+                                                value={passcode}
+                                                onChange={event => {
+                                                    invalidateDraft();
+                                                    setPasscode(event.target.value);
+                                                }}
+                                                placeholder={m['shareLinks.passcodePlaceholder']()}
+                                            />
+                                            <span className="block mt-1.5 text-xs font-normal text-grayscale-500">
+                                                {m['shareLinks.passcodeShareHint']()}
+                                            </span>
+                                        </label>
+                                    )}
+                                    <div className="border-t border-grayscale-100 pt-4 flex gap-3">
+                                        <IonIcon
+                                            icon={notificationsOutline}
+                                            className="mt-0.5 text-grayscale-600 shrink-0"
+                                        />
+                                        <div className="flex-1">
+                                            <span className="flex items-center justify-between gap-4">
+                                                <span className="text-sm font-medium text-grayscale-900">
+                                                    {m['shareLinks.viewNotificationsTitle']()}
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    role="switch"
+                                                    aria-label={m[
+                                                        'shareLinks.viewNotificationsTitle'
+                                                    ]()}
+                                                    aria-checked={notifyOnView}
+                                                    disabled={fieldsLocked}
+                                                    className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${notifyOnView ? 'bg-emerald-600' : 'bg-grayscale-300'}`}
+                                                    onClick={() => {
+                                                        invalidateDraft();
+                                                        setNotifyOnView(enabled => !enabled);
+                                                    }}
+                                                >
+                                                    <span
+                                                        aria-hidden="true"
+                                                        className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${notifyOnView ? 'translate-x-5' : 'translate-x-0.5'}`}
+                                                    />
+                                                </button>
+                                            </span>
+                                            <span className="block mt-1 text-xs text-grayscale-600 leading-relaxed">
+                                                {m['shareLinks.viewNotificationsHint']()}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </section>
+                            )}
                             <label className="block text-xs font-medium text-grayscale-700">
                                 {m['shareLinks.title']()}
                                 <input
@@ -869,84 +963,6 @@ export const ShareLinkCreate = ({
                                             : m['shareLinks.neverExpires']()}
                                     </p>
                                 </fieldset>
-                            )}
-                            {!editShare && (
-                                <section className="rounded-[20px] border border-grayscale-200 p-5 space-y-4">
-                                    <div className="flex gap-3">
-                                        <IonIcon
-                                            icon={lockClosedOutline}
-                                            className="mt-0.5 text-grayscale-600 shrink-0"
-                                        />
-                                        <label className="flex-1 cursor-pointer">
-                                            <span className="flex items-center justify-between gap-4">
-                                                <span className="text-sm font-medium text-grayscale-900">
-                                                    {m['shareLinks.passcodeTitle']()}
-                                                </span>
-                                                <input
-                                                    type="checkbox"
-                                                    className="h-5 w-5 accent-emerald-600"
-                                                    checked={passcodeEnabled}
-                                                    disabled={fieldsLocked}
-                                                    onChange={event => {
-                                                        invalidateDraft();
-                                                        setPasscodeEnabled(event.target.checked);
-                                                    }}
-                                                />
-                                            </span>
-                                            <span className="block mt-1 text-xs text-grayscale-600 leading-relaxed">
-                                                {m['shareLinks.passcodeHint']()}
-                                            </span>
-                                        </label>
-                                    </div>
-                                    {passcodeEnabled && (
-                                        <label className="block text-xs font-medium text-grayscale-700">
-                                            {m['shareLinks.passcodeLabel']()}
-                                            <input
-                                                type="password"
-                                                minLength={4}
-                                                maxLength={64}
-                                                autoComplete="new-password"
-                                                disabled={fieldsLocked}
-                                                className={`${inputClass} mt-2`}
-                                                value={passcode}
-                                                onChange={event => {
-                                                    invalidateDraft();
-                                                    setPasscode(event.target.value);
-                                                }}
-                                                placeholder={m['shareLinks.passcodePlaceholder']()}
-                                            />
-                                            <span className="block mt-1.5 text-xs font-normal text-grayscale-500">
-                                                {m['shareLinks.passcodeShareHint']()}
-                                            </span>
-                                        </label>
-                                    )}
-                                    <div className="border-t border-grayscale-100 pt-4 flex gap-3">
-                                        <IonIcon
-                                            icon={notificationsOutline}
-                                            className="mt-0.5 text-grayscale-600 shrink-0"
-                                        />
-                                        <label className="flex-1 cursor-pointer">
-                                            <span className="flex items-center justify-between gap-4">
-                                                <span className="text-sm font-medium text-grayscale-900">
-                                                    {m['shareLinks.viewNotificationsTitle']()}
-                                                </span>
-                                                <input
-                                                    type="checkbox"
-                                                    className="h-5 w-5 accent-emerald-600"
-                                                    checked={notifyOnView}
-                                                    disabled={fieldsLocked}
-                                                    onChange={event => {
-                                                        invalidateDraft();
-                                                        setNotifyOnView(event.target.checked);
-                                                    }}
-                                                />
-                                            </span>
-                                            <span className="block mt-1 text-xs text-grayscale-600 leading-relaxed">
-                                                {m['shareLinks.viewNotificationsHint']()}
-                                            </span>
-                                        </label>
-                                    </div>
-                                </section>
                             )}
                             <p className="text-xs text-grayscale-600 leading-relaxed">
                                 {m['shareLinks.privacyHint']()}
