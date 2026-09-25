@@ -35,8 +35,7 @@ test.describe('Wallet Credentials', () => {
             if (msg.type() === 'error') consoleErrors.push(msg.text());
         });
 
-        // User 1: Re-authenticate with a network profile
-        await waitForAuthenticatedState(page, { profileId: TEST_USER_PROFILE_ID });
+        // User 1 is already authenticated with a network profile by beforeEach.
 
         // User 2: Authenticate and join the network
         const context2 = await browser.newContext({ ignoreHTTPSErrors: true });
@@ -139,12 +138,16 @@ test.describe('Wallet Credentials', () => {
         // Click the badge to open its detail view
         await page2.getByText(TEST_CREDENTIAL_TITLE).first().click();
 
-        // Verify detail view elements (front + back face both have the title, use first())
-        await expect(page2.locator('.vc-card-header-main-title').first()).toContainText(
-            TEST_CREDENTIAL_TITLE,
-            { timeout: 30_000 }
-        );
-        await expect(page2.locator('.issued-by').first()).toBeVisible({ timeout: 30_000 });
+        // Assert on the active detail dialog, not hidden card faces or cached pages.
+        const detailCard = page2.getByRole('dialog').getByRole('group', {
+            name: TEST_CREDENTIAL_TITLE,
+            exact: true,
+        });
+        await expect(detailCard).toBeVisible({ timeout: 30_000 });
+        await expect(
+            detailCard.getByRole('heading', { name: new RegExp(TEST_CREDENTIAL_TITLE) })
+        ).toBeVisible({ timeout: 30_000 });
+        await expect(detailCard.locator('.issued-by')).toBeVisible({ timeout: 30_000 });
 
         await context2.close();
     });
