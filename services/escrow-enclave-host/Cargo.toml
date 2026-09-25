@@ -1,0 +1,43 @@
+[package]
+name = "escrow-enclave-host"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.93"
+publish = false
+
+[workspace]
+resolver = "3"
+
+[dependencies]
+async-trait = "0.1"
+aws-config = { version = "~1.8.18", default-features = false, features = ["rt-tokio", "default-https-client", "behavior-version-latest"] }
+aws-sdk-dynamodb = { version = "~1.116.0", default-features = false, features = ["rt-tokio", "default-https-client", "behavior-version-latest"] }
+aws-sdk-s3 = { version = "~1.137.0", default-features = false, features = ["rt-tokio", "default-https-client", "behavior-version-latest"] }
+aws-credential-types = "1"
+axum = "0.8"
+axum-server = { version = "0.8", default-features = false, features = ["tls-rustls"] }
+base64 = "0.22"
+hex = "0.4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+subtle = "2.6"
+tokio = { version = "1", features = ["full"] }
+zeroize = "1"
+uuid = { version = "1", features = ["v4"] }
+
+[dev-dependencies]
+serde_bytes = "0.11"
+minicbor = { version = "0.26", features = ["std"] }
+tower = { version = "0.5", features = ["util"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+tokio-vsock = "0.7"
+
+[profile.release]
+panic = "abort"
+lto = "thin"
+strip = true
+
+[profile.dev]
+debug = 0
