@@ -12,7 +12,11 @@ import { environment } from '@environment';
 import { t, openRoute, didAndChallengeRoute } from '@routes';
 import { createRecoverySession } from '@cache/recoverySessions';
 import { decryptAuthShare } from '@helpers/shareEncryption.helpers';
-import { generateEscrowCancelToken, hashEscrowCancelToken } from '@helpers/escrowCancelToken';
+import {
+    generateEscrowCancelToken,
+    hashEscrowCancelToken,
+    escrowCancelTokenMatches,
+} from '@helpers/escrowCancelToken';
 import {
     EscrowEnvelopeValidator,
     EscrowBlobValidator,
@@ -34,6 +38,7 @@ import {
     findPendingEscrowHoldByAuthProvider,
     findEscrowHoldById,
     cancelEscrowHold,
+    cancelEscrowHoldByCancelToken,
     completeEscrowHold,
     expireStaleEscrowHolds,
     hashEscrowResumeToken,
@@ -83,6 +88,20 @@ const limitPinCompletion = async (
         });
 };
 
+// Same Redis INCR/EXPIRE per-IP shape as limitPinCompletion, scoped under its
+// own key so cancel-link attempts never share (or exhaust) the PIN budget.
+const limitCancelLinkAttempts = async (clientIp: string | undefined): Promise<void> => {
+    const redis = cache.redis ?? cache.node;
+    const key = `escrow:cancel-link:${clientIp ?? 'unknown'}`;
+    const count = await redis.incr(key);
+    if (count === 1) await redis.expire(key, 60);
+    if (count > 20)
+        throw new TRPCError({
+            code: 'TOO_MANY_REQUESTS',
+            message: pinThrottledMessage,
+        });
+};
+
 const lockPin = async (hold: EscrowHold, userKey: MongoUserKeyType): Promise<void> => {
     const disabled = await disableEscrowPin(
         hold.authProvider,
@@ -116,6 +135,12 @@ const ensureHoldIndexes = async (): Promise<void> => {
     await holdIndexes;
 };
 const successValidator = z.object({ success: z.literal(true) });
+const cancelByLinkInput = z
+    .object({
+        holdId: z.string().uuid(),
+        token: z.string().regex(/^[0-9a-f]{64}$/),
+    })
+    .strict();
 const resumeInput = z
     .object({
         holdId: z.string().uuid(),
@@ -553,6 +578,34 @@ export const escrowRouter = t.router({
             const hold = pending && (await cancelEscrowHold(pending._id, 'did'));
             if (hold) void notifyEscrowHoldEvent({ kind: 'cancelled', hold, userKey });
             return { success: true as const, cancelled: Boolean(hold) };
+        }),
+
+    // No DID auth is possible from an email link, so this is deliberately an
+    // openRoute guarded only by the single-use cancelToken. Every failure
+    // path — missing hold, wrong token, already used, not pending — returns
+    // the identical { cancelled: false } shape so a link can't be used to
+    // probe hold state (mirrors resumeToken's uniform-failure behaviour in
+    // getStatus/completeRecovery above).
+    cancelRecoveryByLink: openRoute
+        .meta({ openapi: { method: 'POST', path: '/keys/escrow/cancel-link', tags: ['Keys'] } })
+        .input(cancelByLinkInput)
+        .output(z.object({ cancelled: z.boolean() }))
+        .mutation(async ({ input, ctx }) => {
+            await limitCancelLinkAttempts(ctx.clientIp);
+            const hold = await findEscrowHoldById(input.holdId);
+            if (!hold || !escrowCancelTokenMatches(hold, input.token)) return { cancelled: false };
+            const cancelled = await cancelEscrowHoldByCancelToken(
+                hold._id,
+                hashEscrowCancelToken(input.token)
+            );
+            if (!cancelled) return { cancelled: false };
+            const userKey = await findUserKeyByAuthProvider(
+                cancelled.authProvider.type,
+                cancelled.authProvider.id
+            );
+            if (userKey)
+                void notifyEscrowHoldEvent({ kind: 'cancelled', hold: cancelled, userKey });
+            return { cancelled: true };
         }),
 
     completeRecovery: openRoute

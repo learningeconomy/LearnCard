@@ -20,7 +20,7 @@ export const EscrowHoldValidator = z.object({
     releasePolicy: z.enum(['hold', 'pin']).default('hold'),
     cancelReason: z.enum(['pin-mismatch', 'pin-locked', 'superseded', 'release-failed']).optional(),
     cancelledAt: z.date().optional(),
-    cancelledBy: z.enum(['did', 'system']).optional(),
+    cancelledBy: z.enum(['did', 'system', 'link']).optional(),
     completedAt: z.date().optional(),
     clientEphemeralPublicKey: z.string().min(1).max(512),
     resumeTokenHash: z.string().regex(/^[0-9a-f]{64}$/),
@@ -162,6 +162,37 @@ export const cancelEscrowHold = async (
                 cancelledAt: now,
                 updatedAt: now,
                 ...(cancelReason ? { cancelReason } : {}),
+            },
+        },
+        { returnDocument: 'after' }
+    );
+};
+/**
+ * Cancels a hold via its single-use cancel-link token. The status transition
+ * and burning the token happen in one conditional update — matching on the
+ * exact `cancelTokenHash` plus `cancelTokenUsedAt` being unset — so two
+ * concurrent clicks on the same link can never both succeed; only the first
+ * `findOneAndUpdate` observes the pre-burn state and wins the CAS.
+ */
+export const cancelEscrowHoldByCancelToken = async (
+    id: string,
+    cancelTokenHash: string
+): Promise<EscrowHold | null> => {
+    const now = new Date();
+    return getEscrowHoldsCollection().findOneAndUpdate(
+        {
+            _id: id,
+            status: 'pending',
+            cancelTokenHash,
+            cancelTokenUsedAt: { $exists: false },
+        },
+        {
+            $set: {
+                status: 'cancelled',
+                cancelledBy: 'link',
+                cancelledAt: now,
+                cancelTokenUsedAt: now,
+                updatedAt: now,
             },
         },
         { returnDocument: 'after' }

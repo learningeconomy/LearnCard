@@ -25,6 +25,7 @@ import {
     storeRecoveryOtp,
 } from '@cache/recoverySessions';
 import { encryptAuthShare } from '@helpers/shareEncryption.helpers';
+import { generateEscrowCancelToken, hashEscrowCancelToken } from '@helpers/escrowCancelToken';
 import {
     createUserKeysIndexes,
     getUserKeysCollection,
@@ -149,6 +150,7 @@ describe('A6 escrow recovery', () => {
             ['/keys/escrow/recover', 'post'],
             ['/keys/escrow/status', 'get'],
             ['/keys/escrow/cancel', 'post'],
+            ['/keys/escrow/cancel-link', 'post'],
             ['/keys/escrow/complete', 'post'],
         ] as const)
             expect(document.paths?.[path]?.[method]).toBeDefined();
@@ -456,6 +458,107 @@ describe('A6 escrow recovery', () => {
         expect(
             (await getClient().escrow.getStatus(resume(started))).hold?.cancelledAt
         ).toBeDefined();
+    });
+
+    describe('escrow.cancelRecoveryByLink', () => {
+        // startRecovery never returns the plaintext cancelToken (it only ever
+        // reaches the user via the P5.4 email), so these tests install a
+        // known token's hash directly, exactly like a real cancelTokenHash
+        // written by createEscrowHold — everything else about the hold comes
+        // from the real startRecovery flow via start().
+        const setCancelToken = async (holdId: string, token: string): Promise<void> => {
+            await getEscrowHoldsCollection().updateOne(
+                { _id: holdId },
+                { $set: { cancelTokenHash: hashEscrowCancelToken(token) } }
+            );
+        };
+
+        it('cancels a pending hold, burns the token, and leaves cancelReason unset', async () => {
+            await enroll();
+            const started = await start();
+            const token = generateEscrowCancelToken();
+            await setCancelToken(started.holdId, token);
+            await expect(
+                getClient().escrow.cancelRecoveryByLink({ holdId: started.holdId, token })
+            ).resolves.toEqual({ cancelled: true });
+            const hold = await findEscrowHoldById(started.holdId);
+            expect(hold).toMatchObject({ status: 'cancelled', cancelledBy: 'link' });
+            expect(hold?.cancelTokenUsedAt).toBeInstanceOf(Date);
+            expect(hold?.cancelReason).toBeUndefined();
+        });
+
+        it('rejects reusing an already-used link', async () => {
+            await enroll();
+            const started = await start();
+            const token = generateEscrowCancelToken();
+            await setCancelToken(started.holdId, token);
+            await getClient().escrow.cancelRecoveryByLink({ holdId: started.holdId, token });
+            await expect(
+                getClient().escrow.cancelRecoveryByLink({ holdId: started.holdId, token })
+            ).resolves.toEqual({ cancelled: false });
+        });
+
+        it('rejects a wrong token without leaking which condition failed, and leaves the hold pending', async () => {
+            await enroll();
+            const started = await start();
+            await setCancelToken(started.holdId, generateEscrowCancelToken());
+            await expect(
+                getClient().escrow.cancelRecoveryByLink({
+                    holdId: started.holdId,
+                    token: generateEscrowCancelToken(),
+                })
+            ).resolves.toEqual({ cancelled: false });
+            expect((await findEscrowHoldById(started.holdId))?.status).toBe('pending');
+        });
+
+        it('rejects a non-pending (already completed) hold', async () => {
+            setDuration(1);
+            await enroll();
+            const started = await start();
+            const token = generateEscrowCancelToken();
+            await setCancelToken(started.holdId, token);
+            await new Promise(resolve => setTimeout(resolve, 5));
+            await getClient().escrow.completeRecovery(resume(started));
+            await expect(
+                getClient().escrow.cancelRecoveryByLink({ holdId: started.holdId, token })
+            ).resolves.toEqual({ cancelled: false });
+        });
+
+        it('rejects an unknown holdId', async () => {
+            await expect(
+                getClient().escrow.cancelRecoveryByLink({
+                    holdId: randomUUID(),
+                    token: generateEscrowCancelToken(),
+                })
+            ).resolves.toEqual({ cancelled: false });
+        });
+
+        it('allows exactly one of two concurrent calls with the same link to succeed', async () => {
+            await enroll();
+            const started = await start();
+            const token = generateEscrowCancelToken();
+            await setCancelToken(started.holdId, token);
+            const results = await Promise.all([
+                getClient().escrow.cancelRecoveryByLink({ holdId: started.holdId, token }),
+                getClient().escrow.cancelRecoveryByLink({ holdId: started.holdId, token }),
+            ]);
+            expect(results.filter(result => result.cancelled)).toHaveLength(1);
+            expect(results.filter(result => !result.cancelled)).toHaveLength(1);
+        });
+
+        it('refuses completeRecovery for a hold cancelled via link', async () => {
+            await enroll();
+            const started = await start();
+            const token = generateEscrowCancelToken();
+            await setCancelToken(started.holdId, token);
+            await getClient().escrow.cancelRecoveryByLink({ holdId: started.holdId, token });
+            await expect(
+                getClient().escrow.completeRecovery(resume(started))
+            ).rejects.toMatchObject({
+                code: 'FORBIDDEN',
+                message: 'This recovery request was cancelled.',
+            });
+        });
     });
 
     it('7: independently enforces waiting periods in the route and the software enclave', async () => {

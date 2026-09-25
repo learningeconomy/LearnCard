@@ -13,6 +13,7 @@ import {
     getEscrowHoldsCollection,
     createEscrowHold,
     cancelEscrowHold,
+    cancelEscrowHoldByCancelToken,
     completeEscrowHold,
     expireStaleEscrowHolds,
     ESCROW_HOLD_STALE_WINDOW_MS,
@@ -208,6 +209,31 @@ describe('escrow model invariants', () => {
         expect(generateEscrowResumeToken()).not.toBe(token);
         expect(hashEscrowResumeToken(token)).toMatch(/^[0-9a-f]{64}$/);
         expect(hashEscrowResumeToken(token)).not.toBe(token);
+    });
+    it('cancels via link token exactly once, rejecting wrong, reused, or hash-less holds', async () => {
+        const cancelTokenHash = 'a'.repeat(64);
+        const hold = await createEscrowHold({
+            authProvider: provider,
+            primaryDid: 'did:key:test',
+            shareVersion: 1,
+            identityProofType: 'auth-token',
+            requestedAt: new Date(),
+            releaseAfter: new Date(),
+            releasePolicy: 'hold',
+            clientEphemeralPublicKey: 'public-key',
+            resumeTokenHash: hashEscrowResumeToken(generateEscrowResumeToken()),
+            cancelTokenHash,
+        });
+        expect(await cancelEscrowHoldByCancelToken(hold._id, 'b'.repeat(64))).toBeNull();
+        const cancelled = await cancelEscrowHoldByCancelToken(hold._id, cancelTokenHash);
+        expect(cancelled).toMatchObject({ status: 'cancelled', cancelledBy: 'link' });
+        expect(cancelled?.cancelTokenUsedAt).toBeInstanceOf(Date);
+        expect(cancelled?.cancelReason).toBeUndefined();
+        // Burned: the hash still matches, but cancelTokenUsedAt no longer $exists-fails the filter.
+        expect(await cancelEscrowHoldByCancelToken(hold._id, cancelTokenHash)).toBeNull();
+        // A pending hold with no cancelTokenHash at all never matches an exact-hash filter.
+        const noToken = await createHold();
+        expect(await cancelEscrowHoldByCancelToken(noToken._id, cancelTokenHash)).toBeNull();
     });
     it('records notifications by appending to the array without disturbing other fields', async () => {
         const hold = await createHold();
