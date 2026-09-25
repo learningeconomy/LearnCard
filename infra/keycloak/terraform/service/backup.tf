@@ -20,7 +20,23 @@ resource "aws_backup_vault" "copy" {
   provider      = aws.backup_copy
   count         = var.enable_aws_backup ? 1 : 0
   name          = "${local.name}-backup-copy"
+  kms_key_arn   = aws_kms_key.backup_copy[0].arn
   force_destroy = false
+}
+
+# Aurora copies cannot use alias/aws/backup. A dedicated CMK also avoids relying
+# on alias/aws/rds having been initialized in the destination region.
+resource "aws_kms_key" "backup_copy" {
+  provider                = aws.backup_copy
+  count                   = var.enable_aws_backup ? 1 : 0
+  description             = "${local.name}-backup-copy"
+  enable_key_rotation     = true
+  deletion_window_in_days = 30
+  tags                    = { Name = "${local.name}-backup-copy", Purpose = "keycloak-backup-copy" }
+  # Default key policy delegates to this account's constrained IAM identities.
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "aws_iam_role" "backup" {
@@ -54,7 +70,7 @@ resource "aws_iam_role_policy" "backup" {
         Condition = { StringEquals = { "aws:ResourceTag/Project" = "learncard-keycloak", "aws:ResourceTag/Environment" = var.environment } }
       },
       {
-        Effect   = "Allow", Action = ["backup:CopyIntoBackupVault", "backup:CopyFromBackupVault"],
+        Effect   = "Allow", Action = ["backup:CopyIntoBackupVault", "backup:CopyFromBackupVault", "backup:DescribeBackupVault"],
         Resource = [aws_backup_vault.keycloak[0].arn, aws_backup_vault.copy[0].arn]
       },
       {
@@ -71,6 +87,14 @@ resource "aws_iam_role_policy" "backup" {
           "ForAnyValue:StringEquals" = { "kms:ResourceAliases" = ["alias/aws/rds", "alias/aws/backup"] },
           Bool                       = { "kms:GrantIsForAWSResource" = "true" }
         }
+      },
+      {
+        Effect   = "Allow", Action = ["kms:DescribeKey", "kms:Decrypt", "kms:GenerateDataKey*", "kms:ReEncrypt*"],
+        Resource = aws_kms_key.backup_copy[0].arn
+      },
+      {
+        Effect    = "Allow", Action = ["kms:CreateGrant"], Resource = aws_kms_key.backup_copy[0].arn,
+        Condition = { Bool = { "kms:GrantIsForAWSResource" = "true" } }
       }
     ]
   })

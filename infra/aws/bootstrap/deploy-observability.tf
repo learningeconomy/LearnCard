@@ -3,6 +3,76 @@
 # cross-region named backup vaults. PassRole to Backup is in deploy-iam.tf.
 data "aws_iam_policy_document" "deploy_observability" {
   statement {
+    sid       = "CreateBackupCopyKey"
+    actions   = ["kms:CreateKey"]
+    resources = ["*"]
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestTag/Project"
+      values   = ["learncard-keycloak"]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestTag/Environment"
+      values   = [var.environment]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestTag/Purpose"
+      values   = ["keycloak-backup-copy"]
+    }
+  }
+  statement {
+    sid = "ManageBackupCopyKey"
+    actions = [
+      "kms:DescribeKey", "kms:GetKeyPolicy", "kms:PutKeyPolicy", "kms:GetKeyRotationStatus",
+      "kms:EnableKeyRotation", "kms:DisableKeyRotation", "kms:UpdateKeyDescription",
+      "kms:ListResourceTags", "kms:TagResource", "kms:UntagResource",
+      "kms:ScheduleKeyDeletion", "kms:CancelKeyDeletion", "kms:GenerateDataKey", "kms:Decrypt"
+    ]
+    resources = ["arn:${local.partition}:kms:*:${local.account_id}:key/*"]
+    condition {
+      test     = "StringEquals"
+      variable = "aws:ResourceTag/Project"
+      values   = ["learncard-keycloak"]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "aws:ResourceTag/Environment"
+      values   = [var.environment]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "aws:ResourceTag/Purpose"
+      values   = ["keycloak-backup-copy"]
+    }
+  }
+  statement {
+    sid       = "BackupCopyKeyGrant"
+    actions   = ["kms:CreateGrant"]
+    resources = ["arn:${local.partition}:kms:*:${local.account_id}:key/*"]
+    condition {
+      test     = "StringEquals"
+      variable = "aws:ResourceTag/Project"
+      values   = ["learncard-keycloak"]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "aws:ResourceTag/Environment"
+      values   = [var.environment]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "aws:ResourceTag/Purpose"
+      values   = ["keycloak-backup-copy"]
+    }
+    condition {
+      test     = "Bool"
+      variable = "kms:GrantIsForAWSResource"
+      values   = ["true"]
+    }
+  }
+  statement {
     sid = "SavedQueriesAndWafLogDelivery"
     # These APIs do not support resource-level authorization. In particular,
     # PutResourcePolicy can affect account log delivery: review this exception.
@@ -13,6 +83,11 @@ data "aws_iam_policy_document" "deploy_observability" {
       "logs:PutResourcePolicy", "logs:DescribeResourcePolicies"
     ]
     resources = ["*"]
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestedRegion"
+      values   = [var.aws_region]
+    }
   }
   statement {
     sid       = "BackupVaultStorage"
@@ -65,6 +140,53 @@ resource "aws_iam_role_policy_attachment" "deploy_observability" {
 # identifiers are awsbackup:job-*, not our namespaced prefix (AWS controls this).
 data "aws_iam_policy_document" "observability_workload_boundary" {
   source_policy_documents = [data.aws_iam_policy_document.workload_boundary.json]
+  # RDS has no tag-on-create discriminator. Reject foreign existing ownership
+  # tags, including attempts to change them to our values. Untagged AWS-generated
+  # snapshot ARNs remain a documented service-controlled namespace exception.
+  dynamic "statement" {
+    for_each = { Project = "learncard-keycloak", Environment = var.environment }
+    content {
+      sid       = "RejectForeignBackupSnapshot${statement.key}"
+      effect    = "Deny"
+      actions   = ["rds:AddTagsToResource", "rds:CopyDBClusterSnapshot", "rds:DeleteDBClusterSnapshot"]
+      resources = ["arn:${local.partition}:rds:*:${local.account_id}:cluster-snapshot:awsbackup:job-*"]
+      condition {
+        test     = "Null"
+        variable = "aws:ResourceTag/${statement.key}"
+        values   = ["false"]
+      }
+      condition {
+        test     = "StringNotEquals"
+        variable = "aws:ResourceTag/${statement.key}"
+        values   = [statement.value]
+      }
+    }
+  }
+  statement {
+    sid       = "BackupCopyKeyUse"
+    actions   = ["kms:DescribeKey", "kms:Decrypt", "kms:GenerateDataKey*", "kms:ReEncrypt*", "kms:CreateGrant"]
+    resources = ["arn:${local.partition}:kms:*:${local.account_id}:key/*"]
+    condition {
+      test     = "ArnEquals"
+      variable = "aws:PrincipalArn"
+      values   = ["${local.iam_prefix}:role/${local.name}-backup"]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "aws:ResourceTag/Project"
+      values   = ["learncard-keycloak"]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "aws:ResourceTag/Environment"
+      values   = [var.environment]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "aws:ResourceTag/Purpose"
+      values   = ["keycloak-backup-copy"]
+    }
+  }
   statement {
     sid       = "BackupGeneratedSnapshots"
     actions   = ["rds:CreateDBClusterSnapshot", "rds:CopyDBClusterSnapshot", "rds:DeleteDBClusterSnapshot", "rds:AddTagsToResource"]
@@ -77,7 +199,7 @@ data "aws_iam_policy_document" "observability_workload_boundary" {
   }
   statement {
     sid       = "BackupSourceVaultCopy"
-    actions   = ["backup:CopyFromBackupVault"]
+    actions   = ["backup:CopyFromBackupVault", "backup:DescribeBackupVault"]
     resources = ["arn:${local.partition}:backup:*:${local.account_id}:backup-vault:${local.name}-*"]
     condition {
       test     = "ArnEquals"
