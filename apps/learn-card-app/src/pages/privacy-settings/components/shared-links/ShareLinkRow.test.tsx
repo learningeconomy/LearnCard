@@ -112,6 +112,59 @@ describe('ShareLinkRow', () => {
         expect(screen.getByText('Update in progress')).toBeTruthy();
     });
 
+    it('disables the copy button while busy', () => {
+        render(
+            <ul>
+                <ShareLinkRow
+                    share={share()}
+                    pending={false}
+                    busy
+                    showViewStats
+                    onOpen={vi.fn()}
+                    onCopy={vi.fn(async () => true)}
+                />
+            </ul>
+        );
+
+        expect(
+            screen.getByRole('button', { name: /copy link for career highlights/i })
+        ).toBeDisabled();
+    });
+
+    it('renders no copy button while the content is still staging (not yet finalized)', () => {
+        render(
+            <ul>
+                <ShareLinkRow
+                    share={share({ contentState: 'staging' })}
+                    pending={false}
+                    busy={false}
+                    showViewStats
+                    onOpen={vi.fn()}
+                    onCopy={vi.fn(async () => true)}
+                />
+            </ul>
+        );
+
+        expect(screen.queryByRole('button', { name: /copy link/i })).toBeNull();
+    });
+
+    it('renders no copy button for an expired share', () => {
+        render(
+            <ul>
+                <ShareLinkRow
+                    share={share({ expiresAt: '2000-01-01T00:00:00.000Z' })}
+                    pending={false}
+                    busy={false}
+                    showViewStats
+                    onOpen={vi.fn()}
+                    onCopy={vi.fn(async () => true)}
+                />
+            </ul>
+        );
+
+        expect(screen.queryByRole('button', { name: /copy link/i })).toBeNull();
+    });
+
     it('shows a "Passcode protected" img for a passcode-protected share', () => {
         render(
             <ul>

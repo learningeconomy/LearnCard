@@ -28,13 +28,13 @@ const CopyIconButton: React.FC<CopyIconButtonProps> = ({
     const timer = useRef<ReturnType<typeof setTimeout>>();
     const mounted = useRef(true);
 
-    useEffect(
-        () => () => {
+    useEffect(() => {
+        mounted.current = true;
+        return () => {
             mounted.current = false;
             clearTimeout(timer.current);
-        },
-        []
-    );
+        };
+    }, []);
 
     const handleClick = async (event: React.MouseEvent) => {
         event.stopPropagation();
@@ -75,7 +75,7 @@ const CopyIconButton: React.FC<CopyIconButtonProps> = ({
             aria-label={label}
             disabled={disabled}
             onClick={event => void handleClick(event)}
-            className={`relative z-10 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[17px] transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-40 ${copied ? 'bg-emerald-50 text-emerald-700' : 'text-grayscale-600 hover:bg-grayscale-100 hover:text-grayscale-900'}`}
+            className={`relative z-10 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[17px] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:cursor-not-allowed disabled:opacity-40 ${copied ? 'bg-emerald-50 text-emerald-700' : 'text-grayscale-600 hover:bg-grayscale-100 hover:text-grayscale-900'}`}
         >
             {icon}
         </button>

@@ -42,7 +42,7 @@ const ShareLinkRow: React.FC<ShareLinkRowProps> = ({
             <button
                 type="button"
                 onClick={() => onOpen(share)}
-                className="min-w-0 flex-1 py-3 ps-4 text-start after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:rounded-[inherit] focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-emerald-500"
+                className="min-w-0 flex-1 py-3 ps-4 text-start after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-emerald-500 group-first:after:rounded-t-[20px] group-last:after:rounded-b-[20px]"
             >
                 <span
                     className={`block truncate text-sm font-medium ${status === 'stopped' ? 'text-grayscale-500' : 'text-grayscale-900'}`}
@@ -66,12 +66,12 @@ const ShareLinkRow: React.FC<ShareLinkRowProps> = ({
                                 />
                             )}
                             <CredentialStackGlyph count={share.selectedCount} />
-                            <span>{meta.credentials}</span>
+                            <span className="shrink-0">{meta.credentials}</span>
                             {meta.hint && (
                                 <>
                                     <span aria-hidden="true">·</span>
                                     <span
-                                        className={`inline-flex items-center gap-1 ${meta.hint.tone === 'soon' ? 'text-amber-800' : ''}`}
+                                        className={`min-w-0 truncate inline-flex items-center gap-1 ${meta.hint.tone === 'soon' ? 'text-amber-800' : ''}`}
                                     >
                                         {meta.hint.tone === 'soon' && (
                                             <IonIcon icon={hourglassOutline} aria-hidden="true" />
@@ -103,7 +103,7 @@ const ShareLinkRow: React.FC<ShareLinkRowProps> = ({
             <IonIcon
                 icon={chevronForward}
                 aria-hidden="true"
-                className="shrink-0 text-grayscale-400 transition-transform group-hover:translate-x-0.5 rtl:-scale-x-100"
+                className="shrink-0 text-grayscale-400 transition-transform group-hover:translate-x-0.5 rtl:-scale-x-100 rtl:group-hover:-translate-x-0.5"
             />
         </li>
     );

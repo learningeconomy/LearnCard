@@ -39,6 +39,20 @@ describe('CopyIconButton', () => {
         expect(document.querySelector('[data-icon="check"]')).toBeNull();
     });
 
+    it('still shows the checkmark after a StrictMode double-mount', async () => {
+        const onCopy = vi.fn(async () => true);
+        render(
+            <React.StrictMode>
+                <CopyIconButton label="Copy" onCopy={onCopy} />
+            </React.StrictMode>
+        );
+
+        await act(async () => {
+            fireEvent.click(screen.getByRole('button', { name: 'Copy' }));
+        });
+        expect(document.querySelector('[data-icon="check"]')).toBeTruthy();
+    });
+
     it('does not bubble the click to the row behind it', async () => {
         const onRow = vi.fn();
         render(

@@ -50,7 +50,7 @@ const ReceivedCollectionRow: React.FC<{
         <button
             type="button"
             onClick={() => onOpen(collection)}
-            className="flex w-full items-center gap-3 py-3 pe-2 ps-4 text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500"
+            className="flex w-full items-center gap-3 py-3 pe-2 ps-4 text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500 group-first:rounded-t-[20px] group-last:rounded-b-[20px]"
         >
             <SenderAvatar collection={collection} />
             <span className="min-w-0 flex-1">
@@ -77,7 +77,7 @@ const ReceivedCollectionRow: React.FC<{
             <IonIcon
                 icon={chevronForward}
                 aria-hidden="true"
-                className="me-2 shrink-0 text-grayscale-400 transition-transform group-hover:translate-x-0.5 rtl:-scale-x-100"
+                className="me-2 shrink-0 text-grayscale-400 transition-transform group-hover:translate-x-0.5 rtl:-scale-x-100 rtl:group-hover:-translate-x-0.5"
             />
         </button>
     </li>
