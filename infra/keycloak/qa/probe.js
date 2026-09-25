@@ -1,89 +1,100 @@
-/**
- * K6 discovery probe for Keycloak health checks.
- * Loops .well-known/openid-configuration and refresh-token grant at 5 rps.
- * Reports non-2xx counts per 10s window.
- *
- * Usage: k6 run infra/keycloak/qa/probe.js -e HOST=auth.staging.learncard.app
- */
-
-/* eslint-disable no-undef */
+/* global __ENV */
 import http from 'k6/http';
-import { check, sleep } from 'k6';
-import { Counter, Trend } from 'k6/metrics';
+import exec from 'k6/execution';
+import { sleep } from 'k6';
+import { Counter, Rate } from 'k6/metrics';
 
 const host = __ENV.HOST || 'auth.staging.learncard.app';
-const protocol = 'https';
-const baseUrl = `${protocol}://${host}`;
-const realm = 'learncard';
-
-// Metrics
-const wellKnownErrors = new Counter('well_known_errors');
-const refreshErrors = new Counter('refresh_errors');
-const wellKnownDuration = new Trend('well_known_duration');
-const refreshDuration = new Trend('refresh_duration');
+if (!/^[a-zA-Z0-9.-]+(:[0-9]+)?$/.test(host)) throw new Error('HOST must be a hostname');
+const base = `https://${host}/realms/${encodeURIComponent(__ENV.REALM || 'learncard')}`;
+const seconds = Number(__ENV.DURATION_SECONDS || 600);
+if (!Number.isInteger(seconds) || seconds < 10 || seconds > 3600)
+    throw new Error('DURATION_SECONDS must be 10..3600');
+const refreshEnabled = Boolean(__ENV.REFRESH_TOKEN && __ENV.CLIENT_ID);
+if (Boolean(__ENV.REFRESH_TOKEN) !== Boolean(__ENV.CLIENT_ID))
+    throw new Error('Set both REFRESH_TOKEN and CLIENT_ID');
+let refreshToken = __ENV.REFRESH_TOKEN;
+const failures = new Counter('non_2xx');
+const requests = new Counter('probe_requests');
+const failureRate = new Rate('probe_failure_rate');
+const thresholds = {};
+for (let window = 0; window < Math.ceil(seconds / 10); window += 1) {
+    thresholds[`non_2xx{window:${window}}`] = ['count>=0'];
+    thresholds[`probe_requests{window:${window}}`] = ['count>=0'];
+    thresholds[`probe_failure_rate{window:${window}}`] = ['rate<=0.01'];
+}
 
 export const options = {
-    stages: [
-        { duration: '30s', target: 5 }, // Ramp to 5 rps
-        { duration: '5m', target: 5 }, // Hold at 5 rps
-        { duration: '30s', target: 0 }, // Ramp down
-    ],
-    thresholds: {
-        'well_known_errors': ['count < 5'],
-        'refresh_errors': ['count < 5'],
+    scenarios: {
+        discovery: {
+            executor: 'constant-arrival-rate',
+            exec: 'discovery',
+            rate: 5,
+            timeUnit: '1s',
+            duration: `${seconds}s`,
+            preAllocatedVUs: 10,
+            maxVUs: 30,
+        },
+        ...(refreshEnabled
+            ? {
+                  refresh: {
+                      executor: 'constant-vus',
+                      exec: 'refresh',
+                      vus: 1,
+                      duration: `${seconds}s`,
+                  },
+              }
+            : {}),
     },
+    thresholds,
 };
 
-/**
- * Fetch JWKS discovery document.
- */
-function probeWellKnown() {
-    const url = `${baseUrl}/realms/${realm}/.well-known/openid-configuration`;
-    const res = http.get(url, { timeout: '10s' });
+const measure = (response, flow) => {
+    const window = Math.floor(exec.instance.currentTestRunDuration / 10000);
+    const tags = { window: String(window), flow };
+    const failed = response.status < 200 || response.status >= 300;
+    requests.add(1, tags);
+    failures.add(failed ? 1 : 0, tags);
+    failureRate.add(failed, tags);
+};
 
-    const success = check(res, {
-        'well-known 200': r => r.status === 200,
-        'well-known has issuer': r => r.json('issuer') !== undefined,
-    });
+export const discovery = () => {
+    measure(
+        http.get(`${base}/.well-known/openid-configuration`, { timeout: '10s', redirects: 0 }),
+        'discovery'
+    );
+};
 
-    wellKnownDuration.add(res.timings.duration);
-    if (!success) {
-        wellKnownErrors.add(1);
+export const refresh = () => {
+    const started = Date.now();
+    const response = http.post(
+        `${base}/protocol/openid-connect/token`,
+        {
+            grant_type: 'refresh_token',
+            client_id: __ENV.CLIENT_ID,
+            refresh_token: refreshToken,
+            ...(__ENV.CLIENT_SECRET ? { client_secret: __ENV.CLIENT_SECRET } : {}),
+        },
+        { timeout: '10s', redirects: 0 }
+    );
+    measure(response, 'refresh');
+    if (response.status === 200) {
+        const tokens = response.json();
+        if (tokens.refresh_token) refreshToken = tokens.refresh_token;
     }
+    // A single refresh VU owns the rotating token; no concurrent token reuse.
+    sleep(Math.max(0, 0.2 - (Date.now() - started) / 1000));
+};
 
-    return res.json('issuer');
-}
-
-/**
- * Attempt refresh-token grant (synthetic user).
- * Requires a pre-existing refresh token or uses a dummy for error testing.
- */
-function probeRefresh(issuer) {
-    const tokenUrl = `${baseUrl}/realms/${realm}/protocol/openid-connect/token`;
-    const payload = {
-        grant_type: 'refresh_token',
-        client_id: 'learncard-app',
-        refresh_token: 'dummy-token-for-probe',
-    };
-
-    const res = http.post(tokenUrl, payload, { timeout: '10s' });
-
-    // Expect 400 (invalid token) or 200 (if token valid); anything else is an error.
-    const success = check(res, {
-        'refresh response': r => r.status === 200 || r.status === 400,
-    });
-
-    refreshDuration.add(res.timings.duration);
-    if (!success) {
-        refreshErrors.add(1);
+export const handleSummary = data => {
+    const windows = [];
+    for (let window = 0; window < Math.ceil(seconds / 10); window += 1) {
+        windows.push({
+            startSeconds: window * 10,
+            requests: data.metrics[`probe_requests{window:${window}}`]?.values.count ?? 0,
+            non2xx: data.metrics[`non_2xx{window:${window}}`]?.values.count ?? 0,
+            failureRate: data.metrics[`probe_failure_rate{window:${window}}`]?.values.rate ?? 0,
+        });
     }
-}
-
-/**
- * Main VU function: probe every 200ms (5 rps).
- */
-export default function () {
-    const issuer = probeWellKnown();
-    probeRefresh(issuer);
-    sleep(0.2); // 200ms = 5 rps
-}
+    return { stdout: `${JSON.stringify({ refreshEnabled, windows }, null, 2)}\n` };
+};

@@ -1,82 +1,86 @@
-/**
- * K6 load test for Keycloak.
- * Includes burst scenario (500 req/min) for WAF testing.
- *
- * Usage:
- *   k6 run infra/keycloak/qa/load.js -e HOST=auth.staging.learncard.app
- *   k6 run infra/keycloak/qa/load.js -e HOST=auth.staging.learncard.app --scenario burst
- */
-
-/* eslint-disable no-undef */
+/* global __ENV, __VU */
 import http from 'k6/http';
-import { check, sleep } from 'k6';
-import { Counter, Trend } from 'k6/metrics';
+import { Counter, Rate } from 'k6/metrics';
 
 const host = __ENV.HOST || 'auth.staging.learncard.app';
-const protocol = 'https';
-const baseUrl = `${protocol}://${host}`;
-const realm = 'learncard';
-
-// Metrics
-const tokenErrors = new Counter('token_errors');
-const tokenDuration = new Trend('token_duration');
-
+if (host !== 'auth.staging.learncard.app' || __ENV.CONFIRM_STAGING_LOAD !== 'true') {
+    throw new Error('Load is staging-only: set CONFIRM_STAGING_LOAD=true and use the staging host');
+}
+const scenario = __ENV.SCENARIO || 'capacity';
+if (!['capacity', 'burst'].includes(scenario))
+    throw new Error('SCENARIO must be capacity or burst');
+const tokens = __ENV.REFRESH_TOKENS ? JSON.parse(__ENV.REFRESH_TOKENS) : [];
+const vus = Number(__ENV.VUS || 10);
+const rate = Number(__ENV.RATE || 30);
+if (!Number.isInteger(vus) || vus < 1 || vus > 100 || !Number.isFinite(rate) || rate <= 0)
+    throw new Error('Invalid VUS/RATE');
+if (
+    scenario === 'capacity' &&
+    (!__ENV.CLIENT_ID ||
+        !Array.isArray(tokens) ||
+        tokens.length < vus ||
+        tokens.some(token => typeof token !== 'string' || !token))
+) {
+    throw new Error(
+        'Capacity load requires CLIENT_ID and REFRESH_TOKENS JSON array with one independent session per VU'
+    );
+}
+let refreshToken;
+const statuses = new Counter('token_status');
+const failures = new Rate('capacity_failures');
 export const options = {
-    scenarios: {
-        default: {
-            executor: 'ramping-arrival-rate',
-            startRate: 10,
-            timeUnit: '1s',
-            stages: [
-                { duration: '1m', target: 50 }, // Ramp to 50 req/s
-                { duration: '3m', target: 50 }, // Hold
-                { duration: '1m', target: 0 }, // Ramp down
-            ],
-        },
-        burst: {
-            executor: 'constant-arrival-rate',
-            rate: 500,
-            timeUnit: '1m',
-            duration: '2m',
-            preAllocatedVUs: 10,
-            maxVUs: 50,
-        },
-    },
-    thresholds: {
-        'token_errors': ['count < 100'],
-    },
+    scenarios:
+        scenario === 'burst'
+            ? {
+                  burst: {
+                      executor: 'constant-arrival-rate',
+                      rate: 500,
+                      timeUnit: '1m',
+                      duration: __ENV.DURATION || '5m',
+                      preAllocatedVUs: vus,
+                      maxVUs: vus,
+                  },
+              }
+            : {
+                  capacity: {
+                      executor: 'ramping-arrival-rate',
+                      startRate: 1,
+                      timeUnit: '1s',
+                      preAllocatedVUs: vus,
+                      maxVUs: vus,
+                      stages: [
+                          { duration: '1m', target: rate },
+                          { duration: __ENV.DURATION || '20m', target: rate },
+                          { duration: '30s', target: 0 },
+                      ],
+                  },
+              },
+    thresholds:
+        scenario === 'capacity'
+            ? { capacity_failures: ['rate<0.01'], dropped_iterations: ['count==0'] }
+            : {},
 };
 
-/**
- * Attempt token endpoint (password grant with invalid creds).
- * Simulates login attempts.
- */
-function attemptToken() {
-    const tokenUrl = `${baseUrl}/realms/${realm}/protocol/openid-connect/token`;
-    const payload = {
-        grant_type: 'password',
-        client_id: 'learncard-app',
-        username: 'testuser',
-        password: 'wrongpassword',
-    };
-
-    const res = http.post(tokenUrl, payload, { timeout: '10s' });
-
-    // Expect 401 (invalid creds) or 400 (bad request); anything else is an error.
-    const success = check(res, {
-        'token response': r => r.status === 400 || r.status === 401,
-    });
-
-    tokenDuration.add(res.timings.duration);
-    if (!success) {
-        tokenErrors.add(1);
+export default function load() {
+    if (!refreshToken) refreshToken = tokens[__VU - 1];
+    // Burst intentionally generates invalid refresh traffic, not password grants.
+    // Capacity uses valid, independent synthetic sessions and rotates each token.
+    const response = http.post(
+        `https://${host}/realms/${encodeURIComponent(__ENV.REALM || 'learncard')}/protocol/openid-connect/token`,
+        {
+            grant_type: 'refresh_token',
+            client_id: __ENV.CLIENT_ID || 'learncard-app',
+            refresh_token: scenario === 'burst' ? 'synthetic-invalid-token' : refreshToken,
+            ...(__ENV.CLIENT_SECRET ? { client_secret: __ENV.CLIENT_SECRET } : {}),
+        },
+        { timeout: '10s', redirects: 0 }
+    );
+    statuses.add(1, { status: String(response.status) });
+    if (scenario === 'capacity') {
+        failures.add(response.status !== 200);
+        if (response.status === 200) {
+            const data = response.json();
+            if (data.refresh_token) refreshToken = data.refresh_token;
+        }
     }
-}
-
-/**
- * Main VU function.
- */
-export default function () {
-    attemptToken();
-    sleep(0.1);
 }
