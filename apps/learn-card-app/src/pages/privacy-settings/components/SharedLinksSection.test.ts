@@ -24,6 +24,8 @@ const share = {
     stoppedAt: null,
     viewCount: 12,
     lastViewedAt: '2026-09-21T18:15:00.000Z',
+    passcodeProtected: true,
+    notifyOnView: false,
 } as ShareLink;
 
 const viewModel = (overrides: Partial<DataSharingSharedLinksViewModel> = {}) => ({
@@ -80,6 +82,16 @@ describe('shared link filters', () => {
 });
 
 describe('shared link actions', () => {
+    it('surfaces passcode protection on every shared-link card', () => {
+        const vm = viewModel({
+            records: [share, { ...share, id: 'BBBBBBBBBBBBBBBBBBBBBB', passcodeProtected: false }],
+        });
+        render(React.createElement(SharedLinksSection, { vm }));
+
+        expect(screen.getByText('Passcode required')).toBeTruthy();
+        expect(screen.getByText('Passcode off')).toBeTruthy();
+    });
+
     it('confirms that an update keeps the same link before opening the editor', () => {
         const vm = viewModel();
         render(React.createElement(SharedLinksSection, { vm }));

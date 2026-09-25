@@ -8384,7 +8384,7 @@
         },
         "shared": {
             "heading": "Compartido",
-            "subtitle": "Enlaces que has creado y si se han abierto.",
+            "subtitle": "Crea enlaces privados con códigos opcionales y comprueba cuándo se abren.",
             "refresh": "Actualizar",
             "newShare": "Nueva publicación",
             "active": "Activos",
@@ -8397,6 +8397,8 @@
             "viewed": "Visto {{count}} veces · última vez {{date}}",
             "recently": "recientemente",
             "notViewed": "Aún no se ha visto",
+            "passcodeProtected": "Código requerido",
+            "passcodeOff": "Sin código",
             "copy": "Copiar enlace",
             "showQr": "Mostrar QR",
             "changeExpiry": "Cambiar caducidad",

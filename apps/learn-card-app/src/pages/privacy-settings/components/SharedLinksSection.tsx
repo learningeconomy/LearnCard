@@ -6,6 +6,8 @@ import {
     copyOutline,
     createOutline,
     eyeOutline,
+    lockClosedOutline,
+    lockOpenOutline,
     qrCodeOutline,
     refreshOutline,
     stopCircleOutline,
@@ -119,6 +121,14 @@ const ShareLinkRow = ({ share, vm }: { share: ShareLink; vm: DataSharingSharedLi
             </div>
 
             <div className="mt-3 flex flex-wrap gap-2 text-xs text-grayscale-600">
+                <span
+                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 font-medium ${share.passcodeProtected ? 'bg-emerald-50 text-emerald-700' : 'bg-grayscale-100 text-grayscale-600'}`}
+                >
+                    <IonIcon icon={share.passcodeProtected ? lockClosedOutline : lockOpenOutline} />
+                    {share.passcodeProtected
+                        ? m['dataShareCenter.shared.passcodeProtected']()
+                        : m['dataShareCenter.shared.passcodeOff']()}
+                </span>
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-grayscale-100 px-2.5 py-1.5">
                     <IonIcon icon={calendarOutline} />
                     {m['dataShareCenter.shared.created']({

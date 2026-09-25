@@ -171,6 +171,8 @@ const makeShare = (overrides: Partial<ShareLink>): ShareLink =>
         stoppedAt: null,
         viewCount: 12,
         lastViewedAt: '2026-09-21T18:15:00.000Z',
+        passcodeProtected: false,
+        notifyOnView: false,
         minorPolicy: {
             isMinor: false,
             policyResolved: true,
@@ -182,7 +184,7 @@ const makeShare = (overrides: Partial<ShareLink>): ShareLink =>
 
 const sharedLinks: DataSharingSharedLinksViewModel = {
     records: [
-        makeShare({}),
+        makeShare({ passcodeProtected: true }),
         makeShare({
             id: 'BBBBBBBBBBBBBBBBBBBBBB',
             title: 'Volunteer credentials',

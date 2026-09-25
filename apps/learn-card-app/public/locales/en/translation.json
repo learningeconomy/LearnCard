@@ -8390,7 +8390,7 @@
         },
         "shared": {
             "heading": "Shared",
-            "subtitle": "Links you've made and whether they've been opened.",
+            "subtitle": "Create private links with optional passcodes and see when they're opened.",
             "refresh": "Refresh",
             "newShare": "New share",
             "active": "Active",
@@ -8403,6 +8403,8 @@
             "viewed": "Viewed {{count}} times · last {{date}}",
             "recently": "recently",
             "notViewed": "Not viewed yet",
+            "passcodeProtected": "Passcode required",
+            "passcodeOff": "Passcode off",
             "copy": "Copy link",
             "showQr": "Show QR",
             "changeExpiry": "Change expiry",
