@@ -13,6 +13,7 @@ import {
 
 export const lcaApiEnvironmentShape = {
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+    LAMBDA_STAGE: optionalEnvironmentString,
     PORT: environmentPort.default(3000),
     SEED: requiredEnvironmentString,
     MONGO_URI: requiredEnvironmentString,
@@ -28,6 +29,13 @@ export const lcaApiEnvironmentShape = {
     KEYCLOAK_ISSUERS: optionalEnvironmentString,
     KEYCLOAK_AUDIENCES: optionalEnvironmentString,
     KEYCLOAK_JWKS_URL_OVERRIDES: optionalEnvironmentString,
+    OIDC_ISSUER: optionalEnvironmentString,
+    OIDC_SIGNING_KEY_JWK: optionalEnvironmentString,
+    OIDC_CLIENT_ID: optionalEnvironmentString,
+    OIDC_CLIENT_SECRET: optionalEnvironmentString,
+    OIDC_REDIRECT_URIS: optionalEnvironmentString,
+    GOOGLE_OAUTH_CLIENT_IDS: optionalEnvironmentString,
+    APPLE_OAUTH_CLIENT_IDS: optionalEnvironmentString,
     POSTMARK_SERVER_TOKEN: optionalEnvironmentString,
     POSTMARK_FROM_EMAIL: optionalEnvironmentString,
     POSTMARK_BRAND_NAME: optionalEnvironmentString,

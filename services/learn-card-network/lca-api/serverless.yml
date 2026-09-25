@@ -149,6 +149,16 @@ provider:
         GOOGLE_APPLICATION_CREDENTIAL: ${env:GOOGLE_APPLICATION_CREDENTIAL, ''}
         SCOUTS_SSO_CLIENT_SECRET: ${env:SCOUTS_SSO_CLIENT_SECRET, ''}
         LEARN_CLOUD_URL: ${env:LEARN_CLOUD_URL, ''}
+        KEYCLOAK_ISSUERS: ${env:KEYCLOAK_ISSUERS, ''}
+        KEYCLOAK_AUDIENCES: ${env:KEYCLOAK_AUDIENCES, ''}
+        KEYCLOAK_JWKS_URL_OVERRIDES: ${env:KEYCLOAK_JWKS_URL_OVERRIDES, ''}
+        OIDC_ISSUER: ${env:OIDC_ISSUER, ''}
+        OIDC_SIGNING_KEY_JWK: ${env:OIDC_SIGNING_KEY_JWK, ''}
+        OIDC_CLIENT_ID: ${env:OIDC_CLIENT_ID, ''}
+        OIDC_CLIENT_SECRET: ${env:OIDC_CLIENT_SECRET, ''}
+        OIDC_REDIRECT_URIS: ${env:OIDC_REDIRECT_URIS, ''}
+        GOOGLE_OAUTH_CLIENT_IDS: ${env:GOOGLE_OAUTH_CLIENT_IDS, ''}
+        APPLE_OAUTH_CLIENT_IDS: ${env:APPLE_OAUTH_CLIENT_IDS, ''}
         SENTRY_DSN: ${env:SENTRY_DSN, ''}
         SENTRY_ENV: ${env:SENTRY_ENV, ''}
         REDIS_HOST:
@@ -197,6 +207,17 @@ functions:
             - httpApi: GET /.well-known/did.json
         url:
             cors: true
+
+    oidc:
+        handler: lambda.oidcHandler
+        vpc:
+            securityGroupIds:
+                - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
+            subnetIds:
+                - Ref: PrivateSubnetA
+        events:
+            - httpApi: GET /.well-known/openid-configuration
+            - httpApi: ANY /oidc/{proxy+}
 
     swagger:
         handler: lambda.swaggerUiHandler
@@ -323,6 +344,10 @@ resources:
             Properties:
                 AutoMinorVersionUpgrade: true
                 Engine: redis
+                # GETDEL (login codes/tickets/auth codes) needs Redis >= 6.2. The
+                # version is deliberately NOT pinned here: existing clusters are
+                # already on 7.x, and a pin below the running version is rejected
+                # by CloudFormation as a downgrade (failing the whole deploy).
                 CacheNodeType: ${self:custom.config.CACHE_INSTANCE_SIZE}
                 NumCacheNodes: 1
                 VpcSecurityGroupIds:

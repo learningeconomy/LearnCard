@@ -23,6 +23,7 @@ jobs:
             - name: Start Keycloak
               run: |
                   docker run -d --name keycloak -p 8081:8080 -p 9000:9000 \
+                    --add-host=host.docker.internal:host-gateway \
                     -e KC_BOOTSTRAP_ADMIN_USERNAME=admin -e KC_BOOTSTRAP_ADMIN_PASSWORD=admin \
                     -e KC_HEALTH_ENABLED=true -e KC_HOSTNAME=http://localhost:8081 \
                     -e KC_HTTP_ENABLED=true \
@@ -35,6 +36,19 @@ jobs:
                     http://localhost:9000/health/ready || { docker logs keycloak; exit 1; }
             - name: Install dependencies
               run: bun install --frozen-lockfile
+            - name: Verify self-issued OIDC provider (unit)
+              working-directory: services/learn-card-network/lca-api
+              run: >-
+                  bunx vitest run --config vitest.config.ts
+                  test/oidc.spec.ts test/auth-tickets.spec.ts
+            - name: Verify OIDC login-ticket + silent-hop flow (integration)
+              working-directory: services/learn-card-network/lca-api
+              run: bunx vitest run test/oidc.integration.spec.ts
+              env:
+                  KEYCLOAK_INTEGRATION: 'true'
+                  OIDC_ISSUER: http://localhost:5100
+                  OIDC_CLIENT_ID: keycloak-broker
+                  OIDC_CLIENT_SECRET: dev-only-broker-secret
             - name: Verify real Keycloak tokens
               working-directory: services/learn-card-network/lca-api
               run: bunx vitest run test/keycloak-verify.integration.spec.ts
