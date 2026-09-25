@@ -1,7 +1,11 @@
 # Local Keycloak
 
 `realms/learncard-dev-realm.json` bootstraps realm `learncard` on Keycloak **26.7.4**.
-This JSON owns local/CI only; [Terraform](terraform/) separately owns staging/prod.
+This JSON owns local/CI only. Staging/production realms are built by the Terraform
+module [`terraform/modules/realm`](terraform/modules/realm/) (platform overview:
+[`terraform/README.md`](terraform/README.md)). **Change both together:** the
+`keycloak-realm-tests` CI job runs the live specs against the module-built realm, and
+`keycloak-verifier-tests` against this fixture.
 See [migration plan AD-9](../../.sisyphus/plans/keycloak-auth-provider-migration.md).
 All credentials here are public development placeholders, never production secrets.
 The fixture is mounted as `learncard-realm.json`: Keycloak requires the import
@@ -103,7 +107,8 @@ the fixture is imported or `apple` as a `providerId` fails realm import with an 
 error: `infra/keycloak/Dockerfile.dev` (local compose + CI, `start-dev` builds automatically)
 and the builder stage of `infra/keycloak/Dockerfile` (production, before `kc.sh build`) both
 pin it with `ADD --checksum=sha256:<hex> --chown=keycloak:keycloak <release-jar-url> /opt/keycloak/providers/`.
-To bump the version: download the new jar once, compute `shasum -a 256`, update the
+Bumps are normally automated: `.github/workflows/keycloak-provider-watch.yml` opens a PR
+with the new version and checksum in both Dockerfiles. To bump by hand: download the new jar once, compute `shasum -a 256`, update the
 release URL, filename and checksum in **both** Dockerfiles, and confirm compatibility
 against the [compatibility table](https://github.com/klausbetz/apple-identity-provider-keycloak#compatibility)
 for the target Keycloak version.
