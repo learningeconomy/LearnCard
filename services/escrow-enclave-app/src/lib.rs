@@ -2,8 +2,8 @@
 
 /// P-256 ECDH, HKDF-SHA256, and AES-GCM envelope compatibility (P1.2).
 pub mod crypto;
-/// Nitro attestation and the future NsmDriver abstraction with native fakes (P1.3).
-pub mod nsm {}
+/// Nitro attestation drivers and explicitly unverified document parsing (P1.3).
+pub mod nsm;
 /// Attested KMS unseal and the future KmsClient abstraction (P1.4).
 pub mod kms {}
 /// Signed Roughtime intervals and the future TimeSource abstraction (P1.5).

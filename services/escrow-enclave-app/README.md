@@ -2,8 +2,9 @@
 
 Rust scaffold for LearnCard's attested escrow recovery service (P1.1). **Not a
 working enclave or recovery server:** both launch modes log "not yet implemented"
-and exit successfully without binding a socket. No keys, attestation, policy,
-ledger, or cryptography are implemented. Do not deploy this scaffold for recovery.
+and exit successfully without binding a socket. Crypto primitives (P1.2) and NSM
+drivers (P1.3) exist, but policy, ledger, and server integration remain unimplemented.
+Do not deploy this scaffold for recovery.
 
 ## Target architecture
 
@@ -22,10 +23,31 @@ uses `mode: nitro`. Planned production topology is an ASG across at least two AZ
 with an internal NLB and at least `m6i.xlarge` parents (two enclave vCPUs plus two
 remaining for the parent).
 
-Future modules: `crypto` (P1.2), `nsm`/`NsmDriver` (P1.3), `kms`/`KmsClient` (P1.4),
+Implemented primitives: `crypto` (P1.2), `nsm`/`NsmDriver` (P1.3).
+Future modules: `kms`/`KmsClient` (P1.4),
 `time`/`TimeSource` (P1.5), `ledger`/`HeadStore` (P1.6), `policy` (P1.7), and
 `server` (P1.8). Native trait-based fakes will exercise the same policy logic;
-neither the traits nor fake drivers are implemented by this scaffold.
+the NSM trait and fake are available now, while the other drivers remain planned.
+
+## NSM attestation primitives
+
+`RealNsm` (feature `nitro`) opens one device descriptor and closes it on drop.
+Both drivers enforce request caps before IO/signing: user data 1024 bytes, nonce
+512 bytes, optional public key 1024 bytes. Put the P-256 escrow SPKI in `user_data`
+and the distinct RSA KMS recipient key in `public_key`.
+
+`FakeNsm` exists only in tests or with explicit `fake-nsm` (default off). Its public,
+deterministic P-384 test CA chain and signatures are **never production evidence**.
+`parse_attestation_document` only decodes the COSE envelope and claims: it does not
+verify signatures, certificates, root pins, nonce, PCRs, or freshness.
+
+Client verifier fixtures live in
+`packages/sss-key-manager/src/__fixtures__/nitro-attestation/`. Regenerate from this
+directory with `ESCROW_WRITE_NITRO_FIXTURES=1 cargo test nsm::tests::client_fixtures`.
+The first generation uses `crypto::generate_escrow_key_pair`; subsequent generations
+reuse only its public SPKI from the manifest for byte-stable output. Private escrow
+keys are never written. Normal tests are read-only. Use the manifest's frozen
+`nowMs`, `maxAgeMs`, and per-case overrides when testing freshness and nonce checks.
 
 ## Local development
 

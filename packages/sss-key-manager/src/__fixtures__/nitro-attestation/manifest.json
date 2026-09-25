@@ -1,0 +1,50 @@
+{
+    "cases": {
+        "bad-signature": {
+            "accept": false,
+            "reason": "signature"
+        },
+        "debug-zero-pcrs": {
+            "accept": false,
+            "reason": "debug PCRs"
+        },
+        "nonce-mismatch": {
+            "accept": false,
+            "nonceHex": "0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a",
+            "reason": "nonce"
+        },
+        "stale-timestamp": {
+            "accept": false,
+            "reason": "freshness"
+        },
+        "truncated-chain": {
+            "accept": false,
+            "reason": "missing intermediate"
+        },
+        "valid": {
+            "accept": true
+        },
+        "wrong-pcr0": {
+            "accept": false,
+            "reason": "pcr"
+        },
+        "wrong-root": {
+            "accept": false,
+            "reason": "root pin"
+        }
+    },
+    "description": "Public fake CA, never trust in production. Freeze verifier clock to nowMs. Certificates valid 2020-2050. userDataBase64 was generated once by crypto::generate_escrow_key_pair; regeneration reuses it.",
+    "maxAgeMs": 300000,
+    "nonceHex": "0909090909090909090909090909090909090909090909090909090909090909",
+    "nowMs": 1790294401000,
+    "pcrs": {
+        "0": "010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101",
+        "1": "020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202",
+        "2": "030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303"
+    },
+    "publicKeyBase64": null,
+    "rootSha256": "d71ae13f792676894bf8549178ea45acc360b1935e628f678d9e2f3befae9dfe",
+    "testOnly": true,
+    "timestamp": 1790294400000,
+    "userDataBase64": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEnX5GwyaaFpFYdl7m9ft+aF3MG6GanWFe7rvTqEGNoojfQtaaRXWNmYbC9affj2Twoy2RlWkOTGFETJQC5/f93w=="
+}

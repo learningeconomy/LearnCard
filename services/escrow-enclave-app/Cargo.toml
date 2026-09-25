@@ -17,6 +17,7 @@ path = "src/lib.rs"
 
 [features]
 default = []
+fake-nsm = ["dep:p384", "dep:x509-cert", "dep:der", "sha2/oid"]
 nitro = ["dep:aws-nitro-enclaves-nsm-api", "dep:aws-nitro-enclaves-cose"]
 kms = ["dep:aws-config", "dep:aws-sdk-kms", "dep:rsa", "dep:cbc", "dep:der"]
 
@@ -50,6 +51,14 @@ rsa = { version = "~0.9.10", optional = true, features = ["sha2"] }
 aes = { version = "~0.8.4", features = ["zeroize"] }
 cbc = { version = "~0.1.2", optional = true, features = ["alloc", "zeroize"] }
 der = { version = "~0.7.10", optional = true, features = ["alloc", "derive", "oid"] }
+p384 = { version = "~0.13.1", optional = true, features = ["ecdsa", "pkcs8"] }
+x509-cert = { version = "~0.2.5", optional = true, features = ["builder"] }
+
+[dev-dependencies]
+sha2 = { version = "~0.10.9", features = ["oid"] }
+p384 = { version = "~0.13.1", features = ["ecdsa", "pkcs8"] }
+x509-cert = { version = "~0.2.5", features = ["builder"] }
+der = { version = "~0.7.10", features = ["alloc", "derive", "oid"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 tokio-vsock = "~0.7.2"
