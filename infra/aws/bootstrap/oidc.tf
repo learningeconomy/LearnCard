@@ -45,6 +45,8 @@ resource "aws_iam_role" "github" {
   for_each           = local.oidc_subjects
   name               = "${local.name}-${each.key}"
   assume_role_policy = data.aws_iam_policy_document.github_trust[each.key].json
+  # Deploys may wait out a full realm-runner lifecycle (queue + build + stop).
+  max_session_duration = each.key == "deploy" ? 10800 : 3600
 }
 
 # ReadOnlyAccess also reads application data. The plan role only needs resource
