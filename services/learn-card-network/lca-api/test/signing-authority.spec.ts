@@ -2,6 +2,7 @@ import { vi } from 'vitest';
 
 import { getClient, getUser } from './helpers/getClient';
 import { SigningAuthorities } from '@accesslayer/signing-authority';
+import { createSigningAuthorityForDID } from '@accesslayer/signing-authority/create';
 
 /**
  * More info on Signing Authorities:
@@ -83,6 +84,30 @@ describe('Signing Authority', () => {
         await expect(
             userA.clients.fullAuth.signingAuthority.createSigningAuthority({ name: 'mysa' })
         ).rejects.toThrow();
+    });
+
+    it('logs the Mongo code for a duplicate insert without exposing keys or duplicate values', async () => {
+        await SigningAuthorities.createIndex({ ownerDid: 1, name: 1 }, { unique: true });
+        const logger = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        const name = 'private-duplicate-name';
+        const owner = userA.learnCard.id.did();
+        try {
+            expect(await createSigningAuthorityForDID(owner, name)).toEqual(expect.any(String));
+            expect(await createSigningAuthorityForDID(owner, name)).toBe(false);
+            expect(logger).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    operation: 'create',
+                    errorName: 'MongoServerError',
+                    mongoCode: 11000,
+                })
+            );
+            const logs = JSON.stringify(logger.mock.calls);
+            expect(logs).not.toContain('e'.repeat(64));
+            expect(logs).not.toContain(name);
+            expect(logs).not.toContain(owner);
+        } finally {
+            logger.mockRestore();
+        }
     });
 
     it('should allow you to retrieve your signing authorities after creation', async () => {

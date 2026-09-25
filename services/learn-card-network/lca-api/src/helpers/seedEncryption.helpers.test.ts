@@ -1,5 +1,6 @@
 import { createDecipheriv, randomBytes } from 'node:crypto';
 import { DecryptCommand, GenerateDataKeyCommand, KMSClient } from '@aws-sdk/client-kms';
+import { MongoServerError } from 'mongodb';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { environment } from '@environment';
@@ -28,6 +29,22 @@ afterEach(() => {
 });
 
 describe('SA seed envelopes', () => {
+    it('logs Mongo error codes without messages, key values, or document contents', () => {
+        const logger = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        const error = new MongoServerError({ message: seed, code: 11000, keyValue: { seed } });
+        logSeedEncryptionFailure(error, 'create', identity);
+        expect(logger).toHaveBeenCalledWith(
+            expect.objectContaining({
+                operation: 'create',
+                errorName: 'MongoServerError',
+                mongoCode: 11000,
+            })
+        );
+        expect(JSON.stringify(logger.mock.calls)).not.toContain(seed);
+        // Arbitrary exceptions cannot smuggle document contents through name/code.
+        logSeedEncryptionFailure({ name: seed, code: seed, message: seed }, 'create', identity);
+        expect(JSON.stringify(logger.mock.calls)).not.toContain(seed);
+    });
     it('round trips locally with fresh DEKs, IVs, and ciphertext for each authority', async () => {
         const encryption = createSeedEncryption(local);
         const first = await encryption.encrypt(seed, identity);

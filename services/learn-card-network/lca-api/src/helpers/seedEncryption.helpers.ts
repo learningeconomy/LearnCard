@@ -1,5 +1,6 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto';
 import { DecryptCommand, GenerateDataKeyCommand, KMSClient } from '@aws-sdk/client-kms';
+import { MongoServerError } from 'mongodb';
 
 import { environment } from '@environment';
 import type {
@@ -69,6 +70,14 @@ export const logSeedEncryptionFailure = (
             : 'unknown',
         category: error instanceof SeedEncryptionError ? error.category : 'operation_failed',
         awsRequestId: error instanceof SeedEncryptionError ? error.awsRequestId : undefined,
+        // Mongo messages/keyValue can contain the duplicate document or seed. Only log
+        // the known error class and numeric server code (e.g. 11000 for duplicate keys).
+        ...(error instanceof MongoServerError
+            ? {
+                  errorName: 'MongoServerError',
+                  mongoCode: Number.isInteger(error.code) ? error.code : undefined,
+              }
+            : {}),
     });
 };
 
