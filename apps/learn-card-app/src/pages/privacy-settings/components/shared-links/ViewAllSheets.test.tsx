@@ -3,7 +3,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { ShareLink, VP } from '@learncard/types';
 
-import type { DataSharingSharedLinksViewModel } from '../../DataSharingCenter.types';
+import type {
+    DataSharingSharedLinksViewModel,
+    SharedLinkFilter,
+} from '../../DataSharingCenter.types';
 import { useSharedLinksStore } from './sharedLinksStore';
 import SharedLinksAllSheet from './SharedLinksAllSheet';
 import SharedWithYouAllSheet from './SharedWithYouAllSheet';
@@ -116,12 +119,24 @@ const buildVm = (
 
 const seed = (vm: DataSharingSharedLinksViewModel) => useSharedLinksStore.setState({ vm });
 
+/** Seeds a vm whose onFilterChange writes the new filter back to the store, so the
+ *  roving tabIndex/aria-selected actually move like they would with the real store. */
+const seedRoving = (overrides: Partial<DataSharingSharedLinksViewModel> = {}) => {
+    const onFilterChange = vi.fn((filter: SharedLinkFilter) => {
+        const current = useSharedLinksStore.getState().vm as DataSharingSharedLinksViewModel;
+        seed({ ...current, filter });
+    });
+    seed(buildVm({ onFilterChange, ...overrides }));
+    return onFilterChange;
+};
+
 describe('SharedLinksAllSheet', () => {
     it('shows loaded counts on the filter tabs', () => {
         seed(buildVm());
         render(<SharedLinksAllSheet onClose={vi.fn()} onOpenShare={vi.fn()} />);
 
         expect(screen.getByRole('tab', { name: /Active 1/ })).toBeInTheDocument();
+        expect(screen.getByRole('tab', { name: /Expired 1/ })).toBeInTheDocument();
         expect(screen.getByRole('tab', { name: /Stopped 1/ })).toBeInTheDocument();
     });
 
@@ -214,8 +229,8 @@ describe('SharedLinksAllSheet', () => {
         expect(onClose).toHaveBeenCalled();
     });
 
-    it('shows a retry action on error that calls onRefresh', () => {
-        const vm = buildVm({ error: true });
+    it('shows a full-list retry action on error when nothing is loaded yet', () => {
+        const vm = buildVm({ records: [], error: true });
         seed(vm);
         render(<SharedLinksAllSheet onClose={vi.fn()} onOpenShare={vi.fn()} />);
 
@@ -223,8 +238,43 @@ describe('SharedLinksAllSheet', () => {
         expect(vm.onRefresh).toHaveBeenCalled();
     });
 
-    it('moves focus between tabs with arrow keys', () => {
-        seed(buildVm());
+    it('keeps rendering loaded rows on a background error, retrying via onLoadMore when more can load', () => {
+        const vm = buildVm({
+            records: [activeShareNewer],
+            filter: 'active',
+            error: true,
+            hasMore: true,
+        });
+        seed(vm);
+        render(<SharedLinksAllSheet onClose={vi.fn()} onOpenShare={vi.fn()} />);
+
+        expect(screen.getByText('Newer active link')).toBeInTheDocument();
+        const alert = screen.getByRole('alert');
+        expect(alert).toHaveTextContent("We couldn't load your links. Please try again.");
+
+        fireEvent.click(screen.getByText('Try again'));
+        expect(vm.onLoadMore).toHaveBeenCalled();
+        expect(vm.onRefresh).not.toHaveBeenCalled();
+    });
+
+    it('keeps rendering loaded rows on a background error, retrying via onRefresh when nothing more can load', () => {
+        const vm = buildVm({
+            records: [activeShareNewer],
+            filter: 'active',
+            error: true,
+            hasMore: false,
+        });
+        seed(vm);
+        render(<SharedLinksAllSheet onClose={vi.fn()} onOpenShare={vi.fn()} />);
+
+        expect(screen.getByText('Newer active link')).toBeInTheDocument();
+
+        fireEvent.click(screen.getByText('Try again'));
+        expect(vm.onRefresh).toHaveBeenCalled();
+    });
+
+    it('moves focus between tabs with arrow keys and updates the roving tabIndex', () => {
+        const onFilterChange = seedRoving();
         render(<SharedLinksAllSheet onClose={vi.fn()} onOpenShare={vi.fn()} />);
 
         const activeTab = screen.getByRole('tab', { name: /Active/ });
@@ -233,16 +283,57 @@ describe('SharedLinksAllSheet', () => {
 
         activeTab.focus();
         fireEvent.keyDown(activeTab, { key: 'ArrowRight' });
+        expect(onFilterChange).toHaveBeenCalledWith('expired');
         expect(expiredTab).toHaveFocus();
+        expect(expiredTab).toHaveAttribute('tabIndex', '0');
+        expect(activeTab).toHaveAttribute('tabIndex', '-1');
 
         fireEvent.keyDown(expiredTab, { key: 'ArrowRight' });
+        expect(onFilterChange).toHaveBeenCalledWith('stopped');
         expect(stoppedTab).toHaveFocus();
 
         fireEvent.keyDown(stoppedTab, { key: 'ArrowRight' });
+        expect(onFilterChange).toHaveBeenCalledWith('active');
         expect(activeTab).toHaveFocus();
 
         fireEvent.keyDown(activeTab, { key: 'ArrowLeft' });
+        expect(onFilterChange).toHaveBeenCalledWith('stopped');
         expect(stoppedTab).toHaveFocus();
+    });
+
+    it('jumps to the first and last tabs with Home and End', () => {
+        const onFilterChange = seedRoving();
+        render(<SharedLinksAllSheet onClose={vi.fn()} onOpenShare={vi.fn()} />);
+
+        const activeTab = screen.getByRole('tab', { name: /Active/ });
+        const stoppedTab = screen.getByRole('tab', { name: /Stopped/ });
+
+        activeTab.focus();
+        fireEvent.keyDown(activeTab, { key: 'End' });
+        expect(onFilterChange).toHaveBeenCalledWith('stopped');
+        expect(stoppedTab).toHaveFocus();
+
+        fireEvent.keyDown(stoppedTab, { key: 'Home' });
+        expect(onFilterChange).toHaveBeenCalledWith('active');
+        expect(activeTab).toHaveFocus();
+    });
+
+    it('inverts arrow-key direction when the document direction is rtl', () => {
+        document.documentElement.dir = 'rtl';
+        try {
+            const onFilterChange = seedRoving();
+            render(<SharedLinksAllSheet onClose={vi.fn()} onOpenShare={vi.fn()} />);
+
+            const activeTab = screen.getByRole('tab', { name: /Active/ });
+            const stoppedTab = screen.getByRole('tab', { name: /Stopped/ });
+
+            activeTab.focus();
+            fireEvent.keyDown(activeTab, { key: 'ArrowRight' });
+            expect(onFilterChange).toHaveBeenCalledWith('stopped');
+            expect(stoppedTab).toHaveFocus();
+        } finally {
+            document.documentElement.dir = '';
+        }
     });
 });
 

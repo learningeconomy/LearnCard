@@ -55,11 +55,19 @@ export const SheetChrome: React.FC<{
 
 const FILTERS: SharedLinkFilter[] = ['active', 'expired', 'stopped'];
 
+/** True when arrow keys should read right-to-left: the tablist's own computed
+ *  direction wins, falling back to the document's `dir`. */
+const isRtlContext = (element: HTMLElement | null): boolean => {
+    if (element && getComputedStyle(element).direction === 'rtl') return true;
+    return document.documentElement.dir === 'rtl';
+};
+
 const SharedLinksAllSheet: React.FC<{
     onClose: () => void;
     onOpenShare: (share: ShareLink) => void;
 }> = ({ onClose, onOpenShare }) => {
     const vm = useSharedLinksStore(state => state.vm);
+    const tablistRef = useRef<HTMLDivElement | null>(null);
     const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
     const counts = useMemo(() => {
         const next: Record<SharedLinkFilter, number> = { active: 0, expired: 0, stopped: 0 };
@@ -76,14 +84,29 @@ const SharedLinksAllSheet: React.FC<{
 
     if (!vm) return null;
 
+    const focusFilter = (index: number) => {
+        vm.onFilterChange(FILTERS[index]);
+        tabRefs.current[index]?.focus();
+    };
+
     const handleTabKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
-        if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+        const { key } = event;
+        if (key === 'Home') {
+            event.preventDefault();
+            focusFilter(0);
+            return;
+        }
+        if (key === 'End') {
+            event.preventDefault();
+            focusFilter(FILTERS.length - 1);
+            return;
+        }
+        if (key !== 'ArrowLeft' && key !== 'ArrowRight') return;
         event.preventDefault();
-        const direction = event.key === 'ArrowRight' ? 1 : -1;
+        let direction = key === 'ArrowRight' ? 1 : -1;
+        if (isRtlContext(tablistRef.current)) direction = -direction;
         const nextIndex = (index + direction + FILTERS.length) % FILTERS.length;
-        const nextFilter = FILTERS[nextIndex];
-        vm.onFilterChange(nextFilter);
-        tabRefs.current[nextIndex]?.focus();
+        focusFilter(nextIndex);
     };
 
     return (
@@ -99,6 +122,7 @@ const SharedLinksAllSheet: React.FC<{
             }
         >
             <div
+                ref={tablistRef}
                 role="tablist"
                 aria-label={m['dataShareCenter.shared.filterLabel']()}
                 className="mb-3 grid grid-cols-3 gap-1 rounded-[20px] bg-white/70 p-1 ring-1 ring-grayscale-900/[0.06]"
@@ -130,7 +154,7 @@ const SharedLinksAllSheet: React.FC<{
             <ListShell label={statusLabel(vm.filter)}>
                 {vm.isLoading && vm.records.length === 0 ? (
                     <SkeletonRows count={5} />
-                ) : vm.error ? (
+                ) : vm.error && vm.records.length === 0 ? (
                     <MessageRow
                         tone="error"
                         action={
@@ -165,6 +189,22 @@ const SharedLinksAllSheet: React.FC<{
                     ))
                 )}
             </ListShell>
+
+            {vm.error && vm.records.length > 0 && (
+                <p
+                    role="alert"
+                    className="mt-3 flex items-center justify-between gap-2 text-sm text-red-700"
+                >
+                    <span>{m['dataShareCenter.shared.loadError']()}</span>
+                    <button
+                        type="button"
+                        className="shrink-0 font-medium underline"
+                        onClick={() => void (vm.hasMore ? vm.onLoadMore() : vm.onRefresh())}
+                    >
+                        {m['shareLinks.retry']()}
+                    </button>
+                </p>
+            )}
 
             {vm.hasMore && (
                 <button
