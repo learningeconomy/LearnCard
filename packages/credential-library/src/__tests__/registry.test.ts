@@ -582,6 +582,37 @@ describe('prepareFixture', () => {
         expect(subject.id).toBe(subjectDid);
     });
 
+    it('preserves signed credentials nested in a CLR', () => {
+        const fixture = getFixture('vc-v2/basic');
+        const signedEmbeddedCredential = {
+            '@context': ['https://www.w3.org/ns/credentials/v2'],
+            id: fixture.credential.id,
+            type: ['VerifiableCredential'],
+            issuer: 'did:example:nested-issuer',
+            validFrom: '2025-01-01T00:00:00Z',
+            credentialSubject: { id: 'did:example:signed-subject' },
+            proof: { type: 'DataIntegrityProof', proofValue: 'signed-value' },
+        };
+        const prepared = prepareFixture(
+            {
+                ...fixture,
+                credential: {
+                    ...fixture.credential,
+                    credentialSubject: {
+                        id: 'did:example:old-root',
+                        verifiableCredential: [signedEmbeddedCredential],
+                    },
+                },
+            },
+            { issuerDid, subjectDid }
+        );
+        const subject = prepared.credentialSubject as UnknownRecord;
+        const embedded = subject.verifiableCredential as UnknownRecord[];
+
+        expect(subject.id).toBe(subjectDid);
+        expect(embedded[0]).toEqual(signedEmbeddedCredential);
+    });
+
     it('generates fresh UUIDs for id fields by default', () => {
         const fixture = getFixture('obv3/minimal-badge');
         const prepared = prepareFixture(fixture, { issuerDid });

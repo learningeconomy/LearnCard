@@ -40,11 +40,9 @@ type DemoSchoolFlags = {
     legacyDemoContractUris?: unknown;
 };
 
-type DemoSchoolBoxProps = {};
-
 type DemoSchoolStatus = 'idle' | 'connecting' | 'syncing' | 'disconnecting' | 'deleting';
 
-const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
+const DemoSchoolBox: React.FC = () => {
     const { colors } = useTheme();
     const brandingConfig = useBrandingConfig();
     const primaryColor = colors?.defaults?.primaryColor;
@@ -316,16 +314,16 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
                 {isDemoSchoolLookupLoading
                     ? m['passport.buildMyLearnCard.demoSchool.checking']()
                     : isSyncLoading
-                    ? demoSchoolStatus === 'connecting'
-                        ? m['passport.buildMyLearnCard.demoSchool.connecting']()
-                        : m['passport.buildMyLearnCard.demoSchool.syncing']()
-                    : isDeleteLoading
-                    ? demoSchoolStatus === 'disconnecting'
-                        ? m['passport.buildMyLearnCard.demoSchool.disconnect']()
-                        : m['passport.buildMyLearnCard.demoSchool.deleting']()
-                    : demoSchoolDataExists
-                    ? m['passport.buildMyLearnCard.demoSchool.delete']()
-                    : m['passport.buildMyLearnCard.demoSchool.sync']()}
+                      ? demoSchoolStatus === 'connecting'
+                          ? m['passport.buildMyLearnCard.demoSchool.connecting']()
+                          : m['passport.buildMyLearnCard.demoSchool.syncing']()
+                      : isDeleteLoading
+                        ? demoSchoolStatus === 'disconnecting'
+                            ? m['passport.buildMyLearnCard.demoSchool.disconnect']()
+                            : m['passport.buildMyLearnCard.demoSchool.deleting']()
+                        : demoSchoolDataExists
+                          ? m['passport.buildMyLearnCard.demoSchool.delete']()
+                          : m['passport.buildMyLearnCard.demoSchool.sync']()}
                 {isDemoSchoolLookupLoading ? (
                     <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : isSyncLoading ? (

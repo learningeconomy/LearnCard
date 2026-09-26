@@ -115,6 +115,7 @@ import {
     prepareCredentialFromBoost,
     appendTemplateEvidenceToCredential,
 } from '@helpers/boost.helpers';
+import { setCredentialSubjectIds } from '@helpers/credentialSubject.helpers';
 import {
     BoostValidator,
     BoostGenerateClaimLinkInput,
@@ -4549,17 +4550,7 @@ export const boostsRouter = t.router({
                 }
                 unsignedVc.issuer = { id: getDidWeb(ctx.domain, profile.profileId) };
 
-                if (Array.isArray(unsignedVc.credentialSubject)) {
-                    unsignedVc.credentialSubject = unsignedVc.credentialSubject.map(subject => ({
-                        ...subject,
-                        id: getDidWeb(ctx.domain, targetProfile.profileId),
-                    }));
-                } else {
-                    unsignedVc.credentialSubject = {
-                        ...unsignedVc.credentialSubject,
-                        id: getDidWeb(ctx.domain, targetProfile.profileId),
-                    };
-                }
+                setCredentialSubjectIds(unsignedVc, getDidWeb(ctx.domain, targetProfile.profileId));
                 if (unsignedVc?.type?.includes('BoostCredential')) unsignedVc.boostId = boostUri;
                 // Inject OBv3 skill alignments based on boost's framework/skills
                 await injectObv3AlignmentsIntoCredentialForBoost(unsignedVc, boost, ctx.domain);
