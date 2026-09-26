@@ -18,10 +18,14 @@ import { checkIfProfileExists } from '@accesslayer/profile/read';
 import { ProfileManagerType, ProfileManagerValidator } from 'types/profile-manager';
 import { getLearnCard } from '@helpers/learnCard.helpers';
 import { createProfile } from '@accesslayer/profile/create';
+import { PublicProfileIdValidator } from '@helpers/profile.helpers';
 import { createManagesRelationship } from '@accesslayer/profile-manager/relationships/create';
 import { deleteManagesRelationship } from '@accesslayer/profile-manager/relationships/delete';
 import { getBoostByUri } from '@accesslayer/boost/read';
-import { getManagedProfiles, getProfilesManagedByProfile } from '@accesslayer/profile-manager/relationships/read';
+import {
+    getManagedProfiles,
+    getProfilesManagedByProfile,
+} from '@accesslayer/profile-manager/relationships/read';
 import { getProfilesThatManageAProfile } from '@accesslayer/profile/relationships/read';
 import { updateProfileManager } from '@accesslayer/profile-manager/update';
 import { getProfileManagerById } from '@accesslayer/profile-manager/read';
@@ -115,7 +119,11 @@ export const profileManagersRouter = t.router({
             },
             requiredScope: 'profileManagers:write',
         })
-        .input(LCNProfileValidator.omit({ did: true }))
+        .input(
+            LCNProfileValidator.omit({ did: true }).extend({
+                profileId: PublicProfileIdValidator,
+            })
+        )
         .output(z.string())
         .mutation(async ({ input, ctx }) => {
             const profileExists = await checkIfProfileExists(input);

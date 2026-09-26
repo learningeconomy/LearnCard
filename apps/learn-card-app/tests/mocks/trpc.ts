@@ -19,6 +19,34 @@ export type CloudOutputs = inferRouterOutputs<CloudRouter>;
 export const ABORT = Symbol('trpc-mock-abort');
 
 type Handler = (input: unknown) => unknown | typeof ABORT;
+const decodeBatchInput = (entry: unknown): unknown => {
+    let input = entry;
+
+    for (let depth = 0; depth < 3; depth++) {
+        if (typeof input === 'string') {
+            try {
+                input = JSON.parse(input);
+                continue;
+            } catch {
+                return input;
+            }
+        }
+
+        if (input && typeof input === 'object' && 'input' in input) {
+            input = input.input;
+            continue;
+        }
+
+        if (input && typeof input === 'object' && 'json' in input) {
+            input = input.json;
+            continue;
+        }
+
+        break;
+    }
+
+    return input;
+};
 
 /**
  * Minimal tRPC mock for Playwright. Both brain-service and learn-cloud speak
@@ -46,7 +74,7 @@ export const createTrpcMock = (page: Page) => {
                 return route.fallback();
             }
 
-            let body: Record<string, { input?: unknown }> = {};
+            let body: Record<string, unknown>;
             try {
                 body = JSON.parse(route.request().postData() ?? '{}');
             } catch {
@@ -56,7 +84,7 @@ export const createTrpcMock = (page: Page) => {
             const payload: Array<{ result: { data: unknown } }> = [];
             for (let i = 0; i < procedures.length; i++) {
                 const handler = handlers.get(procedures[i])!;
-                const out = handler(body[String(i)]?.input);
+                const out = handler(decodeBatchInput(body[String(i)]));
                 if (out === ABORT) return route.abort('failed');
                 payload.push({ result: { data: out } });
             }

@@ -5,7 +5,7 @@
     "projectType": "library",
     "root": "packages/credential-library",
     "tags": [],
-    "implicitDependencies": ["types"],
+    "implicitDependencies": ["types", "!init"],
     "namedInputs": {
         "scripts": ["{projectRoot}/scripts/**/*"],
         "source": ["{projectRoot}/src/**/*"],
@@ -21,12 +21,24 @@
         },
         "test": {
             "executor": "nx:run-script",
+            "dependsOn": [
+                {
+                    "projects": ["init"],
+                    "target": "build"
+                }
+            ],
             "options": {
                 "script": "test"
             }
         },
         "test:integration": {
             "executor": "nx:run-script",
+            "dependsOn": [
+                {
+                    "projects": ["init"],
+                    "target": "build"
+                }
+            ],
             "options": {
                 "script": "test:integration"
             }
