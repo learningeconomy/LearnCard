@@ -204,7 +204,7 @@ const SharedLinksAllSheet: React.FC<{
                     <button
                         type="button"
                         className="shrink-0 font-medium underline"
-                        onClick={() => void (vm.hasMore ? vm.onLoadMore() : vm.onRefresh())}
+                        onClick={() => void vm.onRefresh()}
                     >
                         {m['shareLinks.retry']()}
                     </button>

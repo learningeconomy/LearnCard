@@ -32,7 +32,7 @@ const SharedWithYouAllSheet: React.FC<{ onClose: () => void }> = ({ onClose }) =
             <ListShell label={m['dataShareCenter.shared.sharedWithYou']()}>
                 {saved.isLoading && saved.records.length === 0 ? (
                     <SkeletonRows count={5} />
-                ) : saved.error ? (
+                ) : saved.error && saved.records.length === 0 ? (
                     <MessageRow
                         tone="error"
                         action={
@@ -50,13 +50,32 @@ const SharedWithYouAllSheet: React.FC<{ onClose: () => void }> = ({ onClose }) =
                 ) : saved.records.length === 0 ? (
                     <MessageRow>{m['dataShareCenter.shared.receivedEmpty']()}</MessageRow>
                 ) : (
-                    saved.records.map(collection => (
-                        <ReceivedCollectionRow
-                            key={collection.uri}
-                            collection={collection}
-                            onOpen={saved.onPreview}
-                        />
-                    ))
+                    <>
+                        {saved.records.map(collection => (
+                            <ReceivedCollectionRow
+                                key={collection.uri}
+                                collection={collection}
+                                onOpen={saved.onPreview}
+                            />
+                        ))}
+                        {saved.error && (
+                            <MessageRow
+                                compact
+                                tone="error"
+                                action={
+                                    <button
+                                        type="button"
+                                        className="text-sm font-medium text-grayscale-700 underline"
+                                        onClick={() => void saved.onRefresh()}
+                                    >
+                                        {m['shareLinks.retry']()}
+                                    </button>
+                                }
+                            >
+                                {m['dataShareCenter.shared.savedLoadError']()}
+                            </MessageRow>
+                        )}
+                    </>
                 )}
             </ListShell>
         </SheetChrome>

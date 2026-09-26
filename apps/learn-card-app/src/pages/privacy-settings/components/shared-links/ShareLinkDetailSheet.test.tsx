@@ -408,14 +408,20 @@ describe('ShareLinkDetailSheet', () => {
         expect((screen.getByLabelText('Expiry date') as HTMLInputElement).value).toBe('2026-10-01');
     });
 
-    it('shows the stopped explanation with no Copy link, and Share again calls onCreateShare', () => {
+    it('shows the stopped explanation with no Copy link, and Share again closes the sheet before calling onCreateShare', () => {
         const vm = viewModel({ records: [share({ status: 'stopped' })] });
         seed(vm);
+        const onClose = vi.fn();
+        const calls: string[] = [];
+        vm.onCreateShare = vi.fn(() => calls.push('onCreateShare'));
         render(
             <ShareLinkDetailSheet
                 shareId={vm.records[0].id}
                 fallback={vm.records[0]}
-                onClose={vi.fn()}
+                onClose={() => {
+                    calls.push('onClose');
+                    onClose();
+                }}
             />
         );
 
@@ -428,6 +434,8 @@ describe('ShareLinkDetailSheet', () => {
 
         fireEvent.click(screen.getByRole('button', { name: 'Share again' }));
         expect(vm.onCreateShare).toHaveBeenCalled();
+        expect(onClose).toHaveBeenCalled();
+        expect(calls).toEqual(['onClose', 'onCreateShare']);
     });
 
     it('renders no Update contents or Stop sharing rows for a stopped link', () => {
@@ -515,6 +523,30 @@ describe('ShareLinkDetailSheet', () => {
         });
 
         expect(screen.getByRole('button', { name: 'Stop sharing' })).not.toBeDisabled();
+    });
+
+    it('closes an open panel and blocks further mutation when the record becomes stopped mid-edit', () => {
+        const vm = viewModel();
+        seed(vm);
+        render(
+            <ShareLinkDetailSheet
+                shareId={vm.records[0].id}
+                fallback={vm.records[0]}
+                onClose={vi.fn()}
+            />
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Change expiry' }));
+        expect(screen.getByLabelText('Expiry date')).toBeInTheDocument();
+
+        act(() => {
+            useSharedLinksStore.setState({
+                vm: viewModel({ records: [share({ status: 'stopped' })] }),
+            });
+        });
+
+        expect(screen.queryByLabelText('Expiry date')).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Save expiry' })).toBeNull();
     });
 
     it('renders the fallback when the record is missing from the store', () => {

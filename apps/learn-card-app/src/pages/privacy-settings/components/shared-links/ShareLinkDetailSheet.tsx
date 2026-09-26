@@ -117,9 +117,24 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
         pendingFocusRef.current = null;
     }, [panel, busy, pending]);
 
+    const status = getSharedLinkViewStatus(share);
+
+    const setPanelState = (next: Panel | null) => {
+        panelRef.current = next;
+        setPanel(next);
+    };
+
+    // Stopped is terminal: if the record transitions to stopped while a panel
+    // is open (e.g. it was stopped elsewhere), close the panel rather than
+    // leaving stale expiry/update/stop controls visible and actionable.
+    useEffect(() => {
+        if (status === 'stopped' && panelRef.current !== null) {
+            setPanelState(null);
+        }
+    }, [status]);
+
     if (!vm) return null;
 
-    const status = getSharedLinkViewStatus(share);
     const finalized = share.contentState === 'finalized';
     const canEdit = status !== 'stopped' && finalized;
     const mutationsDisabled = !canEdit || busy || pending;
@@ -127,11 +142,6 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
     const expiringSoon =
         status === 'active' && Boolean(share.expiresAt) && expiryHint(share.expiresAt!).soon;
     const views = viewHint(share);
-
-    const setPanelState = (next: Panel | null) => {
-        panelRef.current = next;
-        setPanel(next);
-    };
 
     const togglePanel = (next: Panel) => {
         setErrorPanel(null);
@@ -235,7 +245,10 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
                     </p>
                     <button
                         type="button"
-                        onClick={vm.onCreateShare}
+                        onClick={() => {
+                            onClose();
+                            vm.onCreateShare();
+                        }}
                         className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-[20px] bg-grayscale-900 px-4 py-2.5 text-sm font-medium text-white hover:opacity-90"
                     >
                         <IonIcon icon={addOutline} aria-hidden="true" />
@@ -397,13 +410,18 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
                         />
                     </label>
                     <div className="flex flex-wrap justify-end gap-2">
-                        <button type="button" className={quietButton} onClick={() => setExpiry('')}>
+                        <button
+                            type="button"
+                            className={quietButton}
+                            disabled={mutationsDisabled}
+                            onClick={() => setExpiry('')}
+                        >
                             {m['dataShareCenter.shared.noExpiry']()}
                         </button>
                         <button
                             type="button"
                             className="rounded-[20px] bg-grayscale-900 px-4 py-2 text-xs font-medium text-white disabled:opacity-40"
-                            disabled={busy || pending}
+                            disabled={mutationsDisabled}
                             onClick={() => void saveExpiry()}
                         >
                             {busy
@@ -453,7 +471,7 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
                                 <button
                                     type="button"
                                     className="rounded-[20px] bg-grayscale-900 px-4 py-2 text-xs font-medium text-white disabled:opacity-40"
-                                    disabled={busy || pending}
+                                    disabled={mutationsDisabled}
                                     onClick={() => vm.onUpdate(share)}
                                 >
                                     {m['dataShareCenter.shared.continueUpdate']()}
@@ -496,7 +514,7 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
                                     type="button"
                                     aria-describedby={stopWarningId}
                                     className="rounded-[20px] bg-red-700 px-4 py-2 text-xs font-medium text-white disabled:opacity-40"
-                                    disabled={busy || pending}
+                                    disabled={mutationsDisabled}
                                     onClick={() => void stop()}
                                 >
                                     {busy

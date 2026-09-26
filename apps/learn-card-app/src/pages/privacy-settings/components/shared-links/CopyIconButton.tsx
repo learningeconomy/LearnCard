@@ -62,7 +62,6 @@ const CopyIconButton: React.FC<CopyIconButtonProps> = ({
         return (
             <button
                 type="button"
-                aria-label={label}
                 disabled={disabled}
                 onClick={event => void handleClick(event)}
                 className={`inline-flex flex-1 items-center justify-center gap-2 rounded-[20px] px-4 py-2.5 text-sm font-medium text-white transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-40 ${copied ? 'bg-emerald-600' : 'bg-grayscale-900 hover:opacity-90'}`}

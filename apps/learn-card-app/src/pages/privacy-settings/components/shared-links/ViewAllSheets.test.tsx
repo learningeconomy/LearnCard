@@ -252,7 +252,7 @@ describe('SharedLinksAllSheet', () => {
         expect(vm.onRefresh).toHaveBeenCalled();
     });
 
-    it('keeps rendering loaded rows on a background error, retrying via onLoadMore when more can load', () => {
+    it('keeps rendering loaded rows on a background error, always retrying via onRefresh (the hook does not know which request failed, and a stale cursor could load the wrong page)', () => {
         const vm = buildVm({
             records: [activeShareNewer],
             filter: 'active',
@@ -267,8 +267,8 @@ describe('SharedLinksAllSheet', () => {
         expect(alert).toHaveTextContent("We couldn't load your links. Please try again.");
 
         fireEvent.click(screen.getByText('Try again'));
-        expect(vm.onLoadMore).toHaveBeenCalled();
-        expect(vm.onRefresh).not.toHaveBeenCalled();
+        expect(vm.onRefresh).toHaveBeenCalled();
+        expect(vm.onLoadMore).not.toHaveBeenCalled();
     });
 
     it('keeps rendering loaded rows on a background error, retrying via onRefresh when nothing more can load', () => {
@@ -429,6 +429,31 @@ describe('SharedWithYouAllSheet', () => {
         render(<SharedWithYouAllSheet onClose={vi.fn()} />);
 
         fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+        expect(onRefresh).toHaveBeenCalled();
+    });
+
+    it('keeps rendering loaded rows on a background refresh error, with a compact retry', () => {
+        const onRefresh = vi.fn(async () => undefined);
+        const collection = savedCollection();
+        seed(
+            buildVm({
+                savedCollections: {
+                    ...buildVm().savedCollections,
+                    records: [collection],
+                    error: true,
+                    onRefresh,
+                },
+            })
+        );
+        render(<SharedWithYouAllSheet onClose={vi.fn()} />);
+
+        expect(screen.getByText('Career highlights')).toBeInTheDocument();
+        const alert = screen.getByRole('alert');
+        expect(alert).toHaveTextContent(
+            "We couldn't load your saved collections. Please try again."
+        );
+
+        fireEvent.click(screen.getByText('Try again'));
         expect(onRefresh).toHaveBeenCalled();
     });
 });
