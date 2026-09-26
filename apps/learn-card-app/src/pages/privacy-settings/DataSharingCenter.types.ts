@@ -69,7 +69,6 @@ export type DataSharingSavedCollectionsViewModel = {
     records: SavedCredentialCollection[];
     isLoading: boolean;
     error: boolean;
-    onOpen: () => Promise<void>;
     onRefresh: () => Promise<void>;
     onPreview: (collection: SavedCredentialCollection) => void;
 };

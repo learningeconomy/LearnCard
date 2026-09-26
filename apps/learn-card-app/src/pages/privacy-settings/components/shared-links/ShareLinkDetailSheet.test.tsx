@@ -59,7 +59,6 @@ const viewModel = (overrides: Partial<DataSharingSharedLinksViewModel> = {}) => 
         records: [],
         isLoading: false,
         error: false,
-        onOpen: vi.fn(async () => undefined),
         onRefresh: vi.fn(async () => undefined),
         onPreview: vi.fn(),
     },

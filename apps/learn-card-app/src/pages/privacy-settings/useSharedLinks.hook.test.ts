@@ -45,7 +45,7 @@ describe('useSharedLinks', () => {
         expect(getReceivedPresentations).not.toHaveBeenCalled();
     });
 
-    it('does not start a second saved-collection fetch when onOpen is called during or after the eager load', async () => {
+    it('does not start a second saved-collection fetch when onRefresh is called during the eager load', async () => {
         let resolveReceived: (value: unknown[]) => void = () => {};
         getReceivedPresentations.mockImplementationOnce(
             () =>
@@ -60,9 +60,9 @@ describe('useSharedLinks', () => {
 
         await waitFor(() => expect(getReceivedPresentations).toHaveBeenCalledTimes(1));
 
-        // Still in flight: onOpen should reuse the pending fetch, not start a new one.
+        // Still in flight: onRefresh should reuse the pending fetch, not start a new one.
         await act(async () => {
-            void result.current?.savedCollections.onOpen();
+            void result.current?.savedCollections.onRefresh();
             await Promise.resolve();
         });
         expect(getReceivedPresentations).toHaveBeenCalledTimes(1);
@@ -73,11 +73,5 @@ describe('useSharedLinks', () => {
         });
 
         await waitFor(() => expect(result.current?.savedCollections.isLoading).toBe(false));
-
-        // Already loaded: onOpen should be a no-op, not a re-fetch.
-        await act(async () => {
-            await result.current?.savedCollections.onOpen();
-        });
-        expect(getReceivedPresentations).toHaveBeenCalledTimes(1);
     });
 });
