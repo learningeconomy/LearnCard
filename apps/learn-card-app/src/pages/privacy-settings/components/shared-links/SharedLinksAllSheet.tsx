@@ -19,7 +19,7 @@ export const SheetChrome: React.FC<{
     children: React.ReactNode;
 }> = ({ title, onClose, refreshing, onRefresh, children }) => (
     <div className="ds-content-bg min-h-full w-full">
-        <div className="mx-auto w-full max-w-[820px] px-5 pb-14 pt-[max(16px,calc(env(safe-area-inset-top)+8px))]">
+        <div className="mx-auto w-full max-w-[820px] px-5 pb-14 pt-4">
             <div className="mb-4 flex items-center gap-2">
                 <button
                     type="button"
