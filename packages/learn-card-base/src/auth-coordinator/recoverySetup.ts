@@ -102,6 +102,10 @@ export const countConfiguredRecoveryMethods = (
 ): number =>
     new Set(
         methods
-            .filter(method => method.type !== 'email' || method.confirmedAt || maskedRecoveryEmail)
+            .filter(
+                method =>
+                    method.type !== 'escrow' &&
+                    (method.type !== 'email' || method.confirmedAt || maskedRecoveryEmail)
+            )
             .map(method => method.type)
     ).size;

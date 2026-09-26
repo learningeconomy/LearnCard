@@ -90,6 +90,9 @@ describe('tenantConfigSchema', () => {
         expect(result.auth.sss?.enableEmailBackupShare).toBe(true);
         expect(result.auth.sss?.escrowRelayPublicKey).toBe('');
         expect(result.auth.sss?.escrowRelayKeyId).toBe('');
+        expect(result.auth.sss?.escrowEnclaveMode).toBe('off');
+        expect(result.auth.sss?.escrowEnclavePublicKeys).toEqual([]);
+        expect(result.auth.sss?.escrowEnclaveMeasurements).toEqual([]);
         expect(result.auth.sss?.requireEmailForPhoneUsers).toBe(true);
         expect(result.branding.defaultTheme).toBe('colorful');
         expect(result.branding.loginRedirectPath).toBe('/waitingsofa?loginCompleted=true');

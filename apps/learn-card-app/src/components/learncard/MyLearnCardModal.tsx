@@ -99,6 +99,9 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
         showDeviceLinkModal,
         authProvider: contextAuthProvider,
         refreshAuthSession,
+        disableEscrowRecovery,
+        enableEscrowRecovery,
+        getEscrowEnrollmentState,
         runRecoverySetup,
         resetRecoverySetup,
         needsActivation,
@@ -502,6 +505,9 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
                     newModal(
                         <RecoverySetupModal
+                            onGetEscrowEnrollmentState={getEscrowEnrollmentState}
+                            onDisableEscrowRecovery={disableEscrowRecovery}
+                            onEnableEscrowRecovery={enableEscrowRecovery}
                             existingMethods={existingMethods.map(m => ({
                                 type: m.type,
                                 createdAt:
