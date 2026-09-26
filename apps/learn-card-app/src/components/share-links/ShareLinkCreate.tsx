@@ -14,6 +14,8 @@ import {
     closeOutline,
     copyOutline,
     downloadOutline,
+    eyeOffOutline,
+    eyeOutline,
     lockClosedOutline,
     notificationsOutline,
 } from 'ionicons/icons';
@@ -142,6 +144,7 @@ export const ShareLinkCreate = ({
     const [expiryChoice, setExpiryChoice] = useState<ExpiryChoice>(DEFAULT_EXPIRY_CHOICE);
     const [passcodeEnabled, setPasscodeEnabled] = useState(editShare?.passcodeProtected ?? false);
     const [passcode, setPasscode] = useState('');
+    const [showPasscode, setShowPasscode] = useState(false);
     const [notifyOnView, setNotifyOnView] = useState(editShare?.notifyOnView ?? false);
     const [copied, setCopied] = useState(false);
     const [publicationStarted, setPublicationStarted] = useState(false);
@@ -848,24 +851,43 @@ export const ShareLinkCreate = ({
                                 {passcodeEnabled && (
                                     <label className="block text-xs font-medium text-grayscale-700">
                                         {m['shareLinks.passcodeLabel']()}
-                                        <input
-                                            type="password"
-                                            minLength={8}
-                                            maxLength={64}
-                                            autoComplete="new-password"
-                                            disabled={fieldsLocked}
-                                            className={`${inputClass} mt-2`}
-                                            value={passcode}
-                                            onChange={event => {
-                                                invalidateDraft();
-                                                setPasscode(event.target.value);
-                                            }}
-                                            placeholder={
-                                                editShare?.passcodeProtected
-                                                    ? m['shareLinks.passcodeKeepPlaceholder']()
-                                                    : m['shareLinks.passcodePlaceholder']()
-                                            }
-                                        />
+                                        <span className="relative mt-2 block">
+                                            <input
+                                                type={showPasscode ? 'text' : 'password'}
+                                                minLength={8}
+                                                maxLength={64}
+                                                autoComplete="new-password"
+                                                disabled={fieldsLocked}
+                                                className={`${inputClass} pe-12`}
+                                                value={passcode}
+                                                onChange={event => {
+                                                    invalidateDraft();
+                                                    setPasscode(event.target.value);
+                                                }}
+                                                placeholder={
+                                                    editShare?.passcodeProtected
+                                                        ? m['shareLinks.passcodeKeepPlaceholder']()
+                                                        : m['shareLinks.passcodePlaceholder']()
+                                                }
+                                            />
+                                            <button
+                                                type="button"
+                                                aria-label={
+                                                    showPasscode
+                                                        ? m['shareLinks.hidePasscode']()
+                                                        : m['shareLinks.showPasscode']()
+                                                }
+                                                aria-pressed={showPasscode}
+                                                disabled={fieldsLocked}
+                                                onClick={() => setShowPasscode(shown => !shown)}
+                                                className="absolute inset-y-0 end-1 my-auto inline-flex h-10 w-10 items-center justify-center rounded-full text-lg text-grayscale-600 transition-colors hover:bg-grayscale-100 hover:text-grayscale-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:opacity-40"
+                                            >
+                                                <IonIcon
+                                                    aria-hidden="true"
+                                                    icon={showPasscode ? eyeOffOutline : eyeOutline}
+                                                />
+                                            </button>
+                                        </span>
                                         <span className="block mt-1.5 text-xs font-normal text-grayscale-500">
                                             {editShare?.passcodeProtected
                                                 ? m['shareLinks.passcodeKeepHint']()

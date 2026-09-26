@@ -509,6 +509,17 @@ describe('create screen', () => {
         fireEvent.change(screen.getByPlaceholderText('Leave blank to keep current passcode'), {
             target: { value: '86428642' },
         });
+        expect(screen.getByText(/current passcode can't be shown/)).toBeTruthy();
+        const passcodeInput = screen.getByPlaceholderText('Leave blank to keep current passcode');
+        expect(passcodeInput).toHaveAttribute('type', 'password');
+        fireEvent.click(screen.getByRole('button', { name: 'Show passcode' }));
+        expect(passcodeInput).toHaveAttribute('type', 'text');
+        expect(screen.getByRole('button', { name: 'Hide passcode' })).toHaveAttribute(
+            'aria-pressed',
+            'true'
+        );
+        fireEvent.click(screen.getByRole('button', { name: 'Hide passcode' }));
+        expect(passcodeInput).toHaveAttribute('type', 'password');
         fireEvent.click(notificationSwitch);
         fireEvent.click(screen.getByRole('button', { name: /Preview/ }));
         await screen.findByTestId('share-link-preview');
