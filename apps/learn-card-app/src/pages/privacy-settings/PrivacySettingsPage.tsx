@@ -93,7 +93,6 @@ const PrivacySettingsPage: React.FC = () => {
         newModal(
             <ShareLinkCreate
                 onDismiss={() => closeModal()}
-                onManage={() => closeModal()}
                 onComplete={() => refreshSharedRef.current?.()}
             />,
             {},

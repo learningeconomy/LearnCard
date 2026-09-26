@@ -201,7 +201,7 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
     };
 
     return (
-        <div className="relative w-full max-w-[480px] bg-white px-5 pb-6 pt-5 text-grayscale-900">
+        <div className="relative mx-auto w-full max-w-[520px] bg-white px-5 pb-6 pt-5 text-grayscale-900">
             <button
                 type="button"
                 aria-label={m['common.close']()}

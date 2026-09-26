@@ -52,7 +52,7 @@ import { ShareLinkPreview } from './ShareLinkPreview';
 export const primary =
     'px-5 py-3 rounded-[20px] bg-grayscale-900 text-white text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-emerald-500';
 export const secondary =
-    'px-5 py-3 rounded-[20px] border border-grayscale-300 text-grayscale-700 text-sm font-medium hover:bg-grayscale-10 transition-colors disabled:opacity-40';
+    'px-5 py-3 rounded-[20px] ring-1 ring-inset ring-grayscale-300 text-grayscale-700 text-sm font-medium hover:bg-grayscale-10 transition-colors disabled:opacity-40';
 const inputClass =
     'w-full px-4 py-3 rounded-xl border border-grayscale-300 text-sm text-grayscale-900 bg-white placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent';
 export const Busy = ({ children }: { children: React.ReactNode }) => (
@@ -1210,11 +1210,11 @@ export const ShareLinkCreate = ({
                     {step === 'done' && (
                         <div className="flex flex-wrap justify-end gap-3">
                             {onManage && (
-                                <button className={primary} onClick={onManage}>
+                                <button className={secondary} onClick={onManage}>
                                     {m['shareLinks.manage']()}
                                 </button>
                             )}
-                            <button className={secondary} onClick={onDismiss}>
+                            <button className={primary} onClick={onDismiss}>
                                 {m['shareLinks.finish']()}
                             </button>
                         </div>

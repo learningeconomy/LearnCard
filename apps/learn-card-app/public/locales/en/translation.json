@@ -9149,7 +9149,7 @@
         "updated": "Your link is updated",
         "updating": "Updating your link…",
         "update": "Update private link",
-        "manage": "Shared",
+        "manage": "Manage shared links",
         "passcodeTitle": "Require a passcode",
         "passcodeHint": "Recipients enter it before the credentials open. It is never included in the link.",
         "passcodeLabel": "Passcode",

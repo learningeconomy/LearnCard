@@ -5,6 +5,10 @@ import type { SharePayload } from '@learncard/types';
 
 import type { SavedCredentialCollection } from '../../pages/privacy-settings/DataSharingCenter.types';
 import * as m from '../../paraglide/messages.js';
+import {
+    credentialCountLabel,
+    formatShortDate,
+} from '../../pages/privacy-settings/components/shared-links/sharedLinkFormat';
 import { ShareLinkPreview } from './ShareLinkPreview';
 
 type SavedCollectionPreviewProps = {
@@ -57,12 +61,13 @@ export const SavedCollectionPreview = ({ collection, onDismiss }: SavedCollectio
                         sharerAvatar={collection.sharer?.avatar}
                         sharedAt={collection.receivedAt}
                         showExpiry={false}
+                        countLabel={credentialCountLabel(collection.credentialCount)}
                         summaryExtra={
                             <div className="flex items-center gap-1.5 border-t border-grayscale-100 pt-4 text-xs text-grayscale-500">
                                 <IonIcon icon={calendarOutline} />
                                 <time dateTime={collection.receivedAt}>
                                     {m['dataShareCenter.shared.savedOn']({
-                                        date: new Date(collection.receivedAt).toLocaleDateString(),
+                                        date: formatShortDate(collection.receivedAt),
                                     })}
                                 </time>
                             </div>

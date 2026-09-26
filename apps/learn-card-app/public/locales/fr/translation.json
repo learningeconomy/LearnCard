@@ -9143,7 +9143,7 @@
         "updated": "Votre lien est à jour",
         "updating": "Mise à jour de votre lien…",
         "update": "Mettre à jour le lien privé",
-        "manage": "Partagés",
+        "manage": "Gérer les liens partagés",
         "passcodeTitle": "Exiger un code d’accès",
         "passcodeHint": "Les destinataires le saisissent avant d’ouvrir les justificatifs. Il n’est jamais inclus dans le lien.",
         "passcodeLabel": "Code d’accès",

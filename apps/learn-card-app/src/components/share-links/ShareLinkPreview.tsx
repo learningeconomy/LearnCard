@@ -34,6 +34,8 @@ export interface ShareLinkPreviewProps {
     showOriginal?: boolean;
     /** Saved collections are durable records rather than expiring public links. */
     showExpiry?: boolean;
+    /** Overrides the default "N credentials selected" summary (e.g. for received collections). */
+    countLabel?: string;
     className?: string;
 }
 
@@ -81,6 +83,7 @@ export const ShareLinkPreview = ({
     summaryIllustration,
     showOriginal = false,
     showExpiry = true,
+    countLabel,
     className = '',
 }: ShareLinkPreviewProps) => (
     <div className={`space-y-5 ${className}`} data-testid="share-link-preview">
@@ -158,9 +161,10 @@ export const ShareLinkPreview = ({
             )}
             <div className="flex flex-wrap gap-3 text-xs text-grayscale-500">
                 <span>
-                    {(showOriginal ? m['shareLinks.sharedCount'] : m['shareLinks.selected'])({
-                        count: String(payload.selection.length),
-                    })}
+                    {countLabel ??
+                        (showOriginal ? m['shareLinks.sharedCount'] : m['shareLinks.selected'])({
+                            count: String(payload.selection.length),
+                        })}
                 </span>
                 {showExpiry &&
                     (expiresAt ? (

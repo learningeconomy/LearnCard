@@ -9143,7 +9143,7 @@
         "updated": "Tu enlace está actualizado",
         "updating": "Actualizando tu enlace…",
         "update": "Actualizar enlace privado",
-        "manage": "Compartido",
+        "manage": "Gestionar enlaces compartidos",
         "passcodeTitle": "Solicitar un código de acceso",
         "passcodeHint": "Los destinatarios lo introducen antes de abrir las credenciales. Nunca se incluye en el enlace.",
         "passcodeLabel": "Código de acceso",

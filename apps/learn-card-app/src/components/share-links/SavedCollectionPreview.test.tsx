@@ -12,13 +12,15 @@ vi.mock('./ShareLinkPreview', () => ({
         payload,
         title,
         showExpiry,
+        countLabel,
     }: {
         payload: { selection: unknown[] };
         title: string;
         showExpiry: boolean;
+        countLabel?: string;
     }) => (
         <div data-testid="saved-preview">
-            {title} · {payload.selection.length} · {String(showExpiry)}
+            {title} · {payload.selection.length} · {String(showExpiry)} · {countLabel}
         </div>
     ),
 }));
@@ -42,7 +44,8 @@ describe('SavedCollectionPreview', () => {
         render(<SavedCollectionPreview collection={collection} onDismiss={() => undefined} />);
 
         expect(screen.getByTestId('saved-preview')).toHaveTextContent(
-            'Saved credential collection · 2 · false'
+            'Saved credential collection · 2 · false · 2 credentials'
         );
+        expect(screen.getByTestId('saved-preview')).not.toHaveTextContent('selected');
     });
 });
