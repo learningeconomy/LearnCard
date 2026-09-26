@@ -29,6 +29,9 @@ const share = (encryptedData: string) => ({
     encryptedDek: `${encryptedData}-dek`,
     iv: `${encryptedData}-iv`,
 });
+// lca-api wraps auth shares with server-side encryption; reads return the original
+// encryptedData with the wrapper fields (encryptedDek, iv) cleared.
+const storedShare = (encryptedData: string) => ({ encryptedData, encryptedDek: '', iv: '' });
 
 const createChallengeHeaders = async (learnCard: LearnCard, challenge: string) => {
     await redis.set(`challenge|${learnCard.id.did()}|${challenge}`, 'valid', 'EX', 300);
@@ -135,7 +138,7 @@ describe('SSS Key Management API', () => {
         });
         test('should retrieve the stored auth share', async () => {
             expect(await getAuthShare(mockAuthToken)).toMatchObject({
-                authShare: share('initial-auth-share'),
+                authShare: storedShare('initial-auth-share'),
                 primaryDid: learnCard.id.did(),
                 keyProvider: 'sss',
             });
@@ -144,7 +147,9 @@ describe('SSS Key Management API', () => {
 
     describe('Add and Retrieve Recovery Method', () => {
         test('should add and confirm a passkey recovery method', async () => {
-            await enroll(mockAuthToken, 'passkey', 'first-passkey');
+            await enroll(mockAuthToken, 'passkey', 'first-passkey', {
+                credentialId: 'passkey-credential-first',
+            });
         });
         test('should retrieve the stored recovery share', async () => {
             expect(await getRecoveryShare(mockAuthToken, 'passkey')).toMatchObject({
@@ -221,7 +226,7 @@ describe('SSS Key Management API', () => {
                 409
             );
             expect(await getAuthShare(token)).toMatchObject({
-                authShare: share('updated-data'),
+                authShare: storedShare('updated-data'),
                 primaryDid: learnCard.id.did(),
                 shareVersion: 2,
             });
@@ -247,7 +252,7 @@ describe('SSS Key Management API', () => {
             ).toMatchObject({ message: 'The authenticated DID does not own this key record.' });
             expect(await getAuthShare(token)).toMatchObject({
                 primaryDid: learnCard.id.did(),
-                authShare: share('owner-share'),
+                authShare: storedShare('owner-share'),
             });
         });
     });
@@ -300,11 +305,11 @@ describe('SSS Key Management API', () => {
             expect(await getAuthShare(token2)).toBeNull();
             await store(token2, 'provider-two');
             expect(await getAuthShare(token1)).toMatchObject({
-                authShare: share('provider-one'),
+                authShare: storedShare('provider-one'),
                 primaryDid: learnCard.id.did(),
             });
             expect(await getAuthShare(token2)).toMatchObject({
-                authShare: share('provider-two'),
+                authShare: storedShare('provider-two'),
                 primaryDid: learnCard.id.did(),
             });
         });
@@ -330,7 +335,10 @@ describe('SSS Key Management API', () => {
         test('should store and retrieve recovery share with salt', async () => {
             const token = newToken('salt');
             await store(token, 'salt-data');
-            await enroll(token, 'passkey', 'salted-share', { salt: 'random-salt-value-abc123' });
+            await enroll(token, 'passkey', 'salted-share', {
+                credentialId: 'salted-passkey-credential',
+                salt: 'random-salt-value-abc123',
+            });
             expect(await getRecoveryShare(token, 'passkey')).toMatchObject({
                 encryptedShare: { encryptedData: 'salted-share', salt: 'random-salt-value-abc123' },
             });
@@ -342,7 +350,10 @@ describe('SSS Key Management API', () => {
         test('prunes recovery method whose auth share version was evicted from history', async () => {
             await store(token, 'share-v1', { expectedShareVersion: 0 });
             await store(token, 'share-v2', { expectedShareVersion: 1 });
-            await enroll(token, 'passkey', 'passkey-share-v2', { shareVersion: 2 });
+            await enroll(token, 'passkey', 'passkey-share-v2', {
+                credentialId: 'prune-passkey-credential',
+                shareVersion: 2,
+            });
             expect((await getAuthShare(token)).recoveryMethods).toHaveLength(1);
             for (let v = 3; v <= 8; v++) {
                 expect(
@@ -363,7 +374,9 @@ describe('SSS Key Management API', () => {
             expect(data.shareVersion).toBe(9);
             expect(data.recoveryMethods).toHaveLength(1);
             expect(data.recoveryMethods[0]).toMatchObject({ type: 'phrase', shareVersion: 8 });
-            expect(await getAuthShare(token, 8)).toMatchObject({ authShare: share('share-v8') });
+            expect(await getAuthShare(token, 8)).toMatchObject({
+                authShare: storedShare('share-v8'),
+            });
         });
     });
 
@@ -406,7 +419,7 @@ describe('SSS Key Management API', () => {
             expect(await getAuthShare(token)).toMatchObject({
                 primaryDid: learnCard.id.did(),
                 keyProvider: 'sss',
-                authShare: share('new-sss-auth-share'),
+                authShare: storedShare('new-sss-auth-share'),
                 shareVersion: 2,
                 sssActivationState: 'provisional',
             });
@@ -415,6 +428,7 @@ describe('SSS Key Management API', () => {
             await write('recovery', {
                 ...auth(token),
                 type: 'passkey',
+                credentialId: 'lifecycle-passkey-credential',
                 shareVersion: 2,
                 encryptedShare: {
                     encryptedData: 'post-migration-recovery-share',
@@ -428,7 +442,11 @@ describe('SSS Key Management API', () => {
             });
             await write('activate', auth(token), 400);
             expect(await getAuthShare(token)).toMatchObject({ sssActivationState: 'provisional' });
-            await write('recovery/confirm', { ...auth(token), type: 'passkey' });
+            await write('recovery/confirm', {
+                ...auth(token),
+                type: 'passkey',
+                credentialId: 'lifecycle-passkey-credential',
+            });
             await write('activate', auth(token));
         });
         test('step 8: recovery is accessible and SSS is active', async () => {
