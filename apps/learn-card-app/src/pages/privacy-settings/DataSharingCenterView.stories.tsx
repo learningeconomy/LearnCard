@@ -83,12 +83,14 @@ export const SharedWithYou: Story = {
     args: { vm: sharedWithYouPersona() },
 };
 
-export const SharedWithYouEmpty: Story = {
+/** Nothing received yet: the section is left out entirely. */
+export const SharedWithYouHiddenWhenEmpty: Story = {
     args: { vm: sharedWithYouPersona({ records: [] }) },
-};
-
-export const SharedWithYouLoading: Story = {
-    args: { vm: sharedWithYouPersona({ records: [], isLoading: true }) },
+    play: async ({ canvasElement }) => {
+        const canvas = within(canvasElement);
+        await expect(canvas.getByRole('list', { name: 'Your shared links' })).toBeVisible();
+        await expect(canvas.queryByRole('heading', { name: 'Shared with you' })).toBeNull();
+    },
 };
 
 export const SharedWithYouError: Story = {

@@ -142,8 +142,9 @@ const SharedLinksSection: React.FC<{ vm: DataSharingSharedLinksViewModel; delay?
     };
 
     const nothingAtAll = !vm.isLoading && !vm.error && vm.records.length === 0 && !vm.hasMore;
-    const hideReceived =
-        nothingAtAll && !saved.isLoading && !saved.error && saved.records.length === 0;
+    // Nothing received yet (or still loading): leave the section out entirely.
+    // A load failure still shows so the user can retry.
+    const hideReceived = saved.records.length === 0 && !saved.error;
     const showLinksViewAll = vm.records.length > preview.length || vm.hasMore;
     const newLinkButton = (
         <QuietTextButton icon={addOutline} onClick={vm.onCreateShare}>
@@ -230,17 +231,13 @@ const SharedLinksSection: React.FC<{ vm: DataSharingSharedLinksViewModel; delay?
                 <section>
                     <SectionHeader title={m['dataShareCenter.shared.sharedWithYou']()} />
                     <ListShell label={m['dataShareCenter.shared.sharedWithYou']()}>
-                        {saved.isLoading && saved.records.length === 0 ? (
-                            <SkeletonRows count={2} />
-                        ) : saved.error && saved.records.length === 0 ? (
+                        {saved.error && saved.records.length === 0 ? (
                             <MessageRow
                                 tone="error"
                                 action={<RetryButton onClick={saved.onRefresh} />}
                             >
                                 {m['dataShareCenter.shared.savedLoadError']()}
                             </MessageRow>
-                        ) : saved.records.length === 0 ? (
-                            <MessageRow>{m['dataShareCenter.shared.receivedEmpty']()}</MessageRow>
                         ) : (
                             savedPreview.map((collection, index) => (
                                 <ReceivedCollectionRow

@@ -378,11 +378,21 @@ describe('shared with you', () => {
         expect(within(list).getByRole('alert').textContent).toMatch(/saved collections/);
     });
 
-    it('invites instead of apologizing when nothing has been received', () => {
+    it('leaves the section out when nothing has been received', () => {
         renderSection(
             viewModel({ savedCollections: { ...viewModel().savedCollections, records: [] } })
         );
-        expect(screen.getByText(/they'll land here/)).toBeTruthy();
+        expect(screen.queryByRole('heading', { name: 'Shared with you' })).toBeNull();
+        expect(screen.queryByRole('list', { name: 'Shared with you' })).toBeNull();
+    });
+
+    it('stays out of the way while received collections are still loading', () => {
+        renderSection(
+            viewModel({
+                savedCollections: { ...viewModel().savedCollections, records: [], isLoading: true },
+            })
+        );
+        expect(screen.queryByRole('heading', { name: 'Shared with you' })).toBeNull();
     });
 });
 
