@@ -16,6 +16,7 @@ export type {
     TenantFilestackStorageConfig,
     TenantS3StorageConfig,
     TenantBrandingConfig,
+    SamplePersonaConfig,
     TenantFeatureConfig,
     TenantObservabilityConfig,
     TenantLinksConfig,

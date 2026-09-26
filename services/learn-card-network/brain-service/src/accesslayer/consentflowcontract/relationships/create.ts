@@ -23,8 +23,8 @@ import { reconsentTerms, upsertRequestedForRelationship } from './update';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { getNotificationMessage } from '@helpers/notificationMessages';
 import { resolveRecipientLocale } from '@helpers/getRecipientLocale.helpers';
-import { sendBoost } from '@helpers/boost.helpers';
-import { getBoostUri } from '@helpers/boost.helpers';
+import { getBoostUri, sendBoost } from '@helpers/boost.helpers';
+import { setCredentialSubjectIds } from '@helpers/credentialSubject.helpers';
 import { getDidWeb } from '@helpers/did.helpers';
 import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
@@ -238,21 +238,14 @@ export const consentToContract = async (
 
                     boostCredential.issuer = { id: contractOwnerSigningAuthority.relationship.did };
 
-                    boostCredential.boostId = getBoostUri(boost.target.id, domain);
-
-                    if (Array.isArray(boostCredential.credentialSubject)) {
-                        boostCredential.credentialSubject = boostCredential.credentialSubject.map(
-                            subject => ({
-                                ...subject,
-                                id: getDidWeb(domain, consenter.profileId),
-                            })
-                        );
-                    } else {
-                        boostCredential.credentialSubject.id = getDidWeb(
-                            domain,
-                            consenter.profileId
-                        );
+                    if (boostCredential.type.includes('BoostCredential')) {
+                        boostCredential.boostId = getBoostUri(boost.target.id, domain);
                     }
+
+                    setCredentialSubjectIds(
+                        boostCredential,
+                        getDidWeb(domain, consenter.profileId)
+                    );
 
                     // Inject OBv3 skill alignments based on boost's framework/skills
                     await injectObv3AlignmentsIntoCredentialForBoost(
