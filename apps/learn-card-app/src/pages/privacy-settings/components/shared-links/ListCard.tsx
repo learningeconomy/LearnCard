@@ -12,7 +12,7 @@ export const SectionHeader: React.FC<{
     <div className="mb-2 flex items-baseline justify-between gap-4 px-1">
         <div className="flex min-w-0 items-baseline gap-2">
             <h3 className="text-[15px] font-semibold text-grayscale-900">{title}</h3>
-            {caption && <span className="text-xs text-grayscale-500">{caption}</span>}
+            {caption && <span className="text-xs text-grayscale-600">{caption}</span>}
         </div>
         {action}
     </div>

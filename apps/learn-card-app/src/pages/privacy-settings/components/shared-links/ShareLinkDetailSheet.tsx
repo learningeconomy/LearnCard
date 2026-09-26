@@ -206,7 +206,7 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
                 type="button"
                 aria-label={m['common.close']()}
                 onClick={onClose}
-                className="absolute end-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full text-xl text-grayscale-500 hover:bg-grayscale-100"
+                className="absolute end-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full text-xl text-grayscale-600 hover:bg-grayscale-100"
             >
                 <IonIcon icon={closeOutline} aria-hidden="true" />
             </button>
@@ -385,7 +385,7 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
                     <DetailRow label={m['dataShareCenter.shared.viewsLabel']()}>
                         {views?.label}
                         {share.viewCount > 0 && share.lastViewedAt && (
-                            <span className="text-grayscale-500">
+                            <span className="text-grayscale-600">
                                 {' · '}
                                 {formatShortDate(share.lastViewedAt)}
                             </span>

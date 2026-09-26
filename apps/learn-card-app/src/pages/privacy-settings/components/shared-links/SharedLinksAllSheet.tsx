@@ -148,7 +148,7 @@ const SharedLinksAllSheet: React.FC<{
                     >
                         {statusLabel(filter)}
                         <span
-                            className={`ms-1.5 text-xs ${vm.filter === filter ? 'text-white/70' : 'text-grayscale-400'}`}
+                            className={`ms-1.5 text-xs ${vm.filter === filter ? 'text-white/70' : 'text-grayscale-600'}`}
                         >
                             {counts[filter]}
                         </span>
