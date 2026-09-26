@@ -185,20 +185,17 @@ describe('SSS Key Management via LearnCard Plugin', () => {
             );
         });
 
-        test('should reject marking a new SSS record as migrated', async () => {
+        test('should mark a provisional SSS record as migrated', async () => {
             await expect(
                 learnCard.invoke.markMigrated(migrationToken, 'firebase')
-            ).rejects.toMatchObject({
-                data: { code: 'BAD_REQUEST' },
-                message: 'This key record is not eligible for migration.',
-            });
+            ).resolves.toMatchObject({ success: true });
         });
 
-        test('should preserve the SSS record after rejected migration', async () => {
+        test('should keep the Web3Auth fallback until the migration activates', async () => {
             const result = await learnCard.invoke.getAuthShare(migrationToken, 'firebase');
 
             expect(result).not.toBeNull();
-            expect(result?.keyProvider).toBe('sss');
+            expect(result?.keyProvider).toBe('web3auth');
         });
     });
 
