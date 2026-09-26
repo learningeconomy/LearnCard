@@ -382,7 +382,7 @@ describe('Recovery Email Verification & Email Backup', () => {
                 `no-recovery-${uniqueId}`,
                 `no-recovery-${uniqueId}@example.com`
             );
-            const noRecoveryLearnCard = await getLearnCard('f'.repeat(64));
+            const noRecoveryLearnCard = await getLearnCard('7'.repeat(64));
 
             await storeAuthShare(noRecoveryLearnCard, noRecoveryToken, 'no-recovery-share');
 
