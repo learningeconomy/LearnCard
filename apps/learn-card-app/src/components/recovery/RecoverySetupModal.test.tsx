@@ -33,6 +33,7 @@ vi.mock('learn-card-base', async () => ({
 
 import RecoverySetupModal from './RecoverySetupModal';
 import { createRecoverySetupRunner } from '../../../../../packages/learn-card-base/src/auth-coordinator/recoverySetup';
+import { createRecoveryPinActions } from '../../providers/recoveryPinActions';
 
 const renderModal = (
     initialMethod: 'passkey' | 'phrase' | 'backup' | 'email',
@@ -65,6 +66,103 @@ const renderModal = (
 };
 
 describe('RecoverySetupModal prompt integration', () => {
+    it.each([false, true])(
+        'PIN settings (existing PIN: %s) retry activation without re-saving',
+        async hasPin => {
+            const activate = vi
+                .fn()
+                .mockRejectedValueOnce(new Error('offline'))
+                .mockResolvedValue(undefined);
+            const identity = {};
+            const runner = createRecoverySetupRunner(
+                () => ({ identity, needsActivation: true, activate }),
+                vi.fn()
+            );
+            const save = vi.fn().mockResolvedValue(undefined);
+            const actions = createRecoveryPinActions({
+                runRecoverySetup: runner.run,
+                resetRecoverySetup: runner.reset,
+                setEscrowPin: save,
+                clearEscrowPin: vi.fn(),
+            });
+            const getEnrollment = vi.fn().mockResolvedValue({
+                state: 'enrolled',
+                ...(hasPin ? { escrowPin: { state: 'enabled' } } : {}),
+            });
+            renderModal('email', vi.fn(), {
+                onGetEscrowEnrollmentState: getEnrollment,
+                onEnableEscrowRecovery: vi.fn(),
+                onDisableEscrowRecovery: vi.fn(),
+                onSetEscrowPin: actions.setEscrowPin,
+                onClearEscrowPin: actions.clearEscrowPin,
+            });
+            fireEvent.click(
+                await screen.findByRole('button', {
+                    name: hasPin ? 'Change' : 'Set a recovery PIN',
+                })
+            );
+            const enterPin = () =>
+                fireEvent.paste(screen.getAllByLabelText(/PIN digit/)[0], {
+                    clipboardData: { getData: () => '135790' },
+                });
+            enterPin();
+            enterPin();
+            await waitFor(() => expect(activate).toHaveBeenCalledOnce());
+            await waitFor(() =>
+                expect(screen.getAllByLabelText(/PIN digit/)[0]).not.toBeDisabled()
+            );
+            expect(screen.getByText('Confirm your PIN')).toBeInTheDocument();
+            expect(getEnrollment).toHaveBeenCalledOnce();
+            enterPin();
+            await waitFor(() =>
+                expect(screen.queryByText('Confirm your PIN')).not.toBeInTheDocument()
+            );
+            expect(save).toHaveBeenCalledOnce();
+            expect(activate).toHaveBeenCalledTimes(2);
+            expect(getEnrollment).toHaveBeenCalledTimes(2);
+        }
+    );
+
+    it('shows Set PIN pill when enrolled without a PIN and opens PIN entry', async () => {
+        const onSetEscrowPin = vi.fn().mockResolvedValue(undefined);
+        renderModal('email', vi.fn(), {
+            onGetEscrowEnrollmentState: vi.fn().mockResolvedValue({ state: 'enrolled' }),
+            onDisableEscrowRecovery: vi.fn(),
+            onEnableEscrowRecovery: vi.fn(),
+            onSetEscrowPin,
+        });
+
+        const setPinButton = await screen.findByRole('button', { name: 'Set a recovery PIN' });
+        expect(setPinButton).toBeInTheDocument();
+
+        fireEvent.click(setPinButton);
+        expect(screen.getByText('Enter a 6-digit PIN')).toBeInTheDocument();
+    });
+
+    it('shows Change and Remove buttons when PIN is set', async () => {
+        const onClearEscrowPin = vi.fn().mockResolvedValue(undefined);
+        renderModal('email', vi.fn(), {
+            onGetEscrowEnrollmentState: vi
+                .fn()
+                .mockResolvedValue({ state: 'enrolled', escrowPin: { state: 'enabled' } }),
+            onDisableEscrowRecovery: vi.fn(),
+            onEnableEscrowRecovery: vi.fn(),
+            onSetEscrowPin: vi.fn(),
+            onClearEscrowPin,
+        });
+
+        const changeButton = await screen.findByRole('button', { name: 'Change' });
+        const removeButton = await screen.findByRole('button', { name: 'Remove PIN' });
+
+        expect(changeButton).toBeInTheDocument();
+        expect(removeButton).toBeInTheDocument();
+
+        fireEvent.click(removeButton);
+        expect(
+            screen.getByText(/Are you sure you want to remove your recovery PIN/)
+        ).toBeInTheDocument();
+    });
+
     it.each(['enrolled', 'opted-out'] as const)('renders automatic recovery %s', async state => {
         renderModal('email', vi.fn(), {
             onGetEscrowEnrollmentState: vi.fn().mockResolvedValue(state),
@@ -76,11 +174,7 @@ describe('RecoverySetupModal prompt integration', () => {
             String(state === 'enrolled')
         );
         expect(
-            screen.getByText(
-                state === 'enrolled'
-                    ? 'On — your account can be restored after a 7-day waiting period.'
-                    : 'Off'
-            )
+            screen.getByText(state === 'enrolled' ? 'Restore after a 7-day wait' : 'Off')
         ).toBeInTheDocument();
     });
 
@@ -139,9 +233,7 @@ describe('RecoverySetupModal prompt integration', () => {
                 onEnableEscrowRecovery,
             });
             const toggle = await screen.findByRole('switch');
-            fireEvent.click(
-                state === 'not-enrolled' ? screen.getByRole('button', { name: 'Turn on' }) : toggle
-            );
+            fireEvent.click(toggle);
             await waitFor(() => expect(toggle).toHaveAttribute('aria-checked', 'true'));
             expect(onEnableEscrowRecovery).toHaveBeenCalledOnce();
         }
@@ -305,5 +397,41 @@ describe('RecoverySetupModal prompt integration', () => {
 
         await waitFor(() => expect(props.onConfirmEmailRecovery).toHaveBeenCalledWith('654321'));
         expect(onCompleted).toHaveBeenCalledWith('email');
+    });
+
+    it('renders a close button that calls onClose even while activation is pending', () => {
+        const onClose = vi.fn();
+        renderModal('email', vi.fn(), { isActivationPending: true, onClose });
+
+        fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+
+        expect(onClose).toHaveBeenCalledOnce();
+    });
+
+    it('shows the update form when clicking Change on a fully protected account', async () => {
+        renderModal('email', vi.fn(), {
+            existingMethods: [
+                { type: 'email', createdAt: '2023-01-01' },
+                { type: 'phrase', createdAt: '2023-01-01' },
+                { type: 'backup', createdAt: '2023-01-01' },
+                { type: 'passkey', createdAt: '2023-01-01' },
+            ],
+        });
+
+        expect(screen.getByText("You're fully protected.")).toBeInTheDocument();
+
+        const changeButtons = screen.getAllByRole('button', { name: 'Change' });
+
+        // Click Change on phrase (index 1)
+        fireEvent.click(changeButtons[1]);
+        expect(screen.getByRole('button', { name: 'Generate New Phrase' })).toBeInTheDocument();
+
+        // Click Cancel
+        fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+        expect(screen.getByText("You're fully protected.")).toBeInTheDocument();
+
+        // Click Change on backup (index 2)
+        fireEvent.click(changeButtons[2]);
+        expect(screen.getByRole('button', { name: 'Generate New Backup' })).toBeInTheDocument();
     });
 });

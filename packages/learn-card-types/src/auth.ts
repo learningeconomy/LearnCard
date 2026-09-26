@@ -6,6 +6,8 @@
  * coupling consumers to any specific implementation.
  */
 
+import { z } from 'zod';
+
 // ---------------------------------------------------------------------------
 // Auth Session Error
 // ---------------------------------------------------------------------------
@@ -266,6 +268,32 @@ export interface IdentityRecoverySession {
 
 export type SssActivationState = 'provisional' | 'active';
 
+/** Optional PIN enrollment requires rotating the existing escrow share. */
+export type EscrowEnrollmentOptions = { pin?: string };
+
+/** Stable error-message contract shared by PIN recovery clients and servers. */
+export const ESCROW_PIN_LOCKED_MESSAGE =
+    'Too many incorrect PIN attempts. You can still recover by waiting.';
+export const ESCROW_PIN_UNAVAILABLE_MESSAGE = 'PIN recovery is not available for this account.';
+export const ESCROW_PIN_MISMATCH_PATTERN = /^Incorrect PIN\. (\d+) attempts left\.$/;
+export const escrowPinMismatchMessage = (attemptsRemaining: number): string =>
+    `Incorrect PIN. ${attemptsRemaining} attempts left.`;
+
+/** Public PIN availability and remaining lifetime attempts; never includes the verifier. */
+export const EscrowPinStatusValidator = z.object({
+    state: z.enum(['none', 'enabled', 'locked', 'stale']),
+    enabled: z.boolean(),
+    attemptsRemaining: z.number().int().nonnegative(),
+    salt: z.string().optional(),
+});
+export type EscrowPinStatus = z.infer<typeof EscrowPinStatusValidator>;
+
+/** Enrollment details for PIN-aware strategies. Legacy strategies may still return a string. */
+export interface EscrowEnrollmentState {
+    state: 'enrolled' | 'not-enrolled' | 'opted-out' | 'disabled';
+    escrowPin?: EscrowPinStatus;
+}
+
 /**
  * Server key status returned by the strategy's fetchServerKeyStatus.
  * The strategy owns the server shape — different strategies may
@@ -280,6 +308,7 @@ export interface ServerKeyStatus {
     shareVersion: number | null;
     maskedRecoveryEmail?: string | null;
     escrowOptedOut?: boolean;
+    escrowPin?: EscrowPinStatus;
     sssActivationState?: SssActivationState | null;
 }
 
@@ -455,7 +484,7 @@ export interface KeyDerivationStrategy<
     getEscrowEnrollmentState?(params: {
         token: string;
         providerType: AuthProviderType;
-    }): Promise<'enrolled' | 'not-enrolled' | 'opted-out' | 'disabled'>;
+    }): Promise<EscrowEnrollmentState['state'] | EscrowEnrollmentState>;
 
     /** Opt out with an owner proof; requires another confirmed recovery method. */
     disableEscrowRecovery?(params: {
@@ -471,6 +500,7 @@ export interface KeyDerivationStrategy<
         providerType: AuthProviderType;
         privateKey: string;
         signDidAuthVp: DidAuthVpSigner;
+        options?: EscrowEnrollmentOptions;
     }): Promise<
         | { enrolled: false; reason: 'disabled' | 'opted-out' }
         | { enrolled: true; changed: false }
@@ -483,11 +513,29 @@ export interface KeyDerivationStrategy<
         providerType: AuthProviderType;
         privateKey: string;
         signDidAuthVp: DidAuthVpSigner;
+        options?: EscrowEnrollmentOptions;
     }): Promise<
         | { enrolled: false; reason: 'disabled' | 'opted-out' }
         | { enrolled: true; changed: false }
         | { enrolled: true; changed: true; shareVersion: number }
     >;
+
+    /** Set or change a PIN by rotating escrow material with an owner proof. */
+    setEscrowPin?(params: {
+        token: string;
+        providerType: AuthProviderType;
+        privateKey: string;
+        signDidAuthVp: DidAuthVpSigner;
+        pin: string;
+    }): Promise<void>;
+
+    /** Remove a PIN by rotating escrow material with an owner proof. */
+    clearEscrowPin?(params: {
+        token: string;
+        providerType: AuthProviderType;
+        privateKey: string;
+        signDidAuthVp: DidAuthVpSigner;
+    }): Promise<void>;
 
     /** Start an escrow hold. Securely persist the returned secrets; null means an existing hold. */
     startEscrowRecovery?(params: {
@@ -495,6 +543,7 @@ export interface KeyDerivationStrategy<
         providerType?: AuthProviderType;
         recoverySessionToken?: string;
         tenantId?: string;
+        options?: { releasePolicy?: 'hold' | 'pin'; restart?: boolean };
     }): Promise<{
         holdId: string;
         status: 'pending' | 'cancelled' | 'completed' | 'expired';
@@ -504,6 +553,9 @@ export interface KeyDerivationStrategy<
         completedAt?: string;
         resumeToken: string | null;
         clientEphemeralPrivateKey: string;
+        pinSalt?: string;
+        /** Absent on legacy hold-only strategies. */
+        releasePolicy?: 'hold' | 'pin';
     }>;
 
     /** Read a hold using its resume proof or the active device's provider session. */
@@ -516,6 +568,8 @@ export interface KeyDerivationStrategy<
         status: 'pending' | 'cancelled' | 'completed' | 'expired';
         requestedAt: string;
         releaseAfter: string;
+        /** Absent on legacy hold-only strategies. */
+        releasePolicy?: 'hold' | 'pin';
         cancelledAt?: string;
         completedAt?: string;
     } | null>;

@@ -16,6 +16,7 @@ let config: LcaApiEnvironment = environment;
 
 export const isEscrowEnabled = (): boolean => Boolean(config.ESCROW_ENCLAVE_MODE);
 export const getEscrowHoldDurationMs = (): number => config.ESCROW_HOLD_DURATION_MS;
+export const getEscrowHoldRestartMinAgeMs = (): number => config.ESCROW_HOLD_RESTART_MIN_AGE_MS;
 export const getEscrowEnclave = (): EscrowEnclave => {
     if (!isEscrowEnabled()) throw new EscrowUnavailableError();
     if (enclave) return enclave;

@@ -36,15 +36,17 @@ import RecoveryBanner from './RecoveryBanner';
 
 const renderPrompt = (overrides: Partial<React.ComponentProps<typeof RecoveryBanner>> = {}) => {
     const onSetup = vi.fn();
+    const onSetupPin = vi.fn();
     const props: React.ComponentProps<typeof RecoveryBanner> = {
         recoverySupported: true,
         recoveryMethodCount: 0,
         totalCredentialCount: 1,
         onSetup,
+        onSetupPin,
         ...overrides,
     };
 
-    return { ...render(<RecoveryBanner {...props} />), onSetup, props };
+    return { ...render(<RecoveryBanner {...props} />), onSetup, onSetupPin, props };
 };
 
 describe('RecoveryBanner', () => {
@@ -54,10 +56,12 @@ describe('RecoveryBanner', () => {
         mocks.webAuthnSupported = true;
         mocks.track.mockClear();
         firstStartupStore.set.recoveryPromptSnoozedUntil(0);
+        firstStartupStore.set.recoveryBackupPromptSnoozeCount(0);
     });
 
     afterEach(() => {
         vi.useRealTimers();
+        vi.unstubAllGlobals();
     });
 
     it('does not render while unresolved, unsupported, protected, or empty in calm mode', () => {
@@ -96,6 +100,7 @@ describe('RecoveryBanner', () => {
     });
 
     it('renders separate accessible action and snooze buttons and tracks shown once', () => {
+        vi.stubGlobal('navigator', { userAgent: 'Macintosh' });
         const { rerender, props } = renderPrompt();
 
         const action = screen.getByRole('button', { name: 'Set up a way to sign back in' });
@@ -107,6 +112,30 @@ describe('RecoveryBanner', () => {
         expect(
             mocks.track.mock.calls.filter(([, payload]) => payload.action === 'shown')
         ).toHaveLength(1);
+    });
+
+    it('shows Windows Hello on Windows', () => {
+        vi.stubGlobal('navigator', { userAgent: 'Windows NT 10.0' });
+        renderPrompt();
+        expect(screen.getByText('Use Windows Hello')).toBeVisible();
+    });
+
+    it('shows Face ID or Touch ID on Mac', () => {
+        vi.stubGlobal('navigator', { userAgent: 'Macintosh' });
+        renderPrompt();
+        expect(screen.getByText('Use Face ID or Touch ID')).toBeVisible();
+    });
+
+    it('shows fingerprint or face unlock on Android', () => {
+        vi.stubGlobal('navigator', { userAgent: 'Android 13' });
+        renderPrompt();
+        expect(screen.getByText('Use fingerprint or face unlock')).toBeVisible();
+    });
+
+    it('shows generic passkey on Linux', () => {
+        vi.stubGlobal('navigator', { userAgent: 'Linux x86_64' });
+        renderPrompt();
+        expect(screen.getByText('Use a passkey')).toBeVisible();
     });
 
     it('snoozes the calm prompt for seven days', () => {
@@ -199,8 +228,142 @@ describe('RecoveryBanner', () => {
         mocks.webAuthnSupported = false;
         const { onSetup } = renderPrompt();
 
-        expect(screen.getByText('Get a recovery phrase')).toBeVisible();
+        expect(screen.getByText('Save a recovery phrase')).toBeVisible();
         fireEvent.click(screen.getByRole('button', { name: 'Set up a way to sign back in' }));
         expect(onSetup.mock.calls[0][0].initialMethod).toBe('phrase');
+    });
+
+    it('renders tier 1 (pin-first) with PIN CTA and secondary link', () => {
+        const { onSetupPin, onSetup } = renderPrompt({
+            escrowEnrolled: true,
+            pinEnabled: false,
+            recoveryMethodCount: 0,
+        });
+
+        expect(screen.getByText('Finish securing your account')).toBeVisible();
+        expect(screen.getByText('Set a 6-digit PIN')).toBeVisible();
+        const secondary = screen.getByText('Or add a passkey or recovery phrase');
+        expect(secondary).toBeVisible();
+
+        // Primary click
+        fireEvent.click(screen.getByRole('button', { name: 'Set up a way to sign back in' }));
+        expect(onSetupPin).toHaveBeenCalledOnce();
+        expect(
+            mocks.track.mock.calls.filter(
+                ([, payload]) =>
+                    payload.action === 'clicked' &&
+                    payload.method === 'pin' &&
+                    payload.tier === 'pin-first'
+            )
+        ).toHaveLength(1);
+
+        // Secondary click
+        fireEvent.click(secondary);
+        expect(onSetup).toHaveBeenCalledOnce();
+        expect(onSetup.mock.calls[0][0].initialMethod).toBe('passkey');
+    });
+
+    it('renders tier 2 (backup) calm with platform label', () => {
+        vi.stubGlobal('navigator', { userAgent: 'Macintosh' });
+        const { onSetup } = renderPrompt({
+            escrowEnrolled: true,
+            pinEnabled: true,
+            recoveryMethodCount: 0,
+        });
+
+        expect(screen.getByText('Add a backup way in')).toBeVisible();
+        expect(screen.getByText('Use Face ID or Touch ID')).toBeVisible();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Set up a way to sign back in' }));
+        expect(onSetup).toHaveBeenCalledOnce();
+        expect(
+            mocks.track.mock.calls.filter(
+                ([, payload]) =>
+                    payload.action === 'clicked' &&
+                    payload.method === 'passkey' &&
+                    payload.tier === 'backup'
+            )
+        ).toHaveLength(1);
+    });
+
+    it('hides tier 2 (backup) after two snoozes', () => {
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date('2026-09-01T12:00:00Z'));
+
+        const { unmount } = renderPrompt({
+            escrowEnrolled: true,
+            pinEnabled: true,
+            recoveryMethodCount: 0,
+        });
+
+        expect(screen.getByText('Add a backup way in')).toBeVisible();
+
+        // First snooze
+        fireEvent.click(screen.getByRole('button', { name: 'Remind me in 7 days' }));
+        expect(firstStartupStore.get.recoveryBackupPromptSnoozeCount()).toBe(1);
+
+        unmount();
+
+        // Advance time past snooze
+        act(() => vi.advanceTimersByTime(RECOVERY_PROMPT_SNOOZE_MS + 1000));
+
+        const { unmount: unmount2 } = renderPrompt({
+            escrowEnrolled: true,
+            pinEnabled: true,
+            recoveryMethodCount: 0,
+        });
+
+        expect(screen.getByText('Add a backup way in')).toBeVisible();
+
+        // Second snooze
+        fireEvent.click(screen.getByRole('button', { name: 'Remind me in 7 days' }));
+        expect(firstStartupStore.get.recoveryBackupPromptSnoozeCount()).toBe(2);
+
+        unmount2();
+
+        // Advance time past snooze again
+        act(() => vi.advanceTimersByTime(RECOVERY_PROMPT_SNOOZE_MS + 1000));
+
+        renderPrompt({
+            escrowEnrolled: true,
+            pinEnabled: true,
+            recoveryMethodCount: 0,
+        });
+
+        // Should not render anymore
+        expect(screen.queryByTestId('dashboard-recovery-prompt')).not.toBeInTheDocument();
+    });
+
+    it('hides tier 3 (none) when recoveryMethodCount > 0, null, or pinEnabled undefined', () => {
+        const { rerender } = renderPrompt({
+            escrowEnrolled: true,
+            pinEnabled: false,
+            recoveryMethodCount: 1,
+        });
+        expect(screen.queryByTestId('dashboard-recovery-prompt')).not.toBeInTheDocument();
+
+        rerender(
+            <RecoveryBanner
+                recoverySupported
+                recoveryMethodCount={null}
+                totalCredentialCount={1}
+                escrowEnrolled={true}
+                pinEnabled={false}
+                onSetup={vi.fn()}
+            />
+        );
+        expect(screen.queryByTestId('dashboard-recovery-prompt')).not.toBeInTheDocument();
+
+        rerender(
+            <RecoveryBanner
+                recoverySupported
+                recoveryMethodCount={0}
+                totalCredentialCount={1}
+                escrowEnrolled={true}
+                pinEnabled={undefined}
+                onSetup={vi.fn()}
+            />
+        );
+        expect(screen.queryByTestId('dashboard-recovery-prompt')).not.toBeInTheDocument();
     });
 });

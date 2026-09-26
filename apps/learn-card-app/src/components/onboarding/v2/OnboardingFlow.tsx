@@ -46,6 +46,8 @@ import { generateHandle, generateRandomSuffix } from './handleGenerator';
 import { inferCountryCode } from './countryInference';
 import { resolvePostOnboardingRedirect } from './postOnboardingRedirect';
 
+import { RecoveryPinStep } from './RecoveryPinStep';
+import { writeRecoveryPinPromptFlag } from '../../recovery/recoveryPinPromptFlag';
 import BirthdayPicker from './BirthdayPicker';
 import CountrySelectorModal from '../onboardingNetworkForm/components/CountrySelectorModal';
 import LocationIcon from '../../svgs/LocationIcon';
@@ -72,7 +74,7 @@ const COUNTRIES: Record<string, string> = countries as Record<string, string>;
 
 const log = getLogger('onboarding-flow-v2');
 
-type Step = 'age-country' | 'profile' | 'celebrate';
+type Step = 'age-country' | 'profile' | 'pin' | 'celebrate';
 
 type OnboardingFlowProps = {
     onSuccess?: () => void;
@@ -81,7 +83,7 @@ type OnboardingFlowProps = {
 const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
     const adapter = useSignInAdapter();
     const { newModal, closeModal } = useModal();
-    const { state: coordinatorState, setupNewKey, authProvider } = useAppAuth();
+    const { state: coordinatorState, setupNewKey, setEscrowPin, authProvider } = useAppAuth();
     const { initWallet } = useWallet();
     const { track } = useAnalytics();
     const { mutateAsync: updatePreferences } = useUpdatePreferences();
@@ -179,9 +181,10 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
     const onboardingCompletedRef = useRef(false);
     const currentStepRef = useRef<Step>('age-country');
     const stepStartedAtRef = useRef(Date.now());
-    const completedStepIdsRef = useRef<Record<'age-country' | 'profile', boolean>>({
+    const completedStepIdsRef = useRef<Record<'age-country' | 'profile' | 'pin', boolean>>({
         'age-country': false,
         profile: false,
+        pin: false,
     });
     const getStepMetadata = useCallback((currentStep: Step) => {
         switch (currentStep) {
@@ -189,15 +192,17 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                 return { step_id: 'age-country', step_index: 1 } as const;
             case 'profile':
                 return { step_id: 'profile', step_index: 2 } as const;
+            case 'pin':
+                return { step_id: 'pin', step_index: 3 } as const;
             case 'celebrate':
-                return { step_id: 'celebrate', step_index: 3 } as const;
+                return { step_id: 'celebrate', step_index: 4 } as const;
         }
     }, []);
 
     const getStepDuration = useCallback(() => Date.now() - stepStartedAtRef.current, []);
 
     const trackOnboardingStepCompleted = useCallback(
-        (stepId: 'age-country' | 'profile', stepIndex: number) => {
+        (stepId: 'age-country' | 'profile' | 'pin', stepIndex: number) => {
             if (completedStepIdsRef.current[stepId]) {
                 return;
             }
@@ -654,7 +659,11 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                 }
 
                 trackOnboardingStepCompleted('profile', 2);
-                setStep('celebrate');
+
+                const pinAvailable =
+                    coordinatorState.status === 'ready' &&
+                    coordinatorState.escrowEnrollment === 'enrolled';
+                setStep(pinAvailable ? 'pin' : 'celebrate');
             }
         } catch (err: unknown) {
             const errorDetails =
@@ -1283,6 +1292,25 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {step === 'pin' && (
+                <RecoveryPinStep
+                    onComplete={() => {
+                        if (coordinatorState.status === 'ready') {
+                            writeRecoveryPinPromptFlag(coordinatorState.did, 'set');
+                        }
+                        trackOnboardingStepCompleted('pin', 3);
+                        setStep('celebrate');
+                    }}
+                    onSkip={() => {
+                        if (coordinatorState.status === 'ready') {
+                            writeRecoveryPinPromptFlag(coordinatorState.did, 'skipped');
+                        }
+                        setStep('celebrate');
+                    }}
+                    setPin={setEscrowPin}
+                />
             )}
 
             {step === 'celebrate' && (

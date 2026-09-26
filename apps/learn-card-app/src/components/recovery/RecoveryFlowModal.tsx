@@ -467,6 +467,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                     <EscrowRecoveryPanel
                         key={escrowRecovery.scope}
                         {...escrowRecovery}
+                        pinAvailable={!identityPhase && escrowRecovery.pinAvailable === true}
                         available={hasMethod('escrow')}
                     />
                 )}

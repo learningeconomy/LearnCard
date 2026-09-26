@@ -5,7 +5,12 @@ import {
     openEscrowRelease,
 } from '@learncard/sss-key-manager';
 import { SoftwareEnclave } from './softwareEnclave';
-import { EscrowBlobError, EscrowPolicyError, type EscrowHoldForEnclave } from './types';
+import {
+    EscrowBlobError,
+    EscrowPolicyError,
+    EscrowPinMismatchError,
+    type EscrowHoldForEnclave,
+} from './types';
 
 describe('software enclave', () => {
     it('derives the attestation key, verifies enrollment, and enforces release policy', async () => {
@@ -31,7 +36,7 @@ describe('software enclave', () => {
                 expectedDid: plaintext.did,
                 expectedShareVersion: 1,
             })
-        ).toEqual({ ok: true });
+        ).toEqual({ ok: true, hasPin: false });
         expect(
             await enclave.verifyEscrowBlob({
                 envelope,
@@ -45,6 +50,7 @@ describe('software enclave', () => {
             shareVersion: 1,
             status: 'pending',
             releaseAfter: new Date(1000),
+            releasePolicy: 'hold',
             clientEphemeralPublicKey: client.publicKey,
         };
         const request = {
@@ -93,4 +99,74 @@ describe('software enclave', () => {
             })
         ).rejects.toBeInstanceOf(EscrowBlobError);
     });
+
+    it.each([
+        { policy: 'pin' as const, verifier: true, proof: 'ab'.repeat(32), error: undefined },
+        {
+            policy: 'pin' as const,
+            verifier: true,
+            proof: 'cd'.repeat(32),
+            error: EscrowPinMismatchError,
+        },
+        { policy: 'pin' as const, verifier: true, proof: 'ab', error: EscrowPinMismatchError },
+        { policy: 'pin' as const, verifier: true, proof: undefined, error: EscrowPolicyError },
+        {
+            policy: 'pin' as const,
+            verifier: false,
+            proof: 'ab'.repeat(32),
+            error: EscrowPolicyError,
+        },
+        { policy: 'hold' as const, verifier: true, proof: 'cd'.repeat(32), error: undefined },
+    ])(
+        'checks policy/proof case %# without exposing the verifier',
+        async ({ policy, verifier, proof, error }) => {
+            const keys = await generateEscrowKeyPair();
+            const client = await generateEscrowKeyPair();
+            const enclave = new SoftwareEnclave({
+                privateKeys: { test: keys.privateKey },
+                activeKeyId: 'test',
+            });
+            const plaintext = {
+                recoveryShare: 'ab'.repeat(33),
+                did: 'did:key:test',
+                shareVersion: 1,
+            };
+            const envelope = await encryptEscrowBlob(
+                { ...plaintext, ...(verifier ? { pinVerifier: 'ab'.repeat(32) } : {}) },
+                keys.publicKey,
+                'test'
+            );
+            expect(
+                await enclave.verifyEscrowBlob({
+                    envelope,
+                    expectedDid: plaintext.did,
+                    expectedShareVersion: 1,
+                })
+            ).toEqual({ ok: true, hasPin: verifier });
+            const request = {
+                envelope,
+                expectedDid: plaintext.did,
+                clientEphemeralPublicKey: client.publicKey,
+                pinProof: proof,
+                hold: {
+                    _id: 'pin-hold',
+                    status: 'pending' as const,
+                    primaryDid: plaintext.did,
+                    shareVersion: 1,
+                    releasePolicy: policy,
+                    releaseAfter: new Date(0),
+                    clientEphemeralPublicKey: client.publicKey,
+                },
+            };
+            if (error) await expect(enclave.releaseEscrow(request)).rejects.toBeInstanceOf(error);
+            else {
+                const result = await enclave.releaseEscrow(request);
+                expect(await openEscrowRelease(result.sealed, client.privateKey)).toEqual({
+                    ...plaintext,
+                    version: 1,
+                    holdId: 'pin-hold',
+                });
+            }
+        }
+    );
 });

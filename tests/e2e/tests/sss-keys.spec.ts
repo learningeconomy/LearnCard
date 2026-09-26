@@ -178,11 +178,15 @@ describe('SSS Key Management API', () => {
     });
 
     describe('Migration Support', () => {
-        test('should reject marking a newly created SSS record as migrated', async () => {
+        // A legacy Web3Auth user with no prior UserKey gets a provisional SSS record
+        // from storeAuthShare; markMigrated records Web3Auth provenance on it.
+        test('should mark a provisional SSS record as migrated from Web3Auth', async () => {
             const token = newToken('migration');
             await store(token, 'migration-share');
-            expect(await write('migrate', auth(token), 400)).toMatchObject({
-                message: 'This key record is not eligible for migration.',
+            await write('migrate', auth(token));
+            expect(await getAuthShare(token)).toMatchObject({
+                keyProvider: 'web3auth',
+                sssActivationState: 'provisional',
             });
         });
     });
@@ -380,9 +384,8 @@ describe('SSS Key Management API', () => {
         });
     });
 
-    // Public storeAuthShare cannot create a legacy Web3Auth record anymore.
-    // The real legacy migration fixture is DB-seeded in keys-lifecycle-invariants.
-    // Keep the public-route lifecycle coverage, including rejecting that premise.
+    // Public storeAuthShare cannot create a legacy Web3Auth record, but a recordless
+    // legacy user migrates via a provisional SSS record plus markMigrated.
     describe('Full Provisioning Lifecycle (legacy migration input)', () => {
         const token = newToken('full-lifecycle');
         test('step 1: new user has no server record', async () => {
@@ -407,18 +410,16 @@ describe('SSS Key Management API', () => {
                 expectedShareVersion: 1,
             });
         });
-        test('step 5: reject migration for SSS and activation without confirmed recovery', async () => {
-            expect(await write('migrate', auth(token), 400)).toMatchObject({
-                message: 'This key record is not eligible for migration.',
-            });
+        test('step 5: record migration provenance, but reject activation without confirmed recovery', async () => {
+            await write('migrate', auth(token));
             expect(await write('activate', auth(token), 400)).toMatchObject({
                 message: 'A recovery method for the current key version is required.',
             });
         });
-        test('step 6: server returns rotated SSS share and remains provisional', async () => {
+        test('step 6: server returns rotated share and keeps the legacy fallback until activation', async () => {
             expect(await getAuthShare(token)).toMatchObject({
                 primaryDid: learnCard.id.did(),
-                keyProvider: 'sss',
+                keyProvider: 'web3auth',
                 authShare: storedShare('new-sss-auth-share'),
                 shareVersion: 2,
                 sssActivationState: 'provisional',
@@ -454,7 +455,15 @@ describe('SSS Key Management API', () => {
                 encryptedShare: { encryptedData: 'post-migration-recovery-share' },
                 shareVersion: 2,
             });
-            expect(await getAuthShare(token)).toMatchObject({ sssActivationState: 'active' });
+            expect(await getAuthShare(token)).toMatchObject({
+                keyProvider: 'sss',
+                sssActivationState: 'active',
+            });
+        });
+        test('step 9: an active SSS record is no longer eligible for migration', async () => {
+            expect(await write('migrate', auth(token), 400)).toMatchObject({
+                message: 'This key record is not eligible for migration.',
+            });
         });
     });
 
