@@ -42,7 +42,7 @@ export const CheckList: React.FC<{ activeChecklistStep?: ChecklistEnum }> = ({
     }, [activeChecklistStep, handleOpenChecklistManager]);
 
     return (
-        <div className="w-full bg-white items-center justify-center flex flex-col shadow-2xl p-5 mt-4 rounded-[20px]">
+        <div className="w-full bg-white items-center justify-center flex flex-col shadow-2xl p-5 rounded-[20px]">
             <div className="w-full flex flex-col items-start justify-start">
                 <h4 className="text-xl font-semibold text-grayscale-900 leading-tight">
                     {m['passport.buildMyLearnCard.actionsTitle']()}

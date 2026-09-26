@@ -22,6 +22,7 @@ import {
     parseRenderedTemplate,
     shouldAutoAppendTemplateEvidence,
 } from '@helpers/template.helpers';
+import { setCredentialSubjectIds } from '@helpers/credentialSubject.helpers';
 
 import { getBoostOwner } from '@accesslayer/boost/relationships/read';
 import { BoostInstance } from '@models';
@@ -95,15 +96,7 @@ export const convertCredentialToBoostTemplateJSON = (
     delete template.proof;
     template.issuer = defaultIssuerDid ?? 'did:example:123';
 
-    if (Array.isArray(template.credentialSubject)) {
-        template.credentialSubject = template.credentialSubject.map(subject => {
-            subject.id = 'did:example:123';
-
-            return subject;
-        });
-    } else {
-        template.credentialSubject.id = 'did:example:123';
-    }
+    setCredentialSubjectIds(template, 'did:example:123');
     return JSON.stringify(template);
 };
 
@@ -262,14 +255,7 @@ export const issueClaimLinkBoost = async (
 
     boostCredential.issuer = signingAuthorityForUser.relationship.did;
 
-    if (Array.isArray(boostCredential.credentialSubject)) {
-        boostCredential.credentialSubject = boostCredential.credentialSubject.map(subject => ({
-            ...subject,
-            id: getDidWeb(domain, to.profileId),
-        }));
-    } else {
-        boostCredential.credentialSubject.id = getDidWeb(domain, to.profileId);
-    }
+    setCredentialSubjectIds(boostCredential, getDidWeb(domain, to.profileId));
 
     // Embed the boostURI into the boost credential for verification purposes.
     if (boostCredential.type.includes('BoostCredential')) {
@@ -362,20 +348,7 @@ export const prepareCredentialFromBoost = async (
         credential.issuer = issuerDid;
     }
 
-    // Set recipient DID in credentialSubject if provided
-    if (recipientDid) {
-        if (Array.isArray(credential.credentialSubject)) {
-            credential.credentialSubject = credential.credentialSubject.map(subject => ({
-                ...subject,
-                id: recipientDid,
-            }));
-        } else {
-            credential.credentialSubject = {
-                ...(credential.credentialSubject || {}),
-                id: recipientDid,
-            };
-        }
-    }
+    if (recipientDid) setCredentialSubjectIds(credential, recipientDid);
 
     // Embed boostId for BoostCredential types
     if (credential?.type?.includes('BoostCredential')) {

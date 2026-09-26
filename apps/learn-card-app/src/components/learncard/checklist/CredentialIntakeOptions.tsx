@@ -59,7 +59,7 @@ export const CredentialIntakeOptions: React.FC = () => {
     };
 
     return (
-        <section className="w-full bg-white flex flex-col shadow-2xl p-5 mt-4 rounded-[20px]">
+        <section className="w-full bg-white flex flex-col shadow-2xl p-5 rounded-[20px]">
             <h4 className="text-xl font-semibold text-grayscale-900 leading-tight">
                 {m['passport.buildMyLearnCard.intake.title']()}
             </h4>
