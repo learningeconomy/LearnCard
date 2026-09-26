@@ -22,21 +22,35 @@ import type {
     RecoveryResult,
     RecoverySetupInput,
     RecoverySetupResult,
+    RecoveryConfirmationInput,
     RecoveryMethodInfo,
+    IdentityRecoverySession,
     BackupFile,
+    DidAuthVpSigner,
 } from './types';
+import type { EmailRelayBranding } from './email-relay-crypto';
 
-import { splitAndVerify, verifyStoredShares } from './atomic-operations';
+import {
+    AtomicUpdateError,
+    ShareWriteRejectedError,
+    atomicRecovery,
+    atomicShareUpdate,
+    splitAndVerify,
+    verifyStoredShares,
+} from './atomic-operations';
+import type { SSSShares } from './sss';
 import { reconstructFromShares } from './sss';
 import {
     storeDeviceShare as defaultStoreDeviceShare,
     getDeviceShare as defaultGetDeviceShare,
     hasDeviceShare as defaultHasDeviceShare,
     clearAllShares as defaultClearAllShares,
+    deleteDeviceShare as defaultDeleteDeviceShare,
     storeShareVersion as defaultStoreShareVersion,
     getShareVersion as defaultGetShareVersion,
 } from './storage';
-import { encryptWithPassword, decryptWithPassword } from './crypto';
+import { bytesToHex, encryptWithPassword, decryptWithPassword } from './crypto';
+import { encryptEmailRelayPayload, generateEmailRelayConfirmationCode } from './email-relay-crypto';
 import {
     createPasskeyCredential,
     encryptShareWithPasskey,
@@ -51,12 +65,15 @@ import {
 } from './recovery-phrase';
 
 const SSS_DB_NAME = 'lcb-sss-keys';
+const DEFAULT_DEVICE_SHARE_ID = 'sss-device-share';
+const MAX_RECONCILIATION_HISTORY = 5;
 
 export interface SSSStorageFunctions {
     storeDeviceShare: (share: string, id?: string) => Promise<void>;
     getDeviceShare: (id?: string) => Promise<string | null>;
     hasDeviceShare: (id?: string) => Promise<boolean>;
     clearAllShares: (id?: string) => Promise<void>;
+    deleteDeviceShare: (id?: string) => Promise<void>;
     storeShareVersion: (version: number, id?: string) => Promise<void>;
     getShareVersion: (id?: string) => Promise<number | null>;
 }
@@ -69,13 +86,21 @@ export interface SSSStrategyConfig {
     storage?: SSSStorageFunctions;
 
     /**
-     * Whether to automatically send a backup share to the user's email
-     * during key setup and recovery. The share is relayed through the server
-     * but never persisted — fire-and-forget.
+     * Whether email recovery enrollment is enabled. Delivery is synchronous
+     * and must be confirmed with the code included in the recovery email.
      *
      * Defaults to false. Controlled by VITE_ENABLE_EMAIL_BACKUP_SHARE env var.
      */
     enableEmailBackupShare?: boolean;
+
+    /** Base64 DER/SPKI P-256 public key pinned for the isolated email relay. */
+    escrowRelayPublicKey?: string;
+
+    /** Identifier selecting the matching relay private key during rotation. */
+    escrowRelayKeyId?: string;
+
+    /** Tenant branding encrypted into the relay payload with the recovery key. */
+    emailBranding?: EmailRelayBranding;
 
     /**
      * Tenant identifier forwarded as `X-Tenant-Id` on every server request.
@@ -90,6 +115,7 @@ const defaultStorage: SSSStorageFunctions = {
     getDeviceShare: defaultGetDeviceShare,
     hasDeviceShare: defaultHasDeviceShare,
     clearAllShares: defaultClearAllShares,
+    deleteDeviceShare: defaultDeleteDeviceShare,
     storeShareVersion: defaultStoreShareVersion,
     getShareVersion: defaultGetShareVersion,
 };
@@ -141,8 +167,9 @@ const putAuthShare = async (
     authShare: string,
     primaryDid: string,
     didAuthVp?: string,
-    tenantId?: string
-): Promise<{ shareVersion: number }> => {
+    tenantId?: string,
+    expectedShareVersion?: number
+): Promise<{ shareVersion: number; expectedShareVersionChecked: boolean }> => {
     const response = await fetch(`${serverUrl}/keys/auth-share`, {
         method: 'PUT',
         headers: buildHeaders(token, didAuthVp, tenantId),
@@ -152,16 +179,72 @@ const putAuthShare = async (
             authShare: { encryptedData: authShare, encryptedDek: '', iv: '' },
             primaryDid,
             securityLevel: 'basic',
+            sssActivationState: 'provisional',
+            expectedShareVersion,
         }),
     });
 
     if (!response.ok) {
-        throw new Error(`Failed to store auth share: ${response.statusText}`);
+        const message = `Failed to store auth share: ${response.statusText}`;
+        // A gateway/server failure or request timeout can arrive AFTER commit.
+        // Only an explicit client rejection proves this write was not accepted.
+        if (response.status >= 400 && response.status < 500 && response.status !== 408) {
+            throw new ShareWriteRejectedError(message);
+        }
+        throw new Error(message);
     }
 
     const data = await response.json();
 
-    return { shareVersion: data.shareVersion ?? 1 };
+    return {
+        shareVersion: data.shareVersion ?? 1,
+        expectedShareVersionChecked: data.expectedShareVersionChecked === true,
+    };
+};
+
+const authShareToString = (authShare: unknown): string | null => {
+    if (typeof authShare === 'string') return authShare;
+
+    if (
+        typeof authShare === 'object' &&
+        authShare !== null &&
+        'encryptedData' in authShare &&
+        typeof authShare.encryptedData === 'string'
+    ) {
+        return authShare.encryptedData;
+    }
+
+    return null;
+};
+
+/**
+ * Obtain a server-issued nonce and sign a DID-Auth VP specifically for one
+ * write. The server consumes the nonce while creating request context, so a
+ * VP returned here cannot authorize a second request.
+ */
+const requestFreshDidAuthVp = async (
+    serverUrl: string,
+    privateKey: string,
+    did: string,
+    signDidAuthVp: DidAuthVpSigner,
+    tenantId?: string
+): Promise<string> => {
+    const bootstrapVp = await signDidAuthVp(privateKey);
+    const response = await fetch(`${serverUrl}/keys/challenge`, {
+        method: 'POST',
+        headers: buildHeaders('', bootstrapVp, tenantId),
+        body: JSON.stringify({ did }),
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to request DID challenge: ${response.statusText}`);
+    }
+
+    const data = (await response.json()) as { challenge?: string };
+
+    if (!data.challenge) throw new Error('DID challenge response was empty');
+
+    return signDidAuthVp(privateKey, data.challenge);
 };
 
 interface RecoveryShareResponse {
@@ -177,7 +260,12 @@ const fetchRecoveryShare = async (
     credentialId?: string,
     tenantId?: string
 ): Promise<RecoveryShareResponse> => {
-    const params = new URLSearchParams({ type, providerType, authToken: token });
+    // P0-4: this GET has no body, so — unlike the authToken-in-body pattern
+    // used elsewhere in this file — the token travels as an X-Auth-Token
+    // header (not Authorization, which is reserved for a DID-Auth VP on
+    // this same route for other callers). Never as a query param: those
+    // land in proxy/ALB access logs.
+    const params = new URLSearchParams({ type, providerType });
 
     if (credentialId) {
         params.set('credentialId', credentialId);
@@ -185,11 +273,70 @@ const fetchRecoveryShare = async (
 
     const response = await fetch(`${serverUrl}/keys/recovery?${params}`, {
         method: 'GET',
-        headers: buildHeaders(token, undefined, tenantId),
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Auth-Token': token,
+            ...(tenantId ? { 'X-Tenant-Id': tenantId } : {}),
+        },
     });
 
     if (!response.ok) {
         throw new Error(`No ${type} recovery share found`);
+    }
+
+    return response.json();
+};
+
+interface IdentityRecoverySessionResponse {
+    recoverySessionToken: string;
+    recoveryMethods: Array<{
+        type: string;
+        createdAt: string;
+        credentialId?: string;
+        shareVersion?: number;
+    }>;
+}
+
+interface IdentityRecoveryMaterialResponse {
+    authShare: { encryptedData: string; encryptedDek: string; iv: string };
+    encryptedShare?: { encryptedData: string; iv: string; salt?: string };
+    primaryDid: string;
+    shareVersion: number;
+    rebindSessionToken: string;
+}
+
+/**
+ * Signals that an identity-recovery attempt failed after the one-shot server
+ * session was submitted and must be restarted with a new verification code.
+ */
+export class IdentityRecoverySessionConsumedError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = 'IdentityRecoverySessionConsumedError';
+    }
+}
+
+const postJson = async <T>(
+    url: string,
+    body: Record<string, unknown>,
+    headers: Record<string, string>
+): Promise<T> => {
+    const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+        const data = (await response.json().catch(() => null)) as {
+            message?: string;
+            error?: { message?: string };
+        } | null;
+        const message = data?.error?.message || data?.message || response.statusText;
+        if (response.status >= 400 && response.status < 500 && response.status !== 408) {
+            throw new ShareWriteRejectedError(message);
+        }
+        throw new Error(message);
     }
 
     return response.json();
@@ -212,6 +359,63 @@ const postRecoveryMethod = async (
     if (!response.ok) {
         throw new Error(`Failed to add recovery method: ${response.statusText}`);
     }
+};
+
+const postRecoveryConfirmation = async (
+    serverUrl: string,
+    token: string,
+    providerType: AuthProviderType,
+    body: Record<string, unknown>,
+    didAuthVp?: string,
+    tenantId?: string
+): Promise<void> => {
+    const response = await fetch(`${serverUrl}/keys/recovery/confirm`, {
+        method: 'POST',
+        headers: buildHeaders(token, didAuthVp, tenantId),
+        body: JSON.stringify({ authToken: token, providerType, ...body }),
+    });
+
+    if (!response.ok) {
+        const data = (await response.json().catch(() => null)) as {
+            message?: string;
+            error?: { message?: string };
+        } | null;
+        const message =
+            data?.error?.message || data?.message || `Failed to confirm recovery method`;
+
+        throw new Error(message);
+    }
+};
+
+const calculateShareChecksum = async (share: string): Promise<string> => {
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(share));
+
+    return bytesToHex(new Uint8Array(digest));
+};
+
+export const selectRecoveryPhraseChallengeIndices = (
+    wordCount: number,
+    challengeCount = 3
+): number[] => {
+    if (wordCount < challengeCount) {
+        throw new Error('Recovery phrase does not contain enough words for confirmation');
+    }
+
+    const indices = new Set<number>();
+    // Rejection sampling: discard values in the partial top bucket so every
+    // index is equally likely (avoids modulo bias flagged by CodeQL).
+    const limit = 0x1_0000_0000 - (0x1_0000_0000 % wordCount);
+
+    while (indices.size < challengeCount) {
+        const randomValue = crypto.getRandomValues(new Uint32Array(1))[0];
+
+        if (randomValue === undefined) throw new Error('Failed to choose recovery phrase words');
+        if (randomValue >= limit) continue;
+
+        indices.add(randomValue % wordCount);
+    }
+
+    return [...indices].sort((a, b) => a - b);
 };
 
 /**
@@ -255,67 +459,304 @@ const sendEmailBackupShare = async (
     providerType: AuthProviderType,
     emailShare: string,
     email: string,
+    escrowRelayPublicKey: string,
+    escrowRelayKeyId: string,
+    emailBranding?: EmailRelayBranding,
     shareVersion?: number,
+    didAuthVp?: string,
     tenantId?: string
 ): Promise<void> => {
-    try {
-        // Prepend the share version so the recovery flow can request the matching auth share
-        const payload =
-            shareVersion != null ? formatVersionedEmailShare(emailShare, shareVersion) : emailShare;
-
-        const response = await fetch(`${serverUrl}/keys/email-backup`, {
-            method: 'POST',
-            headers: buildHeaders(token, undefined, tenantId),
-            body: JSON.stringify({ authToken: token, providerType, emailShare: payload, email }),
-        });
-
-        if (!response.ok) {
-            console.warn(`Email backup share delivery failed: ${response.statusText}`);
-        }
-    } catch (e) {
-        console.warn('Email backup share delivery failed:', e);
-    }
-};
-
-/**
- * Send the email share to the user's verified recovery email (stored server-side).
- * The raw recovery email never leaves the server.
- */
-const sendEmailShareToRecoveryEmail = async (
-    serverUrl: string,
-    token: string,
-    providerType: AuthProviderType,
-    emailShare: string,
-    shareVersion?: number,
-    tenantId?: string
-): Promise<void> => {
-    const payload =
+    const recoveryKey =
         shareVersion != null ? formatVersionedEmailShare(emailShare, shareVersion) : emailShare;
-
+    const confirmationCode = generateEmailRelayConfirmationCode();
+    const relayPayload = await encryptEmailRelayPayload(
+        {
+            targetEmail: email,
+            recoveryKey,
+            confirmationCode,
+            branding: emailBranding,
+        },
+        escrowRelayPublicKey,
+        escrowRelayKeyId
+    );
     const response = await fetch(`${serverUrl}/keys/email-backup`, {
         method: 'POST',
-        headers: buildHeaders(token, undefined, tenantId),
+        headers: buildHeaders(token, didAuthVp, tenantId),
         body: JSON.stringify({
             authToken: token,
             providerType,
-            emailShare: payload,
-            useRecoveryEmail: true,
+            relayPayload,
+            confirmationCode,
+            email,
+            shareVersion,
         }),
     });
 
     if (!response.ok) {
-        throw new Error(`Failed to send recovery share to recovery email: ${response.statusText}`);
+        throw new Error(`Failed to send recovery share: ${response.statusText}`);
     }
 };
 
+interface PersistedShareUpdate {
+    shares: SSSShares;
+    shareVersion: number;
+}
+
+// Reuse the storage abstraction's encrypted, per-ID entries. No new methods are
+// required of custom stores, and adaptive storage retains its session-only mode.
+const pendingShareId = (storageId?: string): string =>
+    `sss-pending-share:${storageId ?? DEFAULT_DEVICE_SHARE_ID}`;
+
+/** DID_CHALLENGE_TTL_SECS (5 minutes) plus a processing margin for auth-share PUTs. */
+export const PENDING_WRITE_EXPIRY_MS = 10 * 60 * 1000;
+const MAX_PENDING_SHARE_CANDIDATES = 8;
+
+export interface PendingShareCandidate {
+    share: string;
+    createdAt: number;
+}
+
 /**
- * After recovery, re-split the private key and store fresh shares.
- *
- * SAFETY: When `didFromPrivateKey` is provided, the key is validated against
- * `primaryDid` BEFORE any writes. This prevents a wrong key from overwriting
- * the server's auth share and permanently corrupting recovery state.
+ * Read device-only candidates from independent splits; never persist an auth,
+ * recovery, or email share here (two shares from one split reveal the key).
+ * Legacy raw shares have unknown age, but must still be checked before expiry.
+ * Mutating helpers must run under the account's share-update lock.
  */
-const rotateShares = async (
+export const readPendingShareCandidates = async (
+    storage: SSSStorageFunctions,
+    storageId?: string
+): Promise<PendingShareCandidate[]> => {
+    const raw = await storage.getDeviceShare(pendingShareId(storageId));
+    if (!raw) return [];
+    if (!raw.trimStart().startsWith('{')) return [{ share: raw, createdAt: 0 }];
+    const data: unknown = JSON.parse(raw);
+    if (
+        !data ||
+        typeof data !== 'object' ||
+        !('v' in data) ||
+        data.v !== 1 ||
+        !('candidates' in data) ||
+        !Array.isArray(data.candidates) ||
+        !data.candidates.every(
+            (candidate: unknown) =>
+                candidate !== null &&
+                typeof candidate === 'object' &&
+                'share' in candidate &&
+                typeof candidate.share === 'string' &&
+                'createdAt' in candidate &&
+                typeof candidate.createdAt === 'number' &&
+                Number.isFinite(candidate.createdAt) &&
+                candidate.createdAt >= 0
+        )
+    )
+        throw new Error('Invalid pending share candidates');
+    return data.candidates as PendingShareCandidate[];
+};
+
+/** Clear only an empty/resolved queue or when explicitly forgetting this device. */
+export const clearPendingShareCandidates = async (
+    storage: SSSStorageFunctions,
+    storageId?: string
+): Promise<void> => storage.clearAllShares(pendingShareId(storageId));
+
+/** Persist the versioned device-only queue without storing another share of any split. */
+export const writePendingShareCandidates = async (
+    storage: SSSStorageFunctions,
+    candidates: PendingShareCandidate[],
+    storageId?: string
+): Promise<void> => {
+    if (!candidates.length) return clearPendingShareCandidates(storage, storageId);
+    await storage.storeDeviceShare(JSON.stringify({ v: 1, candidates }), pendingShareId(storageId));
+};
+
+/** Append a candidate; never evict a live write to make room for another one. */
+export const addPendingShareCandidate = async (
+    storage: SSSStorageFunctions,
+    candidate: PendingShareCandidate,
+    storageId?: string
+): Promise<void> => {
+    const candidates = await readPendingShareCandidates(storage, storageId);
+    if (candidates.length >= MAX_PENDING_SHARE_CANDIDATES) {
+        throw new AtomicUpdateError(
+            'Reconcile the pending share update before writing new shares',
+            'store_device',
+            false
+        );
+    }
+    await writePendingShareCandidates(storage, [...candidates, candidate], storageId);
+};
+
+/** Roll back only the definitively rejected operation, preserving earlier in-flight writes. */
+export const removePendingShareCandidate = async (
+    storage: SSSStorageFunctions,
+    share: string,
+    storageId?: string
+): Promise<void> => {
+    const candidates = await readPendingShareCandidates(storage, storageId);
+    await writePendingShareCandidates(
+        storage,
+        candidates.filter(candidate => candidate.share !== share),
+        storageId
+    );
+};
+
+interface CurrentShareSnapshot {
+    currentVersion: number | null;
+    authShare: string | null;
+}
+
+/**
+ * Check current and retained history before expiry: an expired nonce does not
+ * prove a write never committed. Keep unrelated live writes even after promotion,
+ * since older servers may still commit them after this read.
+ */
+export const resolvePendingShareCandidates = async (
+    storage: SSSStorageFunctions,
+    storageId: string | undefined,
+    fetchCurrent: () => Promise<CurrentShareSnapshot>,
+    expectedDid: string,
+    didFromPrivateKey: (key: string) => Promise<string>,
+    assertActiveUser: () => void = () => {},
+    onPromoted?: (snapshot: CurrentShareSnapshot) => void,
+    fetchHistorical?: (version: number) => Promise<string | null>
+): Promise<{ snapshot: CurrentShareSnapshot; privateKey: string | null }> => {
+    const candidates = await readPendingShareCandidates(storage, storageId);
+    const snapshot = await fetchCurrent();
+    assertActiveUser();
+    const { authShare, currentVersion } = snapshot;
+    if (
+        authShare &&
+        (currentVersion === null || !Number.isInteger(currentVersion) || currentVersion < 1)
+    ) {
+        throw new Error('Current auth share is missing a valid share version');
+    }
+    if (authShare && currentVersion !== null) {
+        for (const candidate of candidates) {
+            const health = await verifyStoredShares(
+                { getDevice: async () => candidate.share, getAuth: async () => authShare },
+                expectedDid,
+                didFromPrivateKey
+            );
+            assertActiveUser();
+            if (!health.healthy) continue;
+            const privateKey = await reconstructFromShares([candidate.share, authShare]);
+            assertActiveUser();
+            await storage.storeDeviceShare(candidate.share, storageId);
+            await storage.storeShareVersion(currentVersion, storageId);
+            await removePendingShareCandidate(storage, candidate.share, storageId);
+            assertActiveUser();
+            onPromoted?.(snapshot);
+            return { snapshot, privateKey };
+        }
+    }
+    const matched = new Set<string>();
+    const history = new Map<number, string>();
+    let historyComplete = true;
+    if (candidates.length && currentVersion !== null) {
+        for (
+            let version = currentVersion - 1;
+            version >= 1 && version >= currentVersion - MAX_RECONCILIATION_HISTORY;
+            version--
+        ) {
+            if (!fetchHistorical) {
+                historyComplete = false;
+                break;
+            }
+            try {
+                const share = await fetchHistorical(version);
+                if (share) history.set(version, share);
+            } catch {
+                // An unavailable version cannot prove a candidate is dead.
+                historyComplete = false;
+            }
+            assertActiveUser();
+        }
+    }
+    const mainShare = await storage.getDeviceShare(storageId);
+    let mainHealthy = false;
+    const retainedShares = [...history.values(), ...(authShare ? [authShare] : [])];
+    if (mainShare) {
+        for (const share of retainedShares) {
+            const health = await verifyStoredShares(
+                { getDevice: async () => mainShare, getAuth: async () => share },
+                expectedDid,
+                didFromPrivateKey
+            );
+            assertActiveUser();
+            if (health.healthy) {
+                mainHealthy = true;
+                break;
+            }
+        }
+    }
+    let promoted: string | undefined;
+    for (const candidate of candidates) {
+        for (const [version, share] of history) {
+            const health = await verifyStoredShares(
+                { getDevice: async () => candidate.share, getAuth: async () => share },
+                expectedDid,
+                didFromPrivateKey
+            );
+            assertActiveUser();
+            if (!health.healthy) continue;
+            matched.add(candidate.share);
+            if (!mainHealthy && !promoted) {
+                await storage.storeDeviceShare(candidate.share, storageId);
+                await storage.storeShareVersion(version, storageId);
+                assertActiveUser();
+                onPromoted?.({ currentVersion: version, authShare: share });
+                promoted = candidate.share;
+            }
+            break;
+        }
+    }
+    const live = candidates.filter(
+        candidate =>
+            candidate.share !== promoted &&
+            (matched.has(candidate.share) ||
+                !historyComplete ||
+                (candidate.createdAt !== 0 &&
+                    Date.now() - candidate.createdAt <= PENDING_WRITE_EXPIRY_MS))
+    );
+    if (live.length !== candidates.length) {
+        assertActiveUser();
+        await writePendingShareCandidates(storage, live, storageId);
+    }
+    return { snapshot, privateKey: null };
+};
+
+const activeShareUpdates = new WeakMap<SSSStorageFunctions, Set<string>>();
+
+/** Protect the pending slot from overlapping writers and reconciliation. */
+const withShareUpdateLock = async <T>(
+    storage: SSSStorageFunctions,
+    storageId: string | undefined,
+    operation: () => Promise<T>
+): Promise<T> => {
+    const id = pendingShareId(storageId);
+    const active = activeShareUpdates.get(storage) ?? new Set<string>();
+    activeShareUpdates.set(storage, active);
+    const busy = (): AtomicUpdateError =>
+        new AtomicUpdateError('A share update is already in progress', 'store_device', false);
+
+    if (active.has(id)) throw busy();
+    active.add(id);
+    try {
+        // Web Locks also serialize default IndexedDB storage across tabs. The
+        // in-process guard supports runtimes/custom stores without that API.
+        if (typeof navigator !== 'undefined' && navigator.locks) {
+            return await navigator.locks.request(id, { ifAvailable: true }, async lock => {
+                if (!lock) throw busy();
+                return operation();
+            });
+        }
+        return await operation();
+    } finally {
+        active.delete(id);
+    }
+};
+
+const persistSharesWithoutLock = async (
     privateKey: string,
     serverUrl: string,
     token: string,
@@ -324,8 +765,11 @@ const rotateShares = async (
     storage: SSSStorageFunctions,
     storageId?: string,
     didFromPrivateKey?: (pk: string) => Promise<string>,
-    didAuthVp?: string
-) => {
+    signDidAuthVp?: DidAuthVpSigner,
+    tenantId?: string,
+    onPromoted?: (snapshot: CurrentShareSnapshot) => void,
+    assertActiveUser: () => void = () => {}
+): Promise<PersistedShareUpdate> => {
     // Defensive DID check — refuse to rotate if the key is wrong
     if (primaryDid && didFromPrivateKey) {
         const derivedDid = await didFromPrivateKey(privateKey);
@@ -337,12 +781,83 @@ const rotateShares = async (
         }
     }
 
-    const { shares } = await splitAndVerify(privateKey);
+    const { snapshot } = await resolvePendingShareCandidates(
+        storage,
+        storageId,
+        async () => {
+            const data = await fetchAuthShareRaw(
+                serverUrl,
+                token,
+                providerType,
+                undefined,
+                tenantId
+            );
+            return {
+                currentVersion: data?.shareVersion ?? null,
+                authShare: authShareToString(data?.authShare),
+            };
+        },
+        primaryDid,
+        didFromPrivateKey ??
+            (async key => (key === privateKey ? primaryDid : `${primaryDid}:mismatch`)),
+        assertActiveUser,
+        onPromoted,
+        async version =>
+            authShareToString(
+                (await fetchAuthShareRaw(serverUrl, token, providerType, version, tenantId))
+                    ?.authShare
+            )
+    );
+
+    // Acquire authorization before staging: failures here cannot have committed
+    // an auth-share write and must not leave an unresolved pending operation.
+    const didAuthVp = signDidAuthVp
+        ? await requestFreshDidAuthVp(serverUrl, privateKey, primaryDid, signDidAuthVp, tenantId)
+        : undefined;
+    assertActiveUser();
+    let shareVersion: number | undefined;
+    let stagedShare = '';
+
+    const shares = await atomicShareUpdate(privateKey, {
+        storeDevice: async share => {
+            assertActiveUser();
+            stagedShare = share;
+            await addPendingShareCandidate(storage, { share, createdAt: Date.now() }, storageId);
+        },
+        clearDevice: () => removePendingShareCandidate(storage, stagedShare, storageId),
+        storeAuth: async share => {
+            assertActiveUser();
+            const result = await putAuthShare(
+                serverUrl,
+                token,
+                providerType,
+                share,
+                primaryDid,
+                didAuthVp,
+                tenantId,
+                snapshot.currentVersion ?? 0
+            );
+
+            shareVersion = result.shareVersion;
+        },
+    });
+
+    if (shareVersion === undefined) {
+        throw new Error('Server did not return a share version');
+    }
 
     await storage.storeDeviceShare(shares.deviceShare, storageId);
+    await storage.storeShareVersion(shareVersion, storageId);
+    await removePendingShareCandidate(storage, shares.deviceShare, storageId);
+    assertActiveUser();
 
-    await putAuthShare(serverUrl, token, providerType, shares.authShare, primaryDid, didAuthVp);
+    return { shares, shareVersion };
 };
+
+const persistSharesAtomically = (
+    ...args: Parameters<typeof persistSharesWithoutLock>
+): Promise<PersistedShareUpdate> =>
+    withShareUpdateLock(args[5], args[6], () => persistSharesWithoutLock(...args));
 
 // ---------------------------------------------------------------------------
 // Factory
@@ -365,7 +880,14 @@ const rotateShares = async (
  * ```
  */
 export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationStrategy {
-    const { serverUrl, enableEmailBackupShare = false, tenantId } = config;
+    const {
+        serverUrl,
+        enableEmailBackupShare = false,
+        escrowRelayPublicKey = '',
+        escrowRelayKeyId = '',
+        emailBranding,
+        tenantId,
+    } = config;
     const storage = config.storage || defaultStorage;
 
     /**
@@ -394,12 +916,62 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
      */
     let lastShareVersion: number | undefined;
 
-    /**
-     * Whether the user has a verified recovery email. Set during
-     * `fetchServerKeyStatus()`. When true, `sendEmailBackupShare()`
-     * routes the share to the recovery email instead of the primary.
-     */
-    let hasRecoveryEmail = false;
+    let pendingPhraseConfirmation:
+        | {
+              phrase: string;
+              challengeWordIndices: number[];
+          }
+        | undefined;
+    let pendingBackupConfirmation:
+        | {
+              backupFile: BackupFile;
+              recoveryShare: string;
+          }
+        | undefined;
+
+    let pendingIdentityRecovery:
+        | {
+              privateKey: string;
+              primaryDid: string;
+              recoveryShare: string;
+              authShare: string;
+              rebindSessionToken: string;
+          }
+        | undefined;
+
+    /** Last server response, including which version its auth share resolved. */
+    let lastServerSnapshot: {
+        currentVersion: number | null;
+        resolvedVersion: number | null;
+        authShare: string | null;
+        primaryDid: string | null;
+    } | null = null;
+
+    const recordPromotion =
+        (primaryDid: string) =>
+        (snapshot: CurrentShareSnapshot): void => {
+            // A device-only candidate cannot supply the email share of its split.
+            lastEmailShare = undefined;
+            lastShareVersion = snapshot.currentVersion ?? undefined;
+            lastServerSnapshot = {
+                ...snapshot,
+                resolvedVersion: snapshot.currentVersion,
+                primaryDid,
+            };
+        };
+
+    const captureActiveUserGuard = (): (() => void) => {
+        const storageId = activeStorageId;
+        return () => {
+            if (activeStorageId !== storageId) {
+                throw new AtomicUpdateError(
+                    'Active account changed during share update',
+                    'verify_stored',
+                    false
+                );
+            }
+        };
+    };
 
     return {
         name: 'sss',
@@ -415,12 +987,16 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
 
         setActiveUser(userId: string): void {
             activeStorageId = `sss-device-share:${userId}`;
+            lastServerSnapshot = null;
+            pendingPhraseConfirmation = undefined;
+            pendingBackupConfirmation = undefined;
         },
 
         // --- Key lifecycle ---
 
         async hasLocalKey(): Promise<boolean> {
             if (await storage.hasDeviceShare(activeStorageId)) return true;
+            if ((await readPendingShareCandidates(storage, activeStorageId)).length) return true;
 
             // Fallback: check legacy unscoped key for shares stored before per-user scoping
             if (activeStorageId) {
@@ -434,6 +1010,9 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             const scoped = await storage.getDeviceShare(activeStorageId);
 
             if (scoped) return scoped;
+
+            const pending = await readPendingShareCandidates(storage, activeStorageId);
+            if (pending.length) return pending[pending.length - 1]!.share;
 
             // Fallback: try legacy unscoped key and auto-migrate if found
             if (activeStorageId) {
@@ -454,8 +1033,18 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             return storage.storeDeviceShare(key, activeStorageId);
         },
 
-        async clearLocalKeys(): Promise<void> {
-            return storage.clearAllShares(activeStorageId);
+        async clearLocalKeys(options?: { preservePending?: boolean }): Promise<void> {
+            const storageId = activeStorageId;
+            if (!options?.preservePending) {
+                await clearPendingShareCandidates(storage, storageId);
+                return storage.clearAllShares(storageId);
+            }
+
+            // Do not race an in-flight write/reconciliation or erase its pending
+            // candidate. An unscoped clearAllShares() would wipe the entire DB.
+            return withShareUpdateLock(storage, storageId, () =>
+                storage.deleteDeviceShare(storageId)
+            );
         },
 
         async splitKey(privateKey: string): Promise<{ localKey: string; remoteKey: string }> {
@@ -492,6 +1081,210 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             return result.healthy;
         },
 
+        async getFreshDidAuthVp(
+            privateKey: string,
+            did: string,
+            signDidAuthVp: DidAuthVpSigner
+        ): Promise<string> {
+            return requestFreshDidAuthVp(serverUrl, privateKey, did, signDidAuthVp, tenantId);
+        },
+
+        async atomicUpdateShares(params): Promise<void> {
+            const result = await persistSharesAtomically(
+                params.privateKey,
+                serverUrl,
+                params.token,
+                params.providerType,
+                params.did,
+                storage,
+                activeStorageId,
+                undefined,
+                params.signDidAuthVp,
+                tenantId,
+                recordPromotion(params.did),
+                captureActiveUserGuard()
+            );
+
+            lastEmailShare = result.shares.emailShare;
+            lastShareVersion = result.shareVersion;
+            lastServerSnapshot = {
+                currentVersion: result.shareVersion,
+                resolvedVersion: result.shareVersion,
+                authShare: result.shares.authShare,
+                primaryDid: params.did,
+            };
+        },
+
+        async reconcileShares(params): Promise<RecoveryResult | null> {
+            const storageId = activeStorageId;
+            const assertActiveUser = (): void => {
+                if (activeStorageId !== storageId) {
+                    throw new AtomicUpdateError(
+                        'Active account changed during reconciliation',
+                        'verify_stored',
+                        false
+                    );
+                }
+            };
+            return withShareUpdateLock(storage, storageId, async () => {
+                let deviceShare = await storage.getDeviceShare(storageId);
+                const pending = await readPendingShareCandidates(storage, storageId);
+
+                if (!deviceShare && !pending.length) return null;
+
+                const resolution = await resolvePendingShareCandidates(
+                    storage,
+                    storageId,
+                    async () => {
+                        const data = await fetchAuthShareRaw(
+                            serverUrl,
+                            params.token,
+                            params.providerType,
+                            undefined,
+                            tenantId
+                        );
+                        return {
+                            currentVersion: data?.shareVersion ?? null,
+                            authShare: authShareToString(data?.authShare),
+                        };
+                    },
+                    params.expectedDid,
+                    params.didFromPrivateKey,
+                    assertActiveUser,
+                    recordPromotion(params.expectedDid),
+                    async version =>
+                        authShareToString(
+                            (
+                                await fetchAuthShareRaw(
+                                    serverUrl,
+                                    params.token,
+                                    params.providerType,
+                                    version,
+                                    tenantId
+                                )
+                            )?.authShare
+                        )
+                );
+                assertActiveUser();
+                if (resolution.privateKey) {
+                    return { privateKey: resolution.privateKey, did: params.expectedDid };
+                }
+                const { currentVersion, authShare: currentAuthShare } = resolution.snapshot;
+                if (currentVersion === null && !currentAuthShare) return null;
+
+                // Resolution may have recovered a historical candidate without a main share.
+                deviceShare = await storage.getDeviceShare(storageId);
+                const localVersion = await storage.getShareVersion(storageId);
+                if (!deviceShare) return null;
+                const candidates = new Map<number, string>();
+
+                const addCandidate = (version: number | null, authShare: string | null): void => {
+                    if (version !== null && authShare && !candidates.has(version)) {
+                        candidates.set(version, authShare);
+                    }
+                };
+
+                addCandidate(
+                    lastServerSnapshot?.resolvedVersion ?? null,
+                    lastServerSnapshot?.authShare ?? null
+                );
+                addCandidate(currentVersion, currentAuthShare);
+
+                const versionsToTry = new Set<number>();
+                if (localVersion !== null) versionsToTry.add(localVersion);
+
+                if (currentVersion !== null) {
+                    for (
+                        let version = currentVersion;
+                        version >= 1 && version >= currentVersion - MAX_RECONCILIATION_HISTORY;
+                        version--
+                    ) {
+                        versionsToTry.add(version);
+                    }
+                }
+
+                for (const version of versionsToTry) {
+                    if (candidates.has(version)) continue;
+
+                    const data = await fetchAuthShareRaw(
+                        serverUrl,
+                        params.token,
+                        params.providerType,
+                        version,
+                        tenantId
+                    );
+
+                    addCandidate(version, authShareToString(data?.authShare));
+                }
+
+                for (const [candidateVersion, authShare] of candidates) {
+                    const health = await verifyStoredShares(
+                        {
+                            getDevice: async () => deviceShare,
+                            getAuth: async () => authShare,
+                        },
+                        params.expectedDid,
+                        params.didFromPrivateKey
+                    );
+
+                    if (!health.healthy) continue;
+
+                    assertActiveUser();
+
+                    const privateKey = await reconstructFromShares([deviceShare, authShare]);
+
+                    if (candidateVersion === currentVersion) {
+                        if (localVersion !== currentVersion) {
+                            await storage.storeShareVersion(candidateVersion, storageId);
+                        }
+
+                        assertActiveUser();
+                        lastServerSnapshot = {
+                            currentVersion,
+                            resolvedVersion: candidateVersion,
+                            authShare,
+                            primaryDid: params.expectedDid,
+                        };
+
+                        return localVersion === currentVersion
+                            ? null
+                            : { privateKey, did: params.expectedDid };
+                    }
+
+                    // The local device share only matches a historical server share.
+                    // Re-split and atomically advance both stores to one fresh version.
+                    const result = await persistSharesWithoutLock(
+                        privateKey,
+                        serverUrl,
+                        params.token,
+                        params.providerType,
+                        params.expectedDid,
+                        storage,
+                        storageId,
+                        params.didFromPrivateKey,
+                        params.signDidAuthVp,
+                        tenantId,
+                        recordPromotion(params.expectedDid),
+                        assertActiveUser
+                    );
+
+                    assertActiveUser();
+                    lastEmailShare = result.shares.emailShare;
+                    lastShareVersion = result.shareVersion;
+                    lastServerSnapshot = {
+                        currentVersion: result.shareVersion,
+                        resolvedVersion: result.shareVersion,
+                        authShare: result.shares.authShare,
+                        primaryDid: params.expectedDid,
+                    };
+
+                    return { privateKey, did: params.expectedDid };
+                }
+
+                return null;
+            });
+        },
+
         // --- Server communication ---
 
         async fetchServerKeyStatus(
@@ -510,9 +1303,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             );
 
             if (!data) {
-                // Reset — no server record means no recovery email either.
-                // Prevents stale state from a previous user session.
-                hasRecoveryEmail = false;
+                lastServerSnapshot = null;
 
                 return {
                     exists: false,
@@ -522,32 +1313,36 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     authShare: null,
                     shareVersion: null,
                     maskedRecoveryEmail: null,
+                    sssActivationState: null,
                 };
             }
 
             const rawAuthShare = data.authShare;
-
-            const authShareString =
-                typeof rawAuthShare === 'object' && rawAuthShare !== null
-                    ? rawAuthShare.encryptedData ?? null
-                    : typeof rawAuthShare === 'string'
-                    ? rawAuthShare
-                    : null;
+            const authShareString = authShareToString(rawAuthShare);
 
             const serverVersion = data.shareVersion ?? null;
 
             // Version repair: if the server knows the version but local storage
             // doesn't (e.g. account created before versioning was added), backfill
             // it so QR device-link transfers always include the version.
-            if (serverVersion != null && localVersion == null) {
+            if (
+                // Version 0 means "no auth share yet" and must never be pinned locally.
+                serverVersion != null &&
+                serverVersion > 0 &&
+                localVersion == null &&
+                !(await readPendingShareCandidates(storage, activeStorageId)).length
+            ) {
                 storage
                     .storeShareVersion(serverVersion, activeStorageId)
                     .catch(e => console.warn('SSS: failed to backfill local shareVersion', e));
             }
 
-            // Cache whether a recovery email is set so sendEmailBackupShare
-            // can route future shares to the recovery email instead of primary.
-            hasRecoveryEmail = !!data.maskedRecoveryEmail;
+            lastServerSnapshot = {
+                currentVersion: serverVersion,
+                resolvedVersion: authShareString ? (localVersion ?? serverVersion) : null,
+                authShare: authShareString,
+                primaryDid: data.primaryDid || null,
+            };
 
             return {
                 exists: !!rawAuthShare || !!data.keyProvider || !!data.primaryDid,
@@ -557,6 +1352,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 authShare: authShareString,
                 shareVersion: serverVersion,
                 maskedRecoveryEmail: data.maskedRecoveryEmail ?? null,
+                sssActivationState: data.sssActivationState ?? 'active',
             };
         },
 
@@ -601,6 +1397,22 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             }
         },
 
+        async activate(
+            token: string,
+            providerType: AuthProviderType,
+            didAuthVp?: string
+        ): Promise<void> {
+            const response = await fetch(`${serverUrl}/keys/activate`, {
+                method: 'POST',
+                headers: buildHeaders(token, didAuthVp, tenantId),
+                body: JSON.stringify({ authToken: token, providerType }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to activate SSS key: ${response.statusText}`);
+            }
+        },
+
         // --- Recovery execution ---
 
         async executeRecovery(params: {
@@ -608,8 +1420,9 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             providerType: AuthProviderType;
             input: RecoveryInput;
             didFromPrivateKey?: (privateKey: string) => Promise<string>;
+            signDidAuthVp?: DidAuthVpSigner;
         }): Promise<RecoveryResult> {
-            const { token, providerType, input, didFromPrivateKey } = params;
+            const { token, providerType, input, didFromPrivateKey, signDidAuthVp } = params;
 
             let recoveryShare: string;
             let recoveryShareVersion: number | undefined;
@@ -745,17 +1558,32 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 }
             }
 
-            // Step 3: Store the recovery share as the new device share.
-            // Since recoveryShare + authShare = privateKey (just proven above),
-            // we can reuse the recovery share as a valid device share.
-            // This avoids re-splitting, which would overwrite the server's auth
-            // share and invalidate ALL other recovery methods.
-            await storage.storeDeviceShare(recoveryShare, activeStorageId);
+            // Step 3: Re-split and persist both sides atomically. The old auth
+            // share remains in server history, so existing versioned recovery
+            // methods continue to work while this device advances to a fresh pair.
+            const { shares, shareVersion } = await persistSharesAtomically(
+                privateKey,
+                serverUrl,
+                token,
+                providerType,
+                primaryDid,
+                storage,
+                activeStorageId,
+                didFromPrivateKey,
+                signDidAuthVp,
+                tenantId,
+                recordPromotion(primaryDid),
+                captureActiveUserGuard()
+            );
 
-            // Persist the share version so future logins fetch the matching auth share.
-            // Use the recovery method's version if available, otherwise the server's current version.
-            const versionToStore = recoveryShareVersion ?? serverData.shareVersion ?? 1;
-            await storage.storeShareVersion(versionToStore, activeStorageId);
+            lastEmailShare = shares.emailShare;
+            lastShareVersion = shareVersion;
+            lastServerSnapshot = {
+                currentVersion: shareVersion,
+                resolvedVersion: shareVersion,
+                authShare: shares.authShare,
+                primaryDid,
+            };
 
             return { privateKey, did: primaryDid };
         },
@@ -768,7 +1596,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             privateKey: string;
             input: RecoverySetupInput;
             authUser?: AuthUser;
-            signDidAuthVp?: (privateKey: string) => Promise<string>;
+            signDidAuthVp?: DidAuthVpSigner;
         }): Promise<RecoverySetupResult> {
             const { token, providerType, privateKey, input, authUser, signDidAuthVp } = params;
 
@@ -788,18 +1616,6 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 passkeyCredential = await createPasskeyCredential(userId, userName);
             }
 
-            // Sign DID-Auth VP once for all write operations in this method
-            const vpJwt = signDidAuthVp ? await signDidAuthVp(privateKey) : undefined;
-
-            // All setup methods start by re-splitting the key to get a fresh recovery share
-            const { shares } = await splitAndVerify(privateKey);
-
-            // Cache the email share so sendEmailBackupShare can use it
-            lastEmailShare = shares.emailShare;
-
-            // Store new device + auth shares
-            await storage.storeDeviceShare(shares.deviceShare, activeStorageId);
-
             const serverData = await fetchAuthShareRaw(
                 serverUrl,
                 token,
@@ -809,50 +1625,34 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             );
             const primaryDid = serverData?.primaryDid || '';
 
-            const { shareVersion } = await putAuthShare(
+            if (!primaryDid) throw new Error('Cannot set up recovery without a primary DID');
+
+            // Every recovery-method setup rotates device+auth shares through
+            // the verified atomic path. A failed server write restores the
+            // previous device share; an ack-loss skew is repaired on login.
+            const { shares, shareVersion } = await persistSharesAtomically(
+                privateKey,
                 serverUrl,
                 token,
                 providerType,
-                shares.authShare,
                 primaryDid,
-                vpJwt,
-                tenantId
+                storage,
+                activeStorageId,
+                undefined,
+                signDidAuthVp,
+                tenantId,
+                recordPromotion(primaryDid),
+                captureActiveUserGuard()
             );
 
-            // Persist the new version alongside the device share
-            await storage.storeShareVersion(shareVersion, activeStorageId);
-
-            // Fire-and-forget: re-send email backup share so it stays in sync
-            // with the new auth share. Skip for the 'email' method — that case
-            // handles its own send to the recovery email exclusively.
-            if (enableEmailBackupShare && input.method !== 'email' && lastEmailShare) {
-                const resend = hasRecoveryEmail
-                    ? sendEmailShareToRecoveryEmail(
-                          serverUrl,
-                          token,
-                          providerType,
-                          lastEmailShare,
-                          shareVersion,
-                          tenantId
-                      )
-                    : authUser?.email
-                    ? sendEmailBackupShare(
-                          serverUrl,
-                          token,
-                          providerType,
-                          lastEmailShare,
-                          authUser.email,
-                          shareVersion,
-                          tenantId
-                      )
-                    : Promise.resolve();
-
-                resend.catch(e =>
-                    console.warn('Email backup share re-send failed (non-fatal):', e)
-                );
-
-                lastEmailShare = undefined;
-            }
+            lastEmailShare = shares.emailShare;
+            lastShareVersion = shareVersion;
+            lastServerSnapshot = {
+                currentVersion: shareVersion,
+                resolvedVersion: shareVersion,
+                authShare: shares.authShare,
+                primaryDid,
+            };
 
             switch (input.method) {
                 case 'passkey': {
@@ -878,7 +1678,32 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                             credentialId: credential.credentialId,
                             shareVersion,
                         },
-                        vpJwt,
+                        signDidAuthVp
+                            ? await requestFreshDidAuthVp(
+                                  serverUrl,
+                                  privateKey,
+                                  primaryDid,
+                                  signDidAuthVp,
+                                  tenantId
+                              )
+                            : undefined,
+                        tenantId
+                    );
+
+                    await postRecoveryConfirmation(
+                        serverUrl,
+                        token,
+                        providerType,
+                        { type: 'passkey', credentialId: credential.credentialId },
+                        signDidAuthVp
+                            ? await requestFreshDidAuthVp(
+                                  serverUrl,
+                                  privateKey,
+                                  primaryDid,
+                                  signDidAuthVp,
+                                  tenantId
+                              )
+                            : undefined,
                         tenantId
                     );
 
@@ -899,11 +1724,24 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                             type: 'phrase',
                             shareVersion,
                         },
-                        vpJwt,
+                        signDidAuthVp
+                            ? await requestFreshDidAuthVp(
+                                  serverUrl,
+                                  privateKey,
+                                  primaryDid,
+                                  signDidAuthVp,
+                                  tenantId
+                              )
+                            : undefined,
                         tenantId
                     );
 
-                    return { method: 'phrase', phrase };
+                    const challengeWordIndices = selectRecoveryPhraseChallengeIndices(
+                        phrase.split(/\s+/).length
+                    );
+                    pendingPhraseConfirmation = { phrase, challengeWordIndices };
+
+                    return { method: 'phrase', phrase, challengeWordIndices };
                 }
 
                 case 'backup': {
@@ -917,6 +1755,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                         createdAt: new Date().toISOString(),
                         primaryDid: input.did,
                         shareVersion,
+                        shareChecksum: await calculateShareChecksum(shares.recoveryShare),
                         encryptedShare: {
                             ciphertext: encrypted.ciphertext,
                             iv: encrypted.iv,
@@ -935,47 +1774,142 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                             type: 'backup',
                             shareVersion,
                         },
-                        vpJwt,
+                        signDidAuthVp
+                            ? await requestFreshDidAuthVp(
+                                  serverUrl,
+                                  privateKey,
+                                  primaryDid,
+                                  signDidAuthVp,
+                                  tenantId
+                              )
+                            : undefined,
                         tenantId
                     );
+
+                    pendingBackupConfirmation = {
+                        backupFile,
+                        recoveryShare: shares.recoveryShare,
+                    };
 
                     return { method: 'backup', backupFile };
                 }
 
                 case 'email': {
-                    // Send the recovery share to the user's verified recovery email.
-                    // The raw email address never leaves the server — we pass
-                    // useRecoveryEmail: true so the server reads it from UserKey.
-                    await sendEmailShareToRecoveryEmail(
+                    const didAuthVp = signDidAuthVp
+                        ? await requestFreshDidAuthVp(
+                              serverUrl,
+                              privateKey,
+                              primaryDid,
+                              signDidAuthVp,
+                              tenantId
+                          )
+                        : undefined;
+
+                    await sendEmailBackupShare(
                         serverUrl,
                         token,
                         providerType,
                         shares.emailShare,
+                        input.email,
+                        escrowRelayPublicKey,
+                        escrowRelayKeyId,
+                        emailBranding,
                         shareVersion,
+                        didAuthVp,
                         tenantId
                     );
-
-                    // Register email recovery on the server so
-                    // getAvailableRecoveryMethods includes it.
-                    await postRecoveryMethod(
-                        serverUrl,
-                        token,
-                        providerType,
-                        {
-                            type: 'email',
-                            shareVersion,
-                        },
-                        vpJwt,
-                        tenantId
-                    );
-
-                    // Future sendEmailBackupShare calls should route to
-                    // the recovery email, not the primary.
-                    hasRecoveryEmail = true;
 
                     return { method: 'email' };
                 }
             }
+        },
+
+        async confirmRecoveryMethod(params: {
+            token: string;
+            providerType: AuthProviderType;
+            privateKey: string;
+            input: RecoveryConfirmationInput;
+            signDidAuthVp?: DidAuthVpSigner;
+        }): Promise<void> {
+            const { token, providerType, privateKey, input, signDidAuthVp } = params;
+            const primaryDid = lastServerSnapshot?.primaryDid;
+
+            if (!primaryDid) throw new Error('Cannot confirm recovery without a primary DID');
+
+            const confirmationBody: Record<string, unknown> = { type: input.method };
+
+            if (input.method === 'phrase') {
+                const pending = pendingPhraseConfirmation;
+
+                if (!pending) throw new Error('Generate a new recovery phrase to continue');
+
+                const phraseWords = pending.phrase.trim().toLowerCase().split(/\s+/);
+                const matches =
+                    input.challengeWords.length === pending.challengeWordIndices.length &&
+                    pending.challengeWordIndices.every(
+                        (wordIndex, answerIndex) =>
+                            input.challengeWords[answerIndex]?.trim().toLowerCase() ===
+                            phraseWords[wordIndex]
+                    );
+
+                if (!matches) {
+                    throw new Error('Those words do not match. Check your phrase and try again.');
+                }
+            } else if (input.method === 'backup') {
+                const pending = pendingBackupConfirmation;
+
+                if (!pending) throw new Error('Generate a new backup file to continue');
+
+                let suppliedBackup: BackupFile;
+                let decryptedShare: string;
+
+                try {
+                    suppliedBackup = JSON.parse(input.fileContents) as BackupFile;
+                    decryptedShare = await decryptWithPassword(
+                        suppliedBackup.encryptedShare.ciphertext,
+                        suppliedBackup.encryptedShare.iv,
+                        suppliedBackup.encryptedShare.salt,
+                        input.password,
+                        suppliedBackup.encryptedShare.kdfParams
+                    );
+                } catch {
+                    throw new Error('Incorrect password or corrupted data. Please try again.');
+                }
+
+                const checksum = await calculateShareChecksum(decryptedShare);
+
+                if (
+                    suppliedBackup.shareChecksum !== checksum ||
+                    pending.backupFile.shareChecksum !== checksum ||
+                    decryptedShare !== pending.recoveryShare
+                ) {
+                    throw new Error('This backup file could not be verified. Please try again.');
+                }
+            } else {
+                confirmationBody.code = input.code;
+            }
+
+            const didAuthVp = signDidAuthVp
+                ? await requestFreshDidAuthVp(
+                      serverUrl,
+                      privateKey,
+                      primaryDid,
+                      signDidAuthVp,
+                      tenantId
+                  )
+                : undefined;
+
+            await postRecoveryConfirmation(
+                serverUrl,
+                token,
+                providerType,
+                confirmationBody,
+                didAuthVp,
+                tenantId
+            );
+
+            if (input.method === 'phrase') pendingPhraseConfirmation = undefined;
+            if (input.method === 'backup') pendingBackupConfirmation = undefined;
         },
 
         async getAvailableRecoveryMethods(
@@ -990,24 +1924,213 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     undefined,
                     tenantId
                 );
-                const methods = serverData?.recoveryMethods || [];
+                const methods = (serverData?.recoveryMethods || []) as Array<
+                    RecoveryMethodInfo & {
+                        confirmedAt?: Date | string;
+                        confirmationStatus?: 'pending' | 'confirmed';
+                    }
+                >;
+                const activationState = serverData?.sssActivationState ?? 'active';
 
-                // When email backup share is enabled (primary email), inject
-                // an email recovery option so the user can recover from their
-                // primary inbox. Skip if the server already has a registered
-                // 'email' method (from a secondary recovery email setup).
-                if (
-                    enableEmailBackupShare &&
-                    !methods.some((m: RecoveryMethodInfo) => m.type === 'email')
-                ) {
-                    methods.push({ type: 'email', createdAt: new Date() });
-                }
+                return methods.filter(method => {
+                    if (method.confirmedAt) return true;
+                    if (method.confirmationStatus) return false;
 
-                return methods;
+                    return activationState === 'active';
+                });
             } catch (e) {
                 console.error('Error getting recovery methods:', e);
                 return [];
             }
+        },
+
+        async startIdentityRecovery(email: string): Promise<void> {
+            await postJson<{ success: true }>(
+                `${serverUrl}/keys/recovery-session/start`,
+                { email },
+                buildHeaders('', undefined, tenantId)
+            );
+        },
+
+        async verifyIdentityRecovery(
+            email: string,
+            code: string
+        ): Promise<IdentityRecoverySession> {
+            const result = await postJson<IdentityRecoverySessionResponse>(
+                `${serverUrl}/keys/recovery-session/verify`,
+                { email, code },
+                buildHeaders('', undefined, tenantId)
+            );
+
+            return {
+                ...result,
+                recoveryMethods: result.recoveryMethods.map(method => ({
+                    ...method,
+                    createdAt: new Date(method.createdAt),
+                })),
+            };
+        },
+
+        async prepareIdentityRecovery(params): Promise<RecoveryResult> {
+            const { input } = params;
+            let recoveryShare: string | undefined;
+
+            switch (input.method) {
+                case 'passkey':
+                    // Passkey decryption requires the encrypted server material.
+                    break;
+                case 'phrase':
+                    if (!(await validateRecoveryPhrase(input.phrase))) {
+                        throw new Error('Invalid recovery phrase');
+                    }
+                    recoveryShare = await recoveryPhraseToShare(input.phrase);
+                    break;
+                case 'backup': {
+                    const backup = JSON.parse(input.fileContents) as BackupFile;
+                    if (backup.version !== 1) throw new Error('Unsupported backup file version');
+                    recoveryShare = await decryptWithPassword(
+                        backup.encryptedShare.ciphertext,
+                        backup.encryptedShare.iv,
+                        backup.encryptedShare.salt,
+                        input.password,
+                        backup.encryptedShare.kdfParams
+                    );
+                    break;
+                }
+                case 'email':
+                    recoveryShare = parseVersionedEmailShare(input.emailShare.trim()).share;
+                    break;
+            }
+
+            try {
+                const material = await postJson<IdentityRecoveryMaterialResponse>(
+                    `${serverUrl}/keys/recovery-session/recover`,
+                    {
+                        recoverySessionToken: params.recoverySessionToken,
+                        type: input.method,
+                        ...(input.method === 'passkey' ? { credentialId: input.credentialId } : {}),
+                    },
+                    buildHeaders('', undefined, tenantId)
+                );
+
+                if (input.method === 'passkey') {
+                    if (!material.encryptedShare) {
+                        throw new Error('No passkey recovery data found');
+                    }
+                    recoveryShare = await decryptShareWithPasskey({
+                        encryptedData: material.encryptedShare.encryptedData,
+                        iv: material.encryptedShare.iv,
+                        credentialId: input.credentialId,
+                    });
+                }
+
+                if (!recoveryShare) throw new Error('Recovery data was empty');
+
+                const authShare = material.authShare.encryptedData;
+                let privateKey: string;
+
+                try {
+                    privateKey = await reconstructFromShares([recoveryShare, authShare]);
+                } catch {
+                    throw new Error(
+                        'Recovery produced an incorrect key. Try another recovery method.'
+                    );
+                }
+
+                const derivedDid = await params.didFromPrivateKey(privateKey);
+                if (!derivedDid || derivedDid !== material.primaryDid) {
+                    throw new Error(
+                        'Recovery produced an incorrect key. Try another recovery method.'
+                    );
+                }
+
+                pendingIdentityRecovery = {
+                    privateKey,
+                    primaryDid: material.primaryDid,
+                    recoveryShare,
+                    authShare,
+                    rebindSessionToken: material.rebindSessionToken,
+                };
+
+                return { privateKey, did: material.primaryDid };
+            } catch (error) {
+                const message = error instanceof Error ? error.message : 'Identity recovery failed';
+
+                throw new IdentityRecoverySessionConsumedError(message);
+            }
+        },
+
+        hasPendingIdentityRecovery(): boolean {
+            return Boolean(pendingIdentityRecovery);
+        },
+
+        cancelIdentityRecovery(): void {
+            pendingIdentityRecovery = undefined;
+        },
+
+        async completeIdentityRecovery(params): Promise<RecoveryResult> {
+            const pending = pendingIdentityRecovery;
+            const signDidAuthVp = params.signDidAuthVp;
+
+            if (!pending) throw new Error('No identity recovery is waiting for a new sign-in');
+            if (!signDidAuthVp) {
+                throw new Error('DID proof signing is required to bind a new sign-in');
+            }
+
+            const storageId = activeStorageId;
+            const didAuthVp = await requestFreshDidAuthVp(
+                serverUrl,
+                pending.privateKey,
+                pending.primaryDid,
+                signDidAuthVp,
+                tenantId
+            );
+            const previousDeviceShare = await storage.getDeviceShare(storageId);
+            let shareVersion: number | undefined;
+            const result = await atomicRecovery(
+                pending.recoveryShare,
+                pending.authShare,
+                {
+                    storeDevice: share => storage.storeDeviceShare(share, storageId),
+                    clearDevice: () => storage.clearAllShares(storageId),
+                    storeAuth: async share => {
+                        const response = await postJson<{
+                            shareVersion: number;
+                            recoveryMethodsRequireConfirmation: string[];
+                        }>(
+                            `${serverUrl}/keys/recovery-session/rebind`,
+                            {
+                                recoverySessionToken: pending.rebindSessionToken,
+                                providerType: params.providerType,
+                                primaryDid: pending.primaryDid,
+                                authShare: { encryptedData: share, encryptedDek: '', iv: '' },
+                            },
+                            {
+                                ...buildHeaders('', didAuthVp, tenantId),
+                                'X-Auth-Token': params.token,
+                            }
+                        );
+
+                        shareVersion = response.shareVersion;
+                    },
+                },
+                { previousDeviceShare: previousDeviceShare ?? undefined }
+            );
+
+            if (shareVersion === undefined) throw new Error('Server did not confirm the new share');
+
+            await storage.storeShareVersion(shareVersion, storageId);
+            lastEmailShare = result.newShares.emailShare;
+            lastShareVersion = shareVersion;
+            lastServerSnapshot = {
+                currentVersion: shareVersion,
+                resolvedVersion: shareVersion,
+                authShare: result.newShares.authShare,
+                primaryDid: pending.primaryDid,
+            };
+            pendingIdentityRecovery = undefined;
+
+            return { privateKey: result.privateKey, did: pending.primaryDid };
         },
 
         // --- Contact method management ---
@@ -1050,7 +2173,8 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             token: string,
             providerType: AuthProviderType,
             _privateKey: string,
-            email: string
+            email: string,
+            didAuthVp?: string
         ): Promise<void> {
             if (!enableEmailBackupShare) return;
 
@@ -1061,32 +2185,22 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 return;
             }
 
-            // When a recovery email is configured, send ONLY to the recovery
-            // email — eliminates the primary-email single point of failure.
-            if (hasRecoveryEmail) {
-                await sendEmailShareToRecoveryEmail(
-                    serverUrl,
-                    token,
-                    providerType,
-                    lastEmailShare,
-                    lastShareVersion,
-                    tenantId
-                );
-            } else {
-                if (!email) {
-                    console.warn('Cannot send email backup share: no email address');
-                    return;
-                }
-
+            if (email) {
                 await sendEmailBackupShare(
                     serverUrl,
                     token,
                     providerType,
                     lastEmailShare,
                     email,
+                    escrowRelayPublicKey,
+                    escrowRelayKeyId,
+                    emailBranding,
                     lastShareVersion,
+                    didAuthVp,
                     tenantId
                 );
+            } else {
+                throw new Error('Enter a recovery email before sending a recovery key');
             }
 
             // Clear after use — one-shot to avoid stale data

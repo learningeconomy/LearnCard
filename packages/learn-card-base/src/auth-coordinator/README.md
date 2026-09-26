@@ -4,10 +4,10 @@ Unified state machine that coordinates **authentication** and **key derivation**
 
 ## Design Goals
 
--   **Provider-agnostic** — Works with any auth provider (Firebase, Supertokens, OIDC) and any key derivation strategy (SSS, Web3Auth).
--   **Testable** — Pure state machine with injectable dependencies; 35+ unit tests cover every path.
--   **Composable** — Base coordinator lives in `learn-card-base`; each app wraps it with app-specific logic (wallet init, LCN profile, overlays).
--   **Private-key-first** — Can reach `ready` from a cached private key without an active auth session, enabling offline-first UX.
+- **Provider-agnostic** — Works with any auth provider (Firebase, Supertokens, OIDC) and any key derivation strategy (SSS, Web3Auth).
+- **Testable** — Pure state machine with injectable dependencies; 35+ unit tests cover every path.
+- **Composable** — Base coordinator lives in `learn-card-base`; each app wraps it with app-specific logic (wallet init, LCN profile, overlays).
+- **Private-key-first** — Can reach `ready` from a cached private key without an active auth session, enabling offline-first UX.
 
 ---
 
@@ -252,15 +252,18 @@ sequenceDiagram
 
     App->>AC: logout()
     AC->>Auth: signOut()
-    AC->>KD: clearLocalKeys()
+    AC->>KD: cleanup() (preserve stored shares)
 
     opt onLogout configured
         AC->>Cleanup: onLogout()
-        Note over Cleanup: Clear stores, IndexedDB,<br/>localStorage, secure storage
+        Note over Cleanup: Clear session state,<br/>preserving SSS storage
     end
 
     AC->>AC: setState(idle)
 ```
+
+`logout()` preserves stored shares for the next sign-in. Call `forgetDevice()` to
+explicitly remove this account's device share, version, and pending candidates.
 
 ### `retry()`
 
@@ -309,17 +312,27 @@ Default implementation: `createAuthCoordinatorApi(serverUrl)` — uses `fetch` w
 
 ### `KeyDerivationStrategy`
 
-| Method                                   | Description                          |
-| ---------------------------------------- | ------------------------------------ |
-| `hasLocalKey()`                          | Check if device share exists         |
-| `getLocalKey()`                          | Retrieve device share                |
-| `storeLocalKey(key)`                     | Persist device share                 |
-| `clearLocalKeys()`                       | Delete all local shares              |
-| `splitKey(privateKey)`                   | Split into `{ localKey, remoteKey }` |
-| `reconstructKey(local, remote)`          | Reconstruct private key from shares  |
-| `verifyKeys?(local, remote, did, didFn)` | Optional health check                |
+| Method                                   | Description                                                                              |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `hasLocalKey()`                          | Check if device share exists                                                             |
+| `getLocalKey()`                          | Retrieve device share                                                                    |
+| `storeLocalKey(key)`                     | Persist device share                                                                     |
+| `clearLocalKeys(options?)`               | Delete local shares; `{ preservePending: true }` removes only the main share and version |
+| `splitKey(privateKey)`                   | Split into `{ localKey, remoteKey }`                                                     |
+| `reconstructKey(local, remote)`          | Reconstruct private key from shares                                                      |
+| `verifyKeys?(local, remote, did, didFn)` | Optional health check                                                                    |
 
 Default implementation: `createSSSStrategy()` from `@learncard/sss-key-manager`.
+
+After a stale-key mismatch, automatic sign-in uses `clearLocalKeys({ preservePending: true })`.
+Unresolved candidates must survive: a delayed write to a legacy server can still
+commit after sign-in enters `needs_recovery`. A later sign-in can reconcile the
+retained candidate. Explicit `forgetDevice()` does not preserve candidates.
+
+Custom SSS storage adapters must implement `deleteDeviceShare(id?)`: delete only
+the selected device share and its version, defaulting to the adapter's own default
+share when `id` is omitted. Do not clear pending candidates or other accounts.
+The IndexedDB, session-only, and native adapters provide this operation.
 
 ### `AuthProvider`
 
@@ -370,9 +383,24 @@ Default implementation: `createFirebaseAuthProvider({ getAuth, user, onSignOut }
     "providerType": "firebase",
     "authShare": { "encryptedData": "<share>", "encryptedDek": "", "iv": "" },
     "primaryDid": "did:key:z...",
-    "securityLevel": "basic"
+    "securityLevel": "basic",
+    "expectedShareVersion": 1
 }
 ```
+
+`expectedShareVersion` enables compare-and-swap. Use the version returned by the
+latest auth-share read, or `0` when no auth share exists (including an existing
+record with missing or BSON-null auth material). A successful checked write returns:
+
+```json
+{ "success": true, "shareVersion": 2, "expectedShareVersionChecked": true }
+```
+
+First writes require a full unique index on `authProviders.type` and
+`authProviders.id`. The server recreates a missing index before inserting.
+If legacy duplicates prevent index creation, new-account writes return `CONFLICT`
+without inserting a record; operators must resolve those duplicates before
+creation can resume. Existing-account updates remain available.
 
 ### `POST /keys/migrate` — Mark migration complete
 
@@ -432,5 +460,5 @@ packages/learn-card-base/src/auth-coordinator/
 
 ## See Also
 
--   [INTEGRATION.md](./INTEGRATION.md) — How to wire the coordinator into an app
--   [RECOVERY.md](./RECOVERY.md) — Recovery methods, share lifecycle, hook APIs
+- [INTEGRATION.md](./INTEGRATION.md) — How to wire the coordinator into an app
+- [RECOVERY.md](./RECOVERY.md) — Recovery methods, share lifecycle, hook APIs

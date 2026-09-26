@@ -17,6 +17,7 @@ import { resolveCatalogLocale, interpolate, SHARED } from '../i18n';
 export interface RecoveryKeyProps {
     branding: TenantBranding;
     recoveryKey: string;
+    confirmationCode: string;
     /** Recipient locale (BCP-47). Defaults to English. */
     locale?: string;
 }
@@ -29,6 +30,8 @@ const STRINGS: Record<
         greeting: string;
         body: (brandName: string) => string;
         codeLabel: string;
+        confirmationCodeLabel: string;
+        confirmationInstruction: string;
         recoverInstruction: () => React.ReactNode;
         notRequested: string;
         passport: string;
@@ -43,6 +46,9 @@ const STRINGS: Record<
         body: b =>
             `Keep this email safe. You can use the recovery key below to regain access to your ${b} account if you lose your device.`,
         codeLabel: 'Recovery Key \u2014 do NOT share this with anyone',
+        confirmationCodeLabel: 'Confirmation code',
+        confirmationInstruction:
+            'Enter this code in the app to confirm that you received your recovery key.',
         recoverInstruction: () => (
             <>
                 To recover your account, choose <strong>&ldquo;Recover via Email&rdquo;</strong> in
@@ -62,6 +68,9 @@ const STRINGS: Record<
         body: b =>
             `Guarda este correo en un lugar seguro. Puedes usar la clave de recuperación siguiente para recuperar el acceso a tu cuenta de ${b} si pierdes tu dispositivo.`,
         codeLabel: 'Clave de recuperación \u2014 NO la compartas con nadie',
+        confirmationCodeLabel: 'Código de confirmación',
+        confirmationInstruction:
+            'Introduce este código en la aplicación para confirmar que recibiste tu clave de recuperación.',
         recoverInstruction: () => (
             <>
                 Para recuperar tu cuenta, elige <strong>&ldquo;Recuperar por correo&rdquo;</strong>{' '}
@@ -81,6 +90,9 @@ const STRINGS: Record<
         body: b =>
             `Conservez cet e-mail en sécurité. Vous pouvez utiliser la clé de récupération ci-dessous pour retrouver l\u2019accès à votre compte ${b} si vous perdez votre appareil.`,
         codeLabel: 'Clé de récupération \u2014 NE la partagez avec PERSONNE',
+        confirmationCodeLabel: 'Code de confirmation',
+        confirmationInstruction:
+            'Saisissez ce code dans l’application pour confirmer que vous avez reçu votre clé de récupération.',
         recoverInstruction: () => (
             <>
                 Pour récupérer votre compte, choisissez{' '}
@@ -103,6 +115,9 @@ const STRINGS: Record<
         body: b =>
             `احتفظ بهذا البريد في مكان آمن. يمكنك استخدام مفتاح الاستعادة أدناه لاستعادة الوصول إلى حسابك في ${b} إذا فقدت جهازك.`,
         codeLabel: 'مفتاح الاستعادة \u2014 لا تشاركه مع أي شخص إطلاقًا',
+        confirmationCodeLabel: 'رمز التأكيد',
+        confirmationInstruction:
+            'أدخل هذا الرمز في التطبيق لتأكيد استلام مفتاح الاستعادة الخاص بك.',
         recoverInstruction: () => (
             <>
                 لاستعادة حسابك، اختر <strong>&laquo;الاستعادة عبر البريد&raquo;</strong> في التطبيق
@@ -117,7 +132,12 @@ const STRINGS: Record<
     },
 };
 
-export const RecoveryKey: React.FC<RecoveryKeyProps> = ({ branding, recoveryKey, locale }) => {
+export const RecoveryKey: React.FC<RecoveryKeyProps> = ({
+    branding,
+    recoveryKey,
+    confirmationCode,
+    locale,
+}) => {
     const s = STRINGS[resolveCatalogLocale(locale)];
 
     return (
@@ -129,6 +149,10 @@ export const RecoveryKey: React.FC<RecoveryKeyProps> = ({ branding, recoveryKey,
             <Text style={paragraph}>{s.body(branding.brandName)}</Text>
 
             <CodeBlock code={recoveryKey} label={s.codeLabel} variant="key" />
+
+            <CodeBlock code={confirmationCode} label={s.confirmationCodeLabel} variant="code" />
+
+            <Text style={paragraph}>{s.confirmationInstruction}</Text>
 
             <Text style={paragraph}>{s.recoverInstruction()}</Text>
 
@@ -193,6 +217,7 @@ export default function Preview() {
         <RecoveryKey
             branding={DEFAULT_BRANDING}
             recoveryKey="mango-delta-fox-echo-bravo-seven-lima-niner"
+            confirmationCode="123456"
         />
     );
 }

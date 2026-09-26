@@ -13,9 +13,13 @@
 
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 
-import { AuthCoordinatorProvider, useAuthCoordinator } from '../AuthCoordinatorProvider';
+import {
+    AuthCoordinatorProvider,
+    useAuthCoordinator,
+    type AuthCoordinatorContextValue,
+} from '../AuthCoordinatorProvider';
 
 import type { AuthProvider, KeyDerivationStrategy } from '../types';
 
@@ -32,7 +36,7 @@ const createMockKeyDerivation = (): KeyDerivationStrategy =>
         deriveKey: vi.fn(),
         setupKey: vi.fn(),
         clearLocalKeys: vi.fn(),
-    } as unknown as KeyDerivationStrategy);
+    }) as unknown as KeyDerivationStrategy;
 
 const StatusProbe: React.FC = () => {
     const { state } = useAuthCoordinator();
@@ -46,6 +50,105 @@ const slowCachedKey = (value: string | null) => () =>
     new Promise<string | null>(resolve => setTimeout(() => resolve(value), 20));
 
 describe('AuthCoordinatorProvider authProvider swap', () => {
+    it('exposes activation-aware setup and publishes completion only after an activation retry succeeds', async () => {
+        const keyDerivation = createMockKeyDerivation();
+        keyDerivation.capabilities.recovery = true;
+        keyDerivation.fetchServerKeyStatus = vi.fn().mockResolvedValue({
+            exists: true,
+            needsMigration: true,
+            sssActivationState: 'provisional',
+            recoveryMethods: [],
+        });
+        keyDerivation.activate = vi
+            .fn()
+            .mockRejectedValueOnce(new Error('offline'))
+            .mockResolvedValue(undefined);
+        const authProvider: AuthProvider = {
+            getIdToken: vi.fn().mockResolvedValue('token'),
+            getCurrentUser: vi.fn().mockResolvedValue({ id: 'user' }),
+            getProviderType: () => 'firebase',
+            signOut: vi.fn(),
+        };
+        let context!: AuthCoordinatorContextValue;
+        const Probe = () => {
+            const value = useAuthCoordinator();
+            React.useEffect(() => {
+                context = value;
+            }, [value]);
+            return null;
+        };
+        const getCachedPrivateKey = async () => 'private-key';
+        const didFromPrivateKey = async () => 'did:key:test';
+        const view = render(
+            <AuthCoordinatorProvider
+                keyDerivation={keyDerivation}
+                authProvider={authProvider}
+                getCachedPrivateKey={getCachedPrivateKey}
+                didFromPrivateKey={didFromPrivateKey}
+            >
+                <Probe />
+            </AuthCoordinatorProvider>
+        );
+        await waitFor(() => expect(context.needsActivation).toBe(true));
+        const confirm = vi.fn().mockResolvedValue(undefined);
+        await act(async () => {
+            await expect(context.runRecoverySetup('phrase', confirm)).rejects.toThrow(
+                'Please try again'
+            );
+        });
+        expect(context.recoverySetupRevision).toBe(0);
+        expect(context.needsActivation).toBe(true);
+        const originalRun = context.runRecoverySetup;
+        const originalReset = context.resetRecoverySetup;
+        const refreshedProvider = { ...authProvider };
+        view.rerender(
+            <AuthCoordinatorProvider
+                keyDerivation={keyDerivation}
+                authProvider={refreshedProvider}
+                getCachedPrivateKey={getCachedPrivateKey}
+                didFromPrivateKey={didFromPrivateKey}
+            >
+                <Probe />
+            </AuthCoordinatorProvider>
+        );
+        await waitFor(() => expect(authProvider.getCurrentUser).toHaveBeenCalledTimes(2));
+        await waitFor(() => expect(context.isReady).toBe(true));
+        // Same-account auth refresh must retain a consumed confirmation for retry.
+        await act(async () => {
+            await context.runRecoverySetup('phrase', confirm);
+        });
+        expect(context.needsActivation).toBe(false);
+        expect(context.recoverySetupRevision).toBe(1);
+        expect(confirm).toHaveBeenCalledOnce();
+        expect(keyDerivation.activate).toHaveBeenCalledTimes(2);
+        const otherProvider = {
+            ...authProvider,
+            getCurrentUser: vi.fn().mockResolvedValue({ id: 'other-user' }),
+        };
+        view.rerender(
+            <AuthCoordinatorProvider
+                keyDerivation={keyDerivation}
+                authProvider={otherProvider}
+                getCachedPrivateKey={getCachedPrivateKey}
+                didFromPrivateKey={didFromPrivateKey}
+            >
+                <Probe />
+            </AuthCoordinatorProvider>
+        );
+        await waitFor(() =>
+            expect(context.state.status === 'ready' && context.state.authUser?.id).toBe(
+                'other-user'
+            )
+        );
+        const staleConfirmation = vi.fn().mockResolvedValue(undefined);
+        // Models an old modal's token request resolving after the account switch.
+        await expect(originalRun('phrase', staleConfirmation)).rejects.toThrow('sign in again');
+        expect(() => originalReset('phrase')).toThrow('sign in again');
+        expect(staleConfirmation).not.toHaveBeenCalled();
+        expect(keyDerivation.activate).toHaveBeenCalledTimes(2);
+        view.unmount();
+    });
+
     it('bridges idle → real-provider swap with authenticating instead of a stale idle frame', async () => {
         const keyDerivation = createMockKeyDerivation();
 

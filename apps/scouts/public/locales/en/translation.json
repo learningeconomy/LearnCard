@@ -524,7 +524,10 @@
                 "yourPhrase": "Your Recovery Phrase",
                 "copied": "Copied!",
                 "copyBtn": "Copy to Clipboard",
-                "confirmBtn": "I've Saved It Somewhere Safe"
+                "confirmBtn": "I've Saved It Somewhere Safe",
+                "verifyDesc": "Enter the requested words to confirm you saved your phrase.",
+                "verifyTitle": "Confirm Your Recovery Phrase",
+                "wordNumber": "Word {{number}}"
             },
             "backup": {
                 "createdRow": "Backup file created",
@@ -542,7 +545,9 @@
                 "downloadAgain": "Download Again",
                 "downloadBtn": "Download Backup File",
                 "confirmBtn": "I've Saved It Somewhere Safe",
-                "shareTitle": "ScoutPass Backup"
+                "shareTitle": "ScoutPass Backup",
+                "reenterPassword": "Re-enter Backup Password",
+                "verifyDesc": "We'll check the downloaded file before confirming this recovery method."
             },
             "email": {
                 "recoveryRow": "Recovery email: {{email}}",
@@ -563,7 +568,9 @@
                 "sendKeyDesc": "We'll send a recovery key to this email. If you ever lose access, just check your inbox and paste the key to recover.",
                 "sendKeyBtn": "Send Recovery Key",
                 "keySentTitle": "Recovery key sent",
-                "keySentDesc": "Check your inbox at {{email}}. Keep that email safe — you'll need the recovery key if you ever lose access."
+                "keySentDesc": "Check your inbox at {{email}}. Keep that email safe — you'll need the recovery key if you ever lose access.",
+                "confirmKeyBtn": "Confirm Recovery Key",
+                "confirmationCodeSent": "Enter the confirmation code sent with your recovery key to {{email}}."
             },
             "errors": {
                 "passLength": "Password must be at least 8 characters.",

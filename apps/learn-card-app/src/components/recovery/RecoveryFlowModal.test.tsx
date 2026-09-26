@@ -17,17 +17,107 @@ vi.mock('@ionic/react', () => ({
 }));
 
 vi.mock('learn-card-base', async () => {
-    // Keep the real overlay behavior without loading the package barrel's browser-only dependencies.
     const { Overlay } = await import('learn-card-base/auth-coordinator/components/Overlay');
 
     return {
         Overlay,
-        QrLoginRequester: () => null,
+        getLogger: () => ({ error: vi.fn() }),
+        QrLoginRequester: () => <div>QrLoginRequester</div>,
         getSSSConfig: () => ({ serverUrl: 'https://example.com' }),
     };
 });
 
 import { RecoveryFlowModal } from './RecoveryFlowModal';
+
+describe('RecoveryFlowModal', () => {
+    const defaultProps = {
+        availableMethods: [],
+        onRecoverWithPasskey: vi.fn(),
+        onRecoverWithPhrase: vi.fn(),
+        onRecoverWithBackup: vi.fn(),
+        onCancel: vi.fn(),
+    };
+
+    it('renders identity enter_email phase', () => {
+        render(<RecoveryFlowModal {...defaultProps} identityPhase="enter_email" />);
+        expect(screen.getByRole('heading', { name: /Restore Your Account/i })).toBeInTheDocument();
+        expect(screen.getByRole('textbox')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Send Recovery Code/i })).toBeInTheDocument();
+    });
+
+    it('renders identity verify_email phase', () => {
+        render(
+            <RecoveryFlowModal
+                {...defaultProps}
+                identityPhase="verify_email"
+                identityEmail="test@example.com"
+            />
+        );
+        expect(screen.getByRole('heading', { name: /Check Your Email/i })).toBeInTheDocument();
+        expect(screen.getByRole('textbox')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Verify Code/i })).toBeInTheDocument();
+    });
+
+    it('renders identity new_login phase', () => {
+        render(<RecoveryFlowModal {...defaultProps} identityPhase="new_login" />);
+        expect(screen.getByRole('heading', { name: /Account Verified/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Continue to Sign In/i })).toBeInTheDocument();
+    });
+
+    it('renders identity success phase', () => {
+        render(<RecoveryFlowModal {...defaultProps} identityPhase="success" />);
+        expect(screen.getByRole('heading', { name: /Access Restored/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Done/i })).toBeInTheDocument();
+    });
+
+    it('hides device linking in the lost-login chooser even with a device callback', () => {
+        render(
+            <RecoveryFlowModal
+                {...defaultProps}
+                identityPhase="choose_method"
+                onRecoverWithDevice={vi.fn()}
+                availableMethods={[{ type: 'phrase', createdAt: '2026-09-06T00:00:00Z' }]}
+            />
+        );
+
+        expect(screen.queryByRole('button', { name: /sign in from another device/i })).toBeNull();
+        expect(screen.getByRole('button', { name: /phrase/i })).toBeEnabled();
+        expect(screen.queryByText('QrLoginRequester')).toBeNull();
+    });
+
+    it('keeps device linking available in ordinary recovery', () => {
+        render(<RecoveryFlowModal {...defaultProps} onRecoverWithDevice={vi.fn()} />);
+
+        const deviceButton = screen.getByRole('button', { name: /sign in from another device/i });
+        expect(deviceButton).toBeEnabled();
+        fireEvent.click(deviceButton);
+        expect(screen.getByText('QrLoginRequester')).toBeInTheDocument();
+    });
+
+    it('shows a friendly error and enables retry and Back after an invalid lost-login phrase', async () => {
+        const recover = vi.fn().mockRejectedValue(new Error('Invalid recovery phrase'));
+        render(
+            <RecoveryFlowModal
+                {...defaultProps}
+                identityPhase="choose_method"
+                availableMethods={[{ type: 'phrase', createdAt: '2026-09-06T00:00:00Z' }]}
+                onRecoverWithPhrase={recover}
+            />
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: /phrase/i }));
+        const invalidPhrase = Array(25).fill('invalid').join(' ');
+        fireEvent.change(screen.getByRole('textbox'), { target: { value: invalidPhrase } });
+        fireEvent.click(screen.getByRole('button', { name: 'Recover Account' }));
+
+        expect(await screen.findByText(/Please check for typos/)).toBeInTheDocument();
+        expect(recover).toHaveBeenCalledWith(invalidPhrase);
+        expect(screen.getByRole('button', { name: 'Recover Account' })).toBeEnabled();
+        expect(screen.getByRole('button', { name: 'Back' })).toBeEnabled();
+        fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+        expect(screen.getByRole('button', { name: /phrase/i })).toBeEnabled();
+    });
+});
 
 const renderModal = (
     onCancel: () => void,

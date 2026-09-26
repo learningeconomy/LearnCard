@@ -4,6 +4,7 @@ export const getChallengeCacheKey = (did: string, challenge: string): string =>
     `challenge|${did}|${challenge}`;
 
 export const VALID = 'valid';
+export const DID_CHALLENGE_TTL_SECS = 5 * 60;
 
 export const isChallengeValidForDid = async (
     did: string,
@@ -14,8 +15,17 @@ export const isChallengeValidForDid = async (
     return result === VALID ? result : undefined;
 };
 
+/** Atomically validate and consume a challenge so concurrent replays cannot both succeed. */
+export const consumeChallengeForDid = async (did: string, challenge: string): Promise<boolean> => {
+    const key = getChallengeCacheKey(did, challenge);
+    const redis = cache.redis ?? cache.node;
+    const value = await redis.getdel(key);
+
+    return value === VALID;
+};
+
 export const setValidChallengeForDid = async (did: string, challenge: string) => {
-    return cache.set(getChallengeCacheKey(did, challenge), VALID);
+    return cache.set(getChallengeCacheKey(did, challenge), VALID, DID_CHALLENGE_TTL_SECS);
 };
 
 export const setValidChallengesForDid = async (did: string, challenges: string[]) => {
@@ -25,7 +35,7 @@ export const setValidChallengesForDid = async (did: string, challenges: string[]
         return acc;
     }, {});
 
-    return cache.mset(values);
+    return cache.mset(values, DID_CHALLENGE_TTL_SECS);
 };
 
 export const invalidateChallengeForDid = async (did: string, challenge: string) => {

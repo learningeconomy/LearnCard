@@ -2,6 +2,34 @@ import { describe, test, expect, beforeAll } from 'vitest';
 
 import { getLearnCard, type LearnCard } from './helpers/learncard.helpers';
 
+// The plugin exposes enrollment but not confirmation. Use the public challenge
+// endpoint for this missing operation; plugin calls obtain their own challenges.
+const confirmRecoveryMethod = async (
+    learnCard: LearnCard,
+    authToken: string,
+    type: 'phrase' | 'passkey' | 'backup',
+    credentialId?: string
+): Promise<void> => {
+    const vp = await learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt' });
+    if (typeof vp !== 'string') throw new Error('Failed to create DID-Auth VP');
+    const challengeResponse = await fetch('http://localhost:5200/api/keys/challenge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${vp}` },
+        body: JSON.stringify({ did: learnCard.id.did() }),
+    });
+    expect(challengeResponse.status).toBe(200);
+    const { challenge } = await challengeResponse.json();
+    const boundVp = await learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt', challenge });
+    if (typeof boundVp !== 'string') throw new Error('Failed to create DID-Auth VP');
+    const response = await fetch('http://localhost:5200/api/keys/recovery/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${boundVp}` },
+        body: JSON.stringify({ authToken, providerType: 'firebase', type, credentialId }),
+    });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ success: true });
+};
+
 const createMockAuthToken = (userId: string, email: string) => {
     const header = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString('base64url');
     const payload = Buffer.from(
@@ -21,7 +49,6 @@ describe('SSS Key Management via LearnCard Plugin', () => {
 
     const testUserId = `lc-invoke-user-${Date.now()}`;
     const testEmail = `lc-invoke-${Date.now()}@example.com`;
-    const testDid = `did:key:z6MkLcInvoke${Date.now()}`;
 
     let mockAuthToken: string;
     let vpDid: string;
@@ -44,7 +71,7 @@ describe('SSS Key Management via LearnCard Plugin', () => {
                 mockAuthToken,
                 'firebase',
                 authShare,
-                testDid
+                vpDid
             );
 
             expect(result.success).toBe(true);
@@ -55,7 +82,7 @@ describe('SSS Key Management via LearnCard Plugin', () => {
 
             expect(result).not.toBeNull();
             expect(result?.authShare?.encryptedData).toBe(authShare.encryptedData);
-            // storeAuthShare stores ctx.user.did (VP DID), not input.primaryDid
+            // The supplied primaryDid must equal the signing DID.
             expect(result?.primaryDid).toBe(vpDid);
             expect(result?.keyProvider).toBe('sss');
             expect(result?.securityLevel).toBe('basic');
@@ -82,6 +109,10 @@ describe('SSS Key Management via LearnCard Plugin', () => {
             );
 
             expect(result.success).toBe(true);
+            expect(
+                await learnCard.invoke.getRecoveryShare(mockAuthToken, 'firebase', 'phrase')
+            ).toBeNull();
+            await confirmRecoveryMethod(learnCard, mockAuthToken, 'phrase');
         });
 
         test('should add passkey recovery method with credentialId', async () => {
@@ -94,6 +125,7 @@ describe('SSS Key Management via LearnCard Plugin', () => {
             );
 
             expect(result.success).toBe(true);
+            await confirmRecoveryMethod(learnCard, mockAuthToken, 'passkey', 'lc-passkey-cred-123');
         });
 
         test('should retrieve phrase recovery share using invoke.getRecoveryShare', async () => {
@@ -149,17 +181,20 @@ describe('SSS Key Management via LearnCard Plugin', () => {
                     encryptedDek: 'migration-dek',
                     iv: 'migration-iv',
                 },
-                'did:key:z6MkMigrationLC'
+                vpDid
             );
         });
 
-        test('should mark user as migrated using invoke.markMigrated', async () => {
-            const result = await learnCard.invoke.markMigrated(migrationToken, 'firebase');
-
-            expect(result.success).toBe(true);
+        test('should reject marking a new SSS record as migrated', async () => {
+            await expect(
+                learnCard.invoke.markMigrated(migrationToken, 'firebase')
+            ).rejects.toMatchObject({
+                data: { code: 'BAD_REQUEST' },
+                message: 'This key record is not eligible for migration.',
+            });
         });
 
-        test('should confirm migration via getAuthShare', async () => {
+        test('should preserve the SSS record after rejected migration', async () => {
             const result = await learnCard.invoke.getAuthShare(migrationToken, 'firebase');
 
             expect(result).not.toBeNull();
@@ -183,12 +218,16 @@ describe('SSS Key Management via LearnCard Plugin', () => {
                     encryptedDek: 'delete-dek',
                     iv: 'delete-iv',
                 },
-                'did:key:z6MkDeleteLC'
+                vpDid
             );
         });
 
         test('should delete user key using invoke.deleteUserKey', async () => {
-            const result = await learnCard.invoke.deleteUserKey(deleteToken, 'firebase');
+            const result = await learnCard.invoke.deleteUserKey(
+                deleteToken,
+                'firebase',
+                crypto.randomUUID()
+            );
 
             expect(result.success).toBe(true);
         });
@@ -240,7 +279,7 @@ describe('SSS Key Management via LearnCard Plugin', () => {
                     encryptedDek: 'initial-dek-lc',
                     iv: 'initial-iv-lc',
                 },
-                'did:key:z6MkInitialLC'
+                vpDid
             );
 
             await learnCard.invoke.storeAuthShare(
@@ -251,17 +290,17 @@ describe('SSS Key Management via LearnCard Plugin', () => {
                     encryptedDek: 'updated-dek-lc',
                     iv: 'updated-iv-lc',
                 },
-                'did:key:z6MkUpdatedLC'
+                vpDid
             );
 
             const result = await learnCard.invoke.getAuthShare(updateToken, 'firebase');
 
             expect(result?.authShare?.encryptedData).toBe('updated-lc');
-            // storeAuthShare stores VP DID, not input.primaryDid
+            // Rotation preserves the authenticated owner.
             expect(result?.primaryDid).toBe(vpDid);
         });
 
-        test('should handle idempotent delete gracefully', async () => {
+        test('should return NOT_FOUND when deleting an already deleted record', async () => {
             const idempotentToken = createMockAuthToken(
                 `lc-idempotent-${Date.now()}`,
                 `lc-idempotent-${Date.now()}@example.com`
@@ -275,13 +314,22 @@ describe('SSS Key Management via LearnCard Plugin', () => {
                     encryptedDek: 'idem-dek',
                     iv: 'idem-iv',
                 },
-                'did:key:z6MkIdempotentLC'
+                vpDid
             );
 
-            await learnCard.invoke.deleteUserKey(idempotentToken, 'firebase');
+            expect(
+                await learnCard.invoke.deleteUserKey(
+                    idempotentToken,
+                    'firebase',
+                    crypto.randomUUID()
+                )
+            ).toEqual({ success: true });
 
-            const secondDelete = await learnCard.invoke.deleteUserKey(idempotentToken, 'firebase');
-            expect(secondDelete.success).toBe(true);
+            await expect(
+                learnCard.invoke.deleteUserKey(idempotentToken, 'firebase', crypto.randomUUID())
+            ).rejects.toMatchObject({
+                data: { code: 'NOT_FOUND' },
+            });
         });
 
         test('should store and retrieve recovery share with salt', async () => {
@@ -297,7 +345,7 @@ describe('SSS Key Management via LearnCard Plugin', () => {
                     encryptedDek: 'salt-auth-dek',
                     iv: 'salt-auth-iv',
                 },
-                'did:key:z6MkSaltLC'
+                vpDid
             );
 
             const shareWithSalt = {
@@ -312,6 +360,7 @@ describe('SSS Key Management via LearnCard Plugin', () => {
                 'phrase',
                 shareWithSalt
             );
+            await confirmRecoveryMethod(learnCard, saltToken, 'phrase');
 
             const result = await learnCard.invoke.getRecoveryShare(saltToken, 'firebase', 'phrase');
 
@@ -335,7 +384,7 @@ describe('SSS Key Management via LearnCard Plugin', () => {
                     encryptedDek: 'enhanced-dek',
                     iv: 'enhanced-iv',
                 },
-                'did:key:z6MkEnhancedLC',
+                vpDid,
                 'enhanced'
             );
 
@@ -358,7 +407,7 @@ describe('SSS Key Management via LearnCard Plugin', () => {
                     encryptedDek: 'advanced-dek',
                     iv: 'advanced-iv',
                 },
-                'did:key:z6MkAdvancedLC',
+                vpDid,
                 'advanced'
             );
 
@@ -384,7 +433,7 @@ describe('SSS Key Management via LearnCard Plugin', () => {
                     encryptedDek: 'multi-passkey-dek',
                     iv: 'multi-passkey-iv',
                 },
-                'did:key:z6MkMultiPasskeyLC'
+                vpDid
             );
         });
 
@@ -406,6 +455,7 @@ describe('SSS Key Management via LearnCard Plugin', () => {
                 passkey1,
                 'credential-id-1'
             );
+            await confirmRecoveryMethod(learnCard, multiPasskeyToken, 'passkey', 'credential-id-1');
 
             await learnCard.invoke.addRecoveryMethod(
                 multiPasskeyToken,
@@ -414,6 +464,7 @@ describe('SSS Key Management via LearnCard Plugin', () => {
                 passkey2,
                 'credential-id-2'
             );
+            await confirmRecoveryMethod(learnCard, multiPasskeyToken, 'passkey', 'credential-id-2');
 
             const result1 = await learnCard.invoke.getRecoveryShare(
                 multiPasskeyToken,
@@ -461,7 +512,7 @@ describe('SSS Key Management via LearnCard Plugin', () => {
                     encryptedDek: 'backup-auth-dek',
                     iv: 'backup-auth-iv',
                 },
-                'did:key:z6MkBackupLC'
+                vpDid
             );
 
             const backupShare = {
@@ -475,6 +526,7 @@ describe('SSS Key Management via LearnCard Plugin', () => {
                 'backup',
                 backupShare
             );
+            await confirmRecoveryMethod(learnCard, backupToken, 'backup');
 
             const result = await learnCard.invoke.getRecoveryShare(
                 backupToken,
@@ -488,6 +540,7 @@ describe('SSS Key Management via LearnCard Plugin', () => {
 
     describe('Data Isolation via invoke', () => {
         test('should isolate data between different users', async () => {
+            const otherLearnCard = await getLearnCard('2'.repeat(64));
             const user1Token = createMockAuthToken(
                 `lc-isolation-1-${Date.now()}`,
                 `lc-isolation-1-${Date.now()}@example.com`
@@ -506,10 +559,10 @@ describe('SSS Key Management via LearnCard Plugin', () => {
                     encryptedDek: 'user1-dek',
                     iv: 'user1-iv',
                 },
-                'did:key:z6MkUser1LC'
+                vpDid
             );
 
-            await learnCard.invoke.storeAuthShare(
+            await otherLearnCard.invoke.storeAuthShare(
                 user2Token,
                 'firebase',
                 {
@@ -517,14 +570,16 @@ describe('SSS Key Management via LearnCard Plugin', () => {
                     encryptedDek: 'user2-dek',
                     iv: 'user2-iv',
                 },
-                'did:key:z6MkUser2LC'
+                otherLearnCard.id.did()
             );
 
             const result1 = await learnCard.invoke.getAuthShare(user1Token, 'firebase');
-            const result2 = await learnCard.invoke.getAuthShare(user2Token, 'firebase');
+            const result2 = await otherLearnCard.invoke.getAuthShare(user2Token, 'firebase');
 
             expect(result1?.authShare?.encryptedData).toBe('user1-secret');
             expect(result2?.authShare?.encryptedData).toBe('user2-secret');
+            expect(result1?.primaryDid).toBe(vpDid);
+            expect(result2?.primaryDid).toBe(otherLearnCard.id.did());
 
             expect(result1?.authShare?.encryptedData).not.toBe(result2?.authShare?.encryptedData);
         });
@@ -542,7 +597,7 @@ describe('SSS Key Management via LearnCard Plugin', () => {
                     encryptedData: 'test',
                     iv: 'test',
                 })
-            ).rejects.toThrow();
+            ).rejects.toMatchObject({ data: { code: 'NOT_FOUND' } });
         });
     });
 
@@ -600,13 +655,14 @@ describe('SSS Key Management via LearnCard Plugin', () => {
                     encryptedDek: 'initial-dek',
                     iv: 'initial-iv',
                 },
-                'did:key:z6MkPersistInitial'
+                vpDid
             );
 
             await learnCard.invoke.addRecoveryMethod(persistToken, 'firebase', 'phrase', {
                 encryptedData: 'phrase-share',
                 iv: 'phrase-iv',
             });
+            await confirmRecoveryMethod(learnCard, persistToken, 'phrase');
 
             await learnCard.invoke.storeAuthShare(
                 persistToken,
@@ -616,12 +672,13 @@ describe('SSS Key Management via LearnCard Plugin', () => {
                     encryptedDek: 'updated-dek',
                     iv: 'updated-iv',
                 },
-                'did:key:z6MkPersistUpdated'
+                vpDid
             );
 
             const result = await learnCard.invoke.getAuthShare(persistToken, 'firebase');
 
             expect(result?.authShare?.encryptedData).toBe('updated');
+            expect(result?.shareVersion).toBe(2);
 
             const phraseRecovery = await learnCard.invoke.getRecoveryShare(
                 persistToken,
@@ -630,6 +687,7 @@ describe('SSS Key Management via LearnCard Plugin', () => {
             );
 
             expect(phraseRecovery?.encryptedShare?.encryptedData).toBe('phrase-share');
+            expect(phraseRecovery?.shareVersion).toBe(1);
         });
     });
 });
