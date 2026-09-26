@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 
 import * as m from '../../../../paraglide/messages.js';
 import { ListShell, MessageRow, SkeletonRows } from './ListCard';
@@ -8,6 +8,18 @@ import { useSharedLinksStore } from './sharedLinksStore';
 
 const SharedWithYouAllSheet: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const saved = useSharedLinksStore(state => state.vm?.savedCollections);
+    const hadVmRef = useRef(false);
+
+    // Close when the store's vm transitions to null (the section unmounted),
+    // mirroring ShareLinkDetailSheet and SharedLinksAllSheet.
+    useEffect(() => {
+        if (saved) {
+            hadVmRef.current = true;
+        } else if (hadVmRef.current) {
+            onClose();
+        }
+    }, [saved, onClose]);
+
     if (!saved) return null;
 
     return (

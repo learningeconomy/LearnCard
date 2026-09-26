@@ -214,7 +214,7 @@ describe('main list', () => {
         expect(second.onFilterChange).toHaveBeenCalledWith('stopped');
     });
 
-    it('leaves the filter alone when active links exist or another filter is chosen', () => {
+    it('leaves the filter alone when it already fits', () => {
         const withActive = viewModel({ records: [...many(6)] });
         const { unmount } = renderSection(withActive);
         fireEvent.click(screen.getByRole('button', { name: /View all 6/ }));
@@ -228,6 +228,17 @@ describe('main list', () => {
         renderSection(chosen);
         fireEvent.click(screen.getByRole('button', { name: /View all 1/ }));
         expect(chosen.onFilterChange).not.toHaveBeenCalled();
+    });
+
+    it('returns View all to Active once active links exist again', () => {
+        const vm = viewModel({
+            records: [...many(6), { ...share, id: 'STP', status: 'stopped' } as ShareLink],
+            filter: 'expired',
+        });
+        renderSection(vm);
+        fireEvent.click(screen.getByRole('button', { name: /View all 7/ }));
+        expect(vm.onFilterChange).toHaveBeenCalledWith('active');
+        expect(vm.onFilterChange).toHaveBeenCalledOnce();
     });
 
     it('adds a plus to View all when more pages exist', () => {
@@ -267,9 +278,66 @@ describe('main list', () => {
         expect(screen.getByText('Update in progress')).toBeTruthy();
     });
 
+    it('keeps loaded rows and View all on a background error, with an inline retry', () => {
+        const vm = viewModel({ records: many(7), error: true });
+        renderSection(vm);
+
+        const list = screen.getByRole('list', { name: 'Your shared links' });
+        expect(within(list).getAllByRole('button', { name: /^Link \d/ })).toHaveLength(5);
+        expect(within(list).getByRole('button', { name: /View all 7/ })).toBeTruthy();
+        expect(within(list).getByRole('alert').textContent).toMatch(/couldn't load your links/);
+        fireEvent.click(within(list).getByRole('button', { name: 'Try again' }));
+        expect(vm.onRefresh).toHaveBeenCalledOnce();
+    });
+
+    it('shows the full error only when nothing is loaded', () => {
+        renderSection(viewModel({ records: [], error: true }));
+        const list = screen.getByRole('list', { name: 'Your shared links' });
+        expect(within(list).getByRole('alert')).toBeTruthy();
+        expect(within(list).queryByRole('button', { name: /View all/ })).toBeNull();
+    });
+
     it('does not show a refresh button on the main page', () => {
         renderSection(viewModel());
         expect(screen.queryByRole('button', { name: 'Refresh' })).toBeNull();
+    });
+});
+
+describe('row animation', () => {
+    const rowItem = (button: HTMLElement) => button.closest('li') as HTMLElement;
+
+    it('animates each list the first time it shows rows, and keeps that batch stable', () => {
+        const base = viewModel().savedCollections;
+        const loading = viewModel({
+            savedCollections: { ...base, records: [], isLoading: true },
+        });
+        const { rerenderWith } = renderSection(loading);
+
+        const firstLink = () => rowItem(linkRow());
+        expect(firstLink().className).toContain('sl-row-in');
+
+        // Received rows arrive later: they still get their own first reveal.
+        rerenderWith({ ...loading, savedCollections: base });
+        const received = () =>
+            rowItem(
+                within(screen.getByRole('list', { name: 'Shared with you' })).getByRole('button', {
+                    name: /^Career highlights/,
+                })
+            );
+        expect(received().className).toContain('sl-row-in');
+        // The links batch keeps its animation class while its stagger runs.
+        expect(firstLink().className).toContain('sl-row-in');
+
+        // A link added after the first reveal does not animate.
+        const added = {
+            ...share,
+            id: 'NEWNEWNEWNEWNEWNEWNEWN',
+            title: 'Fresh link',
+            createdAt: '2026-09-20T00:00:00.000Z',
+        } as ShareLink;
+        rerenderWith({ ...loading, savedCollections: base, records: [added, share] });
+        expect(rowItem(linkRow('Fresh link')).className).not.toContain('sl-row-in');
+        expect(firstLink().className).toContain('sl-row-in');
     });
 });
 
@@ -284,6 +352,31 @@ describe('shared with you', () => {
         expect(row.textContent).toContain('2 credentials');
         fireEvent.click(row);
         expect(vm.savedCollections.onPreview).toHaveBeenCalledWith(savedCollection);
+    });
+
+    it('keeps received rows on a background error, with an inline retry', () => {
+        const base = viewModel().savedCollections;
+        const records = Array.from({ length: 6 }, (_, index) => ({
+            ...savedCollection,
+            uri: `lc:network:localhost%3A4000:pres:${index}`,
+            title: `Collection ${index}`,
+        }));
+        const vm = viewModel({ savedCollections: { ...base, records, error: true } });
+        renderSection(vm);
+
+        const list = screen.getByRole('list', { name: 'Shared with you' });
+        expect(within(list).getAllByRole('button', { name: /^Collection \d/ })).toHaveLength(5);
+        expect(within(list).getByRole('button', { name: /View all 6/ })).toBeTruthy();
+        expect(within(list).getByRole('alert').textContent).toMatch(/saved collections/);
+        fireEvent.click(within(list).getByRole('button', { name: 'Try again' }));
+        expect(base.onRefresh).toHaveBeenCalledOnce();
+    });
+
+    it('shows the full received error only when nothing is loaded', () => {
+        const base = viewModel().savedCollections;
+        renderSection(viewModel({ savedCollections: { ...base, records: [], error: true } }));
+        const list = screen.getByRole('list', { name: 'Shared with you' });
+        expect(within(list).getByRole('alert').textContent).toMatch(/saved collections/);
     });
 
     it('invites instead of apologizing when nothing has been received', () => {
@@ -402,6 +495,25 @@ describe('detail sheet', () => {
         fireEvent.click(sheet.getByRole('button', { name: 'Check again' }));
         expect(vm.onCheckPending).toHaveBeenCalledWith(share);
         expect(sheet.getByRole('button', { name: 'Stop sharing' })).toBeDisabled();
+    });
+
+    it('checks the right share when two changes are pending', () => {
+        const second = {
+            ...share,
+            id: 'BBBBBBBBBBBBBBBBBBBBBB',
+            title: 'Second share',
+            createdAt: '2026-09-01T00:00:00.000Z',
+        } as ShareLink;
+        const vm = viewModel({
+            records: [share, second],
+            pendingActions: { [share.id]: 'stop', [second.id]: 'expiry' },
+        });
+        renderSection(vm);
+        const sheet = openDetail('Second share');
+
+        fireEvent.click(sheet.getByRole('button', { name: 'Check again' }));
+        expect(vm.onCheckPending).toHaveBeenCalledOnce();
+        expect(vm.onCheckPending).toHaveBeenCalledWith(second);
     });
 
     it('stays live after it opens: a pending change that clears re-enables actions', () => {

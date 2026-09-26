@@ -1,6 +1,6 @@
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { ShareLink, VP } from '@learncard/types';
 
 import type {
@@ -131,6 +131,22 @@ const seedRoving = (overrides: Partial<DataSharingSharedLinksViewModel> = {}) =>
 };
 
 describe('SharedLinksAllSheet', () => {
+    it('closes itself when the store vm transitions to null', () => {
+        seed(buildVm());
+        const onClose = vi.fn();
+        render(<SharedLinksAllSheet onClose={onClose} onOpenShare={vi.fn()} />);
+        expect(onClose).not.toHaveBeenCalled();
+
+        act(() => useSharedLinksStore.setState({ vm: null }));
+        expect(onClose).toHaveBeenCalledOnce();
+    });
+
+    it('does not close when it mounts before any vm is published', () => {
+        const onClose = vi.fn();
+        render(<SharedLinksAllSheet onClose={onClose} onOpenShare={vi.fn()} />);
+        expect(onClose).not.toHaveBeenCalled();
+    });
+
     it('shows loaded counts on the filter tabs', () => {
         seed(buildVm());
         render(<SharedLinksAllSheet onClose={vi.fn()} onOpenShare={vi.fn()} />);
@@ -338,6 +354,22 @@ describe('SharedLinksAllSheet', () => {
 });
 
 describe('SharedWithYouAllSheet', () => {
+    it('closes itself when the store vm transitions to null', () => {
+        seed(buildVm());
+        const onClose = vi.fn();
+        render(<SharedWithYouAllSheet onClose={onClose} />);
+        expect(onClose).not.toHaveBeenCalled();
+
+        act(() => useSharedLinksStore.setState({ vm: null }));
+        expect(onClose).toHaveBeenCalledOnce();
+    });
+
+    it('does not close when it mounts before any vm is published', () => {
+        const onClose = vi.fn();
+        render(<SharedWithYouAllSheet onClose={onClose} />);
+        expect(onClose).not.toHaveBeenCalled();
+    });
+
     it('lists all records, including more than 5', () => {
         const records = Array.from({ length: 7 }, (_, index) =>
             savedCollection({

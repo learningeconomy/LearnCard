@@ -181,4 +181,22 @@ describe('ShareLinkRow', () => {
 
         expect(screen.getByRole('img', { name: 'Passcode protected' })).toBeTruthy();
     });
+
+    it('shows no "Passcode protected" img for an unprotected share', () => {
+        render(
+            <ul>
+                <ShareLinkRow
+                    share={share({ passcodeProtected: false })}
+                    pending={false}
+                    busy={false}
+                    showViewStats
+                    onOpen={vi.fn()}
+                    onCopy={vi.fn(async () => true)}
+                />
+            </ul>
+        );
+
+        expect(screen.getByText('Career highlights')).toBeTruthy();
+        expect(screen.queryByRole('img', { name: 'Passcode protected' })).toBeNull();
+    });
 });

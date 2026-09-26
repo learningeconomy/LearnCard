@@ -39,6 +39,32 @@ const SHARE_SHEET = { desktop: ModalTypes.Center, mobile: ModalTypes.BottomSheet
 const FULL_SHEET = { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen };
 
 /**
+ * Returns the row keys that should play the entrance stagger. The set is taken
+ * once, the first render the list shows rows, and never changes afterwards, so
+ * that batch keeps a stable `animate` flag while its stagger runs and rows
+ * that arrive later appear without animating.
+ */
+const useFirstRevealKeys = (keys: string[]): ReadonlySet<string> => {
+    const revealed = useRef<ReadonlySet<string> | null>(null);
+    // Intentional render-time write: it happens once and is idempotent.
+    if (revealed.current === null && keys.length > 0) revealed.current = new Set(keys);
+    return revealed.current ?? EMPTY_KEYS;
+};
+const EMPTY_KEYS: ReadonlySet<string> = new Set();
+
+const RetryButton: React.FC<{ onClick: () => Promise<void> }> = ({ onClick }) => (
+    <button
+        type="button"
+        className="text-sm font-medium text-grayscale-700 underline"
+        onClick={() => void onClick()}
+    >
+        {m['shareLinks.retry']()}
+    </button>
+);
+
+const shareKey = (share: ShareLink): string => `${share.id}:${share.version}`;
+
+/**
  * The calm Shared section: a short "Your shared links" list and a short
  * "Shared with you" list. Management lives in sheets opened with `newModal`;
  * because modal content is a static snapshot, the live view model is published
@@ -50,15 +76,11 @@ const SharedLinksSection: React.FC<{ vm: DataSharingSharedLinksViewModel; delay?
 }) => {
     const { newModal, closeModalById } = useModal();
     const setVm = useSharedLinksStore(state => state.setVm);
-    const animateRows = useRef(true);
 
     useLayoutEffect(() => {
         setVm(vm);
     }, [setVm, vm]);
     useLayoutEffect(() => () => setVm(null), [setVm]);
-    useLayoutEffect(() => {
-        if (!vm.isLoading) animateRows.current = false;
-    });
 
     const preview = useMemo(() => selectPreviewShares(vm.records), [vm.records]);
     const counts = useMemo(() => {
@@ -69,6 +91,8 @@ const SharedLinksSection: React.FC<{ vm: DataSharingSharedLinksViewModel; delay?
     const activeCount = counts.active;
     const saved = vm.savedCollections;
     const savedPreview = saved.records.slice(0, PREVIEW_LIMIT);
+    const animatedLinkKeys = useFirstRevealKeys(preview.map(shareKey));
+    const animatedReceivedKeys = useFirstRevealKeys(savedPreview.map(collection => collection.uri));
 
     /**
      * Opens a sheet and hands it an `onClose` bound to its own modal id, so a
@@ -101,7 +125,10 @@ const SharedLinksSection: React.FC<{ vm: DataSharingSharedLinksViewModel; delay?
     );
 
     const openAllLinks = () => {
-        if (vm.filter === 'active' && activeCount === 0) {
+        if (activeCount > 0) {
+            // A previous open may have auto-switched away from Active.
+            if (vm.filter !== 'active') vm.onFilterChange('active');
+        } else if (vm.filter === 'active') {
             const fallback = FALLBACK_FILTERS.find(filter => counts[filter] > 0);
             if (fallback) vm.onFilterChange(fallback);
         }
@@ -156,18 +183,10 @@ const SharedLinksSection: React.FC<{ vm: DataSharingSharedLinksViewModel; delay?
                     <ListShell label={m['dataShareCenter.shared.yourLinks']()}>
                         {vm.isLoading && vm.records.length === 0 ? (
                             <SkeletonRows />
-                        ) : vm.error ? (
+                        ) : vm.error && vm.records.length === 0 ? (
                             <MessageRow
                                 tone="error"
-                                action={
-                                    <button
-                                        type="button"
-                                        className="text-sm font-medium text-grayscale-700 underline"
-                                        onClick={() => void vm.onRefresh()}
-                                    >
-                                        {m['shareLinks.retry']()}
-                                    </button>
-                                }
+                                action={<RetryButton onClick={vm.onRefresh} />}
                             >
                                 {m['dataShareCenter.shared.loadError']()}
                             </MessageRow>
@@ -176,10 +195,10 @@ const SharedLinksSection: React.FC<{ vm: DataSharingSharedLinksViewModel; delay?
                         ) : (
                             preview.map((share, index) => (
                                 <ShareLinkRow
-                                    key={`${share.id}:${share.version}`}
+                                    key={shareKey(share)}
                                     share={share}
                                     index={index}
-                                    animate={animateRows.current}
+                                    animate={animatedLinkKeys.has(shareKey(share))}
                                     pending={Boolean(vm.pendingActions[share.id])}
                                     busy={vm.busyId === share.id}
                                     showViewStats={vm.showViewStats}
@@ -188,11 +207,19 @@ const SharedLinksSection: React.FC<{ vm: DataSharingSharedLinksViewModel; delay?
                                 />
                             ))
                         )}
-                        {!vm.error && showLinksViewAll && (
+                        {showLinksViewAll && (
                             <ViewAllRow
                                 label={viewAllLabel(vm.records.length, vm.hasMore)}
                                 onClick={openAllLinks}
                             />
+                        )}
+                        {vm.error && vm.records.length > 0 && (
+                            <MessageRow
+                                tone="error"
+                                action={<RetryButton onClick={vm.onRefresh} />}
+                            >
+                                {m['dataShareCenter.shared.loadError']()}
+                            </MessageRow>
                         )}
                     </ListShell>
                 )}
@@ -204,18 +231,10 @@ const SharedLinksSection: React.FC<{ vm: DataSharingSharedLinksViewModel; delay?
                     <ListShell label={m['dataShareCenter.shared.sharedWithYou']()}>
                         {saved.isLoading && saved.records.length === 0 ? (
                             <SkeletonRows count={2} />
-                        ) : saved.error ? (
+                        ) : saved.error && saved.records.length === 0 ? (
                             <MessageRow
                                 tone="error"
-                                action={
-                                    <button
-                                        type="button"
-                                        className="text-sm font-medium text-grayscale-700 underline"
-                                        onClick={() => void saved.onRefresh()}
-                                    >
-                                        {m['shareLinks.retry']()}
-                                    </button>
-                                }
+                                action={<RetryButton onClick={saved.onRefresh} />}
                             >
                                 {m['dataShareCenter.shared.savedLoadError']()}
                             </MessageRow>
@@ -227,16 +246,24 @@ const SharedLinksSection: React.FC<{ vm: DataSharingSharedLinksViewModel; delay?
                                     key={collection.uri}
                                     collection={collection}
                                     index={index}
-                                    animate={animateRows.current}
+                                    animate={animatedReceivedKeys.has(collection.uri)}
                                     onOpen={saved.onPreview}
                                 />
                             ))
                         )}
-                        {!saved.error && saved.records.length > PREVIEW_LIMIT && (
+                        {saved.records.length > PREVIEW_LIMIT && (
                             <ViewAllRow
                                 label={viewAllLabel(saved.records.length, false)}
                                 onClick={openAllReceived}
                             />
+                        )}
+                        {saved.error && saved.records.length > 0 && (
+                            <MessageRow
+                                tone="error"
+                                action={<RetryButton onClick={saved.onRefresh} />}
+                            >
+                                {m['dataShareCenter.shared.savedLoadError']()}
+                            </MessageRow>
                         )}
                     </ListShell>
                 </section>

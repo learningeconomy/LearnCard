@@ -1,4 +1,4 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { IonIcon } from '@ionic/react';
 import { addOutline, arrowBack, refreshOutline } from 'ionicons/icons';
 import type { ShareLink } from '@learncard/types';
@@ -69,6 +69,18 @@ const SharedLinksAllSheet: React.FC<{
     const vm = useSharedLinksStore(state => state.vm);
     const tablistRef = useRef<HTMLDivElement | null>(null);
     const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+    const hadVmRef = useRef(false);
+
+    // If the section unmounts (or the store is otherwise cleared), the store's
+    // `vm` transitions to null under an open sheet. Close it rather than
+    // lingering as an empty modal.
+    useEffect(() => {
+        if (vm) {
+            hadVmRef.current = true;
+        } else if (hadVmRef.current) {
+            onClose();
+        }
+    }, [vm, onClose]);
     const counts = useMemo(() => {
         const next: Record<SharedLinkFilter, number> = { active: 0, expired: 0, stopped: 0 };
         for (const record of vm?.records ?? []) next[getSharedLinkViewStatus(record)] += 1;
