@@ -32,6 +32,26 @@ describe('OpenAPI generation', () => {
         expect(Object.keys(openApiDocument.paths ?? {}).length).toBeGreaterThan(0);
     });
 
+    it('mounts the anonymous public share routes on paths distinct from the owner route', () => {
+        const paths = Object.keys(openApiDocument.paths ?? {});
+
+        // The import above would have thrown Duplicate procedure for the old
+        // colliding GET /share-links/{id} registration.
+        expect(paths.filter(path => path === '/share-links/{id}')).toHaveLength(1);
+        expect(paths).toContain('/public/share-links/{id}');
+        expect(paths).toContain('/public/share-links/{id}/content');
+        expect(paths).toContain('/public/share-links/acknowledge-view');
+    });
+
+    it('mounts the bounded owner list on GET /share-links, distinct from /share-links/{id}', () => {
+        const paths = Object.keys(openApiDocument.paths ?? {});
+
+        // A collection path with no trailing segment cannot be captured by the
+        // `{id}` param route, so /list -> /{id} shadowing is impossible.
+        expect(paths.filter(path => path === '/share-links')).toHaveLength(1);
+        expect(openApiDocument.paths?.['/share-links']?.get).toBeDefined();
+    });
+
     it('includes the skill-search route whose $regex query previously broke generation', () => {
         const paths = Object.keys(openApiDocument.paths ?? {});
 

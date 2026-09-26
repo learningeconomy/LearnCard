@@ -1,3 +1,4 @@
+import { enterSharePrivacy, isShareViewerPath } from '../components/share-links/sharePrivacy';
 import { useCallback, useMemo } from 'react';
 import { useHistory } from 'react-router-dom';
 import type { VC } from '@learncard/types';
@@ -9,6 +10,7 @@ import { AnalyticsEvents } from '../analytics/events';
 import type { AddressBookContact } from '../pages/addressBook/addressBookHelpers';
 import {
     parseClaimInput,
+    isTenantHttpsUrl,
     type ClaimSurface,
     type ParsedClaimInput,
     type ParseClaimInputConfig,
@@ -139,6 +141,18 @@ export const useClaimInputRouter = ({
             input: string,
             source: ClaimInputSource = defaultSource
         ): Promise<ClaimRouteResult> => {
+            if (isTenantHttpsUrl(input, parserConfig)) {
+                const incoming = new URL(input);
+                if (isShareViewerPath(incoming.pathname)) {
+                    enterSharePrivacy();
+                    history.push(incoming.pathname + incoming.hash);
+                    return {
+                        kind: 'routed',
+                        surface: 'lcw-https',
+                        path: incoming.pathname + incoming.hash,
+                    };
+                }
+            }
             const parsed = parseClaimInput(input, parserConfig);
 
             const emit = (result: ClaimRouteResult) => {

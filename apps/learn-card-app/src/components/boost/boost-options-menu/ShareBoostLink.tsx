@@ -55,6 +55,7 @@ type ShareBoostLinkProps = {
     hideLinkedIn?: boolean;
     isEndorsementRequest?: boolean;
     compact?: boolean;
+    onShareWithOtherCredentials?: () => void;
 };
 
 const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
@@ -68,6 +69,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
     hideLinkedIn = false,
     isEndorsementRequest = false,
     compact = false,
+    onShareWithOtherCredentials,
 }) => {
     const sharedCredentialId = credentialId ?? boost.id;
     const { presentToast } = useToast();
@@ -407,6 +409,16 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                                     </button>
                                 </div>
                             )}
+                            {onShareWithOtherCredentials && !isEndorsementRequest && (
+                                <button
+                                    type="button"
+                                    onClick={onShareWithOtherCredentials}
+                                    className="w-full rounded-[20px] !bg-grayscale-900 !text-white px-5 py-3 text-sm font-medium hover:opacity-90 transition-opacity"
+                                >
+                                    {m['shareLinks.shareWithOthers']()}
+                                </button>
+                            )}
+
                             {!isLinkLoading && shareLink && shareLink?.length > 0 && (
                                 <div className="w-full h-full relative py-4 px-4">
                                     <QRCodeSVG

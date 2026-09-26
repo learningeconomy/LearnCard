@@ -106,7 +106,9 @@ const MobileNavBar: React.FC = () => {
                 <IonRouterOutlet animated={!prefersReducedMotion}>
                     <Routes />
                 </IonRouterOutlet>
-                {isLoggedIn && showNavBar(activePathname) ? (
+                {isLoggedIn &&
+                !/^\/s(?:\/|$)/.test(activePathname) &&
+                showNavBar(activePathname) ? (
                     <IonTabBar
                         slot="bottom"
                         className="lc-footer-nav"

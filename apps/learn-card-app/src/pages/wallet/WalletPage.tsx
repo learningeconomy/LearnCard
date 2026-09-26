@@ -1,7 +1,8 @@
 import React, { Suspense, useEffect } from 'react';
+import Share from '../../components/svgs/Share';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import * as m from '../../paraglide/messages.js';
-import { useHistory, useLocation, Link } from 'react-router-dom';
+import { useHistory, Link } from 'react-router-dom';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { Capacitor } from '@capacitor/core';
 import { getLogger } from 'learn-card-base';
@@ -24,7 +25,6 @@ import {
 } from 'learn-card-base';
 
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
-import WalletActionButton from '../../components/main-subheader/WalletActionButton';
 import CapGoUpdateModal from '../../components/capGoUpdateModal/CapGoUpdateModal';
 import { IonPage, IonContent, IonRow, IonCol, IonSpinner } from '@ionic/react';
 import WalletPageViewModeSelector from './WalletPageViewModeSelector';
@@ -43,9 +43,6 @@ import { chatBotStore } from '../../stores/chatBotStore';
 import { prefetchRoutes, ROUTE_PRELOAD } from '../../Routes';
 import useHeaderScrollSync from '../../hooks/useHeaderScrollSync';
 
-const ViewSharedCredentials = lazyWithRetry(
-    () => import('learn-card-base/components/sharecreds/ViewSharedCredentials')
-);
 const ShareBoostsBundleModal = lazyWithRetry(
     () => import('../../components/creds-bundle/ShareBoostsBundleModal')
 );
@@ -67,7 +64,6 @@ const WalletPage: React.FC = () => {
         mobile: ModalTypes.Cancel,
     });
     const history = useHistory();
-    const location = useLocation();
 
     const { theme, colors } = useTheme();
     const { isMobile } = useDeviceTypeByWidth();
@@ -123,16 +119,6 @@ const WalletPage: React.FC = () => {
             { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
         );
     };
-    const handleViewModal = () => {
-        newModal(
-            <Suspense fallback={<SharedBundleModalFallback />}>
-                <ViewSharedCredentials onDismiss={() => closeModal()} />
-            </Suspense>,
-            {},
-            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
-        );
-    };
-
     const categoryToPath = CATEGORY_TO_ROUTE;
 
     const AI_CATEGORIES = [
@@ -229,7 +215,7 @@ const WalletPage: React.FC = () => {
                     <div className="px-[20px] pt-[16px] pb-[32px] md:pt-[24px] md:pb-[48px]">
                         <div className="flex flex-col max-w-[840px] mx-auto">
                             <IonRow>
-                                <div className="flex justify-between items-center w-full gap-[10px]">
+                                <div className="flex flex-wrap justify-between items-center w-full gap-[10px]">
                                     <div className="flex items-center gap-[8px] min-w-0">
                                         <h1
                                             className={`${passportTextColor} font-poppins text-[30px] font-normal tracking-[0.25px]`}
@@ -240,19 +226,27 @@ const WalletPage: React.FC = () => {
                                         <WalletPageViewModeSelector />
                                     </div>
 
-                                    <div className="wallet-header-menu-options items-center flex gap-[10px] shrink-0 [@media(min-width:992px)_and_(max-width:1244px)]:pr-[90px] [@media(min-width:1245px)_and_(max-width:1350px)]:pr-[50px]">
+                                    <div className="wallet-header-menu-options items-center flex gap-[10px] shrink-0 ml-auto [@media(min-width:992px)_and_(max-width:1244px)]:pr-[90px] [@media(min-width:1245px)_and_(max-width:1350px)]:pr-[50px]">
                                         <NewCredentialsPill
                                             count={totalNewCredentialsCount}
                                             label={m['passport.wallet.new']()}
                                             tone={passportBgColor ? 'onColor' : 'light'}
                                         />
 
-                                        {flags?.boostBundleMenu && (
-                                            <WalletActionButton
-                                                location={location}
-                                                handleSelfIssue={handleViewModal}
-                                                handleShareCreds={handleShareModal}
-                                            />
+                                        {flags?.shareMultipleEnabled === true && (
+                                            <button
+                                                type="button"
+                                                onClick={handleShareModal}
+                                                aria-label={m['shareLinks.share']()}
+                                                className="flex h-9 w-9 sm:w-auto sm:px-3 md:h-10 items-center justify-center gap-2 rounded-[20px] bg-white text-grayscale-900 text-sm font-medium border border-transparent hover:bg-emerald-50 hover:border-emerald-200 active:bg-emerald-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                            >
+                                                <span aria-hidden="true">
+                                                    <Share className="h-5 w-5" />
+                                                </span>
+                                                <span className="hidden sm:inline">
+                                                    {m['common.share']()}
+                                                </span>
+                                            </button>
                                         )}
 
                                         {Capacitor.isNativePlatform() && (
