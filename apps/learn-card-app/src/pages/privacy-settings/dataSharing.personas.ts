@@ -156,7 +156,7 @@ const baseAi = {
     onRetryConsent: noopToggle,
 };
 
-const makeShare = (overrides: Partial<ShareLink>): ShareLink =>
+export const makeShare = (overrides: Partial<ShareLink>): ShareLink =>
     ({
         id: 'AAAAAAAAAAAAAAAAAAAAAA',
         title: 'Career highlights',
@@ -183,7 +183,7 @@ const makeShare = (overrides: Partial<ShareLink>): ShareLink =>
         ...overrides,
     }) as ShareLink;
 
-const sharedLinks: DataSharingSharedLinksViewModel = {
+export const sharedLinks: DataSharingSharedLinksViewModel = {
     records: [
         makeShare({ passcodeProtected: true }),
         makeShare({
@@ -274,6 +274,71 @@ export const DATA_SHARING_PERSONAS: Record<string, DataSharingCenterViewModel> =
         profile: baseProfile,
         diagnostics: baseDiagnostics,
         shared: sharedLinks,
+    },
+    'Active learner · many links': {
+        isLoading: false,
+        isMinor: false,
+        contracts: FEW_CONTRACTS,
+        onContractsUpdate: noop,
+        ai: baseAi,
+        profile: baseProfile,
+        diagnostics: baseDiagnostics,
+        shared: {
+            ...sharedLinks,
+            hasMore: true,
+            pendingActions: { [`MANY${String(2).padStart(18, '0')}`]: 'expiry' },
+            records: [
+                ...Array.from({ length: 8 }, (_, index) =>
+                    makeShare({
+                        id: `MANY${String(index).padStart(18, '0')}`,
+                        title: [
+                            'Internship application',
+                            'Portfolio for Ms. Rivera',
+                            'Scholarship packet',
+                            'Volunteer hours',
+                            'Coding bootcamp',
+                            'Summer camp counselor',
+                            'Dual enrollment',
+                            'Club leadership',
+                        ][index],
+                        passcodeProtected: index % 2 === 0,
+                        createdAt: new Date(2026, 8, 20 - index).toISOString(),
+                        expiresAt:
+                            index === 0
+                                ? new Date(Date.now() + 2 * 86_400_000).toISOString()
+                                : index === 3
+                                  ? new Date(Date.now() + 20 * 86_400_000).toISOString()
+                                  : null,
+                        viewCount: [0, 1, 3, 12, 0, 2, 5, 0][index],
+                        lastViewedAt:
+                            index === 2 ? new Date(Date.now() - 3_600_000).toISOString() : null,
+                    })
+                ),
+                ...sharedLinks.records,
+            ],
+        },
+    },
+    'Active learner · only expired links': {
+        isLoading: false,
+        isMinor: false,
+        contracts: FEW_CONTRACTS,
+        onContractsUpdate: noop,
+        ai: baseAi,
+        profile: baseProfile,
+        diagnostics: baseDiagnostics,
+        shared: {
+            ...sharedLinks,
+            records: [
+                makeShare({ expiresAt: '2026-09-01T00:00:00.000Z' }),
+                makeShare({
+                    id: 'CCCCCCCCCCCCCCCCCCCCCC',
+                    title: 'Spring internship application',
+                    status: 'stopped',
+                    stoppedAt: '2026-09-18T12:00:00.000Z',
+                    expiresAt: null,
+                }),
+            ],
+        },
     },
     'Nothing shared': {
         isLoading: false,
