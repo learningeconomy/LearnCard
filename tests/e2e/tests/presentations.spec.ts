@@ -38,7 +38,7 @@ describe('Presentations', () => {
         expect(await b.invoke.getIncomingPresentations()).toHaveLength(0);
     });
 
-    test('Users cannot accept the same presentation twice', async () => {
+    test('Users can retry presentation acceptance without duplicating it', async () => {
         // Create a test credential first
         const unsignedVc = a.invoke.getTestVc(b.id.did());
         const vc = await a.invoke.issueCredential(unsignedVc);
@@ -50,18 +50,20 @@ describe('Presentations', () => {
         const uri = await a.invoke.sendPresentation('testb', vp);
 
         // First acceptance should succeed
-        await expect(b.invoke.acceptPresentation(uri)).resolves.not.toThrow();
+        await expect(b.invoke.acceptPresentation(uri)).resolves.toBe(true);
 
         // Verify the presentation is now in received presentations
         const receivedPresentations = await b.invoke.getReceivedPresentations();
         expect(receivedPresentations).toHaveLength(1);
 
-        // Second acceptance should fail
-        await expect(b.invoke.acceptPresentation(uri)).rejects.toThrow(/already been received/);
+        // A retry after a lost response should succeed without duplicating the presentation.
+        await expect(b.invoke.acceptPresentation(uri)).resolves.toBe(true);
 
         // Verify that received presentations count hasn't changed
         const receivedPresentationsAfter = await b.invoke.getReceivedPresentations();
-        expect(receivedPresentationsAfter).toHaveLength(1);
+        expect(receivedPresentationsAfter).toEqual(receivedPresentations);
+        expect(receivedPresentationsAfter[0]!.uri).toBe(uri);
+        expect(await b.invoke.getIncomingPresentations()).toHaveLength(0);
     });
 
     test('proof context is placed at top-level vp["@context"] for interoperability', async () => {

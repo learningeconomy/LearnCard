@@ -14,6 +14,12 @@ import { PresentationType } from 'types/presentation';
 import { ProfileType } from 'types/profile';
 import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
 import { getIdFromUri } from '@helpers/uri.helpers';
+import { inflateObject } from '@helpers/objects.helpers';
+
+const inflateRelationshipProperties = (
+    properties: Record<string, unknown>
+): Record<string, unknown> & { metadata?: Record<string, unknown> } =>
+    inflateObject(properties) as Record<string, unknown> & { metadata?: Record<string, unknown> };
 
 export const getPresentationById = async (id: string): Promise<PresentationInstance | null> => {
     return Presentation.findOne({ where: { id } });
@@ -56,8 +62,8 @@ export const getReceivedPresentationsForProfile = async (
     const query =
         from && from.length > 0
             ? matchQuery.where(
-                new Where({ source: { profileId: { [Op.in]: from } } }, matchQuery.getBindParam())
-            )
+                  new Where({ source: { profileId: { [Op.in]: from } } }, matchQuery.getBindParam())
+              )
             : matchQuery;
 
     const results = convertQueryResultToPropertiesObjectArray<{
@@ -66,13 +72,22 @@ export const getReceivedPresentationsForProfile = async (
         received: PresentationRelationships['presentationReceived']['RelationshipProperties'];
     }>(await query.return('sent, presentation, received').limit(limit).run());
 
-    return results.map(({ sent, presentation, received }) => ({
-        uri: getPresentationUri(presentation.id, domain),
-        to: sent.to,
-        from: received.from,
-        sent: sent.date,
-        received: received.date,
-    }));
+    return results.map(({ sent, presentation, received }) => {
+        const sentProps = inflateRelationshipProperties(sent as unknown as Record<string, unknown>);
+        const receivedProps = inflateRelationshipProperties(
+            received as unknown as Record<string, unknown>
+        );
+
+        return {
+            uri: getPresentationUri(presentation.id, domain),
+            to: sentProps.to as string,
+            from: receivedProps.from as string,
+            sent: sentProps.date as string,
+            received: receivedProps.date as string,
+            metadata: (receivedProps.metadata ?? sentProps.metadata) as
+                Record<string, unknown> | undefined,
+        };
+    });
 };
 
 export const getSentPresentationsForProfile = async (
@@ -101,8 +116,8 @@ export const getSentPresentationsForProfile = async (
     const whereQuery =
         to && to.length > 0
             ? matchQuery.where(
-                new Where({ sent: { to: { [Op.in]: to } } }, matchQuery.getBindParam())
-            )
+                  new Where({ sent: { to: { [Op.in]: to } } }, matchQuery.getBindParam())
+              )
             : matchQuery;
 
     const query = whereQuery.match({
@@ -124,13 +139,22 @@ export const getSentPresentationsForProfile = async (
         received?: PresentationRelationships['presentationReceived']['RelationshipProperties'];
     }>(await query.return('source, sent, presentation, received').limit(limit).run());
 
-    return results.map(({ source, sent, presentation, received }) => ({
-        uri: getPresentationUri(presentation.id, domain),
-        to: sent.to,
-        from: source.profileId,
-        sent: sent.date,
-        received: received?.date,
-    }));
+    return results.map(({ source, sent, presentation, received }) => {
+        const sentProps = inflateRelationshipProperties(sent as unknown as Record<string, unknown>);
+        const receivedProps = received
+            ? inflateRelationshipProperties(received as unknown as Record<string, unknown>)
+            : undefined;
+
+        return {
+            uri: getPresentationUri(presentation.id, domain),
+            to: sentProps.to as string,
+            from: source.profileId,
+            sent: sentProps.date as string,
+            received: receivedProps?.date as string | undefined,
+            metadata: (sentProps.metadata ?? receivedProps?.metadata) as
+                Record<string, unknown> | undefined,
+        };
+    });
 };
 
 export const getIncomingPresentationsForProfile = async (
@@ -168,7 +192,8 @@ export const getIncomingPresentationsForProfile = async (
             })
             // Don't return presentations that have been accepted
             .where(
-                `NOT (presentation)-[:PRESENTATION_RECEIVED]->()${whereFrom ? `AND ${whereFrom.getStatement('text')}` : ''
+                `NOT (presentation)-[:PRESENTATION_RECEIVED]->()${
+                    whereFrom ? `AND ${whereFrom.getStatement('text')}` : ''
                 }`
             )
             .return('source, relationship, presentation')
@@ -176,10 +201,17 @@ export const getIncomingPresentationsForProfile = async (
             .run()
     );
 
-    return results.map(({ source, relationship, presentation }) => ({
-        uri: getPresentationUri(presentation.id, domain),
-        to: relationship.to,
-        from: source.profileId,
-        sent: relationship.date,
-    }));
+    return results.map(({ source, relationship, presentation }) => {
+        const relationshipProps = inflateRelationshipProperties(
+            relationship as unknown as Record<string, unknown>
+        );
+
+        return {
+            uri: getPresentationUri(presentation.id, domain),
+            to: relationshipProps.to as string,
+            from: source.profileId,
+            sent: relationshipProps.date as string,
+            metadata: relationshipProps.metadata,
+        };
+    });
 };

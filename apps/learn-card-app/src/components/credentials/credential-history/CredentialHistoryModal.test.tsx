@@ -153,6 +153,7 @@ vi.mock('../../boost/clr-transcript', () => ({
 vi.mock('../../boost/boostCMS/BoostPreview/BoostPreview', () => ({ default: () => null }));
 vi.mock('../../boost/boostCMS/BoostPreview/NonBoostPreview', () => ({ default: () => null }));
 vi.mock('../../boost/boost-options-menu/ShareBoostLink', () => ({ default: () => null }));
+vi.mock('../../share-links/ShareLinkCreate', () => ({ default: () => null }));
 vi.mock('../../boost/boost-options-menu/JsonPreviewModal', () => ({ default: () => null }));
 vi.mock('../../boost/boost-earned-card/helpers/CustomIssuerName', () => ({ default: () => null }));
 vi.mock('../../boost/boost-earned-card/helpers/CustomBoostTitleDisplay', () => ({

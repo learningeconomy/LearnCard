@@ -9,8 +9,8 @@ export type PresentationRelationships = {
     presentationReceived: ModelRelatedNodesI<
         { createOne: (typeof Profile)['createOne'] },
         ProfileInstance,
-        { from: string; date: string },
-        { from: string; date: string }
+        { from: string; date: string; metadata?: Record<string, unknown> },
+        { from: string; date: string; metadata?: Record<string, unknown> }
     >;
 };
 

@@ -1,7 +1,12 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 
-import { IonContent, IonPage } from '@ionic/react';
-import { AllowConnectionRequestsEnum, ProfileVisibilityEnum } from '@learncard/types';
+import { IonContent, IonPage, useIonViewWillEnter } from '@ionic/react';
+import { useFlags } from 'launchdarkly-react-client-sdk';
+import {
+    AllowConnectionRequestsEnum,
+    ProfileVisibilityEnum,
+    type ShareLink,
+} from '@learncard/types';
 
 import {
     getAiFeatureAgeGateState,
@@ -14,6 +19,8 @@ import {
     useAiFeatureGate,
     ToastTypeEnum,
     LEARNCARD_AI_PASSPORT_CONTRACT_URI,
+    ModalTypes,
+    useModal,
 } from 'learn-card-base';
 import { switchedProfileStore } from 'learn-card-base/stores/walletStore';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
@@ -23,10 +30,15 @@ import { useAnalytics } from '../../analytics';
 import * as m from '../../paraglide/messages.js';
 import { useLocale } from '../../i18n';
 import DataSharingCenterView from './DataSharingCenterView';
+import ShareLinkCreate from '../../components/share-links/ShareLinkCreate';
+import ShareLinkOwnerPreview from '../../components/share-links/ShareLinkOwnerPreview';
+import SavedCollectionPreview from '../../components/share-links/SavedCollectionPreview';
+import { useSharedLinks } from './useSharedLinks';
 import type {
     ConnectionRequestsValue,
     DataSharingCenterViewModel,
     ProfileVisibilityValue,
+    SavedCredentialCollection,
 } from './DataSharingCenter.types';
 
 type PrivacySettingsProfile = {
@@ -37,6 +49,11 @@ type PrivacySettingsProfile = {
 };
 
 const PrivacySettingsPage: React.FC = () => {
+    const flags = useFlags();
+    const { newModal, closeModal } = useModal({
+        desktop: ModalTypes.FullScreen,
+        mobile: ModalTypes.FullScreen,
+    });
     const { currentLCNUser, refetch: refetchUser } = useGetCurrentLCNUser();
     const { data: preferences } = useGetPreferencesForDid();
     const { mutate: updatePreferences } = useUpdatePreferences();
@@ -49,6 +66,61 @@ const PrivacySettingsPage: React.FC = () => {
     const { isAiEnabled, reason: aiReason } = useAiFeatureGate();
     const { handleAiToggle } = useAiConsentToggle();
     const [savingField, setSavingField] = useState<string | null>(null);
+    const refreshSharedRef = useRef<(() => Promise<void>) | null>(null);
+    const hasEnteredRef = useRef(false);
+
+    useIonViewWillEnter(() => {
+        if (hasEnteredRef.current) void refreshSharedRef.current?.();
+        else hasEnteredRef.current = true;
+    });
+
+    const handleUpdateShare = useCallback(
+        (share: ShareLink) => {
+            newModal(
+                <ShareLinkCreate
+                    editShare={share}
+                    onDismiss={() => closeModal()}
+                    onComplete={() => refreshSharedRef.current?.()}
+                />,
+                {},
+                { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+            );
+        },
+        [closeModal, newModal]
+    );
+
+    const handleCreateShare = useCallback(() => {
+        newModal(
+            <ShareLinkCreate
+                onDismiss={() => closeModal()}
+                onComplete={() => refreshSharedRef.current?.()}
+            />,
+            {},
+            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+        );
+    }, [closeModal, newModal]);
+
+    const handlePreviewShare = useCallback(
+        (share: ShareLink) => {
+            newModal(
+                <ShareLinkOwnerPreview share={share} onDismiss={() => closeModal()} />,
+                {},
+                { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+            );
+        },
+        [closeModal, newModal]
+    );
+
+    const handlePreviewSavedCollection = useCallback(
+        (collection: SavedCredentialCollection) => {
+            newModal(
+                <SavedCollectionPreview collection={collection} onDismiss={() => closeModal()} />,
+                {},
+                { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+            );
+        },
+        [closeModal, newModal]
+    );
 
     const ageGate = getAiFeatureAgeGateState({
         profileType,
@@ -56,6 +128,15 @@ const PrivacySettingsPage: React.FC = () => {
         country: currentLCNUser?.country,
     });
     const isMinor = ageGate.isChildProfile || ageGate.isMinorByAge;
+    const shared = useSharedLinks(
+        flags?.shareMultipleEnabled === true,
+        !isMinor,
+        handlePreviewShare,
+        handlePreviewSavedCollection,
+        handleUpdateShare,
+        handleCreateShare
+    );
+    refreshSharedRef.current = shared?.onRefresh ?? null;
 
     const contracts = useMemo(
         () =>
@@ -80,10 +161,13 @@ const PrivacySettingsPage: React.FC = () => {
                 const wallet = await initWallet();
                 await wallet?.invoke?.updateProfile(updates);
                 await refetchUser?.();
-            } catch (error: any) {
-                presentToast(error?.message ?? m['settings.privacy.unableToUpdate'](), {
-                    type: ToastTypeEnum.Error,
-                });
+            } catch (error: unknown) {
+                presentToast(
+                    error instanceof Error ? error.message : m['settings.privacy.unableToUpdate'](),
+                    {
+                        type: ToastTypeEnum.Error,
+                    }
+                );
             } finally {
                 setSavingField(null);
             }
@@ -174,6 +258,7 @@ const PrivacySettingsPage: React.FC = () => {
                     updatePreferences({ bugReportsEnabled: enabled });
                 },
             },
+            shared,
         };
     }, [
         isLoading,
@@ -195,7 +280,7 @@ const PrivacySettingsPage: React.FC = () => {
         handleProfileUpdate,
         updatePreferences,
         setAnalyticsEnabled,
-        ,
+        shared,
         locale,
     ]);
 

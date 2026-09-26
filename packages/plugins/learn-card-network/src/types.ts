@@ -17,6 +17,7 @@ import {
     PaginatedShareLinks,
     ShareLinkOperationKeyInput,
     ShareLinkOwnerCommitOutput,
+    ShareLinkOwnerContentOutput,
     ShareLinkOwnerStatusOutput,
     ShareLinkOwnerRecoveryOutput,
     ShareLinkPublicState,
@@ -322,6 +323,7 @@ export type LearnCardNetworkPluginMethods = {
         input: ShareLinkOperationKeyInput
     ) => Promise<ShareLinkOwnerStatusOutput>;
     getShareLinkRecovery: (id: string) => Promise<ShareLinkOwnerRecoveryOutput>;
+    getShareLinkOwnerContent: (id: string) => Promise<ShareLinkOwnerContentOutput>;
 
     /**
      * Bounded, newest-first owner share list. Scope (namespace/owner) is derived
@@ -339,8 +341,8 @@ export type LearnCardNetworkPluginMethods = {
      * guarded ciphertext envelope plus a uniformly shaped opaque receipt;
      * `acknowledgeShareLinkView` always resolves to `{ ok: true }`.
      */
-    resolveShareLink: (id: string) => Promise<ShareLinkPublicState>;
-    getShareLinkContent: (id: string) => Promise<ShareLinkPublicContentView>;
+    resolveShareLink: (id: string, passcode?: string) => Promise<ShareLinkPublicState>;
+    getShareLinkContent: (id: string, passcode?: string) => Promise<ShareLinkPublicContentView>;
     acknowledgeShareLinkView: (receipt: string) => Promise<AcknowledgeViewOutput>;
 
     blockProfile: (profileId: string) => Promise<boolean>;
@@ -366,7 +368,12 @@ export type LearnCardNetworkPluginMethods = {
     getIncomingCredentials: (from?: string) => Promise<SentCredentialInfo[]>;
     deleteCredential: (uri: string) => Promise<boolean>;
 
-    sendPresentation: (profileId: string, vp: VP, encrypt?: boolean) => Promise<string>;
+    sendPresentation: (
+        profileId: string,
+        vp: VP,
+        metadataOrEncrypt?: Record<string, unknown> | boolean,
+        encrypt?: boolean
+    ) => Promise<string>;
     acceptPresentation: (uri: string) => Promise<boolean>;
     getReceivedPresentations: (from?: string) => Promise<SentCredentialInfo[]>;
     getSentPresentations: (to?: string) => Promise<SentCredentialInfo[]>;

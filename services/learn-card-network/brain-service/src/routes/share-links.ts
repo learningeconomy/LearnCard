@@ -5,6 +5,7 @@ import {
     ListShareLinksInputValidator,
     PaginatedShareLinksValidator,
     ShareLinkOwnerCommitOutputValidator,
+    ShareLinkOwnerContentOutputValidator,
     ShareLinkOwnerRecoveryOutputValidator,
     ShareLinkOwnerStatusOutputValidator,
     ShareLinkOperationKeyInputValidator,
@@ -29,6 +30,7 @@ import {
 } from '@helpers/share-link-owner/diagnostics';
 import { createShareLinkPolicyResolver } from '@helpers/share-link-policy/resolver';
 import { ShareLinkCoordinatorError } from '@helpers/share-link-coordinator';
+import { getShareLinkRequestHashSecret } from '@helpers/share-link-lifecycle';
 import type {
     RecoveryRunnerDependencies,
     ShareLinkCoordinator,
@@ -491,6 +493,39 @@ export const createShareLinksRouter = (
 
                 return { recovery: parsed.data };
             }),
+
+        getContent: profileRouteWithoutInputCapture
+            .meta({
+                openapi: openapi(
+                    'GET',
+                    '/share-links/{id}/content',
+                    'Get encrypted share content (owner only)'
+                ),
+                requiredScope: AUTH_GRANT_SHARE_LINKS_READ_SCOPE,
+            })
+            .input(ShareLinkOperationKeyInputValidator.pick({ id: true }))
+            .output(ShareLinkOwnerContentOutputValidator)
+            .query(async ({ ctx, input }) => {
+                const dependencies = await resolve();
+                const result = await runCoordinated(() =>
+                    dependencies.coordinator.fetchShareContent(
+                        input.id,
+                        {
+                            namespace: dependencies.namespace,
+                            ownerProfileId: ctx.user.profile.profileId,
+                        },
+                        { allowExpired: true }
+                    )
+                );
+
+                if (!result.ok) notFound();
+
+                return ShareLinkOwnerContentOutputValidator.parse({
+                    id: input.id,
+                    contentVersion: result.value.contentVersion,
+                    envelope: result.value.envelope,
+                });
+            }),
     });
 };
 
@@ -539,6 +574,8 @@ export const getProductionDependencies =
 const buildProductionDependencies = async (
     config: Extract<ShareLinkOwnerApiConfigResolution, { status: 'enabled' }>
 ): Promise<ShareLinkRouterDependencies> => {
+    // Validate before accepting owner operations, not on the first write.
+    getShareLinkRequestHashSecret();
     const [
         { getServerDidWebDID },
         { createDidWebLearnCardTokenSigner },

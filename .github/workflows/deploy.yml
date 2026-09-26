@@ -459,6 +459,19 @@ jobs:
                     exit 1
                   fi
 
+            - name: Validate share-link request hash secret
+              env:
+                  SHARE_LINK_REQUEST_HASH_SECRET: ${{ secrets.SHARE_LINK_REQUEST_HASH_SECRET }}
+              run: |
+                  # Disabled share-link environments do not need this secret.
+                  if [[ -n "$SHARE_LINK_REQUEST_HASH_SECRET" ]]; then
+                    secret_bytes=$(printf '%s' "$SHARE_LINK_REQUEST_HASH_SECRET" | wc -c | tr -d '[:space:]')
+                    if (( secret_bytes < 32 )); then
+                      echo "::error::SHARE_LINK_REQUEST_HASH_SECRET must contain at least 32 bytes."
+                      exit 1
+                    fi
+                  fi
+
             - name: Deploy Brain Service Lambda
               run: bunx nx serverless-deploy network-brain-service --stage ${{ vars.SERVERLESS_STAGE }} --region ${{ vars.SERVERLESS_REGION }}
               env:
@@ -483,6 +496,8 @@ jobs:
                   SHARE_LINK_MAINTENANCE_ORIGIN: ${{ vars.SHARE_LINK_MAINTENANCE_ORIGIN }}
                   SHARE_LINK_MAINTENANCE_AUDIENCE: ${{ vars.SHARE_LINK_MAINTENANCE_AUDIENCE }}
                   SHARE_LINK_MAINTENANCE_ALLOW_INSECURE_LOOPBACK: 'false'
+                  # LC-2189: private request fingerprint key, stable across Brain deploys.
+                  SHARE_LINK_REQUEST_HASH_SECRET: ${{ secrets.SHARE_LINK_REQUEST_HASH_SECRET }}
                   SEED: ${{ secrets.SEED }}
                   DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
                   NOTIFICATIONS_SERVICE_WEBHOOK_URL: ${{ secrets.NOTIFICATIONS_SERVICE_WEBHOOK_URL }}

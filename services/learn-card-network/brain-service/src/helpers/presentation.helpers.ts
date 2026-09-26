@@ -23,23 +23,29 @@ export const sendPresentation = async (
     from: ProfileType,
     to: ProfileType,
     presentation: VP | JWE,
-    domain: string
+    domain: string,
+    metadata?: Record<string, unknown>
 ): Promise<string> => {
     const presentationInstance = await storePresentation(presentation);
 
-    await createSentPresentationRelationship(from, to, presentationInstance);
+    await createSentPresentationRelationship(from, to, presentationInstance, metadata);
 
-    let uri = getPresentationUri(presentationInstance.id, domain);
+    const uri = getPresentationUri(presentationInstance.id, domain);
 
-    await addNotificationToQueue({
-        type: LCNNotificationTypeEnumValidator.enum.PRESENTATION_RECEIVED,
-        to,
-        from,
-        message: getNotificationMessage('presentationReceived', resolveRecipientLocale(to), {
-            from: from.displayName,
-        }),
-        data: { vpUris: [uri] },
-    });
+    // Saving a shared collection reuses the presentation send/accept pipeline by
+    // sending it to the current profile. Keep that storage behavior without
+    // creating a meaningless "you sent this to yourself" recipient alert.
+    if (from.profileId !== to.profileId) {
+        await addNotificationToQueue({
+            type: LCNNotificationTypeEnumValidator.enum.PRESENTATION_RECEIVED,
+            to,
+            from,
+            message: getNotificationMessage('presentationReceived', resolveRecipientLocale(to), {
+                from: from.displayName,
+            }),
+            data: { vpUris: [uri] },
+        });
+    }
 
     return uri;
 };
@@ -63,16 +69,17 @@ export const acceptPresentation = async (profile: ProfileType, uri: string): Pro
         });
     }
 
-    // Check if presentation has already been received by this profile
+    // Acceptance is idempotent so a client can safely recover from a response
+    // interruption without producing a second received relationship.
     const alreadyReceived = await getPresentationReceivedByProfile(id, profile);
-    if (alreadyReceived) {
-        throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Presentation has already been received',
-        });
+    if (!alreadyReceived) {
+        await createReceivedPresentationRelationship(
+            profile,
+            pendingVp.source,
+            pendingVp.target,
+            pendingVp.relationship.metadata
+        );
     }
-
-    await createReceivedPresentationRelationship(profile, pendingVp.source, pendingVp.target);
 
     return true;
 };

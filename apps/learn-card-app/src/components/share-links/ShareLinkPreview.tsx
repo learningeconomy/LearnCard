@@ -32,6 +32,10 @@ export interface ShareLinkPreviewProps {
     summaryIllustration?: React.ReactNode;
     /** Opt in to the raw original credential disclosure for each selected member. */
     showOriginal?: boolean;
+    /** Saved collections are durable records rather than expiring public links. */
+    showExpiry?: boolean;
+    /** Overrides the default "N credentials selected" summary (e.g. for received collections). */
+    countLabel?: string;
     className?: string;
 }
 
@@ -78,6 +82,8 @@ export const ShareLinkPreview = ({
     summaryExtra,
     summaryIllustration,
     showOriginal = false,
+    showExpiry = true,
+    countLabel,
     className = '',
 }: ShareLinkPreviewProps) => (
     <div className={`space-y-5 ${className}`} data-testid="share-link-preview">
@@ -138,7 +144,9 @@ export const ShareLinkPreview = ({
                                 {m['shareLinks.sharedBy']({ name: sharerName })}
                             </p>
                         ))}
-                    <h1 className="text-2xl md:text-3xl font-semibold break-words">{title}</h1>
+                    <h1 className="break-words text-2xl font-semibold text-grayscale-900 md:text-3xl">
+                        {title}
+                    </h1>
                 </div>
                 {summaryIllustration && (
                     <div className="shrink-0 [&>svg]:h-16 [&>svg]:w-16 sm:[&>svg]:h-20 sm:[&>svg]:w-20">
@@ -153,19 +161,21 @@ export const ShareLinkPreview = ({
             )}
             <div className="flex flex-wrap gap-3 text-xs text-grayscale-500">
                 <span>
-                    {(showOriginal ? m['shareLinks.sharedCount'] : m['shareLinks.selected'])({
-                        count: String(payload.selection.length),
-                    })}
-                </span>
-                {expiresAt ? (
-                    <span>
-                        {m['shareLinks.expires']({
-                            date: new Date(expiresAt).toLocaleDateString(),
+                    {countLabel ??
+                        (showOriginal ? m['shareLinks.sharedCount'] : m['shareLinks.selected'])({
+                            count: String(payload.selection.length),
                         })}
-                    </span>
-                ) : (
-                    <span>{m['shareLinks.neverExpires']()}</span>
-                )}
+                </span>
+                {showExpiry &&
+                    (expiresAt ? (
+                        <span>
+                            {m['shareLinks.expires']({
+                                date: new Date(expiresAt).toLocaleDateString(),
+                            })}
+                        </span>
+                    ) : (
+                        <span>{m['shareLinks.neverExpires']()}</span>
+                    ))}
             </div>
             {summaryExtra}
         </section>
@@ -185,7 +195,7 @@ export const ShareLinkPreview = ({
                         <div className="flex items-center gap-4">
                             <ShareCredentialThumbnail credential={credential} />
                             <div className="min-w-0 flex-1">
-                                <h2 className="text-lg font-semibold break-words">
+                                <h2 className="break-words text-lg font-semibold text-grayscale-900">
                                     {text.name || m['shareLinks.credential']()}
                                 </h2>
                                 <ShareCredentialMetadata credential={credential} />

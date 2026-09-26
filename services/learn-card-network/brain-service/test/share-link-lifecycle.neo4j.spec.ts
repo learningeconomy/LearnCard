@@ -23,6 +23,7 @@ import {
 import { ensureShareLinkConstraints } from '../src/models/share-link-constraints';
 import { toOwnerShareLink } from '../src/helpers/share-link-owner-projection';
 import type { ShareLinkPolicySnapshot } from '../src/helpers/share-link-policy/types';
+import { resolveCurrentShareLinkPolicy } from '../src/helpers/share-link-policy/production';
 import type { ShareLinkRecord } from '../src/models/ShareLink';
 
 import {
@@ -751,6 +752,96 @@ describe('share-link lifecycle repository (Neo4j)', () => {
         expect(active.state).toBe('active');
     });
 
+    it('replaces, preserves, and removes share protection settings', async () => {
+        const created = await commitNewShare();
+        const policy: ShareLinkPolicySnapshot = {
+            isMinor: false,
+            policyResolved: true,
+            defaultExpiryDays: 365,
+            viewCountingEnabled: true,
+        };
+
+        const protect = await reserveReplacement({
+            namespace: created.namespace,
+            ownerProfileId: created.ownerProfileId,
+            clientRequestId: uuid(),
+            shareId: created.shareId,
+            expectedVersion: created.committed.version,
+            requestHash: computeShareLinkRequestHash('update', {
+                id: created.shareId,
+                passcode: 'replacement',
+                notifyOnView: true,
+            }),
+            passcodeHash: '$argon2id$replacement-hash',
+            notifyOnView: true,
+            policy,
+            leaseOwner: 'worker-1',
+            now: NOW,
+        });
+        if (protect.outcome !== 'reserved') throw new Error('expected protection reservation');
+
+        const protectedShare = await finalizeReservation({
+            ...protect.reservation,
+            resolveCurrentPolicy: async () => policy,
+            now: NOW,
+        });
+        if (protectedShare.outcome !== 'finalized') throw new Error('expected protected share');
+        expect(protectedShare.share.passcodeHash).toBe('$argon2id$replacement-hash');
+        expect(protectedShare.share.notifyOnView).toBe(true);
+
+        const preserve = await reserveReplacement({
+            namespace: created.namespace,
+            ownerProfileId: created.ownerProfileId,
+            clientRequestId: uuid(),
+            shareId: created.shareId,
+            expectedVersion: protectedShare.share.version,
+            requestHash: computeShareLinkRequestHash('update', {
+                id: created.shareId,
+                title: 'Still protected',
+            }),
+            title: 'Still protected',
+            policy,
+            leaseOwner: 'worker-1',
+            now: NOW,
+        });
+        if (preserve.outcome !== 'reserved') throw new Error('expected preserve reservation');
+
+        const preservedShare = await finalizeReservation({
+            ...preserve.reservation,
+            now: NOW,
+        });
+        if (preservedShare.outcome !== 'finalized') throw new Error('expected preserved share');
+        expect(preservedShare.share.passcodeHash).toBe('$argon2id$replacement-hash');
+        expect(preservedShare.share.notifyOnView).toBe(true);
+
+        const remove = await reserveReplacement({
+            namespace: created.namespace,
+            ownerProfileId: created.ownerProfileId,
+            clientRequestId: uuid(),
+            shareId: created.shareId,
+            expectedVersion: preservedShare.share.version,
+            requestHash: computeShareLinkRequestHash('update', {
+                id: created.shareId,
+                passcode: null,
+                notifyOnView: false,
+            }),
+            passcodeHash: null,
+            notifyOnView: false,
+            policy,
+            leaseOwner: 'worker-1',
+            now: NOW,
+        });
+        if (remove.outcome !== 'reserved') throw new Error('expected removal reservation');
+
+        const unprotectedShare = await finalizeReservation({
+            ...remove.reservation,
+            now: NOW,
+        });
+        if (unprotectedShare.outcome !== 'finalized') throw new Error('expected unprotected share');
+        expect(unprotectedShare.share.passcodeHash).toBeNull();
+        expect(unprotectedShare.share.notifyOnView).toBe(false);
+    });
+
     it('claims, completes and backs off durable cleanup jobs with a fenced claim token', async () => {
         const created = await commitNewShare();
         const staged = await reserveReplacement({
@@ -1097,5 +1188,81 @@ describe('share-link lifecycle repository (Neo4j)', () => {
         expect(afterReplay.minorPolicyViewCountingEnabled).toBe(false);
         expect(afterReplay.minorPolicyDefaultExpiryDays).toBe(30);
         expect(toOwnerShareLink(afterReplay).minorPolicy.viewCountingEnabled).toBe(false);
+    });
+
+    it('upgrades an unknown share on explicit edit only after a fresh persisted adult check', async () => {
+        const ownerProfileId = `policy-owner-${uuid()}`;
+        const created = await commitNewShare({ ownerProfileId });
+        expect(created.committed.minorPolicyViewCountingEnabled).toBe(false);
+
+        const adultPolicy: ShareLinkPolicySnapshot = {
+            isMinor: false,
+            policyResolved: true,
+            defaultExpiryDays: 365,
+            viewCountingEnabled: true,
+        };
+
+        await neogma.queryRunner.run('CREATE (:Profile {profileId: $profileId, dob: $dob})', {
+            profileId: ownerProfileId,
+            dob: '1990-01-01',
+        });
+
+        try {
+            const update = await reserveReplacement({
+                namespace: created.namespace,
+                ownerProfileId,
+                shareId: created.shareId,
+                expectedVersion: created.committed.version,
+                clientRequestId: uuid(),
+                requestHash: replacementHash(created.shareId, 'adult-policy-edit'),
+                notifyOnView: true,
+                leaseOwner: 'worker-1',
+                policy: adultPolicy,
+                now: NOW,
+            });
+            if (update.outcome !== 'reserved') throw new Error('expected reservation');
+
+            const finalized = await finalizeReservation({
+                ...update.reservation,
+                resolveCurrentPolicy: resolveCurrentShareLinkPolicy,
+                now: NOW,
+            });
+            expect(finalized.share.minorPolicyViewCountingEnabled).toBe(true);
+            expect(finalized.share.notifyOnView).toBe(true);
+
+            // A newly managed profile must not retain the opt-in on a later edit.
+            await neogma.queryRunner.run(
+                `MATCH (p:Profile {profileId: $profileId})
+                 CREATE (p)-[:MANAGED_BY]->(:Profile {profileId: $managerId})`,
+                { profileId: ownerProfileId, managerId: `manager-${uuid()}` }
+            );
+            const restricted = await reserveReplacement({
+                namespace: created.namespace,
+                ownerProfileId,
+                shareId: created.shareId,
+                expectedVersion: finalized.share.version,
+                clientRequestId: uuid(),
+                requestHash: replacementHash(created.shareId, 'managed-policy-edit'),
+                notifyOnView: true,
+                leaseOwner: 'worker-1',
+                policy: adultPolicy,
+                now: NOW,
+            });
+            if (restricted.outcome !== 'reserved') throw new Error('expected reservation');
+            const afterRestriction = await finalizeReservation({
+                ...restricted.reservation,
+                resolveCurrentPolicy: resolveCurrentShareLinkPolicy,
+                now: NOW,
+            });
+            expect(afterRestriction.share.minorPolicyViewCountingEnabled).toBe(false);
+            expect(afterRestriction.share.notifyOnView).toBe(false);
+        } finally {
+            await neogma.queryRunner.run(
+                `MATCH (p:Profile {profileId: $profileId})
+                 OPTIONAL MATCH (p)-[:MANAGED_BY]->(manager:Profile)
+                 DETACH DELETE p, manager`,
+                { profileId: ownerProfileId }
+            );
+        }
     });
 });

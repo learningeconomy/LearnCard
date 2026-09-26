@@ -16,6 +16,10 @@ import { getPresentationOwner } from '@accesslayer/presentation/relationships/re
 import { deletePresentation } from '@accesslayer/presentation/delete';
 import { isRelationshipBlocked } from '@helpers/connection.helpers';
 import { getProfileIdFromString } from '@helpers/did.helpers';
+import {
+    assertPresentationMetadataRecipient,
+    PresentationMetadataValidator,
+} from '@helpers/presentation-metadata';
 
 export const presentationsRouter = t.router({
     sendPresentation: profileRoute
@@ -31,11 +35,17 @@ export const presentationsRouter = t.router({
             },
             requiredScope: 'presentations:write',
         })
-        .input(z.object({ profileId: z.string(), presentation: VPValidator.or(JWEValidator) }))
+        .input(
+            z.object({
+                profileId: z.string(),
+                presentation: VPValidator.or(JWEValidator),
+                metadata: PresentationMetadataValidator.optional(),
+            })
+        )
         .output(z.string())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { profileId, presentation } = input;
+            const { profileId, presentation, metadata } = input;
 
             const resolvedProfileId = await getProfileIdFromString(profileId, ctx.domain);
             if (!resolvedProfileId) {
@@ -52,7 +62,13 @@ export const presentationsRouter = t.router({
                 });
             }
 
-            return sendPresentation(profile, targetProfile, presentation, ctx.domain);
+            assertPresentationMetadataRecipient(
+                metadata,
+                profile.profileId,
+                targetProfile.profileId
+            );
+
+            return sendPresentation(profile, targetProfile, presentation, ctx.domain, metadata);
         }),
 
     acceptPresentation: profileRoute

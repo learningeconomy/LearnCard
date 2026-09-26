@@ -200,6 +200,11 @@ SHARE_LINK_MAINTENANCE_ALLOW_INSECURE_LOOPBACK=true
 SHARE_LINK_OWNER_API_NAMESPACE=learncard-local
 ```
 
+LC-2189 also requires host-run Brain to set `SHARE_LINK_REQUEST_HASH_SECRET` to a
+stable value of at least 32 bytes (generate one with `openssl rand -hex 32`).
+The tracked local Compose stack supplies a clearly labeled development-only
+fallback instead; never use that fallback in a deployed environment.
+
 **LearnCloud** (local port 4100):
 
 ```dotenv
@@ -229,6 +234,11 @@ The `.github/workflows/deploy.yml` deployment steps pass the following GitHub
 environment variables. They are public configuration, not new secrets. Existing
 `SEED` / `LEARN_CLOUD_SEED` secrets remain unchanged; LearnCloud's Serverless stack
 already supplies its Redis endpoint.
+
+LC-2189 separately requires a private, stable 32+ byte GitHub Actions secret named
+`SHARE_LINK_REQUEST_HASH_SECRET` for Brain. Generate it once with
+`openssl rand -hex 32`; the Brain deployment workflow forwards it to Lambda.
+Do not put it in the public variables below or use the local Compose fallback.
 
 Configure each matching pair of GitHub environments independently:
 

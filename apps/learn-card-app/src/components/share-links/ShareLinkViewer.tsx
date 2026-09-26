@@ -1,10 +1,10 @@
 import { QRCodeSVG } from 'qrcode.react';
-import { useModal, ModalTypes } from 'learn-card-base';
+import { useIsLoggedIn, useModal, useWallet, ModalTypes, redirectStore } from 'learn-card-base';
 import LearnCardBrandMark from '../../assets/images/lca-brandmark.png';
 import LearnCardTextLogo from '../svgs/LearnCardTextLogo';
 import { ShareCredentialsIllustration } from './ShareCredentialsIllustration';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useParams, useLocation } from 'react-router-dom';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useParams, useLocation, useHistory } from 'react-router-dom';
 import { IonIcon, IonPage, IonHeader, IonToolbar, IonContent } from '@ionic/react';
 import {
     checkmarkOutline,
@@ -13,6 +13,7 @@ import {
     downloadOutline,
     qrCodeOutline,
     lockClosedOutline,
+    bookmarkOutline,
 } from 'ionicons/icons';
 import { Clipboard } from '@capacitor/clipboard';
 import type { ShareLinkPublicState, SharePayload } from '@learncard/types';
@@ -25,7 +26,9 @@ import {
 import * as m from '../../paraglide/messages.js';
 import {
     createVerificationBudget,
+    parseSavedShareLinkMetadata,
     readShareAddress,
+    SAVED_SHARE_METADATA_TYPE,
     shareWallet,
     verifyCredentialTree,
     verifySharedPresentation,
@@ -42,14 +45,44 @@ type Ready = {
     receipt: string;
 };
 type ViewState =
-    'loading' | 'incomplete' | 'expired' | 'stopped' | 'not_found' | 'error' | 'corrupt' | 'ready';
+    | 'loading'
+    | 'passcode_required'
+    | 'try_later'
+    | 'incomplete'
+    | 'expired'
+    | 'stopped'
+    | 'not_found'
+    | 'error'
+    | 'corrupt'
+    | 'ready';
 
 const secondaryButton =
     'inline-flex items-center justify-center gap-2 px-3 py-3 rounded-[20px] border border-grayscale-300 text-grayscale-700 text-sm font-medium hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed';
 
-const ShareLinkViewer = () => {
-    const { id } = useParams<{ id: string }>();
-    const { hash } = useLocation();
+const SAVE_AFTER_SIGN_IN_KEY = 'learncard:share-link:save-after-sign-in';
+const PRIVATE_RETURN_KEY = 'learncard:share-link:private-return';
+const PRIVATE_RETURN_TTL_MS = 15 * 60 * 1000;
+
+const isPasscodeRejection = (error: unknown): boolean => {
+    if (typeof error !== 'object' || error === null) return false;
+    const candidate = error as { data?: { code?: string }; message?: string };
+    return (
+        candidate.data?.code === 'UNAUTHORIZED' ||
+        candidate.message?.includes('share-link passcode required') === true
+    );
+};
+
+const isRateLimited = (error: unknown): boolean =>
+    typeof error === 'object' &&
+    error !== null &&
+    (error as { data?: { code?: string } }).data?.code === 'TOO_MANY_REQUESTS';
+
+const ShareLinkViewerContent = ({ id }: { id: string }) => {
+    const location = useLocation();
+    const history = useHistory();
+    const { hash } = location;
+    const isLoggedIn = useIsLoggedIn();
+    const { initWallet } = useWallet();
     const [state, setState] = useState<ViewState>('loading');
     const [ready, setReady] = useState<Ready>();
     const [attempt, setAttempt] = useState(0);
@@ -64,6 +97,10 @@ const ShareLinkViewer = () => {
     const [downloading, setDownloading] = useState(false);
     const [pdfDownloading, setPdfDownloading] = useState(false);
     const [actionError, setActionError] = useState<'copy' | 'download'>();
+    const [passcode, setPasscode] = useState('');
+    const [submittedPasscode, setSubmittedPasscode] = useState<string>();
+    const [passcodeError, setPasscodeError] = useState(false);
+    const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
     const visible = useRef<HTMLDivElement>(null);
     const acknowledged = useRef(new Set<string>());
 
@@ -80,6 +117,32 @@ const ShareLinkViewer = () => {
         setLink('');
         setCopyState('idle');
         setActionError(undefined);
+        if (!hash && id) {
+            try {
+                const saved = JSON.parse(sessionStorage.getItem(PRIVATE_RETURN_KEY) ?? 'null');
+                if (
+                    saved?.id === id &&
+                    typeof saved.hash === 'string' &&
+                    typeof saved.createdAt === 'number' &&
+                    Date.now() - saved.createdAt <= PRIVATE_RETURN_TTL_MS &&
+                    readShareAddress(id, saved.hash)
+                ) {
+                    sessionStorage.removeItem(PRIVATE_RETURN_KEY);
+                    history.replace({ pathname: location.pathname, hash: saved.hash });
+                    return () => {
+                        cancelled = true;
+                    };
+                }
+                if (
+                    saved?.id === id ||
+                    typeof saved?.createdAt !== 'number' ||
+                    Date.now() - saved.createdAt > PRIVATE_RETURN_TTL_MS
+                )
+                    sessionStorage.removeItem(PRIVATE_RETURN_KEY);
+            } catch {
+                // A private return is optional; a malformed entry cannot grant access.
+            }
+        }
         const address = readShareAddress(id, hash);
         if (!address) {
             setState('incomplete');
@@ -99,13 +162,37 @@ const ShareLinkViewer = () => {
             try {
                 // Anonymous configured client: no account/key lookup or sign-in prerequisite.
                 const wallet = shareWallet(await getBespokeLearnCard('a'));
-                const metadata = await wallet.invoke.resolveShareLink(id);
+                const metadata = await wallet.invoke.resolveShareLink(id, submittedPasscode);
                 if (cancelled) return;
+                if (metadata.state === 'passcode_required') {
+                    setPasscodeError(previous => previous || Boolean(submittedPasscode));
+                    setState('passcode_required');
+                    return;
+                }
+                if (metadata.state === 'try_later') {
+                    setState('try_later');
+                    return;
+                }
                 if (metadata.state !== 'active') {
                     setState(metadata.state);
                     return;
                 }
-                const content = await wallet.invoke.getShareLinkContent(id);
+                let content: Awaited<ReturnType<typeof wallet.invoke.getShareLinkContent>>;
+                try {
+                    content = await wallet.invoke.getShareLinkContent(id, submittedPasscode);
+                } catch (error) {
+                    if (!cancelled && isRateLimited(error)) {
+                        setState('try_later');
+                        return;
+                    }
+                    if (!cancelled && submittedPasscode && isPasscodeRejection(error)) {
+                        setPasscodeError(true);
+                        setSubmittedPasscode(undefined);
+                        setState('passcode_required');
+                        return;
+                    }
+                    throw error;
+                }
                 if (cancelled) return;
                 try {
                     if (content.id !== id || content.contentVersion !== metadata.contentVersion)
@@ -164,7 +251,7 @@ const ShareLinkViewer = () => {
             cancelled = true;
             budget?.cancel();
         };
-    }, [id, hash, attempt]);
+    }, [id, hash, attempt, submittedPasscode, history, location.pathname]);
 
     useEffect(() => {
         if (state !== 'ready' || !ready || !visible.current) return;
@@ -258,8 +345,99 @@ const ShareLinkViewer = () => {
             setPdfDownloading(false);
         }
     };
+
+    const saveToLearnCard = useCallback(async () => {
+        if (!ready || !isLoggedIn || saveState === 'saving' || saveState === 'saved') return;
+        setSaveState('saving');
+        try {
+            const wallet = shareWallet(await initWallet());
+            const alreadySaved = (await wallet.invoke.getReceivedPresentations()).some(
+                item =>
+                    item.from === item.to &&
+                    parseSavedShareLinkMetadata(item.metadata)?.shareId === ready.payload.shareId
+            );
+            if (alreadySaved) {
+                setSaveState('saved');
+                return;
+            }
+            const pendingSave = (await wallet.invoke.getIncomingPresentations()).find(
+                item =>
+                    item.from === item.to &&
+                    parseSavedShareLinkMetadata(item.metadata)?.shareId === ready.payload.shareId
+            );
+            if (pendingSave) {
+                await wallet.invoke.acceptPresentation(pendingSave.uri);
+                setSaveState('saved');
+                return;
+            }
+            const profile = await wallet.invoke.getProfile();
+            if (!profile?.profileId) throw new Error('profile');
+            const savedMetadata = {
+                type: SAVED_SHARE_METADATA_TYPE,
+                shareId: ready.payload.shareId,
+                title: ready.metadata.title,
+                ...(ready.metadata.note ? { note: ready.metadata.note } : {}),
+                sharer: {
+                    profileId: ready.payload.sharer.profileId,
+                    displayName: ready.metadata.sharer.displayName,
+                },
+            };
+            const uri = await wallet.invoke.sendPresentation(
+                profile.profileId,
+                ready.payload.presentation,
+                savedMetadata,
+                true
+            );
+            await wallet.invoke.acceptPresentation(uri);
+            setSaveState('saved');
+        } catch {
+            setSaveState('error');
+        }
+    }, [initWallet, isLoggedIn, ready, saveState]);
+
+    useEffect(() => {
+        if (!ready || !isLoggedIn || saveState !== 'idle') return;
+        let cancelled = false;
+        void initWallet()
+            .then(wallet => shareWallet(wallet).invoke.getReceivedPresentations())
+            .then(received => {
+                if (
+                    !cancelled &&
+                    received.some(
+                        item =>
+                            item.from === item.to &&
+                            parseSavedShareLinkMetadata(item.metadata)?.shareId ===
+                                ready.payload.shareId
+                    )
+                )
+                    setSaveState('saved');
+            })
+            .catch(() => undefined);
+        return () => {
+            cancelled = true;
+        };
+    }, [initWallet, isLoggedIn, ready, saveState]);
+
+    useEffect(() => {
+        if (!id || !ready || !isLoggedIn || saveState !== 'idle') return;
+
+        try {
+            if (sessionStorage.getItem(SAVE_AFTER_SIGN_IN_KEY) !== id) return;
+            sessionStorage.removeItem(SAVE_AFTER_SIGN_IN_KEY);
+            void saveToLearnCard();
+        } catch {
+            // Storage can be unavailable in hardened browsers. The manual save
+            // action remains available after sign-in in that case.
+        }
+    }, [id, isLoggedIn, ready, saveState, saveToLearnCard]);
+
     const stateCopy = {
         loading: [m['shareLinks.opening'](), m['shareLinks.openingHint']()],
+        passcode_required: [
+            m['shareLinks.passcodeRequired'](),
+            m['shareLinks.passcodeRequiredHint'](),
+        ],
+        try_later: [m['shareLinks.tryLater'](), m['shareLinks.tryLaterHint']()],
         incomplete: [m['shareLinks.incomplete'](), m['shareLinks.incompleteHint']()],
         expired: [m['shareLinks.expired'](), m['shareLinks.askNew']()],
         stopped: [m['shareLinks.stopped'](), m['shareLinks.askNew']()],
@@ -321,6 +499,57 @@ const ShareLinkViewer = () => {
                                         className="mx-auto h-5 w-5 rounded-full border-2 border-grayscale-300 border-t-grayscale-900 animate-spin"
                                     />
                                 )}
+                                {state === 'try_later' && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setAttempt(value => value + 1)}
+                                        className={secondaryButton}
+                                    >
+                                        {m['shareLinks.retry']()}
+                                    </button>
+                                )}
+                                {state === 'passcode_required' && (
+                                    <form
+                                        className="mx-auto max-w-sm space-y-4 text-left"
+                                        onSubmit={event => {
+                                            event.preventDefault();
+                                            if (passcode.length < 4) return;
+                                            setPasscodeError(false);
+                                            setSubmittedPasscode(passcode);
+                                            setAttempt(value => value + 1);
+                                        }}
+                                    >
+                                        <label className="block text-xs font-medium text-grayscale-700">
+                                            {m['shareLinks.passcodeLabel']()}
+                                            <input
+                                                autoFocus
+                                                type="password"
+                                                minLength={4}
+                                                maxLength={64}
+                                                autoComplete="current-password"
+                                                value={passcode}
+                                                onChange={event => {
+                                                    setPasscode(event.target.value);
+                                                    setPasscodeError(false);
+                                                }}
+                                                className="mt-2 w-full rounded-xl border border-grayscale-300 bg-white px-4 py-3 text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                                placeholder={m['shareLinks.passcodeLabel']()}
+                                            />
+                                        </label>
+                                        {passcodeError && (
+                                            <p role="alert" className="text-sm text-red-700">
+                                                {m['shareLinks.passcodeIncorrect']()}
+                                            </p>
+                                        )}
+                                        <button
+                                            type="submit"
+                                            disabled={passcode.length < 4}
+                                            className="w-full rounded-[20px] bg-grayscale-900 px-5 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                                        >
+                                            {m['shareLinks.unlock']()}
+                                        </button>
+                                    </form>
+                                )}
                                 {state === 'error' && (
                                     <button
                                         className="px-5 py-3 rounded-[20px] bg-grayscale-900 text-white text-sm"
@@ -346,6 +575,83 @@ const ShareLinkViewer = () => {
                                         showOriginal
                                         summaryExtra={
                                             <>
+                                                <section
+                                                    data-share-export-exclude
+                                                    className="pt-4 border-t border-grayscale-100 space-y-3"
+                                                >
+                                                    <div className="flex items-start gap-3">
+                                                        <IonIcon
+                                                            icon={bookmarkOutline}
+                                                            className="mt-0.5 text-grayscale-600 shrink-0"
+                                                        />
+                                                        <p className="text-xs text-grayscale-500 leading-relaxed">
+                                                            {m['shareLinks.saveHint']()}
+                                                        </p>
+                                                    </div>
+                                                    {isLoggedIn ? (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => void saveToLearnCard()}
+                                                            disabled={
+                                                                saveState === 'saving' ||
+                                                                saveState === 'saved'
+                                                            }
+                                                            className="w-full rounded-[20px] bg-grayscale-900 px-5 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                                                        >
+                                                            {saveState === 'saving'
+                                                                ? m[
+                                                                      'shareLinks.savingToLearnCard'
+                                                                  ]()
+                                                                : saveState === 'saved'
+                                                                  ? m[
+                                                                        'shareLinks.savedToLearnCard'
+                                                                    ]()
+                                                                  : m[
+                                                                        'shareLinks.saveToLearnCard'
+                                                                    ]()}
+                                                        </button>
+                                                    ) : (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                if (!id) return;
+                                                                try {
+                                                                    sessionStorage.setItem(
+                                                                        SAVE_AFTER_SIGN_IN_KEY,
+                                                                        id
+                                                                    );
+                                                                    sessionStorage.setItem(
+                                                                        PRIVATE_RETURN_KEY,
+                                                                        JSON.stringify({
+                                                                            id,
+                                                                            hash,
+                                                                            createdAt: Date.now(),
+                                                                        })
+                                                                    );
+                                                                } catch {
+                                                                    // Storage may be unavailable in hardened browsers.
+                                                                }
+                                                                // The persisted auth redirect contains only the public
+                                                                // route. The decryption key stays in this tab's session.
+                                                                redirectStore.set.authRedirect(
+                                                                    location.pathname
+                                                                );
+                                                                history.push('/login');
+                                                            }}
+                                                            className="block w-full rounded-[20px] bg-grayscale-900 px-5 py-3 text-center text-sm font-medium text-white transition-opacity hover:opacity-90"
+                                                        >
+                                                            {m['shareLinks.signInToSave']()}
+                                                        </button>
+                                                    )}
+                                                    {saveState === 'error' && (
+                                                        <p
+                                                            role="alert"
+                                                            className="text-sm text-red-700"
+                                                        >
+                                                            {m['shareLinks.saveError']()}
+                                                        </p>
+                                                    )}
+                                                </section>
                                                 <div className="pt-4 border-t border-grayscale-100 space-y-2">
                                                     <p className="text-xs font-medium text-grayscale-700">
                                                         {m['shareLinks.presentationProof']()}
@@ -480,4 +786,12 @@ const ShareLinkViewer = () => {
         </IonPage>
     );
 };
+
+// A route-param change must discard the previous link's passcode and all other
+// private viewer state before any request for the next link can start.
+const ShareLinkViewer = () => {
+    const { id } = useParams<{ id: string }>();
+    return <ShareLinkViewerContent key={id} id={id} />;
+};
+
 export default ShareLinkViewer;
