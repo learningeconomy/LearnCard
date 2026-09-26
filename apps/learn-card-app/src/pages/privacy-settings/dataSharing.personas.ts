@@ -237,7 +237,6 @@ export const sharedLinks: DataSharingSharedLinksViewModel = {
         ],
         isLoading: false,
         error: false,
-        onOpen: async () => undefined,
         onRefresh: async () => undefined,
         onPreview: noop,
     },

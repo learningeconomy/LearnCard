@@ -62,7 +62,6 @@ export const useSharedLinks = (
     const [savedCollections, setSavedCollections] = useState<SavedCredentialCollection[]>([]);
     const [savedCollectionsLoading, setSavedCollectionsLoading] = useState(enabled);
     const [savedCollectionsError, setSavedCollectionsError] = useState(false);
-    const savedCollectionsLoadedRef = useRef(false);
     const savedCollectionsPromiseRef = useRef<Promise<void> | null>(null);
 
     const load = useCallback(async (pageCursor?: string): Promise<void> => {
@@ -115,7 +114,6 @@ export const useSharedLinks = (
             try {
                 const wallet = shareWallet(await walletRef.current());
                 setSavedCollections(await loadSavedCredentialCollections(wallet));
-                savedCollectionsLoadedRef.current = true;
             } catch {
                 setSavedCollectionsError(true);
             } finally {
@@ -132,11 +130,6 @@ export const useSharedLinks = (
         void load();
         void loadSavedCollections();
     }, [enabled, load, loadSavedCollections]);
-
-    const openSavedCollections = useCallback(async (): Promise<void> => {
-        if (savedCollectionsLoadedRef.current) return;
-        await loadSavedCollections();
-    }, [loadSavedCollections]);
 
     const privateUrl = useCallback(async (share: ShareLink): Promise<string> => {
         const wallet = shareWallet(await walletRef.current());
@@ -349,7 +342,6 @@ export const useSharedLinks = (
             records: savedCollections,
             isLoading: savedCollectionsLoading,
             error: savedCollectionsError,
-            onOpen: openSavedCollections,
             onRefresh: loadSavedCollections,
             onPreview: onPreviewSavedCollection,
         },
