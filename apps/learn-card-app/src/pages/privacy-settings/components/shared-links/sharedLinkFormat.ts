@@ -31,7 +31,12 @@ export const minimumExpiryDateValue = (now = new Date()): string => {
     return localDateValue(minimum);
 };
 
-export const formatShortDate = (value: string): string => new Date(value).toLocaleDateString();
+export const formatShortDate = (value: string): string =>
+    new Date(value).toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+    });
 
 export const credentialCountLabel = (count: number): string =>
     count === 1

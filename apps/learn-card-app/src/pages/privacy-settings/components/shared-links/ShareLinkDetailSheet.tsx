@@ -6,6 +6,7 @@ import {
     closeOutline,
     createOutline,
     eyeOutline,
+    hourglassOutline,
     qrCodeOutline,
     refreshOutline,
     stopCircleOutline,
@@ -17,22 +18,22 @@ import * as m from '../../../../paraglide/messages.js';
 import CopyIconButton from './CopyIconButton';
 import { useSharedLinksStore } from './sharedLinksStore';
 import {
-    credentialCountLabel,
     dateInputValue,
     expiryHint,
     formatShortDate,
     getSharedLinkViewStatus,
     minimumExpiryDateValue,
     statusLabel,
+    viewHint,
 } from './sharedLinkFormat';
 import './sharedLinks.css';
 
 type Panel = 'qr' | 'expiry' | 'update' | 'stop';
 
 const quietButton =
-    'inline-flex items-center gap-1.5 rounded-[20px] border border-grayscale-300 px-3 py-2 text-xs font-medium text-grayscale-700 transition-colors hover:bg-grayscale-10 disabled:cursor-not-allowed disabled:opacity-40';
+    'inline-flex items-center gap-1.5 rounded-[20px] ring-1 ring-inset ring-grayscale-300 px-3 py-2 text-xs font-medium text-grayscale-700 transition-colors hover:bg-grayscale-10 disabled:cursor-not-allowed disabled:opacity-40';
 const squareButton =
-    'inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] border border-grayscale-300 text-lg text-grayscale-700 transition-colors hover:bg-grayscale-10 disabled:cursor-not-allowed disabled:opacity-40 aria-pressed:bg-grayscale-900 aria-pressed:text-white aria-pressed:border-grayscale-900';
+    'inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] ring-1 ring-inset ring-grayscale-300 text-lg text-grayscale-700 transition-colors hover:bg-grayscale-10 disabled:cursor-not-allowed disabled:opacity-40 aria-pressed:bg-grayscale-900 aria-pressed:text-white aria-pressed:ring-grayscale-900';
 
 const DetailRow: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
     <div className="flex items-center justify-between gap-4 py-2.5 text-sm">
@@ -123,6 +124,9 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
     const canEdit = status !== 'stopped' && finalized;
     const mutationsDisabled = !canEdit || busy || pending;
     const minimumExpiry = minimumExpiryDateValue();
+    const expiringSoon =
+        status === 'active' && Boolean(share.expiresAt) && expiryHint(share.expiresAt!).soon;
+    const views = viewHint(share);
 
     const setPanelState = (next: Panel | null) => {
         panelRef.current = next;
@@ -208,13 +212,20 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
                 {share.note && (
                     <p className="mt-1 text-sm leading-relaxed text-grayscale-600">{share.note}</p>
                 )}
-                {status !== 'active' && (
-                    <span
-                        className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${status === 'expired' ? 'bg-amber-50 text-amber-900' : 'bg-grayscale-100 text-grayscale-700'}`}
-                    >
-                        {statusLabel(status)}
-                    </span>
-                )}
+                <span
+                    className={`mt-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
+                        status === 'active'
+                            ? 'bg-emerald-50 text-emerald-700'
+                            : status === 'expired'
+                              ? 'bg-amber-50 text-amber-900'
+                              : 'bg-grayscale-100 text-grayscale-700'
+                    }`}
+                >
+                    {status === 'active' && (
+                        <span className="sl-dot text-emerald-500" aria-hidden="true" />
+                    )}
+                    {statusLabel(status)}
+                </span>
             </header>
 
             {status === 'stopped' ? (
@@ -238,6 +249,7 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
                             variant="primary"
                             label={m['dataShareCenter.shared.copy']()}
                             text={m['dataShareCenter.shared.copy']()}
+                            copiedText={m['dataShareCenter.shared.copied']()}
                             disabled={!canEdit || busy}
                             onCopy={() => vm.onCopy(share)}
                         />
@@ -302,7 +314,7 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
                     </p>
                     <button
                         type="button"
-                        className={`${quietButton} mt-3 border-amber-200 bg-white text-amber-900`}
+                        className={`${quietButton} mt-3 ring-amber-200 bg-white text-amber-900`}
                         disabled={busy}
                         onClick={() => void vm.onCheckPending(share)}
                     >
@@ -315,11 +327,8 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
             )}
 
             <dl className="mt-5 divide-y divide-grayscale-100 border-y border-grayscale-100">
-                <DetailRow label={m['dataShareCenter.shared.statusLabel']()}>
-                    {statusLabel(status)}
-                </DetailRow>
                 <DetailRow label={m['dataShareCenter.shared.credentialsLabel']()}>
-                    {credentialCountLabel(share.selectedCount)}
+                    {share.selectedCount}
                 </DetailRow>
                 <DetailRow label={m['dataShareCenter.shared.passcodeLabel']()}>
                     {share.passcodeProtected
@@ -331,11 +340,18 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
                 </DetailRow>
                 <DetailRow label={m['dataShareCenter.shared.expiresLabel']()}>
                     <span className="inline-flex items-center gap-2">
-                        {share.expiresAt
-                            ? status === 'active'
-                                ? expiryHint(share.expiresAt).label
-                                : formatShortDate(share.expiresAt)
-                            : m['dataShareCenter.shared.neverExpires']()}
+                        {share.expiresAt ? (
+                            <span
+                                className={`inline-flex items-center gap-1 ${expiringSoon ? 'text-amber-800' : ''}`}
+                            >
+                                {expiringSoon && (
+                                    <IonIcon icon={hourglassOutline} aria-hidden="true" />
+                                )}
+                                {formatShortDate(share.expiresAt)}
+                            </span>
+                        ) : (
+                            m['dataShareCenter.shared.neverExpires']()
+                        )}
                         {status !== 'stopped' && (
                             <button
                                 ref={changeExpiryButtonRef}
@@ -354,14 +370,13 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
                 </DetailRow>
                 {vm.showViewStats && share.viewCount !== undefined && (
                     <DetailRow label={m['dataShareCenter.shared.viewsLabel']()}>
-                        {share.viewCount > 0
-                            ? m['dataShareCenter.shared.viewed']({
-                                  count: String(share.viewCount),
-                                  date: share.lastViewedAt
-                                      ? formatShortDate(share.lastViewedAt)
-                                      : m['dataShareCenter.shared.recently'](),
-                              })
-                            : m['dataShareCenter.shared.notViewed']()}
+                        {views?.label}
+                        {share.viewCount > 0 && share.lastViewedAt && (
+                            <span className="text-grayscale-500">
+                                {' · '}
+                                {formatShortDate(share.lastViewedAt)}
+                            </span>
+                        )}
                     </DetailRow>
                 )}
             </dl>

@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { IonIcon } from '@ionic/react';
-import { addOutline, arrowBack, refreshOutline } from 'ionicons/icons';
+import { arrowBack, refreshOutline } from 'ionicons/icons';
 import type { ShareLink } from '@learncard/types';
 
 import * as m from '../../../../paraglide/messages.js';
 import '../../dataSharingCenter.scss';
 import type { SharedLinkFilter } from '../../DataSharingCenter.types';
-import { ListShell, MessageRow, QuietTextButton, SkeletonRows } from './ListCard';
+import { ListShell, MessageRow, SkeletonRows } from './ListCard';
 import ShareLinkRow from './ShareLinkRow';
 import { useSharedLinksStore } from './sharedLinksStore';
 import { getSharedLinkViewStatus, sortNewestFirst, statusLabel } from './sharedLinkFormat';
@@ -16,9 +16,8 @@ export const SheetChrome: React.FC<{
     onClose: () => void;
     refreshing: boolean;
     onRefresh: () => void;
-    action?: React.ReactNode;
     children: React.ReactNode;
-}> = ({ title, onClose, refreshing, onRefresh, action, children }) => (
+}> = ({ title, onClose, refreshing, onRefresh, children }) => (
     <div className="ds-content-bg min-h-full w-full">
         <div className="mx-auto w-full max-w-[820px] px-5 pb-14 pt-[max(16px,calc(env(safe-area-inset-top)+8px))]">
             <div className="mb-4 flex items-center gap-2">
@@ -46,7 +45,6 @@ export const SheetChrome: React.FC<{
                         className={refreshing ? 'motion-safe:animate-spin' : undefined}
                     />
                 </button>
-                {action}
             </div>
             {children}
         </div>
@@ -127,11 +125,6 @@ const SharedLinksAllSheet: React.FC<{
             onClose={onClose}
             refreshing={vm.isLoading}
             onRefresh={() => void vm.onRefresh()}
-            action={
-                <QuietTextButton icon={addOutline} onClick={vm.onCreateShare}>
-                    {m['dataShareCenter.shared.newLink']()}
-                </QuietTextButton>
-            }
         >
             <div
                 ref={tablistRef}
@@ -223,7 +216,7 @@ const SharedLinksAllSheet: React.FC<{
                     type="button"
                     disabled={vm.isLoadingMore}
                     onClick={() => void vm.onLoadMore()}
-                    className="mt-3 w-full rounded-[20px] border border-grayscale-300 bg-white/80 px-4 py-2.5 text-sm font-medium text-grayscale-700 hover:bg-white disabled:opacity-40"
+                    className="mt-3 w-full rounded-[20px] ring-1 ring-inset ring-grayscale-300 bg-white/80 px-4 py-2.5 text-sm font-medium text-grayscale-700 hover:bg-white disabled:opacity-40"
                 >
                     {vm.isLoadingMore
                         ? m['dataShareCenter.shared.loading']()

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook, waitFor } from '@testing-library/react';
 
 const listShareLinks = vi.fn(async () => ({ records: [], hasMore: false }));
-const getReceivedPresentations = vi.fn(async () => []);
+const getReceivedPresentations = vi.fn(async (): Promise<unknown[]> => []);
 const presentToast = vi.fn();
 
 vi.mock('learn-card-base', () => ({

@@ -196,13 +196,11 @@ describe('SharedLinksAllSheet', () => {
         expect(vm.onRefresh).toHaveBeenCalled();
     });
 
-    it('calls onCreateShare when New link is clicked', () => {
-        const vm = buildVm();
-        seed(vm);
+    it('keeps the header calm: back, title and refresh only', () => {
+        seed(buildVm());
         render(<SharedLinksAllSheet onClose={vi.fn()} onOpenShare={vi.fn()} />);
 
-        fireEvent.click(screen.getByText('New link'));
-        expect(vm.onCreateShare).toHaveBeenCalled();
+        expect(screen.queryByText('New link')).toBeNull();
     });
 
     it('shows Load more when hasMore and calls onLoadMore', () => {

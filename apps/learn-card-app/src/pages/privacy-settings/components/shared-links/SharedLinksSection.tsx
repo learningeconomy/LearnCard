@@ -55,7 +55,7 @@ const EMPTY_KEYS: ReadonlySet<string> = new Set();
 const RetryButton: React.FC<{ onClick: () => Promise<void> }> = ({ onClick }) => (
     <button
         type="button"
-        className="text-sm font-medium text-grayscale-700 underline"
+        className="shrink-0 text-sm font-medium text-grayscale-700 underline"
         onClick={() => void onClick()}
     >
         {m['shareLinks.retry']()}
@@ -215,6 +215,7 @@ const SharedLinksSection: React.FC<{ vm: DataSharingSharedLinksViewModel; delay?
                         )}
                         {vm.error && vm.records.length > 0 && (
                             <MessageRow
+                                compact
                                 tone="error"
                                 action={<RetryButton onClick={vm.onRefresh} />}
                             >
@@ -259,6 +260,7 @@ const SharedLinksSection: React.FC<{ vm: DataSharingSharedLinksViewModel; delay?
                         )}
                         {saved.error && saved.records.length > 0 && (
                             <MessageRow
+                                compact
                                 tone="error"
                                 action={<RetryButton onClick={saved.onRefresh} />}
                             >

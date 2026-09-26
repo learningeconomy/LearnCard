@@ -15,6 +15,8 @@ type CopyIconButtonProps = {
     /** `icon` = 36px round row action; `primary` = full-width sheet button with text. */
     variant?: 'icon' | 'primary';
     text?: string;
+    /** Optional text shown while the copied state is visible (primary variant). */
+    copiedText?: string;
 };
 
 const CopyIconButton: React.FC<CopyIconButtonProps> = ({
@@ -23,6 +25,7 @@ const CopyIconButton: React.FC<CopyIconButtonProps> = ({
     disabled = false,
     variant = 'icon',
     text,
+    copiedText,
 }) => {
     const [copied, setCopied] = useState(false);
     const timer = useRef<ReturnType<typeof setTimeout>>();
@@ -65,7 +68,7 @@ const CopyIconButton: React.FC<CopyIconButtonProps> = ({
                 className={`inline-flex flex-1 items-center justify-center gap-2 rounded-[20px] px-4 py-2.5 text-sm font-medium text-white transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-40 ${copied ? 'bg-emerald-600' : 'bg-grayscale-900 hover:opacity-90'}`}
             >
                 {icon}
-                {text}
+                {copied && copiedText ? copiedText : text}
             </button>
         );
 

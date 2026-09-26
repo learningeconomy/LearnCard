@@ -6,6 +6,7 @@ import {
     avatarTint,
     calendarDaysUntil,
     expiryHint,
+    formatShortDate,
     getSharedLinkViewStatus,
     initialsFor,
     localDateValue,
@@ -161,7 +162,7 @@ describe('row meta', () => {
             now
         );
         expect(meta.hint).toEqual({
-            label: `Stopped ${new Date('2026-09-20T00:00:00.000Z').toLocaleDateString()}`,
+            label: `Stopped ${formatShortDate('2026-09-20T00:00:00.000Z')}`,
             tone: 'default',
         });
     });
@@ -186,7 +187,7 @@ describe('row meta', () => {
             now
         );
         expect(meta.hint).toEqual({
-            label: `Expired ${new Date('2026-09-01T00:00:00.000Z').toLocaleDateString()}`,
+            label: `Expired ${formatShortDate('2026-09-01T00:00:00.000Z')}`,
             tone: 'soon',
         });
     });

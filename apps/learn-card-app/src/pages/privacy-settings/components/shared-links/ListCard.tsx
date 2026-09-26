@@ -60,13 +60,21 @@ export const SkeletonRows: React.FC<{ count?: number }> = ({ count = 3 }) => (
 
 export const MessageRow: React.FC<{
     tone?: 'muted' | 'error';
+    /** Slim single-line variant for a notice beneath rows that are still shown. */
+    compact?: boolean;
     children: React.ReactNode;
     action?: React.ReactNode;
-}> = ({ tone = 'muted', children, action }) => (
-    <li className="flex flex-col items-center gap-2 px-6 py-6 text-center">
+}> = ({ tone = 'muted', compact = false, children, action }) => (
+    <li
+        className={
+            compact
+                ? 'flex items-center justify-between gap-3 bg-red-50/60 px-4 py-2.5'
+                : 'flex flex-col items-center gap-2 px-6 py-6 text-center'
+        }
+    >
         <p
             role={tone === 'error' ? 'alert' : undefined}
-            className={`text-sm leading-relaxed ${tone === 'error' ? 'text-red-700' : 'text-grayscale-600'}`}
+            className={`${compact ? 'min-w-0 text-xs' : 'text-sm'} leading-relaxed ${tone === 'error' ? 'text-red-700' : 'text-grayscale-600'}`}
         >
             {children}
         </p>

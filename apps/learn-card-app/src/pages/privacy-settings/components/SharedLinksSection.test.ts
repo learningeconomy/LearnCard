@@ -410,21 +410,21 @@ describe('detail sheet', () => {
         renderSection(viewModel());
         const sheet = openDetail();
         expect(sheet.getByText('Passcode').nextElementSibling?.textContent).toBe('On');
-        expect(sheet.getByText(/Viewed 12 times/)).toBeTruthy();
+        expect(sheet.getByText(/Opened 12 times/)).toBeTruthy();
     });
 
     it('does not render view statistics for a protected minor account', () => {
         renderSection(viewModel({ showViewStats: false }));
         const sheet = openDetail();
-        expect(sheet.queryByText(/Viewed 12 times/)).toBeNull();
+        expect(sheet.queryByText(/Opened 12 times/)).toBeNull();
     });
 
     it('does not invent view statistics when the server omits them', () => {
         const withoutViews = { ...share, viewCount: undefined, lastViewedAt: null } as ShareLink;
         renderSection(viewModel({ records: [withoutViews] }));
         const sheet = openDetail();
-        expect(sheet.queryByText(/Viewed/)).toBeNull();
-        expect(sheet.queryByText('Not viewed yet')).toBeNull();
+        expect(sheet.queryByText(/Opened/)).toBeNull();
+        expect(sheet.queryByText('Not opened yet')).toBeNull();
     });
 
     it('confirms that an update keeps the same link before opening the editor', () => {

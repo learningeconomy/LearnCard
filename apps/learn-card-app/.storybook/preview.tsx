@@ -30,6 +30,7 @@ import '@ionic/react/css/normalize.css';
 import '@ionic/react/css/structure.css';
 import '@ionic/react/css/typography.css';
 
+import '../../../packages/learn-card-base/src/assets/styles/modal.scss';
 import './preview.css';
 
 setupIonicReact({ swipeBackEnabled: false });
