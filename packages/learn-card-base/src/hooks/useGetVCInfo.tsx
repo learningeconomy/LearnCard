@@ -220,6 +220,7 @@ export const useGetVCInfo = (
             />
         ) : undefined;
     }
+    const lcTagHints = parseLcTags(getCredentialSubjectAchievement(vc)?.tag);
 
     // ========================================================================
     // ID CARD OVERRIDES
@@ -245,8 +246,9 @@ export const useGetVCInfo = (
             'flex items-center justify-center h-full text-white font-medium text-4xl',
     };
 
-    let idIssuerThumbnailSrc = vc?.boostID?.issuerThumbnail;
-    let showIdIssuerThumbnail = vc?.boostID?.showIssuerThumbnail;
+    let idIssuerThumbnailSrc = vc?.boostID?.issuerThumbnail ?? lcTagHints.idIssuerThumbnail;
+    let showIdIssuerThumbnail =
+        vc?.boostID?.showIssuerThumbnail ?? Boolean(lcTagHints.idIssuerThumbnail);
     let idSubjectDID: string = '';
 
     if (mappedInputs) {
@@ -385,7 +387,7 @@ export const useGetVCInfo = (
     // ========================================================================
     // DISPLAY METADATA
     // ========================================================================
-    const lcTagHints = parseLcTags(getCredentialSubjectAchievement(vc)?.tag);
+    // Standard OBv3 credentials carry LearnCard display hints in achievement tags.
 
     const displayType =
         vc?.display?.displayType ??
@@ -395,8 +397,8 @@ export const useGetVCInfo = (
     const subtype = lcTagHints.subtype;
 
     // ID card-specific display settings
-    const idBackgroundImage = vc?.boostID?.backgroundImage;
-    const idDimBackgroundImage = vc?.boostID?.dimBackgroundImage;
+    const idBackgroundImage = vc?.boostID?.backgroundImage ?? lcTagHints.idBackgroundImage;
+    const idDimBackgroundImage = vc?.boostID?.dimBackgroundImage ?? lcTagHints.idDimBackgroundImage;
     const idFontColor = vc?.boostID?.fontColor;
     const idAccentColor = vc?.boostID?.accentColor;
     const achievementImage = getUrlFromImage(getCredentialSubjectAchievement(vc)?.image);

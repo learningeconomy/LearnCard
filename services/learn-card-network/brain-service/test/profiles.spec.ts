@@ -5,7 +5,15 @@ import {
     ProfileVisibilityEnum,
 } from '@learncard/types';
 import { getClient, getUser } from './helpers/getClient';
-import { Profile, SigningAuthority, Credential, Boost, ClaimHook, ContactMethod } from '@models';
+import {
+    Profile,
+    ProfileManager,
+    SigningAuthority,
+    Credential,
+    Boost,
+    ClaimHook,
+    ContactMethod,
+} from '@models';
 import cache from '@cache';
 import { testVc, sendBoost, testVp, testUnsignedBoost } from './helpers/send';
 
@@ -26,6 +34,30 @@ describe('Profiles', () => {
         userA = await getUser();
         userB = await getUser('b'.repeat(64));
         userC = await getUser('c'.repeat(64));
+    });
+
+    describe('createManagedProfile', () => {
+        beforeEach(async () => {
+            await ProfileManager.delete({ detach: true, where: {} });
+            await Profile.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+        });
+
+        afterAll(async () => {
+            await ProfileManager.delete({ detach: true, where: {} });
+            await Profile.delete({ detach: true, where: {} });
+        });
+
+        it('should reserve sample persona profileIds', async () => {
+            const managerDid = await userA.clients.fullAuth.profileManager.createProfileManager({});
+            const managerClient = getClient({ did: managerDid, isChallengeValid: true });
+
+            await expect(
+                managerClient.profileManager.createManagedProfile({
+                    profileId: 'Sample-college-board',
+                })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        });
     });
 
     describe('createProfile', () => {
@@ -61,6 +93,14 @@ describe('Profiles', () => {
             await expect(
                 userB.clients.fullAuth.profile.createProfile({ profileId: 'usera' })
             ).rejects.toThrow();
+        });
+
+        it('should reserve sample persona profileIds', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.createProfile({
+                    profileId: 'Sample-college-board',
+                })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
         });
 
         it('should not allow creating a profile with an email that has already been taken', async () => {
@@ -387,6 +427,14 @@ describe('Profiles', () => {
             ).rejects.toThrow();
         });
 
+        it('should reserve sample persona profileIds', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.createServiceProfile({
+                    profileId: 'sample-college-board',
+                })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        });
+
         it('should not allow creating a profile with an email that has already been taken', async () => {
             await expect(
                 userA.clients.fullAuth.profile.createServiceProfile({
@@ -489,6 +537,16 @@ describe('Profiles', () => {
                     profileId: 'managed-usera',
                 })
             ).resolves.not.toThrow();
+        });
+
+        it('should reserve sample persona profileIds', async () => {
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+
+            await expect(
+                userA.clients.fullAuth.profile.createManagedServiceProfile({
+                    profileId: 'sample-college-board',
+                })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
         });
     });
 
@@ -1253,6 +1311,14 @@ describe('Profiles', () => {
             await expect(
                 userA.clients.fullAuth.profile.updateProfile({ profileId: 'usera' })
             ).rejects.toMatchObject({ code: 'CONFLICT' });
+        });
+
+        it('should not allow changing a profileId to the sample persona namespace', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.updateProfile({
+                    profileId: 'sample-college-board',
+                })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
         });
 
         it('should allow you to update your email', async () => {
