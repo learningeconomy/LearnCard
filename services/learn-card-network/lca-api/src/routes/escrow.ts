@@ -34,6 +34,7 @@ import {
     findEscrowHoldById,
     cancelEscrowHold,
     completeEscrowHold,
+    hasCompletedEscrowHoldForVersion,
     expireStaleEscrowHolds,
     hashEscrowResumeToken,
     generateEscrowResumeToken,
@@ -319,7 +320,9 @@ export const escrowRouter = t.router({
                     !oldPin.disabledAt &&
                     oldPin.shareVersion === oldBlob.shareVersion &&
                     oldBlob.enclaveKeyId === attestation.keyId &&
-                    input.shareVersion > oldBlob.shareVersion
+                    input.shareVersion > oldBlob.shareVersion &&
+                    // A released blob's PIN is retired: it was just used, or the user forgot it.
+                    !(await hasCompletedEscrowHoldForVersion(authProvider, oldBlob.shareVersion))
                 ) {
                     try {
                         const carried = await getEscrowEnclave().carryPinVerifier({

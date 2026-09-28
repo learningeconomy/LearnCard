@@ -825,6 +825,8 @@ describe('escrow strategy', () => {
         expect(blob?.shareVersion).toBe(3);
         expect(strategy.hasPendingIdentityRecovery!()).toBe(false);
         expect(calls.some(call => call.path === '/keys/recovery-session/rebind')).toBe(true);
+        const reEnrollment = calls.filter(call => call.path === '/keys/escrow').at(-1);
+        expect(JSON.parse(String(reEnrollment?.init?.body))).toMatchObject({ clearPin: true });
     });
     it('keeps the OTP-style pending state until a replacement login completes rebind', async () => {
         await strategy.ensureEscrowEnrollment!(params);

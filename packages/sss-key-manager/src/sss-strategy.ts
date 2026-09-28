@@ -2222,6 +2222,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 primaryDid,
             };
 
+            // Recovery retires the released PIN; never ask the server to carry it.
             await tryEnrollEscrow(
                 token,
                 providerType,
@@ -2229,7 +2230,10 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 primaryDid,
                 shares,
                 shareVersion,
-                signDidAuthVp
+                signDidAuthVp,
+                undefined,
+                undefined,
+                true
             );
             return { privateKey, did: primaryDid };
         },
@@ -2949,7 +2953,10 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 pending.primaryDid,
                 shares,
                 shareVersion,
-                signDidAuthVp
+                signDidAuthVp,
+                undefined,
+                undefined,
+                true
             );
             if (activeStorageId !== storageId || storageGeneration !== generation) {
                 throw new Error('This recovery request was cancelled.');

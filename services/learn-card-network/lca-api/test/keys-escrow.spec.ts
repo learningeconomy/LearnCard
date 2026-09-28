@@ -713,8 +713,10 @@ describe('escrow PIN release', () => {
         'concurrent lock',
         'concurrent blob',
         'clear',
+        'released',
     ])('enrolls after rotation with safe PIN carry: %s', async scenario => {
         await enrollPin();
+        if (scenario === 'released') await completePin(await startPin());
         await getUserKeysCollection().updateOne(
             { 'authProviders.id': authProvider.id },
             {
@@ -790,7 +792,7 @@ describe('escrow PIN release', () => {
                     expectedShareVersion: 2,
                 })
             ).toEqual({ ok: true, hasPin: false });
-            if (['locked', 'key mismatch', 'clear'].includes(scenario))
+            if (['locked', 'key mismatch', 'clear', 'released'].includes(scenario))
                 expect(spy).not.toHaveBeenCalled();
         }
     });
