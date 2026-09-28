@@ -856,11 +856,28 @@ export const getImageUrlFromCredential = (
     return imgUrl;
 };
 
+export const isResumeBuilderCredential = (credential: VC): boolean => {
+    const attachments = getCredentialSubject(credential)?.attachments;
+
+    if (!Array.isArray(attachments)) return false;
+
+    return attachments.some(
+        attachment =>
+            Array.isArray(attachment?.descriptions) &&
+            attachment.descriptions.some((description: string) =>
+                description.startsWith('Resume PDF published')
+            )
+    );
+};
+
 export const getCredentialName = (credential: VC): string => {
     const credentialTypes = getCredentialType(credential);
     const name = getPotentialNameFieldsFromType(credentialTypes, credential);
     const credentialSubjectAchievementName = getCredentialSubject(credential)?.achievement?.name;
 
+    if (isResumeBuilderCredential(credential)) {
+        return 'Resume Builder';
+    }
     // Generic VCDM-shape fallback: humanize the most-specific entry of
     // the `type` array so a credential without an explicit `name` or
     // `achievement.name` still gets a sensible title rather than being
