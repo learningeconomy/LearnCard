@@ -6,7 +6,7 @@ import { validatePin } from '@learncard/sss-key-manager';
 import { RecoveryPinInput } from './RecoveryPinInput';
 import { m } from '../../paraglide/messages.js';
 
-export type RecoveryPinSetupReason = 'first-time' | 'after-recovery';
+export type RecoveryPinSetupReason = 'first-time' | 'after-recovery' | 'after-hold-recovery';
 
 interface RecoveryPinSetupOverlayProps {
     setPin: (pin: string) => Promise<void>;
@@ -22,6 +22,7 @@ export const RecoveryPinSetupOverlay: React.FC<RecoveryPinSetupOverlayProps> = (
     reason = 'first-time',
 }) => {
     const afterRecovery = reason === 'after-recovery';
+    const afterHoldRecovery = reason === 'after-hold-recovery';
     const [step, setStep] = useState<'enter' | 'confirm' | 'saving' | 'success'>('enter');
     const [pin, setPin] = useState('');
     const [confirmPin, setConfirmPin] = useState('');
@@ -82,12 +83,16 @@ export const RecoveryPinSetupOverlay: React.FC<RecoveryPinSetupOverlayProps> = (
                         <h2 className="text-xl font-semibold text-grayscale-900">
                             {afterRecovery
                                 ? m['recovery.pin.afterRecovery.title']()
-                                : m['recovery.pin.setPin']()}
+                                : afterHoldRecovery
+                                  ? m['recovery.pin.afterHoldRecovery.title']()
+                                  : m['recovery.pin.setPin']()}
                         </h2>
                         <p className="text-sm text-grayscale-600 leading-relaxed">
                             {afterRecovery
                                 ? m['recovery.pin.afterRecovery.body']()
-                                : m['recovery.pin.setPinDesc']()}
+                                : afterHoldRecovery
+                                  ? m['recovery.pin.afterHoldRecovery.body']()
+                                  : m['recovery.pin.setPinDesc']()}
                         </p>
                         {afterRecovery && (
                             <p className="text-xs text-grayscale-500 leading-relaxed">

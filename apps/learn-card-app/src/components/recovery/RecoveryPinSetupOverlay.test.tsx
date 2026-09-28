@@ -33,6 +33,21 @@ describe('RecoveryPinSetupOverlay', () => {
         expect(screen.queryByText('Set a recovery PIN')).not.toBeInTheDocument();
     });
 
+    it('offers to skip the wait next time after a hold recovery', () => {
+        render(
+            <RecoveryPinSetupOverlay
+                setPin={mockSetEscrowPin}
+                onComplete={mockOnComplete}
+                onSkip={mockOnSkip}
+                reason="after-hold-recovery"
+            />
+        );
+
+        expect(screen.getByText('Skip the wait next time')).toBeInTheDocument();
+        expect(screen.getByText(/without waiting 7 days/)).toBeInTheDocument();
+        expect(screen.queryByText(/has been retired/)).not.toBeInTheDocument();
+    });
+
     it('uses first-time copy by default', () => {
         render(
             <RecoveryPinSetupOverlay

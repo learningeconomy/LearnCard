@@ -471,7 +471,7 @@ const AuthSessionManager: React.FC<{
     const wasNewUserRef = useRef(false);
     // Set when a PIN-based recovery just succeeded, proving the user had a PIN
     // even on a new/forgotten device where the local prompt flag is absent.
-    const recoveredWithPinRef = useRef(false);
+    const recoveredViaEscrowRef = useRef<'pin' | 'hold' | null>(null);
 
     // null = recovery method status has not been checked yet
     const [recoveryMethodCount, setRecoveryMethodCount] = useState<number | null>(null);
@@ -601,12 +601,17 @@ const AuthSessionManager: React.FC<{
             }
 
             if (readyPinEnabled === true) {
-                recoveredWithPinRef.current = false;
+                recoveredViaEscrowRef.current = null;
             } else if (readyPinEnabled === false) {
-                if (recoveredWithPinRef.current) {
+                if (recoveredViaEscrowRef.current === 'pin') {
                     writeRecoveryPinPromptFlag(did, 'set');
                     setRecoveryPinSetupReason('after-recovery');
-                    recoveredWithPinRef.current = false;
+                    recoveredViaEscrowRef.current = null;
+                } else if (recoveredViaEscrowRef.current === 'hold') {
+                    // Waited out the hold without a PIN: offer instant recovery next time.
+                    // Leave the flag alone so skipping never shows the "PIN was reset" banner.
+                    setRecoveryPinSetupReason('after-hold-recovery');
+                    recoveredViaEscrowRef.current = null;
                 } else if (flag === 'set') {
                     setShowRecoveryPinReset(true);
                 }
@@ -1106,7 +1111,7 @@ const AuthSessionManager: React.FC<{
             walletInitRef.current = false;
             walletModeRef.current = null;
             walletModeStore.set.mode(null);
-            recoveredWithPinRef.current = false;
+            recoveredViaEscrowRef.current = null;
         }
     }, [coordinator.state.status, wallet]);
 
@@ -1423,7 +1428,9 @@ const AuthSessionManager: React.FC<{
                             await coordinator.recover(input);
 
                             if (input.method === 'escrow-pin') {
-                                recoveredWithPinRef.current = true;
+                                recoveredViaEscrowRef.current = 'pin';
+                            } else if (input.method === 'escrow') {
+                                recoveredViaEscrowRef.current = 'hold';
                             }
                         },
                         canResumeCompleted: () =>

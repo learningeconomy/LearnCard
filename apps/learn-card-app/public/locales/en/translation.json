@@ -2166,6 +2166,10 @@
                 "title": "Set a new recovery PIN",
                 "body": "The PIN you just used has been retired — each PIN works once, so your account stays protected. Choose a new one to keep instant recovery ready.",
                 "hint": "Same rules as before: 6 digits, nothing obvious."
+            },
+            "afterHoldRecovery": {
+                "title": "Skip the wait next time",
+                "body": "You're back in. Set a 6-digit PIN so you can recover instantly next time, without waiting 7 days."
             }
         },
         "addWayBackIn": "Add a way back in",
