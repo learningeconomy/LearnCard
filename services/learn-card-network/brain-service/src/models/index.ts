@@ -256,4 +256,5 @@ export * from './Integration';
 export * from './AppStoreListing';
 export * from './CredentialActivity';
 export * from './CredentialRefresh';
+export * from './ShareLink';
 export * from './StatusList';
