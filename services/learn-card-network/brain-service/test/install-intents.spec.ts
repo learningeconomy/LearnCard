@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto';
 
 import { beforeEach, describe, expect, it } from 'vitest';
+import type { IntegrationScopeRequest } from '@learncard/types';
+import { computeManifestHash } from '@helpers/manifest-signature.helpers';
 
 import { neogma } from '@instance';
 import { createProfile } from '@accesslayer/profile/create';
@@ -28,6 +30,7 @@ import { AUTH_GRANT_FULL_ACCESS_SCOPE } from 'src/constants/auth-grant';
 import { getClient } from './helpers/getClient';
 import { makeListingInput } from './helpers/app-store.helpers';
 import {
+    buildSignedManifestForKind,
     createSignedListingVersionForKind,
     createUnsignedListingVersionForKind,
 } from './helpers/manifest.helpers';
@@ -242,6 +245,120 @@ describe('Install intents', () => {
             'STATUS_REMOVED',
             'REVOKED',
         ]);
+    });
+
+    it.each([
+        { resource: 'group', action: 'sync' },
+        { resource: 'group:sync', action: 'read' },
+    ])(
+        'binds every typed integration scope field into the catalog install plan and hash: %j',
+        async authority => {
+            const ecosystem = await createOperatorEcosystem();
+            const scopes: IntegrationScopeRequest[] = [
+                {
+                    ...authority,
+                    selectorKind: 'tree',
+                    selectorValue: '$installEcosystemId',
+                    reason: 'Sync roster data',
+                },
+                {
+                    resource: 'credential',
+                    action: 'read',
+                    selectorKind: 'id',
+                    selectorValue: 'credential:123',
+                    reason: 'Read the selected credential',
+                },
+            ];
+            const { listingId, versionId } = await createListingWithVersion({
+                kind: 'INTEGRATION',
+                manifest: { apiVersion: 'lc.integration/v1.3', scopes },
+            });
+            const planned = await createPlannedIntent(ecosystem.id, listingId, versionId);
+            const formatScope = (scope: IntegrationScopeRequest): string =>
+                `${encodeURIComponent(scope.resource)}:${encodeURIComponent(scope.action)}:${scope.selectorKind}:${scope.selectorValue}`;
+
+            expect(planned.proposal.source.type).toBe('CATALOG_LISTING');
+            expect(planned.plan.scopesRequested).toEqual(scopes.map(formatScope).sort());
+            expect(planned.plan.authorityChanges.addedScopes).toEqual(
+                scopes.map(formatScope).sort()
+            );
+            const repeated = await createPlannedIntent(ecosystem.id, listingId, versionId);
+            expect(repeated.plan.planHash).toBe(planned.plan.planHash);
+
+            for (const [index, scope] of scopes.entries()) {
+                const changes: Partial<IntegrationScopeRequest>[] = [
+                    { resource: `${scope.resource}-other` },
+                    { action: `${scope.action}-other` },
+                    { selectorKind: scope.selectorKind === 'tree' ? 'id' : 'tree' },
+                    { selectorValue: `${scope.selectorValue}-other` },
+                ];
+                if (scope.resource === 'group:sync') {
+                    // These tuples collide if resource/action delimiters are not escaped.
+                    changes.push({ resource: 'group', action: 'sync:read' });
+                }
+                for (const change of changes) {
+                    const changedScopes = scopes.map((entry, entryIndex) =>
+                        entryIndex === index ? { ...entry, ...change } : entry
+                    );
+                    const manifest = await buildSignedManifestForKind('INTEGRATION', {
+                        apiVersion: 'lc.integration/v1.3',
+                        scopes: changedScopes,
+                    });
+                    // Deliberately replace this test fixture in place: changing version IDs
+                    // would change the hash even if the scope fields were still omitted.
+                    await neogma.queryRunner.run(
+                        `MATCH (version:ListingVersion { version_id: $versionId })
+                     SET version.manifest_json = $manifestJson,
+                         version.manifest_hash = $manifestHash,
+                         version.signature = $signature`,
+                        {
+                            versionId,
+                            manifestJson: JSON.stringify(manifest),
+                            manifestHash: computeManifestHash(manifest),
+                            signature: manifest.signature.sig,
+                        }
+                    );
+                    const changed = await createPlannedIntent(ecosystem.id, listingId, versionId);
+                    expect(changed.plan.scopesRequested).toEqual(
+                        changedScopes.map(formatScope).sort()
+                    );
+                    expect(changed.plan.planHash).not.toBe(planned.plan.planHash);
+                }
+            }
+        }
+    );
+
+    it.each([
+        { resource: '*' },
+        { action: 'read*' },
+        { selectorKind: 'all' },
+        { selectorValue: '' },
+        { reason: 'x'.repeat(281) },
+    ])('rejects invalid signed integration scopes at plan time: %j', async invalidScope => {
+        const ecosystem = await createOperatorEcosystem();
+        const { listingId, versionId } = await createListingWithVersion({
+            kind: 'INTEGRATION',
+            manifest: {
+                apiVersion: 'lc.integration/v1.3',
+                scopes: [
+                    {
+                        resource: 'group',
+                        action: 'sync',
+                        selectorKind: 'tree',
+                        selectorValue: '$installEcosystemId',
+                        reason: 'Sync roster data',
+                        ...invalidScope,
+                    },
+                ],
+            },
+        });
+
+        await expect(createPlannedIntent(ecosystem.id, listingId, versionId)).rejects.toMatchObject(
+            {
+                code: 'BAD_REQUEST',
+                message: expect.stringMatching(/scopes/i),
+            }
+        );
     });
 
     it('rejects planning an install intent for an unsigned integration listing version', async () => {

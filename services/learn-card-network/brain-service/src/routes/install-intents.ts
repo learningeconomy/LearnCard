@@ -76,6 +76,7 @@ import {
     assertEntitlementsSatisfied,
     assertSupportedConsentTiers,
     buildPlanFromMaterialization,
+    getIntegrationListingVersionScopes,
     evaluateConsentPreflight,
     expandBundle,
     getInstallTargetTypeForListing,
@@ -258,6 +259,7 @@ const buildSingletonSpec = (
     targetType: ReturnType<typeof getInstallTargetTypeForListing>,
     requestedConfig: Record<string, unknown>,
     proposedBindings: BindingProposal[],
+    scopes: string[],
     additionalTargets: InstallIntentSpec['targets'] = []
 ): InstallIntentSpec => ({
     apiVersion: 'lc.install-spec/v1',
@@ -266,7 +268,7 @@ const buildSingletonSpec = (
             targetType,
             listingId,
             versionId,
-            scopes: [],
+            scopes,
             consentTiers: [],
             config: { declarationId: 'root', ...requestedConfig },
             entitlementRequirements: [],
@@ -275,7 +277,7 @@ const buildSingletonSpec = (
     ],
     bindings: proposedBindings,
     pinnedVersionIds: [versionId],
-    scopes: [],
+    scopes,
     consentTiers: [],
     config: requestedConfig,
     entitlementRequirements: [],
@@ -486,6 +488,7 @@ const buildSpecForIntent = async (input: {
             getInstallTargetTypeForListing(listing),
             input.requestedConfig,
             bindEcosystem(input.ecosystemId, input.proposedBindings),
+            listing.kind === 'INTEGRATION' ? getIntegrationListingVersionScopes(version) : [],
             subscriptionTargets
         ),
         infrastructureEffects: [

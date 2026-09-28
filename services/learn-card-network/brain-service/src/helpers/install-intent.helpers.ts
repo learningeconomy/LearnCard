@@ -6,6 +6,7 @@ import {
     CapabilityEnum,
     ConsentDecisionActorValidator,
     ConsentTierEnum,
+    IntegrationScopeRequestValidator,
     getCapabilitySetVersionForManifestApiVersion,
     isCapabilitySupportedByManifestApiVersion,
 } from '@learncard/types';
@@ -335,6 +336,30 @@ const safeParseJsonRecord = (value?: string): Record<string, unknown> | undefine
     }
 };
 
+export const getIntegrationListingVersionScopes = (version: ListingVersionType): string[] => {
+    const manifest = safeParseJsonRecord(version.manifest_json);
+    const result = IntegrationScopeRequestValidator.array().safeParse(manifest?.scopes ?? []);
+
+    if (!result.success) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `ListingVersion ${version.version_id} has invalid integration scopes: ${result.error.message}`,
+        });
+    }
+
+    // Escape delimiter-bearing fields; the final selector value stays literal.
+    return uniqueSortedStrings(
+        result.data.map(scope =>
+            [
+                encodeURIComponent(scope.resource),
+                encodeURIComponent(scope.action),
+                scope.selectorKind,
+                scope.selectorValue,
+            ].join(':')
+        )
+    );
+};
+
 const collectStringArrayValues = (
     value: unknown,
     keys: Set<string>,
@@ -358,11 +383,15 @@ const collectStringArrayValues = (
 };
 
 const getListingVersionAuthoritySummary = (version: ListingVersionType) => {
-    const sources = [
-        safeParseJsonRecord(version.manifest_json),
-        safeParseJsonRecord(version.review_snapshot_json),
-    ].filter((source): source is Record<string, unknown> => Boolean(source));
+    const manifest = safeParseJsonRecord(version.manifest_json);
+    const sources = [manifest, safeParseJsonRecord(version.review_snapshot_json)].filter(
+        (source): source is Record<string, unknown> => Boolean(source)
+    );
     const manifestScopes = sources.flatMap(source => {
+        if (source === manifest && source.listingKind === 'INTEGRATION') {
+            return getIntegrationListingVersionScopes(version);
+        }
+
         const scopes = Array.isArray(source.scopes) ? source.scopes : [];
 
         return scopes
