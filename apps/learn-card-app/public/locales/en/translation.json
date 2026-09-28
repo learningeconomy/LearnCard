@@ -279,6 +279,29 @@
                 "deleting": "Deleting Demo Credentials...",
                 "delError": "Unable to delete the demo school. Please try again."
             },
+            "samplePersona": {
+                "title": "See an example LearnCard",
+                "sampleTitle": "Sample LearnCard",
+                "description": "Add a ready-made student example to explore records, skills, and sharing.",
+                "removeDescription": "These sample records stay separate from your own and can be removed at any time.",
+                "addAction": "Sync My School",
+                "addPersonaAction": "Add {{persona}} example",
+                "addSuccess": "Sample credentials added.",
+                "addError": "We couldn’t add the sample credentials. Please try again.",
+                "addPartialError": "Some sample credentials may have been added. Remove them, then try again.",
+                "connecting": "Setting up...",
+                "adding": "Adding sample credentials...",
+                "checking": "Checking sample credentials...",
+                "removeAction": "Remove sample credentials",
+                "removeConfirmation": "Remove all sample credentials? Your own records won’t be affected.",
+                "removeSuccess": "Removed {{count}} sample credentials.",
+                "removeError": "We couldn’t remove the sample credentials. Please try again.",
+                "disconnecting": "Disconnecting...",
+                "deleting": "Removing sample credentials...",
+                "chooseAction": "Choose an example",
+                "pickerTitle": "Choose an example LearnCard",
+                "pickerDescription": "Pick the example that best matches what you want to explore."
+            },
             "managers": {
                 "resume": {
                     "title": "Resume",

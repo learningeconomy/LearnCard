@@ -72,7 +72,17 @@
         "introSlides": true,
         "pathways": true,
         "launchPadQuickActions": false,
-        "dashboardHome": true
+        "dashboardHome": true,
+        "samplePersonas": [
+            {
+                "id": "student",
+                "contractUri": "lc:network:network.learncard.com/trpc:contract:79672d1a-fe7c-5715-95db-27586e529934"
+            }
+        ],
+        "legacySamplePersonaContractUris": [
+            "lc:network:network.learncard.com/trpc:contract:f3c35767-31d0-4595-8b7b-285530509d1c",
+            "lc:network:network.learncard.com/trpc:contract:a7836325-7bbb-4515-a5ef-ef1fbb66f771"
+        ]
     },
     "observability": {
         "sentryDsn": "https://68210fb71359458b9746c55cf5f545b4@o246842.ingest.us.sentry.io/4505432118984704",

@@ -279,6 +279,29 @@
                 "deleting": "Eliminando Credenciales de Demostración...",
                 "delError": "No se pudo eliminar la escuela de demostración. Inténtalo de nuevo."
             },
+            "samplePersona": {
+                "title": "Ver un LearnCard de ejemplo",
+                "sampleTitle": "LearnCard de ejemplo",
+                "description": "Añade un ejemplo de estudiante listo para explorar registros, habilidades y opciones para compartir.",
+                "removeDescription": "Estos registros de ejemplo se mantienen separados de los tuyos y puedes eliminarlos cuando quieras.",
+                "addAction": "Sincronizar mi escuela",
+                "addPersonaAction": "Añadir ejemplo de {{persona}}",
+                "addSuccess": "Credenciales de ejemplo añadidas.",
+                "addError": "No pudimos añadir las credenciales de ejemplo. Inténtalo de nuevo.",
+                "addPartialError": "Es posible que se hayan añadido algunas credenciales de ejemplo. Elimínalas e inténtalo de nuevo.",
+                "connecting": "Configurando...",
+                "adding": "Añadiendo credenciales de ejemplo...",
+                "checking": "Comprobando credenciales de ejemplo...",
+                "removeAction": "Eliminar credenciales de ejemplo",
+                "removeConfirmation": "¿Eliminar todas las credenciales de ejemplo? Tus registros no se verán afectados.",
+                "removeSuccess": "Se eliminaron {{count}} credenciales de ejemplo.",
+                "removeError": "No pudimos eliminar las credenciales de ejemplo. Inténtalo de nuevo.",
+                "disconnecting": "Desconectando...",
+                "deleting": "Eliminando credenciales de ejemplo...",
+                "chooseAction": "Elegir un ejemplo",
+                "pickerTitle": "Elige un LearnCard de ejemplo",
+                "pickerDescription": "Elige el ejemplo que mejor se adapte a lo que quieres explorar."
+            },
             "managers": {
                 "resume": {
                     "title": "Currículum",

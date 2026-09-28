@@ -168,7 +168,7 @@ describe('did:web profile document generation with signing authorities', () => {
         await deleteDidDocForProfile(profileId);
     });
 
-    it('never emits a fragment on a verificationMethod controller', async () => {
+    it('renders controller-owned verification and key-agreement methods', async () => {
         const profile = await getProfileByProfileId(profileId);
         const sa = await createSigningAuthority(SA_ENDPOINT);
         await createUseSigningAuthorityRelationship(profile!, sa, 'lca-sa', SA_DID, true);
@@ -195,6 +195,15 @@ describe('did:web profile document generation with signing authorities', () => {
         );
         expect(saVm).toBeDefined();
         expect((saVm as { controller: string }).controller).toBe(did);
+
+        const ownerKeyAgreement = (doc.keyAgreement ?? []).find(
+            method => typeof method === 'object' && method.controller === did
+        );
+        expect(ownerKeyAgreement).toMatchObject({
+            type: 'X25519KeyAgreementKey2019',
+            controller: did,
+            publicKeyBase58: expect.any(String),
+        });
     });
 
     it('de-duplicates repeated signing-authority relationships in the rendered document', async () => {
