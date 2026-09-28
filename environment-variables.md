@@ -177,3 +177,92 @@ The "LearnCard" Infisical project has this folder layout:
 **Missing variables** — Compare the generated `.env` against the `.env.example` in the same directory. Any vars not in Infisical need to be added there or filled in manually.
 
 **Authentication expired** — Run `infisical login` again.
+
+## Local multi-credential sharing (LC-2187)
+
+`apps/learn-card-app/compose-local.yaml` supplies a matching local Brain/LearnCloud
+trust configuration, including LearnCloud's Redis replay store. Rebuild/recreate
+that local stack and enable the client-side LaunchDarkly flag
+`share-multiple-enabled` to exercise the sharing flow. No additional untracked
+service `.env` entries are needed for this Compose setup. These Compose values
+explicitly override the corresponding entries in service `env_file` files.
+
+For services running directly on the host, add these settings to the existing
+service `.env` files (keep the normal database, seed, and Redis configuration):
+
+**Brain** (local port 4000, `IS_OFFLINE=true`):
+
+```dotenv
+SHARE_LINK_MAINTENANCE_NAMESPACE=learncard-local
+SHARE_LINK_MAINTENANCE_ORIGIN=http://localhost:4100
+SHARE_LINK_MAINTENANCE_AUDIENCE=did:web:localhost%3A4100
+SHARE_LINK_MAINTENANCE_ALLOW_INSECURE_LOOPBACK=true
+SHARE_LINK_OWNER_API_NAMESPACE=learncard-local
+```
+
+**LearnCloud** (local port 4100):
+
+```dotenv
+SHARE_CONTENT_AUDIENCE=did:web:localhost%3A4100
+SHARE_CONTENT_SERVICE_DIDS=did:web:localhost%3A4000
+SHARE_CONTENT_VERIFICATION_METHODS=did:web:localhost%3A4000#owner
+SHARE_CONTENT_NAMESPACE_BINDINGS='{"did:web:localhost%3A4000":["learncard-local"]}'
+```
+
+LearnCloud also requires `REDIS_HOST` and `REDIS_PORT` pointing to its running
+Redis replay store. Brain publishes its service signing method as `#owner` in
+`http://localhost:4000/.well-known/did.json`. If you change the ports or identities,
+update both sides together. Restart both services after changing their environment.
+A coworker whose existing `.env` files already provide matching values can simply
+rebuild/restart and test. Missing trust configuration leaves the share-content
+routes disabled; enabling the UI flag alone does not enable the backend.
+
+These are public, local-development identities, not production credentials.
+Deployed environments must explicitly provision their own HTTPS LearnCloud origin,
+audience, allowed Brain identity, exact signing method, namespace binding, and
+Redis replay store. Do not enable the insecure-loopback option there.
+
+### GitHub deployment configuration
+
+The `.github/workflows/deploy.yml` deployment steps pass the following GitHub
+**environment variables** to Serverless, which installs them as Lambda runtime
+environment variables. They are public configuration, not new secrets. Existing
+`SEED` / `LEARN_CLOUD_SEED` secrets remain unchanged; LearnCloud's Serverless stack
+already supplies its Redis endpoint.
+
+Configure each matching pair of GitHub environments independently:
+
+| Stage                | Brain environment                    | LearnCloud environment               |
+| -------------------- | ------------------------------------ | ------------------------------------ |
+| LearnCard staging    | `learn-cloud-network-api-staging`    | `learn-cloud-storage-api-staging`    |
+| LearnCard production | `learn-cloud-network-api-production` | `learn-cloud-storage-api-production` |
+| ScoutPass staging    | `scout-network-api-staging`          | `scout-storage-api-staging`          |
+| ScoutPass production | `scout-network-api-production`       | `scout-storage-api-production`       |
+
+In the Brain environment, add:
+
+| Variable                           | Value                                                                              |
+| ---------------------------------- | ---------------------------------------------------------------------------------- |
+| `SHARE_LINK_MAINTENANCE_NAMESPACE` | A stable namespace, e.g. `learncard` (or `scouts` for ScoutPass)                   |
+| `SHARE_LINK_MAINTENANCE_ORIGIN`    | That stage's HTTPS LearnCloud origin, e.g. `https://<cloud-host>`; no `/trpc` path |
+| `SHARE_LINK_MAINTENANCE_AUDIENCE`  | `did:web:<cloud-host>`                                                             |
+
+In the matching LearnCloud environment, add:
+
+| Variable                             | Value                                                                                                                    |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| `SHARE_CONTENT_AUDIENCE`             | Same value as Brain's audience                                                                                           |
+| `SHARE_CONTENT_SERVICE_DIDS`         | `did:web:<brain-host>` (the deployed Brain service identity)                                                             |
+| `SHARE_CONTENT_VERIFICATION_METHODS` | The exact signing method from Brain's `https://<brain-host>/.well-known/did.json`, normally `did:web:<brain-host>#owner` |
+| `SHARE_CONTENT_NAMESPACE_BINDINGS`   | JSON mapping that Brain DID to its namespace, e.g. `{"did:web:<brain-host>":["learncard"]}`                              |
+
+Replace the host placeholders with the deployed domains; do not paste placeholders
+or local identities into GitHub. Store the JSON as raw JSON without surrounding
+shell quotes. Keep the namespace stable after creating links. The deploy workflow
+forces insecure loopback off. The owner API inherits the maintenance namespace,
+so no separate owner namespace variable is required.
+
+Redeploy both services after setting the variables (rebuilding the frontend alone
+will not update Lambda configuration), then enable `share-multiple-enabled` in
+LaunchDarkly. Check create/open/revoke in the target environment, including opening
+a copied link in a signed-out browser. Missing values keep sharing disabled.
