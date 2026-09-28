@@ -3,6 +3,7 @@ import { Capacitor } from '@capacitor/core';
 
 import { IonPage } from '@ionic/react';
 import { getVCDisplayCardVariant, VCDisplayCard2 } from '@learncard/react';
+import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 import * as m from '../../../../paraglide/messages.js';
 import { BoostPreviewTabsEnum } from '../../../boost-preview-tabs/boost-preview-tabs.helpers';
 import { boostPreviewStore } from 'learn-card-base';
@@ -36,6 +37,7 @@ import { useKnownDIDRegistry } from 'learn-card-base/hooks/useRegistry';
 import {
     getAchievementType,
     getCredentialName,
+    isBoostCredential,
     unwrapBoostCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
 import { getSvgMustacheRenderMethod } from '@learncard/render-method-plugin';
@@ -340,39 +342,60 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                 m['claim.modal.credentialFallback']()
             }
         >
-            <VCDisplayCard2
-                credential={credential}
-                issueeOverride={issueeOverride}
-                issuerOverride={issuerOverride}
-                issueHistory={issueHistory}
-                categoryType={categoryType}
-                verificationItems={verifications}
-                customThumbComponent={customThumbComponent}
-                customBodyCardComponent={customBodyCardComponent}
-                customFooterComponent={
-                    isClrChildCredential ? <VerifiedChildCLRFooter /> : customFooterComponent
-                }
-                subjectDID={subjectDID}
-                subjectImageComponent={subjectImageComponent}
-                issuerImageComponent={issuerImageComponent}
-                customDescription={customDescription}
-                customCriteria={customCriteria}
-                customIssueHistoryComponent={customIssueHistoryComponent}
-                enableLightbox
-                titleOverride={titleOverride}
-                knownDIDRegistry={knownDIDRegistry}
-                handleXClick={isCertificate ? closeModal : undefined}
-                hideIssueDate={hideIssueDate}
-                customRibbonCategoryComponent={<RibbonCategory categoryType={categoryType} />}
-                hideNavButtons
-                setIsFrontOverride={setIsFront}
-                qrCodeOnClick={qrCodeOnClick}
-                hideQRCode={hideQRCode}
-                formattedDisplayType={formattedDisplayType}
-                customLinkedCredentialsComponent={customLinkedCredentialsComponent}
-                customBodyContentSlot={endorsementBadge}
-                onVerifierClick={openCredentialIssuerPopover}
-            />
+            {sharedOriginal && !isBoostCredential(_credential) ? (
+                // Match the normal non-Boost detail view, including its generic VC
+                // title/category/image fallbacks (e.g. a saved LER résumé).
+                <VCDisplayCardWrapper2
+                    credential={credential}
+                    categoryType={categoryType}
+                    skipVerification
+                    verificationItems={verifications}
+                    issueeOverride={issueeOverride}
+                    issuerOverride={issuerOverride}
+                    subjectImageComponent={subjectImageComponent}
+                    issuerImageComponent={issuerImageComponent}
+                    customFooterComponent={customFooterComponent}
+                    customLinkedCredentialsComponent={customLinkedCredentialsComponent}
+                    hideNavButtons
+                    hideQRCode={hideQRCode}
+                    setIsFrontOverride={setIsFront}
+                    enableLightbox
+                />
+            ) : (
+                <VCDisplayCard2
+                    credential={credential}
+                    issueeOverride={issueeOverride}
+                    issuerOverride={issuerOverride}
+                    issueHistory={issueHistory}
+                    categoryType={categoryType}
+                    verificationItems={verifications}
+                    customThumbComponent={customThumbComponent}
+                    customBodyCardComponent={customBodyCardComponent}
+                    customFooterComponent={
+                        isClrChildCredential ? <VerifiedChildCLRFooter /> : customFooterComponent
+                    }
+                    subjectDID={subjectDID}
+                    subjectImageComponent={subjectImageComponent}
+                    issuerImageComponent={issuerImageComponent}
+                    customDescription={customDescription}
+                    customCriteria={customCriteria}
+                    customIssueHistoryComponent={customIssueHistoryComponent}
+                    enableLightbox
+                    titleOverride={titleOverride}
+                    knownDIDRegistry={knownDIDRegistry}
+                    handleXClick={isCertificate ? closeModal : undefined}
+                    hideIssueDate={hideIssueDate}
+                    customRibbonCategoryComponent={<RibbonCategory categoryType={categoryType} />}
+                    hideNavButtons
+                    setIsFrontOverride={setIsFront}
+                    qrCodeOnClick={qrCodeOnClick}
+                    hideQRCode={hideQRCode}
+                    formattedDisplayType={formattedDisplayType}
+                    customLinkedCredentialsComponent={customLinkedCredentialsComponent}
+                    customBodyContentSlot={endorsementBadge}
+                    onVerifierClick={openCredentialIssuerPopover}
+                />
+            )}
         </AccessibleCredentialCard>
     );
 
