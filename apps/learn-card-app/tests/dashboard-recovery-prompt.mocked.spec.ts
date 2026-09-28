@@ -109,7 +109,7 @@ test.describe('Dashboard recovery prompt @mocked', () => {
         await expect(prompt(page)).toHaveCount(0);
 
         await page.goto(`${HARNESS_PATH}?clear=1&passkey=0&count=0&credentials=1`);
-        await expect(page.getByText('Get a recovery phrase')).toBeVisible();
+        await expect(page.getByText('Save a recovery phrase')).toBeVisible();
         await page.getByRole('button', { name: 'Set up a way to sign back in' }).click();
         await expect(page.getByRole('button', { name: 'Generate Recovery Phrase' })).toBeVisible();
     });
