@@ -734,7 +734,8 @@ export const setEscrowBlobByAuthProvider = async (
     authProvider: AuthProviderMapping,
     blob: EscrowBlob,
     expectedShareVersion: number,
-    pin?: { salt: string }
+    pin?: { salt: string },
+    carryFrom?: { blob: EscrowBlob; pin: NonNullable<MongoUserKeyType['escrowPin']> }
 ): Promise<MongoUserKeyType | null> => {
     const now = new Date();
     const parsed = EscrowBlobValidator.safeParse(blob);
@@ -751,21 +752,24 @@ export const setEscrowBlobByAuthProvider = async (
             ...getAuthProviderFilter(authProvider),
             shareVersion: expectedShareVersion,
             escrowOptedOutAt: { $exists: false },
+            ...(carryFrom ? { escrowBlob: carryFrom.blob, escrowPin: carryFrom.pin } : {}),
         },
         [
             {
                 $set: {
                     escrowBlob: { $literal: validated },
-                    escrowPin: pin
-                        ? {
-                              $literal: EscrowPinValidator.parse({
-                                  salt: pin.salt,
-                                  failedAttempts: 0,
-                                  enabledAt: now,
-                                  shareVersion: expectedShareVersion,
-                              }),
-                          }
-                        : '$$REMOVE',
+                    escrowPin: carryFrom
+                        ? { $literal: { ...carryFrom.pin, shareVersion: expectedShareVersion } }
+                        : pin
+                          ? {
+                                $literal: EscrowPinValidator.parse({
+                                    salt: pin.salt,
+                                    failedAttempts: 0,
+                                    enabledAt: now,
+                                    shareVersion: expectedShareVersion,
+                                }),
+                            }
+                          : '$$REMOVE',
                     updatedAt: now,
                     recoveryMethods: {
                         $concatArrays: [

@@ -1052,7 +1052,8 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
     // TODO(escrow): this cannot survive a reload; a cross-login guard needs the
     // server to expose a pending (unconfirmed) escrow record for the current version.
     let unenrolledRotation:
-        { shares: SSSShares; shareVersion: number; primaryDid: string } | undefined;
+        | { shares: SSSShares; shareVersion: number; primaryDid: string; clearPin?: boolean }
+        | undefined;
 
     const escrowRequest = async <T>(
         path: string,
@@ -1150,7 +1151,8 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         shareVersion: number,
         signDidAuthVp?: DidAuthVpSigner,
         verifiedKey?: { publicKey: string; keyId: string },
-        pinMaterial?: { pinSalt: string; pinVerifier: string }
+        pinMaterial?: { pinSalt: string; pinVerifier: string },
+        clearPin = false
     ): Promise<void> => {
         if (!config.escrow?.enabled) throw new Error('Escrow enrollment is disabled');
         if (!signDidAuthVp) throw new Error('DID proof signing is required for escrow enrollment');
@@ -1182,6 +1184,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 shareVersion,
                 enclaveKeyId: keyId,
                 ...(pinMaterial ? { pinSalt: pinMaterial.pinSalt } : {}),
+                ...(clearPin ? { clearPin: true } : {}),
             }),
         });
     };
@@ -1234,8 +1237,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             )
         )
             // Automatic repair preserves current enrollment regardless of PIN status.
-            // Forced rotations cannot preserve a PIN we do not retain: recovery and
-            // email-link rotations drop it, so callers must prompt to set it again.
+            // The enclave can carry an existing verifier when shares rotate.
             return { enrolled: true, changed: false };
         if (!status.primaryDid) throw new Error('Cannot enroll escrow without a primary DID');
         if (!params.signDidAuthVp) {
@@ -1256,7 +1258,10 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 retry.primaryDid,
                 retry.shares,
                 retry.shareVersion,
-                params.signDidAuthVp
+                params.signDidAuthVp,
+                undefined,
+                undefined,
+                retry.clearPin
             );
             unenrolledRotation = undefined;
             return { enrolled: true, changed: true, shareVersion: retry.shareVersion };
@@ -1295,7 +1300,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         };
         unenrolledRotation = pinMaterial
             ? undefined
-            : { shares, shareVersion, primaryDid: status.primaryDid };
+            : { shares, shareVersion, primaryDid: status.primaryDid, clearPin: forceRotate };
         await enrollEscrow(
             params.token,
             params.providerType,
@@ -1305,7 +1310,8 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             shareVersion,
             params.signDidAuthVp,
             verifiedKey,
-            pinMaterial
+            pinMaterial,
+            forceRotate
         );
         unenrolledRotation = undefined;
         return { enrolled: true, changed: true, shareVersion };

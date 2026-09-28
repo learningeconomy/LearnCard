@@ -37,9 +37,17 @@ export interface ReleaseRequest {
 export interface ReleaseResult {
     sealed: EscrowEnvelope;
 }
+export interface CarryPinVerifierInput {
+    sourceEnvelope: EscrowEnvelope;
+    targetEnvelope: EscrowEnvelope;
+    expectedDid: string;
+    sourceShareVersion: number;
+    targetShareVersion: number;
+}
 export interface EscrowEnclave {
     getAttestation(): Promise<EnclaveAttestation>;
     verifyEscrowBlob(input: VerifyEscrowBlobInput): Promise<VerifyEscrowBlobResult>;
+    carryPinVerifier(input: CarryPinVerifierInput): Promise<{ envelope: EscrowEnvelope }>;
     releaseEscrow(input: ReleaseRequest): Promise<ReleaseResult>;
 }
 export class EscrowPolicyError extends Error {

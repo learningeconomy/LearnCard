@@ -602,7 +602,10 @@ describe('escrow strategy', () => {
         expect(version).toBe(3);
         expect(pinSalt).not.toBe(previousSalt);
         expect(blob?.pinVerifier).toBe(await derivePinProof('246802', pinSalt!));
+        calls = [];
         await strategy.clearEscrowPin!(params);
+        const enrollment = calls.find(call => call.path === '/keys/escrow');
+        expect(JSON.parse(String(enrollment?.init?.body))).toMatchObject({ clearPin: true });
         expect(version).toBe(4);
         expect(pinSalt).toBeUndefined();
         expect(blob?.pinVerifier).toBeUndefined();
