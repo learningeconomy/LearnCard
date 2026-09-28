@@ -8,6 +8,7 @@ import { useParams, useLocation } from 'react-router-dom';
 import { IonIcon, IonPage, IonHeader, IonToolbar, IonContent } from '@ionic/react';
 import {
     checkmarkOutline,
+    closeOutline,
     copyOutline,
     documentTextOutline,
     downloadOutline,
@@ -274,7 +275,7 @@ const ShareLinkViewer = () => {
                 <IonToolbar style={{ '--background': 'white' }}>
                     <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between gap-4 text-xs font-medium text-grayscale-600">
                         <a
-                            href="https://learncard.app"
+                            href="/login"
                             aria-label="LearnCard"
                             rel="noreferrer"
                             className="flex items-center gap-2.5 shrink-0 rounded text-grayscale-900 transition-opacity hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
@@ -286,10 +287,20 @@ const ShareLinkViewer = () => {
                             />
                             <LearnCardTextLogo className="w-28 sm:w-40 h-auto" />
                         </a>
-                        <span className="flex items-center gap-2 text-right">
-                            <IonIcon icon={lockClosedOutline} className="shrink-0" />
-                            {m['shareLinks.sharedCredentials']()}
-                        </span>
+                        <div className="flex items-center gap-4">
+                            <span className="hidden sm:flex items-center gap-2 text-right">
+                                <IonIcon icon={lockClosedOutline} className="shrink-0" />
+                                {m['shareLinks.sharedCredentials']()}
+                            </span>
+                            <a
+                                href="/login"
+                                rel="noreferrer"
+                                className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-[20px] border border-grayscale-300 px-4 py-3 text-sm font-medium text-grayscale-700 transition-colors hover:bg-grayscale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
+                            >
+                                <span>{m['shareLinks.close']()}</span>
+                                <IonIcon icon={closeOutline} aria-hidden="true" className="h-4 w-4 shrink-0" />
+                            </a>
+                        </div>
                     </div>
                 </IonToolbar>
             </IonHeader>
