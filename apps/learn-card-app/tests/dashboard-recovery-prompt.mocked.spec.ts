@@ -90,7 +90,12 @@ test.describe('Dashboard recovery prompt @mocked', () => {
         page,
     }) => {
         await page.goto(`${HARNESS_PATH}?clear=1&count=0&credentials=1`);
-        await expect(page.getByText('Use Face ID or Touch ID')).toBeVisible();
+        // The passkey label follows the host platform (Apple/Windows/Android/generic).
+        await expect(
+            page.getByText(
+                /^(Use Face ID or Touch ID|Use Windows Hello|Use fingerprint or face unlock|Use a passkey)$/
+            )
+        ).toBeVisible();
         await page.getByRole('button', { name: 'Set up a way to sign back in' }).press('Enter');
         await expect(page.getByRole('button', { name: 'Set Up Passkey' })).toBeVisible();
         await page.getByRole('button', { name: 'Set Up Passkey' }).click();
