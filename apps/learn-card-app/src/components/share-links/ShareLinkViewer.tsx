@@ -298,7 +298,11 @@ const ShareLinkViewer = () => {
                                 className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-[20px] border border-grayscale-300 px-4 py-3 text-sm font-medium text-grayscale-700 transition-colors hover:bg-grayscale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
                             >
                                 <span>{m['shareLinks.close']()}</span>
-                                <IonIcon icon={closeOutline} aria-hidden="true" className="h-4 w-4 shrink-0" />
+                                <IonIcon
+                                    icon={closeOutline}
+                                    aria-hidden="true"
+                                    className="h-4 w-4 shrink-0"
+                                />
                             </a>
                         </div>
                     </div>
