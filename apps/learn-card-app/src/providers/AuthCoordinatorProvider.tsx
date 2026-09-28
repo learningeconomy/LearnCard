@@ -115,6 +115,8 @@ import {
     countUserConfiguredRecoveryMethods,
     mergeAuthUserIntoCurrentUser,
     shouldResetWalletOnStatus,
+    decidePinPromptAfterReady,
+    type EscrowRecoveryKind,
 } from './authCoordinator.helpers';
 import { getTenantHeaders, getResolvedTenantConfig } from '../config/bootstrapTenantConfig';
 import { createRecoveryPinActions } from './recoveryPinActions';
@@ -471,7 +473,7 @@ const AuthSessionManager: React.FC<{
     const wasNewUserRef = useRef(false);
     // Set when a PIN-based recovery just succeeded, proving the user had a PIN
     // even on a new/forgotten device where the local prompt flag is absent.
-    const recoveredViaEscrowRef = useRef<'pin' | 'hold' | null>(null);
+    const recoveredViaEscrowRef = useRef<EscrowRecoveryKind | null>(null);
 
     // null = recovery method status has not been checked yet
     const [recoveryMethodCount, setRecoveryMethodCount] = useState<number | null>(null);
@@ -576,6 +578,14 @@ const AuthSessionManager: React.FC<{
     const readyEnrollment =
         coordinator.state.status === 'ready' ? coordinator.state.escrowEnrollment : undefined;
 
+    // Identity recovery only completes through the escrow hold, and initialize()
+    // re-derives this status after a reload, unlike the in-memory onRecover signal.
+    useEffect(() => {
+        if (coordinator.state.status === 'identity_recovery_success') {
+            recoveredViaEscrowRef.current = 'hold';
+        }
+    }, [coordinator.state.status]);
+
     // Track whether the user went through needs_setup (new user flow)
     useEffect(() => {
         if (coordinator.state.status === 'needs_setup') {
@@ -600,21 +610,24 @@ const AuthSessionManager: React.FC<{
                 setRecoveryPinSetupReason('first-time');
             }
 
-            if (readyPinEnabled === true) {
+            if (readyPinEnabled === true) recoveredViaEscrowRef.current = null;
+
+            const prompt = decidePinPromptAfterReady({
+                recoveredVia: recoveredViaEscrowRef.current,
+                pinEnabled: readyPinEnabled,
+                enrollment: readyEnrollment,
+                promptFlag: flag,
+            });
+            if (prompt.kind === 'after-recovery') {
+                writeRecoveryPinPromptFlag(did, 'set');
+                setRecoveryPinSetupReason('after-recovery');
                 recoveredViaEscrowRef.current = null;
-            } else if (readyPinEnabled === false) {
-                if (recoveredViaEscrowRef.current === 'pin') {
-                    writeRecoveryPinPromptFlag(did, 'set');
-                    setRecoveryPinSetupReason('after-recovery');
-                    recoveredViaEscrowRef.current = null;
-                } else if (recoveredViaEscrowRef.current === 'hold') {
-                    // Waited out the hold without a PIN: offer instant recovery next time.
-                    // Leave the flag alone so skipping never shows the "PIN was reset" banner.
-                    setRecoveryPinSetupReason('after-hold-recovery');
-                    recoveredViaEscrowRef.current = null;
-                } else if (flag === 'set') {
-                    setShowRecoveryPinReset(true);
-                }
+            } else if (prompt.kind === 'after-hold-recovery') {
+                // No flag write, so skipping never shows the "PIN was reset" banner.
+                setRecoveryPinSetupReason('after-hold-recovery');
+                recoveredViaEscrowRef.current = null;
+            } else if (prompt.kind === 'reset-banner') {
+                setShowRecoveryPinReset(true);
             }
         }
     }, [coordinator.state.status, readyDid, readyPinEnabled, readyEnrollment]);
