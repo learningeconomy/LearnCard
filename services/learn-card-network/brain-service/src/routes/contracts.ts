@@ -77,6 +77,7 @@ import {
 } from '@accesslayer/consentflowcontract/relationships/create';
 import { getProfileByDid, getProfileByProfileId } from '@accesslayer/profile/read';
 import { sendBoost, isDraftBoost } from '@helpers/boost.helpers';
+import { setCredentialSubjectIds } from '@helpers/credentialSubject.helpers';
 import { isRelationshipBlocked } from '@helpers/connection.helpers';
 import { getBoostByUri } from '@accesslayer/boost/read';
 import { canProfileIssueBoost } from '@accesslayer/boost/relationships/read';
@@ -818,17 +819,7 @@ export const contractsRouter = t.router({
                     unsignedVc.issuanceDate = new Date().toISOString();
                 }
                 unsignedVc.issuer = { id: getDidWeb(ctx.domain, profile.profileId) };
-                if (Array.isArray(unsignedVc.credentialSubject)) {
-                    unsignedVc.credentialSubject = unsignedVc.credentialSubject.map(subject => ({
-                        ...subject,
-                        id: getDidWeb(ctx.domain, otherProfile.profileId),
-                    }));
-                } else {
-                    unsignedVc.credentialSubject = {
-                        ...unsignedVc.credentialSubject,
-                        id: getDidWeb(ctx.domain, otherProfile.profileId),
-                    };
-                }
+                setCredentialSubjectIds(unsignedVc, getDidWeb(ctx.domain, otherProfile.profileId));
                 if (unsignedVc?.type?.includes('BoostCredential')) unsignedVc.boostId = boostUri;
                 // Inject OBv3 skill alignments based on boost's framework/skills
                 await injectObv3AlignmentsIntoCredentialForBoost(unsignedVc, boost, ctx.domain);

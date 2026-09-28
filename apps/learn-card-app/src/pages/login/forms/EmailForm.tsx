@@ -1,5 +1,5 @@
 import { walletModeStore } from 'learn-card-base/stores/walletModeStore';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import * as m from '../../../paraglide/messages.js';
 import { TransP } from '../../../i18n/TransP';
 import { useLocale } from '../../../i18n';
@@ -105,6 +105,8 @@ const EmailForm: React.FC<EmailFormProps> = ({
     const [errors, setErrors] = useState<Record<string, string[]>>({});
     const [codeError, setCodeError] = useState<string>('');
     const [isLoading, setIsLoading] = useState(false);
+    const [hasVerificationFailed, setHasVerificationFailed] = useState(false);
+    const [isRateLimited, setIsRateLimited] = useState(false);
 
     const { mutateAsync: sendLoginVerificationCode } = useSendLoginVerificationCode();
     const { mutateAsync: verifyLoginVerificationCode } = useVerifyLoginVerificationCode();
@@ -113,13 +115,23 @@ const EmailForm: React.FC<EmailFormProps> = ({
     const locale = useLocale();
 
     const [isResendCodeLoading, setIsResendCodeLoading] = useState<boolean>(false);
+    const [countdownEndTime, setCountdownEndTime] = useState<number | null>(null);
+    // Key to force remount of code input when clearing
+    const [codeInputKey, setCodeInputKey] = useState<number>(0);
+    // Ref to capture email when entering verification - survives re-renders
+    const capturedEmailRef = useRef<string | null>(null);
 
     useEffect(() => {
         if (shouldVerifyCode && currentStep !== EmailFormStepsEnum.verification) {
             setCurrentStep(EmailFormStepsEnum.verification);
             setShowSocialLogins(false);
+            setCountdownEndTime(Date.now() + 30000);
+            // Capture email from store when entering via URL params
+            if (verificationEmail) {
+                capturedEmailRef.current = verificationEmail;
+            }
         }
-    }, [shouldVerifyCode]);
+    }, [shouldVerifyCode, verificationEmail]);
 
     let activeStep: React.ReactNode | null = null;
     let formTitle: string | React.ReactNode | null = null;
@@ -162,31 +174,70 @@ const EmailForm: React.FC<EmailFormProps> = ({
 
     const handleVerifyCode = async () => {
         if (validateCode()) {
+            // Use captured email from ref, fallback to store
+            const emailToUse = capturedEmailRef.current || verificationEmail;
+            if (!emailToUse) {
+                setCodeError('Session expired. Please go back and enter your email again.');
+                return;
+            }
             try {
                 setCodeError('');
                 setIsLoading(true);
                 const response = await verifyLoginVerificationCode({
-                    email: verificationEmail as string,
+                    email: emailToUse,
                     code: code,
                 });
-                if (response?.token) {
-                    redirectStore.set.email(null);
-                    await signInWithCustomFirebaseToken(response?.token);
+                if (response?.success && response?.token) {
+                    try {
+                        await signInWithCustomFirebaseToken(response?.token);
+
+                        // Clear email state after successful sign-in
+                        redirectStore.set.email(null);
+                        capturedEmailRef.current = null;
+
+                        // Auth succeeded - let LoginPage's auth effect handle redirect
+                        // via SPA navigation (no hard reload)
+                        setIsLoading(false);
+                        return;
+                    } catch (signInError) {
+                        console.error('[handleVerifyCode] Sign-in error:', signInError);
+                        log.error('Sign-in failed:', signInError);
+                        setCodeError('Sign-in failed. Please try again.');
+                        setIsLoading(false);
+                    }
+                    return;
+                } else {
+                    // Verification failed - require manual submit for next attempt
+                    setHasVerificationFailed(true);
+                    // Rate limit errors shown inline, other errors shown via popup
+                    const rateLimited = response?.error?.includes('Too many attempts');
+                    if (rateLimited) {
+                        setIsRateLimited(true);
+                        setCodeError(response?.error || '');
+                    }
                 }
                 setIsLoading(false);
             } catch (e) {
                 setIsLoading(false);
+                setHasVerificationFailed(true);
+                // Network/exception errors still show inline
                 setCodeError(m['login.email.verification.error']());
             }
         }
     };
 
     useEffect(() => {
-        if (currentStep === EmailFormStepsEnum.verification && code.length === 6 && !isLoading) {
-            // auto verify code when 6 digits are entered
+        if (
+            currentStep === EmailFormStepsEnum.verification &&
+            code.length === 6 &&
+            !isLoading &&
+            !hasVerificationFailed
+        ) {
+            // Auto verify code when 6 digits are entered (only on first attempt)
+            // After a failed verification, user must manually click Verify
             handleVerifyCode();
         }
-    }, [code, currentStep]);
+    }, [code, currentStep, hasVerificationFailed]);
 
     const handleDemoLogin = async () => {
         setIsLoading(true);
@@ -269,6 +320,8 @@ const EmailForm: React.FC<EmailFormProps> = ({
                             setIsLoading(true);
                             await sendLoginVerificationCode({ email, locale });
                             redirectStore.set.email(email);
+                            capturedEmailRef.current = email;
+                            setCountdownEndTime(Date.now() + 30000);
                             setCurrentStep(EmailFormStepsEnum.verification);
                             setIsLoading(false);
                         } catch (e) {
@@ -287,8 +340,14 @@ const EmailForm: React.FC<EmailFormProps> = ({
 
     const handleResendCode = async () => {
         setIsResendCodeLoading(true);
+        setCodeError('');
+        setCode('');
+        setCodeInputKey(k => k + 1);
+        setIsRateLimited(false);
+        setHasVerificationFailed(false);
         try {
             await sendLoginVerificationCode({ email: verificationEmail as string, locale });
+            setCountdownEndTime(Date.now() + 30000);
             setIsResendCodeLoading(false);
         } catch (e) {
             setIsResendCodeLoading(false);
@@ -302,12 +361,22 @@ const EmailForm: React.FC<EmailFormProps> = ({
             history.replace(resetRedirectPath);
         }
         redirectStore.set.email(null);
+        capturedEmailRef.current = null;
         setEmail('');
+        setCode('');
+        setCodeError('');
+        setHasVerificationFailed(false);
+        setIsRateLimited(false);
+        setCountdownEndTime(null);
+        setIsLoading(false);
     };
 
     const resendCodeButtonText: string = isResendCodeLoading
         ? m['common.sendingCode']()
         : m['common.resendCode']();
+
+    // Define verification error at component level so it's accessible in return
+    const verificationError = errors?.code?.[0] ?? codeError;
 
     let disabled = isLoading;
     if (currentStep === EmailFormStepsEnum.email) {
@@ -373,7 +442,6 @@ const EmailForm: React.FC<EmailFormProps> = ({
         if (isLoading) buttonTitle = m['common.sendingCode']();
         disabled = !email || isLoading;
     } else if (currentStep === EmailFormStepsEnum.verification) {
-        const verificationError = errors?.code?.[0] ?? codeError;
         formTitle = (
             <TransP
                 m={m['common.enterVerificationCode']}
@@ -391,6 +459,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
         activeStep = (
             <IonCol size="12" className="w-full ion-no-padding ion-no-margin mb-[20px]">
                 <AccessibleCodeInput
+                    key={codeInputKey}
                     name="emailVerification"
                     label={m['common.enterVerificationCode']()}
                     errorId={verificationError ? 'login-email-code-error' : undefined}
@@ -403,19 +472,10 @@ const EmailForm: React.FC<EmailFormProps> = ({
                         verificationCodeInputClassName ?? ''
                     } ${errors.code || codeError ? 'react-code-input-error' : ''}`}
                 />
-                {verificationError && (
-                    <p
-                        id="login-email-code-error"
-                        role="alert"
-                        className="w-full text-center mt-2 text-red-500 font-medium"
-                    >
-                        {verificationError}
-                    </p>
-                )}
             </IonCol>
         );
         buttonTitle = isLoading ? m['common.verifying']() : m['common.verify']();
-        disabled = code?.length < 6 || isLoading;
+        disabled = code?.length < 6 || isLoading || isRateLimited;
     }
 
     return (
@@ -450,12 +510,27 @@ const EmailForm: React.FC<EmailFormProps> = ({
                 </button>
             </div>
             {currentStep === EmailFormStepsEnum.email && <AppStoreDownloadButtons />}
+            {currentStep === EmailFormStepsEnum.verification && verificationError && (
+                <div className="flex items-center justify-center w-full mb-4">
+                    <p
+                        id="login-email-code-error"
+                        role="alert"
+                        className="flex w-fit items-center gap-2 rounded-lg bg-pink-50 px-2 py-1 text-sm font-medium text-red-500"
+                    >
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full border-2 border-red-500 text-xs font-bold">
+                            !
+                        </span>
+                        {verificationError}
+                    </p>
+                </div>
+            )}
             {currentStep === EmailFormStepsEnum.verification && verificationEmail && (
                 <div className="flex items-center justify-center w-full">
                     <Countdown
-                        date={Date.now() + 30000} // 30 seconds
+                        key={countdownEndTime ?? 0}
+                        date={countdownEndTime ?? Date.now()}
                         renderer={({ seconds, completed }) =>
-                            completed ? (
+                            completed || !countdownEndTime ? (
                                 <button
                                     type="button"
                                     onClick={e => {
@@ -465,7 +540,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
                                     }}
                                     className={
                                         resendCodeButtonClassNameOverride ??
-                                        'text-white font-bold mt-4 border-b-white border-solid border-b-[1px]'
+                                        'text-white font-bold border-b-white border-solid border-b-[1px]'
                                     }
                                 >
                                     {resendCodeButtonText}

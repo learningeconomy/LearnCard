@@ -97,6 +97,34 @@ describe('tenantConfigSchema', () => {
         expect(result.storage.provider).toBe('filestack');
     });
 
+    it('validates sample persona contract configuration', () => {
+        const result = tenantConfigSchema.parse({
+            ...DEFAULT_LEARNCARD_TENANT_CONFIG,
+            features: {
+                ...DEFAULT_LEARNCARD_TENANT_CONFIG.features,
+                samplePersonas: [
+                    {
+                        id: 'student',
+                        contractUri: 'lc:network:network.example/trpc:contract:student',
+                    },
+                ],
+                legacySamplePersonaContractUris: [
+                    'lc:network:network.example/trpc:contract:legacy',
+                ],
+            },
+        });
+
+        expect(result.features.samplePersonas).toEqual([
+            {
+                id: 'student',
+                contractUri: 'lc:network:network.example/trpc:contract:student',
+            },
+        ]);
+        expect(result.features.legacySamplePersonaContractUris).toEqual([
+            'lc:network:network.example/trpc:contract:legacy',
+        ]);
+    });
+
     it('accepts S3 storage config and preserves extra fields', () => {
         const withS3Storage = {
             ...DEFAULT_LEARNCARD_TENANT_CONFIG,
