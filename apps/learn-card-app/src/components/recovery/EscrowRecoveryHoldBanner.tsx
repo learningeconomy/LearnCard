@@ -2,42 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { IonIcon } from '@ionic/react';
 import { alertCircleOutline, shieldHalfOutline, checkmarkCircleOutline } from 'ionicons/icons';
 import * as m from '../../paraglide/messages.js';
+import { getLocale } from '../../paraglide/runtime.js';
 
-const getRelativeTime = (dateStr: string, locale: string = 'en') => {
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diffInSeconds = Math.floor((date.getTime() - now.getTime()) / 1000);
+const UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
+    ['year', 31_536_000],
+    ['month', 2_592_000],
+    ['day', 86_400],
+    ['hour', 3_600],
+    ['minute', 60],
+];
 
+const formatRelative = (dateStr: string, locale: string): string => {
+    const seconds = Math.round((new Date(dateStr).getTime() - Date.now()) / 1000);
     const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
-
-    const absDiff = Math.abs(diffInSeconds);
-    if (absDiff < 60) return rtf.format(Math.round(diffInSeconds), 'second');
-    if (absDiff < 3600) return rtf.format(Math.round(diffInSeconds / 60), 'minute');
-    if (absDiff < 86400) return rtf.format(Math.round(diffInSeconds / 3600), 'hour');
-    if (absDiff < 2592000) return rtf.format(Math.round(diffInSeconds / 86400), 'day');
-    if (absDiff < 31536000) return rtf.format(Math.round(diffInSeconds / 2592000), 'month');
-    return rtf.format(Math.round(diffInSeconds / 31536000), 'year');
-};
-
-const getRemainingTime = (dateStr: string, locale: string = 'en') => {
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diffInSeconds = Math.floor((date.getTime() - now.getTime()) / 1000);
-
-    if (diffInSeconds <= 0) return 'soon';
-
-    const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'always', style: 'long' });
-
-    if (diffInSeconds < 60) return rtf.format(diffInSeconds, 'second').replace('in ', '');
-    if (diffInSeconds < 3600)
-        return rtf.format(Math.round(diffInSeconds / 60), 'minute').replace('in ', '');
-    if (diffInSeconds < 86400)
-        return rtf.format(Math.round(diffInSeconds / 3600), 'hour').replace('in ', '');
-    if (diffInSeconds < 2592000)
-        return rtf.format(Math.round(diffInSeconds / 86400), 'day').replace('in ', '');
-    if (diffInSeconds < 31536000)
-        return rtf.format(Math.round(diffInSeconds / 2592000), 'month').replace('in ', '');
-    return rtf.format(Math.round(diffInSeconds / 31536000), 'year').replace('in ', '');
+    const [unit, size] = UNITS.find(([, s]) => Math.abs(seconds) >= s) ?? ['second', 1];
+    return rtf.format(Math.round(seconds / size), unit);
 };
 
 export const EscrowRecoveryHoldBanner = ({
@@ -54,29 +33,34 @@ export const EscrowRecoveryHoldBanner = ({
     const [dismissed, setDismissed] = useState(false);
     const [success, setSuccess] = useState(false);
 
-    // Force re-render every minute to update relative times
+    // Re-render every minute so the relative times stay current.
     const [, setTick] = useState(0);
     useEffect(() => {
-        const interval = setInterval(() => setTick(t => t + 1), 60000);
+        const interval = setInterval(() => setTick(t => t + 1), 60_000);
         return () => clearInterval(interval);
     }, []);
 
+    useEffect(() => {
+        if (!success) return;
+        const timeout = setTimeout(() => setDismissed(true), 2500);
+        return () => clearTimeout(timeout);
+    }, [success]);
+
     if (dismissed) return null;
 
-    // We can use navigator.language or fallback to 'en'
-    const locale = typeof navigator !== 'undefined' ? navigator.language : 'en';
-    const timeAgo = getRelativeTime(requestedAt, locale);
-    const timeRemaining = releaseAfter ? getRemainingTime(releaseAfter, locale) : '';
+    const locale = getLocale();
+    const timeAgo = formatRelative(requestedAt, locale);
+    const releasePending = !!releaseAfter && new Date(releaseAfter).getTime() > Date.now();
 
     return (
         <section
             role="alert"
             aria-labelledby="escrow-hold-title"
             aria-describedby="escrow-hold-desc"
-            className="font-poppins p-5 bg-white/80 backdrop-blur-xl border border-grayscale-200 shadow-lg rounded-[24px] space-y-4 animate-fade-in-up transition-all duration-300 ease-in-out"
+            className="font-poppins p-5 bg-white/80 backdrop-blur-xl border border-grayscale-200 shadow-lg rounded-[24px] space-y-4 animate-fade-in-up motion-reduce:animate-none transition-all duration-300 ease-in-out"
         >
             {success ? (
-                <div className="flex flex-col items-center justify-center py-4 space-y-3 animate-fade-in-up">
+                <div className="flex flex-col items-center justify-center py-4 space-y-3 animate-fade-in-up motion-reduce:animate-none">
                     <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center">
                         <IonIcon
                             icon={checkmarkCircleOutline}
@@ -112,7 +96,11 @@ export const EscrowRecoveryHoldBanner = ({
                                     className="text-xs text-grayscale-500"
                                     title={new Date(releaseAfter).toLocaleString()}
                                 >
-                                    {m['recovery.escrowHold.finishesIn']({ timeRemaining })}
+                                    {releasePending
+                                        ? m['recovery.escrowHold.finishesIn']({
+                                              when: formatRelative(releaseAfter, locale),
+                                          })
+                                        : m['recovery.escrowHold.finishingSoon']()}
                                 </p>
                             )}
                         </div>
@@ -139,9 +127,6 @@ export const EscrowRecoveryHoldBanner = ({
                                 try {
                                     await onCancel();
                                     setSuccess(true);
-                                    setTimeout(() => {
-                                        setDismissed(true);
-                                    }, 2500);
                                 } catch {
                                     setError(true);
                                     setLoading(false);

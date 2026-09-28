@@ -5,12 +5,15 @@ import { EscrowRecoveryHoldBanner } from './EscrowRecoveryHoldBanner';
 
 vi.mock('@ionic/react', () => ({ IonIcon: () => <span /> }));
 
+vi.mock('../../paraglide/runtime.js', () => ({ getLocale: () => 'en' }));
+
 vi.mock('../../paraglide/messages.js', () => ({
     'recovery.escrowHold.title': () => 'Was this you?',
-    'recovery.escrowHold.body': (opts: { timeAgo?: string; timeRemaining?: string }) =>
+    'recovery.escrowHold.body': (opts: { timeAgo: string }) =>
         `Someone started recovering your account ${opts.timeAgo}.`,
-    'recovery.escrowHold.finishesIn': (opts: { timeAgo?: string; timeRemaining?: string }) =>
-        `It finishes in ${opts.timeRemaining} unless you stop it.`,
+    'recovery.escrowHold.finishesIn': (opts: { when: string }) =>
+        `It finishes ${opts.when} unless you stop it.`,
+    'recovery.escrowHold.finishingSoon': () => 'It can finish at any time unless you stop it.',
     'recovery.escrowHold.stop': () => 'Stop recovery',
     'recovery.escrowHold.stopping': () => 'Stopping…',
     'recovery.escrowHold.success': () => 'Recovery stopped. Your account is safe.',
@@ -45,6 +48,20 @@ describe('EscrowRecoveryHoldBanner', () => {
             screen.getByText(/Someone started recovering your account 2 minutes ago/)
         ).toBeInTheDocument();
         expect(screen.getByText(/It finishes in 6 days unless you stop it/)).toBeInTheDocument();
+    });
+
+    it('says recovery can finish at any time once the hold has elapsed', () => {
+        render(
+            <EscrowRecoveryHoldBanner
+                requestedAt={new Date(Date.now() - 8 * 86400000).toISOString()}
+                releaseAfter={new Date(Date.now() - 60000).toISOString()}
+                onCancel={vi.fn()}
+            />
+        );
+
+        expect(
+            screen.getByText('It can finish at any time unless you stop it.')
+        ).toBeInTheDocument();
     });
 
     it('stop flow: loading text, success state, then removal', async () => {

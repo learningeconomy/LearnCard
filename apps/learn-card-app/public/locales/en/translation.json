@@ -2175,7 +2175,8 @@
         "escrowHold": {
             "title": "Was this you?",
             "body": "Someone started recovering your account {{timeAgo}}.",
-            "finishesIn": "It finishes in {{timeRemaining}} unless you stop it.",
+            "finishesIn": "It finishes {{when}} unless you stop it.",
+            "finishingSoon": "It can finish at any time unless you stop it.",
             "stop": "Stop recovery",
             "stopping": "Stopping…",
             "success": "Recovery stopped. Your account is safe.",
