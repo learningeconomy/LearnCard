@@ -5,6 +5,7 @@ import { claimHooksRouter, ClaimHooksRouter } from '@routes/claim-hooks';
 import { profilesRouter, ProfilesRouter } from '@routes/profiles';
 import { profileManagersRouter, ProfileManagersRouter } from '@routes/profile-manager';
 import { credentialsRouter, CredentialsRouter } from '@routes/credentials';
+import { credentialRefreshesRouter, CredentialRefreshesRouter } from '@routes/credential-refreshes';
 import { presentationsRouter, PresentationsRouter } from '@routes/presentations';
 import { storageRouter, StorageRouter } from '@routes/storage';
 import { utilitiesRouter, UtilitiesRouter } from '@routes/utilities';
@@ -23,6 +24,8 @@ import { federationRouter, FederationRouter } from '@routes/federation';
 import { ecosystemsRouter, EcosystemsRouter } from '@routes/ecosystems';
 import { groupsRouter, GroupsRouter } from '@routes/groups';
 import { installIntentsRouter, InstallIntentsRouter } from '@routes/install-intents';
+import { shareLinksRouter, ShareLinksRouter } from '@routes/share-links';
+import { publicShareLinksRouter, PublicShareLinksRouter } from '@routes/public-share-links';
 
 /** For end-to-end testing, only available in test environment */
 import { testRouter, TestRouter } from '@routes/test';
@@ -38,6 +41,7 @@ export const appRouter = t.router<{
     profile: ProfilesRouter;
     profileManager: ProfileManagersRouter;
     credential: CredentialsRouter;
+    credentialRefresh: CredentialRefreshesRouter;
     presentation: PresentationsRouter;
     storage: StorageRouter;
     utilities: UtilitiesRouter;
@@ -56,6 +60,8 @@ export const appRouter = t.router<{
     ecosystem: EcosystemsRouter;
     group: GroupsRouter;
     installIntent: InstallIntentsRouter;
+    shareLinks: ShareLinksRouter;
+    publicShareLinks: PublicShareLinksRouter;
     test?: TestRouter;
     bench?: BenchRouter;
 }>({
@@ -64,6 +70,7 @@ export const appRouter = t.router<{
     profile: profilesRouter,
     profileManager: profileManagersRouter,
     credential: credentialsRouter,
+    credentialRefresh: credentialRefreshesRouter,
     presentation: presentationsRouter,
     storage: storageRouter,
     utilities: utilitiesRouter,
@@ -82,6 +89,8 @@ export const appRouter = t.router<{
     ecosystem: ecosystemsRouter,
     group: groupsRouter,
     installIntent: installIntentsRouter,
+    shareLinks: shareLinksRouter,
+    publicShareLinks: publicShareLinksRouter,
     test: environment.IS_E2E_TEST ? testRouter : undefined,
     bench: environment.ENABLE_BENCH_ROUTES ? benchRouter : undefined,
 });

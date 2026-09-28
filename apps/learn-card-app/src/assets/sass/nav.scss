@@ -70,11 +70,11 @@ ion-tab-bar.lc-footer-nav {
     // the insets there and let the four buttons use the full width, as before.
     @media (min-width: 400px) {
         ion-tab-button:first-child {
-            margin-left: 20px;
+            margin-inline-start: 20px;
         }
 
         ion-tab-button:last-child {
-            margin-right: 40px;
+            margin-inline-end: 40px;
         }
     }
 
@@ -85,7 +85,7 @@ ion-tab-bar.lc-footer-nav {
     // reads as intended, so the rule above wins outside this band.
     @media (min-width: 200px) and (max-width: 400px) {
         ion-tab-button:last-child {
-            margin-right: 20px;
+            margin-inline-end: 20px;
         }
     }
 }

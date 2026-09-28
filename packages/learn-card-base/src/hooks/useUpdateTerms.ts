@@ -14,10 +14,15 @@ export const useUpdateTerms = (termsUri: string, contractOwnerDid: string) => {
             terms: ConsentFlowTerms;
             expiresAt?: string;
             oneTime?: boolean;
+            /** Runs after credential preparation, immediately before submitting terms. */
+            beforeSubmit?: () => Promise<void>;
         }) => {
             const wallet = await initWallet();
 
-            const terms = await getTermsWithSharedUris(_terms);
+            const { beforeSubmit, ...submission } = _terms;
+            const terms = await getTermsWithSharedUris(submission);
+
+            await beforeSubmit?.();
 
             return wallet.invoke.updateContractTerms(termsUri, terms);
         },

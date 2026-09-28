@@ -42,12 +42,6 @@ vi.mock('@capacitor/core', () => ({
     },
 }));
 
-vi.mock('@capacitor-firebase/authentication', () => ({
-    FirebaseAuthentication: {
-        signOut: vi.fn(),
-    },
-}));
-
 // Mock sub-components that have complex dependencies
 vi.mock('./GameFlow/FullScreenGameFlow', () => ({
     __esModule: true,
@@ -66,13 +60,13 @@ vi.mock('./ConsentFlowError', () => ({
 
 // Mock all the heavy dependencies
 vi.mock('@ionic/react', () => ({
-    IonPage: ({ children, className }: any) => (
+    IonPage: ({ children, className }: React.PropsWithChildren<{ className?: string }>) => (
         <div data-testid="ion-page" className={className}>
             {children}
         </div>
     ),
-    IonCol: ({ children }: any) => <div>{children}</div>,
-    IonRow: ({ children }: any) => <div>{children}</div>,
+    IonCol: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
+    IonRow: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
     IonSkeletonText: () => <div data-testid="skeleton" />,
     IonSpinner: () => <div data-testid="spinner" />,
 }));
@@ -135,6 +129,7 @@ vi.mock('@analytics', () => ({
 }));
 
 vi.mock('learn-card-base', () => ({
+    useSignInAdapter: () => ({ signOut: vi.fn() }),
     getLogger: () => ({
         debug: vi.fn(),
         error: vi.fn(),
@@ -146,7 +141,7 @@ vi.mock('learn-card-base', () => ({
     pushUtilities: { revokePushToken: vi.fn() },
     useAuthCoordinator: () => ({ logout: vi.fn(), state: { status: 'idle' } }),
     useSQLiteStorage: () => ({ clearDB: vi.fn(), setCurrentUser: vi.fn() }),
-    useContract: (...args: any[]) => mockFns.useContract(...args),
+    useContract: (...args: unknown[]) => mockFns.useContract(...args),
     redirectStore: { set: { authRedirect: vi.fn() } },
     ModalTypes: { FullScreen: 'fullscreen' },
     UploadTypesEnum: {
@@ -363,8 +358,9 @@ describe('ExternalConsentFlowDoor', () => {
             // (either redirect to returnTo or show appropriate UI)
             await waitFor(() => {
                 // Should NOT navigate to sync-data for already-consented user
-                const syncDataCalls = mockPush.mock.calls.filter((call: any) =>
-                    call[0]?.includes('consent-flow-sync-data')
+                const syncDataCalls = mockPush.mock.calls.filter(
+                    (call: unknown[]) =>
+                        typeof call[0] === 'string' && call[0].includes('consent-flow-sync-data')
                 );
                 expect(syncDataCalls).toHaveLength(0);
             });

@@ -154,6 +154,30 @@ describe('ExchangeAcceptCredentials duplicate handling', () => {
         });
     });
 
+    it('passes the stable inbox id to storage when the claimed credential has no id', async () => {
+        const idless = { ...credential };
+        delete idless.id;
+        mocks.requestDuplicateResolution.mockResolvedValue({ action: 'save', isDuplicate: false });
+        render(
+            <ExchangeAcceptCredentials
+                verifiablePresentation={{ ...presentation, verifiableCredential: [idless] }}
+                inboxDeliveries={[{ id: 'inbox-delivery', credential: idless }]}
+                onAccept={mocks.onAccept}
+                requestDuplicateResolution={mocks.requestDuplicateResolution}
+                isCheckingDuplicate={false}
+            />
+        );
+        fireEvent.click(screen.getByRole('button', { name: 'Claim My Credential' }));
+        await waitFor(() =>
+            expect(mocks.storeAndAddVCToWallet).toHaveBeenCalledWith(
+                idless,
+                expect.objectContaining({ inboxDeliveryId: 'inbox-delivery' }),
+                'LearnCloud',
+                true
+            )
+        );
+    });
+
     it('uses the compact claim loading label while checking for a saved copy', async () => {
         render(
             <ExchangeAcceptCredentials

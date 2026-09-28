@@ -77,9 +77,6 @@ vi.mock('../../components/generic/GenericErrorBoundary', () => ({
     default: ({ children }: React.PropsWithChildren) => <>{children}</>,
 }));
 vi.mock('../../stores/loadingStore', () => ({ useLoadingLine: vi.fn() }));
-vi.mock('../../components/boost/hooks/useBoostModal', () => ({
-    default: () => ({ handlePresentBoostModal: vi.fn() }),
-}));
 vi.mock('../../components/network-prompts/hooks/useLCNGatedAction', () => ({
     default: () => ({ gate: vi.fn() }),
 }));

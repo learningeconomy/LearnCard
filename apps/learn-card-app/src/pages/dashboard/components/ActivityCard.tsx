@@ -1,5 +1,8 @@
 import React, { useMemo } from 'react';
 import moment from 'moment';
+import 'moment/locale/ar';
+import 'moment/locale/es';
+import 'moment/locale/fr';
 import { useHistory } from 'react-router-dom';
 
 import {
@@ -246,7 +249,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
             out.push({
                 key: `notif-${n._id ?? sortMs}-${n.type}`,
                 title: n.message?.title?.trim() || titleForNotificationType(n.type),
-                subtitle: n.sent ? moment(n.sent).fromNow() : undefined,
+                subtitle: n.sent ? moment(n.sent).locale(locale).fromNow() : undefined,
                 imageUrl: senderImage || undefined,
                 timestamp: sortMs,
                 onClick: () => history.push('/notifications'),

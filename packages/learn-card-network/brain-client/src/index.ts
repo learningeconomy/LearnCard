@@ -62,10 +62,6 @@ export const getClient = async (
         }
     };
 
-    // Pre-warm the pool while the caller continues client/plugin setup. Requests
-    // arriving before this settles await the same single-flight refill.
-    void refillChallenges().catch(() => undefined);
-
     const trpc = createTRPCClient<AppRouter>({
         links: [
             callbackLink(async () => {
@@ -133,5 +129,21 @@ export const getApiTokenClient = async (
 
     return trpc;
 };
+
+/** Public routes only: no DID challenges, API tokens, or authority headers. */
+export const getAnonymousClient = (url: string): LCNClient =>
+    createTRPCClient<AppRouter>({
+        links: [
+            httpBatchLink({
+                methodOverride: 'POST',
+                url,
+                maxURLLength: 3072,
+                transformer: {
+                    input: RegExpTransformer,
+                    output: { serialize: o => o, deserialize: o => o },
+                },
+            }),
+        ],
+    });
 
 export default getClient;

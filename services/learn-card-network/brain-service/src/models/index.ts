@@ -27,6 +27,8 @@ import { WorkloadDeployment } from './WorkloadDeployment';
 import { RegistrySubscription } from './RegistrySubscription';
 import { InstallIntentAuditEvent } from './InstallIntentAuditEvent';
 import { ConsentDecisionRecord } from './ConsentDecisionRecord';
+import { CredentialRefresh } from './CredentialRefresh';
+import { ensureCredentialRefreshConstraints } from './credential-refresh-constraints';
 
 void Tenant;
 
@@ -42,6 +44,17 @@ void WorkloadDeployment;
 void RegistrySubscription;
 void InstallIntentAuditEvent;
 void ConsentDecisionRecord;
+
+CredentialRefresh.addRelationships({
+    issuer: { model: Profile, direction: 'in', name: 'ISSUED_REFRESH' },
+    holder: { model: Profile, direction: 'in', name: 'HELD_REFRESH' },
+    root: { model: Credential, direction: 'out', name: 'ROOT' },
+    head: { model: Credential, direction: 'out', name: 'HEAD' },
+});
+
+// (Credential)-[:REFRESHED_TO]->(Credential) version-chain edges are created by the
+// credential-refresh access layer via raw Cypher so version nodes can carry refresh
+// metadata that is intentionally not part of the shared Credential schema.
 
 Credential.addRelationships({
     credentialReceived: {
@@ -168,6 +181,8 @@ const indexQueries = [
     'CREATE INDEX profilemanager_id_idx IF NOT EXISTS FOR (p:ProfileManager) ON (p.id)',
     'CREATE INDEX profile_manager_created_idx IF NOT EXISTS FOR (p:ProfileManager) ON (p.created)',
     'CREATE INDEX role_id_idx IF NOT EXISTS FOR (r:Role) ON (r.id)',
+    'CREATE INDEX inbox_delivery_recipient_idx IF NOT EXISTS FOR (i:InboxCredential) ON (i.deliveryRecipientDid)',
+    'CREATE INDEX inbox_delivery_expires_idx IF NOT EXISTS FOR (i:InboxCredential) ON (i.deliveryExpiresAt)',
     'CREATE INDEX inbox_credential_status_idx IF NOT EXISTS FOR (i:InboxCredential) ON (i.currentStatus)',
     'CREATE INDEX inbox_credential_expires_idx IF NOT EXISTS FOR (i:InboxCredential) ON (i.expiresAt)',
     'CREATE INDEX inbox_credential_created_idx IF NOT EXISTS FOR (i:InboxCredential) ON (i.createdAt)',
@@ -261,6 +276,8 @@ const indexQueries = [
     'CREATE INDEX consent_decision_record_ecosystem_idx IF NOT EXISTS FOR (r:ConsentDecisionRecord) ON (r.ecosystemId)',
     'CREATE INDEX consent_decision_record_subject_idx IF NOT EXISTS FOR (r:ConsentDecisionRecord) ON (r.subjectProfileId)',
     'CREATE INDEX consent_decision_record_timestamp_idx IF NOT EXISTS FOR (r:ConsentDecisionRecord) ON (r.occurredAt)',
+    'CREATE INDEX credential_refresh_credential_id_idx IF NOT EXISTS FOR (r:CredentialRefresh) ON (r.credentialId)',
+    'CREATE INDEX credential_refresh_version_refresh_id_idx IF NOT EXISTS FOR (c:Credential) ON (c.refreshId)',
 ];
 
 const wait = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
@@ -290,7 +307,11 @@ const runIndexQuery = async (query: string): Promise<void> => {
     }
 };
 
-if (shouldCreateIndices)
+if (shouldCreateIndices) {
+    void ensureCredentialRefreshConstraints().catch(err => {
+        console.error('Error creating credential refresh constraints:', err);
+    });
+
     (async function createIndices() {
         try {
             for (const query of indexQueries) {
@@ -302,6 +323,7 @@ if (shouldCreateIndices)
             console.error('Error creating indices:', err);
         }
     })();
+}
 
 export * from './AuthGrant';
 export * from './Role';
@@ -325,6 +347,8 @@ export * from './Integration';
 export * from './AppStoreListing';
 export * from './ListingVersion';
 export * from './CredentialActivity';
+export * from './CredentialRefresh';
+export * from './ShareLink';
 export * from './StatusList';
 export * from './Ecosystem';
 export * from './Group';

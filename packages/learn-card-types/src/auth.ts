@@ -101,6 +101,24 @@ export interface PhoneVerificationHandle {
     _internal?: unknown;
 }
 
+/** Sign-in features available to the UI, independent of the provider name. */
+export interface SignInCapabilities {
+    readonly emailLink: boolean;
+    /** Email OTP is verified by the app's server, then exchanged via customToken. */
+    readonly emailOtp: boolean;
+    readonly phoneOtp: boolean;
+    readonly google: boolean;
+    readonly apple: boolean;
+    readonly social: boolean;
+    readonly customToken: boolean;
+    readonly deleteAccount: boolean;
+}
+
+export interface SocialSignInOptions {
+    /** Restore a session using the existing re-authentication interaction. */
+    intent?: 'signIn' | 'reauthenticate';
+}
+
 /**
  * Abstract sign-in adapter interface.
  *
@@ -118,6 +136,7 @@ export interface PhoneVerificationHandle {
  */
 export interface SignInAdapter {
     readonly providerType: AuthProviderType;
+    readonly capabilities: SignInCapabilities;
 
     // --- Auth state ---
 
@@ -140,6 +159,9 @@ export interface SignInAdapter {
 
     isEmailLink(link: string): boolean;
 
+    /** Authoritative provider check; isEmailLink remains a synchronous hint. */
+    validateEmailLink(link: string): Promise<boolean>;
+
     // --- Phone OTP ---
 
     /**
@@ -153,6 +175,17 @@ export interface SignInAdapter {
      */
     confirmPhoneOtp(handle: PhoneVerificationHandle, code: string | number): Promise<AuthUser>;
 
+    /** Preferred API: confirm the most recent request without exposing SDK state. */
+    confirmPhoneOtp(code: string | number): Promise<AuthUser>;
+
+    /** Fires when a code is ready for entry, on either platform. */
+    onPhoneCodeSent(callback: () => void): () => void;
+
+    /** Auto-retrieved code; call confirmPhoneOtp before starting key derivation. */
+    onPhoneVerificationCompleted(callback: (code: string | undefined) => void): () => void;
+
+    onPhoneVerificationFailed(callback: (error: unknown) => void): () => void;
+
     /**
      * Confirm a phone OTP using a native verificationId (Capacitor auto-verify
      * path).  Falls back to `confirmPhoneOtp` when not implemented.
@@ -161,9 +194,9 @@ export interface SignInAdapter {
 
     // --- OAuth ---
 
-    signInWithGoogle(): Promise<AuthUser>;
+    signInWithGoogle(options?: SocialSignInOptions): Promise<AuthUser>;
 
-    signInWithApple(): Promise<AuthUser>;
+    signInWithApple(options?: SocialSignInOptions): Promise<AuthUser>;
 
     /** Check for a pending OAuth redirect result (e.g. Apple on web). */
     checkRedirectResult?(): Promise<AuthUser | null>;
@@ -178,6 +211,15 @@ export interface SignInAdapter {
     // --- Account management ---
 
     deleteAccount(): Promise<void>;
+
+    /** Update the signed-in user's display profile, when supported. */
+    updateProfile?(profile: {
+        displayName?: string | null;
+        photoUrl?: string | null;
+    }): Promise<void>;
+
+    /** Limit the auth session to this browser tab on a public computer. */
+    setSessionPersistence?(sessionOnly: boolean): Promise<void>;
 
     signOut(): Promise<void>;
 
@@ -346,7 +388,13 @@ export interface KeyDerivationStrategy<
     fetchServerKeyStatus(token: string, providerType: AuthProviderType): Promise<ServerKeyStatus>;
 
     /** Store the remote key component on the server */
-    storeAuthShare(token: string, providerType: AuthProviderType, remoteKey: string, did: string, didAuthVp?: string): Promise<void>;
+    storeAuthShare(
+        token: string,
+        providerType: AuthProviderType,
+        remoteKey: string,
+        did: string,
+        didAuthVp?: string
+    ): Promise<void>;
 
     /** Mark migration complete on the server (optional — only needed for migration-capable strategies) */
     markMigrated?(token: string, providerType: AuthProviderType, didAuthVp?: string): Promise<void>;
@@ -374,7 +422,10 @@ export interface KeyDerivationStrategy<
     }): Promise<TRecoverySetupResult>;
 
     /** Get configured recovery methods for the authenticated user */
-    getAvailableRecoveryMethods?(token: string, providerType: AuthProviderType): Promise<RecoveryMethodInfo[]>;
+    getAvailableRecoveryMethods?(
+        token: string,
+        providerType: AuthProviderType
+    ): Promise<RecoveryMethodInfo[]>;
 
     // --- Contact method management ---
 

@@ -18,6 +18,7 @@ import { useIonModal } from '@ionic/react';
 
 import { VC } from '@learncard/types';
 import { FamilyMembersListTabsEnum } from '../../FamilyCMSMembersList/FamilyCMSMembersList';
+import { getFamilyTitleLabel } from '../../FamilyCMSMemberTitlesForm/FamilyCMSMemberTitlesToggle/familyTitles.helpers';
 
 export const FamilyBoostMembersList: React.FC<{
     credential: VC;
@@ -83,7 +84,7 @@ export const FamilyBoostMembersList: React.FC<{
                             className="profile-thumb-img border-[1px] border-white border-solid  vc-issuee-image h-[40px] w-[40px] rounded-full overflow-hidden mx-[-5px] z-10"
                         >
                             <UserProfilePicture
-                                customContainerClass="flex justify-center items-center w-full h-full rounded-full overflow-hidden text-white font-medium text-2xl mr-3"
+                                customContainerClass="flex justify-center items-center w-full h-full rounded-full overflow-hidden text-white font-medium text-2xl"
                                 customImageClass="flex justify-center items-center w-full h-full rounded-full overflow-hidden object-cover"
                                 user={recipient}
                             />
@@ -93,7 +94,7 @@ export const FamilyBoostMembersList: React.FC<{
                 {totalMembersCount > 5 && (
                     <button
                         onClick={() => threeDotOnClick?.()}
-                        className="ml-1 w-[25px] h-[25px] rounded-full overflow-hidden flex items-center justify-center z-10"
+                        className="ms-1 w-[25px] h-[25px] rounded-full overflow-hidden flex items-center justify-center z-10"
                     >
                         <ThreeDots className="w-[20px] h-auto text-grayscale-900" version="2" />
                     </button>
@@ -149,9 +150,11 @@ export const FamilyBoostMembersList: React.FC<{
                             }`}
                         >
                             {childrenCount}{' '}
-                            {childrenCount === 1
-                                ? dependentTitle?.singular || m['family.members.child']()
-                                : dependentTitle?.plural || m['family.members.children']()}
+                            {getFamilyTitleLabel(
+                                childrenCount === 1
+                                    ? dependentTitle?.singular || m['family.members.child']()
+                                    : dependentTitle?.plural || m['family.members.children']()
+                            )}
                         </button>
                     )}
 
@@ -164,15 +167,17 @@ export const FamilyBoostMembersList: React.FC<{
                         }`}
                     >
                         {guardiansCount}{' '}
-                        {guardiansCount === 1
-                            ? guardianTitle?.singular || m['family.members.guardian']()
-                            : guardianTitle?.plural || m['family.members.guardians']()}
+                        {getFamilyTitleLabel(
+                            guardiansCount === 1
+                                ? guardianTitle?.singular || m['family.members.guardian']()
+                                : guardianTitle?.plural || m['family.members.guardians']()
+                        )}
                     </button>
                 </div>
 
                 <div className="mt-1 w-full">
                     {guardiansAndDependents?.map(user => {
-                        let _familyTitles =
+                        const _familyTitles =
                             user?.type === 'Guardian' ? guardianTitle : dependentTitle;
 
                         return (

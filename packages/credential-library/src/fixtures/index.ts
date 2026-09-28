@@ -23,11 +23,26 @@ import { obv3CourseCompletion } from './obv3/course-completion';
 import { obv3StandaloneFullCourse } from './obv3/standalone-full-course';
 import { obv3K12Diploma } from './obv3/k12-diploma';
 import { obv3EndorsementCredential } from './obv3/endorsement';
+import {
+    obv3StudentAfterschoolProgramMentor,
+    obv3StudentEnvironmentBadge,
+    obv3StudentRockClimbingMentor,
+    obv3StudentParkCleanupHelper,
+} from './obv3/student-sample-badges';
+import { obv3StudentAdditionalCredentials } from './obv3/student-additional-credentials';
+import { obv3RubricAlignedBadge } from './obv3/rubric-aligned-badge';
 
 // CLR v2
 import { clrMinimal } from './clr/minimal';
 import { clrMultiAchievement } from './clr/multi-achievement';
 import { clrUniversityTranscript } from './clr/university-transcript';
+import { clrStudentOfficialAcademicTranscript } from './clr/student-official-academic-transcript';
+import { clrEmploymentRecord } from './clr/employment-record';
+import { clrTrainingProviderRecord } from './clr/training-provider-record';
+import { clrMilitaryTrainingRecord } from './clr/military-training-record';
+import { clrProfessionalOrganizationRecord } from './clr/professional-organization-record';
+import { clrLicensingRegulatoryRecord } from './clr/licensing-regulatory-record';
+import { clrMixedCareerRecord } from './clr/mixed-career-record';
 
 // LearnCard Boosts
 import { boostBasic } from './boost/basic';
@@ -56,6 +71,12 @@ import { vcV2LicenseCredential } from './vc-v2/license-credential';
 import { clrGreatPlainsFull } from './clr/great-plains-full';
 import { clrWestbridgeFull } from './clr/westbridge-full';
 import { clrCompetencyAligned } from './clr/competency-aligned';
+import {
+    clrProvisionalTranscript,
+    buildFinalTranscriptVariant,
+    REFRESH_SERVICE_INLINE_CONTEXT,
+} from './clr/provisional-transcript';
+import { clrDemoIsdDiplomaAssessments } from './clr/demo-isd-diploma-assessments';
 
 // SD-JWT VC
 import { sdJwtVcCourseCompletion } from './sd-jwt-vc/course-completion';
@@ -88,11 +109,24 @@ export const ALL_FIXTURES: LibraryFixture[] = [
     obv3StandaloneFullCourse,
     obv3K12Diploma,
     obv3EndorsementCredential,
+    obv3StudentAfterschoolProgramMentor,
+    obv3StudentEnvironmentBadge,
+    obv3StudentRockClimbingMentor,
+    obv3StudentParkCleanupHelper,
+    ...obv3StudentAdditionalCredentials,
+    obv3RubricAlignedBadge,
 
     // CLR v2
     clrMinimal,
     clrMultiAchievement,
     clrUniversityTranscript,
+    clrStudentOfficialAcademicTranscript,
+    clrEmploymentRecord,
+    clrTrainingProviderRecord,
+    clrMilitaryTrainingRecord,
+    clrProfessionalOrganizationRecord,
+    clrLicensingRegulatoryRecord,
+    clrMixedCareerRecord,
 
     // Boosts
     boostBasic,
@@ -119,6 +153,8 @@ export const ALL_FIXTURES: LibraryFixture[] = [
     clrGreatPlainsFull,
     clrWestbridgeFull,
     clrCompetencyAligned,
+    clrProvisionalTranscript,
+    clrDemoIsdDiplomaAssessments,
 
     // SD-JWT VC
     sdJwtVcCourseCompletion,
@@ -153,7 +189,20 @@ export {
     obv3StandaloneFullCourse,
     obv3K12Diploma,
     obv3EndorsementCredential,
+    obv3StudentAfterschoolProgramMentor,
+    obv3StudentEnvironmentBadge,
+    obv3StudentRockClimbingMentor,
+    obv3StudentParkCleanupHelper,
+    obv3StudentAdditionalCredentials,
+    obv3RubricAlignedBadge,
     clrUniversityTranscript,
+    clrStudentOfficialAcademicTranscript,
+    clrEmploymentRecord,
+    clrTrainingProviderRecord,
+    clrMilitaryTrainingRecord,
+    clrProfessionalOrganizationRecord,
+    clrLicensingRegulatoryRecord,
+    clrMixedCareerRecord,
     boostCommunityAward,
     boostDelegate,
     vcV1AlumniCredential,
@@ -165,5 +214,9 @@ export {
     clrGreatPlainsFull,
     clrWestbridgeFull,
     clrCompetencyAligned,
+    clrProvisionalTranscript,
+    buildFinalTranscriptVariant,
+    REFRESH_SERVICE_INLINE_CONTEXT,
+    clrDemoIsdDiplomaAssessments,
     sdJwtVcCourseCompletion,
 };

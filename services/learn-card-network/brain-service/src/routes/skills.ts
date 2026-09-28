@@ -241,7 +241,7 @@ export const skillsRouter = t.router({
 
                 if (rateCount > SEMANTIC_SEARCH_RATE_LIMIT_PER_MIN) {
                     throw new TRPCError({
-                        code: 'TOO_MANY_REQUESTS' as 'BAD_REQUEST',
+                        code: 'TOO_MANY_REQUESTS',
                         message: `Rate limit exceeded: max ${SEMANTIC_SEARCH_RATE_LIMIT_PER_MIN} semantic searches per minute`,
                     });
                 }

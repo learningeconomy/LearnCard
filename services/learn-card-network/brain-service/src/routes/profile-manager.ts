@@ -19,6 +19,7 @@ import { ProfileManagerType, ProfileManagerValidator } from 'types/profile-manag
 import { getLearnCard } from '@helpers/learnCard.helpers';
 import { assertOrganizationInvariants } from '@helpers/organization.helpers';
 import { createProfile } from '@accesslayer/profile/create';
+import { PublicProfileIdValidator } from '@helpers/profile.helpers';
 import { createManagesRelationship } from '@accesslayer/profile-manager/relationships/create';
 import { deleteManagesRelationship } from '@accesslayer/profile-manager/relationships/delete';
 import { getBoostByUri } from '@accesslayer/boost/read';
@@ -119,7 +120,11 @@ export const profileManagersRouter = t.router({
             },
             requiredScope: 'profileManagers:write',
         })
-        .input(LCNProfileValidator.omit({ did: true }))
+        .input(
+            LCNProfileValidator.omit({ did: true }).extend({
+                profileId: PublicProfileIdValidator,
+            })
+        )
         .output(z.string())
         .mutation(async ({ input, ctx }) => {
             assertOrganizationInvariants(input);

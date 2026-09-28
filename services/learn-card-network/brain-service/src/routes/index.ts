@@ -9,8 +9,9 @@ import { CreateFastifyContextOptions } from '@trpc/server/adapters/fastify';
 import { OpenApiMeta } from 'trpc-to-openapi';
 import jwtDecode from 'jwt-decode';
 import * as Sentry from '@sentry/serverless';
-import { AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX } from '@learncard/types';
+import { ACT_AS_HEADER, AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX } from '@learncard/types';
 import { ContactMethodType } from '@learncard/types';
+import { MAX_SHARE_LINK_REQUEST_BYTES, utf8ByteLength } from '@learncard/types';
 
 import { RegExpTransformer } from '@learncard/helpers';
 import { resolveTenantFromRequest, type ResolvedTenant } from '@learncard/email-templates';
@@ -48,7 +49,11 @@ export type Context = {
         did: string;
         isChallengeValid: boolean;
         scope?: string;
+        isAuthGrant?: boolean;
+        actAsPolicy?: string;
+        onBehalfOf?: string;
     };
+    actAs?: string;
     contactMethod?: ContactMethodType;
     domain: string;
     tenant: ResolvedTenant;
@@ -84,6 +89,14 @@ export const createContext = async (
         | { req: { headers: Map<string, string> } }
 ): Promise<Context> => {
     const event = 'event' in options ? options.event : options.req;
+    const headerEntries =
+        'get' in event.headers
+            ? Array.from(event.headers as Map<string, string>)
+            : Object.entries(event.headers);
+    const rawActAs = headerEntries.find(
+        ([name]) => name.toLowerCase() === ACT_AS_HEADER.toLowerCase()
+    )?.[1];
+    const actAs = Array.isArray(rawActAs) ? rawActAs.join(',') : rawActAs;
     const authHeader =
         'get' in event.headers
             ? (event.headers as Map<string, string>).get('authorization')
@@ -141,6 +154,7 @@ export const createContext = async (
                 if (!challenge)
                     return {
                         user: { did, isChallengeValid: false, scope: AUTH_GRANT_NO_ACCESS_SCOPE },
+                        actAs,
                         domain,
                         tenant,
                         sourceIp,
@@ -148,6 +162,8 @@ export const createContext = async (
 
                 let isChallengeValid = false;
                 let scope = AUTH_GRANT_FULL_ACCESS_SCOPE;
+                let isAuthGrant = false;
+                let actAsPolicy: string | undefined;
 
                 // If the user is using a provisional auth token for a contact method:
                 if (challenge?.includes(CONTACT_METHOD_SESSION_PREFIX)) {
@@ -159,6 +175,7 @@ export const createContext = async (
                         if (!contactMethod) throw new TRPCError({ code: 'NOT_FOUND' });
                         return {
                             contactMethod,
+                            actAs,
                             domain,
                             tenant,
                             sourceIp,
@@ -166,9 +183,14 @@ export const createContext = async (
                     }
                     // If the user is using a real auth grant i.e. an API Token.
                 } else if (challenge?.includes(AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX)) {
-                    const { isChallengeValid: _isChallengeValid, scope: _scope } =
-                        await isAuthGrantChallengeValidForDID(challenge, did);
+                    const {
+                        isChallengeValid: _isChallengeValid,
+                        scope: _scope,
+                        actAs: policy,
+                    } = await isAuthGrantChallengeValidForDID(challenge, did);
 
+                    isAuthGrant = true;
+                    actAsPolicy = policy;
                     isChallengeValid = _isChallengeValid;
                     scope = _scope;
                     // If the user is using a real challenge signed by their private key.
@@ -182,7 +204,8 @@ export const createContext = async (
                 Sentry.setUser({ id: did });
 
                 return {
-                    user: { did, isChallengeValid, scope },
+                    user: { did, isChallengeValid, scope, isAuthGrant, actAsPolicy },
+                    actAs,
                     domain,
                     tenant,
                     _guardianApprovalToken,
@@ -192,17 +215,96 @@ export const createContext = async (
         }
     }
 
-    return { domain, tenant, _guardianApprovalToken, sourceIp };
+    return { domain, tenant, _guardianApprovalToken, sourceIp, actAs };
 };
 
-export const openRoute = t.procedure
-    .use(t.middleware(Sentry.Handlers.trpcMiddleware({ attachRpcInput: true }) as any))
-    .use(({ ctx, next, path }) => {
-        Sentry.configureScope(scope => {
-            scope.setTransactionName(`trpc-${path}`);
-        });
-        return next({ ctx });
+const sentryTransactionNameMiddleware = t.middleware(({ ctx, next, path }) => {
+    Sentry.configureScope(scope => {
+        scope.setTransactionName(`trpc-${path}`);
     });
+    return next({ ctx });
+});
+
+// Sentry's tRPC middleware type predates this repo's generic context. Cast
+// through the tRPC builder's expected parameter type instead of `any`.
+type SentryTrpcMiddleware = Parameters<typeof t.middleware>[0];
+
+const sentryInputCaptureMiddleware = Sentry.Handlers.trpcMiddleware({
+    attachRpcInput: true,
+}) as unknown as SentryTrpcMiddleware;
+
+const sentryNoInputCaptureMiddleware = Sentry.Handlers.trpcMiddleware({
+    attachRpcInput: false,
+}) as unknown as SentryTrpcMiddleware;
+
+/**
+ * Complete-request byte bound for owner share-link routes, enforced on the RAW
+ * input before Zod parsing/stripping. Individual field validators cannot bound a
+ * request whose unknown or duplicate fields are stripped first, so this measures
+ * the whole serialized body (UTF-8) and fails closed over the shared 1 MiB cap.
+ *
+ * It is composed into the base so it runs before authentication and before any
+ * input parser, and can never be skipped by a malformed or unauthenticated call.
+ */
+const enforceShareLinkRequestByteBound = t.middleware(async ({ ctx, next, getRawInput }) => {
+    const raw = await getRawInput();
+
+    let bytes: number;
+    if (raw === undefined || raw === null) {
+        bytes = 0;
+    } else if (typeof raw === 'string') {
+        bytes = utf8ByteLength(raw);
+    } else {
+        let serialized: string;
+        try {
+            serialized = JSON.stringify(raw);
+        } catch {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: 'invalid share-link request' });
+        }
+        bytes = utf8ByteLength(serialized);
+    }
+
+    if (bytes > MAX_SHARE_LINK_REQUEST_BYTES) {
+        throw new TRPCError({
+            code: 'PAYLOAD_TOO_LARGE',
+            message: 'share-link request exceeds the 1 MiB limit',
+        });
+    }
+
+    return next({ ctx });
+});
+
+export const openRoute = t.procedure
+    .use(t.middleware(sentryInputCaptureMiddleware))
+    .use(sentryTransactionNameMiddleware);
+
+/**
+ * LC-2187 public share-link paths must never be cached by an intermediary or a
+ * browser. tRPC has no per-procedure header API, so the actual HTTP adapters
+ * (Fastify and Lambda, both tRPC and OpenAPI) apply `Cache-Control` from the
+ * resolved procedure path through this single helper.
+ */
+export const PUBLIC_SHARE_LINK_ROUTE_PREFIX = 'publicShareLinks.';
+
+export const publicShareLinkCacheControlHeaders = (
+    paths: readonly string[] | undefined
+): Record<string, string> =>
+    (paths ?? []).some(path => path.startsWith(PUBLIC_SHARE_LINK_ROUTE_PREFIX))
+        ? { 'Cache-Control': 'private, no-store' }
+        : {};
+
+/**
+ * Route base for procedures whose input carries owner-private material (titles,
+ * notes, ciphertext envelopes, recovery JWEs) and whose error paths must not
+ * attach raw request bodies to Sentry. It runs the same Sentry error/transaction
+ * handling but with input attachment disabled, so no branch — malformed,
+ * unauthenticated or failing — can capture the payload, and it enforces the
+ * complete-request byte bound before input parsing.
+ */
+export const openRouteWithoutInputCapture = t.procedure
+    .use(t.middleware(sentryNoInputCaptureMiddleware))
+    .use(sentryTransactionNameMiddleware)
+    .use(enforceShareLinkRequestByteBound);
 
 export const resolveProfileFromContextDid = async (
     didFromContext: string | undefined,
@@ -245,23 +347,82 @@ export const resolveProfileFromContextDid = async (
     return getProfileByDid(did);
 };
 
-export const didRoute = openRoute.use(async ({ ctx, next }) => {
-    if (!ctx.user?.did) {
-        throw new TRPCError({ code: 'UNAUTHORIZED' });
+type ActingUser = NonNullable<Context['user']> & { profile: ProfileType | null };
+
+const resolveActAs = async (
+    user: ActingUser,
+    actAs: string | undefined,
+    domain: string
+): Promise<ActingUser> => {
+    const requested = actAs?.trim();
+    if (!requested) return user;
+
+    const { profile } = user;
+    const prefix = `did:web:${domain}:users:`;
+    const profileId = requested.startsWith(prefix) ? requested.slice(prefix.length) : requested;
+    if (!profileId || /[:/?#]/.test(profileId)) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid act-as profile identifier' });
     }
 
-    const profile = await resolveProfileFromContextDid(ctx.user.did, ctx.domain);
+    // Two DB lookups per request when the act-as header is present (target profile,
+    // then its managers) — acceptable at backend issuance volume; not worth caching.
+    const target = await getProfileByProfileId(profileId);
+    if (!target)
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Act-as target profile not found' });
 
-    if (profile) Sentry.setUser({ id: profile.profileId, username: profile.displayName });
+    const managers = await getProfilesThatManageAProfile(target.profileId);
+    if (!profile || !managers.some(manager => manager.profileId === profile.profileId)) {
+        throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: `You do not manage profile "${profileId}".`,
+        });
+    }
 
-    return next({ ctx: { ...ctx, user: { ...ctx.user, profile } } });
-});
+    const policy = user.actAsPolicy;
+    const permitted =
+        policy === '*' ||
+        policy
+            ?.split(',')
+            .map(id => id.trim())
+            .includes(target.profileId);
+    if (user.isAuthGrant && !permitted) {
+        throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: `This API token may not act as "${profileId}". Grant actAs on the token.`,
+        });
+    }
 
-export const didAndChallengeRoute = didRoute.use(({ ctx, next }) => {
-    if (!ctx.user?.isChallengeValid) throw new TRPCError({ code: 'UNAUTHORIZED' });
+    Sentry.setUser({ id: target.profileId, username: target.displayName });
+    return { ...user, profile: target, did: target.did, onBehalfOf: profile.profileId };
+};
 
-    return next({ ctx: { ...ctx, user: ctx.user } });
-});
+const withDid = (base: typeof openRoute) =>
+    base.use(async ({ ctx, next }) => {
+        if (!ctx.user?.did) {
+            throw new TRPCError({ code: 'UNAUTHORIZED' });
+        }
+
+        const profile = await resolveProfileFromContextDid(ctx.user.did, ctx.domain);
+
+        if (profile) Sentry.setUser({ id: profile.profileId, username: profile.displayName });
+
+        const user = ctx.user.isChallengeValid
+            ? await resolveActAs({ ...ctx.user, profile }, ctx.actAs, ctx.domain)
+            : { ...ctx.user, profile };
+
+        return next({ ctx: { ...ctx, user } });
+    });
+
+export const didRoute = withDid(openRoute);
+
+const withChallenge = (base: typeof didRoute) =>
+    base.use(({ ctx, next }) => {
+        if (!ctx.user?.isChallengeValid) throw new TRPCError({ code: 'UNAUTHORIZED' });
+
+        return next({ ctx: { ...ctx, user: ctx.user } });
+    });
+
+export const didAndChallengeRoute = withChallenge(didRoute);
 
 // Service-to-service caller: a challenge-fresh DID-Auth VP whose holder is on the exact
 // AUTHORIZED_SERVICE_DIDS allowlist. Used by trusted backends (e.g. console-bff) for narrow
@@ -312,33 +473,41 @@ export const openProfileRoute = didRoute.use(async ({ ctx, next }) => {
     return next({ ctx: { ...ctx, user: { ...ctx.user, profile } } });
 });
 
-export const profileRoute = didAndChallengeRoute.use(async ({ ctx, next, meta }) => {
-    const { profile } = ctx.user;
+const withProfile = (base: typeof didAndChallengeRoute) =>
+    base.use(async ({ ctx, next, meta }) => {
+        const { profile } = ctx.user;
 
-    if (!profile) {
-        throw new TRPCError({
-            code: 'NOT_FOUND',
-            message: 'Profile not found. Please make a profile!',
-        });
-    }
+        if (!profile) {
+            throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: 'Profile not found. Please make a profile!',
+            });
+        }
 
-    if (!meta?.requiredScope) {
+        if (!meta?.requiredScope) {
+            return next({ ctx: { ...ctx, user: { ...ctx.user, profile } } });
+        }
+
+        const userScope = ctx.user?.scope || AUTH_GRANT_NO_ACCESS_SCOPE;
+
+        const hasRequiredScope = userHasRequiredScopes(userScope, meta.requiredScope);
+
+        if (!hasRequiredScope) {
+            throw new TRPCError({
+                code: 'UNAUTHORIZED',
+                message: `This operation requires ${meta.requiredScope} scope`,
+            });
+        }
+
         return next({ ctx: { ...ctx, user: { ...ctx.user, profile } } });
-    }
+    });
 
-    const userScope = ctx.user?.scope || AUTH_GRANT_NO_ACCESS_SCOPE;
+export const profileRoute = withProfile(didAndChallengeRoute);
 
-    const hasRequiredScope = userHasRequiredScopes(userScope, meta.requiredScope);
-
-    if (!hasRequiredScope) {
-        throw new TRPCError({
-            code: 'UNAUTHORIZED',
-            message: `This operation requires ${meta.requiredScope} scope`,
-        });
-    }
-
-    return next({ ctx: { ...ctx, user: { ...ctx.user, profile } } });
-});
+/** Same auth chain, composed on a base that never attaches private RPC input to Sentry. */
+export const didRouteWithoutInputCapture = withDid(openRouteWithoutInputCapture);
+export const didAndChallengeRouteWithoutInputCapture = withChallenge(didRouteWithoutInputCapture);
+export const profileRouteWithoutInputCapture = withProfile(didAndChallengeRouteWithoutInputCapture);
 
 export const openProfileManagerRoute = openRoute.use(async ({ ctx, next }) => {
     if (!ctx.user?.did) throw new TRPCError({ code: 'UNAUTHORIZED' });
@@ -390,99 +559,100 @@ export const verifiedContactRoute = openRoute.use(async ({ ctx, next }) => {
 export type GuardianApprovalToken = {
     iss: string;
     sub: string;
-    iat: number;
+    iat?: number;
     exp: number;
     scope: string;
 };
 
+// Match the existing guardian UI's five-minute approval window.
+const GUARDIAN_APPROVAL_MAX_TTL_SECONDS = 5 * 60;
+const GUARDIAN_APPROVAL_CLOCK_SKEW_SECONDS = 60;
+
 export const guardianGatedRoute = profileRoute.use(async ({ ctx, next }) => {
     const { profile } = ctx.user;
     const guardianApprovalToken = ctx._guardianApprovalToken;
-
     const isChildAccount = await isProfileManaged(profile.profileId);
+    let guardianIdentity: { profileId: string; did: string } | undefined;
 
-    if (!isChildAccount) {
-        return next({
-            ctx: { ...ctx, isChildAccount: false, hasGuardianApproval: false },
-        });
-    }
-
-    if (!guardianApprovalToken) {
-        return next({
-            ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false },
-        });
-    }
-
-    try {
-        const learnCard = await getEmptyLearnCard();
-
-        const result = await learnCard.invoke.verifyPresentation(guardianApprovalToken, {
-            proofFormat: 'jwt',
-        });
-
-        if (result.errors.length > 0 || !result.checks.includes('JWS')) {
-            return next({
-                ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false },
-            });
-        }
-
-        const jwtPayload = jwtDecode<{ vp?: { proof?: { challenge?: string } }; nonce?: string }>(
-            guardianApprovalToken
-        );
-
-        const challengeStr = jwtPayload.vp?.proof?.challenge ?? jwtPayload.nonce;
-        if (!challengeStr) {
-            return next({
-                ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false },
-            });
-        }
-
-        let guardianClaims: GuardianApprovalToken;
+    if (isChildAccount && guardianApprovalToken) {
         try {
-            guardianClaims = JSON.parse(challengeStr);
+            const learnCard = await getEmptyLearnCard();
+            const result = await learnCard.invoke.verifyPresentation(guardianApprovalToken, {
+                proofFormat: 'jwt',
+            });
+
+            // Verifier warnings are advisory; errors and a missing JWS check are fatal.
+            // Identity and current manager authorization are checked independently below.
+            if (result.errors.length === 0 && result.checks.includes('JWS')) {
+                const jwtHeader = jwtDecode<{ kid?: string }>(guardianApprovalToken, {
+                    header: true,
+                });
+                const jwtPayload = jwtDecode<{
+                    iss?: string;
+                    vp?: { holder?: string; proof?: { challenge?: string } };
+                    nonce?: string;
+                }>(guardianApprovalToken);
+                const challenge = jwtPayload.vp?.proof?.challenge ?? jwtPayload.nonce;
+                const claims: GuardianApprovalToken | null =
+                    typeof challenge === 'string' ? JSON.parse(challenge) : null;
+                const now = Date.now() / 1000;
+                const signerDid =
+                    typeof jwtHeader.kid === 'string' ? jwtHeader.kid.split('#')[0] : undefined;
+
+                // Verification proves the key's signature; bind every identity claim to that key.
+                // Older clients omit iat. Allow clock skew without extending the signed lifetime
+                // or accepting a token whose actual expiry has passed.
+                if (
+                    claims &&
+                    signerDid &&
+                    jwtPayload.iss === signerDid &&
+                    jwtPayload.vp?.holder === signerDid &&
+                    claims.iss === signerDid &&
+                    typeof claims.exp === 'number' &&
+                    Number.isFinite(claims.exp) &&
+                    claims.exp > now &&
+                    claims.exp <=
+                        now +
+                            GUARDIAN_APPROVAL_MAX_TTL_SECONDS +
+                            GUARDIAN_APPROVAL_CLOCK_SKEW_SECONDS &&
+                    (claims.iat === undefined ||
+                        (typeof claims.iat === 'number' &&
+                            Number.isFinite(claims.iat) &&
+                            claims.iat <= now + GUARDIAN_APPROVAL_CLOCK_SKEW_SECONDS &&
+                            claims.exp > claims.iat &&
+                            claims.exp - claims.iat <= GUARDIAN_APPROVAL_MAX_TTL_SECONDS)) &&
+                    claims.scope === 'guardian-approval' &&
+                    claims.sub === getDidWeb(ctx.domain, profile.profileId)
+                ) {
+                    const managers = await getProfilesThatManageAProfile(profile.profileId);
+                    const guardian = managers.find(
+                        manager =>
+                            signerDid === manager.did ||
+                            signerDid === getDidWeb(ctx.domain, manager.profileId)
+                    );
+                    if (guardian) {
+                        guardianIdentity = { profileId: guardian.profileId, did: signerDid };
+                    } else {
+                        console.warn('guardian_approval: unauthorized_manager');
+                    }
+                } else {
+                    console.warn('guardian_approval: invalid_claims');
+                }
+            } else {
+                console.warn('guardian_approval: verification_failed');
+            }
         } catch {
-            return next({
-                ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false },
-            });
+            // Malformed or unverifiable presentations never authorize a guardian-only mutation.
+            console.warn('guardian_approval: malformed_or_unverifiable');
         }
-
-        if (!guardianClaims.exp || guardianClaims.exp * 1000 < Date.now()) {
-            return next({
-                ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false },
-            });
-        }
-
-        if (guardianClaims.scope !== 'guardian-approval') {
-            return next({
-                ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false },
-            });
-        }
-
-        const childDidWeb = getDidWeb(ctx.domain, profile.profileId);
-        if (guardianClaims.sub !== childDidWeb) {
-            return next({
-                ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false },
-            });
-        }
-
-        const managers = await getProfilesThatManageAProfile(profile.profileId);
-        const guardianProfile = managers.find(manager => {
-            const managerDidWeb = getDidWeb(ctx.domain, manager.profileId);
-            return guardianClaims.iss === managerDidWeb || guardianClaims.iss === manager.did;
-        });
-
-        if (!guardianProfile) {
-            return next({
-                ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false },
-            });
-        }
-
-        return next({
-            ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: true },
-        });
-    } catch {
-        return next({
-            ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false },
-        });
     }
+
+    return next({
+        ctx: {
+            ...ctx,
+            isChildAccount,
+            hasGuardianApproval: guardianIdentity !== undefined,
+            guardianIdentity,
+        },
+    });
 });

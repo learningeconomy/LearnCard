@@ -110,10 +110,9 @@ export const markInboxClaimTokenAsUsed = async (token: string): Promise<boolean>
 
 export const generateClaimUrl = (token: string): string => {
     const domainName = environment.CLIENT_APP_DOMAIN_NAME;
-    const domain =
-        !domainName || environment.IS_OFFLINE
-            ? `localhost:${environment.PORT || 3000}`
-            : domainName;
+    // Claim links open the frontend, not the brain-service HTTP port. Honor an
+    // explicitly configured app domain in local development as well.
+    const domain = domainName || `localhost:${environment.CLIENT_APP_PORT || 3000}`;
 
     const protocol = environment.IS_OFFLINE ? 'http' : 'https';
 

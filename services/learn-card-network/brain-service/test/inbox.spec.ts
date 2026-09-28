@@ -7,6 +7,7 @@ import {
     LCNNotificationTypeEnumValidator,
     VC,
     VP,
+    JWE,
 } from '@learncard/types';
 import { sendSpy, addNotificationToQueueSpy } from './helpers/spies';
 import * as notifications from '@helpers/notifications.helpers';
@@ -23,6 +24,15 @@ let userC: Awaited<ReturnType<typeof getUser>>;
 
 vi.mock('@services/delivery/delivery.factory', () => ({
     getDeliveryService: () => ({ send: sendSpy }),
+}));
+
+// Each phone-delivery test explicitly opts its issuer into the trusted fixture registry.
+vi.mock('@services/registry/registry.factory', () => ({
+    getRegistryService: () => ({
+        isTrusted: async (did: string) =>
+            (process.env.TRUSTED_ISSUERS_WHITELIST ?? '').split(',').includes(did),
+        getIssuer: async () => null,
+    }),
 }));
 
 const getExchangeIdFromClaimUrl = (claimUrl: string | undefined) => {
@@ -203,6 +213,12 @@ describe('Universal Inbox', () => {
                 credential: vc,
                 recipient: { type: 'email', value: 'userA@test.com' },
             });
+
+            const storedBeforeClaim = (await InboxCredential.findMany({ where: {} })).find(
+                record => record.id === inboxCredential.issuanceId
+            );
+            expect(storedBeforeClaim?.credential).toMatch(/^lc-inbox-jwe:v1:/);
+            expect(storedBeforeClaim?.credential).not.toContain('Test Credential');
             expect(inboxCredential.claimUrl).not.toBeNull();
             expect(inboxCredential.claimUrl).toContain('/interactions/inbox-claim');
             expect(inboxCredential.claimUrl).toContain('?iuv=1');
@@ -925,6 +941,12 @@ describe('Universal Inbox', () => {
                 exchangePresentationResponse?.verifiablePresentation?.verifiableCredential?.[0]
             ).toMatchObject(vc);
 
+            const storedAfterClaim = (await InboxCredential.findMany({ where: {} })).find(
+                record => record.id === inboxCredential.issuanceId
+            );
+            expect(storedAfterClaim?.currentStatus).toBe('ISSUED');
+            expect(storedAfterClaim?.credential).toBeUndefined();
+
             const [claimerPrompts, senderPrompts, claimer, sender] = await Promise.all([
                 userB.clients.fullAuth.profile.pendingConnectionPrompts(),
                 userA.clients.fullAuth.profile.pendingConnectionPrompts(),
@@ -1134,7 +1156,7 @@ describe('Universal Inbox', () => {
                 recipient: { type: 'email', value: 'did-only@test.com' },
             });
 
-            await expect(claimFromInboxUrl(userB, secondIssue.claimUrl)).resolves.toHaveLength(2);
+            await expect(claimFromInboxUrl(userB, secondIssue.claimUrl)).resolves.toHaveLength(1);
             await expect(
                 userB.clients.fullAuth.profile.pendingConnectionPrompts()
             ).resolves.toMatchObject([
@@ -1523,10 +1545,12 @@ describe('Universal Inbox', () => {
             });
 
             // User C attempts to claim second credential
-            await userC.clients.fullAuth.workflows.participateInExchange({
-                localWorkflowId: 'inbox-claim',
-                localExchangeId: localExchangeId2,
-            });
+            await expect(
+                userC.clients.fullAuth.workflows.participateInExchange({
+                    localWorkflowId: 'inbox-claim',
+                    localExchangeId: localExchangeId2,
+                })
+            ).rejects.toMatchObject({ code: 'NOT_FOUND' });
 
             const userCContactMethods =
                 await userC.clients.fullAuth.contactMethods.getMyContactMethods();
@@ -1592,11 +1616,13 @@ describe('Universal Inbox', () => {
             }
             const receivedCred = (await userB.clients.fullAuth.storage.resolve({
                 uri: incomingCredentials?.[0].uri,
-            })) as VC;
+            })) as JWE;
             if (!receivedCred) {
                 throw new Error('Received credential is undefined');
             }
-            expect(receivedCred?.name).toBe('Delivered Straight to Wallet');
+            expect(receivedCred).toHaveProperty('ciphertext');
+            const decrypted = await userB.learnCard.invoke.decryptDagJwe<VC>(receivedCred as JWE);
+            expect(decrypted.name).toBe('Delivered Straight to Wallet');
         });
 
         it('should not route credentials to the profile if the recipient exists with a unverified email contact method', async () => {
@@ -1671,11 +1697,13 @@ describe('Universal Inbox', () => {
             }
             const receivedCred2 = (await userB.clients.fullAuth.storage.resolve({
                 uri: incomingCredentials2?.[0].uri,
-            })) as VC;
+            })) as JWE;
             if (!receivedCred2) {
                 throw new Error('Received credential is undefined');
             }
-            expect(receivedCred2?.name).toBe('Delivered Straight to Wallet');
+            expect(receivedCred2).toHaveProperty('ciphertext');
+            const decrypted = await userB.learnCard.invoke.decryptDagJwe<VC>(receivedCred2 as JWE);
+            expect(decrypted.name).toBe('Delivered Straight to Wallet');
         });
     });
 
@@ -1842,12 +1870,12 @@ describe('Universal Inbox', () => {
                 },
                 properties: {
                     name: 'example',
-                    did: await (userA.learnCard as any).id.did('key'),
+                    did: await userA.learnCard.id.did('key'),
                 },
             });
             // Issue two unsigned credentials to userA@test.com with signingAuthority metadata
-            const vc1 = await (userA.learnCard as any).invoke.getTestVc();
-            const vc2 = await (userA.learnCard as any).invoke.getTestVc();
+            const vc1 = await userA.learnCard.invoke.getTestVc();
+            const vc2 = await userA.learnCard.invoke.getTestVc();
             const inboxCredential1 = await userA.clients.fullAuth.inbox.issue({
                 credential: vc1,
                 recipient: { type: 'email', value: 'userA@test.com' },
@@ -1962,12 +1990,8 @@ describe('Universal Inbox', () => {
             ]);
             addNotificationToQueueSpy.mockClear();
 
-            await updateInboxCredential(firstIssue.issuanceId, {
-                currentStatus: 'PENDING',
-                isAccepted: true,
-            });
             await expect(userB.clients.fullAuth.inbox.finalize({})).resolves.toMatchObject({
-                claimed: 1,
+                claimed: 0,
                 errors: 0,
             });
             expect(await userB.clients.fullAuth.profile.pendingConnectionPrompts()).toHaveLength(0);
@@ -2166,7 +2190,7 @@ describe('Universal Inbox', () => {
             await expect(
                 userA.clients.fullAuth.inbox.issue({
                     recipient: { type: 'email', value: 'test@test.com' },
-                } as any)
+                } as never)
             ).rejects.toThrow();
         });
 

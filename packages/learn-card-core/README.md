@@ -13,6 +13,8 @@ The LearnCard Wallet SDK is a pluggable, open-source, universal digital wallet t
 All LearnCard documentation can be found at:
 https://docs.learncard.com
 
+To extend the SDK, see [Build a Plugin](PLUGINS.md).
+
 ## Install
 
 ```bash

@@ -1,3 +1,4 @@
+import { isSharePrivateSession } from '../components/share-links/sharePrivacy';
 /**
  * Shared event context — enforced properties attached to EVERY analytics
  * event (product analytics hygiene, LC funnel taxonomy).
@@ -15,7 +16,7 @@
 import { Capacitor } from '@capacitor/core';
 import type { TenantConfig } from 'learn-card-base';
 
-import { getResolvedTenantConfig } from '../config/bootstrapTenantConfig';
+import { getResolvedTenantConfig } from '../config/tenantConfigState';
 import { environment } from '../config/environment';
 
 export type AnalyticsEnvironment = 'production' | 'staging' | 'preview' | 'development' | 'test';
@@ -120,7 +121,8 @@ export const detectAnalyticsEnvironment = (): AnalyticsEnvironment => {
  * humans on staging/preview still send events (tagged with
  * `environment`) so pre-release QA remains observable.
  */
-export const shouldDropEvents = (): boolean => detectAnalyticsEnvironment() === 'test';
+export const shouldDropEvents = (): boolean =>
+    isSharePrivateSession() || detectAnalyticsEnvironment() === 'test';
 
 const getPlatform = (): SharedEventContext['platform'] => {
     const platform = Capacitor.getPlatform();

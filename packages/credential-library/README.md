@@ -251,7 +251,7 @@ See the [Credential Viewer README](../../examples/credential-viewer/README.md) f
 -   `vc-v2/membership-credential` — Professional association membership
 -   `vc-v2/license-credential` — Professional nursing license
 
-### Open Badges v3 (11)
+### Open Badges v3 (12)
 
 -   `obv3/minimal-badge` — Minimal OBv3 achievement credential
 -   `obv3/full-badge` — Full-featured badge with image, evidence, alignment, results, expiration
@@ -264,6 +264,7 @@ See the [Credential Viewer README](../../examples/credential-viewer/README.md) f
 -   `obv3/course-completion` — Introduction to Machine Learning course completion
 -   `obv3/k12-diploma` — High school diploma
 -   `obv3/endorsement-credential` — Program accreditation endorsement
+-   `obv3/rubric-aligned-badge` — Open Skills Alignment result with rubric levels and CTDL alignment
 
 ### CLR v2 (4)
 

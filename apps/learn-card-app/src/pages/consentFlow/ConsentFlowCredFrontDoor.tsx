@@ -31,7 +31,7 @@ const ConsentFlowCredFrontDoor: React.FC<ConsentFlowCredFrontDoorProps> = ({
     isPreview,
 }) => {
     const history = useHistory();
-    const currentUser = useCurrentUser()!!!!!!!!!;
+    const currentUser = useCurrentUser()!;
     const { currentLCNUser } = useGetCurrentLCNUser();
     const { newModal, closeModal } = useModal();
 
@@ -79,7 +79,7 @@ const ConsentFlowCredFrontDoor: React.FC<ConsentFlowCredFrontDoorProps> = ({
         );
     };
 
-    const handleAccept = async (terms?: ConsentFlowTerms) => {
+    const handleAccept = async (terms?: ConsentFlowTerms, beforeSubmit?: () => Promise<void>) => {
         setIsLoading(true);
         setIsSyncingCredentials(false);
         try {
@@ -88,6 +88,7 @@ const ConsentFlowCredFrontDoor: React.FC<ConsentFlowCredFrontDoorProps> = ({
                 terms: terms ?? getMinimumTermsForContract(contractDetails.contract, currentUser),
                 expiresAt: '',
                 oneTime: false,
+                beforeSubmit,
             });
 
             setIsSyncingCredentials(true);

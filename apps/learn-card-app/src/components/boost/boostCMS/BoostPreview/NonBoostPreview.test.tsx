@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { VC } from '@learncard/types';
@@ -10,8 +10,15 @@ type MenuProps = {
 };
 
 type FooterLayoutProps = React.PropsWithChildren<{
-    footerProps?: { handleDotMenu?: () => void; handleDetails?: () => void };
+    footerProps?: {
+        handleClose?: () => void;
+        handleDotMenu?: () => void;
+        handleDetails?: () => void;
+    };
 }>;
+const mocks = vi.hoisted(() => ({
+    newModal: vi.fn(),
+}));
 
 vi.mock('learn-card-base', () => ({
     boostPreviewStore: {
@@ -22,7 +29,7 @@ vi.mock('learn-card-base', () => ({
         },
     },
     useWallet: () => ({ initWallet: vi.fn() }),
-    useModal: () => ({ newModal: vi.fn(), closeModal: vi.fn() }),
+    useModal: () => ({ newModal: mocks.newModal, closeModal: vi.fn() }),
     ModalTypes: { Right: 'right' },
     useDeviceTypeByWidth: () => ({ isMobile: true }),
     DisplayTypeEnum: {
@@ -75,8 +82,17 @@ vi.mock('../../../accessibility/AccessibleBoostFooterLayout', () => ({
     default: ({ children, footerProps }: FooterLayoutProps) => (
         <div>
             {children}
+            {footerProps?.handleClose && (
+                <button type="button" onClick={footerProps.handleClose}>
+                    Footer close
+                </button>
+            )}
             {footerProps?.handleDotMenu && <button type="button">Footer options</button>}
-            {footerProps?.handleDetails && <button type="button">Footer details</button>}
+            {footerProps?.handleDetails && (
+                <button type="button" onClick={footerProps.handleDetails}>
+                    Footer details
+                </button>
+            )}
         </div>
     ),
 }));
@@ -165,6 +181,7 @@ const courseCredential = {
 
 describe('NonBoostPreview', () => {
     it('only exposes credential options through the preview footer', () => {
+        const handleCloseModal = vi.fn();
         render(
             <NonBoostPreview
                 credential={credential}
@@ -174,7 +191,7 @@ describe('NonBoostPreview', () => {
                 customBodyCardComponent={null}
                 customFooterComponent={null}
                 customIssueHistoryComponent={null}
-                handleCloseModal={vi.fn()}
+                handleCloseModal={handleCloseModal}
                 handleShareBoost={vi.fn()}
                 onDotsClick={vi.fn()}
                 displayType={DisplayTypeEnum.Certificate}
@@ -184,6 +201,34 @@ describe('NonBoostPreview', () => {
 
         expect(screen.getByRole('button', { name: 'Footer options' })).toBeTruthy();
         expect(screen.queryByRole('button', { name: 'Embedded options' })).toBeNull();
+        fireEvent.click(screen.getByRole('button', { name: 'Footer close' }));
+        expect(handleCloseModal).toHaveBeenCalledOnce();
+    });
+
+    it('passes the credential record URI to earned credential options', () => {
+        render(
+            <NonBoostPreview
+                credential={credential}
+                credentialUri="lc:credential:record-a"
+                verificationItems={[]}
+                categoryType={BoostCategoryOptionsEnum.achievement}
+                customThumbComponent={null}
+                customBodyCardComponent={null}
+                customFooterComponent={null}
+                customIssueHistoryComponent={null}
+                handleCloseModal={vi.fn()}
+                handleShareBoost={vi.fn()}
+                displayType={DisplayTypeEnum.Certificate}
+                isPreview
+            />
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Footer details' }));
+
+        const detailsElement = mocks.newModal.mock.calls[0][0] as React.ReactElement<{
+            shareCredentialUri?: string;
+        }>;
+        expect(detailsElement.props.shareCredentialUri).toBe('lc:credential:record-a');
     });
 
     it('keeps credential options available for media previews', () => {

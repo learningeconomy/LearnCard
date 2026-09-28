@@ -17,10 +17,6 @@ import WalletIconThin2 from 'learn-card-base/svgs/WalletIconThin2';
 import AiInsightsTwoTonedIcon from 'learn-card-base/svgs/SideNav/AiInsightsTwoTonedIcon';
 import AiWandIcon from 'learn-card-base/svgs/AiWandIcon';
 import UnicornIcon from 'learn-card-base/svgs/UnicornIcon';
-import {
-    ThinnerLighterShieldChevron,
-    ThinnerShieldChevron,
-} from 'learn-card-base/svgs/ShieldChevron';
 
 import { SideNavIcons } from 'learn-card-base/svgs/SideNav/SideNavIcons';
 import PassportIcon from 'learn-card-base/svgs/PassportIcon';
@@ -44,8 +40,8 @@ export enum SideMenuLinksEnum {
     launchPad = 'launchPad',
     contacts = 'contacts',
     alerts = 'alerts',
+    myAssistant = 'myAssistant',
     personalize = 'personalize',
-    adminTools = 'adminTools',
 
     // secondary links
     wallet = 'wallet',
@@ -117,7 +113,7 @@ export const getSideMenuLinkLabel = (
     const translationKey = getSideMenuTranslationKey(link.id == null ? undefined : String(link.id));
     const message = messages[`sidemenu.links.${translationKey}`];
 
-    return typeof message === 'function' ? (message as () => string)() : link.label ?? '';
+    return typeof message === 'function' ? (message as () => string)() : (link.label ?? '');
 };
 
 export type SideMenuLinks = {
@@ -153,17 +149,17 @@ export const sideMenuRootLinks: Record<BrandingEnum, SideMenuLinks[]> = {
         },
         {
             id: 4,
+            name: 'My Assistant',
+            IconComponent: AiWandIcon,
+            path: '/ai/assistant',
+            type: SideMenuLinksEnum.myAssistant,
+        },
+        {
+            id: 5,
             name: 'Personalize',
             IconComponent: UnicornIcon,
             path: '/personalize',
             type: SideMenuLinksEnum.personalize,
-        },
-        {
-            id: 5,
-            name: 'Admin Tools',
-            IconComponent: ThinnerShieldChevron,
-            path: '/admin-tools',
-            type: SideMenuLinksEnum.adminTools,
         },
     ],
     [BrandingEnum.metaversity]: [
@@ -198,12 +194,6 @@ export const sideMenuRootLinks: Record<BrandingEnum, SideMenuLinks[]> = {
             name: 'Alerts',
             IconComponent: NotificationIcon2,
             path: '/notifications',
-        },
-        {
-            id: 5,
-            name: 'Admin Tools',
-            IconComponent: ThinnerLighterShieldChevron,
-            path: '/admin-tools',
         },
     ],
 };

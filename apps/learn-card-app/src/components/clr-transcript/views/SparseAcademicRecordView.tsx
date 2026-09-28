@@ -1,6 +1,7 @@
 import React from 'react';
 
 import ClrTranscriptResultsList from '../ClrTranscriptResultsList';
+import ClrAwardsSection from '../ClrAwardsSection';
 
 import { formatClrDate } from '../../../helpers/clrRenderer.helpers';
 import type { ClrTranscriptDisplayModel } from '../../../helpers/clrRenderer.helpers';
@@ -54,6 +55,7 @@ const SparseAcademicRecordView: React.FC<{
                     ))}
                 </div>
             )}
+            <ClrAwardsSection awards={model.awards} />
             {model.otherRecords.length > 0 && (
                 <div className="space-y-3">
                     <div className="flex items-center justify-between px-1 border-b border-grayscale-100 pb-2">

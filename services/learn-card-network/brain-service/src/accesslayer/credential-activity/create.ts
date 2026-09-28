@@ -23,6 +23,7 @@ export const createCredentialActivity = async (
         eventType: params.eventType,
         timestamp,
         actorProfileId: params.actorProfileId,
+        onBehalfOf: params.onBehalfOf,
         recipientType: params.recipientType,
         recipientIdentifier: params.recipientIdentifier,
         boostUri: params.boostUri,

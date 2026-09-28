@@ -26,5 +26,8 @@ packages/plugins/didkit/src/didkit/pkg/
 CHANGELOG.md
 **/CHANGELOG.md
 
+# Legacy Markdown formatting
+packages/credential-library/README.md
+
 # Changesets (tool-generated; @changesets/cli emits double quotes that conflict with our config)
 .changeset/*.md

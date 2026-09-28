@@ -423,8 +423,7 @@ export interface CheckCredentialResponse {
  * The recipient can be either a DID (did:web:...) or a profileId.
  */
 export type CheckIssuanceStatusInput =
-    | { templateAlias: string; recipient: string }
-    | { boostUri: string; recipient: string };
+    { templateAlias: string; recipient: string } | { boostUri: string; recipient: string };
 
 /**
  * Response from getTemplateIssuanceStatus
@@ -520,12 +519,7 @@ export interface LearnerContextRawData {
     personalData?: Record<string, unknown>;
 }
 
-export type LearnerContextCacheStatus =
-    | 'browser-hit'
-    | 'browser-miss'
-    | 'backend-hit'
-    | 'backend-miss'
-    | 'structured';
+export type LearnerContextCacheStatus = 'backend-hit' | 'backend-miss' | 'structured';
 
 export interface LearnerContextTimingBreakdown {
     totalMs: number;
@@ -533,8 +527,6 @@ export interface LearnerContextTimingBreakdown {
     appEventMs?: number;
     credentialReadMs?: number;
     promptizerMs?: number;
-    cacheLookupMs?: number;
-    prewarmAgeMs?: number;
 }
 
 /**
@@ -559,8 +551,10 @@ export interface LearnerContextResponse {
     /** User's display name if available */
     displayName?: string;
 
-    /** Optional metadata for cache and timing diagnostics */
+    /** Server authorization, server-cache, and request timing metadata. Prompts are not cached in the browser. */
     metadata?: {
+        /** Current AI consent revision for a formatted prompt; absent for structured-only responses. */
+        consentRevision?: string;
         cacheStatus?: LearnerContextCacheStatus;
         timings?: LearnerContextTimingBreakdown;
         backendMetadata?: Record<string, unknown>;

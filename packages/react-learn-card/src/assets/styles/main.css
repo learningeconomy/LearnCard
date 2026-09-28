@@ -11,6 +11,16 @@
     display: none;
 }
 
+/* Put the focus ring on the unclipped card frame, matching the app-wide treatment. */
+.boost-generic-card-wrapper:has(.boost-generic-card-button:focus-visible) {
+    @apply ring-2 ring-emerald-500 ring-offset-2 ring-offset-white;
+}
+
+.boost-generic-card-button:focus-visible {
+    outline: none;
+    box-shadow: none;
+}
+
 .lds-ring {
     display: inline-block;
     position: relative;

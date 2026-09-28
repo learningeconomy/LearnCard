@@ -23,6 +23,8 @@ export type {
     RecoveryMethodInfo,
     RecoveryResult,
     SignInAdapter,
+    SignInCapabilities,
+    SocialSignInOptions,
     PhoneVerificationHandle,
 } from '@learncard/types';
 

@@ -19,16 +19,17 @@ export const useConsentToContract = (
             expiresAt?: string;
             oneTime?: boolean;
             skipSharedUriMaterialization?: boolean;
+            /** Runs after credential preparation, immediately before submitting consent. */
+            beforeSubmit?: () => Promise<void>;
         }) => {
             const wallet = await initWallet();
+            const { beforeSubmit, skipSharedUriMaterialization, ...submission } = _terms;
 
-            const terms = _terms.skipSharedUriMaterialization
-                ? {
-                      terms: _terms.terms,
-                      expiresAt: _terms.expiresAt,
-                      oneTime: _terms.oneTime,
-                  }
-                : await getTermsWithSharedUris(_terms);
+            const terms = skipSharedUriMaterialization
+                ? submission
+                : await getTermsWithSharedUris(submission);
+
+            await beforeSubmit?.();
 
             return wallet.invoke.consentToContract(uri, terms, recipientToken);
         },

@@ -47,13 +47,13 @@ export const ensureCredentialIngestion = (
         return cached.request;
 
     const request = ensureAiPassportSession(wallet)
-        .then(mode =>
+        .then(() =>
             aiPassportFetch(
                 '/credentials/ingestion',
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(mode === 'legacy' ? { did, source } : { source }),
+                    body: JSON.stringify({ source }),
                 },
                 did
             )

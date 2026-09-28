@@ -64,20 +64,14 @@ describe('ensureCredentialIngestion', () => {
         );
     });
 
-    it('preserves the legacy ingestion identity only for a legacy backend', async () => {
-        const did = 'did:example:legacy-ingestion';
-
-        ensureAiPassportSessionMock.mockResolvedValueOnce('legacy');
-
-        await ensureCredentialIngestion(wallet(did), 'app_open');
-
-        expect(aiPassportFetchMock).toHaveBeenCalledWith(
-            '/credentials/ingestion',
-            expect.objectContaining({
-                body: JSON.stringify({ did, source: 'app_open' }),
-            }),
-            did
+    it('does not submit ingestion when session authentication fails', async () => {
+        ensureAiPassportSessionMock.mockRejectedValueOnce(
+            new Error('Session authentication failed')
         );
+        await expect(
+            ensureCredentialIngestion(wallet('did:example:auth-failure'), 'app_open')
+        ).rejects.toThrow('Session authentication failed');
+        expect(aiPassportFetchMock).not.toHaveBeenCalled();
     });
 
     it('keeps in-flight requests deduplicated beyond the success-cache window', async () => {

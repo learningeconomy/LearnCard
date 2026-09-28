@@ -12,7 +12,8 @@ export const AiInsightsTabs: React.FC<{
     className?: string;
     selectedTab?: AiInsightsTabsEnum;
     setSelectedTab?: (tab: AiInsightsTabsEnum) => void;
-}> = ({ className, selectedTab, setSelectedTab }) => {
+    showAgentDebugTab?: boolean;
+}> = ({ className, selectedTab, setSelectedTab, showAgentDebugTab = false }) => {
     const isSelectedTab = (tab: AiInsightsTabsEnum) => selectedTab === tab;
 
     const [contractUri, setContractUri] = useState<string>('');
@@ -63,6 +64,10 @@ export const AiInsightsTabs: React.FC<{
                     tab.value === AiInsightsTabsEnum.ChildInsights &&
                     currentUserRole !== LearnCardRolesEnum.guardian
                 ) {
+                    return null;
+                }
+
+                if (tab.value === AiInsightsTabsEnum.AgentDebug && !showAgentDebugTab) {
                     return null;
                 }
 

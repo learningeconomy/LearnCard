@@ -16,6 +16,7 @@ export type {
     TenantFilestackStorageConfig,
     TenantS3StorageConfig,
     TenantBrandingConfig,
+    SamplePersonaConfig,
     TenantFeatureConfig,
     TenantObservabilityConfig,
     TenantLinksConfig,
@@ -40,7 +41,7 @@ export {
     tenantNativeConfigSchema,
     tenantEcosystemConfigSchema,
     parseTenantConfig,
-    parsePartialTenantConfig,
+    parseTenantConfigOverlay,
     TENANT_CONFIG_SCHEMA_VERSION,
 } from './tenantConfigSchema';
 

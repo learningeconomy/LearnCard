@@ -12,7 +12,9 @@ import * as Sentry from '@sentry/serverless';
 import app from './src/openapi';
 import skillsViewerApp from './src/skills-viewer';
 import statusListsApp from './src/status-lists';
+import credentialRefreshApp from './src/credential-refresh';
 import { appRouter, createContext } from './src/app';
+import { publicShareLinkCacheControlHeaders } from './src/routes';
 import { deliverQueuedNotification } from './src/helpers/notificationQueue.helpers';
 import { startSkillEmbeddingBackfill } from './src/helpers/skill-embedding.helpers';
 import { createOpenApiAwsLambdaHandler } from './src/helpers/shim';
@@ -23,6 +25,11 @@ import {
 } from './src/helpers/sentry.helpers';
 import { environment } from './src/config/environment';
 import { toServerlessApplication } from './src/helpers/serverlessApplication';
+import { runInboxMaintenance } from './src/helpers/inbox-maintenance.helpers';
+import {
+    inboxBatchResponseMeta,
+    withInboxBatchBodyLimit,
+} from './src/helpers/inbox-batch-http.helpers';
 
 Sentry.AWSLambda.init({
     dsn: environment.SENTRY_DSN,
@@ -49,14 +56,24 @@ export const skillsViewerHandler = serverlessHttp(toServerlessApplication(skills
 
 export const statusListsHandler = serverlessHttp(toServerlessApplication(statusListsApp));
 
+// Passing the Fastify instance selects serverless-http's inject adapter, which
+// drops the API Gateway source address. The HTTP server path preserves it.
+const credentialRefreshProxy = serverlessHttp(toServerlessApplication(credentialRefreshApp.server));
+export const credentialRefreshHandler: typeof credentialRefreshProxy = async (event, context) => {
+    await credentialRefreshApp.ready();
+    return credentialRefreshProxy(event, context);
+};
+
 export const _openApiHandler = createOpenApiAwsLambdaHandler({
     router: appRouter,
-    responseMeta: () => {
+    responseMeta: meta => {
         return {
+            ...inboxBatchResponseMeta(meta),
             headers: {
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
                 'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+                ...publicShareLinkCacheControlHeaders(meta.paths),
             },
         };
     },
@@ -64,21 +81,25 @@ export const _openApiHandler = createOpenApiAwsLambdaHandler({
     onError: handleTrpcError,
 });
 
-export const _trpcHandler = awsLambdaRequestHandler({
-    allowMethodOverride: true,
-    router: appRouter,
-    createContext,
-    onError: handleTrpcError,
-    responseMeta: () => {
-        return {
-            headers: {
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': '*',
-                'Access-Control-Allow-Headers': 'authorization',
-            },
-        };
-    },
-});
+export const _trpcHandler = withInboxBatchBodyLimit(
+    awsLambdaRequestHandler({
+        allowMethodOverride: true,
+        router: appRouter,
+        createContext,
+        onError: handleTrpcError,
+        responseMeta: ({ paths }) => {
+            return {
+                headers: {
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Methods': '*',
+                    'Access-Control-Allow-Headers': 'authorization',
+                    ...publicShareLinkCacheControlHeaders(paths),
+                },
+            };
+        },
+    }),
+    'trpc'
+);
 
 export const openApiHandler = Sentry.AWSLambda.wrapHandler(
     async (event: APIGatewayProxyEventV2, context: Context): Promise<APIGatewayProxyResultV2> => {
@@ -114,6 +135,43 @@ export const trpcHandler = Sentry.AWSLambda.wrapHandler(
     }
 );
 
+export const inboxQueueWorker: SQSHandler = Sentry.AWSLambda.wrapHandler(async event => {
+    const { processInboxQueueMessage } = await import('./src/helpers/inbox-queue.helpers');
+    const batchItemFailures = [];
+    for (const record of event.Records) {
+        try {
+            await processInboxQueueMessage(record.body);
+        } catch {
+            console.error('Inbox worker message failed', { messageId: record.messageId });
+            batchItemFailures.push({ itemIdentifier: record.messageId });
+        }
+    }
+    return { batchItemFailures } satisfies SQSBatchResponse;
+});
+
+export const inboxQueueDispatcher = Sentry.AWSLambda.wrapHandler(
+    async (_event: unknown, context: Context): Promise<void> => {
+        const { dispatchInboxJobs } = await import('./src/helpers/inbox-queue.helpers');
+        // Share one clock across publication and recovery, retaining five seconds for shutdown.
+        const deadline = Date.now() + Math.max(0, context.getRemainingTimeInMillis() - 5_000);
+        await dispatchInboxJobs(deadline);
+    }
+);
+
+export const inboxDeadLetterWorker: SQSHandler = Sentry.AWSLambda.wrapHandler(async event => {
+    const { processInboxDeadLetter } = await import('./src/helpers/inbox-queue.helpers');
+    const batchItemFailures = [];
+    for (const record of event.Records) {
+        try {
+            await processInboxDeadLetter(record.body);
+        } catch {
+            console.error('Inbox dead-letter processing failed', { messageId: record.messageId });
+            batchItemFailures.push({ itemIdentifier: record.messageId });
+        }
+    }
+    return { batchItemFailures } satisfies SQSBatchResponse;
+});
+
 export const notificationsWorker: SQSHandler = Sentry.AWSLambda.wrapHandler(async event => {
     const batchItemFailures = await Promise.all(
         event.Records.map(async record => {
@@ -137,4 +195,9 @@ export const notificationsWorker: SQSHandler = Sentry.AWSLambda.wrapHandler(asyn
             (failure): failure is { itemIdentifier: string } => failure !== undefined
         ),
     } satisfies SQSBatchResponse;
+});
+
+export const inboxMaintenanceHandler = Sentry.AWSLambda.wrapHandler(async (): Promise<void> => {
+    const counts = await runInboxMaintenance();
+    console.log('Universal Inbox maintenance completed', counts);
 });

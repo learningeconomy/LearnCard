@@ -47,7 +47,7 @@ import {
     isInboxActivity,
     isAutoDelivery,
     getActivityLabel,
-} from 'src/pages/appStoreDeveloper/dashboards/hooks/useIntegrationActivity';
+} from '../../pages/appStoreDeveloper/dashboards/hooks/useIntegrationActivity';
 
 export interface IssuanceDetailModalProps {
     item: CredentialActivityRecord;

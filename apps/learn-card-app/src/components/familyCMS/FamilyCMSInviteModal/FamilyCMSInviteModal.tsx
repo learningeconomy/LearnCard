@@ -6,6 +6,7 @@ import ModalLayout from 'learn-card-base/components/modals/ionic-modals/CancelMo
 
 import { FamilyCMSState, FamilyMember } from '../familyCMSState';
 import { m } from '../../../paraglide/messages.js';
+import { getFamilyTitleLabel } from '../FamilyCMSMemberTitlesForm/FamilyCMSMemberTitlesToggle/familyTitles.helpers';
 
 type FamilyCMSInviteModalProps = {
     state: FamilyCMSState;
@@ -36,7 +37,9 @@ const FamilyCMSInviteModal: React.FC<FamilyCMSInviteModalProps> = ({
         <div className="w-full">
             <FamilyCMSInviteModalButton
                 btnText={m['family.invite.addMember']({
-                    title: customChildrenName?.singular || m['family.members.child'](),
+                    title: getFamilyTitleLabel(
+                        customChildrenName?.singular || m['family.members.child']()
+                    ),
                 })}
                 state={state}
                 setState={setState}
@@ -51,7 +54,9 @@ const FamilyCMSInviteModal: React.FC<FamilyCMSInviteModalProps> = ({
             />
             <FamilyCMSInviteModalButton
                 btnText={m['family.invite.inviteMember']({
-                    title: customGuardianName?.singular || m['family.members.guardian'](),
+                    title: getFamilyTitleLabel(
+                        customGuardianName?.singular || m['family.members.guardian']()
+                    ),
                 })}
                 state={state}
                 setState={setState}

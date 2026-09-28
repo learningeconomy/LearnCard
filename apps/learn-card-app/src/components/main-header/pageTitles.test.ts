@@ -1,7 +1,10 @@
-import { describe, it, expect } from 'vitest';
+import { beforeEach, describe, it, expect } from 'vitest';
+import { setLocale } from '../../paraglide/runtime.js';
 import { getPageTitle } from './pageTitles';
 
 describe('getPageTitle (LC-1921 scroll title)', () => {
+    beforeEach(() => setLocale('en', { reload: false }));
+
     it('maps known routes to their page titles', () => {
         expect(getPageTitle('/passport')).toBe('My Passport');
         expect(getPageTitle('/dashboard')).toBe('My Dashboard');
@@ -21,5 +24,11 @@ describe('getPageTitle (LC-1921 scroll title)', () => {
 
     it('returns null for unmapped routes (caller falls back to brand)', () => {
         expect(getPageTitle('/totally-unknown')).toBeNull();
+    });
+
+    it('returns the localized title for the active locale', () => {
+        setLocale('ar', { reload: false });
+
+        expect(getPageTitle('/dashboard')).toBe('لوحة التحكم الخاصة بي');
     });
 });

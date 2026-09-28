@@ -6,3 +6,4 @@ export { app as didApp } from './dids';
 export { app as swaggerApp } from './openapi';
 export { app as skillsViewerApp } from './skills-viewer';
 export { app as statusListsApp } from './status-lists';
+export { app as credentialRefreshApp } from './credential-refresh';

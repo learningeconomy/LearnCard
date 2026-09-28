@@ -9,7 +9,10 @@ import { Capacitor } from '@capacitor/core';
 import { asyncWithLDProvider, basicLogger } from 'launchdarkly-react-client-sdk';
 import { TenantConfigProvider, renderConfigurationError } from 'learn-card-base';
 import { registerExternalUrlOpener } from 'learn-card-base/helpers/externalUrlOpener';
+// Registers the Firebase provider initializer before bootstrapTenantConfig() runs it.
+import './auth/firebaseProviderInit';
 import { bootstrapTenantConfig } from './config/bootstrapTenantConfig';
+import { environment } from './config/environment';
 import { getLaunchDarklyConfig } from './constants/runtimeLaunchDarkly';
 import App from './App';
 
@@ -55,10 +58,19 @@ installInsetSimulator();
         }
     }
 
-    // Disable LaunchDarkly logging
+    // Disable LaunchDarkly logging. In local development, bootstrap draft assistant
+    // flags on so the page and debug tooling are available before LD has remote values.
     const ldOptions = {
         options: {
             logger: basicLogger({ level: 'none' }),
+            ...(environment.DEV
+                ? {
+                      bootstrap: {
+                          enableLearnCardAssistant: true,
+                          enableLearnCardAssistantDebug: true,
+                      },
+                  }
+                : {}),
         },
     };
 

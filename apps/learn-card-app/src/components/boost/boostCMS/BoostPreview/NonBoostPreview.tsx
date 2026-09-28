@@ -196,6 +196,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
         newModal(
             <BoostDetailsSideMenu
                 credential={selectedCredential}
+                shareCredentialUri={boostUri ?? credentialUri}
                 categoryType={categoryType}
                 verificationItems={detailVerificationItems}
                 customLinkedCredentialsComponent={customLinkedCredentialsComponent}
@@ -423,6 +424,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                     {!isMobile && !isClrCredential && !showsCoursePanel && (
                         <BoostDetailsSideBar
                             credential={selectedCredential}
+                            shareCredentialUri={boostUri ?? credentialUri}
                             categoryType={categoryType}
                             verificationItems={detailVerificationItems}
                             customLinkedCredentialsComponent={customLinkedCredentialsComponent}

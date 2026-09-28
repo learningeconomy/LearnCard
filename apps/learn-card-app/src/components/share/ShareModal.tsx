@@ -119,7 +119,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ contractUri, profileId, overrid
                     {m['common.share']()}
                 </p>
                 <p className="font-poppins text-[14px] text-grayscale-700 mt-[10px]">
-                    Copy your profile url so you can share it with others.
+                    {m['arabicFixes.shareProfileHelp']()}
                 </p>
             </div>
 
@@ -138,18 +138,18 @@ const ShareModal: React.FC<ShareModalProps> = ({ contractUri, profileId, overrid
                     <div className="flex items-center justify-center w-full mt-3">
                         <div className="flex items-center justify-center w-full px-5">
                             <h2 className="divider-with-text">
-                                <span>or</span>
+                                <span>{m['arabicFixes.or']()}</span>
                             </h2>
                         </div>
                     </div>
                     <div className="w-full flex items-center justify-center mt-1 px-4">
                         <p className="text-grayscale-700 font-normal w-full text-left font-poppins">
-                            Allow others to automatically connect to your profile.
+                            {m['arabicFixes.autoConnectHelp']()}
                         </p>
                     </div>
 
                     <div className="w-full flex items-center justify-start px-4 mt-4">
-                        <p className="mr-1 font-poppins text-grayscale-700">
+                        <p className="me-1 font-poppins text-grayscale-700">
                             {expiration === 0
                                 ? m['share.link']()
                                 : m['share.linkExpires']({ time: '' })}
@@ -157,13 +157,22 @@ const ShareModal: React.FC<ShareModalProps> = ({ contractUri, profileId, overrid
                         <Select
                             value={expiration}
                             setValue={v => setExpiration(v)}
-                            placeholder="Select expiration"
+                            placeholder={m['arabicFixes.selectExpiration']()}
                             className="font-semibold text-grayscale-800"
                             options={[
-                                { value: 3600, displayText: '1 hour' },
-                                { value: 86400, displayText: '24 hours' },
-                                { value: 604800, displayText: '7 days' },
-                                { value: 2592000, displayText: '30 days' },
+                                { value: 3600, displayText: m['arabicFixes.oneHour']() },
+                                {
+                                    value: 86400,
+                                    displayText: m['arabicFixes.hours']({ count: 24 }),
+                                },
+                                {
+                                    value: 604800,
+                                    displayText: m['arabicFixes.days']({ count: 7 }),
+                                },
+                                {
+                                    value: 2592000,
+                                    displayText: m['arabicFixes.days']({ count: 30 }),
+                                },
                                 {
                                     value: 0,
                                     displayText: m['share.neverExpires'](),

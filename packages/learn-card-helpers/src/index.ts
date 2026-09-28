@@ -85,6 +85,7 @@ export * from './Utilities';
 // Export app install helpers
 export * from './app-install';
 export * from './credential-format';
+export * from './credential-refresh';
 export * from './did';
 export * from './environment';
 
@@ -105,3 +106,5 @@ export const isAppDidWeb = (did?: string): boolean => {
     const LCN_APP_DID_WEB_REGEX = /^did:web:.*:app:([^:]+)$/;
     return LCN_APP_DID_WEB_REGEX.test(did);
 };
+
+export * from './share-content-canonical';

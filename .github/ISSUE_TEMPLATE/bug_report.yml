@@ -1,0 +1,47 @@
+name: 🐛 Bug report
+description: Something in a LearnCard package, service, or app isn't working as documented.
+labels: ['bug']
+body:
+    - type: markdown
+      attributes:
+          value: |
+              Thanks for the report. Feature requests go on the [roadmap](https://roadmap.learncard.com) instead — this form is for things that are broken.
+    - type: dropdown
+      id: area
+      attributes:
+          label: Where is the problem?
+          options:
+              - Wallet SDK (@learncard/init, @learncard/core, plugins)
+              - LearnCloud Network API (brain-service)
+              - LearnCloud Storage API (learn-cloud-service)
+              - Partner Connect SDK / Embed SDK / App Store
+              - LearnCard App (iOS / Android / web)
+              - ScoutPass
+              - Documentation (docs.learncard.com)
+              - Other / not sure
+      validations:
+          required: true
+    - type: input
+      id: version
+      attributes:
+          label: Package and version
+          description: e.g. `@learncard/init 10.2.1`, or the app version from Settings.
+          placeholder: '@learncard/init 10.x.x'
+    - type: textarea
+      id: what-happened
+      attributes:
+          label: What happened?
+          description: What did you do, what did you expect, and what happened instead? Paste error messages verbatim.
+      validations:
+          required: true
+    - type: textarea
+      id: repro
+      attributes:
+          label: Smallest code that reproduces it
+          description: A minimal snippet or repo link. This is the single most useful thing you can include.
+          render: ts
+    - type: input
+      id: environment
+      attributes:
+          label: Environment
+          placeholder: 'Node 24 / Bun 1.x / Chrome 130 / iOS 18 …'

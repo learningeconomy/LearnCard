@@ -5,7 +5,12 @@ import CaretDown from '../../../svgs/CaretDown';
 import FamilyCMSMemberTitlesOptionsList from './FamilyCMSMemberTitlesOptionsList';
 
 import { FamilyCMSState, MemberTitleTypes } from '../../familyCMSState';
-import { FamilyTitleModesEnum, familyTitleOptions, TitleOption } from './familyTitles.helpers';
+import {
+    FamilyTitleModesEnum,
+    familyTitleOptions,
+    getFamilyTitleLabel,
+    TitleOption,
+} from './familyTitles.helpers';
 import { ModalTypes, useModal } from 'learn-card-base';
 import { m } from '../../../../paraglide/messages.js';
 
@@ -92,7 +97,7 @@ export const FamilyCMSMemberTitlesToggle: React.FC<{
                     className={`flex items-center justify-between bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-normal font-poppins text-[17px] w-full`}
                 >
                     <p className="m-0 p-0 text-lg font-notoSans text-grayscale-900">
-                        {guardianTitles.plural}
+                        {getFamilyTitleLabel(guardianTitles.plural)}
                     </p>
                     <CaretDown />
                 </button>
@@ -107,7 +112,7 @@ export const FamilyCMSMemberTitlesToggle: React.FC<{
                     className={`flex items-center justify-between bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-normal font-poppins text-[17px] w-full`}
                 >
                     <p className="m-0 p-0 text-lg font-notoSans text-grayscale-900">
-                        {dependentTitles?.plural}
+                        {getFamilyTitleLabel(dependentTitles?.plural ?? 'Children')}
                     </p>
                     <CaretDown />
                 </button>

@@ -36,6 +36,7 @@ export const tenantApiConfigSchema = z
         xapi: urlOrPlaceholder().optional(),
         notificationsEndpoint: urlOrPlaceholder().optional(),
         aiService: urlOrPlaceholder().optional(),
+        aiAgentService: urlOrPlaceholder().optional(),
         corsProxyApiKey: z.string().optional(),
     })
     .passthrough();
@@ -193,6 +194,15 @@ export const tenantBrandingConfigSchema = z
     })
     .passthrough();
 
+export const samplePersonaConfigSchema = z
+    .object({
+        id: z.string().min(1),
+        contractUri: z.string().min(1),
+        displayName: z.string().min(1).optional(),
+        description: z.string().min(1).optional(),
+    })
+    .passthrough();
+
 export const tenantFeatureConfigSchema = z
     .object({
         aiFeatures: z.boolean().default(true),
@@ -221,6 +231,8 @@ export const tenantFeatureConfigSchema = z
          * set `true` in the `config.local.json` / `config.staging.json` overlays.
          */
         useSeededSkillFrameworks: z.boolean().default(false),
+        samplePersonas: z.array(samplePersonaConfigSchema).default([]),
+        legacySamplePersonaContractUris: z.array(z.string().min(1)).default([]),
     })
     .passthrough();
 
@@ -370,6 +382,7 @@ export type TenantStorageConfig = z.infer<typeof tenantStorageConfigSchema>;
 export type TenantFilestackStorageConfig = z.infer<typeof tenantFilestackStorageConfigSchema>;
 export type TenantS3StorageConfig = z.infer<typeof tenantS3StorageConfigSchema>;
 export type TenantBrandingConfig = z.infer<typeof tenantBrandingConfigSchema>;
+export type SamplePersonaConfig = z.infer<typeof samplePersonaConfigSchema>;
 export type TenantFeatureConfig = z.infer<typeof tenantFeatureConfigSchema>;
 export type TenantObservabilityConfig = z.infer<typeof tenantObservabilityConfigSchema>;
 export type TenantLinksConfig = z.infer<typeof tenantLinksConfigSchema>;
@@ -419,8 +432,30 @@ const parseWithSource = <Schema extends z.ZodType>(
 export const parseTenantConfig = (raw: unknown, source: string): TenantConfig =>
     parseWithSource(tenantConfigSchema, raw, source);
 
-/** Parse and validate a root-level tenant overlay. Invalid explicit config throws. */
-const partialTenantConfigSchema = tenantConfigSchema.partial();
+/**
+ * A tenant config *overlay* — a sparse set of overrides that is deep-merged onto
+ * a base (baked config or the LearnCard defaults) before full validation.
+ *
+ * Deliberately NOT `tenantConfigSchema.partial()`:
+ *   - `.partial()` is shallow, so a partial `auth` block (e.g. only `web3Auth`)
+ *     would run the full `tenantAuthConfigSchema` cross-field refinements
+ *     against the overlay alone and fail ("Required when auth.provider is
+ *     firebase") even though the merged result is valid.
+ *   - `.default()`s would be materialized into the overlay and then clobber
+ *     the base values during the merge.
+ *
+ * Only the shape needed by the resolver is checked here; everything else is
+ * validated on the merged result via `parseTenantConfig`.
+ */
+const tenantConfigOverlaySchema = z
+    .object({
+        tenantId: z.string().optional(),
+        domain: z.string().optional(),
+    })
+    .passthrough();
 
-export const parsePartialTenantConfig = (raw: unknown, source: string): Partial<TenantConfig> =>
-    parseWithSource(partialTenantConfigSchema, raw, source);
+export type TenantConfigOverlay = z.infer<typeof tenantConfigOverlaySchema>;
+
+/** Shape-check a root-level tenant overlay. Non-object payloads throw. */
+export const parseTenantConfigOverlay = (raw: unknown, source: string): TenantConfigOverlay =>
+    parseWithSource(tenantConfigOverlaySchema, raw, source);

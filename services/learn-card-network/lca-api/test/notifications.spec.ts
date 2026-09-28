@@ -3,8 +3,10 @@ import { vi } from 'vitest';
 import { getUser } from './helpers/getClient';
 import { Notifications } from '@accesslayer/notifications';
 import * as PushNotifications from '@helpers/pushNotifications.helpers';
+import cache from '@cache';
 import {
     LCNProfile,
+    LCNNotification,
     LCNNotificationTypeEnumValidator,
     LCNNotificationTypeEnum,
 } from '@learncard/types';
@@ -219,6 +221,227 @@ describe('Notifications', () => {
                     'data.metadata.connectionPrompt.promptId': { $exists: false },
                 })
             ).resolves.toBe(2);
+        });
+    });
+
+    describe('Credential Refresh Notification Collapse', () => {
+        const EMPTY_PUSH_RESPONSE = { failureCount: 0, successCount: 0, failedTokens: [] };
+
+        const getRefreshNotification = (
+            to: string,
+            from: string,
+            deliveryKey: string,
+            version: number
+        ): LCNNotification =>
+            getTestNotification(
+                to,
+                from,
+                LCNNotificationTypeEnumValidator.enum.CREDENTIAL_REFRESHED,
+                undefined,
+                {
+                    metadata: {
+                        refreshId: 'opaque-refresh-id',
+                        version,
+                        routeKey: 'opaque-route-key',
+                        deliveryKey,
+                    },
+                }
+            );
+
+        const sendRefresh = (deliveryKey: string, version: number) =>
+            userA.clients.authorizedDidAuth.notifications.sendNotification(
+                getRefreshNotification(
+                    userA.learnCard.id.did(),
+                    userB.learnCard.id.did(),
+                    deliveryKey,
+                    version
+                )
+            );
+
+        let pushSpy: ReturnType<typeof vi.spyOn>;
+
+        beforeEach(() => {
+            pushSpy = vi
+                .spyOn(PushNotifications, 'sendPushNotification')
+                .mockResolvedValue(EMPTY_PUSH_RESPONSE);
+        });
+
+        afterEach(() => {
+            pushSpy.mockRestore();
+        });
+
+        it('creates the notification and pushes on the first delivery in a window', async () => {
+            await expect(sendRefresh('window-1', 1)).resolves.toBe(true);
+
+            await expect(
+                Notifications.countDocuments({
+                    type: LCNNotificationTypeEnumValidator.enum.CREDENTIAL_REFRESHED,
+                })
+            ).resolves.toBe(1);
+            expect(pushSpy).toHaveBeenCalledTimes(1);
+
+            const stored = await Notifications.findOne({
+                type: LCNNotificationTypeEnumValidator.enum.CREDENTIAL_REFRESHED,
+            });
+            expect(stored?.read).toBe(false);
+            expect(stored?.data?.metadata).toMatchObject({ version: 1 });
+        });
+
+        it('collapses repeat deliveries in the same window into one unread notification without pushing again', async () => {
+            await expect(sendRefresh('window-1', 1)).resolves.toBe(true);
+
+            const first = (
+                await userA.clients.fullAuth.notifications.notifications({ options: { limit: 5 } })
+            ).notifications[0];
+            expect(first?.read).toBe(false);
+
+            if (first?._id) {
+                await userA.clients.fullAuth.notifications.updateNotificationMeta({
+                    _id: first._id,
+                    meta: { read: true },
+                });
+            } else {
+                expect(first?._id).toBeDefined();
+            }
+
+            await expect(sendRefresh('window-1', 2)).resolves.toBe(true);
+
+            await expect(
+                Notifications.countDocuments({
+                    type: LCNNotificationTypeEnumValidator.enum.CREDENTIAL_REFRESHED,
+                })
+            ).resolves.toBe(1);
+            expect(pushSpy).toHaveBeenCalledTimes(1);
+
+            const stored = await Notifications.findOne({
+                type: LCNNotificationTypeEnumValidator.enum.CREDENTIAL_REFRESHED,
+            });
+            expect(stored?.read).toBe(false);
+            expect(stored?.data?.metadata).toMatchObject({ version: 2 });
+        });
+
+        it('creates a new notification and pushes again for a new delivery window', async () => {
+            await expect(sendRefresh('window-1', 1)).resolves.toBe(true);
+            await expect(sendRefresh('window-2', 2)).resolves.toBe(true);
+
+            await expect(
+                Notifications.countDocuments({
+                    type: LCNNotificationTypeEnumValidator.enum.CREDENTIAL_REFRESHED,
+                })
+            ).resolves.toBe(2);
+            expect(pushSpy).toHaveBeenCalledTimes(2);
+        });
+
+        it('keeps one record and one push for two concurrent first deliveries', async () => {
+            await Promise.all([sendRefresh('window-1', 1), sendRefresh('window-1', 1)]);
+
+            await expect(
+                Notifications.countDocuments({
+                    type: LCNNotificationTypeEnumValidator.enum.CREDENTIAL_REFRESHED,
+                })
+            ).resolves.toBe(1);
+            expect(pushSpy).toHaveBeenCalledTimes(1);
+        });
+
+        it('deduplicates managed initial credential deliveries without changing generic received notifications', async () => {
+            const managedInitial = getTestNotification(
+                userA.learnCard.id.did(),
+                userB.learnCard.id.did(),
+                LCNNotificationTypeEnumValidator.enum.CREDENTIAL_RECEIVED,
+                undefined,
+                {
+                    vcUris: ['lc:network:credential:root'],
+                    metadata: {
+                        managedCredentialRefreshInitial: true,
+                        routeKey: 'opaque-route-key',
+                        deliveryKey: 'opaque-initial-delivery-key',
+                    },
+                }
+            );
+            const genericReceived = getTestNotification(
+                userA.learnCard.id.did(),
+                userB.learnCard.id.did(),
+                LCNNotificationTypeEnumValidator.enum.CREDENTIAL_RECEIVED,
+                undefined,
+                { vcUris: ['lc:network:credential:legacy'] }
+            );
+
+            await Promise.all([
+                userA.clients.authorizedDidAuth.notifications.sendNotification(managedInitial),
+                userA.clients.authorizedDidAuth.notifications.sendNotification(managedInitial),
+            ]);
+            await userA.clients.authorizedDidAuth.notifications.sendNotification(genericReceived);
+            await userA.clients.authorizedDidAuth.notifications.sendNotification(genericReceived);
+
+            await expect(
+                Notifications.countDocuments({
+                    type: LCNNotificationTypeEnumValidator.enum.CREDENTIAL_RECEIVED,
+                    'data.metadata.managedCredentialRefreshInitial': true,
+                })
+            ).resolves.toBe(1);
+            await expect(
+                Notifications.countDocuments({
+                    type: LCNNotificationTypeEnumValidator.enum.CREDENTIAL_RECEIVED,
+                    'data.metadata.managedCredentialRefreshInitial': { $exists: false },
+                })
+            ).resolves.toBe(2);
+            expect(pushSpy).toHaveBeenCalledTimes(3);
+        });
+
+        it('records exactly one E2E push attempt per delivery window', async () => {
+            vi.stubEnv('IS_E2E_TEST', 'true');
+
+            try {
+                await expect(sendRefresh('window-1', 1)).resolves.toBe(true);
+                await expect(sendRefresh('window-1', 2)).resolves.toBe(true);
+
+                // Two collapsed deliveries in one window = exactly one push attempt.
+                const firstWindowKeys = await cache.keys('e2e:push-attempt:*');
+                expect(firstWindowKeys).toHaveLength(1);
+
+                const attempt = JSON.parse((await cache.get(firstWindowKeys![0]!)) as string);
+                expect(attempt.type).toBe(
+                    LCNNotificationTypeEnumValidator.enum.CREDENTIAL_REFRESHED
+                );
+                expect(attempt.toDid).toBe(userA.learnCard.id.did());
+                expect(attempt.refreshId).toBe('opaque-refresh-id');
+                expect(attempt.routeKey).toBe('opaque-route-key');
+                expect(attempt.deliveryKey).toBe('window-1');
+                expect(attempt.version).toBe(1);
+                expect(typeof attempt.at).toBe('string');
+
+                // A new delivery window produces a new push attempt.
+                await expect(sendRefresh('window-2', 3)).resolves.toBe(true);
+
+                expect(await cache.keys('e2e:push-attempt:*')).toHaveLength(2);
+            } finally {
+                vi.unstubAllEnvs();
+
+                const keys = await cache.keys('e2e:push-attempt:*');
+                if (keys && keys.length > 0) await cache.delete(keys);
+            }
+        });
+
+        it('leaves non-refresh notification semantics unchanged', async () => {
+            const legacy = getTestNotification(
+                userA.learnCard.id.did(),
+                userB.learnCard.id.did(),
+                LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED
+            );
+
+            await expect(
+                userA.clients.authorizedDidAuth.notifications.sendNotification(legacy)
+            ).resolves.toBe(true);
+            await expect(
+                userA.clients.authorizedDidAuth.notifications.sendNotification(legacy)
+            ).resolves.toBe(true);
+
+            await expect(
+                Notifications.countDocuments({
+                    type: LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED,
+                })
+            ).resolves.toBe(2);
+            expect(pushSpy).toHaveBeenCalledTimes(2);
         });
     });
 

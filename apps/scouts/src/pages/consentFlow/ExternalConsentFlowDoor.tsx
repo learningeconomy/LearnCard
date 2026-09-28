@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import queryString from 'query-string';
-import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { Capacitor } from '@capacitor/core';
 
 import { useHistory, useLocation } from 'react-router-dom';
@@ -20,17 +19,14 @@ import {
     useSQLiteStorage,
     useContract,
     redirectStore,
+    useSignInAdapter,
 } from 'learn-card-base';
-import { SocialLoginTypes } from 'learn-card-base/hooks/useSocialLogins';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import * as m from '../../paraglide/messages.js';
 import { LOGIN_REDIRECTS } from 'learn-card-base/constants/redirects';
-import { auth } from '../../firebase/firebase';
 import { openPP, openToS } from '../../helpers/externalLinkHelpers';
 import { useAuthCoordinator } from '../../providers/AuthCoordinatorProvider';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
-import { getLogger } from 'learn-card-base';
-const log = getLogger('external-consent-flow-door');
 
 enum Step {
     landing,
@@ -38,11 +34,11 @@ enum Step {
 }
 
 const ExternalConsentFlowDoor: React.FC = () => {
+    const adapter = useSignInAdapter();
     const currentUser = useCurrentUser();
 
     const history = useHistory();
     const location = useLocation();
-    const firebaseAuth = auth();
     const queryClient = useQueryClient();
     const { initWallet } = useWallet();
     const { logout: coordinatorLogout } = useAuthCoordinator();
@@ -55,19 +51,11 @@ const ExternalConsentFlowDoor: React.FC = () => {
 
     const [step, setStep] = useState(Step.landing);
 
-    const contractUri = Array.isArray(uri) ? uri[0] ?? '' : uri ?? '';
+    const contractUri = Array.isArray(uri) ? (uri[0] ?? '') : (uri ?? '');
     const { data: contractDetails, isPending } = useContract(contractUri);
 
     // TODO duplicated from QRCodeUserCard, should turn into helper
     const handleLogout = async () => {
-        const typeOfLogin = authStore?.get?.typeOfLogin();
-        const nativeSocialLogins = [
-            SocialLoginTypes.apple,
-            SocialLoginTypes.sms,
-            SocialLoginTypes.passwordless,
-            SocialLoginTypes.google,
-        ];
-
         const redirectUrl =
             IS_PRODUCTION || Capacitor.getPlatform() === 'android'
                 ? LOGIN_REDIRECTS[BrandingEnum.learncard].redirectUrl
@@ -79,16 +67,8 @@ const ExternalConsentFlowDoor: React.FC = () => {
                 await pushUtilities.revokePushToken(initWallet, deviceToken);
             }
 
-            await firebaseAuth.signOut(); // sign out of web layer
-            if (nativeSocialLogins.includes(typeOfLogin) && Capacitor.isNativePlatform()) {
-                try {
-                    await FirebaseAuthentication?.signOut?.();
-                } catch (e) {
-                    log.debug('firebase::signout::error', e);
-                }
-            }
-
-            coordinatorLogout();
+            await adapter.signOut();
+            await coordinatorLogout();
             await queryClient.resetQueries();
 
             await clearDB();

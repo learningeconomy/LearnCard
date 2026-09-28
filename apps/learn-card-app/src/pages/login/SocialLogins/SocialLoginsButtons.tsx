@@ -9,7 +9,7 @@ import EmailIcon from 'learn-card-base/svgs/EmailIcon';
 
 import { LoginTypesEnum } from 'learn-card-base/helpers/loginHelpers';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
-import { SocialLoginTypes } from 'learn-card-base';
+import { SocialLoginTypes, useSignInAdapter } from 'learn-card-base';
 
 import useTheme from '../../../theme/hooks/useTheme';
 
@@ -41,6 +41,7 @@ export const SocialLoginsButtons: React.FC<{
     extraSocialLogins = [],
     showSocialLogins,
 }) => {
+    const { capabilities } = useSignInAdapter();
     const { colors, theme } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
     const loginBgColor =
@@ -80,7 +81,16 @@ export const SocialLoginsButtons: React.FC<{
     const activeLoginTypeStyles =
         activeLoginType === LoginTypesEnum.phone ? `bg-${primaryColor}` : 'bg-yellow-500';
 
-    const _socialLogins = [...socialLogins, ...extraSocialLogins];
+    const _socialLogins = [...socialLogins, ...extraSocialLogins].filter(login => {
+        if (!capabilities.social) return false;
+        if (login.type === SocialLoginTypes.google) return capabilities.google;
+        if (login.type === SocialLoginTypes.apple) return capabilities.apple;
+        return true;
+    });
+    const canSwitchLoginType =
+        activeLoginType === LoginTypesEnum.phone
+            ? capabilities.emailOtp || capabilities.emailLink
+            : capabilities.phoneOtp;
 
     return (
         <IonRow className="w-full flex items-center justify-center social-logins-container">
@@ -128,21 +138,23 @@ export const SocialLoginsButtons: React.FC<{
                                 </button>
                             );
                         })}
-                        <button
-                            type="button"
-                            aria-label={
-                                activeLoginType === LoginTypesEnum.phone
-                                    ? m['login.email.button']()
-                                    : m['login.phone.button']()
-                            }
-                            className={`flex items-center justify-center border-solid border-[1px] border-white/30 ${activeLoginTypeStyles} rounded-full min-w-[60px] min-h-[60px] max-w-[60px] max-h-[60px] overflow-hidden`}
-                            onClick={e => {
-                                e.stopPropagation();
-                                handleActiveLoginType();
-                            }}
-                        >
-                            <ActiveLoginIcon className="w-[32px] h-[32px] object-contain" />
-                        </button>
+                        {canSwitchLoginType && (
+                            <button
+                                type="button"
+                                aria-label={
+                                    activeLoginType === LoginTypesEnum.phone
+                                        ? m['login.email.button']()
+                                        : m['login.phone.button']()
+                                }
+                                className={`flex items-center justify-center border-solid border-[1px] border-white/30 ${activeLoginTypeStyles} rounded-full min-w-[60px] min-h-[60px] max-w-[60px] max-h-[60px] overflow-hidden`}
+                                onClick={e => {
+                                    e.stopPropagation();
+                                    handleActiveLoginType();
+                                }}
+                            >
+                                <ActiveLoginIcon className="w-[32px] h-[32px] object-contain" />
+                            </button>
+                        )}
                     </div>
                     {showSocialLogins && (
                         <p className="border-b-[1px] border-solid border-white leading-[0.1em] w-full text-center my-[40px]">

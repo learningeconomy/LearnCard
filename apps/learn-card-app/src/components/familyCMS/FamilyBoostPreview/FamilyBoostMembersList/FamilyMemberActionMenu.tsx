@@ -31,6 +31,7 @@ import { useHistory } from 'react-router-dom';
 import { closeAll } from '../../../../helpers/uiHelpers';
 import { BoostSkeleton } from 'learn-card-base/components/boost/boostSkeletonLoaders/BoostSkeletons';
 import { MemberActionMenuEnum } from './FamilyMemberActionMenu.types';
+import * as m from '../../../../paraglide/messages.js';
 
 export const FamilyMemberActionMenu: React.FC<{
     credential: VC;
@@ -96,7 +97,7 @@ export const FamilyMemberActionMenu: React.FC<{
     }[] = [
         {
             id: 1,
-            title: 'View Profile',
+            title: m['family.actionMenu.viewProfile'](),
             icon: <ProfileIcon className="text-grayscale-900" />,
             onClick: () => {
                 // open LearnCardID Preview
@@ -130,7 +131,7 @@ export const FamilyMemberActionMenu: React.FC<{
         },
         {
             id: 2,
-            title: 'Boost',
+            title: m['family.actionMenu.boost'](),
             icon: <QrCodeIcon className="text-grayscale-900" />,
             onClick: () => {
                 // open LearnCardID Preview

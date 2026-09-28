@@ -33,6 +33,7 @@ export const Credential = ModelFactory<CredentialType, CredentialRelationships>(
         schema: {
             id: { type: 'string', required: true, uniqueItems: true },
             credential: { type: 'string', required: true },
+            statusEntries: { type: 'string', required: false },
         },
         primaryKeyField: 'id',
     },

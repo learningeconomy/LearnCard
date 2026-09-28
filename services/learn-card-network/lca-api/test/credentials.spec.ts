@@ -96,4 +96,42 @@ describe('Credentials', () => {
         );
         expect(proof).toBeDefined();
     });
+
+    it('rejects an unresolvable encryption recipient as BAD_REQUEST', async () => {
+        await expect(
+            userA.clients.authorizedDidAuth.credentials.issueCredential({
+                credential: userA.learnCard.invoke.newCredential(),
+                signingAuthority: {
+                    name: signingAuthority.name,
+                    ownerDid: signingAuthority.ownerDid,
+                    did: signingAuthority.did,
+                },
+                encryption: { recipients: ['did:example:no-key-agreement'] },
+            })
+        ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+    });
+
+    it('encrypts for both subject and owner while excluding an unrelated server key', async () => {
+        const student = await getUser('b'.repeat(64));
+        const server = await getUser('c'.repeat(64));
+        const credential = userA.learnCard.invoke.newCredential();
+        credential.credentialSubject = { id: student.learnCard.id.did() };
+        const stored = await userA.clients.authorizedDidAuth.credentials.issueCredential({
+            credential,
+            signingAuthority: {
+                name: signingAuthority.name,
+                ownerDid: signingAuthority.ownerDid,
+                did: signingAuthority.did,
+            },
+            encryption: { recipients: [student.learnCard.id.did(), userA.learnCard.id.did()] },
+        });
+        expect(stored).toHaveProperty('ciphertext');
+        const decrypted = await student.learnCard.invoke.decryptDagJwe(stored);
+        expect(await userA.learnCard.invoke.decryptDagJwe(stored)).toEqual(decrypted);
+        // WASM returns an empty value for an inaccessible JWE; native may throw.
+        expect(
+            await server.learnCard.invoke.decryptDagJwe(stored).catch(() => undefined)
+        ).toBeFalsy();
+        expect(decrypted).toMatchObject({ credentialSubject: credential.credentialSubject });
+    });
 });

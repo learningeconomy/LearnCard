@@ -21,3 +21,5 @@ export * from './auth';
 export * from './bitstring-status-list';
 export * from './inAppMessages';
 export * from './education-os';
+export * from './credential-refresh';
+export * from './share-links';

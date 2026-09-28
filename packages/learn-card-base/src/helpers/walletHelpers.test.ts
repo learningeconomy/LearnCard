@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
     getLinkedClaimsPlugin: vi.fn(async () => ({})),
     getRenderMethodPlugin: vi.fn(() => ({})),
     initLearnCard: vi.fn(),
+    networkUrl: vi.fn(() => 'https://network.example.com'),
 }));
 
 vi.mock('@learncard/init', () => ({ initLearnCard: mocks.initLearnCard }));
@@ -35,7 +36,7 @@ vi.mock('learn-card-base/stores/NetworkStore', () => ({
         get: {
             apiEndpoint: () => 'https://api.example.com',
             cloudUrl: () => 'https://cloud.example.com',
-            networkUrl: () => 'https://network.example.com',
+            networkUrl: mocks.networkUrl,
             tenantId: () => undefined,
         },
     },
@@ -51,6 +52,7 @@ vi.mock('../logging/logger', () => ({
 }));
 
 import { clearLearnCardCache, getBespokeLearnCard, getSigningLearnCard } from './walletHelpers';
+import { configureLocalDevelopmentNetwork } from '../config/localDevelopmentNetwork';
 
 const createWallet = () => {
     const wallet = { addPlugin: vi.fn() };
@@ -62,6 +64,8 @@ describe('wallet promise caches', () => {
     beforeEach(() => {
         clearLearnCardCache();
         vi.clearAllMocks();
+        mocks.networkUrl.mockReturnValue('https://network.example.com');
+        configureLocalDevelopmentNetwork(false, false, '', '');
     });
 
     it('shares one in-flight bespoke wallet build for the same cache key', async () => {
@@ -80,6 +84,43 @@ describe('wallet promise caches', () => {
         expect(firstWallet).toBe(wallet);
         expect(secondWallet).toBe(wallet);
         expect(mocks.getLCAPlugin).toHaveBeenCalledTimes(1);
+    });
+
+    it('passes local trust to network wallets and rebuilds without it after opting out', async () => {
+        const network = 'http://localhost:4000/trpc';
+        mocks.networkUrl.mockReturnValue(network);
+        mocks.initLearnCard.mockImplementation(async () => createWallet());
+        configureLocalDevelopmentNetwork(true, true, 'http://localhost:3000', network);
+
+        const localWallet = await getBespokeLearnCard('seed');
+        const options = mocks.initLearnCard.mock.calls[0]![0];
+        expect(options.network).toBe(network);
+        expect(JSON.parse(decodeURIComponent(options.trustedBoostRegistry.split(',')[1]))).toEqual([
+            {
+                id: 'Local LearnCard Network',
+                url: 'http://localhost:4000',
+                did: 'did:web:localhost%3A4000',
+            },
+        ]);
+
+        configureLocalDevelopmentNetwork(true, false, 'http://localhost:3000', network);
+        const normalWallet = await getBespokeLearnCard('seed');
+        expect(normalWallet).not.toBe(localWallet);
+        expect(mocks.initLearnCard.mock.calls[1]![0].trustedBoostRegistry).toBeUndefined();
+    });
+
+    it('keeps signing and offline wallets independent of local network trust', async () => {
+        const network = 'http://localhost:4000/trpc';
+        mocks.networkUrl.mockReturnValue(network);
+        mocks.initLearnCard.mockImplementation(async () => createWallet());
+        configureLocalDevelopmentNetwork(true, true, 'http://localhost:3000', network);
+        await getSigningLearnCard('seed');
+        await getBespokeLearnCard('seed', undefined, { offline: true });
+
+        for (const [options] of mocks.initLearnCard.mock.calls) {
+            expect(options).not.toHaveProperty('trustedBoostRegistry');
+            expect(options).not.toHaveProperty('network');
+        }
     });
 
     it('evicts a rejected bespoke wallet build so the next call retries', async () => {

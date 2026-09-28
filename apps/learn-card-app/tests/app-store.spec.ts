@@ -78,7 +78,7 @@ test.describe('App Store — redirect flow', () => {
         // Should redirect to /login
         await expect(page).toHaveURL(/\/login/, { timeout: 5_000 });
 
-        // Log in again — waitForAuthenticatedState uses /hidden/seed which bypasses
+        // Log in again — waitForAuthenticatedState uses /developer/sign-in which bypasses
         // the login page's returnUrl redirect, so we navigate back to the listing manually.
         // The installIntent persists in redirectStore across this navigation.
         await waitForAuthenticatedState(page, { profileId: 'testa' });

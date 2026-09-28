@@ -1,10 +1,17 @@
+import { LCNProfileValidator } from '@learncard/types';
+
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import { createProfile } from '@accesslayer/profile/create';
 import { getProfileIdFromDid } from './did.helpers';
 import { ProfileType } from 'types/profile';
 
 export const transformProfileId = (rawInput: string): string =>
-    rawInput.toLowerCase().replace(':', '%3A');
+    rawInput.toLowerCase().replaceAll(':', '%3A');
+
+export const PublicProfileIdValidator = LCNProfileValidator.shape.profileId.refine(
+    profileId => !transformProfileId(profileId).startsWith('sample-'),
+    { message: 'Profile IDs beginning with "sample-" are reserved.' }
+);
 
 /**
  * Gets or creates a federated profile for cross-instance credential sending.

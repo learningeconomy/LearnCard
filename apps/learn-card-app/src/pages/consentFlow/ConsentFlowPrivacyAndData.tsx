@@ -9,10 +9,11 @@ import {
     LaunchPadAppListItem,
     useWallet,
     useUpdateTerms,
+    useCurrentUser,
 } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import useConsentFlow from './useConsentFlow';
-import useGuardianGate from 'src/hooks/useGuardianGate';
+import useGuardianGate from '../../hooks/useGuardianGate';
 
 import { IonToggle } from '@ionic/react';
 import ConsentFlowFooter from './ConsentFlowFooter';
@@ -23,15 +24,17 @@ import PrivacyAndDataHeader from './PrivacyAndDataHeader';
 import ConsentFlowVerifiableDataSharingItem from './ConsentFlowVerifiableDataSharingItem';
 
 import { curriedStateSlice } from '@learncard/helpers';
-import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
 import * as m from '../../paraglide/messages.js';
 import TransP from '../../i18n/TransP';
 import {
+    getPersonalEntry,
     getAllCredentialUrisForCategory,
     getPrivacyAndDataInfo,
+    isSupportedPersonalField,
     isVerifiableDataContractCategory,
     VERIFIABLE_DATA_CONTRACT_CATEGORIES,
 } from '../../helpers/contract.helpers';
+import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
 
 type ConsentFlowPrivacyAndDataProps = {
     contractDetails: ConsentFlowContractDetails;
@@ -72,6 +75,7 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
     const { presentToast } = useToast();
     const brandingConfig = useBrandingConfig();
     const { guardedAction } = useGuardianGate();
+    const currentUser = useCurrentUser();
 
     // Use passed termsUri/ownerDid if provided (e.g., from ManageDataSharingModal)
     // Otherwise fall back to useConsentFlow lookup
@@ -92,12 +96,14 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
     const updateTerms = hasDirectUri
         ? async (
               terms: ConsentFlowTerms,
-              shareDuration: { oneTimeShare: boolean; customDuration: string }
+              shareDuration: { oneTimeShare: boolean; customDuration: string },
+              beforeSubmit?: () => Promise<void>
           ) => {
               await directUpdateTerms({
                   terms,
                   oneTime: shareDuration.oneTimeShare,
                   expiresAt: shareDuration.customDuration,
+                  beforeSubmit,
               });
           }
         : hookUpdateTerms;
@@ -236,6 +242,21 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
 
     const isUpdated = !isEqual(initialTerms, terms);
 
+    const handleToggleAnonymize = () => {
+        const nextAnonymize = !readTerms.anonymize;
+
+        updateSlice('read', oldRead => {
+            oldRead.anonymize = nextAnonymize;
+            oldRead.personal ??= {};
+
+            Object.keys(contractDetails.contract.read.personal ?? {}).forEach(key => {
+                if (oldRead.personal[key] && isSupportedPersonalField(key)) {
+                    oldRead.personal[key] = getPersonalEntry(key, currentUser, nextAnonymize);
+                }
+            });
+        });
+    };
+
     const allReadToggle = Object.keys(readCredentials.categories ?? {})
         .filter(category => !isVerifiableDataContractCategory(category))
         .every(category => {
@@ -243,7 +264,6 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
 
             return Boolean(categoryState?.sharing && categoryState.shareAll);
         });
-    const allWriteToggle = Object.values(terms.write.credentials.categories).every(Boolean);
 
     const handleToggleAllCategoryReadToggles = () => {
         updateSlice('read', oldRead => {
@@ -378,7 +398,12 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                                 <p className="text-grayscale-600 text-[14px] font-notoSans">
                                     <TransP
                                         m={m['consentFlow.privacyData.liveSyncDescription']}
-                                        components={[<span className="font-[600] font-notoSans" />]}
+                                        components={[
+                                            <span
+                                                key="emphasis"
+                                                className="font-[600] font-notoSans"
+                                            />,
+                                        ]}
                                     />
                                 </p>
                             </div>
@@ -410,12 +435,12 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                                 <label className="flex flex-col gap-[2px]">
                                     <output
                                         className={`font-[600] text-[14px] font-notoSans ${
-                                            terms.read.anonymize
+                                            readTerms.anonymize
                                                 ? 'text-emerald-700'
                                                 : 'text-grayscale-500'
                                         }`}
                                     >
-                                        {terms.read.anonymize
+                                        {readTerms.anonymize
                                             ? m['consentFlow.status.on']()
                                             : m['consentFlow.status.off']()}
                                     </output>
@@ -428,7 +453,7 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                                     mode="ios"
                                     className="[--background:white]"
                                     color="emerald-700"
-                                    onClick={() => updateRead('anonymize', !readTerms.anonymize)}
+                                    onClick={handleToggleAnonymize}
                                     checked={readTerms.anonymize}
                                 />
                             </div>
@@ -436,7 +461,12 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                             <p className="text-grayscale-600 text-[14px] font-notoSans">
                                 <TransP
                                     m={m['consentFlow.privacyData.anonymizeDescription']}
-                                    components={[<span className="font-[600] font-notoSans" />]}
+                                    components={[
+                                        <span
+                                            key="emphasis"
+                                            className="font-[600] font-notoSans"
+                                        />,
+                                    ]}
                                 />
                             </p>
                         </div>
@@ -499,7 +529,12 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                                     <TransP
                                         m={m['consentFlow.privacyData.writeDescription']}
                                         values={{ brand: brandingConfig?.name ?? '' }}
-                                        components={[<span className="font-[600] font-notoSans" />]}
+                                        components={[
+                                            <span
+                                                key="emphasis"
+                                                className="font-[600] font-notoSans"
+                                            />,
+                                        ]}
                                     />
                                 </p>
                             </div>
@@ -523,16 +558,19 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                     if (isPostConsent && isUpdated) {
                         try {
                             await guardedAction(async () => {
-                                await updateTerms(terms, shareDuration);
+                                await updateTerms(terms, shareDuration, () =>
+                                    guardedAction(() => {})
+                                );
                             });
                             presentToast('Successfully updated!', {
                                 type: ToastTypeEnum.Success,
                             });
                             if (embedded) onSaved?.();
                             else closeModal();
-                        } catch (e) {
-                            presentToast(`Failed to update terms: ${e.message}`, {
+                        } catch {
+                            presentToast(m['error.generic'](), {
                                 type: ToastTypeEnum.Error,
+                                hasDismissButton: true,
                             });
                         }
                     }

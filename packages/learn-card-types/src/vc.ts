@@ -188,7 +188,7 @@ export type UnsignedVC = z.infer<typeof UnsignedVCValidator>;
 export const ProofValidator = z
     .object({
         type: z.string(),
-        created: z.string(),
+        created: z.string().optional(),
         challenge: z.string().optional(),
         domain: z.string().optional(),
         nonce: z.string().optional(),
@@ -196,7 +196,19 @@ export const ProofValidator = z
         verificationMethod: z.string(),
         jws: z.string().optional(),
     })
-    .catchall(z.any());
+    .catchall(z.any())
+    .superRefine((proof, ctx) => {
+        if (
+            proof.created === undefined &&
+            (proof.type !== 'DataIntegrityProof' || proof.cryptosuite !== 'ecdsa-rdfc-2019')
+        ) {
+            ctx.addIssue({
+                code: 'custom',
+                path: ['created'],
+                message: 'created is required for this proof suite',
+            });
+        }
+    });
 export type Proof = z.infer<typeof ProofValidator>;
 
 export const VCValidator = UnsignedVCValidator.extend({

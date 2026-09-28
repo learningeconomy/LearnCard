@@ -4,72 +4,52 @@ description: 'Explanation: Interoperability, Open Standards, and LearnCard'
 
 # Interoperability
 
-Our core philosophy is simple: **A user's identity and achievements belong to them, not to a platform.** This principle is not just a talking point; it is the architectural foundation of everything we build, and it is made possible through a deep commitment to interoperability and open standards.
+A credential you issue through LearnCard is a standard W3C Verifiable Credential, usually an Open Badges 3.0 badge. That's a plain JSON document with a signature — not a LearnCard format. Any wallet or verifier that speaks the standard can hold it, show it, and check it, whether or not LearnCard is involved.
 
-## The Universal Passport: Beyond a Simple Wallet
+The same goes the other way. LearnCard can receive credentials issued by other systems, present its credentials to other verifiers, and export everything a user holds. Nothing about a learner's record depends on LearnCard staying around.
 
-It's helpful to think of LearnCard not as a closed "wallet," but as a **universal passport for learning and work.**
+This page lists what that rests on. For how to actually move credentials in and out, see [Bring Your Credentials into LearnCard](../how-to-guides/interoperate-with-learncard.md).
 
-A physical passport is valuable because it's based on a global standard. It's issued by a trusted authority, but it's recognized and accepted by countless other countries, airlines, and institutions. You can take it anywhere, and its value is understood.
+## Standards LearnCard implements
 
-This is our model for digital identity. A credential for a course completed on one platform should be just as valid and useful on another. A skill verified by one employer should be presentable to the next. LearnCard is designed to be that trusted, portable container for these records—a passport that unlocks opportunities across the entire digital world, not just within our own walls.
+- [**Verifiable Credentials (VCs)**](https://w3c.github.io/vc-data-model/)**:** The W3C standard for creating secure, tamper-evident digital records that are portable and independently verifiable.
+- [**Decentralized Identifiers (DIDs)**](https://w3c.github.io/did/)**:** The W3C standard for creating globally unique, user-controlled identifiers that are not dependent on any single organization.
+- [**VC-API**](https://w3c-ccg.github.io/vc-api)**:** A standard protocol that defines how wallets and servers communicate to issue and verify credentials, ensuring any compliant wallet can interact with any compliant issuer.
+- [**OpenID for Verifiable Credential Issuance (OID4VCI)**](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html)**:** The OpenID Foundation standard for receiving credentials from an issuer. LearnCard can accept a credential offer (by scanning a QR code or following a link), complete the issuer's authorization, and store the resulting credentials—bridging the OpenID ecosystem with your LearnCard Passport.
+- [**OpenID for Verifiable Presentations (OID4VP)**](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html)**:** The OpenID Foundation standard for presenting credentials to a verifier. LearnCard resolves a verifier's request, lets you choose which held credentials to share (with selective disclosure via DIF Presentation Exchange or DCQL), and returns a signed Verifiable Presentation.
+- [**Self-Issued OpenID Provider v2 (SIOPv2)**](https://openid.net/specs/openid-connect-self-issued-v2-1_0.html)**:** The OpenID Foundation standard that lets your wallet act as its own identity provider, issuing self-signed ID tokens so you can authenticate to relying parties without a centralized login.
+- [**Credential Handler API (CHAPI)**](http://chapi.io/): The Credential Handler API (CHAPI) allows your digital wallet to receive Verifiable Credentials from an independent third-party issuer - or present Verifiable Credentials to an independent third-party verifier - in a way that establishes trust and preserves privacy. LearnCard is CHAPI-compatible out of the box: if your system implements CHAPI (see the [official CHAPI documentation](https://chapi.io/developers/)), it works with LearnCard — no LearnCard-specific integration required.
+- [**Open Badges v3**](https://www.imsglobal.org/spec/ob/v3p0/)**:** The leading standard from 1EdTech for creating and recognizing digital badges for skills and achievements, which is fully compatible with the Verifiable Credentials model.
+- [**Comprehensive Learner Record v2**](https://www.imsglobal.org/spec/clr/v2p0/)**:** The leading standard from 1EdTech designed to create, transmit, and render an individual's set of achievements, as issued by multiple learning providers, in a machine-readable format that can be curated into verifiable digital records of achievement.
+- [**Credential Transparency Description Language (CTDL)**](https://credentialengine.org/credential-transparency/ctdl/)**:** A standard vocabulary for describing credentials, competencies, and educational pathways, making records machine-readable and easy to understand across different systems.
 
-## The Universal Inbox: The Bridge to Simplicity
+## Portability
 
-The biggest challenge to interoperability isn't a lack of standards; it's the friction of adoption. How do you connect the simple, centralized systems everyone uses today (like email) with the powerful, decentralized world of verifiable identity?
+A user can export their credentials, identifiers, and consent records from LearnCard at any time, without asking anyone — see [Holder Continuity](../core-concepts/architecture-and-principles/holder-continuity.md). The credentials remain valid in any other conformant wallet because their validity comes from the issuer's signature, not from LearnCard.
 
-This is the problem the [**Universal Inbox**](../core-concepts/network-and-interactions/universal-inbox.md) solves.
+One honest limit: _claiming_ a credential from a LearnCard email link happens in the LearnCard app. Getting that credential into a different wallet afterwards is an export or a standards-based transfer (OID4VCI, VC-API, CHAPI), not something the claim link does by itself.
 
-It acts as a simple, familiar on-ramp. By allowing an organization to send a credential to a simple email address or phone number, we remove the "chicken-and-egg" problem of decentralized identity. The developer doesn't need to ask, "Does this user have a passport yet?" They just send the record.
+## Tested against
 
-The Universal Inbox is the bridge that makes interoperability practical. It uses a simple, centralized interaction to bootstrap the user into a world where they are in full control of their own decentralized, interoperable records.
+Wallets and platforms LearnCard has exchanged credentials with:
 
-## A Foundation of Open Standards
+- [MIT's Learner Credential Wallet](https://lcw.app/)
+- [iDatify's SmartResume](https://www.smartresume.com/)
+- [IEEE's Open Credential Publisher](https://opencredentialpublisher.org/access/login)
+- [Digital Bazaar's Veres One Wallet](https://veres.one/)
+- [Spruce's Credible Wallet](https://spruceid.com/products/credible)
+- [Acreditta](https://info.acreditta.com/)
+- [ASU's Pocket](https://pocket.asu.edu/)
+- [Danube Tech](https://danubetech.com/tech/uni-issuer-verifier)
+- [Participate](https://www.participate.com/)
+- [Gobekli](https://gobekli.io/)
+- [VC Playground](https://vcplayground.org/)
+- _And many others that implement the VC-API and OpenID4VC (OID4VCI / OID4VP) standards._
 
-Our commitment to interoperability is not theoretical; it's built into every layer of our platform through the adoption of global, open standards. This ensures that data created or managed within LearnCard is portable, secure, and understandable by any other compliant system.
+Standards bodies whose work this builds on:
 
--   [**Verifiable Credentials (VCs)**](https://w3c.github.io/vc-data-model/)**:** The W3C standard for creating secure, tamper-evident digital records that are portable and independently verifiable.
--   [**Decentralized Identifiers (DIDs)**](https://w3c.github.io/did/)**:** The W3C standard for creating globally unique, user-controlled identifiers that are not dependent on any single organization.
--   [**VC-API**](https://w3c-ccg.github.io/vc-api)**:** A standard protocol that defines how wallets and servers communicate to issue and verify credentials, ensuring any compliant wallet can interact with any compliant issuer.
--   [**OpenID for Verifiable Credential Issuance (OID4VCI)**](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html)**:** The OpenID Foundation standard for receiving credentials from an issuer. LearnCard can accept a credential offer (by scanning a QR code or following a link), complete the issuer's authorization, and store the resulting credentials—bridging the OpenID ecosystem with your LearnCard Passport.
--   [**OpenID for Verifiable Presentations (OID4VP)**](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html)**:** The OpenID Foundation standard for presenting credentials to a verifier. LearnCard resolves a verifier's request, lets you choose which held credentials to share (with selective disclosure via DIF Presentation Exchange or DCQL), and returns a signed Verifiable Presentation.
--   [**Self-Issued OpenID Provider v2 (SIOPv2)**](https://openid.net/specs/openid-connect-self-issued-v2-1_0.html)**:** The OpenID Foundation standard that lets your wallet act as its own identity provider, issuing self-signed ID tokens so you can authenticate to relying parties without a centralized login.
--   [**Credential Handler API (CHAPI)**](http://chapi.io/): The Credential Handler API (CHAPI) allows your digital wallet to receive Verifiable Credentials from an independent third-party issuer - or present Verifiable Credentials to an independent third-party verifier - in a way that establishes trust and preserves privacy.
--   [**Open Badges v3**](https://www.imsglobal.org/spec/ob/v3p0/)**:** The leading standard from 1EdTech for creating and recognizing digital badges for skills and achievements, which is fully compatible with the Verifiable Credentials model.
--   [**Comprehensive Learner Record v2**](https://www.imsglobal.org/spec/clr/v2p0/)**:** The leading standard from 1EdTech designed to create, transmit, and render an individual's set of achievements, as issued by multiple learning providers, in a machine-readable format that can be curated into verifiable digital records of achievement.
--   [**Credential Transparency Description Language (CTDL)**](https://credentialengine.org/credential-transparency/ctdl/)**:** A standard vocabulary for describing credentials, competencies, and educational pathways, making records machine-readable and easy to understand across different systems.
-
-## Your Data, Your Passport: True Portability
-
-Because we are built on these open standards, **you are never locked in.**
-
-A user can, at any time, export their credentials and identifiers from their LearnCard Passport and import them into any other standards-compliant wallet. This is the ultimate guarantee of user control and freedom. It's not our platform that gives the credentials their value; it's the standards they are built upon. Our job is simply to provide the most secure, user-friendly passport for carrying them.
-
-## The Wall of Interoperability
-
-LearnCard is a node in a growing global network. Our ability to interoperate is proven by our compatibility with other tools and platforms that also embrace open standards.
-
-**Compatible Wallets & Platforms:**
-
--   [MIT's Learner Credential Wallet](https://lcw.app/)
--   [iDatify's SmartResume](https://www.smartresume.com/)
--   [IEEE's Open Credential Publisher](https://opencredentialpublisher.org/access/login)
--   [Digital Bazaar's Veres One Wallet](https://veres.one/)
--   [Spruce's Credible Wallet](https://spruceid.com/products/credible)
--   [Acreditta](https://info.acreditta.com/)
--   [ASU's Pocket](https://pocket.asu.edu/)
--   [Danube Tech](https://danubetech.com/tech/uni-issuer-verifier)
--   [Participate](https://www.participate.com/)
--   [Gobekli](https://gobekli.io/)
--   [VC Playground](https://vcplayground.org/)
--   _And many others that implement the VC-API and OpenID4VC (OID4VCI / OID4VP) standards._
-
-**Supported Standards Bodies:**
-
--   [W3C Credentials Community Group](https://www.w3.org/community/credentials/)
--   [1EdTech](https://www.1edtech.org/) (formerly IMS Global)
--   [IEEE](https://www.ieee.org/)
--   [Decentralized Identity Foundation (DIF)](https://identity.foundation/)
--   [OpenID Foundation](https://openid.net/)
-
-This ecosystem is a testament to the power of collaborative, open development. Our goal is to make LearnCard the easiest way to participate in it.
+- [W3C Credentials Community Group](https://www.w3.org/community/credentials/)
+- [1EdTech](https://www.1edtech.org/) (formerly IMS Global)
+- [IEEE](https://www.ieee.org/)
+- [Decentralized Identity Foundation (DIF)](https://identity.foundation/)
+- [OpenID Foundation](https://openid.net/)

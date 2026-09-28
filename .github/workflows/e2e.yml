@@ -1,0 +1,307 @@
+name: E2E
+
+on:
+    pull_request:
+        types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
+    # Merge queue: GitHub creates a temporary branch with the PR(s) merged onto
+    # current main and runs this once per batch. This is what lets PRs stay
+    # mergeable without every author re-running E2E after main moves.
+    merge_group:
+        types: [checks_requested]
+    workflow_dispatch:
+        inputs:
+            ref:
+                description: 'LearnCard ref to test'
+                required: false
+                default: 'main'
+            test_files:
+                description: 'Browser spec files, separated by spaces'
+                required: false
+                default: 'consent-flow-race.spec.ts app-store.spec.ts wallet-credentials.spec.ts'
+
+permissions:
+    contents: read
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.merge_group.head_ref || github.run_id }}
+    cancel-in-progress: true
+
+env:
+    E2E_TESTED_REF: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.event.inputs.ref || github.sha }}
+
+jobs:
+    eligibility:
+        name: Determine E2E eligibility
+        runs-on: ubuntu-latest
+        outputs:
+            run_e2e: ${{ steps.policy.outputs.run_e2e }}
+            reason: ${{ steps.policy.outputs.reason }}
+        steps:
+            - name: Checkout for change detection
+              if: ${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' }}
+              uses: actions/checkout@v7
+              with:
+                  ref: ${{ env.E2E_TESTED_REF }}
+                  fetch-depth: 0
+
+            - name: Evaluate PR policy
+              id: policy
+              env:
+                  EVENT_NAME: ${{ github.event_name }}
+                  PR_DRAFT: ${{ github.event.pull_request.draft || false }}
+                  BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+              run: |
+                  if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+                    echo 'run_e2e=true' >> "$GITHUB_OUTPUT"
+                    echo 'reason=manual-dispatch' >> "$GITHUB_OUTPUT"
+                    exit 0
+                  fi
+
+                  if [[ "$EVENT_NAME" == "pull_request" && "$PR_DRAFT" == "true" ]]; then
+                    echo 'run_e2e=false' >> "$GITHUB_OUTPUT"
+                    echo 'reason=draft-pr' >> "$GITHUB_OUTPUT"
+                    exit 0
+                  fi
+
+                  if bash scripts/e2e-hosted/changes-are-docs-only.sh "$BASE_SHA" HEAD; then
+                    echo 'run_e2e=false' >> "$GITHUB_OUTPUT"
+                    echo 'reason=docs-only' >> "$GITHUB_OUTPUT"
+                    exit 0
+                  fi
+
+                  echo 'run_e2e=true' >> "$GITHUB_OUTPUT"
+                  echo "reason=$EVENT_NAME" >> "$GITHUB_OUTPUT"
+
+    playwright_e2e:
+        name: Playwright E2E
+        needs: eligibility
+        if: ${{ needs.eligibility.outputs.run_e2e == 'true' }}
+        runs-on: ${{ vars.E2E_HOSTED_RUNNER || 'ubuntu-latest' }}
+        timeout-minutes: 60
+        env:
+            E2E_ARTIFACT_DIR: /tmp/learncard-e2e-artifacts/browser
+            E2E_TEST_FILES: ${{ github.event.inputs.test_files || 'consent-flow-race.spec.ts app-store.spec.ts wallet-credentials.spec.ts' }}
+        steps:
+            - name: Checkout tested revision
+              id: checkout
+              uses: actions/checkout@v7
+              with:
+                  ref: ${{ env.E2E_TESTED_REF }}
+                  fetch-depth: 0
+
+            - name: Capture runner preflight
+              if: ${{ always() }}
+              working-directory: ${{ runner.temp }}
+              env:
+                  CHECKOUT_OUTCOME: ${{ steps.checkout.outcome }}
+                  CHECKOUT_CONCLUSION: ${{ steps.checkout.conclusion }}
+                  TESTED_REF: ${{ env.E2E_TESTED_REF }}
+              run: |
+                  mkdir -p "$E2E_ARTIFACT_DIR"
+                  {
+                    printf 'checkout_outcome=%s\n' "$CHECKOUT_OUTCOME"
+                    printf 'checkout_conclusion=%s\n' "$CHECKOUT_CONCLUSION"
+                  } > "$E2E_ARTIFACT_DIR/checkout-status.txt"
+                  checkout_sha=unavailable
+                  if [[ "$CHECKOUT_OUTCOME" == "success" ]]; then
+                    checkout_sha=$(git -C "$GITHUB_WORKSPACE" rev-parse HEAD 2>/dev/null) || checkout_sha=unavailable
+                  fi
+                  {
+                    printf 'event_name=%s\n' "$GITHUB_EVENT_NAME"
+                    printf 'event_sha=%s\n' "$GITHUB_SHA"
+                    printf 'event_ref=%s\n' "$GITHUB_REF"
+                    printf 'run_id=%s\n' "$GITHUB_RUN_ID"
+                    printf 'run_attempt=%s\n' "$GITHUB_RUN_ATTEMPT"
+                    printf 'repository=%s\n' "$GITHUB_REPOSITORY"
+                    printf 'workflow=%s\n' "$GITHUB_WORKFLOW"
+                    printf 'tested_ref=%s\n' "$TESTED_REF"
+                    printf 'checkout_sha=%s\n' "$checkout_sha"
+                  } > "$E2E_ARTIFACT_DIR/revision-provenance.txt"
+                  {
+                    echo 'checkout:'
+                    cat "$E2E_ARTIFACT_DIR/checkout-status.txt"
+                    echo 'filesystem:'
+                    df -h /
+                    echo 'memory:'
+                    head -5 /proc/meminfo
+                    echo 'docker:'
+                    docker system df -v 2>&1 || true
+                  } > "$E2E_ARTIFACT_DIR/runner-preflight.txt"
+
+            - name: Prepare runner storage
+              run: bash scripts/e2e-hosted/prepare-storage.sh
+
+            - name: Setup Docker Buildx
+              uses: docker/setup-buildx-action@v3
+
+            - name: Expose GitHub Actions cache runtime
+              uses: crazy-max/ghaction-github-runtime@v3
+
+            - name: Setup Node
+              uses: actions/setup-node@v6
+              with:
+                  node-version-file: .nvmrc
+
+            - name: Setup Bun and dependencies
+              uses: ./.github/actions/setup
+
+            - name: Run Playwright and accessibility suites
+              run: bash scripts/e2e-hosted/run-browser.sh
+
+            - name: Publish browser diagnostic summary
+              if: always()
+              run: |
+                  if [[ -f "$E2E_ARTIFACT_DIR/summary.md" ]]; then
+                    cat "$E2E_ARTIFACT_DIR/summary.md" >> "$GITHUB_STEP_SUMMARY"
+                  else
+                    echo 'Playwright E2E diagnostics were not created.' >> "$GITHUB_STEP_SUMMARY"
+                  fi
+
+            - name: Upload browser E2E artifacts
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: playwright-e2e-${{ github.run_id }}
+                  path: ${{ env.E2E_ARTIFACT_DIR }}
+                  if-no-files-found: error
+                  retention-days: 30
+
+    tests_e2e:
+        name: tests/e2e
+        needs: eligibility
+        if: ${{ needs.eligibility.outputs.run_e2e == 'true' }}
+        runs-on: ${{ vars.E2E_HOSTED_RUNNER || 'ubuntu-latest' }}
+        timeout-minutes: 60
+        # 45 spec files run strictly serially (serviceIntegrationPreset sets
+        # fileParallelism: false because they share one stack). Each file wipes every
+        # database in its beforeAll, so there is no cross-file ordering dependency and
+        # the files can be split across runners that each own a separate stack.
+        # fail-fast is off so one red shard still lets the others report.
+        strategy:
+            fail-fast: false
+            matrix:
+                shard: [1, 2, 3]
+        env:
+            E2E_ARTIFACT_DIR: /tmp/learncard-e2e-artifacts/service
+            E2E_SHARD: ${{ matrix.shard }}
+            E2E_SHARD_TOTAL: ${{ strategy.job-total }}
+        steps:
+            - name: Checkout tested revision
+              id: checkout
+              uses: actions/checkout@v7
+              with:
+                  ref: ${{ env.E2E_TESTED_REF }}
+                  fetch-depth: 0
+
+            - name: Capture runner preflight
+              if: ${{ always() }}
+              working-directory: ${{ runner.temp }}
+              env:
+                  CHECKOUT_OUTCOME: ${{ steps.checkout.outcome }}
+                  CHECKOUT_CONCLUSION: ${{ steps.checkout.conclusion }}
+                  TESTED_REF: ${{ env.E2E_TESTED_REF }}
+              run: |
+                  mkdir -p "$E2E_ARTIFACT_DIR"
+                  {
+                    printf 'checkout_outcome=%s\n' "$CHECKOUT_OUTCOME"
+                    printf 'checkout_conclusion=%s\n' "$CHECKOUT_CONCLUSION"
+                  } > "$E2E_ARTIFACT_DIR/checkout-status.txt"
+                  checkout_sha=unavailable
+                  if [[ "$CHECKOUT_OUTCOME" == "success" ]]; then
+                    checkout_sha=$(git -C "$GITHUB_WORKSPACE" rev-parse HEAD 2>/dev/null) || checkout_sha=unavailable
+                  fi
+                  {
+                    printf 'event_name=%s\n' "$GITHUB_EVENT_NAME"
+                    printf 'event_sha=%s\n' "$GITHUB_SHA"
+                    printf 'event_ref=%s\n' "$GITHUB_REF"
+                    printf 'run_id=%s\n' "$GITHUB_RUN_ID"
+                    printf 'run_attempt=%s\n' "$GITHUB_RUN_ATTEMPT"
+                    printf 'repository=%s\n' "$GITHUB_REPOSITORY"
+                    printf 'workflow=%s\n' "$GITHUB_WORKFLOW"
+                    printf 'tested_ref=%s\n' "$TESTED_REF"
+                    printf 'checkout_sha=%s\n' "$checkout_sha"
+                  } > "$E2E_ARTIFACT_DIR/revision-provenance.txt"
+                  {
+                    echo 'checkout:'
+                    cat "$E2E_ARTIFACT_DIR/checkout-status.txt"
+                    echo 'filesystem:'
+                    df -h /
+                    echo 'memory:'
+                    head -5 /proc/meminfo
+                    echo 'docker:'
+                    docker system df -v 2>&1 || true
+                  } > "$E2E_ARTIFACT_DIR/runner-preflight.txt"
+
+            - name: Prepare runner storage
+              run: bash scripts/e2e-hosted/prepare-storage.sh
+
+            - name: Setup Docker Buildx
+              uses: docker/setup-buildx-action@v3
+
+            - name: Expose GitHub Actions cache runtime
+              uses: crazy-max/ghaction-github-runtime@v3
+
+            - name: Setup Node
+              uses: actions/setup-node@v6
+              with:
+                  node-version-file: .nvmrc
+
+            - name: Setup Bun and dependencies
+              uses: ./.github/actions/setup
+
+            - name: Run tests/e2e
+              run: bash scripts/e2e-hosted/run-service.sh
+
+            - name: Publish service diagnostic summary
+              if: always()
+              run: |
+                  echo "## tests/e2e shard ${E2E_SHARD}/${E2E_SHARD_TOTAL}" >> "$GITHUB_STEP_SUMMARY"
+                  if [[ -f "$E2E_ARTIFACT_DIR/summary.md" ]]; then
+                    cat "$E2E_ARTIFACT_DIR/summary.md" >> "$GITHUB_STEP_SUMMARY"
+                  else
+                    echo 'tests/e2e diagnostics were not created.' >> "$GITHUB_STEP_SUMMARY"
+                  fi
+
+            - name: Upload service E2E artifacts
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: tests-e2e-${{ github.run_id }}-shard${{ matrix.shard }}
+                  path: ${{ env.E2E_ARTIFACT_DIR }}
+                  if-no-files-found: error
+                  retention-days: 30
+
+    e2e:
+        name: E2E
+        needs: [eligibility, playwright_e2e, tests_e2e]
+        if: ${{ always() }}
+        runs-on: ubuntu-latest
+        timeout-minutes: 5
+        steps:
+            - name: Evaluate E2E result
+              env:
+                  ELIGIBILITY_RESULT: ${{ needs.eligibility.result }}
+                  ELIGIBLE: ${{ needs.eligibility.outputs.run_e2e }}
+                  ELIGIBILITY_REASON: ${{ needs.eligibility.outputs.reason }}
+                  BROWSER_RESULT: ${{ needs.playwright_e2e.result }}
+                  SERVICE_RESULT: ${{ needs.tests_e2e.result }}
+              run: |
+                  if [[ "$ELIGIBILITY_RESULT" != "success" ]]; then
+                    echo "E2E eligibility did not succeed: $ELIGIBILITY_RESULT" >&2
+                    exit 1
+                  fi
+
+                  if [[ "$ELIGIBLE" == "false" ]]; then
+                    case "$ELIGIBILITY_REASON" in
+                      draft-pr)  echo 'E2E skipped: draft pull request.'; exit 0 ;;
+                      docs-only) echo 'E2E skipped: only documentation files changed.'; exit 0 ;;
+                    esac
+                  fi
+
+                  if [[ "$ELIGIBLE" == "true" && "$BROWSER_RESULT" == "success" && "$SERVICE_RESULT" == "success" ]]; then
+                    echo 'Both hosted E2E suites passed.'
+                    exit 0
+                  fi
+
+                  echo "E2E failed: eligibility=$ELIGIBLE reason=$ELIGIBILITY_REASON playwright=$BROWSER_RESULT tests_e2e=$SERVICE_RESULT" >&2
+                  exit 1

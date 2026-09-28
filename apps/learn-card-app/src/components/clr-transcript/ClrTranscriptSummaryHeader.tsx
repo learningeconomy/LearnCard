@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { useClrLearnerIdentity } from './useClrLearnerIdentity';
+
 import { StatCard } from './ClrStatCard';
 import ClrIssuerBadge from './ClrIssuerBadge';
 import ClrEvidenceDetailPanel from './ClrEvidenceDetailPanel';
@@ -25,10 +27,23 @@ const ClrTranscriptSummaryHeader: React.FC<{
     adminMode?: boolean;
 }> = ({ model, boost, boostUri, adminMode = false }) => {
     const { newModal } = useModal({ desktop: ModalTypes.Right, mobile: ModalTypes.Right });
+    const learner = useClrLearnerIdentity(model.header.learnerName?.value);
     const issuerLogo = getClrIssuerLogo(model);
     const transcriptTitle = model.header.title?.value || 'Official Academic Transcript';
     const scrollToCourseHistory = () => {
         document.getElementById('course-history')?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+        });
+    };
+    const scrollToAssessments = () => {
+        document.getElementById('assessments')?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+        });
+    };
+    const scrollToAwards = () => {
+        document.getElementById('awards')?.scrollIntoView({
             behavior: 'smooth',
             block: 'start',
         });
@@ -60,7 +75,7 @@ const ClrTranscriptSummaryHeader: React.FC<{
     };
 
     return (
-        <div className="bg-white rounded-[20px] border border-grayscale-200 p-6 space-y-5 relative overflow-hidden">
+        <div className="bg-white rounded-[20px] border border-grayscale-200 p-4 space-y-3 relative overflow-hidden">
             {model.meta.partial && (
                 <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
                     <p className="text-xs font-medium text-amber-800">
@@ -73,14 +88,18 @@ const ClrTranscriptSummaryHeader: React.FC<{
             {/* Top: avatar + identity + QR */}
             <div className="relative flex flex-col gap-4 md:flex-row md:items-start">
                 <UserProfilePicture
-                    user={{ displayName: model.header.learnerName?.value }}
-                    customContainerClass="w-16 h-16 shrink-0 text-2xl self-start"
-                    customImageClass="w-16 h-16"
+                    user={learner}
+                    customContainerClass="w-12 h-12 shrink-0 text-lg self-start"
+                    customImageClass="w-12 h-12"
                 />
 
                 <div className="w-full min-w-0 md:flex-1 md:pt-1">
-                    <p className="text-[22px] text-grayscale-900 leading-tight truncate">
-                        {model.header.learnerName?.value ?? 'Unknown learner'}
+                    <p
+                        className={`text-lg text-grayscale-900 leading-tight truncate ${
+                            learner.displayName.length > 20 ? 'xs:mt-4' : ''
+                        }`}
+                    >
+                        {learner.displayName}
                     </p>
                     <div className="border-t border-grayscale-200 my-2" />
                     {model.header.issuerName?.value && (
@@ -121,6 +140,20 @@ const ClrTranscriptSummaryHeader: React.FC<{
                         type="courses"
                         value={model.summary.courseCount}
                         onClick={scrollToCourseHistory}
+                    />
+                )}
+                {model.summary.assessmentCount > 0 && (
+                    <StatCard
+                        type="assessments"
+                        value={model.summary.assessmentCount}
+                        onClick={scrollToAssessments}
+                    />
+                )}
+                {model.summary.awardCount > 0 && (
+                    <StatCard
+                        type="awards"
+                        value={model.summary.awardCount}
+                        onClick={scrollToAwards}
                     />
                 )}
                 {model.summary.explicitCompetencyCount > 0 && (
@@ -164,12 +197,13 @@ const ClrTranscriptSummaryHeader: React.FC<{
             {/* Verification badge + pills + issuer logo */}
             <div className="flex items-center justify-between gap-3 flex-wrap">
                 <div className="flex items-center gap-2 flex-wrap">
-                    <div className="bg-grayscale-100 rounded-full px-2 !py-0">
+                    <div className="flex items-center bg-grayscale-100 rounded-full px-2 py-1">
                         <CredentialVerificationDisplay
                             className="!bg-grayscale-100"
                             iconClassName="!w-4 !h-4"
                             credential={boost}
                             showText
+                            spanClassName="text-[#026BFF]"
                         />
                     </div>
                     <ClrVerificationPills boost={boost} />

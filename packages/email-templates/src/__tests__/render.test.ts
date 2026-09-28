@@ -130,6 +130,11 @@ const TEMPLATE_FIXTURES: { [K in TemplateId]: TemplateDataMap[K] } = {
         credential: { name: 'Diploma' },
         recipient: { email: 'student@example.com' },
     },
+
+    'credential-updated': {
+        issuer: { name: 'Inbox Demo School' },
+        credential: { name: 'Introduction to Biology' },
+    },
 };
 
 const ALL_TEMPLATE_IDS = Object.keys(TEMPLATE_FIXTURES) as TemplateId[];
@@ -139,38 +144,40 @@ const ALL_TEMPLATE_IDS = Object.keys(TEMPLATE_FIXTURES) as TemplateId[];
 // ---------------------------------------------------------------------------
 
 describe('renderEmail — smoke tests', () => {
-    it.each(ALL_TEMPLATE_IDS)(
-        '"%s" renders with default branding',
-        async (templateId) => {
-            const result = await renderEmail(templateId, DEFAULT_BRANDING, TEMPLATE_FIXTURES[templateId]);
+    it.each(ALL_TEMPLATE_IDS)('"%s" renders with default branding', async templateId => {
+        const result = await renderEmail(
+            templateId,
+            DEFAULT_BRANDING,
+            TEMPLATE_FIXTURES[templateId]
+        );
 
-            expect(result.html).toBeTruthy();
-            expect(result.html).toContain('<!DOCTYPE');
-            expect(result.text).toBeTruthy();
-            expect(result.subject).toBeTruthy();
-            expect(result.subject.length).toBeGreaterThan(0);
-        },
-    );
+        expect(result.html).toBeTruthy();
+        expect(result.html).toContain('<!DOCTYPE');
+        expect(result.text).toBeTruthy();
+        expect(result.subject).toBeTruthy();
+        expect(result.subject.length).toBeGreaterThan(0);
+    });
 
-    it.each(ALL_TEMPLATE_IDS)(
-        '"%s" renders with custom (VetPass) branding',
-        async (templateId) => {
-            const result = await renderEmail(templateId, VETPASS_BRANDING, TEMPLATE_FIXTURES[templateId]);
+    it.each(ALL_TEMPLATE_IDS)('"%s" renders with custom (VetPass) branding', async templateId => {
+        const result = await renderEmail(
+            templateId,
+            VETPASS_BRANDING,
+            TEMPLATE_FIXTURES[templateId]
+        );
 
-            expect(result.html).toBeTruthy();
-            expect(result.text).toBeTruthy();
-            expect(result.subject).toBeTruthy();
-        },
-    );
+        expect(result.html).toBeTruthy();
+        expect(result.text).toBeTruthy();
+        expect(result.subject).toBeTruthy();
+    });
 
     it.each(ALL_TEMPLATE_IDS)(
         '"%s" renders with empty branding (falls back to defaults)',
-        async (templateId) => {
+        async templateId => {
             const result = await renderEmail(templateId, {}, TEMPLATE_FIXTURES[templateId]);
 
             expect(result.html).toBeTruthy();
             expect(result.subject).toBeTruthy();
-        },
+        }
     );
 });
 
@@ -293,6 +300,89 @@ describe('renderEmail — content assertions', () => {
 });
 
 // ---------------------------------------------------------------------------
+// credential-updated — minimal-context update email (LC-2198)
+// ---------------------------------------------------------------------------
+
+describe('renderEmail — credential-updated', () => {
+    it('includes the issuer display name and credential title', async () => {
+        const data = TEMPLATE_FIXTURES['credential-updated'];
+        const { html } = await renderEmail('credential-updated', DEFAULT_BRANDING, data);
+
+        expect(html).toContain('Inbox Demo School');
+        expect(html).toContain('Introduction to Biology');
+    });
+
+    it('links the CTA to the configured app notifications page, not a claim or token URL', async () => {
+        const { html } = await renderEmail('credential-updated', VETPASS_BRANDING, {
+            issuer: { name: 'Vet School' },
+            credential: { name: 'Veterinary Ethics' },
+        });
+
+        expect(html).toContain('https://vetpass.app/notifications');
+        expect(html).not.toContain('/claim');
+        expect(html).not.toContain('token=');
+    });
+
+    it('falls back to generic copy when no credential title is available', async () => {
+        const { html, text } = await renderEmail('credential-updated', DEFAULT_BRANDING, {
+            issuer: { name: 'Inbox Demo School' },
+        });
+
+        expect(html).toContain('Inbox Demo School');
+        // Generic copy confirms an update without inventing a title.
+        expect(html.toLowerCase()).toContain('updated');
+        expect(text.toLowerCase()).toContain('updated');
+        expect(html).not.toContain('undefined');
+    });
+
+    it('never renders issuer-authored summary or credential body content', async () => {
+        // The data shape only carries issuer + title; assert nothing else leaks.
+        const { html } = await renderEmail('credential-updated', DEFAULT_BRANDING, {
+            issuer: { name: 'Inbox Demo School' },
+            credential: { name: 'Introduction to Biology' },
+        } as unknown as (typeof TEMPLATE_FIXTURES)['credential-updated']);
+
+        expect(html).not.toContain('updateSummary');
+        expect(html).not.toContain('credentialSubject');
+    });
+
+    it.each([
+        { locale: 'es', expected: 'actualiz' },
+        { locale: 'fr', expected: 'mis' },
+        { locale: 'ar', expected: 'تم' },
+    ])('renders localized copy for $locale', async ({ locale, expected }) => {
+        const data = TEMPLATE_FIXTURES['credential-updated'];
+        const { html, subject } = await renderEmail(
+            'credential-updated',
+            DEFAULT_BRANDING,
+            data,
+            locale
+        );
+
+        expect(subject).toBeTruthy();
+        expect(html).toContain(expected);
+    });
+
+    it('plain text output is readable and free of HTML tags', async () => {
+        const data = TEMPLATE_FIXTURES['credential-updated'];
+        const { text } = await renderEmail('credential-updated', DEFAULT_BRANDING, data);
+
+        expect(text).not.toMatch(/<[a-z][\s\S]*>/i);
+        expect(text).toContain('Inbox Demo School');
+        expect(text).toContain('Introduction to Biology');
+    });
+
+    it('flows tenant branding through to the rendered email', async () => {
+        const data = TEMPLATE_FIXTURES['credential-updated'];
+        const { html } = await renderEmail('credential-updated', VETPASS_BRANDING, data);
+
+        expect(html).toContain('VetPass');
+        expect(html).toContain('#1B5E20');
+        expect(html).toContain('support@vetpass.app');
+    });
+});
+
+// ---------------------------------------------------------------------------
 // Branding tests — custom branding flows through to rendered output
 // ---------------------------------------------------------------------------
 
@@ -366,10 +456,33 @@ describe('renderEmail — subjects', () => {
         expect(subject).toBe('Verify Your Email');
     });
 
+    it('credential-updated subject is localized and generic', async () => {
+        const [en, es] = await Promise.all([
+            renderEmail(
+                'credential-updated',
+                DEFAULT_BRANDING,
+                TEMPLATE_FIXTURES['credential-updated']
+            ),
+            renderEmail(
+                'credential-updated',
+                DEFAULT_BRANDING,
+                TEMPLATE_FIXTURES['credential-updated'],
+                'es'
+            ),
+        ]);
+
+        expect(en.subject).toBe('Your credential was updated');
+        expect(es.subject).toBe('Tu credencial se actualizó');
+    });
+
     it('Postmark alias pairs produce the same subject', async () => {
         const [a, b] = await Promise.all([
             renderEmail('inbox-claim', DEFAULT_BRANDING, TEMPLATE_FIXTURES['inbox-claim']),
-            renderEmail('universal-inbox-claim', DEFAULT_BRANDING, TEMPLATE_FIXTURES['inbox-claim']),
+            renderEmail(
+                'universal-inbox-claim',
+                DEFAULT_BRANDING,
+                TEMPLATE_FIXTURES['inbox-claim']
+            ),
         ]);
 
         expect(a.subject).toBe(b.subject);
@@ -382,13 +495,21 @@ describe('renderEmail — subjects', () => {
 
 describe('renderEmail — plain text', () => {
     it('plain text output does not contain HTML tags', async () => {
-        const { text } = await renderEmail('inbox-claim', DEFAULT_BRANDING, TEMPLATE_FIXTURES['inbox-claim']);
+        const { text } = await renderEmail(
+            'inbox-claim',
+            DEFAULT_BRANDING,
+            TEMPLATE_FIXTURES['inbox-claim']
+        );
 
         expect(text).not.toMatch(/<[a-z][\s\S]*>/i);
     });
 
     it('plain text includes key content', async () => {
-        const { text } = await renderEmail('recovery-key', DEFAULT_BRANDING, TEMPLATE_FIXTURES['recovery-key']);
+        const { text } = await renderEmail(
+            'recovery-key',
+            DEFAULT_BRANDING,
+            TEMPLATE_FIXTURES['recovery-key']
+        );
 
         expect(text).toContain('ABCD-EFGH-1234-5678');
     });

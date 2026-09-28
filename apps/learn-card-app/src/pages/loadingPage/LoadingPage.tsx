@@ -111,6 +111,7 @@ export const LoadingPage2: React.FC = React.memo(() => {
             const isChapiInteraction = chapiStore.get.isChapiInteraction();
             if (redirectTo) {
                 try {
+                    redirectStore.set.lcnRedirect(null);
                     redirectStore.set.authRedirect(null);
                     chapiStore.set.isChapiInteraction(null);
                 } catch (e) {
@@ -131,3 +132,5 @@ export const LoadingPage2: React.FC = React.memo(() => {
 
     return <LoginLoadingPage />;
 });
+
+LoadingPage2.displayName = 'LoadingPage2';

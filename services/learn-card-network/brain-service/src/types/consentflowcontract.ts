@@ -3,8 +3,19 @@ import {
     ConsentFlowTermsValidator,
     ConsentFlowTermsStatusValidator,
     ConsentFlowTransactionActionValidator,
+    ConsentFlowGuardianApprovalValidator,
 } from '@learncard/types';
 import { z } from 'zod';
+
+type FlatGuardianApproval = {
+    [
+        Key in keyof z.infer<
+            typeof ConsentFlowGuardianApprovalValidator
+        > as `guardianApproval.${Key}`
+    ]?: string;
+};
+
+type FlatConsentTerms = Partial<Record<`terms.${string}`, string | boolean | string[]>>;
 
 export const DbContractValidator = z.object({
     id: z.string(),
@@ -29,18 +40,23 @@ export const DbTransactionValidator = z.object({
     id: z.string(),
     action: ConsentFlowTransactionActionValidator,
     terms: ConsentFlowTermsValidator,
+    guardianApproval: ConsentFlowGuardianApprovalValidator.optional(),
     date: z.string(),
     expiresAt: z.string().optional(),
     oneTime: z.boolean().optional(),
 });
 
 export type DbTransactionType = z.infer<typeof DbTransactionValidator>;
-export type FlatDbTransactionType = DbTransactionType & { terms: any };
+export type FlatDbTransactionType = Omit<DbTransactionType, 'guardianApproval' | 'terms'> &
+    FlatConsentTerms &
+    FlatGuardianApproval;
 
 export const DbTermsValidator = z.object({
     id: z.string(),
     status: ConsentFlowTermsStatusValidator,
-    terms: ConsentFlowTermsValidator,
+    // Neo4j has no properties to store for entirely empty permission objects.
+    terms: ConsentFlowTermsValidator.prefault({}),
+    guardianApproval: ConsentFlowGuardianApprovalValidator.optional(),
     createdAt: z.string().optional(),
     updatedAt: z.string().optional(),
     expiresAt: z.string().optional(),
@@ -48,4 +64,6 @@ export const DbTermsValidator = z.object({
 });
 
 export type DbTermsType = z.infer<typeof DbTermsValidator>;
-export type FlatDbTermsType = DbTermsType & { terms: any };
+export type FlatDbTermsType = Omit<DbTermsType, 'guardianApproval' | 'terms'> &
+    FlatConsentTerms &
+    FlatGuardianApproval;

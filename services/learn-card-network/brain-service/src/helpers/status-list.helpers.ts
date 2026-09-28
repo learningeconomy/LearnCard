@@ -8,7 +8,10 @@ import type {
     UnsignedVC,
     VC,
 } from '@learncard/types';
-import { DEFAULT_BITSTRING_STATUS_LIST_SIZE } from '@learncard/types';
+import {
+    BitstringStatusListEntryValidator,
+    DEFAULT_BITSTRING_STATUS_LIST_SIZE,
+} from '@learncard/types';
 import {
     getBitstringStatusListEntries,
     getCredentialStatusArray,
@@ -52,7 +55,7 @@ const nodeToStatusList = (node: unknown): StatusListType | null => {
 };
 
 export const getStatusListBaseUrl = (domain: string): string => {
-    const normalizedDomain = domain.replace('/trpc', '').replace(/%3A/g, ':');
+    const normalizedDomain = domain.replace('/trpc', '').replace(/%3A/gi, ':');
     const protocol = normalizedDomain.includes('localhost') ? 'http' : 'https';
 
     return `${protocol}://${normalizedDomain}`;
@@ -397,16 +400,36 @@ export const setCredentialBitstringStatus = async (
     const credential = await Credential.findOne({ where: { id: credentialId } });
     if (!credential) return false;
 
-    const parsedCredential = JSON.parse(credential.credential);
-    const entries = getBitstringStatusListEntries(parsedCredential).filter(
-        entry => entry.statusPurpose === statusPurpose
-    );
+    // Encrypted SA credentials retain only public status coordinates separately.
+    // Legacy plaintext/wrapped credentials continue using their embedded entries.
+    let statusEntries: BitstringStatusListEntry[];
+    try {
+        statusEntries = BitstringStatusListEntryValidator.array().parse(
+            credential.statusEntries
+                ? JSON.parse(credential.statusEntries)
+                : getBitstringStatusListEntries(JSON.parse(credential.credential))
+        );
+        if (
+            statusEntries.some(
+                entry =>
+                    !Number.isSafeInteger(Number(entry.statusListIndex)) ||
+                    Number(entry.statusListIndex) < 0
+            )
+        ) {
+            throw new Error('Invalid status list index');
+        }
+    } catch {
+        console.error('[setCredentialBitstringStatus] Invalid stored status entries', {
+            credentialId,
+        });
+        return false;
+    }
+    const entries = statusEntries.filter(entry => entry.statusPurpose === statusPurpose);
 
     if (entries.length === 0) return false;
 
-    await Promise.all(entries.map(entry => setStatusListEntryBit(entry, value)));
-
-    return true;
+    const updated = await Promise.all(entries.map(entry => setStatusListEntryBit(entry, value)));
+    return updated.every(Boolean);
 };
 
 export const getSignedStatusListCredential = async (id: string): Promise<VC | null> => {

@@ -13,7 +13,7 @@ import {
     RegistrySubscriptionDeclarationValidator,
     ConsoleSurfaceValidator,
 } from '@learncard/types';
-import type { JWE, UnsignedVC, VC } from '@learncard/types';
+import type { UnsignedVC } from '@learncard/types';
 import { isVC2Format, checkAppInstallEligibility, calculateAgeFromDob } from '@learncard/helpers';
 import type { ProfileType } from 'types/profile';
 
@@ -114,9 +114,11 @@ import {
     isDraftBoost,
     appendTemplateEvidenceToCredential,
 } from '@helpers/boost.helpers';
+import { setCredentialSubjectIds } from '@helpers/credentialSubject.helpers';
 import { createBoostForListing } from '@accesslayer/boost/create';
 import { setBoostAsParent } from '@accesslayer/boost/relationships/create';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
+import type { IssuedCredential } from '../types/credential';
 import {
     renderBoostTemplate,
     parseRenderedTemplate,
@@ -134,7 +136,7 @@ import {
 } from '@accesslayer/credential/read';
 import { getEcosystemById } from '@accesslayer/ecosystem/read';
 import {
-    getContractTermsForProfile,
+    getConsentedDataBetweenProfiles,
     getContractDetailsByUri,
 } from '@accesslayer/consentflowcontract/relationships/read';
 import { getBoostPermissions, getBoostRecipients } from '@accesslayer/boost/relationships/read';
@@ -708,17 +710,7 @@ export const handleSendCredentialEvent = async (
 
         const targetDid = getDidWeb(ctx.domain, target.profileId);
 
-        if (Array.isArray(unsignedVc.credentialSubject)) {
-            unsignedVc.credentialSubject = unsignedVc.credentialSubject.map(subject => ({
-                ...subject,
-                id: targetDid,
-            }));
-        } else {
-            unsignedVc.credentialSubject = {
-                ...unsignedVc.credentialSubject,
-                id: targetDid,
-            };
-        }
+        setCredentialSubjectIds(unsignedVc, targetDid);
 
         if (unsignedVc?.type?.includes('BoostCredential')) {
             unsignedVc.boostId = boostUri;
@@ -741,7 +733,7 @@ export const handleSendCredentialEvent = async (
     };
 
     // Issue via signing authority
-    let credential: VC | JWE;
+    let credential: IssuedCredential;
 
     try {
         const ownerDidOverride = listing.slug ? getAppDidWeb(ctx.domain, listing.slug) : undefined;
@@ -1215,59 +1207,75 @@ const handleRequestLearnerContextEvent = async (
         detailLevel?: string;
     };
 
-    const credentialUris: string[] = [];
+    const credentialUris = new Set<string>();
     let personalData: Record<string, string> = {};
-
-    const sentCredentials = await getCredentialsSentByListingToProfile(
-        listingId,
-        profile.profileId,
-        { limit: 100 }
-    );
-
-    for (const sentCred of sentCredentials) {
-        const credentialUri = getCredentialUri(sentCred.credentialId, ctx.domain);
-        credentialUris.push(credentialUri);
-    }
-
-    // Resolve contractUri from launch_config_json or guideState
-    let contractUri = getContractUriFromLaunchConfig(listing);
-
-    if (!contractUri) {
-        const integration = await getIntegrationForListing(listingId);
-        contractUri = getContractUriFromGuideState(integration);
-    }
+    const integration = await getIntegrationForListing(listingId);
+    const contractUri =
+        getContractUriFromLaunchConfig(listing) ?? getContractUriFromGuideState(integration);
 
     if (contractUri) {
-        try {
-            const contractDetails = await getContractDetailsByUri(contractUri);
+        const contractDetails = await getContractDetailsByUri(contractUri);
+        const owner = integration ? await getOwnerProfileForIntegration(integration.id) : null;
+        if (
+            !contractDetails ||
+            !owner ||
+            contractDetails.contractOwner.profileId !== owner.profileId
+        ) {
+            throw new TRPCError({
+                code: 'FORBIDDEN',
+                message: 'The app must use a consent contract owned by its integration',
+            });
+        }
 
-            if (contractDetails?.contract) {
-                const terms = await getContractTermsForProfile(profile, contractDetails.contract);
-
-                if (event.includeCredentials && terms?.terms?.read?.credentials) {
-                    const uris = Object.values(terms.terms.read.credentials.categories).flatMap(
-                        (category: unknown) => (category as { shared?: string[] })?.shared ?? []
-                    );
-
-                    credentialUris.push(...uris);
-                }
-
-                if (event.includePersonalData && terms?.terms?.read?.personal) {
-                    personalData = terms.terms.read.personal;
-                }
+        // Use the same live/expiry/category/guardian evaluation as data-provider reads.
+        // An app's contract is not interchangeable with another app's or AI's grant.
+        const [consent] = await getConsentedDataBetweenProfiles(
+            owner.profileId,
+            profile.profileId,
+            { query: { id: contractDetails.contract.id }, limit: 1, domain: ctx.domain }
+        );
+        if (
+            !consent ||
+            consent.status !== 'live' ||
+            (consent.guardian.required && !consent.guardian.approved)
+        ) {
+            throw new TRPCError({
+                code: 'FORBIDDEN',
+                message: 'Current app consent and applicable guardian approval are required',
+            });
+        }
+        if (event.includeCredentials === true) {
+            for (const credential of consent.credentials) credentialUris.add(credential.uri);
+        }
+        if (event.includePersonalData === true) personalData = consent.personal;
+    } else if (event.includeCredentials === true) {
+        // Without a read contract, only this app's own accepted, active issuances
+        // are available. Never supplement a restricted contract with these records.
+        const sentCredentials = await getCredentialsSentByListingToProfile(
+            listingId,
+            profile.profileId,
+            { limit: 501 }
+        );
+        if (sentCredentials.length > 500) {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'Learner context supports up to 500 selected credentials',
+            });
+        }
+        for (const credential of sentCredentials) {
+            if (credential.status === 'claimed') {
+                credentialUris.add(getCredentialUri(credential.credentialId, ctx.domain));
             }
-        } catch (error) {
-            console.error('Error fetching contract credentials:', error);
         }
     }
 
     return {
-        credentialUris,
+        credentialUris: [...credentialUris],
         personalData,
         instructions,
         detailLevel,
-        maxCredentials: credentialUris.length,
-        did: `did:web:${ctx.domain}:${profile.profileId}`,
+        maxCredentials: credentialUris.size,
+        did: getDidWeb(ctx.domain, profile.profileId),
     };
 };
 
@@ -1671,7 +1679,7 @@ const handleSendNotificationEvent = async (
         // tRPC does not support HTTP 429 natively, so we cast to BAD_REQUEST
         // while keeping the semantic code in the message for clients.
         throw new TRPCError({
-            code: 'TOO_MANY_REQUESTS' as 'BAD_REQUEST',
+            code: 'TOO_MANY_REQUESTS',
             message: 'Rate limit exceeded: max 10 notifications per user per app per hour',
         });
     }
@@ -2948,7 +2956,7 @@ export const appStoreRouter = t.router({
                 // tRPC does not support HTTP 429 natively, so we cast to BAD_REQUEST
                 // while keeping the semantic code in the message for clients.
                 throw new TRPCError({
-                    code: 'TOO_MANY_REQUESTS' as 'BAD_REQUEST',
+                    code: 'TOO_MANY_REQUESTS',
                     message: 'Rate limit exceeded: max 60 notifications per app per hour',
                 });
             }

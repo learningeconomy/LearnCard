@@ -4,7 +4,11 @@ import { getLogger } from 'learn-card-base';
 const log = getLogger('family-pin-wrapper');
 
 import FamilyPinModal from './FamilyPinModal';
-import { confirmPinValidator, existingPinValidator, pinValidator } from './familyPin.helpers';
+import {
+    getConfirmPinValidator,
+    getExistingPinValidator,
+    getPinValidator,
+} from './familyPin.helpers';
 import { currentUserStore, switchedProfileStore, useModal, useVerifyPin } from 'learn-card-base';
 
 export enum FamilyPinViewModeEnum {
@@ -47,18 +51,18 @@ export const FamilyPinWrapper: React.FC<FamilyPinWrapperProps> = ({
 
     const { mutateAsync: verifyPin } = useVerifyPin();
 
-    const validate = (type: 'pin' | 'confirmPin' | 'existingPin', data: any): boolean => {
+    const validate = (type: 'pin' | 'confirmPin' | 'existingPin', data: unknown): boolean => {
         let validator;
 
         switch (type) {
             case 'pin':
-                validator = pinValidator;
+                validator = getPinValidator();
                 break;
             case 'confirmPin':
-                validator = confirmPinValidator;
+                validator = getConfirmPinValidator();
                 break;
             case 'existingPin':
-                validator = existingPinValidator;
+                validator = getExistingPinValidator();
                 break;
             default:
                 throw new Error('Invalid validation type');

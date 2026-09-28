@@ -1,6 +1,7 @@
 import React from 'react';
 
 import AddUser from '../svgs/AddUser';
+import * as m from '../../paraglide/messages.js';
 
 export const NewProfileButton: React.FC<{ onClick?: () => void }> = ({ onClick }) => {
     return (
@@ -12,8 +13,7 @@ export const NewProfileButton: React.FC<{ onClick?: () => void }> = ({ onClick }
                 <AddUser version="4" />
             </button>
             <p className="text-xs text-grayscale-600 text-center font-semibold mt-1">
-                New Child <br />
-                or Organization
+                {m['arabicFixes.newChildOrOrganization']()}
             </p>
         </div>
     );

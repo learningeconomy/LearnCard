@@ -1,3 +1,4 @@
+import { enterSharePrivacy } from '../share-links/sharePrivacy';
 import React, { useEffect, useMemo } from 'react';
 import { useHistory } from 'react-router-dom';
 import { App, URLOpenListenerEvent } from '@capacitor/app';
@@ -16,10 +17,7 @@ const log = getLogger('app-url-listener');
 export const AppUrlListener: React.FC = () => {
     const history = useHistory();
 
-    const parserConfig = useMemo<ParseClaimInputConfig>(
-        () => resolveTenantParseConfig(),
-        []
-    );
+    const parserConfig = useMemo<ParseClaimInputConfig>(() => resolveTenantParseConfig(), []);
 
     useEffect(() => {
         let listener: PluginListenerHandle | null = null;
@@ -27,6 +25,12 @@ export const AppUrlListener: React.FC = () => {
         const handleUrlOpen = (event: URLOpenListenerEvent) => {
             try {
                 const isOnTenantHttpsDomain = isTenantHttpsUrl(event.url, parserConfig);
+                const incoming = new URL(event.url);
+                if (isOnTenantHttpsDomain && /^\/s(?:\/|$)/.test(incoming.pathname)) {
+                    enterSharePrivacy();
+                    history.push(incoming.pathname + incoming.hash);
+                    return;
+                }
                 const parsed = parseClaimInput(event.url, parserConfig);
 
                 switch (parsed.kind) {

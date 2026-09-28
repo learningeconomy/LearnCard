@@ -67,7 +67,7 @@ import { ProfileType, SigningAuthorityForUserValidator } from 'types/profile';
 
 import { t, openRoute, didAndChallengeRoute, profileRoute, didRoute } from '@routes';
 
-import { transformProfileId } from '@helpers/profile.helpers';
+import { PublicProfileIdValidator, transformProfileId } from '@helpers/profile.helpers';
 import { deleteDidDocForProfile } from '@cache/did-docs';
 import {
     isInviteAlreadySetForProfile,
@@ -103,7 +103,7 @@ import { createProfileContactMethodRelationship } from '@accesslayer/contact-met
 import { deleteAllProfileContactMethodRelationshipsExceptForProfileId } from '@accesslayer/contact-method/relationships/delete';
 
 const UpdateProfileInputValidator = z.object({
-    profileId: z.string().optional(),
+    profileId: PublicProfileIdValidator.optional(),
     displayName: z.string().optional(),
     shortBio: z.string().optional(),
     bio: z.string().optional(),
@@ -155,7 +155,10 @@ export const profilesRouter = t.router({
             LCNProfileValidator.omit({
                 did: true,
                 isServiceProfile: true,
-            }).extend({ authToken: z.string().optional() })
+            }).extend({
+                profileId: PublicProfileIdValidator,
+                authToken: z.string().optional(),
+            })
         )
         .output(z.string())
         .mutation(async ({ input, ctx }) => {
@@ -246,7 +249,11 @@ export const profilesRouter = t.router({
             },
             requiredScope: 'profiles:write',
         })
-        .input(LCNProfileValidator.omit({ did: true, isServiceProfile: true }))
+        .input(
+            LCNProfileValidator.omit({ did: true, isServiceProfile: true }).extend({
+                profileId: PublicProfileIdValidator,
+            })
+        )
         .output(z.string())
         .mutation(async ({ input, ctx }) => {
             assertOrganizationInvariants(input);
@@ -286,7 +293,11 @@ export const profilesRouter = t.router({
             },
             requiredScope: 'profiles:write',
         })
-        .input(LCNProfileValidator.omit({ did: true, isServiceProfile: true }))
+        .input(
+            LCNProfileValidator.omit({ did: true, isServiceProfile: true }).extend({
+                profileId: PublicProfileIdValidator,
+            })
+        )
         .output(z.string())
         .mutation(async ({ input, ctx }) => {
             assertOrganizationInvariants(input);

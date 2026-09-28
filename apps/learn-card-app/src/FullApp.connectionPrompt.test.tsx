@@ -72,6 +72,9 @@ vi.mock('./components/network-listener/NetworkListener', () => ({ default: () =>
 vi.mock('./components/credential-sync-listener/CredentialSyncListener', () => ({
     default: () => null,
 }));
+vi.mock('./components/credential-refresh-listener/CredentialRefreshListener', () => ({
+    default: () => null,
+}));
 vi.mock('./components/notification-toast-listener/NotificationToastListener', () => ({
     default: () => null,
 }));
@@ -115,7 +118,7 @@ it('mounts one localized connection prompt coordinator in the app shell', () => 
     expect(screen.getAllByTestId('connection-prompt-coordinator')).toHaveLength(1);
     expect(coordinatorProps).toHaveBeenCalledOnce();
     const [{ copy }] = coordinatorProps.mock.calls[0] as [
-        { copy: { title: (name: string) => string } }
+        { copy: { title: (name: string) => string } },
     ];
     expect(copy.title('Alice')).toBe('Connect with Alice?');
 });

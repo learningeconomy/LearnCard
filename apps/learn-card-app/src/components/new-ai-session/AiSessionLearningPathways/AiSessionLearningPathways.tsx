@@ -7,23 +7,19 @@ import AiSessionLearningPathwayItemSkeleton from './AiSessionLearningPathwayItem
 import LockSimple from 'learn-card-base/svgs/LockSimple';
 
 import {
-    getAiPassportLaunchUrl,
     ModalTypes,
     truncateWithEllipsis,
     useDeviceTypeByWidth,
-    useGetCurrentLCNUser,
     useGetEnrichedSession,
     useModal,
 } from 'learn-card-base';
 
-import {
-    ChatBotQA,
-    ChatBotQuestionsEnum,
-} from '../NewAiSessionChatBot/newAiSessionChatbot.helpers';
-import { LearningPathway } from '../../ai-sessions/AiSessionTopics/aiSession-topics.helpers';
+import { ChatBotQuestionsEnum } from '../NewAiSessionChatBot/newAiSessionChatbot.helpers';
+import type { ChatBotQA } from '../NewAiSessionChatBot/newAiSessionChatbot.helpers';
+import type { LearningPathway } from '../../ai-sessions/AiSessionTopics/aiSession-topics.helpers';
 import { getAiTopicTitle } from '../../new-ai-session/newAiSession.helpers';
 import { useGetLearningPathwaysForSession } from './ai-learningPathways.helpers';
-import { Boost } from '@learncard/types';
+import type { Boost } from '@learncard/types';
 
 import { useHistory } from 'react-router-dom';
 import {
@@ -35,7 +31,6 @@ export const AiSessionLearningPathways: React.FC<{ chatBotQA: ChatBotQA[] }> = (
     const { newModal, closeAllModals } = useModal();
     const { isDesktop } = useDeviceTypeByWidth();
     const history = useHistory();
-    const { currentLCNUser } = useGetCurrentLCNUser();
 
     const sessionUri = chatBotQA?.find(qa => qa.type === ChatBotQuestionsEnum.ResumeTopic)?.answer;
     const { data, isLoading } = useGetEnrichedSession(sessionUri || '');
@@ -44,13 +39,11 @@ export const AiSessionLearningPathways: React.FC<{ chatBotQA: ChatBotQA[] }> = (
     const topicVc = data?.topicVc;
     const topicBoost = data?.topicBoost;
     const topicTitle = getAiTopicTitle(topicVc) ?? '';
-    const sessions = data?.sessions ?? [];
+    const sessions = data?.sessions;
     const app = getAiPassportAppByContractUri(topicRecord?.contractUri || '');
 
     const { data: learningPathwaysData, isLoading: isLoadingPathways } =
         useGetLearningPathwaysForSession(sessions?.[0]?.boost?.uri || '');
-
-    if (!sessionUri) return <></>;
 
     // Robust fallback: if there are no sessions OR, after loading, no pathways, go to chats
     useEffect(() => {
@@ -71,10 +64,7 @@ export const AiSessionLearningPathways: React.FC<{ chatBotQA: ChatBotQA[] }> = (
             } else {
                 const url = app?.url;
                 if (url) {
-                    window.location.href = getAiPassportLaunchUrl(
-                        `${url}/chats?topicUri=${encodeURIComponent(sessionUri)}`,
-                        currentLCNUser?.did
-                    );
+                    window.location.href = `${url}/chats?topicUri=${encodeURIComponent(sessionUri)}`;
                 } else {
                     history.push(`/chats?topicUri=${encodeURIComponent(sessionUri)}`);
                 }
@@ -88,9 +78,9 @@ export const AiSessionLearningPathways: React.FC<{ chatBotQA: ChatBotQA[] }> = (
         learningPathwaysData,
         history,
         app,
-        currentLCNUser?.did,
         closeAllModals,
     ]);
+    if (!sessionUri) return <></>;
 
     const handleLearningPathwayPreview = (learningPathway: {
         boost: Boost;

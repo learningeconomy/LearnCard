@@ -32,8 +32,15 @@ const config: PlaywrightTestConfig = {
         // config would call network.learncard.com and miss every recorded entry.
         // Use bun (the repo's declared packageManager); a `pnpm` here is rejected by
         // corepack against the bun packageManager spec.
+        //
+        // Compile paraglide BEFORE vite starts. Otherwise paraglideVitePlugin writes the
+        // ~8MB src/paraglide/messages/_index.js while Vite's dep scanner is already
+        // reading it; the scan fails on the truncated file ("Failed to scan for
+        // dependencies"), so deps are discovered lazily mid-test and Vite's
+        // re-optimize full-page reload lands during sign-in (flaky LaunchPad test).
+        // With the output already on disk, the plugin's startup compile is a no-op.
         command:
-            'bun scripts/prepare-native-config.ts learncard --stage local && bunx vite --host --port 3010 --strictPort',
+            'bun scripts/prepare-native-config.ts learncard --stage local && bun run i18n:compile && bunx vite --host --port 3010 --strictPort',
         url: 'http://localhost:3010',
         timeout: 5 * 60 * 1000,
         reuseExistingServer: !process.env.CI,

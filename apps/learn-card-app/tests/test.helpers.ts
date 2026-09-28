@@ -79,7 +79,7 @@ export const issueBadgeToSelf = async (page: Page, timeout = 60_000) => {
  * a privateKey that is stored separately from localStorage for security. When
  * localStorage is restored without the privateKey, the app logs out the user.
  *
- * This helper uses the /hidden/seed route which creates a proper user with a
+ * This helper uses the /developer/sign-in route which creates a proper user with a
  * private key derived from the seed.
  *
  * @param page - Playwright page object
@@ -115,19 +115,27 @@ export const waitForAuthenticatedState = async (
         )
         .catch(() => undefined);
 
-    // Login via seed - this creates a proper user with privateKey
-    // If profileId is provided, the seed route will also create a network profile
+    // Login via seed - this creates a proper user with privateKey.
+    // ?profileId= makes the page create the network profile during sign-in
+    // (deterministic), instead of relying on the Setup Profile modal appearing.
     const seedUrl = options.profileId
-        ? `/hidden/seed?profileId=${encodeURIComponent(options.profileId)}`
-        : '/hidden/seed';
+        ? `/developer/sign-in?profileId=${encodeURIComponent(options.profileId)}`
+        : '/developer/sign-in';
     await page.goto(seedUrl);
 
-    // Fill in the seed and submit
+    // Fill in the seed and submit. The page is state-aware: the primary button reads
+    // "Sign in" when logged out, or "Sign out and switch" when a session already
+    // exists (e.g. the demo user in tests/states/demoState.json). Either path
+    // ends on /wallet — the switch variant logs out, reloads, and auto-signs in
+    // with the seed it stashed.
     await page.getByRole('textbox').fill(options.seed);
-    await page.getByRole('button', { name: /sign in with seed/i }).click();
+    await page.getByRole('button', { name: /^(Sign in|Sign out and switch)$/ }).click();
 
-    // Wait for redirect to wallet (indicates successful login + profile creation)
     await page.waitForURL(/\/wallet/, { timeout });
+
+    if (options.profileId) {
+        await joinNetworkIfNeeded(page, options.profileId);
+    }
 
     await profileFetchPromise;
 

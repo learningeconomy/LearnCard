@@ -13,3 +13,11 @@ export type {
     FirebaseAuthLike,
     NativeFirebaseAuthLike,
 } from './createFirebaseSignInAdapter';
+
+export type {
+    SignInAdapter,
+    SignInCapabilities,
+    SocialSignInOptions,
+    PhoneVerificationHandle,
+} from '@learncard/types';
+export type { FirebaseEmailLinkSettings, FirebaseSignInOperation } from './types';

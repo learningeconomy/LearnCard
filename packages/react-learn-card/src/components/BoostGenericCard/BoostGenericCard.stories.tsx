@@ -1,5 +1,6 @@
 import React from 'react';
-import { Story, Meta } from '@storybook/react';
+import { Decorator, Meta, Story } from '@storybook/react';
+import { expect, userEvent, within } from '@storybook/test';
 import BoostGenericCard from './BoostGenericCard';
 import { BoostGenericCardProps, WalletCategoryTypes } from '../../types';
 import { AllFieldsCredential } from '../../helpers/test.helpers';
@@ -12,6 +13,22 @@ export default {
 
 const Template: Story<BoostGenericCardProps> = args => <BoostGenericCard {...args} />;
 
+const withConsumerFocusReset: Decorator = StoryComponent => (
+    <>
+        <style>
+            {`
+                :where(#app-router, #modal-mid-root) :where(button):focus-visible {
+                    outline: none;
+                    outline-offset: 2px;
+                }
+            `}
+        </style>
+        <div id="app-router">
+            <StoryComponent />
+        </div>
+    </>
+);
+
 export const BoostGenericCardTest = Template.bind({});
 BoostGenericCardTest.args = {
     title: 'Title Title Title',
@@ -22,6 +39,29 @@ BoostGenericCardTest.args = {
     issuerName: 'Beau Bobby Bruce',
     innerOnClick: () => console.log('innerOnClick'),
     optionsTriggerOnClick: () => console.log('//options trigger click'),
+};
+
+export const KeyboardFocus = Template.bind({});
+KeyboardFocus.args = BoostGenericCardTest.args;
+KeyboardFocus.decorators = [withConsumerFocusReset];
+KeyboardFocus.play = async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    await userEvent.tab();
+
+    const card = canvas.getByRole('button', { name: /Title Title Title/ });
+    const cardFrame = card.closest<HTMLElement>('.boost-generic-card-wrapper');
+
+    await expect(card).toHaveFocus();
+    await expect(cardFrame).not.toBeNull();
+
+    const focusedStyle = getComputedStyle(card);
+    const frameStyle = getComputedStyle(cardFrame!);
+
+    await expect(focusedStyle.outlineStyle).toBe('none');
+    await expect(focusedStyle.boxShadow).toBe('none');
+    await expect(frameStyle.boxShadow).toContain('rgb(255, 255, 255) 0px 0px 0px 2px');
+    await expect(frameStyle.boxShadow).toContain('rgb(64, 203, 166) 0px 0px 0px 4px');
 };
 
 export const InSkillsModal = Template.bind({});

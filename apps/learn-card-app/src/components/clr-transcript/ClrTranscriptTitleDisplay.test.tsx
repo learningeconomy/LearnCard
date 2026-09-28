@@ -47,7 +47,7 @@ describe('ClrTranscriptTitleDisplay', () => {
         mocks.inferKind.mockClear();
     });
 
-    it('shows the credential name when the transcript has no GPA', () => {
+    it('shows "Transcript" label for transcript-kind credentials without GPA', () => {
         mocks.normalize.mockReturnValue(createTranscriptModel());
 
         render(
@@ -57,11 +57,11 @@ describe('ClrTranscriptTitleDisplay', () => {
             />
         );
 
-        expect(screen.getByText('Silverbrook College Transcript')).toBeInTheDocument();
+        expect(screen.getByText('Transcript')).toBeInTheDocument();
         expect(screen.queryByText(/GPA:/)).not.toBeInTheDocument();
     });
 
-    it('continues to show GPA when one is available', () => {
+    it('shows "Transcript" label even when GPA is available', () => {
         mocks.normalize.mockReturnValue(createTranscriptModel(3.48));
 
         render(
@@ -71,11 +71,11 @@ describe('ClrTranscriptTitleDisplay', () => {
             />
         );
 
-        expect(screen.getByText('GPA: 3.48')).toBeInTheDocument();
-        expect(screen.queryByText('Silverbrook College Transcript')).not.toBeInTheDocument();
+        expect(screen.getByText('Transcript')).toBeInTheDocument();
+        expect(screen.queryByText(/GPA:/)).not.toBeInTheDocument();
     });
 
-    it('uses the fallback title when the CLR credential has no name or GPA', () => {
+    it('shows "Transcript" label regardless of missing name or GPA', () => {
         mocks.normalize.mockReturnValue(createTranscriptModel(undefined, null));
 
         render(
@@ -85,7 +85,7 @@ describe('ClrTranscriptTitleDisplay', () => {
             />
         );
 
-        expect(screen.getByText('Fallback Transcript')).toBeInTheDocument();
+        expect(screen.getByText('Transcript')).toBeInTheDocument();
         expect(screen.queryByText(/GPA:/)).not.toBeInTheDocument();
     });
 });

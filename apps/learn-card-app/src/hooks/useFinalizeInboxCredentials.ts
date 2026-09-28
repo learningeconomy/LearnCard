@@ -4,13 +4,12 @@ import { useQueryClient } from '@tanstack/react-query';
 import {
     useIsLoggedIn,
     useWallet,
-    getCategoryForCredential,
     walletStore,
     WalletSyncState,
     useIsCurrentUserLCNUser,
     connectionPromptKeys,
 } from 'learn-card-base';
-import type { VC, LCNProfile } from '@learncard/types';
+import type { LCNProfile } from '@learncard/types';
 import { useVerifySuccessTick } from '../stores/autoVerifyStore';
 import { captureException } from '@sentry/react';
 import {
@@ -21,6 +20,8 @@ import {
     ACCOUNT_CREATED_AT_KEY,
     SESSION_START_KEY,
 } from '@analytics';
+
+import { recoverInboxDeliveries, storeInboxDeliveries } from './recoverInboxDeliveries';
 
 // Finalize cache settings
 const FINALIZE_CACHE_TTL_MS = 30 * 60_000; // 30 minutes
@@ -73,6 +74,7 @@ export const useFinalizeInboxCredentials = () => {
 
         (async () => {
             if (!isLCNUser || !isLoggedIn) return;
+            let storedCount = 0;
             try {
                 inFlightRef.current = true;
 
@@ -84,86 +86,80 @@ export const useFinalizeInboxCredentials = () => {
                 const profileId = hasProfileId(profile) ? profile.profileId : undefined;
                 if (!profileId) return;
 
-                // Skip if recently finalized for this profile
-                if (!needsFinalize(profileId)) return;
-
-                const result = await wallet.invoke?.finalizeInboxCredentials();
-
-                await queryClient.invalidateQueries({ queryKey: connectionPromptKeys.all });
-
-                const vcs: VC[] = result?.verifiableCredentials || [];
-
-                if (!vcs.length) {
-                    // Nothing to store but consider finalization complete for a while
-                    markFinalized(profileId);
-                    return;
-                }
-
-                // mark syncing
-                walletStore.set.setIsSyncing(WalletSyncState.Syncing);
-
-                // LC-1853: freeze pre-mutation snapshot now that we know we have credentials to store.
-                capture();
-                storedCountAtStartRef.current = snapshotRef.current.credentialCount;
-
-                let storedCount = 0;
-
-                for (const vc of vcs) {
+                const onStored = (): void => {
+                    if (storedCount === 0) {
+                        walletStore.set.setIsSyncing(WalletSyncState.Syncing);
+                        capture();
+                        storedCountAtStartRef.current = snapshotRef.current.credentialCount;
+                    }
+                    storedCount += 1;
+                    // LC-1853: fire profile_item_added for each auto-accepted credential
                     try {
-                        const category = await getCategoryForCredential(vc, wallet, false);
-
-                        const uri = (await wallet.store.LearnCloud.uploadEncrypted?.(vc)) ?? '';
-
-                        if (!uri) continue;
-
-                        const id =
-                            vc?.id ||
-                            (typeof crypto !== 'undefined' && crypto.randomUUID
-                                ? crypto.randomUUID()
-                                : `${Date.now()}-${Math.random()
-                                      .toString(36)
-                                      .slice(2, 18)}-${Math.random()
-                                      .toString(36)
-                                      .slice(2, 18)}-${performance.now()}`);
-
-                        await wallet.index.LearnCloud.add({
-                            id,
-                            uri,
-                            category,
+                        const now = Date.now();
+                        const sessionStart = Number(localStorage.getItem(SESSION_START_KEY) ?? now);
+                        const accountCreatedAt = Number(
+                            localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now
+                        );
+                        track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
+                            method: ProfileBuildMethod.ReceivedBoost,
+                            itemType: 'credential',
+                            itemCount: 1,
+                            totalItemsAfter: storedCountAtStartRef.current + storedCount,
+                            msSinceAccountCreated: now - accountCreatedAt,
+                            msSinceSessionStart: now - sessionStart,
                         });
-
-                        storedCount += 1;
-
-                        // LC-1853: fire profile_item_added for each auto-accepted credential
-                        try {
-                            const now = Date.now();
-                            const sessionStart = Number(
-                                localStorage.getItem(SESSION_START_KEY) ?? now
-                            );
-                            const accountCreatedAt = Number(
-                                localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now
-                            );
-                            track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
-                                method: ProfileBuildMethod.ReceivedBoost,
-                                itemType: 'credential',
-                                itemCount: 1,
-                                totalItemsAfter: storedCountAtStartRef.current + storedCount,
-                                msSinceAccountCreated: now - accountCreatedAt,
-                                msSinceSessionStart: now - sessionStart,
-                            });
-                        } catch (_) {
-                            // analytics must not break credential storage
-                        }
                     } catch (_) {
-                        // continue storing other VCs
+                        // analytics must not break credential storage
+                    }
+                };
+                const refreshCredentials = async (): Promise<void> => {
+                    await Promise.all([
+                        queryClient.invalidateQueries({ queryKey: ['useGetCredentialList'] }),
+                        queryClient.invalidateQueries({ queryKey: ['useGetCredentialCount'] }),
+                    ]);
+                };
+
+                // Save the finalize response immediately. Delivery IDs let recovery skip
+                // these records, while still retrying lost responses and failed local saves.
+                let finalizeFailed = false;
+                if (needsFinalize(profileId)) {
+                    try {
+                        const finalized = await wallet.invoke.finalizeInboxCredentials();
+                        const saved = await storeInboxDeliveries(
+                            wallet,
+                            finalized.deliveries ?? [],
+                            onStored
+                        );
+                        finalizeFailed = saved.failed > 0 || finalized.errors > 0;
+                        if (saved.stored) await refreshCredentials();
+                    } catch (error) {
+                        finalizeFailed = true;
+                        captureException(error);
                     }
                 }
 
+                await queryClient.invalidateQueries({ queryKey: connectionPromptKeys.all });
+                const countBeforeRecovery = storedCount;
+                let recoveryFailed = false;
+                try {
+                    const recovery = await recoverInboxDeliveries(wallet, onStored);
+                    recoveryFailed = recovery.failed > 0;
+                } catch (error) {
+                    recoveryFailed = true;
+                    captureException(error);
+                }
+                // Also refresh partial progress if a later recovery page was unavailable.
+                if (storedCount > countBeforeRecovery) await refreshCredentials();
+
                 // complete syncing
-                walletStore.set.setIsSyncing(WalletSyncState.Completed, storedCount);
+                if (storedCount > 0) {
+                    walletStore.set.setIsSyncing(WalletSyncState.Completed, storedCount);
+                } else {
+                    walletStore.set.setIsSyncing(WalletSyncState.NotSyncing);
+                }
 
                 // Mark as finalized for this profile in ephemeral cache
-                markFinalized(profileId);
+                if (!finalizeFailed && !recoveryFailed) markFinalized(profileId);
             } catch (e) {
                 // Capture and reset syncing state on error
                 captureException(e);
