@@ -9,6 +9,7 @@
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
+        "migrate:sa-seeds:local": "bash scripts/migrate-signing-authority-seeds-local.sh",
         "migrate:sa-seeds": "node scripts/migrate-signing-authority-seeds.mjs",
         "check:sa-infra": "node scripts/check-seed-encryption-infrastructure.mjs",
         "test": "vitest run --config vitest.config.ts",
