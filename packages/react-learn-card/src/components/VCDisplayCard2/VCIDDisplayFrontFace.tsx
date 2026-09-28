@@ -119,12 +119,18 @@ const VCIDDisplayFrontFace: React.FC<VCIDDisplayFrontFaceProps> = ({
                                         e.stopPropagation();
                                         qrCodeOnClick?.();
                                     }}
-                                    className="text-grayscale-900 bg-white rounded-full p-[10px] absolute top-[-10px] right-[45%]"
+                                    className="text-grayscale-900 bg-white rounded-full p-[10px] absolute top-[-10px] left-1/2 -translate-x-1/2 z-10"
                                 >
                                     <QRCodeIcon className="text-grayscale-900 " />
                                 </button>
                             )}
-                            <img src={IDSleeve} alt="id-sleeve" className="w-full object-cover" />
+                            <img
+                                src={IDSleeve}
+                                alt="id-sleeve"
+                                width={295}
+                                height={89}
+                                className="block w-full h-auto object-cover"
+                            />
                         </div>
                     </Flipped>
 
