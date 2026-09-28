@@ -28,6 +28,7 @@ export function Layout({ children, session, onLogin, onLogout, busy }: LayoutPro
                 collapsed={collapsed}
                 onToggle={handleToggle}
                 activeSurfaceSlugs={surfaces.map(surface => surface.slug)}
+                session={session}
             />
             <div className="flex-1 flex flex-col min-w-0">
                 <header className="h-14 flex items-center border-b border-border px-2 sm:px-4 bg-card gap-1.5 sm:gap-2 md:gap-3">

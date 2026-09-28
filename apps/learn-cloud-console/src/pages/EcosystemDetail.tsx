@@ -20,6 +20,8 @@ import { ErrorState } from '../components/ErrorState';
 import { CreateEcosystemForm } from '../components/CreateEcosystemForm';
 import { CreateGroupForm } from '../components/CreateGroupForm';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
+import { MemberEntityView } from '../components/ecosystem/MemberEntityView';
+import { LABELS } from '../lib/labels';
 
 export function EcosystemDetail() {
     const params = useParams<{ id: string }>();
@@ -37,6 +39,12 @@ export function EcosystemDetail() {
     const [groups, setGroups] = useState<Group[]>([]);
     const [ancestors, setAncestors] = useState<{ id: string; name: string }[]>([]);
     const [showAddGroup, setShowAddGroup] = useState(false);
+    // prototype-corrections-2026-09 §2 / ADR-001 D7: parent's OWNER/ADMIN roster, shown
+    // as a muted sub-list; null means "not fetched / unreadable", hidden either way.
+    const [inheritedAdmins, setInheritedAdmins] = useState<EcosystemDetailData['members'] | null>(
+        null
+    );
+    const [inheritedAdminsParentName, setInheritedAdminsParentName] = useState<string | null>(null);
 
     const load = useCallback(async () => {
         if (!id) return;
@@ -65,8 +73,24 @@ export function EcosystemDetail() {
                         name: ecoMap.get(pid) || pid,
                     }))
                 );
+
+                const parentId = data.ecosystem.pathIds[data.ecosystem.pathIds.length - 2];
+                try {
+                    const parentDetail = await getEcosystemDetail(parentId);
+                    setInheritedAdmins(
+                        parentDetail.members.filter(m => m.role === 'OWNER' || m.role === 'ADMIN')
+                    );
+                    setInheritedAdminsParentName(parentDetail.ecosystem?.name || parentId);
+                } catch {
+                    // Principal can't read the parent (403) or the call otherwise failed —
+                    // silently hide the sub-list rather than surface a page-level error.
+                    setInheritedAdmins(null);
+                    setInheritedAdminsParentName(null);
+                }
             } else {
                 setAncestors([]);
+                setInheritedAdmins(null);
+                setInheritedAdminsParentName(null);
             }
         } catch (e) {
             setError(e instanceof Error ? e.message : String(e));
@@ -121,6 +145,7 @@ export function EcosystemDetail() {
         );
 
     const canManageMembers = detail.role === 'OWNER' || detail.role === 'ADMIN';
+    const isMemberView = detail.role === 'MEMBER' || detail.role === 'VIEWER';
 
     return (
         <div className="max-w-5xl mx-auto space-y-6">
@@ -129,353 +154,406 @@ export function EcosystemDetail() {
                 className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
                 <ArrowLeft className="h-4 w-4" />
-                Back to Ecosystem
+                {LABELS.backToEcosystem}
             </Link>
 
-            <div className="bg-card border border-border rounded-xl p-5 md:p-6 shadow-card space-y-2">
-                {ancestors.length > 0 && (
-                    <nav
-                        aria-label="Breadcrumb"
-                        className="flex items-center gap-1.5 text-sm text-muted-foreground mb-2"
-                    >
-                        {ancestors.map(anc => (
-                            <React.Fragment key={anc.id}>
-                                <Link
-                                    href={`/ecosystem/${anc.id}`}
-                                    className="hover:text-foreground"
-                                >
-                                    {anc.name}
-                                </Link>
-                                <ChevronRight className="w-3.5 h-3.5" />
-                            </React.Fragment>
-                        ))}
-                        <span className="text-foreground font-medium">
-                            {detail.ecosystem ? detail.ecosystem.name : detail.ecosystemId}
-                        </span>
-                    </nav>
-                )}
-
-                <div className="flex items-center gap-2">
-                    {detail.role && (
-                        <Badge variant="secondary" className="text-xs">
-                            {detail.role}
-                        </Badge>
-                    )}
-                    {detail.ecosystem && <Badge variant="outline">{detail.ecosystem.status}</Badge>}
-                </div>
-                <h1
-                    className={cn(
-                        'font-display text-2xl font-bold text-foreground',
-                        !detail.ecosystem && 'font-mono'
-                    )}
-                >
-                    {detail.ecosystem ? detail.ecosystem.name : detail.ecosystemId}
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                    {detail.ecosystem
-                        ? detail.ecosystem.description || '/' + detail.ecosystem.slugPath.join('/')
-                        : 'Details unavailable from LearnCloud yet.'}
-                </p>
-                {detail.ecosystem && (
-                    <p className="text-sm text-muted-foreground">
-                        Created {new Date(detail.ecosystem.createdAt).toLocaleDateString()}
-                    </p>
-                )}
-            </div>
-
-            <div className="bg-card border border-border rounded-xl p-5 md:p-6 shadow-card space-y-4">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4" />
-                        <h2 className="font-display font-bold">
-                            Members ({detail.members.length})
-                        </h2>
-                    </div>
-                    {canManageMembers && (
-                        <Button variant="hero" size="sm" onClick={() => setShowAddMember(true)}>
-                            <Plus className="w-4 h-4 mr-1.5" />
-                            Add Members
-                        </Button>
-                    )}
-                </div>
-
-                <Dialog open={showAddMember} onOpenChange={setShowAddMember}>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle className="font-display capitalize">
-                                Add Member
-                            </DialogTitle>
-                        </DialogHeader>
-                        <div className="flex flex-col sm:flex-row gap-2 p-3 rounded-md bg-muted/30 border mt-2">
-                            <Input
-                                placeholder="profile-id"
-                                value={newMemberProfileId}
-                                onChange={e => setNewMemberProfileId(e.target.value)}
-                                className="flex-1"
-                                disabled={granting}
-                            />
-                            <select
-                                value={newMemberRole}
-                                onChange={e => {
-                                    const role = e.target.value;
-                                    if (
-                                        role === 'ADMIN' ||
-                                        role === 'MEMBER' ||
-                                        role === 'VIEWER'
-                                    ) {
-                                        setNewMemberRole(role);
-                                    }
-                                }}
-                                className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                disabled={granting}
+            {isMemberView ? (
+                <MemberEntityView detail={detail} groups={groups} />
+            ) : (
+                <>
+                    <div className="bg-card border border-border rounded-xl p-5 md:p-6 shadow-card space-y-2">
+                        {ancestors.length > 0 && (
+                            <nav
+                                aria-label="Breadcrumb"
+                                className="flex items-center gap-1.5 text-sm text-muted-foreground mb-2"
                             >
-                                <option value="MEMBER">MEMBER</option>
-                                <option value="ADMIN">ADMIN</option>
-                                <option value="VIEWER">VIEWER</option>
-                            </select>
-                            <Button
-                                onClick={handleGrant}
-                                disabled={granting || !newMemberProfileId.trim()}
-                            >
-                                {granting ? 'Granting...' : 'Grant'}
-                            </Button>
+                                {ancestors.map(anc => (
+                                    <React.Fragment key={anc.id}>
+                                        <Link
+                                            href={`/ecosystem/${anc.id}`}
+                                            className="hover:text-foreground"
+                                        >
+                                            {anc.name}
+                                        </Link>
+                                        <ChevronRight className="w-3.5 h-3.5" />
+                                    </React.Fragment>
+                                ))}
+                                <span className="text-foreground font-medium">
+                                    {detail.ecosystem ? detail.ecosystem.name : detail.ecosystemId}
+                                </span>
+                            </nav>
+                        )}
+
+                        <div className="flex items-center gap-2">
+                            {detail.role && (
+                                <Badge variant="secondary" className="text-xs">
+                                    {detail.role}
+                                </Badge>
+                            )}
+                            {detail.ecosystem && (
+                                <Badge variant="outline">{detail.ecosystem.status}</Badge>
+                            )}
                         </div>
-                        {grantError && (
-                            <div className="rounded-lg bg-destructive/15 p-4 text-destructive border border-destructive/20 text-sm mt-2">
-                                {grantError}
+                        <h1
+                            className={cn(
+                                'font-display text-2xl font-bold text-foreground',
+                                !detail.ecosystem && 'font-mono'
+                            )}
+                        >
+                            {detail.ecosystem ? detail.ecosystem.name : detail.ecosystemId}
+                        </h1>
+                        <p className="text-sm text-muted-foreground">
+                            {detail.ecosystem
+                                ? detail.ecosystem.description ||
+                                  '/' + detail.ecosystem.slugPath.join('/')
+                                : 'Details unavailable from LearnCloud yet.'}
+                        </p>
+                        {detail.ecosystem && (
+                            <p className="text-sm text-muted-foreground">
+                                Created {new Date(detail.ecosystem.createdAt).toLocaleDateString()}
+                            </p>
+                        )}
+                    </div>
+
+                    <div className="bg-card border border-border rounded-xl p-5 md:p-6 shadow-card space-y-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <Users className="h-4 w-4" />
+                                <h2 className="font-display font-bold">
+                                    {LABELS.members} ({detail.members.length})
+                                </h2>
+                            </div>
+                            {canManageMembers && (
+                                <Button
+                                    variant="hero"
+                                    size="sm"
+                                    onClick={() => setShowAddMember(true)}
+                                >
+                                    <Plus className="w-4 h-4 mr-1.5" />
+                                    {LABELS.addMembers}
+                                </Button>
+                            )}
+                        </div>
+
+                        <Dialog open={showAddMember} onOpenChange={setShowAddMember}>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle className="font-display capitalize">
+                                        {LABELS.addMember}
+                                    </DialogTitle>
+                                </DialogHeader>
+                                <div className="flex flex-col sm:flex-row gap-2 p-3 rounded-md bg-muted/30 border mt-2">
+                                    <Input
+                                        placeholder="profile-id"
+                                        value={newMemberProfileId}
+                                        onChange={e => setNewMemberProfileId(e.target.value)}
+                                        className="flex-1"
+                                        disabled={granting}
+                                    />
+                                    <select
+                                        value={newMemberRole}
+                                        onChange={e => {
+                                            const role = e.target.value;
+                                            if (
+                                                role === 'ADMIN' ||
+                                                role === 'MEMBER' ||
+                                                role === 'VIEWER'
+                                            ) {
+                                                setNewMemberRole(role);
+                                            }
+                                        }}
+                                        className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                        disabled={granting}
+                                    >
+                                        <option value="MEMBER">MEMBER</option>
+                                        <option value="ADMIN">ADMIN</option>
+                                        <option value="VIEWER">VIEWER</option>
+                                    </select>
+                                    <Button
+                                        onClick={handleGrant}
+                                        disabled={granting || !newMemberProfileId.trim()}
+                                    >
+                                        {granting ? 'Granting...' : 'Grant'}
+                                    </Button>
+                                </div>
+                                {grantError && (
+                                    <div className="rounded-lg bg-destructive/15 p-4 text-destructive border border-destructive/20 text-sm mt-2">
+                                        {grantError}
+                                    </div>
+                                )}
+                            </DialogContent>
+                        </Dialog>
+
+                        {detail.members.length === 0 ? (
+                            <div className="bg-muted/30 rounded-lg py-10 text-center">
+                                <Users className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
+                                <p className="text-sm text-muted-foreground">
+                                    {LABELS.noMembersInEcosystem}
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="space-y-2">
+                                {detail.members.map(member => (
+                                    <div
+                                        key={member.profileId}
+                                        className="flex items-center justify-between p-3 rounded-lg bg-muted/40 border"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-md flex items-center justify-center shrink-0 bg-emerald/10 text-emerald">
+                                                <Users className="w-4 h-4" />
+                                            </div>
+                                            <div>
+                                                <div className="font-medium">
+                                                    {member.displayName || member.profileId}
+                                                </div>
+                                                {member.displayName &&
+                                                    member.displayName !== member.profileId && (
+                                                        <div className="text-xs text-muted-foreground font-mono">
+                                                            {member.profileId}
+                                                        </div>
+                                                    )}
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Badge
+                                                variant={
+                                                    member.role === 'OWNER'
+                                                        ? 'default'
+                                                        : member.role === 'ADMIN'
+                                                          ? 'secondary'
+                                                          : 'outline'
+                                                }
+                                            >
+                                                {member.role}
+                                            </Badge>
+                                            {canManageMembers && (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                    onClick={() => handleRevoke(member.profileId)}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         )}
-                    </DialogContent>
-                </Dialog>
 
-                {detail.members.length === 0 ? (
-                    <div className="bg-muted/30 rounded-lg py-10 text-center">
-                        <Users className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
-                        <p className="text-sm text-muted-foreground">
-                            No members in this ecosystem yet.
-                        </p>
-                    </div>
-                ) : (
-                    <div className="space-y-2">
-                        {detail.members.map(member => (
-                            <div
-                                key={member.profileId}
-                                className="flex items-center justify-between p-3 rounded-lg bg-muted/40 border"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-md flex items-center justify-center shrink-0 bg-emerald/10 text-emerald">
-                                        <Users className="w-4 h-4" />
-                                    </div>
-                                    <div>
-                                        <div className="font-medium">
-                                            {member.displayName || member.profileId}
-                                        </div>
-                                        {member.displayName &&
-                                            member.displayName !== member.profileId && (
-                                                <div className="text-xs text-muted-foreground font-mono">
-                                                    {member.profileId}
-                                                </div>
-                                            )}
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <Badge
-                                        variant={
-                                            member.role === 'OWNER'
-                                                ? 'default'
-                                                : member.role === 'ADMIN'
-                                                  ? 'secondary'
-                                                  : 'outline'
-                                        }
-                                    >
-                                        {member.role}
-                                    </Badge>
-                                    {canManageMembers && (
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                            onClick={() => handleRevoke(member.profileId)}
+                        {inheritedAdmins && inheritedAdmins.length > 0 && (
+                            <div className="pt-3 border-t border-border/60 space-y-2">
+                                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                                    {LABELS.inheritedAdmins}
+                                </h3>
+                                <div className="space-y-1.5">
+                                    {inheritedAdmins.map(admin => (
+                                        <div
+                                            key={admin.profileId}
+                                            className="flex items-center justify-between p-3 rounded-lg bg-muted/20 text-muted-foreground"
                                         >
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    )}
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-md flex items-center justify-center shrink-0 bg-muted text-muted-foreground">
+                                                    <Users className="w-4 h-4" />
+                                                </div>
+                                                <div>
+                                                    <div className="text-sm font-medium">
+                                                        {admin.displayName || admin.profileId}
+                                                    </div>
+                                                    <div className="text-xs">
+                                                        via {inheritedAdminsParentName}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <Badge variant="outline">{admin.role}</Badge>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
-                        ))}
+                        )}
                     </div>
-                )}
-            </div>
 
-            <div className="bg-card border border-border rounded-xl p-5 md:p-6 shadow-card space-y-4">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <Layers className="h-4 w-4" />
-                        <h2 className="font-display font-bold">Groups ({groups.length})</h2>
-                    </div>
-                    <Button variant="hero" size="sm" onClick={() => setShowAddGroup(true)}>
-                        <Plus className="w-4 h-4 mr-1.5" />
-                        Add Group
-                    </Button>
-                </div>
+                    <div className="bg-card border border-border rounded-xl p-5 md:p-6 shadow-card space-y-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <Layers className="h-4 w-4" />
+                                {/* `groups` here are ADR-001 D11 curated collections -> displayed as "Networks" */}
+                                <h2 className="font-display font-bold">
+                                    {LABELS.networks} ({groups.length})
+                                </h2>
+                            </div>
+                            <Button variant="hero" size="sm" onClick={() => setShowAddGroup(true)}>
+                                <Plus className="w-4 h-4 mr-1.5" />
+                                {LABELS.addNetwork}
+                            </Button>
+                        </div>
 
-                <Dialog open={showAddGroup} onOpenChange={setShowAddGroup}>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle className="font-display capitalize">Add Group</DialogTitle>
-                        </DialogHeader>
-                        <CreateGroupForm
-                            ecosystemOptions={[
-                                {
-                                    id: detail.ecosystemId,
-                                    name: detail.ecosystem?.name || detail.ecosystemId,
-                                },
-                            ]}
-                            fixedEcosystemId={detail.ecosystemId}
-                            onCreated={() => {
-                                setShowAddGroup(false);
-                                load();
-                            }}
-                            onCancel={() => setShowAddGroup(false)}
-                        />
-                    </DialogContent>
-                </Dialog>
+                        <Dialog open={showAddGroup} onOpenChange={setShowAddGroup}>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle className="font-display capitalize">
+                                        {LABELS.addNetwork}
+                                    </DialogTitle>
+                                </DialogHeader>
+                                <CreateGroupForm
+                                    ecosystemOptions={[
+                                        {
+                                            id: detail.ecosystemId,
+                                            name: detail.ecosystem?.name || detail.ecosystemId,
+                                        },
+                                    ]}
+                                    fixedEcosystemId={detail.ecosystemId}
+                                    onCreated={() => {
+                                        setShowAddGroup(false);
+                                        load();
+                                    }}
+                                    onCancel={() => setShowAddGroup(false)}
+                                />
+                            </DialogContent>
+                        </Dialog>
 
-                {groups.length === 0 ? (
-                    <div className="bg-muted/30 rounded-lg py-10 text-center">
-                        <Layers className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
-                        <p className="text-sm text-muted-foreground">
-                            No groups in this ecosystem yet.
-                        </p>
-                    </div>
-                ) : (
-                    <div className="space-y-3">
-                        {groups.map(group => (
-                            <Link
-                                key={group.id}
-                                href={`/group/${group.id}`}
-                                className="bg-card border border-border rounded-xl p-4 md:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-card hover:shadow-elevated transition-shadow cursor-pointer block"
-                            >
-                                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center shrink-0 bg-violet/10 text-violet">
-                                        <Layers className="w-4 h-4 sm:w-5 sm:h-5" />
-                                    </div>
-                                    <div className="min-w-0">
-                                        <h3 className="font-medium text-foreground truncate">
-                                            {group.name}
+                        {groups.length === 0 ? (
+                            <div className="bg-muted/30 rounded-lg py-10 text-center">
+                                <Layers className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
+                                <p className="text-sm text-muted-foreground">
+                                    {LABELS.noNetworksInEcosystem}
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                {groups.map(group => (
+                                    <Link
+                                        key={group.id}
+                                        href={`/group/${group.id}`}
+                                        className="bg-card border border-border rounded-xl p-4 md:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-card hover:shadow-elevated transition-shadow cursor-pointer block"
+                                    >
+                                        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                                            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center shrink-0 bg-violet/10 text-violet">
+                                                <Layers className="w-4 h-4 sm:w-5 sm:h-5" />
+                                            </div>
+                                            <div className="min-w-0">
+                                                <h3 className="font-medium text-foreground truncate">
+                                                    {group.name}
+                                                    <Badge
+                                                        variant="secondary"
+                                                        className="text-xs shrink-0 align-middle ml-2 capitalize"
+                                                    >
+                                                        {group.type}
+                                                    </Badge>
+                                                </h3>
+                                                <p className="text-sm text-muted-foreground truncate">
+                                                    {group.description || '/' + group.slug}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2 sm:gap-3">
                                             <Badge
-                                                variant="secondary"
-                                                className="text-xs shrink-0 align-middle ml-2 capitalize"
+                                                variant={
+                                                    group.status === 'ACTIVE'
+                                                        ? 'success'
+                                                        : group.status === 'DRAFT'
+                                                          ? 'warning'
+                                                          : 'outline'
+                                                }
                                             >
-                                                {group.type}
+                                                {group.status}
                                             </Badge>
-                                        </h3>
-                                        <p className="text-sm text-muted-foreground truncate">
-                                            {group.description || '/' + group.slug}
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-2 sm:gap-3">
-                                    <Badge
-                                        variant={
-                                            group.status === 'ACTIVE'
-                                                ? 'success'
-                                                : group.status === 'DRAFT'
-                                                  ? 'warning'
-                                                  : 'outline'
-                                        }
+                                        </div>
+                                    </Link>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="bg-card border border-border rounded-xl p-5 md:p-6 shadow-card space-y-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <Building2 className="h-4 w-4" />
+                                {/* `detail.children` are Child Ecosystems (CHILD_OF) -> displayed as "Groups" */}
+                                <h2 className="font-display font-bold">
+                                    {LABELS.childEcosystems} ({detail.children.length})
+                                </h2>
+                            </div>
+                            <Button variant="hero" size="sm" onClick={() => setShowAddChild(true)}>
+                                <Plus className="w-4 h-4 mr-1.5" />
+                                {LABELS.addGroup}
+                            </Button>
+                        </div>
+
+                        <Dialog open={showAddChild} onOpenChange={setShowAddChild}>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle className="font-display capitalize">
+                                        {LABELS.addGroup}
+                                    </DialogTitle>
+                                </DialogHeader>
+                                <CreateEcosystemForm
+                                    parentOptions={[
+                                        {
+                                            id: detail.ecosystemId,
+                                            name: detail.ecosystem?.name || detail.ecosystemId,
+                                        },
+                                    ]}
+                                    fixedParentId={detail.ecosystemId}
+                                    onCreated={eco => {
+                                        setShowAddChild(false);
+                                        setLocation(`/ecosystem/${eco.id}`);
+                                    }}
+                                    onCancel={() => setShowAddChild(false)}
+                                />
+                            </DialogContent>
+                        </Dialog>
+
+                        {detail.children.length === 0 ? (
+                            <div className="bg-muted/30 rounded-lg py-10 text-center">
+                                <Building2 className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
+                                <p className="text-sm text-muted-foreground">
+                                    {LABELS.noChildEcosystems}
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                {detail.children.map(child => (
+                                    <Link
+                                        key={child.id}
+                                        href={`/ecosystem/${child.id}`}
+                                        className="bg-card border border-border rounded-xl p-4 md:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-card hover:shadow-elevated transition-shadow cursor-pointer block"
                                     >
-                                        {group.status}
-                                    </Badge>
-                                </div>
-                            </Link>
-                        ))}
+                                        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                                            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center shrink-0 bg-emerald/10 text-emerald">
+                                                <Building2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                                            </div>
+                                            <div className="min-w-0">
+                                                <h3 className="font-medium text-foreground truncate">
+                                                    {child.name}
+                                                </h3>
+                                                <p className="text-sm text-muted-foreground truncate">
+                                                    {child.description ||
+                                                        '/' + child.slugPath.join('/')}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2 sm:gap-3">
+                                            <Badge
+                                                variant={
+                                                    child.status === 'ACTIVE'
+                                                        ? 'success'
+                                                        : child.status === 'DRAFT'
+                                                          ? 'warning'
+                                                          : 'outline'
+                                                }
+                                            >
+                                                {child.status}
+                                            </Badge>
+                                        </div>
+                                    </Link>
+                                ))}
+                            </div>
+                        )}
                     </div>
-                )}
-            </div>
-
-            <div className="bg-card border border-border rounded-xl p-5 md:p-6 shadow-card space-y-4">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <Building2 className="h-4 w-4" />
-                        <h2 className="font-display font-bold">
-                            Child Ecosystems ({detail.children.length})
-                        </h2>
-                    </div>
-                    <Button variant="hero" size="sm" onClick={() => setShowAddChild(true)}>
-                        <Plus className="w-4 h-4 mr-1.5" />
-                        Add Child
-                    </Button>
-                </div>
-
-                <Dialog open={showAddChild} onOpenChange={setShowAddChild}>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle className="font-display capitalize">
-                                Add Child Ecosystem
-                            </DialogTitle>
-                        </DialogHeader>
-                        <CreateEcosystemForm
-                            parentOptions={[
-                                {
-                                    id: detail.ecosystemId,
-                                    name: detail.ecosystem?.name || detail.ecosystemId,
-                                },
-                            ]}
-                            fixedParentId={detail.ecosystemId}
-                            onCreated={eco => {
-                                setShowAddChild(false);
-                                setLocation(`/ecosystem/${eco.id}`);
-                            }}
-                            onCancel={() => setShowAddChild(false)}
-                        />
-                    </DialogContent>
-                </Dialog>
-
-                {detail.children.length === 0 ? (
-                    <div className="bg-muted/30 rounded-lg py-10 text-center">
-                        <Building2 className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
-                        <p className="text-sm text-muted-foreground">No child ecosystems yet.</p>
-                    </div>
-                ) : (
-                    <div className="space-y-3">
-                        {detail.children.map(child => (
-                            <Link
-                                key={child.id}
-                                href={`/ecosystem/${child.id}`}
-                                className="bg-card border border-border rounded-xl p-4 md:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-card hover:shadow-elevated transition-shadow cursor-pointer block"
-                            >
-                                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center shrink-0 bg-emerald/10 text-emerald">
-                                        <Building2 className="w-4 h-4 sm:w-5 sm:h-5" />
-                                    </div>
-                                    <div className="min-w-0">
-                                        <h3 className="font-medium text-foreground truncate">
-                                            {child.name}
-                                        </h3>
-                                        <p className="text-sm text-muted-foreground truncate">
-                                            {child.description || '/' + child.slugPath.join('/')}
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-2 sm:gap-3">
-                                    <Badge
-                                        variant={
-                                            child.status === 'ACTIVE'
-                                                ? 'success'
-                                                : child.status === 'DRAFT'
-                                                  ? 'warning'
-                                                  : 'outline'
-                                        }
-                                    >
-                                        {child.status}
-                                    </Badge>
-                                </div>
-                            </Link>
-                        ))}
-                    </div>
-                )}
-            </div>
+                </>
+            )}
         </div>
     );
 }

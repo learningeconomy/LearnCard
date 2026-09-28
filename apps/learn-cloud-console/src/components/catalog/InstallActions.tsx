@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import {
@@ -44,14 +44,14 @@ export function InstallActions({
     const [error, setError] = useState<string | null>(null);
     const [busy, setBusy] = useState(false);
 
-    useEffect(() => {
+    const [prevIsInstalled, setPrevIsInstalled] = useState(isInstalled);
+    if (prevIsInstalled !== isInstalled) {
+        setPrevIsInstalled(isInstalled);
         setState(isInstalled ? 'ready' : 'plan');
-    }, [isInstalled]);
+    }
 
     const describeError = (e: unknown): string => {
-        let msg = '';
-        if (e instanceof TRPCClientError) msg = e.message;
-        else msg = e instanceof Error ? e.message : String(e);
+        const msg = e instanceof TRPCClientError || e instanceof Error ? e.message : String(e);
 
         const lower = msg.toLowerCase();
         if (lower.includes('invalid signature') || lower.includes('signed manifest')) {
@@ -150,7 +150,7 @@ export function InstallActions({
     };
 
     const permissions = [
-        { label: 'Read ecosystem roster', detail: 'Entity names, groups, and learner counts' },
+        { label: 'Read ecosystem roster', detail: 'Entity names, networks, and learner counts' },
         {
             label: 'Read/write credential records',
             detail: `Records produced or consumed by ${itemName}`,
@@ -296,10 +296,10 @@ export function InstallActions({
                                     {state === 'applying'
                                         ? 'applying'
                                         : state === 'ready'
-                                        ? 'ready'
-                                        : state === 'failed'
-                                        ? 'failed'
-                                        : 'pending'}
+                                          ? 'ready'
+                                          : state === 'failed'
+                                            ? 'failed'
+                                            : 'pending'}
                                 </Badge>
                             </div>
                             <p className="text-sm text-muted-foreground">

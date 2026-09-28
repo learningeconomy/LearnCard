@@ -9,8 +9,19 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Select, type SelectOption } from '../ui/select';
+import { LABELS, entityKindLabel, ecosystemDisplayLabel } from '../../lib/labels';
 
 type Mode = 'group' | 'institution' | 'employer' | 'ecosystem';
+
+// This dialog's `mode` matches the `EntityKind` union, but 'ecosystem' mode here
+// only ever creates a Child Ecosystem (a tenant has a single root, ADR-001), so it
+// displays as "Group" rather than entityKindLabel's generic "Ecosystem".
+const modeDialogLabel: Record<Mode, string> = {
+    institution: entityKindLabel('institution'),
+    employer: entityKindLabel('employer'),
+    group: entityKindLabel('group'), // ADR-001 D11 curated collection -> "Network"
+    ecosystem: ecosystemDisplayLabel(false), // always a Child Ecosystem here -> "Group"
+};
 type GroupType = CreateGroupInput['type'];
 
 interface AddEntityDialogProps {
@@ -240,14 +251,7 @@ export function AddEntityDialog({
             <DialogContent className="max-w-lg">
                 <DialogHeader>
                     <DialogTitle className="font-display capitalize">
-                        Add{' '}
-                        {mode === 'institution'
-                            ? 'Institution'
-                            : mode === 'employer'
-                              ? 'Employer'
-                              : mode === 'group'
-                                ? 'Group'
-                                : 'Ecosystem'}
+                        Add {modeDialogLabel[mode]}
                     </DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 mt-2">
@@ -257,7 +261,9 @@ export function AddEntityDialog({
                         </div>
                     )}
                     <div>
-                        <Label>{mode === 'ecosystem' ? 'Parent Ecosystem' : 'Ecosystem'}</Label>
+                        <Label>
+                            {mode === 'ecosystem' ? LABELS.parentEcosystem : LABELS.ecosystem}
+                        </Label>
                         {ecosystemIsReadOnly && selectedEcosystem ? (
                             <p className="text-xs text-muted-foreground mt-1.5">
                                 In{' '}
@@ -380,7 +386,7 @@ export function AddEntityDialog({
                             </div>
                             {/* Prototype's "Estimated Learners / Employees" omitted: no primitive; headcount is not Profile identity data (ADR-001 §4 amendment, AGENTS.md rule 4) */}
                             <div>
-                                <Label>Assign to Groups</Label>
+                                <Label>{LABELS.assignToNetworks}</Label>
                                 {availableGroups.length > 0 ? (
                                     <div className="flex flex-wrap gap-2 mt-1.5">
                                         {availableGroups.map(group => (
@@ -400,12 +406,12 @@ export function AddEntityDialog({
                                     </div>
                                 ) : (
                                     <p className="text-xs text-muted-foreground mt-1">
-                                        No groups yet.
+                                        {LABELS.noNetworksYet}
                                     </p>
                                 )}
                                 <div className="flex gap-2 mt-2">
                                     <Input
-                                        placeholder="Create new group…"
+                                        placeholder={LABELS.createNetworkPlaceholder}
                                         className="flex-1"
                                         value={newGroupName}
                                         onChange={event => setNewGroupName(event.target.value)}

@@ -1,29 +1,46 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'wouter';
-import {
-    LayoutGrid,
-    AppWindow,
-    Database,
-    Settings,
-    LogOut,
-    PanelLeft,
-    ChevronRight,
-} from 'lucide-react';
+import { AppWindow, Database, Settings, LogOut, PanelLeft, ChevronRight } from 'lucide-react';
 import { cn } from '../lib/utils';
 import eduosHorizontal from '../assets/eduos-horizontal-black.png';
 import { topRoutes, appsRoutes, pluginsRoutes, dataRoutes, RouteDefinition } from '../routes';
+import type { DashboardSession } from '../api';
 
 interface SidebarProps {
     collapsed: boolean;
     onToggle: () => void;
     activeSurfaceSlugs?: string[];
+    session?: DashboardSession | null;
 }
 
-function MenuItems({ items, collapsed }: { items: RouteDefinition[]; collapsed: boolean }) {
+type EcosystemRole = NonNullable<RouteDefinition['minimumRole']>;
+
+// Same ordering/weights as SurfaceGate.tsx and console-bff's ROLE_RANK, extended with
+// VIEWER. Sidebar-only filtering (ADR-015 minimumRole) — never the enforcement path.
+const ROLE_WEIGHT: Record<EcosystemRole, number> = { VIEWER: 0, MEMBER: 1, ADMIN: 2, OWNER: 3 };
+
+// Unknown role (session still loading, or no ecosystem grant) never hides a nav item —
+// only a *known* role below the threshold does.
+function canViewRoute(route: RouteDefinition, role: EcosystemRole | undefined | null): boolean {
+    if (!route.minimumRole) return true;
+    if (!role) return true;
+    return ROLE_WEIGHT[role] >= ROLE_WEIGHT[route.minimumRole];
+}
+
+function MenuItems({
+    items,
+    collapsed,
+    role,
+}: {
+    items: RouteDefinition[];
+    collapsed: boolean;
+    role?: EcosystemRole | null;
+}) {
     const [location] = useLocation();
+    const visibleItems = items.filter(item => canViewRoute(item, role));
     return (
         <ul className="flex w-full min-w-0 flex-col gap-0.5">
-            {items.map(item => {
+            {visibleItems.map(item => {
                 const isActive =
                     location === item.path ||
                     (item.path !== '/' && location.startsWith(item.path + '/')) ||
@@ -58,6 +75,7 @@ function CollapsibleGroup({
     icon: GroupIcon,
     open,
     onOpenChange,
+    role,
 }: {
     label: string;
     items: RouteDefinition[];
@@ -65,12 +83,13 @@ function CollapsibleGroup({
     icon: React.ElementType;
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    role?: EcosystemRole | null;
 }) {
     if (collapsed) {
         return (
             <div className="relative flex w-full min-w-0 flex-col py-0">
                 <div className="w-full text-sm">
-                    <MenuItems items={items} collapsed={collapsed} />
+                    <MenuItems items={items} collapsed={collapsed} role={role} />
                 </div>
             </div>
         );
@@ -97,7 +116,7 @@ function CollapsibleGroup({
                 </button>
                 {open && (
                     <div className="w-full text-sm pl-3 mt-0.5">
-                        <MenuItems items={items} collapsed={collapsed} />
+                        <MenuItems items={items} collapsed={collapsed} role={role} />
                     </div>
                 )}
             </div>
@@ -105,16 +124,24 @@ function CollapsibleGroup({
     );
 }
 
-export function Sidebar({ collapsed, onToggle, activeSurfaceSlugs = [] }: SidebarProps) {
-    const [openGroup, setOpenGroup] = useState<'apps' | 'plugins' | 'data' | null>(null);
+export function Sidebar({
+    collapsed,
+    onToggle,
+    activeSurfaceSlugs = [],
+    session = null,
+}: SidebarProps) {
+    // 'plugins'/'data' are the two remaining collapsible groups (rendered with the
+    // "Apps"/"Data" labels below); appsRoutes items are flat top-level items now,
+    // so they are not part of this open/closed state.
+    const [openGroup, setOpenGroup] = useState<'plugins' | 'data' | null>(null);
     const visibleAppsRoutes = appsRoutes.filter(
         route => !route.surfaceSlug || activeSurfaceSlugs.includes(route.surfaceSlug)
     );
+    const role = session?.effectiveAccess.ecosystemRoles[0]?.role;
     const [location] = useLocation();
 
     useEffect(() => {
-        const groupForPath = (path: string): 'apps' | 'plugins' | 'data' | null => {
-            if (appsRoutes.some(r => r.path === path)) return 'apps';
+        const groupForPath = (path: string): 'plugins' | 'data' | null => {
             if (pluginsRoutes.some(r => r.path === path)) return 'plugins';
             if (dataRoutes.some(r => r.path === path)) return 'data';
             return null;
@@ -124,7 +151,7 @@ export function Sidebar({ collapsed, onToggle, activeSurfaceSlugs = [] }: Sideba
         void Promise.resolve().then(() => setOpenGroup(group));
     }, [location]);
 
-    const handleOpenChange = (group: 'apps' | 'plugins' | 'data') => (open: boolean) => {
+    const handleOpenChange = (group: 'plugins' | 'data') => (open: boolean) => {
         setOpenGroup(open ? group : null);
     };
 
@@ -173,27 +200,25 @@ export function Sidebar({ collapsed, onToggle, activeSurfaceSlugs = [] }: Sideba
 
                 <div className="relative flex w-full min-w-0 flex-col p-2 py-1 pb-4">
                     <div className="w-full text-sm">
-                        <MenuItems items={topRoutes} collapsed={collapsed} />
+                        {/* Plugin-delivered pages (e.g. Credential Finder) render as flat
+                            top-level items alongside the core pages, not in a collapsible. */}
+                        <MenuItems
+                            items={[...topRoutes, ...visibleAppsRoutes]}
+                            collapsed={collapsed}
+                            role={role}
+                        />
                     </div>
                 </div>
 
                 <div className="px-2">
                     <CollapsibleGroup
                         label="Apps"
-                        items={visibleAppsRoutes}
-                        collapsed={collapsed}
-                        icon={LayoutGrid}
-                        open={openGroup === 'apps'}
-                        onOpenChange={handleOpenChange('apps')}
-                    />
-                    <div className="h-4" />
-                    <CollapsibleGroup
-                        label="Plugins"
                         items={pluginsRoutes}
                         collapsed={collapsed}
                         icon={AppWindow}
                         open={openGroup === 'plugins'}
                         onOpenChange={handleOpenChange('plugins')}
+                        role={role}
                     />
                     <div className="h-4" />
                     <CollapsibleGroup
@@ -203,6 +228,7 @@ export function Sidebar({ collapsed, onToggle, activeSurfaceSlugs = [] }: Sideba
                         icon={Database}
                         open={openGroup === 'data'}
                         onOpenChange={handleOpenChange('data')}
+                        role={role}
                     />
                     <div className="h-4" />
                 </div>

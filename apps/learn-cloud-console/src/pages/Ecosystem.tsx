@@ -1,6 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation } from 'wouter';
-import { Globe, Building2, Search, Plus, Layers, School, ChevronDown, Network } from 'lucide-react';
+import {
+    Globe,
+    Building2,
+    Search,
+    Plus,
+    Layers,
+    School,
+    ChevronDown,
+    Network,
+    ListTree,
+} from 'lucide-react';
 import { InstitutionTypeEnum, type InstitutionType } from '@learncard/types';
 import {
     listEcosystems,
@@ -20,6 +30,9 @@ import { ErrorState } from '../components/ErrorState';
 import { DropdownMenu, DropdownMenuItem } from '../components/ui/dropdown-menu';
 import { AddEntityDialog } from '../components/ecosystem/AddEntityDialog';
 import { EcosystemMapDialog } from '../components/ecosystem/EcosystemMapDialog';
+import { EntityTree } from '../components/ecosystem/EntityTree';
+import { LABELS, entityKindLabel, ecosystemDisplayLabel } from '../lib/labels';
+import { kindColors, kindIcon } from '../lib/entity-taxonomy';
 
 const institutionTypeLabels: Record<InstitutionType, string> = {
     [InstitutionTypeEnum.enum.preschool]: 'Preschool',
@@ -74,6 +87,7 @@ export function Ecosystem() {
         'group' | 'institution' | 'employer' | 'ecosystem'
     >('institution');
     const [mapOpen, setMapOpen] = useState(false);
+    const [hierarchy, setHierarchy] = useState(false);
 
     const load = useCallback(async () => {
         setError(false);
@@ -219,7 +233,10 @@ export function Ecosystem() {
             searchString: entry.ecosystem
                 ? '/' + entry.ecosystem.slugPath.join('/')
                 : 'Details unavailable from LearnCloud yet.',
-            typeLabel: 'Ecosystem',
+            // ADR-001: slugPath.length === 1 is the root indicator used throughout this file.
+            typeLabel: ecosystemDisplayLabel(
+                entry.ecosystem ? entry.ecosystem.slugPath.length === 1 : true
+            ),
             kind: 'ecosystem',
             status: entry.ecosystem?.status,
             role: entry.role,
@@ -234,7 +251,7 @@ export function Ecosystem() {
                     name: child.name,
                     subtitle: getEcoSummary(child.id, 0),
                     searchString: '/' + child.slugPath.join('/'),
-                    typeLabel: 'Ecosystem',
+                    typeLabel: ecosystemDisplayLabel(false), // always a Child Ecosystem here
                     kind: 'ecosystem',
                     status: child.status,
                     link: `/ecosystem/${child.id}`,
@@ -254,7 +271,9 @@ export function Ecosystem() {
                 searchString: eco.ecosystem
                     ? '/' + eco.ecosystem.slugPath.join('/')
                     : 'Details unavailable from LearnCloud yet.',
-                typeLabel: 'Ecosystem',
+                typeLabel: ecosystemDisplayLabel(
+                    eco.ecosystem ? eco.ecosystem.slugPath.length === 1 : true
+                ),
                 kind: 'ecosystem',
                 status: eco.ecosystem?.status,
                 link: `/ecosystem/${eco.ecosystemId}`,
@@ -320,7 +339,7 @@ export function Ecosystem() {
             name: org.displayName || org.profileId,
             subtitle,
             searchString: parts.length > 0 ? parts.join(' · ') : `in ${ownerName}`,
-            typeLabel: org.type === 'institution' ? 'Institution' : 'Employer',
+            typeLabel: entityKindLabel(org.type),
             kind: org.type,
             link: `/ecosystem/${org.anchorEcosystemId}`,
             ownerEcosystemId: org.anchorEcosystemId,
@@ -342,12 +361,46 @@ export function Ecosystem() {
         return false;
     });
 
+    const treeEntities = new Map<string, UnifiedEntity>();
+    if (hierarchy) {
+        const addWithAncestors = (entity: UnifiedEntity) => {
+            if (treeEntities.has(entity.id)) return;
+            treeEntities.set(entity.id, entity);
+
+            if (entity.kind === 'ecosystem' && entity.slugPath && entity.slugPath.length > 1) {
+                const parentId = entity.slugPath[entity.slugPath.length - 2];
+                const parent = unifiedEntities.find(e => e.id === parentId);
+                if (parent) addWithAncestors(parent);
+            } else if (entity.kind !== 'ecosystem' && entity.ownerEcosystemId) {
+                const parent = unifiedEntities.find(e => e.id === entity.ownerEcosystemId);
+                if (parent) addWithAncestors(parent);
+            }
+        };
+
+        filtered.filter(e => e.kind !== 'group').forEach(addWithAncestors);
+    }
+
     const typeCounts = unifiedEntities.reduce<Record<string, number>>((acc, entity) => {
         acc[entity.typeLabel] = (acc[entity.typeLabel] || 0) + 1;
         return acc;
     }, {});
 
-    const availableTypes = Object.keys(typeCounts).sort();
+    const typeOrder = [
+        LABELS.ecosystem,
+        LABELS.group,
+        LABELS.network,
+        LABELS.institution,
+        LABELS.employer,
+    ];
+
+    const availableTypes = Object.keys(typeCounts).sort((a, b) => {
+        const indexA = (typeOrder as readonly string[]).indexOf(a);
+        const indexB = (typeOrder as readonly string[]).indexOf(b);
+        if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+        if (indexA !== -1) return -1;
+        if (indexB !== -1) return 1;
+        return a.localeCompare(b);
+    });
 
     const toggleType = (type: string) => {
         setSelectedTypes(prev =>
@@ -387,10 +440,10 @@ export function Ecosystem() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                     <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground">
-                        Your Ecosystem
+                        {LABELS.yourEcosystem}
                     </h1>
                     <p className="text-muted-foreground mt-1 text-sm sm:text-base">
-                        Your full ecosystem, filtered to only what you have permission to see.
+                        {LABELS.yourEcosystemSubtitle}
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -412,21 +465,24 @@ export function Ecosystem() {
                             </Button>
                         }
                     >
+                        {/* Domain kind 'group' = ADR-001 D11 curated collection -> displays as "Network" */}
                         <DropdownMenuItem onClick={() => openDialog('group')}>
                             <Layers className="w-4 h-4 mr-2 text-violet" />
-                            Add Group
+                            {LABELS.addNetwork}
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => openDialog('employer')}>
                             <Building2 className="w-4 h-4 mr-2 text-coral" />
-                            Add Employer
+                            {LABELS.addEmployer}
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => openDialog('institution')}>
                             <School className="w-4 h-4 mr-2 text-emerald" />
-                            Add Institution
+                            {LABELS.addInstitution}
                         </DropdownMenuItem>
+                        {/* Domain kind 'ecosystem' here always creates a Child Ecosystem (single root
+                            per tenant, ADR-001) -> displays as "Group" */}
                         <DropdownMenuItem onClick={() => openDialog('ecosystem')}>
                             <Globe className="w-4 h-4 mr-2 text-primary" />
-                            Add Ecosystem
+                            {LABELS.addGroup}
                         </DropdownMenuItem>
                     </DropdownMenu>
                 </div>
@@ -457,8 +513,22 @@ export function Ecosystem() {
             />
 
             <div className="space-y-3">
-                {availableTypes.length > 0 && (
-                    <div className="flex flex-wrap items-center gap-2">
+                <div className="-mx-4 sm:mx-0 px-4 sm:px-0 overflow-x-auto sm:overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                    <div className="flex sm:flex-wrap items-center gap-2 min-w-max sm:min-w-0">
+                        <button
+                            type="button"
+                            onClick={() => setHierarchy(h => !h)}
+                            aria-pressed={hierarchy}
+                            className={cn(
+                                'inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-colors',
+                                hierarchy
+                                    ? 'bg-violet/10 text-violet border-violet/40'
+                                    : 'bg-card text-foreground border-border hover:bg-muted'
+                            )}
+                        >
+                            <ListTree className="w-3.5 h-3.5" />
+                            {LABELS.hierarchy}
+                        </button>
                         {availableTypes.map(type => {
                             const active = selectedTypes.includes(type);
                             return (
@@ -483,12 +553,12 @@ export function Ecosystem() {
                             );
                         })}
                     </div>
-                )}
+                </div>
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
                         className="pl-10"
-                        placeholder="Search ecosystem..."
+                        placeholder={LABELS.searchEcosystemPlaceholder}
                         value={search}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                             setSearch(e.target.value)
@@ -501,13 +571,54 @@ export function Ecosystem() {
                 <div className="text-center py-20 bg-card border border-border rounded-xl">
                     <Globe className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
                     <h3 className="font-display text-lg font-bold text-foreground mb-2">
-                        {unifiedEntities.length === 0 ? 'Your ecosystem is empty' : 'No results'}
+                        {unifiedEntities.length === 0 ? LABELS.ecosystemEmptyTitle : 'No results'}
                     </h3>
                     <p className="text-sm text-muted-foreground">
                         {unifiedEntities.length === 0
-                            ? 'Add groups, institutions, or employers to build your network.'
+                            ? LABELS.emptyEcosystemHint
                             : 'Try a different search term or filter.'}
                     </p>
+                </div>
+            ) : hierarchy ? (
+                <div className="space-y-4">
+                    <EntityTree
+                        entities={Array.from(treeEntities.values())}
+                        expandAll={Boolean(search) || selectedTypes.length > 0}
+                    />
+                    {filtered.filter(e => e.kind === 'group').length > 0 && (
+                        <div className="space-y-2">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                {LABELS.networks} — no admin hierarchy
+                            </p>
+                            {filtered
+                                .filter(e => e.kind === 'group')
+                                .map(ent => (
+                                    <Link
+                                        key={ent.id}
+                                        href={ent.link as string}
+                                        className="flex items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5 shadow-card hover:shadow-elevated transition-shadow cursor-pointer"
+                                    >
+                                        <div
+                                            className={cn(
+                                                'w-8 h-8 rounded-lg flex items-center justify-center shrink-0',
+                                                kindColors.group
+                                            )}
+                                        >
+                                            <Network className="w-4 h-4" />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="font-medium text-sm text-foreground truncate">
+                                                {ent.name}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground truncate">
+                                                {ent.typeLabel}
+                                                {ent.subtitle ? ` · ${ent.subtitle}` : ''}
+                                            </p>
+                                        </div>
+                                    </Link>
+                                ))}
+                        </div>
+                    )}
                 </div>
             ) : (
                 <div className="space-y-6">
@@ -543,18 +654,8 @@ export function Ecosystem() {
 
                         const renderCard = (entity: UnifiedEntity) => {
                             const isLink = !!entity.link;
-                            let Icon = Globe;
-                            let iconColor = 'bg-violet/10 text-violet';
-                            if (entity.kind === 'group') {
-                                Icon = Layers;
-                                iconColor = 'bg-violet/10 text-violet';
-                            } else if (entity.kind === 'institution') {
-                                Icon = School;
-                                iconColor = 'bg-emerald/10 text-emerald';
-                            } else if (entity.kind === 'employer') {
-                                Icon = Building2;
-                                iconColor = 'bg-coral/10 text-coral';
-                            }
+                            const Icon = kindIcon[entity.kind];
+                            const iconColor = kindColors[entity.kind];
 
                             // Exception-only: ACTIVE is the norm; only DRAFT/ARCHIVED (Ecosystem/Group lifecycle) is signal
                             const showStatus = entity.status && entity.status !== 'ACTIVE';

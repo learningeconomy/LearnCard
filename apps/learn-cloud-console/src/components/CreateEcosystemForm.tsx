@@ -4,6 +4,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Select } from './ui/select';
 import { TRPCClientError } from '@trpc/client';
+import { LABELS } from '../lib/labels';
 
 interface CreateEcosystemFormProps {
     parentOptions: { id: string; name: string }[];
@@ -80,7 +81,7 @@ export function CreateEcosystemForm({
             {!fixedParentId && (
                 <div>
                     <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-                        Parent Ecosystem
+                        {LABELS.parentEcosystem}
                     </label>
                     <Select
                         value={parentId}
@@ -140,7 +141,8 @@ export function CreateEcosystemForm({
 
             <div className="flex items-center gap-2 pt-2">
                 <Button type="submit" disabled={!canSubmit || busy}>
-                    {busy ? 'Creating...' : 'Create Ecosystem'}
+                    {/* This form always creates a Child Ecosystem (ADR-001 single root) -> "Create Group" */}
+                    {busy ? 'Creating...' : LABELS.createGroup}
                 </Button>
                 <Button type="button" variant="ghost" onClick={onCancel} disabled={busy}>
                     Cancel

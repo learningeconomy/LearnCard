@@ -12,6 +12,7 @@ import {
     Plug,
     TrendingUp,
     Users,
+    Wand2,
 } from 'lucide-react';
 import {
     BindingRecord,
@@ -173,16 +174,92 @@ export function Overview({ session }: { session: DashboardSession }) {
         );
     }
 
+    const statAccents = [
+        {
+            text: 'text-lc-blue',
+            bg: 'bg-background/70',
+            accent: 'from-lc-blue/25 to-lc-cyan/10',
+            border: 'hover:border-lc-blue/40',
+        },
+        {
+            text: 'text-lc-lime',
+            bg: 'bg-background/70',
+            accent: 'from-lc-lime/25 to-lc-cyan/10',
+            border: 'hover:border-lc-lime/40',
+        },
+        {
+            text: 'text-lc-pink',
+            bg: 'bg-background/70',
+            accent: 'from-lc-pink/25 to-violet-500/10',
+            border: 'hover:border-lc-pink/40',
+        },
+        {
+            text: 'text-gold',
+            bg: 'bg-background/70',
+            accent: 'from-amber-500/25 to-lc-pink/10',
+            border: 'hover:border-gold/40',
+        },
+    ];
+    const actionAccents = [
+        {
+            text: 'text-lc-blue',
+            bg: 'bg-lc-blue/10',
+            bgHover: 'group-hover:bg-lc-blue/20',
+            border: 'hover:border-lc-blue/40',
+        },
+        {
+            text: 'text-lc-cyan',
+            bg: 'bg-lc-cyan/10',
+            bgHover: 'group-hover:bg-lc-cyan/20',
+            border: 'hover:border-lc-cyan/40',
+        },
+        {
+            text: 'text-gold',
+            bg: 'bg-gold/10',
+            bgHover: 'group-hover:bg-gold/20',
+            border: 'hover:border-gold/40',
+        },
+        {
+            text: 'text-lc-pink',
+            bg: 'bg-lc-pink/10',
+            bgHover: 'group-hover:bg-lc-pink/20',
+            border: 'hover:border-lc-pink/40',
+        },
+        {
+            text: 'text-violet',
+            bg: 'bg-violet/10',
+            bgHover: 'group-hover:bg-violet/20',
+            border: 'hover:border-violet/40',
+        },
+        {
+            text: 'text-lc-lime',
+            bg: 'bg-lc-lime/10',
+            bgHover: 'group-hover:bg-lc-lime/20',
+            border: 'hover:border-lc-lime/40',
+        },
+        {
+            text: 'text-teal',
+            bg: 'bg-teal/10',
+            bgHover: 'group-hover:bg-teal/20',
+            border: 'hover:border-teal/40',
+        },
+        {
+            text: 'text-emerald',
+            bg: 'bg-emerald/10',
+            bgHover: 'group-hover:bg-emerald/20',
+            border: 'hover:border-emerald/40',
+        },
+    ];
+
     return (
         <div className="max-w-6xl mx-auto space-y-6 md:space-y-8">
-            <div>
-                <div className="flex items-start justify-between gap-4 flex-wrap">
-                    <div>
-                        <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground">
-                            Welcome to EducationOS
-                        </h1>
-                    </div>
-                </div>
+            <div className="rounded-2xl border bg-gradient-to-br from-lc-blue/10 via-background to-lc-pink/10 p-6 sm:p-8">
+                <h1 className="font-display text-3xl sm:text-4xl font-bold leading-tight text-foreground">
+                    Welcome to EducationOS
+                </h1>
+                <p className="mt-2 text-sm text-muted-foreground">
+                    Get started by setting up your ecosystem.
+                </p>
             </div>
 
             {error && (
@@ -193,25 +270,37 @@ export function Overview({ session }: { session: DashboardSession }) {
 
             {/* Stats */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                {stats.map(stat => (
-                    <div
-                        key={stat.label}
-                        className="bg-card border border-border rounded-xl p-4 md:p-5 shadow-card cursor-pointer hover:border-emerald/30 transition-all"
-                        onClick={() => setLocation(stat.link)}
-                    >
-                        <div className="flex items-center justify-between mb-3">
-                            <stat.icon className="w-5 h-5 text-emerald" />
-                            <TrendingUp className="w-4 h-4 text-muted-foreground/40" />
+                {stats.map((stat, i) => {
+                    const accent = statAccents[i % statAccents.length];
+                    return (
+                        <div
+                            key={stat.label}
+                            className={`group bg-card border border-border rounded-2xl p-4 md:p-5 shadow-card cursor-pointer transition-all hover:shadow-elevated bg-gradient-to-br ${accent.accent} ${accent.border}`}
+                            onClick={() => setLocation(stat.link)}
+                        >
+                            <div className="flex items-center justify-between mb-3">
+                                <div
+                                    className={`w-9 h-9 rounded-lg ${accent.bg} flex items-center justify-center`}
+                                >
+                                    <stat.icon className={`w-5 h-5 ${accent.text}`} />
+                                </div>
+                                <TrendingUp className="w-4 h-4 text-muted-foreground/40" />
+                            </div>
+                            <div className="font-display text-2xl font-bold text-foreground">
+                                {stat.value}
+                            </div>
+                            <div className="text-xs text-muted-foreground mt-1">{stat.label}</div>
+                            <div
+                                className={`text-xs text-black mt-2 font-medium flex items-center gap-1`}
+                            >
+                                {stat.linkText}{' '}
+                                <span className="transition-transform group-hover:translate-x-0.5">
+                                    →
+                                </span>
+                            </div>
                         </div>
-                        <div className="font-display text-2xl font-bold text-foreground">
-                            {stat.value}
-                        </div>
-                        <div className="text-xs text-muted-foreground mt-1">{stat.label}</div>
-                        <div className="text-xs text-emerald mt-2 font-medium">
-                            {stat.linkText} →
-                        </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
 
             {/* Needs your attention — the only activity that is actionable from a dashboard.
@@ -289,31 +378,41 @@ export function Overview({ session }: { session: DashboardSession }) {
 
             {/* Quick Actions */}
             <div>
-                <h2 className="font-display text-xl font-bold text-foreground mb-4">
-                    Quick Actions
-                </h2>
+                <div className="flex items-center gap-2 mb-4">
+                    <Wand2 className="w-5 h-5 text-lc-pink" />
+                    <h2 className="font-display text-xl font-bold text-foreground">
+                        Quick Actions
+                    </h2>
+                </div>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-2 gap-3 md:gap-4">
-                    {quickActions.map(action => (
-                        <div
-                            key={action.title}
-                            onClick={() => setLocation(action.href)}
-                            className="bg-card border border-border rounded-xl p-4 md:p-6 shadow-card hover:shadow-elevated hover:border-emerald/30 transition-all group cursor-pointer"
-                        >
-                            <div className="flex items-start gap-4">
-                                <div className="w-10 h-10 rounded-lg bg-emerald/10 flex items-center justify-center shrink-0 group-hover:bg-emerald/20 transition-colors">
-                                    <action.icon className="w-5 h-5 text-emerald" />
-                                </div>
-                                <div>
-                                    <h3 className="font-display font-bold text-foreground group-hover:text-emerald transition-colors">
-                                        {action.title}
-                                    </h3>
-                                    <p className="text-sm text-muted-foreground mt-1">
-                                        {action.desc}
-                                    </p>
+                    {quickActions.map((action, i) => {
+                        const accent = actionAccents[i % actionAccents.length];
+                        return (
+                            <div
+                                key={action.title}
+                                onClick={() => setLocation(action.href)}
+                                className={`bg-card border border-border rounded-2xl p-4 md:p-6 shadow-card hover:shadow-elevated transition-all group cursor-pointer ${accent.border}`}
+                            >
+                                <div className="flex items-start gap-4">
+                                    <div
+                                        className={`w-10 h-10 rounded-xl ${accent.bg} ${accent.bgHover} flex items-center justify-center shrink-0 transition-colors`}
+                                    >
+                                        <action.icon className={`w-5 h-5 ${accent.text}`} />
+                                    </div>
+                                    <div>
+                                        <h3
+                                            className={`font-display font-bold text-foreground ${accent.text.replace('text-', 'group-hover:text-')} transition-colors`}
+                                        >
+                                            {action.title}
+                                        </h3>
+                                        <p className="text-sm text-muted-foreground mt-1">
+                                            {action.desc}
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             </div>
         </div>

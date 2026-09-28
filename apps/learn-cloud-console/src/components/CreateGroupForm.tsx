@@ -4,6 +4,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Select } from './ui/select';
 import { TRPCClientError } from '@trpc/client';
+import { LABELS } from '../lib/labels';
 
 interface CreateGroupFormProps {
     ecosystemOptions: { id: string; name: string }[];
@@ -86,7 +87,7 @@ export function CreateGroupForm({
             {!fixedEcosystemId && (
                 <div>
                     <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-                        Owner Ecosystem
+                        {LABELS.ownerEcosystem}
                     </label>
                     <Select
                         value={ownerEcosystemId}

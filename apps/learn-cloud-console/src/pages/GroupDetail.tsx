@@ -14,6 +14,7 @@ import { cn } from '../lib/utils';
 import { PageSkeleton } from '../components/PageSkeleton';
 import { ErrorState } from '../components/ErrorState';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
+import { LABELS } from '../lib/labels';
 
 export function GroupDetail() {
     const params = useParams<{ id: string }>();
@@ -41,7 +42,7 @@ export function GroupDetail() {
     }, [id]);
 
     useEffect(() => {
-        void load();
+        void Promise.resolve().then(load);
     }, [load]);
 
     const handleGrant = async () => {
@@ -91,7 +92,7 @@ export function GroupDetail() {
                 className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
                 <ArrowLeft className="h-4 w-4" />
-                Back to Ecosystem
+                {LABELS.backToEcosystem}
             </Link>
 
             <div className="bg-card border border-border rounded-xl p-5 md:p-6 shadow-card space-y-2">
@@ -117,12 +118,12 @@ export function GroupDetail() {
                     <div className="flex items-center gap-2">
                         <Users className="h-4 w-4" />
                         <h2 className="font-display font-bold">
-                            Members ({detail.members.length})
+                            {LABELS.members} ({detail.members.length})
                         </h2>
                     </div>
                     <Button variant="hero" size="sm" onClick={() => setShowAddMember(true)}>
                         <Plus className="w-4 h-4 mr-1.5" />
-                        Add Member
+                        {LABELS.addMember}
                     </Button>
                 </div>
 
@@ -130,7 +131,7 @@ export function GroupDetail() {
                     <DialogContent>
                         <DialogHeader>
                             <DialogTitle className="font-display capitalize">
-                                Add Member
+                                {LABELS.addMember}
                             </DialogTitle>
                         </DialogHeader>
                         <div className="flex flex-col sm:flex-row gap-2 p-3 rounded-md bg-muted/30 border mt-2">
@@ -159,9 +160,7 @@ export function GroupDetail() {
                 {detail.members.length === 0 ? (
                     <div className="bg-muted/30 rounded-lg py-10 text-center">
                         <Users className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
-                        <p className="text-sm text-muted-foreground">
-                            No members in this group yet.
-                        </p>
+                        <p className="text-sm text-muted-foreground">{LABELS.noNetworkMembers}</p>
                     </div>
                 ) : (
                     <div className="space-y-2">
@@ -228,14 +227,14 @@ export function GroupDetail() {
                 <div className="flex items-center gap-2">
                     <Layers className="h-4 w-4" />
                     <h2 className="font-display font-bold">
-                        Child Groups ({detail.children.length})
+                        {LABELS.childNetworks} ({detail.children.length})
                     </h2>
                 </div>
 
                 {detail.children.length === 0 ? (
                     <div className="bg-muted/30 rounded-lg py-10 text-center">
                         <Layers className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
-                        <p className="text-sm text-muted-foreground">No child groups yet.</p>
+                        <p className="text-sm text-muted-foreground">{LABELS.noChildNetworks}</p>
                     </div>
                 ) : (
                     <div className="space-y-3">
@@ -270,8 +269,8 @@ export function GroupDetail() {
                                             child.status === 'ACTIVE'
                                                 ? 'success'
                                                 : child.status === 'DRAFT'
-                                                ? 'warning'
-                                                : 'outline'
+                                                  ? 'warning'
+                                                  : 'outline'
                                         }
                                     >
                                         {child.status}

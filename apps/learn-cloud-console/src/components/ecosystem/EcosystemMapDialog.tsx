@@ -14,6 +14,7 @@ import {
     Building2,
     Scan,
 } from 'lucide-react';
+import { LABELS } from '../../lib/labels';
 
 interface UnifiedEntity {
     id: string;
@@ -197,7 +198,7 @@ export function EcosystemMapDialog({ open, onOpenChange, entities }: Props) {
             const sub =
                 entity.kind === 'ecosystem' || entity.kind === 'group'
                     ? typeof entity.subtitle === 'string' &&
-                      entity.subtitle !== 'No groups or members yet'
+                      entity.subtitle !== 'No networks or members yet'
                         ? entity.subtitle
                         : entity.typeLabel
                     : entity.searchString.startsWith('in ')
@@ -236,7 +237,7 @@ export function EcosystemMapDialog({ open, onOpenChange, entities }: Props) {
                         laidEdges.push({
                             from: fromId,
                             to: toId,
-                            label: 'in group',
+                            label: 'in network',
                             dashed: true,
                             tone: 'hsl(var(--violet))',
                         });
@@ -274,7 +275,7 @@ export function EcosystemMapDialog({ open, onOpenChange, entities }: Props) {
                     ecoLabeled = true;
                 }
             } else if (t.kind === 'group') {
-                label = 'GROUPS';
+                label = LABELS.networks.toUpperCase(); // kind 'group' = ADR-001 D11 -> "Network"
             } else if (t.kind === 'institution') {
                 label = 'INSTITUTIONS';
             } else if (t.kind === 'employer') {
@@ -334,26 +335,26 @@ export function EcosystemMapDialog({ open, onOpenChange, entities }: Props) {
                 <DialogHeader>
                     <DialogTitle className="font-display">Ecosystem Map</DialogTitle>
                     <p className="text-sm text-muted-foreground">
-                        Every ecosystem, group, and organization you administer, and how they
+                        Every ecosystem, network, and organization you administer, and how they
                         relate.
                     </p>
                 </DialogHeader>
 
                 <div className="flex flex-wrap items-center gap-2 text-xs">
                     <Badge variant="outline" className="border-primary/40 text-primary">
-                        Ecosystem
+                        {LABELS.ecosystem}
                     </Badge>
                     <Badge variant="outline" className="border-violet/40 text-violet">
-                        Group
+                        {LABELS.network}
                     </Badge>
                     <Badge variant="outline" className="border-emerald/40 text-emerald">
-                        Institution
+                        {LABELS.institution}
                     </Badge>
                     <Badge variant="outline" className="border-coral/40 text-coral">
-                        Employer
+                        {LABELS.employer}
                     </Badge>
                     <span className="ml-2 text-muted-foreground">
-                        lines: child / owns / member · dashed: in group
+                        lines: child / owns / member · dashed: in network
                     </span>
                     <div className="ml-auto flex items-center gap-1">
                         <Button
