@@ -8,6 +8,11 @@ import {
     Boost,
     Profile,
 } from '@learncard/types';
+import {
+    LER_RS_TYPE_URI_V45,
+    LEGACY_LER_RS_TYPE_URI_V44,
+    LEGACY_LER_RS_TYPE_TOKEN,
+} from '@learncard/ler-rs-plugin';
 import { useKnownDIDRegistry } from 'learn-card-base/hooks/useRegistry';
 import { SortedCredentials } from 'learn-card-base/stores/selectedCredsStore';
 import { SyncCredentialsVCs } from 'learn-card-base/stores/syncSchoolStore';
@@ -856,18 +861,32 @@ export const getImageUrlFromCredential = (
     return imgUrl;
 };
 
+/**
+ * Checks if a credential is a LER-RS (Resume Builder) credential by inspecting
+ * the credential's type array and credentialSubject type fields.
+ */
 export const isResumeBuilderCredential = (credential: VC): boolean => {
-    const attachments = getCredentialSubject(credential)?.attachments;
+    const LER_RS_TYPES = [
+        LEGACY_LER_RS_TYPE_TOKEN,
+        LEGACY_LER_RS_TYPE_URI_V44,
+        LER_RS_TYPE_URI_V45,
+    ];
 
-    if (!Array.isArray(attachments)) return false;
+    const typeList = Array.isArray(credential?.type) ? credential.type : [credential?.type];
+    if (typeList.some(type => typeof type === 'string' && LER_RS_TYPES.includes(type))) {
+        return true;
+    }
 
-    return attachments.some(
-        attachment =>
-            Array.isArray(attachment?.descriptions) &&
-            attachment.descriptions.some((description: string) =>
-                description.startsWith('Resume PDF published')
-            )
-    );
+    const credentialSubject = getCredentialSubject(credential);
+    if (!credentialSubject) return false;
+
+    const inlineType = credentialSubject.type;
+    if (typeof inlineType === 'string' && LER_RS_TYPES.includes(inlineType)) {
+        return true;
+    }
+
+    const nestedType = (credentialSubject.lerrsType as Record<string, unknown> | undefined)?.type;
+    return typeof nestedType === 'string' && LER_RS_TYPES.includes(nestedType);
 };
 
 export const getCredentialName = (credential: VC): string => {
@@ -875,9 +894,6 @@ export const getCredentialName = (credential: VC): string => {
     const name = getPotentialNameFieldsFromType(credentialTypes, credential);
     const credentialSubjectAchievementName = getCredentialSubject(credential)?.achievement?.name;
 
-    if (isResumeBuilderCredential(credential)) {
-        return 'Resume Builder';
-    }
     // Generic VCDM-shape fallback: humanize the most-specific entry of
     // the `type` array so a credential without an explicit `name` or
     // `achievement.name` still gets a sensible title rather than being
@@ -886,7 +902,12 @@ export const getCredentialName = (credential: VC): string => {
     // achievement payload (e.g. the walt.id sandbox `UniversityDegree`).
     const humanizedType = humanizeCredentialType(getMostSpecificCredentialType(credentialTypes));
 
-    return credential?.name || name || credentialSubjectAchievementName || humanizedType;
+    return (
+        credential?.name ||
+        name ||
+        credentialSubjectAchievementName ||
+        (isResumeBuilderCredential(credential) ? 'Resume Builder' : humanizedType)
+    );
 };
 
 export const getCredentialType = (credential: VC) => {
