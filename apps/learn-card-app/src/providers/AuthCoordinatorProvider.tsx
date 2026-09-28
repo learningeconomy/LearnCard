@@ -1374,11 +1374,15 @@ const AuthSessionManager: React.FC<{
         <AppAuthContext.Provider value={enrichedValue}>
             {children}
             {coordinator.state.status === 'ready' && (
-                <div className="fixed top-6 inset-x-4 z-[10000] max-w-md mx-auto space-y-2">
+                <div
+                    className="fixed inset-x-4 z-[10000] max-w-md mx-auto space-y-2"
+                    style={{ top: 'calc(1.5rem + var(--ion-safe-area-top, 0px))' }}
+                >
                     {coordinator.state.pendingEscrowHold && (
                         <EscrowRecoveryHoldBanner
                             key={coordinator.state.pendingEscrowHold.holdId}
                             requestedAt={coordinator.state.pendingEscrowHold.requestedAt}
+                            releaseAfter={coordinator.state.pendingEscrowHold.releaseAfter}
                             onCancel={coordinator.cancelEscrowRecovery}
                         />
                     )}

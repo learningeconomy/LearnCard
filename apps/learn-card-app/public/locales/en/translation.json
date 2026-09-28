@@ -2171,7 +2171,16 @@
         "addWayBackIn": "Add a way back in",
         "addAnotherMethod": "Add another method",
         "fullyProtected": "You're fully protected.",
-        "added": "Added"
+        "added": "Added",
+        "escrowHold": {
+            "title": "Was this you?",
+            "body": "Someone started recovering your account {{timeAgo}}.",
+            "finishesIn": "It finishes in {{timeRemaining}} unless you stop it.",
+            "stop": "Stop recovery",
+            "stopping": "Stopping…",
+            "success": "Recovery stopped. Your account is safe.",
+            "dismiss": "It was me"
+        }
     },
     "alerts": {
         "accepted": "Accepted",
