@@ -1,5 +1,8 @@
 import cache from '@cache';
-import { environment } from '@environment';
+import {
+    environment,
+    getInstallIntentReconcilerRuntimeEnvironment as reconcilerConfig,
+} from '@environment';
 import { TRPCError } from '@trpc/server';
 import { traceInternal } from '@tracing';
 import { WalletManifestValidator } from '@learncard/types';
@@ -105,7 +108,7 @@ const getRedisClient = () => cache.redis ?? cache.node;
 let warnedAboutLocalCoordination = false;
 
 const allowLocalCoordination = (): boolean => {
-    const flag = environment.INSTALL_INTENT_RECONCILER_ALLOW_LOCAL_COORDINATION;
+    const flag = reconcilerConfig().INSTALL_INTENT_RECONCILER_ALLOW_LOCAL_COORDINATION;
 
     if (flag !== undefined) return flag;
 
@@ -150,12 +153,18 @@ const getInjectedFailureKey = (intentId: string, pass: string): string =>
     `install-intent-reconciler:inject-failure:${intentId}:${pass}`;
 
 const getMaxRetries = (): number => {
-    const parsed = Number.parseInt(environment.INSTALL_INTENT_RECONCILER_MAX_RETRIES ?? '', 10);
+    const parsed = Number.parseInt(
+        reconcilerConfig().INSTALL_INTENT_RECONCILER_MAX_RETRIES ?? '',
+        10
+    );
     return Number.isFinite(parsed) ? parsed : DEFAULT_MAX_RETRIES;
 };
 
 const getBackoffMs = (): number => {
-    const parsed = Number.parseInt(environment.INSTALL_INTENT_RECONCILER_BACKOFF_MS ?? '', 10);
+    const parsed = Number.parseInt(
+        reconcilerConfig().INSTALL_INTENT_RECONCILER_BACKOFF_MS ?? '',
+        10
+    );
     return Number.isFinite(parsed) ? parsed : DEFAULT_BACKOFF_MS;
 };
 
@@ -173,14 +182,15 @@ const recordLatency = (durationMs: number): void => {
 const iso = (date: Date): string => date.toISOString();
 
 const isGlobalKillSwitchEnabled = async (): Promise<boolean> => {
-    if (environment.INSTALL_INTENT_RECONCILER_DISABLED) return true;
+    if (reconcilerConfig().INSTALL_INTENT_RECONCILER_DISABLED) return true;
 
     const flag = await cache.get(KILL_SWITCH_KEY);
     return flag === '1' || flag === 'true';
 };
 
 const isTenantKillSwitchEnabled = async (ecosystemId: string): Promise<boolean> => {
-    const perTenantEnv = environment.INSTALL_INTENT_RECONCILER_DISABLED_ECOSYSTEM_IDS?.split(',')
+    const perTenantEnv = reconcilerConfig()
+        .INSTALL_INTENT_RECONCILER_DISABLED_ECOSYSTEM_IDS?.split(',')
         .map(value => value.trim())
         .filter(Boolean);
     if (perTenantEnv?.includes(ecosystemId)) return true;
@@ -197,7 +207,7 @@ const isKillSwitchEnabled = async (ecosystemId?: string): Promise<boolean> => {
 
 export const getStuckThresholdMs = (): number => {
     const parsed = Number.parseInt(
-        environment.INSTALL_INTENT_RECONCILER_STUCK_THRESHOLD_MS ?? '',
+        reconcilerConfig().INSTALL_INTENT_RECONCILER_STUCK_THRESHOLD_MS ?? '',
         10
     );
     return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_STUCK_THRESHOLD_MS;
@@ -205,7 +215,7 @@ export const getStuckThresholdMs = (): number => {
 
 const getMaxStuckIntentsAlertThreshold = (): number => {
     const parsed = Number.parseInt(
-        environment.INSTALL_INTENT_RECONCILER_ALERT_MAX_STUCK_INTENTS ?? '',
+        reconcilerConfig().INSTALL_INTENT_RECONCILER_ALERT_MAX_STUCK_INTENTS ?? '',
         10
     );
     return Number.isFinite(parsed) && parsed >= 0
@@ -215,7 +225,7 @@ const getMaxStuckIntentsAlertThreshold = (): number => {
 
 const getMaxDegradedIntentsAlertThreshold = (): number => {
     const parsed = Number.parseInt(
-        environment.INSTALL_INTENT_RECONCILER_ALERT_MAX_DEGRADED_INTENTS ?? '',
+        reconcilerConfig().INSTALL_INTENT_RECONCILER_ALERT_MAX_DEGRADED_INTENTS ?? '',
         10
     );
     return Number.isFinite(parsed) && parsed >= 0
@@ -225,7 +235,7 @@ const getMaxDegradedIntentsAlertThreshold = (): number => {
 
 const getMaxFailedIntentsAlertThreshold = (): number => {
     const parsed = Number.parseInt(
-        environment.INSTALL_INTENT_RECONCILER_ALERT_MAX_FAILED_INTENTS ?? '',
+        reconcilerConfig().INSTALL_INTENT_RECONCILER_ALERT_MAX_FAILED_INTENTS ?? '',
         10
     );
     return Number.isFinite(parsed) && parsed >= 0
@@ -239,7 +249,7 @@ const getTenantConcurrencyLimit = async (ecosystemId: string): Promise<number> =
     if (Number.isFinite(parsedConfigured) && parsedConfigured > 0) return parsedConfigured;
 
     const parsedEnv = Number.parseInt(
-        environment.INSTALL_INTENT_RECONCILER_TENANT_CONCURRENCY ?? '',
+        reconcilerConfig().INSTALL_INTENT_RECONCILER_TENANT_CONCURRENCY ?? '',
         10
     );
     if (Number.isFinite(parsedEnv) && parsedEnv > 0) return parsedEnv;

@@ -1,4 +1,4 @@
-import { environment } from '@environment';
+import { getInstallIntentReconcilerRuntimeEnvironment } from '@environment';
 import { listInstallIntentsForReconciliation } from '@accesslayer/install-intent/intent-read';
 import type { InstallIntentRecordType } from 'types/install-intent';
 
@@ -28,11 +28,14 @@ const positiveIntFromEnv = (raw: string | undefined, fallback: number): number =
 };
 
 export const getInstallIntentReconcilerIntervalMs = (): number =>
-    positiveIntFromEnv(environment.INSTALL_INTENT_RECONCILER_INTERVAL_MS, DEFAULT_INTERVAL_MS);
+    positiveIntFromEnv(
+        getInstallIntentReconcilerRuntimeEnvironment().INSTALL_INTENT_RECONCILER_INTERVAL_MS,
+        DEFAULT_INTERVAL_MS
+    );
 
 export const getInstallIntentReconcilerHealthIntervalMs = (): number =>
     positiveIntFromEnv(
-        environment.INSTALL_INTENT_RECONCILER_HEALTH_INTERVAL_MS,
+        getInstallIntentReconcilerRuntimeEnvironment().INSTALL_INTENT_RECONCILER_HEALTH_INTERVAL_MS,
         DEFAULT_HEALTH_INTERVAL_MS
     );
 

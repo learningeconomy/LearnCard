@@ -246,6 +246,36 @@ export const getInboxBatchRuntimeEnvironment = (): InboxBatchRuntimeEnvironment 
         examplePath: 'services/learn-card-network/brain-service/.env.example',
     });
 
+const installIntentReconcilerRuntimeEnvironmentSchema = z
+    .object(brainServiceEnvironmentShape)
+    .pick({
+        INSTALL_INTENT_RECONCILER_ALLOW_LOCAL_COORDINATION: true,
+        INSTALL_INTENT_RECONCILER_DISABLED: true,
+        INSTALL_INTENT_RECONCILER_DISABLED_ECOSYSTEM_IDS: true,
+        INSTALL_INTENT_RECONCILER_MAX_RETRIES: true,
+        INSTALL_INTENT_RECONCILER_BACKOFF_MS: true,
+        INSTALL_INTENT_RECONCILER_STUCK_THRESHOLD_MS: true,
+        INSTALL_INTENT_RECONCILER_ALERT_MAX_STUCK_INTENTS: true,
+        INSTALL_INTENT_RECONCILER_ALERT_MAX_DEGRADED_INTENTS: true,
+        INSTALL_INTENT_RECONCILER_ALERT_MAX_FAILED_INTENTS: true,
+        INSTALL_INTENT_RECONCILER_TENANT_CONCURRENCY: true,
+        INSTALL_INTENT_RECONCILER_INTERVAL_MS: true,
+        INSTALL_INTENT_RECONCILER_HEALTH_INTERVAL_MS: true,
+    });
+
+export type InstallIntentReconcilerRuntimeEnvironment = z.output<
+    typeof installIntentReconcilerRuntimeEnvironmentSchema
+>;
+
+/** Reads operator controls at call time while retaining the startup schema's validation. */
+export const getInstallIntentReconcilerRuntimeEnvironment =
+    (): InstallIntentReconcilerRuntimeEnvironment =>
+        parseEnvironment(installIntentReconcilerRuntimeEnvironmentSchema, process.env, {
+            project: 'brain-service install intent reconciler',
+            source: 'process environment',
+            examplePath: 'services/learn-card-network/brain-service/.env.example',
+        });
+
 export type BrainServiceEnvironment = z.output<typeof brainServiceEnvironmentSchema>;
 
 export const parseBrainServiceEnvironment = (
