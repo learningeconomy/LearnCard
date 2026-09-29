@@ -41,6 +41,25 @@ vi.mock('../../paraglide/messages.js', () => ({
     'recovery.setup.backup.confirmBtn': () => 'Verify Backup File',
     'recovery.setup.email.sendCodeBtn': () => 'Send Verification Code',
     'recovery.setup.email.verifyCodeBtn': () => 'Verify Code',
+
+    'recovery.stepOf': () => 'Step 1 of 2',
+    'recovery.step.save': () => 'Save',
+    'recovery.step.check': () => 'Check',
+    'recovery.step.send': () => 'Send',
+    'recovery.action.nextCheckIt': () => 'Next: check it',
+    'recovery.action.nextCheckFile': () => 'Next: check your file',
+    'recovery.hint.oneMoreStep': () => 'One more step: check your file.',
+    'recovery.guard.phraseTitle': () => 'Finish setting up your recovery phrase?',
+    'recovery.guard.backupTitle': () => 'Finish setting up your backup file?',
+    'recovery.guard.emailTitle': () => 'Finish setting up your recovery email?',
+    'recovery.guard.body': () => "It won't work until you check it. This only takes a few seconds.",
+    'recovery.guard.finish': () => 'Finish setup',
+    'recovery.guard.discardPhrase': () => 'Discard phrase',
+    'recovery.guard.discardBackup': () => 'Discard backup',
+    'recovery.guard.discardEmail': () => 'Discard',
+    'recovery.guard.discardNote': () =>
+        "The one you saved won't work. You can make a new one anytime.",
+
     'recovery.setup.email.sendKeyBtn': () => 'Send Recovery Key',
     'recovery.setup.email.confirmKeyBtn': () => 'Confirm Recovery Key',
     'recovery.setup.phrase.verifyTitle': () => 'Verify your phrase',
@@ -267,11 +286,6 @@ describe('RecoverySetupModal prompt integration', () => {
             name: /one|four|five|six|seven|eight/,
         });
         expect(challengeButtons).toHaveLength(6);
-
-        fireEvent.click(screen.getByRole('button', { name: 'Passkey' }));
-        expect(screen.queryByRole('button', { name: 'one' })).toBeNull();
-
-        fireEvent.click(screen.getByRole('button', { name: 'Phrase' }));
 
         fireEvent.click(await screen.findByRole('button', { name: 'one' }));
         fireEvent.click(await screen.findByRole('button', { name: 'three' }));

@@ -89,7 +89,7 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
     } = useAppAuth();
     const { currentLCNUser, refetch } = useGetCurrentLCNUser();
 
-    const { newModal, closeModal } = useModal();
+    const { newModal, closeModal, forceCloseModal } = useModal();
     const { handleLogout, isLoggingOut } = useLogout();
     const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
 
@@ -253,7 +253,16 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
                 const showReAuth = () => {
                     newModal(
                         <ReAuthOverlay onSuccess={closeModal} onCancel={closeModal} />,
-                        { sectionClassName: '!max-w-[480px]' },
+                        {
+                            sectionClassName: '!max-w-[480px]',
+                            onClose: () => {
+                                if (requestClose) {
+                                    requestClose();
+                                    return false;
+                                }
+                                return true;
+                            },
+                        },
                         { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
                     );
                 };
@@ -443,8 +452,12 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
                     };
                 };
 
+                let requestClose: (() => void) | undefined;
                 newModal(
                     <RecoverySetupModal
+                        registerCloseRequest={fn => {
+                            requestClose = fn;
+                        }}
                         emailAvailable={isEmailRelayConfigured()}
                         existingMethods={existingMethods.map(m => ({
                             type: m.type,

@@ -2023,7 +2023,9 @@
             "tapToChoose": "Appuyez pour choisir le fichier de sauvegarde",
             "fileSelected": "Fichier sélectionné",
             "enter": "Saisir",
-            "change": "Modifier"
+            "change": "Modifier",
+            "nextCheckIt": "Suivant : vérifiez-le",
+            "nextCheckFile": "Suivant : vérifiez votre fichier"
         },
         "tab": {
             "email": "E-mail",
@@ -2102,7 +2104,10 @@
         "step": {
             "searchInbox": "Recherchez dans votre boîte de réception un e-mail avec l’objet \"Votre clé de récupération LearnCard\"",
             "findKey": "Trouvez la longue chaîne de caractères entre \"RECOVERY KEY\" et \"END RECOVERY KEY\"",
-            "copyKey": "Copiez toute cette chaîne et collez-la ci-dessous"
+            "copyKey": "Copiez toute cette chaîne et collez-la ci-dessous",
+            "save": "Sauvegarder",
+            "check": "Vérifier",
+            "send": "Envoyer"
         },
         "newDeviceDesc": "Cet appareil n’a pas encore été configuré pour votre compte. Choisissez une méthode pour vous connecter.",
         "restoreAccessDesc": "Choisissez comment vous souhaitez restaurer l’accès à votre compte.",
@@ -2169,7 +2174,22 @@
             "turnOff": "Désactiver vos autres méthodes de connexion jusqu'à ce que vous les reconfiguriez"
         },
         "showNotSetUp": "Afficher {{count}} non configurés",
-        "hideNotSetUp": "Masquer les méthodes non configurées"
+        "hideNotSetUp": "Masquer les méthodes non configurées",
+        "stepOf": "Étape {current} sur {total}",
+        "hint": {
+            "oneMoreStep": "Encore une étape : vérifiez votre fichier."
+        },
+        "guard": {
+            "phraseTitle": "Terminer la configuration de votre phrase de récupération ?",
+            "backupTitle": "Terminer la configuration de votre fichier de sauvegarde ?",
+            "emailTitle": "Terminer la configuration de votre e-mail de récupération ?",
+            "body": "Cela ne fonctionnera pas tant que vous ne l'aurez pas vérifié. Cela ne prend que quelques secondes.",
+            "finish": "Terminer la configuration",
+            "discardPhrase": "Ignorer la phrase",
+            "discardBackup": "Ignorer la sauvegarde",
+            "discardEmail": "Ignorer",
+            "discardNote": "Celui que vous avez sauvegardé ne fonctionnera pas. Vous pouvez en créer un nouveau à tout moment."
+        }
     },
     "alerts": {
         "title": "Alertes",

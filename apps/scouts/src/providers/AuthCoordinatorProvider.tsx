@@ -1389,6 +1389,9 @@ const AuthSessionManager: React.FC<{
                     return (
                         <Overlay onDismiss={() => setShowRecoverySetup(false)}>
                             <RecoverySetupModal
+                                registerCloseRequest={fn => {
+                                    recoveryRequestCloseRef.current = fn;
+                                }}
                                 emailAvailable={isEmailRelayConfigured()}
                                 existingMethods={[]}
                                 maskedRecoveryEmail={null}

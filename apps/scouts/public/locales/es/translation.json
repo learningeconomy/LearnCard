@@ -599,6 +599,30 @@
             "titlePrivate": "Protege tu cuenta",
             "descPublic": "Esta es una sesión temporal. Cerrar la pestaña cerrará tu sesión permanentemente a menos que configures un método de recuperación.",
             "descPrivate": "Configura la recuperación para poder volver a entrar si pierdes este dispositivo."
+        },
+        "stepOf": "Paso {current} de {total}",
+        "step": {
+            "save": "Guardar",
+            "check": "Comprobar",
+            "send": "Enviar"
+        },
+        "action": {
+            "nextCheckIt": "Siguiente: compruébalo",
+            "nextCheckFile": "Siguiente: comprueba tu archivo"
+        },
+        "hint": {
+            "oneMoreStep": "Un paso más: comprueba tu archivo."
+        },
+        "guard": {
+            "phraseTitle": "¿Terminar de configurar tu frase de recuperación?",
+            "backupTitle": "¿Terminar de configurar tu archivo de copia de seguridad?",
+            "emailTitle": "¿Terminar de configurar tu correo de recuperación?",
+            "body": "No funcionará hasta que lo compruebes. Esto solo toma unos segundos.",
+            "finish": "Terminar configuración",
+            "discardPhrase": "Descartar frase",
+            "discardBackup": "Descartar copia de seguridad",
+            "discardEmail": "Descartar",
+            "discardNote": "El que guardaste no funcionará. Puedes crear uno nuevo en cualquier momento."
         }
     },
     "networkPrompts": {

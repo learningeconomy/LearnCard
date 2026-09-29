@@ -599,6 +599,30 @@
             "titlePrivate": "Protégez votre compte",
             "descPublic": "Ceci est une session temporaire. Fermer l'onglet vous déconnectera définitivement, sauf si vous configurez une méthode de récupération.",
             "descPrivate": "Configurez la récupération pour pouvoir revenir si vous perdez cet appareil."
+        },
+        "stepOf": "Étape {current} sur {total}",
+        "step": {
+            "save": "Sauvegarder",
+            "check": "Vérifier",
+            "send": "Envoyer"
+        },
+        "action": {
+            "nextCheckIt": "Suivant : vérifiez-le",
+            "nextCheckFile": "Suivant : vérifiez votre fichier"
+        },
+        "hint": {
+            "oneMoreStep": "Encore une étape : vérifiez votre fichier."
+        },
+        "guard": {
+            "phraseTitle": "Terminer la configuration de votre phrase de récupération ?",
+            "backupTitle": "Terminer la configuration de votre fichier de sauvegarde ?",
+            "emailTitle": "Terminer la configuration de votre e-mail de récupération ?",
+            "body": "Cela ne fonctionnera pas tant que vous ne l'aurez pas vérifié. Cela ne prend que quelques secondes.",
+            "finish": "Terminer la configuration",
+            "discardPhrase": "Ignorer la phrase",
+            "discardBackup": "Ignorer la sauvegarde",
+            "discardEmail": "Ignorer",
+            "discardNote": "Celui que vous avez sauvegardé ne fonctionnera pas. Vous pouvez en créer un nouveau à tout moment."
         }
     },
     "networkPrompts": {

@@ -2023,7 +2023,9 @@
             "tapToChoose": "Toca para elegir el archivo de respaldo",
             "fileSelected": "Archivo seleccionado",
             "enter": "Ingresar",
-            "change": "Cambiar"
+            "change": "Cambiar",
+            "nextCheckIt": "Siguiente: compruébalo",
+            "nextCheckFile": "Siguiente: comprueba tu archivo"
         },
         "tab": {
             "email": "Correo electrónico",
@@ -2102,7 +2104,10 @@
         "step": {
             "searchInbox": "Busca en tu bandeja de entrada un correo con el asunto \"Tu Clave de Recuperación de LearnCard\"",
             "findKey": "Encuentra la cadena larga de caracteres entre \"RECOVERY KEY\" y \"END RECOVERY KEY\"",
-            "copyKey": "Copia esa cadena completa y pégala abajo"
+            "copyKey": "Copia esa cadena completa y pégala abajo",
+            "save": "Guardar",
+            "check": "Comprobar",
+            "send": "Enviar"
         },
         "newDeviceDesc": "Este dispositivo aún no ha sido configurado para tu cuenta. Elige un método para iniciar sesión.",
         "restoreAccessDesc": "Elige cómo quieres restaurar el acceso a tu cuenta.",
@@ -2169,7 +2174,22 @@
             "turnOff": "Desactivará tus otros métodos de inicio de sesión hasta que los vuelvas a configurar"
         },
         "showNotSetUp": "Mostrar {{count}} sin configurar",
-        "hideNotSetUp": "Ocultar métodos sin configurar"
+        "hideNotSetUp": "Ocultar métodos sin configurar",
+        "stepOf": "Paso {current} de {total}",
+        "hint": {
+            "oneMoreStep": "Un paso más: comprueba tu archivo."
+        },
+        "guard": {
+            "phraseTitle": "¿Terminar de configurar tu frase de recuperación?",
+            "backupTitle": "¿Terminar de configurar tu archivo de copia de seguridad?",
+            "emailTitle": "¿Terminar de configurar tu correo de recuperación?",
+            "body": "No funcionará hasta que lo compruebes. Esto solo toma unos segundos.",
+            "finish": "Terminar configuración",
+            "discardPhrase": "Descartar frase",
+            "discardBackup": "Descartar copia de seguridad",
+            "discardEmail": "Descartar",
+            "discardNote": "El que guardaste no funcionará. Puedes crear uno nuevo en cualquier momento."
+        }
     },
     "alerts": {
         "title": "Alertas",

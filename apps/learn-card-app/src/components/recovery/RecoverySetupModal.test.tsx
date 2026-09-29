@@ -280,9 +280,7 @@ describe('RecoverySetupModal prompt integration', () => {
         vi.mocked(props.onConfirmPhrase).mockImplementation(() => runner.run('phrase', confirm));
 
         fireEvent.click(screen.getByRole('button', { name: 'Generate Recovery Phrase' }));
-        fireEvent.click(
-            await screen.findByRole('button', { name: "I've Saved It Somewhere Safe" })
-        );
+        fireEvent.click(await screen.findByRole('button', { name: 'Next: check it' }));
 
         fireEvent.click(await screen.findByRole('button', { name: 'one' }));
         fireEvent.click(await screen.findByRole('button', { name: 'three' }));
@@ -307,9 +305,7 @@ describe('RecoverySetupModal prompt integration', () => {
     ) => {
         const rendered = renderModal('phrase', vi.fn(), overrides);
         fireEvent.click(screen.getByRole('button', { name: 'Generate Recovery Phrase' }));
-        fireEvent.click(
-            await screen.findByRole('button', { name: "I've Saved It Somewhere Safe" })
-        );
+        fireEvent.click(await screen.findByRole('button', { name: 'Next: check it' }));
         return rendered;
     };
 
@@ -347,9 +343,7 @@ describe('RecoverySetupModal prompt integration', () => {
         fireEvent.click(screen.getByRole('button', { name: 'five' }));
         fireEvent.click(await screen.findByRole('button', { name: 'Show my phrase again' }));
 
-        expect(
-            await screen.findByRole('button', { name: "I've Saved It Somewhere Safe" })
-        ).toBeInTheDocument();
+        expect(await screen.findByRole('button', { name: 'Next: check it' })).toBeInTheDocument();
     });
 
     it('falls back to typed words when choices are unavailable', async () => {
@@ -392,18 +386,13 @@ describe('RecoverySetupModal prompt integration', () => {
         await waitFor(() => expect(props.onGeneratePhrase).toHaveBeenCalledOnce());
         expect(onCompleted).not.toHaveBeenCalled();
 
-        fireEvent.click(screen.getByRole('button', { name: "I've Saved It Somewhere Safe" }));
+        fireEvent.click(screen.getByRole('button', { name: 'Next: check it' }));
         expect(onCompleted).not.toHaveBeenCalled();
 
         const challengeButtons = await screen.findAllByRole('button', {
             name: /one|four|five|six|seven|eight/,
         });
         expect(challengeButtons).toHaveLength(6);
-
-        fireEvent.click(screen.getByRole('button', { name: 'Passkey' }));
-        expect(screen.queryByRole('button', { name: 'one' })).not.toBeInTheDocument();
-
-        fireEvent.click(screen.getByRole('button', { name: 'Phrase' }));
 
         fireEvent.click(await screen.findByRole('button', { name: 'one' }));
         fireEvent.click(await screen.findByRole('button', { name: 'three' }));

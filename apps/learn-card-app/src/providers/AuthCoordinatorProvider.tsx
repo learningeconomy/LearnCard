@@ -471,6 +471,7 @@ const AuthSessionManager: React.FC<{
     // --- Recovery setup prompt (shown after first-time setup with no recovery methods) ---
     const [showRecoverySetup, setShowRecoverySetup] = useState(false);
     const recoverySetupOptionsRef = useRef<RecoverySetupOptions>({});
+    const recoveryRequestCloseRef = useRef<(() => void) | null>(null);
     const wasNewUserRef = useRef(false);
     // Set when a PIN-based recovery just succeeded, proving the user had a PIN
     // even on a new/forgotten device where the local prompt flag is absent.
@@ -1803,7 +1804,13 @@ const AuthSessionManager: React.FC<{
                     // Session expired — show in-place re-auth overlay
                     if (recoverySessionValid === false) {
                         return (
-                            <Overlay onDismiss={closeRecoverySetup}>
+                            <Overlay
+                                onDismiss={() => {
+                                    if (recoveryRequestCloseRef.current)
+                                        recoveryRequestCloseRef.current();
+                                    else closeRecoverySetup();
+                                }}
+                            >
                                 <ReAuthOverlay
                                     onSuccess={() => setRecoverySessionValid(true)}
                                     onCancel={closeRecoverySetup}
@@ -1908,6 +1915,9 @@ const AuthSessionManager: React.FC<{
                     return (
                         <Overlay onDismiss={closeRecoverySetup}>
                             <RecoverySetupModal
+                                registerCloseRequest={fn => {
+                                    recoveryRequestCloseRef.current = fn;
+                                }}
                                 emailAvailable={isEmailRelayConfigured()}
                                 onGetEscrowEnrollmentState={coordinator.getEscrowEnrollmentState}
                                 onDisableEscrowRecovery={coordinator.disableEscrowRecovery}

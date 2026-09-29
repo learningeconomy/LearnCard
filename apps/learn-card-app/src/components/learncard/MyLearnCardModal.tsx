@@ -87,7 +87,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
     const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
     const { gate } = useLCNGatedAction();
 
-    const { newModal, closeModal } = useModal();
+    const { newModal, closeModal, forceCloseModal } = useModal();
     const { handleLogout, isLoggingOut } = useLogout();
 
     const { data: isNetworkUser, isLoading: isNetworkUserLoading } = useIsCurrentUserLCNUser();
@@ -318,7 +318,16 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                     const showReAuth = () => {
                         newModal(
                             <ReAuthOverlay onSuccess={closeModal} onCancel={closeModal} />,
-                            { sectionClassName: '!max-w-[480px]' },
+                            {
+                                sectionClassName: '!max-w-[480px]',
+                                onClose: () => {
+                                    if (requestClose) {
+                                        requestClose();
+                                        return false;
+                                    }
+                                    return true;
+                                },
+                            },
                             { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
                         );
                     };
@@ -506,8 +515,12 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                         };
                     };
 
+                    let requestClose: (() => void) | undefined;
                     newModal(
                         <RecoverySetupModal
+                            registerCloseRequest={fn => {
+                                requestClose = fn;
+                            }}
                             emailAvailable={isEmailRelayConfigured()}
                             onGetEscrowEnrollmentState={getEscrowEnrollmentState}
                             onDisableEscrowRecovery={disableEscrowRecovery}

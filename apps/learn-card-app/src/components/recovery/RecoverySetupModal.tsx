@@ -47,6 +47,7 @@ interface RecoverySetupModalProps extends Partial<AutomaticRecoveryProps> {
     emailAvailable?: boolean;
     onCompleted?: (method: RecoverySetupType) => void;
     onClose: () => void;
+    registerCloseRequest?: (fn: () => void) => void;
 }
 
 const isValidChallengeOptions = (
@@ -74,6 +75,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     emailAvailable = true,
     onCompleted,
     onClose,
+    registerCloseRequest,
     onGetEscrowEnrollmentState,
     onDisableEscrowRecovery,
     onEnableEscrowRecovery,
@@ -96,6 +98,8 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
 
     // Default to the first unconfigured method in priority order:
     // email > phrase > backup > passkey
+    const [showLeaveGuard, setShowLeaveGuard] = useState(false);
+    const [pendingAction, setPendingAction] = useState<'close' | RecoverySetupType | null>(null);
     const [activeTab, setActiveTab] = useState<RecoverySetupType>(() => {
         if (
             initialMethod &&
@@ -145,7 +149,64 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     const [emailShareSent, setEmailShareSent] = useState(false);
     const [emailRecoveryCode, setEmailRecoveryCode] = useState('');
 
+    const unfinished: RecoverySetupType | null =
+        recoveryPhrase && !isConfigured('phrase')
+            ? 'phrase'
+            : backupDownloaded && !backupConfirmed
+              ? 'backup'
+              : emailShareSent && !isConfigured('email')
+                ? 'email'
+                : null;
+
+    const requestClose = React.useCallback(() => {
+        if (unfinished) {
+            setPendingAction('close');
+            setShowLeaveGuard(true);
+        } else {
+            onClose();
+        }
+    }, [unfinished, onClose]);
+
+    React.useEffect(() => {
+        if (registerCloseRequest) {
+            registerCloseRequest(requestClose);
+        }
+    }, [registerCloseRequest, requestClose]);
+
+    const handleDiscard = () => {
+        if (unfinished === 'phrase') {
+            setRecoveryPhrase(null);
+            setPhraseChallengeStarted(false);
+            setPhraseChallengeWords([]);
+            setCurrentChallengeIndex(0);
+            setWrongTaps(new Set());
+            setWrongTapsCount(0);
+            setCorrectTap(null);
+        } else if (unfinished === 'backup') {
+            setBackupDownloaded(false);
+            setBackupVerificationPassword('');
+        } else if (unfinished === 'email') {
+            setEmailShareSent(false);
+            setEmailRecoveryCode('');
+        }
+        setShowLeaveGuard(false);
+        if (pendingAction === 'close') {
+            onClose();
+        } else if (pendingAction) {
+            setActiveTab(pendingAction);
+            setError(null);
+            setSuccess(null);
+            setShowUpdateForm(false);
+        }
+        setPendingAction(null);
+    };
+
     const handleTabSwitch = (tab: RecoverySetupType) => {
+        if (unfinished && tab !== activeTab) {
+            setPendingAction(tab);
+            setShowLeaveGuard(true);
+            return;
+        }
         setActiveTab(tab);
         setError(null);
         setSuccess(null);
@@ -480,6 +541,31 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
 
     // ── Shared helpers ──────────────────────────────────────────────
 
+    const StepIndicator = ({
+        step,
+        label1,
+        label2,
+    }: {
+        step: 1 | 2;
+        label1: string;
+        label2: string;
+    }) => (
+        <div className="flex items-center gap-2 mb-4">
+            <div className="flex gap-1">
+                <div
+                    className={`w-1.5 h-1.5 rounded-full ${step >= 1 ? 'bg-emerald-500' : 'bg-grayscale-300'}`}
+                />
+                <div
+                    className={`w-1.5 h-1.5 rounded-full ${step >= 2 ? 'bg-emerald-500' : 'bg-grayscale-300'}`}
+                />
+            </div>
+            <span className="text-xs text-grayscale-500 font-medium">
+                {m['recovery.stepOf']({ current: String(step), total: '2' })} ·{' '}
+                {step === 1 ? label1 : label2}
+            </span>
+        </div>
+    );
+
     const updateWarning = (text: string) => (
         <div className="p-3 bg-amber-50 border border-amber-100 rounded-2xl flex items-start gap-2.5">
             <IonIcon
@@ -529,12 +615,63 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     // ── Render ─────────────────────────────────────────────────────────
 
     return (
-        <div className="p-6 max-w-md mx-auto bg-white min-h-full">
+        <div className="p-6 max-w-md mx-auto bg-white min-h-full relative">
+            {showLeaveGuard && (
+                <div
+                    className="absolute inset-0 z-50 bg-white/80 backdrop-blur-sm flex items-center justify-center p-6 animate-fade-in-up motion-reduce:animate-none"
+                    role="alertdialog"
+                    aria-labelledby="leave-guard-title"
+                    aria-describedby="leave-guard-desc"
+                >
+                    <div className="bg-white rounded-[20px] shadow-2xl border border-grayscale-200 p-6 w-full max-w-sm text-center">
+                        <h3
+                            id="leave-guard-title"
+                            className="text-lg font-semibold text-grayscale-900 mb-2"
+                        >
+                            {unfinished === 'phrase'
+                                ? m['recovery.guard.phraseTitle']()
+                                : unfinished === 'backup'
+                                  ? m['recovery.guard.backupTitle']()
+                                  : m['recovery.guard.emailTitle']()}
+                        </h3>
+                        <p id="leave-guard-desc" className="text-sm text-grayscale-600 mb-6">
+                            {m['recovery.guard.body']()}
+                        </p>
+                        <div className="space-y-3">
+                            <button
+                                autoFocus
+                                onClick={() => setShowLeaveGuard(false)}
+                                className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                            >
+                                {m['recovery.guard.finish']()}
+                            </button>
+                            <div>
+                                <button
+                                    onClick={handleDiscard}
+                                    className="w-full py-2.5 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors font-medium"
+                                >
+                                    {unfinished === 'phrase'
+                                        ? m['recovery.guard.discardPhrase']()
+                                        : unfinished === 'backup'
+                                          ? m['recovery.guard.discardBackup']()
+                                          : m['recovery.guard.discardEmail']()}
+                                </button>
+                                {(unfinished === 'phrase' || unfinished === 'backup') && (
+                                    <p className="text-xs text-grayscale-500 mt-1">
+                                        {m['recovery.guard.discardNote']()}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Dynamic Header */}
             <div className="relative text-center mb-5">
                 <button
                     type="button"
-                    onClick={onClose}
+                    onClick={requestClose}
                     aria-label={m['common.close']()}
                     className="absolute top-0 end-0 p-2 rounded-full text-grayscale-500 hover:text-grayscale-700 hover:bg-grayscale-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                 >
@@ -633,6 +770,12 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                             >
                                 <IonIcon icon={tab.icon} className={tab.iconClass} />
                                 {tab.label}
+                                {unfinished === tab.id && (
+                                    <>
+                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 ml-1" />
+                                        <span className="sr-only">Not finished</span>
+                                    </>
+                                )}
                             </button>
                         ))}
                     </div>
@@ -715,6 +858,11 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                             !showUpdateForm &&
                             !recoveryPhrase ? null : phraseChallengeStarted ? (
                                 <>
+                                    <StepIndicator
+                                        step={2}
+                                        label1={m['recovery.step.save']()}
+                                        label2={m['recovery.step.check']()}
+                                    />
                                     {phraseChallengeOptions.length > 0 ? (
                                         <>
                                             <div className="mb-4">
@@ -879,6 +1027,11 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                 </>
                             ) : !recoveryPhrase ? (
                                 <>
+                                    <StepIndicator
+                                        step={1}
+                                        label1={m['recovery.step.save']()}
+                                        label2={m['recovery.step.check']()}
+                                    />
                                     {isUpdate && updateWarning(m['recovery.generateNewPhrase']())}
 
                                     <div>
@@ -931,7 +1084,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                         onClick={() => setPhraseChallengeStarted(true)}
                                         className="w-full py-3 px-4 rounded-[20px] bg-emerald-600 text-white font-medium text-sm hover:bg-emerald-700 transition-colors"
                                     >
-                                        {m['recovery.savedSomewhereSafe']()}
+                                        {m['recovery.action.nextCheckIt']()}
                                     </button>
                                 </>
                             )}
@@ -945,6 +1098,11 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                             !showUpdateForm &&
                             !backupFileJson ? null : !backupFileJson ? (
                                 <>
+                                    <StepIndicator
+                                        step={1}
+                                        label1={m['recovery.step.save']()}
+                                        label2={m['recovery.step.check']()}
+                                    />
                                     {isUpdate && updateWarning(m['recovery.generateNewBackup']())}
 
                                     <p className="text-sm text-grayscale-600 leading-relaxed">
@@ -996,6 +1154,11 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                 </>
                             ) : (
                                 <>
+                                    <StepIndicator
+                                        step={2}
+                                        label1={m['recovery.step.save']()}
+                                        label2={m['recovery.step.check']()}
+                                    />
                                     <div>
                                         <p className="text-sm font-medium text-grayscale-900 mb-1">
                                             {m['recovery.backupReady']()}
@@ -1020,6 +1183,9 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
 
                                     {backupDownloaded && !backupConfirmed && (
                                         <div className="space-y-4">
+                                            <p className="text-xs text-grayscale-600 mb-3">
+                                                {m['recovery.hint.oneMoreStep']()}
+                                            </p>
                                             <div>
                                                 <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
                                                     {m['recovery.reenterPassword']()}
@@ -1061,6 +1227,11 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                             {isConfigured('email') && !showUpdateForm ? null : !emailVerified ? (
                                 // Step 1 & 2: Verify email
                                 <>
+                                    <StepIndicator
+                                        step={1}
+                                        label1={m['recovery.step.send']()}
+                                        label2={m['recovery.step.check']()}
+                                    />
                                     {isUpdate && updateWarning(m['recovery.replaceEmail']())}
 
                                     {!anyConfigured && (
@@ -1158,6 +1329,11 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                             ) : !emailShareSent ? (
                                 // Step 3: Email verified, send recovery share
                                 <>
+                                    <StepIndicator
+                                        step={2}
+                                        label1={m['recovery.step.send']()}
+                                        label2={m['recovery.step.check']()}
+                                    />
                                     <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-start gap-2.5">
                                         <IonIcon
                                             icon={checkmarkCircleOutline}
@@ -1244,7 +1420,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                         </p>
                     )}
                     <button
-                        onClick={onClose}
+                        onClick={requestClose}
                         className="w-full py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
                     >
                         {anyConfigured ? m['common.done']() : m['common.skipForNow']()}
